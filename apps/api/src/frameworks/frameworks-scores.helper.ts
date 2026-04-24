@@ -16,8 +16,8 @@ const HIPAA_TRAINING_ID = 'hipaa-sat-1';
 export async function getOverviewScores(organizationId: string) {
   const [allPolicies, allTasks, employees, onboarding, org, hipaaInstance] =
     await Promise.all([
-      db.policy.findMany({ where: { organizationId } }),
-      db.task.findMany({ where: { organizationId } }),
+      db.policy.findMany({ where: { organizationId, isArchived: false, archivedAt: null } }),
+      db.task.findMany({ where: { organizationId, archivedAt: null } }),
       db.member.findMany({
         where: { organizationId, deactivated: false },
         include: { user: true },

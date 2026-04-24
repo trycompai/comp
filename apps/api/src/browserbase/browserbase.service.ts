@@ -1,16 +1,14 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import Browserbase from '@browserbasehq/sdk';
 // Lazy-imported in createStagehand() to avoid Node v25 crash
 // (SlowBuffer.prototype was removed — @browserbasehq/stagehand bundles buffer-equal-constant-time which uses it)
 type Stagehand = import('@browserbasehq/stagehand').Stagehand;
 import { db } from '@db';
 import { z } from 'zod';
-import {
-  GetObjectCommand,
-  PutObjectCommand,
-  S3Client,
-} from '@aws-sdk/client-s3';
-import { getSignedUrl } from '@/app/s3';
+import { GetObjectCommand, PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
+import { BUCKET_NAME, getSignedUrl, s3Client } from '@/app/s3';
+import { renderOverlay } from './screenshot-overlay';
+import { isNoPageError, toRunErrorMessage } from './run-error-formatter';
 
 const BROWSER_WIDTH = 1440;
 const BROWSER_HEIGHT = 900;
@@ -23,6 +21,13 @@ const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 const PENDING_CONTEXT_ID = '__PENDING__';
 
+/** Empty strings become null; any actual text is trimmed and kept. */
+const normalizeCriteria = (value: string | null | undefined): string | null => {
+  if (value == null) return null;
+  const trimmed = value.trim();
+  return trimmed.length === 0 ? null : trimmed;
+};
+
 const isPrismaUniqueConstraintError = (error: unknown): boolean => {
   if (typeof error !== 'object' || error === null) return false;
   if (!('code' in error)) return false;
@@ -33,14 +38,23 @@ const isPrismaUniqueConstraintError = (error: unknown): boolean => {
 @Injectable()
 export class BrowserbaseService {
   private readonly logger = new Logger(BrowserbaseService.name);
-  private readonly s3Client: S3Client;
-  private readonly bucketName: string;
 
-  constructor() {
-    this.s3Client = new S3Client({
-      region: process.env.AWS_REGION || 'us-east-1',
-    });
-    this.bucketName = process.env.APP_AWS_BUCKET_NAME || 'comp-attachments';
+  private get s3Client(): S3Client {
+    if (!s3Client) {
+      throw new Error(
+        'S3 client not configured — set APP_AWS_ACCESS_KEY_ID, APP_AWS_SECRET_ACCESS_KEY, APP_AWS_REGION, APP_AWS_BUCKET_NAME in apps/api/.env',
+      );
+    }
+    return s3Client;
+  }
+
+  private get bucketName(): string {
+    if (!BUCKET_NAME) {
+      throw new Error(
+        'APP_AWS_BUCKET_NAME is not set — configure S3 credentials in apps/api/.env',
+      );
+    }
+    return BUCKET_NAME;
   }
 
   private getBrowserbase() {
@@ -319,12 +333,7 @@ export class BrowserbaseService {
         username: result.username,
       };
     } catch (err) {
-      const message = err instanceof Error ? err.message : String(err);
-      const isNoPage =
-        message.includes('awaitActivePage') ||
-        message.includes('no page available') ||
-        message.includes('No page found');
-      if (isNoPage) {
+      if (isNoPageError(err)) {
         throw new Error(
           'Browser session ended before we could verify login status. Please retry.',
         );
@@ -343,6 +352,7 @@ export class BrowserbaseService {
     description?: string;
     targetUrl: string;
     instruction: string;
+    evaluationCriteria?: string;
     schedule?: string;
   }) {
     return db.browserAutomation.create({
@@ -352,6 +362,7 @@ export class BrowserbaseService {
         description: data.description,
         targetUrl: data.targetUrl,
         instruction: data.instruction,
+        evaluationCriteria: normalizeCriteria(data.evaluationCriteria),
         schedule: data.schedule,
         isEnabled: true, // Enable by default so scheduled runs work
       },
@@ -390,13 +401,20 @@ export class BrowserbaseService {
       description?: string;
       targetUrl?: string;
       instruction?: string;
+      evaluationCriteria?: string;
       schedule?: string;
       isEnabled?: boolean;
     },
   ) {
+    const { evaluationCriteria, ...rest } = data;
     return db.browserAutomation.update({
       where: { id: automationId },
-      data,
+      data: {
+        ...rest,
+        ...(evaluationCriteria !== undefined
+          ? { evaluationCriteria: normalizeCriteria(evaluationCriteria) }
+          : {}),
+      },
     });
   }
 
@@ -506,6 +524,7 @@ export class BrowserbaseService {
         {
           title: automation.task.title,
           description: automation.task.description,
+          evaluationCriteria: automation.evaluationCriteria,
         },
       );
 
@@ -534,7 +553,7 @@ export class BrowserbaseService {
         };
       }
 
-      // Upload screenshot to S3 (only taken if evaluation passed)
+      // Upload screenshot to S3
       let screenshotKey: string | undefined;
       let presignedUrl: string | undefined;
       if (result.screenshot) {
@@ -547,7 +566,8 @@ export class BrowserbaseService {
         presignedUrl = await this.getPresignedUrl(screenshotKey);
       }
 
-      // Update run as completed
+      // Update run as completed. Only persist an evaluation verdict when
+      // the caller's automation had criteria configured.
       await db.browserAutomationRun.update({
         where: { id: runId },
         data: {
@@ -556,7 +576,7 @@ export class BrowserbaseService {
           durationMs: run.startedAt ? Date.now() - run.startedAt.getTime() : 0,
           screenshotUrl: screenshotKey,
           evaluationStatus: result.evaluationStatus ?? null,
-          evaluationReason: result.evaluationReason ?? 'Screenshot captured',
+          evaluationReason: result.evaluationReason ?? null,
         },
       });
 
@@ -568,6 +588,7 @@ export class BrowserbaseService {
       };
     } catch (err) {
       this.logger.error('Failed to execute automation on session', err);
+      const { userFacing, needsReauth } = toRunErrorMessage(err);
 
       await db.browserAutomationRun.update({
         where: { id: runId },
@@ -575,13 +596,14 @@ export class BrowserbaseService {
           status: 'failed',
           completedAt: new Date(),
           durationMs: run.startedAt ? Date.now() - run.startedAt.getTime() : 0,
-          error: err instanceof Error ? err.message : 'Unknown error',
+          error: userFacing,
         },
       });
 
       return {
         success: false,
-        error: err instanceof Error ? err.message : 'Unknown error',
+        error: userFacing,
+        needsReauth: needsReauth ? true : undefined,
       };
     }
   }
@@ -646,6 +668,7 @@ export class BrowserbaseService {
           {
             title: automation.task.title,
             description: automation.task.description,
+            evaluationCriteria: automation.evaluationCriteria,
           },
         );
 
@@ -686,7 +709,8 @@ export class BrowserbaseService {
           presignedUrl = await this.getPresignedUrl(screenshotKey);
         }
 
-        // Update run as completed
+        // Update run as completed. Only persist an evaluation verdict when
+        // the automation had criteria configured.
         await db.browserAutomationRun.update({
           where: { id: run.id },
           data: {
@@ -695,7 +719,7 @@ export class BrowserbaseService {
             durationMs: Date.now() - run.startedAt!.getTime(),
             screenshotUrl: screenshotKey,
             evaluationStatus: result.evaluationStatus ?? null,
-            evaluationReason: result.evaluationReason ?? 'Screenshot captured',
+            evaluationReason: result.evaluationReason ?? null,
           },
         });
 
@@ -719,6 +743,7 @@ export class BrowserbaseService {
       }
     } catch (err) {
       this.logger.error('Failed to run browser automation', err);
+      const { userFacing, needsReauth } = toRunErrorMessage(err);
 
       // Update run as failed
       await db.browserAutomationRun.update({
@@ -727,14 +752,15 @@ export class BrowserbaseService {
           status: 'failed',
           completedAt: new Date(),
           durationMs: run.startedAt ? Date.now() - run.startedAt.getTime() : 0,
-          error: err instanceof Error ? err.message : 'Unknown error',
+          error: userFacing,
         },
       });
 
       return {
         runId: run.id,
         success: false,
-        error: err instanceof Error ? err.message : 'Unknown error',
+        error: userFacing,
+        needsReauth: needsReauth ? true : undefined,
       };
     }
   }
@@ -743,7 +769,11 @@ export class BrowserbaseService {
     sessionId: string,
     targetUrl: string,
     instruction: string,
-    taskContext?: { title: string; description?: string | null },
+    taskContext?: {
+      title: string;
+      description?: string | null;
+      evaluationCriteria?: string | null;
+    },
   ): Promise<{
     success: boolean;
     screenshot?: string;
@@ -802,32 +832,71 @@ export class BrowserbaseService {
 
       // Always take a screenshot at the end (no pass/fail criteria gate)
       page = await this.ensureActivePage(stagehand);
-      const screenshot = await page.screenshot({
+      const sourceUrl = page.url();
+      const rawScreenshot = await page.screenshot({
         type: 'jpeg',
         quality: 80,
         fullPage: false,
       });
 
+      let finalBuffer: Buffer = rawScreenshot;
+      try {
+        finalBuffer = await renderOverlay({
+          buffer: rawScreenshot,
+          instruction,
+          sourceUrl,
+          capturedAt: new Date(),
+        });
+      } catch (overlayErr) {
+        this.logger.warn('Screenshot overlay render failed; uploading raw image', {
+          error:
+            overlayErr instanceof Error ? overlayErr.message : String(overlayErr),
+        });
+      }
+
+      // Optional evaluation: if the automation was configured with
+      // natural-language criteria, ask Stagehand to inspect the page and
+      // produce a pass/fail verdict with a short reason.
+      let evaluationStatus: 'pass' | 'fail' | undefined;
+      let evaluationReason: string | undefined;
+      const criteria = taskContext?.evaluationCriteria?.trim();
+      if (criteria) {
+        try {
+          const evalSchema = z.object({
+            pass: z.boolean(),
+            reason: z.string(),
+          });
+          const evaluation = (await stagehand.extract(
+            `You are an auditor reviewing the current page after an automation has finished navigating. Decide whether the page clearly satisfies this criteria. Only return pass=true if the evidence is unambiguously present and visible. If it is ambiguous, missing, or contradicted, return pass=false. Always provide a short reason (max 220 characters).\n\nCriteria: ${criteria}`,
+            evalSchema as any,
+          )) as { pass: boolean; reason: string };
+
+          evaluationStatus = evaluation.pass ? 'pass' : 'fail';
+          evaluationReason = evaluation.reason;
+        } catch (evalErr) {
+          this.logger.warn(
+            'Evaluation step failed; returning screenshot without verdict',
+            {
+              error:
+                evalErr instanceof Error ? evalErr.message : String(evalErr),
+            },
+          );
+        }
+      }
+
       return {
         success: true,
-        screenshot: screenshot.toString('base64'),
-        evaluationReason: taskContext
-          ? `Navigation completed for "${taskContext.title}". Screenshot captured.`
-          : 'Navigation completed. Screenshot captured.',
+        screenshot: finalBuffer.toString('base64'),
+        evaluationStatus,
+        evaluationReason,
       };
     } catch (err) {
       this.logger.error('Failed to execute automation', err);
-      const message = err instanceof Error ? err.message : String(err);
-      const isNoPage =
-        message.includes('awaitActivePage') ||
-        message.includes('no page available') ||
-        message.includes('No page found');
+      const { userFacing, needsReauth } = toRunErrorMessage(err);
       return {
         success: false,
-        needsReauth: isNoPage ? true : undefined,
-        error: isNoPage
-          ? 'Browser session ended before we could capture evidence. Please retry.'
-          : message,
+        needsReauth: needsReauth ? true : undefined,
+        error: userFacing,
       };
     } finally {
       await this.safeCloseStagehand(stagehand);
@@ -856,12 +925,57 @@ export class BrowserbaseService {
     return key;
   }
 
-  async getPresignedUrl(key: string, expiresIn = 3600): Promise<string> {
+  async getPresignedUrl(
+    key: string,
+    options: { expiresIn?: number; responseContentDisposition?: string } = {},
+  ): Promise<string> {
     const command = new GetObjectCommand({
       Bucket: this.bucketName,
       Key: key,
+      ResponseContentDisposition: options.responseContentDisposition,
     });
-    return getSignedUrl(this.s3Client, command, { expiresIn });
+    return getSignedUrl(this.s3Client, command, {
+      expiresIn: options.expiresIn ?? 3600,
+    });
+  }
+
+  /**
+   * Resolve a run's S3 screenshot key to a freshly signed presigned URL,
+   * scoped to the caller's organization. Used by the controller's
+   * GET runs/:runId/screenshot redirect endpoint so that the "Open full size"
+   * UI link never serves an expired URL.
+   *
+   * When `download` is true, the presigned URL is signed with an
+   * attachment Content-Disposition so the browser downloads the image
+   * instead of rendering it inline.
+   */
+  async getScreenshotRedirectUrl(input: {
+    runId: string;
+    organizationId: string;
+    download?: boolean;
+  }): Promise<string> {
+    const { runId, organizationId, download } = input;
+
+    const run = await db.browserAutomationRun.findUnique({
+      where: { id: runId },
+      include: { automation: { include: { task: true } } },
+    });
+
+    if (!run || !run.screenshotUrl) {
+      throw new NotFoundException('Screenshot not found');
+    }
+
+    if (run.automation.task.organizationId !== organizationId) {
+      throw new NotFoundException('Screenshot not found');
+    }
+
+    const responseContentDisposition = download
+      ? `attachment; filename="screenshot-${runId}.jpg"`
+      : undefined;
+
+    return this.getPresignedUrl(run.screenshotUrl, {
+      responseContentDisposition,
+    });
   }
 
   async getRunWithPresignedUrl(runId: string) {

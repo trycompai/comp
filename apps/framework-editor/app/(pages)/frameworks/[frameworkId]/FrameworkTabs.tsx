@@ -14,6 +14,7 @@ export function FrameworkTabs() {
     { name: 'Policies', href: `/frameworks/${frameworkId}/policies`, segment: 'policies' },
     { name: 'Tasks', href: `/frameworks/${frameworkId}/tasks`, segment: 'tasks' },
     { name: 'Documents', href: `/frameworks/${frameworkId}/documents`, segment: 'documents' },
+    { name: 'Versions', href: `/frameworks/${frameworkId}/versions`, segment: 'versions' },
   ];
 
   const activeValue = segment ?? 'requirements';
