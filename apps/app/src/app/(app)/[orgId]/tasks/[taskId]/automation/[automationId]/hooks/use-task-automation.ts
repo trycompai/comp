@@ -1,4 +1,5 @@
 import { api } from '@/lib/api-client';
+import type { TaskFrequency } from '@db';
 import { useParams } from 'next/navigation';
 import useSWR from 'swr';
 
@@ -13,7 +14,12 @@ interface TaskAutomationData {
   updatedAt: string;
   evaluationCriteria?: string;
   isEnabled: boolean;
+  scheduleFrequency?: TaskFrequency;
 }
+
+type UpdateAutomationPayload = Partial<
+  Pick<TaskAutomationData, 'name' | 'description' | 'scheduleFrequency'>
+>;
 
 interface UseTaskAutomationReturn {
   automation: TaskAutomationData | undefined;
@@ -21,7 +27,7 @@ interface UseTaskAutomationReturn {
   isError: boolean;
   error: Error | undefined;
   mutate: () => Promise<unknown>;
-  updateAutomation: (body: Partial<Pick<TaskAutomationData, 'name' | 'description'>>) => Promise<void>;
+  updateAutomation: (body: UpdateAutomationPayload) => Promise<void>;
   deleteAutomation: () => Promise<void>;
 }
 
@@ -71,9 +77,7 @@ export function useTaskAutomation(overrideAutomationId?: string): UseTaskAutomat
     },
   );
 
-  const updateAutomation = async (
-    body: Partial<Pick<TaskAutomationData, 'name' | 'description'>>,
-  ) => {
+  const updateAutomation = async (body: UpdateAutomationPayload) => {
     const realId = data?.id || automationId;
     const response = await api.patch(
       `/v1/tasks/${taskId}/automations/${realId}`,

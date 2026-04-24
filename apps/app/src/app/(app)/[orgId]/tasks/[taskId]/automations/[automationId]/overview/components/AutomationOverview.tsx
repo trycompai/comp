@@ -3,7 +3,13 @@
 import { RecentAuditLogs } from '@/components/RecentAuditLogs';
 import { useAuditLogs } from '@/hooks/use-audit-logs';
 import { Button } from '@trycompai/ui/button';
-import type { EvidenceAutomation, EvidenceAutomationRun, EvidenceAutomationVersion, Task } from '@db';
+import type {
+  EvidenceAutomation,
+  EvidenceAutomationRun,
+  EvidenceAutomationVersion,
+  Task,
+  TaskFrequency,
+} from '@db';
 import {
   Breadcrumb,
   Button as DSButton,
@@ -27,7 +33,10 @@ import {
   executeAutomationScript,
   toggleAutomationEnabled,
 } from '../../../../automation/[automationId]/actions/task-automation-actions';
-import { DeleteAutomationDialog } from '../../../../automation/[automationId]/components/AutomationSettingsDialogs';
+import {
+  DeleteAutomationDialog,
+  EditScheduleDialog,
+} from '../../../../automation/[automationId]/components/AutomationSettingsDialogs';
 import { useTaskAutomation } from '../../../../automation/[automationId]/hooks/use-task-automation';
 import { AutomationRunsCard } from '../../../../components/AutomationRunsCard';
 import { useAutomationRuns } from '../hooks/use-automation-runs';
@@ -35,6 +44,14 @@ import { MetricsSection } from './MetricsSection';
 
 type RunWithAutomationName = EvidenceAutomationRun & {
   evidenceAutomation: { name: string };
+};
+
+const FREQUENCY_LABELS: Record<TaskFrequency, string> = {
+  daily: 'Daily',
+  weekly: 'Weekly',
+  monthly: 'Monthly',
+  quarterly: 'Quarterly',
+  yearly: 'Yearly',
 };
 
 interface AutomationOverviewProps {
@@ -57,6 +74,7 @@ export function AutomationOverview({
   }>();
 
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [scheduleDialogOpen, setScheduleDialogOpen] = useState(false);
   const [isTogglingEnabled, setIsTogglingEnabled] = useState(false);
   const [isEditingName, setIsEditingName] = useState(false);
   const [nameValue, setNameValue] = useState('');
@@ -374,6 +392,24 @@ export function AutomationOverview({
 
                 <HStack justify="between" align="center">
                   <Stack gap="none">
+                    <Text size="sm" weight="medium">Schedule</Text>
+                    <Text size="xs" variant="muted">
+                      Current: {FREQUENCY_LABELS[automation.scheduleFrequency] ?? 'Daily'}
+                    </Text>
+                  </Stack>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setScheduleDialogOpen(true)}
+                  >
+                    Edit
+                  </Button>
+                </HStack>
+
+                <div className="border-t" />
+
+                <HStack justify="between" align="center">
+                  <Stack gap="none">
                     <Text size="sm" weight="medium">Delete Automation</Text>
                     <Text size="xs" variant="muted">
                       Permanently delete this automation and all its versions
@@ -398,6 +434,12 @@ export function AutomationOverview({
       <DeleteAutomationDialog
         open={deleteDialogOpen}
         onOpenChange={setDeleteDialogOpen}
+        onSuccess={mutateAutomation}
+      />
+
+      <EditScheduleDialog
+        open={scheduleDialogOpen}
+        onOpenChange={setScheduleDialogOpen}
         onSuccess={mutateAutomation}
       />
     </PageLayout>

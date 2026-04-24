@@ -1,5 +1,7 @@
 'use client';
 
+import { SchedulePicker } from '@/components/schedule-picker';
+import type { TaskFrequency } from '@db';
 import { Button } from '@trycompai/ui/button';
 import {
   Dialog,
@@ -24,6 +26,12 @@ interface EditNameDialogProps {
 }
 
 interface EditDescriptionDialogProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  onSuccess?: () => void;
+}
+
+interface EditScheduleDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSuccess?: () => void;
@@ -153,6 +161,66 @@ export function EditDescriptionDialog({
 
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>
+            Cancel
+          </Button>
+          <Button onClick={handleSave} disabled={isSaving}>
+            {isSaving ? 'Saving...' : 'Save Changes'}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+export function EditScheduleDialog({
+  open,
+  onOpenChange,
+  onSuccess,
+}: EditScheduleDialogProps) {
+  const { automation, updateAutomation } = useTaskAutomation();
+  const [value, setValue] = useState<TaskFrequency>(
+    automation?.scheduleFrequency ?? 'daily',
+  );
+  const [isSaving, setIsSaving] = useState(false);
+
+  // Keep local state in sync with freshly fetched automation data
+  useEffect(() => {
+    setValue(automation?.scheduleFrequency ?? 'daily');
+  }, [automation?.scheduleFrequency]);
+
+  const handleSave = async () => {
+    setIsSaving(true);
+    try {
+      await updateAutomation({ scheduleFrequency: value });
+      await onSuccess?.();
+      onOpenChange(false);
+      toast.success('Schedule updated');
+    } catch {
+      toast.error('Failed to update schedule');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Edit Schedule</DialogTitle>
+          <DialogDescription>
+            Choose how often this automation should run. Changes apply to the next scheduled run.
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="space-y-4 py-4">
+          <div className="space-y-2">
+            <Label htmlFor="automation-schedule">Frequency</Label>
+            <SchedulePicker value={value} onChange={setValue} disabled={isSaving} />
+          </div>
+        </div>
+
+        <DialogFooter>
+          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isSaving}>
             Cancel
           </Button>
           <Button onClick={handleSave} disabled={isSaving}>
