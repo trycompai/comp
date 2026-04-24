@@ -116,6 +116,76 @@ describe('PolicyDownloadSheet', () => {
     expect(onOpenChange).toHaveBeenCalledWith(false);
   });
 
+  it('re-selects all current policies when reopened, dropping stale IDs', async () => {
+    const user = userEvent.setup();
+    const onOpenChange = vi.fn();
+
+    const { rerender } = render(
+      <PolicyDownloadSheet
+        open={true}
+        onOpenChange={onOpenChange}
+        policies={policies}
+      />,
+    );
+
+    // Deselect one policy while open
+    await user.click(screen.getByLabelText(/draft policy/i));
+    expect(
+      screen.getByRole('button', { name: /download 2 policies/i }),
+    ).toBeEnabled();
+
+    // Close and reopen — selection should reset to all
+    rerender(
+      <PolicyDownloadSheet
+        open={false}
+        onOpenChange={onOpenChange}
+        policies={policies}
+      />,
+    );
+    rerender(
+      <PolicyDownloadSheet
+        open={true}
+        onOpenChange={onOpenChange}
+        policies={policies}
+      />,
+    );
+
+    expect(screen.getByLabelText(/draft policy/i)).toBeChecked();
+    expect(
+      screen.getByRole('button', { name: /download 3 policies/i }),
+    ).toBeEnabled();
+  });
+
+  it('updates selection when the policies prop changes while open', () => {
+    const { rerender } = render(
+      <PolicyDownloadSheet
+        open={true}
+        onOpenChange={vi.fn()}
+        policies={policies}
+      />,
+    );
+
+    const newPolicies: typeof policies = [
+      { id: 'p1', name: 'Security Policy', status: 'published' },
+      { id: 'p4', name: 'New Policy', status: 'draft' },
+    ];
+
+    rerender(
+      <PolicyDownloadSheet
+        open={true}
+        onOpenChange={vi.fn()}
+        policies={newPolicies}
+      />,
+    );
+
+    // New policy is checked by default; stale IDs are dropped
+    expect(screen.getByLabelText(/new policy/i)).toBeChecked();
+    expect(screen.queryByLabelText(/privacy policy/i)).not.toBeInTheDocument();
+    expect(
+      screen.getByRole('button', { name: /download 2 policies/i }),
+    ).toBeEnabled();
+  });
+
   it('shows a toast and keeps the sheet open on API error', async () => {
     const user = userEvent.setup();
     vi.mocked(api.get).mockResolvedValue({

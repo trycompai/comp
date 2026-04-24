@@ -16,7 +16,7 @@ import {
   Stack,
   Text,
 } from '@trycompai/design-system';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 
 interface PolicyDownloadSheetProps {
@@ -47,6 +47,14 @@ export function PolicyDownloadSheet({
   const allIds = useMemo(() => policies.map((p) => p.id), [policies]);
   const [selected, setSelected] = useState<Set<string>>(() => new Set(allIds));
   const [isDownloading, setIsDownloading] = useState(false);
+
+  // Reset selection to all current policies whenever the sheet opens or the
+  // underlying policy list changes, so reopens and prop refreshes don't leave
+  // stale or deleted IDs in the selection.
+  useEffect(() => {
+    if (!open) return;
+    setSelected(new Set(allIds));
+  }, [open, allIds]);
 
   const handleToggle = (id: string) => {
     setSelected((prev) => {

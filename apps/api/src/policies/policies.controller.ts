@@ -72,12 +72,15 @@ import {
 } from './schemas/version-responses';
 import { PolicyResponseDto } from './dto/policy-responses.dto';
 
-function parsePolicyIdsParam(raw: string | undefined): string[] | undefined {
+function parsePolicyIdsParam(
+  raw: string | string[] | undefined,
+): string[] | undefined {
   if (!raw) return undefined;
+  const values = Array.isArray(raw) ? raw : [raw];
   const ids = Array.from(
     new Set(
-      raw
-        .split(',')
+      values
+        .flatMap((value) => value.split(','))
         .map((s) => s.trim())
         .filter((s) => s.length > 0),
     ),
@@ -167,7 +170,7 @@ export class PoliciesController {
   async downloadAllPolicies(
     @OrganizationId() organizationId: string,
     @AuthContext() authContext: AuthContextType,
-    @Query('policyIds') policyIdsParam?: string,
+    @Query('policyIds') policyIdsParam?: string | string[],
   ) {
     const policyIds = parsePolicyIdsParam(policyIdsParam);
 

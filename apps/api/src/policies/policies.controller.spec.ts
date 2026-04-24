@@ -269,6 +269,38 @@ describe('PoliciesController', () => {
         undefined,
       );
     });
+
+    it('handles repeated-key array form (policyIds=a&policyIds=b)', async () => {
+      const mockResult = { downloadUrl: 'https://s3/signed', name: 'all-policies', policyCount: 2 };
+      mockPoliciesService.downloadAllPoliciesPdf.mockResolvedValue(mockResult);
+
+      await controller.downloadAllPolicies(
+        orgId,
+        mockAuthContext,
+        ['p1', 'p2'],
+      );
+
+      expect(policiesService.downloadAllPoliciesPdf).toHaveBeenCalledWith(
+        orgId,
+        ['p1', 'p2'],
+      );
+    });
+
+    it('handles mixed array form where each value itself contains commas', async () => {
+      const mockResult = { downloadUrl: 'https://s3/signed', name: 'all-policies', policyCount: 3 };
+      mockPoliciesService.downloadAllPoliciesPdf.mockResolvedValue(mockResult);
+
+      await controller.downloadAllPolicies(
+        orgId,
+        mockAuthContext,
+        ['p1,p2', 'p3'],
+      );
+
+      expect(policiesService.downloadAllPoliciesPdf).toHaveBeenCalledWith(
+        orgId,
+        ['p1', 'p2', 'p3'],
+      );
+    });
   });
 
   describe('getPolicy', () => {
