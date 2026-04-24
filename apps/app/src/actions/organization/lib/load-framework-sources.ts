@@ -5,6 +5,7 @@ import type {
   Departments,
   TaskAutomationStatus,
 } from '@db/server';
+import { normalizeFormType } from './form-type-normalize';
 
 /**
  * Shape of FrameworkVersion.manifest. Kept in sync with the authoritative
@@ -158,7 +159,12 @@ export async function loadFrameworkSources({
           id: c.id,
           name: c.name,
           description: c.description,
-          documentTypes: (c.documentTypes ?? []) as EvidenceFormType[],
+          // Backfilled v1.0.0 manifests stored hyphenated DB @map values; newer
+          // manifests store underscored Prisma-client names. Normalize here so
+          // downstream Prisma writes (controlDocumentType.createMany) receive
+          // valid enum keys regardless of which manifest generation they came
+          // from.
+          documentTypes: (c.documentTypes ?? []).map(normalizeFormType) as EvidenceFormType[],
         });
       }
       const rel = getOrCreateRelation(c.id);
