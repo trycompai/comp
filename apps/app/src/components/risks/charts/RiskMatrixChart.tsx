@@ -1,24 +1,9 @@
 'use client';
 
+import { IMPACT_SCORES, LIKELIHOOD_SCORES, getRiskLevel } from '@/lib/risk-score';
 import { Impact, Likelihood } from '@db';
 import { Button, HStack, Section } from '@trycompai/design-system';
 import { useEffect, useState } from 'react';
-
-const LIKELIHOOD_SCORES: Record<Likelihood, number> = {
-  very_unlikely: 1,
-  unlikely: 2,
-  possible: 3,
-  likely: 4,
-  very_likely: 5,
-};
-
-const IMPACT_SCORES: Record<Impact, number> = {
-  insignificant: 1,
-  minor: 2,
-  moderate: 3,
-  major: 4,
-  severe: 5,
-};
 
 const VISUAL_LIKELIHOOD_ORDER: Likelihood[] = [
   Likelihood.very_likely,
@@ -114,13 +99,7 @@ export function RiskMatrixChart({
       const likelihoodScore =
         LIKELIHOOD_SCORES[VISUAL_LIKELIHOOD_ORDER[probabilityLevels.indexOf(probability)]];
       const impactScore = IMPACT_SCORES[VISUAL_IMPACT_ORDER[impactLevels.indexOf(impact)]];
-      const score = likelihoodScore * impactScore;
-
-      let level: RiskCell['level'] = 'very-low';
-      if (score > 16) level = 'very-high';
-      else if (score > 9) level = 'high';
-      else if (score > 4) level = 'medium';
-      else if (score > 1) level = 'low';
+      const level = getRiskLevel(likelihoodScore * impactScore);
 
       return {
         probability,
@@ -207,7 +186,7 @@ export function RiskMatrixChart({
                         onClick={() => handleCellClick(probability, impact)}
                       >
                         {cell?.value && (
-                          <div className="h-3 w-3 animate-pulse rounded-full bg-white shadow-lg" />
+                          <div className="h-4 w-4 animate-pulse rounded-full bg-white shadow-lg ring-2 ring-slate-900/70 dark:ring-slate-100/80" />
                         )}
                       </div>
                     );
