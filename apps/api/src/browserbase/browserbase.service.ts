@@ -400,7 +400,6 @@ export class BrowserbaseService {
       targetUrl?: string;
       instruction?: string;
       evaluationCriteria?: string;
-      schedule?: string;
       isEnabled?: boolean;
     },
   ) {

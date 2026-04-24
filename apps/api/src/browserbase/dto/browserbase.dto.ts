@@ -89,11 +89,6 @@ export class CreateBrowserAutomationDto {
   @IsString()
   @IsOptional()
   evaluationCriteria?: string;
-
-  @ApiPropertyOptional({ description: 'Cron schedule expression' })
-  @IsString()
-  @IsOptional()
-  schedule?: string;
 }
 
 export class UpdateBrowserAutomationDto {
@@ -126,11 +121,6 @@ export class UpdateBrowserAutomationDto {
   @IsString()
   @IsOptional()
   evaluationCriteria?: string;
-
-  @ApiPropertyOptional({ description: 'Cron schedule expression' })
-  @IsString()
-  @IsOptional()
-  schedule?: string;
 
   @ApiPropertyOptional({ description: 'Whether automation is enabled' })
   @IsBoolean()
@@ -185,9 +175,6 @@ export class BrowserAutomationResponseDto {
 
   @ApiProperty()
   isEnabled: boolean;
-
-  @ApiPropertyOptional()
-  schedule?: string;
 
   @ApiProperty()
   createdAt: Date;
