@@ -42,7 +42,7 @@ export function SOADocumentInfo({
 
   const approvalStatusText = document.approvedAt
     ? `Approved on ${new Date(document.approvedAt).toLocaleDateString()}`
-    : document.declinedAt
+    : document.status === 'needs_review' && document.declinedAt
       ? `Declined on ${new Date(document.declinedAt).toLocaleDateString()}`
       : approver
         ? 'Pending approval'
