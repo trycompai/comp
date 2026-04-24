@@ -174,6 +174,25 @@ function parseRiskAssessmentJson(value: string): Prisma.InputJsonValue {
   return parsed;
 }
 
+/**
+ * Output of the vendor AI risk assessment — two independent dimensions.
+ *
+ * Replaces the previous single-level → diagonal-cell mapping, which pooled
+ * every vendor into 5 of 25 possible cells (5 of 10 score buckets).
+ *
+ * `likelihood` = probability of a security incident originating from or
+ *   involving this vendor (adversary motivation + exposure + data handled).
+ * `impact`     = blast radius if the vendor is compromised (regulatory
+ *   exposure, customer-data sensitivity, operational criticality).
+ */
+export const assessmentOutputSchema = z.object({
+  likelihood: z.nativeEnum(Likelihood),
+  impact: z.nativeEnum(Impact),
+  rationale: z.string().min(20),
+});
+
+export type AssessmentOutput = z.infer<typeof assessmentOutputSchema>;
+
 const riskLevelSchema = z
   .object({
     riskLevel: z.string().optional(),
