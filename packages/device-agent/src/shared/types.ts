@@ -47,6 +47,12 @@ export interface CheckInRequest {
 export interface CheckInResponse {
   isCompliant: boolean;
   nextCheckIn: string;
+  /**
+   * Present when the API silently upgraded the session from a generic session
+   * to a dedicated device-agent session. The agent must persist this token and
+   * use it for all subsequent requests.
+   */
+  upgradedSessionToken?: string;
 }
 
 export interface DeviceStatus {

@@ -44,6 +44,7 @@ export const createMockSession = (overrides?: Partial<Session>): Session => ({
   userAgent: 'test-agent',
   activeOrganizationId: 'org_test123',
   impersonatedBy: null,
+  deviceAgent: false,
   ...overrides,
 });
 
