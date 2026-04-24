@@ -121,8 +121,8 @@ export function CompanyOverviewCards({ organizationId }: { organizationId: strin
 
   const { data: findingsResponse } = useOrganizationFindings();
   const { data: frameworksResponse } = useSWR<FrameworkListResponse>(
-    '/v1/frameworks',
-    async (endpoint: string) => {
+    ['/v1/frameworks', organizationId] as const,
+    async ([endpoint]: readonly [string, string]) => {
       const response = await api.get<FrameworkListResponse>(endpoint);
       if (response.error || !response.data) {
         throw new Error(response.error ?? 'Failed to load frameworks');
