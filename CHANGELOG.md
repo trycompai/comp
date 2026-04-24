@@ -1,3 +1,12 @@
+## [3.32.1](https://github.com/trycompai/comp/compare/v3.32.0...v3.32.1) (2026-04-24)
+
+
+### Bug Fixes
+
+* **browserbase:** install DejaVu Sans so overlay text renders in production ([#2659](https://github.com/trycompai/comp/issues/2659)) ([1d87427](https://github.com/trycompai/comp/commit/1d8742765f4b7c407887fb2020c53099649d58a6))
+* **device-agent:** dedicated long-lived session per install (CS-280) ([48fd4ab](https://github.com/trycompai/comp/commit/48fd4ab6008aeb187621d3742406ea7f14524630))
+* fix issue with document underscore when creating framework ([05f44eb](https://github.com/trycompai/comp/commit/05f44eb6f58927793b76a04bccc140173005c0ee))
+
 # [3.32.0](https://github.com/trycompai/comp/compare/v3.31.1...v3.32.0) (2026-04-23)
 
 
