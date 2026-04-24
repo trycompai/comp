@@ -353,7 +353,6 @@ export class BrowserbaseService {
     targetUrl: string;
     instruction: string;
     evaluationCriteria?: string;
-    schedule?: string;
   }) {
     return db.browserAutomation.create({
       data: {
@@ -363,7 +362,6 @@ export class BrowserbaseService {
         targetUrl: data.targetUrl,
         instruction: data.instruction,
         evaluationCriteria: normalizeCriteria(data.evaluationCriteria),
-        schedule: data.schedule,
         isEnabled: true, // Enable by default so scheduled runs work
       },
     });
