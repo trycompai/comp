@@ -93,10 +93,15 @@ export default async function StatementOfApplicabilityPage({
         document: Record<string, unknown> | null;
       }>('/v1/soa/ensure-setup', { frameworkId, organizationId });
 
-      const configuration = setupResult.data?.configuration;
-      const document = setupResult.data?.document;
+      const setupData = setupResult.data;
+      if (!setupData?.success) {
+        soaError = setupData?.error || 'Failed to setup SOA. Please try again later.';
+      }
 
-      if (configuration && document) {
+      const configuration = setupData?.configuration;
+      const document = setupData?.document;
+
+      if (!soaError && configuration && document) {
         let approver = null;
         const approverId = document.approverId as string | undefined;
         if (approverId) {
@@ -146,6 +151,9 @@ export default async function StatementOfApplicabilityPage({
           currentMemberId: currentMember?.id || null,
           ownerAdminMembers,
         } as SOAData;
+      } else if (!soaError) {
+        soaError =
+          'SOA setup did not return required configuration data. Please try again later.';
       }
     } catch (error) {
       console.error('Failed to setup SOA:', error);
