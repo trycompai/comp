@@ -39,8 +39,12 @@ import { VendorResidualRiskChart } from './VendorResidualRiskChart';
 
 const mockVendor: any = {
   id: 'vendor-1',
+  inherentProbability: 'possible',
+  inherentImpact: 'moderate',
   residualProbability: 'unlikely',
   residualImpact: 'minor',
+  treatmentStrategy: 'accept',
+  tasks: [],
 };
 
 describe('VendorResidualRiskChart', () => {
@@ -83,7 +87,7 @@ describe('VendorResidualRiskChart', () => {
 
     expect(capturedProps.title).toBe('Residual Risk');
     expect(capturedProps.description).toBe(
-      'Select the residual risk level for this vendor',
+      'Risk level after the treatment plan is applied. The dashed cell is the suggestion computed from your strategy and linked task completion.',
     );
     expect(capturedProps.riskId).toBe('vendor-1');
     expect(capturedProps.activeLikelihood).toBe('unlikely');
