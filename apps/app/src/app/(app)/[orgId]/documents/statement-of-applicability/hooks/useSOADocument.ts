@@ -70,14 +70,13 @@ export function useSOADocument({ documentId, organizationId, fallbackData }: Use
     if (response.error) throw new Error(response.error);
     if (!response.data?.success) throw new Error('Failed to save answer');
 
-    await mutate();
     return true;
   };
 
   const approve = async (): Promise<boolean> => {
     if (!documentId) throw new Error('No document ID');
 
-    const response = await api.post<{ success: boolean; data?: unknown }>(
+    const response = await api.post<{ success: boolean; data?: SOADocumentData }>(
       '/v1/soa/approve',
       { organizationId, documentId },
     );
@@ -85,8 +84,8 @@ export function useSOADocument({ documentId, organizationId, fallbackData }: Use
     if (response.error) throw new Error(response.error || 'Failed to approve SOA document');
     if (!response.data?.success) throw new Error('Failed to approve SOA document');
 
-    if (data) {
-      await mutate({ ...data, status: 'approved', approvedAt: new Date().toISOString() }, false);
+    if (response.data?.data) {
+      await mutate(response.data.data, false);
     }
     return true;
   };
@@ -94,7 +93,7 @@ export function useSOADocument({ documentId, organizationId, fallbackData }: Use
   const decline = async (): Promise<boolean> => {
     if (!documentId) throw new Error('No document ID');
 
-    const response = await api.post<{ success: boolean; data?: unknown }>(
+    const response = await api.post<{ success: boolean; data?: SOADocumentData }>(
       '/v1/soa/decline',
       { organizationId, documentId },
     );
@@ -102,8 +101,8 @@ export function useSOADocument({ documentId, organizationId, fallbackData }: Use
     if (response.error) throw new Error(response.error || 'Failed to decline SOA document');
     if (!response.data?.success) throw new Error('Failed to decline SOA document');
 
-    if (data) {
-      await mutate({ ...data, status: 'needs_review', declinedAt: new Date().toISOString() }, false);
+    if (response.data?.data) {
+      await mutate(response.data.data, false);
     }
     return true;
   };
@@ -111,7 +110,7 @@ export function useSOADocument({ documentId, organizationId, fallbackData }: Use
   const submitForApproval = async (approverId: string): Promise<boolean> => {
     if (!documentId) throw new Error('No document ID');
 
-    const response = await api.post<{ success: boolean; data?: unknown }>(
+    const response = await api.post<{ success: boolean; data?: SOADocumentData }>(
       '/v1/soa/submit-for-approval',
       { organizationId, documentId, approverId },
     );
@@ -119,9 +118,8 @@ export function useSOADocument({ documentId, organizationId, fallbackData }: Use
     if (response.error) throw new Error(response.error || 'Failed to submit for approval');
     if (!response.data?.success) throw new Error('Failed to submit for approval');
 
-    // Optimistically update cached document status
-    if (data) {
-      await mutate({ ...data, status: 'pending_approval', approverId }, false);
+    if (response.data?.data) {
+      await mutate(response.data.data, false);
     }
     return true;
   };

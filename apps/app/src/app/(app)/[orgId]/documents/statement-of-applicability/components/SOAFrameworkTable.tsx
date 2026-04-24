@@ -84,12 +84,14 @@ export function SOAFrameworkTable({
 
   // Derive state from SWR-cached document (updates after mutations)
   const resolvedDocument = swrDocument ?? document;
-  const derivedIsPendingApproval = resolvedDocument?.status === 'pending_approval' || isPendingApproval;
+  const derivedIsPendingApproval = resolvedDocument
+    ? resolvedDocument.status === 'needs_review'
+    : isPendingApproval;
   const derivedApproverId = (resolvedDocument?.approverId ?? document?.approverId) as string | null | undefined;
   // Resolve the approver member from the list using the derived approverId
   const derivedApprover = derivedApproverId
     ? ownerAdminMembers.find((m) => m.id === derivedApproverId) ?? approver
-    : approver;
+    : null;
   const derivedCanCurrentUserApprove = derivedIsPendingApproval && derivedApproverId === currentMemberId;
 
   const columns = configuration.columns as SOAColumn[];

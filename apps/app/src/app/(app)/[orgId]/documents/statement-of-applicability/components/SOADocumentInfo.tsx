@@ -42,9 +42,9 @@ export function SOADocumentInfo({
 
   const approvalStatusText = document.approvedAt
     ? `Approved on ${new Date(document.approvedAt).toLocaleDateString()}`
-    : document.status === 'needs_review' && document.declinedAt
+    : document.declinedAt
       ? `Declined on ${new Date(document.declinedAt).toLocaleDateString()}`
-      : approver
+      : document.status === 'needs_review'
         ? 'Pending approval'
         : 'Not approved';
 
@@ -93,13 +93,16 @@ export function SOADocumentInfo({
               <InfoItem label="Approved by" value={approver.user.name || approver.user.email || 'Unknown'} />
             </>
           )}
-          {approver && !document.approvedAt && document.status !== 'needs_review' && (
+          {approver &&
+            !document.approvedAt &&
+            !document.declinedAt &&
+            document.status === 'needs_review' && (
             <>
               <div className="hidden xl:block h-8 w-px bg-border" />
               <InfoItem label="Pending approval by" value={approver.user.name || approver.user.email || 'Unknown'} />
             </>
           )}
-          {document.status === 'needs_review' && document.declinedAt && (
+          {document.declinedAt && (
             <>
               <div className="hidden xl:block h-8 w-px bg-border" />
               <InfoItem

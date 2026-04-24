@@ -121,7 +121,6 @@ export function SOAOverviewCard({
     if (document.declinedAt) return 'Declined';
     if (
       document.status === 'needs_review' ||
-      document.status === 'pending_approval' ||
       !!document.approverId
     ) {
       return 'Pending';
