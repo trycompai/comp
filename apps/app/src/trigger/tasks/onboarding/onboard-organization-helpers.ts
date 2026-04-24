@@ -1,6 +1,5 @@
 import { openai } from '@ai-sdk/openai';
 import {
-  CommentEntityType,
   Departments,
   FrameworkEditorFramework,
   Impact,
@@ -381,17 +380,14 @@ ${policiesContext}
 Please perform a comprehensive vendor risk assessment for this vendor using the available policies listed above as context for your recommendations.`,
   });
 
-  await db.comment.create({
-    data: {
-      content: riskMitigationComment.text,
-      entityId: vendor.id,
-      entityType: CommentEntityType.vendor,
-      authorId,
-      organizationId,
-    },
+  await db.vendor.update({
+    where: { id: vendor.id, organizationId },
+    data: { treatmentStrategyDescription: riskMitigationComment.text },
   });
 
-  logger.info(`Created risk mitigation comment for vendor: ${vendor.id} (${vendor.name})`);
+  logger.info(
+    `Wrote AI-generated treatmentStrategyDescription for vendor: ${vendor.id} (${vendor.name})`,
+  );
 }
 
 /**
@@ -693,17 +689,14 @@ export async function createRiskMitigationComment(
     prompt: `Risk: ${risk.title} (${risk.category} / ${risk.department})\n\nDescription:\n${risk.description}\n\nTreatment Strategy:\n${risk.treatmentStrategy}: ${risk.treatmentStrategyDescription || 'N/A'}\n\nResidual Assessment: Likelihood ${risk.likelihood}, Impact ${risk.impact}\n\nAvailable Organization Policies:\n${policiesContext}\n\nWrite a pragmatic mitigation plan with concrete steps the team can implement in the next 30-90 days.`,
   });
 
-  await db.comment.create({
-    data: {
-      content: mitigation.text,
-      entityId: risk.id,
-      entityType: CommentEntityType.risk,
-      authorId,
-      organizationId,
-    },
+  await db.risk.update({
+    where: { id: risk.id, organizationId },
+    data: { treatmentStrategyDescription: mitigation.text },
   });
 
-  logger.info(`Created risk mitigation comment for risk: ${risk.id} (${risk.title})`);
+  logger.info(
+    `Wrote AI-generated treatmentStrategyDescription for risk: ${risk.id} (${risk.title})`,
+  );
 }
 
 /**
