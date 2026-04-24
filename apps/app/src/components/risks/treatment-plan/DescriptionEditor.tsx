@@ -22,8 +22,10 @@ export function DescriptionEditor({
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    setDraft(value);
-  }, [value]);
+    if (!saving) {
+      setDraft(value);
+    }
+  }, [value, saving]);
 
   const isDirty = draft.trim() !== (value ?? '').trim();
 
@@ -42,7 +44,7 @@ export function DescriptionEditor({
       <textarea
         value={draft}
         onChange={(e) => setDraft(e.target.value)}
-        disabled={disabled}
+        disabled={disabled || saving}
         placeholder="Describe how this risk is being treated — the concrete controls, owners, and timelines."
         rows={8}
         className="focus:border-primary w-full rounded-md border bg-transparent p-3 text-sm outline-none"

@@ -57,7 +57,7 @@ export function LinkedWork({ orgId, tasks }: LinkedWorkProps) {
             <Stack gap="xs">
               {tasks.map((t) => (
                 <HStack key={t.id} justify="between" align="center">
-                  <Link href={`/${orgId}/task/${t.id}`} className="text-sm hover:underline">
+                  <Link href={`/${orgId}/tasks/${t.id}`} className="text-sm hover:underline">
                     {t.title}
                   </Link>
                   <Badge>{STATUS_LABEL[t.status]}</Badge>

@@ -15,12 +15,17 @@ export function VendorResidualRiskChart({ vendor }: ResidualRiskChartProps) {
   const { mutate } = useVendor(vendor.id);
   const { hasPermission } = usePermissions();
 
-  const suggestion = suggestedResidual({
-    likelihood: vendor.inherentProbability,
-    impact: vendor.inherentImpact,
-    strategy: vendor.treatmentStrategy,
-    tasks: vendor.tasks ?? [],
-  });
+  // Only compute a suggestion when tasks are actually loaded — falling back to
+  // [] would render a misleading "0% complete" ghost cell on vendors that
+  // haven't hydrated yet.
+  const suggestion = vendor.tasks
+    ? suggestedResidual({
+        likelihood: vendor.inherentProbability,
+        impact: vendor.inherentImpact,
+        strategy: vendor.treatmentStrategy,
+        tasks: vendor.tasks,
+      })
+    : undefined;
 
   return (
     <RiskMatrixChart
@@ -32,8 +37,8 @@ export function VendorResidualRiskChart({ vendor }: ResidualRiskChartProps) {
       riskId={vendor.id}
       activeLikelihood={vendor.residualProbability}
       activeImpact={vendor.residualImpact}
-      suggestedLikelihood={suggestion.likelihood}
-      suggestedImpact={suggestion.impact}
+      suggestedLikelihood={suggestion?.likelihood}
+      suggestedImpact={suggestion?.impact}
       readOnly={!hasPermission('vendor', 'update')}
       saveAction={async ({ id, probability, impact }) => {
         await updateVendor(id, {

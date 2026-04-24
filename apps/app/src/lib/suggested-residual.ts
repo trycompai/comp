@@ -59,7 +59,7 @@ export interface SuggestedResidualOutput {
  * strategy + linked-task completion. Uses Math.floor on the applied step
  * reduction, so partial completion earns no step until fully earned.
  *
- * ENG-221 — see docs/superpowers/specs/2026-04-24-eng-221-risk-treatment-plan-design.md
+ * Tune the coefficients in STRATEGY_REDUCTION above to change the math.
  */
 export function suggestedResidual({
   likelihood,

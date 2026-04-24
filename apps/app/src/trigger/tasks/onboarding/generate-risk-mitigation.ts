@@ -20,7 +20,7 @@ export const generateRiskMitigation = task({
   run: async (payload: {
     organizationId: string;
     riskId: string;
-    authorId: string;
+    authorId?: string;
     policies: PolicyContext[];
   }) => {
     const { organizationId, riskId, authorId, policies } = payload;
@@ -40,14 +40,14 @@ export const generateRiskMitigation = task({
     const metadataHandle = metadata.root ?? metadata.parent ?? metadata;
     metadataHandle.set(`risk_${riskId}_status`, 'processing');
 
-    await createRiskMitigationComment(risk, policies, organizationId, authorId);
+    await createRiskMitigationComment(risk, policies, organizationId, authorId ?? '');
 
-    // Mark risk as closed and assign to owner/admin
+    // Mark risk as closed; reassign to owner/admin only if we have one.
     await db.risk.update({
       where: { id: risk.id, organizationId },
       data: {
         status: RiskStatus.closed,
-        assigneeId: authorId,
+        ...(authorId ? { assigneeId: authorId } : {}),
       },
     });
 
@@ -105,9 +105,8 @@ export const generateRiskMitigationsForOrg = task({
 
     if (!author) {
       logger.warn(
-        `No onboarding author found for org ${organizationId}; skipping risk mitigations`,
+        `No onboarding author found for org ${organizationId}; treatment descriptions will generate but risks will not be reassigned`,
       );
-      return;
     }
 
     const policies = policyRows.map((p) => ({ name: p.name, description: p.description }));
@@ -117,7 +116,7 @@ export const generateRiskMitigationsForOrg = task({
         payload: {
           organizationId,
           riskId: r.id,
-          authorId: author.id,
+          authorId: author?.id,
           policies,
         },
         concurrencyKey: `${organizationId}:${r.id}`,

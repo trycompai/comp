@@ -16,12 +16,17 @@ export function ResidualRiskChart({ risk }: ResidualRiskChartProps) {
   const { mutate: globalMutate } = useSWRConfig();
   const { hasPermission } = usePermissions();
 
-  const suggestion = suggestedResidual({
-    likelihood: risk.likelihood,
-    impact: risk.impact,
-    strategy: risk.treatmentStrategy,
-    tasks: risk.tasks ?? [],
-  });
+  // Only compute a suggestion when tasks are actually loaded — falling back to
+  // [] would render a misleading "0% complete" ghost cell on orgs that haven't
+  // hydrated yet.
+  const suggestion = risk.tasks
+    ? suggestedResidual({
+        likelihood: risk.likelihood,
+        impact: risk.impact,
+        strategy: risk.treatmentStrategy,
+        tasks: risk.tasks,
+      })
+    : undefined;
 
   return (
     <RiskMatrixChart
@@ -33,8 +38,8 @@ export function ResidualRiskChart({ risk }: ResidualRiskChartProps) {
       riskId={risk.id}
       activeLikelihood={risk.residualLikelihood}
       activeImpact={risk.residualImpact}
-      suggestedLikelihood={suggestion.likelihood}
-      suggestedImpact={suggestion.impact}
+      suggestedLikelihood={suggestion?.likelihood}
+      suggestedImpact={suggestion?.impact}
       readOnly={!hasPermission('risk', 'update')}
       saveAction={async ({ id, probability, impact }) => {
         await updateRisk(id, {

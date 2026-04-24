@@ -3,7 +3,7 @@
 import { suggestedResidual } from '@/lib/suggested-residual';
 import { Impact, Likelihood, RiskTreatmentType, TaskStatus } from '@db';
 import { Section, Stack } from '@trycompai/design-system';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { DeltaChip } from './DeltaChip';
 import { DescriptionEditor } from './DescriptionEditor';
 import { LinkedWork } from './LinkedWork';
@@ -45,6 +45,10 @@ export function TreatmentPlanTab({
   regenerating,
 }: TreatmentPlanTabProps) {
   const [strategy, setStrategy] = useState(entity.treatmentStrategy);
+
+  useEffect(() => {
+    setStrategy(entity.treatmentStrategy);
+  }, [entity.treatmentStrategy]);
 
   const handleStrategyChange = async (next: RiskTreatmentType) => {
     setStrategy(next);
