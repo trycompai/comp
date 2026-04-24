@@ -415,6 +415,15 @@ export const runTaskIntegrationChecks = task({
         data: { lastSyncAt: new Date() },
       });
 
+      // Record successful run on the task so the orchestrator's schedule
+      // filter (`isDueToday`) can skip it on the next tick. Only written on
+      // success — failures leave this untouched so the next orchestrator tick
+      // retries the task.
+      await db.task.update({
+        where: { id: taskId },
+        data: { integrationLastRunAt: new Date() },
+      });
+
       // Update task status based on check results
       // If any findings or check failures, mark as failed
       // If all checks pass with no findings, mark as done (only if not already done)
