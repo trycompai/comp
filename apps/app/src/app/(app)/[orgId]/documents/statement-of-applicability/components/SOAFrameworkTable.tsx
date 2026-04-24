@@ -118,6 +118,12 @@ export function SOAFrameworkTable({
   }, [resolvedDocument?.answers]);
 
   const handleAnswerUpdate = (questionId: string, payload: SOAFieldSavePayload) => {
+    const previousIsApplicable =
+      answersMap.get(questionId)?.savedIsApplicable ??
+      processedResults.get(questionId)?.isApplicable ??
+      questions.find((q) => q.id === questionId)?.columnMapping.isApplicable ??
+      null;
+
     setAnswersMap((prev) => {
       const newMap = new Map(prev);
       const existing = newMap.get(questionId);
@@ -128,6 +134,40 @@ export function SOAFrameworkTable({
       });
       return newMap;
     });
+
+    void mutateSOADocument((current) => {
+      if (!current) return current;
+
+      const totalQuestions = current.totalQuestions as number | undefined;
+      const currentAnsweredQuestions = current.answeredQuestions as number | undefined;
+
+      if (
+        typeof totalQuestions !== 'number' ||
+        typeof currentAnsweredQuestions !== 'number'
+      ) {
+        return current;
+      }
+
+      const nextIsApplicable = payload.isApplicable ?? null;
+      let answeredQuestions = currentAnsweredQuestions;
+
+      if (previousIsApplicable === null && nextIsApplicable !== null) {
+        answeredQuestions += 1;
+      } else if (previousIsApplicable !== null && nextIsApplicable === null) {
+        answeredQuestions -= 1;
+      }
+
+      answeredQuestions = Math.max(0, Math.min(totalQuestions, answeredQuestions));
+
+      return {
+        ...current,
+        answeredQuestions,
+        status: answeredQuestions === totalQuestions ? 'completed' : 'in_progress',
+        approverId: null,
+        approvedAt: null,
+        declinedAt: null,
+      };
+    }, false);
   };
 
   const [isSubmitApprovalDialogOpen, setIsSubmitApprovalDialogOpen] = useState(false);
@@ -151,9 +191,32 @@ export function SOAFrameworkTable({
     questions: questionsForHook,
     documentId: document?.id || '',
     organizationId,
-    onUpdate: () => {
-      // Revalidate SWR cache instead of full page reload
-      void mutateSOADocument();
+    onUpdate: ({ total, answered } = {}) => {
+      // Keep SOA info card in sync immediately after auto-fill completion.
+      void mutateSOADocument((current) => {
+        if (!current) return current;
+        const totalQuestions =
+          typeof total === 'number' ? total : (current.totalQuestions as number | undefined);
+        const answeredQuestions =
+          typeof answered === 'number'
+            ? answered
+            : (current.answeredQuestions as number | undefined);
+
+        if (typeof totalQuestions !== 'number' || typeof answeredQuestions !== 'number') {
+          return current;
+        }
+
+        return {
+          ...current,
+          totalQuestions,
+          answeredQuestions,
+          status:
+            answeredQuestions === totalQuestions ? 'completed' : 'in_progress',
+          approverId: null,
+          approvedAt: null,
+          declinedAt: null,
+        };
+      }, false);
     },
   });
 

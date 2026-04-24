@@ -17,7 +17,7 @@ interface UseSOAAutoFillProps {
   }>;
   documentId: string;
   organizationId: string;
-  onUpdate: () => void;
+  onUpdate: (payload?: { total?: number; answered?: number }) => void;
 }
 
 export function useSOAAutoFill({ questions, documentId, organizationId, onUpdate }: UseSOAAutoFillProps) {
@@ -115,7 +115,10 @@ export function useSOAAutoFill({ questions, documentId, organizationId, onUpdate
                 // All questions completed
                 toast.success(`Auto-filled ${data.answered} questions`);
                 setIsAutoFilling(false);
-                onUpdate();
+                onUpdate({
+                  total: typeof data.total === 'number' ? data.total : undefined,
+                  answered: typeof data.answered === 'number' ? data.answered : undefined,
+                });
               } else if (data.type === 'error') {
                 toast.error(data.error || 'Failed to auto-fill SOA');
                 setIsAutoFilling(false);
