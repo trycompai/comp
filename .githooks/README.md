@@ -16,14 +16,23 @@ worktree — no need to re-run after `git worktree add`.
 
 ### `post-checkout`
 
-Automatically symlinks every `.env*` file from the main worktree into a
-freshly created worktree. Fires **only** inside `git worktree add` — regular
-`git checkout`, `git switch`, and file checkouts are filtered by checking
-that the previous HEAD is the null SHA (true only for fresh checkouts) and
-that the current worktree isn't the main one.
+Runs two steps automatically on `git worktree add`:
 
-Delegates to `scripts/link-worktree-envs.sh` so the same logic works for
-manual invocations.
+1. **Symlink `.env*` files** from the main worktree (`scripts/link-worktree-envs.sh`).
+2. **Set up the worktree** — `bun install`, `bun run db:generate`, `bun run build`
+   (`scripts/setup-worktree.sh`).
+
+The hook fires **only** inside `git worktree add` — regular `git checkout`,
+`git switch`, and file checkouts are filtered by checking that the
+previous HEAD is the null SHA (true only for fresh checkouts) and that
+the current worktree isn't the main one.
+
+Step 2 is slow (minutes) but synchronous on purpose: callers — including
+Claude Code — typically start running commands in the new worktree
+immediately, and we don't want them racing ahead of the install.
+
+Skip step 2 for a fast "just give me the files" worktree with
+`SKIP_WORKTREE_SETUP=1 git worktree add …`.
 
 ## Backfilling existing worktrees
 
@@ -35,6 +44,9 @@ scripts/link-worktree-envs.sh
 
 # Or pass an explicit path from anywhere:
 scripts/link-worktree-envs.sh /path/to/.worktrees/some-feature
+
+# And/or run the full install + build:
+scripts/setup-worktree.sh /path/to/.worktrees/some-feature
 ```
 
 ## Per-worktree overrides

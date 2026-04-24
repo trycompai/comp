@@ -31,3 +31,10 @@ cur=$(git rev-parse --show-toplevel)
 "$main/scripts/link-worktree-envs.sh" "$cur" || {
   echo "post-checkout: failed to link envs (continuing)" >&2
 }
+
+# Envs must be in place first because `db:generate` and the build step read
+# DATABASE_URL from .env. Skippable via SKIP_WORKTREE_SETUP=1 for callers
+# that want the worktree without the install/build cycle (~minutes).
+"$main/scripts/setup-worktree.sh" "$cur" || {
+  echo "post-checkout: setup-worktree failed (worktree is still usable, fix manually)" >&2
+}
