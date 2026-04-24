@@ -1,45 +1,48 @@
 ---
 title: "Cloud Tests"
-description: "Comp AI Cloud Tests Guide"
+description: "Continuously assess your cloud posture by connecting AWS, Azure, and GCP to Comp AI."
 ---
 
-## Supported Cloud Tests
+## What Cloud Tests do
 
-Comp AI offers several Cloud Tests with third-party services to enhance your experience:
+Cloud Tests connect your cloud accounts to Comp AI and continuously evaluate them against security and compliance controls. Each finding is mapped to the frameworks you track (SOC 2, ISO 27001, CIS, PCI DSS, HIPAA), so cloud misconfigurations show up directly in your compliance posture.
 
-### Cloud Provider Integrations
+All connections are **read-only by default**. Comp AI only makes `GET` / `list` calls against each cloud provider unless you explicitly opt in to auto-remediation (AWS).
 
-Comp AI integrates with major cloud providers to facilitate cloud security testing and compliance monitoring:
+## Supported providers
 
-#### AWS Cloud Test
+<CardGroup cols={3}>
+  <Card title="AWS" href="/cloud-tests/aws">
+    Cross-account IAM role with External ID. No access keys stored.
+  </Card>
+  <Card title="Azure" href="/cloud-tests/azure">
+    Sign in with Microsoft OAuth, or provision a service principal.
+  </Card>
+  <Card title="GCP" href="/cloud-tests/gcp">
+    Sign in with Google OAuth. Findings flow from Security Command Center.
+  </Card>
+</CardGroup>
 
-- **Purpose**: Perform security tests and compliance checks on AWS infrastructure
-- **Features**:
-  - IAM policy analysis
-  - S3 bucket security assessment
-  - EC2 instance compliance monitoring
-  - CloudTrail audit log analysis
+## How connections are authorized
 
-For setup instructions, see the [AWS Cloud Tests Guide](/integrations/aws).
+| Provider | Connection method                           | What you provide                                             |
+| -------- | ------------------------------------------- | ------------------------------------------------------------ |
+| AWS      | Cross-account IAM role (STS AssumeRole)     | Role ARN + External ID (pre-filled in the UI)                |
+| Azure    | OAuth 2.0 (primary) or service principal    | Microsoft sign-in, or Tenant + Client ID + Secret + Sub ID   |
+| GCP      | OAuth 2.0                                   | Google sign-in; org + projects auto-detected after consent   |
 
-#### Azure Cloud Test
+## Common capabilities
 
-- **Purpose**: Perform security tests and compliance checks on Azure infrastructure
-- **Features**:
-  - Resource group security assessment
-  - Azure AD configuration analysis
-  - Storage account compliance checks
-  - Network security evaluation
+Regardless of provider, each connection supports:
 
-For setup instructions, see the [Azure Cloud Tests Guide](/integrations/azure).
+- **Continuous scanning** on a schedule, with on-demand re-scans
+- **Per-service toggles** so you can enable only the checks you care about
+- **Findings mapped to frameworks** (SOC 2, ISO 27001, CIS, PCI DSS, HIPAA)
+- **Evidence collection** that plugs directly into the compliance module
+- **Multiple connections per provider** so you can monitor multiple accounts, subscriptions, or orgs separately
 
-#### GCP Cloud Test
+## Next steps
 
-- **Purpose**: Perform security tests and compliance checks on Google Cloud Platform
-- **Features**:
-  - IAM role analysis
-  - GCS bucket security assessment
-  - Compute Engine compliance monitoring
-  - Cloud logging audit analysis
-
-For setup instructions, see the [GCP Cloud Tests Guide](/integrations/gcp).
+- [Set up AWS](/cloud-tests/aws)
+- [Set up Azure](/cloud-tests/azure)
+- [Set up GCP](/cloud-tests/gcp)
