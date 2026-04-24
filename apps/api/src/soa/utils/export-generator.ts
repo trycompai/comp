@@ -107,7 +107,7 @@ function generateSOAPDF(
   y += lineHeight;
   const approvalStatusText = metadata.approvedAt
     ? `Approved on ${new Date(metadata.approvedAt).toLocaleDateString()}`
-    : metadata.status === 'declined' && metadata.declinedAt
+    : metadata.declinedAt
       ? `Declined on ${new Date(metadata.declinedAt).toLocaleDateString()}`
       : metadata.approverName
         ? 'Pending approval'
