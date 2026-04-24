@@ -558,6 +558,7 @@ export class TasksService {
       assigneeId?: string | null;
       approverId?: string | null;
       frequency?: TaskFrequency;
+      integrationScheduleFrequency?: TaskFrequency;
       department?: string;
       reviewDate?: Date | null;
     },
@@ -592,6 +593,7 @@ export class TasksService {
         assigneeId?: string | null;
         approverId?: string | null;
         frequency?: TaskFrequency;
+        integrationScheduleFrequency?: TaskFrequency;
         department?: string;
         reviewDate?: Date | null;
       } = {};
@@ -650,6 +652,10 @@ export class TasksService {
         dataToUpdate.reviewDate = computeNextTaskReviewDate(
           updateData.frequency,
         );
+      }
+      if (updateData.integrationScheduleFrequency !== undefined) {
+        dataToUpdate.integrationScheduleFrequency =
+          updateData.integrationScheduleFrequency;
       }
       if (updateData.department !== undefined) {
         dataToUpdate.department = updateData.department;

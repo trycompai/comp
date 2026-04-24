@@ -30,6 +30,14 @@ export class CreateTaskDto {
   frequency?: string;
 
   @ApiProperty({
+    description:
+      'Cadence for running the integration check attached to this task',
+    enum: ['daily', 'weekly', 'monthly', 'quarterly', 'yearly'],
+    required: false,
+  })
+  integrationScheduleFrequency?: string;
+
+  @ApiProperty({
     description: 'Department assignment',
     enum: ['none', 'admin', 'gov', 'hr', 'it', 'itsm', 'qms'],
     default: 'none',
@@ -79,6 +87,14 @@ export class UpdateTaskDto {
     required: false,
   })
   frequency?: string;
+
+  @ApiProperty({
+    description:
+      'Cadence for running the integration check attached to this task',
+    enum: ['daily', 'weekly', 'monthly', 'quarterly', 'yearly'],
+    required: false,
+  })
+  integrationScheduleFrequency?: string;
 
   @ApiProperty({
     description: 'Department assignment',

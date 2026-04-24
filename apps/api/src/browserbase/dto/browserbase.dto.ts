@@ -1,11 +1,13 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import {
+  IsEnum,
   IsNotEmpty,
   IsOptional,
   IsString,
   IsBoolean,
   IsUrl,
 } from 'class-validator';
+import { TaskFrequency } from '@db';
 import { IsSafeUrl } from '../validators/url-safety.validator';
 
 // ===== Session DTOs =====
@@ -89,6 +91,14 @@ export class CreateBrowserAutomationDto {
   @IsString()
   @IsOptional()
   evaluationCriteria?: string;
+
+  @ApiPropertyOptional({
+    enum: TaskFrequency,
+    description: 'Automation schedule cadence',
+  })
+  @IsEnum(TaskFrequency)
+  @IsOptional()
+  scheduleFrequency?: TaskFrequency;
 }
 
 export class UpdateBrowserAutomationDto {
@@ -126,6 +136,14 @@ export class UpdateBrowserAutomationDto {
   @IsBoolean()
   @IsOptional()
   isEnabled?: boolean;
+
+  @ApiPropertyOptional({
+    enum: TaskFrequency,
+    description: 'Automation schedule cadence',
+  })
+  @IsEnum(TaskFrequency)
+  @IsOptional()
+  scheduleFrequency?: TaskFrequency;
 }
 
 // ===== Response DTOs =====
