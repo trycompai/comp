@@ -1,0 +1,53 @@
+#!/usr/bin/env bash
+# Auto-link .env* files from the main worktree into freshly created worktrees.
+#
+# post-checkout fires for every `git checkout`, `git switch`, and
+# `git worktree add`. This script uses two layered checks to run ONLY for
+# fresh worktree creation:
+#
+#   1. `<prev-HEAD>` equals the null SHA — git fills this in only when there
+#      was no previous HEAD in the current directory (fresh checkout).
+#      Normal branch or file checkouts have a real SHA here.
+#
+#   2. The current worktree is not the main worktree — filters the fresh-clone
+#      case (which also gets the null SHA on its first checkout).
+#
+# Combined, the only invocation that satisfies both is `git worktree add`.
+set -euo pipefail
+
+prev="$1"
+
+# Check 1: only proceed if this is a fresh checkout (no previous HEAD).
+[[ "$prev" == "0000000000000000000000000000000000000000" ]] || exit 0
+
+main=$(git worktree list --porcelain | awk '$1=="worktree"{print $2; exit}')
+cur=$(git rev-parse --show-toplevel)
+
+# Check 2: don't run on the main worktree (fresh clone case).
+[[ "$main" == "$cur" ]] && exit 0
+
+# Spin up an isolated Postgres database for this worktree so branches with
+# divergent migrations don't step on each other. The returned URL is fed
+# into the linker so .env files with DATABASE_URL point at the new DB.
+# Skippable via SKIP_WORKTREE_DB=1.
+iso_url=""
+if [[ "${SKIP_WORKTREE_DB:-}" != "1" ]]; then
+  # Script prints the isolated URL on stdout; logs go to stderr (inherited).
+  iso_url=$("$main/scripts/setup-worktree-db.sh" "$cur") || {
+    echo "post-checkout: setup-worktree-db failed — continuing without DB isolation" >&2
+    iso_url=""
+  }
+fi
+
+# Delegate env setup. When $iso_url is non-empty, env files with
+# DATABASE_URL are rewritten (copy, not symlink) to point at the isolated DB.
+ISOLATED_DATABASE_URL="$iso_url" "$main/scripts/link-worktree-envs.sh" "$cur" || {
+  echo "post-checkout: failed to link envs (continuing)" >&2
+}
+
+# Envs must be in place first because `db:migrate` and `db:generate` read
+# DATABASE_URL from .env. Skippable via SKIP_WORKTREE_SETUP=1 for callers
+# that want the worktree without the install cycle.
+"$main/scripts/setup-worktree.sh" "$cur" || {
+  echo "post-checkout: setup-worktree failed (worktree is still usable, fix manually)" >&2
+}
