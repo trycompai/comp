@@ -4,6 +4,12 @@ import { describe, expect, it, vi } from 'vitest';
 import type { DeviceWithChecks } from '../types';
 import { DeviceDetails } from './DeviceDetails';
 
+vi.mock('./RevokeAgentAccessDialog', () => ({
+  RevokeAgentAccessDialog: ({ deviceId }: { deviceId: string; deviceName: string }) => (
+    <div data-testid="revoke-dialog">revoke {deviceId}</div>
+  ),
+}));
+
 function makeDevice(overrides: Partial<DeviceWithChecks> = {}): DeviceWithChecks {
   return {
     id: 'dev_1',
@@ -27,6 +33,7 @@ function makeDevice(overrides: Partial<DeviceWithChecks> = {}): DeviceWithChecks
     source: 'device_agent',
     complianceStatus: 'compliant',
     daysSinceLastCheckIn: 0,
+    hasActiveAgentSession: false,
     ...overrides,
   };
 }
@@ -134,5 +141,34 @@ describe('DeviceDetails compliance badge', () => {
     expect(
       screen.queryByRole('button', { name: /What does Stale mean\?/i }),
     ).not.toBeInTheDocument();
+  });
+});
+
+describe('DeviceDetails revoke action', () => {
+  it('renders the RevokeAgentAccessDialog for device_agent with an active agent session', () => {
+    render(
+      <DeviceDetails device={makeDevice({ hasActiveAgentSession: true })} onClose={vi.fn()} />,
+    );
+    expect(screen.getByTestId('revoke-dialog')).toBeInTheDocument();
+  });
+
+  it('does not render when hasActiveAgentSession is false', () => {
+    render(
+      <DeviceDetails
+        device={makeDevice({ hasActiveAgentSession: false })}
+        onClose={vi.fn()}
+      />,
+    );
+    expect(screen.queryByTestId('revoke-dialog')).toBeNull();
+  });
+
+  it('does not render for fleet-sourced devices', () => {
+    render(
+      <DeviceDetails
+        device={makeDevice({ source: 'fleet', hasActiveAgentSession: true })}
+        onClose={vi.fn()}
+      />,
+    );
+    expect(screen.queryByTestId('revoke-dialog')).toBeNull();
   });
 });

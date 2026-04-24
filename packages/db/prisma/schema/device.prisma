@@ -12,6 +12,9 @@ model Device {
   organizationId String
   organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 
+  agentSessionId String?
+  agentSession   Session? @relation("DeviceAgentSession", fields: [agentSessionId], references: [id], onDelete: SetNull)
+
   isCompliant           Boolean  @default(false)
   diskEncryptionEnabled Boolean  @default(false)
   antivirusEnabled      Boolean  @default(false)
@@ -30,6 +33,7 @@ model Device {
   @@index([memberId])
   @@index([organizationId])
   @@index([isCompliant])
+  @@index([agentSessionId])
 }
 
 enum DevicePlatform {

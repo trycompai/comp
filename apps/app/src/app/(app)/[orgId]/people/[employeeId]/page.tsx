@@ -283,6 +283,9 @@ const getMemberDevice = async (
           },
         },
       },
+      agentSession: {
+        select: { expiresAt: true },
+      },
     },
     orderBy: { installedAt: 'desc' },
   });
@@ -320,5 +323,8 @@ const getMemberDevice = async (
     source: 'device_agent' as const,
     complianceStatus,
     daysSinceLastCheckIn: daysSinceCheckIn(device.lastCheckIn),
+    hasActiveAgentSession:
+      !!device.agentSession &&
+      device.agentSession.expiresAt.getTime() > Date.now(),
   };
 };
