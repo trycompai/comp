@@ -11,7 +11,15 @@ import type {
   Likelihood,
   Impact,
   RiskTreatmentType,
+  TaskStatus,
 } from '@db';
+
+export interface RiskLinkedTask {
+  id: string;
+  title: string;
+  status: TaskStatus;
+  controls: { id: string; name: string }[];
+}
 
 // Default polling interval for real-time updates (5 seconds)
 const DEFAULT_POLLING_INTERVAL = 5000;
@@ -42,6 +50,7 @@ export interface Risk {
   organizationId: string;
   assigneeId: string | null;
   assignee?: RiskAssignee | null;
+  tasks?: RiskLinkedTask[];
   createdAt: string;
   updatedAt: string;
 }

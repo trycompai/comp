@@ -5,16 +5,16 @@ import { RecentAuditLogs } from '@/components/RecentAuditLogs';
 import { InherentRiskChart } from '@/components/risks/charts/InherentRiskChart';
 import { ResidualRiskChart } from '@/components/risks/charts/ResidualRiskChart';
 import { RiskOverview } from '@/components/risks/risk-overview';
+import { TreatmentPlanTab } from '@/components/risks/treatment-plan/TreatmentPlanTab';
 import { TaskItems } from '@/components/task-items/TaskItems';
 import { useAuditLogs } from '@/hooks/use-audit-logs';
 import { useRisk, useRiskActions, type RiskResponse } from '@/hooks/use-risks';
 import { useTaskItems, useTaskItemActions } from '@/hooks/use-task-items';
 import { usePermissions } from '@/hooks/use-permissions';
 import { CommentEntityType } from '@db';
-import type { Member, Risk, User } from '@db';
+import type { Member, Risk, RiskTreatmentType, User } from '@db';
 import {
   Breadcrumb,
-  Button,
   HStack,
   Stack,
   Tabs,
@@ -141,6 +141,16 @@ export function RiskPageClient({
     }
   };
 
+  const handleUpdateStrategy = async (strategy: RiskTreatmentType) => {
+    await updateRisk(riskId, { treatmentStrategy: strategy });
+    mutateRisk();
+  };
+
+  const handleUpdateDescription = async (description: string) => {
+    await updateRisk(riskId, { treatmentStrategyDescription: description });
+    mutateRisk();
+  };
+
   const handleRegenerateMitigation = async () => {
     setIsRegenerating(true);
     toast.info('Regenerating risk mitigation...');
@@ -240,6 +250,7 @@ export function RiskPageClient({
           <Stack gap="lg">
             <TabsList variant="underline">
               <TabsTrigger value="overview">Overview</TabsTrigger>
+              <TabsTrigger value="treatment-plan">Treatment Plan</TabsTrigger>
               <TabsTrigger value="risk-matrix">Risk Matrix</TabsTrigger>
               <TabsTrigger value="tasks">Tasks</TabsTrigger>
               <TabsTrigger value="comments">Comments</TabsTrigger>
@@ -249,6 +260,27 @@ export function RiskPageClient({
 
             <TabsContent value="overview">
               <RiskOverview risk={risk} assignees={assignees} />
+            </TabsContent>
+
+            <TabsContent value="treatment-plan">
+              <TreatmentPlanTab
+                orgId={orgId}
+                entity={{
+                  id: risk.id,
+                  inherentLikelihood: risk.likelihood,
+                  inherentImpact: risk.impact,
+                  residualLikelihood: risk.residualLikelihood,
+                  residualImpact: risk.residualImpact,
+                  treatmentStrategy: risk.treatmentStrategy,
+                  treatmentStrategyDescription: risk.treatmentStrategyDescription,
+                  tasks: swrRisk?.tasks ?? [],
+                }}
+                canUpdate={canUpdate}
+                onUpdateStrategy={handleUpdateStrategy}
+                onUpdateDescription={handleUpdateDescription}
+                onRegenerate={handleRegenerateMitigation}
+                regenerating={isRegenerating}
+              />
             </TabsContent>
 
             <TabsContent value="risk-matrix">
@@ -271,27 +303,7 @@ export function RiskPageClient({
             </TabsContent>
 
             <TabsContent value="settings">
-              <Stack gap="lg">
-                {canUpdate && (
-                  <HStack justify="between" align="center">
-                    <Stack gap="none">
-                      <Text size="sm" weight="medium">Regenerate Risk Mitigation</Text>
-                      <Text size="xs" variant="muted">
-                        Generate a fresh mitigation comment for this risk using AI
-                      </Text>
-                    </Stack>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={handleRegenerateMitigation}
-                      disabled={isRegenerating}
-                      loading={isRegenerating}
-                    >
-                      {isRegenerating ? 'Regenerating...' : 'Regenerate'}
-                    </Button>
-                  </HStack>
-                )}
-              </Stack>
+              <Text size="sm" variant="muted">No settings yet.</Text>
             </TabsContent>
           </Stack>
         </Tabs>

@@ -128,6 +128,14 @@ export class RisksService {
               user: true,
             },
           },
+          tasks: {
+            select: {
+              id: true,
+              title: true,
+              status: true,
+              controls: { select: { id: true, name: true } },
+            },
+          },
         },
       });
 
