@@ -53,7 +53,7 @@ model SOADocument {
   isLatest Boolean @default(true) // Whether this is the latest version
 
   // Document status
-  status SOADocumentStatus @default(draft) // draft, in_progress, needs_review, declined, completed
+  status SOADocumentStatus @default(draft) // draft, in_progress, needs_review, completed
 
   // Document metadata
   totalQuestions    Int @default(0) // Total number of questions in this document
@@ -125,7 +125,6 @@ enum SOADocumentStatus {
   draft // Document is being created/edited
   in_progress // Document is being generated
   needs_review // Document is submitted for approval
-  declined // Document was declined by approver
   completed // Document is complete and approved
 }
 
