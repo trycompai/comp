@@ -173,12 +173,11 @@ export function CompanyOverviewCards({ organizationId }: { organizationId: strin
         ISO27001_NAMES.includes(frameworkInstance.framework.name),
     );
   }, [frameworksResponse]);
-  const hasISO27001Framework = !!iso27001Framework;
   const iso27001FrameworkId = iso27001Framework?.frameworkId ?? null;
 
   return (
     <Stack gap="6">
-      {hasISO27001Framework && iso27001FrameworkId && (
+      {iso27001FrameworkId && (
         <SOAOverviewCard
           organizationId={organizationId}
           iso27001FrameworkId={iso27001FrameworkId}
