@@ -2,7 +2,9 @@
 
 import { ConnectIntegrationDialog } from '@/components/integrations/ConnectIntegrationDialog';
 import { ManageIntegrationDialog } from '@/components/integrations/ManageIntegrationDialog';
+import { SchedulePicker } from '@/components/schedule-picker';
 import { downloadAutomationPDF } from '@/lib/evidence-download';
+import type { TaskFrequency } from '@db';
 import type { TaskIntegrationCheck, StoredCheckRun } from '../hooks/useIntegrationChecks';
 import { useIntegrationChecks } from '../hooks/useIntegrationChecks';
 import { cn } from '@/lib/utils';
@@ -50,12 +52,18 @@ interface TaskIntegrationChecksProps {
   onTaskUpdated?: () => void;
   /** When true, disables creating new automations (shows existing ones read-only) */
   isManualTask?: boolean;
+  /** Current schedule for integration checks on this task. When provided with
+   * `onScheduleChange`, renders a schedule picker in the card header. */
+  scheduleFrequency?: TaskFrequency;
+  onScheduleChange?: (value: TaskFrequency) => void | Promise<void>;
 }
 
 export function TaskIntegrationChecks({
   taskId,
   onTaskUpdated,
   isManualTask = false,
+  scheduleFrequency,
+  onScheduleChange,
 }: TaskIntegrationChecksProps) {
   const params = useParams();
   const searchParams = useSearchParams();
@@ -274,12 +282,16 @@ export function TaskIntegrationChecks({
   };
 
   const nextRun = connectedChecks.length > 0 ? getNextScheduledRun() : null;
+  const hasConfiguredChecks =
+    connectedChecks.length > 0 || disabledForTaskChecks.length > 0;
+  const showSchedulePicker =
+    hasConfiguredChecks && !!scheduleFrequency && !!onScheduleChange;
 
   return (
     <div className="rounded-lg border border-border bg-card overflow-hidden">
       {/* Card Header */}
       <div className="px-5 py-4 border-b border-border">
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between gap-4">
           <div className="flex items-center gap-2.5">
             <div className="p-1.5 rounded-md bg-muted">
               <PlugZap className="h-4 w-4 text-primary" />
@@ -291,16 +303,31 @@ export function TaskIntegrationChecks({
               </p>
             </div>
           </div>
-          {connectedChecks.length > 0 && nextRun && (
-            <div className="text-right">
-              <div className="text-[10px] text-muted-foreground uppercase tracking-wide">
-                Next run
+          <div className="flex items-center gap-4">
+            {showSchedulePicker && scheduleFrequency && onScheduleChange && (
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-muted-foreground uppercase tracking-wide">
+                  Schedule
+                </span>
+                <SchedulePicker
+                  value={scheduleFrequency}
+                  onChange={(value) => {
+                    void onScheduleChange(value);
+                  }}
+                />
               </div>
-              <div className="text-sm font-medium text-foreground">
-                {formatDistanceToNow(nextRun, { addSuffix: true })}
+            )}
+            {connectedChecks.length > 0 && nextRun && (
+              <div className="text-right">
+                <div className="text-[10px] text-muted-foreground uppercase tracking-wide">
+                  Next run
+                </div>
+                <div className="text-sm font-medium text-foreground">
+                  {formatDistanceToNow(nextRun, { addSuffix: true })}
+                </div>
               </div>
-            </div>
-          )}
+            )}
+          </div>
         </div>
       </div>
 

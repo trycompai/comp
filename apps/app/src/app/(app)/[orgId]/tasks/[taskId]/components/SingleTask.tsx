@@ -24,6 +24,7 @@ import {
   type Control,
   type Member,
   type Task,
+  type TaskFrequency,
   type TaskStatus,
   type User,
 } from '@db';
@@ -160,6 +161,16 @@ export function SingleTask({
       mutateActivity();
     } catch {
       toast.error('Failed to update description');
+    }
+  };
+
+  const handleUpdateIntegrationSchedule = async (value: TaskFrequency) => {
+    try {
+      await updateTask({ integrationScheduleFrequency: value });
+      toast.success('Schedule updated');
+      mutateActivity();
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Failed to update schedule');
     }
   };
 
@@ -344,6 +355,10 @@ export function SingleTask({
                 taskId={task.id}
                 onTaskUpdated={() => mutateTask()}
                 isManualTask={task.automationStatus === 'MANUAL'}
+                scheduleFrequency={task.integrationScheduleFrequency ?? undefined}
+                onScheduleChange={
+                  canUpdateTask ? handleUpdateIntegrationSchedule : undefined
+                }
               />
               <TaskAutomations
                 automations={automations || []}
