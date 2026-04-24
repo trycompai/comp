@@ -10,7 +10,16 @@ import type {
   Likelihood,
   Impact,
   Prisma,
+  RiskTreatmentType,
+  TaskStatus,
 } from '@db';
+
+export interface VendorLinkedTask {
+  id: string;
+  title: string;
+  status: TaskStatus;
+  controls: { id: string; name: string }[];
+}
 
 // Default polling interval for real-time updates (5 seconds)
 const DEFAULT_POLLING_INTERVAL = 5000;
@@ -40,6 +49,9 @@ export interface Vendor {
   organizationId: string;
   assigneeId: string | null;
   assignee?: VendorAssignee | null;
+  treatmentStrategy: RiskTreatmentType;
+  treatmentStrategyDescription: string | null;
+  tasks?: VendorLinkedTask[];
   createdAt: string;
   updatedAt: string;
 }
@@ -79,6 +91,8 @@ interface UpdateVendorData {
   inherentImpact?: Impact;
   residualProbability?: Likelihood;
   residualImpact?: Impact;
+  treatmentStrategy?: RiskTreatmentType;
+  treatmentStrategyDescription?: string | null;
 }
 
 export interface UseVendorsOptions extends UseApiSWROptions<VendorsResponse> {

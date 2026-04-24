@@ -17,7 +17,8 @@ import { VendorResearchBadges, VendorResearchLinks } from './VendorResearchSecti
 import { VendorResearchFeed } from './VendorResearchFeed';
 import { VendorInherentRiskChart } from './VendorInherentRiskChart';
 import { VendorResidualRiskChart } from './VendorResidualRiskChart';
-import type { Member, User, Vendor } from '@db';
+import { TreatmentPlanTab } from '@/components/risks/treatment-plan/TreatmentPlanTab';
+import type { Member, RiskTreatmentType, User, Vendor } from '@db';
 import { CommentEntityType } from '@db';
 import type { Prisma } from '@db';
 import { useRealtimeRun } from '@trigger.dev/react-hooks';
@@ -260,6 +261,16 @@ export function VendorDetailTabs({
     }
   };
 
+  const handleUpdateStrategy = async (strategy: RiskTreatmentType) => {
+    await updateVendor(vendorId, { treatmentStrategy: strategy });
+    refreshVendor();
+  };
+
+  const handleUpdateDescription = async (description: string) => {
+    await updateVendor(vendorId, { treatmentStrategyDescription: description });
+    refreshVendor();
+  };
+
   const handleRegenerateAssessment = async () => {
     setIsAssessmentLoading(true);
     toast.info('Regenerating vendor risk assessment...');
@@ -406,6 +417,7 @@ export function VendorDetailTabs({
           <Stack gap="lg">
             <TabsList variant="underline">
               <TabsTrigger value="overview">Overview</TabsTrigger>
+              <TabsTrigger value="treatment-plan">Treatment Plan</TabsTrigger>
               <TabsTrigger value="risk-matrix">Risk Matrix</TabsTrigger>
               <TabsTrigger value="risk-assessment">Risk Assessment</TabsTrigger>
               <TabsTrigger value="tasks">Tasks</TabsTrigger>
@@ -416,6 +428,27 @@ export function VendorDetailTabs({
 
             <TabsContent value="overview">
               <SecondaryFields vendor={resolvedVendor} assignees={assignees} onUpdate={refreshVendor} />
+            </TabsContent>
+
+            <TabsContent value="treatment-plan">
+              <TreatmentPlanTab
+                orgId={orgId}
+                entity={{
+                  id: resolvedVendor.id,
+                  inherentLikelihood: resolvedVendor.inherentProbability,
+                  inherentImpact: resolvedVendor.inherentImpact,
+                  residualLikelihood: resolvedVendor.residualProbability,
+                  residualImpact: resolvedVendor.residualImpact,
+                  treatmentStrategy: resolvedVendor.treatmentStrategy,
+                  treatmentStrategyDescription: resolvedVendor.treatmentStrategyDescription,
+                  tasks: swrVendor?.tasks ?? [],
+                }}
+                canUpdate={canUpdate}
+                onUpdateStrategy={handleUpdateStrategy}
+                onUpdateDescription={handleUpdateDescription}
+                onRegenerate={handleRegenerateMitigation}
+                regenerating={isMitigationLoading}
+              />
             </TabsContent>
 
             <TabsContent value="risk-matrix">
@@ -488,45 +521,23 @@ export function VendorDetailTabs({
             <TabsContent value="settings">
               <Stack gap="lg">
                 {canUpdate && (
-                  <>
-                    <HStack justify="between" align="center">
-                      <Stack gap="none">
-                        <Text size="sm" weight="medium">Regenerate Risk Assessment</Text>
-                        <Text size="xs" variant="muted">
-                          Generate or regenerate the AI risk assessment for this vendor
-                        </Text>
-                      </Stack>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={handleRegenerateAssessment}
-                        disabled={isAssessmentLoading}
-                        loading={isAssessmentLoading}
-                      >
-                        Regenerate Assessment
-                      </Button>
-                    </HStack>
-
-                    <div className="border-t" />
-
-                    <HStack justify="between" align="center">
-                      <Stack gap="none">
-                        <Text size="sm" weight="medium">Regenerate Mitigation</Text>
-                        <Text size="xs" variant="muted">
-                          Generate a fresh risk mitigation comment for this vendor
-                        </Text>
-                      </Stack>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={handleRegenerateMitigation}
-                        disabled={isMitigationLoading}
-                        loading={isMitigationLoading}
-                      >
-                        Regenerate Mitigation
-                      </Button>
-                    </HStack>
-                  </>
+                  <HStack justify="between" align="center">
+                    <Stack gap="none">
+                      <Text size="sm" weight="medium">Regenerate Risk Assessment</Text>
+                      <Text size="xs" variant="muted">
+                        Generate or regenerate the AI risk assessment for this vendor
+                      </Text>
+                    </Stack>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleRegenerateAssessment}
+                      disabled={isAssessmentLoading}
+                      loading={isAssessmentLoading}
+                    >
+                      Regenerate Assessment
+                    </Button>
+                  </HStack>
                 )}
               </Stack>
             </TabsContent>
