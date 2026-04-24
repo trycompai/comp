@@ -8,6 +8,8 @@ model Vendor {
   inherentImpact      Impact         @default(insignificant)
   residualProbability Likelihood     @default(very_unlikely)
   residualImpact      Impact         @default(insignificant)
+  treatmentStrategy            RiskTreatmentType @default(accept)
+  treatmentStrategyDescription String?
   website             String?
   isSubProcessor      Boolean        @default(false)
 
