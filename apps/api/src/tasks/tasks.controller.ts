@@ -1,4 +1,4 @@
-import { AttachmentEntityType } from '@db';
+import { AttachmentEntityType, db } from '@db';
 import {
   BadRequestException,
   Body,
@@ -6,6 +6,7 @@ import {
   Delete,
   ForbiddenException,
   Get,
+  NotFoundException,
   Param,
   Patch,
   Post,
@@ -628,6 +629,75 @@ export class TasksController {
     }
 
     return task;
+  }
+
+  @Get(':taskId/policies')
+  @UseGuards(PermissionGuard)
+  @RequirePermission('task', 'read')
+  @ApiOperation({
+    summary: 'Get policies that reference a task via shared controls',
+  })
+  @ApiParam({
+    name: 'taskId',
+    description: 'Unique task identifier',
+    example: 'tsk_abc123def456',
+  })
+  async getTaskPolicies(
+    @OrganizationId() organizationId: string,
+    @Param('taskId') taskId: string,
+    @AuthContext() authContext: AuthContextType,
+  ) {
+    const task = await db.task.findFirst({
+      where: { id: taskId, organizationId, archivedAt: null },
+      select: {
+        id: true,
+        controls: {
+          where: { archivedAt: null },
+          select: {
+            id: true,
+            name: true,
+            policies: {
+              where: { archivedAt: null, status: 'published' },
+              select: {
+                id: true,
+                name: true,
+                status: true,
+                frequency: true,
+                department: true,
+              },
+              orderBy: { name: 'asc' },
+            },
+          },
+          orderBy: { name: 'asc' },
+        },
+      },
+    });
+
+    if (!task) {
+      throw new NotFoundException('Task not found');
+    }
+
+    const data = task.controls.map((control) => ({
+      control: { id: control.id, name: control.name },
+      policies: control.policies,
+    }));
+
+    const uniquePolicyIds = new Set<string>();
+    for (const group of data) {
+      for (const policy of group.policies) uniquePolicyIds.add(policy.id);
+    }
+
+    return {
+      data,
+      count: uniquePolicyIds.size,
+      authType: authContext.authType,
+      ...(authContext.userId && {
+        authenticatedUser: {
+          id: authContext.userId,
+          email: authContext.userEmail,
+        },
+      }),
+    };
   }
 
   @Get(':taskId/activity')

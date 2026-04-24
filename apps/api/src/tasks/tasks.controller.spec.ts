@@ -10,7 +10,11 @@ import { AttachmentsService } from '../attachments/attachments.service';
 
 jest.mock('@db', () => ({
   ...jest.requireActual('@prisma/client'),
-  db: {},
+  db: {
+    task: {
+      findFirst: jest.fn(),
+    },
+  },
   Prisma: {
     PrismaClientKnownRequestError: class PrismaClientKnownRequestError extends Error {
       code: string;
@@ -509,6 +513,72 @@ describe('TasksController', () => {
       const result = await controller.getTask(orgId, 'tsk_1', employeeAuth);
 
       expect(result).toEqual(mockTask);
+    });
+  });
+
+  // ==================== GET TASK POLICIES ====================
+
+  describe('getTaskPolicies', () => {
+    it('returns policies grouped by control, filtering drafts and archived', async () => {
+      const { db } = require('@db');
+      db.task.findFirst.mockResolvedValue({
+        id: 'tsk_1',
+        controls: [
+          {
+            id: 'ctl_1',
+            name: 'Access Controls',
+            policies: [
+              {
+                id: 'pol_1',
+                name: 'Authentication Policy',
+                status: 'published',
+                frequency: 'yearly',
+                department: 'it',
+              },
+            ],
+          },
+        ],
+      });
+
+      const result = await controller.getTaskPolicies(
+        orgId,
+        'tsk_1',
+        authContext,
+      );
+
+      expect(db.task.findFirst).toHaveBeenCalledWith({
+        where: { id: 'tsk_1', organizationId: orgId, archivedAt: null },
+        select: expect.objectContaining({
+          id: true,
+          controls: expect.objectContaining({
+            where: { archivedAt: null },
+          }),
+        }),
+      });
+      expect(result.data).toEqual([
+        {
+          control: { id: 'ctl_1', name: 'Access Controls' },
+          policies: [
+            {
+              id: 'pol_1',
+              name: 'Authentication Policy',
+              status: 'published',
+              frequency: 'yearly',
+              department: 'it',
+            },
+          ],
+        },
+      ]);
+      expect(result.count).toBe(1);
+    });
+
+    it('throws NotFoundException when task is not in caller org', async () => {
+      const { db } = require('@db');
+      db.task.findFirst.mockResolvedValue(null);
+
+      await expect(
+        controller.getTaskPolicies(orgId, 'tsk_404', authContext),
+      ).rejects.toThrow('Task not found');
     });
   });
 
