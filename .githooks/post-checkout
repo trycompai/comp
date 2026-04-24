@@ -26,15 +26,28 @@ cur=$(git rev-parse --show-toplevel)
 # Check 2: don't run on the main worktree (fresh clone case).
 [[ "$main" == "$cur" ]] && exit 0
 
-# Delegate to the shared linker script so the same logic is available for
-# manual backfill (scripts/link-worktree-envs.sh <path>).
-"$main/scripts/link-worktree-envs.sh" "$cur" || {
+# Spin up an isolated Postgres database for this worktree so branches with
+# divergent migrations don't step on each other. The returned URL is fed
+# into the linker so .env files with DATABASE_URL point at the new DB.
+# Skippable via SKIP_WORKTREE_DB=1.
+iso_url=""
+if [[ "${SKIP_WORKTREE_DB:-}" != "1" ]]; then
+  # Script prints the isolated URL on stdout; logs go to stderr (inherited).
+  iso_url=$("$main/scripts/setup-worktree-db.sh" "$cur") || {
+    echo "post-checkout: setup-worktree-db failed — continuing without DB isolation" >&2
+    iso_url=""
+  }
+fi
+
+# Delegate env setup. When $iso_url is non-empty, env files with
+# DATABASE_URL are rewritten (copy, not symlink) to point at the isolated DB.
+ISOLATED_DATABASE_URL="$iso_url" "$main/scripts/link-worktree-envs.sh" "$cur" || {
   echo "post-checkout: failed to link envs (continuing)" >&2
 }
 
-# Envs must be in place first because `db:generate` and the build step read
+# Envs must be in place first because `db:migrate` and `db:generate` read
 # DATABASE_URL from .env. Skippable via SKIP_WORKTREE_SETUP=1 for callers
-# that want the worktree without the install/build cycle (~minutes).
+# that want the worktree without the install cycle.
 "$main/scripts/setup-worktree.sh" "$cur" || {
   echo "post-checkout: setup-worktree failed (worktree is still usable, fix manually)" >&2
 }

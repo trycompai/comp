@@ -32,14 +32,33 @@ fi
 
 cd "$main"
 
+# Optional: per-worktree DATABASE_URL override. When set, any .env file
+# whose source contains DATABASE_URL= will be copied (not symlinked) and
+# rewritten to point at the isolated URL. All other .env files stay as
+# symlinks so API keys and such still auto-propagate.
+iso_url="${ISOLATED_DATABASE_URL:-}"
+
 linked=0
+rewritten=0
 while IFS= read -r -d '' env; do
   rel="${env#./}"
   src="$main/$rel"
-  link="$target/$rel"
-  mkdir -p "$(dirname "$link")"
-  ln -sfn "$src" "$link"
-  linked=$((linked + 1))
+  dest="$target/$rel"
+  mkdir -p "$(dirname "$dest")"
+
+  if [[ -n "$iso_url" ]] && grep -qE '^DATABASE_URL=' "$src"; then
+    # Copy + rewrite DATABASE_URL (and DIRECT_URL, if present).
+    rm -f "$dest"
+    awk -v u="$iso_url" '
+      /^DATABASE_URL=/ { print "DATABASE_URL=" u; next }
+      /^DIRECT_URL=/   { print "DIRECT_URL=" u; next }
+      { print }
+    ' "$src" > "$dest"
+    rewritten=$((rewritten + 1))
+  else
+    ln -sfn "$src" "$dest"
+    linked=$((linked + 1))
+  fi
 done < <(
   find . -maxdepth 3 -name ".env*" \
     ! -name "*.example" \
@@ -49,4 +68,8 @@ done < <(
     -print0
 )
 
-echo "linked $linked env file(s) from $main into $target" >&2
+if [[ -n "$iso_url" ]]; then
+  echo "linked $linked env file(s), rewrote DATABASE_URL in $rewritten file(s) -> isolated URL" >&2
+else
+  echo "linked $linked env file(s) from $main into $target" >&2
+fi
