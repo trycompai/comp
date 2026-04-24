@@ -189,6 +189,18 @@ export class TaskResponseDto {
   frequency: string | null;
 
   @ApiProperty({
+    description: 'Cadence for running the integration check attached to this task',
+    enum: ['daily', 'weekly', 'monthly', 'quarterly', 'yearly'],
+  })
+  integrationScheduleFrequency: string;
+
+  @ApiProperty({
+    description: 'Last successful integration check run timestamp',
+    nullable: true,
+  })
+  integrationLastRunAt: Date | null;
+
+  @ApiProperty({
     description: 'Department assignment',
     enum: ['none', 'admin', 'gov', 'hr', 'it', 'itsm', 'qms'],
     nullable: true,

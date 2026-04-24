@@ -20,9 +20,19 @@ const PERIOD_DAYS: Record<TaskFrequency, number> = {
 
 // Approximate next-run (months ≈ 30 days). The server's isDueToday helper is the
 // real authority; this is only a UX hint shown on automation cards.
-function computeNextRun(frequency: TaskFrequency, lastRunAt: Date | null): Date {
-  const base = lastRunAt ?? new Date();
+function computeNextRun(frequency: TaskFrequency, lastRunAt: Date | null, now: Date): Date {
+  const base = lastRunAt ?? now;
   return new Date(base.getTime() + PERIOD_DAYS[frequency] * 24 * 60 * 60 * 1000);
+}
+
+// Locale-agnostic YYYY-MM-DD so the rendered string is byte-identical on
+// server vs. client, avoiding React hydration mismatches that
+// `toLocaleDateString()` would introduce under different user locales.
+function formatYmdUtc(d: Date): string {
+  const y = d.getUTCFullYear();
+  const m = String(d.getUTCMonth() + 1).padStart(2, '0');
+  const day = String(d.getUTCDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
 }
 
 export function ScheduleSummary({
@@ -33,10 +43,14 @@ export function ScheduleSummary({
   lastRunAt: string | Date | null;
 }) {
   const last = lastRunAt ? new Date(lastRunAt) : null;
-  const next = computeNextRun(scheduleFrequency, last);
+  // Anchor "now" to UTC midnight so a render that spans a day boundary
+  // doesn't produce a different next-run date between server and client.
+  const nowUtc = new Date();
+  nowUtc.setUTCHours(0, 0, 0, 0);
+  const next = computeNextRun(scheduleFrequency, last, nowUtc);
   return (
     <span className="text-xs text-muted-foreground">
-      Runs {LABELS[scheduleFrequency]} · next: {next.toLocaleDateString()}
+      Runs {LABELS[scheduleFrequency]} · next: {formatYmdUtc(next)}
     </span>
   );
 }

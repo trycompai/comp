@@ -8,13 +8,15 @@ describe('ScheduleSummary', () => {
     expect(screen.getByText(/Weekly/)).toBeInTheDocument();
   });
 
-  it('renders a next-run date', () => {
+  it('renders a deterministic YYYY-MM-DD next-run date', () => {
     render(
       <ScheduleSummary
         scheduleFrequency="weekly"
-        lastRunAt={new Date('2026-04-17').toISOString()}
+        lastRunAt={new Date('2026-04-17T00:00:00.000Z').toISOString()}
       />,
     );
-    expect(screen.getByText(/next:/)).toBeInTheDocument();
+    // lastRunAt 2026-04-17 + 7 days = 2026-04-24. Tests render the literal
+    // locale-agnostic YYYY-MM-DD, not a toLocaleDateString() output.
+    expect(screen.getByText(/next: 2026-04-24/)).toBeInTheDocument();
   });
 });

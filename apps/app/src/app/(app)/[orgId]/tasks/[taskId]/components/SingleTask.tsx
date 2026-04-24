@@ -356,6 +356,7 @@ export function SingleTask({
                 onTaskUpdated={() => mutateTask()}
                 isManualTask={task.automationStatus === 'MANUAL'}
                 scheduleFrequency={task.integrationScheduleFrequency ?? undefined}
+                lastRunAt={task.integrationLastRunAt ?? null}
                 onScheduleChange={
                   canUpdateTask ? handleUpdateIntegrationSchedule : undefined
                 }

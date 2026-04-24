@@ -55,6 +55,8 @@ interface TaskIntegrationChecksProps {
   /** Current schedule for integration checks on this task. When provided with
    * `onScheduleChange`, renders a schedule picker in the card header. */
   scheduleFrequency?: TaskFrequency;
+  /** Last successful run timestamp, used to compute the "next run" display. */
+  lastRunAt?: Date | string | null;
   onScheduleChange?: (value: TaskFrequency) => void | Promise<void>;
 }
 
@@ -63,6 +65,7 @@ export function TaskIntegrationChecks({
   onTaskUpdated,
   isManualTask = false,
   scheduleFrequency,
+  lastRunAt,
   onScheduleChange,
 }: TaskIntegrationChecksProps) {
   const params = useParams();
@@ -268,16 +271,29 @@ export function TaskIntegrationChecks({
   const failedRuns = storedRuns.filter((r) => r.status === 'failed' || r.failedCount > 0).length;
   const successRate = totalRuns > 0 ? Math.round((successfulRuns / totalRuns) * 100) : 0;
 
-  // Calculate next scheduled run (daily at 6 AM UTC)
+  // Calculate next scheduled run. Orchestrator fires daily at 6 AM UTC; the
+  // actual task only runs on a tick when `isDueToday(scheduleFrequency,
+  // lastRunAt)` returns true (server-side). We approximate the next qualifying
+  // 6 AM UTC tick here — exact enough for a UI hint, not authoritative.
   const getNextScheduledRun = () => {
     const now = new Date();
-    let nextRun = setMinutes(setHours(new Date(), 6), 0); // 6:00 AM UTC today
-
-    // If we're past 6 AM UTC today, schedule for tomorrow
+    const PERIOD_DAYS: Record<TaskFrequency, number> = {
+      daily: 0,
+      weekly: 7,
+      monthly: 30,
+      quarterly: 91,
+      yearly: 365,
+    };
+    const last = lastRunAt ? new Date(lastRunAt) : null;
+    const periodDays = PERIOD_DAYS[scheduleFrequency ?? 'daily'];
+    const earliestDueFromLast = last
+      ? addDays(last, periodDays)
+      : now;
+    // Snap to next 6 AM UTC at or after the earliest-due date
+    let nextRun = setMinutes(setHours(earliestDueFromLast, 6), 0);
     if (isBefore(nextRun, now)) {
-      nextRun = addDays(nextRun, 1);
+      nextRun = setMinutes(setHours(addDays(now, 1), 6), 0);
     }
-
     return nextRun;
   };
 
