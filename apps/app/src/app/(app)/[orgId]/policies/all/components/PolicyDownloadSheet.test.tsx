@@ -46,12 +46,86 @@ describe('PolicyDownloadSheet', () => {
     expect(screen.getByLabelText(/draft policy/i)).toBeChecked();
   });
 
-  it('shows a status badge for each policy', () => {
+  it('shows a status section header for each policy group', () => {
     renderSheet();
+    // Status labels now appear as section headers with counts, e.g. "Published (1)"
     expect(screen.getByText(/published/i)).toBeInTheDocument();
     expect(screen.getByText(/needs review/i)).toBeInTheDocument();
-    // "Draft" badge text (distinct from "Draft Policy" name) — use exact match
-    expect(screen.getByText(/^draft$/i)).toBeInTheDocument();
+    // "Draft (1)" section header — distinct from the "Draft Policy" policy name
+    expect(screen.getByText(/^draft \(1\)$/i)).toBeInTheDocument();
+  });
+
+  it('groups policies by status with section headers and counts', () => {
+    renderSheet();
+    expect(screen.getByText(/^published \(1\)$/i)).toBeInTheDocument();
+    expect(screen.getByText(/^needs review \(1\)$/i)).toBeInTheDocument();
+    expect(screen.getByText(/^draft \(1\)$/i)).toBeInTheDocument();
+  });
+
+  it('hides inline per-row status badge (status is implied by section)', () => {
+    renderSheet();
+    // The old layout rendered a standalone "Published" badge next to each row.
+    // Section headers now use "Published (1)" wording, so an exact match should
+    // return nothing.
+    const badges = screen.queryAllByText(/^published$/i);
+    expect(badges).toHaveLength(0);
+  });
+
+  it('filters rows live as the user types in the search input', async () => {
+    const user = userEvent.setup();
+    renderSheet();
+
+    const search = screen.getByRole('searchbox', { name: /search policies/i });
+    await user.type(search, 'priva');
+
+    expect(screen.getByLabelText(/privacy policy/i)).toBeInTheDocument();
+    expect(screen.queryByLabelText(/security policy/i)).not.toBeInTheDocument();
+    expect(screen.queryByLabelText(/draft policy/i)).not.toBeInTheDocument();
+  });
+
+  it('shows an empty state when search matches nothing', async () => {
+    const user = userEvent.setup();
+    renderSheet();
+
+    const search = screen.getByRole('searchbox', { name: /search policies/i });
+    await user.type(search, 'zzzzzz');
+
+    expect(screen.getByText(/no policies match/i)).toBeInTheDocument();
+  });
+
+  it('preserves selection state for policies hidden by search', async () => {
+    const user = userEvent.setup();
+    renderSheet();
+
+    // Start: all 3 selected. Deselect Draft Policy.
+    await user.click(screen.getByLabelText(/draft policy/i));
+    expect(
+      screen.getByRole('button', { name: /download 2 policies/i }),
+    ).toBeEnabled();
+
+    // Search to hide Draft Policy entirely
+    const search = screen.getByRole('searchbox', { name: /search policies/i });
+    await user.type(search, 'priva');
+
+    // Download button still says 2 — hidden-but-selected are still counted
+    expect(
+      screen.getByRole('button', { name: /download 2 policies/i }),
+    ).toBeEnabled();
+  });
+
+  it('per-group select-all toggles only that group', async () => {
+    const user = userEvent.setup();
+    renderSheet();
+
+    // Published group: currently 1 selected (p1). Click its group toggle to clear.
+    const publishedGroupToggle = screen.getByRole('checkbox', {
+      name: /toggle published group/i,
+    });
+    await user.click(publishedGroupToggle);
+
+    expect(screen.getByLabelText(/security policy/i)).not.toBeChecked();
+    expect(screen.getByLabelText(/privacy policy/i)).toBeChecked();
+    expect(screen.getByLabelText(/draft policy/i)).toBeChecked();
   });
 
   it('shows "Download 3 policies" by default and enables the button', () => {

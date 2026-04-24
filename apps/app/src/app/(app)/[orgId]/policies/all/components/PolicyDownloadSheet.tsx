@@ -3,10 +3,9 @@
 import { api } from '@/lib/api-client';
 import type { Policy, PolicyStatus } from '@db';
 import {
-  Badge,
   Button,
   Checkbox,
-  ScrollArea,
+  Input,
   Sheet,
   SheetBody,
   SheetContent,
@@ -25,18 +24,13 @@ interface PolicyDownloadSheetProps {
   policies: Pick<Policy, 'id' | 'name' | 'status'>[];
 }
 
-type BadgeVariant = 'default' | 'secondary' | 'outline';
+type PolicyRow = Pick<Policy, 'id' | 'name' | 'status'>;
 
+const STATUS_ORDER: PolicyStatus[] = ['published', 'needs_review', 'draft'];
 const STATUS_LABEL: Record<PolicyStatus, string> = {
   published: 'Published',
   needs_review: 'Needs review',
   draft: 'Draft',
-};
-
-const STATUS_VARIANT: Record<PolicyStatus, BadgeVariant> = {
-  published: 'default',
-  needs_review: 'secondary',
-  draft: 'outline',
 };
 
 export function PolicyDownloadSheet({
@@ -47,14 +41,49 @@ export function PolicyDownloadSheet({
   const allIds = useMemo(() => policies.map((p) => p.id), [policies]);
   const [selected, setSelected] = useState<Set<string>>(() => new Set(allIds));
   const [isDownloading, setIsDownloading] = useState(false);
+  const [query, setQuery] = useState('');
 
-  // Reset selection to all current policies whenever the sheet opens or the
-  // underlying policy list changes, so reopens and prop refreshes don't leave
-  // stale or deleted IDs in the selection.
+  // Reset selection + search whenever the sheet opens or the underlying policy
+  // list changes, so reopens and prop refreshes don't leave stale or deleted
+  // IDs in the selection.
   useEffect(() => {
     if (!open) return;
     setSelected(new Set(allIds));
+    setQuery('');
   }, [open, allIds]);
+
+  const normalizedQuery = query.trim().toLowerCase();
+  const filteredPolicies = useMemo(() => {
+    if (!normalizedQuery) return policies;
+    return policies.filter((p) =>
+      (p.name ?? '').toLowerCase().includes(normalizedQuery),
+    );
+  }, [policies, normalizedQuery]);
+
+  const groups = useMemo(() => {
+    const byStatus = new Map<PolicyStatus, PolicyRow[]>();
+    for (const p of filteredPolicies) {
+      const status = (p.status ?? 'draft') as PolicyStatus;
+      const list = byStatus.get(status) ?? [];
+      list.push(p);
+      byStatus.set(status, list);
+    }
+    return STATUS_ORDER.filter((s) => (byStatus.get(s)?.length ?? 0) > 0).map(
+      (s) => ({ status: s, items: byStatus.get(s) ?? [] }),
+    );
+  }, [filteredPolicies]);
+
+  const visibleIds = useMemo(
+    () => filteredPolicies.map((p) => p.id),
+    [filteredPolicies],
+  );
+  const visibleSelectedCount = visibleIds.filter((id) =>
+    selected.has(id),
+  ).length;
+  const allVisibleChecked =
+    visibleIds.length > 0 && visibleSelectedCount === visibleIds.length;
+  const someVisibleChecked =
+    visibleSelectedCount > 0 && visibleSelectedCount < visibleIds.length;
 
   const handleToggle = (id: string) => {
     setSelected((prev) => {
@@ -65,13 +94,29 @@ export function PolicyDownloadSheet({
     });
   };
 
-  const allChecked = selected.size === allIds.length && allIds.length > 0;
-  const someChecked = selected.size > 0 && !allChecked;
+  const handleToggleVisible = () => {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (allVisibleChecked) {
+        for (const id of visibleIds) next.delete(id);
+      } else {
+        for (const id of visibleIds) next.add(id);
+      }
+      return next;
+    });
+  };
 
-  const handleToggleAll = () => {
-    setSelected((prev) =>
-      prev.size === allIds.length ? new Set() : new Set(allIds),
-    );
+  const handleToggleGroup = (groupIds: string[]) => {
+    const allChecked = groupIds.every((id) => selected.has(id));
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (allChecked) {
+        for (const id of groupIds) next.delete(id);
+      } else {
+        for (const id of groupIds) next.add(id);
+      }
+      return next;
+    });
   };
 
   const handleDownload = async () => {
@@ -111,6 +156,12 @@ export function PolicyDownloadSheet({
       ? 'Download'
       : `Download ${count} ${count === 1 ? 'policy' : 'policies'}`;
 
+  const hasAnyResults = filteredPolicies.length > 0;
+  const totalDiffersFromVisible = count !== visibleSelectedCount;
+  const selectAllSuffix = totalDiffersFromVisible
+    ? `, ${count} total selected`
+    : '';
+
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent>
@@ -119,42 +170,70 @@ export function PolicyDownloadSheet({
         </SheetHeader>
         <SheetBody>
           <Stack gap="md">
-            <div className="flex items-center gap-2">
+            <Input
+              type="search"
+              placeholder="Search policies…"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              aria-label="Search policies"
+            />
+
+            <div className="flex items-center gap-2 border-b pb-3">
               <Checkbox
-                checked={allChecked}
-                indeterminate={someChecked}
-                onCheckedChange={handleToggleAll}
+                checked={allVisibleChecked}
+                indeterminate={someVisibleChecked}
+                onCheckedChange={handleToggleVisible}
                 aria-label="Select all"
+                disabled={!hasAnyResults}
               />
               <Text>
-                Select all ({selected.size} of {allIds.length} selected)
+                Select all ({visibleSelectedCount} of {visibleIds.length} shown
+                {selectAllSuffix})
               </Text>
             </div>
-            <ScrollArea>
-              <Stack gap="xs">
-                {policies.map((policy) => {
-                  const statusKey = policy.status ?? 'draft';
-                  return (
-                    <div
-                      key={policy.id}
-                      className="flex items-center gap-2 py-1"
-                    >
+
+            {!hasAnyResults && <Text>No policies match "{query}".</Text>}
+
+            {hasAnyResults &&
+              groups.map((group) => {
+                const groupIds = group.items.map((p) => p.id);
+                const groupChecked =
+                  groupIds.length > 0 &&
+                  groupIds.every((id) => selected.has(id));
+                const groupSome =
+                  !groupChecked && groupIds.some((id) => selected.has(id));
+
+                return (
+                  <div key={group.status} className="flex flex-col">
+                    <div className="flex items-center gap-2 py-1">
                       <Checkbox
-                        checked={selected.has(policy.id)}
-                        onCheckedChange={() => handleToggle(policy.id)}
-                        aria-label={policy.name ?? 'Policy'}
+                        checked={groupChecked}
+                        indeterminate={groupSome}
+                        onCheckedChange={() => handleToggleGroup(groupIds)}
+                        aria-label={`Toggle ${STATUS_LABEL[group.status]} group`}
                       />
-                      <div className="flex flex-1 items-center gap-2">
-                        <Text>{policy.name}</Text>
-                        <Badge variant={STATUS_VARIANT[statusKey] ?? 'outline'}>
-                          {STATUS_LABEL[statusKey] ?? statusKey}
-                        </Badge>
-                      </div>
+                      <span className="text-muted-foreground text-xs font-medium uppercase tracking-wide">
+                        {STATUS_LABEL[group.status]} ({group.items.length})
+                      </span>
                     </div>
-                  );
-                })}
-              </Stack>
-            </ScrollArea>
+                    <div className="flex flex-col">
+                      {group.items.map((policy) => (
+                        <div
+                          key={policy.id}
+                          className="hover:bg-muted/40 flex h-10 items-center gap-2 rounded-sm px-2"
+                        >
+                          <Checkbox
+                            checked={selected.has(policy.id)}
+                            onCheckedChange={() => handleToggle(policy.id)}
+                            aria-label={policy.name ?? 'Policy'}
+                          />
+                          <Text>{policy.name}</Text>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })}
           </Stack>
         </SheetBody>
         <SheetFooter>
