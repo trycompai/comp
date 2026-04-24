@@ -27,7 +27,14 @@ export function useFrameworkUpdateStatus(
     },
     {
       fallbackData: options?.fallbackData,
-      revalidateOnMount: !options?.fallbackData,
+      // Always revalidate on mount, even when fallbackData is provided.
+      // fallbackData is only a fast first paint — without this, SWR treats
+      // the server-rendered snapshot as authoritative forever and skips the
+      // client fetch, so users don't see newly-available upgrades after the
+      // feature flag is flipped, after a sync on a sibling framework, or
+      // whenever the Next.js router cache serves a stale RSC. Short of
+      // signing out and back in.
+      revalidateOnMount: true,
       revalidateOnFocus: true,
     },
   );
