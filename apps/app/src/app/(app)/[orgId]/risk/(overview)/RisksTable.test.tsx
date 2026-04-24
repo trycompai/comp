@@ -202,9 +202,33 @@ describe('RisksTable permission gating', () => {
 
     expect(screen.getByText('RISK')).toBeInTheDocument();
     expect(screen.getByText('SEVERITY')).toBeInTheDocument();
+    expect(screen.getByText('RESIDUAL RISK')).toBeInTheDocument();
     expect(screen.getByText('STATUS')).toBeInTheDocument();
     expect(screen.getByText('OWNER')).toBeInTheDocument();
     expect(screen.getByText('UPDATED')).toBeInTheDocument();
+  });
+
+  it('renders the RESIDUAL RISK column immediately after SEVERITY', () => {
+    setMockPermissions({});
+
+    render(<RisksTable {...defaultProps} />);
+
+    const headers = screen
+      .getAllByRole('columnheader')
+      .map((h) => (h.textContent || '').toUpperCase());
+    const severityIdx = headers.findIndex((h) => h.includes('SEVERITY'));
+    const residualIdx = headers.findIndex((h) => h.includes('RESIDUAL RISK'));
+    expect(severityIdx).toBeGreaterThanOrEqual(0);
+    expect(residualIdx).toBe(severityIdx + 1);
+  });
+
+  it('renders a residual score badge for risks', () => {
+    setMockPermissions({});
+
+    render(<RisksTable {...defaultProps} />);
+
+    // Test Risk residual (unlikely × minor) → raw 4 → score 2/10
+    expect(screen.getByText('2/10')).toBeInTheDocument();
   });
 
   it('renders search bar regardless of permissions', () => {

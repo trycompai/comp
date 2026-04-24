@@ -1,5 +1,6 @@
 'use client';
 
+import { RiskScoreBadge } from '@/components/risks/RiskScoreBadge';
 import { usePermissions } from '@/hooks/use-permissions';
 import {
   useRiskActions,
@@ -463,6 +464,7 @@ export const RisksTable = ({
                     </button>
                   </TableHead>
                   <TableHead>SEVERITY</TableHead>
+                  <TableHead>RESIDUAL RISK</TableHead>
                   <TableHead>STATUS</TableHead>
                   <TableHead>OWNER</TableHead>
                   <TableHead>
@@ -495,6 +497,12 @@ export const RisksTable = ({
                         </HStack>
                       </TableCell>
                       <TableCell>{getSeverityBadge(risk.likelihood, risk.impact)}</TableCell>
+                      <TableCell>
+                        <RiskScoreBadge
+                          likelihood={risk.residualLikelihood}
+                          impact={risk.residualImpact}
+                        />
+                      </TableCell>
                       <TableCell>{getStatusBadge(risk.status)}</TableCell>
                       <TableCell>
                         <Text>{risk.assignee?.user?.name || 'Unassigned'}</Text>
