@@ -1,3 +1,10 @@
+# [3.33.0](https://github.com/trycompai/comp/compare/v3.32.2...v3.33.0) (2026-04-24)
+
+
+### Features
+
+* add risk scores in main overview page and make risk matrix selected value more clear ([840374b](https://github.com/trycompai/comp/commit/840374bd85e4eae552fc1fec8f1b45ecc31cac41))
+
 ## [3.32.2](https://github.com/trycompai/comp/compare/v3.32.1...v3.32.2) (2026-04-24)
 
 
