@@ -35,13 +35,29 @@ type SOASetupResponse = {
   } | null;
 };
 
-type SOAApprovalStatus = 'Approved' | 'Declined' | 'Pending' | 'Not approved';
+type SOAApprovalStatus =
+  | 'Approved'
+  | 'Declined'
+  | 'Pending'
+  | 'Not approved'
+  | 'Loading'
+  | 'Unavailable';
 
 function SOAApprovalStatusBadge({ status }: { status: SOAApprovalStatus }) {
   const statusConfig: Record<
     SOAApprovalStatus,
     { label: SOAApprovalStatus; className: string }
   > = {
+    Loading: {
+      label: 'Loading',
+      className:
+        'bg-slate-100 text-slate-700 dark:bg-slate-950/30 dark:text-slate-300',
+    },
+    Unavailable: {
+      label: 'Unavailable',
+      className:
+        'bg-slate-100 text-slate-700 dark:bg-slate-950/30 dark:text-slate-300',
+    },
     Approved: {
       label: 'Approved',
       className:
@@ -78,7 +94,8 @@ export function SOAOverviewCard({
   iso27001FrameworkId,
 }: SOAOverviewCardProps) {
   const form = STATEMENT_OF_APPLICABILITY_FORM;
-  const { data: soaSetupResponse } = useSWR<SOASetupResponse>(
+  const { data: soaSetupResponse, error: soaSetupError, isLoading: isLoadingSOASetup } =
+    useSWR<SOASetupResponse>(
     ['/v1/soa/ensure-setup', organizationId, iso27001FrameworkId],
     async ([endpoint, orgId, frameworkId]: readonly [string, string, string]) => {
       const response = await api.post<SOASetupResponse>(endpoint, {
@@ -97,6 +114,8 @@ export function SOAOverviewCard({
 
   const document = soaSetupResponse?.document;
   const approvalStatus = useMemo<SOAApprovalStatus>(() => {
+    if (isLoadingSOASetup) return 'Loading';
+    if (soaSetupError || !soaSetupResponse?.success) return 'Unavailable';
     if (!document) return 'Not approved';
     if (document.approvedAt) return 'Approved';
     if (document.declinedAt) return 'Declined';
@@ -108,7 +127,7 @@ export function SOAOverviewCard({
       return 'Pending';
     }
     return 'Not approved';
-  }, [document]);
+  }, [document, isLoadingSOASetup, soaSetupError, soaSetupResponse?.success]);
 
   return (
     <div className="space-y-3">
