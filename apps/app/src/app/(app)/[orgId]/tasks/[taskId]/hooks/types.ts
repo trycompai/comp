@@ -21,6 +21,7 @@ export interface BrowserAutomation {
   isEnabled: boolean;
   schedule?: string;
   scheduleFrequency?: TaskFrequency;
+  lastRunAt?: string | null;
   createdAt: string;
   runs?: BrowserAutomationRun[];
 }
