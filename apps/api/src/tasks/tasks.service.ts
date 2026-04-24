@@ -532,8 +532,8 @@ export class TasksService {
         organizationId,
         timelinesService: this.timelinesService,
       }).catch((err) => {
-      this.logger.warn('timeline auto-complete check failed', err);
-    });
+        this.logger.warn('timeline auto-complete check failed', err);
+      });
 
       return { deletedCount: result.count };
     } catch (error) {

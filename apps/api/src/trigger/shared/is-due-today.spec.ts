@@ -8,32 +8,60 @@ describe('isDueToday', () => {
 
   describe('daily', () => {
     it('returns true when lastRunAt is null', () => {
-      expect(isDueToday({ scheduleFrequency: TaskFrequency.daily, lastRunAt: null, now })).toBe(true);
+      expect(
+        isDueToday({
+          scheduleFrequency: TaskFrequency.daily,
+          lastRunAt: null,
+          now,
+        }),
+      ).toBe(true);
     });
     it('returns true even when it ran today', () => {
       expect(
-        isDueToday({ scheduleFrequency: TaskFrequency.daily, lastRunAt: atUtc('2026-04-24'), now }),
+        isDueToday({
+          scheduleFrequency: TaskFrequency.daily,
+          lastRunAt: atUtc('2026-04-24'),
+          now,
+        }),
       ).toBe(true);
     });
   });
 
   describe('weekly', () => {
     it('returns true when lastRunAt is null', () => {
-      expect(isDueToday({ scheduleFrequency: TaskFrequency.weekly, lastRunAt: null, now })).toBe(true);
+      expect(
+        isDueToday({
+          scheduleFrequency: TaskFrequency.weekly,
+          lastRunAt: null,
+          now,
+        }),
+      ).toBe(true);
     });
     it('returns false when lastRunAt is 6 days ago', () => {
       expect(
-        isDueToday({ scheduleFrequency: TaskFrequency.weekly, lastRunAt: atUtc('2026-04-18'), now }),
+        isDueToday({
+          scheduleFrequency: TaskFrequency.weekly,
+          lastRunAt: atUtc('2026-04-18'),
+          now,
+        }),
       ).toBe(false);
     });
     it('returns true when lastRunAt is exactly 7 days ago', () => {
       expect(
-        isDueToday({ scheduleFrequency: TaskFrequency.weekly, lastRunAt: atUtc('2026-04-17'), now }),
+        isDueToday({
+          scheduleFrequency: TaskFrequency.weekly,
+          lastRunAt: atUtc('2026-04-17'),
+          now,
+        }),
       ).toBe(true);
     });
     it('returns true when lastRunAt is 14 days ago', () => {
       expect(
-        isDueToday({ scheduleFrequency: TaskFrequency.weekly, lastRunAt: atUtc('2026-04-10'), now }),
+        isDueToday({
+          scheduleFrequency: TaskFrequency.weekly,
+          lastRunAt: atUtc('2026-04-10'),
+          now,
+        }),
       ).toBe(true);
     });
   });
@@ -42,17 +70,29 @@ describe('isDueToday', () => {
     it('returns true when lastRunAt crossed a calendar-month boundary', () => {
       // 2026-03-26 → 2026-04-24: different calendar month → due
       expect(
-        isDueToday({ scheduleFrequency: TaskFrequency.monthly, lastRunAt: atUtc('2026-03-26'), now }),
+        isDueToday({
+          scheduleFrequency: TaskFrequency.monthly,
+          lastRunAt: atUtc('2026-03-26'),
+          now,
+        }),
       ).toBe(true);
     });
     it('returns false when lastRunAt is same calendar month', () => {
       expect(
-        isDueToday({ scheduleFrequency: TaskFrequency.monthly, lastRunAt: atUtc('2026-04-01'), now }),
+        isDueToday({
+          scheduleFrequency: TaskFrequency.monthly,
+          lastRunAt: atUtc('2026-04-01'),
+          now,
+        }),
       ).toBe(false);
     });
     it('returns true when lastRunAt is null', () => {
       expect(
-        isDueToday({ scheduleFrequency: TaskFrequency.monthly, lastRunAt: null, now }),
+        isDueToday({
+          scheduleFrequency: TaskFrequency.monthly,
+          lastRunAt: null,
+          now,
+        }),
       ).toBe(true);
     });
   });
@@ -60,12 +100,20 @@ describe('isDueToday', () => {
   describe('quarterly', () => {
     it('returns false when lastRunAt is 2 months ago', () => {
       expect(
-        isDueToday({ scheduleFrequency: TaskFrequency.quarterly, lastRunAt: atUtc('2026-02-24'), now }),
+        isDueToday({
+          scheduleFrequency: TaskFrequency.quarterly,
+          lastRunAt: atUtc('2026-02-24'),
+          now,
+        }),
       ).toBe(false);
     });
     it('returns true when lastRunAt is 3 months ago', () => {
       expect(
-        isDueToday({ scheduleFrequency: TaskFrequency.quarterly, lastRunAt: atUtc('2026-01-24'), now }),
+        isDueToday({
+          scheduleFrequency: TaskFrequency.quarterly,
+          lastRunAt: atUtc('2026-01-24'),
+          now,
+        }),
       ).toBe(true);
     });
   });
@@ -73,12 +121,20 @@ describe('isDueToday', () => {
   describe('yearly', () => {
     it('returns false when lastRunAt is 11 months ago', () => {
       expect(
-        isDueToday({ scheduleFrequency: TaskFrequency.yearly, lastRunAt: atUtc('2025-05-24'), now }),
+        isDueToday({
+          scheduleFrequency: TaskFrequency.yearly,
+          lastRunAt: atUtc('2025-05-24'),
+          now,
+        }),
       ).toBe(false);
     });
     it('returns true when lastRunAt is 12 months ago', () => {
       expect(
-        isDueToday({ scheduleFrequency: TaskFrequency.yearly, lastRunAt: atUtc('2025-04-24'), now }),
+        isDueToday({
+          scheduleFrequency: TaskFrequency.yearly,
+          lastRunAt: atUtc('2025-04-24'),
+          now,
+        }),
       ).toBe(true);
     });
   });

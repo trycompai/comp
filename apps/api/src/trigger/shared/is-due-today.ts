@@ -32,7 +32,9 @@ export function isDueToday({
 
   switch (scheduleFrequency) {
     case TaskFrequency.weekly: {
-      const days = Math.floor((now.getTime() - lastRunAt.getTime()) / MS_PER_DAY);
+      const days = Math.floor(
+        (now.getTime() - lastRunAt.getTime()) / MS_PER_DAY,
+      );
       return days >= 7;
     }
     case TaskFrequency.monthly:

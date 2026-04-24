@@ -42,7 +42,9 @@ import { PermissionGuard } from '../auth/permission.guard';
 
 describe('BrowserbaseController.redirectToScreenshot', () => {
   let controller: BrowserbaseController;
-  let service: jest.Mocked<Pick<BrowserbaseService, 'getScreenshotRedirectUrl'>>;
+  let service: jest.Mocked<
+    Pick<BrowserbaseService, 'getScreenshotRedirectUrl'>
+  >;
 
   beforeEach(async () => {
     service = {
@@ -80,7 +82,10 @@ describe('BrowserbaseController.redirectToScreenshot', () => {
       organizationId: 'org_1',
       download: false,
     });
-    expect(res.redirect).toHaveBeenCalledWith(302, 'https://s3.example.com/fresh-signed');
+    expect(res.redirect).toHaveBeenCalledWith(
+      302,
+      'https://s3.example.com/fresh-signed',
+    );
   });
 
   it('passes download=true to the service when the query param is "true"', async () => {

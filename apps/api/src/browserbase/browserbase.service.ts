@@ -5,7 +5,11 @@ import Browserbase from '@browserbasehq/sdk';
 type Stagehand = import('@browserbasehq/stagehand').Stagehand;
 import { db, TaskFrequency } from '@db';
 import { z } from 'zod';
-import { GetObjectCommand, PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
+import {
+  GetObjectCommand,
+  PutObjectCommand,
+  S3Client,
+} from '@aws-sdk/client-s3';
 import { BUCKET_NAME, getSignedUrl, s3Client } from '@/app/s3';
 import { renderOverlay } from './screenshot-overlay';
 import { isNoPageError, toRunErrorMessage } from './run-error-formatter';
@@ -416,9 +420,7 @@ export class BrowserbaseService {
         ...(evaluationCriteria !== undefined
           ? { evaluationCriteria: normalizeCriteria(evaluationCriteria) }
           : {}),
-        ...(scheduleFrequency !== undefined
-          ? { scheduleFrequency }
-          : {}),
+        ...(scheduleFrequency !== undefined ? { scheduleFrequency } : {}),
       },
     });
   }
@@ -853,10 +855,15 @@ export class BrowserbaseService {
           capturedAt: new Date(),
         });
       } catch (overlayErr) {
-        this.logger.warn('Screenshot overlay render failed; uploading raw image', {
-          error:
-            overlayErr instanceof Error ? overlayErr.message : String(overlayErr),
-        });
+        this.logger.warn(
+          'Screenshot overlay render failed; uploading raw image',
+          {
+            error:
+              overlayErr instanceof Error
+                ? overlayErr.message
+                : String(overlayErr),
+          },
+        );
       }
 
       // Optional evaluation: if the automation was configured with
