@@ -69,6 +69,18 @@ function generateSOAPDF(
       y = margin;
     }
   };
+  const writeLines = (
+    lines: string[],
+    fontStyle: 'normal' | 'bold' = 'normal',
+  ) => {
+    if (lines.length === 0) return;
+    pdf.setFont('helvetica', fontStyle);
+    for (const line of lines) {
+      ensureSpace(lineHeight);
+      pdf.text(line, margin, y);
+      y += lineHeight;
+    }
+  };
 
   pdf.setFont('helvetica', 'bold');
   pdf.setFontSize(16);
@@ -151,34 +163,13 @@ function generateSOAPDF(
       justificationText,
       contentWidth,
     );
-    const blockHeight =
-      (titleLines.length +
-        closureLines.length +
-        objectiveLines.length +
-        applicabilityLines.length +
-        justificationLines.length) *
-        lineHeight +
-      lineHeight * 1.5;
-
-    ensureSpace(blockHeight);
-
-    pdf.setFont('helvetica', 'bold');
-    pdf.text(titleLines, margin, y);
-    y += titleLines.length * lineHeight;
-
-    pdf.setFont('helvetica', 'normal');
-    if (closureLines.length > 0) {
-      pdf.text(closureLines, margin, y);
-      y += closureLines.length * lineHeight;
-    }
-    if (objectiveLines.length > 0) {
-      pdf.text(objectiveLines, margin, y);
-      y += objectiveLines.length * lineHeight;
-    }
-    pdf.text(applicabilityLines, margin, y);
-    y += applicabilityLines.length * lineHeight;
-    pdf.text(justificationLines, margin, y);
-    y += justificationLines.length * lineHeight + lineHeight * 0.5;
+    writeLines(titleLines, 'bold');
+    writeLines(closureLines);
+    writeLines(objectiveLines);
+    writeLines(applicabilityLines);
+    writeLines(justificationLines);
+    ensureSpace(lineHeight * 0.5);
+    y += lineHeight * 0.5;
   }
 
   return Buffer.from(pdf.output('arraybuffer'));
