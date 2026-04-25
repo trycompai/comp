@@ -885,6 +885,8 @@ export class TasksService {
         createdAt: task.createdAt,
         updatedAt: task.updatedAt,
         taskTemplateId: task.taskTemplateId,
+        integrationScheduleFrequency: task.integrationScheduleFrequency,
+        integrationLastRunAt: task.integrationLastRunAt,
       };
     } catch (error) {
       console.error('Error creating task:', error);
