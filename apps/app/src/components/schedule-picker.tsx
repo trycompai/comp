@@ -37,7 +37,7 @@ export function SchedulePicker({
   return (
     <Select value={value} onValueChange={handleValueChange} disabled={disabled}>
       <SelectTrigger>
-        <SelectValue placeholder="Select a frequency" />
+        <SelectValue placeholder="Select a frequency">{LABELS[value]}</SelectValue>
       </SelectTrigger>
       <SelectContent>
         {FREQUENCIES.map((freq) => (
