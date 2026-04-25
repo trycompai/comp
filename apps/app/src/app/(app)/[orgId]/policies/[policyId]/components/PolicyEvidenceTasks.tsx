@@ -21,10 +21,21 @@ const COLLAPSE_THRESHOLD = 5;
 
 export function PolicyEvidenceTasks() {
   const { orgId, policyId } = useParams<{ orgId: string; policyId: string }>();
-  const { groups, count, isLoading } = usePolicyEvidenceTasks({
+  const { groups, count, isLoading, error } = usePolicyEvidenceTasks({
     policyId,
     organizationId: orgId,
   });
+
+  if (error) {
+    return (
+      <Section
+        title="Evidence Tasks"
+        description="Tasks attached to the controls mapped to this policy."
+      >
+        <Text>Could not load evidence tasks. Please try again.</Text>
+      </Section>
+    );
+  }
 
   if (isLoading) {
     return (
@@ -85,14 +96,12 @@ function ControlGroup({
   }
 
   if (tasks.length > COLLAPSE_THRESHOLD) {
-    const label =
-      tasks.length === 1 ? 'Show 1 task' : `Show ${tasks.length} tasks`;
     return (
       <Collapsible>
         <HStack justify="between" align="center">
           <Text weight="medium">{control.name}</Text>
           <CollapsibleTrigger className="inline-flex h-6 items-center rounded-sm px-2 text-xs font-medium text-muted-foreground hover:bg-muted hover:text-foreground">
-            {label}
+            Show {tasks.length} tasks
           </CollapsibleTrigger>
         </HStack>
         <CollapsibleContent>

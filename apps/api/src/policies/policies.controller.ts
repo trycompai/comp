@@ -242,12 +242,12 @@ export class PoliciesController {
       select: {
         id: true,
         controls: {
-          where: { archivedAt: null },
+          where: { archivedAt: null, organizationId },
           select: {
             id: true,
             name: true,
             tasks: {
-              where: { archivedAt: null },
+              where: { archivedAt: null, organizationId },
               select: {
                 id: true,
                 title: true,

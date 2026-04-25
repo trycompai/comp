@@ -101,6 +101,50 @@ describe('TaskPolicies', () => {
     expect(link).toHaveAttribute('href', '/org_1/policies/pol_42');
   });
 
+  it('renders error state when the hook returns an error', () => {
+    mockHook.mockReturnValue({
+      groups: [],
+      count: 0,
+      isLoading: false,
+      error: new Error('boom'),
+    });
+
+    render(<TaskPolicies />);
+
+    expect(
+      screen.getByText(/could not load policies/i),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByText(/no policies reference this task/i),
+    ).not.toBeInTheDocument();
+  });
+
+  it('counts unique policies even when one policy spans multiple controls', () => {
+    const shared = makePolicy({ id: 'pol_shared', name: 'Shared Policy' });
+    mockHook.mockReturnValue({
+      groups: [
+        {
+          control: { id: 'ctl_1', name: 'Access Controls' },
+          policies: [shared],
+        },
+        {
+          control: { id: 'ctl_2', name: 'Monitoring' },
+          policies: [shared],
+        },
+      ],
+      // API's pre-dedupe count is irrelevant; visible count should reflect
+      // unique policy IDs.
+      count: 2,
+      isLoading: false,
+    });
+
+    render(<TaskPolicies />);
+
+    expect(
+      screen.getByText(/1 policy whose controls this task demonstrates\./i),
+    ).toBeInTheDocument();
+  });
+
   it('collapses groups with more than 5 policies by default', () => {
     const manyPolicies = Array.from({ length: 7 }, (_, i) =>
       makePolicy({ id: `pol_${i}`, name: `Policy ${i}` }),

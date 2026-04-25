@@ -95,6 +95,24 @@ describe('PolicyEvidenceTasks', () => {
     expect(link).toHaveAttribute('href', '/org_1/tasks/tsk_42');
   });
 
+  it('renders error state when the hook returns an error', () => {
+    mockHook.mockReturnValue({
+      groups: [],
+      count: 0,
+      isLoading: false,
+      error: new Error('boom'),
+    });
+
+    render(<PolicyEvidenceTasks />);
+
+    expect(
+      screen.getByText(/could not load evidence tasks/i),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByText(/map at least one control/i),
+    ).not.toBeInTheDocument();
+  });
+
   it('collapses groups with more than 5 tasks by default', () => {
     const manyTasks = Array.from({ length: 7 }, (_, i) =>
       makeTask({ id: `tsk_${i}`, title: `Task ${i}` }),

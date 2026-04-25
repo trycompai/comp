@@ -523,6 +523,7 @@ describe('TasksController', () => {
       const { db } = require('@db');
       db.task.findFirst.mockResolvedValue({
         id: 'tsk_1',
+        assigneeId: 'mem_other',
         controls: [
           {
             id: 'ctl_1',
@@ -550,8 +551,18 @@ describe('TasksController', () => {
         where: { id: 'tsk_1', organizationId: orgId, archivedAt: null },
         select: expect.objectContaining({
           id: true,
+          assigneeId: true,
           controls: expect.objectContaining({
-            where: { archivedAt: null },
+            where: { archivedAt: null, organizationId: orgId },
+            select: expect.objectContaining({
+              policies: expect.objectContaining({
+                where: {
+                  archivedAt: null,
+                  organizationId: orgId,
+                  status: 'published',
+                },
+              }),
+            }),
           }),
         }),
       });
@@ -579,6 +590,56 @@ describe('TasksController', () => {
       await expect(
         controller.getTaskPolicies(orgId, 'tsk_404', authContext),
       ).rejects.toThrow('Task not found');
+    });
+
+    it('throws ForbiddenException for employee who is not the assignee', async () => {
+      const { db } = require('@db');
+      db.task.findFirst.mockResolvedValue({
+        id: 'tsk_1',
+        assigneeId: 'mem_other',
+        controls: [],
+      });
+
+      const employeeAuth: AuthContext = {
+        ...authContext,
+        userRoles: ['employee'],
+        memberId: 'mem_123',
+      };
+
+      await expect(
+        controller.getTaskPolicies(orgId, 'tsk_1', employeeAuth),
+      ).rejects.toThrow(ForbiddenException);
+    });
+
+    it('allows employee who is the assignee to read policies', async () => {
+      const { db } = require('@db');
+      db.task.findFirst.mockResolvedValue({
+        id: 'tsk_1',
+        assigneeId: 'mem_123',
+        controls: [
+          {
+            id: 'ctl_1',
+            name: 'Access Controls',
+            policies: [],
+          },
+        ],
+      });
+
+      const employeeAuth: AuthContext = {
+        ...authContext,
+        userRoles: ['employee'],
+        memberId: 'mem_123',
+      };
+
+      const result = await controller.getTaskPolicies(
+        orgId,
+        'tsk_1',
+        employeeAuth,
+      );
+
+      expect(result.data).toEqual([
+        { control: { id: 'ctl_1', name: 'Access Controls' }, policies: [] },
+      ]);
     });
   });
 

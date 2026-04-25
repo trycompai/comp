@@ -651,13 +651,14 @@ export class TasksController {
       where: { id: taskId, organizationId, archivedAt: null },
       select: {
         id: true,
+        assigneeId: true,
         controls: {
-          where: { archivedAt: null },
+          where: { archivedAt: null, organizationId },
           select: {
             id: true,
             name: true,
             policies: {
-              where: { archivedAt: null, status: 'published' },
+              where: { archivedAt: null, organizationId, status: 'published' },
               select: {
                 id: true,
                 name: true,
@@ -675,6 +676,14 @@ export class TasksController {
 
     if (!task) {
       throw new NotFoundException('Task not found');
+    }
+
+    if (
+      !hasTaskAccess(task, authContext.memberId, authContext.userRoles, {
+        isApiKey: authContext.isApiKey,
+      })
+    ) {
+      throw new ForbiddenException('You do not have access to this task');
     }
 
     const data = task.controls.map((control) => ({

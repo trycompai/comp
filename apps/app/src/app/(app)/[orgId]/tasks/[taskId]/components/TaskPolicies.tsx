@@ -21,7 +21,7 @@ const COLLAPSE_THRESHOLD = 5;
 
 export function TaskPolicies() {
   const { orgId, taskId } = useParams<{ orgId: string; taskId: string }>();
-  const { groups, isLoading } = useTaskPolicies({
+  const { groups, isLoading, error } = useTaskPolicies({
     taskId,
     organizationId: orgId,
   });
@@ -38,10 +38,24 @@ export function TaskPolicies() {
     // keeps empty groups as a prompt to add tasks.
     .filter((group) => group.policies.length > 0);
 
-  const visibleCount = visibleGroups.reduce(
-    (n, g) => n + g.policies.length,
-    0,
-  );
+  // Dedupe by policy ID — a single policy can appear under multiple controls
+  // attached to the same task, but for the count we want unique policies.
+  const visiblePolicyIds = new Set<string>();
+  for (const group of visibleGroups) {
+    for (const policy of group.policies) visiblePolicyIds.add(policy.id);
+  }
+  const visibleCount = visiblePolicyIds.size;
+
+  if (error) {
+    return (
+      <Section
+        title="Policies"
+        description="Policies whose controls this task demonstrates."
+      >
+        <Text>Could not load policies. Please try again.</Text>
+      </Section>
+    );
+  }
 
   if (isLoading) {
     return (

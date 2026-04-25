@@ -775,7 +775,12 @@ describe('PoliciesController', () => {
         select: expect.objectContaining({
           id: true,
           controls: expect.objectContaining({
-            where: { archivedAt: null },
+            where: { archivedAt: null, organizationId: orgId },
+            select: expect.objectContaining({
+              tasks: expect.objectContaining({
+                where: { archivedAt: null, organizationId: orgId },
+              }),
+            }),
           }),
         }),
       });
