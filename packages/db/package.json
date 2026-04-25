@@ -44,7 +44,7 @@
     },
     "scripts": {
         "backfill:framework-versions": "bun src/scripts/backfill-framework-versions.ts",
-        "build": "rm -rf dist && node scripts/generate-prisma-client-js.js && tsc",
+        "build": "rm -rf dist && node scripts/generate-prisma-client-js.js && tsc && node scripts/build-dist-schema.js",
         "check-types": "tsc --noEmit",
         "db:generate": "node scripts/generate-prisma-client-js.js",
         "db:migrate": "prisma migrate dev",
