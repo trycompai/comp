@@ -85,4 +85,18 @@ export class TaskResponseDto {
     required: false,
   })
   taskTemplateId?: string | null;
+
+  @ApiProperty({
+    description: 'Cadence for running the integration check attached to this task',
+    enum: ['daily', 'weekly', 'monthly', 'quarterly', 'yearly'],
+    example: 'daily',
+  })
+  integrationScheduleFrequency: string;
+
+  @ApiProperty({
+    description: 'Last successful integration check run timestamp',
+    nullable: true,
+    required: false,
+  })
+  integrationLastRunAt?: Date | null;
 }
