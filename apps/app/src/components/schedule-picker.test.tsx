@@ -18,7 +18,7 @@ function useMockSelect(): SelectContextValue {
   return ctx;
 }
 
-vi.mock('@trycompai/design-system', () => ({
+vi.mock('@trycompai/ui/select', () => ({
   Select: ({
     value,
     onValueChange,
@@ -43,9 +43,17 @@ vi.mock('@trycompai/design-system', () => ({
     );
   },
   SelectContent: ({ children }: { children: ReactNode }) => <div>{children}</div>,
-  SelectValue: ({ placeholder }: { placeholder?: string }) => {
+  SelectValue: ({
+    placeholder,
+    children,
+  }: {
+    placeholder?: string;
+    children?: ReactNode;
+  }) => {
     const { value } = useMockSelect();
-    return <span>{value || placeholder}</span>;
+    // Mirror the real Radix behavior: render `children` (the label) when
+    // `value` is set, otherwise the placeholder.
+    return <span>{value ? (children ?? value) : placeholder}</span>;
   },
   SelectItem: ({ value, children }: { value: string; children: ReactNode }) => {
     const { onValueChange } = useMockSelect();
@@ -57,13 +65,15 @@ vi.mock('@trycompai/design-system', () => ({
   },
 }));
 
-// Import AFTER mock is declared so the component uses mocked DS components.
+// Import AFTER mock is declared so the component uses the mocked Select.
 import { SchedulePicker } from './schedule-picker';
 
 describe('SchedulePicker', () => {
-  it('renders the current value', () => {
+  it('renders the current value as a capitalized label', () => {
     render(<SchedulePicker value="weekly" onChange={() => {}} />);
-    expect(screen.getByText('Weekly')).toBeInTheDocument();
+    // The trigger displays the human label (via SelectValue children),
+    // not the raw enum.
+    expect(screen.getByRole('combobox')).toHaveTextContent('Weekly');
   });
 
   it('calls onChange when a new option is picked', () => {

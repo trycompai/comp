@@ -7,7 +7,7 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@trycompai/design-system';
+} from '@trycompai/ui/select';
 
 const LABELS: Record<TaskFrequency, string> = {
   daily: 'Daily',
@@ -28,14 +28,12 @@ export function SchedulePicker({
   onChange: (value: TaskFrequency) => void;
   disabled?: boolean;
 }) {
-  const handleValueChange = (next: TaskFrequency | null) => {
-    if (next !== null) {
-      onChange(next);
-    }
-  };
-
   return (
-    <Select value={value} onValueChange={handleValueChange} disabled={disabled}>
+    <Select
+      value={value}
+      onValueChange={(next) => onChange(next as TaskFrequency)}
+      disabled={disabled}
+    >
       <SelectTrigger>
         <SelectValue placeholder="Select a frequency">{LABELS[value]}</SelectValue>
       </SelectTrigger>
