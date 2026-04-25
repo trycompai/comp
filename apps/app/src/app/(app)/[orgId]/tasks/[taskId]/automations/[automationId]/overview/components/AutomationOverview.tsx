@@ -293,6 +293,8 @@ export function AutomationOverview({
       <MetricsSection
         initialVersions={initialVersions}
         initialRuns={runs}
+        scheduleFrequency={automation.scheduleFrequency ?? 'daily'}
+        lastRunAt={automation.lastRunAt ?? null}
       />
 
       <Tabs defaultValue="history">

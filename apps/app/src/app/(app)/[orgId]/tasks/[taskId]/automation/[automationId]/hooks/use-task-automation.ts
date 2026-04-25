@@ -15,6 +15,7 @@ interface TaskAutomationData {
   evaluationCriteria?: string;
   isEnabled: boolean;
   scheduleFrequency?: TaskFrequency;
+  lastRunAt?: string | null;
 }
 
 type UpdateAutomationPayload = Partial<
