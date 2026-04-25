@@ -1,3 +1,10 @@
+## [3.33.1](https://github.com/trycompai/comp/compare/v3.33.0...v3.33.1) (2026-04-24)
+
+
+### Bug Fixes
+
+* **api:** scope task status-change emails to assignee, not whole org ([#2669](https://github.com/trycompai/comp/issues/2669)) ([fd0aa1c](https://github.com/trycompai/comp/commit/fd0aa1cd59c73c8f9c12f0567775226300a4a7fd))
+
 # [3.33.0](https://github.com/trycompai/comp/compare/v3.32.2...v3.33.0) (2026-04-24)
 
 
