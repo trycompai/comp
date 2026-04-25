@@ -20,9 +20,13 @@ const PERIOD_DAYS: Record<TaskFrequency, number> = {
 
 // Approximate next-run (months ≈ 30 days). The server's isDueToday helper is the
 // real authority; this is only a UX hint shown on automation cards.
+//
+// When `lastRunAt` is null the orchestrator picks the automation up on its
+// next tick, so we show "now" rather than now + period (which would over-
+// project a full period into the future).
 function computeNextRun(frequency: TaskFrequency, lastRunAt: Date | null, now: Date): Date {
-  const base = lastRunAt ?? now;
-  return new Date(base.getTime() + PERIOD_DAYS[frequency] * 24 * 60 * 60 * 1000);
+  if (lastRunAt === null) return now;
+  return new Date(lastRunAt.getTime() + PERIOD_DAYS[frequency] * 24 * 60 * 60 * 1000);
 }
 
 // Locale-agnostic YYYY-MM-DD so the rendered string is byte-identical on

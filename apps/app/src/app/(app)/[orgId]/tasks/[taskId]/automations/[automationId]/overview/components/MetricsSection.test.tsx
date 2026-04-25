@@ -53,7 +53,7 @@ describe('MetricsSection (SALE-49)', () => {
     // pin the literal time because it depends on the test runner's TZ.
     const label = await screen.findByText(/^Every day at \d{1,2}:\d{2}\s(AM|PM)\s\S+/);
     expect(label).toBeInTheDocument();
-    expect(label.textContent).not.toContain('UTC at');
+    expect(label.textContent).not.toMatch(/\bUTC\b/);
   });
 
   it('updates the schedule label when the frequency changes', async () => {

@@ -37,21 +37,27 @@ function computeNextRunUtc(
   lastRunAt: Date | null,
   now: Date,
 ): Date {
-  const base = lastRunAt ?? now;
-  const candidate = new Date(base.getTime());
-  candidate.setUTCDate(candidate.getUTCDate() + PERIOD_DAYS[scheduleFrequency]);
-  candidate.setUTCHours(ORCHESTRATOR_HOUR_UTC, 0, 0, 0);
-  if (candidate.getTime() <= now.getTime()) {
-    // We're already past the candidate; jump to the next 09:00 UTC tick.
-    const next = new Date(
-      Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), ORCHESTRATOR_HOUR_UTC),
-    );
-    if (next.getTime() <= now.getTime()) {
-      next.setUTCDate(next.getUTCDate() + 1);
+  // Never-run automations: the orchestrator's `isDueToday` short-circuits to
+  // true on a null lastRunAt, so the next run is the next 09:00 UTC tick. Do
+  // NOT add the period — that would push the displayed next-run a full week/
+  // month into the future and contradict the actual scheduler behavior.
+  if (lastRunAt !== null) {
+    const candidate = new Date(lastRunAt.getTime());
+    candidate.setUTCDate(candidate.getUTCDate() + PERIOD_DAYS[scheduleFrequency]);
+    candidate.setUTCHours(ORCHESTRATOR_HOUR_UTC, 0, 0, 0);
+    if (candidate.getTime() > now.getTime()) {
+      return candidate;
     }
-    return next;
   }
-  return candidate;
+  // Either never run, or the period-aligned candidate is already in the past;
+  // both fall through to "next 09:00 UTC tick from now".
+  const next = new Date(
+    Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), ORCHESTRATOR_HOUR_UTC),
+  );
+  if (next.getTime() <= now.getTime()) {
+    next.setUTCDate(next.getUTCDate() + 1);
+  }
+  return next;
 }
 
 export function MetricsSection({
