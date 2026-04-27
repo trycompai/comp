@@ -69,7 +69,7 @@ Standard repo conventions apply (see `AGENTS.md`). Highlights:
 - Brainstorm before building new UX (`superpowers:brainstorming`)
 - Plans + subagent-driven execution for multi-step work
 - Run `audit-design-system` after any frontend component edit
-- Always run typecheck before declaring a change done (`npx turbo run typecheck --filter=<pkg>`)
+- Always run typecheck before declaring a change done (`bunx turbo run typecheck --filter=<pkg>`)
 
 ### 5. When done, clean up
 

@@ -20,4 +20,4 @@ Audit the specified files for design system compliance. **Fix every issue found 
 2. Find `@trycompai/ui` imports — check if DS equivalent exists
 3. Find `lucide-react` imports — find matching Carbon icons
 4. Migrate components and icons
-5. Run build to verify: `npx turbo run typecheck --filter=@trycompai/app`
+5. Run build to verify: `bunx turbo run typecheck --filter=@trycompai/app`

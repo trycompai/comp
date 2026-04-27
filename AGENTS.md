@@ -4,9 +4,9 @@
 
 - **Package manager**: `bun` (never npm/yarn/pnpm)
 - **Build**: `bun run build` (uses turbo). Filter: `bun run --filter '@trycompai/app' build`
-- **Typecheck**: `bun run typecheck` or `npx turbo run typecheck --filter=@trycompai/api`
-- **Tests (app)**: `cd apps/app && npx vitest run`
-- **Tests (api)**: `cd apps/api && npx jest src/<module> --passWithNoTests`
+- **Typecheck**: `bun run typecheck` or `bunx turbo run typecheck --filter=@trycompai/api`
+- **Tests (app)**: `cd apps/app && bunx vitest run`
+- **Tests (api)**: `cd apps/api && bunx jest src/<module> --passWithNoTests`
 - **Lint**: `bun run lint`
 
 ## Code Style
@@ -129,7 +129,7 @@ Every customer-facing API endpoint MUST have:
 - **App tests**: Vitest + @testing-library/react (jsdom environment)
 - **API tests**: Jest with NestJS testing utilities
 - **Permission tests**: Test admin (write) and read-only user scenarios
-- **Run from package dir**: `cd apps/app && npx vitest run` or `cd apps/api && npx jest`
+- **Run from package dir**: `cd apps/app && bunx vitest run` or `cd apps/api && bunx jest`
 
 ## Database
 

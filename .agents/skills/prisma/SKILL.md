@@ -54,6 +54,7 @@ cd packages/db && bunx prisma migrate dev --name add_user_role
 # 3. Regenerate types in ALL apps that use the db
 bun run -F apps/app db:generate
 bun run -F apps/api db:generate
+bun run -F apps/portal db:generate
 ```
 
 ### ❌ Never Do This

@@ -10,7 +10,7 @@ Check that unit tests exist and pass for permission-gated components. **Write mi
 - **Component testing**: `@testing-library/react` + `@testing-library/jest-dom`
 - **Setup**: `apps/app/src/test-utils/setup.ts`
 - **Permission mocks**: `apps/app/src/test-utils/mocks/permissions.ts`
-- **Run**: `cd apps/app && npx vitest run`
+- **Run**: `cd apps/app && bunx vitest run`
 
 ## Required Test Pattern
 
@@ -27,4 +27,4 @@ Use `setMockPermissions`, `ADMIN_PERMISSIONS`, `AUDITOR_PERMISSIONS` from test u
 2. Check for corresponding `.test.tsx` files
 3. Write missing tests following the pattern above
 4. Fix any failing tests
-5. Run: `cd apps/app && npx vitest run`
+5. Run: `cd apps/app && bunx vitest run`

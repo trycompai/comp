@@ -30,7 +30,7 @@ comp/
 │   └── portal/          # Next.js portal
 ├── packages/
 │   ├── db/              # Prisma (@trycompai/db)
-│   ├── ui/              # UI components (@trycompai/ui)
+│   ├── ui/              # Legacy UI (@trycompai/ui); prefer @trycompai/design-system
 │   └── ...
 ├── turbo.json
 └── package.json

@@ -36,7 +36,7 @@ Prompt engineering is preferred because:
 
 ---
 
-## The 8 Core Techniques
+## The 6 Core Techniques
 
 ### 1. Be Clear and Direct
 
