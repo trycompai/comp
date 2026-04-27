@@ -7,24 +7,22 @@ import {
   Logger,
 } from '@nestjs/common';
 import { db } from '@db';
-import { createHash, timingSafeEqual } from 'node:crypto';
-
-import { CredentialVaultService } from '../integration-platform/services/credential-vault.service';
-import type { CreatePenetrationTestDto } from './dto/create-penetration-test.dto';
 import {
+  createMacedClient,
+  MacedApiError,
   MacedClient,
-  type MacedCreatePentestRun,
-  type MacedPentestProgress,
-  type MacedPentestRun,
-} from './maced-client';
+  MacedWebhookSignatureError,
+  type CreatePentestBody,
+  type Issue,
+  type MacedWebhookEvent,
+  type Pentest,
+  type PentestCreated,
+  type PentestEvent,
+  type PentestProgress as MacedPentestProgress,
+  type PentestWithProgress,
+} from '@maced/api-client';
 
-export interface GithubRepo {
-  id: number;
-  name: string;
-  fullName: string;
-  private: boolean;
-  htmlUrl: string;
-}
+import type { CreatePenetrationTestDto } from './dto/create-penetration-test.dto';
 
 export type PentestReportStatus =
   | 'provisioning'
@@ -34,6 +32,8 @@ export type PentestReportStatus =
   | 'failed'
   | 'cancelled';
 
+// Alias the SDK progress type so callers inside this module don't import from
+// the SDK directly.
 export type PentestProgress = MacedPentestProgress;
 
 export interface SecurityPenetrationTest {
@@ -81,22 +81,73 @@ interface WebhookRequestMetadata {
   eventId?: string;
 }
 
-interface PersistedWebhookHandshake {
-  tokenHash: string;
-  createdAt: string;
-  lastEventId?: string;
-  lastPayloadHash?: string;
-  lastWebhookAt?: string;
-}
-
 @Injectable()
 export class SecurityPenetrationTestsService {
   private readonly logger = new Logger(SecurityPenetrationTestsService.name);
-  private readonly macedClient = new MacedClient();
+  private readonly macedClient: MacedClient;
 
-  constructor(
-    private readonly credentialVaultService: CredentialVaultService,
-  ) {}
+  constructor() {
+    const apiKey = process.env.MACED_API_KEY;
+    if (!apiKey) {
+      // Throw at construction so the app fails loudly on boot, not on first request.
+      throw new Error('MACED_API_KEY is required to start the pentest module');
+    }
+    this.macedClient = createMacedClient({
+      apiKey,
+      baseUrl: process.env.MACED_API_BASE_URL,
+      userAgent: 'comp-api',
+    });
+  }
+
+  /**
+   * Wraps a Maced SDK call so MacedApiError is translated into a NestJS
+   * HttpException that preserves the upstream status code. Non-API errors
+   * (network / unexpected) are mapped to 502 BAD_GATEWAY but we surface as
+   * much detail as we can so the frontend toast is actually useful.
+   */
+  private async callMaced<T>(
+    fn: () => Promise<T>,
+    context: string,
+  ): Promise<T> {
+    try {
+      return await fn();
+    } catch (error) {
+      if (error instanceof MacedApiError) {
+        const body =
+          typeof error.body === 'object' && error.body !== null
+            ? (error.body as { error?: string; message?: string })
+            : undefined;
+        const upstreamMessage =
+          body?.error ??
+          body?.message ??
+          (typeof error.body === 'string' ? error.body : null) ??
+          error.message;
+        this.logger.error(
+          `Maced API error (${context}): ${error.status} ${upstreamMessage}`,
+        );
+        throw new HttpException(
+          { error: upstreamMessage, source: 'maced', status: error.status },
+          error.status,
+        );
+      }
+      // Non-API throw (timeout, DNS, malformed body the SDK couldn't parse,
+      // …). Include the constructor name + message in the log so we can tell
+      // what actually broke without a debugger.
+      const errName = error?.constructor?.name ?? typeof error;
+      const errMessage =
+        error instanceof Error ? error.message : String(error);
+      this.logger.error(
+        `Transport failure calling Maced (${context}): ${errName} — ${errMessage}`,
+      );
+      throw new HttpException(
+        {
+          error: `Provider call failed (${context}): ${errMessage}`,
+          source: 'transport',
+        },
+        HttpStatus.BAD_GATEWAY,
+      );
+    }
+  }
 
   private readonly canonicalWebhookPath =
     '/v1/security-penetration-tests/webhook';
@@ -122,12 +173,13 @@ export class SecurityPenetrationTestsService {
       return [];
     }
 
-    const reports = await this.macedClient.listPentests();
+    const reports = await this.callMaced(
+      () => this.macedClient.pentests.list(),
+      'listing penetration tests',
+    );
 
     return reports
-      .filter((report) => {
-        return ownedRunIds.has(report.id);
-      })
+      .filter((report) => ownedRunIds.has(report.id))
       .map((report) => this.mapMacedRunToSecurityPenetrationTest(report));
   }
 
@@ -137,80 +189,42 @@ export class SecurityPenetrationTestsService {
   ): Promise<SecurityPenetrationTest> {
     const resolvedWebhookUrl = this.resolveWebhookUrl(payload.webhookUrl);
 
-    const sanitizedPayload: {
-      targetUrl: string;
-      repoUrl?: string;
-      githubToken?: string;
-      configYaml?: string;
-      pipelineTesting?: boolean;
-      testMode?: boolean;
-      workspace?: string;
-      webhookUrl?: string;
-    } = {
+    // Public repos only. We deliberately do NOT auto-attach the org's
+    // GitHub OAuth token — that would silently share Comp customer creds
+    // with a third-party vendor. Private-repo support belongs behind an
+    // explicit, scoped credential mechanism (e.g., GitHub App installation
+    // tokens), not a quiet OAuth-token forward.
+    const body: CreatePentestBody = {
       targetUrl: payload.targetUrl,
-      repoUrl: payload.repoUrl,
-      githubToken: payload.githubToken,
-      configYaml: payload.configYaml,
-      pipelineTesting: payload.pipelineTesting,
-      testMode: payload.testMode,
-      workspace: payload.workspace,
-      webhookUrl: resolvedWebhookUrl,
+      ...(payload.repoUrl ? { repoUrl: payload.repoUrl } : {}),
+      ...(payload.pipelineTesting !== undefined
+        ? { pipelineTesting: payload.pipelineTesting }
+        : {}),
+      ...(payload.testMode !== undefined ? { testMode: payload.testMode } : {}),
+      ...(resolvedWebhookUrl ? { webhookUrl: resolvedWebhookUrl } : {}),
+      // Attribution metadata — Maced persists this verbatim and returns it on
+      // list/get. Gives us a second source of truth for the org↔run mapping
+      // (our `security_penetration_test_runs` table is the primary one) so
+      // ownership can be reconstructed from Maced if our DB ever drifts.
+      metadata: {
+        compOrganizationId: organizationId,
+        compEnvironment:
+          process.env.NODE_ENV === 'production' ? 'production' : 'development',
+        compApiVersion: '1',
+      },
     };
 
-    if (
-      payload.repoUrl?.startsWith('https://github.com/') &&
-      !sanitizedPayload.githubToken
-    ) {
-      sanitizedPayload.githubToken =
-        (await this.getGithubTokenForOrg(organizationId)) ?? undefined;
-    }
-
-    const createdReport =
-      await this.macedClient.createPentest(sanitizedPayload);
+    const createdReport = await this.callMaced(
+      () => this.macedClient.pentests.create(body),
+      'creating penetration test',
+    );
 
     const providerRunId = createdReport.id;
-
     if (!providerRunId) {
       throw new HttpException(
         { error: 'Create response missing report identifier' },
         HttpStatus.BAD_GATEWAY,
       );
-    }
-    const webhookToken = createdReport.webhookToken;
-
-    if (
-      resolvedWebhookUrl &&
-      this.isCompWebhookUrl(resolvedWebhookUrl) &&
-      !webhookToken
-    ) {
-      throw new HttpException(
-        {
-          error:
-            'Penetration test was created at provider but webhook handshake token was missing',
-        },
-        HttpStatus.BAD_GATEWAY,
-      );
-    }
-
-    if (
-      resolvedWebhookUrl &&
-      this.isCompWebhookUrl(resolvedWebhookUrl) &&
-      webhookToken
-    ) {
-      const handshakePersisted = await this.persistWebhookHandshakeWithRetry(
-        organizationId,
-        providerRunId,
-        webhookToken,
-      );
-      if (!handshakePersisted) {
-        throw new HttpException(
-          {
-            error:
-              'Penetration test was created at provider but webhook handshake could not be persisted',
-          },
-          HttpStatus.BAD_GATEWAY,
-        );
-      }
     }
 
     const ownershipPersisted = await this.persistRunOwnershipWithRetry(
@@ -227,52 +241,25 @@ export class SecurityPenetrationTestsService {
       );
     }
 
-    return this.mapMacedRunToSecurityPenetrationTest(createdReport);
-  }
-
-  async listGithubRepos(
-    organizationId: string,
-  ): Promise<{ repos: GithubRepo[]; connected: boolean }> {
-    const token = await this.getGithubTokenForOrg(organizationId);
-    if (!token) {
-      return { repos: [], connected: false };
-    }
-
-    try {
-      const response = await fetch(
-        'https://api.github.com/user/repos?per_page=100&sort=updated&affiliation=owner,collaborator,organization_member',
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            Accept: 'application/vnd.github+json',
-          },
-        },
-      );
-
-      if (!response.ok) {
-        this.logger.warn(
-          `GitHub repos API returned ${response.status} for org=${organizationId}`,
-        );
-        return { repos: [], connected: true };
-      }
-
-      const raw = (await response.json()) as Array<Record<string, unknown>>;
-      const repos: GithubRepo[] = raw.map((r) => ({
-        id: r.id as number,
-        name: r.name as string,
-        fullName: r.full_name as string,
-        private: r.private as boolean,
-        htmlUrl: r.html_url as string,
-      }));
-
-      return { repos, connected: true };
-    } catch (error) {
-      this.logger.error(
-        `Failed to fetch GitHub repos for org=${organizationId}`,
-        error instanceof Error ? error.message : String(error),
-      );
-      return { repos: [], connected: true };
-    }
+    // Maced's POST /v1/pentests returns only { id, status } — backfill the
+    // rest from the user's payload so the return shape honors its type and
+    // the frontend renders real values before the first GET /:id poll
+    // hydrates the full run detail.
+    const now = new Date().toISOString();
+    return {
+      id: providerRunId,
+      status: createdReport.status,
+      targetUrl: payload.targetUrl,
+      repoUrl: payload.repoUrl ?? null,
+      testMode: payload.testMode ?? null,
+      createdAt: now,
+      updatedAt: now,
+      error: null,
+      failedReason: null,
+      temporalUiUrl: null,
+      webhookUrl: resolvedWebhookUrl ?? null,
+      notificationEmail: null,
+    };
   }
 
   async getReport(
@@ -280,7 +267,10 @@ export class SecurityPenetrationTestsService {
     id: string,
   ): Promise<SecurityPenetrationTest> {
     await this.assertRunOwnership(organizationId, id);
-    const report = await this.macedClient.getPentest(id);
+    const report = await this.callMaced(
+      () => this.macedClient.pentests.get(id),
+      `fetching penetration test ${id}`,
+    );
     return this.mapMacedRunToSecurityPenetrationTest(report);
   }
 
@@ -289,7 +279,32 @@ export class SecurityPenetrationTestsService {
     id: string,
   ): Promise<PentestProgress> {
     await this.assertRunOwnership(organizationId, id);
-    return this.macedClient.getPentestProgress(id);
+    return this.callMaced(
+      () => this.macedClient.pentests.progress(id),
+      `fetching penetration test progress ${id}`,
+    );
+  }
+
+  async getReportIssues(
+    organizationId: string,
+    id: string,
+  ): Promise<Issue[]> {
+    await this.assertRunOwnership(organizationId, id);
+    return this.callMaced(
+      () => this.macedClient.pentests.issues(id),
+      `fetching penetration test issues ${id}`,
+    );
+  }
+
+  async getReportEvents(
+    organizationId: string,
+    id: string,
+  ): Promise<PentestEvent[]> {
+    await this.assertRunOwnership(organizationId, id);
+    return this.callMaced(
+      () => this.macedClient.pentests.events(id),
+      `fetching penetration test events ${id}`,
+    );
   }
 
   async getReportOutput(
@@ -298,13 +313,15 @@ export class SecurityPenetrationTestsService {
   ): Promise<BinaryArtifact> {
     await this.getReport(organizationId, id);
 
-    const response = await this.macedClient.getPentestReportRaw(id);
+    const report = await this.callMaced(
+      () => this.macedClient.pentests.report(id),
+      `fetching penetration test report ${id}`,
+    );
 
     return {
-      buffer: Buffer.from(await response.arrayBuffer()),
-      contentType:
-        response.headers.get('Content-Type') || 'text/markdown; charset=utf-8',
-      contentDisposition: response.headers.get('Content-Disposition'),
+      buffer: Buffer.from(report.markdown, 'utf-8'),
+      contentType: 'text/markdown; charset=utf-8',
+      contentDisposition: null,
     };
   }
 
@@ -314,149 +331,75 @@ export class SecurityPenetrationTestsService {
   ): Promise<BinaryArtifact> {
     await this.getReport(organizationId, id);
 
-    const response = await this.macedClient.getPentestReportPdf(id);
+    const blob = await this.callMaced(
+      () => this.macedClient.pentests.reportPdf(id),
+      `fetching penetration test PDF ${id}`,
+    );
 
     return {
-      buffer: Buffer.from(await response.arrayBuffer()),
-      contentType: response.headers.get('Content-Type') || 'application/pdf',
-      contentDisposition:
-        response.headers.get('Content-Disposition') ||
-        `attachment; filename="penetration-test-${id}.pdf"`,
+      buffer: Buffer.from(await blob.arrayBuffer()),
+      contentType: blob.type || 'application/pdf',
+      contentDisposition: `attachment; filename="penetration-test-${id}.pdf"`,
     };
   }
 
-  async handleWebhook(
-    payload: unknown,
-    metadata: WebhookRequestMetadata = {},
-  ): Promise<{
+  async handleWebhook(params: {
+    rawBody: Buffer | undefined;
+    signatureHeader: string | undefined;
+  }): Promise<{
     success: true;
-    organizationId: string;
-    reportId?: string;
-    status?: string;
-    eventType: WebhookEventType;
-    duplicate?: true;
-    report?: {
-      costUsd: number;
-      durationMs: number;
-      agentCount: number;
-      hasMarkdown: true;
-    };
-    failure?: {
-      error: string;
-      failedAt: string;
-    };
+    eventType: string;
+    eventId?: string;
   }> {
-    if (!this.isRecord(payload)) {
-      throw new BadRequestException('Invalid webhook payload');
+    if (!params.rawBody) {
+      throw new BadRequestException('Missing raw body for webhook verification');
     }
 
-    const completedEvent = this.extractCompletedWebhookPayload(payload);
-    const failedEvent = this.extractFailedWebhookPayload(payload);
-
-    const payloadReportId =
-      completedEvent?.runId ??
-      failedEvent?.runId ??
-      this.extractStringField(payload, 'runId');
-
-    if (!payloadReportId) {
-      throw new BadRequestException('Webhook payload must include a report id');
+    const secret = process.env.MACED_WEBHOOK_SIGNING_SECRET;
+    if (!secret) {
+      this.logger.error(
+        'MACED_WEBHOOK_SIGNING_SECRET is not configured — rejecting webhook',
+      );
+      throw new HttpException(
+        { error: 'Webhook signing secret not configured on server' },
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
     }
 
-    const organizationId =
-      await this.resolveOrganizationForRun(payloadReportId);
+    let event: MacedWebhookEvent;
+    try {
+      event = await MacedClient.webhooks.constructEvent(
+        params.rawBody,
+        params.signatureHeader ?? null,
+        secret,
+      );
+    } catch (error) {
+      if (error instanceof MacedWebhookSignatureError) {
+        this.logger.warn(
+          `[Webhook] Signature verification failed: ${error.code}`,
+        );
+        throw new ForbiddenException('Invalid webhook signature');
+      }
+      throw error;
+    }
 
-    const duplicate = await this.verifyAndRecordWebhookHandshake({
-      organizationId,
-      reportId: payloadReportId,
-      payload,
-      webhookToken: metadata.webhookToken,
-      eventId: metadata.eventId,
-    });
-
-    const payloadStatus =
-      this.extractStringField(payload, 'status') ||
-      this.extractStringField(payload, 'reportStatus') ||
-      (completedEvent ? 'completed' : undefined) ||
-      (failedEvent ? 'failed' : undefined);
-
-    const eventType: WebhookEventType = completedEvent
-      ? 'completed'
-      : failedEvent
-        ? 'failed'
-        : 'status';
+    // event is a proper discriminated union — narrow on event.type to access
+    // event-specific data shape. See @maced/api-client WebhookEvent.
+    const issueId =
+      event.type === 'issue.created' || event.type === 'issue.status_changed'
+        ? event.data.issueId
+        : undefined;
 
     this.logger.log(
-      `[Webhook] Received penetration test ${eventType} event for org=${organizationId}${payloadReportId ? ` run=${payloadReportId}` : ''} status=${payloadStatus ?? 'unknown'}`,
+      `[Webhook] ${event.type} id=${event.id} pentest=${event.data.pentestId}` +
+        (issueId ? ` issue=${issueId}` : ''),
     );
 
     return {
       success: true,
-      organizationId,
-      eventType,
-      ...(payloadReportId ? { reportId: payloadReportId } : {}),
-      ...(payloadStatus ? { status: payloadStatus } : {}),
-      ...(duplicate ? ({ duplicate: true } as const) : {}),
-      ...(completedEvent
-        ? {
-            report: {
-              costUsd: completedEvent.report.costUsd,
-              durationMs: completedEvent.report.durationMs,
-              agentCount: completedEvent.report.agentCount,
-              hasMarkdown: true as const,
-            },
-          }
-        : {}),
-      ...(failedEvent
-        ? {
-            failure: {
-              error: failedEvent.error,
-              failedAt: failedEvent.failedAt,
-            },
-          }
-        : {}),
+      eventType: event.type,
+      eventId: event.id,
     };
-  }
-
-  private async getGithubTokenForOrg(
-    organizationId: string,
-  ): Promise<string | null> {
-    try {
-      const provider = await db.integrationProvider.findUnique({
-        where: { slug: 'github' },
-        select: { id: true },
-      });
-
-      if (!provider) {
-        return null;
-      }
-
-      const connection = await db.integrationConnection.findFirst({
-        where: {
-          providerId: provider.id,
-          organizationId,
-          status: 'active',
-        },
-        select: { id: true },
-      });
-
-      if (!connection) {
-        return null;
-      }
-
-      const credentials =
-        await this.credentialVaultService.getDecryptedCredentials(
-          connection.id,
-        );
-
-      const token = credentials?.access_token;
-      return typeof token === 'string' && token.length > 0 ? token : null;
-    } catch (error) {
-      this.logger.warn(
-        `Could not retrieve GitHub token for org=${organizationId}`,
-        error instanceof Error ? error.message : String(error),
-      );
-      return null;
-    }
   }
 
   private trimTrailingSlashes(value: string): string {
@@ -469,13 +412,42 @@ export class SecurityPenetrationTestsService {
   }
 
   private mapMacedRunToSecurityPenetrationTest(
-    report: MacedPentestRun | MacedCreatePentestRun,
+    report: Pentest | PentestWithProgress | PentestCreated,
   ): SecurityPenetrationTest {
-    const failedReason = report.error ?? null;
+    // PentestCreated only has { id, status } — the backfill in createReport
+    // already handles that case directly. Here we handle the full run shapes
+    // returned by list/get.
+    if (!('targetUrl' in report)) {
+      return {
+        id: report.id,
+        status: report.status,
+        targetUrl: '',
+        createdAt: '',
+        updatedAt: '',
+        error: null,
+        failedReason: null,
+        repoUrl: null,
+        testMode: null,
+        temporalUiUrl: null,
+        webhookUrl: null,
+        notificationEmail: null,
+      };
+    }
 
     return {
-      ...(report as SecurityPenetrationTest),
-      failedReason,
+      id: report.id,
+      status: report.status,
+      targetUrl: report.targetUrl,
+      createdAt: report.createdAt,
+      updatedAt: report.updatedAt,
+      error: report.error ?? null,
+      failedReason: report.error ?? null,
+      repoUrl: report.repoUrl ?? null,
+      testMode: report.testMode ?? null,
+      temporalUiUrl: null,
+      webhookUrl: report.webhookUrl ?? null,
+      notificationEmail: report.notificationEmail ?? null,
+      ...('progress' in report ? { progress: report.progress } : {}),
     };
   }
 
@@ -627,25 +599,6 @@ export class SecurityPenetrationTestsService {
     };
   }
 
-  private hashValue(input: string): string {
-    return createHash('sha256').update(input).digest('hex');
-  }
-
-  private hashesEqual(a: string, b: string): boolean {
-    const aBuffer = Buffer.from(a, 'hex');
-    const bBuffer = Buffer.from(b, 'hex');
-
-    if (aBuffer.length !== bBuffer.length) {
-      return false;
-    }
-
-    return timingSafeEqual(aBuffer, bBuffer);
-  }
-
-  private webhookHandshakeSecretName(reportId: string): string {
-    return `security_penetration_test_webhook_${reportId}`;
-  }
-
   private async persistRunOwnership(
     organizationId: string,
     reportId: string,
@@ -777,167 +730,4 @@ export class SecurityPenetrationTestsService {
     return hosts;
   }
 
-  private parseWebhookHandshake(
-    rawValue: string,
-  ): PersistedWebhookHandshake | null {
-    try {
-      const parsed = JSON.parse(rawValue) as Record<string, unknown>;
-      const tokenHash =
-        typeof parsed.tokenHash === 'string' &&
-        parsed.tokenHash.trim().length > 0
-          ? parsed.tokenHash.trim()
-          : undefined;
-      const createdAt =
-        typeof parsed.createdAt === 'string' &&
-        parsed.createdAt.trim().length > 0
-          ? parsed.createdAt.trim()
-          : undefined;
-
-      if (!tokenHash || !createdAt) {
-        return null;
-      }
-
-      return {
-        tokenHash,
-        createdAt,
-        ...(typeof parsed.lastEventId === 'string'
-          ? { lastEventId: parsed.lastEventId }
-          : {}),
-        ...(typeof parsed.lastPayloadHash === 'string'
-          ? { lastPayloadHash: parsed.lastPayloadHash }
-          : {}),
-        ...(typeof parsed.lastWebhookAt === 'string'
-          ? { lastWebhookAt: parsed.lastWebhookAt }
-          : {}),
-      };
-    } catch {
-      return null;
-    }
-  }
-
-  private async persistWebhookHandshake(
-    organizationId: string,
-    reportId: string,
-    webhookToken: string,
-  ): Promise<void> {
-    const handshakeState: PersistedWebhookHandshake = {
-      tokenHash: this.hashValue(webhookToken),
-      createdAt: new Date().toISOString(),
-    };
-
-    await db.secret.upsert({
-      where: {
-        organizationId_name: {
-          organizationId,
-          name: this.webhookHandshakeSecretName(reportId),
-        },
-      },
-      create: {
-        organizationId,
-        name: this.webhookHandshakeSecretName(reportId),
-        category: 'webhook',
-        description: 'Maced penetration test webhook handshake',
-        value: JSON.stringify(handshakeState),
-      },
-      update: {
-        category: 'webhook',
-        description: 'Maced penetration test webhook handshake',
-        value: JSON.stringify(handshakeState),
-        lastUsedAt: null,
-      },
-    });
-  }
-
-  private async persistWebhookHandshakeWithRetry(
-    organizationId: string,
-    reportId: string,
-    webhookToken: string,
-  ): Promise<boolean> {
-    for (let attempt = 1; attempt <= 3; attempt += 1) {
-      try {
-        await this.persistWebhookHandshake(
-          organizationId,
-          reportId,
-          webhookToken,
-        );
-        return true;
-      } catch (error) {
-        this.logger.error(
-          `Unable to persist webhook handshake for report ${reportId} (attempt ${attempt}/3)`,
-          error instanceof Error ? error.message : String(error),
-        );
-      }
-    }
-
-    return false;
-  }
-
-  private async verifyAndRecordWebhookHandshake(params: {
-    organizationId: string;
-    reportId: string;
-    payload: Record<string, unknown>;
-    webhookToken?: string;
-    eventId?: string;
-  }): Promise<boolean> {
-    const storedHandshake = await db.secret.findUnique({
-      where: {
-        organizationId_name: {
-          organizationId: params.organizationId,
-          name: this.webhookHandshakeSecretName(params.reportId),
-        },
-      },
-      select: {
-        id: true,
-        value: true,
-      },
-    });
-
-    if (!storedHandshake) {
-      throw new ForbiddenException('Webhook handshake not found for report');
-    }
-
-    const handshakeState = this.parseWebhookHandshake(storedHandshake.value);
-    if (!handshakeState) {
-      throw new ForbiddenException('Invalid webhook handshake state');
-    }
-
-    if (!params.webhookToken) {
-      throw new ForbiddenException('Missing webhook token');
-    }
-
-    if (
-      !this.hashesEqual(
-        this.hashValue(params.webhookToken),
-        handshakeState.tokenHash,
-      )
-    ) {
-      throw new ForbiddenException('Invalid webhook token');
-    }
-
-    const payloadHash = this.hashValue(JSON.stringify(params.payload));
-    const duplicateByEventId =
-      Boolean(params.eventId) && handshakeState.lastEventId === params.eventId;
-    const duplicateByPayload =
-      !params.eventId && handshakeState.lastPayloadHash === payloadHash;
-    const duplicate = duplicateByEventId || duplicateByPayload;
-
-    const nextHandshakeState: PersistedWebhookHandshake = {
-      ...handshakeState,
-      lastPayloadHash: payloadHash,
-      lastWebhookAt: new Date().toISOString(),
-      ...(params.eventId ? { lastEventId: params.eventId } : {}),
-    };
-
-    await db.secret.update({
-      where: {
-        id: storedHandshake.id,
-      },
-      data: {
-        value: JSON.stringify(nextHandshakeState),
-        lastUsedAt: new Date(),
-      },
-    });
-
-    return duplicate;
-  }
 }

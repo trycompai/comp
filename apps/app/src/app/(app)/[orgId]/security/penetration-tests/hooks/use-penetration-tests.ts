@@ -3,7 +3,9 @@
 import { api } from '@/lib/api-client';
 import type {
   CreatePenetrationTestResponse,
+  PentestAgentEvent,
   PentestCreateRequest,
+  PentestIssue,
   PentestProgress,
   PentestReportStatus,
   PentestRun,
@@ -14,11 +16,14 @@ import useSWR from 'swr';
 import { isReportInProgress, sortReportsByUpdatedAtDesc } from '../lib';
 
 const reportListEndpoint = '/v1/security-penetration-tests';
-const githubReposEndpoint = '/v1/security-penetration-tests/github/repos';
 const reportEndpoint = (reportId: string): string =>
   `/v1/security-penetration-tests/${encodeURIComponent(reportId)}`;
 const reportProgressEndpoint = (reportId: string): string =>
   `/v1/security-penetration-tests/${encodeURIComponent(reportId)}/progress`;
+const reportIssuesEndpoint = (reportId: string): string =>
+  `/v1/security-penetration-tests/${encodeURIComponent(reportId)}/issues`;
+const reportEventsEndpoint = (reportId: string): string =>
+  `/v1/security-penetration-tests/${encodeURIComponent(reportId)}/events`;
 const inProgressStatus: readonly PentestReportStatus[] = [
   'provisioning',
   'cloning',
@@ -35,8 +40,6 @@ const allStatuses: readonly PentestReportStatus[] = [
 
 type ReportsSWRKey = readonly [endpoint: string, organizationId: string];
 
-const githubReposKey = (organizationId: string): ReportsSWRKey =>
-  [githubReposEndpoint, organizationId] as const;
 const reportListKey = (organizationId: string): ReportsSWRKey =>
   [reportListEndpoint, organizationId] as const;
 const reportKey = (organizationId: string, reportId: string): ReportsSWRKey =>
@@ -71,11 +74,8 @@ const resolveCreateStatus = (
 interface CreatePayload {
   targetUrl: string;
   repoUrl?: string;
-  githubToken?: string;
-  configYaml?: string;
   pipelineTesting?: boolean;
   testMode?: boolean;
-  workspace?: string;
 }
 
 type CreateReportApiPayload = PentestCreateRequest;
@@ -199,34 +199,74 @@ export function usePenetrationTestProgress(
   } satisfies UsePenetrationTestProgressReturn;
 }
 
-export interface GithubRepo {
-  id: number;
-  name: string;
-  fullName: string;
-  private: boolean;
-  htmlUrl: string;
-}
+const reportIssuesKey = (
+  organizationId: string,
+  reportId: string,
+): ReportsSWRKey => [reportIssuesEndpoint(reportId), organizationId] as const;
 
-interface GithubReposResponse {
-  repos: GithubRepo[];
-  connected: boolean;
-}
+const reportEventsKey = (
+  organizationId: string,
+  reportId: string,
+): ReportsSWRKey => [reportEventsEndpoint(reportId), organizationId] as const;
 
-export function useGithubRepos(organizationId: string): {
-  repos: GithubRepo[];
-  connected: boolean;
+// Polls the issues list continuously while the run is in-progress, and once
+// after completion to load the final set. During a live ~1-hr scan, findings
+// trickle in — each refresh appends any new ones.
+export function usePenetrationTestIssues(
+  organizationId: string,
+  reportId: string,
+  status: PentestReportStatus | undefined,
+): {
+  issues: PentestIssue[];
   isLoading: boolean;
+  error: Error | undefined;
+  mutate: () => Promise<PentestIssue[] | undefined>;
 } {
-  const shouldFetch = Boolean(organizationId);
-  const { data } = useSWR<GithubReposResponse>(
-    shouldFetch ? githubReposKey(organizationId) : null,
+  const shouldFetch = Boolean(organizationId && reportId);
+  const inProgress = Boolean(status && isReportInProgress(status));
+
+  const { data, error, mutate } = useSWR<PentestIssue[]>(
+    shouldFetch ? reportIssuesKey(organizationId, reportId) : null,
     fetchApiJson,
+    {
+      refreshInterval: inProgress ? 3000 : 0,
+      revalidateOnFocus: true,
+    },
   );
 
   return {
-    repos: data?.repos ?? [],
-    connected: data?.connected ?? false,
-    isLoading: shouldFetch && data === undefined,
+    issues: data ?? [],
+    isLoading: shouldFetch && data === undefined && !error,
+    error: error as Error | undefined,
+    mutate,
+  };
+}
+
+// Polls the agent event stream (tool calls, observations). Noisier than
+// issues — intended for activity feeds or debug views.
+export function usePenetrationTestEvents(
+  organizationId: string,
+  reportId: string,
+  status: PentestReportStatus | undefined,
+): {
+  events: PentestAgentEvent[];
+  isLoading: boolean;
+} {
+  const shouldFetch = Boolean(organizationId && reportId);
+  const inProgress = Boolean(status && isReportInProgress(status));
+
+  const { data, error } = useSWR<PentestAgentEvent[]>(
+    shouldFetch ? reportEventsKey(organizationId, reportId) : null,
+    fetchApiJson,
+    {
+      refreshInterval: inProgress ? 5000 : 0,
+      revalidateOnFocus: true,
+    },
+  );
+
+  return {
+    events: data ?? [],
+    isLoading: shouldFetch && data === undefined && !error,
   };
 }
 
@@ -250,11 +290,8 @@ export function useCreatePenetrationTest(
           {
             targetUrl: payload.targetUrl,
             repoUrl: payload.repoUrl,
-            githubToken: payload.githubToken,
-            configYaml: payload.configYaml,
             pipelineTesting: payload.pipelineTesting,
             testMode: payload.testMode,
-            workspace: payload.workspace,
           } satisfies CreateReportApiPayload,
           organizationId,
         );
@@ -266,15 +303,6 @@ export function useCreatePenetrationTest(
         const reportId = response.data?.id;
         if (!reportId) {
           throw new Error('Could not resolve report ID from create response.');
-        }
-
-        const billingRes = await api.post(
-          '/v1/pentest-billing/charge',
-          { runId: reportId },
-          organizationId,
-        );
-        if (billingRes.error) {
-          throw new Error(billingRes.error);
         }
 
         const data: CreatePenetrationTestResponse = {

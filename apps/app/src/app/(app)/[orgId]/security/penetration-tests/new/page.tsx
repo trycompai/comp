@@ -4,17 +4,14 @@ import type { Metadata } from 'next';
 import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
 
-import { PenetrationTestPageClient } from './penetration-test-page-client';
+import { NewPenetrationTestPageClient } from './new-penetration-test-page-client';
 
-interface ReportPageProps {
-  params: Promise<{
-    orgId: string;
-    reportId: string;
-  }>;
+interface NewPageProps {
+  params: Promise<{ orgId: string }>;
 }
 
-export default async function PenetrationTestPage({ params }: ReportPageProps) {
-  const { orgId, reportId } = await params;
+export default async function NewPenetrationTestPage({ params }: NewPageProps) {
+  const { orgId } = await params;
   const session = await auth.api.getSession({
     headers: await headers(),
   });
@@ -35,12 +32,11 @@ export default async function PenetrationTestPage({ params }: ReportPageProps) {
     redirect('/');
   }
 
-  return <PenetrationTestPageClient orgId={orgId} reportId={reportId} />;
+  return <NewPenetrationTestPageClient orgId={orgId} />;
 }
 
-export async function generateMetadata({ params }: ReportPageProps): Promise<Metadata> {
-  const { reportId } = await params;
+export async function generateMetadata(): Promise<Metadata> {
   return {
-    title: `Penetration Test ${reportId}`,
+    title: 'New Penetration Test',
   };
 }

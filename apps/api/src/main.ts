@@ -13,6 +13,12 @@ import { adminAuthRateLimiter } from './auth/admin-rate-limit.middleware';
 import { originCheckMiddleware } from './auth/origin-check.middleware';
 import { mkdirSync, writeFileSync, existsSync } from 'fs';
 
+declare module 'express-serve-static-core' {
+  interface Request {
+    rawBody?: Buffer;
+  }
+}
+
 let app: INestApplication | null = null;
 
 function describeServer(baseUrl: string): string {
@@ -78,7 +84,14 @@ async function bootstrap(): Promise<void> {
   // request stream to properly read the body (including OAuth callbackURL).
   // Express-level middleware runs BEFORE NestJS module middleware, so without this
   // skip, express.json() would consume the stream before better-auth's handler.
-  const jsonParser = express.json({ limit: '150mb' });
+  // Preserve raw body alongside the parsed JSON so webhook signature verification
+  // (e.g. Maced) can HMAC over the exact bytes we received.
+  const jsonParser = express.json({
+    limit: '150mb',
+    verify: (req, _res, buf) => {
+      (req as express.Request).rawBody = buf;
+    },
+  });
   const urlencodedParser = express.urlencoded({
     limit: '150mb',
     extended: true,
