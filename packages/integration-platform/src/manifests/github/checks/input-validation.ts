@@ -1,0 +1,273 @@
+/**
+ * Input Validation Check
+ *
+ * Verifies repositories use a modern validation/sanitization library.
+ * Supports monorepos by scanning all package.json / requirements.txt /
+ * pyproject.toml / composer.json files in the repository tree.
+ *
+ * Detection covers JS/TS, Python, and PHP ecosystems.
+ */
+
+import { TASK_TEMPLATES } from '../../../task-mappings';
+import type { IntegrationCheck } from '../../../types';
+import type { GitHubRepo, GitHubTreeEntry, GitHubTreeResponse } from '../types';
+import { parseRepoBranch, targetReposVariable } from '../variables';
+import {
+  JS_VALIDATION_PACKAGES,
+  PHP_VALIDATION_PACKAGES,
+  PY_VALIDATION_PACKAGES,
+  VALIDATION_TARGET_FILES,
+} from './validation-libraries';
+
+interface GitHubFileResponse {
+  content: string;
+  encoding: 'base64' | 'utf-8';
+  path: string;
+}
+
+interface ValidationMatch {
+  library: string;
+  file: string;
+}
+
+const decodeFile = (file: GitHubFileResponse): string => {
+  if (!file?.content) return '';
+  if (file.encoding === 'base64') {
+    return Buffer.from(file.content, 'base64').toString('utf-8');
+  }
+  return file.content;
+};
+
+const getFileName = (path: string): string => {
+  const parts = path.split('/');
+  return parts[parts.length - 1] ?? path;
+};
+
+const escapeRegex = (s: string): string => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+const checkPackageJson = (content: string, filePath: string): ValidationMatch | null => {
+  try {
+    const pkg = JSON.parse(content);
+    const deps = {
+      ...(pkg.dependencies || {}),
+      ...(pkg.devDependencies || {}),
+    };
+    for (const candidate of JS_VALIDATION_PACKAGES) {
+      if (deps[candidate]) {
+        return { library: candidate, file: filePath };
+      }
+    }
+  } catch {
+    // Invalid JSON, skip
+  }
+  return null;
+};
+
+const checkPythonFile = (
+  content: string,
+  filePath: string,
+  fileName: string,
+): ValidationMatch | null => {
+  // Parse line-by-line so we can strip comments and match package names as
+  // standalone tokens (e.g. don't match "schema" inside "jsonschema" or inside
+  // a prose comment).
+  //
+  // Comment syntax differs between the two Python dependency file formats:
+  //   - pyproject.toml (TOML): `#` starts a comment anywhere outside a string.
+  //     Dependency values are always quoted, so stripping at any `#` is safe
+  //     — the package name in `"name @ url#egg=name"` appears before the URL.
+  //   - requirements.txt (pip): `#` only starts a comment when preceded by
+  //     whitespace (or at line start). This preserves VCS URL fragments like
+  //     `git+https://...#egg=pydantic` used for editable installs.
+  const isTOML = fileName === 'pyproject.toml';
+  const stripCommentRegex = isTOML ? /#.*$/ : /(^|\s)#.*$/;
+  const lines = content.split('\n');
+  for (const rawLine of lines) {
+    const line = rawLine.replace(stripCommentRegex, '').toLowerCase();
+    if (!line.trim()) continue;
+    for (const candidate of PY_VALIDATION_PACKAGES) {
+      const escaped = escapeRegex(candidate.toLowerCase());
+      // Match the package name as a standalone token. Leading context: start
+      // of line or a separator commonly preceding a package name (whitespace,
+      // quote, bracket, comma, semicolon, or `=` for `#egg=name` VCS syntax).
+      // Trailing context: end of line or a separator that can follow a
+      // package name (whitespace, version operator, bracket, quote, comma,
+      // semicolon).
+      const pattern = new RegExp(
+        `(?:^|[\\s"'\\[,;=])${escaped}(?:$|[\\s=<>!~\\[\\]"',;])`,
+      );
+      if (pattern.test(line)) {
+        return { library: candidate, file: filePath };
+      }
+    }
+  }
+  return null;
+};
+
+const checkComposerJson = (content: string, filePath: string): ValidationMatch | null => {
+  try {
+    const pkg = JSON.parse(content);
+    const deps = {
+      ...(pkg.require || {}),
+      ...(pkg['require-dev'] || {}),
+    };
+    for (const candidate of PHP_VALIDATION_PACKAGES) {
+      if (deps[candidate]) {
+        return { library: candidate, file: filePath };
+      }
+    }
+  } catch {
+    // Invalid JSON, skip
+  }
+  return null;
+};
+
+export const inputValidationCheck: IntegrationCheck = {
+  id: 'input_validation',
+  name: 'Input Validation',
+  description:
+    'Verifies repositories use a supported input-validation library (JS/TS, Python, or PHP). Scans entire repository including monorepo subdirectories.',
+  service: 'code-security',
+  taskMapping: TASK_TEMPLATES.sanitizedInputs,
+  defaultSeverity: 'medium',
+  variables: [targetReposVariable],
+
+  run: async (ctx) => {
+    const targetReposRaw = (ctx.variables.target_repos as string[] | undefined) ?? [];
+    // Extract just the repo names (values may be in "owner/repo:branch" format)
+    const targetRepos = targetReposRaw.map((v) => parseRepoBranch(v).repo);
+
+    if (targetRepos.length === 0) {
+      ctx.fail({
+        title: 'No repositories selected',
+        description:
+          'Select at least one repository to monitor in the integration settings so we can verify input validation.',
+        resourceType: 'integration',
+        resourceId: 'github',
+        severity: 'low',
+        remediation: 'Open the integration settings and choose repositories to monitor.',
+      });
+      return;
+    }
+
+    const fetchRepo = async (fullName: string): Promise<GitHubRepo | null> => {
+      try {
+        return await ctx.fetch<GitHubRepo>(`/repos/${fullName}`);
+      } catch (error) {
+        ctx.warn(`Failed to fetch repo ${fullName}: ${String(error)}`);
+        return null;
+      }
+    };
+
+    const fetchRepoTree = async (repoName: string, branch: string): Promise<GitHubTreeEntry[]> => {
+      try {
+        const tree = await ctx.fetch<GitHubTreeResponse>(
+          `/repos/${repoName}/git/trees/${branch}?recursive=1`,
+        );
+        if (tree.truncated) {
+          ctx.warn(`Repository ${repoName} has too many files, tree was truncated`);
+        }
+        return tree.tree;
+      } catch (error) {
+        ctx.warn(`Failed to fetch tree for ${repoName}: ${String(error)}`);
+        return [];
+      }
+    };
+
+    const fetchFile = async (repoName: string, path: string): Promise<string | null> => {
+      try {
+        const file = await ctx.fetch<GitHubFileResponse>(`/repos/${repoName}/contents/${path}`);
+        return decodeFile(file);
+      } catch {
+        return null;
+      }
+    };
+
+    const findValidationLibraries = async (
+      repoName: string,
+      tree: GitHubTreeEntry[],
+    ): Promise<ValidationMatch[]> => {
+      const matches: ValidationMatch[] = [];
+
+      const targetEntries = tree.filter(
+        (entry) => entry.type === 'blob' && VALIDATION_TARGET_FILES.includes(getFileName(entry.path)),
+      );
+
+      for (const entry of targetEntries) {
+        const content = await fetchFile(repoName, entry.path);
+        if (!content) continue;
+
+        const fileName = getFileName(entry.path);
+
+        if (fileName === 'package.json') {
+          const match = checkPackageJson(content, entry.path);
+          if (match) matches.push(match);
+        } else if (fileName === 'requirements.txt' || fileName === 'pyproject.toml') {
+          const match = checkPythonFile(content, entry.path, fileName);
+          if (match) matches.push(match);
+        } else if (fileName === 'composer.json') {
+          const match = checkComposerJson(content, entry.path);
+          if (match) matches.push(match);
+        }
+      }
+
+      return matches;
+    };
+
+    for (const repoName of targetRepos) {
+      const repo = await fetchRepo(repoName);
+      if (!repo) continue;
+
+      const tree = await fetchRepoTree(repo.full_name, repo.default_branch);
+      const validationMatches = await findValidationLibraries(repo.full_name, tree);
+
+      if (validationMatches.length > 0) {
+        ctx.pass({
+          title: `Input validation enabled in ${repo.name}`,
+          description: `Found ${validationMatches.length} location(s) with validation libraries: ${validationMatches.map((m) => `${m.library} (${m.file})`).join(', ')}.`,
+          resourceType: 'repository',
+          resourceId: repo.full_name,
+          evidence: {
+            [repo.full_name]: {
+              validation: {
+                status: 'enabled',
+                matches: validationMatches,
+                checked_at: new Date().toISOString(),
+              },
+            },
+          },
+        });
+      } else {
+        const checkedFiles = tree
+          .filter((e) => e.type === 'blob' && VALIDATION_TARGET_FILES.includes(getFileName(e.path)))
+          .map((e) => e.path);
+
+        const supportedLibraries = [
+          ...JS_VALIDATION_PACKAGES,
+          ...PY_VALIDATION_PACKAGES,
+          ...PHP_VALIDATION_PACKAGES,
+        ].join(', ');
+
+        ctx.fail({
+          title: `No input validation library found in ${repo.name}`,
+          description: `Could not detect a supported validation library in any package.json, requirements.txt, pyproject.toml, or composer.json. Checked for: ${supportedLibraries}. If you use a different library, you can mark this task manually with evidence.`,
+          resourceType: 'repository',
+          resourceId: repo.full_name,
+          severity: 'medium',
+          remediation:
+            'Add a supported input-validation library (e.g. Zod/Yup/Joi/Valibot for JS/TS, Pydantic/Marshmallow for Python, Laravel/Respect-Validation for PHP) to enforce schema validation on inbound data.',
+          evidence: {
+            [repo.full_name]: {
+              validation: {
+                status: 'not_found',
+                checked_files:
+                  checkedFiles.length > 0 ? checkedFiles : ['No dependency files found'],
+                checked_at: new Date().toISOString(),
+              },
+            },
+          },
+        });
+      }
+    }
+  },
+};
