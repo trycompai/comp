@@ -1,0 +1,148 @@
+---
+name: prisma
+description: "Prisma schema conventions and migration workflow"
+---
+
+Source Cursor rule: `.cursor/rules/prisma.mdc`.
+Original file scope: `**/*.prisma`.
+Original Cursor alwaysApply: `false`.
+
+# Prisma Schema
+
+## Migration Workflow
+
+**Schema changes happen in `packages/db`, then regenerate types in each app.**
+
+### Step 1: Edit Schema
+
+```bash
+# Schema files are in packages/db/prisma/schema/
+packages/db/prisma/schema/
+├── schema.prisma      # Main schema with datasource
+├── user.prisma        # User models
+├── task.prisma        # Task models
+└── ...
+```
+
+### Step 2: Create Migration
+
+```bash
+# Run from packages/db
+cd packages/db
+bunx prisma migrate dev --name your_migration_name
+```
+
+### Step 3: Regenerate Types in Apps
+
+```bash
+# Each app needs to regenerate Prisma client types
+bun run -F apps/app db:generate
+bun run -F apps/api db:generate
+bun run -F apps/portal db:generate
+
+# Or from root (if configured)
+bun run prisma:generate
+```
+
+### ✅ Always Do This
+
+```bash
+# 1. Make schema changes in packages/db
+# 2. Create migration
+cd packages/db && bunx prisma migrate dev --name add_user_role
+
+# 3. Regenerate types in ALL apps that use the db
+bun run -F apps/app db:generate
+bun run -F apps/api db:generate
+bun run -F apps/portal db:generate
+```
+
+### ❌ Never Do This
+
+```bash
+# Don't edit schema in app directories
+apps/app/prisma/schema.prisma  # ❌ Wrong location
+
+# Don't forget to regenerate types
+bunx prisma migrate dev  # ✅ Created migration
+# ... forgot to run db:generate in apps  # ❌ Types out of sync
+```
+
+## Core Rule
+
+**Always use prefixed CUIDs for IDs** using `generate_prefixed_cuid`.
+
+## ID Pattern
+
+### ✅ Always Do This
+
+```prisma
+model User {
+  id String @id @default(dbgenerated("generate_prefixed_cuid('usr'::text)"))
+  // ... other fields
+}
+
+model Task {
+  id String @id @default(dbgenerated("generate_prefixed_cuid('tsk'::text)"))
+  // ... other fields
+}
+
+model Organization {
+  id String @id @default(dbgenerated("generate_prefixed_cuid('org'::text)"))
+  // ... other fields
+}
+```
+
+### ❌ Never Do This
+
+```prisma
+// Don't use UUID
+model User {
+  id String @id @default(uuid())
+}
+
+// Don't use auto-increment
+model User {
+  id Int @id @default(autoincrement())
+}
+
+// Don't forget ::text cast
+model User {
+  id String @id @default(dbgenerated("generate_prefixed_cuid('usr')")) // ❌ Missing ::text
+}
+```
+
+## Prefix Guidelines
+
+| Entity       | Prefix | Example ID                     |
+| ------------ | ------ | ------------------------------ |
+| User         | `usr`  | `usr_BJRIZLgRPuWt8MvMjkSY82f1` |
+| Organization | `org`  | `org_cK9xMnPqRs2tUvWx3yZa4b5c` |
+| Task         | `tsk`  | `tsk_dE6fGhIj7kLmNoP8qRsT9uVw` |
+| Control      | `ctl`  | `ctl_xY0zAaBb1cDdEe2fFgGh3iIj` |
+| Policy       | `pol`  | `pol_kK4lLmMn5oOpPq6rRsSt7uUv` |
+
+## Rules
+
+1. **Short prefixes** - Use 2-3 characters
+2. **Unique prefixes** - Each model gets its own prefix
+3. **Always cast** - Include `::text` in the function call
+4. **Use dbgenerated** - Wrap the function call in `dbgenerated()`
+
+## Benefits
+
+- Human-readable IDs at a glance (`usr_` vs `org_`)
+- Easy debugging in logs
+- Safe to expose in URLs
+- Unique across all tables
+
+## Checklist
+
+After schema changes:
+
+- [ ] Schema edited in `packages/db/prisma/schema/`
+- [ ] Migration created with `bunx prisma migrate dev`
+- [ ] Types regenerated in `apps/app` with `db:generate`
+- [ ] Types regenerated in `apps/api` with `db:generate`
+- [ ] Types regenerated in `apps/portal` with `db:generate`
+- [ ] New models use prefixed CUID IDs

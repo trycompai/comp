@@ -60,9 +60,9 @@ model SOADocument {
   answeredQuestions Int @default(0) // Number of questions with answers
 
   // Approval tracking
-  preparedBy String  @default("Comp AI") // Always "Comp AI"
+  preparedBy String    @default("Comp AI") // Always "Comp AI"
   approverId String? // Member ID who will approve this document (set when submitted for approval)
-  approver   Member? @relation("SOADocumentApprover", fields: [approverId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  approver   Member?   @relation("SOADocumentApprover", fields: [approverId], references: [id], onDelete: SetNull, onUpdate: Cascade)
   approvedAt DateTime? // When document was approved
   declinedAt DateTime? // When document was declined
 
