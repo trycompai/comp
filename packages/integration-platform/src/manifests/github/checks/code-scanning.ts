@@ -9,9 +9,49 @@
 
 import { TASK_TEMPLATES } from '../../../task-mappings';
 import type { IntegrationCheck } from '../../../types';
-import type { GitHubRepo, GitHubTreeEntry, GitHubTreeResponse } from '../types';
+import type {
+  GitHubCodeScanningDefaultSetup,
+  GitHubRepo,
+  GitHubTreeEntry,
+  GitHubTreeResponse,
+} from '../types';
 import { parseRepoBranch, targetReposVariable } from '../variables';
-import { getCodeScanningStatus } from './code-scanning-detector';
+
+// Patterns that indicate code scanning is configured in a workflow
+const CODE_SCANNING_PATTERNS = [
+  'github/codeql-action/init',
+  'github/codeql-action/analyze',
+  'github/codeql-action/upload-sarif',
+  'codeql-action/init',
+  'codeql-action/analyze',
+  'codeql-action/upload-sarif',
+  'upload-sarif', // Generic SARIF upload
+];
+
+interface GitHubFileResponse {
+  content: string;
+  encoding: 'base64' | 'utf-8';
+  path: string;
+}
+
+type CodeScanningStatus =
+  | {
+      status: 'enabled';
+      method: 'default-setup' | 'workflow';
+      languages?: string[];
+      workflow?: string;
+    }
+  | { status: 'not-configured' }
+  | { status: 'permission-denied'; isPrivate: boolean }
+  | { status: 'ghas-required' };
+
+const decodeFile = (file: GitHubFileResponse): string => {
+  if (!file?.content) return '';
+  if (file.encoding === 'base64') {
+    return Buffer.from(file.content, 'base64').toString('utf-8');
+  }
+  return file.content;
+};
 
 export const codeScanningCheck: IntegrationCheck = {
   id: 'code_scanning',
@@ -64,6 +104,110 @@ export const codeScanningCheck: IntegrationCheck = {
       }
     };
 
+    const fetchFile = async (repoName: string, path: string): Promise<string | null> => {
+      try {
+        const file = await ctx.fetch<GitHubFileResponse>(`/repos/${repoName}/contents/${path}`);
+        return decodeFile(file);
+      } catch {
+        return null;
+      }
+    };
+
+    const hasCodeScanningInWorkflow = (content: string): boolean => {
+      const lower = content.toLowerCase();
+      return CODE_SCANNING_PATTERNS.some((pattern) => lower.includes(pattern.toLowerCase()));
+    };
+
+    const findCodeScanningWorkflows = async (
+      repoName: string,
+      tree: GitHubTreeEntry[],
+    ): Promise<string[]> => {
+      const workflowFiles = tree.filter(
+        (entry) =>
+          entry.type === 'blob' &&
+          entry.path.startsWith('.github/workflows/') &&
+          (entry.path.endsWith('.yml') || entry.path.endsWith('.yaml')),
+      );
+
+      const codeScanningWorkflows: string[] = [];
+
+      for (const entry of workflowFiles) {
+        const content = await fetchFile(repoName, entry.path);
+        if (content && hasCodeScanningInWorkflow(content)) {
+          codeScanningWorkflows.push(entry.path);
+        }
+      }
+
+      return codeScanningWorkflows;
+    };
+
+    const getCodeScanningStatus = async ({
+      repoName,
+      tree,
+      isPrivate,
+      isGhasEnabled,
+    }: {
+      repoName: string;
+      tree: GitHubTreeEntry[];
+      isPrivate: boolean;
+      isGhasEnabled: boolean;
+    }): Promise<CodeScanningStatus> => {
+      let apiGot403 = false;
+
+      // First, try the default setup API
+      try {
+        const setup = await ctx.fetch<GitHubCodeScanningDefaultSetup>(
+          `/repos/${repoName}/code-scanning/default-setup`,
+        );
+        if (setup.state === 'configured') {
+          return {
+            status: 'enabled',
+            method: 'default-setup',
+            languages: setup.languages || [],
+          };
+        }
+      } catch (error) {
+        const errorStr = String(error);
+
+        if (errorStr.includes('403') || errorStr.includes('Forbidden')) {
+          // The code-scanning API requires GHAS for private repos, but reading
+          // workflow file contents only requires contents:read. A 403 here does
+          // not mean we can't check for code scanning workflows.
+          ctx.log(
+            `Code scanning API returned 403 for ${repoName} (private: ${isPrivate}, ghas: ${isGhasEnabled}). Falling back to workflow file scanning.`,
+          );
+          apiGot403 = true;
+        } else {
+          // Other errors - API might not be available, continue to check workflows
+          ctx.log(`Code scanning default setup not available for ${repoName}: ${errorStr}`);
+        }
+      }
+
+      // Fall back to checking for workflow files with code scanning.
+      // This catches repos using third-party SAST tools (Semgrep, Snyk, Trivy, etc.)
+      // that upload SARIF results via github/codeql-action/upload-sarif.
+      const codeScanningWorkflows = await findCodeScanningWorkflows(repoName, tree);
+      if (codeScanningWorkflows.length > 0) {
+        return {
+          status: 'enabled',
+          method: 'workflow',
+          workflow: codeScanningWorkflows[0],
+        };
+      }
+
+      if (apiGot403) {
+        if (isPrivate) {
+          if (isGhasEnabled) {
+            return { status: 'permission-denied', isPrivate };
+          }
+          return { status: 'ghas-required' };
+        }
+        return { status: 'permission-denied', isPrivate };
+      }
+
+      return { status: 'not-configured' };
+    };
+
     for (const repoName of targetRepos) {
       const repo = await fetchRepo(repoName);
       if (!repo) continue;
@@ -72,7 +216,6 @@ export const codeScanningCheck: IntegrationCheck = {
       const isGhasEnabled = repo.security_and_analysis?.advanced_security?.status === 'enabled';
 
       const codeScanningStatus = await getCodeScanningStatus({
-        ctx,
         repoName: repo.full_name,
         tree,
         isPrivate: repo.private,

@@ -6,5 +6,5 @@
 export { branchProtectionCheck } from './branch-protection';
 export { codeScanningCheck } from './code-scanning';
 export { dependabotCheck } from './dependabot';
-export { inputValidationCheck } from './input-validation';
+export { sanitizedInputsCheck } from './sanitized-inputs';
 export { twoFactorAuthCheck } from './two-factor-auth';

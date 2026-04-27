@@ -9,7 +9,7 @@ import type { IntegrationManifest } from '../../types';
 import { branchProtectionCheck } from './checks/branch-protection';
 import { codeScanningCheck } from './checks/code-scanning';
 import { dependabotCheck } from './checks/dependabot';
-import { inputValidationCheck } from './checks/input-validation';
+import { sanitizedInputsCheck } from './checks/sanitized-inputs';
 import { twoFactorAuthCheck } from './checks/two-factor-auth';
 
 export const manifest: IntegrationManifest = {
@@ -87,7 +87,7 @@ export const manifest: IntegrationManifest = {
     branchProtectionCheck,
     codeScanningCheck,
     dependabotCheck,
-    inputValidationCheck,
+    sanitizedInputsCheck,
     twoFactorAuthCheck,
   ],
 
