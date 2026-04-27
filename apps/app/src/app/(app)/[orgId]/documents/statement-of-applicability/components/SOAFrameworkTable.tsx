@@ -4,7 +4,7 @@ import { Card } from '@trycompai/ui';
 import { useState, useMemo, useEffect } from 'react';
 import { toast } from 'sonner';
 import { useSOAAutoFill } from '../hooks/useSOAAutoFill';
-import { useSOADocument } from '../../hooks/useSOADocument';
+import { useSOADocument } from '../hooks/useSOADocument';
 import type { Member, User } from '@db';
 import { SOADocumentInfo } from './SOADocumentInfo';
 import { SOAPendingApprovalAlert } from './SOAPendingApprovalAlert';
@@ -84,12 +84,14 @@ export function SOAFrameworkTable({
 
   // Derive state from SWR-cached document (updates after mutations)
   const resolvedDocument = swrDocument ?? document;
-  const derivedIsPendingApproval = resolvedDocument?.status === 'pending_approval' || isPendingApproval;
+  const derivedIsPendingApproval = resolvedDocument
+    ? resolvedDocument.status === 'needs_review'
+    : isPendingApproval;
   const derivedApproverId = (resolvedDocument?.approverId ?? document?.approverId) as string | null | undefined;
   // Resolve the approver member from the list using the derived approverId
   const derivedApprover = derivedApproverId
     ? ownerAdminMembers.find((m) => m.id === derivedApproverId) ?? approver
-    : approver;
+    : null;
   const derivedCanCurrentUserApprove = derivedIsPendingApproval && derivedApproverId === currentMemberId;
 
   const columns = configuration.columns as SOAColumn[];
@@ -105,19 +107,28 @@ export function SOAFrameworkTable({
     );
   });
 
-  // Update answersMap when document changes
+  // Update answersMap when the live document changes
   useEffect(() => {
+    if (!Array.isArray(resolvedDocument?.answers)) {
+      return;
+    }
     setAnswersMap(
       new Map(
-        (document?.answers || []).map((answer: { questionId: string; answer: string | null; answerVersion: number }) => [
+        resolvedDocument.answers.map((answer: { questionId: string; answer: string | null; answerVersion: number }) => [
           answer.questionId,
           { answer: answer.answer, answerVersion: answer.answerVersion },
         ])
       )
     );
-  }, [document?.answers]);
+  }, [resolvedDocument?.answers]);
 
   const handleAnswerUpdate = (questionId: string, payload: SOAFieldSavePayload) => {
+    const previousIsApplicable =
+      answersMap.get(questionId)?.savedIsApplicable ??
+      processedResults.get(questionId)?.isApplicable ??
+      questions.find((q) => q.id === questionId)?.columnMapping.isApplicable ??
+      null;
+
     setAnswersMap((prev) => {
       const newMap = new Map(prev);
       const existing = newMap.get(questionId);
@@ -128,6 +139,40 @@ export function SOAFrameworkTable({
       });
       return newMap;
     });
+
+    void mutateSOADocument((current) => {
+      if (!current) return current;
+
+      const totalQuestions = current.totalQuestions as number | undefined;
+      const currentAnsweredQuestions = current.answeredQuestions as number | undefined;
+
+      if (
+        typeof totalQuestions !== 'number' ||
+        typeof currentAnsweredQuestions !== 'number'
+      ) {
+        return current;
+      }
+
+      const nextIsApplicable = payload.isApplicable ?? null;
+      let answeredQuestions = currentAnsweredQuestions;
+
+      if (previousIsApplicable === null && nextIsApplicable !== null) {
+        answeredQuestions += 1;
+      } else if (previousIsApplicable !== null && nextIsApplicable === null) {
+        answeredQuestions -= 1;
+      }
+
+      answeredQuestions = Math.max(0, Math.min(totalQuestions, answeredQuestions));
+
+      return {
+        ...current,
+        answeredQuestions,
+        status: answeredQuestions === totalQuestions ? 'completed' : 'in_progress',
+        approverId: null,
+        approvedAt: null,
+        declinedAt: null,
+      };
+    }, false);
   };
 
   const [isSubmitApprovalDialogOpen, setIsSubmitApprovalDialogOpen] = useState(false);
@@ -151,9 +196,32 @@ export function SOAFrameworkTable({
     questions: questionsForHook,
     documentId: document?.id || '',
     organizationId,
-    onUpdate: () => {
-      // Revalidate SWR cache instead of full page reload
-      void mutateSOADocument();
+    onUpdate: ({ total, answered } = {}) => {
+      // Keep SOA info card in sync immediately after auto-fill completion.
+      void mutateSOADocument((current) => {
+        if (!current) return current;
+        const totalQuestions =
+          typeof total === 'number' ? total : (current.totalQuestions as number | undefined);
+        const answeredQuestions =
+          typeof answered === 'number'
+            ? answered
+            : (current.answeredQuestions as number | undefined);
+
+        if (typeof totalQuestions !== 'number' || typeof answeredQuestions !== 'number') {
+          return current;
+        }
+
+        return {
+          ...current,
+          totalQuestions,
+          answeredQuestions,
+          status:
+            answeredQuestions === totalQuestions ? 'completed' : 'in_progress',
+          approverId: null,
+          approvedAt: null,
+          declinedAt: null,
+        };
+      }, false);
     },
   });
 
@@ -190,10 +258,8 @@ export function SOAFrameworkTable({
     );
   }
 
-  // The document comes from the Prisma SOADocument type which has all necessary fields.
-  // We cast to the SOADocumentInfo's expected type for the info panel.
-  const docForInfo = document as unknown as SOADocumentInfoDocument;
-  const approverId = (document as Record<string, unknown>).approverId as string | null | undefined;
+  // Use the resolved SWR document so approval status updates instantly without page refresh.
+  const docForInfo = resolvedDocument as unknown as SOADocumentInfoDocument;
 
   const handleAutoFill = async () => {
     if (!document) return;
@@ -278,7 +344,7 @@ export function SOAFrameworkTable({
         isFullyRemote={isFullyRemote}
         isExpanded={isExpanded}
         onToggleExpand={() => setIsExpanded(!isExpanded)}
-        documentId={document.id}
+        documentId={resolvedDocument?.id ?? document.id}
         isPendingApproval={derivedIsPendingApproval}
         organizationId={organizationId}
         onAnswerUpdate={handleAnswerUpdate}

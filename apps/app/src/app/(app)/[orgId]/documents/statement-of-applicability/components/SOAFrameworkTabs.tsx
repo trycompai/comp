@@ -5,7 +5,7 @@ import { useState, useTransition } from 'react';
 import { toast } from 'sonner';
 import { Loader2, ShieldCheck } from 'lucide-react';
 import { SOAFrameworkTable } from './SOAFrameworkTable';
-import { ensureSOASetup } from '../../hooks/useSOADocument';
+import { ensureSOASetup } from '../hooks/useSOADocument';
 import type { FrameworkWithSOAData } from '../types';
 
 interface SOAFrameworkTabsProps {

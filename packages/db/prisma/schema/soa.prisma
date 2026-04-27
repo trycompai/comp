@@ -53,7 +53,7 @@ model SOADocument {
   isLatest Boolean @default(true) // Whether this is the latest version
 
   // Document status
-  status SOADocumentStatus @default(draft) // draft, in_progress, completed
+  status SOADocumentStatus @default(draft) // draft, in_progress, needs_review, completed
 
   // Document metadata
   totalQuestions    Int @default(0) // Total number of questions in this document
@@ -64,6 +64,7 @@ model SOADocument {
   approverId String? // Member ID who will approve this document (set when submitted for approval)
   approver   Member?   @relation("SOADocumentApprover", fields: [approverId], references: [id], onDelete: SetNull, onUpdate: Cascade)
   approvedAt DateTime? // When document was approved
+  declinedAt DateTime? // When document was declined
 
   // Dates
   completedAt DateTime? // When document was completed

@@ -18,10 +18,24 @@ import Link from 'next/link';
 import { useMemo } from 'react';
 import useSWR from 'swr';
 import { evidenceFormDefinitionList, meetingSubTypeValues } from '../forms';
+import { SOAOverviewCard } from './SOAOverviewCard';
 
 type FormStatuses = Record<string, { lastSubmittedAt: string | null }>;
+type FrameworkListResponse = {
+  data: Array<{
+    id: string;
+    frameworkId: string;
+    framework: {
+      id: string;
+      name: string;
+      description: string | null;
+      visible: boolean;
+    };
+  }>;
+};
 
 const SIX_MONTHS_MS = 6 * 30 * 24 * 60 * 60 * 1000;
+const ISO27001_NAMES = ['ISO 27001', 'iso27001', 'ISO27001'];
 
 const MEETING_SUB_TYPES = meetingSubTypeValues;
 const MEETING_ALL_TYPES = new Set<string>([...MEETING_SUB_TYPES, 'meeting']);
@@ -106,6 +120,16 @@ export function CompanyOverviewCards({ organizationId }: { organizationId: strin
   );
 
   const { data: findingsResponse } = useOrganizationFindings();
+  const { data: frameworksResponse } = useSWR<FrameworkListResponse>(
+    ['/v1/frameworks', organizationId] as const,
+    async ([endpoint]: readonly [string, string]) => {
+      const response = await api.get<FrameworkListResponse>(endpoint);
+      if (response.error || !response.data) {
+        throw new Error(response.error ?? 'Failed to load frameworks');
+      }
+      return response.data;
+    },
+  );
 
   const activeIssueCounts = useMemo(() => {
     const counts: Record<string, number> = {};
@@ -141,8 +165,24 @@ export function CompanyOverviewCards({ organizationId }: { organizationId: strin
     return map;
   }, [visibleForms]);
 
+  const iso27001Framework = useMemo(() => {
+    const frameworks = frameworksResponse?.data ?? [];
+    return frameworks.find(
+      (frameworkInstance) =>
+        !!frameworkInstance.framework?.name &&
+        ISO27001_NAMES.includes(frameworkInstance.framework.name),
+    );
+  }, [frameworksResponse]);
+  const iso27001FrameworkId = iso27001Framework?.frameworkId ?? null;
+
   return (
     <Stack gap="6">
+      {iso27001FrameworkId && (
+        <SOAOverviewCard
+          organizationId={organizationId}
+          iso27001FrameworkId={iso27001FrameworkId}
+        />
+      )}
       {Array.from(categories.entries()).map(([category, forms]) => (
         <div key={category} className="space-y-3">
           <div className="flex items-center gap-2">

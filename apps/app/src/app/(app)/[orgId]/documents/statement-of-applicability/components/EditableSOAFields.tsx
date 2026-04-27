@@ -20,7 +20,7 @@ import {
 } from '@trycompai/ui/dialog';
 import { X, Loader2, Edit2 } from 'lucide-react';
 import { toast } from 'sonner';
-import { useSOADocument } from '../../hooks/useSOADocument';
+import { useSOADocument } from '../hooks/useSOADocument';
 import { ApplicableReadOnlyDisplay, ApplicableSwatchRow } from './ApplicableSwatch';
 import type { SOAFieldSavePayload } from './soa-field-types';
 
