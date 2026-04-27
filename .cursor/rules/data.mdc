@@ -52,7 +52,12 @@ export function useTasks({ organizationId, initialData }: UseTasksOptions) {
     mutate(); // Revalidate
   };
 
-  return { tasks: data ?? [], createTask, mutate };
+  const updateTask = async ({ taskId, input }: { taskId: string; input: UpdateTaskInput }) => {
+    await apiClient.put(`/v1/tasks/${taskId}`, input, organizationId);
+    mutate(); // Revalidate
+  };
+
+  return { tasks: data ?? [], createTask, updateTask, mutate };
 }
 ```
 
