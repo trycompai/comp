@@ -1,3 +1,10 @@
+## [3.33.2](https://github.com/trycompai/comp/compare/v3.33.1...v3.33.2) (2026-04-27)
+
+
+### Bug Fixes
+
+* **gws:** coerce target_org_units to array in check-user-filter ([f5e6754](https://github.com/trycompai/comp/commit/f5e6754af8805307d79f046fef22a6e871fabd27))
+
 ## [3.33.1](https://github.com/trycompai/comp/compare/v3.33.0...v3.33.1) (2026-04-24)
 
 
