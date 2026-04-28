@@ -661,7 +661,7 @@ export class TasksController {
             id: true,
             name: true,
             policies: {
-              where: { archivedAt: null, organizationId, status: 'published' },
+              where: { archivedAt: null, organizationId },
               select: {
                 id: true,
                 name: true,

@@ -55,7 +55,9 @@ describe('TaskPolicies', () => {
     ).toBeInTheDocument();
   });
 
-  it('filters out policies that are not published, defensively', () => {
+  it('renders all policies returned by the API, including drafts', () => {
+    // The API is authoritative on what to show; the component does not filter
+    // by status. Both draft and published policies should appear.
     mockHook.mockReturnValue({
       groups: [
         {
@@ -63,23 +65,19 @@ describe('TaskPolicies', () => {
           policies: [
             makePolicy({ id: 'pol_1', status: 'published', name: 'Published One' }),
             makePolicy({ id: 'pol_2', status: 'draft', name: 'Draft One' }),
-            makePolicy({ id: 'pol_3', status: 'archived', name: 'Archived One' }),
           ],
         },
       ],
-      // API's unfiltered count disagrees with what we render; the description
-      // should reflect the visible (filtered) count, not this value.
-      count: 3,
+      count: 2,
       isLoading: false,
     });
 
     render(<TaskPolicies />);
 
     expect(screen.getByText('Published One')).toBeInTheDocument();
-    expect(screen.queryByText('Draft One')).not.toBeInTheDocument();
-    expect(screen.queryByText('Archived One')).not.toBeInTheDocument();
+    expect(screen.getByText('Draft One')).toBeInTheDocument();
     expect(
-      screen.getByText(/1 policy whose controls this task demonstrates\./i),
+      screen.getByText(/2 policies whose controls this task demonstrates\./i),
     ).toBeInTheDocument();
   });
 

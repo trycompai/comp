@@ -519,7 +519,7 @@ describe('TasksController', () => {
   // ==================== GET TASK POLICIES ====================
 
   describe('getTaskPolicies', () => {
-    it('returns policies grouped by control, filtering drafts and archived', async () => {
+    it('returns policies grouped by control, excluding archived only (drafts included)', async () => {
       const { db } = require('@db');
       db.task.findFirst.mockResolvedValue({
         id: 'tsk_1',
@@ -533,6 +533,13 @@ describe('TasksController', () => {
                 id: 'pol_1',
                 name: 'Authentication Policy',
                 status: 'published',
+                frequency: 'yearly',
+                department: 'it',
+              },
+              {
+                id: 'pol_2',
+                name: 'Acceptable Use',
+                status: 'draft',
                 frequency: 'yearly',
                 department: 'it',
               },
@@ -559,13 +566,17 @@ describe('TasksController', () => {
                 where: {
                   archivedAt: null,
                   organizationId: orgId,
-                  status: 'published',
                 },
               }),
             }),
           }),
         }),
       });
+      // Assert the policies where clause does NOT filter by status.
+      const callArgs = db.task.findFirst.mock.calls[0][0];
+      expect(callArgs.select.controls.select.policies.where).not.toHaveProperty(
+        'status',
+      );
       expect(result.data).toEqual([
         {
           control: { id: 'ctl_1', name: 'Access Controls' },
@@ -577,10 +588,17 @@ describe('TasksController', () => {
               frequency: 'yearly',
               department: 'it',
             },
+            {
+              id: 'pol_2',
+              name: 'Acceptable Use',
+              status: 'draft',
+              frequency: 'yearly',
+              department: 'it',
+            },
           ],
         },
       ]);
-      expect(result.count).toBe(1);
+      expect(result.count).toBe(2);
     });
 
     it('throws NotFoundException when task is not in caller org', async () => {

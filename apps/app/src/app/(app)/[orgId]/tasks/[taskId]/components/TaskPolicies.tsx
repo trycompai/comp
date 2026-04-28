@@ -39,17 +39,11 @@ export function TaskPolicies() {
     organizationId: orgId,
   });
 
-  // Defensive filter: never render non-published policies even if the API
-  // regresses and returns them.
-  const visibleGroups = groups
-    .map((group) => ({
-      ...group,
-      policies: group.policies.filter((p) => p.status === 'published'),
-    }))
-    // Drop empty groups: a control with no published policies is irrelevant noise
-    // on the task page. Diverges intentionally from PolicyEvidenceTasks, which
-    // keeps empty groups as a prompt to add tasks.
-    .filter((group) => group.policies.length > 0);
+  // Drop empty groups: a control with no policies is irrelevant noise on the
+  // task page. Diverges intentionally from PolicyEvidenceTasks, which keeps
+  // empty groups as a prompt to add tasks. The API is authoritative on which
+  // policies to show — we don't filter by status here.
+  const visibleGroups = groups.filter((group) => group.policies.length > 0);
 
   // Dedupe by policy ID — a single policy can appear under multiple controls
   // attached to the same task, but for the count we want unique policies.
