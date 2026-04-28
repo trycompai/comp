@@ -117,14 +117,14 @@ export function TaskPolicies() {
                   target="_blank"
                   rel="noopener noreferrer"
                   onClick={(e) => e.stopPropagation()}
-                  className="group inline-flex items-center gap-2"
+                  className="group flex items-center justify-between gap-2"
                 >
                   <Text size="sm" weight="medium">
                     {row.policyName}
                   </Text>
                   <Launch
                     size={14}
-                    className="shrink-0 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100"
+                    className="shrink-0 text-muted-foreground transition-colors group-hover:text-foreground"
                   />
                 </Link>
               </TableCell>
@@ -134,14 +134,14 @@ export function TaskPolicies() {
                   target="_blank"
                   rel="noopener noreferrer"
                   onClick={(e) => e.stopPropagation()}
-                  className="group inline-flex items-center gap-2"
+                  className="group flex items-center justify-between gap-2"
                 >
                   <Text size="sm" variant="muted">
                     {row.controlName}
                   </Text>
                   <Launch
                     size={14}
-                    className="shrink-0 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100"
+                    className="shrink-0 text-muted-foreground transition-colors group-hover:text-foreground"
                   />
                 </Link>
               </TableCell>
