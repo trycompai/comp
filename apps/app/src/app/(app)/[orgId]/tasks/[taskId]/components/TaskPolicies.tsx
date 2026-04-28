@@ -14,7 +14,7 @@ import { useParams, useRouter } from 'next/navigation';
 import { useTaskPolicies } from '../hooks/use-task-policies';
 
 const SECTION_TITLE = 'Policies';
-const SECTION_DESCRIPTION = 'Policies whose controls this task demonstrates.';
+const SECTION_DESCRIPTION = 'Policies this task implements.';
 
 interface PolicyRow {
   policyId: string;

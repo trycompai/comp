@@ -14,7 +14,7 @@ import { useParams, useRouter } from 'next/navigation';
 import { usePolicyEvidenceTasks } from '../hooks/usePolicyEvidenceTasks';
 
 const SECTION_TITLE = 'Evidence Tasks';
-const SECTION_DESCRIPTION = 'Tasks attached to controls mapped to this policy.';
+const SECTION_DESCRIPTION = 'Tasks that implement this policy.';
 
 interface TaskRow {
   taskId: string;
