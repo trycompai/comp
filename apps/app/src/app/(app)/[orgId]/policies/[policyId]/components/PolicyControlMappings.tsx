@@ -206,13 +206,13 @@ export function PolicyControlMappings({
                   </Link>
                 </TableCell>
                 <TableCell>
-                  {control.frameworks.length === 0 ? (
+                  {(control.frameworks ?? []).length === 0 ? (
                     <Text size="sm" variant="muted">
                       —
                     </Text>
                   ) : (
                     <div className="flex flex-wrap gap-1">
-                      {control.frameworks.map((fw) => (
+                      {(control.frameworks ?? []).map((fw) => (
                         <Badge key={fw.id} variant="secondary">
                           {fw.name}
                         </Badge>
