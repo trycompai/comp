@@ -374,7 +374,7 @@ async getTaskPolicies(
           id: true,
           name: true,
           policies: {
-            where: { archivedAt: null, status: 'published' },
+            where: { archivedAt: null },
             select: {
               id: true,
               name: true,
