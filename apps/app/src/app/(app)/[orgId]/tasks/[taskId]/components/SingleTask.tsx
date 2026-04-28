@@ -333,6 +333,7 @@ export function SingleTask({
         <Stack gap="lg">
           <TabsList variant="underline">
             <TabsTrigger value="overview">Overview</TabsTrigger>
+            <TabsTrigger value="mappings">Mappings</TabsTrigger>
             {task.automationStatus !== 'MANUAL' && <TabsTrigger value="automations">Automations</TabsTrigger>}
             <TabsTrigger value="comments">Comments</TabsTrigger>
             <TabsTrigger value="activity">Activity</TabsTrigger>
@@ -347,6 +348,11 @@ export function SingleTask({
                 onRequestApproval={handleRequestApproval}
               />
               <TaskMainContent task={task} showComments={false} />
+            </Stack>
+          </TabsContent>
+
+          <TabsContent value="mappings">
+            <Stack gap="lg">
               <TaskPolicies />
             </Stack>
           </TabsContent>
