@@ -81,7 +81,7 @@ export function SingleTask({
   const searchParams = useSearchParams();
   const orgId = params.orgId as string;
   const taskId = params.taskId as string;
-  const requestedTab = searchParams.get('tab') || 'overview';
+  const defaultTab = searchParams.get('tab') || 'overview';
 
   const {
     task,
@@ -123,15 +123,6 @@ export function SingleTask({
   const canUpdateTask = hasPermission('task', 'update');
   const canDeleteTask = hasPermission('task', 'delete');
   const canReadPolicy = hasPermission('policy', 'read');
-
-  // Fall back to overview if the requested tab isn't available to this user
-  // (e.g. bookmarked ?tab=mappings without policy:read, or ?tab=automations on a manual task).
-  const isTabAvailable = (tab: string) => {
-    if (tab === 'mappings') return canReadPolicy;
-    if (tab === 'automations') return task.automationStatus !== 'MANUAL';
-    return ['overview', 'comments', 'activity', 'settings'].includes(tab);
-  };
-  const defaultTab = isTabAvailable(requestedTab) ? requestedTab : 'overview';
 
   const startEditingTitle = () => {
     if (!canUpdateTask) return;
@@ -361,13 +352,11 @@ export function SingleTask({
             </Stack>
           </TabsContent>
 
-          {canReadPolicy && (
-            <TabsContent value="mappings">
-              <Stack gap="lg">
-                <TaskPolicies />
-              </Stack>
-            </TabsContent>
-          )}
+          <TabsContent value="mappings">
+            <Stack gap="lg">
+              <TaskPolicies />
+            </Stack>
+          </TabsContent>
 
           <TabsContent value="automations">
             <Stack gap="lg">
