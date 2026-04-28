@@ -5,11 +5,23 @@ import {
   Collapsible,
   CollapsibleContent,
   CollapsibleTrigger,
+  Empty,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyMedia,
+  EmptyTitle,
+  Heading,
   HStack,
+  Item,
+  ItemActions,
+  ItemContent,
+  ItemGroup,
+  ItemTitle,
   Section,
   Stack,
   Text,
 } from '@trycompai/design-system';
+import { ChevronRight, Document } from '@trycompai/design-system/icons';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import {
@@ -18,6 +30,7 @@ import {
 } from '../hooks/use-task-policies';
 
 const COLLAPSE_THRESHOLD = 5;
+const SECTION_DESCRIPTION = 'Policies whose controls this task demonstrates.';
 
 export function TaskPolicies() {
   const { orgId, taskId } = useParams<{ orgId: string; taskId: string }>();
@@ -48,10 +61,7 @@ export function TaskPolicies() {
 
   if (error) {
     return (
-      <Section
-        title="Policies"
-        description="Policies whose controls this task demonstrates."
-      >
+      <Section title="Policies" description={SECTION_DESCRIPTION}>
         <Text>Could not load policies. Please try again.</Text>
       </Section>
     );
@@ -59,10 +69,7 @@ export function TaskPolicies() {
 
   if (isLoading) {
     return (
-      <Section
-        title="Policies"
-        description="Policies whose controls this task demonstrates."
-      >
+      <Section title="Policies" description={SECTION_DESCRIPTION}>
         <Text>Loading...</Text>
       </Section>
     );
@@ -70,11 +77,18 @@ export function TaskPolicies() {
 
   if (visibleGroups.length === 0) {
     return (
-      <Section
-        title="Policies"
-        description="Policies whose controls this task demonstrates."
-      >
-        <Text>No policies reference this task through its mapped controls.</Text>
+      <Section title="Policies" description={SECTION_DESCRIPTION}>
+        <Empty>
+          <EmptyHeader>
+            <EmptyMedia variant="icon">
+              <Document />
+            </EmptyMedia>
+            <EmptyTitle>No policies yet</EmptyTitle>
+            <EmptyDescription>
+              No policies reference this task through its mapped controls.
+            </EmptyDescription>
+          </EmptyHeader>
+        </Empty>
       </Section>
     );
   }
@@ -84,12 +98,34 @@ export function TaskPolicies() {
       title="Policies"
       description={`${visibleCount} ${visibleCount === 1 ? 'policy' : 'policies'} whose controls this task demonstrates.`}
     >
-      <Stack gap="4">
+      <Stack gap="6">
         {visibleGroups.map((group) => (
           <ControlGroup key={group.control.id} group={group} orgId={orgId} />
         ))}
       </Stack>
     </Section>
+  );
+}
+
+function ControlGroupHeader({
+  name,
+  count,
+  trigger,
+}: {
+  name: string;
+  count: number;
+  trigger?: React.ReactNode;
+}) {
+  return (
+    <div className="flex items-center justify-between border-b pb-2">
+      <HStack gap="2" align="center">
+        <Heading level="5" as="h3">
+          {name}
+        </Heading>
+        <Badge variant="secondary">{count}</Badge>
+      </HStack>
+      {trigger}
+    </div>
   );
 }
 
@@ -107,22 +143,28 @@ function ControlGroup({
   if (policies.length > COLLAPSE_THRESHOLD) {
     return (
       <Collapsible>
-        <HStack justify="between" align="center">
-          <Text weight="medium">{control.name}</Text>
-          <CollapsibleTrigger className="inline-flex h-6 items-center rounded-sm px-2 text-xs font-medium text-muted-foreground hover:bg-muted hover:text-foreground">
-            {label}
-          </CollapsibleTrigger>
-        </HStack>
-        <CollapsibleContent>
-          <PolicyList policies={policies} orgId={orgId} />
-        </CollapsibleContent>
+        <Stack gap="3">
+          <ControlGroupHeader
+            name={control.name}
+            count={policies.length}
+            trigger={
+              <CollapsibleTrigger className="inline-flex items-center gap-1 rounded-sm px-2 py-1 text-xs font-medium text-muted-foreground hover:bg-muted hover:text-foreground [&>svg]:transition-transform data-[panel-open]:[&>svg]:rotate-90">
+                <ChevronRight size={14} />
+                {label}
+              </CollapsibleTrigger>
+            }
+          />
+          <CollapsibleContent>
+            <PolicyList policies={policies} orgId={orgId} />
+          </CollapsibleContent>
+        </Stack>
       </Collapsible>
     );
   }
 
   return (
-    <Stack gap="2">
-      <Text weight="medium">{control.name}</Text>
+    <Stack gap="3">
+      <ControlGroupHeader name={control.name} count={policies.length} />
       <PolicyList policies={policies} orgId={orgId} />
     </Stack>
   );
@@ -136,22 +178,25 @@ function PolicyList({
   orgId: string;
 }) {
   return (
-    <Stack gap="1">
+    <ItemGroup>
       {policies.map((policy) => (
-        <Link
+        <Item
           key={policy.id}
-          href={`/${orgId}/policies/${policy.id}`}
-          className="block rounded px-3 py-2 hover:bg-muted"
+          variant="outline"
+          size="sm"
+          render={<Link href={`/${orgId}/policies/${policy.id}`} />}
         >
-          <HStack justify="between" align="center">
-            <Text>{policy.name}</Text>
-            <HStack gap="2">
-              <Badge>{policy.status}</Badge>
-              {policy.frequency ? <Badge>{policy.frequency}</Badge> : null}
-            </HStack>
-          </HStack>
-        </Link>
+          <ItemContent>
+            <ItemTitle>{policy.name}</ItemTitle>
+          </ItemContent>
+          <ItemActions>
+            <Badge variant="secondary">{policy.status}</Badge>
+            {policy.frequency ? (
+              <Badge variant="outline">{policy.frequency}</Badge>
+            ) : null}
+          </ItemActions>
+        </Item>
       ))}
-    </Stack>
+    </ItemGroup>
   );
 }
