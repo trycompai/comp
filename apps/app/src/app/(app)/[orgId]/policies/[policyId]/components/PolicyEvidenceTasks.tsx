@@ -10,6 +10,7 @@ import {
   TableRow,
   Text,
 } from '@trycompai/design-system';
+import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { usePolicyEvidenceTasks } from '../hooks/usePolicyEvidenceTasks';
 
@@ -123,9 +124,15 @@ export function PolicyEvidenceTasks() {
               style={{ cursor: 'pointer' }}
             >
               <TableCell>
-                <Text size="sm" weight="medium">
-                  {row.taskTitle}
-                </Text>
+                <Link
+                  href={`/${orgId}/tasks/${row.taskId}`}
+                  onClick={(e) => e.stopPropagation()}
+                  className="block"
+                >
+                  <Text size="sm" weight="medium">
+                    {row.taskTitle}
+                  </Text>
+                </Link>
               </TableCell>
               <TableCell>
                 <Text size="sm" variant="muted">

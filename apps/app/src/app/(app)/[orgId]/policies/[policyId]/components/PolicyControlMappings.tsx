@@ -31,6 +31,7 @@ import {
   Text,
 } from '@trycompai/design-system';
 import { Add, Unlink } from '@trycompai/design-system/icons';
+import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { toast } from 'sonner';
@@ -190,9 +191,15 @@ export function PolicyControlMappings({
                 style={{ cursor: 'pointer' }}
               >
                 <TableCell>
-                  <Text size="sm" weight="medium">
-                    {control.name}
-                  </Text>
+                  <Link
+                    href={`/${orgId}/controls/${control.id}`}
+                    onClick={(e) => e.stopPropagation()}
+                    className="block"
+                  >
+                    <Text size="sm" weight="medium">
+                      {control.name}
+                    </Text>
+                  </Link>
                 </TableCell>
                 {canMutate && (
                   <TableCell style={{ width: 48 }}>

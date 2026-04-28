@@ -10,6 +10,7 @@ import {
   TableRow,
   Text,
 } from '@trycompai/design-system';
+import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { useTaskPolicies } from '../hooks/use-task-policies';
 
@@ -119,9 +120,15 @@ export function TaskPolicies() {
               style={{ cursor: 'pointer' }}
             >
               <TableCell>
-                <Text size="sm" weight="medium">
-                  {row.policyName}
-                </Text>
+                <Link
+                  href={`/${orgId}/policies/${row.policyId}`}
+                  onClick={(e) => e.stopPropagation()}
+                  className="block"
+                >
+                  <Text size="sm" weight="medium">
+                    {row.policyName}
+                  </Text>
+                </Link>
               </TableCell>
               <TableCell>
                 <Text size="sm" variant="muted">
