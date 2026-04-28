@@ -70,6 +70,12 @@ export class DeviceAgentController {
   ) {
     const result = await this.deviceAgentService.getUpdateFile({ filename });
 
+    if (result.kind === 'redirect') {
+      res.set({ 'Cache-Control': 'no-store' });
+      res.redirect(302, result.url);
+      return;
+    }
+
     res.set({
       'Content-Type': result.contentType,
       'Cache-Control': 'public, max-age=300',
@@ -89,6 +95,12 @@ export class DeviceAgentController {
     @Response({ passthrough: true }) res: ExpressResponse,
   ) {
     const result = await this.deviceAgentService.headUpdateFile({ filename });
+
+    if (result.kind === 'redirect') {
+      res.set({ 'Cache-Control': 'no-store' });
+      res.redirect(302, result.url);
+      return;
+    }
 
     res.set({
       'Content-Type': result.contentType,
