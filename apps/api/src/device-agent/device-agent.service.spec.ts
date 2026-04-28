@@ -5,10 +5,28 @@ import {
 import { Readable } from 'stream';
 
 const mockSend = jest.fn();
+const mockGetSignedUrl = jest.fn();
+
+class MockGetObjectCommand {
+  constructor(public readonly input: unknown) {
+    Object.assign(this, input as object);
+  }
+}
+
+class MockHeadObjectCommand {
+  constructor(public readonly input: unknown) {
+    Object.assign(this, input as object);
+  }
+}
 
 jest.mock('@aws-sdk/client-s3', () => ({
   S3Client: jest.fn().mockImplementation(() => ({ send: mockSend })),
-  GetObjectCommand: jest.fn().mockImplementation((input) => input),
+  GetObjectCommand: MockGetObjectCommand,
+  HeadObjectCommand: MockHeadObjectCommand,
+}));
+
+jest.mock('@aws-sdk/s3-request-presigner', () => ({
+  getSignedUrl: (...args: unknown[]) => mockGetSignedUrl(...args),
 }));
 
 import { DeviceAgentService } from './device-agent.service';
@@ -89,6 +107,123 @@ describe('DeviceAgentService', () => {
       await expect(service.downloadMacAgent()).rejects.toThrow(
         'Failed to download macOS agent',
       );
+    });
+  });
+
+  describe('getUpdateFile', () => {
+    it('streams .yml manifests directly from S3', async () => {
+      const mockStream = new Readable({ read() {} });
+      mockSend.mockResolvedValue({
+        Body: mockStream,
+        ContentLength: 859,
+      });
+
+      const result = await service.getUpdateFile({ filename: 'latest-mac.yml' });
+
+      expect(result).toEqual({
+        kind: 'stream',
+        stream: mockStream,
+        contentType: 'text/yaml',
+        contentLength: 859,
+      });
+      expect(mockGetSignedUrl).not.toHaveBeenCalled();
+    });
+
+    it('redirects binary downloads to a presigned S3 URL signed for GET', async () => {
+      mockGetSignedUrl.mockResolvedValue('https://s3.example.com/signed-zip-url');
+
+      const result = await service.getUpdateFile({
+        filename: 'CompAI-Device-Agent-1.0.5-arm64.zip',
+      });
+
+      expect(result).toEqual({
+        kind: 'redirect',
+        url: 'https://s3.example.com/signed-zip-url',
+      });
+      expect(mockSend).not.toHaveBeenCalled();
+      expect(mockGetSignedUrl).toHaveBeenCalledTimes(1);
+      const [, command] = mockGetSignedUrl.mock.calls[0];
+      expect(command).toBeInstanceOf(MockGetObjectCommand);
+      expect(command).toMatchObject({
+        Bucket: 'test-bucket',
+        Key: 'device-agent/production/updates/CompAI-Device-Agent-1.0.5-arm64.zip',
+      });
+    });
+
+    it.each([
+      'CompAI-Device-Agent-1.0.5-arm64.zip',
+      'CompAI-Device-Agent-1.0.5-setup.exe',
+      'CompAI-Device-Agent-1.0.5-arm64.dmg',
+      'CompAI-Device-Agent-1.0.5-x86_64.AppImage',
+      'CompAI-Device-Agent-1.0.5-arm64.zip.blockmap',
+    ])('redirects binary file %s', async (filename) => {
+      mockGetSignedUrl.mockResolvedValue('https://s3.example.com/signed');
+
+      const result = await service.getUpdateFile({ filename });
+
+      expect(result).toEqual({
+        kind: 'redirect',
+        url: 'https://s3.example.com/signed',
+      });
+    });
+
+    it('throws NotFoundException for invalid filenames', async () => {
+      await expect(
+        service.getUpdateFile({ filename: '../etc/passwd' }),
+      ).rejects.toThrow(NotFoundException);
+      await expect(
+        service.getUpdateFile({ filename: 'foo.txt' }),
+      ).rejects.toThrow(NotFoundException);
+    });
+
+    it('throws NotFoundException when S3 returns NoSuchKey for a yml manifest', async () => {
+      const error = new Error('Not found');
+      error.name = 'NoSuchKey';
+      mockSend.mockRejectedValue(error);
+
+      await expect(
+        service.getUpdateFile({ filename: 'latest-mac.yml' }),
+      ).rejects.toThrow(NotFoundException);
+    });
+  });
+
+  describe('headUpdateFile', () => {
+    it('returns metadata for .yml manifests', async () => {
+      mockSend.mockResolvedValue({ ContentLength: 859 });
+
+      const result = await service.headUpdateFile({
+        filename: 'latest-mac.yml',
+      });
+
+      expect(result).toEqual({
+        kind: 'stream',
+        contentType: 'text/yaml',
+        contentLength: 859,
+      });
+      expect(mockGetSignedUrl).not.toHaveBeenCalled();
+    });
+
+    it('redirects binary HEAD requests to a URL signed with HeadObjectCommand', async () => {
+      mockGetSignedUrl.mockResolvedValue('https://s3.example.com/signed-head');
+
+      const result = await service.headUpdateFile({
+        filename: 'CompAI-Device-Agent-1.0.5-arm64.zip',
+      });
+
+      expect(result).toEqual({
+        kind: 'redirect',
+        url: 'https://s3.example.com/signed-head',
+      });
+      expect(mockSend).not.toHaveBeenCalled();
+      expect(mockGetSignedUrl).toHaveBeenCalledTimes(1);
+      const [, command] = mockGetSignedUrl.mock.calls[0];
+      // S3 signs each HTTP method separately; a GET-signed URL would be
+      // rejected when used with a HEAD request.
+      expect(command).toBeInstanceOf(MockHeadObjectCommand);
+      expect(command).toMatchObject({
+        Bucket: 'test-bucket',
+        Key: 'device-agent/production/updates/CompAI-Device-Agent-1.0.5-arm64.zip',
+      });
     });
   });
 
