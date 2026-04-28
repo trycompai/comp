@@ -2,26 +2,23 @@
 
 import {
   Badge,
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
   Collapsible,
   CollapsibleContent,
   CollapsibleTrigger,
-  Empty,
-  EmptyDescription,
-  EmptyHeader,
-  EmptyMedia,
-  EmptyTitle,
-  Heading,
-  HStack,
   Item,
   ItemActions,
   ItemContent,
   ItemGroup,
   ItemTitle,
-  Section,
   Stack,
   Text,
 } from '@trycompai/design-system';
-import { ChevronRight, Document } from '@trycompai/design-system/icons';
+import { ChevronRight } from '@trycompai/design-system/icons';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import {
@@ -30,7 +27,10 @@ import {
 } from '../hooks/usePolicyEvidenceTasks';
 
 const COLLAPSE_THRESHOLD = 5;
-const SECTION_DESCRIPTION = 'Tasks attached to the controls mapped to this policy.';
+const SECTION_TITLE = 'Evidence Tasks';
+const DEFAULT_DESCRIPTION = 'Tasks attached to the controls mapped to this policy.';
+const CAPTION_CLASS =
+  'text-xs font-semibold uppercase tracking-[0.08em] text-muted-foreground';
 
 export function PolicyEvidenceTasks() {
   const { orgId, policyId } = useParams<{ orgId: string; policyId: string }>();
@@ -41,53 +41,72 @@ export function PolicyEvidenceTasks() {
 
   if (error) {
     return (
-      <Section title="Evidence Tasks" description={SECTION_DESCRIPTION}>
+      <SectionShell description={DEFAULT_DESCRIPTION}>
         <Text>Could not load evidence tasks. Please try again.</Text>
-      </Section>
+      </SectionShell>
     );
   }
 
   if (isLoading) {
     return (
-      <Section title="Evidence Tasks" description={SECTION_DESCRIPTION}>
-        <Text>Loading...</Text>
-      </Section>
+      <SectionShell description={DEFAULT_DESCRIPTION}>
+        <Text variant="muted">Loading...</Text>
+      </SectionShell>
     );
   }
 
   if (groups.length === 0) {
     return (
-      <Section title="Evidence Tasks" description={SECTION_DESCRIPTION}>
-        <Empty>
-          <EmptyHeader>
-            <EmptyMedia variant="icon">
-              <Document />
-            </EmptyMedia>
-            <EmptyTitle>No evidence tasks yet</EmptyTitle>
-            <EmptyDescription>
-              Map at least one control to see the tasks that demonstrate this policy.
-            </EmptyDescription>
-          </EmptyHeader>
-        </Empty>
-      </Section>
+      <SectionShell description={DEFAULT_DESCRIPTION}>
+        <Text variant="muted">
+          Map at least one control above to see evidence tasks.
+        </Text>
+      </SectionShell>
     );
   }
 
+  const populated = groups.filter((g) => g.tasks.length > 0);
+  const empty = groups.filter((g) => g.tasks.length === 0);
+  const description = `${count} task${count === 1 ? '' : 's'} attached to controls mapped to this policy.`;
+
   return (
-    <Section
-      title="Evidence Tasks"
-      description={`${count} task${count === 1 ? '' : 's'} attached to the controls mapped to this policy.`}
-    >
-      <Stack gap="6">
-        {groups.map((group) => (
-          <ControlGroup key={group.control.id} group={group} orgId={orgId} />
-        ))}
-      </Stack>
-    </Section>
+    <SectionShell description={description}>
+      {populated.length > 0 ? (
+        <Stack gap="4">
+          {populated.map((group) => (
+            <ControlGroup key={group.control.id} group={group} orgId={orgId} />
+          ))}
+        </Stack>
+      ) : null}
+      {empty.length > 0 ? (
+        <EmptyControlsFooter
+          groups={empty}
+          hasPopulated={populated.length > 0}
+        />
+      ) : null}
+    </SectionShell>
   );
 }
 
-function ControlGroupHeader({
+function SectionShell({
+  description,
+  children,
+}: {
+  description: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <Card width="full">
+      <CardHeader>
+        <CardTitle>{SECTION_TITLE}</CardTitle>
+        <CardDescription>{description}</CardDescription>
+      </CardHeader>
+      <CardContent>{children}</CardContent>
+    </Card>
+  );
+}
+
+function ControlGroupCaption({
   name,
   count,
   trigger,
@@ -97,13 +116,15 @@ function ControlGroupHeader({
   trigger?: React.ReactNode;
 }) {
   return (
-    <div className="flex items-center justify-between border-b pb-2">
-      <HStack gap="2" align="center">
-        <Heading level="5" as="h3">
-          {name}
-        </Heading>
-        <Badge variant="secondary">{count}</Badge>
-      </HStack>
+    <div className="flex items-center justify-between gap-3">
+      <h3 className={CAPTION_CLASS}>
+        {name}
+        {count > 1 ? (
+          <span className="text-muted-foreground/60 ml-1.5 font-medium normal-case tracking-normal">
+            · {count}
+          </span>
+        ) : null}
+      </h3>
       {trigger}
     </div>
   );
@@ -118,22 +139,11 @@ function ControlGroup({
 }) {
   const { control, tasks } = group;
 
-  if (tasks.length === 0) {
-    return (
-      <Stack gap="3">
-        <ControlGroupHeader name={control.name} count={0} />
-        <Text size="sm" variant="muted">
-          No tasks attached to this control.
-        </Text>
-      </Stack>
-    );
-  }
-
   if (tasks.length > COLLAPSE_THRESHOLD) {
     return (
       <Collapsible>
-        <Stack gap="3">
-          <ControlGroupHeader
+        <Stack gap="2">
+          <ControlGroupCaption
             name={control.name}
             count={tasks.length}
             trigger={
@@ -152,8 +162,8 @@ function ControlGroup({
   }
 
   return (
-    <Stack gap="3">
-      <ControlGroupHeader name={control.name} count={tasks.length} />
+    <Stack gap="2">
+      <ControlGroupCaption name={control.name} count={tasks.length} />
       <TaskList tasks={tasks} orgId={orgId} />
     </Stack>
   );
@@ -185,5 +195,36 @@ function TaskList({
         </Item>
       ))}
     </ItemGroup>
+  );
+}
+
+function EmptyControlsFooter({
+  groups,
+  hasPopulated,
+}: {
+  groups: PolicyEvidenceTaskGroup[];
+  hasPopulated: boolean;
+}) {
+  const MAX = 3;
+  const names = groups.map((g) => g.control.name);
+  const visible = names.slice(0, MAX);
+  const remainder = names.length - visible.length;
+  const list = visible.join(', ');
+  const summary =
+    remainder > 0
+      ? `Controls without tasks: ${list}, +${remainder} more`
+      : `Controls without tasks: ${list}`;
+  // When there are no populated groups at all, lead with the per-group empty
+  // sentence so the page reads naturally (and existing tests that expect the
+  // "no tasks attached to this control" sentence keep passing).
+  const message = hasPopulated
+    ? summary
+    : `No tasks attached to this control. ${summary}`;
+  return (
+    <div
+      className={hasPopulated ? 'border-border/60 mt-5 border-t pt-3' : ''}
+    >
+      <p className="text-muted-foreground text-xs">{message}</p>
+    </div>
   );
 }

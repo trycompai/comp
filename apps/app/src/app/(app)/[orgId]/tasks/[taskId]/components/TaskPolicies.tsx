@@ -2,26 +2,23 @@
 
 import {
   Badge,
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
   Collapsible,
   CollapsibleContent,
   CollapsibleTrigger,
-  Empty,
-  EmptyDescription,
-  EmptyHeader,
-  EmptyMedia,
-  EmptyTitle,
-  Heading,
-  HStack,
   Item,
   ItemActions,
   ItemContent,
   ItemGroup,
   ItemTitle,
-  Section,
   Stack,
   Text,
 } from '@trycompai/design-system';
-import { ChevronRight, Document } from '@trycompai/design-system/icons';
+import { ChevronRight } from '@trycompai/design-system/icons';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import {
@@ -30,7 +27,10 @@ import {
 } from '../hooks/use-task-policies';
 
 const COLLAPSE_THRESHOLD = 5;
-const SECTION_DESCRIPTION = 'Policies whose controls this task demonstrates.';
+const SECTION_TITLE = 'Policies';
+const DEFAULT_DESCRIPTION = 'Policies whose controls this task demonstrates.';
+const CAPTION_CLASS =
+  'text-xs font-semibold uppercase tracking-[0.08em] text-muted-foreground';
 
 export function TaskPolicies() {
   const { orgId, taskId } = useParams<{ orgId: string; taskId: string }>();
@@ -61,53 +61,62 @@ export function TaskPolicies() {
 
   if (error) {
     return (
-      <Section title="Policies" description={SECTION_DESCRIPTION}>
+      <SectionShell description={DEFAULT_DESCRIPTION}>
         <Text>Could not load policies. Please try again.</Text>
-      </Section>
+      </SectionShell>
     );
   }
 
   if (isLoading) {
     return (
-      <Section title="Policies" description={SECTION_DESCRIPTION}>
-        <Text>Loading...</Text>
-      </Section>
+      <SectionShell description={DEFAULT_DESCRIPTION}>
+        <Text variant="muted">Loading...</Text>
+      </SectionShell>
     );
   }
 
   if (visibleGroups.length === 0) {
     return (
-      <Section title="Policies" description={SECTION_DESCRIPTION}>
-        <Empty>
-          <EmptyHeader>
-            <EmptyMedia variant="icon">
-              <Document />
-            </EmptyMedia>
-            <EmptyTitle>No policies yet</EmptyTitle>
-            <EmptyDescription>
-              No policies reference this task through its mapped controls.
-            </EmptyDescription>
-          </EmptyHeader>
-        </Empty>
-      </Section>
+      <SectionShell description={DEFAULT_DESCRIPTION}>
+        <Text variant="muted">
+          No policies reference this task through its mapped controls.
+        </Text>
+      </SectionShell>
     );
   }
 
+  const description = `${visibleCount} ${visibleCount === 1 ? 'policy' : 'policies'} whose controls this task demonstrates.`;
+
   return (
-    <Section
-      title="Policies"
-      description={`${visibleCount} ${visibleCount === 1 ? 'policy' : 'policies'} whose controls this task demonstrates.`}
-    >
-      <Stack gap="6">
+    <SectionShell description={description}>
+      <Stack gap="4">
         {visibleGroups.map((group) => (
           <ControlGroup key={group.control.id} group={group} orgId={orgId} />
         ))}
       </Stack>
-    </Section>
+    </SectionShell>
   );
 }
 
-function ControlGroupHeader({
+function SectionShell({
+  description,
+  children,
+}: {
+  description: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <Card width="full">
+      <CardHeader>
+        <CardTitle>{SECTION_TITLE}</CardTitle>
+        <CardDescription>{description}</CardDescription>
+      </CardHeader>
+      <CardContent>{children}</CardContent>
+    </Card>
+  );
+}
+
+function ControlGroupCaption({
   name,
   count,
   trigger,
@@ -117,13 +126,15 @@ function ControlGroupHeader({
   trigger?: React.ReactNode;
 }) {
   return (
-    <div className="flex items-center justify-between border-b pb-2">
-      <HStack gap="2" align="center">
-        <Heading level="5" as="h3">
-          {name}
-        </Heading>
-        <Badge variant="secondary">{count}</Badge>
-      </HStack>
+    <div className="flex items-center justify-between gap-3">
+      <h3 className={CAPTION_CLASS}>
+        {name}
+        {count > 1 ? (
+          <span className="text-muted-foreground/60 ml-1.5 font-medium normal-case tracking-normal">
+            · {count}
+          </span>
+        ) : null}
+      </h3>
       {trigger}
     </div>
   );
@@ -143,8 +154,8 @@ function ControlGroup({
   if (policies.length > COLLAPSE_THRESHOLD) {
     return (
       <Collapsible>
-        <Stack gap="3">
-          <ControlGroupHeader
+        <Stack gap="2">
+          <ControlGroupCaption
             name={control.name}
             count={policies.length}
             trigger={
@@ -163,8 +174,8 @@ function ControlGroup({
   }
 
   return (
-    <Stack gap="3">
-      <ControlGroupHeader name={control.name} count={policies.length} />
+    <Stack gap="2">
+      <ControlGroupCaption name={control.name} count={policies.length} />
       <PolicyList policies={policies} orgId={orgId} />
     </Stack>
   );
