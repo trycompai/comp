@@ -29,7 +29,7 @@ import { UploadAttachmentDto } from '../attachments/upload-attachment.dto';
 import { AuthContext, OrganizationId } from '../auth/auth-context.decorator';
 import { HybridAuthGuard } from '../auth/hybrid-auth.guard';
 import { PermissionGuard } from '../auth/permission.guard';
-import { RequirePermission } from '../auth/require-permission.decorator';
+import { RequirePermission, RequirePermissions } from '../auth/require-permission.decorator';
 import type { AuthContext as AuthContextType } from '../auth/types';
 import {
   buildTaskAssignmentFilter,
@@ -633,7 +633,10 @@ export class TasksController {
 
   @Get(':taskId/policies')
   @UseGuards(PermissionGuard)
-  @RequirePermission('task', 'read')
+  @RequirePermissions([
+    { resource: 'task', actions: ['read'] },
+    { resource: 'policy', actions: ['read'] },
+  ])
   @ApiOperation({
     summary: 'Get policies that reference a task via shared controls',
   })
