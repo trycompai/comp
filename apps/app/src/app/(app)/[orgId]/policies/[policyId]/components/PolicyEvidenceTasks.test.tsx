@@ -63,7 +63,7 @@ describe('PolicyEvidenceTasks', () => {
     ).toBeInTheDocument();
   });
 
-  it('shows per-group empty state when a control has no tasks', () => {
+  it('shows page-level empty state when every mapped control has no tasks', () => {
     mockHook.mockReturnValue({
       groups: [{ control: { id: 'ctl_1', name: 'Access Controls' }, tasks: [] }],
       count: 0,
@@ -73,8 +73,30 @@ describe('PolicyEvidenceTasks', () => {
     render(<PolicyEvidenceTasks />);
 
     expect(
-      screen.getByText(/no tasks attached to this control/i),
+      screen.getByText(/map at least one control/i),
     ).toBeInTheDocument();
+  });
+
+  it('hides empty groups silently when other groups have tasks', () => {
+    mockHook.mockReturnValue({
+      groups: [
+        {
+          control: { id: 'ctl_1', name: 'Access Controls' },
+          tasks: [makeTask({ id: 'tsk_1', title: 'Enable 2FA' })],
+        },
+        { control: { id: 'ctl_2', name: 'Endpoint Security' }, tasks: [] },
+      ],
+      count: 1,
+      isLoading: false,
+    });
+
+    render(<PolicyEvidenceTasks />);
+
+    expect(screen.getByText('Access Controls')).toBeInTheDocument();
+    expect(screen.queryByText('Endpoint Security')).not.toBeInTheDocument();
+    expect(
+      screen.queryByText(/controls without tasks/i),
+    ).not.toBeInTheDocument();
   });
 
   it('task row links to the task detail page', () => {

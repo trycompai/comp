@@ -196,8 +196,8 @@ export const PolicyControlMappings = ({
 
   return (
     <Section
-      title="Map Controls"
-      description="Map controls that are relevant to this policy."
+      title="Controls"
+      description="Controls relevant to this policy."
     >
       <Stack gap="md">
         {canMutate && (

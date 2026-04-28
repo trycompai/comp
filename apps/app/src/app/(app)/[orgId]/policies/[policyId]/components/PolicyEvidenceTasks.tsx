@@ -4,9 +4,6 @@ import {
   Badge,
   Card,
   CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
   Collapsible,
   CollapsibleContent,
   CollapsibleTrigger,
@@ -15,6 +12,7 @@ import {
   ItemContent,
   ItemGroup,
   ItemTitle,
+  Section,
   Stack,
   Text,
 } from '@trycompai/design-system';
@@ -66,24 +64,28 @@ export function PolicyEvidenceTasks() {
   }
 
   const populated = groups.filter((g) => g.tasks.length > 0);
-  const empty = groups.filter((g) => g.tasks.length === 0);
+
+  // If every control has zero tasks, fall back to the page-level empty state
+  // rather than rendering an empty card with no content.
+  if (populated.length === 0) {
+    return (
+      <SectionShell description={DEFAULT_DESCRIPTION}>
+        <Text variant="muted">
+          Map at least one control above to see evidence tasks.
+        </Text>
+      </SectionShell>
+    );
+  }
+
   const description = `${count} task${count === 1 ? '' : 's'} attached to controls mapped to this policy.`;
 
   return (
     <SectionShell description={description}>
-      {populated.length > 0 ? (
-        <Stack gap="4">
-          {populated.map((group) => (
-            <ControlGroup key={group.control.id} group={group} orgId={orgId} />
-          ))}
-        </Stack>
-      ) : null}
-      {empty.length > 0 ? (
-        <EmptyControlsFooter
-          groups={empty}
-          hasPopulated={populated.length > 0}
-        />
-      ) : null}
+      <Stack gap="4">
+        {populated.map((group) => (
+          <ControlGroup key={group.control.id} group={group} orgId={orgId} />
+        ))}
+      </Stack>
     </SectionShell>
   );
 }
@@ -96,13 +98,11 @@ function SectionShell({
   children: React.ReactNode;
 }) {
   return (
-    <Card width="full">
-      <CardHeader>
-        <CardTitle>{SECTION_TITLE}</CardTitle>
-        <CardDescription>{description}</CardDescription>
-      </CardHeader>
-      <CardContent>{children}</CardContent>
-    </Card>
+    <Section title={SECTION_TITLE} description={description}>
+      <Card width="full">
+        <CardContent>{children}</CardContent>
+      </Card>
+    </Section>
   );
 }
 
@@ -198,33 +198,3 @@ function TaskList({
   );
 }
 
-function EmptyControlsFooter({
-  groups,
-  hasPopulated,
-}: {
-  groups: PolicyEvidenceTaskGroup[];
-  hasPopulated: boolean;
-}) {
-  const MAX = 3;
-  const names = groups.map((g) => g.control.name);
-  const visible = names.slice(0, MAX);
-  const remainder = names.length - visible.length;
-  const list = visible.join(', ');
-  const summary =
-    remainder > 0
-      ? `Controls without tasks: ${list}, +${remainder} more`
-      : `Controls without tasks: ${list}`;
-  // When there are no populated groups at all, lead with the per-group empty
-  // sentence so the page reads naturally (and existing tests that expect the
-  // "no tasks attached to this control" sentence keep passing).
-  const message = hasPopulated
-    ? summary
-    : `No tasks attached to this control. ${summary}`;
-  return (
-    <div
-      className={hasPopulated ? 'border-border/60 mt-5 border-t pt-3' : ''}
-    >
-      <p className="text-muted-foreground text-xs">{message}</p>
-    </div>
-  );
-}

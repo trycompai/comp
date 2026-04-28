@@ -4,9 +4,6 @@ import {
   Badge,
   Card,
   CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
   Collapsible,
   CollapsibleContent,
   CollapsibleTrigger,
@@ -15,6 +12,7 @@ import {
   ItemContent,
   ItemGroup,
   ItemTitle,
+  Section,
   Stack,
   Text,
 } from '@trycompai/design-system';
@@ -100,13 +98,11 @@ function SectionShell({
   children: React.ReactNode;
 }) {
   return (
-    <Card width="full">
-      <CardHeader>
-        <CardTitle>{SECTION_TITLE}</CardTitle>
-        <CardDescription>{description}</CardDescription>
-      </CardHeader>
-      <CardContent>{children}</CardContent>
-    </Card>
+    <Section title={SECTION_TITLE} description={description}>
+      <Card width="full">
+        <CardContent>{children}</CardContent>
+      </Card>
+    </Section>
   );
 }
 
