@@ -153,15 +153,15 @@ function TaskList({
   orgId: string;
 }) {
   return (
-    <div className="divide-y divide-border/40">
+    <div className="overflow-hidden rounded-md border divide-y divide-border">
       {tasks.map((task) => (
         <Link
           key={task.id}
           href={`/${orgId}/tasks/${task.id}`}
-          className="flex items-center justify-between px-3 py-2 hover:bg-muted/50 rounded-sm transition-colors"
+          className="flex items-center justify-between gap-4 px-3 py-2.5 hover:bg-muted/50 transition-colors"
         >
           <span className="text-sm">{task.title}</span>
-          <span className="flex items-center gap-2 text-xs text-muted-foreground">
+          <span className="flex items-center gap-2 text-xs text-muted-foreground whitespace-nowrap">
             <span className="capitalize">{formatStatus(task.status)}</span>
             {task.frequency ? (
               <>
