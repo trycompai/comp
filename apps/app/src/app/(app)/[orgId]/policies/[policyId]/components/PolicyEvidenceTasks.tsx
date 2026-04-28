@@ -10,8 +10,9 @@ import {
   TableRow,
   Text,
 } from '@trycompai/design-system';
+import { Launch } from '@trycompai/design-system/icons';
 import Link from 'next/link';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams } from 'next/navigation';
 import { usePolicyEvidenceTasks } from '../hooks/usePolicyEvidenceTasks';
 
 const SECTION_TITLE = 'Evidence Tasks';
@@ -55,7 +56,6 @@ function TaskStatusPill({ status }: { status: string }) {
 
 export function PolicyEvidenceTasks() {
   const { orgId, policyId } = useParams<{ orgId: string; policyId: string }>();
-  const router = useRouter();
   const { groups, isLoading, error } = usePolicyEvidenceTasks({
     policyId,
     organizationId: orgId,
@@ -101,10 +101,6 @@ export function PolicyEvidenceTasks() {
     );
   }
 
-  const handleRowClick = (taskId: string) => {
-    router.push(`/${orgId}/tasks/${taskId}`);
-  };
-
   return (
     <Section title={SECTION_TITLE} description={SECTION_DESCRIPTION}>
       <Table variant="bordered">
@@ -118,26 +114,40 @@ export function PolicyEvidenceTasks() {
         </TableHeader>
         <TableBody>
           {rows.map((row) => (
-            <TableRow
-              key={`${row.controlId}:${row.taskId}`}
-              onClick={() => handleRowClick(row.taskId)}
-              style={{ cursor: 'pointer' }}
-            >
+            <TableRow key={`${row.controlId}:${row.taskId}`}>
               <TableCell>
                 <Link
                   href={`/${orgId}/tasks/${row.taskId}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
                   onClick={(e) => e.stopPropagation()}
-                  className="block"
+                  className="group inline-flex items-center gap-2"
                 >
                   <Text size="sm" weight="medium">
                     {row.taskTitle}
                   </Text>
+                  <Launch
+                    size={14}
+                    className="shrink-0 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100"
+                  />
                 </Link>
               </TableCell>
               <TableCell>
-                <Text size="sm" variant="muted">
-                  {row.controlName}
-                </Text>
+                <Link
+                  href={`/${orgId}/controls/${row.controlId}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={(e) => e.stopPropagation()}
+                  className="group inline-flex items-center gap-2"
+                >
+                  <Text size="sm" variant="muted">
+                    {row.controlName}
+                  </Text>
+                  <Launch
+                    size={14}
+                    className="shrink-0 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100"
+                  />
+                </Link>
               </TableCell>
               <TableCell>
                 <TaskStatusPill status={row.status} />

@@ -30,9 +30,9 @@ import {
   TableRow,
   Text,
 } from '@trycompai/design-system';
-import { Add, Unlink } from '@trycompai/design-system/icons';
+import { Add, Launch, Unlink } from '@trycompai/design-system/icons';
 import Link from 'next/link';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams } from 'next/navigation';
 import { useState } from 'react';
 import { toast } from 'sonner';
 import useSWR from 'swr';
@@ -64,7 +64,6 @@ export function PolicyControlMappings({
   onMutate,
 }: PolicyControlMappingsProps) {
   const { orgId, policyId } = useParams<{ orgId: string; policyId: string }>();
-  const router = useRouter();
   const { hasPermission } = usePermissions();
   const canMutate = hasPermission('policy', 'update') && !isPendingApproval;
 
@@ -137,10 +136,6 @@ export function PolicyControlMappings({
     }
   };
 
-  const handleRowClick = (controlId: string) => {
-    router.push(`/${orgId}/controls/${controlId}`);
-  };
-
   return (
     <Section
       title="Controls"
@@ -192,20 +187,22 @@ export function PolicyControlMappings({
           </TableHeader>
           <TableBody>
             {mappedControls.map((control) => (
-              <TableRow
-                key={control.id}
-                onClick={() => handleRowClick(control.id)}
-                style={{ cursor: 'pointer' }}
-              >
+              <TableRow key={control.id}>
                 <TableCell>
                   <Link
                     href={`/${orgId}/controls/${control.id}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
                     onClick={(e) => e.stopPropagation()}
-                    className="block"
+                    className="group inline-flex items-center gap-2"
                   >
                     <Text size="sm" weight="medium">
                       {control.name}
                     </Text>
+                    <Launch
+                      size={14}
+                      className="shrink-0 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100"
+                    />
                   </Link>
                 </TableCell>
                 <TableCell>

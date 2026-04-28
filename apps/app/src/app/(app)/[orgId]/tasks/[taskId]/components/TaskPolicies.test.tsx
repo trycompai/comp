@@ -1,12 +1,10 @@
-import { fireEvent, render, screen } from '@testing-library/react';
+import { render, screen } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { TaskPolicies } from './TaskPolicies';
 import type { TaskPolicyGroup } from '../hooks/use-task-policies';
 
-const mockPush = vi.fn();
 vi.mock('next/navigation', () => ({
   useParams: () => ({ orgId: 'org_1', taskId: 'tsk_1' }),
-  useRouter: () => ({ push: mockPush }),
 }));
 
 const mockHook = vi.fn();
@@ -26,7 +24,6 @@ const makePolicy = (overrides: Partial<TaskPolicyGroup['policies'][number]> = {}
 describe('TaskPolicies', () => {
   beforeEach(() => {
     mockHook.mockReset();
-    mockPush.mockReset();
   });
 
   it('renders one row per (control, policy) pair with policy and control names', () => {
@@ -82,7 +79,7 @@ describe('TaskPolicies', () => {
     ).toBeInTheDocument();
   });
 
-  it('clicking a row navigates to the policy detail page', () => {
+  it('renders policy and control cells as links that open in a new tab', () => {
     mockHook.mockReturnValue({
       groups: [
         {
@@ -96,12 +93,17 @@ describe('TaskPolicies', () => {
 
     render(<TaskPolicies />);
 
-    const cell = screen.getByText('Authentication Policy');
-    const row = cell.closest('tr');
-    expect(row).not.toBeNull();
-    fireEvent.click(row!);
+    const policyLink = screen.getByText('Authentication Policy').closest('a');
+    expect(policyLink).not.toBeNull();
+    expect(policyLink).toHaveAttribute('href', '/org_1/policies/pol_42');
+    expect(policyLink).toHaveAttribute('target', '_blank');
+    expect(policyLink).toHaveAttribute('rel', 'noopener noreferrer');
 
-    expect(mockPush).toHaveBeenCalledWith('/org_1/policies/pol_42');
+    const controlLink = screen.getByText('Access Controls').closest('a');
+    expect(controlLink).not.toBeNull();
+    expect(controlLink).toHaveAttribute('href', '/org_1/controls/ctl_1');
+    expect(controlLink).toHaveAttribute('target', '_blank');
+    expect(controlLink).toHaveAttribute('rel', 'noopener noreferrer');
   });
 
   it('renders error state when the hook returns an error', () => {
