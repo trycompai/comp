@@ -13,9 +13,15 @@ import { EnsureSOASetupDto } from './dto/ensure-soa-setup.dto';
 import { ApproveSOADocumentDto } from './dto/approve-soa-document.dto';
 import { DeclineSOADocumentDto } from './dto/decline-soa-document.dto';
 import { SubmitSOAForApprovalDto } from './dto/submit-soa-for-approval.dto';
+import { ExportSOADocumentDto } from './dto/export-soa-document.dto';
 import type { SimilarContentResult } from '@/vector-store/lib';
 import { loadISOConfig } from './utils/transform-iso-config';
 import { ISO27001_FRAMEWORK_NAMES } from './utils/constants';
+import {
+  generateSOAExportFile,
+  type SOAExportMetadata,
+  type SOAExportQuestion,
+} from './utils/export-generator';
 import {
   batchSearchSOAQuestions,
   generateSOAAnswerWithRAG,
@@ -340,6 +346,7 @@ export class SOAService {
       data: {
         status: 'completed',
         approvedAt: new Date(),
+        declinedAt: null,
       },
     });
 
@@ -374,6 +381,7 @@ export class SOAService {
         approverId: null,
         approvedAt: null,
         status: 'completed',
+        declinedAt: new Date(),
       },
     });
 
@@ -430,11 +438,93 @@ export class SOAService {
       where: { id: dto.documentId },
       data: {
         approverId: dto.approverId,
+        approvedAt: null,
+        declinedAt: null,
         status: 'needs_review',
       },
     });
 
     return { success: true, data: updatedDocument };
+  }
+
+  async exportDocument(dto: ExportSOADocumentDto): Promise<{
+    fileBuffer: Buffer;
+    mimeType: string;
+    filename: string;
+  }> {
+    const document = await db.sOADocument.findFirst({
+      where: {
+        id: dto.documentId,
+        organizationId: dto.organizationId,
+      },
+      include: {
+        configuration: true,
+        framework: {
+          select: { name: true },
+        },
+        approver: {
+          select: {
+            user: {
+              select: {
+                name: true,
+                email: true,
+              },
+            },
+          },
+        },
+        answers: {
+          where: { isLatestAnswer: true },
+          select: {
+            questionId: true,
+            answer: true,
+          },
+        },
+      },
+    });
+
+    if (!document) {
+      throw new NotFoundException('SOA document not found');
+    }
+
+    const questions =
+      (document.configuration.questions as unknown as SOAQuestion[]) ?? [];
+    const answersByQuestionId = new Map(
+      document.answers.map((answer) => [answer.questionId, answer.answer]),
+    );
+
+    const exportQuestions: SOAExportQuestion[] = questions.map((question) => ({
+      id: question.id,
+      text: question.text,
+      columnMapping: {
+        closure: question.columnMapping?.closure ?? null,
+        title: question.columnMapping?.title ?? null,
+        control_objective: question.columnMapping?.control_objective ?? null,
+        isApplicable: question.columnMapping?.isApplicable ?? null,
+        justification: question.columnMapping?.justification ?? null,
+      },
+      answer: answersByQuestionId.get(question.id) ?? null,
+    }));
+
+    const exportMetadata: SOAExportMetadata = {
+      preparedBy: (document.preparedBy as string | null) ?? null,
+      answeredQuestions: document.answeredQuestions,
+      totalQuestions: document.totalQuestions,
+      approvedAt: document.approvedAt ?? null,
+      declinedAt: (document as { declinedAt?: Date | null }).declinedAt ?? null,
+      status: document.status,
+      approverName:
+        document.approver?.user?.name ||
+        document.approver?.user?.email ||
+        null,
+    };
+
+    return generateSOAExportFile(
+      exportQuestions,
+      document.framework.name || 'ISO 27001',
+      document.version,
+      exportMetadata,
+      dto.format,
+    );
   }
 
   // Auto-fill related methods (delegating to utilities)

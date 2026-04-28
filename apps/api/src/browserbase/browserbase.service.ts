@@ -3,9 +3,13 @@ import Browserbase from '@browserbasehq/sdk';
 // Lazy-imported in createStagehand() to avoid Node v25 crash
 // (SlowBuffer.prototype was removed — @browserbasehq/stagehand bundles buffer-equal-constant-time which uses it)
 type Stagehand = import('@browserbasehq/stagehand').Stagehand;
-import { db } from '@db';
+import { db, TaskFrequency } from '@db';
 import { z } from 'zod';
-import { GetObjectCommand, PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
+import {
+  GetObjectCommand,
+  PutObjectCommand,
+  S3Client,
+} from '@aws-sdk/client-s3';
 import { BUCKET_NAME, getSignedUrl, s3Client } from '@/app/s3';
 import { renderOverlay } from './screenshot-overlay';
 import { isNoPageError, toRunErrorMessage } from './run-error-formatter';
@@ -353,7 +357,7 @@ export class BrowserbaseService {
     targetUrl: string;
     instruction: string;
     evaluationCriteria?: string;
-    schedule?: string;
+    scheduleFrequency?: TaskFrequency;
   }) {
     return db.browserAutomation.create({
       data: {
@@ -363,8 +367,10 @@ export class BrowserbaseService {
         targetUrl: data.targetUrl,
         instruction: data.instruction,
         evaluationCriteria: normalizeCriteria(data.evaluationCriteria),
-        schedule: data.schedule,
         isEnabled: true, // Enable by default so scheduled runs work
+        ...(data.scheduleFrequency !== undefined
+          ? { scheduleFrequency: data.scheduleFrequency }
+          : {}),
       },
     });
   }
@@ -402,11 +408,11 @@ export class BrowserbaseService {
       targetUrl?: string;
       instruction?: string;
       evaluationCriteria?: string;
-      schedule?: string;
       isEnabled?: boolean;
+      scheduleFrequency?: TaskFrequency;
     },
   ) {
-    const { evaluationCriteria, ...rest } = data;
+    const { evaluationCriteria, scheduleFrequency, ...rest } = data;
     return db.browserAutomation.update({
       where: { id: automationId },
       data: {
@@ -414,6 +420,7 @@ export class BrowserbaseService {
         ...(evaluationCriteria !== undefined
           ? { evaluationCriteria: normalizeCriteria(evaluationCriteria) }
           : {}),
+        ...(scheduleFrequency !== undefined ? { scheduleFrequency } : {}),
       },
     });
   }
@@ -848,10 +855,15 @@ export class BrowserbaseService {
           capturedAt: new Date(),
         });
       } catch (overlayErr) {
-        this.logger.warn('Screenshot overlay render failed; uploading raw image', {
-          error:
-            overlayErr instanceof Error ? overlayErr.message : String(overlayErr),
-        });
+        this.logger.warn(
+          'Screenshot overlay render failed; uploading raw image',
+          {
+            error:
+              overlayErr instanceof Error
+                ? overlayErr.message
+                : String(overlayErr),
+          },
+        );
       }
 
       // Optional evaluation: if the automation was configured with

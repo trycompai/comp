@@ -45,75 +45,75 @@ model TimelineTemplate {
 }
 
 model TimelinePhaseTemplate {
-  id                   String              @id @default(dbgenerated("generate_prefixed_cuid('tpt'::text)"))
-  templateId           String
-  name                 String
-  description          String?
-  groupLabel           String?
-  orderIndex           Int
-  defaultDurationWeeks Int
-  completionType       PhaseCompletionType @default(MANUAL)
-  locksTimelineOnComplete Boolean          @default(false)
-  createdAt            DateTime            @default(now())
-  updatedAt            DateTime            @updatedAt
+  id                      String              @id @default(dbgenerated("generate_prefixed_cuid('tpt'::text)"))
+  templateId              String
+  name                    String
+  description             String?
+  groupLabel              String?
+  orderIndex              Int
+  defaultDurationWeeks    Int
+  completionType          PhaseCompletionType @default(MANUAL)
+  locksTimelineOnComplete Boolean             @default(false)
+  createdAt               DateTime            @default(now())
+  updatedAt               DateTime            @updatedAt
 
   template TimelineTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
   phases   TimelinePhase[]
 }
 
 model TimelineInstance {
-  id                 String         @id @default(dbgenerated("generate_prefixed_cuid('tli'::text)"))
-  organizationId     String
+  id                  String         @id @default(dbgenerated("generate_prefixed_cuid('tli'::text)"))
+  organizationId      String
   frameworkInstanceId String
-  templateId         String
-  trackKey           String         @default("primary")
-  cycleNumber        Int
-  status             TimelineStatus @default(DRAFT)
-  startDate          DateTime?
-  pausedAt           DateTime?
-  lockedAt           DateTime?
-  lockedById         String?
-  unlockedAt         DateTime?
-  unlockedById       String?
-  unlockReason       String?
-  completedAt        DateTime?
-  createdAt          DateTime       @default(now())
-  updatedAt          DateTime       @updatedAt
+  templateId          String
+  trackKey            String         @default("primary")
+  cycleNumber         Int
+  status              TimelineStatus @default(DRAFT)
+  startDate           DateTime?
+  pausedAt            DateTime?
+  lockedAt            DateTime?
+  lockedById          String?
+  unlockedAt          DateTime?
+  unlockedById        String?
+  unlockReason        String?
+  completedAt         DateTime?
+  createdAt           DateTime       @default(now())
+  updatedAt           DateTime       @updatedAt
 
-  organization     Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  organization      Organization      @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   frameworkInstance FrameworkInstance @relation(fields: [frameworkInstanceId], references: [id], onDelete: Cascade)
-  template         TimelineTemplate @relation(fields: [templateId], references: [id])
-  lockedBy         User?            @relation("TimelineInstanceLockedBy", fields: [lockedById], references: [id])
-  unlockedBy       User?            @relation("TimelineInstanceUnlockedBy", fields: [unlockedById], references: [id])
-  phases           TimelinePhase[]
+  template          TimelineTemplate  @relation(fields: [templateId], references: [id])
+  lockedBy          User?             @relation("TimelineInstanceLockedBy", fields: [lockedById], references: [id])
+  unlockedBy        User?             @relation("TimelineInstanceUnlockedBy", fields: [unlockedById], references: [id])
+  phases            TimelinePhase[]
 
   @@unique([frameworkInstanceId, trackKey, cycleNumber])
 }
 
 model TimelinePhase {
-  id               String              @id @default(dbgenerated("generate_prefixed_cuid('tlp'::text)"))
-  instanceId       String
-  phaseTemplateId  String?
-  name             String
-  description      String?
-  groupLabel       String?
-  orderIndex       Int
-  status           TimelinePhaseStatus @default(PENDING)
-  startDate        DateTime?
-  endDate          DateTime?
-  durationWeeks    Int
-  completionType   PhaseCompletionType @default(MANUAL)
-  locksTimelineOnComplete Boolean       @default(false)
-  regressedAt       DateTime?
-  datesPinned      Boolean             @default(false)
-  completedAt      DateTime?
-  completedById    String?
-  readyForReview   Boolean             @default(false)
-  readyForReviewAt DateTime?
-  documentUrl      String?
-  documentName     String?
-  createdAt        DateTime            @default(now())
-  updatedAt        DateTime            @updatedAt
+  id                      String              @id @default(dbgenerated("generate_prefixed_cuid('tlp'::text)"))
+  instanceId              String
+  phaseTemplateId         String?
+  name                    String
+  description             String?
+  groupLabel              String?
+  orderIndex              Int
+  status                  TimelinePhaseStatus @default(PENDING)
+  startDate               DateTime?
+  endDate                 DateTime?
+  durationWeeks           Int
+  completionType          PhaseCompletionType @default(MANUAL)
+  locksTimelineOnComplete Boolean             @default(false)
+  regressedAt             DateTime?
+  datesPinned             Boolean             @default(false)
+  completedAt             DateTime?
+  completedById           String?
+  readyForReview          Boolean             @default(false)
+  readyForReviewAt        DateTime?
+  documentUrl             String?
+  documentName            String?
+  createdAt               DateTime            @default(now())
+  updatedAt               DateTime            @updatedAt
 
   instance      TimelineInstance       @relation(fields: [instanceId], references: [id], onDelete: Cascade)
   phaseTemplate TimelinePhaseTemplate? @relation(fields: [phaseTemplateId], references: [id])
