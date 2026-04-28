@@ -22,7 +22,6 @@ import {
   PopoverContent,
   PopoverTrigger,
   Section,
-  Stack,
   Table,
   TableBody,
   TableCell,
@@ -37,7 +36,6 @@ import { useState } from 'react';
 import { toast } from 'sonner';
 import useSWR from 'swr';
 import { usePolicy } from '../hooks/usePolicy';
-import { usePolicyEvidenceTasks } from '../hooks/usePolicyEvidenceTasks';
 
 type MappedControl = Pick<Control, 'id' | 'name' | 'description'>;
 
@@ -80,11 +78,6 @@ export function PolicyControlMappings({
     },
   );
 
-  const { groups, mutate: mutateGroups } = usePolicyEvidenceTasks({
-    policyId,
-    organizationId: orgId,
-  });
-
   const { addControlMappings, removeControlMapping } = usePolicy({
     policyId,
     organizationId: orgId,
@@ -95,17 +88,12 @@ export function PolicyControlMappings({
   const mappedIds = new Set(mappedControls.map((c) => c.id));
   const availableControls = allControls.filter((c) => !mappedIds.has(c.id));
 
-  const taskCountByControl = new Map<string, number>();
-  for (const group of groups) {
-    taskCountByControl.set(group.control.id, group.tasks.length);
-  }
-
   const [addOpen, setAddOpen] = useState(false);
   const [toRemove, setToRemove] = useState<{ id: string; name: string } | null>(null);
   const [loading, setLoading] = useState(false);
 
   const refreshAll = async () => {
-    await Promise.all([mutateGroups(), mutateControls()]);
+    await mutateControls();
     onMutate?.();
   };
 
@@ -148,93 +136,84 @@ export function PolicyControlMappings({
   };
 
   return (
-    <Section title="Controls" description="Controls relevant to this policy.">
-      <Stack gap="md">
-        {canMutate && (
-          <div>
-            <Popover open={addOpen} onOpenChange={setAddOpen}>
-              <PopoverTrigger
-                disabled={isPendingApproval || loading}
-                className={buttonVariants({ variant: 'outline', size: 'sm' })}
+    <Section
+      title="Controls"
+      description="Controls relevant to this policy."
+      actions={
+        canMutate ? (
+          <Popover open={addOpen} onOpenChange={setAddOpen}>
+            <PopoverTrigger
+              disabled={isPendingApproval || loading}
+              className={buttonVariants({ variant: 'outline', size: 'sm' })}
+            >
+              <Add size={14} />
+              Link control
+            </PopoverTrigger>
+            <PopoverContent align="end">
+              <Command>
+                <CommandInput placeholder="Search controls..." />
+                <CommandList>
+                  <CommandEmpty>No controls found.</CommandEmpty>
+                  {availableControls.map((c) => (
+                    <CommandItem
+                      key={c.id}
+                      value={c.name}
+                      onSelect={() => handleAdd(c.id)}
+                    >
+                      {c.name}
+                    </CommandItem>
+                  ))}
+                </CommandList>
+              </Command>
+            </PopoverContent>
+          </Popover>
+        ) : undefined
+      }
+    >
+      {mappedControls.length === 0 ? (
+        <Text size="sm" variant="muted">
+          No controls mapped yet.
+        </Text>
+      ) : (
+        <Table variant="bordered">
+          <TableHeader>
+            <TableRow>
+              <TableHead>Name</TableHead>
+              {canMutate && <TableHead style={{ width: 48 }} />}
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {mappedControls.map((control) => (
+              <TableRow
+                key={control.id}
+                onClick={() => handleRowClick(control.id)}
+                style={{ cursor: 'pointer' }}
               >
-                <Add size={14} />
-                Add controls
-              </PopoverTrigger>
-              <PopoverContent align="start">
-                <Command>
-                  <CommandInput placeholder="Search controls..." />
-                  <CommandList>
-                    <CommandEmpty>No controls found.</CommandEmpty>
-                    {availableControls.map((c) => (
-                      <CommandItem
-                        key={c.id}
-                        value={c.name}
-                        onSelect={() => handleAdd(c.id)}
-                      >
-                        {c.name}
-                      </CommandItem>
-                    ))}
-                  </CommandList>
-                </Command>
-              </PopoverContent>
-            </Popover>
-          </div>
-        )}
-
-        {mappedControls.length === 0 ? (
-          <Text size="sm" variant="muted">
-            No controls mapped yet.
-          </Text>
-        ) : (
-          <Table variant="bordered">
-            <TableHeader>
-              <TableRow>
-                <TableHead>Name</TableHead>
-                <TableHead style={{ textAlign: 'right' }}>Tasks</TableHead>
-                {canMutate && <TableHead style={{ width: 48 }} />}
+                <TableCell>
+                  <Text size="sm" weight="medium">
+                    {control.name}
+                  </Text>
+                </TableCell>
+                {canMutate && (
+                  <TableCell style={{ width: 48 }}>
+                    <button
+                      type="button"
+                      aria-label={`Remove ${control.name}`}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setToRemove({ id: control.id, name: control.name });
+                      }}
+                      className="inline-flex h-7 w-7 items-center justify-center rounded text-muted-foreground hover:bg-muted hover:text-foreground"
+                    >
+                      <Close size={14} />
+                    </button>
+                  </TableCell>
+                )}
               </TableRow>
-            </TableHeader>
-            <TableBody>
-              {mappedControls.map((control) => {
-                const taskCount = taskCountByControl.get(control.id) ?? 0;
-                return (
-                  <TableRow
-                    key={control.id}
-                    onClick={() => handleRowClick(control.id)}
-                    style={{ cursor: 'pointer' }}
-                  >
-                    <TableCell>
-                      <Text size="sm" weight="medium">
-                        {control.name}
-                      </Text>
-                    </TableCell>
-                    <TableCell style={{ textAlign: 'right' }}>
-                      <Text size="sm" variant="muted">
-                        {taskCount}
-                      </Text>
-                    </TableCell>
-                    {canMutate && (
-                      <TableCell style={{ width: 48 }}>
-                        <button
-                          type="button"
-                          aria-label={`Remove ${control.name}`}
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setToRemove({ id: control.id, name: control.name });
-                          }}
-                          className="inline-flex h-7 w-7 items-center justify-center rounded text-muted-foreground hover:bg-muted hover:text-foreground"
-                        >
-                          <Close size={14} />
-                        </button>
-                      </TableCell>
-                    )}
-                  </TableRow>
-                );
-              })}
-            </TableBody>
-          </Table>
-        )}
-      </Stack>
+            ))}
+          </TableBody>
+        </Table>
+      )}
 
       <AlertDialog
         open={toRemove !== null}
