@@ -150,9 +150,10 @@ export function PolicyControlMappings({
               <Add size={14} />
               Link control
             </PopoverTrigger>
-            <PopoverContent align="end">
+            <PopoverContent align="end" sideOffset={8}>
               <Command>
                 <CommandInput placeholder="Search controls..." />
+                <div className="h-2" />
                 <CommandList>
                   <CommandEmpty>No controls found.</CommandEmpty>
                   {availableControls.map((c) => (
