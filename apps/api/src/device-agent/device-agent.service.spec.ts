@@ -7,10 +7,22 @@ import { Readable } from 'stream';
 const mockSend = jest.fn();
 const mockGetSignedUrl = jest.fn();
 
+class MockGetObjectCommand {
+  constructor(public readonly input: unknown) {
+    Object.assign(this, input as object);
+  }
+}
+
+class MockHeadObjectCommand {
+  constructor(public readonly input: unknown) {
+    Object.assign(this, input as object);
+  }
+}
+
 jest.mock('@aws-sdk/client-s3', () => ({
   S3Client: jest.fn().mockImplementation(() => ({ send: mockSend })),
-  GetObjectCommand: jest.fn().mockImplementation((input) => input),
-  HeadObjectCommand: jest.fn().mockImplementation((input) => input),
+  GetObjectCommand: MockGetObjectCommand,
+  HeadObjectCommand: MockHeadObjectCommand,
 }));
 
 jest.mock('@aws-sdk/s3-request-presigner', () => ({
@@ -117,7 +129,7 @@ describe('DeviceAgentService', () => {
       expect(mockGetSignedUrl).not.toHaveBeenCalled();
     });
 
-    it('redirects binary downloads to a presigned S3 URL', async () => {
+    it('redirects binary downloads to a presigned S3 URL signed for GET', async () => {
       mockGetSignedUrl.mockResolvedValue('https://s3.example.com/signed-zip-url');
 
       const result = await service.getUpdateFile({
@@ -131,6 +143,7 @@ describe('DeviceAgentService', () => {
       expect(mockSend).not.toHaveBeenCalled();
       expect(mockGetSignedUrl).toHaveBeenCalledTimes(1);
       const [, command] = mockGetSignedUrl.mock.calls[0];
+      expect(command).toBeInstanceOf(MockGetObjectCommand);
       expect(command).toMatchObject({
         Bucket: 'test-bucket',
         Key: 'device-agent/production/updates/CompAI-Device-Agent-1.0.5-arm64.zip',
@@ -190,7 +203,7 @@ describe('DeviceAgentService', () => {
       expect(mockGetSignedUrl).not.toHaveBeenCalled();
     });
 
-    it('redirects binary HEAD requests to a presigned S3 URL', async () => {
+    it('redirects binary HEAD requests to a URL signed with HeadObjectCommand', async () => {
       mockGetSignedUrl.mockResolvedValue('https://s3.example.com/signed-head');
 
       const result = await service.headUpdateFile({
@@ -202,6 +215,15 @@ describe('DeviceAgentService', () => {
         url: 'https://s3.example.com/signed-head',
       });
       expect(mockSend).not.toHaveBeenCalled();
+      expect(mockGetSignedUrl).toHaveBeenCalledTimes(1);
+      const [, command] = mockGetSignedUrl.mock.calls[0];
+      // S3 signs each HTTP method separately; a GET-signed URL would be
+      // rejected when used with a HEAD request.
+      expect(command).toBeInstanceOf(MockHeadObjectCommand);
+      expect(command).toMatchObject({
+        Bucket: 'test-bucket',
+        Key: 'device-agent/production/updates/CompAI-Device-Agent-1.0.5-arm64.zip',
+      });
     });
   });
 

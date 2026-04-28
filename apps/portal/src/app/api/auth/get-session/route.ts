@@ -28,9 +28,14 @@ export async function GET(req: NextRequest): Promise<Response> {
     redirect: 'manual',
   });
 
-  const responseHeaders: Record<string, string> = {};
+  // Headers must use append for Set-Cookie so that multiple cookies (e.g.
+  // session-refresh + cookie-cache) are preserved instead of comma-collapsed.
+  const responseHeaders = new Headers();
   const contentType = response.headers.get('Content-Type');
-  if (contentType) responseHeaders['Content-Type'] = contentType;
+  if (contentType) responseHeaders.set('Content-Type', contentType);
+  for (const cookie of response.headers.getSetCookie()) {
+    responseHeaders.append('Set-Cookie', cookie);
+  }
 
   return new NextResponse(response.body, {
     status: response.status,

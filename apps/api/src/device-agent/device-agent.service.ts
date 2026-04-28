@@ -195,7 +195,7 @@ export class DeviceAgentService {
     const ext = getExtension(filename);
 
     if (REDIRECT_EXTENSIONS.has(ext)) {
-      return { kind: 'redirect', url: await this.signUpdateUrl(key) };
+      return { kind: 'redirect', url: await this.signUpdateUrl(key, 'GET') };
     }
 
     const contentType = CONTENT_TYPES[ext] || 'application/octet-stream';
@@ -244,7 +244,9 @@ export class DeviceAgentService {
     const ext = getExtension(filename);
 
     if (REDIRECT_EXTENSIONS.has(ext)) {
-      return { kind: 'redirect', url: await this.signUpdateUrl(key) };
+      // S3 signs each HTTP method separately — a GET-signed URL is rejected
+      // for HEAD with SignatureDoesNotMatch.
+      return { kind: 'redirect', url: await this.signUpdateUrl(key, 'HEAD') };
     }
 
     const contentType = CONTENT_TYPES[ext] || 'application/octet-stream';
@@ -269,11 +271,20 @@ export class DeviceAgentService {
     }
   }
 
-  private async signUpdateUrl(key: string): Promise<string> {
-    const command = new GetObjectCommand({
-      Bucket: this.fleetBucketName,
-      Key: key,
-    });
+  private async signUpdateUrl(
+    key: string,
+    method: 'GET' | 'HEAD',
+  ): Promise<string> {
+    const command =
+      method === 'HEAD'
+        ? new HeadObjectCommand({
+            Bucket: this.fleetBucketName,
+            Key: key,
+          })
+        : new GetObjectCommand({
+            Bucket: this.fleetBucketName,
+            Key: key,
+          });
     return getSignedUrl(this.s3Client, command, {
       expiresIn: PRESIGNED_URL_TTL_SECONDS,
     });
