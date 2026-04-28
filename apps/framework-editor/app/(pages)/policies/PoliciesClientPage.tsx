@@ -64,7 +64,6 @@ export function PoliciesClientPage({ initialPolicies, emptyMessage, frameworkId 
       <CreatePolicyDialog
         isOpen={isCreatePolicyDialogOpen}
         onOpenChange={setIsCreatePolicyDialogOpen}
-        frameworkId={frameworkId}
       />
       {frameworkId && (
         <AddExistingItemDialog
