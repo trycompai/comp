@@ -72,6 +72,22 @@ import {
 } from './schemas/version-responses';
 import { PolicyResponseDto } from './dto/policy-responses.dto';
 
+function parsePolicyIdsParam(
+  raw: string | string[] | undefined,
+): string[] | undefined {
+  if (!raw) return undefined;
+  const values = Array.isArray(raw) ? raw : [raw];
+  const ids = Array.from(
+    new Set(
+      values
+        .flatMap((value) => value.split(','))
+        .map((s) => s.trim())
+        .filter((s) => s.length > 0),
+    ),
+  );
+  return ids.length > 0 ? ids : undefined;
+}
+
 @ApiTags('Policies')
 @ApiExtraModels(PolicyResponseDto)
 @Controller({ path: 'policies', version: '1' })
@@ -154,9 +170,14 @@ export class PoliciesController {
   async downloadAllPolicies(
     @OrganizationId() organizationId: string,
     @AuthContext() authContext: AuthContextType,
+    @Query('policyIds') policyIdsParam?: string | string[],
   ) {
-    const result =
-      await this.policiesService.downloadAllPoliciesPdf(organizationId);
+    const policyIds = parsePolicyIdsParam(policyIdsParam);
+
+    const result = await this.policiesService.downloadAllPoliciesPdf(
+      organizationId,
+      policyIds,
+    );
 
     return {
       ...result,

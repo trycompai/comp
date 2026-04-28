@@ -532,8 +532,8 @@ export class TasksService {
         organizationId,
         timelinesService: this.timelinesService,
       }).catch((err) => {
-      this.logger.warn('timeline auto-complete check failed', err);
-    });
+        this.logger.warn('timeline auto-complete check failed', err);
+      });
 
       return { deletedCount: result.count };
     } catch (error) {
@@ -558,6 +558,7 @@ export class TasksService {
       assigneeId?: string | null;
       approverId?: string | null;
       frequency?: TaskFrequency;
+      integrationScheduleFrequency?: TaskFrequency;
       department?: string;
       reviewDate?: Date | null;
     },
@@ -592,6 +593,7 @@ export class TasksService {
         assigneeId?: string | null;
         approverId?: string | null;
         frequency?: TaskFrequency;
+        integrationScheduleFrequency?: TaskFrequency;
         department?: string;
         reviewDate?: Date | null;
       } = {};
@@ -650,6 +652,10 @@ export class TasksService {
         dataToUpdate.reviewDate = computeNextTaskReviewDate(
           updateData.frequency,
         );
+      }
+      if (updateData.integrationScheduleFrequency !== undefined) {
+        dataToUpdate.integrationScheduleFrequency =
+          updateData.integrationScheduleFrequency;
       }
       if (updateData.department !== undefined) {
         dataToUpdate.department = updateData.department;
@@ -879,6 +885,8 @@ export class TasksService {
         createdAt: task.createdAt,
         updatedAt: task.updatedAt,
         taskTemplateId: task.taskTemplateId,
+        integrationScheduleFrequency: task.integrationScheduleFrequency,
+        integrationLastRunAt: task.integrationLastRunAt,
       };
     } catch (error) {
       console.error('Error creating task:', error);

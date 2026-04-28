@@ -1,5 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { BadRequestException } from '@nestjs/common';
+import type { Response } from 'express';
 import { HybridAuthGuard } from '../auth/hybrid-auth.guard';
 import { PermissionGuard } from '../auth/permission.guard';
 import type { AuthContext } from '../auth/types';
@@ -8,6 +9,15 @@ import { SOAService } from './soa.service';
 
 jest.mock('../auth/auth.server', () => ({
   auth: { api: { getSession: jest.fn() } },
+}));
+jest.mock('../auth/hybrid-auth.guard', () => ({
+  HybridAuthGuard: class MockHybridAuthGuard {},
+}));
+jest.mock('../auth/permission.guard', () => ({
+  PermissionGuard: class MockPermissionGuard {},
+}));
+jest.mock('./soa.service', () => ({
+  SOAService: class MockSOAService {},
 }));
 
 jest.mock('@trycompai/auth', () => ({
@@ -37,6 +47,7 @@ describe('SOAController', () => {
     approveDocument: jest.fn(),
     declineDocument: jest.fn(),
     submitForApproval: jest.fn(),
+    exportDocument: jest.fn(),
   };
 
   const mockGuard = { canActivate: jest.fn().mockReturnValue(true) };
@@ -208,6 +219,42 @@ describe('SOAController', () => {
 
       expect(soaService.submitForApproval).toHaveBeenCalledWith(dto);
       expect(result).toEqual(submitted);
+    });
+  });
+
+  describe('exportDocument', () => {
+    const dto = {
+      documentId: 'doc_1',
+      format: 'pdf',
+    };
+
+    it('should call soaService.exportDocument, set headers, and send file buffer', async () => {
+      const fileBuffer = Buffer.from('pdf-data');
+      mockSOAService.exportDocument.mockResolvedValue({
+        fileBuffer,
+        mimeType: 'application/pdf',
+        filename: 'soa-export.pdf',
+      });
+      const res = {
+        setHeader: jest.fn(),
+        send: jest.fn(),
+      } as unknown as Response;
+
+      await controller.exportDocument(dto as never, res, 'org_123');
+
+      expect(soaService.exportDocument).toHaveBeenCalledWith({
+        ...dto,
+        organizationId: 'org_123',
+      });
+      expect(res.setHeader).toHaveBeenCalledWith(
+        'Content-Type',
+        'application/pdf',
+      );
+      expect(res.setHeader).toHaveBeenCalledWith(
+        'Content-Disposition',
+        'attachment; filename="soa-export.pdf"',
+      );
+      expect(res.send).toHaveBeenCalledWith(fileBuffer);
     });
   });
 });

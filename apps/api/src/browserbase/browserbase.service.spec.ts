@@ -8,6 +8,17 @@ jest.mock('@db', () => ({
     browserAutomationRun: {
       findUnique: jest.fn(),
     },
+    browserAutomation: {
+      create: jest.fn(),
+      update: jest.fn(),
+    },
+  },
+  TaskFrequency: {
+    daily: 'daily',
+    weekly: 'weekly',
+    monthly: 'monthly',
+    quarterly: 'quarterly',
+    yearly: 'yearly',
   },
 }));
 
@@ -17,7 +28,7 @@ jest.mock('@/app/s3', () => ({
   BUCKET_NAME: 'test-bucket',
 }));
 
-import { db } from '@db';
+import { db, TaskFrequency } from '@db';
 import { getSignedUrl } from '@/app/s3';
 
 describe('BrowserbaseService.getScreenshotRedirectUrl', () => {
@@ -124,5 +135,81 @@ describe('BrowserbaseService.getScreenshotRedirectUrl', () => {
     expect(command.input.ResponseContentDisposition).toBe(
       'attachment; filename="screenshot-bar_1.jpg"',
     );
+  });
+});
+
+describe('BrowserbaseService schedule frequency passthrough', () => {
+  let service: BrowserbaseService;
+
+  beforeEach(async () => {
+    jest.clearAllMocks();
+    const moduleRef = await Test.createTestingModule({
+      providers: [BrowserbaseService],
+    }).compile();
+    service = moduleRef.get(BrowserbaseService);
+  });
+
+  it('forwards scheduleFrequency when creating a browser automation', async () => {
+    (db.browserAutomation.create as jest.Mock).mockResolvedValue({
+      id: 'bau_1',
+    });
+
+    await service.createBrowserAutomation({
+      taskId: 'tsk_1',
+      name: 'name',
+      targetUrl: 'https://example.com',
+      instruction: 'click',
+      scheduleFrequency: TaskFrequency.weekly,
+    });
+
+    expect(db.browserAutomation.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ scheduleFrequency: 'weekly' }),
+      }),
+    );
+  });
+
+  it('omits scheduleFrequency when creating without the field', async () => {
+    (db.browserAutomation.create as jest.Mock).mockResolvedValue({
+      id: 'bau_1',
+    });
+
+    await service.createBrowserAutomation({
+      taskId: 'tsk_1',
+      name: 'name',
+      targetUrl: 'https://example.com',
+      instruction: 'click',
+    });
+
+    const call = (db.browserAutomation.create as jest.Mock).mock.calls[0][0];
+    expect(call.data).not.toHaveProperty('scheduleFrequency');
+  });
+
+  it('forwards scheduleFrequency when updating a browser automation', async () => {
+    (db.browserAutomation.update as jest.Mock).mockResolvedValue({
+      id: 'bau_1',
+    });
+
+    await service.updateBrowserAutomation('bau_1', {
+      scheduleFrequency: TaskFrequency.monthly,
+    });
+
+    expect(db.browserAutomation.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { id: 'bau_1' },
+        data: expect.objectContaining({ scheduleFrequency: 'monthly' }),
+      }),
+    );
+  });
+
+  it('omits scheduleFrequency when updating without the field', async () => {
+    (db.browserAutomation.update as jest.Mock).mockResolvedValue({
+      id: 'bau_1',
+    });
+
+    await service.updateBrowserAutomation('bau_1', { name: 'renamed' });
+
+    const call = (db.browserAutomation.update as jest.Mock).mock.calls[0][0];
+    expect(call.data).not.toHaveProperty('scheduleFrequency');
   });
 });
