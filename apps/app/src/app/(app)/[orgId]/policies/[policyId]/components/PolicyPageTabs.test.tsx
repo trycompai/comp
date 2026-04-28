@@ -88,8 +88,12 @@ vi.mock('./PolicyArchiveSheet', () => ({
   PolicyArchiveSheet: () => <div data-testid="policy-archive-sheet" />,
 }));
 
-vi.mock('./PolicyMappings', () => ({
-  PolicyMappings: () => <div data-testid="policy-mappings" />,
+vi.mock('./PolicyControlMappings', () => ({
+  PolicyControlMappings: () => <div data-testid="policy-control-mappings" />,
+}));
+
+vi.mock('./PolicyEvidenceTasks', () => ({
+  PolicyEvidenceTasks: () => <div data-testid="policy-evidence-tasks" />,
 }));
 
 vi.mock('./PolicyDeleteDialog', () => ({
@@ -196,9 +200,6 @@ describe('PolicyPageTabs', () => {
     it('renders overview tab content by default', () => {
       render(<PolicyPageTabs {...defaultProps} />);
       expect(screen.getByTestId('policy-settings-card')).toBeInTheDocument();
-      expect(
-        screen.getByTestId('policy-mappings'),
-      ).toBeInTheDocument();
     });
   });
 
@@ -219,9 +220,6 @@ describe('PolicyPageTabs', () => {
     it('renders the overview tab content (child components handle their own gating)', () => {
       render(<PolicyPageTabs {...defaultProps} />);
       expect(screen.getByTestId('policy-settings-card')).toBeInTheDocument();
-      expect(
-        screen.getByTestId('policy-mappings'),
-      ).toBeInTheDocument();
     });
 
     it('still renders sheets/dialogs (they handle own permission checks)', () => {

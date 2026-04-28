@@ -11,30 +11,34 @@ import {
   Text,
 } from '@trycompai/design-system';
 import { useParams, useRouter } from 'next/navigation';
-import { useTaskPolicies } from '../hooks/use-task-policies';
+import { usePolicyEvidenceTasks } from '../hooks/usePolicyEvidenceTasks';
 
-const SECTION_TITLE = 'Policies';
-const SECTION_DESCRIPTION = 'Policies whose controls this task demonstrates.';
+const SECTION_TITLE = 'Evidence Tasks';
+const SECTION_DESCRIPTION = 'Tasks attached to controls mapped to this policy.';
 
-interface PolicyRow {
-  policyId: string;
-  policyName: string;
+interface TaskRow {
+  taskId: string;
+  taskTitle: string;
   status: string;
   frequency: string | null;
   controlId: string;
   controlName: string;
 }
 
-function PolicyStatusPill({ status }: { status: string }) {
+function TaskStatusPill({ status }: { status: string }) {
   const label = status.replace(/_/g, ' ');
   const styles = (() => {
     switch (status) {
-      case 'published':
-        return 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300';
-      case 'needs_review':
+      case 'in_progress':
+        return 'bg-blue-500/15 text-blue-700 dark:text-blue-300';
+      case 'in_review':
         return 'bg-amber-500/15 text-amber-700 dark:text-amber-300';
-      case 'draft':
-      case 'archived':
+      case 'done':
+        return 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300';
+      case 'failed':
+        return 'bg-red-500/15 text-red-700 dark:text-red-300';
+      case 'not_relevant':
+      case 'todo':
       default:
         return 'bg-muted text-muted-foreground';
     }
@@ -48,18 +52,18 @@ function PolicyStatusPill({ status }: { status: string }) {
   );
 }
 
-export function TaskPolicies() {
-  const { orgId, taskId } = useParams<{ orgId: string; taskId: string }>();
+export function PolicyEvidenceTasks() {
+  const { orgId, policyId } = useParams<{ orgId: string; policyId: string }>();
   const router = useRouter();
-  const { groups, isLoading, error } = useTaskPolicies({
-    taskId,
+  const { groups, isLoading, error } = usePolicyEvidenceTasks({
+    policyId,
     organizationId: orgId,
   });
 
   if (error) {
     return (
       <Section title={SECTION_TITLE} description={SECTION_DESCRIPTION}>
-        <Text>Could not load policies. Please try again.</Text>
+        <Text>Could not load evidence tasks. Please try again.</Text>
       </Section>
     );
   }
@@ -72,14 +76,14 @@ export function TaskPolicies() {
     );
   }
 
-  const rows: PolicyRow[] = [];
+  const rows: TaskRow[] = [];
   for (const group of groups) {
-    for (const policy of group.policies) {
+    for (const task of group.tasks) {
       rows.push({
-        policyId: policy.id,
-        policyName: policy.name,
-        status: policy.status,
-        frequency: policy.frequency,
+        taskId: task.id,
+        taskTitle: task.title,
+        status: task.status,
+        frequency: task.frequency,
         controlId: group.control.id,
         controlName: group.control.name,
       });
@@ -90,14 +94,14 @@ export function TaskPolicies() {
     return (
       <Section title={SECTION_TITLE} description={SECTION_DESCRIPTION}>
         <Text variant="muted">
-          No policies reference this task through its mapped controls.
+          No evidence tasks yet. Map a control with tasks attached above.
         </Text>
       </Section>
     );
   }
 
-  const handleRowClick = (policyId: string) => {
-    router.push(`/${orgId}/policies/${policyId}`);
+  const handleRowClick = (taskId: string) => {
+    router.push(`/${orgId}/tasks/${taskId}`);
   };
 
   return (
@@ -105,7 +109,7 @@ export function TaskPolicies() {
       <Table variant="bordered">
         <TableHeader>
           <TableRow>
-            <TableHead>Policy</TableHead>
+            <TableHead>Task</TableHead>
             <TableHead>Control</TableHead>
             <TableHead>Status</TableHead>
             <TableHead>Frequency</TableHead>
@@ -114,13 +118,13 @@ export function TaskPolicies() {
         <TableBody>
           {rows.map((row) => (
             <TableRow
-              key={`${row.controlId}:${row.policyId}`}
-              onClick={() => handleRowClick(row.policyId)}
+              key={`${row.controlId}:${row.taskId}`}
+              onClick={() => handleRowClick(row.taskId)}
               style={{ cursor: 'pointer' }}
             >
               <TableCell>
                 <Text size="sm" weight="medium">
-                  {row.policyName}
+                  {row.taskTitle}
                 </Text>
               </TableCell>
               <TableCell>
@@ -129,7 +133,7 @@ export function TaskPolicies() {
                 </Text>
               </TableCell>
               <TableCell>
-                <PolicyStatusPill status={row.status} />
+                <TaskStatusPill status={row.status} />
               </TableCell>
               <TableCell>
                 <div className="capitalize">

@@ -3,8 +3,10 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { TaskPolicies } from './TaskPolicies';
 import type { TaskPolicyGroup } from '../hooks/use-task-policies';
 
+const mockPush = vi.fn();
 vi.mock('next/navigation', () => ({
   useParams: () => ({ orgId: 'org_1', taskId: 'tsk_1' }),
+  useRouter: () => ({ push: mockPush }),
 }));
 
 const mockHook = vi.fn();
@@ -24,9 +26,10 @@ const makePolicy = (overrides: Partial<TaskPolicyGroup['policies'][number]> = {}
 describe('TaskPolicies', () => {
   beforeEach(() => {
     mockHook.mockReset();
+    mockPush.mockReset();
   });
 
-  it('renders one section per control group with policy rows', () => {
+  it('renders one row per (control, policy) pair with policy and control names', () => {
     mockHook.mockReturnValue({
       groups: [
         {
@@ -40,19 +43,10 @@ describe('TaskPolicies', () => {
 
     render(<TaskPolicies />);
 
-    expect(screen.getByText('Access Controls')).toBeInTheDocument();
     expect(screen.getByText('Authentication Policy')).toBeInTheDocument();
     expect(screen.getByText('MFA Policy')).toBeInTheDocument();
-  });
-
-  it('shows empty state when task has no linked controls', () => {
-    mockHook.mockReturnValue({ groups: [], count: 0, isLoading: false });
-
-    render(<TaskPolicies />);
-
-    expect(
-      screen.getByText(/no policies reference this task/i),
-    ).toBeInTheDocument();
+    // Control name appears once per row in the Control column.
+    expect(screen.getAllByText('Access Controls')).toHaveLength(2);
   });
 
   it('renders all policies returned by the API, including drafts', () => {
@@ -76,12 +70,19 @@ describe('TaskPolicies', () => {
 
     expect(screen.getByText('Published One')).toBeInTheDocument();
     expect(screen.getByText('Draft One')).toBeInTheDocument();
+  });
+
+  it('shows empty state when task has no linked controls', () => {
+    mockHook.mockReturnValue({ groups: [], count: 0, isLoading: false });
+
+    render(<TaskPolicies />);
+
     expect(
-      screen.getByText(/2 policies whose controls this task demonstrates\./i),
+      screen.getByText(/no policies reference this task/i),
     ).toBeInTheDocument();
   });
 
-  it('policy row links to the policy detail page', () => {
+  it('clicking a row navigates to the policy detail page', () => {
     mockHook.mockReturnValue({
       groups: [
         {
@@ -95,8 +96,12 @@ describe('TaskPolicies', () => {
 
     render(<TaskPolicies />);
 
-    const link = screen.getByRole('link', { name: /Authentication Policy/ });
-    expect(link).toHaveAttribute('href', '/org_1/policies/pol_42');
+    const cell = screen.getByText('Authentication Policy');
+    const row = cell.closest('tr');
+    expect(row).not.toBeNull();
+    fireEvent.click(row!);
+
+    expect(mockPush).toHaveBeenCalledWith('/org_1/policies/pol_42');
   });
 
   it('renders error state when the hook returns an error', () => {
@@ -115,51 +120,5 @@ describe('TaskPolicies', () => {
     expect(
       screen.queryByText(/no policies reference this task/i),
     ).not.toBeInTheDocument();
-  });
-
-  it('counts unique policies even when one policy spans multiple controls', () => {
-    const shared = makePolicy({ id: 'pol_shared', name: 'Shared Policy' });
-    mockHook.mockReturnValue({
-      groups: [
-        {
-          control: { id: 'ctl_1', name: 'Access Controls' },
-          policies: [shared],
-        },
-        {
-          control: { id: 'ctl_2', name: 'Monitoring' },
-          policies: [shared],
-        },
-      ],
-      // API's pre-dedupe count is irrelevant; visible count should reflect
-      // unique policy IDs.
-      count: 2,
-      isLoading: false,
-    });
-
-    render(<TaskPolicies />);
-
-    expect(
-      screen.getByText(/1 policy whose controls this task demonstrates\./i),
-    ).toBeInTheDocument();
-  });
-
-  it('collapses groups with more than 5 policies by default', () => {
-    const manyPolicies = Array.from({ length: 7 }, (_, i) =>
-      makePolicy({ id: `pol_${i}`, name: `Policy ${i}` }),
-    );
-    mockHook.mockReturnValue({
-      groups: [{ control: { id: 'ctl_1', name: 'Access Controls' }, policies: manyPolicies }],
-      count: 7,
-      isLoading: false,
-    });
-
-    render(<TaskPolicies />);
-
-    expect(screen.queryByText('Policy 0')).not.toBeInTheDocument();
-
-    const toggle = screen.getByRole('button', { name: /show 7 policies/i });
-    fireEvent.click(toggle);
-
-    expect(screen.getByText('Policy 0')).toBeInTheDocument();
   });
 });

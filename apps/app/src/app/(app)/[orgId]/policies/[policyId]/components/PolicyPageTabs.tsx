@@ -14,8 +14,9 @@ import { usePolicy } from '../hooks/usePolicy';
 import { usePolicyVersions } from '../hooks/usePolicyVersions';
 import { PolicyAlerts } from './PolicyAlerts';
 import { PolicyArchiveSheet } from './PolicyArchiveSheet';
+import { PolicyControlMappings } from './PolicyControlMappings';
 import { PolicyDeleteDialog } from './PolicyDeleteDialog';
-import { PolicyMappings } from './PolicyMappings';
+import { PolicyEvidenceTasks } from './PolicyEvidenceTasks';
 import { PolicyOverviewSheet } from './PolicyOverviewSheet';
 import { PolicySettingsCard } from './PolicySettingsCard';
 import { PolicyVersionsTab } from './PolicyVersionsTab';
@@ -201,12 +202,15 @@ export function PolicyPageTabs({
           </TabsContent>
 
           <TabsContent value="mappings">
-            <PolicyMappings
-              mappedControls={mappedControls}
-              allControls={allControls}
-              isPendingApproval={isPendingApproval}
-              onMutate={mutateAll}
-            />
+            <Stack gap="lg">
+              <PolicyControlMappings
+                mappedControls={mappedControls}
+                allControls={allControls}
+                isPendingApproval={isPendingApproval}
+                onMutate={mutateAll}
+              />
+              <PolicyEvidenceTasks />
+            </Stack>
           </TabsContent>
 
           <TabsContent value="content">
