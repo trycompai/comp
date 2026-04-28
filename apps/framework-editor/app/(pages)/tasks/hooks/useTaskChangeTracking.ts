@@ -155,8 +155,11 @@ export const useTaskChangeTracking = (initialData: TasksPageGridData[], framewor
       }
 
       try {
-        const queryParam = frameworkId ? `?frameworkId=${frameworkId}` : '';
-        const newTask = await apiClient<{ id: string }>(`/task-template${queryParam}`, {
+        // Don't pass frameworkId — new task templates are created unlinked.
+        // CX explicitly attaches them to specific controls afterward via the
+        // dedicated link endpoints. Auto-linking to every control in the
+        // framework forced manual cleanup after every create.
+        const newTask = await apiClient<{ id: string }>(`/task-template`, {
           method: 'POST',
           body: JSON.stringify({
             name: row.name,
