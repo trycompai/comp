@@ -1,17 +1,9 @@
 'use client';
 
 import {
-  Badge,
-  Card,
-  CardContent,
   Collapsible,
   CollapsibleContent,
   CollapsibleTrigger,
-  Item,
-  ItemActions,
-  ItemContent,
-  ItemGroup,
-  ItemTitle,
   Section,
   Stack,
   Text,
@@ -29,6 +21,10 @@ const SECTION_TITLE = 'Policies';
 const DEFAULT_DESCRIPTION = 'Policies whose controls this task demonstrates.';
 const CAPTION_CLASS =
   'text-xs font-semibold uppercase tracking-[0.08em] text-muted-foreground';
+
+function formatStatus(status: string) {
+  return status.replace(/_/g, ' ');
+}
 
 export function TaskPolicies() {
   const { orgId, taskId } = useParams<{ orgId: string; taskId: string }>();
@@ -53,55 +49,39 @@ export function TaskPolicies() {
 
   if (error) {
     return (
-      <SectionShell description={DEFAULT_DESCRIPTION}>
+      <Section title={SECTION_TITLE} description={DEFAULT_DESCRIPTION}>
         <Text>Could not load policies. Please try again.</Text>
-      </SectionShell>
+      </Section>
     );
   }
 
   if (isLoading) {
     return (
-      <SectionShell description={DEFAULT_DESCRIPTION}>
+      <Section title={SECTION_TITLE} description={DEFAULT_DESCRIPTION}>
         <Text variant="muted">Loading...</Text>
-      </SectionShell>
+      </Section>
     );
   }
 
   if (visibleGroups.length === 0) {
     return (
-      <SectionShell description={DEFAULT_DESCRIPTION}>
+      <Section title={SECTION_TITLE} description={DEFAULT_DESCRIPTION}>
         <Text variant="muted">
           No policies reference this task through its mapped controls.
         </Text>
-      </SectionShell>
+      </Section>
     );
   }
 
   const description = `${visibleCount} ${visibleCount === 1 ? 'policy' : 'policies'} whose controls this task demonstrates.`;
 
   return (
-    <SectionShell description={description}>
-      <Stack gap="4">
+    <Section title={SECTION_TITLE} description={description}>
+      <Stack gap="6">
         {visibleGroups.map((group) => (
           <ControlGroup key={group.control.id} group={group} orgId={orgId} />
         ))}
       </Stack>
-    </SectionShell>
-  );
-}
-
-function SectionShell({
-  description,
-  children,
-}: {
-  description: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <Section title={SECTION_TITLE} description={description}>
-      <Card width="full">
-        <CardContent>{children}</CardContent>
-      </Card>
     </Section>
   );
 }
@@ -116,15 +96,11 @@ function ControlGroupCaption({
   trigger?: React.ReactNode;
 }) {
   return (
-    <div className="flex items-center justify-between gap-3">
-      <h3 className={CAPTION_CLASS}>
-        {name}
-        {count > 1 ? (
-          <span className="text-muted-foreground/60 ml-1.5 font-medium normal-case tracking-normal">
-            · {count}
-          </span>
-        ) : null}
-      </h3>
+    <div className="flex items-baseline gap-1.5 mb-2">
+      <h4 className={CAPTION_CLASS}>{name}</h4>
+      {count > 1 ? (
+        <span className="text-xs text-muted-foreground/70">· {count}</span>
+      ) : null}
       {trigger}
     </div>
   );
@@ -144,30 +120,30 @@ function ControlGroup({
   if (policies.length > COLLAPSE_THRESHOLD) {
     return (
       <Collapsible>
-        <Stack gap="2">
+        <div>
           <ControlGroupCaption
             name={control.name}
             count={policies.length}
             trigger={
-              <CollapsibleTrigger className="inline-flex items-center gap-1 rounded-sm px-2 py-1 text-xs font-medium text-muted-foreground hover:bg-muted hover:text-foreground [&>svg]:transition-transform data-[panel-open]:[&>svg]:rotate-90">
-                <ChevronRight size={14} />
-                {label}
+              <CollapsibleTrigger className="ml-auto inline-flex items-center gap-0.5 text-xs text-muted-foreground hover:text-foreground [&>svg]:transition-transform data-[panel-open]:[&>svg]:rotate-90">
+                <ChevronRight size={12} />
+                <span>{label}</span>
               </CollapsibleTrigger>
             }
           />
           <CollapsibleContent>
             <PolicyList policies={policies} orgId={orgId} />
           </CollapsibleContent>
-        </Stack>
+        </div>
       </Collapsible>
     );
   }
 
   return (
-    <Stack gap="2">
+    <div>
       <ControlGroupCaption name={control.name} count={policies.length} />
       <PolicyList policies={policies} orgId={orgId} />
-    </Stack>
+    </div>
   );
 }
 
@@ -179,25 +155,25 @@ function PolicyList({
   orgId: string;
 }) {
   return (
-    <ItemGroup>
+    <div className="divide-y divide-border/40">
       {policies.map((policy) => (
-        <Item
+        <Link
           key={policy.id}
-          variant="outline"
-          size="sm"
-          render={<Link href={`/${orgId}/policies/${policy.id}`} />}
+          href={`/${orgId}/policies/${policy.id}`}
+          className="flex items-center justify-between px-3 py-2 hover:bg-muted/50 rounded-sm transition-colors"
         >
-          <ItemContent>
-            <ItemTitle>{policy.name}</ItemTitle>
-          </ItemContent>
-          <ItemActions>
-            <Badge variant="secondary">{policy.status}</Badge>
+          <span className="text-sm">{policy.name}</span>
+          <span className="flex items-center gap-2 text-xs text-muted-foreground">
+            <span className="capitalize">{formatStatus(policy.status)}</span>
             {policy.frequency ? (
-              <Badge variant="outline">{policy.frequency}</Badge>
+              <>
+                <span aria-hidden>·</span>
+                <span className="capitalize">{policy.frequency}</span>
+              </>
             ) : null}
-          </ItemActions>
-        </Item>
+          </span>
+        </Link>
       ))}
-    </ItemGroup>
+    </div>
   );
 }

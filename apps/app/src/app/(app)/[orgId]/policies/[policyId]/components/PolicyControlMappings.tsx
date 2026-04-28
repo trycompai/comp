@@ -12,7 +12,7 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-  Button,
+  buttonVariants,
   Command,
   CommandEmpty,
   CommandInput,
@@ -205,13 +205,11 @@ export const PolicyControlMappings = ({
             <Popover open={addOpen} onOpenChange={setAddOpen}>
               <PopoverTrigger
                 disabled={isPendingApproval || loading}
-                render={
-                  <Button variant="outline" size="sm">
-                    <Add size={14} />
-                    Add controls
-                  </Button>
-                }
-              />
+                className={buttonVariants({ variant: 'outline', size: 'sm' })}
+              >
+                <Add size={14} />
+                Add controls
+              </PopoverTrigger>
               <PopoverContent align="start">
                 <Command>
                   <CommandInput placeholder="Search controls..." />
