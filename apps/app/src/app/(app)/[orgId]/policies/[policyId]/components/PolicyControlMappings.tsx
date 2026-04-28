@@ -30,7 +30,7 @@ import {
   TableRow,
   Text,
 } from '@trycompai/design-system';
-import { Add, Close } from '@trycompai/design-system/icons';
+import { Add, Unlink } from '@trycompai/design-system/icons';
 import { useParams, useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { toast } from 'sonner';
@@ -198,14 +198,15 @@ export function PolicyControlMappings({
                   <TableCell style={{ width: 48 }}>
                     <button
                       type="button"
-                      aria-label={`Remove ${control.name}`}
+                      aria-label={`Unlink ${control.name}`}
+                      title="Unlink control"
                       onClick={(e) => {
                         e.stopPropagation();
                         setToRemove({ id: control.id, name: control.name });
                       }}
-                      className="inline-flex h-7 w-7 items-center justify-center rounded text-muted-foreground hover:bg-muted hover:text-foreground"
+                      className="inline-flex h-7 w-7 items-center justify-center rounded text-destructive hover:bg-destructive/10"
                     >
-                      <Close size={14} />
+                      <Unlink size={14} />
                     </button>
                   </TableCell>
                 )}
@@ -223,11 +224,11 @@ export function PolicyControlMappings({
       >
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Remove control mapping</AlertDialogTitle>
+            <AlertDialogTitle>Unlink control</AlertDialogTitle>
             <AlertDialogDescription>
               {toRemove ? (
                 <>
-                  Remove <strong>{toRemove.name}</strong> from this policy? You can map it
+                  Unlink <strong>{toRemove.name}</strong> from this policy? You can link it
                   again later.
                 </>
               ) : null}
@@ -235,7 +236,12 @@ export function PolicyControlMappings({
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel onClick={() => setToRemove(null)}>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleConfirmRemove}>Remove</AlertDialogAction>
+            <AlertDialogAction
+              onClick={handleConfirmRemove}
+              className={buttonVariants({ variant: 'destructive', size: 'sm' })}
+            >
+              Unlink
+            </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
