@@ -244,10 +244,7 @@ export function PolicyControlMappings({
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel onClick={() => setToRemove(null)}>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={handleConfirmRemove}
-              className={buttonVariants({ variant: 'destructive', size: 'sm' })}
-            >
+            <AlertDialogAction onClick={handleConfirmRemove} variant="destructive">
               Unlink
             </AlertDialogAction>
           </AlertDialogFooter>
