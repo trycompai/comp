@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { db } from '@db';
 import type { SyncEmployee } from '@trycompai/integration-platform';
+import { BUILT_IN_ROLE_PERMISSIONS } from '@trycompai/auth';
 
 // ============================================================================
 // Types
@@ -75,6 +76,28 @@ export class GenericEmployeeSyncService {
     const allowReactivation = options.allowReactivation ?? false;
     const protectedRoles = options.protectedRoles ?? DEFAULT_PROTECTED_ROLES;
     const providerName = options.providerName ?? 'provider';
+
+    // Build the set of role identifiers we'll accept on this sync. Anything
+    // outside this set is dropped (e.g. a Microsoft DSL that mis-maps
+    // jobTitle into role would otherwise plant "Senior Front End Engineer"
+    // strings into member.role with no matching organization_role row).
+    const customRoles: { name: string }[] = await db.organizationRole.findMany({
+      where: { organizationId },
+      select: { name: true },
+    });
+    const validRoleNames = new Set<string>([
+      ...Object.keys(BUILT_IN_ROLE_PERMISSIONS),
+      ...customRoles.map((r) => r.name),
+    ]);
+
+    const sanitizeRole = (raw: string | undefined | null): string => {
+      if (!raw) return defaultRole;
+      const tokens = raw
+        .split(',')
+        .map((t) => t.trim())
+        .filter((t) => t.length > 0 && validRoleNames.has(t));
+      return tokens.length > 0 ? tokens.join(',') : defaultRole;
+    };
 
     const results: SyncResult = {
       success: true,
@@ -174,11 +197,17 @@ export class GenericEmployeeSyncService {
         }
 
         // Create new member
+        const sanitizedRole = sanitizeRole(employee.role);
+        if (employee.role && sanitizedRole !== employee.role) {
+          this.logger.warn(
+            `[GenericSync] Provider "${providerName}" sent unrecognized role "${employee.role}" for ${normalizedEmail}; falling back to "${sanitizedRole}"`,
+          );
+        }
         await db.member.create({
           data: {
             organizationId,
             userId: existingUser.id,
-            role: employee.role || defaultRole,
+            role: sanitizedRole,
             isActive: true,
           },
         });
