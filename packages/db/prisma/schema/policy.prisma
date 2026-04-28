@@ -4,7 +4,7 @@ enum PolicyDisplayFormat {
 }
 
 enum PolicyVisibility {
-  ALL        // Visible to everyone in organization
+  ALL // Visible to everyone in organization
   DEPARTMENT // Only visible to specified departments
 }
 
@@ -66,8 +66,8 @@ model PolicyVersion {
   updatedAt DateTime @updatedAt
 
   // Relations
-  policyId String
-  policy   Policy @relation("PolicyVersions", fields: [policyId], references: [id], onDelete: Cascade)
+  policyId         String
+  policy           Policy  @relation("PolicyVersions", fields: [policyId], references: [id], onDelete: Cascade)
   currentForPolicy Policy? @relation("PolicyCurrentVersion")
 
   // Version details

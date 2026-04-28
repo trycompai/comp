@@ -11,11 +11,11 @@ description: Configure Better Auth server and client, set up database adapters, 
 
 ## Setup Workflow
 
-1. Install: `npm install better-auth`
+1. Install: `bun add better-auth`
 2. Set env vars: `BETTER_AUTH_SECRET` and `BETTER_AUTH_URL`
 3. Create `auth.ts` with database + config
 4. Create route handler for your framework
-5. Run `npx @better-auth/cli@latest migrate`
+5. Run `bunx @better-auth/cli@latest migrate`
 6. Verify: call `GET /api/auth/ok` — should return `{ status: "ok" }`
 
 ---
@@ -32,9 +32,9 @@ Only define `baseURL`/`secret` in config if env vars are NOT set.
 CLI looks for `auth.ts` in: `./`, `./lib`, `./utils`, or under `./src`. Use `--config` for custom path.
 
 ### CLI Commands
-- `npx @better-auth/cli@latest migrate` - Apply schema (built-in adapter)
-- `npx @better-auth/cli@latest generate` - Generate schema for Prisma/Drizzle
-- `npx @better-auth/cli mcp --cursor` - Add MCP to AI tools
+- `bunx @better-auth/cli@latest migrate` - Apply schema (built-in adapter)
+- `bunx @better-auth/cli@latest generate` - Generate schema for Prisma/Drizzle
+- `bunx @better-auth/cli@latest mcp --cursor` - Add MCP to AI tools
 
 **Re-run after adding/changing plugins.**
 

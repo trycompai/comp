@@ -87,12 +87,17 @@ export class AutomationsService {
       throw new NotFoundException('Automation not found');
     }
 
+    const { scheduleFrequency, ...rest } = updateAutomationDto;
+
     // Update the automation
     const automation = await db.evidenceAutomation.update({
       where: {
         id: automationId,
       },
-      data: updateAutomationDto,
+      data: {
+        ...rest,
+        ...(scheduleFrequency !== undefined ? { scheduleFrequency } : {}),
+      },
     });
 
     return {

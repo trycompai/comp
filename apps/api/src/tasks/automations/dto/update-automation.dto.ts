@@ -1,5 +1,6 @@
-import { ApiProperty } from '@nestjs/swagger';
-import { IsString, IsOptional, IsBoolean } from 'class-validator';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { IsString, IsOptional, IsBoolean, IsEnum } from 'class-validator';
+import { TaskFrequency } from '@db';
 
 export class UpdateAutomationDto {
   @ApiProperty({
@@ -35,4 +36,12 @@ export class UpdateAutomationDto {
   @IsString()
   @IsOptional()
   evaluationCriteria?: string;
+
+  @ApiPropertyOptional({
+    enum: TaskFrequency,
+    description: 'Automation schedule cadence',
+  })
+  @IsEnum(TaskFrequency)
+  @IsOptional()
+  scheduleFrequency?: TaskFrequency;
 }

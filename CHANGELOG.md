@@ -1,3 +1,62 @@
+# [3.34.0](https://github.com/trycompai/comp/compare/v3.33.2...v3.34.0) (2026-04-28)
+
+
+### Bug Fixes
+
+* **api:** add coverage for SOA export endpoint ([24f9791](https://github.com/trycompai/comp/commit/24f97917b9be58f1b5d218415012b654507dd913))
+* **api:** add metrics to SOA pdf document ([1d3f903](https://github.com/trycompai/comp/commit/1d3f903915a5bc6932020065d768fa32d5e2ee66))
+* **api:** add non-empty validation for requirement fields in ExportSOADocumentDto ([bfd1f5f](https://github.com/trycompai/comp/commit/bfd1f5f19898540b35d257fd4966e07c03536fb5))
+* **api:** correct SOA completion logic based on approvedAt for SOA ([38642ba](https://github.com/trycompai/comp/commit/38642badc3b477f4e98a2ca01956b25806a9d3b1))
+* **api:** correct SOA export classification for declined cases ([ada6b5e](https://github.com/trycompai/comp/commit/ada6b5e4515092087c58288fd6049ef0caac5b00))
+* **api:** create endpoint to export soa into pdf ([7364c58](https://github.com/trycompai/comp/commit/7364c58c7cdc9801061a4df6f2ca95d6a346254d))
+* **api:** fix pagination overflow for long question blocks in soa pdf ([589f285](https://github.com/trycompai/comp/commit/589f28516c5c296e3f6f0b5844b5de02c77a5562))
+* **api:** include soa to documents score ([10c67f7](https://github.com/trycompai/comp/commit/10c67f7bf49169082240cf7c415beb9d23068d4b))
+* **api:** update approval status text on soa pdf ([4813da6](https://github.com/trycompai/comp/commit/4813da66b12400c40975362fe27903c506749bcd))
+* **api:** update declineAt during SOA Document status changes ([dafde6f](https://github.com/trycompai/comp/commit/dafde6f2400d6a7529ec3ea8bf525532cb48a76f))
+* **api:** update the soa pdf content ([7705eca](https://github.com/trycompai/comp/commit/7705eca723b1208ef95650cebdc2e103f3e6cb2d))
+* **app:** add organizationId to frameworks SWR cache ([fd5ba8b](https://github.com/trycompai/comp/commit/fd5ba8b72596babf5d55c485296559fe2bc69a54))
+* **app:** avoid defaulting to 'Not approved' before SOA status loads ([140db39](https://github.com/trycompai/comp/commit/140db39d9d7864fc0c6276b8462972fd44d32d8d))
+* **app:** correct approvalStatusText handling of declinedAt ([08971f9](https://github.com/trycompai/comp/commit/08971f944f918cec00208749c63fba7beab2b4d4))
+* **app:** correct SOA document info during the status changes ([f817d44](https://github.com/trycompai/comp/commit/f817d4465da29ab7f868b5271e45b632feb070f2))
+* **app:** export Statement of Applicability as pdf ([e6731b2](https://github.com/trycompai/comp/commit/e6731b2bed8b50b8e50b4fffdecf61eaafe9e9bd))
+* **app:** guard answers sync effect from clearing answersMap on partial data in SOA page ([b9a580f](https://github.com/trycompai/comp/commit/b9a580f70c84ca7500cc654574876366596c620b))
+* **app:** handle /v1/frameworks fetch errors before showing not found message on SOA ([959d571](https://github.com/trycompai/comp/commit/959d5717cf190e7cad2a5ab6c239f5823e9bedd2))
+* **app:** handle serverApi.post errors to prevent infinite loading on SOA page ([2f12556](https://github.com/trycompai/comp/commit/2f12556fddfdaa68e2eb489b3bf88087572b1c1a))
+* **app:** move 'Statement of Applicability' from Questionnaire to Documents ([5fa4861](https://github.com/trycompai/comp/commit/5fa48613aeff3f618b0f86d6ecbd818170ab30bf))
+* **app:** remove use of ai-vendor-questionnaire FF for SOA page ([993e89b](https://github.com/trycompai/comp/commit/993e89b01f7a96ff3fa133ea2e7e6619d6e1e019))
+* **app:** remove use of hasISO27001Framework on CompanyOverviewCards ([49c1673](https://github.com/trycompai/comp/commit/49c16732b2748e15a93d2354f2cb172980a9914d))
+* **app:** show approval status on Statement of Applicability card in documents ([4d6e854](https://github.com/trycompai/comp/commit/4d6e85486d9b9ef5339397e6a9d74ebcdc973df1))
+* **app:** update approval status after approving of 'Statement of Applicability' ([d8a9a8d](https://github.com/trycompai/comp/commit/d8a9a8d88b58c9afc41b7cd13323ddf080ff5c61))
+* **app:** update approval status text on soa ([59567c4](https://github.com/trycompai/comp/commit/59567c4ce6a1abd7f4765730a834270cfe0fa070))
+* **app:** update SOA Document Info based on status changes ([af47b4e](https://github.com/trycompai/comp/commit/af47b4e75d104233f588e6fdead8c10763538cdf))
+* **app:** use exact role checks instead of substring matching ([760c304](https://github.com/trycompai/comp/commit/760c3048e171cee420201ad537217aed7e24411c))
+* **db:** add declined fields to SOADocument ([1296eeb](https://github.com/trycompai/comp/commit/1296eeb109f00aecbbf816a2cf636871801d784e))
+* **db:** remove declined from SOADocumentStatus ([83a5619](https://github.com/trycompai/comp/commit/83a5619777e61efffef88d28115bf25cd2dbe670))
+* **framework-editor:** add SOA document to ISO 27001 framework ([a5e8988](https://github.com/trycompai/comp/commit/a5e898876c990a0f947ee53150d2a165f08c8491))
+* **gws:** coerce target_org_units to array in check-user-filter ([65e60cc](https://github.com/trycompai/comp/commit/65e60ccb227bbc26edc50ad9c89cde09dad48249))
+
+
+### Features
+
+* add ability to set frequency on automations running ([32b210e](https://github.com/trycompai/comp/commit/32b210ee57f4b8eb0c900a961e53a1d7dc9e600e))
+* add comprehensive project rules and guidelines documentation ([e8a751b](https://github.com/trycompai/comp/commit/e8a751b39d79c95e78ec6f18d06b1e711be2175f))
+* allow selecting which policies to download when clicking download all ([46b9575](https://github.com/trycompai/comp/commit/46b9575c4798bb9cada8b609954e0add20e1ba1e))
+* **integrations:** split GitHub sanitized inputs check into two automations ([9463c5a](https://github.com/trycompai/comp/commit/9463c5a47f60ecf2e2f47b5679c9c88124ff8783))
+
+## [3.33.2](https://github.com/trycompai/comp/compare/v3.33.1...v3.33.2) (2026-04-27)
+
+
+### Bug Fixes
+
+* **gws:** coerce target_org_units to array in check-user-filter ([f5e6754](https://github.com/trycompai/comp/commit/f5e6754af8805307d79f046fef22a6e871fabd27))
+
+## [3.33.1](https://github.com/trycompai/comp/compare/v3.33.0...v3.33.1) (2026-04-24)
+
+
+### Bug Fixes
+
+* **api:** scope task status-change emails to assignee, not whole org ([#2669](https://github.com/trycompai/comp/issues/2669)) ([fd0aa1c](https://github.com/trycompai/comp/commit/fd0aa1cd59c73c8f9c12f0567775226300a4a7fd))
+
 # [3.33.0](https://github.com/trycompai/comp/compare/v3.32.2...v3.33.0) (2026-04-24)
 
 

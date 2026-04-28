@@ -10,6 +10,11 @@ export const DOCUMENT_TYPE_OPTIONS: MultiSelectOption[] = [
   { value: 'rbac_matrix', label: 'RBAC Matrix', category: 'Security' },
   { value: 'infrastructure_inventory', label: 'Infrastructure Inventory', category: 'Security' },
   { value: 'network_diagram', label: 'Network Diagram', category: 'Security' },
+  {
+    value: 'statement_of_applicability',
+    label: 'Statement of Applicability',
+    category: 'SOA',
+  },
   { value: 'tabletop_exercise', label: 'Incident Response Tabletop Exercise', category: 'Security' },
   { value: 'whistleblower_report', label: 'Whistleblower Report', category: 'People' },
   { value: 'employee_performance_evaluation', label: 'Employee Performance Evaluation', category: 'People' },
