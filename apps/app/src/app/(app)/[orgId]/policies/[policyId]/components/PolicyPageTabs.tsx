@@ -14,9 +14,8 @@ import { usePolicy } from '../hooks/usePolicy';
 import { usePolicyVersions } from '../hooks/usePolicyVersions';
 import { PolicyAlerts } from './PolicyAlerts';
 import { PolicyArchiveSheet } from './PolicyArchiveSheet';
-import { PolicyControlMappings } from './PolicyControlMappings';
 import { PolicyDeleteDialog } from './PolicyDeleteDialog';
-import { PolicyEvidenceTasks } from './PolicyEvidenceTasks';
+import { PolicyMappings } from './PolicyMappings';
 import { PolicyOverviewSheet } from './PolicyOverviewSheet';
 import { PolicySettingsCard } from './PolicySettingsCard';
 import { PolicyVersionsTab } from './PolicyVersionsTab';
@@ -184,6 +183,7 @@ export function PolicyPageTabs({
           <TabsList variant="underline">
             <TabsTrigger value="overview">Overview</TabsTrigger>
             <TabsTrigger value="content">Content</TabsTrigger>
+            <TabsTrigger value="mappings">Mappings</TabsTrigger>
             <TabsTrigger value="versions">Versions</TabsTrigger>
             <TabsTrigger value="activity">Activity</TabsTrigger>
             <TabsTrigger value="comments">Comments</TabsTrigger>
@@ -197,14 +197,16 @@ export function PolicyPageTabs({
                 isPendingApproval={isPendingApproval}
                 onMutate={mutate}
               />
-              <PolicyControlMappings
-                mappedControls={mappedControls}
-                allControls={allControls}
-                isPendingApproval={isPendingApproval}
-                onMutate={mutateAll}
-              />
-              <PolicyEvidenceTasks />
             </Stack>
+          </TabsContent>
+
+          <TabsContent value="mappings">
+            <PolicyMappings
+              mappedControls={mappedControls}
+              allControls={allControls}
+              isPendingApproval={isPendingApproval}
+              onMutate={mutateAll}
+            />
           </TabsContent>
 
           <TabsContent value="content">

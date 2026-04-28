@@ -88,8 +88,8 @@ vi.mock('./PolicyArchiveSheet', () => ({
   PolicyArchiveSheet: () => <div data-testid="policy-archive-sheet" />,
 }));
 
-vi.mock('./PolicyControlMappings', () => ({
-  PolicyControlMappings: () => <div data-testid="policy-control-mappings" />,
+vi.mock('./PolicyMappings', () => ({
+  PolicyMappings: () => <div data-testid="policy-mappings" />,
 }));
 
 vi.mock('./PolicyDeleteDialog', () => ({
@@ -197,7 +197,7 @@ describe('PolicyPageTabs', () => {
       render(<PolicyPageTabs {...defaultProps} />);
       expect(screen.getByTestId('policy-settings-card')).toBeInTheDocument();
       expect(
-        screen.getByTestId('policy-control-mappings'),
+        screen.getByTestId('policy-mappings'),
       ).toBeInTheDocument();
     });
   });
@@ -220,7 +220,7 @@ describe('PolicyPageTabs', () => {
       render(<PolicyPageTabs {...defaultProps} />);
       expect(screen.getByTestId('policy-settings-card')).toBeInTheDocument();
       expect(
-        screen.getByTestId('policy-control-mappings'),
+        screen.getByTestId('policy-mappings'),
       ).toBeInTheDocument();
     });
 
