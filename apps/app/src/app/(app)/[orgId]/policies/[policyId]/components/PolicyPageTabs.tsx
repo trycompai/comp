@@ -1,6 +1,6 @@
 'use client';
 
-import type { Control, Member, Policy, PolicyVersion, User } from '@db';
+import type { Member, Policy, PolicyVersion, User } from '@db';
 import type { JSONContent } from '@tiptap/react';
 import { Stack, Tabs, TabsContent, TabsList, TabsTrigger } from '@trycompai/design-system';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
@@ -14,7 +14,10 @@ import { usePolicy } from '../hooks/usePolicy';
 import { usePolicyVersions } from '../hooks/usePolicyVersions';
 import { PolicyAlerts } from './PolicyAlerts';
 import { PolicyArchiveSheet } from './PolicyArchiveSheet';
-import { PolicyControlMappings } from './PolicyControlMappings';
+import {
+  PolicyControlMappings,
+  type MappedControl,
+} from './PolicyControlMappings';
 import { PolicyDeleteDialog } from './PolicyDeleteDialog';
 import { PolicyEvidenceTasks } from './PolicyEvidenceTasks';
 import { PolicyOverviewSheet } from './PolicyOverviewSheet';
@@ -56,8 +59,8 @@ function sanitizePolicyContent(raw: unknown): JSONContent[] {
 interface PolicyPageTabsProps {
   policy: (Policy & { approver: (Member & { user: User }) | null }) | null;
   assignees: (Member & { user: User })[];
-  mappedControls: Control[];
-  allControls: Control[];
+  mappedControls: MappedControl[];
+  allControls: MappedControl[];
   isPendingApproval: boolean;
   policyId: string;
   organizationId: string;

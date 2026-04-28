@@ -2,7 +2,6 @@
 
 import { usePermissions } from '@/hooks/use-permissions';
 import { apiClient } from '@/lib/api-client';
-import type { Control } from '@db';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -12,6 +11,7 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
+  Badge,
   buttonVariants,
   Command,
   CommandEmpty,
@@ -38,7 +38,12 @@ import { toast } from 'sonner';
 import useSWR from 'swr';
 import { usePolicy } from '../hooks/usePolicy';
 
-type MappedControl = Pick<Control, 'id' | 'name' | 'description'>;
+export type MappedControl = {
+  id: string;
+  name: string;
+  description: string | null;
+  frameworks: Array<{ id: string; name: string }>;
+};
 
 interface ControlsResponse {
   mappedControls: MappedControl[];
@@ -46,8 +51,8 @@ interface ControlsResponse {
 }
 
 interface PolicyControlMappingsProps {
-  mappedControls: Control[];
-  allControls: Control[];
+  mappedControls: MappedControl[];
+  allControls: MappedControl[];
   isPendingApproval: boolean;
   onMutate?: () => void;
 }
@@ -181,6 +186,7 @@ export function PolicyControlMappings({
           <TableHeader>
             <TableRow>
               <TableHead>Name</TableHead>
+              <TableHead>Frameworks</TableHead>
               {canMutate && <TableHead style={{ width: 48 }} />}
             </TableRow>
           </TableHeader>
@@ -201,6 +207,21 @@ export function PolicyControlMappings({
                       {control.name}
                     </Text>
                   </Link>
+                </TableCell>
+                <TableCell>
+                  {control.frameworks.length === 0 ? (
+                    <Text size="sm" variant="muted">
+                      —
+                    </Text>
+                  ) : (
+                    <div className="flex flex-wrap gap-1">
+                      {control.frameworks.map((fw) => (
+                        <Badge key={fw.id} variant="secondary">
+                          {fw.name}
+                        </Badge>
+                      ))}
+                    </div>
+                  )}
                 </TableCell>
                 {canMutate && (
                   <TableCell style={{ width: 48 }}>
