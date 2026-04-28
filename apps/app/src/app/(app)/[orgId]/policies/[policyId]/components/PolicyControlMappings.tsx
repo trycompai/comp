@@ -40,7 +40,7 @@ interface ControlsResponse {
   allControls: MappedControl[];
 }
 
-function ControlChip({
+function ControlRow({
   control,
   orgId,
   canRemove,
@@ -52,10 +52,10 @@ function ControlChip({
   onRequestRemove: (control: MappedControl) => void;
 }) {
   return (
-    <div className="inline-flex items-center rounded-md border bg-muted/30 text-sm hover:bg-muted/60 transition-colors">
+    <div className="group/control-row flex items-center hover:bg-muted/50 transition-colors">
       <Link
         href={`/${orgId}/controls/${control.id}`}
-        className="px-3 py-1 hover:underline"
+        className="flex-1 px-3 py-2.5 text-sm hover:underline"
       >
         {control.name}
       </Link>
@@ -64,7 +64,7 @@ function ControlChip({
           type="button"
           onClick={() => onRequestRemove(control)}
           aria-label={`Remove ${control.name}`}
-          className="border-l mr-0.5 ml-0.5 p-1 rounded text-muted-foreground hover:text-foreground hover:bg-muted"
+          className="mr-2 inline-flex h-6 w-6 items-center justify-center rounded text-muted-foreground opacity-0 transition-opacity hover:bg-muted hover:text-foreground group-hover/control-row:opacity-100 focus-visible:opacity-100"
         >
           <Close size={14} />
         </button>
@@ -236,9 +236,9 @@ export const PolicyControlMappings = ({
             No controls mapped yet.
           </Text>
         ) : (
-          <div className="flex flex-wrap gap-2">
+          <div className="overflow-hidden rounded-md border divide-y divide-border">
             {mappedControls.map((control) => (
-              <ControlChip
+              <ControlRow
                 key={control.id}
                 control={control}
                 orgId={orgId}
