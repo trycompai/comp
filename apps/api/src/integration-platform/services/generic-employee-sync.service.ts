@@ -172,11 +172,27 @@ export class GenericEmployeeSyncService {
         });
 
         if (existingMember) {
+          // Self-heal limbo roles: if the persisted member.role contains
+          // tokens that don't map to any valid role today (e.g. an Entra
+          // jobTitle planted by a misconfigured DSL pre-fix), drop them.
+          // We only ever shrink the role string here — never overwrite a
+          // valid assignment with whatever the provider sent.
+          const healedRole = sanitizeRole(existingMember.role);
+          const needsHeal = healedRole !== existingMember.role;
+          if (needsHeal) {
+            this.logger.warn(
+              `[GenericSync] Healing limbo role for ${normalizedEmail}: "${existingMember.role}" → "${healedRole}"`,
+            );
+          }
+
           if (existingMember.deactivated && allowReactivation) {
-            // Reactivate the member
             await db.member.update({
               where: { id: existingMember.id },
-              data: { deactivated: false, isActive: true },
+              data: {
+                deactivated: false,
+                isActive: true,
+                ...(needsHeal ? { role: healedRole } : {}),
+              },
             });
             results.reactivated++;
             results.details.push({
@@ -184,6 +200,12 @@ export class GenericEmployeeSyncService {
               status: 'reactivated',
             });
           } else {
+            if (needsHeal) {
+              await db.member.update({
+                where: { id: existingMember.id },
+                data: { role: healedRole },
+              });
+            }
             results.skipped++;
             results.details.push({
               email: normalizedEmail,

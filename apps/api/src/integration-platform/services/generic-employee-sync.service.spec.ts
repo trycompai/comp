@@ -152,4 +152,93 @@ describe('GenericEmployeeSyncService role validation', () => {
       }),
     );
   });
+
+  describe('limbo role self-heal on re-sync', () => {
+    it('heals an existing member whose role is entirely invalid', async () => {
+      mockUserFindUnique.mockResolvedValue({
+        id: 'user_1',
+        email: 'mc@example.com',
+      });
+      mockMemberFindFirst.mockResolvedValue({
+        id: 'mem_1',
+        role: 'Senior Front End Engineer',
+        deactivated: false,
+      });
+
+      await service.processEmployees({
+        organizationId: 'org_1',
+        employees: [baseEmployee({ email: 'mc@example.com', role: 'employee' })],
+        options: { defaultRole: 'employee' },
+      });
+
+      expect(mockMemberUpdate).toHaveBeenCalledWith({
+        where: { id: 'mem_1' },
+        data: { role: 'employee' },
+      });
+    });
+
+    it('heals an existing member whose role mixes valid + invalid tokens', async () => {
+      mockUserFindUnique.mockResolvedValue({
+        id: 'user_1',
+        email: 'mc@example.com',
+      });
+      mockMemberFindFirst.mockResolvedValue({
+        id: 'mem_1',
+        role: 'admin,Senior Front End Engineer',
+        deactivated: false,
+      });
+
+      await service.processEmployees({
+        organizationId: 'org_1',
+        employees: [baseEmployee({ email: 'mc@example.com' })],
+      });
+
+      expect(mockMemberUpdate).toHaveBeenCalledWith({
+        where: { id: 'mem_1' },
+        data: { role: 'admin' },
+      });
+    });
+
+    it('does not touch an existing member whose role is already valid', async () => {
+      mockUserFindUnique.mockResolvedValue({
+        id: 'user_1',
+        email: 'mc@example.com',
+      });
+      mockMemberFindFirst.mockResolvedValue({
+        id: 'mem_1',
+        role: 'admin',
+        deactivated: false,
+      });
+
+      await service.processEmployees({
+        organizationId: 'org_1',
+        employees: [baseEmployee({ email: 'mc@example.com' })],
+      });
+
+      expect(mockMemberUpdate).not.toHaveBeenCalled();
+    });
+
+    it('heals AND reactivates a deactivated member with a limbo role', async () => {
+      mockUserFindUnique.mockResolvedValue({
+        id: 'user_1',
+        email: 'mc@example.com',
+      });
+      mockMemberFindFirst.mockResolvedValue({
+        id: 'mem_1',
+        role: 'Senior Front End Engineer',
+        deactivated: true,
+      });
+
+      await service.processEmployees({
+        organizationId: 'org_1',
+        employees: [baseEmployee({ email: 'mc@example.com' })],
+        options: { allowReactivation: true, defaultRole: 'employee' },
+      });
+
+      expect(mockMemberUpdate).toHaveBeenCalledWith({
+        where: { id: 'mem_1' },
+        data: { deactivated: false, isActive: true, role: 'employee' },
+      });
+    });
+  });
 });
