@@ -157,15 +157,20 @@ function useNewFindingHighlights(
       return next;
     });
 
-    const timer = window.setTimeout(() => {
+    // Schedule per-batch removal independently — fire and forget.
+    // Don't `clearTimeout` on cleanup: if `issues` changes in <2s
+    // (very common during a live scan polling at 3s), the cleanup
+    // would cancel the pending removal and the highlight class would
+    // stick to those rows forever. Each scheduled removal targets only
+    // the IDs from its batch, so multiple in-flight timers can't
+    // step on each other.
+    window.setTimeout(() => {
       setHighlighted((prev) => {
         const next = new Set(prev);
         for (const id of newlyLanded) next.delete(id);
         return next;
       });
     }, 2000);
-
-    return () => window.clearTimeout(timer);
   }, [issues]);
 
   return highlighted;

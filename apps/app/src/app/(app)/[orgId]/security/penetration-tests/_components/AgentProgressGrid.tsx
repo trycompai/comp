@@ -22,8 +22,13 @@ export function AgentProgressGrid({
   className,
 }: AgentProgressGridProps) {
   const count = Math.max(total, 1);
-  const running = done < count ? 1 : 0;
-  const pending = Math.max(count - done - running, 0);
+  // Clamp `done` to the grid size — if Maced ever reports done > total
+  // (rare, but possible when their progress payload is briefly out of
+  // sync), we'd otherwise render extra cells past the configured columns
+  // and break the visual width.
+  const doneClamped = Math.min(Math.max(done, 0), count);
+  const running = doneClamped < count ? 1 : 0;
+  const pending = Math.max(count - doneClamped - running, 0);
 
   return (
     <div
@@ -32,9 +37,9 @@ export function AgentProgressGrid({
         className,
       )}
       style={{ gridTemplateColumns: `repeat(${count}, minmax(0, 1fr))` }}
-      aria-label={`Agents: ${done} of ${count} complete`}
+      aria-label={`Agents: ${doneClamped} of ${count} complete`}
     >
-      {Array.from({ length: done }).map((_, i) => (
+      {Array.from({ length: doneClamped }).map((_, i) => (
         <span key={`done-${i}`} className="bg-primary" />
       ))}
       {running > 0 ? (

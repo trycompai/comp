@@ -494,7 +494,10 @@ export class SecurityPenetrationTestsService {
     // Refund the credit on terminal failure events. The user paid for a
     // run that didn't deliver value, so they shouldn't lose the credit.
     // Idempotent via the run row's `creditRefundedAt` column — webhook
-    // redelivery cannot double-credit.
+    // redelivery cannot double-credit. If the refund transaction fails
+    // (e.g. transient DB blip), the error propagates so this handler
+    // returns 5xx and Maced redelivers the webhook — without that, the
+    // customer would silently lose their credit.
     if (event.type === 'pentest.failed' || event.type === 'pentest.cancelled') {
       await this.refundOnTerminalFailure(event.data.pentestId, event.type);
     }
@@ -591,56 +594,50 @@ export class SecurityPenetrationTestsService {
     // wallet write would leave `creditRefundedAt` set with no actual
     // refund, and webhook redelivery would short-circuit forever — the
     // customer never gets their credit back.
-    try {
-      await db.$transaction(async (tx) => {
-        const claimed = await tx.securityPenetrationTestRun.updateMany({
-          where: { providerRunId, creditRefundedAt: null },
-          data: { creditRefundedAt: new Date() },
-        });
-
-        if (claimed.count === 0) {
-          // Either we don't own this run (orphan from a fast-click race
-          // — ownership row never persisted) OR the credit has already
-          // been refunded. Either way: do nothing further.
-          this.logger.log(
-            `[Webhook] ${eventType} refund skipped run=${providerRunId} (no ownership row or already refunded)`,
-          );
-          return;
-        }
-
-        const run = await tx.securityPenetrationTestRun.findUnique({
-          where: { providerRunId },
-          select: { organizationId: true },
-        });
-        if (!run) {
-          // Vanishingly rare race; abort the transaction so the claim
-          // rolls back. Webhook redelivery will retry.
-          throw new Error(
-            `Run row vanished after claim for ${providerRunId}`,
-          );
-        }
-
-        // Pass the tx client through so the wallet write happens in
-        // the same transaction as the claim. If this throws (or the
-        // caller's outer try/catch surfaces an error), the claim is
-        // undone.
-        await this.credits.refund(
-          run.organizationId,
-          providerRunId,
-          eventType,
-          tx,
-        );
+    //
+    // Errors are NOT swallowed here — they propagate to handleWebhook
+    // → Maced sees 5xx → redelivers the webhook. On the redelivery
+    // the rolled-back `creditRefundedAt` is null again, so the claim
+    // re-fires and the refund is retried.
+    await db.$transaction(async (tx) => {
+      const claimed = await tx.securityPenetrationTestRun.updateMany({
+        where: { providerRunId, creditRefundedAt: null },
+        data: { creditRefundedAt: new Date() },
       });
-    } catch (error) {
-      // Log and let the webhook retry. The transaction rolled back, so
-      // `creditRefundedAt` is null again — a redelivered webhook will
-      // re-attempt the refund.
-      this.logger.error(
-        `[Webhook] ${eventType} refund transaction failed run=${providerRunId}: ${
-          error instanceof Error ? error.message : String(error)
-        }`,
+
+      if (claimed.count === 0) {
+        // Either we don't own this run (orphan from a fast-click race
+        // — ownership row never persisted) OR the credit has already
+        // been refunded. Either way: do nothing further.
+        this.logger.log(
+          `[Webhook] ${eventType} refund skipped run=${providerRunId} (no ownership row or already refunded)`,
+        );
+        return;
+      }
+
+      const run = await tx.securityPenetrationTestRun.findUnique({
+        where: { providerRunId },
+        select: { organizationId: true },
+      });
+      if (!run) {
+        // Vanishingly rare race; abort the transaction so the claim
+        // rolls back. Webhook redelivery will retry.
+        throw new Error(
+          `Run row vanished after claim for ${providerRunId}`,
+        );
+      }
+
+      // Pass the tx client through so the wallet write happens in
+      // the same transaction as the claim. If this throws, the claim
+      // is undone and the error propagates up to handleWebhook → Maced
+      // sees 5xx and redelivers, allowing retry.
+      await this.credits.refund(
+        run.organizationId,
+        providerRunId,
+        eventType,
+        tx,
       );
-    }
+    });
   }
 
   private formatDurationMs(ms: number): string {

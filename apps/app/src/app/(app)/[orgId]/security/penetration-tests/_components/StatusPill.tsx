@@ -59,10 +59,18 @@ const STATUS_CONFIG: Record<
   },
 };
 
-const CONFIG_DEFAULT = STATUS_CONFIG.provisioning;
+// Fallback for status values we don't know how to render. Better to
+// show "Unknown" than to silently render an unrelated status (e.g.
+// previously this defaulted to "Provisioning", which would mislead
+// users into thinking the scan was still starting up).
+const CONFIG_UNKNOWN: { label: string; dotClass: string; textClass: string } = {
+  label: 'Unknown',
+  dotClass: 'bg-muted-foreground',
+  textClass: 'text-muted-foreground',
+};
 
 export function StatusPill({ status, className }: StatusPillProps) {
-  const config = STATUS_CONFIG[status as StatusKind] ?? CONFIG_DEFAULT;
+  const config = STATUS_CONFIG[status as StatusKind] ?? CONFIG_UNKNOWN;
 
   return (
     <span

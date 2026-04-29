@@ -159,7 +159,6 @@ export function SplitView({
           runs={reports as PentestRun[]}
           selectedRunId={selectedRunId}
           onCreateClick={goToCreate}
-          overviewActive={selectedRunId === null && !isCreateMode}
           balance={balance}
           trialUsed={trialUsed}
         />

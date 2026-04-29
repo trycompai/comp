@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import { cn } from '@trycompai/design-system/cn';
 import type { PentestAgentEvent } from '@/lib/security/penetration-tests-client';
 
@@ -46,6 +47,11 @@ export function AgentActivityLog({
   events,
   defaultOpen = true,
 }: AgentActivityLogProps) {
+  // Track open state ourselves so the user can collapse the details
+  // panel without React re-forcing it open on the next render. With
+  // `open={defaultOpen}` as a controlled prop the user's collapse
+  // would be undone on every parent re-render (e.g. SWR poll).
+  const [open, setOpen] = useState(defaultOpen);
   const recent = [...events]
     .filter(isCustomerVisible)
     .sort((a, b) => b.timestamp - a.timestamp)
@@ -53,7 +59,8 @@ export function AgentActivityLog({
 
   return (
     <details
-      open={defaultOpen}
+      open={open}
+      onToggle={(e) => setOpen((e.currentTarget as HTMLDetailsElement).open)}
       className="overflow-hidden rounded-[var(--radius)] border border-border"
     >
       <summary className="flex cursor-pointer items-center justify-between gap-3 px-4 py-3 text-sm hover:bg-muted">

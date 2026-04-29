@@ -128,12 +128,17 @@ function PostureOverview({
   onDownloadMarkdown,
   onDownloadPdf,
 }: PostureOverviewProps) {
-  const targets = uniqueTargets(runs);
+  // Coverage and stale-target stats use ONLY completed runs — a target
+  // that's only ever had failed/cancelled scans isn't truly "covered,"
+  // and a target whose latest scan failed shouldn't reset the staleness
+  // clock. The full `runs` list is only used for the recent activity
+  // sidebar elsewhere.
+  const targets = uniqueTargets(completed);
   const lastScan = mostRecent(completed);
   const avgDuration = avgDurationMs(completed);
   const scansLast30d = countWithin(completed, 30 * 24 * 60 * 60 * 1000);
   const recentScans = sortByUpdatedDesc(completed).slice(0, 6);
-  const staleTargets = computeStaleTargets(runs, targets);
+  const staleTargets = computeStaleTargets(completed, targets);
 
   return (
     <div className="min-h-0 overflow-y-auto">

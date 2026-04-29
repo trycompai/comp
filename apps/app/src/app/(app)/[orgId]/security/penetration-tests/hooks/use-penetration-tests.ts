@@ -269,7 +269,7 @@ export function usePenetrationTestEvents(
   const shouldFetch = Boolean(organizationId && reportId);
   const inProgress = Boolean(status && isReportInProgress(status));
 
-  const { data, error } = useSWR<PentestAgentEvent[]>(
+  const { data, error, mutate } = useSWR<PentestAgentEvent[]>(
     shouldFetch ? reportEventsKey(organizationId, reportId) : null,
     fetchApiJson,
     {
@@ -277,6 +277,19 @@ export function usePenetrationTestEvents(
       revalidateOnFocus: true,
     },
   );
+
+  // Same final-refresh pattern as usePenetrationTestIssues — when the
+  // run transitions out of in-progress we poll one more time so the
+  // last batch of events Maced wrote during the completion phase isn't
+  // missed (otherwise we'd stop polling immediately and never see them
+  // unless the user refocuses the tab).
+  const wasInProgressRef = useRef(inProgress);
+  useEffect(() => {
+    if (wasInProgressRef.current && !inProgress && shouldFetch) {
+      void mutate();
+    }
+    wasInProgressRef.current = inProgress;
+  }, [inProgress, shouldFetch, mutate]);
 
   return {
     events: data ?? [],

@@ -14,8 +14,6 @@ interface RunListProps {
   runs: PentestRun[];
   selectedRunId: string | null;
   onCreateClick: () => void;
-  /** When true, highlights an implicit "Overview" state (no selection). */
-  overviewActive?: boolean;
   /** Spendable credit balance — drives the "X runs left" badge. */
   balance?: number;
   /** True when the user has used their initial trial (balance 0, totalGranted > 0). */
