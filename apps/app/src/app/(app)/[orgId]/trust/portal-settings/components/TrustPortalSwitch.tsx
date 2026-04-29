@@ -16,7 +16,6 @@ import {
   SelectContent,
   SelectItem,
   SelectTrigger,
-  SelectValue,
   Switch,
   Tabs,
   TabsContent,
@@ -41,17 +40,24 @@ import { TrustPortalOverview } from './TrustPortalOverview';
 import { TrustPortalVendors } from './TrustPortalVendors';
 import { UpdateTrustFavicon } from './UpdateTrustFavicon';
 import { BrandSettings } from './BrandSettings';
-import type { FaqItem } from '../types/faq';
 import {
   GDPR,
+  GDPRInProgress,
   HIPAA,
+  HIPAAInProgress,
   ISO27001,
+  ISO27001InProgress,
   ISO42001,
+  ISO42001InProgress,
   ISO9001,
+  ISO9001InProgress,
   NEN7510,
   PCIDSS,
+  PCIDSSInProgress,
   SOC2Type1,
+  SOC2Type1IinProgress,
   SOC2Type2,
+  SOC2Type2InProgress,
 } from './logos';
 
 // Client-side form schema (includes all fields for form state)
@@ -841,6 +847,43 @@ export function TrustPortalSwitch({
   );
 }
 
+function ComplianceFrameworkLogo({ title, status }: { title: string; status: string }) {
+  const isInProgress = status === 'in_progress';
+  let LogoComponent: React.ElementType | null = null;
+
+  if (title === 'ISO 27001') {
+    LogoComponent = isInProgress ? ISO27001InProgress : ISO27001;
+  } else if (title === 'ISO 42001') {
+    LogoComponent = isInProgress ? ISO42001InProgress : ISO42001;
+  } else if (title === 'GDPR') {
+    LogoComponent = isInProgress ? GDPRInProgress : GDPR;
+  } else if (title === 'HIPAA') {
+    LogoComponent = isInProgress ? HIPAAInProgress : HIPAA;
+  } else if (title === 'SOC 2 Type 1') {
+    LogoComponent = isInProgress ? SOC2Type1IinProgress : SOC2Type1;
+  } else if (title === 'SOC 2 Type 2') {
+    LogoComponent = isInProgress ? SOC2Type2InProgress : SOC2Type2;
+  } else if (title === 'PCI DSS') {
+    LogoComponent = isInProgress ? PCIDSSInProgress : PCIDSS;
+  } else if (title === 'NEN 7510') {
+    LogoComponent = isInProgress ? NEN7510 : NEN7510;
+  } else if (title === 'ISO 9001') {
+    LogoComponent = isInProgress ? ISO9001InProgress : ISO9001;
+  } else {
+    LogoComponent = null;
+  }
+
+  if (LogoComponent) {
+    return (
+      <div className="h-16 w-16 flex items-center justify-center">
+        <LogoComponent className="max-h-full max-w-full" />
+      </div>
+    );
+  }
+
+  return null;
+}
+
 // Extracted component for compliance frameworks to reduce repetition and improve readability
 function ComplianceFramework({
   title,
@@ -941,51 +984,14 @@ function ComplianceFramework({
     }
   };
 
-  const logo =
-    title === 'ISO 27001' ? (
-      <div className="h-16 w-16 flex items-center justify-center">
-        <ISO27001 className="max-h-full max-w-full" />
-      </div>
-    ) : title === 'ISO 42001' ? (
-      <div className="h-16 w-16 flex items-center justify-center">
-        <ISO42001 className="max-h-full max-w-full" />
-      </div>
-    ) : title === 'GDPR' ? (
-      <div className="h-16 w-16 flex items-center justify-center">
-        <GDPR className="max-h-full max-w-full" />
-      </div>
-    ) : title === 'HIPAA' ? (
-      <div className="h-16 w-16 flex items-center justify-center">
-        <HIPAA className="max-h-full max-w-full" />
-      </div>
-    ) : title === 'SOC 2 Type 1' ? (
-      <div className="h-16 w-16 flex items-center justify-center">
-        <SOC2Type1 className="max-h-full max-w-full" />
-      </div>
-    ) : title === 'SOC 2 Type 2' ? (
-      <div className="h-16 w-16 flex items-center justify-center">
-        <SOC2Type2 className="max-h-full max-w-full" />
-      </div>
-    ) : title === 'PCI DSS' ? (
-      <div className="h-16 w-16 flex items-center justify-center">
-        <PCIDSS className="max-h-full max-w-full" />
-      </div>
-    ) : title === 'NEN 7510' ? (
-      <div className="h-16 w-16 flex items-center justify-center">
-        <NEN7510 className="max-h-full max-w-full" />
-      </div>
-    ) : title === 'ISO 9001' ? (
-      <div className="h-16 w-16 flex items-center justify-center">
-        <ISO9001 className="max-h-full max-w-full" />
-      </div>
-    ) : null;
-
   return (
     <>
       <Card>
         <CardHeader>
           <div className="flex items-center gap-4">
-            <div className="shrink-0">{logo}</div>
+            <div className="shrink-0">
+              <ComplianceFrameworkLogo title={title} status={status} />
+            </div>
             <div>
               <CardTitle>{title}</CardTitle>
               <div className="line-clamp-3">
