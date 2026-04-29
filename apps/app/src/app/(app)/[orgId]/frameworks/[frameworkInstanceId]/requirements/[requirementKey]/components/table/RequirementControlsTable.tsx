@@ -22,6 +22,7 @@ import {
   type EvidenceSubmissionInfo,
   getControlProgressPercent,
   getControlStatus,
+  getRequirementArtifactCounts,
 } from '@/lib/control-compliance';
 
 const PAGE_SIZE_OPTIONS = [10, 25, 50, 100];
@@ -153,20 +154,17 @@ export function RequirementControlsTable({
             </TableRow>
           ) : (
             paginatedControls.map((control) => {
-              const controlTasks = tasks.filter((t) => t.controls.some((c) => c.id === control.id));
               const policies = control.policies ?? [];
-              const publishedCount = policies.filter((p) => p.status === 'published').length;
-              const doneTasks = controlTasks.filter(
-                (t) => t.status === 'done' || t.status === 'not_relevant',
-              ).length;
-
               const documentTypes = control.controlDocumentTypes ?? [];
-              const submittedFormTypes = new Set(
-                (evidenceSubmissions ?? []).map((es) => es.formType),
+
+              // Use the shared aggregator so per-control counts (especially
+              // documents) honour the same 6-month freshness rule as
+              // getControlStatus / getControlProgressPercent below.
+              const counts = getRequirementArtifactCounts(
+                [control],
+                tasks,
+                evidenceSubmissions,
               );
-              const submittedDocumentsCount = documentTypes.filter((dt) =>
-                submittedFormTypes.has(dt.formType),
-              ).length;
 
               const status = getControlStatus(
                 policies,
@@ -237,21 +235,21 @@ export function RequirementControlsTable({
                   <TableCell>
                     <div className="tabular-nums">
                       <Text size="sm" variant="muted">
-                        {publishedCount}/{policies.length}
+                        {counts.policies.completed}/{counts.policies.total}
                       </Text>
                     </div>
                   </TableCell>
                   <TableCell>
                     <div className="tabular-nums">
                       <Text size="sm" variant="muted">
-                        {doneTasks}/{controlTasks.length}
+                        {counts.tasks.completed}/{counts.tasks.total}
                       </Text>
                     </div>
                   </TableCell>
                   <TableCell>
                     <div className="tabular-nums">
                       <Text size="sm" variant="muted">
-                        {submittedDocumentsCount}/{documentTypes.length}
+                        {counts.documents.completed}/{counts.documents.total}
                       </Text>
                     </div>
                   </TableCell>

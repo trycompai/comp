@@ -179,11 +179,13 @@ describe('getControlProgressPercent', () => {
   });
 
   it('only counts tasks linked to the given control', () => {
+    // The unrelated task is `todo` so a missing filter would drop the percent
+    // from 100 (correct: only the linked, done task counts) to 50 (broken).
     const percent = getControlProgressPercent(
       [],
       [
         makeTask({ id: 't1', status: 'done', controls: [{ id: 'c1' } as Control] }),
-        makeTask({ id: 't2', status: 'done', controls: [{ id: 'other' } as Control] }),
+        makeTask({ id: 't2', status: 'todo', controls: [{ id: 'other' } as Control] }),
       ],
       'c1',
       [],
