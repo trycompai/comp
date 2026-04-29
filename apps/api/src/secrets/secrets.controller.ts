@@ -30,7 +30,7 @@ export class SecretsController {
   constructor(private readonly secretsService: SecretsService) {}
 
   @Get()
-  @RequirePermission('organization', 'read')
+  @RequirePermission('secret', 'read')
   @ApiOperation({ summary: 'List all secrets (metadata only, no values)' })
   async listSecrets(
     @OrganizationId() organizationId: string,
@@ -53,7 +53,7 @@ export class SecretsController {
   }
 
   @Get(':id')
-  @RequirePermission('organization', 'read')
+  @RequirePermission('secret', 'read')
   @ApiOperation({ summary: 'Get a secret with decrypted value' })
   @ApiParam({ name: 'id', description: 'Secret ID' })
   async getSecret(
@@ -77,7 +77,7 @@ export class SecretsController {
   }
 
   @Post()
-  @RequirePermission('organization', 'update')
+  @RequirePermission('secret', 'create')
   @ApiOperation({ summary: 'Create a new secret' })
   @ApiBody({
     schema: {
@@ -118,7 +118,7 @@ export class SecretsController {
   }
 
   @Put(':id')
-  @RequirePermission('organization', 'update')
+  @RequirePermission('secret', 'update')
   @ApiOperation({ summary: 'Update a secret' })
   @ApiParam({ name: 'id', description: 'Secret ID' })
   async updateSecret(
@@ -153,7 +153,7 @@ export class SecretsController {
   }
 
   @Delete(':id')
-  @RequirePermission('organization', 'update')
+  @RequirePermission('secret', 'delete')
   @ApiOperation({ summary: 'Delete a secret' })
   @ApiParam({ name: 'id', description: 'Secret ID' })
   async deleteSecret(

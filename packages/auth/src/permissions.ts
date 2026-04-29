@@ -47,6 +47,10 @@ export const statement = {
   training: ['read', 'update'],
   // Portal self-service
   portal: ['read', 'update'],
+  // Secrets manager — encrypted credentials surfaced to AI automations.
+  // Read returns DECRYPTED plaintext, so this resource is intentionally
+  // separate from `organization` to keep read-only auditors out.
+  secret: ['create', 'read', 'update', 'delete'],
 } as const;
 
 export const ac: AccessControl = createAccessControl(statement);
@@ -85,6 +89,8 @@ export const owner = ac.newRole({
   training: ['read', 'update'],
   // Portal self-service
   portal: ['read', 'update'],
+  // Secrets manager — owner can fully manage decrypted credentials
+  secret: ['create', 'read', 'update', 'delete'],
 });
 
 /**
@@ -121,6 +127,8 @@ export const admin = ac.newRole({
   training: ['read', 'update'],
   // Portal self-service
   portal: ['read', 'update'],
+  // Secrets manager — admin can fully manage decrypted credentials
+  secret: ['create', 'read', 'update', 'delete'],
 });
 
 /**

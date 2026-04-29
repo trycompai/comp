@@ -399,6 +399,7 @@ export class PeopleController {
       memberId,
       organizationId,
       updateData,
+      authContext.userId,
     );
 
     return {

@@ -1,3 +1,22 @@
+## [3.38.1](https://github.com/trycompai/comp/compare/v3.38.0...v3.38.1) (2026-04-29)
+
+
+### Bug Fixes
+
+* **security:** admin escalation, secrets RBAC, oauth session check ([#2712](https://github.com/trycompai/comp/issues/2712)) ([5627b12](https://github.com/trycompai/comp/commit/5627b1212aa62252f4542ef1b96e4c074b473490))
+
+# [3.38.0](https://github.com/trycompai/comp/compare/v3.37.0...v3.38.0) (2026-04-29)
+
+
+### Bug Fixes
+
+* **sentry:** gate includeLocalVariables and drop sendDefaultPii ([#2710](https://github.com/trycompai/comp/issues/2710)) ([e985b8b](https://github.com/trycompai/comp/commit/e985b8b5878305a6a5de8fe50ce17310204ff6c3)), closes [#2709](https://github.com/trycompai/comp/issues/2709)
+
+
+### Features
+
+* **observability:** integrate Sentry into app and portal ([#2705](https://github.com/trycompai/comp/issues/2705)) ([0aa2417](https://github.com/trycompai/comp/commit/0aa241709bc4da6d18200088e69b2a4b360b8f05))
+
 # [3.37.0](https://github.com/trycompai/comp/compare/v3.36.1...v3.37.0) (2026-04-29)
 
 
