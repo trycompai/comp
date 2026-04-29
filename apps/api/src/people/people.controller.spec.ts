@@ -217,6 +217,7 @@ describe('PeopleController', () => {
         'mem_1',
         'org_123',
         dto,
+        'usr_123',
       );
     });
   });
