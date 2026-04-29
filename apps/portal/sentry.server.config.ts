@@ -14,4 +14,6 @@ Sentry.init({
   includeLocalVariables: true,
 
   enableLogs: true,
+
+  sendDefaultPii: true,
 });

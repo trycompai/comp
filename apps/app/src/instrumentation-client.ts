@@ -33,6 +33,8 @@ Sentry.init({
   // 10% of all sessions; 100% of sessions where an error occurs.
   replaysSessionSampleRate: 0.1,
   replaysOnErrorSampleRate: 1.0,
+
+  sendDefaultPii: true,
 });
 
 export const onRouterTransitionStart = Sentry.captureRouterTransitionStart;
