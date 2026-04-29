@@ -218,6 +218,9 @@ export class HybridAuthGuard implements CanActivate {
       request.authType = 'session';
       request.isApiKey = false;
       request.isServiceToken = false;
+      request.sessionId = sessionData.id;
+      request.sessionDeviceAgent =
+        (sessionData as Record<string, unknown>).deviceAgent === true;
       // Resolve isPlatformAdmin from the User.role column (via better-auth session),
       // not from the member relation. This ensures the flag is set regardless of
       // org membership or skipOrgCheck.

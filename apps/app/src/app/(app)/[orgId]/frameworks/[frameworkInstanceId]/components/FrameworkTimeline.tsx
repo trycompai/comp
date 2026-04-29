@@ -7,6 +7,7 @@ import {
   CircleDash,
   Time,
 } from '@trycompai/design-system/icons';
+import { useFeatureFlag } from '@trycompai/analytics';
 import { useState } from 'react';
 import {
   useTimelines,
@@ -46,7 +47,10 @@ function getTimeRemaining(endDate: string | null): string | null {
 export function FrameworkTimeline({
   frameworkInstanceId,
 }: FrameworkTimelineProps) {
+  const isTimelineEnabled = useFeatureFlag('is-timeline-enabled');
   const { timelines } = useTimelines();
+
+  if (!isTimelineEnabled) return null;
 
   const timeline = timelines.find(
     (t) => t.frameworkInstanceId === frameworkInstanceId,

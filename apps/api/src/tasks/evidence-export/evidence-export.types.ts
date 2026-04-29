@@ -88,10 +88,23 @@ export interface EvidenceExportOptions {
 }
 
 /**
- * Export result
+ * Export result for a single PDF (buffered — small, fits in memory safely)
  */
 export interface EvidenceExportResult {
   fileBuffer: Buffer;
   mimeType: string;
+  filename: string;
+}
+
+/**
+ * Streaming export result for ZIP bundles.
+ * The archive is returned live — the caller pipes it to a response and the
+ * service populates it asynchronously. Archive memory stays ≈ one file at a
+ * time instead of buffering the whole ZIP.
+ */
+export interface EvidenceZipStream {
+  /** Active archiver — already being populated. Pipe to a response / S3 stream. */
+  archive: import('archiver').Archiver;
+  /** Suggested Content-Disposition filename. */
   filename: string;
 }

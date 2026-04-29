@@ -1,9 +1,11 @@
 'use client';
 
 import { OnboardingLoadingAnimation } from '@/components/onboarding-loading-animation';
+import { RiskScoreBadge } from '@/components/risks/RiskScoreBadge';
+import { VendorStatus } from '@/components/vendor-status';
 import { usePermissions } from '@/hooks/use-permissions';
 import { useVendors, useVendorActions, type Vendor } from '@/hooks/use-vendors';
-import { VendorStatus } from '@/components/vendor-status';
+import { getRiskScore } from '@/lib/risk-score';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -168,7 +170,10 @@ export function VendorsTable({
 
   // Local state for search, sorting, and pagination
   const [searchQuery, setSearchQuery] = useState('');
-  const [sort, setSort] = useState<{ id: 'name' | 'updatedAt'; desc: boolean }>({
+  const [sort, setSort] = useState<{
+    id: 'name' | 'updatedAt' | 'inherentRisk';
+    desc: boolean;
+  }>({
     id: 'name',
     desc: false,
   });
@@ -319,15 +324,17 @@ export function VendorsTable({
 
     // Sort
     result.sort((a, b) => {
-      const aValue = sort.id === 'name' ? a.name : a.updatedAt;
-      const bValue = sort.id === 'name' ? b.name : b.updatedAt;
-
       if (sort.id === 'name') {
-        const comparison = (aValue as string).localeCompare(bValue as string);
+        const comparison = a.name.localeCompare(b.name);
         return sort.desc ? -comparison : comparison;
       }
-      const comparison =
-        new Date(aValue as string).getTime() - new Date(bValue as string).getTime();
+      if (sort.id === 'inherentRisk') {
+        const aScore = getRiskScore(a.inherentProbability, a.inherentImpact).raw;
+        const bScore = getRiskScore(b.inherentProbability, b.inherentImpact).raw;
+        const comparison = aScore - bScore;
+        return sort.desc ? -comparison : comparison;
+      }
+      const comparison = new Date(a.updatedAt).getTime() - new Date(b.updatedAt).getTime();
       return sort.desc ? -comparison : comparison;
     });
 
@@ -385,7 +392,7 @@ export function VendorsTable({
     router.push(`/${orgId}/vendors/${vendorId}`);
   };
 
-  const handleSort = (columnId: 'name' | 'updatedAt') => {
+  const handleSort = (columnId: 'name' | 'updatedAt' | 'inherentRisk') => {
     if (sort.id === columnId) {
       setSort({ id: columnId, desc: !sort.desc });
     } else {
@@ -393,7 +400,7 @@ export function VendorsTable({
     }
   };
 
-  const getSortIcon = (columnId: 'name' | 'updatedAt') => {
+  const getSortIcon = (columnId: 'name' | 'updatedAt' | 'inherentRisk') => {
     if (sort.id !== columnId) {
       return <ArrowUpDown className="ml-1 h-3 w-3 text-muted-foreground" />;
     }
@@ -528,6 +535,16 @@ export function VendorsTable({
                   </button>
                 </TableHead>
                 <TableHead>STATUS</TableHead>
+                <TableHead>
+                  <button
+                    type="button"
+                    onClick={() => handleSort('inherentRisk')}
+                    className="flex items-center hover:text-foreground"
+                  >
+                    INHERENT RISK
+                    {getSortIcon('inherentRisk')}
+                  </button>
+                </TableHead>
                 <TableHead>CATEGORY</TableHead>
                 <TableHead>OWNER</TableHead>
                 {hasPermission('vendor', 'delete') && <TableHead>ACTIONS</TableHead>}
@@ -548,6 +565,16 @@ export function VendorsTable({
                     </TableCell>
                     <TableCell>
                       <VendorStatusCell vendor={vendor} />
+                    </TableCell>
+                    <TableCell>
+                      {vendor.status === 'not_assessed' ? (
+                        <Text variant="muted" size="sm">—</Text>
+                      ) : (
+                        <RiskScoreBadge
+                          likelihood={vendor.inherentProbability}
+                          impact={vendor.inherentImpact}
+                        />
+                      )}
                     </TableCell>
                     <TableCell>
                       <Badge variant="secondary">

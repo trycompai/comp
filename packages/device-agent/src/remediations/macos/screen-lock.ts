@@ -3,12 +3,12 @@ import type { RemediationInfo, RemediationResult } from '../../shared/types';
 import { getInstructions } from '../instructions';
 import type { ComplianceRemediation } from '../types';
 
-const TARGET_IDLE_TIME_SECONDS = 300; // 5 minutes
+const TARGET_IDLE_TIME_SECONDS = 900; // 15 minutes
 
 /**
  * macOS screen lock remediation.
  * Auto-fixes without admin privileges by writing user-level defaults:
- *  - Screen saver idle time set to 5 minutes
+ *  - Screen saver idle time set to 15 minutes
  *  - Password required immediately after screen saver
  */
 export class MacOSScreenLockRemediation implements ComplianceRemediation {
@@ -28,7 +28,7 @@ export class MacOSScreenLockRemediation implements ComplianceRemediation {
 
   async remediate(): Promise<RemediationResult> {
     try {
-      // Set screen saver idle time to 5 minutes
+      // Set screen saver idle time to 15 minutes
       execSync(
         `defaults -currentHost write com.apple.screensaver idleTime -int ${TARGET_IDLE_TIME_SECONDS}`,
         { encoding: 'utf-8', timeout: 10000 },

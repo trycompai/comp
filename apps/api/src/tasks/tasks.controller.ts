@@ -1,4 +1,4 @@
-import { AttachmentEntityType } from '@db';
+import { AttachmentEntityType, db } from '@db';
 import {
   BadRequestException,
   Body,
@@ -6,6 +6,7 @@ import {
   Delete,
   ForbiddenException,
   Get,
+  NotFoundException,
   Param,
   Patch,
   Post,
@@ -28,7 +29,7 @@ import { UploadAttachmentDto } from '../attachments/upload-attachment.dto';
 import { AuthContext, OrganizationId } from '../auth/auth-context.decorator';
 import { HybridAuthGuard } from '../auth/hybrid-auth.guard';
 import { PermissionGuard } from '../auth/permission.guard';
-import { RequirePermission } from '../auth/require-permission.decorator';
+import { RequirePermission, RequirePermissions } from '../auth/require-permission.decorator';
 import type { AuthContext as AuthContextType } from '../auth/types';
 import {
   buildTaskAssignmentFilter,
@@ -630,6 +631,87 @@ export class TasksController {
     return task;
   }
 
+  @Get(':taskId/policies')
+  @UseGuards(PermissionGuard)
+  @RequirePermissions([
+    { resource: 'task', actions: ['read'] },
+    { resource: 'policy', actions: ['read'] },
+  ])
+  @ApiOperation({
+    summary: 'Get policies that reference a task via shared controls',
+  })
+  @ApiParam({
+    name: 'taskId',
+    description: 'Unique task identifier',
+    example: 'tsk_abc123def456',
+  })
+  async getTaskPolicies(
+    @OrganizationId() organizationId: string,
+    @Param('taskId') taskId: string,
+    @AuthContext() authContext: AuthContextType,
+  ) {
+    const task = await db.task.findFirst({
+      where: { id: taskId, organizationId, archivedAt: null },
+      select: {
+        id: true,
+        assigneeId: true,
+        controls: {
+          where: { archivedAt: null, organizationId },
+          select: {
+            id: true,
+            name: true,
+            policies: {
+              where: { archivedAt: null, organizationId },
+              select: {
+                id: true,
+                name: true,
+                status: true,
+                frequency: true,
+                department: true,
+              },
+              orderBy: { name: 'asc' },
+            },
+          },
+          orderBy: { name: 'asc' },
+        },
+      },
+    });
+
+    if (!task) {
+      throw new NotFoundException('Task not found');
+    }
+
+    if (
+      !hasTaskAccess(task, authContext.memberId, authContext.userRoles, {
+        isApiKey: authContext.isApiKey,
+      })
+    ) {
+      throw new ForbiddenException('You do not have access to this task');
+    }
+
+    const data = task.controls.map((control) => ({
+      control: { id: control.id, name: control.name },
+      policies: control.policies,
+    }));
+
+    const uniquePolicyIds = new Set<string>();
+    for (const group of data) {
+      for (const policy of group.policies) uniquePolicyIds.add(policy.id);
+    }
+
+    return {
+      data,
+      count: uniquePolicyIds.size,
+      authType: authContext.authType,
+      ...(authContext.userId && {
+        authenticatedUser: {
+          id: authContext.userId,
+          email: authContext.userEmail,
+        },
+      }),
+    };
+  }
+
   @Get(':taskId/activity')
   @UseGuards(PermissionGuard)
   @RequirePermission('task', 'read')
@@ -712,6 +794,13 @@ export class TasksController {
           enum: ['daily', 'weekly', 'monthly', 'quarterly', 'yearly'],
           example: 'monthly',
         },
+        integrationScheduleFrequency: {
+          type: 'string',
+          enum: ['daily', 'weekly', 'monthly', 'quarterly', 'yearly'],
+          example: 'daily',
+          description:
+            'Cadence for running the integration check attached to this task',
+        },
         department: {
           type: 'string',
           enum: ['none', 'admin', 'gov', 'hr', 'it', 'itsm', 'qms'],
@@ -754,6 +843,7 @@ export class TasksController {
       assigneeId?: string | null;
       approverId?: string | null;
       frequency?: string;
+      integrationScheduleFrequency?: string;
       department?: string;
       reviewDate?: string;
     },
@@ -789,6 +879,9 @@ export class TasksController {
         assigneeId: body.assigneeId,
         approverId: body.approverId,
         frequency: body.frequency as TaskFrequency | undefined,
+        integrationScheduleFrequency: body.integrationScheduleFrequency as
+          | TaskFrequency
+          | undefined,
         department: body.department,
         reviewDate: parsedReviewDate,
       },

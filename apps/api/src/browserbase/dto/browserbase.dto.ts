@@ -1,11 +1,13 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import {
+  IsEnum,
   IsNotEmpty,
   IsOptional,
   IsString,
   IsBoolean,
   IsUrl,
 } from 'class-validator';
+import { TaskFrequency } from '@db';
 import { IsSafeUrl } from '../validators/url-safety.validator';
 
 // ===== Session DTOs =====
@@ -82,10 +84,21 @@ export class CreateBrowserAutomationDto {
   @IsNotEmpty()
   instruction: string;
 
-  @ApiPropertyOptional({ description: 'Cron schedule expression' })
+  @ApiPropertyOptional({
+    description:
+      'Optional natural-language criteria used to evaluate the automation result. When set, the run gets a pass/fail verdict.',
+  })
   @IsString()
   @IsOptional()
-  schedule?: string;
+  evaluationCriteria?: string;
+
+  @ApiPropertyOptional({
+    enum: TaskFrequency,
+    description: 'Automation schedule cadence',
+  })
+  @IsEnum(TaskFrequency)
+  @IsOptional()
+  scheduleFrequency?: TaskFrequency;
 }
 
 export class UpdateBrowserAutomationDto {
@@ -111,15 +124,26 @@ export class UpdateBrowserAutomationDto {
   @IsOptional()
   instruction?: string;
 
-  @ApiPropertyOptional({ description: 'Cron schedule expression' })
+  @ApiPropertyOptional({
+    description:
+      'Optional natural-language criteria used to evaluate the automation result. Pass an empty string to clear.',
+  })
   @IsString()
   @IsOptional()
-  schedule?: string;
+  evaluationCriteria?: string;
 
   @ApiPropertyOptional({ description: 'Whether automation is enabled' })
   @IsBoolean()
   @IsOptional()
   isEnabled?: boolean;
+
+  @ApiPropertyOptional({
+    enum: TaskFrequency,
+    description: 'Automation schedule cadence',
+  })
+  @IsEnum(TaskFrequency)
+  @IsOptional()
+  scheduleFrequency?: TaskFrequency;
 }
 
 // ===== Response DTOs =====
@@ -169,9 +193,6 @@ export class BrowserAutomationResponseDto {
 
   @ApiProperty()
   isEnabled: boolean;
-
-  @ApiPropertyOptional()
-  schedule?: string;
 
   @ApiProperty()
   createdAt: Date;

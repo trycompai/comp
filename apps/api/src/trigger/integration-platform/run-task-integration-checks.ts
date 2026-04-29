@@ -319,6 +319,7 @@ export const runTaskIntegrationChecks = task({
     let totalFindings = 0;
     let totalPassing = 0;
     let hasFailedChecks = false;
+    let hasExecutionErrors = false;
 
     // Run only the checks that apply to this task
     try {
@@ -346,6 +347,9 @@ export const runTaskIntegrationChecks = task({
         totalPassing += checkResult.result.passingResults.length;
         if (checkResult.status === 'failed' || checkResult.status === 'error') {
           hasFailedChecks = true;
+        }
+        if (checkResult.status === 'error') {
+          hasExecutionErrors = true;
         }
 
         // Store check run
@@ -414,6 +418,19 @@ export const runTaskIntegrationChecks = task({
         where: { id: connectionId },
         data: { lastSyncAt: new Date() },
       });
+
+      // Record a successful run on the task so the orchestrator's schedule
+      // filter (`isDueToday`) can skip it on the next tick. "Successful" here
+      // means every check executed — including checks that legitimately found
+      // violations (`status: 'failed'`). We skip the write only when a check
+      // couldn't execute (`status: 'error'`, e.g. transient provider error),
+      // so the next orchestrator tick retries instead of waiting a full period.
+      if (!hasExecutionErrors) {
+        await db.task.update({
+          where: { id: taskId },
+          data: { integrationLastRunAt: new Date() },
+        });
+      }
 
       // Update task status based on check results
       // If any findings or check failures, mark as failed

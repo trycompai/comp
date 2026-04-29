@@ -143,11 +143,13 @@ export default async function Layout({
     );
   }
 
-  // Check feature flags for menu items
+  // Check feature flags for menu items. Security (penetration tests) is
+  // always enabled now — the nav rail entry is gated solely by the
+  // `pentest:read` permission downstream, matching `security/layout.tsx`.
   let isQuestionnaireEnabled = false;
   let isTrustNdaEnabled = false;
   let isWebAutomationsEnabled = false;
-  let isSecurityEnabled = false;
+  const isSecurityEnabled = true;
   if (session?.user?.id) {
     const flags = await getFeatureFlags(session.user.id, {
       groups: { organization: organization.id },
@@ -158,8 +160,6 @@ export default async function Layout({
     isWebAutomationsEnabled =
       flags['is-web-automations-enabled'] === true ||
       flags['is-web-automations-enabled'] === 'true';
-    isSecurityEnabled =
-      flags['is-security-enabled'] === true || flags['is-security-enabled'] === 'true';
   }
 
   // Check auditor role

@@ -1,4 +1,8 @@
-import { createParamDecorator, ExecutionContext } from '@nestjs/common';
+import {
+  createParamDecorator,
+  ExecutionContext,
+  InternalServerErrorException,
+} from '@nestjs/common';
 import { AuthContext as AuthContextType, AuthenticatedRequest } from './types';
 
 /**
@@ -46,7 +50,10 @@ export const AuthContext = createParamDecorator(
 );
 
 /**
- * Parameter decorator to extract just the organization ID
+ * Parameter decorator to extract just the organization ID.
+ * Throws when no active organization is present on the request — only use this
+ * on endpoints that require an active organization. For endpoints decorated
+ * with @SkipOrgCheck() (e.g. onboarding), use @OrganizationIdOptional() instead.
  */
 export const OrganizationId = createParamDecorator(
   (data: unknown, ctx: ExecutionContext): string => {
@@ -54,12 +61,25 @@ export const OrganizationId = createParamDecorator(
     const { organizationId } = request;
 
     if (!organizationId) {
-      throw new Error(
-        'Organization ID not found. Ensure HybridAuthGuard is applied.',
+      throw new InternalServerErrorException(
+        'Organization ID missing on request. If this endpoint is @SkipOrgCheck()-decorated, use @OrganizationIdOptional() instead.',
       );
     }
 
     return organizationId;
+  },
+);
+
+/**
+ * Parameter decorator to extract the organization ID when it may be absent.
+ * Returns `undefined` instead of throwing when no active organization is
+ * present. Use this on endpoints decorated with @SkipOrgCheck() where the
+ * user may not yet have an active organization (e.g. during onboarding).
+ */
+export const OrganizationIdOptional = createParamDecorator(
+  (data: unknown, ctx: ExecutionContext): string | undefined => {
+    const request = ctx.switchToHttp().getRequest<AuthenticatedRequest>();
+    return request.organizationId || undefined;
   },
 );
 

@@ -7,6 +7,7 @@
 
 import type { IntegrationManifest } from '../../types';
 import { branchProtectionCheck } from './checks/branch-protection';
+import { codeScanningCheck } from './checks/code-scanning';
 import { dependabotCheck } from './checks/dependabot';
 import { sanitizedInputsCheck } from './checks/sanitized-inputs';
 import { twoFactorAuthCheck } from './checks/two-factor-auth';
@@ -82,7 +83,13 @@ export const manifest: IntegrationManifest = {
   ],
 
   // Compliance checks that run daily and can auto-complete tasks
-  checks: [branchProtectionCheck, dependabotCheck, sanitizedInputsCheck, twoFactorAuthCheck],
+  checks: [
+    branchProtectionCheck,
+    codeScanningCheck,
+    dependabotCheck,
+    sanitizedInputsCheck,
+    twoFactorAuthCheck,
+  ],
 
   isActive: true,
 };
