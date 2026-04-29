@@ -1,3 +1,10 @@
+# [3.35.0](https://github.com/trycompai/comp/compare/v3.34.2...v3.35.0) (2026-04-29)
+
+
+### Features
+
+* add clear view of maps between policies<>controls<>tasks ([5e30bfb](https://github.com/trycompai/comp/commit/5e30bfb7099acfa408ffe3b9b03b03c6abc3fc58))
+
 ## [3.34.2](https://github.com/trycompai/comp/compare/v3.34.1...v3.34.2) (2026-04-28)
 
 
