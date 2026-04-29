@@ -1,17 +1,17 @@
 {
-  "generatedAt": "2026-04-20T21:22:12.175Z",
-  "total": 540,
-  "sourceCount": 540,
-  "uniqueSlugs": 540,
+  "generatedAt": "2026-04-29T14:54:47.641Z",
+  "total": 554,
+  "sourceCount": 554,
+  "uniqueSlugs": 554,
   "byCategory": {
     "HR & People": 61,
-    "Security": 120,
-    "Productivity": 111,
-    "Infrastructure": 29,
+    "Security": 129,
+    "Productivity": 112,
+    "Infrastructure": 31,
     "Communication": 46,
-    "Cloud": 53,
+    "Monitoring": 51,
+    "Cloud": 52,
     "Development": 52,
-    "Monitoring": 48,
     "Identity & Access": 20
   },
   "integrations": [
@@ -95,6 +95,15 @@
       "checkCount": 2,
       "syncSupported": false,
       "file": "integrations/activecampaign.json"
+    },
+    {
+      "slug": "activtrak",
+      "name": "ActivTrak",
+      "category": "Monitoring",
+      "authType": "custom",
+      "checkCount": 3,
+      "syncSupported": false,
+      "file": "integrations/activtrak.json"
     },
     {
       "slug": "addigy",
@@ -235,7 +244,7 @@
       "slug": "anthropic",
       "name": "Anthropic",
       "category": "Cloud",
-      "authType": "api_key",
+      "authType": "custom",
       "checkCount": 2,
       "syncSupported": false,
       "file": "integrations/anthropic.json"
@@ -275,6 +284,15 @@
       "checkCount": 2,
       "syncSupported": false,
       "file": "integrations/aqua-security.json"
+    },
+    {
+      "slug": "arctic-wolf",
+      "name": "Arctic Wolf",
+      "category": "Security",
+      "authType": "custom",
+      "checkCount": 4,
+      "syncSupported": false,
+      "file": "integrations/arctic-wolf.json"
     },
     {
       "slug": "asana",
@@ -439,15 +457,6 @@
       "file": "integrations/beehiiv.json"
     },
     {
-      "slug": "better-uptime",
-      "name": "Better Stack",
-      "category": "Monitoring",
-      "authType": "api_key",
-      "checkCount": 2,
-      "syncSupported": false,
-      "file": "integrations/better-uptime.json"
-    },
-    {
       "slug": "betterstack",
       "name": "BetterStack",
       "category": "Monitoring",
@@ -577,7 +586,7 @@
       "slug": "browserstack",
       "name": "BrowserStack",
       "category": "Development",
-      "authType": "custom",
+      "authType": "basic",
       "checkCount": 2,
       "syncSupported": false,
       "file": "integrations/browserstack.json"
@@ -590,6 +599,15 @@
       "checkCount": 2,
       "syncSupported": false,
       "file": "integrations/buddy.json"
+    },
+    {
+      "slug": "bugcrowd",
+      "name": "Bugcrowd",
+      "category": "Security",
+      "authType": "custom",
+      "checkCount": 3,
+      "syncSupported": false,
+      "file": "integrations/bugcrowd.json"
     },
     {
       "slug": "bugsnag",
@@ -743,6 +761,15 @@
       "checkCount": 2,
       "syncSupported": false,
       "file": "integrations/chartmogul.json"
+    },
+    {
+      "slug": "checkpoint",
+      "name": "Check Point",
+      "category": "Security",
+      "authType": "custom",
+      "checkCount": 6,
+      "syncSupported": false,
+      "file": "integrations/checkpoint.json"
     },
     {
       "slug": "checkly",
@@ -1154,7 +1181,7 @@
       "name": "CrowdStrike Falcon",
       "category": "Security",
       "authType": "custom",
-      "checkCount": 2,
+      "checkCount": 5,
       "syncSupported": false,
       "file": "integrations/crowdstrike.json"
     },
@@ -1193,6 +1220,15 @@
       "checkCount": 3,
       "syncSupported": true,
       "file": "integrations/cyberark-identity.json"
+    },
+    {
+      "slug": "cybereason",
+      "name": "Cybereason",
+      "category": "Security",
+      "authType": "custom",
+      "checkCount": 4,
+      "syncSupported": false,
+      "file": "integrations/cybereason.json"
     },
     {
       "slug": "cycode",
@@ -1244,7 +1280,7 @@
       "name": "Datadog",
       "category": "Cloud",
       "authType": "custom",
-      "checkCount": 3,
+      "checkCount": 5,
       "syncSupported": false,
       "file": "integrations/datadog.json"
     },
@@ -1405,7 +1441,7 @@
       "slug": "doppler",
       "name": "Doppler",
       "category": "Cloud",
-      "authType": "api_key",
+      "authType": "custom",
       "checkCount": 2,
       "syncSupported": false,
       "file": "integrations/doppler.json"
@@ -1582,6 +1618,15 @@
       "file": "integrations/eset-protect.json"
     },
     {
+      "slug": "expel",
+      "name": "Expel",
+      "category": "Security",
+      "authType": "api_key",
+      "checkCount": 5,
+      "syncSupported": false,
+      "file": "integrations/expel.json"
+    },
+    {
       "slug": "expensify",
       "name": "Expensify",
       "category": "Productivity",
@@ -1631,7 +1676,7 @@
       "name": "Firebase",
       "category": "Cloud",
       "authType": "oauth2",
-      "checkCount": 3,
+      "checkCount": 2,
       "syncSupported": false,
       "file": "integrations/firebase.json"
     },
@@ -1870,15 +1915,6 @@
       "file": "integrations/goodhire.json"
     },
     {
-      "slug": "google-cloud",
-      "name": "Google Cloud",
-      "category": "Cloud",
-      "authType": "oauth2",
-      "checkCount": 2,
-      "syncSupported": false,
-      "file": "integrations/google-cloud.json"
-    },
-    {
       "slug": "google-workspace-admin",
       "name": "Google Workspace",
       "category": "Productivity",
@@ -1904,6 +1940,15 @@
       "checkCount": 4,
       "syncSupported": false,
       "file": "integrations/grafana-cloud.json"
+    },
+    {
+      "slug": "grain",
+      "name": "Grain",
+      "category": "Productivity",
+      "authType": "custom",
+      "checkCount": 3,
+      "syncSupported": false,
+      "file": "integrations/grain.json"
     },
     {
       "slug": "greenhouse",
@@ -2158,6 +2203,15 @@
       "file": "integrations/hyperproof.json"
     },
     {
+      "slug": "illumio",
+      "name": "Illumio",
+      "category": "Security",
+      "authType": "custom",
+      "checkCount": 7,
+      "syncSupported": false,
+      "file": "integrations/illumio.json"
+    },
+    {
       "slug": "incident-io",
       "name": "Incident.io",
       "category": "Monitoring",
@@ -2203,6 +2257,15 @@
       "file": "integrations/intercom.json"
     },
     {
+      "slug": "invicti",
+      "name": "Invicti",
+      "category": "Security",
+      "authType": "custom",
+      "checkCount": 6,
+      "syncSupported": false,
+      "file": "integrations/invicti.json"
+    },
+    {
       "slug": "ionos",
       "name": "IONOS Cloud",
       "category": "Cloud",
@@ -2219,6 +2282,15 @@
       "checkCount": 2,
       "syncSupported": false,
       "file": "integrations/ironclad.json"
+    },
+    {
+      "slug": "kandji",
+      "name": "Iru (formerly Kandji)",
+      "category": "Security",
+      "authType": "api_key",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/kandji.json"
     },
     {
       "slug": "it-glue",
@@ -2320,15 +2392,6 @@
       "file": "integrations/justworks.json"
     },
     {
-      "slug": "kandji",
-      "name": "Kandji",
-      "category": "Security",
-      "authType": "api_key",
-      "checkCount": 2,
-      "syncSupported": false,
-      "file": "integrations/kandji.json"
-    },
-    {
       "slug": "kaseya-vsa",
       "name": "Kaseya VSA",
       "category": "Security",
@@ -2405,7 +2468,7 @@
       "name": "KnowBe4",
       "category": "Security",
       "authType": "custom",
-      "checkCount": 2,
+      "checkCount": 5,
       "syncSupported": false,
       "file": "integrations/knowbe4.json"
     },
@@ -2561,6 +2624,15 @@
       "checkCount": 2,
       "syncSupported": false,
       "file": "integrations/lob.json"
+    },
+    {
+      "slug": "logicmonitor",
+      "name": "LogicMonitor",
+      "category": "Monitoring",
+      "authType": "custom",
+      "checkCount": 5,
+      "syncSupported": false,
+      "file": "integrations/logicmonitor.json"
     },
     {
       "slug": "logrocket",
@@ -2779,6 +2851,15 @@
       "file": "integrations/intune.json"
     },
     {
+      "slug": "microsoft-sentinel",
+      "name": "Microsoft Sentinel",
+      "category": "Monitoring",
+      "authType": "oauth2",
+      "checkCount": 3,
+      "syncSupported": false,
+      "file": "integrations/microsoft-sentinel.json"
+    },
+    {
       "slug": "microsoft-teams",
       "name": "Microsoft Teams",
       "category": "Communication",
@@ -2804,6 +2885,15 @@
       "checkCount": 2,
       "syncSupported": false,
       "file": "integrations/mintlify.json"
+    },
+    {
+      "slug": "miradore",
+      "name": "Miradore",
+      "category": "Infrastructure",
+      "authType": "custom",
+      "checkCount": 5,
+      "syncSupported": false,
+      "file": "integrations/miradore.json"
     },
     {
       "slug": "miro",
@@ -3053,7 +3143,7 @@
       "name": "Okta",
       "category": "Identity & Access",
       "authType": "custom",
-      "checkCount": 3,
+      "checkCount": 5,
       "syncSupported": false,
       "file": "integrations/okta.json"
     },
@@ -3872,7 +3962,7 @@
       "name": "SentinelOne",
       "category": "Security",
       "authType": "api_key",
-      "checkCount": 2,
+      "checkCount": 5,
       "syncSupported": false,
       "file": "integrations/sentinelone.json"
     },
@@ -3940,6 +4030,15 @@
       "file": "integrations/signoz.json"
     },
     {
+      "slug": "site24x7",
+      "name": "Site24x7",
+      "category": "Monitoring",
+      "authType": "custom",
+      "checkCount": 5,
+      "syncSupported": false,
+      "file": "integrations/site24x7.json"
+    },
+    {
       "slug": "slack",
       "name": "Slack",
       "category": "Communication",
@@ -3980,7 +4079,7 @@
       "name": "Snyk",
       "category": "Security",
       "authType": "custom",
-      "checkCount": 2,
+      "checkCount": 5,
       "syncSupported": false,
       "file": "integrations/snyk.json"
     },
@@ -4210,15 +4309,6 @@
       "file": "integrations/stytch.json"
     },
     {
-      "slug": "sumo-logic",
-      "name": "Sumo Logic",
-      "category": "Monitoring",
-      "authType": "basic",
-      "checkCount": 2,
-      "syncSupported": false,
-      "file": "integrations/sumo-logic.json"
-    },
-    {
       "slug": "sumologic",
       "name": "Sumo Logic",
       "category": "Monitoring",
@@ -4226,6 +4316,15 @@
       "checkCount": 2,
       "syncSupported": false,
       "file": "integrations/sumologic.json"
+    },
+    {
+      "slug": "sumo-logic",
+      "name": "Sumo Logic",
+      "category": "Monitoring",
+      "authType": "basic",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/sumo-logic.json"
     },
     {
       "slug": "supabase",
@@ -4381,6 +4480,15 @@
       "file": "integrations/threatdown.json"
     },
     {
+      "slug": "threatlocker",
+      "name": "ThreatLocker",
+      "category": "Security",
+      "authType": "custom",
+      "checkCount": 6,
+      "syncSupported": false,
+      "file": "integrations/threatlocker.json"
+    },
+    {
       "slug": "tines",
       "name": "Tines",
       "category": "Security",
@@ -4534,6 +4642,15 @@
       "file": "integrations/ukg-ready.json"
     },
     {
+      "slug": "unifi",
+      "name": "UniFi",
+      "category": "Infrastructure",
+      "authType": "custom",
+      "checkCount": 5,
+      "syncSupported": false,
+      "file": "integrations/unifi.json"
+    },
+    {
       "slug": "upcloud",
       "name": "UpCloud",
       "category": "Cloud",
@@ -4595,6 +4712,15 @@
       "checkCount": 2,
       "syncSupported": false,
       "file": "integrations/vercel.json"
+    },
+    {
+      "slug": "verkada",
+      "name": "Verkada",
+      "category": "Security",
+      "authType": "custom",
+      "checkCount": 3,
+      "syncSupported": false,
+      "file": "integrations/verkada.json"
     },
     {
       "slug": "vitally",

@@ -38,8 +38,29 @@
       "description": "Checks for critical and high severity open source vulnerabilities across monitored projects",
       "defaultSeverity": "high",
       "enabled": true
+    },
+    {
+      "slug": "snyk_license_compliance",
+      "name": "License Compliance",
+      "description": "Checks for license policy violations across monitored open source dependencies",
+      "defaultSeverity": "high",
+      "enabled": true
+    },
+    {
+      "slug": "snyk_dependency_vulnerabilities",
+      "name": "Dependency Vulnerabilities",
+      "description": "Counts open vulnerabilities by severity and fails if any critical vulnerabilities exist",
+      "defaultSeverity": "critical",
+      "enabled": true
+    },
+    {
+      "slug": "snyk_project_monitoring",
+      "name": "Project Monitoring",
+      "description": "Verifies that all Snyk projects have active monitoring enabled with recurring tests configured",
+      "defaultSeverity": "high",
+      "enabled": true
     }
   ],
-  "checkCount": 2,
+  "checkCount": 5,
   "isActive": true
 }

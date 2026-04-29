@@ -1,0 +1,71 @@
+{
+  "slug": "miradore",
+  "name": "Miradore",
+  "description": "Miradore is a cross-platform Mobile Device Management (MDM) solution for managing Android, iOS, macOS, and Windows devices. This integration checks device inventory, compliance status, encryption, and OS update status.",
+  "category": "Infrastructure",
+  "docsUrl": "https://www.miradore.com/knowledge/integrations/miradore-api/",
+  "baseUrl": "https://online.miradore.com",
+  "authConfig": {
+    "type": "custom",
+    "config": {
+      "credentialFields": [
+        {
+          "label": "Site Name",
+          "type": "text",
+          "required": true,
+          "helpText": "Your Miradore site name (the subdomain part of your Miradore URL, e.g., if your URL is https://online.miradore.com/mycompany, enter 'mycompany')"
+        },
+        {
+          "label": "API Key",
+          "type": "password",
+          "required": true,
+          "helpText": "API authentication key generated from Miradore web console (System > Infrastructure diagram > Create key)"
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "miradore_app_availability",
+      "name": "App Availability",
+      "description": "Verifies connectivity to the Miradore API by fetching device data with a minimal query",
+      "defaultSeverity": "high",
+      "enabled": true
+    },
+    {
+      "slug": "miradore_device_list",
+      "name": "Device List",
+      "description": "Enumerates all managed devices in Miradore with platform, status, and model information",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "miradore_device_compliance",
+      "name": "Device Compliance",
+      "description": "Checks device security compliance across all platforms by verifying security configurations such as passcode presence, rooting/jailbreak status",
+      "defaultSeverity": "high",
+      "enabled": true
+    },
+    {
+      "slug": "miradore_encryption_status",
+      "name": "Encryption Status",
+      "description": "Checks disk encryption status on managed devices by examining storage and security encryption properties",
+      "defaultSeverity": "high",
+      "enabled": true
+    },
+    {
+      "slug": "miradore_os_update_status",
+      "name": "OS Update Status",
+      "description": "Checks whether managed devices have current operating system versions by examining OS inventory data",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 5,
+  "isActive": true
+}

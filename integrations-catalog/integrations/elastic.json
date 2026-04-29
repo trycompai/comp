@@ -8,13 +8,19 @@
   "authConfig": {
     "type": "custom",
     "config": {
-      "setupInstructions": "1. Log in to Kibana\n2. Go to Stack Management > Security > API keys\n3. Create an API key with cluster:monitor and security permissions\n4. The key is provided as id:value — base64-encode it\n5. Paste the encoded value below",
+      "setupInstructions": "1. Log in to Kibana\n2. Go to Stack Management > Security > API keys\n3. Create an API key with cluster:monitor and security permissions\n4. Copy the API Key ID and the API Key secret value\n5. Paste them into the fields below",
       "credentialFields": [
         {
-          "label": "API Key",
+          "label": "API Key ID",
+          "type": "text",
+          "required": true,
+          "helpText": "The ID portion of your Elasticsearch API key (shown when the key is created)"
+        },
+        {
+          "label": "API Key Secret",
           "type": "password",
           "required": true,
-          "helpText": "Create an API key in Kibana > Stack Management > Security > API keys. Use the base64-encoded 'id:value' format"
+          "helpText": "The secret value of your Elasticsearch API key (shown once at creation time)"
         }
       ]
     }

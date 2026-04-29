@@ -2,9 +2,9 @@
 
 Public catalog of all compliance integrations available in the [CompAI](https://trycomp.ai) platform.
 
-**540 integrations** across 9 categories.
+**554 integrations** across 9 categories.
 
-> Last updated: 2026-04-20
+> Last updated: 2026-04-29
 
 ## What's in this catalog
 
@@ -33,25 +33,25 @@ curl https://raw.githubusercontent.com/trycompai/comp/main/integrations-catalog/
 
 ## Summary by category
 
-- **Security** — 120 integrations
-- **Productivity** — 111 integrations
+- **Security** — 129 integrations
+- **Productivity** — 112 integrations
 - **HR & People** — 61 integrations
-- **Cloud** — 53 integrations
+- **Cloud** — 52 integrations
 - **Development** — 52 integrations
-- **Monitoring** — 48 integrations
+- **Monitoring** — 51 integrations
 - **Communication** — 46 integrations
-- **Infrastructure** — 29 integrations
+- **Infrastructure** — 31 integrations
 - **Identity & Access** — 20 integrations
 
 ## Full catalog
 
-### Cloud (53)
+### Cloud (52)
 
 | Integration | Slug | Auth | Checks | Sync |
 |-------------|------|------|--------|------|
 | [Airbyte](integrations/airbyte.json) | `airbyte` | api_key | 2 |  |
 | [Aiven](integrations/aiven.json) | `aiven` | api_key | 2 |  |
-| [Anthropic](integrations/anthropic.json) | `anthropic` | api_key | 2 |  |
+| [Anthropic](integrations/anthropic.json) | `anthropic` | custom | 2 |  |
 | [Box](integrations/box.json) | `box` | oauth2 | 2 |  |
 | [Brex](integrations/brex.json) | `brex` | api_key | 1 |  |
 | [Civo](integrations/civo.json) | `civo` | api_key | 2 |  |
@@ -61,18 +61,17 @@ curl https://raw.githubusercontent.com/trycompai/comp/main/integrations-catalog/
 | [Cohere](integrations/cohere.json) | `cohere` | api_key | 2 |  |
 | [Convex](integrations/convex.json) | `convex` | custom | 3 |  |
 | [Databricks](integrations/databricks.json) | `databricks` | api_key | 2 |  |
-| [Datadog](integrations/datadog.json) | `datadog` | custom | 3 |  |
+| [Datadog](integrations/datadog.json) | `datadog` | custom | 5 |  |
 | [dbt Cloud](integrations/dbt-cloud.json) | `dbt-cloud` | api_key | 2 |  |
 | [Deepgram](integrations/deepgram.json) | `deepgram` | api_key | 2 |  |
 | [DigitalOcean](integrations/digitalocean.json) | `digitalocean` | api_key | 2 |  |
-| [Doppler](integrations/doppler.json) | `doppler` | api_key | 2 |  |
+| [Doppler](integrations/doppler.json) | `doppler` | custom | 2 |  |
 | [Egnyte](integrations/egnyte.json) | `egnyte` | custom | 3 | ✓ |
 | [Elastic Cloud](integrations/elastic-cloud.json) | `elastic-cloud` | custom | 2 |  |
-| [Firebase](integrations/firebase.json) | `firebase` | oauth2 | 3 |  |
+| [Firebase](integrations/firebase.json) | `firebase` | oauth2 | 2 |  |
 | [Fireworks AI](integrations/fireworks-ai.json) | `fireworks-ai` | api_key | 2 |  |
 | [Fivetran](integrations/fivetran.json) | `fivetran` | custom | 2 |  |
 | [Fly.io](integrations/fly.json) | `fly` | api_key | 2 |  |
-| [Google Cloud](integrations/google-cloud.json) | `google-cloud` | oauth2 | 2 |  |
 | [Groq](integrations/groq.json) | `groq` | api_key | 2 |  |
 | [Heroku](integrations/heroku.json) | `heroku` | custom | 2 |  |
 | [Hetzner Cloud](integrations/hetzner.json) | `hetzner` | api_key | 2 |  |
@@ -162,7 +161,7 @@ curl https://raw.githubusercontent.com/trycompai/comp/main/integrations-catalog/
 | [Azure DevOps](integrations/azure-devops.json) | `azure-devops` | custom | 3 |  |
 | [Baseten](integrations/baseten.json) | `baseten` | custom | 2 |  |
 | [Bitbucket](integrations/bitbucket.json) | `bitbucket` | custom | 2 |  |
-| [BrowserStack](integrations/browserstack.json) | `browserstack` | custom | 2 |  |
+| [BrowserStack](integrations/browserstack.json) | `browserstack` | basic | 2 |  |
 | [Buddy](integrations/buddy.json) | `buddy` | api_key | 2 |  |
 | [Buildkite](integrations/buildkite.json) | `buildkite` | api_key | 2 |  |
 | [Census](integrations/census.json) | `census` | api_key | 2 |  |
@@ -292,7 +291,7 @@ curl https://raw.githubusercontent.com/trycompai/comp/main/integrations-catalog/
 | [FusionAuth](integrations/fusionauth.json) | `fusionauth` | custom | 4 | ✓ |
 | [JumpCloud](integrations/jumpcloud.json) | `jumpcloud` | custom | 3 |  |
 | [Microsoft Entra ID](integrations/entra-id.json) | `entra-id` | custom | 4 | ✓ |
-| [Okta](integrations/okta.json) | `okta` | custom | 3 |  |
+| [Okta](integrations/okta.json) | `okta` | custom | 5 |  |
 | [OneLogin](integrations/onelogin.json) | `onelogin` | custom | 2 |  |
 | [Permit.io](integrations/permit-io.json) | `permit-io` | custom | 2 |  |
 | [Persona](integrations/persona.json) | `persona` | api_key | 2 |  |
@@ -302,7 +301,7 @@ curl https://raw.githubusercontent.com/trycompai/comp/main/integrations-catalog/
 | [Stytch](integrations/stytch.json) | `stytch` | custom | 2 |  |
 | [WorkOS](integrations/workos.json) | `workos` | api_key | 2 |  |
 
-### Infrastructure (29)
+### Infrastructure (31)
 
 | Integration | Slug | Auth | Checks | Sync |
 |-------------|------|------|--------|------|
@@ -321,6 +320,7 @@ curl https://raw.githubusercontent.com/trycompai/comp/main/integrations-catalog/
 | [KeyCDN](integrations/keycdn.json) | `keycdn` | custom | 2 |  |
 | [Kong Konnect](integrations/kong.json) | `kong` | api_key | 2 |  |
 | [Koyeb](integrations/koyeb.json) | `koyeb` | api_key | 2 |  |
+| [Miradore](integrations/miradore.json) | `miradore` | custom | 5 |  |
 | [ngrok](integrations/ngrok.json) | `ngrok` | api_key | 2 |  |
 | [Northflank](integrations/northflank.json) | `northflank` | api_key | 2 |  |
 | [NS1](integrations/ns1.json) | `ns1` | custom | 2 |  |
@@ -333,18 +333,19 @@ curl https://raw.githubusercontent.com/trycompai/comp/main/integrations-catalog/
 | [Tailscale](integrations/tailscale.json) | `tailscale` | api_key | 2 |  |
 | [Teleport](integrations/teleport.json) | `teleport` | api_key | 2 |  |
 | [Terraform Cloud](integrations/terraform-cloud.json) | `terraform-cloud` | custom | 2 |  |
+| [UniFi](integrations/unifi.json) | `unifi` | custom | 5 |  |
 | [Veeam Backup & Replication](integrations/veeam.json) | `veeam` | custom | 3 |  |
 | [ZeroTier](integrations/zerotier.json) | `zerotier` | custom | 2 |  |
 
-### Monitoring (48)
+### Monitoring (51)
 
 | Integration | Slug | Auth | Checks | Sync |
 |-------------|------|------|--------|------|
+| [ActivTrak](integrations/activtrak.json) | `activtrak` | custom | 3 |  |
 | [Amplitude](integrations/amplitude.json) | `amplitude` | api_key | 2 |  |
 | [Anodot](integrations/anodot.json) | `anodot` | custom | 2 |  |
 | [Auvik](integrations/auvik.json) | `auvik` | basic | 2 |  |
 | [Axiom](integrations/axiom.json) | `axiom` | custom | 2 |  |
-| [Better Stack](integrations/better-uptime.json) | `better-uptime` | api_key | 2 |  |
 | [BetterStack](integrations/betterstack.json) | `betterstack` | api_key | 2 |  |
 | [Bugsnag](integrations/bugsnag.json) | `bugsnag` | api_key | 2 |  |
 | [Checkly](integrations/checkly.json) | `checkly` | api_key | 2 |  |
@@ -362,11 +363,13 @@ curl https://raw.githubusercontent.com/trycompai/comp/main/integrations-catalog/
 | [Honeycomb](integrations/honeycomb.json) | `honeycomb` | api_key | 2 |  |
 | [Incident.io](integrations/incident-io.json) | `incident-io` | api_key | 2 |  |
 | [Instatus](integrations/instatus.json) | `instatus` | custom | 2 |  |
+| [LogicMonitor](integrations/logicmonitor.json) | `logicmonitor` | custom | 5 |  |
 | [LogRocket](integrations/logrocket.json) | `logrocket` | api_key | 2 |  |
 | [Logz.io](integrations/logzio.json) | `logzio` | api_key | 2 |  |
 | [Lumigo](integrations/lumigo.json) | `lumigo` | custom | 1 |  |
 | [Mezmo](integrations/mezmo.json) | `mezmo` | custom | 2 |  |
 | [Mezmo (LogDNA)](integrations/logdna.json) | `logdna` | api_key | 2 |  |
+| [Microsoft Sentinel](integrations/microsoft-sentinel.json) | `microsoft-sentinel` | oauth2 | 3 |  |
 | [Mixpanel](integrations/mixpanel.json) | `mixpanel` | custom | 2 |  |
 | [Monte Carlo](integrations/monte-carlo.json) | `monte-carlo` | custom | 2 |  |
 | [New Relic](integrations/new-relic.json) | `new-relic` | custom | 3 |  |
@@ -380,16 +383,17 @@ curl https://raw.githubusercontent.com/trycompai/comp/main/integrations-catalog/
 | [RudderStack](integrations/rudderstack.json) | `rudderstack` | api_key | 2 |  |
 | [Sentry](integrations/sentry.json) | `sentry` | custom | 2 |  |
 | [SigNoz](integrations/signoz.json) | `signoz` | custom | 2 |  |
+| [Site24x7](integrations/site24x7.json) | `site24x7` | custom | 5 |  |
 | [Splunk](integrations/splunk.json) | `splunk` | custom | 2 |  |
 | [Splunk On-Call](integrations/victorops.json) | `victorops` | custom | 2 |  |
 | [Statsig](integrations/statsig.json) | `statsig` | custom | 2 |  |
 | [StatusCake](integrations/statuscake.json) | `statuscake` | custom | 4 |  |
 | [Statuspage](integrations/statuspage.json) | `statuspage` | api_key | 2 |  |
-| [Sumo Logic](integrations/sumo-logic.json) | `sumo-logic` | basic | 2 |  |
 | [Sumo Logic](integrations/sumologic.json) | `sumologic` | custom | 2 |  |
+| [Sumo Logic](integrations/sumo-logic.json) | `sumo-logic` | basic | 2 |  |
 | [Updown.io](integrations/updown.json) | `updown` | custom | 2 |  |
 
-### Productivity (111)
+### Productivity (112)
 
 | Integration | Slug | Auth | Checks | Sync |
 |-------------|------|------|--------|------|
@@ -441,6 +445,7 @@ curl https://raw.githubusercontent.com/trycompai/comp/main/integrations-catalog/
 | [Freshsales](integrations/freshsales.json) | `freshsales` | custom | 2 | ✓ |
 | [Freshservice](integrations/freshservice.json) | `freshservice` | custom | 2 |  |
 | [Google Workspace](integrations/google-workspace-admin.json) | `google-workspace-admin` | oauth2 | 2 |  |
+| [Grain](integrations/grain.json) | `grain` | custom | 3 |  |
 | [Guru](integrations/guru.json) | `guru` | custom | 1 |  |
 | [Harvest](integrations/harvest.json) | `harvest` | custom | 2 |  |
 | [Hive](integrations/hive.json) | `hive` | custom | 2 | ✓ |
@@ -505,7 +510,7 @@ curl https://raw.githubusercontent.com/trycompai/comp/main/integrations-catalog/
 | [Zoho CRM](integrations/zoho-crm.json) | `zoho-crm` | custom | 3 | ✓ |
 | [Zuora](integrations/zuora.json) | `zuora` | custom | 2 |  |
 
-### Security (120)
+### Security (129)
 
 | Integration | Slug | Auth | Checks | Sync |
 |-------------|------|------|--------|------|
@@ -519,6 +524,7 @@ curl https://raw.githubusercontent.com/trycompai/comp/main/integrations-catalog/
 | [Apiiro](integrations/apiiro.json) | `apiiro` | custom | 2 |  |
 | [Apple Business Manager](integrations/apple-business-manager.json) | `apple-business-manager` | custom | 3 |  |
 | [Aqua Security](integrations/aqua-security.json) | `aqua-security` | custom | 2 |  |
+| [Arctic Wolf](integrations/arctic-wolf.json) | `arctic-wolf` | custom | 4 |  |
 | [Atera](integrations/atera.json) | `atera` | custom | 3 |  |
 | [Automox](integrations/automox.json) | `automox` | api_key | 2 |  |
 | [Axonius](integrations/axonius.json) | `axonius` | custom | 5 | ✓ |
@@ -527,10 +533,12 @@ curl https://raw.githubusercontent.com/trycompai/comp/main/integrations-catalog/
 | [Bitdefender GravityZone](integrations/bitdefender-gravityzone.json) | `bitdefender-gravityzone` | custom | 5 |  |
 | [Bitsight](integrations/bitsight.json) | `bitsight` | custom | 5 |  |
 | [Bitwarden](integrations/bitwarden.json) | `bitwarden` | custom | 3 |  |
+| [Bugcrowd](integrations/bugcrowd.json) | `bugcrowd` | custom | 3 |  |
 | [Carbon Black](integrations/carbon-black.json) | `carbon-black` | api_key | 2 |  |
 | [Cato Networks](integrations/cato-networks.json) | `cato-networks` | custom | 2 |  |
 | [Certn](integrations/certn.json) | `certn` | custom | 2 |  |
 | [Chainguard](integrations/chainguard.json) | `chainguard` | custom | 2 |  |
+| [Check Point](integrations/checkpoint.json) | `checkpoint` | custom | 6 |  |
 | [Checkmarx](integrations/checkmarx.json) | `checkmarx` | custom | 2 |  |
 | [Cisco Secure Endpoint](integrations/cisco-secure-endpoint.json) | `cisco-secure-endpoint` | custom | 3 |  |
 | [Cisco Umbrella](integrations/cisco-umbrella.json) | `cisco-umbrella` | custom | 2 |  |
@@ -541,8 +549,9 @@ curl https://raw.githubusercontent.com/trycompai/comp/main/integrations-catalog/
 | [Contrast Security](integrations/contrast-security.json) | `contrast-security` | custom | 2 |  |
 | [Cortex XDR](integrations/cortex-xdr.json) | `cortex-xdr` | custom | 3 |  |
 | [Coursera for Business](integrations/coursera-business.json) | `coursera-business` | custom | 2 | ✓ |
-| [CrowdStrike Falcon](integrations/crowdstrike.json) | `crowdstrike` | custom | 2 |  |
+| [CrowdStrike Falcon](integrations/crowdstrike.json) | `crowdstrike` | custom | 5 |  |
 | [CyberArk Identity](integrations/cyberark-identity.json) | `cyberark-identity` | custom | 3 | ✓ |
+| [Cybereason](integrations/cybereason.json) | `cybereason` | custom | 4 |  |
 | [Cycode](integrations/cycode.json) | `cycode` | custom | 2 |  |
 | [Darktrace](integrations/darktrace.json) | `darktrace` | custom | 3 |  |
 | [Datto RMM](integrations/datto-rmm.json) | `datto-rmm` | custom | 3 |  |
@@ -551,6 +560,7 @@ curl https://raw.githubusercontent.com/trycompai/comp/main/integrations-catalog/
 | [Endor Labs](integrations/endor-labs.json) | `endor-labs` | custom | 1 |  |
 | [Envoy](integrations/envoy.json) | `envoy` | api_key | 3 | ✓ |
 | [ESET Protect](integrations/eset-protect.json) | `eset-protect` | custom | 3 |  |
+| [Expel](integrations/expel.json) | `expel` | api_key | 5 |  |
 | [FleetDM](integrations/fleetdm.json) | `fleetdm` | custom | 3 |  |
 | [Forescout](integrations/forescout.json) | `forescout` | custom | 3 |  |
 | [Fortinet FortiGate](integrations/fortinet-fortigate.json) | `fortinet-fortigate` | custom | 4 |  |
@@ -564,13 +574,15 @@ curl https://raw.githubusercontent.com/trycompai/comp/main/integrations-catalog/
 | [Hoxhunt](integrations/hoxhunt.json) | `hoxhunt` | custom | 4 |  |
 | [Huntress](integrations/huntress.json) | `huntress` | basic | 3 |  |
 | [Hyperproof](integrations/hyperproof.json) | `hyperproof` | api_key | 2 |  |
+| [Illumio](integrations/illumio.json) | `illumio` | custom | 7 |  |
 | [Infisical](integrations/infisical.json) | `infisical` | api_key | 2 |  |
+| [Invicti](integrations/invicti.json) | `invicti` | custom | 6 |  |
+| [Iru (formerly Kandji)](integrations/kandji.json) | `kandji` | api_key | 2 |  |
 | [Ivanti Neurons](integrations/ivanti.json) | `ivanti` | custom | 3 |  |
 | [Jamf Pro](integrations/jamf.json) | `jamf` | custom | 3 |  |
-| [Kandji](integrations/kandji.json) | `kandji` | api_key | 2 |  |
 | [Kaseya VSA](integrations/kaseya-vsa.json) | `kaseya-vsa` | custom | 3 |  |
 | [Keeper Security](integrations/keeper-security.json) | `keeper-security` | custom | 4 |  |
-| [KnowBe4](integrations/knowbe4.json) | `knowbe4` | custom | 2 |  |
+| [KnowBe4](integrations/knowbe4.json) | `knowbe4` | custom | 5 |  |
 | [Kolide](integrations/kolide.json) | `kolide` | custom | 2 |  |
 | [Lacework](integrations/lacework.json) | `lacework` | custom | 2 |  |
 | [LastPass Business](integrations/lastpass.json) | `lastpass` | custom | 3 |  |
@@ -602,8 +614,8 @@ curl https://raw.githubusercontent.com/trycompai/comp/main/integrations-catalog/
 | [Secureframe](integrations/secureframe.json) | `secureframe` | api_key | 2 |  |
 | [SecurityScorecard](integrations/securityscorecard.json) | `securityscorecard` | custom | 5 |  |
 | [Semgrep](integrations/semgrep.json) | `semgrep` | api_key | 2 |  |
-| [SentinelOne](integrations/sentinelone.json) | `sentinelone` | api_key | 2 |  |
-| [Snyk](integrations/snyk.json) | `snyk` | custom | 2 |  |
+| [SentinelOne](integrations/sentinelone.json) | `sentinelone` | api_key | 5 |  |
+| [Snyk](integrations/snyk.json) | `snyk` | custom | 5 |  |
 | [Socket](integrations/socket-dev.json) | `socket-dev` | api_key | 2 |  |
 | [Socket Security](integrations/socket.json) | `socket` | custom | 2 |  |
 | [SonarCloud](integrations/sonarcloud.json) | `sonarcloud` | custom | 2 |  |
@@ -616,6 +628,7 @@ curl https://raw.githubusercontent.com/trycompai/comp/main/integrations-catalog/
 | [Tenable Cloud](integrations/tenable-cloud.json) | `tenable-cloud` | custom | 2 |  |
 | [Tenable.io](integrations/tenable.json) | `tenable` | custom | 2 |  |
 | [ThreatDown (Malwarebytes)](integrations/threatdown.json) | `threatdown` | custom | 5 |  |
+| [ThreatLocker](integrations/threatlocker.json) | `threatlocker` | custom | 6 |  |
 | [Tines](integrations/tines.json) | `tines` | custom | 2 |  |
 | [Torq](integrations/torq.json) | `torq` | custom | 2 |  |
 | [Transcend](integrations/transcend.json) | `transcend` | api_key | 2 |  |
@@ -623,6 +636,7 @@ curl https://raw.githubusercontent.com/trycompai/comp/main/integrations-catalog/
 | [Trend Micro Vision One](integrations/trend-micro-vision-one.json) | `trend-micro-vision-one` | custom | 4 |  |
 | [Twingate](integrations/twingate.json) | `twingate` | custom | 4 | ✓ |
 | [Veracode](integrations/veracode.json) | `veracode` | custom | 2 |  |
+| [Verkada](integrations/verkada.json) | `verkada` | custom | 3 |  |
 | [VMware Workspace ONE](integrations/vmware-workspace-one.json) | `vmware-workspace-one` | custom | 3 |  |
 | [VulnCheck](integrations/vulncheck.json) | `vulncheck` | custom | 2 |  |
 | [WatchGuard](integrations/watchguard.json) | `watchguard` | custom | 3 |  |

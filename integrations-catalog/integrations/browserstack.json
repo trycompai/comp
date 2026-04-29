@@ -6,17 +6,11 @@
   "docsUrl": "https://www.browserstack.com/docs/automate/api-reference/selenium/introduction",
   "baseUrl": "https://api.browserstack.com/",
   "authConfig": {
-    "type": "custom",
+    "type": "basic",
     "config": {
-      "setupInstructions": "1. Log in to BrowserStack at https://browserstack.com\n2. Go to Account → Summary to find your Username and Access Key\n3. Encode them: base64('username:access_key')\n4. Enter the encoded value below",
-      "credentialFields": [
-        {
-          "label": "Encoded Credentials",
-          "type": "password",
-          "required": true,
-          "helpText": "Base64 encode 'username:access_key'. Command: echo -n 'user@email.com:access_key' | base64"
-        }
-      ]
+      "setupInstructions": "1. Log in to BrowserStack at https://browserstack.com\n2. Go to Account > Summary to find your Username and Access Key\n3. Enter your Username and Access Key below",
+      "usernameField": "username",
+      "passwordField": "access_key"
     }
   },
   "capabilities": [

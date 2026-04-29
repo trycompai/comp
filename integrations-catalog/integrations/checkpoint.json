@@ -1,0 +1,85 @@
+{
+  "slug": "checkpoint",
+  "name": "Check Point",
+  "description": "Check Point network and cloud security integration for compliance monitoring. Connects to the Check Point Management API to verify firewall policies, access control rules, threat prevention, network segmentation, HTTPS inspection, and gateway health.",
+  "category": "Security",
+  "docsUrl": "https://sc1.checkpoint.com/documents/latest/APIs/",
+  "baseUrl": null,
+  "authConfig": {
+    "type": "custom",
+    "config": {
+      "setupInstructions": "1. Log in to your Check Point SmartConsole\n2. Go to Manage & Settings > Blades > Management API\n3. Ensure the Management API is enabled\n4. Under API Settings, set 'Accepted API calls from' to allow your CompAI server IP or 'All IP addresses'\n5. Publish the session, then run 'api restart' on the Management Server CLI (or reboot) so the setting takes effect\n6. Create an API key: Manage & Settings > Permissions & Administrators > create a new administrator with read-only permissions and an API key\n7. Copy the Management Server URL (the IP/hostname where SmartConsole connects)\n8. Paste the Management Server URL and API Key below\n\nNetwork prerequisites: TCP 443 from CompAI to your Management Server must be allowed. Ensure the server presents a trusted TLS certificate.\n\nNote: The API key must have at least read-only access. For Multi-Domain Server deployments, also specify the domain name.",
+      "credentialFields": [
+        {
+          "label": "Management Server URL",
+          "type": "text",
+          "required": true,
+          "helpText": "The base URL of your Check Point Management Server (e.g. https://192.168.1.100 or https://mgmt.example.com). Default port is 443."
+        },
+        {
+          "label": "API Key",
+          "type": "password",
+          "required": true,
+          "helpText": "API key for authentication. Generate in SmartConsole: Manage & Settings > Blades > Management API > API Keys. The API key must have read-only permissions."
+        },
+        {
+          "label": "Domain (optional)",
+          "type": "text",
+          "required": false,
+          "helpText": "For Multi-Domain Server deployments, specify the domain name or UID. Leave empty for single-domain setups."
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "checkpoint_app_availability",
+      "name": "Check Point App Availability",
+      "description": "Verifies connectivity to the Check Point Management API by authenticating and confirming session establishment.",
+      "defaultSeverity": "high",
+      "enabled": true
+    },
+    {
+      "slug": "checkpoint_access_control_policy",
+      "name": "Check Point Access Control Policy",
+      "description": "Verifies that access control rules are configured with a default deny policy and proper rule structure.",
+      "defaultSeverity": "high",
+      "enabled": true
+    },
+    {
+      "slug": "checkpoint_threat_prevention",
+      "name": "Check Point Threat Prevention",
+      "description": "Verifies that threat prevention profiles (IPS, Anti-Bot, Anti-Virus, Threat Emulation) are configured and active.",
+      "defaultSeverity": "high",
+      "enabled": true
+    },
+    {
+      "slug": "checkpoint_gateway_health",
+      "name": "Check Point Gateway Health",
+      "description": "Verifies that security gateways are configured and reporting to the management server.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "checkpoint_https_inspection",
+      "name": "Check Point HTTPS Inspection",
+      "description": "Verifies that HTTPS inspection is configured for encrypted traffic visibility and threat detection.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "checkpoint_admin_permissions",
+      "name": "Check Point Administrator Permissions",
+      "description": "Reviews administrator accounts to verify proper role-based access control (RBAC) and identify any overprivileged accounts.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 6,
+  "isActive": true
+}
