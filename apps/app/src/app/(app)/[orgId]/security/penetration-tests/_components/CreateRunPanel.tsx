@@ -107,7 +107,7 @@ export function CreateRunPanel({
                 id="pt-target-url"
                 value={targetUrl}
                 onChange={(e) => setTargetUrl(e.target.value)}
-                placeholder="app.staging.trycomp.ai"
+                placeholder="your.staging.app"
                 autoFocus
                 required
                 className="flex-1 bg-transparent font-mono text-xs outline-none"
