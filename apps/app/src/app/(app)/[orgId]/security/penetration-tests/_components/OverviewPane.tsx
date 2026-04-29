@@ -1,145 +1,254 @@
 'use client';
 
-import { cn } from '@trycompai/design-system/cn';
+import { Button } from '@trycompai/design-system';
+import { Add } from '@trycompai/design-system/icons';
 import type { PentestRun } from '@/lib/security/penetration-tests-client';
-import { formatReportDate } from '../lib';
-import { SevTally } from './SevTally';
-import { StatusPill } from './StatusPill';
-import { isRunInProgress, isRunTerminal } from './severity';
+import {
+  LatestAssessment,
+  RecentScansSection,
+  StaleCoverageSection,
+  avgDurationMs,
+  cadenceLabel,
+  computeStaleTargets,
+  countWithin,
+  formatDurationLabel,
+  mostRecent,
+  relativeTime,
+  sortByUpdatedDesc,
+  uniqueTargets,
+} from './overview-internals';
 
 interface OverviewPaneProps {
+  orgId: string;
   runs: PentestRun[];
+  onCreateClick: () => void;
+  /** False when the org is out of pentest credits — disables the CTA. */
+  canCreate: boolean;
+  onDownloadMarkdown: (runId: string) => void;
+  onDownloadPdf: (runId: string) => void;
 }
 
 /**
- * Default right-pane when no run is selected. Surfaces at-a-glance posture:
- *   - KPI strip (open needs-action, running now, recent cadence)
- *   - Severity roll-up
- *   - Targets + last scan
- * Full version of the Overview from the design handoff requires backend
- * aggregations we don't have yet (14-day cadence series, denormalized top-N
- * findings). This ships the pieces we can compute client-side from the list.
+ * Right pane shown when no scan is selected. Two real states:
+ *
+ *   - 0 completed scans → onboarding card with primary CTA
+ *   - 1+ completed scans → posture overview: real counts, recent scans,
+ *     stale-coverage list. NO cross-scan severity aggregation, NO trend
+ *     chart, NO "open findings" queue — those need per-run issue counts
+ *     in the list endpoint (backend aggregation), which we don't have
+ *     yet. Surfacing fabricated severity numbers in a posture dashboard
+ *     would actively mislead in an audit context.
  */
-export function OverviewPane({ runs }: OverviewPaneProps) {
-  const running = runs.filter((r) => isRunInProgress(r.status));
-  const terminal = runs.filter((r) => isRunTerminal(r.status));
-  const completed = terminal.filter((r) => r.status === 'completed');
-  const failed = terminal.filter((r) => r.status === 'failed');
+export function OverviewPane({
+  orgId,
+  runs,
+  onCreateClick,
+  canCreate,
+  onDownloadMarkdown,
+  onDownloadPdf,
+}: OverviewPaneProps) {
+  const completed = runs.filter((r) => r.status === 'completed');
 
-  // Target roll-up — last scan per distinct target URL.
-  const targetsMap = new Map<string, PentestRun>();
-  for (const run of runs) {
-    const existing = targetsMap.get(run.targetUrl);
-    if (!existing || new Date(run.updatedAt) > new Date(existing.updatedAt)) {
-      targetsMap.set(run.targetUrl, run);
-    }
+  if (completed.length === 0) {
+    return <OnboardingState onCreateClick={onCreateClick} canCreate={canCreate} />;
   }
-  const targets = Array.from(targetsMap.values()).sort(
-    (a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime(),
+
+  return (
+    <PostureOverview
+      orgId={orgId}
+      runs={runs}
+      completed={completed}
+      onCreateClick={onCreateClick}
+      canCreate={canCreate}
+      onDownloadMarkdown={onDownloadMarkdown}
+      onDownloadPdf={onDownloadPdf}
+    />
   );
+}
+
+function OnboardingState({
+  onCreateClick,
+  canCreate,
+}: {
+  onCreateClick: () => void;
+  canCreate: boolean;
+}) {
+  return (
+    <div className="flex h-full items-center justify-center px-8 py-12">
+      <div className="w-full max-w-[560px]">
+        <div className="font-mono text-[11px] uppercase tracking-[0.1em] text-muted-foreground">
+          Penetration tests · Overview
+        </div>
+        <h1 className="mt-3 text-[24px] font-medium tracking-[-0.01em]">
+          No scans yet. Start with your most exposed target.
+        </h1>
+
+        <ol className="mt-6 space-y-3">
+          {[
+            'Pick a target URL',
+            'Agents run for ~1–3 hours',
+            'Get a signed report — clean or with findings',
+          ].map((step, i) => (
+            <li key={step} className="flex items-baseline gap-3 text-[13px]">
+              <span className="font-mono text-[11px] tabular-nums text-muted-foreground">
+                {String(i + 1).padStart(2, '0')}
+              </span>
+              <span>{step}</span>
+            </li>
+          ))}
+        </ol>
+
+        <div className="mt-7">
+          <Button onClick={onCreateClick} disabled={!canCreate}>
+            <Add className="h-3.5 w-3.5" />
+            New scan
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+interface PostureOverviewProps {
+  orgId: string;
+  runs: PentestRun[];
+  completed: PentestRun[];
+  onCreateClick: () => void;
+  canCreate: boolean;
+  onDownloadMarkdown: (runId: string) => void;
+  onDownloadPdf: (runId: string) => void;
+}
+
+function PostureOverview({
+  orgId,
+  runs,
+  completed,
+  onCreateClick,
+  canCreate,
+  onDownloadMarkdown,
+  onDownloadPdf,
+}: PostureOverviewProps) {
+  const targets = uniqueTargets(runs);
+  const lastScan = mostRecent(completed);
+  const avgDuration = avgDurationMs(completed);
+  const scansLast30d = countWithin(completed, 30 * 24 * 60 * 60 * 1000);
+  const recentScans = sortByUpdatedDesc(completed).slice(0, 6);
+  const staleTargets = computeStaleTargets(runs, targets);
 
   return (
     <div className="min-h-0 overflow-y-auto">
       <div className="mx-auto max-w-5xl px-8 py-8 space-y-6">
-        <header>
-          <h1 className="text-[26px] font-medium tracking-[-0.02em]">
-            Overview
-          </h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Select a scan from the list or start a new one.
-          </p>
+        <header className="flex flex-wrap items-end justify-between gap-3 pb-3">
+          <div>
+            <h1 className="text-[28px] font-medium tracking-[-0.02em]">
+              Overview
+            </h1>
+            <p className="mt-1 font-mono text-xs text-muted-foreground">
+              <span className="tabular-nums">{completed.length}</span>{' '}
+              completed scan{completed.length === 1 ? '' : 's'}
+              {' · '}
+              <span className="tabular-nums">{targets.length}</span> target
+              {targets.length === 1 ? '' : 's'} covered
+              {lastScan
+                ? ` · last sweep ${relativeTime(lastScan.updatedAt)}`
+                : ''}
+            </p>
+          </div>
+          <Button onClick={onCreateClick} disabled={!canCreate}>
+            <Add className="h-3.5 w-3.5" />
+            New scan
+          </Button>
         </header>
 
-        <KPIStrip
-          runsTotal={runs.length}
-          running={running.length}
+        {lastScan ? (
+          <LatestAssessment
+            orgId={orgId}
+            run={lastScan}
+            onDownloadMarkdown={onDownloadMarkdown}
+            onDownloadPdf={onDownloadPdf}
+          />
+        ) : null}
+
+        <StatBand
           completed={completed.length}
-          failed={failed.length}
+          targets={targets.length}
+          avgDurationMs={avgDuration}
+          scansLast30d={scansLast30d}
         />
 
-        <div>
-          <h2 className="mb-2 text-[11px] font-bold uppercase tracking-[0.08em] text-muted-foreground">
-            Severity roll-up
-          </h2>
-          <SevTally
-            counts={{}}
-            size="mid"
-            className="bg-background"
-          />
-          <p className="mt-2 text-xs text-muted-foreground">
-            Per-org finding aggregation coming soon. Open a scan to see its findings.
-          </p>
-        </div>
+        <RecentScansSection orgId={orgId} runs={recentScans} />
 
-        <TargetsList targets={targets} />
+        <StaleCoverageSection orgId={orgId} stale={staleTargets} />
       </div>
     </div>
   );
 }
 
-interface KPIStripProps {
-  runsTotal: number;
-  running: number;
+
+interface StatBandProps {
   completed: number;
-  failed: number;
+  targets: number;
+  avgDurationMs: number;
+  scansLast30d: number;
 }
 
-function KPIStrip({ runsTotal, running, completed, failed }: KPIStripProps) {
-  const cells = [
-    { label: 'Total scans', value: runsTotal },
-    { label: 'Running now', value: running },
-    { label: 'Completed', value: completed },
-    { label: 'Failed', value: failed },
-  ];
+function StatBand({
+  completed,
+  targets,
+  avgDurationMs: avgMs,
+  scansLast30d,
+}: StatBandProps) {
   return (
-    <div className="grid grid-cols-2 overflow-hidden rounded-[var(--radius)] border border-border md:grid-cols-4">
-      {cells.map((cell, i) => (
-        <div
-          key={cell.label}
-          className={cn(
-            'flex flex-col gap-1 border-border px-5 py-4',
-            i < cells.length - 1 && 'md:border-r',
-            i < 2 && 'border-b md:border-b-0',
-          )}
-        >
-          <span className="text-[10px] font-bold uppercase tracking-[0.08em] text-muted-foreground">
-            {cell.label}
-          </span>
-          <span className="text-[40px] font-light leading-none tracking-[-0.03em] tabular-nums">
-            {cell.value}
-          </span>
-        </div>
-      ))}
-    </div>
+    <section className="border-b-2 border-border pb-6">
+      <div className="grid grid-cols-2 gap-6 md:grid-cols-4">
+        <StatCell
+          label="Completed scans"
+          value={String(completed)}
+          subline="across all targets"
+        />
+        <StatCell
+          label="Coverage"
+          value={String(targets)}
+          subline={`distinct target${targets === 1 ? '' : 's'} scanned`}
+          divider
+        />
+        <StatCell
+          label="Avg duration"
+          value={avgMs > 0 ? formatDurationLabel(avgMs) : '—'}
+          subline="per completed scan"
+          divider
+        />
+        <StatCell
+          label="Cadence"
+          value={String(scansLast30d)}
+          subline={cadenceLabel(scansLast30d)}
+          divider
+        />
+      </div>
+    </section>
   );
 }
 
-function TargetsList({ targets }: { targets: PentestRun[] }) {
-  if (targets.length === 0) return null;
+function StatCell({
+  label,
+  value,
+  subline,
+  divider,
+}: {
+  label: string;
+  value: string;
+  subline: string;
+  divider?: boolean;
+}) {
   return (
-    <div className="overflow-hidden rounded-[var(--radius)] border border-border">
-      <div className="border-b border-border px-4 py-3">
-        <h2 className="text-[11px] font-bold uppercase tracking-[0.08em] text-muted-foreground">
-          Targets · last scan
-        </h2>
+    <div className={divider ? 'md:border-l md:border-border md:pl-6' : ''}>
+      <div className="text-[10px] font-bold uppercase tracking-[0.08em] text-muted-foreground">
+        {label}
       </div>
-      <table className="w-full border-collapse text-sm">
-        <tbody className="divide-y divide-border">
-          {targets.slice(0, 10).map((run) => (
-            <tr key={run.id}>
-              <td className="px-4 py-2.5 align-middle">
-                <div className="truncate text-sm">{run.targetUrl}</div>
-              </td>
-              <td className="px-4 py-2.5 align-middle font-mono text-xs text-muted-foreground">
-                {formatReportDate(run.updatedAt)}
-              </td>
-              <td className="px-4 py-2.5 text-right align-middle">
-                <StatusPill status={run.status} />
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+      <div className="mt-2 text-[40px] font-light leading-none tracking-[-0.03em] tabular-nums">
+        {value}
+      </div>
+      <div className="mt-1.5 text-[11px] text-muted-foreground">{subline}</div>
     </div>
   );
 }

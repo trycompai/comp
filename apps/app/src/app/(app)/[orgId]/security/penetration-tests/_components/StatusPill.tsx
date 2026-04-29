@@ -6,12 +6,19 @@ type StatusKind =
   | 'running'
   | 'completed'
   | 'failed'
-  | 'cancelled'
-  | 'clean';
+  | 'cancelled';
 
 interface StatusPillProps {
   status: StatusKind | string;
-  /** Total + found count — used to distinguish "completed" from "clean". */
+  /**
+   * @deprecated retained for prop compatibility. Was used to promote
+   * `completed` runs to a "clean" pill, but the sidebar list can't compute
+   * the same value (no per-run issue counts in the list endpoint), which
+   * led to the detail view saying "CLEAN" while the sidebar said
+   * "COMPLETED" for the same run. The promotion is dropped — the hero
+   * headline ("No findings reported in this scan") already carries the
+   * success cue.
+   */
   findingCount?: number;
   className?: string;
 }
@@ -40,11 +47,6 @@ const STATUS_CONFIG: Record<
     dotClass: 'bg-primary',
     textClass: 'text-foreground',
   },
-  clean: {
-    label: 'Clean',
-    dotClass: 'bg-[var(--pt-sev-low-bar)]',
-    textClass: 'text-[var(--pt-sev-low-fg)]',
-  },
   failed: {
     label: 'Failed',
     dotClass: 'bg-destructive',
@@ -59,13 +61,8 @@ const STATUS_CONFIG: Record<
 
 const CONFIG_DEFAULT = STATUS_CONFIG.provisioning;
 
-export function StatusPill({ status, findingCount, className }: StatusPillProps) {
-  // Promote completed runs with zero findings to the "clean" look.
-  const effective: StatusKind =
-    status === 'completed' && findingCount === 0
-      ? 'clean'
-      : (status as StatusKind);
-  const config = STATUS_CONFIG[effective] ?? CONFIG_DEFAULT;
+export function StatusPill({ status, className }: StatusPillProps) {
+  const config = STATUS_CONFIG[status as StatusKind] ?? CONFIG_DEFAULT;
 
   return (
     <span

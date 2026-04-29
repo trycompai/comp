@@ -11,6 +11,10 @@ interface CreateRunPanelProps {
   orgId: string;
   onSubmit: (payload: PentestCreateRequest) => Promise<{ id: string }>;
   isSubmitting?: boolean;
+  /** Spendable credit balance — disables submit when 0. */
+  balance?: number;
+  /** True when the trial has already been used (paid plans coming soon). */
+  trialUsed?: boolean;
 }
 
 /**
@@ -22,10 +26,13 @@ export function CreateRunPanel({
   orgId,
   onSubmit,
   isSubmitting,
+  balance,
+  trialUsed,
 }: CreateRunPanelProps) {
   const router = useRouter();
   const [targetUrl, setTargetUrl] = useState('');
   const [repoUrl, setRepoUrl] = useState('');
+  const canCreate = balance === undefined ? true : balance > 0;
 
   const handleCancel = () => {
     router.push(`/${orgId}/security/penetration-tests`);
@@ -33,6 +40,14 @@ export function CreateRunPanel({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!canCreate) {
+      toast.error(
+        trialUsed
+          ? "You've used your trial run. Paid plans coming soon."
+          : 'No pentest runs remaining.',
+      );
+      return;
+    }
     const normalized = normalizeUrl(targetUrl);
     if (!normalized) {
       toast.error('Target URL is required.');
@@ -68,6 +83,14 @@ export function CreateRunPanel({
             Scans typically take 1–3 hours. Findings stream in as they're
             discovered — you don't need to keep this page open.
           </p>
+
+          {!canCreate && (
+            <div className="mb-5 rounded border border-destructive/40 bg-destructive/5 p-3.5 text-xs leading-relaxed text-destructive">
+              {trialUsed
+                ? "You've used your trial run. Paid plans are coming soon — contact support if you need access today."
+                : 'No pentest runs remaining.'}
+            </div>
+          )}
 
           <div className="mb-4">
             <label
@@ -149,7 +172,11 @@ export function CreateRunPanel({
             >
               Cancel
             </Button>
-            <Button type="submit" loading={isSubmitting}>
+            <Button
+              type="submit"
+              loading={isSubmitting}
+              disabled={!canCreate || isSubmitting}
+            >
               Start scan
               <ArrowRight className="h-3.5 w-3.5" />
             </Button>

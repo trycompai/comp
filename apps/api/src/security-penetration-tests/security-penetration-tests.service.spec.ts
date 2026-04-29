@@ -3,12 +3,23 @@ import { db } from '@db';
 import { createHash } from 'node:crypto';
 import type { CredentialVaultService } from '../integration-platform/services/credential-vault.service';
 import type { CreatePenetrationTestDto } from './dto/create-penetration-test.dto';
+import type { PentestCreditsService } from './pentest-credits.service';
 import { SecurityPenetrationTestsService } from './security-penetration-tests.service';
 
 const mockCredentialVaultService: jest.Mocked<
   Pick<CredentialVaultService, 'getDecryptedCredentials'>
 > = {
   getDecryptedCredentials: jest.fn(),
+};
+
+// All createReport tests assume an org with credits. Tests that exercise the
+// 0-balance path override `getStatus` to return balance: 0.
+const mockPentestCreditsService: jest.Mocked<
+  Pick<PentestCreditsService, 'getStatus' | 'debitOrThrow' | 'refund'>
+> = {
+  getStatus: jest.fn(),
+  debitOrThrow: jest.fn(),
+  refund: jest.fn(),
 };
 
 jest.mock('@db', () => ({
@@ -65,7 +76,7 @@ describe('SecurityPenetrationTestsService', () => {
   let service: SecurityPenetrationTestsService;
 
   beforeAll(() => {
-    process.env.MACED_API_KEY = 'test-maced-api-key';
+    process.env.MACED_API_KEY = 'mc_dev_test_maced_api_key';
   });
 
   afterAll(() => {
@@ -77,8 +88,23 @@ describe('SecurityPenetrationTestsService', () => {
   });
 
   beforeEach(() => {
-    process.env.MACED_API_KEY = 'test-maced-api-key';
-    service = new SecurityPenetrationTestsService();
+    process.env.MACED_API_KEY = 'mc_dev_test_maced_api_key';
+    mockPentestCreditsService.getStatus.mockResolvedValue({
+      balance: 5,
+      totalGranted: 5,
+      totalConsumed: 0,
+      lastGrantSource: 'trial',
+    });
+    mockPentestCreditsService.debitOrThrow.mockResolvedValue({
+      balance: 4,
+      totalGranted: 5,
+      totalConsumed: 1,
+      lastGrantSource: 'trial',
+    });
+    mockPentestCreditsService.refund.mockResolvedValue();
+    service = new SecurityPenetrationTestsService(
+      mockPentestCreditsService as unknown as PentestCreditsService,
+    );
     fetchMock.mockReset();
     global.fetch = fetchMock as unknown as typeof fetch;
     mockedDb.securityPenetrationTestRun.upsert.mockResolvedValue({});
@@ -123,7 +149,7 @@ describe('SecurityPenetrationTestsService', () => {
       expect.objectContaining({
         method: 'GET',
         headers: expect.objectContaining({
-          'x-api-key': 'test-maced-api-key',
+          'x-api-key': 'mc_dev_test_maced_api_key',
         }),
       }),
     );
@@ -620,7 +646,7 @@ describe('SecurityPenetrationTestsService', () => {
       expect.objectContaining({
         method: 'GET',
         headers: expect.objectContaining({
-          'x-api-key': 'test-maced-api-key',
+          'x-api-key': 'mc_dev_test_maced_api_key',
         }),
       }),
     );
@@ -672,7 +698,7 @@ describe('SecurityPenetrationTestsService', () => {
       expect.objectContaining({
         method: 'GET',
         headers: expect.objectContaining({
-          'x-api-key': 'test-maced-api-key',
+          'x-api-key': 'mc_dev_test_maced_api_key',
         }),
       }),
     );

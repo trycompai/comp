@@ -9,6 +9,10 @@ import {
 
 interface EmptyStateProps {
   onCreateClick: () => void;
+  /** Spendable balance — when 0 the CTA is disabled. */
+  balance?: number;
+  /** True if the trial has already been used (paid plans coming soon copy). */
+  trialUsed?: boolean;
 }
 
 const STEPS = [
@@ -32,7 +36,15 @@ const STEPS = [
   },
 ];
 
-export function EmptyState({ onCreateClick }: EmptyStateProps) {
+export function EmptyState({
+  onCreateClick,
+  balance,
+  trialUsed,
+}: EmptyStateProps) {
+  const canCreate = balance === undefined ? true : balance > 0;
+  const tagline = trialUsed
+    ? "You've used your trial run. Paid plans are coming soon — contact support if you need access today."
+    : 'Automated black-box pen testing. Start a scan to see findings here.';
   return (
     <div className="mx-auto flex h-full max-w-3xl flex-col items-start justify-center gap-6 px-8 py-12">
       <div>
@@ -44,12 +56,12 @@ export function EmptyState({ onCreateClick }: EmptyStateProps) {
             New
           </span>
         </div>
-        <p className="max-w-xl text-sm text-muted-foreground">
-          Automated black-box pen testing. Start a scan to see findings here.
-        </p>
+        <p className="max-w-xl text-sm text-muted-foreground">{tagline}</p>
       </div>
 
-      <Button onClick={onCreateClick}>+ New Scan</Button>
+      <Button onClick={onCreateClick} disabled={!canCreate}>
+        + New Scan
+      </Button>
 
       <div className="w-full rounded-[var(--radius)] border border-border bg-background">
         <div className="border-b border-border px-5 py-3">

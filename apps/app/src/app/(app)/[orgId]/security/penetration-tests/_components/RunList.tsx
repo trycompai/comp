@@ -2,7 +2,7 @@
 
 import { cn } from '@trycompai/design-system/cn';
 import { Progress } from '@trycompai/design-system';
-import { Filter, Add } from '@trycompai/design-system/icons';
+import { Add } from '@trycompai/design-system/icons';
 import { useRouter } from 'next/navigation';
 import type { PentestRun } from '@/lib/security/penetration-tests-client';
 import { formatReportDate } from '../lib';
@@ -16,6 +16,10 @@ interface RunListProps {
   onCreateClick: () => void;
   /** When true, highlights an implicit "Overview" state (no selection). */
   overviewActive?: boolean;
+  /** Spendable credit balance — drives the "X runs left" badge. */
+  balance?: number;
+  /** True when the user has used their initial trial (balance 0, totalGranted > 0). */
+  trialUsed?: boolean;
 }
 
 export function RunList({
@@ -23,8 +27,16 @@ export function RunList({
   runs,
   selectedRunId,
   onCreateClick,
+  balance,
+  trialUsed,
 }: RunListProps) {
   const router = useRouter();
+  const canCreate = balance === undefined ? true : balance > 0;
+  const newButtonTitle = !canCreate
+    ? trialUsed
+      ? "You've used your trial run. Paid plans coming soon."
+      : 'No pentest runs remaining.'
+    : 'Start a new scan';
   return (
     <aside className="flex h-full min-h-0 w-[340px] shrink-0 flex-col border-r border-border bg-background">
       {/* Header — matches "Scans  6   Filter  Sort" from the design */}
@@ -42,17 +54,15 @@ export function RunList({
         <div className="flex items-center gap-2">
           <button
             type="button"
-            className="flex items-center gap-1 text-[11px] text-muted-foreground hover:text-foreground"
-            title="Filter (coming soon)"
-            disabled
-          >
-            <Filter className="h-3 w-3" />
-            Filter
-          </button>
-          <button
-            type="button"
             onClick={onCreateClick}
-            className="flex items-center gap-1 rounded border border-border bg-background px-2 py-1 text-[11px] font-semibold hover:bg-muted"
+            disabled={!canCreate}
+            title={newButtonTitle}
+            className={cn(
+              'flex items-center gap-1 rounded border border-border bg-background px-2 py-1 text-[11px] font-semibold',
+              canCreate
+                ? 'hover:bg-muted'
+                : 'cursor-not-allowed opacity-50',
+            )}
           >
             <Add className="h-3 w-3" />
             New
@@ -77,7 +87,57 @@ export function RunList({
           </ul>
         )}
       </div>
+      {balance !== undefined && (
+        <QuotaFooter balance={balance} trialUsed={Boolean(trialUsed)} />
+      )}
     </aside>
+  );
+}
+
+interface QuotaFooterProps {
+  balance: number;
+  trialUsed: boolean;
+}
+
+/**
+ * Sidebar footer showing scan-quota status. Persistent across overview /
+ * detail / create routes — always visible without crowding the header
+ * actions. Falls back to a "Contact support" mailto when the user is at
+ * zero so they have a clear next step.
+ */
+function QuotaFooter({ balance, trialUsed }: QuotaFooterProps) {
+  if (balance > 0) {
+    return (
+      <div className="border-t border-border px-4 py-3">
+        <div className="flex items-center justify-between text-[11px] text-muted-foreground">
+          <span>
+            <span className="font-mono tabular-nums text-foreground">
+              {balance}
+            </span>{' '}
+            scan{balance === 1 ? '' : 's'} remaining
+          </span>
+          <span className="text-[10px] uppercase tracking-[0.06em]">Trial</span>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="border-t border-border px-4 py-3">
+      <div className="text-[11px] font-medium">
+        {trialUsed ? "You've used your trial scan" : 'No scans available'}
+      </div>
+      <div className="mt-0.5 text-[11px] text-muted-foreground">
+        Paid plans coming soon —{' '}
+        <a
+          href="mailto:support@trycomp.ai?subject=Pentest%20scan%20access"
+          className="underline hover:text-foreground"
+        >
+          contact support
+        </a>
+        .
+      </div>
+    </div>
   );
 }
 
@@ -139,16 +199,12 @@ function RunRow({ orgId, run, selected }: RunRowProps) {
           <div className="h-1">
             <Progress value={progressPercent} />
           </div>
-          <div className="flex items-center justify-between font-mono text-[10px] text-muted-foreground">
-            <span>
-              {progress?.completedAgents ?? 0}/{progress?.totalAgents ?? 22}{' '}
-              agents
-            </span>
-            <span>
+          {(elapsedLabel || etaLabel) && (
+            <div className="text-right font-mono text-[10px] text-muted-foreground">
               {elapsedLabel}
               {etaLabel ? ` · eta ~${etaLabel}` : ''}
-            </span>
-          </div>
+            </div>
+          )}
         </div>
       ) : run.status === 'failed' || run.status === 'cancelled' ? (
         <div className="text-[11px] text-destructive">

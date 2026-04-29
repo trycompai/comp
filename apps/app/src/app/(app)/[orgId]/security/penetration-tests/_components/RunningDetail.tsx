@@ -33,7 +33,16 @@ export function RunningDetail({
   const progress = run.progress;
   const completedAgents = progress?.completedAgents ?? 0;
   const totalAgents = progress?.totalAgents ?? 22;
-  const elapsedMs = progress?.elapsedMs ?? 0;
+  // Compute elapsed client-side from `createdAt` rather than trusting
+  // `progress.elapsedMs` from Maced — that field isn't always populated,
+  // which would otherwise show "0m" hours into a real scan. Updates on
+  // each SWR poll (~4s cadence), which is fine granularity for a
+  // multi-hour run.
+  const startedMs = new Date(run.createdAt).getTime();
+  const elapsedMs =
+    Number.isFinite(startedMs) && startedMs > 0
+      ? Math.max(0, Date.now() - startedMs)
+      : 0;
   const elapsedLabel = formatElapsed(elapsedMs);
 
   return (
@@ -51,17 +60,21 @@ export function RunningDetail({
           </h1>
           <div className="flex flex-wrap gap-x-6 gap-y-1 text-xs text-muted-foreground">
             <span>Started {formatReportDate(run.createdAt)}</span>
-            <span>Last update {formatReportDate(run.updatedAt)}</span>
-            <span>Elapsed {elapsedLabel}</span>
+            {run.updatedAt && run.updatedAt !== run.createdAt ? (
+              <span>Last update {formatReportDate(run.updatedAt)}</span>
+            ) : null}
             {run.repoUrl ? <span>Repo: {run.repoUrl}</span> : null}
           </div>
         </header>
 
         <section className="space-y-2">
           <h2 className="text-[11px] font-bold uppercase tracking-[0.08em] text-muted-foreground">
-            Agents · {completedAgents}/{totalAgents} complete
+            Scan progress
           </h2>
           <AgentProgressGrid total={totalAgents} done={completedAgents} />
+          <div className="font-mono text-[11px] text-muted-foreground">
+            Running · {elapsedLabel} elapsed
+          </div>
         </section>
 
         <section className="space-y-2">
@@ -72,21 +85,16 @@ export function RunningDetail({
         </section>
 
         <section className="space-y-2">
-          <div className="flex items-center justify-between">
-            <h2 className="text-[11px] font-bold uppercase tracking-[0.08em] text-muted-foreground">
-              Findings ({issues.length})
-            </h2>
-            <span className="text-xs text-muted-foreground">
-              New findings appear here as agents discover them
-            </span>
-          </div>
+          <h2 className="text-[11px] font-bold uppercase tracking-[0.08em] text-muted-foreground">
+            Findings ({issues.length})
+          </h2>
           <FindingsTable
             issues={issues}
             onRowClick={onOpenFinding}
             highlightedIds={highlighted}
             emptyState={
               <div className="rounded-[var(--radius)] border border-dashed border-border bg-background p-10 text-center text-sm text-muted-foreground">
-                Scanning. Findings will appear here as they are discovered.
+                Scanning. New findings will appear here as agents discover them.
               </div>
             }
           />

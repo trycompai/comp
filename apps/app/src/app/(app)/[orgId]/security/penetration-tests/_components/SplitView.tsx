@@ -15,6 +15,7 @@ import {
   usePenetrationTestEvents,
   usePenetrationTestIssues,
   usePenetrationTests,
+  usePentestCredits,
 } from '../hooks/use-penetration-tests';
 import { CreateRunPanel } from './CreateRunPanel';
 import { DetailPane } from './DetailPane';
@@ -62,6 +63,10 @@ export function SplitView({
     selectedRun?.status,
   );
   const { createReport, isCreating } = useCreatePenetrationTest(orgId);
+  const { credits } = usePentestCredits(orgId);
+  const balance = credits?.balance ?? 0;
+  const trialUsed =
+    credits !== undefined && balance === 0 && credits.totalGranted > 0;
 
   const showEmptyState =
     !listLoading &&
@@ -100,6 +105,23 @@ export function SplitView({
     });
   };
 
+  // Parameterized variants for surfaces that aren't tied to `selectedRun`
+  // (the overview pane needs to download the latest run's report without
+  // making the user click into it first).
+  const handleDownloadMarkdownById = (runId: string) =>
+    downloadArtifact({
+      orgId,
+      path: `/v1/security-penetration-tests/${encodeURIComponent(runId)}/report`,
+      filename: `penetration-test-${runId}.md`,
+    });
+
+  const handleDownloadPdfById = (runId: string) =>
+    downloadArtifact({
+      orgId,
+      path: `/v1/security-penetration-tests/${encodeURIComponent(runId)}/pdf`,
+      filename: `penetration-test-${runId}.pdf`,
+    });
+
   const goToCreate = () =>
     router.push(`/${orgId}/security/penetration-tests/new`);
 
@@ -108,14 +130,22 @@ export function SplitView({
   // split view.
   if (showEmptyState) {
     return (
-      <div className="pt-tokens h-[calc(100vh-4rem)]">
-        <EmptyState onCreateClick={goToCreate} />
+      // Negative margins to escape the app-shell's `p-4 md:p-6` so the
+      // pentest split-view renders edge-to-edge like an IDE rather than
+      // as a padded card. The h-calc subtracts only the global topbar
+      // (4rem); the outer shell padding is undone by `-m-*`.
+      <div className="pt-tokens h-[calc(100vh-4rem)] -m-4 md:-m-6">
+        <EmptyState
+          onCreateClick={goToCreate}
+          balance={balance}
+          trialUsed={trialUsed}
+        />
       </div>
     );
   }
 
   return (
-    <div className="pt-tokens flex h-[calc(100vh-4rem)] min-h-0">
+    <div className="pt-tokens flex h-[calc(100vh-4rem)] min-h-0 -m-4 md:-m-6">
       <div
         aria-hidden={isCreateMode}
         className={isCreateMode ? 'pointer-events-none opacity-45' : ''}
@@ -126,6 +156,8 @@ export function SplitView({
           selectedRunId={selectedRunId}
           onCreateClick={goToCreate}
           overviewActive={selectedRunId === null && !isCreateMode}
+          balance={balance}
+          trialUsed={trialUsed}
         />
       </div>
       <main className="flex-1 min-w-0 flex flex-col">
@@ -134,9 +166,18 @@ export function SplitView({
             orgId={orgId}
             onSubmit={handleCreateSubmit}
             isSubmitting={isCreating}
+            balance={balance}
+            trialUsed={trialUsed}
           />
         ) : selectedRunId === null ? (
-          <OverviewPane runs={reports as PentestRun[]} />
+          <OverviewPane
+            orgId={orgId}
+            runs={reports as PentestRun[]}
+            onCreateClick={goToCreate}
+            canCreate={balance === undefined ? true : balance > 0}
+            onDownloadMarkdown={handleDownloadMarkdownById}
+            onDownloadPdf={handleDownloadPdfById}
+          />
         ) : (
           <DetailPane
             run={selectedRun}

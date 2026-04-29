@@ -158,6 +158,9 @@
         "transform": {
             "^.+\\.(t|j)sx?$": "ts-jest"
         },
+        "transformIgnorePatterns": [
+            "node_modules/(?!(@maced/api-client|better-auth)/)"
+        ],
         "collectCoverageFrom": [
             "**/*.(t|j)s"
         ],

@@ -11,7 +11,7 @@ import {
 import { ArrowLeft, Copy } from '@trycompai/design-system/icons';
 import { toast } from 'sonner';
 import type { PentestIssue } from '@/lib/security/penetration-tests-client';
-import { SEVERITY_BG_VAR, SEVERITY_FG_VAR } from './severity';
+import { SEVERITY_BAR_VAR, SEVERITY_FG_VAR } from './severity';
 
 interface FindingDetailProps {
   issue: PentestIssue;
@@ -29,8 +29,8 @@ const TABS = [
 ] as const;
 
 export function FindingDetail({ issue, onBack }: FindingDetailProps) {
-  const heroBg = SEVERITY_BG_VAR[issue.severity];
-  const heroFg = SEVERITY_FG_VAR[issue.severity];
+  const accentBar = SEVERITY_BAR_VAR[issue.severity];
+  const eyebrowFg = SEVERITY_FG_VAR[issue.severity];
 
   return (
     <div className="min-h-0 overflow-y-auto">
@@ -42,12 +42,17 @@ export function FindingDetail({ issue, onBack }: FindingDetailProps) {
           </Button>
         </div>
 
-        {/* Severity-tinted hero */}
+        {/* Hero — neutral card surface so the severity wash doesn't
+            dominate the page; severity is still instantly readable via
+            the colored left accent bar and the eyebrow label. */}
         <header
-          className="rounded-[var(--radius)] border border-border p-6"
-          style={{ backgroundColor: heroBg, color: heroFg }}
+          className="rounded-[var(--radius)] border border-border border-l-4 bg-card p-6"
+          style={{ borderLeftColor: accentBar }}
         >
-          <div className="text-[10px] font-bold uppercase tracking-[0.08em] opacity-75">
+          <div
+            className="text-[10px] font-bold uppercase tracking-[0.08em]"
+            style={{ color: eyebrowFg }}
+          >
             {issue.severity}
             {issue.cweId ? ` · ${issue.cweId}` : ''}
             {typeof issue.cvssScore === 'number' ? ` · CVSS ${issue.cvssScore}` : ''}
@@ -56,7 +61,7 @@ export function FindingDetail({ issue, onBack }: FindingDetailProps) {
             {issue.title}
           </h1>
           {issue.summary ? (
-            <p className="mt-3 text-sm opacity-90">{issue.summary}</p>
+            <p className="mt-3 text-sm text-muted-foreground">{issue.summary}</p>
           ) : null}
         </header>
 

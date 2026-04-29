@@ -9,14 +9,45 @@ interface AgentActivityLogProps {
 }
 
 /**
- * Collapsible under-the-hood activity log. Collapsed by default per the
- * design handoff — findings are the hero, agent events are secondary.
+ * Drop events that reference our infrastructure provider in any string
+ * field. Customers see Comp.ai end-to-end — exposing Maced-internal tool
+ * names (`mcp__maced-helper__*`) or branded mentions in agent prose
+ * leaks the supplier and looks like internal dev tooling. This is purely
+ * a customer-facing UI filter; the events still exist in the API
+ * response and our logs.
+ *
+ * Also drops `TodoWrite` rows — agent self-bookkeeping that has no
+ * informational value for customers.
+ */
+function isCustomerVisible(event: PentestAgentEvent): boolean {
+  if (event.tool === 'TodoWrite') return false;
+  const fields: (string | null | undefined)[] = [
+    event.agent,
+    event.tool,
+    event.summary,
+    event.description,
+    event.raw,
+  ];
+  for (const field of fields) {
+    if (typeof field === 'string' && field.toLowerCase().includes('maced')) {
+      return false;
+    }
+  }
+  return true;
+}
+
+/**
+ * Collapsible execution trace. Open by default — surfaces the agent
+ * activity stream as proof-of-work without forcing a click. The section
+ * is still wrapped in `<details>` so users can collapse it once they've
+ * seen what they need.
  */
 export function AgentActivityLog({
   events,
-  defaultOpen = false,
+  defaultOpen = true,
 }: AgentActivityLogProps) {
   const recent = [...events]
+    .filter(isCustomerVisible)
     .sort((a, b) => b.timestamp - a.timestamp)
     .slice(0, 200);
 
@@ -28,7 +59,7 @@ export function AgentActivityLog({
       <summary className="flex cursor-pointer items-center justify-between gap-3 px-4 py-3 text-sm hover:bg-muted">
         <div className="flex items-center gap-3">
           <span className="text-[11px] font-bold uppercase tracking-[0.08em] text-muted-foreground">
-            Agent activity
+            Execution trace
           </span>
           <span className="font-mono text-xs text-muted-foreground">
             {events.length}

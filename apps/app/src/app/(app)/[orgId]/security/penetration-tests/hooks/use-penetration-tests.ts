@@ -16,6 +16,7 @@ import useSWR from 'swr';
 import { isReportInProgress, sortReportsByUpdatedAtDesc } from '../lib';
 
 const reportListEndpoint = '/v1/security-penetration-tests';
+const creditsStatusEndpoint = '/v1/pentest-credits/status';
 const reportEndpoint = (reportId: string): string =>
   `/v1/security-penetration-tests/${encodeURIComponent(reportId)}`;
 const reportProgressEndpoint = (reportId: string): string =>
@@ -270,6 +271,42 @@ export function usePenetrationTestEvents(
   };
 }
 
+export interface PentestCreditsStatus {
+  balance: number;
+  totalGranted: number;
+  totalConsumed: number;
+  lastGrantSource: string;
+}
+
+const creditsKey = (organizationId: string): ReportsSWRKey =>
+  [creditsStatusEndpoint, organizationId] as const;
+
+/**
+ * Wallet status for the org. Drives the "X runs remaining" badge in the
+ * RunList header and gates the "+ New" button. Re-fetched after each
+ * successful create via SWR's `mutate(creditsKey(...))`.
+ */
+export function usePentestCredits(organizationId: string): {
+  credits: PentestCreditsStatus | undefined;
+  isLoading: boolean;
+  error: Error | undefined;
+  mutate: () => Promise<PentestCreditsStatus | undefined>;
+} {
+  const shouldFetch = Boolean(organizationId);
+  const { data, error, mutate } = useSWR<PentestCreditsStatus>(
+    shouldFetch ? creditsKey(organizationId) : null,
+    fetchApiJson,
+    { revalidateOnFocus: true },
+  );
+
+  return {
+    credits: data,
+    isLoading: shouldFetch && data === undefined && !error,
+    error: error as Error | undefined,
+    mutate,
+  };
+}
+
 export function useCreatePenetrationTest(
   organizationId: string,
 ): UseCreatePenetrationTestReturn {
@@ -349,6 +386,9 @@ export function useCreatePenetrationTest(
         }
         void mutate(reportListKey(organizationId));
         void mutate(reportKey(organizationId, reportId));
+        // Balance changed — kick the credits cache so the badge and the
+        // "+ New" gating reflect the new balance immediately.
+        void mutate(creditsKey(organizationId));
         return data;
       } catch (reportError) {
         const message =

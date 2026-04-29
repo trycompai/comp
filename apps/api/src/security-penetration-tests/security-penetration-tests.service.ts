@@ -23,6 +23,7 @@ import {
 } from '@maced/api-client';
 
 import type { CreatePenetrationTestDto } from './dto/create-penetration-test.dto';
+import { PentestCreditsService } from './pentest-credits.service';
 
 export type PentestReportStatus =
   | 'provisioning'
@@ -86,7 +87,7 @@ export class SecurityPenetrationTestsService {
   private readonly logger = new Logger(SecurityPenetrationTestsService.name);
   private readonly macedClient: MacedClient;
 
-  constructor() {
+  constructor(private readonly credits: PentestCreditsService) {
     const apiKey = process.env.MACED_API_KEY;
     if (!apiKey) {
       // Throw at construction so the app fails loudly on boot, not on first request.
@@ -96,6 +97,14 @@ export class SecurityPenetrationTestsService {
       apiKey,
       baseUrl: process.env.MACED_API_BASE_URL,
       userAgent: 'comp-api',
+      // Disable SDK-level retries. The 0.9.1 retry wrapper reuses the same
+      // Request object across attempts, which throws "Cannot construct a
+      // Request with a Request object that has already been used" on any
+      // retriable status (408/425/429/500/502/503/504) when the request
+      // has a body. The cryptic error masks the real upstream failure.
+      // We retry where it matters at the application layer (ownership
+      // persistence in createReport).
+      retry: { maxAttempts: 1 },
     });
   }
 
@@ -189,6 +198,38 @@ export class SecurityPenetrationTestsService {
   ): Promise<SecurityPenetrationTest> {
     const resolvedWebhookUrl = this.resolveWebhookUrl(payload.webhookUrl);
 
+    // Debit FIRST so concurrent fast-clicks block at the cheap DB
+    // conditional update before any of them reach Maced. Without this,
+    // double-clicks would race past the balance check, all hit Maced
+    // (creating multiple paid runs), and only one would win the debit —
+    // we'd burn money on orphaned provider-side runs. Atomic
+    // `updateMany WHERE balance > 0` guarantees only one decrement
+    // succeeds.
+    try {
+      await this.credits.debitOrThrow(organizationId);
+    } catch (error) {
+      if (
+        error instanceof HttpException &&
+        error.getStatus() === HttpStatus.PAYMENT_REQUIRED
+      ) {
+        // Record the blocked attempt so support / compliance can answer
+        // "did the user try to scan after their trial was used?". Best-
+        // effort — never let an audit-log failure hide the 402 from the
+        // user.
+        await this.credits.writePentestAuditEntry({
+          organizationId,
+          action: 'pentest_create_blocked',
+          runId: null,
+          description: 'Pentest create blocked: no credits remaining',
+          metadata: {
+            reason: 'pentest_credits_exhausted',
+            targetUrl: payload.targetUrl,
+          },
+        });
+      }
+      throw error;
+    }
+
     // Public repos only. We deliberately do NOT auto-attach the org's
     // GitHub OAuth token — that would silently share Comp customer creds
     // with a third-party vendor. Private-repo support belongs behind an
@@ -214,13 +255,26 @@ export class SecurityPenetrationTestsService {
       },
     };
 
-    const createdReport = await this.callMaced(
-      () => this.macedClient.pentests.create(body),
-      'creating penetration test',
-    );
+    let createdReport: PentestCreated;
+    try {
+      createdReport = await this.callMaced(
+        () => this.macedClient.pentests.create(body),
+        'creating penetration test',
+      );
+    } catch (error) {
+      // Provider call failed after we debited. Refund so the user isn't
+      // charged for a run that never started.
+      await this.refundQuietly(organizationId, 'pending', 'maced_create_failed');
+      throw error;
+    }
 
     const providerRunId = createdReport.id;
     if (!providerRunId) {
+      await this.refundQuietly(
+        organizationId,
+        'pending',
+        'maced_missing_run_id',
+      );
       throw new HttpException(
         { error: 'Create response missing report identifier' },
         HttpStatus.BAD_GATEWAY,
@@ -232,6 +286,16 @@ export class SecurityPenetrationTestsService {
       providerRunId,
     );
     if (!ownershipPersisted) {
+      // We debited and Maced created the run, but our DB rejected the
+      // ownership row 3x. Refund — the user can't see the run, so they
+      // shouldn't pay for it. The Maced run is orphaned (no
+      // ownership) but Maced has the `compOrganizationId` metadata if
+      // support ever needs to clean it up.
+      await this.refundQuietly(
+        organizationId,
+        providerRunId,
+        'ownership_persist_failed',
+      );
       throw new HttpException(
         {
           error:
@@ -395,11 +459,115 @@ export class SecurityPenetrationTestsService {
         (issueId ? ` issue=${issueId}` : ''),
     );
 
+    // Refund the credit on terminal failure events. The user paid for a
+    // run that didn't deliver value, so they shouldn't lose the credit.
+    // Idempotent via the run row's `creditRefundedAt` column — webhook
+    // redelivery cannot double-credit.
+    if (event.type === 'pentest.failed' || event.type === 'pentest.cancelled') {
+      await this.refundOnTerminalFailure(event.data.pentestId, event.type);
+    }
+
+    // Successful completion deserves its own audit-log row so the
+    // run's lifecycle is durably recorded ("scan completed for X with N
+    // findings"). Without this the audit log shows the create but not
+    // the result, and the only completion record is in NestJS logs /
+    // Maced.
+    if (event.type === 'pentest.completed') {
+      await this.auditPentestCompleted(event.data);
+    }
+
     return {
       success: true,
       eventType: event.type,
       eventId: event.id,
     };
+  }
+
+  /**
+   * Look up the run's owning org and write a `pentest_completed` audit
+   * row. Quiet on orphan runs (no ownership row → can't attribute) —
+   * those are rare race-condition artifacts and don't represent
+   * customer-visible state.
+   */
+  private async auditPentestCompleted(
+    data: {
+      pentestId: string;
+      targetUrl: string;
+      issueCount: number;
+      durationMs: number;
+      agentCount: number;
+    },
+  ): Promise<void> {
+    const run = await db.securityPenetrationTestRun.findUnique({
+      where: { providerRunId: data.pentestId },
+      select: { organizationId: true },
+    });
+    if (!run) {
+      this.logger.log(
+        `[Webhook] pentest.completed for unowned run ${data.pentestId} — skipping audit`,
+      );
+      return;
+    }
+    await this.credits.writePentestAuditEntry({
+      organizationId: run.organizationId,
+      action: 'pentest_completed',
+      runId: data.pentestId,
+      description: `Pentest completed for ${data.targetUrl} — ${data.issueCount} finding${data.issueCount === 1 ? '' : 's'}, ${this.formatDurationMs(data.durationMs)}`,
+      metadata: {
+        targetUrl: data.targetUrl,
+        issueCount: data.issueCount,
+        durationMs: data.durationMs,
+        agentCount: data.agentCount,
+      },
+    });
+  }
+
+  /**
+   * Atomically marks the run as refunded and credits the org's wallet.
+   * The conditional `where: { creditRefundedAt: null }` ensures the
+   * second delivery of the same event sees the marker and short-circuits
+   * — the wallet stays correct even if Maced retries the webhook.
+   */
+  private async refundOnTerminalFailure(
+    providerRunId: string,
+    eventType: 'pentest.failed' | 'pentest.cancelled',
+  ): Promise<void> {
+    const claimed = await db.securityPenetrationTestRun.updateMany({
+      where: { providerRunId, creditRefundedAt: null },
+      data: { creditRefundedAt: new Date() },
+    });
+
+    if (claimed.count === 0) {
+      // Either we don't own this run (orphan from a fast-click race —
+      // ownership row never persisted) OR the credit has already been
+      // refunded. Either way: do nothing further.
+      this.logger.log(
+        `[Webhook] ${eventType} refund skipped run=${providerRunId} (no ownership row or already refunded)`,
+      );
+      return;
+    }
+
+    const run = await db.securityPenetrationTestRun.findUnique({
+      where: { providerRunId },
+      select: { organizationId: true },
+    });
+    if (!run) {
+      // Race: the row was deleted between updateMany and findUnique.
+      // Vanishingly rare; log and bail.
+      this.logger.warn(
+        `[Webhook] ${eventType} run row vanished after claim run=${providerRunId}`,
+      );
+      return;
+    }
+
+    await this.refundQuietly(run.organizationId, providerRunId, eventType);
+  }
+
+  private formatDurationMs(ms: number): string {
+    const totalMin = Math.max(Math.round(ms / 60_000), 0);
+    const hours = Math.floor(totalMin / 60);
+    const minutes = totalMin % 60;
+    return hours > 0 ? `${hours}h ${minutes}m` : `${totalMin}m`;
   }
 
   private trimTrailingSlashes(value: string): string {
@@ -599,10 +767,40 @@ export class SecurityPenetrationTestsService {
     };
   }
 
+  /**
+   * Refund a credit, swallowing any error so the caller's primary failure
+   * path remains intact. The original error has already been logged by
+   * the caller — losing the refund would be unfortunate but should never
+   * promote into a different failure mode for the user.
+   */
+  private async refundQuietly(
+    organizationId: string,
+    runId: string,
+    reason: string,
+  ): Promise<void> {
+    try {
+      await this.credits.refund(organizationId, runId, reason);
+    } catch (error) {
+      this.logger.error(
+        `Refund failed for org=${organizationId} run=${runId} reason=${reason}: ${
+          error instanceof Error ? error.message : String(error)
+        }`,
+      );
+    }
+  }
+
   private async persistRunOwnership(
     organizationId: string,
     reportId: string,
   ): Promise<void> {
+    // Defensive: if a row already exists for this providerRunId, do NOT
+    // overwrite its organizationId. Maced generates unique providerRunIds
+    // per create, so in normal operation the create branch is the only
+    // one that fires. But if any future bug or replay attempted to "take
+    // over" an existing run by submitting it with a different orgId, the
+    // empty `update: {}` ensures the original owner stays intact. The
+    // upsert pattern (vs. plain create) is kept to make `createReport`
+    // idempotent against retry-style transient errors.
     await db.securityPenetrationTestRun.upsert({
       where: {
         providerRunId: reportId,
@@ -611,9 +809,7 @@ export class SecurityPenetrationTestsService {
         organizationId,
         providerRunId: reportId,
       },
-      update: {
-        organizationId,
-      },
+      update: {},
     });
   }
 
