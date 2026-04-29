@@ -25,7 +25,7 @@
     {
       "slug": "betterstack_incident_response",
       "name": "Incident Response",
-      "description": "Checks BetterStack for open incidents requiring response",
+      "description": "Checks for unresolved incidents in BetterStack and verifies they are being acknowledged",
       "defaultSeverity": "high",
       "enabled": true
     }

@@ -8,13 +8,13 @@
   "authConfig": {
     "type": "custom",
     "config": {
-      "setupInstructions": "1. Log in to Affinity at https://affinity.co\n2. Go to Settings → API\n3. Copy your API Key\n4. Base64 encode 'api_key:' (with colon): echo -n 'apikey:' | base64\n5. Enter the encoded value below",
+      "setupInstructions": "1. Log in to Affinity at https://affinity.co\n2. Go to Settings > API\n3. Copy your API Key\n4. Paste it below",
       "credentialFields": [
         {
-          "label": "Encoded API Key",
+          "label": "API Key",
           "type": "password",
           "required": true,
-          "helpText": "Base64 encode 'api_key:' (with trailing colon). Found in Affinity Settings → API. Command: echo -n 'apikey:' | base64"
+          "helpText": "Found in Affinity Settings > API"
         }
       ]
     }

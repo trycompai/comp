@@ -1,0 +1,71 @@
+{
+  "slug": "arctic-wolf",
+  "name": "Arctic Wolf",
+  "description": "Monitor Arctic Wolf managed detection and response (MDR) platform for security ticket management, incident tracking, and threat response compliance",
+  "category": "Security",
+  "docsUrl": "https://docs.arcticwolf.com/en/developer-and-oem/ticket-api/arctic-wolf-ticket-api",
+  "baseUrl": "https://eloc.global-prod.arcticwolf.net",
+  "authConfig": {
+    "type": "custom",
+    "config": {
+      "setupInstructions": "1. Sign in to the Arctic Wolf Unified Portal at https://dashboard.arcticwolf.com\n2. Go to Organization Profile > Personal API Keys\n3. Click Create an API Key, give it a name, and select an expiry period\n4. Copy the API key token (you will not be able to view it again)\n5. Find your POD and Organization UUID by calling the Organizations API:\n   curl https://eloc.global-prod.arcticwolf.net/api/v1/organizations -H \"Authorization: Bearer YOUR_API_KEY\"\n6. Note the 'pod' value (e.g., us001) and the 'id' value (your Organization UUID) from the response",
+      "credentialFields": [
+        {
+          "label": "Personal API Key",
+          "type": "password",
+          "required": true,
+          "helpText": "Generate in Arctic Wolf Unified Portal: Organization Profile > Personal API Keys > Create an API Key"
+        },
+        {
+          "label": "POD (Region)",
+          "type": "text",
+          "required": true,
+          "helpText": "Your Arctic Wolf POD name (e.g., us001, us002). Find it via the Organizations API or ask your Concierge Security Team."
+        },
+        {
+          "label": "Organization UUID",
+          "type": "text",
+          "required": true,
+          "helpText": "Your Arctic Wolf organization UUID. Find it via the Organizations API or in the Unified Portal."
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "arctic_wolf_api_connectivity",
+      "name": "API Connectivity",
+      "description": "Verifies connectivity to the Arctic Wolf API and that the Personal API Key is valid by retrieving the organization list",
+      "defaultSeverity": "high",
+      "enabled": true
+    },
+    {
+      "slug": "arctic_wolf_incident_response",
+      "name": "Incident Response Monitoring",
+      "description": "Checks for open and recent incident tickets in Arctic Wolf to verify active incident response monitoring",
+      "defaultSeverity": "high",
+      "enabled": true
+    },
+    {
+      "slug": "arctic_wolf_ticket_management",
+      "name": "Ticket Management",
+      "description": "Reviews all Arctic Wolf security tickets to ensure active ticket management and timely resolution",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "arctic_wolf_threat_detection",
+      "name": "Threat Detection Coverage",
+      "description": "Verifies Arctic Wolf MDR is actively monitoring by checking for recent tickets that indicate threat detection activity",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 4,
+  "isActive": true
+}

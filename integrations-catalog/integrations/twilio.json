@@ -8,19 +8,19 @@
   "authConfig": {
     "type": "custom",
     "config": {
-      "setupInstructions": "1. Go to https://console.twilio.com — copy your Account SID and Auth Token\n2. Encode credentials: base64('AccountSID:AuthToken')\n3. Enter both the encoded value and raw Account SID below",
+      "setupInstructions": "1. Go to https://console.twilio.com\n2. Copy your Account SID and Auth Token from the dashboard\n3. Paste both values below",
       "credentialFields": [
-        {
-          "label": "Encoded Credentials",
-          "type": "password",
-          "required": true,
-          "helpText": "Base64 encode your Account SID and Auth Token: base64('AccountSID:AuthToken'). Use https://www.base64encode.org/"
-        },
         {
           "label": "Account SID",
           "type": "text",
           "required": true,
           "helpText": "Your Twilio Account SID from the console dashboard"
+        },
+        {
+          "label": "Auth Token",
+          "type": "password",
+          "required": true,
+          "helpText": "Your Twilio Auth Token from the console dashboard"
         }
       ]
     }
