@@ -8,13 +8,13 @@
   "authConfig": {
     "type": "custom",
     "config": {
-      "setupInstructions": "1. Log in to Ashby\n2. Go to Settings → Integrations → API Keys\n3. Create a new API key\n4. Run: echo -n 'YOUR_API_KEY:' | base64\n5. Paste the output below",
+      "setupInstructions": "1. Log in to Ashby\n2. Go to Settings > Integrations > API Keys\n3. Create a new API key\n4. Paste the API key below",
       "credentialFields": [
         {
-          "label": "Basic Auth Token",
+          "label": "API Key",
           "type": "password",
           "required": true,
-          "helpText": "Base64-encode your API key with a colon: echo -n 'your_api_key:' | base64"
+          "helpText": "Found in Ashby Settings > Integrations > API Keys"
         }
       ]
     }

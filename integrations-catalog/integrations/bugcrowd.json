@@ -1,0 +1,52 @@
+{
+  "slug": "bugcrowd",
+  "name": "Bugcrowd",
+  "description": "Monitor bug bounty programs, vulnerability submissions, and reward configurations on the Bugcrowd platform for security compliance",
+  "category": "Security",
+  "docsUrl": "https://docs.bugcrowd.com/api/getting-started",
+  "baseUrl": "https://api.bugcrowd.com",
+  "authConfig": {
+    "type": "custom",
+    "config": {
+      "setupInstructions": "Prerequisites: You must have an Organization Owner or Admin role on your Bugcrowd organization to generate API credentials with access to all programs and submissions.\n\n1. Log into Bugcrowd at https://tracker.bugcrowd.com\n2. Click your profile picture in the top right\n3. Select 'API Credentials' from the dropdown\n4. Enter a descriptive name (e.g., 'CompAI Integration') and click 'Create credentials'\n5. Copy the full token (username:password format) before leaving the page - it won't be shown again\n6. Paste the token here\n\nNote: The API token format is username:password (colon-separated). Ensure you copy both parts.",
+      "credentialFields": [
+        {
+          "label": "API Token",
+          "type": "password",
+          "required": true,
+          "helpText": "Your Bugcrowd API token in the format username:password (e.g., myuser:abc123def456). Generate it from your Bugcrowd profile > API Credentials."
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "bugcrowd_active_programs",
+      "name": "Active Bug Bounty Programs",
+      "description": "Verifies that the organization has active bug bounty programs on Bugcrowd, indicating an ongoing commitment to secure code through external vulnerability testing",
+      "defaultSeverity": "high",
+      "enabled": true
+    },
+    {
+      "slug": "bugcrowd_submission_triage",
+      "name": "Vulnerability Submission Triage & Resolution",
+      "description": "Checks that vulnerability submissions on Bugcrowd are being actively triaged and resolved, demonstrating effective incident response processes",
+      "defaultSeverity": "high",
+      "enabled": true
+    },
+    {
+      "slug": "bugcrowd_program_config",
+      "name": "Program Reward & Scope Configuration",
+      "description": "Verifies that Bugcrowd programs have properly configured reward ranges and target scopes, ensuring effective monitoring and alerting for the bug bounty program",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 3,
+  "isActive": true
+}

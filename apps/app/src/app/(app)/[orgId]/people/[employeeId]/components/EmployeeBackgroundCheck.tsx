@@ -2,34 +2,26 @@
 
 import { usePermissions } from '@/hooks/use-permissions';
 import { apiClient } from '@/lib/api-client';
-import { zodResolver } from '@hookform/resolvers/zod';
 import type { Member, User } from '@db';
+import { zodResolver } from '@hookform/resolvers/zod';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import useSWR from 'swr';
+import { BackgroundCheckDetailsForm } from './BackgroundCheckDetailsForm';
 import { BackgroundCheckStatusView } from './BackgroundCheckStatusView';
 import { OverviewStep } from './BackgroundCheckWizardParts';
-import { BackgroundCheckDetailsForm } from './BackgroundCheckDetailsForm';
 import { CustomBackgroundCheckUpload } from './CustomBackgroundCheckUpload';
+import { PaymentMethodUpdateDialog } from './PaymentMethodUpdateDialog';
 import {
   backgroundCheckSchema,
   clearPendingBackgroundCheckRequest,
-  type BackgroundCheckFormValues,
   readPendingBackgroundCheckRequest,
   writePendingBackgroundCheckRequest,
+  type BackgroundCheckFormValues,
 } from './backgroundCheckForm';
-import type {
-  BackgroundCheckBillingStatus,
-  BackgroundCheckRecord,
-} from './backgroundCheckTypes';
-
-export type {
-  BackgroundCheckBillingStatus,
-  BackgroundCheckRecord,
-  BackgroundCheckStatus,
-} from './backgroundCheckTypes';
+import type { BackgroundCheckBillingStatus, BackgroundCheckRecord } from './backgroundCheckTypes';
 
 interface EmployeeBackgroundCheckProps {
   employee: Member & { user: User };
@@ -63,25 +55,27 @@ export function EmployeeBackgroundCheck({
     useSWR<BackgroundCheckRecord | null>(
       [`/v1/people/${employee.id}/background-check`, organizationId],
       async ([endpoint]) => {
-        const response = await apiClient.get<BackgroundCheckRecord | null>(endpoint, organizationId);
+        const response = await apiClient.get<BackgroundCheckRecord | null>(
+          endpoint,
+          organizationId,
+        );
         if (response.error) throw new Error(response.error);
         return response.data ?? null;
       },
       { fallbackData: initialBackgroundCheck },
     );
 
-  const { data: billingStatus, mutate: mutateBillingStatus } =
-    useSWR<BackgroundCheckBillingStatus>(
-      ['/v1/background-check-billing/status', organizationId],
-      async ([endpoint]) => {
-        const response = await apiClient.get<BackgroundCheckBillingStatus>(endpoint, organizationId);
-        if (response.error || !response.data) {
-          throw new Error(response.error ?? 'Failed to load billing status');
-        }
-        return response.data;
-      },
-      { fallbackData: initialBillingStatus },
-    );
+  const { data: billingStatus, mutate: mutateBillingStatus } = useSWR<BackgroundCheckBillingStatus>(
+    ['/v1/background-check-billing/status', organizationId],
+    async ([endpoint]) => {
+      const response = await apiClient.get<BackgroundCheckBillingStatus>(endpoint, organizationId);
+      if (response.error || !response.data) {
+        throw new Error(response.error ?? 'Failed to load billing status');
+      }
+      return response.data;
+    },
+    { fallbackData: initialBillingStatus },
+  );
 
   const form = useForm<BackgroundCheckFormValues>({
     resolver: zodResolver(backgroundCheckSchema),
@@ -140,7 +134,9 @@ export function EmployeeBackgroundCheck({
 
       if (response.error || !response.data) {
         if (response.status === 402) {
-          setPaymentIssue(response.error ?? 'Payment failed. Update billing details and try again.');
+          setPaymentIssue(
+            response.error ?? 'Payment failed. Update billing details and try again.',
+          );
           return false;
         }
         toast.error(response.error ?? 'Failed to request background check');
@@ -267,20 +263,25 @@ export function EmployeeBackgroundCheck({
       )}
       {visibleWizardStep === 'details' && (
         <BackgroundCheckDetailsForm
-          canManageBilling={canManageBilling}
           canRequest={canRequest}
           form={form}
           isOpeningBilling={isOpeningBilling}
           isRequesting={isRequesting}
           billingSetupComplete={billingSetupComplete}
-          paymentIssue={paymentIssue}
           hasPaymentMethod={hasPaymentMethod}
           canGoBack={!hasPaymentMethod}
           onBack={() => setWizardStep('overview')}
-          onOpenBilling={handleOpenBilling}
           onSubmit={handleComplete}
         />
       )}
+      <PaymentMethodUpdateDialog
+        canManageBilling={canManageBilling}
+        isOpeningBilling={isOpeningBilling}
+        issue={paymentIssue}
+        open={paymentIssue !== null}
+        onOpenChange={(open) => !open && setPaymentIssue(null)}
+        onUpdatePaymentMethod={() => void handleOpenBilling(form.getValues())}
+      />
       <CustomBackgroundCheckUpload
         canRequest={canRequest}
         employeeEmail={employee.user.email}

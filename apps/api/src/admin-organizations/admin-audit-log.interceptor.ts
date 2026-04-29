@@ -20,6 +20,10 @@ const SEGMENT_TO_RESOURCE: Record<
   tasks: { entity: AuditLogEntityType.task, singular: 'task' },
   vendors: { entity: AuditLogEntityType.vendor, singular: 'vendor' },
   context: { entity: AuditLogEntityType.organization, singular: 'context' },
+  'pentest-credits': {
+    entity: AuditLogEntityType.pentest,
+    singular: 'pentest credits',
+  },
 };
 
 const SPECIAL_ACTION_DESCRIPTIONS: Record<string, string> = {

@@ -9,10 +9,41 @@ CREATE TYPE "BackgroundCheckStatus" AS ENUM (
   'cancelled'
 );
 
+-- CreateTable
+CREATE TABLE IF NOT EXISTS "organization_billing" (
+  "id" TEXT NOT NULL DEFAULT generate_prefixed_cuid('obil'::text),
+  "organization_id" TEXT NOT NULL,
+  "stripe_customer_id" TEXT NOT NULL,
+  "stripe_background_check_payment_method_id" TEXT,
+  "background_check_payment_method_setup_at" TIMESTAMP(3),
+  "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  "updated_at" TIMESTAMP(3) NOT NULL,
+
+  CONSTRAINT "organization_billing_pkey" PRIMARY KEY ("id")
+);
+
 -- AlterTable
 ALTER TABLE "organization_billing"
-ADD COLUMN "stripe_background_check_payment_method_id" TEXT,
-ADD COLUMN "background_check_payment_method_setup_at" TIMESTAMP(3);
+ADD COLUMN IF NOT EXISTS "stripe_background_check_payment_method_id" TEXT,
+ADD COLUMN IF NOT EXISTS "background_check_payment_method_setup_at" TIMESTAMP(3);
+
+-- CreateIndex
+CREATE UNIQUE INDEX IF NOT EXISTS "organization_billing_organization_id_key" ON "organization_billing"("organization_id");
+
+-- AddForeignKey
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1
+    FROM pg_constraint
+    WHERE conname = 'organization_billing_organization_id_fkey'
+  ) THEN
+    ALTER TABLE "organization_billing"
+    ADD CONSTRAINT "organization_billing_organization_id_fkey"
+    FOREIGN KEY ("organization_id") REFERENCES "Organization"("id")
+    ON DELETE CASCADE ON UPDATE CASCADE;
+  END IF;
+END $$;
 
 -- CreateTable
 CREATE TABLE "background_check_requests" (

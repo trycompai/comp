@@ -1,7 +1,7 @@
 import { apiClient } from '@/lib/api-client';
+import type { Member, User } from '@db';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import type { Member, User } from '@db';
 import { SWRConfig } from 'swr';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { EmployeeBackgroundCheck } from './EmployeeBackgroundCheck';
@@ -114,7 +114,9 @@ describe('EmployeeBackgroundCheck', () => {
   it('skips the overview when a payment method is already saved', () => {
     renderSection();
 
-    expect(screen.queryByText('Streamline background checks now in Comp AI')).not.toBeInTheDocument();
+    expect(
+      screen.queryByText('Streamline background checks now in Comp AI'),
+    ).not.toBeInTheDocument();
     expect(screen.getByLabelText('Personal email')).toBeInTheDocument();
     expect(
       screen.getByText('Your saved card will be charged $49 for this background check.'),
@@ -186,9 +188,9 @@ describe('EmployeeBackgroundCheck', () => {
       }),
       'org_1',
     );
-    expect(
-      window.sessionStorage.getItem('background-check:org_1:mem_1:pending-request'),
-    ).toContain('ada@example.com');
+    expect(window.sessionStorage.getItem('background-check:org_1:mem_1:pending-request')).toContain(
+      'ada@example.com',
+    );
   });
 
   it('restores the pending check after Stripe setup before completing it', async () => {
@@ -253,9 +255,9 @@ describe('EmployeeBackgroundCheck', () => {
     );
     expect(await screen.findByText('Payment method saved')).toBeInTheDocument();
     expect(screen.getByDisplayValue('ada@example.com')).toBeInTheDocument();
-    expect(
-      window.sessionStorage.getItem('background-check:org_1:mem_1:pending-request'),
-    ).toContain('ada@example.com');
+    expect(window.sessionStorage.getItem('background-check:org_1:mem_1:pending-request')).toContain(
+      'ada@example.com',
+    );
 
     await user.click(screen.getByRole('button', { name: /complete/i }));
 
@@ -274,19 +276,29 @@ describe('EmployeeBackgroundCheck', () => {
     ).toBeNull();
   });
 
-  it('shows an update billing callout when payment fails', async () => {
+  it('shows an update payment dialog when payment fails', async () => {
     const user = userEvent.setup();
-    vi.mocked(apiClient.post).mockResolvedValueOnce({
-      error: 'Background check payment failed. Update billing and try again.',
-      status: 402,
-    });
+    vi.mocked(apiClient.post)
+      .mockResolvedValueOnce({
+        error: 'Background check payment failed. Update billing and try again.',
+        status: 402,
+      })
+      .mockResolvedValueOnce({ data: {}, status: 200 });
     renderSection();
 
     await user.type(screen.getByLabelText('Personal email'), 'ada@example.com');
     await user.click(screen.getByRole('button', { name: /complete/i }));
 
-    expect(await screen.findByText('Update billing details')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /update billing/i })).toBeInTheDocument();
-  });
+    expect(
+      await screen.findByRole('heading', { name: /update payment method/i }),
+    ).toBeInTheDocument();
 
+    await user.click(screen.getByRole('button', { name: /update payment method/i }));
+
+    expect(apiClient.post).toHaveBeenCalledWith(
+      '/v1/background-check-billing/portal',
+      expect.objectContaining({ returnUrl: expect.stringContaining('/org_1/people/mem_1') }),
+      'org_1',
+    );
+  });
 });

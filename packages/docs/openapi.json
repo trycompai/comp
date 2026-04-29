@@ -12058,6 +12058,7 @@
                 "hipaa",
                 "soc2_type1",
                 "soc2_type2",
+                "soc3",
                 "pci_dss",
                 "nen_7510",
                 "iso_9001"
@@ -23973,6 +23974,7 @@
               "hipaa",
               "soc2_type1",
               "soc2_type2",
+              "soc3",
               "pci_dss",
               "nen_7510",
               "iso_9001"
@@ -24014,6 +24016,7 @@
               "hipaa",
               "soc2_type1",
               "soc2_type2",
+              "soc3",
               "pci_dss",
               "nen_7510",
               "iso_9001"
@@ -24056,6 +24059,7 @@
               "hipaa",
               "soc2_type1",
               "soc2_type2",
+              "soc3",
               "pci_dss",
               "nen_7510",
               "iso_9001"

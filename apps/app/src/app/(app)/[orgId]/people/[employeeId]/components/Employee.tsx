@@ -13,13 +13,10 @@ import {
 import { useSearchParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import type { DeviceWithChecks, FleetPolicy, Host } from '../../devices/types';
-import {
-  EmployeeBackgroundCheck,
-  type BackgroundCheckBillingStatus,
-  type BackgroundCheckRecord,
-} from './EmployeeBackgroundCheck';
-import { EmployeeDevice } from './EmployeeDevice';
+import type { BackgroundCheckBillingStatus, BackgroundCheckRecord } from './backgroundCheckTypes';
+import { EmployeeBackgroundCheck } from './EmployeeBackgroundCheck';
 import { EmployeeDetails } from './EmployeeDetails';
+import { EmployeeDevice } from './EmployeeDevice';
 import { EmployeePageHeader } from './EmployeePageHeader';
 import { EmployeePolicies } from './EmployeePolicies';
 import { EmployeeHipaaTraining, EmployeeTrainingVideos } from './EmployeeTraining';

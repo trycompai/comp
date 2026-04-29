@@ -7,6 +7,7 @@ import { EvidenceFormsModule } from '../evidence-forms/evidence-forms.module';
 import { PoliciesModule } from '../policies/policies.module';
 import { CommentsModule } from '../comments/comments.module';
 import { AttachmentsModule } from '../attachments/attachments.module';
+import { SecurityPenetrationTestsModule } from '../security-penetration-tests/security-penetration-tests.module';
 import { AdminOrganizationsController } from './admin-organizations.controller';
 import { AdminOrganizationsService } from './admin-organizations.service';
 import { PurgeOrganizationService } from './purge-organization.service';
@@ -18,6 +19,7 @@ import { AdminTasksController } from './admin-tasks.controller';
 import { AdminVendorsController } from './admin-vendors.controller';
 import { AdminContextController } from './admin-context.controller';
 import { AdminEvidenceController } from './admin-evidence.controller';
+import { AdminPentestCreditsController } from './admin-pentest-credits.controller';
 
 @Module({
   imports: [
@@ -29,6 +31,7 @@ import { AdminEvidenceController } from './admin-evidence.controller';
     PoliciesModule,
     CommentsModule,
     AttachmentsModule,
+    SecurityPenetrationTestsModule,
   ],
   controllers: [
     AdminOrganizationsController,
@@ -38,6 +41,7 @@ import { AdminEvidenceController } from './admin-evidence.controller';
     AdminVendorsController,
     AdminContextController,
     AdminEvidenceController,
+    AdminPentestCreditsController,
   ],
   providers: [
     AdminOrganizationsService,

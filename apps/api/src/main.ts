@@ -13,11 +13,13 @@ import { adminAuthRateLimiter } from './auth/admin-rate-limit.middleware';
 import { originCheckMiddleware } from './auth/origin-check.middleware';
 import { mkdirSync, writeFileSync, existsSync } from 'fs';
 
-let app: INestApplication | null = null;
-
-interface ExpressRawBodyRequest extends express.Request {
-  rawBody?: Buffer;
+declare module 'express-serve-static-core' {
+  interface Request {
+    rawBody?: Buffer;
+  }
 }
+
+let app: INestApplication | null = null;
 
 function describeServer(baseUrl: string): string {
   if (baseUrl.includes('api.staging.trycomp.ai')) return 'Staging API Server';
@@ -82,12 +84,26 @@ async function bootstrap(): Promise<void> {
   // request stream to properly read the body (including OAuth callbackURL).
   // Express-level middleware runs BEFORE NestJS module middleware, so without this
   // skip, express.json() would consume the stream before better-auth's handler.
-  const jsonParser = express.json({
+  // Routes that need the exact request bytes for HMAC signature verification.
+  // Anything matched here gets `req.rawBody` populated; everything else uses
+  // the standard parser which discards the buffer to avoid keeping a 150MB
+  // copy of every JSON payload alive on the heap.
+  const RAW_BODY_PATHS = [
+    '/v1/security-penetration-tests/webhook',
+    '/security-penetration-tests/webhook',
+    '/v1/background-checks/webhook',
+    '/background-checks/webhook',
+  ];
+  const needsRawBody = (req: express.Request): boolean =>
+    RAW_BODY_PATHS.some((p) => req.path.endsWith(p));
+
+  const jsonParserWithRaw = express.json({
     limit: '150mb',
     verify: (req, _res, buf) => {
-      (req as ExpressRawBodyRequest).rawBody = Buffer.from(buf);
+      req.rawBody = Buffer.from(buf);
     },
   });
+  const jsonParser = express.json({ limit: '150mb' });
   const urlencodedParser = express.urlencoded({
     limit: '150mb',
     extended: true,
@@ -101,7 +117,8 @@ async function bootstrap(): Promise<void> {
       if (req.path.startsWith('/api/auth')) {
         return next();
       }
-      jsonParser(req, res, (err?: unknown) => {
+      const parser = needsRawBody(req) ? jsonParserWithRaw : jsonParser;
+      parser(req, res, (err?: unknown) => {
         if (err) return next(err);
         urlencodedParser(req, res, next);
       });

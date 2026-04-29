@@ -51,8 +51,22 @@
       "description": "Verifies that Datadog monitors have notification channels configured for alerting",
       "defaultSeverity": "high",
       "enabled": true
+    },
+    {
+      "slug": "datadog_audit_logging",
+      "name": "Audit Logging",
+      "description": "Verifies that Datadog Audit Trail is enabled and recording events for compliance tracking",
+      "defaultSeverity": "high",
+      "enabled": true
+    },
+    {
+      "slug": "datadog_user_management",
+      "name": "User Management",
+      "description": "Lists Datadog users, checks for inactive or disabled accounts, and verifies proper access management",
+      "defaultSeverity": "medium",
+      "enabled": true
     }
   ],
-  "checkCount": 3,
+  "checkCount": 5,
   "isActive": true
 }
