@@ -25,6 +25,31 @@ import {
 import type { CreatePenetrationTestDto } from './dto/create-penetration-test.dto';
 import { PentestCreditsService } from './pentest-credits.service';
 
+/**
+ * Drops events that mention our infrastructure provider in any string
+ * field. Matches the same predicate as the frontend's
+ * `isCustomerVisible`, but applied at the API layer so the filter
+ * cannot be bypassed by a non-browser client (curl, DevTools, custom
+ * SDK consumer). The events still exist in our internal logs.
+ */
+function isCustomerVisibleEvent(event: PentestEvent): boolean {
+  const e = event as PentestEvent & {
+    agent?: unknown;
+    tool?: unknown;
+    summary?: unknown;
+    description?: unknown;
+    raw?: unknown;
+  };
+  if (typeof e.tool === 'string' && e.tool === 'TodoWrite') return false;
+  const fields: unknown[] = [e.agent, e.tool, e.summary, e.description, e.raw];
+  for (const field of fields) {
+    if (typeof field === 'string' && field.toLowerCase().includes('maced')) {
+      return false;
+    }
+  }
+  return true;
+}
+
 export type PentestReportStatus =
   | 'provisioning'
   | 'cloning'
@@ -365,10 +390,17 @@ export class SecurityPenetrationTestsService {
     id: string,
   ): Promise<PentestEvent[]> {
     await this.assertRunOwnership(organizationId, id);
-    return this.callMaced(
+    const events = await this.callMaced(
       () => this.macedClient.pentests.events(id),
       `fetching penetration test events ${id}`,
     );
+    // Filter at the API layer (defense in depth) — a UI-only filter
+    // would leave Maced-internal tool names (`mcp__maced-helper__*`)
+    // and any "Maced" prose mentions visible in the raw HTTP response,
+    // i.e. accessible via DevTools / curl / a custom client. By
+    // dropping these rows before they leave our server, the customer-
+    // facing surface stays white-labeled regardless of consumer.
+    return events.filter(isCustomerVisibleEvent);
   }
 
   async getReportOutput(
