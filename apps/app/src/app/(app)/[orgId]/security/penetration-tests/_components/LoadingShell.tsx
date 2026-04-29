@@ -62,6 +62,18 @@ export function LoadingShell({ variant, mainPane }: LoadingShellProps) {
           showMainMobile ? 'flex' : 'hidden md:flex',
         ].join(' ')}
       >
+        {/* Mobile-only back-bar skeleton on non-list routes. Matches the
+            "← Scans" bar that SplitView renders on detail/create URLs
+            below md — without this placeholder, resolving the page
+            shifts the main content down ~33px when the real bar mounts. */}
+        {variant !== 'list' && (
+          <div
+            className="md:hidden flex items-center border-b border-border bg-background px-3 py-2"
+            aria-hidden
+          >
+            <div className="h-4 w-16 rounded bg-muted animate-pulse" />
+          </div>
+        )}
         {mainPane}
       </main>
     </div>
