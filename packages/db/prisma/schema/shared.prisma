@@ -53,6 +53,7 @@ enum AuditLogEntityType {
   integration
   trust
   finding
+  pentest
 }
 
 enum EvidenceFormType {

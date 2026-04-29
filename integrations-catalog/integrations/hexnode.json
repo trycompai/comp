@@ -4,7 +4,7 @@
   "description": "Hexnode UEM integration for device management, compliance monitoring, and policy enforcement",
   "category": "Security",
   "docsUrl": "https://www.hexnode.com/mobile-device-management/developers/",
-  "baseUrl": null,
+  "baseUrl": "https://placeholder.hexnodemdm.com",
   "authConfig": {
     "type": "custom",
     "config": {

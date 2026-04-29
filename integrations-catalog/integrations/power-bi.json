@@ -1,0 +1,57 @@
+{
+  "slug": "power-bi",
+  "name": "Microsoft Power BI",
+  "description": "Business intelligence and analytics platform from Microsoft. Monitors workspace access, user roles, and service availability.",
+  "category": "Productivity",
+  "docsUrl": null,
+  "baseUrl": null,
+  "authConfig": {
+    "type": "custom",
+    "config": {
+      "setupInstructions": "Setup steps:\n\n1. Register an Azure AD application:\n   - Go to Azure Portal > Microsoft Entra ID > App registrations > New registration\n   - Name it (e.g., 'CompAI Power BI Integration')\n   - Set supported account type to 'Accounts in this organizational directory only'\n   - Click Register\n\n2. Create a Client Secret:\n   - In your app, go to Certificates & secrets > New client secret\n   - Copy the secret value immediately (it won't be shown again)\n\n3. Enable Service Principal for Power BI:\n   - Go to Power BI Admin Portal > Tenant settings\n   - Under 'Developer settings', enable 'Allow service principals to use Power BI APIs'\n   - Add the service principal (or its security group) to the allowed group\n   - Under 'Admin API settings', enable 'Allow service principals to use read-only admin APIs'\n   - Add the service principal (or its security group) to the allowed group\n\n4. Copy the Tenant ID and Application (Client) ID from the app's Overview page.",
+      "credentialFields": [
+        {
+          "label": "Tenant ID",
+          "type": "text",
+          "required": true,
+          "helpText": "Your Azure AD / Microsoft Entra ID tenant ID. Find it in Azure Portal > Microsoft Entra ID > Overview."
+        },
+        {
+          "label": "Application (Client) ID",
+          "type": "text",
+          "required": true,
+          "helpText": "The Application (Client) ID from your registered Azure AD app."
+        },
+        {
+          "label": "Client Secret",
+          "type": "password",
+          "required": true,
+          "helpText": "A client secret generated under Certificates & secrets for your Azure AD app."
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "power_bi_employee_access",
+      "name": "Employee Access",
+      "description": "Lists all users across Power BI workspaces with their access roles. Retrieves workspaces (groups) with expanded user membership to identify who has access and at what permission level (Admin, Member, Contributor, Viewer).",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "power_bi_app_availability",
+      "name": "App Availability",
+      "description": "Verifies the Power BI service is accessible by authenticating with the service principal and listing workspaces. Confirms the service is reachable and returning data.",
+      "defaultSeverity": "high",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

@@ -44,8 +44,29 @@
       "description": "Verifies employee access to KnowBe4 by checking account info and user count.",
       "defaultSeverity": "medium",
       "enabled": true
+    },
+    {
+      "slug": "knowbe4_security_training",
+      "name": "KnowBe4 Security Awareness Training",
+      "description": "Checks training campaign completion rates across all active campaigns. Fails if overall completion rate is below 80%.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "knowbe4_phishing_simulation",
+      "name": "KnowBe4 Phishing Simulation",
+      "description": "Checks phishing simulation campaign results and reports the organization's phish-prone percentage.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "knowbe4_user_groups",
+      "name": "KnowBe4 User Group Management",
+      "description": "Verifies that users are organized into groups for targeted security awareness training.",
+      "defaultSeverity": "medium",
+      "enabled": true
     }
   ],
-  "checkCount": 2,
+  "checkCount": 5,
   "isActive": true
 }

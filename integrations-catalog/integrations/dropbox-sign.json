@@ -8,13 +8,13 @@
   "authConfig": {
     "type": "custom",
     "config": {
-      "setupInstructions": "1. Log in to Dropbox Sign\n2. Go to Settings → Integrations → API\n3. Copy your API key\n4. Run: echo -n 'YOUR_API_KEY:' | base64\n5. Paste the output below",
+      "setupInstructions": "1. Log in to Dropbox Sign\n2. Go to Settings > Integrations > API\n3. Copy your API key and paste it below",
       "credentialFields": [
         {
-          "label": "Basic Auth Token",
+          "label": "API Key",
           "type": "password",
           "required": true,
-          "helpText": "Base64-encode your API key with a colon: echo -n 'your_api_key:' | base64"
+          "helpText": "Found in Dropbox Sign Settings > Integrations > API"
         }
       ]
     }

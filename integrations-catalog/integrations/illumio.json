@@ -1,0 +1,97 @@
+{
+  "slug": "illumio",
+  "name": "Illumio",
+  "description": "Illumio is a Zero Trust Segmentation platform that provides microsegmentation, workload visibility, policy enforcement, and ransomware protection for data centers and cloud environments.",
+  "category": "Security",
+  "docsUrl": null,
+  "baseUrl": "https://illumio.placeholder.invalid",
+  "authConfig": {
+    "type": "custom",
+    "config": {
+      "credentialFields": [
+        {
+          "label": "PCE URL",
+          "type": "text",
+          "required": true,
+          "helpText": "Your Illumio PCE base URL including port, e.g. https://pce.example.com:8443. Do not include a trailing slash."
+        },
+        {
+          "label": "Organization ID",
+          "type": "text",
+          "required": true,
+          "helpText": "Your Illumio organization ID (typically 1 for single-org deployments). Found in PCE URL paths as /orgs/N."
+        },
+        {
+          "label": "API Key ID",
+          "type": "text",
+          "required": true,
+          "helpText": "The API Key ID (username) generated in PCE Settings > API Keys."
+        },
+        {
+          "label": "API Secret",
+          "type": "password",
+          "required": true,
+          "helpText": "The API Secret (password) generated alongside the API Key."
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "illumio_workload_visibility",
+      "name": "Workload Visibility",
+      "description": "Verifies that workloads are managed by Illumio VEN agents and have visibility enabled, ensuring network traffic is being monitored for microsegmentation policy enforcement.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "illumio_enforcement_mode",
+      "name": "Enforcement Mode",
+      "description": "Checks that workloads are running in full enforcement mode rather than idle or visibility-only, ensuring segmentation policies are actively blocking unauthorized traffic.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "illumio_segmentation_rulesets",
+      "name": "Segmentation Rulesets",
+      "description": "Verifies that segmentation rulesets are defined and provisioned in Illumio, confirming that microsegmentation policies exist to control lateral movement between workloads.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "illumio_label_coverage",
+      "name": "Label Coverage",
+      "description": "Checks that workloads have Illumio labels assigned (Role, Application, Environment, Location), essential for policy-driven microsegmentation and proper workload classification.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "illumio_password_policy",
+      "name": "Password Policy",
+      "description": "Verifies that a strong password policy is configured in the Illumio PCE, checking minimum length and complexity requirements for local user accounts.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "illumio_events_monitoring",
+      "name": "Events Monitoring",
+      "description": "Verifies that audit events are being generated in the Illumio PCE, confirming that the events framework is active and security-relevant activities are being logged for compliance.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "illumio_enforcement_boundaries",
+      "name": "Enforcement Boundaries",
+      "description": "Checks whether enforcement boundaries are defined in Illumio, providing deny-list based segmentation to block specific traffic flows without requiring full workload enforcement.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 7,
+  "isActive": true
+}
