@@ -17,7 +17,7 @@ export class BackgroundCheckIdentityClient {
   }): Promise<IdentityCreateResponse> {
     const apiKey = process.env.BACKGROUND_CHECK_API_KEY;
     if (!apiKey) {
-      throw new BadRequestException('BACKGROUND_CHECK_API_KEY is not configured.');
+      throw new BadRequestException('Background check service is not configured. Contact support.');
     }
 
     const baseUrl = this.baseUrl();

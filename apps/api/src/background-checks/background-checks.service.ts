@@ -65,38 +65,56 @@ export class BackgroundChecksService {
       throw new NotFoundException('Member not found.');
     }
 
+    // Step 1: Claim the record slot before charging. Catches the TOCTOU race
+    // where two concurrent requests both pass the getForMember check.
+    try {
+      await db.backgroundCheckRequest.create({
+        data: {
+          organizationId,
+          memberId,
+          employeeName,
+          employeeEmail,
+          requesterNotes,
+          status: BackgroundCheckStatus.invited,
+          lastSyncedAt: new Date(),
+        },
+      });
+    } catch (error) {
+      if (this.isUniqueConstraintError(error)) {
+        const raced = await this.getForMember({ organizationId, memberId });
+        if (raced) return raced;
+      }
+      throw error;
+    }
+
+    // Step 2: Charge — record exists so a failure here is recoverable
     const payment = await this.paymentService.charge({
       organizationId,
       memberId,
     });
 
-    await db.backgroundCheckRequest.upsert({
-      where: { organizationId_memberId: { organizationId, memberId } },
-      create: {
+    // Step 3: Persist payment info. Refund if this write fails.
+    try {
+      await db.backgroundCheckRequest.update({
+        where: { organizationId_memberId: { organizationId, memberId } },
+        data: {
+          stripePaymentIntentId: payment.paymentIntentId,
+          stripePaymentStatus: payment.status,
+          stripeAmountCents: payment.amount,
+          stripeCurrency: payment.currency,
+          lastSyncedAt: new Date(),
+        },
+      });
+    } catch (error) {
+      await this.paymentService.refund({
         organizationId,
         memberId,
-        employeeName,
-        employeeEmail,
-        requesterNotes,
-        status: BackgroundCheckStatus.invited,
-        stripePaymentIntentId: payment.paymentIntentId,
-        stripePaymentStatus: payment.status,
-        stripeAmountCents: payment.amount,
-        stripeCurrency: payment.currency,
-        lastSyncedAt: new Date(),
-      },
-      update: {
-        employeeName,
-        employeeEmail,
-        requesterNotes,
-        stripePaymentIntentId: payment.paymentIntentId,
-        stripePaymentStatus: payment.status,
-        stripeAmountCents: payment.amount,
-        stripeCurrency: payment.currency,
-        lastSyncedAt: new Date(),
-      },
-    });
+        paymentIntentId: payment.paymentIntentId,
+      });
+      throw error;
+    }
 
+    // Step 4: Call Identity API — refund on failure
     let identityResult;
     try {
       identityResult = await this.identityClient.createBackgroundCheck({
@@ -107,30 +125,15 @@ export class BackgroundChecksService {
         requesterEmail,
       });
     } catch (error) {
-      // Only refund when the identity API call itself fails — not on DB errors
       const refundId = await this.paymentService.refund({
         organizationId,
         memberId,
         paymentIntentId: payment.paymentIntentId,
       });
 
-      await db.backgroundCheckRequest.upsert({
+      await db.backgroundCheckRequest.update({
         where: { organizationId_memberId: { organizationId, memberId } },
-        create: {
-          organizationId,
-          memberId,
-          employeeName,
-          employeeEmail,
-          requesterNotes,
-          status: BackgroundCheckStatus.failed,
-          stripePaymentIntentId: payment.paymentIntentId,
-          stripePaymentStatus: payment.status,
-          stripeRefundId: refundId,
-          stripeAmountCents: payment.amount,
-          stripeCurrency: payment.currency,
-          lastSyncedAt: new Date(),
-        },
-        update: {
+        data: {
           status: BackgroundCheckStatus.failed,
           stripeRefundId: refundId,
           lastSyncedAt: new Date(),
@@ -140,34 +143,13 @@ export class BackgroundChecksService {
       throw error;
     }
 
-    return db.backgroundCheckRequest.upsert({
+    // Step 5: Persist Identity result
+    return db.backgroundCheckRequest.update({
       where: { organizationId_memberId: { organizationId, memberId } },
-      create: {
-        organizationId,
-        memberId,
-        employeeName,
-        employeeEmail,
-        requesterNotes,
+      data: {
         identityBackgroundCheckId: identityResult.id,
         candidateUrl: identityResult.candidateUrl ?? null,
         status: identityResult.status,
-        stripePaymentIntentId: payment.paymentIntentId,
-        stripePaymentStatus: payment.status,
-        stripeAmountCents: payment.amount,
-        stripeCurrency: payment.currency,
-        lastSyncedAt: new Date(),
-      },
-      update: {
-        employeeName,
-        employeeEmail,
-        requesterNotes,
-        identityBackgroundCheckId: identityResult.id,
-        candidateUrl: identityResult.candidateUrl ?? null,
-        status: identityResult.status,
-        stripePaymentIntentId: payment.paymentIntentId,
-        stripePaymentStatus: payment.status,
-        stripeAmountCents: payment.amount,
-        stripeCurrency: payment.currency,
         lastSyncedAt: new Date(),
       },
     });
