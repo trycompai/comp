@@ -1,19 +1,16 @@
-import { auth } from '@/utils/auth';
 import { serverApi } from '@/lib/server-api-client';
+import { auth } from '@/utils/auth';
 import type { Member, User } from '@db';
 import { db } from '@db/server';
-import {
-  PageHeader,
-  PageLayout,
-} from '@trycompai/design-system';
+import { PageHeader, PageLayout } from '@trycompai/design-system';
 import type { Metadata } from 'next';
 import { headers } from 'next/headers';
 import { notFound, redirect } from 'next/navigation';
-import {
-  EmployeeBackgroundCheck,
-  type BackgroundCheckBillingStatus,
-  type BackgroundCheckRecord,
-} from '../components/EmployeeBackgroundCheck';
+import type {
+  BackgroundCheckBillingStatus,
+  BackgroundCheckRecord,
+} from '../components/backgroundCheckTypes';
+import { EmployeeBackgroundCheck } from '../components/EmployeeBackgroundCheck';
 
 export default async function EmployeeBackgroundCheckPage({
   params,
