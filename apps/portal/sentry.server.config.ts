@@ -16,6 +16,4 @@ Sentry.init({
   includeLocalVariables: process.env.NODE_ENV !== 'production',
 
   enableLogs: true,
-
-  sendDefaultPii: true,
 });
