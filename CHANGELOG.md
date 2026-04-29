@@ -1,3 +1,18 @@
+# [3.37.0](https://github.com/trycompai/comp/compare/v3.36.1...v3.37.0) (2026-04-29)
+
+
+### Bug Fixes
+
+* **pentest:** include running/failed scans in Recent activity list ([6ae7ea3](https://github.com/trycompai/comp/commit/6ae7ea38158c1abdf0a4210d71bc84963550456f))
+* **pentest:** mirror mobile back-bar in detail/create loading skeletons ([aea5f1a](https://github.com/trycompai/comp/commit/aea5f1ae18cf303b0f32c1454c041a311d540364))
+* **pentest:** mirror split-view shell in loading.tsx to prevent layout shift ([f69854e](https://github.com/trycompai/comp/commit/f69854e1a1b8aeeaa40fc258c24d1ca41512f2a0))
+* **pentest:** surface in-progress scans on overview when no completed runs ([c009ae8](https://github.com/trycompai/comp/commit/c009ae89f18dce3be625d6e4d15a7aaab3d0af33))
+
+
+### Features
+
+* **pentest:** mobile-friendly split-view + per-route loading skeletons ([84ae91a](https://github.com/trycompai/comp/commit/84ae91a6030e96d9f435172f4c6ebe7f5b36aee2))
+
 ## [3.36.1](https://github.com/trycompai/comp/compare/v3.36.0...v3.36.1) (2026-04-29)
 
 
