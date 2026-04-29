@@ -8,13 +8,13 @@
   "authConfig": {
     "type": "custom",
     "config": {
-      "setupInstructions": "1. Go to BambooHR > profile icon > API Keys > Add New Key\n2. Copy the API key\n3. Encode it: run echo -n YOUR_API_KEY:x | base64\n4. Enter the encoded result and your subdomain below",
+      "setupInstructions": "1. Go to BambooHR > profile icon > API Keys > Add New Key\n2. Copy the API key\n3. Paste it below along with your BambooHR subdomain",
       "credentialFields": [
         {
-          "label": "Encoded API Token",
+          "label": "API Key",
           "type": "password",
           "required": true,
-          "helpText": "Base64 encode your API key: run echo -n YOUR_API_KEY:x | base64"
+          "helpText": "Found in BambooHR > profile icon > API Keys"
         }
       ]
     }

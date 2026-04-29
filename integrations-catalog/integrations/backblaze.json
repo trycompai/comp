@@ -8,19 +8,19 @@
   "authConfig": {
     "type": "custom",
     "config": {
-      "setupInstructions": "1. Log in to Backblaze\n2. Go to Account → App Keys\n3. Note your Account ID and Application Key\n4. Encode them: echo -n 'accountId:applicationKey' | base64\n5. Paste the encoded value below",
+      "setupInstructions": "1. Log in to Backblaze\n2. Go to Account > App Keys\n3. Copy your Account ID and Application Key\n4. Paste both values below",
       "credentialFields": [
         {
           "label": "Account ID",
           "type": "text",
           "required": true,
-          "helpText": "Backblaze → Account → App Keys → Account ID"
+          "helpText": "Found in Backblaze > Account > App Keys"
         },
         {
-          "label": "Basic Auth Token",
+          "label": "Application Key",
           "type": "password",
           "required": true,
-          "helpText": "Run: echo -n 'accountId:applicationKey' | base64"
+          "helpText": "Found in Backblaze > Account > App Keys"
         }
       ]
     }

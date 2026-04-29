@@ -1,3 +1,67 @@
+# [3.37.0](https://github.com/trycompai/comp/compare/v3.36.1...v3.37.0) (2026-04-29)
+
+
+### Bug Fixes
+
+* **pentest:** include running/failed scans in Recent activity list ([6ae7ea3](https://github.com/trycompai/comp/commit/6ae7ea38158c1abdf0a4210d71bc84963550456f))
+* **pentest:** mirror mobile back-bar in detail/create loading skeletons ([aea5f1a](https://github.com/trycompai/comp/commit/aea5f1ae18cf303b0f32c1454c041a311d540364))
+* **pentest:** mirror split-view shell in loading.tsx to prevent layout shift ([f69854e](https://github.com/trycompai/comp/commit/f69854e1a1b8aeeaa40fc258c24d1ca41512f2a0))
+* **pentest:** surface in-progress scans on overview when no completed runs ([c009ae8](https://github.com/trycompai/comp/commit/c009ae89f18dce3be625d6e4d15a7aaab3d0af33))
+
+
+### Features
+
+* **pentest:** mobile-friendly split-view + per-route loading skeletons ([84ae91a](https://github.com/trycompai/comp/commit/84ae91a6030e96d9f435172f4c6ebe7f5b36aee2))
+
+## [3.36.1](https://github.com/trycompai/comp/compare/v3.36.0...v3.36.1) (2026-04-29)
+
+
+### Bug Fixes
+
+* **app:** bubble up artifact-based progress through control/requirement/framework views (CS-316) ([33a7b90](https://github.com/trycompai/comp/commit/33a7b903beab9726ceafce66481b3af740b1bc7d)), closes [#2695](https://github.com/trycompai/comp/issues/2695)
+
+# [3.36.0](https://github.com/trycompai/comp/compare/v3.35.0...v3.36.0) (2026-04-29)
+
+
+### Bug Fixes
+
+* **api:** purge snapshot — null out stripe IDs from dropped tables ([f7a9ce9](https://github.com/trycompai/comp/commit/f7a9ce9adef73ea35a6d7305d449d5066bd68585))
+* **app:** able to upload markdowns or CSVs as evidence for documents ([#2684](https://github.com/trycompai/comp/issues/2684)) ([6a3f631](https://github.com/trycompai/comp/commit/6a3f631c0ee48be449de6bd859adb49424ae70a5))
+* fix progress counts for frameworks, requirements and controls ([0a2d766](https://github.com/trycompai/comp/commit/0a2d766a95ae3cfbea655a8b4653dc6d7675c1b6))
+* **pentest:** address cubic-AI review — refund tx, audit dedup, UX bugs ([ebed6cc](https://github.com/trycompai/comp/commit/ebed6cc7b63c057f62b37d00302bcd1210dcfa36))
+* **pentest:** api-side maced filter, schema docs, drop stale planning files ([4aeef2a](https://github.com/trycompai/comp/commit/4aeef2af51402d84cae9af4c145158f045706dc5))
+* **pentest:** second cubic review pass — refund retry, ux + correctness ([f5e2528](https://github.com/trycompai/comp/commit/f5e2528418c34bdbab6e7b7912e78d90621899ba))
+
+
+### Features
+
+* **app:** add SOC 3 ([0e7492c](https://github.com/trycompai/comp/commit/0e7492caebf0fe68f32e4802fa8db0568d39dfa8))
+* **pentest:** credits wallet, admin grants, audit logging, UX polish ([f494299](https://github.com/trycompai/comp/commit/f494299f957b1775909e2fd620ca00dbdc839726))
+* **pentest:** full v1 rebuild — split-view UI, SDK swap, signed webhooks ([db0e7e7](https://github.com/trycompai/comp/commit/db0e7e7fb5045573d4026f59c807bf7874a2103c))
+
+# [3.35.0](https://github.com/trycompai/comp/compare/v3.34.2...v3.35.0) (2026-04-29)
+
+
+### Features
+
+* add clear view of maps between policies<>controls<>tasks ([5e30bfb](https://github.com/trycompai/comp/commit/5e30bfb7099acfa408ffe3b9b03b03c6abc3fc58))
+
+## [3.34.2](https://github.com/trycompai/comp/compare/v3.34.1...v3.34.2) (2026-04-28)
+
+
+### Bug Fixes
+
+* **device-agent:** unbrick stuck installs (auto-update + legacy session) ([926a905](https://github.com/trycompai/comp/commit/926a905baa7805e2cc2517f5c3601c6f95710d68))
+* **sync:** validate employee.role before persisting (limbo-role guard) ([#2690](https://github.com/trycompai/comp/issues/2690)) ([382f619](https://github.com/trycompai/comp/commit/382f619a7bf16199b42e2db55404c468cb3452d2))
+
+## [3.34.1](https://github.com/trycompai/comp/compare/v3.34.0...v3.34.1) (2026-04-28)
+
+
+### Bug Fixes
+
+* fix-sync-requirement-map-drift ([a10ecc3](https://github.com/trycompai/comp/commit/a10ecc309a4e2283c5e9d36555dfe1673fd142f3))
+* **framework-editor:** don't auto-link new task/policy templates to all framework controls ([#2686](https://github.com/trycompai/comp/issues/2686)) ([b58c4d3](https://github.com/trycompai/comp/commit/b58c4d3f70ec82e56da178dac4c3562226cfed6a))
+
 # [3.34.0](https://github.com/trycompai/comp/compare/v3.33.2...v3.34.0) (2026-04-28)
 
 

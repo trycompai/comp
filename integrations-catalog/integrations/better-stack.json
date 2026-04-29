@@ -1,0 +1,52 @@
+{
+  "slug": "better-stack",
+  "name": "Better Stack",
+  "description": "Uptime monitoring, incident management, and on-call scheduling platform. Monitor uptime status, track incidents, and review team member access controls.",
+  "category": "Monitoring",
+  "docsUrl": "https://betterstack.com/docs/uptime/api/getting-started-with-uptime-api/",
+  "baseUrl": "https://uptime.betterstack.com",
+  "authConfig": {
+    "type": "custom",
+    "config": {
+      "setupInstructions": "1. Log in to Better Stack at https://betterstack.com\n2. Go to Settings > API tokens (https://betterstack.com/settings/global-api-tokens)\n3. Copy an existing Global API token or create a new one\n4. Paste the token below",
+      "credentialFields": [
+        {
+          "label": "API Token",
+          "type": "password",
+          "required": true,
+          "helpText": "Better Stack API token. Get it from Better Stack Dashboard > Settings > API tokens. You can use either a Global API token or an Uptime API token."
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "better_stack_uptime_monitors",
+      "name": "Uptime Monitors",
+      "description": "Lists all uptime monitors and their current status. Monitors with 'down' status are flagged as findings.",
+      "defaultSeverity": "high",
+      "enabled": true
+    },
+    {
+      "slug": "better_stack_incident_response",
+      "name": "Incident Response",
+      "description": "Lists recent incidents and their resolution status. Unresolved incidents that have not been acknowledged are flagged.",
+      "defaultSeverity": "high",
+      "enabled": true
+    },
+    {
+      "slug": "better_stack_employee_access",
+      "name": "Employee Access",
+      "description": "Lists all team members with their roles and invitation status. Verifies employee access controls.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 3,
+  "isActive": true
+}

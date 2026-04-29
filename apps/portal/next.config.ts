@@ -1,3 +1,4 @@
+import { withSentryConfig } from '@sentry/nextjs';
 import path from 'path';
 import './src/env.mjs';
 
@@ -71,4 +72,23 @@ const config = {
     : {}),
 };
 
-export default config;
+export default withSentryConfig(config, {
+  org: 'comp-ai',
+  project: 'comp',
+
+  // Only print logs for uploading source maps in CI
+  silent: !process.env.CI,
+
+  // Upload a larger set of source maps for prettier stack traces
+  widenClientFileUpload: true,
+
+  // Route browser requests to Sentry through a Next.js rewrite to circumvent ad-blockers.
+  tunnelRoute: '/monitoring',
+
+  webpack: {
+    // Automatically tree-shake Sentry logger statements to reduce bundle size
+    treeshake: {
+      removeDebugLogging: true,
+    },
+  },
+});

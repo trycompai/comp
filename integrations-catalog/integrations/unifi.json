@@ -1,0 +1,78 @@
+{
+  "slug": "unifi",
+  "name": "UniFi",
+  "description": "Ubiquiti UniFi network management platform. Monitors hosts, sites, devices, firewall policies, and ISP connectivity through the official UniFi Site Manager and Network APIs.",
+  "category": "Infrastructure",
+  "docsUrl": "https://developer.ui.com/site-manager/v1.0.0/gettingstarted",
+  "baseUrl": null,
+  "authConfig": {
+    "type": "custom",
+    "config": {
+      "setupInstructions": "1. Sign in to the UniFi Site Manager at https://unifi.ui.com\n2. Go to the API section (or Settings > API Keys in EA)\n3. Click 'Create New API Key' and copy it\n4. For firewall checks: note your Console ID from the hosts list and Site ID from the sites list\n5. Paste the API key and optional IDs below",
+      "credentialFields": [
+        {
+          "label": "API Key",
+          "type": "password",
+          "required": true,
+          "helpText": "Sign in to unifi.ui.com, navigate to API section, and create a new API key."
+        },
+        {
+          "label": "Console ID (Host ID)",
+          "type": "text",
+          "required": false,
+          "helpText": "The ID of the UniFi console/host for firewall checks. Find it via the Site Manager API (GET /v1/hosts) or from the UniFi Site Manager URL."
+        },
+        {
+          "label": "Site ID",
+          "type": "text",
+          "required": false,
+          "helpText": "The ID of the site for firewall checks. Find it via the Site Manager API (GET /v1/sites) or from the UniFi Site Manager URL."
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "unifi_app_availability",
+      "name": "App Availability",
+      "description": "Verifies that the UniFi Site Manager API is reachable and the API key is valid by listing hosts.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "unifi_device_list",
+      "name": "Device List",
+      "description": "Retrieves all UniFi devices managed by the account and verifies each device is online and adopted.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "unifi_production_firewall",
+      "name": "Production Firewall",
+      "description": "Checks that firewall policies are configured on the specified UniFi site via the Network API Cloud Connector.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "unifi_tls_https",
+      "name": "TLS/HTTPS",
+      "description": "Verifies that UniFi hosts are running with secure HTTPS connections by checking host reported state.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "unifi_monitoring_alerting",
+      "name": "Monitoring and Alerting",
+      "description": "Verifies that ISP monitoring is active by checking that ISP metrics data exists for the account's sites.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 5,
+  "isActive": true
+}

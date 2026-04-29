@@ -134,6 +134,13 @@ export const createOrganizationMinimal = authActionClientWithoutOrg
               role: 'owner',
             },
           },
+          pentestCredits: {
+            create: {
+              balance: 1,
+              totalGranted: 1,
+              lastGrantSource: 'trial',
+            },
+          },
           // Save framework context: display names for AI prompts + raw IDs for recovery
           context: {
             createMany: {

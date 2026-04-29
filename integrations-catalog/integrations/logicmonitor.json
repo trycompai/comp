@@ -1,0 +1,72 @@
+{
+  "slug": "logicmonitor",
+  "name": "LogicMonitor",
+  "description": "LogicMonitor is an enterprise infrastructure monitoring platform that provides unified visibility across cloud, on-premises, and hybrid environments with automated monitoring, alerting, and AIOps capabilities.",
+  "category": "Monitoring",
+  "docsUrl": "https://www.logicmonitor.com/support/rest-api-developers-guide/overview/using-logicmonitors-rest-api",
+  "baseUrl": null,
+  "authConfig": {
+    "type": "custom",
+    "config": {
+      "setupInstructions": "1. Log in to your LogicMonitor portal.\n2. Go to Settings > Users and Roles.\n3. Select your user or create a new API-only user.\n4. Under the API Tokens tab, click Generate to create a new Bearer Token.\n5. Copy the Bearer token value and enter it above.\n6. Enter your LogicMonitor account name (the subdomain from your LogicMonitor URL).",
+      "credentialFields": [
+        {
+          "label": "Account Name",
+          "type": "text",
+          "required": true,
+          "helpText": "Your LogicMonitor account name (the subdomain in your LogicMonitor URL, e.g. 'mycompany' from mycompany.logicmonitor.com)."
+        },
+        {
+          "label": "API Bearer Token",
+          "type": "password",
+          "required": true,
+          "helpText": "Generate a Bearer token in LogicMonitor: Settings > Users and Roles > API Tokens. Copy the token value."
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "logicmonitor_app_availability",
+      "name": "LogicMonitor App Availability",
+      "description": "Verifies that the LogicMonitor API is reachable and the Bearer token is valid by making a lightweight API call.",
+      "defaultSeverity": "high",
+      "enabled": true
+    },
+    {
+      "slug": "logicmonitor_device_monitoring",
+      "name": "LogicMonitor Device Monitoring",
+      "description": "Lists monitored devices and verifies they are actively monitored with healthy status.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "logicmonitor_alert_management",
+      "name": "LogicMonitor Alert Management",
+      "description": "Checks for active critical and error alerts in LogicMonitor to assess current alert health.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "logicmonitor_collector_health",
+      "name": "LogicMonitor Collector Health",
+      "description": "Verifies that LogicMonitor collectors are registered and running, ensuring continuous monitoring data collection.",
+      "defaultSeverity": "high",
+      "enabled": true
+    },
+    {
+      "slug": "logicmonitor_alert_rules",
+      "name": "LogicMonitor Alert Rules",
+      "description": "Verifies that alert rules are configured in LogicMonitor to ensure proper alert routing and escalation.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 5,
+  "isActive": true
+}
