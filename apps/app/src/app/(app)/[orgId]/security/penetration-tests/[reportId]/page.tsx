@@ -1,6 +1,5 @@
 import { auth } from '@/utils/auth';
 import { db } from '@db/server';
-import { PageHeader, PageLayout } from '@trycompai/design-system';
 import type { Metadata } from 'next';
 import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
@@ -36,12 +35,7 @@ export default async function PenetrationTestPage({ params }: ReportPageProps) {
     redirect('/');
   }
 
-  return (
-    <PageLayout>
-      <PageHeader title="Penetration Test">Review details for this report generation.</PageHeader>
-      <PenetrationTestPageClient orgId={orgId} reportId={reportId} />
-    </PageLayout>
-  );
+  return <PenetrationTestPageClient orgId={orgId} reportId={reportId} />;
 }
 
 export async function generateMetadata({ params }: ReportPageProps): Promise<Metadata> {
