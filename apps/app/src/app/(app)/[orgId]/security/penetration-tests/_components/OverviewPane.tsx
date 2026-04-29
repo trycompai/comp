@@ -250,16 +250,21 @@ function PostureOverview({
   onDownloadMarkdown,
   onDownloadPdf,
 }: PostureOverviewProps) {
-  // Coverage and stale-target stats use ONLY completed runs — a target
-  // that's only ever had failed/cancelled scans isn't truly "covered,"
-  // and a target whose latest scan failed shouldn't reset the staleness
-  // clock. The full `runs` list is only used for the recent activity
-  // sidebar elsewhere.
+  // Coverage / avg-duration / stale stats are completed-only on purpose:
+  // a target whose only scans are running or failed isn't actually
+  // "covered," a running scan has no real duration yet, and a failed
+  // scan shouldn't reset the staleness clock.
+  //
+  // "Recent scans" is the exception — that's an activity feed, not a
+  // success metric, so it uses the full `runs` list. Otherwise a user
+  // with completed history but a fresh running scan would see the
+  // running one in the sidebar but NOT here, which contradicts the
+  // sidebar and hides the live scan from the overview.
   const targets = uniqueTargets(completed);
   const lastScan = mostRecent(completed);
   const avgDuration = avgDurationMs(completed);
   const scansLast30d = countWithin(completed, 30 * 24 * 60 * 60 * 1000);
-  const recentScans = sortByUpdatedDesc(completed).slice(0, 6);
+  const recentScans = sortByUpdatedDesc(runs).slice(0, 6);
   const staleTargets = computeStaleTargets(completed, targets);
 
   return (
