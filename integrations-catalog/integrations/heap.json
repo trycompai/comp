@@ -1,0 +1,57 @@
+{
+  "slug": "heap",
+  "name": "Heap",
+  "description": "Monitor Heap product analytics platform for account access and availability compliance. Heap (now part of Contentsquare) provides digital analytics to understand user behavior.",
+  "category": "Monitoring",
+  "docsUrl": "https://developers.heap.io/reference",
+  "baseUrl": null,
+  "authConfig": {
+    "type": "custom",
+    "config": {
+      "setupInstructions": "1. Log in to Heap at https://heapanalytics.com/app\n2. Go to Account > Manage > Privacy & Security\n3. Note your Environment ID (App ID)\n4. Generate an API key (or copy existing one)\n5. Enter both values below",
+      "credentialFields": [
+        {
+          "label": "Environment ID (App ID)",
+          "type": "text",
+          "required": true,
+          "helpText": "Your Heap Main Production environment ID. Found in Account > Manage > Privacy & Security."
+        },
+        {
+          "label": "API Key",
+          "type": "password",
+          "required": true,
+          "helpText": "Generate in Account > Manage > Privacy & Security. Admin access required."
+        },
+        {
+          "label": "Data Center Region",
+          "type": "select",
+          "required": true,
+          "helpText": "Select the region where your Heap data is stored. US is the default. EU is at eu.heapanalytics.com."
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "heap_employee_access",
+      "name": "Employee Access",
+      "description": "Verifies Heap account credentials are valid by authenticating with the API. Heap does not expose a team member listing API, so this check validates that the configured credentials have admin-level access.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "heap_app_availability",
+      "name": "App Availability",
+      "description": "Verifies the Heap platform is accessible by authenticating against the Heap API endpoint",
+      "defaultSeverity": "high",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}
