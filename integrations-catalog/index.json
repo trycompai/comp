@@ -1,15 +1,15 @@
 {
-  "generatedAt": "2026-04-29T14:54:47.641Z",
-  "total": 554,
-  "sourceCount": 554,
-  "uniqueSlugs": 554,
+  "generatedAt": "2026-04-29T16:30:41.116Z",
+  "total": 559,
+  "sourceCount": 559,
+  "uniqueSlugs": 559,
   "byCategory": {
     "HR & People": 61,
     "Security": 129,
-    "Productivity": 112,
+    "Productivity": 115,
     "Infrastructure": 31,
     "Communication": 46,
-    "Monitoring": 51,
+    "Monitoring": 53,
     "Cloud": 52,
     "Development": 52,
     "Identity & Access": 20
@@ -457,13 +457,13 @@
       "file": "integrations/beehiiv.json"
     },
     {
-      "slug": "betterstack",
-      "name": "BetterStack",
+      "slug": "better-stack",
+      "name": "Better Stack",
       "category": "Monitoring",
-      "authType": "api_key",
-      "checkCount": 2,
+      "authType": "custom",
+      "checkCount": 3,
       "syncSupported": false,
-      "file": "integrations/betterstack.json"
+      "file": "integrations/better-stack.json"
     },
     {
       "slug": "beyond-trust",
@@ -1474,15 +1474,6 @@
       "file": "integrations/dropbox-business.json"
     },
     {
-      "slug": "dropbox-sign",
-      "name": "Dropbox Sign",
-      "category": "Productivity",
-      "authType": "custom",
-      "checkCount": 1,
-      "syncSupported": false,
-      "file": "integrations/dropbox-sign.json"
-    },
-    {
       "slug": "hellosign",
       "name": "Dropbox Sign",
       "category": "Productivity",
@@ -1490,6 +1481,15 @@
       "checkCount": 2,
       "syncSupported": false,
       "file": "integrations/hellosign.json"
+    },
+    {
+      "slug": "dropbox-sign",
+      "name": "Dropbox Sign",
+      "category": "Productivity",
+      "authType": "custom",
+      "checkCount": 1,
+      "syncSupported": false,
+      "file": "integrations/dropbox-sign.json"
     },
     {
       "slug": "druva",
@@ -1555,15 +1555,6 @@
       "file": "integrations/egnyte.json"
     },
     {
-      "slug": "elastic-cloud",
-      "name": "Elastic Cloud",
-      "category": "Cloud",
-      "authType": "custom",
-      "checkCount": 2,
-      "syncSupported": false,
-      "file": "integrations/elastic-cloud.json"
-    },
-    {
       "slug": "elastic",
       "name": "Elastic Cloud",
       "category": "Monitoring",
@@ -1571,6 +1562,15 @@
       "checkCount": 2,
       "syncSupported": false,
       "file": "integrations/elastic.json"
+    },
+    {
+      "slug": "elastic-cloud",
+      "name": "Elastic Cloud",
+      "category": "Cloud",
+      "authType": "custom",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/elastic-cloud.json"
     },
     {
       "slug": "employment-hero",
@@ -2021,6 +2021,15 @@
       "checkCount": 2,
       "syncSupported": false,
       "file": "integrations/hashicorp-vault.json"
+    },
+    {
+      "slug": "heap",
+      "name": "Heap",
+      "category": "Monitoring",
+      "authType": "custom",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/heap.json"
     },
     {
       "slug": "helpscout",
@@ -2653,6 +2662,15 @@
       "file": "integrations/logzio.json"
     },
     {
+      "slug": "looker",
+      "name": "Looker",
+      "category": "Productivity",
+      "authType": "custom",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/looker.json"
+    },
+    {
       "slug": "loops",
       "name": "Loops",
       "category": "Communication",
@@ -2849,6 +2867,15 @@
       "checkCount": 3,
       "syncSupported": false,
       "file": "integrations/intune.json"
+    },
+    {
+      "slug": "power-bi",
+      "name": "Microsoft Power BI",
+      "category": "Productivity",
+      "authType": "custom",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/power-bi.json"
     },
     {
       "slug": "microsoft-sentinel",
@@ -4102,15 +4129,6 @@
       "file": "integrations/socket.json"
     },
     {
-      "slug": "sonarqube-cloud",
-      "name": "SonarCloud",
-      "category": "Development",
-      "authType": "api_key",
-      "checkCount": 2,
-      "syncSupported": false,
-      "file": "integrations/sonarqube-cloud.json"
-    },
-    {
       "slug": "sonarcloud",
       "name": "SonarCloud",
       "category": "Security",
@@ -4118,6 +4136,15 @@
       "checkCount": 2,
       "syncSupported": false,
       "file": "integrations/sonarcloud.json"
+    },
+    {
+      "slug": "sonarqube-cloud",
+      "name": "SonarCloud",
+      "category": "Development",
+      "authType": "api_key",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/sonarqube-cloud.json"
     },
     {
       "slug": "sonarqube-server",
@@ -4309,15 +4336,6 @@
       "file": "integrations/stytch.json"
     },
     {
-      "slug": "sumologic",
-      "name": "Sumo Logic",
-      "category": "Monitoring",
-      "authType": "custom",
-      "checkCount": 2,
-      "syncSupported": false,
-      "file": "integrations/sumologic.json"
-    },
-    {
       "slug": "sumo-logic",
       "name": "Sumo Logic",
       "category": "Monitoring",
@@ -4325,6 +4343,15 @@
       "checkCount": 2,
       "syncSupported": false,
       "file": "integrations/sumo-logic.json"
+    },
+    {
+      "slug": "sumologic",
+      "name": "Sumo Logic",
+      "category": "Monitoring",
+      "authType": "custom",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/sumologic.json"
     },
     {
       "slug": "supabase",
@@ -4361,6 +4388,15 @@
       "checkCount": 2,
       "syncSupported": false,
       "file": "integrations/sysdig.json"
+    },
+    {
+      "slug": "tableau",
+      "name": "Tableau",
+      "category": "Productivity",
+      "authType": "custom",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/tableau.json"
     },
     {
       "slug": "tailscale",
@@ -4676,6 +4712,15 @@
       "checkCount": 2,
       "syncSupported": false,
       "file": "integrations/upstash.json"
+    },
+    {
+      "slug": "uptime-robot",
+      "name": "Uptime Robot",
+      "category": "Monitoring",
+      "authType": "api_key",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/uptime-robot.json"
     },
     {
       "slug": "userflow",

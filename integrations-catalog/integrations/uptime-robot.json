@@ -1,0 +1,37 @@
+{
+  "slug": "uptime-robot",
+  "name": "Uptime Robot",
+  "description": "Monitor Uptime Robot uptime monitors and account accessibility for availability compliance",
+  "category": "Monitoring",
+  "docsUrl": "https://uptimerobot.com/api/v3/",
+  "baseUrl": "https://api.uptimerobot.com/v3",
+  "authConfig": {
+    "type": "api_key",
+    "config": {
+      "setupInstructions": "1. Log in to UptimeRobot at https://dashboard.uptimerobot.com\n2. Navigate to Integrations & API in the left sidebar\n3. Under the API section, create or copy your Main API Key or Read-Only API Key\n4. Paste the API key below"
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "uptime_robot_uptime_monitors",
+      "name": "Uptime Monitors",
+      "description": "Lists all Uptime Robot monitors and reports their current status (up/down/paused)",
+      "defaultSeverity": "high",
+      "enabled": true
+    },
+    {
+      "slug": "uptime_robot_app_availability",
+      "name": "App Availability",
+      "description": "Verifies Uptime Robot account is active and accessible via the API",
+      "defaultSeverity": "low",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}
