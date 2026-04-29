@@ -31,7 +31,7 @@ const STEPS = [
   {
     title: 'Scan runs automatically',
     description:
-      'Specialist agents probe the target for 1–3 hours and return a compliance-grade report.',
+      'Probing typically takes 1–3 hours. You get a compliance-grade report when it finishes.',
     Icon: Rocket,
   },
 ];
