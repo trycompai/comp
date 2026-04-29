@@ -55,7 +55,7 @@ import {
   PCIDSS,
   PCIDSSInProgress,
   SOC2Type1,
-  SOC2Type1IinProgress,
+  SOC2Type1InProgress,
   SOC2Type2,
   SOC2Type2InProgress,
 } from './logos';
@@ -860,7 +860,7 @@ function ComplianceFrameworkLogo({ title, status }: { title: string; status: str
   } else if (title === 'HIPAA') {
     LogoComponent = isInProgress ? HIPAAInProgress : HIPAA;
   } else if (title === 'SOC 2 Type 1') {
-    LogoComponent = isInProgress ? SOC2Type1IinProgress : SOC2Type1;
+    LogoComponent = isInProgress ? SOC2Type1InProgress : SOC2Type1;
   } else if (title === 'SOC 2 Type 2') {
     LogoComponent = isInProgress ? SOC2Type2InProgress : SOC2Type2;
   } else if (title === 'PCI DSS') {
