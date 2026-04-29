@@ -34,7 +34,7 @@ export function FindingDetail({ issue, onBack }: FindingDetailProps) {
 
   return (
     <div className="min-h-0 overflow-y-auto">
-      <div className="mx-auto max-w-5xl px-8 py-8 space-y-6">
+      <div className="mx-auto max-w-5xl space-y-6 px-4 py-6 md:px-8 md:py-8">
         <div>
           <Button variant="ghost" size="sm" onClick={onBack}>
             <ArrowLeft className="h-3.5 w-3.5" />

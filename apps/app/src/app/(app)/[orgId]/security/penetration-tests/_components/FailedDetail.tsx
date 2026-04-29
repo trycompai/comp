@@ -16,7 +16,7 @@ export function FailedDetail({ run, onRetry }: FailedDetailProps) {
 
   return (
     <div className="min-h-0 overflow-y-auto">
-      <div className="mx-auto max-w-5xl px-8 py-8 space-y-6">
+      <div className="mx-auto max-w-5xl space-y-6 px-4 py-6 md:px-8 md:py-8">
         <header className="space-y-3">
           <div className="flex items-center gap-3">
             <StatusPill status={run.status} />
