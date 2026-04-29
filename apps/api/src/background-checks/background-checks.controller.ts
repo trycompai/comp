@@ -56,7 +56,7 @@ export class PeopleBackgroundChecksController {
     return this.backgroundChecksService.requestForMember({
       organizationId,
       memberId,
-      employeeName: body.employeeName.trim(),
+      employeeName: body.employeeName,
       employeeEmail: body.employeeEmail.trim().toLowerCase(),
       requesterNotes: body.requesterNotes?.trim() || undefined,
       requesterEmail: authContext.userEmail ?? 'api-key@trycomp.ai',

@@ -100,7 +100,7 @@ async function bootstrap(): Promise<void> {
   const jsonParserWithRaw = express.json({
     limit: '150mb',
     verify: (req, _res, buf) => {
-      (req as express.Request).rawBody = Buffer.from(buf);
+      (req as express.Request).rawBody = buf;
     },
   });
   const jsonParser = express.json({ limit: '150mb' });

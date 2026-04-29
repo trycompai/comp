@@ -90,7 +90,10 @@ export class BackgroundCheckIdentityClient {
 
   private async fetchIdentity(url: string, init: RequestInit): Promise<Response> {
     try {
-      return await fetch(url, init);
+      return await fetch(url, {
+        ...init,
+        signal: init.signal ?? AbortSignal.timeout(30_000),
+      });
     } catch (error) {
       this.logger.error('Identity background check network request failed', {
         url,

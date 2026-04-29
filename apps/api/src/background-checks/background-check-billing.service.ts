@@ -78,6 +78,10 @@ export class BackgroundCheckBillingService {
       expand: ['setup_intent'],
     });
 
+    if (session.status !== 'complete') {
+      throw new BadRequestException('Checkout session is not complete.');
+    }
+
     const stripeCustomerId = this.extractStripeId(session.customer);
     if (!stripeCustomerId) {
       throw new BadRequestException('Checkout session is missing a customer.');
@@ -192,7 +196,7 @@ export class BackgroundCheckBillingService {
 
     const stripe = this.stripeService.getClient();
     const price = await stripe.prices.retrieve(priceId);
-    if (!price.unit_amount) {
+    if (price.unit_amount === null || price.unit_amount === undefined) {
       throw new BadRequestException('Background check price has no unit amount.');
     }
 

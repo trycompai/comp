@@ -97,47 +97,17 @@ export class BackgroundChecksService {
       },
     });
 
+    let identityResult;
     try {
-      const identityResult = await this.identityClient.createBackgroundCheck({
+      identityResult = await this.identityClient.createBackgroundCheck({
         organizationId,
         memberId,
         employeeName,
         employeeEmail,
         requesterEmail,
       });
-
-      return db.backgroundCheckRequest.upsert({
-        where: { organizationId_memberId: { organizationId, memberId } },
-        create: {
-          organizationId,
-          memberId,
-          employeeName,
-          employeeEmail,
-          requesterNotes,
-          identityBackgroundCheckId: identityResult.id,
-          candidateUrl: identityResult.candidateUrl ?? null,
-          status: identityResult.status,
-          stripePaymentIntentId: payment.paymentIntentId,
-          stripePaymentStatus: payment.status,
-          stripeAmountCents: payment.amount,
-          stripeCurrency: payment.currency,
-          lastSyncedAt: new Date(),
-        },
-        update: {
-          employeeName,
-          employeeEmail,
-          requesterNotes,
-          identityBackgroundCheckId: identityResult.id,
-          candidateUrl: identityResult.candidateUrl ?? null,
-          status: identityResult.status,
-          stripePaymentIntentId: payment.paymentIntentId,
-          stripePaymentStatus: payment.status,
-          stripeAmountCents: payment.amount,
-          stripeCurrency: payment.currency,
-          lastSyncedAt: new Date(),
-        },
-      });
     } catch (error) {
+      // Only refund when the identity API call itself fails — not on DB errors
       const refundId = await this.paymentService.refund({
         organizationId,
         memberId,
@@ -169,6 +139,38 @@ export class BackgroundChecksService {
 
       throw error;
     }
+
+    return db.backgroundCheckRequest.upsert({
+      where: { organizationId_memberId: { organizationId, memberId } },
+      create: {
+        organizationId,
+        memberId,
+        employeeName,
+        employeeEmail,
+        requesterNotes,
+        identityBackgroundCheckId: identityResult.id,
+        candidateUrl: identityResult.candidateUrl ?? null,
+        status: identityResult.status,
+        stripePaymentIntentId: payment.paymentIntentId,
+        stripePaymentStatus: payment.status,
+        stripeAmountCents: payment.amount,
+        stripeCurrency: payment.currency,
+        lastSyncedAt: new Date(),
+      },
+      update: {
+        employeeName,
+        employeeEmail,
+        requesterNotes,
+        identityBackgroundCheckId: identityResult.id,
+        candidateUrl: identityResult.candidateUrl ?? null,
+        status: identityResult.status,
+        stripePaymentIntentId: payment.paymentIntentId,
+        stripePaymentStatus: payment.status,
+        stripeAmountCents: payment.amount,
+        stripeCurrency: payment.currency,
+        lastSyncedAt: new Date(),
+      },
+    });
   }
 
   async getById({
@@ -231,6 +233,7 @@ export class BackgroundChecksService {
       throw new NotFoundException('Background check request not found.');
     }
 
+    let isDuplicate = false;
     try {
       await db.backgroundCheckWebhookEvent.create({
         data: {
@@ -243,9 +246,10 @@ export class BackgroundChecksService {
       });
     } catch (error) {
       if (this.isUniqueConstraintError(error)) {
-        return { ok: true, duplicate: true };
+        isDuplicate = true;
+      } else {
+        throw error;
       }
-      throw error;
     }
 
     const reportSnapshot = await fetchCompletedReportSnapshot({
@@ -278,7 +282,7 @@ export class BackgroundChecksService {
       },
     });
 
-    return { ok: true };
+    return { ok: true, ...(isDuplicate ? { duplicate: true } : {}) };
   }
 
   private isUniqueConstraintError(error: unknown): boolean {

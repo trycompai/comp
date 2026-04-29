@@ -174,7 +174,7 @@ export function MemberRow({
     }
   }
 
-  if (shouldShowTaskRequirements && deviceStatus) {
+  if (shouldShowTaskRequirements && (deviceStatus || isDeviceStatusLoading)) {
     taskItems.push({
       label: 'Device',
       completed: deviceStatus === 'compliant' ? 1 : 0,
