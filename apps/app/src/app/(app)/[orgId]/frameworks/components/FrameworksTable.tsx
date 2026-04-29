@@ -47,6 +47,7 @@ const FRAMEWORK_BADGES: Record<string, string> = {
   'PCI DSS Level 1': '/badges/pci-dss.svg',
   'NEN 7510': '/badges/nen7510.svg',
   'ISO 9001': '/badges/iso9001.svg',
+  'SOC 2 Type 1': '/badges/soc2.svg',
 };
 
 function getFrameworkBadge(name: string): string | null {
