@@ -4,7 +4,7 @@ enum PolicyDisplayFormat {
 }
 
 enum PolicyVisibility {
-  ALL        // Visible to everyone in organization
+  ALL // Visible to everyone in organization
   DEPARTMENT // Only visible to specified departments
 }
 
@@ -34,6 +34,12 @@ model Policy {
   lastArchivedAt  DateTime?
   lastPublishedAt DateTime?
 
+  // Sync-driven archive. Distinct from `isArchived` (which is user-initiated
+  // archiving of a published policy). UI should hide a policy if EITHER is
+  // set: `WHERE isArchived = false AND archivedAt IS NULL`. Rollback restores
+  // only `archivedAt`, never touches `isArchived`.
+  archivedAt DateTime?
+
   // Relationships
   organizationId   String
   organization     Organization                   @relation(fields: [organizationId], references: [id], onDelete: Cascade)
@@ -51,6 +57,7 @@ model Policy {
   findings         Finding[]
 
   @@index([organizationId])
+  @@index([organizationId, archivedAt])
 }
 
 model PolicyVersion {
@@ -59,8 +66,8 @@ model PolicyVersion {
   updatedAt DateTime @updatedAt
 
   // Relations
-  policyId String
-  policy   Policy @relation("PolicyVersions", fields: [policyId], references: [id], onDelete: Cascade)
+  policyId         String
+  policy           Policy  @relation("PolicyVersions", fields: [policyId], references: [id], onDelete: Cascade)
   currentForPolicy Policy? @relation("PolicyCurrentVersion")
 
   // Version details

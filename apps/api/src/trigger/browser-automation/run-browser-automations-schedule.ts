@@ -1,6 +1,29 @@
-import { db } from '@db';
+import { db, TaskFrequency } from '@db';
 import { logger, schedules } from '@trigger.dev/sdk';
 import { runBrowserAutomation } from './run-browser-automation';
+import { isDueToday } from '../shared/is-due-today';
+
+/**
+ * Pure helper extracted for unit testing. Filters a list of candidate
+ * automations down to those whose schedule says they are due at `now`.
+ *
+ * Kept in-memory (Shape A from the plan) because the single source of truth
+ * for schedule math is `isDueToday`; duplicating it in SQL would create drift.
+ */
+export function filterDueAutomations<
+  T extends {
+    scheduleFrequency: TaskFrequency;
+    lastRunAt: Date | null;
+  },
+>({ automations, now }: { automations: T[]; now: Date }): T[] {
+  return automations.filter((a) =>
+    isDueToday({
+      scheduleFrequency: a.scheduleFrequency,
+      lastRunAt: a.lastRunAt,
+      now,
+    }),
+  );
+}
 
 /**
  * Daily scheduled task (orchestrator) that finds all enabled browser automations
@@ -16,10 +39,17 @@ export const browserAutomationsSchedule = schedules.task({
       lastRun: payload.lastTimestamp,
     });
 
+    const now = new Date();
+
     // Find all enabled browser automations
-    const automations = await db.browserAutomation.findMany({
+    const candidateAutomations = await db.browserAutomation.findMany({
       where: { isEnabled: true },
-      include: {
+      select: {
+        id: true,
+        name: true,
+        taskId: true,
+        scheduleFrequency: true,
+        lastRunAt: true,
         task: {
           select: {
             id: true,
@@ -30,12 +60,34 @@ export const browserAutomationsSchedule = schedules.task({
       },
     });
 
-    if (automations.length === 0) {
+    if (candidateAutomations.length === 0) {
       logger.info('No enabled browser automations found');
       return { success: true, automationsTriggered: 0 };
     }
 
-    logger.info(`Found ${automations.length} enabled browser automations`);
+    logger.info(
+      `Found ${candidateAutomations.length} enabled browser automations`,
+    );
+
+    // Filter by the automation's schedule. `lastRunAt` is only written when
+    // the automation actually executed (including legitimate 'fail' verdicts)
+    // inside `runBrowserAutomation`, so infra-level failures naturally retry
+    // on the next orchestrator tick (the "crude retry" behavior).
+    const automations = filterDueAutomations({
+      automations: candidateAutomations,
+      now,
+    });
+
+    if (automations.length < candidateAutomations.length) {
+      logger.info(
+        `Skipped ${candidateAutomations.length - automations.length} automation(s) not due yet`,
+      );
+    }
+
+    if (automations.length === 0) {
+      logger.info('No browser automations due today');
+      return { success: true, automationsTriggered: 0 };
+    }
 
     // Build payloads for batch triggering
     const triggerPayloads = automations.map((automation) => ({

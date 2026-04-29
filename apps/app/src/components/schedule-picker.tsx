@@ -1,0 +1,49 @@
+'use client';
+
+import { TaskFrequency } from '@db';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@trycompai/ui/select';
+
+const LABELS: Record<TaskFrequency, string> = {
+  daily: 'Daily',
+  weekly: 'Weekly',
+  monthly: 'Monthly',
+  quarterly: 'Quarterly',
+  yearly: 'Yearly',
+};
+
+const FREQUENCIES = Object.keys(LABELS) as TaskFrequency[];
+
+export function SchedulePicker({
+  value,
+  onChange,
+  disabled,
+}: {
+  value: TaskFrequency;
+  onChange: (value: TaskFrequency) => void;
+  disabled?: boolean;
+}) {
+  return (
+    <Select
+      value={value}
+      onValueChange={(next) => onChange(next as TaskFrequency)}
+      disabled={disabled}
+    >
+      <SelectTrigger>
+        <SelectValue placeholder="Select a frequency">{LABELS[value]}</SelectValue>
+      </SelectTrigger>
+      <SelectContent>
+        {FREQUENCIES.map((freq) => (
+          <SelectItem key={freq} value={freq}>
+            {LABELS[freq]}
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
+  );
+}

@@ -37,7 +37,7 @@ import { AuditRead } from '../audit/skip-audit-log.decorator';
 import { AuthContext, OrganizationId } from '../auth/auth-context.decorator';
 import { HybridAuthGuard } from '../auth/hybrid-auth.guard';
 import { PermissionGuard } from '../auth/permission.guard';
-import { RequirePermission } from '../auth/require-permission.decorator';
+import { RequirePermission, RequirePermissions } from '../auth/require-permission.decorator';
 import type { AuthContext as AuthContextType } from '../auth/types';
 import { CreatePolicyDto } from './dto/create-policy.dto';
 import { UpdatePolicyDto } from './dto/update-policy.dto';
@@ -71,6 +71,22 @@ import {
   UPDATE_VERSION_CONTENT_RESPONSES,
 } from './schemas/version-responses';
 import { PolicyResponseDto } from './dto/policy-responses.dto';
+
+function parsePolicyIdsParam(
+  raw: string | string[] | undefined,
+): string[] | undefined {
+  if (!raw) return undefined;
+  const values = Array.isArray(raw) ? raw : [raw];
+  const ids = Array.from(
+    new Set(
+      values
+        .flatMap((value) => value.split(','))
+        .map((s) => s.trim())
+        .filter((s) => s.length > 0),
+    ),
+  );
+  return ids.length > 0 ? ids : undefined;
+}
 
 @ApiTags('Policies')
 @ApiExtraModels(PolicyResponseDto)
@@ -154,9 +170,14 @@ export class PoliciesController {
   async downloadAllPolicies(
     @OrganizationId() organizationId: string,
     @AuthContext() authContext: AuthContextType,
+    @Query('policyIds') policyIdsParam?: string | string[],
   ) {
-    const result =
-      await this.policiesService.downloadAllPoliciesPdf(organizationId);
+    const policyIds = parsePolicyIdsParam(policyIdsParam);
+
+    const result = await this.policiesService.downloadAllPoliciesPdf(
+      organizationId,
+      policyIds,
+    );
 
     return {
       ...result,
@@ -179,24 +200,144 @@ export class PoliciesController {
     @OrganizationId() organizationId: string,
     @AuthContext() authContext: AuthContextType,
   ) {
+    const controlSelect = {
+      id: true,
+      name: true,
+      description: true,
+      requirementsMapped: {
+        where: {
+          archivedAt: null,
+          frameworkInstance: { organizationId },
+        },
+        select: {
+          frameworkInstance: {
+            select: {
+              id: true,
+              framework: { select: { id: true, name: true } },
+              customFramework: { select: { id: true, name: true } },
+            },
+          },
+        },
+      },
+    } as const;
+
     const [policy, allControls] = await Promise.all([
       db.policy.findFirst({
-        where: { id, organizationId },
+        where: { id, organizationId, archivedAt: null },
         select: {
           id: true,
-          controls: { select: { id: true, name: true, description: true } },
+          controls: { where: { archivedAt: null }, select: controlSelect },
         },
       }),
       db.control.findMany({
-        where: { organizationId },
-        select: { id: true, name: true, description: true },
+        where: { organizationId, archivedAt: null },
+        select: controlSelect,
         orderBy: { name: 'asc' },
       }),
     ]);
 
+    type RawControl = {
+      id: string;
+      name: string;
+      description: string | null;
+      requirementsMapped: Array<{
+        frameworkInstance: {
+          id: string;
+          framework: { id: string; name: string } | null;
+          customFramework: { id: string; name: string } | null;
+        } | null;
+      }>;
+    };
+
+    const transform = (controls: RawControl[]) =>
+      controls.map((c) => {
+        const frameworks: Array<{ id: string; name: string }> = [];
+        const seen = new Set<string>();
+        for (const rm of c.requirementsMapped) {
+          const fi = rm.frameworkInstance;
+          if (!fi || seen.has(fi.id)) continue;
+          seen.add(fi.id);
+          const fw = fi.framework ?? fi.customFramework;
+          if (fw) frameworks.push({ id: fw.id, name: fw.name });
+        }
+        return {
+          id: c.id,
+          name: c.name,
+          description: c.description,
+          frameworks,
+        };
+      });
+
     return {
-      mappedControls: policy?.controls ?? [],
-      allControls,
+      mappedControls: transform(policy?.controls ?? []),
+      allControls: transform(allControls),
+      authType: authContext.authType,
+      ...(authContext.userId && {
+        authenticatedUser: {
+          id: authContext.userId,
+          email: authContext.userEmail,
+        },
+      }),
+    };
+  }
+
+  @Get(':id/evidence-tasks')
+  @RequirePermissions([
+    { resource: 'policy', actions: ['read'] },
+    { resource: 'task', actions: ['read'] },
+  ])
+  @ApiOperation({ summary: 'Get tasks that serve as evidence for a policy, grouped by control' })
+  @ApiParam(POLICY_PARAMS.policyId)
+  async getPolicyEvidenceTasks(
+    @Param('id') id: string,
+    @OrganizationId() organizationId: string,
+    @AuthContext() authContext: AuthContextType,
+  ) {
+    const policy = await db.policy.findFirst({
+      where: { id, organizationId, archivedAt: null },
+      select: {
+        id: true,
+        controls: {
+          where: { archivedAt: null, organizationId },
+          select: {
+            id: true,
+            name: true,
+            tasks: {
+              where: { archivedAt: null, organizationId },
+              select: {
+                id: true,
+                title: true,
+                status: true,
+                frequency: true,
+                department: true,
+                automationStatus: true,
+                assigneeId: true,
+              },
+              orderBy: { title: 'asc' },
+            },
+          },
+          orderBy: { name: 'asc' },
+        },
+      },
+    });
+
+    if (!policy) {
+      throw new NotFoundException('Policy not found');
+    }
+
+    const data = policy.controls.map((control) => ({
+      control: { id: control.id, name: control.name },
+      tasks: control.tasks,
+    }));
+
+    const uniqueTaskIds = new Set<string>();
+    for (const group of data) {
+      for (const task of group.tasks) uniqueTaskIds.add(task.id);
+    }
+
+    return {
+      data,
+      count: uniqueTaskIds.size,
       authType: authContext.authType,
       ...(authContext.userId && {
         authenticatedUser: {
@@ -311,8 +452,14 @@ export class PoliciesController {
     let pdfUrl: string | null = null;
 
     if (versionId) {
+      // Apply the same archive guard to the parent policy as the non-versioned
+      // path — otherwise an archived policy's PDF could still be fetched by
+      // passing a versionId, bypassing the user-archived/sync-archived filter.
       const version = await db.policyVersion.findFirst({
-        where: { id: versionId, policy: { id, organizationId } },
+        where: {
+          id: versionId,
+          policy: { id, organizationId, archivedAt: null, isArchived: false },
+        },
         select: { pdfUrl: true },
       });
       pdfUrl = version?.pdfUrl ?? null;
@@ -320,7 +467,7 @@ export class PoliciesController {
 
     if (!pdfUrl) {
       const policy = await db.policy.findFirst({
-        where: { id, organizationId },
+        where: { id, organizationId, archivedAt: null, isArchived: false },
         select: { pdfUrl: true },
       });
       pdfUrl = policy?.pdfUrl ?? null;
@@ -389,7 +536,7 @@ export class PoliciesController {
     const s3 = new S3Client({ region: process.env.AWS_REGION || 'us-east-1' });
 
     const policy = await db.policy.findFirst({
-      where: { id, organizationId },
+      where: { id, organizationId, archivedAt: null },
       select: {
         id: true,
         status: true,
@@ -520,7 +667,7 @@ export class PoliciesController {
       }
     } else {
       const policy = await db.policy.findFirst({
-        where: { id, organizationId },
+        where: { id, organizationId, archivedAt: null },
         select: { id: true, pdfUrl: true },
       });
       if (!policy) throw new NotFoundException('Policy not found');
@@ -570,7 +717,7 @@ export class PoliciesController {
     }
     if (!pdfUrl) {
       const policy = await db.policy.findFirst({
-        where: { id, organizationId },
+        where: { id, organizationId, archivedAt: null },
         select: { pdfUrl: true },
       });
       pdfUrl = policy?.pdfUrl ?? null;

@@ -1564,6 +1564,7 @@ export class TrustAccessService {
         organizationId: grant.accessRequest.organizationId,
         status: 'published',
         isArchived: false,
+        archivedAt: null,
       },
       select: {
         id: true,
@@ -1910,6 +1911,7 @@ export class TrustAccessService {
       | 'iso42001'
       | 'gdpr'
       | 'hipaa'
+      | 'soc3'
       | 'soc2type1'
       | 'soc2type2'
       | 'pci_dss'
@@ -1922,6 +1924,7 @@ export class TrustAccessService {
       [TrustFramework.hipaa]: 'hipaa',
       [TrustFramework.soc2_type1]: 'soc2type1',
       [TrustFramework.soc2_type2]: 'soc2type2',
+      [TrustFramework.soc3]: 'soc3',
       [TrustFramework.pci_dss]: 'pci_dss',
       [TrustFramework.nen_7510]: 'nen7510',
       [TrustFramework.iso_9001]: 'iso9001',
@@ -1998,6 +2001,7 @@ export class TrustAccessService {
         organizationId: grant.accessRequest.organizationId,
         status: 'published',
         isArchived: false,
+        archivedAt: null,
       },
       select: {
         id: true,
@@ -2286,6 +2290,7 @@ export class TrustAccessService {
         organizationId: grant.accessRequest.organizationId,
         status: 'published',
         isArchived: false,
+        archivedAt: null,
       },
       select: {
         id: true,
@@ -2591,6 +2596,8 @@ export class TrustAccessService {
     const CERT_MAP: Record<string, string> = {
       soc2: 'soc2',
       'soc 2': 'soc2',
+      soc3: 'soc3',
+      'soc 3': 'soc3',
       iso27001: 'iso27001',
       'iso 27001': 'iso27001',
       iso42001: 'iso42001',
@@ -2644,6 +2651,7 @@ export class TrustAccessService {
 
     const LABEL_MAP: Record<string, string> = {
       soc2: 'SOC 2',
+      soc3: 'SOC 3',
       iso27001: 'ISO 27001',
       iso42001: 'ISO 42001',
       iso9001: 'ISO 9001',

@@ -12022,6 +12022,7 @@
                 "hipaa",
                 "soc2_type1",
                 "soc2_type2",
+                "soc3",
                 "pci_dss",
                 "nen_7510",
                 "iso_9001"
@@ -12265,16 +12266,7 @@
       },
       "post": {
         "operationId": "ControlTemplateController_create_v1",
-        "parameters": [
-          {
-            "name": "frameworkId",
-            "required": true,
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
+        "parameters": [],
         "requestBody": {
           "required": true,
           "content": {
@@ -13791,6 +13783,20 @@
                 "ready_for_review",
                 "needs_revision",
                 "closed"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "name": "severity",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "enum": [
+                "low",
+                "medium",
+                "high",
+                "critical"
               ],
               "type": "string"
             }
@@ -17664,6 +17670,48 @@
         ]
       }
     },
+    "/v1/browserbase/runs/{runId}/screenshot": {
+      "get": {
+        "description": "Issues a 302 redirect to a newly signed S3 URL so that \"Open full size\" links never serve an expired URL. Pass ?download=true to force an attachment download.",
+        "operationId": "BrowserbaseController_redirectToScreenshot_v1",
+        "parameters": [
+          {
+            "name": "runId",
+            "required": true,
+            "in": "path",
+            "description": "Run ID",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "download",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "302": {
+            "description": "Redirect to signed S3 URL"
+          },
+          "404": {
+            "description": "Run or screenshot not found"
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Redirect to a freshly signed screenshot URL",
+        "tags": [
+          "Browserbase"
+        ]
+      }
+    },
     "/v1/task-management/stats": {
       "get": {
         "description": "Retrieve task items statistics (total count, counts by status) for a specific entity",
@@ -19737,6 +19785,171 @@
           }
         ],
         "summary": "Link existing org controls to a requirement",
+        "tags": [
+          "Frameworks"
+        ]
+      }
+    },
+    "/v1/frameworks/{id}/update-status": {
+      "get": {
+        "operationId": "FrameworksController_getUpdateStatus_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get the update status for a framework instance",
+        "tags": [
+          "Frameworks"
+        ]
+      }
+    },
+    "/v1/frameworks/{id}/update-preview": {
+      "get": {
+        "operationId": "FrameworksController_getUpdatePreview_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Preview changes from updating a framework instance",
+        "tags": [
+          "Frameworks"
+        ]
+      }
+    },
+    "/v1/frameworks/{id}/sync": {
+      "post": {
+        "operationId": "FrameworksController_syncFramework_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SyncFrameworkDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Sync a framework instance to a target version",
+        "tags": [
+          "Frameworks"
+        ]
+      }
+    },
+    "/v1/frameworks/{id}/rollback": {
+      "post": {
+        "operationId": "FrameworksController_rollbackFramework_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RollbackFrameworkDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Roll back a framework sync operation",
+        "tags": [
+          "Frameworks"
+        ]
+      }
+    },
+    "/v1/frameworks/{id}/sync-history": {
+      "get": {
+        "operationId": "FrameworksController_getSyncHistory_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get sync history for a framework instance",
         "tags": [
           "Frameworks"
         ]
@@ -23356,6 +23569,7 @@
               "hipaa",
               "soc2_type1",
               "soc2_type2",
+              "soc3",
               "pci_dss",
               "nen_7510",
               "iso_9001"
@@ -23397,6 +23611,7 @@
               "hipaa",
               "soc2_type1",
               "soc2_type2",
+              "soc3",
               "pci_dss",
               "nen_7510",
               "iso_9001"
@@ -23439,6 +23654,7 @@
               "hipaa",
               "soc2_type1",
               "soc2_type2",
+              "soc3",
               "pci_dss",
               "nen_7510",
               "iso_9001"
@@ -24460,6 +24676,10 @@
             "type": "string",
             "description": "Natural language instruction for navigation"
           },
+          "evaluationCriteria": {
+            "type": "string",
+            "description": "Optional natural-language criteria used to evaluate the automation result. When set, the run gets a pass/fail verdict."
+          },
           "schedule": {
             "type": "string",
             "description": "Cron schedule expression"
@@ -24537,6 +24757,10 @@
           "instruction": {
             "type": "string",
             "description": "Natural language instruction"
+          },
+          "evaluationCriteria": {
+            "type": "string",
+            "description": "Optional natural-language criteria used to evaluate the automation result. Pass an empty string to clear."
           },
           "schedule": {
             "type": "string",
@@ -25243,6 +25467,14 @@
         "required": [
           "controlIds"
         ]
+      },
+      "SyncFrameworkDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "RollbackFrameworkDto": {
+        "type": "object",
+        "properties": {}
       },
       "RequirementMappingDto": {
         "type": "object",

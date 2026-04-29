@@ -22,7 +22,7 @@ function createPrismaClient(): PrismaClient {
   return new PrismaClient({
     adapter,
     transactionOptions: {
-      timeout: 30000,
+      timeout: 60000,
     },
   });
 }

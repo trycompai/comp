@@ -7,20 +7,18 @@
 import { TASK_TEMPLATES } from '../../../task-mappings';
 import type { IntegrationCheck } from '../../../types';
 import type { GitHubDependabotAlert, GitHubOrg, GitHubRepo } from '../types';
-import { parseRepoBranch, targetReposVariable } from '../variables';
-
-interface AlertCounts {
-  open: number;
-  dismissed: number;
-  fixed: number;
-  total: number;
-  bySeverity: {
-    critical: number;
-    high: number;
-    medium: number;
-    low: number;
-  };
-}
+import {
+  alertSeverityThresholdVariable,
+  parseRepoBranch,
+  targetReposVariable,
+} from '../variables';
+import {
+  countAtOrAboveSeverity,
+  highestPresentSeverity,
+  resolveSeverityThreshold,
+  thresholdLabel,
+  type AlertCounts,
+} from './dependabot-alert-severity';
 
 export const dependabotCheck: IntegrationCheck = {
   id: 'dependabot_enabled',
@@ -30,12 +28,16 @@ export const dependabotCheck: IntegrationCheck = {
   taskMapping: TASK_TEMPLATES.secureCode,
   defaultSeverity: 'medium',
 
-  variables: [targetReposVariable],
+  variables: [targetReposVariable, alertSeverityThresholdVariable],
 
   run: async (ctx) => {
     const targetReposRaw = ctx.variables.target_repos as string[] | undefined;
     // Extract just the repo names (values may be in "owner/repo:branch" format)
     const targetRepos = (targetReposRaw || []).map((v) => parseRepoBranch(v).repo);
+
+    const severityThreshold = resolveSeverityThreshold(
+      ctx.variables.alert_severity_threshold as string | undefined,
+    );
 
     let repos: GitHubRepo[];
 
@@ -225,7 +227,37 @@ export const dependabotCheck: IntegrationCheck = {
         ? `\n\nAlert Summary: ${formatAlertSummary(alertCounts)}`
         : '';
 
-      if (dependabotStatus === 'enabled') {
+      // Gate pass/fail on open alerts at/above the configured threshold. If we
+      // couldn't fetch alerts (alertCounts == null), fall back to the original
+      // "Dependabot on = pass" path — we have no alert signal to act on.
+      const alertsAtOrAboveThreshold = alertCounts
+        ? countAtOrAboveSeverity(alertCounts.bySeverity, severityThreshold)
+        : 0;
+      const isDependabotActive =
+        dependabotStatus === 'enabled' || dependabotStatus === 'paused';
+
+      if (alertCounts && alertsAtOrAboveThreshold > 0 && isDependabotActive) {
+        const isSingular = alertsAtOrAboveThreshold === 1;
+        const noun = isSingular ? 'alert' : 'alerts';
+        const verb = isSingular ? 'is' : 'are';
+        const pausedNote =
+          dependabotStatus === 'paused'
+            ? ' Paused Dependabot will not open fix PRs until it resumes.'
+            : '';
+        const titleSuffix = dependabotStatus === 'paused' ? ' (paused)' : '';
+
+        ctx.fail({
+          title: `${alertsAtOrAboveThreshold} unresolved Dependabot ${noun} on ${repo.name}${titleSuffix}`,
+          description: `Dependabot is ${dependabotStatus} but ${alertsAtOrAboveThreshold} open ${thresholdLabel(severityThreshold)} ${noun} ${verb} still unresolved.${pausedNote}${alertSummary}`,
+          resourceType: 'repository',
+          resourceId: repo.full_name,
+          severity: highestPresentSeverity(alertCounts.bySeverity),
+          remediation: `1. Review open alerts at ${repo.html_url}/security/dependabot\n2. Merge the auto-generated fix PRs, or dismiss alerts with a documented justification\n3. Re-run this check once the alert count drops to zero`,
+          evidence: {
+            [repo.full_name]: repoEvidence,
+          },
+        });
+      } else if (dependabotStatus === 'enabled') {
         ctx.pass({
           title: `Dependabot enabled on ${repo.name}`,
           description: `Dependabot security updates are enabled and will automatically create pull requests to fix vulnerable dependencies.${alertSummary}`,

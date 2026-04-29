@@ -53,6 +53,20 @@ jest.mock('@db', () => ({
     draft: 'draft',
     published: 'published',
   },
+  FindingType: {
+    soc2: 'soc2',
+    iso27001: 'iso27001',
+    hipaa: 'hipaa',
+    gdpr: 'gdpr',
+    nist: 'nist',
+  },
+  FindingStatus: {
+    open: 'open',
+    closed: 'closed',
+  },
+  PhaseCompletionType: {},
+  TimelinePhaseStatus: {},
+  TimelineStatus: {},
 }));
 
 jest.mock('@trigger.dev/sdk', () => ({
@@ -188,16 +202,114 @@ describe('PoliciesController', () => {
       const result = await controller.downloadAllPolicies(
         orgId,
         mockAuthContext,
+        undefined,
       );
 
       expect(policiesService.downloadAllPoliciesPdf).toHaveBeenCalledWith(
         orgId,
+        undefined,
       );
       expect(result).toEqual({
         url: 'https://s3.example.com/bundle.pdf',
         authType: 'session',
         authenticatedUser: { id: 'usr_123', email: 'test@example.com' },
       });
+    });
+
+    it('parses comma-separated policyIds and passes an array to the service', async () => {
+      const mockResult = { downloadUrl: 'https://s3/signed', name: 'all-policies', policyCount: 2 };
+      mockPoliciesService.downloadAllPoliciesPdf.mockResolvedValue(mockResult);
+
+      await controller.downloadAllPolicies(
+        orgId,
+        mockAuthContext,
+        'p1, p2 ,p3',
+      );
+
+      expect(policiesService.downloadAllPoliciesPdf).toHaveBeenCalledWith(
+        orgId,
+        ['p1', 'p2', 'p3'],
+      );
+    });
+
+    it('dedupes policyIds and strips empty entries', async () => {
+      const mockResult = { downloadUrl: 'https://s3/signed', name: 'all-policies', policyCount: 1 };
+      mockPoliciesService.downloadAllPoliciesPdf.mockResolvedValue(mockResult);
+
+      await controller.downloadAllPolicies(
+        orgId,
+        mockAuthContext,
+        'p1,,p1,p2,',
+      );
+
+      expect(policiesService.downloadAllPoliciesPdf).toHaveBeenCalledWith(
+        orgId,
+        ['p1', 'p2'],
+      );
+    });
+
+    it('passes undefined when policyIds query is missing', async () => {
+      const mockResult = { downloadUrl: 'https://s3/signed', name: 'all-policies', policyCount: 10 };
+      mockPoliciesService.downloadAllPoliciesPdf.mockResolvedValue(mockResult);
+
+      await controller.downloadAllPolicies(
+        orgId,
+        mockAuthContext,
+        undefined,
+      );
+
+      expect(policiesService.downloadAllPoliciesPdf).toHaveBeenCalledWith(
+        orgId,
+        undefined,
+      );
+    });
+
+    it('passes undefined when policyIds query is an empty string', async () => {
+      const mockResult = { downloadUrl: 'https://s3/signed', name: 'all-policies', policyCount: 10 };
+      mockPoliciesService.downloadAllPoliciesPdf.mockResolvedValue(mockResult);
+
+      await controller.downloadAllPolicies(
+        orgId,
+        mockAuthContext,
+        '',
+      );
+
+      expect(policiesService.downloadAllPoliciesPdf).toHaveBeenCalledWith(
+        orgId,
+        undefined,
+      );
+    });
+
+    it('handles repeated-key array form (policyIds=a&policyIds=b)', async () => {
+      const mockResult = { downloadUrl: 'https://s3/signed', name: 'all-policies', policyCount: 2 };
+      mockPoliciesService.downloadAllPoliciesPdf.mockResolvedValue(mockResult);
+
+      await controller.downloadAllPolicies(
+        orgId,
+        mockAuthContext,
+        ['p1', 'p2'],
+      );
+
+      expect(policiesService.downloadAllPoliciesPdf).toHaveBeenCalledWith(
+        orgId,
+        ['p1', 'p2'],
+      );
+    });
+
+    it('handles mixed array form where each value itself contains commas', async () => {
+      const mockResult = { downloadUrl: 'https://s3/signed', name: 'all-policies', policyCount: 3 };
+      mockPoliciesService.downloadAllPoliciesPdf.mockResolvedValue(mockResult);
+
+      await controller.downloadAllPolicies(
+        orgId,
+        mockAuthContext,
+        ['p1,p2', 'p3'],
+      );
+
+      expect(policiesService.downloadAllPoliciesPdf).toHaveBeenCalledWith(
+        orgId,
+        ['p1', 'p2', 'p3'],
+      );
     });
   });
 
@@ -292,14 +404,39 @@ describe('PoliciesController', () => {
   });
 
   describe('getPolicyControls', () => {
-    it('should return mapped and all controls', async () => {
+    it('returns mapped and all controls with framework names derived from requirementsMapped', async () => {
       const { db } = require('@db');
       const mappedControls = [
-        { id: 'ctrl_1', name: 'Control 1', description: 'desc' },
+        {
+          id: 'ctrl_1',
+          name: 'Control 1',
+          description: 'desc',
+          requirementsMapped: [
+            {
+              frameworkInstance: {
+                id: 'fi_1',
+                framework: { id: 'fw_soc2', name: 'SOC 2' },
+                customFramework: null,
+              },
+            },
+            {
+              frameworkInstance: {
+                id: 'fi_2',
+                framework: null,
+                customFramework: { id: 'cfw_1', name: 'Internal Policy' },
+              },
+            },
+          ],
+        },
       ];
       const allControls = [
-        { id: 'ctrl_1', name: 'Control 1', description: 'desc' },
-        { id: 'ctrl_2', name: 'Control 2', description: 'desc2' },
+        ...mappedControls,
+        {
+          id: 'ctrl_2',
+          name: 'Control 2',
+          description: 'desc2',
+          requirementsMapped: [],
+        },
       ];
       db.policy.findFirst.mockResolvedValue({
         id: 'pol_1',
@@ -313,12 +450,80 @@ describe('PoliciesController', () => {
         mockAuthContext,
       );
 
-      expect(result.mappedControls).toEqual(mappedControls);
-      expect(result.allControls).toEqual(allControls);
+      expect(result.mappedControls).toEqual([
+        {
+          id: 'ctrl_1',
+          name: 'Control 1',
+          description: 'desc',
+          frameworks: [
+            { id: 'fw_soc2', name: 'SOC 2' },
+            { id: 'cfw_1', name: 'Internal Policy' },
+          ],
+        },
+      ]);
+      expect(result.allControls).toEqual([
+        {
+          id: 'ctrl_1',
+          name: 'Control 1',
+          description: 'desc',
+          frameworks: [
+            { id: 'fw_soc2', name: 'SOC 2' },
+            { id: 'cfw_1', name: 'Internal Policy' },
+          ],
+        },
+        {
+          id: 'ctrl_2',
+          name: 'Control 2',
+          description: 'desc2',
+          frameworks: [],
+        },
+      ]);
       expect(result.authType).toBe('session');
     });
 
-    it('should return empty mappedControls when policy not found', async () => {
+    it('dedupes frameworks when the same FrameworkInstance is reachable via multiple RequirementMaps', async () => {
+      const { db } = require('@db');
+      const controls = [
+        {
+          id: 'ctrl_1',
+          name: 'Control 1',
+          description: 'desc',
+          requirementsMapped: [
+            {
+              frameworkInstance: {
+                id: 'fi_1',
+                framework: { id: 'fw_soc2', name: 'SOC 2' },
+                customFramework: null,
+              },
+            },
+            {
+              frameworkInstance: {
+                id: 'fi_1',
+                framework: { id: 'fw_soc2', name: 'SOC 2' },
+                customFramework: null,
+              },
+            },
+          ],
+        },
+      ];
+      db.policy.findFirst.mockResolvedValue({
+        id: 'pol_1',
+        controls,
+      });
+      db.control.findMany.mockResolvedValue(controls);
+
+      const result = await controller.getPolicyControls(
+        'pol_1',
+        orgId,
+        mockAuthContext,
+      );
+
+      expect(result.mappedControls[0].frameworks).toEqual([
+        { id: 'fw_soc2', name: 'SOC 2' },
+      ]);
+    });
+
+    it('returns empty mappedControls when policy is not found', async () => {
       const { db } = require('@db');
       db.policy.findFirst.mockResolvedValue(null);
       db.control.findMany.mockResolvedValue([]);
@@ -330,6 +535,33 @@ describe('PoliciesController', () => {
       );
 
       expect(result.mappedControls).toEqual([]);
+    });
+
+    it('scopes the requirementsMapped query to the caller organization', async () => {
+      const { db } = require('@db');
+      db.policy.findFirst.mockResolvedValue({ id: 'pol_1', controls: [] });
+      db.control.findMany.mockResolvedValue([]);
+
+      await controller.getPolicyControls('pol_1', orgId, mockAuthContext);
+
+      expect(db.policy.findFirst).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { id: 'pol_1', organizationId: orgId, archivedAt: null },
+          select: expect.objectContaining({
+            controls: expect.objectContaining({
+              where: { archivedAt: null },
+              select: expect.objectContaining({
+                requirementsMapped: expect.objectContaining({
+                  where: {
+                    archivedAt: null,
+                    frameworkInstance: { organizationId: orgId },
+                  },
+                }),
+              }),
+            }),
+          }),
+        }),
+      );
     });
   });
 
@@ -620,6 +852,89 @@ describe('PoliciesController', () => {
         body,
       );
       expect(result.data).toEqual(mockResult);
+    });
+  });
+
+  describe('getPolicyEvidenceTasks', () => {
+    it('returns tasks grouped by control, excluding archived tasks', async () => {
+      const { db } = require('@db');
+      db.policy.findFirst.mockResolvedValue({
+        id: 'pol_1',
+        controls: [
+          {
+            id: 'ctl_1',
+            name: 'Access Controls',
+            tasks: [
+              {
+                id: 'tsk_1',
+                title: 'Enable 2FA',
+                status: 'in_progress',
+                frequency: 'monthly',
+                department: 'it',
+                automationStatus: 'MANUAL',
+                assigneeId: 'mem_1',
+              },
+            ],
+          },
+          {
+            id: 'ctl_2',
+            name: 'Monitoring',
+            tasks: [],
+          },
+        ],
+      });
+
+      const result = await controller.getPolicyEvidenceTasks(
+        'pol_1',
+        orgId,
+        mockAuthContext,
+      );
+
+      expect(db.policy.findFirst).toHaveBeenCalledWith({
+        where: { id: 'pol_1', organizationId: orgId, archivedAt: null },
+        select: expect.objectContaining({
+          id: true,
+          controls: expect.objectContaining({
+            where: { archivedAt: null, organizationId: orgId },
+            select: expect.objectContaining({
+              tasks: expect.objectContaining({
+                where: { archivedAt: null, organizationId: orgId },
+              }),
+            }),
+          }),
+        }),
+      });
+      expect(result.data).toEqual([
+        {
+          control: { id: 'ctl_1', name: 'Access Controls' },
+          tasks: [
+            {
+              id: 'tsk_1',
+              title: 'Enable 2FA',
+              status: 'in_progress',
+              frequency: 'monthly',
+              department: 'it',
+              automationStatus: 'MANUAL',
+              assigneeId: 'mem_1',
+            },
+          ],
+        },
+        {
+          control: { id: 'ctl_2', name: 'Monitoring' },
+          tasks: [],
+        },
+      ]);
+      expect(result.count).toBe(1);
+      expect(result.authType).toBe('session');
+    });
+
+    it('throws NotFoundException when policy is not in caller org', async () => {
+      const { db } = require('@db');
+      db.policy.findFirst.mockResolvedValue(null);
+
+      await expect(
+        controller.getPolicyEvidenceTasks('pol_404', orgId, mockAuthContext),
+      ).rejects.toThrow('Policy not found');
     });
   });
 });

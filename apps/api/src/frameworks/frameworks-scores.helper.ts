@@ -5,6 +5,7 @@ import {
   toExternalEvidenceFormType,
 } from '@trycompai/company';
 import { db } from '@db';
+import { ISO27001_FRAMEWORK_NAMES } from '../soa/utils/constants';
 import { filterComplianceMembers } from '../utils/compliance-filters';
 
 const SIX_MONTHS_MS = 6 * 30 * 24 * 60 * 60 * 1000;
@@ -15,8 +16,8 @@ const HIPAA_TRAINING_ID = 'hipaa-sat-1';
 export async function getOverviewScores(organizationId: string) {
   const [allPolicies, allTasks, employees, onboarding, org, hipaaInstance] =
     await Promise.all([
-      db.policy.findMany({ where: { organizationId } }),
-      db.task.findMany({ where: { organizationId } }),
+      db.policy.findMany({ where: { organizationId, isArchived: false, archivedAt: null } }),
+      db.task.findMany({ where: { organizationId, archivedAt: null } }),
       db.member.findMany({
         where: { organizationId, deactivated: false },
         include: { user: true },
@@ -185,11 +186,24 @@ export async function getOverviewScores(organizationId: string) {
 }
 
 async function computeDocumentsScore(organizationId: string) {
-  const groupedStatuses = await db.evidenceSubmission.groupBy({
-    by: ['formType'],
-    where: { organizationId },
-    _max: { submittedAt: true },
-  });
+  const [groupedStatuses, isoFrameworkInstances] = await Promise.all([
+    db.evidenceSubmission.groupBy({
+      by: ['formType'],
+      where: { organizationId },
+      _max: { submittedAt: true },
+    }),
+    db.frameworkInstance.findMany({
+      where: {
+        organizationId,
+        framework: {
+          name: {
+            in: ISO27001_FRAMEWORK_NAMES,
+          },
+        },
+      },
+      select: { frameworkId: true },
+    }),
+  ]);
 
   const statuses: Record<string, { lastSubmittedAt: string | null }> = {};
   for (const form of evidenceFormDefinitionList) {
@@ -204,8 +218,7 @@ async function computeDocumentsScore(organizationId: string) {
   const includedForms = evidenceFormDefinitionList.filter(
     (f) => !f.hidden && !f.optional,
   );
-  const totalDocuments = includedForms.length;
-  const outstandingDocuments = includedForms.reduce((count, form) => {
+  const nonSOAOutstandingDocuments = includedForms.reduce((count, form) => {
     if (form.type === 'meeting') {
       const allMeetingsOutstanding = meetingSubTypeValues.every((subType) => {
         const lastSubmitted = statuses[subType]?.lastSubmittedAt;
@@ -222,6 +235,37 @@ async function computeDocumentsScore(organizationId: string) {
       Date.now() - new Date(lastSubmitted).getTime() > SIX_MONTHS_MS;
     return isOutstanding ? count + 1 : count;
   }, 0);
+
+  const isoFrameworkIds = isoFrameworkInstances
+    .map((instance) => instance.frameworkId)
+    .filter((id): id is string => !!id);
+  const hasSOADocumentRequirement = isoFrameworkIds.length > 0;
+
+  let soaCompleted = false;
+  if (hasSOADocumentRequirement) {
+    const latestSOADocument = await db.sOADocument.findFirst({
+      where: {
+        organizationId,
+        isLatest: true,
+        frameworkId: { in: isoFrameworkIds },
+      },
+      select: {
+        approvedAt: true,
+        status: true,
+      },
+      orderBy: {
+        updatedAt: 'desc',
+      },
+    });
+    soaCompleted =
+      latestSOADocument?.status === 'completed' &&
+      !!latestSOADocument.approvedAt;
+  }
+
+  const soaTotalDocuments = hasSOADocumentRequirement ? 1 : 0;
+  const soaOutstandingDocuments = hasSOADocumentRequirement && !soaCompleted ? 1 : 0;
+  const totalDocuments = includedForms.length + soaTotalDocuments;
+  const outstandingDocuments = nonSOAOutstandingDocuments + soaOutstandingDocuments;
 
   return {
     totalDocuments,

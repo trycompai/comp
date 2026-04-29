@@ -36,6 +36,21 @@ describe('parseGoogleWorkspaceCheckUserFilter', () => {
     expect(config.userFilterMode).toBe('exclude');
     expect(config.includeSuspended).toBe(false);
   });
+
+  it('coerces a string target_org_units into an array', () => {
+    const config = parseGoogleWorkspaceCheckUserFilter({
+      target_org_units: '/Staff' as unknown as string[],
+      include_suspended: 'false',
+    });
+    expect(config.targetOrgUnits).toEqual(['/Staff']);
+  });
+
+  it('returns undefined for missing target_org_units', () => {
+    const config = parseGoogleWorkspaceCheckUserFilter({
+      include_suspended: 'false',
+    });
+    expect(config.targetOrgUnits).toBeUndefined();
+  });
 });
 
 describe('shouldIncludeGoogleWorkspaceUserForCheck', () => {

@@ -50,3 +50,10 @@ next-env.d.ts
 # Sentry Config File
 .env.sentry-build-plugin
 
+# Generated Prisma Client
+prisma/generated
+prisma/src/generated/
+src/generated/
+# Model files are copied here by db:getschema — only schema.prisma is committed
+prisma/schema/*.prisma
+!prisma/schema/schema.prisma

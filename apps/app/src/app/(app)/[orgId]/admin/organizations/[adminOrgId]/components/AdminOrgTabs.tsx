@@ -1,6 +1,8 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { toast } from 'sonner';
 import { api } from '@/lib/api-client';
 import {
   AlertDialog,
@@ -33,6 +35,7 @@ import { EvidenceTab } from './EvidenceTab';
 import { PoliciesTab } from './PoliciesTab';
 import { TimelineTab } from './TimelineTab';
 import { FeatureFlagsTab } from './FeatureFlagsTab';
+import { PentestCreditsTab } from './PentestCreditsTab';
 
 interface OrgMember {
   id: string;
@@ -65,11 +68,15 @@ export function AdminOrgTabs({
   org: AdminOrgDetail;
   currentOrgId: string;
 }) {
+  const router = useRouter();
   const [activeTab, setActiveTab] = useState('overview');
   const [toggling, setToggling] = useState(false);
   const [hasAccess, setHasAccess] = useState(org.hasAccess);
   const [deactivateDialogOpen, setDeactivateDialogOpen] = useState(false);
   const [confirmValue, setConfirmValue] = useState('');
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [deleteConfirmValue, setDeleteConfirmValue] = useState('');
+  const [deleting, setDeleting] = useState(false);
 
   const handleToggleAccess = async () => {
     if (hasAccess) {
@@ -93,6 +100,27 @@ export function AdminOrgTabs({
     );
     if (!res.error) setHasAccess(false);
     setToggling(false);
+  };
+
+  const handleConfirmDelete = async () => {
+    setDeleting(true);
+    const res = await api.delete(
+      `/v1/admin/organizations/${org.id}`,
+      undefined,
+      { confirm: org.slug },
+    );
+    setDeleting(false);
+    if (res.error) {
+      toast.error(
+        typeof res.error === 'string'
+          ? res.error
+          : 'Failed to delete organization',
+      );
+      return;
+    }
+    setDeleteDialogOpen(false);
+    toast.success(`Organization '${org.name}' permanently deleted`);
+    router.push(`/${currentOrgId}/admin/organizations`);
   };
 
   return (
@@ -121,6 +149,16 @@ export function AdminOrgTabs({
                 >
                   {hasAccess ? 'Deactivate' : 'Activate'}
                 </Button>
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  onClick={() => {
+                    setDeleteConfirmValue('');
+                    setDeleteDialogOpen(true);
+                  }}
+                >
+                  Delete Permanently
+                </Button>
               </div>
             }
             tabs={
@@ -134,6 +172,7 @@ export function AdminOrgTabs({
                 <TabsTrigger value="context">Context</TabsTrigger>
                 <TabsTrigger value="evidence">Evidence</TabsTrigger>
                 <TabsTrigger value="timeline">Timeline</TabsTrigger>
+                <TabsTrigger value="pentest-credits">Pentest credits</TabsTrigger>
                 <TabsTrigger value="feature-flags">Feature Flags</TabsTrigger>
               </TabsList>
             }
@@ -184,6 +223,9 @@ export function AdminOrgTabs({
         <TabsContent value="timeline">
           <TimelineTab orgId={org.id} />
         </TabsContent>
+        <TabsContent value="pentest-credits">
+          <PentestCreditsTab orgId={org.id} currentOrgId={currentOrgId} />
+        </TabsContent>
         <TabsContent value="feature-flags">
           <FeatureFlagsTab orgId={org.id} />
         </TabsContent>
@@ -226,6 +268,51 @@ export function AdminOrgTabs({
               disabled={confirmValue !== 'deactivate'}
             >
               Deactivate
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog
+        open={deleteDialogOpen}
+        onOpenChange={(open) => {
+          setDeleteDialogOpen(open);
+          if (!open) setDeleteConfirmValue('');
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Permanently delete organization</AlertDialogTitle>
+            <AlertDialogDescription>
+              This cannot be undone. All policies, members, tasks, devices,
+              evidence, integrations, Stripe billing, S3 files, and vector
+              embeddings for <strong>{org.name}</strong> will be permanently
+              removed.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="mt-2 flex flex-col gap-2">
+            <Label htmlFor="confirm-delete">
+              Type the organization slug{' '}
+              <code className="font-mono">{org.slug}</code> to confirm
+            </Label>
+            <Input
+              id="confirm-delete"
+              value={deleteConfirmValue}
+              onChange={(e) => setDeleteConfirmValue(e.target.value)}
+              placeholder={org.slug}
+              autoComplete="off"
+            />
+          </div>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setDeleteConfirmValue('')}>
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction
+              variant="destructive"
+              onClick={handleConfirmDelete}
+              disabled={deleteConfirmValue !== org.slug || deleting}
+            >
+              {deleting ? 'Deleting…' : 'Delete Permanently'}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

@@ -106,6 +106,7 @@ export class TasksService {
         db.task.findMany({
           where: {
             organizationId,
+            archivedAt: null,
             ...assignmentFilter,
           },
           ...(options?.includeRelations && {
@@ -195,10 +196,11 @@ export class TasksService {
           where: {
             id: taskId,
             organizationId,
+            archivedAt: null,
           },
           include: {
             assignee: true,
-            controls: true,
+            controls: { where: { archivedAt: null } },
             approver: { include: { user: true } },
           },
         }),
@@ -236,6 +238,7 @@ export class TasksService {
       where: {
         id: taskId,
         organizationId,
+        archivedAt: null,
       },
     });
 
@@ -318,7 +321,7 @@ export class TasksService {
     const [controls, frameworkInstances, organization, member] =
       await Promise.all([
         db.control.findMany({
-          where: { organizationId },
+          where: { organizationId, archivedAt: null },
           select: { id: true, name: true },
           orderBy: { name: 'asc' },
         }),
@@ -529,8 +532,8 @@ export class TasksService {
         organizationId,
         timelinesService: this.timelinesService,
       }).catch((err) => {
-      this.logger.warn('timeline auto-complete check failed', err);
-    });
+        this.logger.warn('timeline auto-complete check failed', err);
+      });
 
       return { deletedCount: result.count };
     } catch (error) {
@@ -555,6 +558,7 @@ export class TasksService {
       assigneeId?: string | null;
       approverId?: string | null;
       frequency?: TaskFrequency;
+      integrationScheduleFrequency?: TaskFrequency;
       department?: string;
       reviewDate?: Date | null;
     },
@@ -566,6 +570,7 @@ export class TasksService {
         where: {
           id: taskId,
           organizationId,
+          archivedAt: null,
         },
         select: {
           id: true,
@@ -588,6 +593,7 @@ export class TasksService {
         assigneeId?: string | null;
         approverId?: string | null;
         frequency?: TaskFrequency;
+        integrationScheduleFrequency?: TaskFrequency;
         department?: string;
         reviewDate?: Date | null;
       } = {};
@@ -647,6 +653,10 @@ export class TasksService {
           updateData.frequency,
         );
       }
+      if (updateData.integrationScheduleFrequency !== undefined) {
+        dataToUpdate.integrationScheduleFrequency =
+          updateData.integrationScheduleFrequency;
+      }
       if (updateData.department !== undefined) {
         dataToUpdate.department = updateData.department;
       }
@@ -657,7 +667,7 @@ export class TasksService {
       // When status changes to done, set review date based on frequency
       if (updateData.status === TaskStatus.done && !updateData.reviewDate) {
         const task = await db.task.findFirst({
-          where: { id: taskId, organizationId },
+          where: { id: taskId, organizationId, archivedAt: null },
           select: { frequency: true },
         });
         dataToUpdate.reviewDate = computeNextTaskReviewDate(task?.frequency);
@@ -875,6 +885,8 @@ export class TasksService {
         createdAt: task.createdAt,
         updatedAt: task.updatedAt,
         taskTemplateId: task.taskTemplateId,
+        integrationScheduleFrequency: task.integrationScheduleFrequency,
+        integrationLastRunAt: task.integrationLastRunAt,
       };
     } catch (error) {
       console.error('Error creating task:', error);
@@ -887,7 +899,7 @@ export class TasksService {
    */
   async regenerateFromTemplate(organizationId: string, taskId: string) {
     const task = await db.task.findFirst({
-      where: { id: taskId, organizationId },
+      where: { id: taskId, organizationId, archivedAt: null },
       include: { taskTemplate: true },
     });
 
@@ -936,6 +948,7 @@ export class TasksService {
       where: {
         id: taskId,
         organizationId,
+        archivedAt: null,
       },
     });
 
@@ -966,7 +979,7 @@ export class TasksService {
     approverId: string,
   ): Promise<TaskResponseDto> {
     const task = await db.task.findFirst({
-      where: { id: taskId, organizationId },
+      where: { id: taskId, organizationId, archivedAt: null },
     });
 
     if (!task) {
@@ -1080,6 +1093,7 @@ export class TasksService {
       where: {
         id: { in: taskIds },
         organizationId,
+        archivedAt: null,
         status: { notIn: ['in_review', 'done'] },
       },
     });
@@ -1150,7 +1164,7 @@ export class TasksService {
     userId: string,
   ): Promise<TaskResponseDto> {
     const task = await db.task.findFirst({
-      where: { id: taskId, organizationId },
+      where: { id: taskId, organizationId, archivedAt: null },
       include: {
         approver: { include: { user: true } },
         assignee: { include: { user: true } },
@@ -1238,7 +1252,7 @@ export class TasksService {
     userId: string,
   ): Promise<TaskResponseDto> {
     const task = await db.task.findFirst({
-      where: { id: taskId, organizationId },
+      where: { id: taskId, organizationId, archivedAt: null },
       include: {
         approver: { include: { user: true } },
         assignee: { include: { user: true } },

@@ -1,9 +1,11 @@
 model EvidenceAutomation {
-  id          String   @id @default(dbgenerated("generate_prefixed_cuid('aut'::text)"))
-  name        String
-  description String?
-  createdAt   DateTime @default(now())
-  isEnabled   Boolean  @default(false)
+  id                String        @id @default(dbgenerated("generate_prefixed_cuid('aut'::text)"))
+  name              String
+  description       String?
+  createdAt         DateTime      @default(now())
+  isEnabled         Boolean       @default(false)
+  scheduleFrequency TaskFrequency @default(daily)
+  lastRunAt         DateTime?
 
   chatHistory        String?
   evaluationCriteria String?

@@ -19,22 +19,6 @@ export class CreatePenetrationTestDto {
   repoUrl?: string;
 
   @ApiPropertyOptional({
-    description: 'GitHub token used for cloning private repositories',
-    required: false,
-  })
-  @IsOptional()
-  @IsString()
-  githubToken?: string;
-
-  @ApiPropertyOptional({
-    description: 'Optional YAML configuration for the pentest run',
-    required: false,
-  })
-  @IsOptional()
-  @IsString()
-  configYaml?: string;
-
-  @ApiPropertyOptional({
     description: 'Whether to enable pipeline testing mode',
     required: false,
     default: false,
@@ -42,14 +26,6 @@ export class CreatePenetrationTestDto {
   @IsOptional()
   @IsBoolean()
   pipelineTesting?: boolean;
-
-  @ApiPropertyOptional({
-    description: 'Workspace identifier used by the pentest engine',
-    required: false,
-  })
-  @IsOptional()
-  @IsString()
-  workspace?: string;
 
   @ApiPropertyOptional({
     description:

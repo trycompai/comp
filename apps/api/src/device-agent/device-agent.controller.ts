@@ -1,14 +1,18 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   Head,
+  HttpCode,
+  HttpStatus,
   Param,
   Post,
   Query,
   Req,
   Response,
   StreamableFile,
+  UnauthorizedException,
   UseGuards,
 } from '@nestjs/common';
 import {
@@ -27,7 +31,7 @@ import { PermissionGuard } from '../auth/permission.guard';
 import { Public } from '../auth/public.decorator';
 import { RequirePermission } from '../auth/require-permission.decorator';
 import { SkipOrgCheck } from '../auth/skip-org-check.decorator';
-import type { AuthContext as AuthContextType } from '../auth/types';
+import type { AuthContext as AuthContextType, AuthenticatedRequest } from '../auth/types';
 import { DeviceAgentAuthService } from './device-agent-auth.service';
 import { DeviceAgentService } from './device-agent.service';
 import { AuthCodeDto } from './dto/auth-code.dto';
@@ -66,6 +70,12 @@ export class DeviceAgentController {
   ) {
     const result = await this.deviceAgentService.getUpdateFile({ filename });
 
+    if (result.kind === 'redirect') {
+      res.set({ 'Cache-Control': 'no-store' });
+      res.redirect(302, result.url);
+      return;
+    }
+
     res.set({
       'Content-Type': result.contentType,
       'Cache-Control': 'public, max-age=300',
@@ -85,6 +95,12 @@ export class DeviceAgentController {
     @Response({ passthrough: true }) res: ExpressResponse,
   ) {
     const result = await this.deviceAgentService.headUpdateFile({ filename });
+
+    if (result.kind === 'redirect') {
+      res.set({ 'Cache-Control': 'no-store' });
+      res.redirect(302, result.url);
+      return;
+    }
 
     res.set({
       'Content-Type': result.contentType,
@@ -130,18 +146,36 @@ export class DeviceAgentController {
   @SkipOrgCheck()
   @ApiOperation({ summary: 'Register a device agent' })
   async registerDevice(
+    @Req() req: AuthenticatedRequest,
     @UserId() userId: string,
     @Body() dto: RegisterDeviceDto,
   ) {
-    return this.deviceAgentAuthService.registerDevice({ userId, dto });
+    const { sessionId } = req;
+    if (!sessionId) {
+      throw new UnauthorizedException('Session ID missing from request');
+    }
+    return this.deviceAgentAuthService.registerDevice({ userId, sessionId, dto });
   }
 
   @Post('check-in')
   @UseGuards(HybridAuthGuard)
   @SkipOrgCheck()
   @ApiOperation({ summary: 'Submit a device check-in' })
-  async checkIn(@UserId() userId: string, @Body() dto: CheckInDto) {
-    return this.deviceAgentAuthService.checkIn({ userId, dto });
+  async checkIn(
+    @Req() req: AuthenticatedRequest,
+    @UserId() userId: string,
+    @Body() dto: CheckInDto,
+  ) {
+    const { sessionId, sessionDeviceAgent } = req;
+    if (!sessionId) {
+      throw new UnauthorizedException('Session ID missing from request');
+    }
+    return this.deviceAgentAuthService.checkIn({
+      userId,
+      sessionId,
+      sessionDeviceAgent: sessionDeviceAgent ?? false,
+      dto,
+    });
   }
 
   @Get('status')
@@ -216,5 +250,20 @@ export class DeviceAgentController {
     });
 
     return new StreamableFile(stream);
+  }
+
+  @Delete('sessions/:deviceId')
+  @UseGuards(HybridAuthGuard, PermissionGuard)
+  @RequirePermission('member', 'update')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiOperation({ summary: 'Revoke a device agent session' })
+  async revokeAgentAccess(
+    @OrganizationId() organizationId: string,
+    @Param('deviceId') deviceId: string,
+  ) {
+    await this.deviceAgentAuthService.revokeAgentAccess({
+      organizationId,
+      deviceId,
+    });
   }
 }
