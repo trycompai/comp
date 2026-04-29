@@ -1,6 +1,8 @@
 'use client';
 
 import { api } from '@/lib/api-client';
+import { cn } from '@trycompai/design-system/cn';
+import { ArrowLeft } from '@trycompai/design-system/icons';
 import type {
   PentestCreateRequest,
   PentestIssue,
@@ -128,6 +130,14 @@ export function SplitView({
 
   const goToCreate = () =>
     router.push(`/${orgId}/security/penetration-tests/new`);
+  const goToList = () =>
+    router.push(`/${orgId}/security/penetration-tests`);
+
+  // Mobile shows ONE pane at a time, picked from the URL. List on
+  // `/pentests`, main pane on `/pentests/:id` and `/pentests/new`. Below
+  // `md` we hide whichever isn't active so an IDE-style split doesn't
+  // collapse into ~200px columns. On desktop both are always shown.
+  const showListOnMobile = selectedRunId === null && !isCreateMode;
 
   // Empty state only shown when there are no runs AND no selection AND not
   // in create mode. Once there is at least one run we always render the
@@ -152,7 +162,11 @@ export function SplitView({
     <div className="pt-tokens flex h-[calc(100vh-4rem)] min-h-0 -m-4 md:-m-6">
       <div
         aria-hidden={isCreateMode}
-        className={isCreateMode ? 'pointer-events-none opacity-45' : ''}
+        className={cn(
+          'w-full md:w-auto md:shrink-0',
+          showListOnMobile ? 'block' : 'hidden md:block',
+          isCreateMode ? 'pointer-events-none opacity-45' : '',
+        )}
       >
         <RunList
           orgId={orgId}
@@ -163,7 +177,28 @@ export function SplitView({
           trialUsed={trialUsed}
         />
       </div>
-      <main className="flex-1 min-w-0 flex flex-col">
+      <main
+        className={cn(
+          'min-w-0 flex-1 flex-col',
+          showListOnMobile ? 'hidden md:flex' : 'flex',
+        )}
+      >
+        {/* Mobile-only back bar. The sidebar is hidden on phones once a
+            run is selected (or in create mode), so we surface a
+            persistent path back to the list. md+ never sees this — the
+            sidebar itself is the navigation. */}
+        {!showListOnMobile && (
+          <div className="md:hidden flex items-center border-b border-border bg-background px-3 py-2">
+            <button
+              type="button"
+              onClick={goToList}
+              className="flex items-center gap-1.5 text-sm font-medium text-muted-foreground hover:text-foreground"
+            >
+              <ArrowLeft className="h-4 w-4" />
+              Scans
+            </button>
+          </div>
+        )}
         {isCreateMode ? (
           <CreateRunPanel
             orgId={orgId}

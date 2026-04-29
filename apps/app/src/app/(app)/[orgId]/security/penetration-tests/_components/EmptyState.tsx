@@ -46,7 +46,7 @@ export function EmptyState({
     ? "You've used your trial run. Paid plans are coming soon — contact support if you need access today."
     : 'Automated black-box pen testing. Start a scan to see findings here.';
   return (
-    <div className="mx-auto flex h-full max-w-3xl flex-col items-start justify-center gap-6 px-8 py-12">
+    <div className="mx-auto flex h-full max-w-3xl flex-col items-start justify-center gap-6 px-4 py-10 md:px-8 md:py-12">
       <div>
         <div className="mb-3 inline-flex items-center gap-2">
           <h1 className="text-[26px] font-medium tracking-[-0.02em]">
