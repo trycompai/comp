@@ -14,6 +14,7 @@ import type { UpdatePeopleDto } from './dto/update-people.dto';
 import type { BulkCreatePeopleDto } from './dto/bulk-create-people.dto';
 import { MemberValidator } from './utils/member-validator';
 import { MemberQueries } from './utils/member-queries';
+import { authorizeRoleChange } from './utils/role-authorization';
 import {
   collectAssignedItems,
   clearAssignments,
@@ -292,6 +293,7 @@ export class PeopleService {
     memberId: string,
     organizationId: string,
     updateData: UpdatePeopleDto,
+    callerUserId?: string,
   ): Promise<PeopleResponseDto> {
     try {
       await MemberValidator.validateOrganization(organizationId);
@@ -299,6 +301,20 @@ export class PeopleService {
         memberId,
         organizationId,
       );
+
+      if (updateData.role !== undefined) {
+        if (!callerUserId) {
+          throw new ForbiddenException(
+            'Role changes require an authenticated session caller',
+          );
+        }
+        await authorizeRoleChange({
+          callerUserId,
+          organizationId,
+          targetMember: existingMember,
+          newRole: updateData.role,
+        });
+      }
 
       // If userId is being updated, validate the new user
       if (updateData.userId && updateData.userId !== existingMember.userId) {
@@ -323,7 +339,8 @@ export class PeopleService {
     } catch (error) {
       if (
         error instanceof NotFoundException ||
-        error instanceof BadRequestException
+        error instanceof BadRequestException ||
+        error instanceof ForbiddenException
       ) {
         throw error;
       }
