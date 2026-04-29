@@ -5,12 +5,13 @@ jest.mock('@db', () => ({
     member: { findMany: jest.fn() },
     onboarding: { findUnique: jest.fn() },
     organization: { findUnique: jest.fn() },
-    frameworkInstance: { findFirst: jest.fn() },
+    frameworkInstance: { findFirst: jest.fn(), findMany: jest.fn() },
     employeeTrainingVideoCompletion: { findMany: jest.fn() },
     device: { findMany: jest.fn() },
     fleetPolicyResult: { findMany: jest.fn() },
     evidenceSubmission: { groupBy: jest.fn() },
     finding: { findMany: jest.fn() },
+    sOADocument: { findFirst: jest.fn() },
   },
 }));
 
@@ -20,7 +21,12 @@ jest.mock('../utils/compliance-filters', () => ({
 
 import { db } from '@db';
 import { filterComplianceMembers } from '../utils/compliance-filters';
-import { getOverviewScores } from './frameworks-scores.helper';
+import {
+  computeFrameworkComplianceScore,
+  getOverviewScores,
+} from './frameworks-scores.helper';
+
+const SIX_MONTHS_MS = 6 * 30 * 24 * 60 * 60 * 1000;
 
 const mockDb = db as jest.Mocked<typeof db>;
 const mockFilterComplianceMembers =
@@ -42,6 +48,8 @@ describe('frameworks-scores.helper', () => {
     (mockDb.fleetPolicyResult.findMany as jest.Mock).mockResolvedValue([]);
     (mockDb.evidenceSubmission.groupBy as jest.Mock).mockResolvedValue([]);
     (mockDb.finding.findMany as jest.Mock).mockResolvedValue([]);
+    (mockDb.frameworkInstance.findMany as jest.Mock).mockResolvedValue([]);
+    ((mockDb as any).sOADocument.findFirst as jest.Mock).mockResolvedValue(null);
   });
 
   it('requires installed device for people completion when device agent step is enabled', async () => {
@@ -237,6 +245,107 @@ describe('frameworks-scores.helper', () => {
       mockDb.employeeTrainingVideoCompletion.findMany,
     ).toHaveBeenCalledWith({
       where: { memberId: { in: ['mem_1', 'mem_2'] } },
+    });
+  });
+
+  describe('computeFrameworkComplianceScore', () => {
+    it('returns 0 when the framework has no artifacts', () => {
+      expect(
+        computeFrameworkComplianceScore({ controls: [] }, [], []),
+      ).toBe(0);
+    });
+
+    it('returns 100 when every artifact across the framework is complete', () => {
+      const framework = {
+        controls: [
+          {
+            id: 'c1',
+            policies: [{ id: 'p1', status: 'published' }],
+            controlDocumentTypes: [],
+          },
+        ],
+      };
+      const tasks = [
+        { id: 't1', status: 'done', controls: [{ id: 'c1' }] },
+      ];
+      expect(computeFrameworkComplianceScore(framework, tasks, [])).toBe(100);
+    });
+
+    it('weights every artifact equally instead of treating partial controls as 0%', () => {
+      const framework = {
+        controls: [
+          {
+            id: 'c1',
+            policies: [{ id: 'p1', status: 'published' }],
+            controlDocumentTypes: [{ formType: 'access_control_policy' }],
+          },
+          {
+            id: 'c2',
+            policies: [{ id: 'p2', status: 'draft' }],
+            controlDocumentTypes: [],
+          },
+        ],
+      };
+      const tasks = [
+        { id: 't1', status: 'done', controls: [{ id: 'c1' }] },
+        { id: 't2', status: 'todo', controls: [{ id: 'c2' }] },
+      ];
+      // 5 unique artifacts (2 policies, 2 tasks, 1 doc type), 2 completed → 40%
+      // The old binary-completion implementation would have returned 0%
+      // because no control is fully satisfied.
+      expect(computeFrameworkComplianceScore(framework, tasks, [])).toBe(40);
+    });
+
+    it('only treats a document as completed when its latest submission is within 6 months', () => {
+      const framework = {
+        controls: [
+          {
+            id: 'c1',
+            policies: [],
+            controlDocumentTypes: [
+              { formType: 'access_control_policy' },
+              { formType: 'incident_response_plan' },
+            ],
+          },
+        ],
+      };
+      const recent = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+      const stale = new Date(Date.now() - SIX_MONTHS_MS - 24 * 60 * 60 * 1000);
+      const submissions = [
+        { formType: 'access_control_policy', submittedAt: recent },
+        { formType: 'incident_response_plan', submittedAt: stale },
+      ];
+      expect(computeFrameworkComplianceScore(framework, [], submissions)).toBe(
+        50,
+      );
+    });
+
+    it('deduplicates artifacts shared across controls', () => {
+      const framework = {
+        controls: [
+          {
+            id: 'c1',
+            policies: [{ id: 'p1', status: 'published' }],
+            controlDocumentTypes: [{ formType: 'access_control_policy' }],
+          },
+          {
+            id: 'c2',
+            policies: [{ id: 'p1', status: 'published' }],
+            controlDocumentTypes: [{ formType: 'access_control_policy' }],
+          },
+        ],
+      };
+      const sharedTask = {
+        id: 't1',
+        status: 'done',
+        controls: [{ id: 'c1' }, { id: 'c2' }],
+      };
+      // Without dedup: 6 artifacts (2 policies, 2 tasks, 2 docs), 4 completed → 67%
+      // With dedup: 2 unique artifacts (1 policy, 1 task), 2 completed; 1 unmet doc → 67%
+      // Wait: 1 policy (done) + 1 task (done) + 1 doc (no submission, not fresh) = 2/3 = 67%
+      expect(computeFrameworkComplianceScore(framework, [sharedTask], [])).toBe(
+        67,
+      );
     });
   });
 
