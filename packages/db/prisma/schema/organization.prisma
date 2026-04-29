@@ -74,6 +74,9 @@ model Organization {
   // Device Agent
   devices Device[]
 
+  // Background Checks
+  backgroundCheckRequests BackgroundCheckRequest[]
+
   // Org Chart
   organizationChart OrganizationChart?
 

@@ -4,22 +4,6 @@ import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { useState } from 'react';
 
-import { Button } from '@trycompai/ui/button';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@trycompai/ui/dialog';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@trycompai/ui/dropdown-menu';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@trycompai/ui/tooltip';
 import { parseRolesString } from '@/lib/permissions';
 import type { Role } from '@db';
 import {
@@ -27,6 +11,17 @@ import {
   AvatarFallback,
   AvatarImage,
   Badge,
+  Button,
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
   HStack,
   Label,
   Skeleton,
@@ -34,14 +29,21 @@ import {
   TableRow,
   Text,
 } from '@trycompai/design-system';
-import { Checkmark, Edit, Information, Laptop, OverflowMenuVertical, TrashCan } from '@trycompai/design-system/icons';
+import {
+  Checkmark,
+  Edit,
+  Laptop,
+  OverflowMenuVertical,
+  TrashCan,
+} from '@trycompai/design-system/icons';
 
 import { toast } from 'sonner';
+import { BackgroundCheckVerifiedTick } from '../../components/BackgroundCheckVerifiedTick';
 import { MultiRoleCombobox } from './MultiRoleCombobox';
 import { RemoveDeviceAlert } from './RemoveDeviceAlert';
 import { RemoveMemberAlert } from './RemoveMemberAlert';
 import type { CustomRoleOption } from './MultiRoleCombobox';
-import type { MemberWithUser, TaskCompletion } from './TeamMembers';
+import type { BackgroundCheckStatus, MemberWithUser, TaskCompletion } from './TeamMembers';
 
 interface MemberRowProps {
   member: MemberWithUser;
@@ -55,6 +57,7 @@ interface MemberRowProps {
   taskCompletion?: TaskCompletion;
   deviceStatus?: 'compliant' | 'non-compliant' | 'stale' | 'not-installed';
   isDeviceStatusLoading?: boolean;
+  backgroundCheckStatus?: BackgroundCheckStatus;
 }
 
 function getInitials(name?: string | null, email?: string | null): string {
@@ -88,32 +91,22 @@ function parseRoles(role: Role | Role[] | string): string[] {
   return parseRolesString(role);
 }
 
-type DeviceStatus = 'compliant' | 'non-compliant' | 'stale' | 'not-installed';
-
-function getDeviceStatusDotClass(status: DeviceStatus): string {
-  switch (status) {
-    case 'compliant':
-      return 'bg-green-500';
-    case 'non-compliant':
-      return 'bg-yellow-500';
-    case 'stale':
-      return 'bg-gray-400';
-    case 'not-installed':
-      return 'bg-red-400';
-  }
+function isBackgroundCheckComplete(status?: BackgroundCheckStatus): boolean {
+  return status === 'completed' || status === 'completed_with_flags';
 }
 
-function getDeviceStatusLabel(status: DeviceStatus): string {
-  switch (status) {
-    case 'compliant':
-      return 'Compliant';
-    case 'non-compliant':
-      return 'Non-Compliant';
-    case 'stale':
-      return 'Stale';
-    case 'not-installed':
-      return 'Not Installed';
-  }
+interface TaskCountItem {
+  label: string;
+  completed: number;
+  total: number;
+}
+
+function TaskCountLabel({ item }: { item: TaskCountItem }) {
+  return (
+    <Text size="xs" variant="muted">
+      {item.label} {item.completed}/{item.total}
+    </Text>
+  );
 }
 
 export function MemberRow({
@@ -128,6 +121,7 @@ export function MemberRow({
   taskCompletion,
   deviceStatus,
   isDeviceStatusLoading = false,
+  backgroundCheckStatus,
 }: MemberRowProps) {
   const { orgId } = useParams<{ orgId: string }>();
 
@@ -146,16 +140,60 @@ export function MemberRow({
   const memberAvatar = member.user.image;
   const memberId = member.id;
   const currentRoles = parseRoles(member.role);
-  const taskProgressPercent =
-    taskCompletion && taskCompletion.total > 0
-      ? Math.round((taskCompletion.completed / taskCompletion.total) * 100)
-      : 0;
 
   const isOwner = currentRoles.includes('owner');
   const isPlatformAdmin = member.user.role === 'admin';
   const canRemove = !isOwner;
   const isDeactivated = member.deactivated || !member.isActive;
   const profileHref = `/${orgId}/people/${memberId}`;
+  const hasCompletedBackgroundCheck = isBackgroundCheckComplete(backgroundCheckStatus);
+  const shouldShowTaskRequirements = !isPlatformAdmin && !isDeactivated;
+  const taskItems: TaskCountItem[] = [];
+
+  if (taskCompletion) {
+    taskItems.push({
+      label: 'Policies',
+      completed: taskCompletion.policies.completed,
+      total: taskCompletion.policies.total,
+    });
+
+    if (taskCompletion.training.total > 0) {
+      taskItems.push({
+        label: 'Training',
+        completed: taskCompletion.training.completed,
+        total: taskCompletion.training.total,
+      });
+    }
+
+    if (taskCompletion.hipaa) {
+      taskItems.push({
+        label: 'HIPAA',
+        completed: taskCompletion.hipaa.completed,
+        total: taskCompletion.hipaa.total,
+      });
+    }
+  }
+
+  if (shouldShowTaskRequirements && deviceStatus) {
+    taskItems.push({
+      label: 'Device',
+      completed: deviceStatus === 'compliant' ? 1 : 0,
+      total: 1,
+    });
+  }
+
+  if (shouldShowTaskRequirements) {
+    taskItems.push({
+      label: 'Background check',
+      completed: hasCompletedBackgroundCheck ? 1 : 0,
+      total: 1,
+    });
+  }
+
+  const visibleTaskTotal = taskItems.reduce((sum, item) => sum + item.total, 0);
+  const visibleTaskCompleted = taskItems.reduce((sum, item) => sum + item.completed, 0);
+  const taskProgressPercent =
+    visibleTaskTotal > 0 ? Math.round((visibleTaskCompleted / visibleTaskTotal) * 100) : 0;
 
   const handleEditRolesClick = () => {
     setSelectedRoles(parseRoles(member.role));
@@ -225,14 +263,17 @@ export function MemberRow({
               </Avatar>
             </div>
             <div className="min-w-0">
-              <Link
-                href={profileHref}
-                className={`truncate text-sm font-medium hover:underline ${
-                  isDeactivated ? 'text-muted-foreground' : ''
-                }`}
-              >
-                {memberName}
-              </Link>
+              <div className="flex min-w-0 items-center gap-1.5">
+                <Link
+                  href={profileHref}
+                  className={`truncate text-sm font-medium hover:underline ${
+                    isDeactivated ? 'text-muted-foreground' : ''
+                  }`}
+                >
+                  {memberName}
+                </Link>
+                {hasCompletedBackgroundCheck && <BackgroundCheckVerifiedTick />}
+              </div>
               <Text variant="muted">{memberEmail}</Text>
             </div>
           </HStack>
@@ -263,63 +304,10 @@ export function MemberRow({
           </div>
         </TableCell>
 
-        {/* DEVICE */}
-        <TableCell>
-          {isPlatformAdmin || isDeactivated ? (
-            <Text size="sm" variant="muted">
-              —
-            </Text>
-          ) : isDeviceStatusLoading ? (
-            <div className="h-4 w-24">
-              <Skeleton style={{ height: '100%', width: '100%' }} />
-            </div>
-          ) : !deviceStatus ? (
-            <Text size="sm" variant="muted">
-              —
-            </Text>
-          ) : (
-            <div className="flex items-center gap-2">
-              <span
-                className={`inline-block h-2 w-2 rounded-full ${getDeviceStatusDotClass(deviceStatus)}`}
-              />
-              <span
-                className={`text-sm ${
-                  deviceStatus === 'not-installed' || deviceStatus === 'stale'
-                    ? 'text-muted-foreground'
-                    : 'text-foreground'
-                }`}
-              >
-                {getDeviceStatusLabel(deviceStatus)}
-              </span>
-              {deviceStatus === 'stale' && (
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <button
-                        type="button"
-                        aria-label="What does Stale mean?"
-                        className="inline-flex items-center text-muted-foreground hover:text-foreground"
-                        onClick={(e) => e.stopPropagation()}
-                      >
-                        <Information size={14} />
-                      </button>
-                    </TooltipTrigger>
-                    <TooltipContent className="max-w-xs text-xs">
-                      We haven't received a recent compliance check from this device. It may be
-                      offline, the agent may need to be updated, or the device may no longer be in
-                      use.
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
-              )}
-            </div>
-          )}
-        </TableCell>
-
         {/* TASKS */}
         <TableCell>
-          {taskCompletion ? (
-            <div className="w-[220px]">
+          {taskItems.length > 0 ? (
+            <div className="min-w-64 max-w-sm">
               <div className="h-2 w-full overflow-hidden rounded-full bg-muted">
                 <div
                   className="h-full bg-primary transition-all"
@@ -327,18 +315,13 @@ export function MemberRow({
                 />
               </div>
               <div className="mt-1 flex flex-wrap gap-x-2 gap-y-0.5">
-                <Text size="xs" variant="muted">
-                  Policies {taskCompletion.policies.completed}/{taskCompletion.policies.total}
-                </Text>
-                {taskCompletion.training.total > 0 && (
-                  <Text size="xs" variant="muted">
-                    Training {taskCompletion.training.completed}/{taskCompletion.training.total}
-                  </Text>
-                )}
-                {taskCompletion.hipaa && (
-                  <Text size="xs" variant="muted">
-                    HIPAA {taskCompletion.hipaa.completed}/{taskCompletion.hipaa.total}
-                  </Text>
+                {taskItems.map((item) => (
+                  <TaskCountLabel key={item.label} item={item} />
+                ))}
+                {shouldShowTaskRequirements && isDeviceStatusLoading && (
+                  <div className="h-3 w-16">
+                    <Skeleton style={{ height: '100%', width: '100%' }} />
+                  </div>
                 )}
               </div>
             </div>
@@ -353,10 +336,11 @@ export function MemberRow({
         <TableCell>
           <div className="flex justify-center">
             <DropdownMenu open={dropdownOpen} onOpenChange={setDropdownOpen}>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="sm" className="h-8 w-8 p-0" disabled={!canEdit}>
+              <DropdownMenuTrigger
+                disabled={!canEdit}
+                className="inline-flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground disabled:pointer-events-none disabled:opacity-50"
+              >
                   <OverflowMenuVertical />
-                </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
                 {isDeactivated && canEdit && (
@@ -386,7 +370,7 @@ export function MemberRow({
                   )}
                 {!isDeactivated && canRemove && (
                   <DropdownMenuItem
-                    className="text-destructive focus:text-destructive focus:bg-destructive/10"
+                    variant="destructive"
                     onSelect={() => {
                       setDropdownOpen(false);
                       setIsRemoveAlertOpen(true);

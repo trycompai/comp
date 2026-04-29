@@ -9,6 +9,21 @@ import { TeamMembersClient } from './TeamMembersClient';
 
 export interface MemberWithUser extends Member {
   user: User;
+  backgroundCheckRequests?: BackgroundCheckSummary[];
+}
+
+export type BackgroundCheckStatus =
+  | 'invited'
+  | 'in_progress'
+  | 'in_review'
+  | 'completed'
+  | 'completed_with_flags'
+  | 'failed'
+  | 'cancelled';
+
+export interface BackgroundCheckSummary {
+  id: string;
+  status: BackgroundCheckStatus;
 }
 
 export interface TeamMembersData {

@@ -523,7 +523,7 @@
     },
     "packages/db": {
       "name": "@trycompai/db",
-      "version": "2.0.0",
+      "version": "2.0.1",
       "bin": {
         "comp-prisma-postinstall": "./dist/postinstall.js",
       },

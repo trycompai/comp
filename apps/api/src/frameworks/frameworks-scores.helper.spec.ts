@@ -1,14 +1,19 @@
 jest.mock('@db', () => ({
+  BackgroundCheckStatus: {
+    completed: 'completed',
+    completed_with_flags: 'completed_with_flags',
+  },
   db: {
     policy: { findMany: jest.fn() },
     task: { findMany: jest.fn() },
     member: { findMany: jest.fn() },
     onboarding: { findUnique: jest.fn() },
     organization: { findUnique: jest.fn() },
-    frameworkInstance: { findFirst: jest.fn() },
+    frameworkInstance: { findFirst: jest.fn(), findMany: jest.fn() },
     employeeTrainingVideoCompletion: { findMany: jest.fn() },
     device: { findMany: jest.fn() },
     fleetPolicyResult: { findMany: jest.fn() },
+    backgroundCheckRequest: { findMany: jest.fn() },
     evidenceSubmission: { groupBy: jest.fn() },
     finding: { findMany: jest.fn() },
   },
@@ -36,10 +41,15 @@ describe('frameworks-scores.helper', () => {
     (mockDb.task.findMany as jest.Mock).mockResolvedValue([]);
     (mockDb.onboarding.findUnique as jest.Mock).mockResolvedValue(null);
     (mockDb.frameworkInstance.findFirst as jest.Mock).mockResolvedValue(null);
+    (mockDb.frameworkInstance.findMany as jest.Mock).mockResolvedValue([]);
     (
       mockDb.employeeTrainingVideoCompletion.findMany as jest.Mock
     ).mockResolvedValue([]);
     (mockDb.fleetPolicyResult.findMany as jest.Mock).mockResolvedValue([]);
+    (mockDb.backgroundCheckRequest.findMany as jest.Mock).mockResolvedValue([
+      { memberId: 'mem_1' },
+      { memberId: 'mem_2' },
+    ]);
     (mockDb.evidenceSubmission.groupBy as jest.Mock).mockResolvedValue([]);
     (mockDb.finding.findMany as jest.Mock).mockResolvedValue([]);
   });
@@ -272,6 +282,8 @@ describe('frameworks-scores.helper', () => {
 
     expect(scores.people.total).toBe(2);
     expect(scores.people.completed).toBe(2);
-    expect(mockDb.employeeTrainingVideoCompletion.findMany).not.toHaveBeenCalled();
+    expect(
+      mockDb.employeeTrainingVideoCompletion.findMany,
+    ).not.toHaveBeenCalled();
   });
 });

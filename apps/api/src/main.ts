@@ -15,6 +15,10 @@ import { mkdirSync, writeFileSync, existsSync } from 'fs';
 
 let app: INestApplication | null = null;
 
+interface ExpressRawBodyRequest extends express.Request {
+  rawBody?: Buffer;
+}
+
 function describeServer(baseUrl: string): string {
   if (baseUrl.includes('api.staging.trycomp.ai')) return 'Staging API Server';
   if (baseUrl.includes('api.trycomp.ai')) return 'Production API Server';
@@ -78,7 +82,12 @@ async function bootstrap(): Promise<void> {
   // request stream to properly read the body (including OAuth callbackURL).
   // Express-level middleware runs BEFORE NestJS module middleware, so without this
   // skip, express.json() would consume the stream before better-auth's handler.
-  const jsonParser = express.json({ limit: '150mb' });
+  const jsonParser = express.json({
+    limit: '150mb',
+    verify: (req, _res, buf) => {
+      (req as ExpressRawBodyRequest).rawBody = Buffer.from(buf);
+    },
+  });
   const urlencodedParser = express.urlencoded({
     limit: '150mb',
     extended: true,
