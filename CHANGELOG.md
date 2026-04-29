@@ -1,3 +1,10 @@
+## [3.36.1](https://github.com/trycompai/comp/compare/v3.36.0...v3.36.1) (2026-04-29)
+
+
+### Bug Fixes
+
+* **app:** bubble up artifact-based progress through control/requirement/framework views (CS-316) ([33a7b90](https://github.com/trycompai/comp/commit/33a7b903beab9726ceafce66481b3af740b1bc7d)), closes [#2695](https://github.com/trycompai/comp/issues/2695)
+
 # [3.36.0](https://github.com/trycompai/comp/compare/v3.35.0...v3.36.0) (2026-04-29)
 
 
