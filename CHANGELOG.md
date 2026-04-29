@@ -1,3 +1,10 @@
+## [3.38.1](https://github.com/trycompai/comp/compare/v3.38.0...v3.38.1) (2026-04-29)
+
+
+### Bug Fixes
+
+* **security:** admin escalation, secrets RBAC, oauth session check ([#2712](https://github.com/trycompai/comp/issues/2712)) ([5627b12](https://github.com/trycompai/comp/commit/5627b1212aa62252f4542ef1b96e4c074b473490))
+
 # [3.38.0](https://github.com/trycompai/comp/compare/v3.37.0...v3.38.0) (2026-04-29)
 
 
