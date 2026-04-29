@@ -2,14 +2,12 @@
 
 import type { Control, Task } from '@db';
 import { Badge, Text } from '@trycompai/design-system';
-import { getControlStatus } from '@/lib/control-compliance';
+import {
+  type EvidenceSubmissionInfo,
+  getControlStatus,
+  getFrameworkAggregatePercent,
+} from '@/lib/control-compliance';
 import type { FrameworkInstanceWithControls } from '@/lib/types/framework';
-
-interface EvidenceSubmissionInfo {
-  id: string;
-  formType: string;
-  createdAt: Date | string;
-}
 
 interface Props {
   framework: FrameworkInstanceWithControls;
@@ -32,7 +30,7 @@ export function FrameworkProgress({ framework, tasks, evidenceSubmissions }: Pro
       ) === 'completed',
   ).length;
 
-  const percent = totalControls > 0 ? Math.round((compliantControls / totalControls) * 100) : 0;
+  const percent = getFrameworkAggregatePercent(allControls, tasks, evidenceSubmissions);
   const remaining = totalControls - compliantControls;
 
   const variant: 'default' | 'secondary' | 'destructive' =
