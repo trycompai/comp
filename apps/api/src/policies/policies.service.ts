@@ -48,7 +48,7 @@ export class PoliciesService {
   async findAll(organizationId: string) {
     try {
       const policies = await db.policy.findMany({
-        where: { organizationId },
+        where: { organizationId, isArchived: false, archivedAt: null },
         select: {
           id: true,
           name: true,
@@ -1268,7 +1268,10 @@ export class PoliciesService {
   /**
    * Download all published policies as a single PDF bundle (no watermark)
    */
-  async downloadAllPoliciesPdf(organizationId: string) {
+  async downloadAllPoliciesPdf(
+    organizationId: string,
+    policyIds?: string[],
+  ) {
     // Get organization info
     const organization = await db.organization.findUnique({
       where: { id: organizationId },
@@ -1284,6 +1287,10 @@ export class PoliciesService {
       where: {
         organizationId,
         isArchived: false,
+        archivedAt: null,
+        ...(policyIds && policyIds.length > 0
+          ? { id: { in: policyIds } }
+          : {}),
       },
       select: {
         id: true,

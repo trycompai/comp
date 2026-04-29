@@ -1,13 +1,15 @@
 model Task {
   // Metadata
-  id          String         @id @default(dbgenerated("generate_prefixed_cuid('tsk'::text)"))
-  title       String
-  description String
-  status           TaskStatus           @default(todo)
-  automationStatus TaskAutomationStatus @default(AUTOMATED)
-  frequency        TaskFrequency?
-  department  Departments?   @default(none)
-  order       Int            @default(0)
+  id                           String               @id @default(dbgenerated("generate_prefixed_cuid('tsk'::text)"))
+  title                        String
+  description                  String
+  status                       TaskStatus           @default(todo)
+  automationStatus             TaskAutomationStatus @default(AUTOMATED)
+  frequency                    TaskFrequency?
+  integrationScheduleFrequency TaskFrequency        @default(daily)
+  integrationLastRunAt         DateTime?
+  department                   Departments?         @default(none)
+  order                        Int                  @default(0)
 
   // Dates
   createdAt       DateTime  @default(now())
@@ -29,14 +31,19 @@ model Task {
   browserAutomations  BrowserAutomation[]
 
   evidenceAutomationRuns EvidenceAutomationRun[]
-  integrationCheckRuns  IntegrationCheckRun[]
-  findings              Finding[]
+  integrationCheckRuns   IntegrationCheckRun[]
+  findings               Finding[]
 
   // Evidence approval
   approverId     String?
   approver       Member?     @relation("TaskApprover", fields: [approverId], references: [id])
   approvedAt     DateTime?
   previousStatus TaskStatus?
+
+  // Sync-driven archive — see Control.archivedAt.
+  archivedAt DateTime?
+
+  @@index([organizationId, archivedAt])
 }
 
 enum TaskStatus {

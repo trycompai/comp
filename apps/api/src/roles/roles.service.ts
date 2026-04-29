@@ -468,6 +468,71 @@ export class RolesService {
   }
 
   /**
+   * Filter a list of members down to those whose combined role permissions
+   * grant the given `resource:action`. Built-in role definitions come from
+   * `BUILT_IN_ROLE_PERMISSIONS`; custom roles are fetched in a single batched
+   * `organizationRole.findMany` keyed by the distinct role names present in
+   * the input.
+   *
+   * Matches better-auth's `hasPermissionFn` semantics: comma-separated roles
+   * in `member.role` are treated as a union (ANY role granting the permission
+   * is sufficient). Unknown role names are skipped silently.
+   */
+  async filterMembersWithPermission<M extends { role: string | null }>(
+    organizationId: string,
+    members: M[],
+    resource: string,
+    action: string,
+  ): Promise<M[]> {
+    if (members.length === 0) return [];
+
+    const distinctRoles = new Set<string>();
+    for (const m of members) {
+      if (!m.role) continue;
+      for (const r of m.role.split(',').map((r) => r.trim()).filter(Boolean)) {
+        distinctRoles.add(r);
+      }
+    }
+    if (distinctRoles.size === 0) return [];
+
+    const customRoleNames = [...distinctRoles].filter(
+      (r) => !BUILT_IN_ROLES.includes(r),
+    );
+
+    const customRoles =
+      customRoleNames.length > 0
+        ? await db.organizationRole.findMany({
+            where: { organizationId, name: { in: customRoleNames } },
+            select: { name: true, permissions: true },
+          })
+        : [];
+
+    const permsByRole = new Map<string, Record<string, string[]>>();
+    for (const name of distinctRoles) {
+      if (BUILT_IN_ROLES.includes(name)) {
+        permsByRole.set(name, BUILT_IN_ROLE_PERMISSIONS[name] ?? {});
+      } else {
+        const custom = customRoles.find((c) => c.name === name);
+        if (!custom) continue;
+        const perms =
+          typeof custom.permissions === 'string'
+            ? (JSON.parse(custom.permissions) as Record<string, string[]>)
+            : (custom.permissions as Record<string, string[]>);
+        permsByRole.set(name, perms);
+      }
+    }
+
+    return members.filter((m) => {
+      if (!m.role) return false;
+      const roles = m.role
+        .split(',')
+        .map((r) => r.trim())
+        .filter(Boolean);
+      return roles.some((r) => permsByRole.get(r)?.[resource]?.includes(action));
+    });
+  }
+
+  /**
    * Get merged obligations for a list of custom role names.
    * Used by the frontend to resolve effective obligations for custom roles.
    */

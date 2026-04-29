@@ -72,6 +72,22 @@ import {
 } from './schemas/version-responses';
 import { PolicyResponseDto } from './dto/policy-responses.dto';
 
+function parsePolicyIdsParam(
+  raw: string | string[] | undefined,
+): string[] | undefined {
+  if (!raw) return undefined;
+  const values = Array.isArray(raw) ? raw : [raw];
+  const ids = Array.from(
+    new Set(
+      values
+        .flatMap((value) => value.split(','))
+        .map((s) => s.trim())
+        .filter((s) => s.length > 0),
+    ),
+  );
+  return ids.length > 0 ? ids : undefined;
+}
+
 @ApiTags('Policies')
 @ApiExtraModels(PolicyResponseDto)
 @Controller({ path: 'policies', version: '1' })
@@ -154,9 +170,14 @@ export class PoliciesController {
   async downloadAllPolicies(
     @OrganizationId() organizationId: string,
     @AuthContext() authContext: AuthContextType,
+    @Query('policyIds') policyIdsParam?: string | string[],
   ) {
-    const result =
-      await this.policiesService.downloadAllPoliciesPdf(organizationId);
+    const policyIds = parsePolicyIdsParam(policyIdsParam);
+
+    const result = await this.policiesService.downloadAllPoliciesPdf(
+      organizationId,
+      policyIds,
+    );
 
     return {
       ...result,
@@ -181,14 +202,14 @@ export class PoliciesController {
   ) {
     const [policy, allControls] = await Promise.all([
       db.policy.findFirst({
-        where: { id, organizationId },
+        where: { id, organizationId, archivedAt: null },
         select: {
           id: true,
-          controls: { select: { id: true, name: true, description: true } },
+          controls: { where: { archivedAt: null }, select: { id: true, name: true, description: true } },
         },
       }),
       db.control.findMany({
-        where: { organizationId },
+        where: { organizationId, archivedAt: null },
         select: { id: true, name: true, description: true },
         orderBy: { name: 'asc' },
       }),
@@ -311,8 +332,14 @@ export class PoliciesController {
     let pdfUrl: string | null = null;
 
     if (versionId) {
+      // Apply the same archive guard to the parent policy as the non-versioned
+      // path — otherwise an archived policy's PDF could still be fetched by
+      // passing a versionId, bypassing the user-archived/sync-archived filter.
       const version = await db.policyVersion.findFirst({
-        where: { id: versionId, policy: { id, organizationId } },
+        where: {
+          id: versionId,
+          policy: { id, organizationId, archivedAt: null, isArchived: false },
+        },
         select: { pdfUrl: true },
       });
       pdfUrl = version?.pdfUrl ?? null;
@@ -320,7 +347,7 @@ export class PoliciesController {
 
     if (!pdfUrl) {
       const policy = await db.policy.findFirst({
-        where: { id, organizationId },
+        where: { id, organizationId, archivedAt: null, isArchived: false },
         select: { pdfUrl: true },
       });
       pdfUrl = policy?.pdfUrl ?? null;
@@ -389,7 +416,7 @@ export class PoliciesController {
     const s3 = new S3Client({ region: process.env.AWS_REGION || 'us-east-1' });
 
     const policy = await db.policy.findFirst({
-      where: { id, organizationId },
+      where: { id, organizationId, archivedAt: null },
       select: {
         id: true,
         status: true,
@@ -520,7 +547,7 @@ export class PoliciesController {
       }
     } else {
       const policy = await db.policy.findFirst({
-        where: { id, organizationId },
+        where: { id, organizationId, archivedAt: null },
         select: { id: true, pdfUrl: true },
       });
       if (!policy) throw new NotFoundException('Policy not found');
@@ -570,7 +597,7 @@ export class PoliciesController {
     }
     if (!pdfUrl) {
       const policy = await db.policy.findFirst({
-        where: { id, organizationId },
+        where: { id, organizationId, archivedAt: null },
         select: { pdfUrl: true },
       });
       pdfUrl = policy?.pdfUrl ?? null;

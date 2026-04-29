@@ -10,6 +10,9 @@ import { AttachmentsModule } from '../attachments/attachments.module';
 import { SecurityPenetrationTestsModule } from '../security-penetration-tests/security-penetration-tests.module';
 import { AdminOrganizationsController } from './admin-organizations.controller';
 import { AdminOrganizationsService } from './admin-organizations.service';
+import { PurgeOrganizationService } from './purge-organization.service';
+import { PurgeOrganizationSnapshotService } from './purge-organization-snapshot.service';
+import { PurgeOrganizationExternalService } from './purge-organization-external.service';
 import { AdminFindingsController } from './admin-findings.controller';
 import { AdminPoliciesController } from './admin-policies.controller';
 import { AdminTasksController } from './admin-tasks.controller';
@@ -40,6 +43,11 @@ import { AdminPentestCreditsController } from './admin-pentest-credits.controlle
     AdminEvidenceController,
     AdminPentestCreditsController,
   ],
-  providers: [AdminOrganizationsService],
+  providers: [
+    AdminOrganizationsService,
+    PurgeOrganizationService,
+    PurgeOrganizationSnapshotService,
+    PurgeOrganizationExternalService,
+  ],
 })
 export class AdminOrganizationsModule {}

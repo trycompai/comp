@@ -47,11 +47,8 @@ export class TaskTemplateController {
       transform: true,
     }),
   )
-  async createTaskTemplate(
-    @Body() dto: CreateTaskTemplateDto,
-    @Query('frameworkId') frameworkId?: string,
-  ) {
-    return this.taskTemplateService.create(dto, frameworkId);
+  async createTaskTemplate(@Body() dto: CreateTaskTemplateDto) {
+    return this.taskTemplateService.create(dto);
   }
 
   @Get()

@@ -2,7 +2,9 @@
 
 import { ConnectIntegrationDialog } from '@/components/integrations/ConnectIntegrationDialog';
 import { ManageIntegrationDialog } from '@/components/integrations/ManageIntegrationDialog';
+import { SchedulePicker } from '@/components/schedule-picker';
 import { downloadAutomationPDF } from '@/lib/evidence-download';
+import type { TaskFrequency } from '@db';
 import type { TaskIntegrationCheck, StoredCheckRun } from '../hooks/useIntegrationChecks';
 import { useIntegrationChecks } from '../hooks/useIntegrationChecks';
 import { cn } from '@/lib/utils';
@@ -50,12 +52,21 @@ interface TaskIntegrationChecksProps {
   onTaskUpdated?: () => void;
   /** When true, disables creating new automations (shows existing ones read-only) */
   isManualTask?: boolean;
+  /** Current schedule for integration checks on this task. When provided with
+   * `onScheduleChange`, renders a schedule picker in the card header. */
+  scheduleFrequency?: TaskFrequency;
+  /** Last successful run timestamp, used to compute the "next run" display. */
+  lastRunAt?: Date | string | null;
+  onScheduleChange?: (value: TaskFrequency) => void | Promise<void>;
 }
 
 export function TaskIntegrationChecks({
   taskId,
   onTaskUpdated,
   isManualTask = false,
+  scheduleFrequency,
+  lastRunAt,
+  onScheduleChange,
 }: TaskIntegrationChecksProps) {
   const params = useParams();
   const searchParams = useSearchParams();
@@ -260,26 +271,43 @@ export function TaskIntegrationChecks({
   const failedRuns = storedRuns.filter((r) => r.status === 'failed' || r.failedCount > 0).length;
   const successRate = totalRuns > 0 ? Math.round((successfulRuns / totalRuns) * 100) : 0;
 
-  // Calculate next scheduled run (daily at 6 AM UTC)
+  // Calculate next scheduled run. Orchestrator fires daily at 6 AM UTC; the
+  // actual task only runs on a tick when `isDueToday(scheduleFrequency,
+  // lastRunAt)` returns true (server-side). We approximate the next qualifying
+  // 6 AM UTC tick here — exact enough for a UI hint, not authoritative.
   const getNextScheduledRun = () => {
     const now = new Date();
-    let nextRun = setMinutes(setHours(new Date(), 6), 0); // 6:00 AM UTC today
-
-    // If we're past 6 AM UTC today, schedule for tomorrow
+    const PERIOD_DAYS: Record<TaskFrequency, number> = {
+      daily: 1,
+      weekly: 7,
+      monthly: 30,
+      quarterly: 91,
+      yearly: 365,
+    };
+    const last = lastRunAt ? new Date(lastRunAt) : null;
+    const periodDays = PERIOD_DAYS[scheduleFrequency ?? 'daily'];
+    const earliestDueFromLast = last
+      ? addDays(last, periodDays)
+      : now;
+    // Snap to next 6 AM UTC at or after the earliest-due date
+    let nextRun = setMinutes(setHours(earliestDueFromLast, 6), 0);
     if (isBefore(nextRun, now)) {
-      nextRun = addDays(nextRun, 1);
+      nextRun = setMinutes(setHours(addDays(now, 1), 6), 0);
     }
-
     return nextRun;
   };
 
   const nextRun = connectedChecks.length > 0 ? getNextScheduledRun() : null;
+  const hasConfiguredChecks =
+    connectedChecks.length > 0 || disabledForTaskChecks.length > 0;
+  const showSchedulePicker =
+    hasConfiguredChecks && !!scheduleFrequency && !!onScheduleChange;
 
   return (
     <div className="rounded-lg border border-border bg-card overflow-hidden">
       {/* Card Header */}
       <div className="px-5 py-4 border-b border-border">
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between gap-4">
           <div className="flex items-center gap-2.5">
             <div className="p-1.5 rounded-md bg-muted">
               <PlugZap className="h-4 w-4 text-primary" />
@@ -291,16 +319,31 @@ export function TaskIntegrationChecks({
               </p>
             </div>
           </div>
-          {connectedChecks.length > 0 && nextRun && (
-            <div className="text-right">
-              <div className="text-[10px] text-muted-foreground uppercase tracking-wide">
-                Next run
+          <div className="flex items-center gap-4">
+            {showSchedulePicker && scheduleFrequency && onScheduleChange && (
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-muted-foreground uppercase tracking-wide">
+                  Schedule
+                </span>
+                <SchedulePicker
+                  value={scheduleFrequency}
+                  onChange={(value) => {
+                    void onScheduleChange(value);
+                  }}
+                />
               </div>
-              <div className="text-sm font-medium text-foreground">
-                {formatDistanceToNow(nextRun, { addSuffix: true })}
+            )}
+            {connectedChecks.length > 0 && nextRun && (
+              <div className="text-right">
+                <div className="text-[10px] text-muted-foreground uppercase tracking-wide">
+                  Next run
+                </div>
+                <div className="text-sm font-medium text-foreground">
+                  {formatDistanceToNow(nextRun, { addSuffix: true })}
+                </div>
               </div>
-            </div>
-          )}
+            )}
+          </div>
         </div>
       </div>
 
@@ -1046,6 +1089,18 @@ function CheckRunItem({
                         )}
                       </div>
                     </div>
+                    {finding.evidence && Object.keys(finding.evidence).length > 0 && (
+                      <details className="text-xs">
+                        <summary className="text-muted-foreground cursor-pointer">
+                          View Evidence
+                        </summary>
+                        <EvidenceJsonView
+                          evidence={finding.evidence}
+                          organizationName={organizationName}
+                          automationName={run.checkName}
+                        />
+                      </details>
+                    )}
                   </div>
                 ))}
                 {findings.length > 3 && (

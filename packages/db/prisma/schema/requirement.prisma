@@ -14,8 +14,13 @@ model RequirementMap {
   frameworkInstanceId String
   frameworkInstance   FrameworkInstance @relation(fields: [frameworkInstanceId], references: [id], onDelete: Cascade)
 
+  // Sync-driven archive — edges are framework-scoped, so these always archive
+  // cleanly when the mapping disappears from the framework's latest version.
+  archivedAt DateTime?
+
   @@unique([controlId, frameworkInstanceId, requirementId])
   @@unique([controlId, frameworkInstanceId, customRequirementId])
   @@index([requirementId, frameworkInstanceId])
   @@index([customRequirementId, frameworkInstanceId])
+  @@index([frameworkInstanceId, archivedAt])
 }

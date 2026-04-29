@@ -712,6 +712,13 @@ export class TasksController {
           enum: ['daily', 'weekly', 'monthly', 'quarterly', 'yearly'],
           example: 'monthly',
         },
+        integrationScheduleFrequency: {
+          type: 'string',
+          enum: ['daily', 'weekly', 'monthly', 'quarterly', 'yearly'],
+          example: 'daily',
+          description:
+            'Cadence for running the integration check attached to this task',
+        },
         department: {
           type: 'string',
           enum: ['none', 'admin', 'gov', 'hr', 'it', 'itsm', 'qms'],
@@ -754,6 +761,7 @@ export class TasksController {
       assigneeId?: string | null;
       approverId?: string | null;
       frequency?: string;
+      integrationScheduleFrequency?: string;
       department?: string;
       reviewDate?: string;
     },
@@ -789,6 +797,9 @@ export class TasksController {
         assigneeId: body.assigneeId,
         approverId: body.approverId,
         frequency: body.frequency as TaskFrequency | undefined,
+        integrationScheduleFrequency: body.integrationScheduleFrequency as
+          | TaskFrequency
+          | undefined,
         department: body.department,
         reviewDate: parsedReviewDate,
       },

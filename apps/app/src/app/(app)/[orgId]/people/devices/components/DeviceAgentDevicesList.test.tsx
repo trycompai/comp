@@ -42,6 +42,7 @@ function makeDevice(overrides: Partial<DeviceWithChecks> = {}): DeviceWithChecks
     source: 'device_agent',
     complianceStatus: 'compliant',
     daysSinceLastCheckIn: 0,
+    hasActiveAgentSession: false,
     ...overrides,
   };
 }
@@ -122,5 +123,59 @@ describe('DeviceAgentDevicesList', () => {
     expect(contents).toContain('Alpha');
     expect(contents).toContain('Beta');
     expect(contents).toContain('stale');
+  });
+
+  it('renders a stale-explainer tooltip trigger next to the Stale badge', () => {
+    render(
+      <DeviceAgentDevicesList
+        devices={[
+          makeDevice({ complianceStatus: 'stale', daysSinceLastCheckIn: 12 }),
+        ]}
+      />,
+    );
+    expect(
+      screen.getByRole('button', { name: /What does Stale mean\?/i }),
+    ).toBeInTheDocument();
+  });
+
+  it('renders the stale-explainer tooltip trigger when daysSinceLastCheckIn is null (never reported)', () => {
+    render(
+      <DeviceAgentDevicesList
+        devices={[
+          makeDevice({
+            complianceStatus: 'stale',
+            daysSinceLastCheckIn: null,
+            lastCheckIn: null,
+          }),
+        ]}
+      />,
+    );
+    expect(
+      screen.getByRole('button', { name: /What does Stale mean\?/i }),
+    ).toBeInTheDocument();
+  });
+
+  it('does not render the stale-explainer tooltip trigger for a compliant device', () => {
+    render(<DeviceAgentDevicesList devices={[makeDevice({ complianceStatus: 'compliant' })]} />);
+    expect(
+      screen.queryByRole('button', { name: /What does Stale mean\?/i }),
+    ).not.toBeInTheDocument();
+  });
+
+  it('does not render the stale-explainer tooltip trigger for a non-compliant device', () => {
+    render(
+      <DeviceAgentDevicesList
+        devices={[
+          makeDevice({
+            complianceStatus: 'non_compliant',
+            isCompliant: false,
+            diskEncryptionEnabled: false,
+          }),
+        ]}
+      />,
+    );
+    expect(
+      screen.queryByRole('button', { name: /What does Stale mean\?/i }),
+    ).not.toBeInTheDocument();
   });
 });

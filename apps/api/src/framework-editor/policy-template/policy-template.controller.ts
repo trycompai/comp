@@ -45,11 +45,8 @@ export class PolicyTemplateController {
   @Post()
   @ApiOperation({ summary: 'Create a policy template' })
   @UsePipes(new ValidationPipe({ whitelist: true, transform: true }))
-  async create(
-    @Body() dto: CreatePolicyTemplateDto,
-    @Query('frameworkId') frameworkId?: string,
-  ) {
-    return this.service.create(dto, frameworkId);
+  async create(@Body() dto: CreatePolicyTemplateDto) {
+    return this.service.create(dto);
   }
 
   @Patch(':id')

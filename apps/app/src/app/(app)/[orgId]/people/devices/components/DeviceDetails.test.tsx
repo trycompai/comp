@@ -4,6 +4,12 @@ import { describe, expect, it, vi } from 'vitest';
 import type { DeviceWithChecks } from '../types';
 import { DeviceDetails } from './DeviceDetails';
 
+vi.mock('./RevokeAgentAccessDialog', () => ({
+  RevokeAgentAccessDialog: ({ deviceId }: { deviceId: string; deviceName: string }) => (
+    <div data-testid="revoke-dialog">revoke {deviceId}</div>
+  ),
+}));
+
 function makeDevice(overrides: Partial<DeviceWithChecks> = {}): DeviceWithChecks {
   return {
     id: 'dev_1',
@@ -27,6 +33,7 @@ function makeDevice(overrides: Partial<DeviceWithChecks> = {}): DeviceWithChecks
     source: 'device_agent',
     complianceStatus: 'compliant',
     daysSinceLastCheckIn: 0,
+    hasActiveAgentSession: false,
     ...overrides,
   };
 }
@@ -85,18 +92,20 @@ describe('DeviceDetails compliance badge', () => {
     expect(screen.getByText('Stale')).toBeInTheDocument();
   });
 
-  it('sets stale badge title tooltip based on daysSinceLastCheckIn', () => {
-    const { rerender } = render(
+  it('renders a stale-explainer tooltip trigger for a stale device', () => {
+    render(
       <DeviceDetails
         device={makeDevice({ complianceStatus: 'stale', daysSinceLastCheckIn: 30 })}
         onClose={vi.fn()}
       />,
     );
-    expect(screen.getByText('Stale (30d)').closest('[title]')?.getAttribute('title')).toBe(
-      'No check-in in 30 days',
-    );
+    expect(
+      screen.getByRole('button', { name: /What does Stale mean\?/i }),
+    ).toBeInTheDocument();
+  });
 
-    rerender(
+  it('renders the stale-explainer tooltip trigger when daysSinceLastCheckIn is null (never reported)', () => {
+    render(
       <DeviceDetails
         device={makeDevice({
           complianceStatus: 'stale',
@@ -106,8 +115,60 @@ describe('DeviceDetails compliance badge', () => {
         onClose={vi.fn()}
       />,
     );
-    expect(screen.getByText('Stale').closest('[title]')?.getAttribute('title')).toBe(
-      'No check-ins recorded',
+    expect(
+      screen.getByRole('button', { name: /What does Stale mean\?/i }),
+    ).toBeInTheDocument();
+  });
+
+  it('does not render the stale-explainer tooltip trigger for a compliant device', () => {
+    render(<DeviceDetails device={makeDevice()} onClose={vi.fn()} />);
+    expect(
+      screen.queryByRole('button', { name: /What does Stale mean\?/i }),
+    ).not.toBeInTheDocument();
+  });
+
+  it('does not render the stale-explainer tooltip trigger for a non-compliant device', () => {
+    render(
+      <DeviceDetails
+        device={makeDevice({
+          complianceStatus: 'non_compliant',
+          isCompliant: false,
+          diskEncryptionEnabled: false,
+        })}
+        onClose={vi.fn()}
+      />,
     );
+    expect(
+      screen.queryByRole('button', { name: /What does Stale mean\?/i }),
+    ).not.toBeInTheDocument();
+  });
+});
+
+describe('DeviceDetails revoke action', () => {
+  it('renders the RevokeAgentAccessDialog for device_agent with an active agent session', () => {
+    render(
+      <DeviceDetails device={makeDevice({ hasActiveAgentSession: true })} onClose={vi.fn()} />,
+    );
+    expect(screen.getByTestId('revoke-dialog')).toBeInTheDocument();
+  });
+
+  it('does not render when hasActiveAgentSession is false', () => {
+    render(
+      <DeviceDetails
+        device={makeDevice({ hasActiveAgentSession: false })}
+        onClose={vi.fn()}
+      />,
+    );
+    expect(screen.queryByTestId('revoke-dialog')).toBeNull();
+  });
+
+  it('does not render for fleet-sourced devices', () => {
+    render(
+      <DeviceDetails
+        device={makeDevice({ source: 'fleet', hasActiveAgentSession: true })}
+        onClose={vi.fn()}
+      />,
+    );
+    expect(screen.queryByTestId('revoke-dialog')).toBeNull();
   });
 });

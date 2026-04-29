@@ -22,6 +22,14 @@ export class FrameworkEditorFrameworkService {
         requirements: {
           select: { _count: { select: { controlTemplates: true } } },
         },
+        // Latest published FrameworkVersion per framework, resolved in a single
+        // query rather than N+1 client-side fetches. Falls back to the
+        // framework's catalog version string when no versions exist yet.
+        versions: {
+          orderBy: { publishedAt: 'desc' },
+          take: 1,
+          select: { id: true, version: true, publishedAt: true },
+        },
       },
     });
 
@@ -32,8 +40,10 @@ export class FrameworkEditorFrameworkService {
         (sum, r) => sum + r._count.controlTemplates,
         0,
       ),
+      latestVersion: fw.versions[0] ?? null,
       _count: undefined,
       requirements: undefined,
+      versions: undefined,
     }));
   }
 

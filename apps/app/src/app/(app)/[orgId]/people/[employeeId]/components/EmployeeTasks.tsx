@@ -4,6 +4,7 @@ import type { TrainingVideo } from '@/lib/data/training-videos';
 import type { EmployeeTrainingVideoCompletion, Member, Organization, Policy, User } from '@db';
 
 import { Card, CardContent, CardHeader, CardTitle } from '@trycompai/ui/card';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@trycompai/ui/tooltip';
 import {
   Badge,
   Section,
@@ -14,6 +15,7 @@ import {
   TabsTrigger,
   Text,
 } from '@trycompai/design-system';
+import { Information } from '@trycompai/design-system/icons';
 import { AlertCircle, Award, CheckCircle2, Download, Info } from 'lucide-react';
 import type { FleetPolicy, Host } from '../../devices/types';
 import type { DeviceWithChecks } from '../../devices/types';
@@ -56,18 +58,35 @@ function staleLabel(daysSinceLastCheckIn: number | null): string {
   return daysSinceLastCheckIn === null ? 'Stale' : `Stale (${daysSinceLastCheckIn}d)`;
 }
 
-function staleTitle(daysSinceLastCheckIn: number | null): string {
+function staleTooltipCopy(daysSinceLastCheckIn: number | null): string {
   return daysSinceLastCheckIn === null
-    ? 'No check-ins recorded'
-    : `No check-in in ${daysSinceLastCheckIn} days`;
+    ? "This device was registered but hasn't sent a compliance check yet. If it's not new, the agent may not be running or the device may be offline."
+    : "This device hasn't reported to CompAI in over 7 days, so we can't verify its current compliance. It may be offline, the agent may need to be updated, or the device may no longer be in use. Check with the employee.";
 }
 
 function DeviceComplianceBadge({ device }: { device: DeviceWithChecks }) {
   if (device.complianceStatus === 'stale') {
     return (
-      <Badge variant="secondary" title={staleTitle(device.daysSinceLastCheckIn)}>
-        {staleLabel(device.daysSinceLastCheckIn)}
-      </Badge>
+      <div className="flex items-center gap-1">
+        <Badge variant="secondary">{staleLabel(device.daysSinceLastCheckIn)}</Badge>
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button
+                type="button"
+                aria-label="What does Stale mean?"
+                className="inline-flex items-center text-muted-foreground hover:text-foreground"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <Information size={14} />
+              </button>
+            </TooltipTrigger>
+            <TooltipContent className="max-w-xs text-xs">
+              {staleTooltipCopy(device.daysSinceLastCheckIn)}
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+      </div>
     );
   }
   if (device.complianceStatus === 'compliant') {

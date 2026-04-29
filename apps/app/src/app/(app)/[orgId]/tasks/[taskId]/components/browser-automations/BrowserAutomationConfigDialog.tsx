@@ -1,5 +1,6 @@
 'use client';
 
+import { SchedulePicker } from '@/components/schedule-picker';
 import { Button } from '@trycompai/ui/button';
 import {
   Dialog,
@@ -15,7 +16,7 @@ import { Textarea } from '@trycompai/ui/textarea';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Loader2 } from 'lucide-react';
 import { useEffect } from 'react';
-import { useForm } from 'react-hook-form';
+import { Controller, useForm } from 'react-hook-form';
 import { z } from 'zod';
 import type { BrowserAutomation } from '../../hooks/types';
 
@@ -23,6 +24,8 @@ const automationConfigSchema = z.object({
   name: z.string().trim().min(1, { message: 'Name is required' }),
   targetUrl: z.string().trim().url({ message: 'Starting URL must be a valid URL' }),
   instruction: z.string().trim().min(1, { message: 'Instruction is required' }),
+  evaluationCriteria: z.string().trim().optional(),
+  scheduleFrequency: z.enum(['daily', 'weekly', 'monthly', 'quarterly', 'yearly']),
 });
 
 type AutomationConfigFormData = z.infer<typeof automationConfigSchema>;
@@ -30,7 +33,10 @@ type AutomationConfigFormData = z.infer<typeof automationConfigSchema>;
 interface BrowserAutomationConfigDialogProps {
   isOpen: boolean;
   mode: 'create' | 'edit';
-  initialValues?: Pick<BrowserAutomation, 'id' | 'name' | 'targetUrl' | 'instruction'>;
+  initialValues?: Pick<
+    BrowserAutomation,
+    'id' | 'name' | 'targetUrl' | 'instruction' | 'evaluationCriteria' | 'scheduleFrequency'
+  >;
   isSaving: boolean;
   onClose: () => void;
   onCreate: (data: AutomationConfigFormData) => Promise<boolean>;
@@ -47,6 +53,7 @@ export function BrowserAutomationConfigDialog({
   onUpdate,
 }: BrowserAutomationConfigDialogProps) {
   const {
+    control,
     register,
     handleSubmit,
     reset,
@@ -57,6 +64,8 @@ export function BrowserAutomationConfigDialog({
       name: '',
       targetUrl: '',
       instruction: '',
+      evaluationCriteria: '',
+      scheduleFrequency: 'daily',
     },
   });
 
@@ -68,15 +77,29 @@ export function BrowserAutomationConfigDialog({
         name: initialValues.name ?? '',
         targetUrl: initialValues.targetUrl ?? '',
         instruction: initialValues.instruction ?? '',
+        evaluationCriteria: initialValues.evaluationCriteria ?? '',
+        scheduleFrequency: initialValues.scheduleFrequency ?? 'daily',
       });
       return;
     }
 
-    reset({ name: '', targetUrl: '', instruction: '' });
+    reset({
+      name: '',
+      targetUrl: '',
+      instruction: '',
+      evaluationCriteria: '',
+      scheduleFrequency: 'daily',
+    });
   }, [isOpen, mode, initialValues, reset]);
 
   const handleClose = () => {
-    reset({ name: '', targetUrl: '', instruction: '' });
+    reset({
+      name: '',
+      targetUrl: '',
+      instruction: '',
+      evaluationCriteria: '',
+      scheduleFrequency: 'daily',
+    });
     onClose();
   };
 
@@ -155,6 +178,40 @@ export function BrowserAutomationConfigDialog({
                 screenshot.
               </p>
             )}
+          </div>
+
+          <div className="flex flex-col gap-2">
+            <Label htmlFor="automation-evaluation-criteria">
+              Evaluation Criteria{' '}
+              <span className="text-muted-foreground font-normal">(optional)</span>
+            </Label>
+            <Textarea
+              id="automation-evaluation-criteria"
+              placeholder="Branch protection is enabled on the main branch, with at least one required reviewer"
+              {...register('evaluationCriteria')}
+              rows={3}
+            />
+            <p className="text-xs text-muted-foreground">
+              If set, each run checks the final page against this criteria and records a
+              pass/fail verdict. Leave blank to only capture a screenshot.
+            </p>
+          </div>
+
+          <div className="flex flex-col gap-2">
+            <Label htmlFor="automation-schedule-frequency">Schedule</Label>
+            <Controller
+              control={control}
+              name="scheduleFrequency"
+              render={({ field }) => (
+                <SchedulePicker value={field.value} onChange={field.onChange} />
+              )}
+            />
+            {errors.scheduleFrequency?.message && (
+              <p className="text-sm text-destructive">{errors.scheduleFrequency.message}</p>
+            )}
+            <p className="text-xs text-muted-foreground">
+              How often this automation should run automatically.
+            </p>
           </div>
 
           <DialogFooter>

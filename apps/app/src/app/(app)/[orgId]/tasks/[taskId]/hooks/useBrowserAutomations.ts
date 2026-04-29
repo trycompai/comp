@@ -1,6 +1,7 @@
 'use client';
 
 import { apiClient } from '@/lib/api-client';
+import type { TaskFrequency } from '@db';
 import { useCallback, useState } from 'react';
 import { toast } from 'sonner';
 import type { BrowserAutomation } from './types';
@@ -13,6 +14,8 @@ interface AutomationConfigInput {
   name: string;
   targetUrl: string;
   instruction: string;
+  evaluationCriteria?: string;
+  scheduleFrequency?: TaskFrequency;
 }
 
 export function useBrowserAutomations({ taskId }: UseBrowserAutomationsOptions) {

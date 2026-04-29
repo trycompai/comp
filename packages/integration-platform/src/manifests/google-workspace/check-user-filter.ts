@@ -21,7 +21,11 @@ export function parseGoogleWorkspaceCheckUserFilter(
   variables: CheckVariableValues,
 ): GoogleWorkspaceCheckUserFilterConfig {
   return {
-    targetOrgUnits: variables.target_org_units as string[] | undefined,
+    targetOrgUnits: Array.isArray(variables.target_org_units)
+      ? variables.target_org_units
+      : typeof variables.target_org_units === 'string'
+        ? [variables.target_org_units]
+        : undefined,
     excludedTerms: parseSyncFilterTerms(
       variables.sync_excluded_emails ?? variables.excluded_emails,
     ),

@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Body,
   Controller,
   Delete,
@@ -30,13 +31,21 @@ import { CreateCustomFrameworkDto } from './dto/create-custom-framework.dto';
 import { CreateCustomRequirementDto } from './dto/create-custom-requirement.dto';
 import { LinkRequirementsDto } from './dto/link-requirements.dto';
 import { LinkControlsDto } from './dto/link-controls.dto';
+import { SyncFrameworkDto } from './dto/sync-framework.dto';
+import { RollbackFrameworkDto } from './dto/rollback-framework.dto';
+import { FrameworkSyncService } from './framework-versioning/framework-sync.service';
+import { FrameworkRollbackService } from './framework-versioning/framework-rollback.service';
 
 @ApiTags('Frameworks')
 @ApiBearerAuth()
 @UseGuards(HybridAuthGuard, PermissionGuard)
 @Controller({ path: 'frameworks', version: '1' })
 export class FrameworksController {
-  constructor(private readonly frameworksService: FrameworksService) {}
+  constructor(
+    private readonly frameworksService: FrameworksService,
+    private readonly syncService: FrameworkSyncService,
+    private readonly rollbackService: FrameworkRollbackService,
+  ) {}
 
   @Get()
   @RequirePermission('framework', 'read')
@@ -170,6 +179,86 @@ export class FrameworksController {
       organizationId,
       dto.controlIds,
     );
+  }
+
+  @Get(':id/update-status')
+  @RequirePermission('framework', 'read')
+  @ApiOperation({ summary: 'Get the update status for a framework instance' })
+  async getUpdateStatus(
+    @OrganizationId() organizationId: string,
+    @Param('id') id: string,
+  ) {
+    const data = await this.frameworksService.getUpdateStatus({
+      organizationId,
+      frameworkInstanceId: id,
+    });
+    return { data };
+  }
+
+  @Get(':id/update-preview')
+  @RequirePermission('framework', 'read')
+  @ApiOperation({ summary: 'Preview changes from updating a framework instance' })
+  async getUpdatePreview(
+    @OrganizationId() organizationId: string,
+    @Param('id') id: string,
+  ) {
+    const data = await this.frameworksService.getUpdatePreview({
+      organizationId,
+      frameworkInstanceId: id,
+    });
+    return { data };
+  }
+
+  @Post(':id/sync')
+  @RequirePermission('framework', 'update')
+  @ApiOperation({ summary: 'Sync a framework instance to a target version' })
+  async syncFramework(
+    @OrganizationId() organizationId: string,
+    @Param('id') id: string,
+    @Body() body: SyncFrameworkDto,
+    @AuthContext() authContext: AuthContextType,
+  ) {
+    if (!authContext.memberId) throw new BadRequestException('Member ID not available');
+    const result = await this.syncService.sync({
+      organizationId,
+      frameworkInstanceId: id,
+      targetVersionId: body.targetVersionId,
+      memberId: authContext.memberId,
+    });
+    return { data: result };
+  }
+
+  @Post(':id/rollback')
+  @RequirePermission('framework', 'update')
+  @ApiOperation({ summary: 'Roll back a framework sync operation' })
+  async rollbackFramework(
+    @OrganizationId() organizationId: string,
+    @Param('id') id: string,
+    @Body() body: RollbackFrameworkDto,
+    @AuthContext() authContext: AuthContextType,
+  ) {
+    if (!authContext.memberId) throw new BadRequestException('Member ID not available');
+    const result = await this.rollbackService.rollback({
+      organizationId,
+      frameworkInstanceId: id,
+      syncOperationId: body.syncOperationId,
+      memberId: authContext.memberId,
+    });
+    return { data: result };
+  }
+
+  @Get(':id/sync-history')
+  @RequirePermission('framework', 'read')
+  @ApiOperation({ summary: 'Get sync history for a framework instance' })
+  async getSyncHistory(
+    @OrganizationId() organizationId: string,
+    @Param('id') id: string,
+  ) {
+    const data = await this.frameworksService.getSyncHistory({
+      organizationId,
+      frameworkInstanceId: id,
+    });
+    return { data, count: data.length };
   }
 
   @Delete(':id')

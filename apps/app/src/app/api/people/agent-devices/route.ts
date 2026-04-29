@@ -30,6 +30,7 @@ export async function GET() {
           user: { select: { name: true, email: true } },
         },
       },
+      agentSession: { select: { expiresAt: true } },
     },
     orderBy: { installedAt: 'desc' },
   });
@@ -64,6 +65,8 @@ export async function GET() {
       source: 'device_agent' as const,
       complianceStatus,
       daysSinceLastCheckIn: daysSinceCheckIn(device.lastCheckIn),
+      hasActiveAgentSession:
+        !!device.agentSession && device.agentSession.expiresAt.getTime() > Date.now(),
     };
   });
 

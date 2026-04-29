@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { useState } from 'react';
+import { ScheduleSummary } from '@/components/schedule-summary';
 import type { BrowserAutomation, BrowserAutomationRun } from '../../hooks/types';
 import { RunHistory } from './RunHistory';
 
@@ -85,6 +86,14 @@ export function AutomationItem({
             </p>
           ) : (
             <p className="text-xs text-muted-foreground mt-0.5">Never run</p>
+          )}
+          {automation.scheduleFrequency && (
+            <div className="mt-0.5">
+              <ScheduleSummary
+                scheduleFrequency={automation.scheduleFrequency}
+                lastRunAt={automation.lastRunAt ?? null}
+              />
+            </div>
           )}
         </div>
 

@@ -26,6 +26,7 @@ function makeAgentDevice(overrides: Partial<DeviceWithChecks> = {}): DeviceWithC
     source: 'device_agent',
     complianceStatus: 'compliant',
     daysSinceLastCheckIn: 0,
+    hasActiveAgentSession: false,
     ...overrides,
   };
 }
@@ -73,7 +74,7 @@ describe('computeDeviceStatusMap', () => {
     expect(map.mem_1).toBe('non-compliant');
   });
 
-  it('counts a stale device as non-compliant in the roll-up', () => {
+  it('returns stale when the only agent device is stale', () => {
     const map = computeDeviceStatusMap({
       agentDevices: [
         makeAgentDevice({
@@ -86,10 +87,10 @@ describe('computeDeviceStatusMap', () => {
       fleetHosts: [],
       complianceMemberIds: ['mem_1'],
     });
-    expect(map.mem_1).toBe('non-compliant');
+    expect(map.mem_1).toBe('stale');
   });
 
-  it('counts stale among mixed devices as non-compliant', () => {
+  it('returns stale when a compliant and a stale device are mixed', () => {
     const map = computeDeviceStatusMap({
       agentDevices: [
         makeAgentDevice({ memberId: 'mem_1', complianceStatus: 'compliant' }),
@@ -102,7 +103,43 @@ describe('computeDeviceStatusMap', () => {
       fleetHosts: [],
       complianceMemberIds: ['mem_1'],
     });
+    expect(map.mem_1).toBe('stale');
+  });
+
+  it('prefers non-compliant over stale when both present', () => {
+    const map = computeDeviceStatusMap({
+      agentDevices: [
+        makeAgentDevice({
+          memberId: 'mem_1',
+          complianceStatus: 'stale',
+          daysSinceLastCheckIn: 10,
+        }),
+        makeAgentDevice({ memberId: 'mem_1', complianceStatus: 'non_compliant' }),
+      ],
+      fleetHosts: [],
+      complianceMemberIds: ['mem_1'],
+    });
     expect(map.mem_1).toBe('non-compliant');
+  });
+
+  it('returns stale when all devices are stale', () => {
+    const map = computeDeviceStatusMap({
+      agentDevices: [
+        makeAgentDevice({
+          memberId: 'mem_1',
+          complianceStatus: 'stale',
+          daysSinceLastCheckIn: 10,
+        }),
+        makeAgentDevice({
+          memberId: 'mem_1',
+          complianceStatus: 'stale',
+          daysSinceLastCheckIn: 20,
+        }),
+      ],
+      fleetHosts: [],
+      complianceMemberIds: ['mem_1'],
+    });
+    expect(map.mem_1).toBe('stale');
   });
 
   it('falls back to Fleet policy status when no agent device is present', () => {
@@ -139,7 +176,48 @@ describe('computeDeviceStatusMap', () => {
       ],
       complianceMemberIds: ['mem_1'],
     });
-    // Agent says stale → non-compliant, even if fleet would say compliant.
+    // Agent says stale → member is stale, even if fleet would say compliant.
+    expect(map.mem_1).toBe('stale');
+  });
+
+  it('keeps a member non-compliant when a failing fleet host precedes a passing one', () => {
+    // Regression test for a fleet-loop last-host-wins bug: a passing host
+    // encountered after a failing one for the same member must not overwrite
+    // non-compliant with compliant.
+    const map = computeDeviceStatusMap({
+      agentDevices: [],
+      fleetHosts: [
+        makeFleetHost({
+          member_id: 'mem_1',
+          policies: [{ id: 1, name: 'Disk Enc', response: 'fail' }],
+        }),
+        makeFleetHost({
+          member_id: 'mem_1',
+          policies: [{ id: 2, name: 'Antivirus', response: 'pass' }],
+        }),
+      ],
+      complianceMemberIds: ['mem_1'],
+    });
+    expect(map.mem_1).toBe('non-compliant');
+  });
+
+  it('keeps a member non-compliant when a passing fleet host precedes a failing one', () => {
+    // Sibling order — the passing host runs first; the later failing host
+    // must still flip the member to non-compliant.
+    const map = computeDeviceStatusMap({
+      agentDevices: [],
+      fleetHosts: [
+        makeFleetHost({
+          member_id: 'mem_1',
+          policies: [{ id: 1, name: 'Antivirus', response: 'pass' }],
+        }),
+        makeFleetHost({
+          member_id: 'mem_1',
+          policies: [{ id: 2, name: 'Disk Enc', response: 'fail' }],
+        }),
+      ],
+      complianceMemberIds: ['mem_1'],
+    });
     expect(map.mem_1).toBe('non-compliant');
   });
 
