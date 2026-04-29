@@ -327,74 +327,70 @@ interface EvidenceSubmissionForScoring {
   submittedAt: Date | string;
 }
 
-function hasAnyArtifact(
-  control: ControlForScoring,
-  tasks: TaskWithControls[],
-): boolean {
-  const policies = control.policies ?? [];
-  const documentTypes = control.controlDocumentTypes ?? [];
-  const controlTasks = tasks.filter((t) =>
-    t.controls.some((c) => c.id === control.id),
-  );
-  return (
-    policies.length > 0 || controlTasks.length > 0 || documentTypes.length > 0
-  );
-}
-
-function isControlCompleted(
-  control: ControlForScoring,
-  tasks: TaskWithControls[],
-  evidenceSubmissions: EvidenceSubmissionForScoring[],
-): boolean {
-  const policies = control.policies ?? [];
-  const documentTypes = control.controlDocumentTypes ?? [];
-  const controlTasks = tasks.filter((t) =>
-    t.controls.some((c) => c.id === control.id),
-  );
-
-  const policiesComplete =
-    policies.length === 0 ||
-    policies.every((p) => p.status === 'published');
-
-  const tasksComplete =
-    controlTasks.length === 0 ||
-    controlTasks.every(
-      (t) => t.status === 'done' || t.status === 'not_relevant',
-    );
-
-  let documentsComplete = true;
-  if (documentTypes.length > 0) {
-    const sorted = [...evidenceSubmissions].sort(
-      (a, b) =>
-        new Date(b.submittedAt).getTime() - new Date(a.submittedAt).getTime(),
-    );
-    const now = Date.now();
-    for (const dt of documentTypes) {
-      const latest = sorted.find((es) => es.formType === dt.formType);
-      if (
-        !latest ||
-        now - new Date(latest.submittedAt).getTime() > SIX_MONTHS_MS
-      ) {
-        documentsComplete = false;
-        break;
-      }
-    }
-  }
-
-  return policiesComplete && tasksComplete && documentsComplete;
-}
-
 export function computeFrameworkComplianceScore(
   framework: FrameworkWithControlsForScoring,
   tasks: TaskWithControls[],
   evidenceSubmissions: EvidenceSubmissionForScoring[] = [],
 ): number {
-  const controls = (framework.controls ?? []).filter((c) =>
-    hasAnyArtifact(c, tasks),
-  );
+  const controls = framework.controls ?? [];
   if (controls.length === 0) return 0;
-  const completed = controls.filter((c) =>
-    isControlCompleted(c, tasks, evidenceSubmissions),
+
+  const controlIds = new Set(controls.map((c) => c.id));
+
+  // Bubble up artifact-based progress: count every unique policy, task and
+  // document type across the framework, then weight each artifact equally.
+  // Previously this was binary on full-control satisfaction, so a control
+  // with one in-progress task pulled the whole framework to 0%.
+  const policiesById = new Map<string, { id: string; status: string }>();
+  for (const control of controls) {
+    for (const policy of control.policies ?? []) {
+      policiesById.set(policy.id, policy);
+    }
+  }
+
+  const tasksById = new Map<string, TaskWithControls>();
+  for (const task of tasks) {
+    if (task.controls.some((c) => controlIds.has(c.id))) {
+      tasksById.set(task.id, task);
+    }
+  }
+
+  const documentFormTypes = new Set<string>();
+  for (const control of controls) {
+    for (const dt of control.controlDocumentTypes ?? []) {
+      documentFormTypes.add(dt.formType);
+    }
+  }
+
+  const totalArtifacts =
+    policiesById.size + tasksById.size + documentFormTypes.size;
+  if (totalArtifacts === 0) return 0;
+
+  const policiesCompleted = Array.from(policiesById.values()).filter(
+    (p) => p.status === 'published',
   ).length;
-  return Math.round((completed / controls.length) * 100);
+  const tasksCompleted = Array.from(tasksById.values()).filter(
+    (t) => t.status === 'done' || t.status === 'not_relevant',
+  ).length;
+
+  let documentsCompleted = 0;
+  if (documentFormTypes.size > 0 && evidenceSubmissions.length > 0) {
+    const sorted = [...evidenceSubmissions].sort(
+      (a, b) =>
+        new Date(b.submittedAt).getTime() - new Date(a.submittedAt).getTime(),
+    );
+    const now = Date.now();
+    for (const formType of documentFormTypes) {
+      const latest = sorted.find((es) => es.formType === formType);
+      if (
+        latest &&
+        now - new Date(latest.submittedAt).getTime() <= SIX_MONTHS_MS
+      ) {
+        documentsCompleted++;
+      }
+    }
+  }
+
+  const completed = policiesCompleted + tasksCompleted + documentsCompleted;
+  return Math.round((completed / totalArtifacts) * 100);
 }
