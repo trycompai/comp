@@ -8,13 +8,13 @@
   "authConfig": {
     "type": "custom",
     "config": {
-      "setupInstructions": "1. Log in to Close at https://app.close.com\n2. Go to Settings → API Keys → Create API Key\n3. Base64 encode 'api_key:' (with colon): echo -n 'apikey:' | base64\n4. Enter the encoded value below",
+      "setupInstructions": "1. Log in to Close at https://app.close.com\n2. Go to Settings > API Keys > Create API Key\n3. Copy the API key and paste it below",
       "credentialFields": [
         {
-          "label": "Encoded API Key",
+          "label": "API Key",
           "type": "password",
           "required": true,
-          "helpText": "Base64 encode 'api_key:' (with trailing colon). Found in Close Settings → API Keys. Command: echo -n 'apikey:' | base64"
+          "helpText": "Found in Close Settings > API Keys"
         }
       ]
     }

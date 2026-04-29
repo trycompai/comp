@@ -1,3 +1,29 @@
+# [3.36.0](https://github.com/trycompai/comp/compare/v3.35.0...v3.36.0) (2026-04-29)
+
+
+### Bug Fixes
+
+* **api:** purge snapshot — null out stripe IDs from dropped tables ([f7a9ce9](https://github.com/trycompai/comp/commit/f7a9ce9adef73ea35a6d7305d449d5066bd68585))
+* **app:** able to upload markdowns or CSVs as evidence for documents ([#2684](https://github.com/trycompai/comp/issues/2684)) ([6a3f631](https://github.com/trycompai/comp/commit/6a3f631c0ee48be449de6bd859adb49424ae70a5))
+* fix progress counts for frameworks, requirements and controls ([0a2d766](https://github.com/trycompai/comp/commit/0a2d766a95ae3cfbea655a8b4653dc6d7675c1b6))
+* **pentest:** address cubic-AI review — refund tx, audit dedup, UX bugs ([ebed6cc](https://github.com/trycompai/comp/commit/ebed6cc7b63c057f62b37d00302bcd1210dcfa36))
+* **pentest:** api-side maced filter, schema docs, drop stale planning files ([4aeef2a](https://github.com/trycompai/comp/commit/4aeef2af51402d84cae9af4c145158f045706dc5))
+* **pentest:** second cubic review pass — refund retry, ux + correctness ([f5e2528](https://github.com/trycompai/comp/commit/f5e2528418c34bdbab6e7b7912e78d90621899ba))
+
+
+### Features
+
+* **app:** add SOC 3 ([0e7492c](https://github.com/trycompai/comp/commit/0e7492caebf0fe68f32e4802fa8db0568d39dfa8))
+* **pentest:** credits wallet, admin grants, audit logging, UX polish ([f494299](https://github.com/trycompai/comp/commit/f494299f957b1775909e2fd620ca00dbdc839726))
+* **pentest:** full v1 rebuild — split-view UI, SDK swap, signed webhooks ([db0e7e7](https://github.com/trycompai/comp/commit/db0e7e7fb5045573d4026f59c807bf7874a2103c))
+
+# [3.35.0](https://github.com/trycompai/comp/compare/v3.34.2...v3.35.0) (2026-04-29)
+
+
+### Features
+
+* add clear view of maps between policies<>controls<>tasks ([5e30bfb](https://github.com/trycompai/comp/commit/5e30bfb7099acfa408ffe3b9b03b03c6abc3fc58))
+
 ## [3.34.2](https://github.com/trycompai/comp/compare/v3.34.1...v3.34.2) (2026-04-28)
 
 

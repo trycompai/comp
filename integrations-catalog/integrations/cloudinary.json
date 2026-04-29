@@ -8,7 +8,7 @@
   "authConfig": {
     "type": "custom",
     "config": {
-      "setupInstructions": "1. Log in to Cloudinary at https://cloudinary.com/console\n2. Go to Settings → Access Keys\n3. Copy your API Key and API Secret\n4. Base64 encode 'api_key:api_secret'\n5. Enter your cloud name and encoded credentials below",
+      "setupInstructions": "1. Log in to Cloudinary at https://cloudinary.com/console\n2. Go to Settings > Access Keys\n3. Copy your Cloud Name, API Key, and API Secret\n4. Enter them below",
       "credentialFields": [
         {
           "label": "Cloud Name",
@@ -17,10 +17,16 @@
           "helpText": "Your Cloudinary cloud name (found in Dashboard)"
         },
         {
-          "label": "Encoded API Credentials",
+          "label": "API Key",
+          "type": "text",
+          "required": true,
+          "helpText": "Found in Settings > Access Keys"
+        },
+        {
+          "label": "API Secret",
           "type": "password",
           "required": true,
-          "helpText": "Base64 encode 'api_key:api_secret'. Found in Cloudinary Dashboard → Settings → Access Keys. Command: echo -n 'api_key:api_secret' | base64"
+          "helpText": "Found in Settings > Access Keys (click to reveal)"
         }
       ]
     }

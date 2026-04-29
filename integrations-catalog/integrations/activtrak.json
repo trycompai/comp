@@ -1,0 +1,58 @@
+{
+  "slug": "activtrak",
+  "name": "ActivTrak",
+  "description": "Monitor ActivTrak workforce analytics platform for user activity monitoring, alerting, and agent deployment compliance",
+  "category": "Monitoring",
+  "docsUrl": "https://developers.activtrak.com/introduction",
+  "baseUrl": "https://{{credentials.region}}/",
+  "authConfig": {
+    "type": "custom",
+    "config": {
+      "setupInstructions": "1. Log in to ActivTrak at https://app.activtrak.com\n2. Navigate to API & Integrations > API Keys\n3. Click 'Create API Key' and follow the prompts\n4. Copy the API key (it can only be viewed once)\n5. Determine your region from your ActivTrak login URL\n6. Enter the API key and region below",
+      "credentialFields": [
+        {
+          "label": "API Key",
+          "type": "password",
+          "required": true,
+          "helpText": "Generate at ActivTrak > API & Integrations > API Keys. Requires Admin role."
+        },
+        {
+          "label": "API Region",
+          "type": "text",
+          "required": true,
+          "helpText": "Your ActivTrak API base domain. US: api.activtrak.com, EU: api-eu.activtrak.com, UK: api-uk.activtrak.com, AU: api-au.activtrak.com, CA: api-ca.activtrak.com"
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "activtrak_monitoring_alerting",
+      "name": "Monitoring & Alerting",
+      "description": "Verifies ActivTrak activity monitoring is active by checking for recent activity data collected by deployed agents",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "activtrak_employee_access",
+      "name": "Employee Access",
+      "description": "Lists all ActivTrak console users (consumers) with their roles and group access permissions",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "activtrak_device_list",
+      "name": "Device List",
+      "description": "Lists all monitored devices (user agents/clients) registered in ActivTrak",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 3,
+  "isActive": true
+}

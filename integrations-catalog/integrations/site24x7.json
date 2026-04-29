@@ -1,0 +1,72 @@
+{
+  "slug": "site24x7",
+  "name": "Site24x7",
+  "description": "Monitor Site24x7 infrastructure monitoring configuration including monitor health, alerts, SSL certificate monitoring, and notification profiles for compliance evidence",
+  "category": "Monitoring",
+  "docsUrl": "https://www.site24x7.com/help/api/",
+  "baseUrl": "https://www.site24x7.com",
+  "authConfig": {
+    "type": "custom",
+    "config": {
+      "setupInstructions": "1. Go to Zoho Developer Console (https://api-console.zoho.com for US, or your regional equivalent) and create a Self Client.\n2. Generate a grant token with scopes: Site24x7.Reports.Read, Site24x7.Admin.Read, Site24x7.Operations.Read.\n3. Exchange the grant token for an access token and refresh token via POST to https://accounts.zoho.com/oauth/v2/token.\n4. Enter the access token above.\n5. Enter your data center domain (e.g. site24x7.com for US, site24x7.eu for Europe).",
+      "credentialFields": [
+        {
+          "label": "Zoho OAuth Access Token",
+          "type": "password",
+          "required": true,
+          "helpText": "Generate via Zoho Developer Console (Self Client). Requires scopes: Site24x7.Reports.Read, Site24x7.Admin.Read, Site24x7.Operations.Read. See https://www.site24x7.com/help/api/#authentication"
+        },
+        {
+          "label": "Data Center Domain",
+          "type": "text",
+          "required": true,
+          "helpText": "Your Site24x7 data center domain. Options: site24x7.com (US), site24x7.eu (EU), site24x7.in (India), site24x7.cn (China), site24x7.net.au (Australia), site24x7.ca (Canada), site24x7.sa (Saudi Arabia). For Japan use app.site24x7.jp, UK use app.site24x7.uk, UAE use app.site24x7.ae."
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "site24x7_app_availability",
+      "name": "App Availability",
+      "description": "Verify that the Site24x7 API is reachable by retrieving the current status of all monitors",
+      "defaultSeverity": "high",
+      "enabled": true
+    },
+    {
+      "slug": "site24x7_monitor_health",
+      "name": "Monitoring & Alerting",
+      "description": "List all monitors and check their health status to ensure infrastructure monitoring is active",
+      "defaultSeverity": "high",
+      "enabled": true
+    },
+    {
+      "slug": "site24x7_alert_management",
+      "name": "Incident Response",
+      "description": "Check recent alert logs to verify that alerting is active and incidents are being tracked",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "site24x7_ssl_monitoring",
+      "name": "TLS / HTTPS",
+      "description": "Check that SSL/TLS certificate monitors are configured to track certificate expiry and validity",
+      "defaultSeverity": "high",
+      "enabled": true
+    },
+    {
+      "slug": "site24x7_notification_profiles",
+      "name": "Monitoring & Alerting",
+      "description": "Verify notification profiles are configured to ensure alerts are properly routed to the right contacts",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 5,
+  "isActive": true
+}

@@ -8,13 +8,27 @@
   "authConfig": {
     "type": "custom",
     "config": {
-      "setupInstructions": "1. Go to id.atlassian.com/manage-profile/security/api-tokens\n2. Click 'Create API token'\n3. Base64-encode 'your_email:api_token'\n4. Paste the encoded string below",
+      "setupInstructions": "1. Log in to your Atlassian account at id.atlassian.com\n2. Go to Security > API tokens (id.atlassian.com/manage-profile/security/api-tokens)\n3. Click 'Create API token', give it a name, and copy the token\n4. Enter the fields above:\n   - Site Domain: your Atlassian site (e.g. yourcompany.atlassian.net)\n   - Email: the email of the account that created the token\n   - API Token: the token you just copied\n   - Group Name (optional): leave empty for the default 'confluence-users' group, or enter your custom group name\n5. Tip: We recommend using an Atlassian service account rather than a personal account. Create one at admin.atlassian.com > Directory > Users",
       "credentialFields": [
         {
-          "label": "Base64 Encoded Token",
+          "label": "Atlassian Site Domain",
+          "type": "text",
+          "required": true
+        },
+        {
+          "label": "Email",
+          "type": "text",
+          "required": true
+        },
+        {
+          "label": "API Token",
           "type": "password",
-          "required": true,
-          "helpText": "Base64-encode 'email@example.com:api_token'. Create an API token at id.atlassian.com/manage-profile/security/api-tokens"
+          "required": true
+        },
+        {
+          "label": "Confluence Group Name",
+          "type": "text",
+          "required": false
         }
       ]
     }

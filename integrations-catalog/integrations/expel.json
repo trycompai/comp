@@ -1,0 +1,58 @@
+{
+  "slug": "expel",
+  "name": "Expel",
+  "description": "Monitor Expel Workbench MDR platform for security alerts, investigations, device health, and user access management",
+  "category": "Security",
+  "docsUrl": "https://workbench.expel.io/api/v2/docs/",
+  "baseUrl": "https://workbench.expel.io/api/v2",
+  "authConfig": {
+    "type": "api_key",
+    "config": {
+      "setupInstructions": "1. Log in to Expel Workbench at https://workbench.expel.io\n2. Go to Organization Settings > Service Accounts\n3. Create a new service account with the appropriate role (admin or analyst)\n4. Copy the generated API key\n5. Paste the API key in the field below"
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "expel_app_availability",
+      "name": "Expel App Availability",
+      "description": "Verifies connectivity to the Expel Workbench API and validates API key authentication",
+      "defaultSeverity": "high",
+      "enabled": true
+    },
+    {
+      "slug": "expel_alert_management",
+      "name": "Expel Alert Management",
+      "description": "Checks for open critical and high severity alerts in Expel Workbench that may require immediate attention",
+      "defaultSeverity": "high",
+      "enabled": true
+    },
+    {
+      "slug": "expel_incident_response",
+      "name": "Expel Incident Response",
+      "description": "Reviews recent investigations and flags open incidents that need attention",
+      "defaultSeverity": "high",
+      "enabled": true
+    },
+    {
+      "slug": "expel_security_device_health",
+      "name": "Expel Security Device Health",
+      "description": "Verifies that connected security devices in Expel Workbench are healthy and operational",
+      "defaultSeverity": "high",
+      "enabled": true
+    },
+    {
+      "slug": "expel_employee_access",
+      "name": "Expel Employee Access",
+      "description": "Lists user accounts and their roles in Expel Workbench for access review",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 5,
+  "isActive": true
+}
