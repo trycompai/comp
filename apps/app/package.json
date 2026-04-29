@@ -52,6 +52,8 @@
         "@react-three/drei": "^10.3.0",
         "@react-three/fiber": "^9.1.2",
         "@react-three/postprocessing": "^3.0.4",
+        "@sentry/cli": "^2",
+        "@sentry/nextjs": "^10",
         "@streamdown/cjk": "^1.0.2",
         "@streamdown/code": "^1.0.3",
         "@streamdown/math": "^1.0.2",
