@@ -22,8 +22,6 @@ export class PurgeOrganizationSnapshotService {
     }
 
     const [
-      billing,
-      pentest,
       trustResources,
       trustNdas,
       trustDocs,
@@ -36,14 +34,13 @@ export class PurgeOrganizationSnapshotService {
       integrations,
       counts,
     ] = await Promise.all([
-      db.organizationBilling.findUnique({
-        where: { organizationId },
-        select: { stripeCustomerId: true },
-      }),
-      db.pentestSubscription.findUnique({
-        where: { organizationId },
-        select: { stripeSubscriptionId: true },
-      }),
+      // The legacy `organization_billing` and `pentest_subscriptions`
+      // tables were dropped in migration 20260427000000_pentest_credits;
+      // they were Stripe-coupled records that never had production data
+      // and have been superseded by the `pentest_credits` wallet model.
+      // The snapshot intentionally omits them — there's nothing to
+      // capture. If/when v2 introduces real Stripe billing, the new
+      // tables get added here at that point.
       db.trustResource.findMany({
         where: { organizationId },
         select: { s3Key: true },
@@ -130,9 +127,13 @@ export class PurgeOrganizationSnapshotService {
     return {
       organization: { id: org.id, name: org.name, slug: org.slug },
       counts,
+      // Stripe IDs intentionally null — the source tables were dropped
+      // in 20260427000000_pentest_credits. The shape is preserved so
+      // downstream consumers (purge orchestrator) don't need to change
+      // until v2 billing replaces these.
       stripe: {
-        customerId: billing?.stripeCustomerId ?? null,
-        subscriptionId: pentest?.stripeSubscriptionId ?? null,
+        customerId: null,
+        subscriptionId: null,
       },
       s3KeysByBucket,
       knowledgeBaseDocumentIds: kbDocs.map((d) => d.id),
