@@ -51,9 +51,16 @@ export function FindingsTable({
           {sorted.map((issue) => (
             <tr
               key={issue.id}
+              // Make rows keyboard-activatable when they're interactive.
+              // Without these, keyboard-only users can't open a finding
+              // — `onClick` alone is mouse-only.
+              role={onRowClick ? 'button' : undefined}
+              tabIndex={onRowClick ? 0 : undefined}
+              aria-label={onRowClick ? issue.title : undefined}
               className={cn(
                 'border-t border-border transition-colors',
-                onRowClick && 'cursor-pointer hover:bg-muted',
+                onRowClick &&
+                  'cursor-pointer outline-none hover:bg-muted focus-visible:bg-muted',
                 highlightedIds?.has(issue.id) && 'pt-row-land',
               )}
               style={
@@ -64,6 +71,13 @@ export function FindingsTable({
                   : undefined
               }
               onClick={() => onRowClick?.(issue)}
+              onKeyDown={(e) => {
+                if (!onRowClick) return;
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault();
+                  onRowClick(issue);
+                }
+              }}
             >
               <td className="px-3 py-2.5 align-middle">
                 <SevChip severity={issue.severity} size="sm" />

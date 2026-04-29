@@ -10,7 +10,7 @@ import type {
   PentestReportStatus,
   PentestRun,
 } from '@/lib/security/penetration-tests-client';
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useSWRConfig } from 'swr';
 import useSWR from 'swr';
 import { isReportInProgress, sortReportsByUpdatedAtDesc } from '../lib';
@@ -234,6 +234,19 @@ export function usePenetrationTestIssues(
       revalidateOnFocus: true,
     },
   );
+
+  // Trigger one final fetch the moment the run transitions out of an
+  // in-progress state. Without this, the very last batch of findings
+  // Maced writes during the completion phase can be missed: we stop
+  // polling immediately and don't refresh again until the user
+  // refocuses the tab.
+  const wasInProgressRef = useRef(inProgress);
+  useEffect(() => {
+    if (wasInProgressRef.current && !inProgress && shouldFetch) {
+      void mutate();
+    }
+    wasInProgressRef.current = inProgress;
+  }, [inProgress, shouldFetch, mutate]);
 
   return {
     issues: data ?? [],

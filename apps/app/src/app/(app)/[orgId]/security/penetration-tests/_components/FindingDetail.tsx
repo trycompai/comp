@@ -88,8 +88,10 @@ export function FindingDetail({ issue, onBack }: FindingDetailProps) {
 
           <TabsContent value="poc">
             <div className="mt-4">
+              {/* Use truthiness (`||`) rather than `??` so empty-string
+                  values from upstream still render the fallback message. */}
               <CopyableBlock
-                content={issue.proofOfConcept ?? 'No proof of concept recorded.'}
+                content={issue.proofOfConcept || 'No proof of concept recorded.'}
                 empty={!issue.proofOfConcept}
               />
             </div>

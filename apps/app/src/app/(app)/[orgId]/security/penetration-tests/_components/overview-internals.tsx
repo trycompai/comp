@@ -246,7 +246,7 @@ export function relativeTime(iso: string): string {
   const ms = Date.now() - new Date(iso).getTime();
   if (!Number.isFinite(ms) || ms < 0) return '—';
   const minutes = Math.floor(ms / 60_000);
-  if (minutes < 60) return minutes <= 1 ? 'just now' : `${minutes} min ago`;
+  if (minutes < 60) return minutes < 1 ? 'just now' : `${minutes} min ago`;
   const hours = Math.floor(ms / 3_600_000);
   if (hours < 24) return `${hours}h ago`;
   const days = Math.floor(ms / 86_400_000);

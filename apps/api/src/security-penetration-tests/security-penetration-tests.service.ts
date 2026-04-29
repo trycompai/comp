@@ -498,16 +498,38 @@ export class SecurityPenetrationTestsService {
       agentCount: number;
     },
   ): Promise<void> {
+    // Atomic claim — only the first webhook delivery for this run gets
+    // count: 1 back. Subsequent redeliveries see `completed_audit_at`
+    // already set and bail out before writing a duplicate audit row.
+    const claimed = await db.securityPenetrationTestRun.updateMany({
+      where: {
+        providerRunId: data.pentestId,
+        completedAuditAt: null,
+      },
+      data: { completedAuditAt: new Date() },
+    });
+    if (claimed.count === 0) {
+      // Either no ownership row (orphan) or this completion event has
+      // already been audited. Either way: silent no-op.
+      this.logger.log(
+        `[Webhook] pentest.completed audit skipped run=${data.pentestId} (no ownership row or already audited)`,
+      );
+      return;
+    }
+
     const run = await db.securityPenetrationTestRun.findUnique({
       where: { providerRunId: data.pentestId },
       select: { organizationId: true },
     });
     if (!run) {
-      this.logger.log(
-        `[Webhook] pentest.completed for unowned run ${data.pentestId} — skipping audit`,
+      // Race: the row vanished between updateMany and findUnique.
+      // Vanishingly rare; log and bail.
+      this.logger.warn(
+        `[Webhook] pentest.completed run row vanished after claim run=${data.pentestId}`,
       );
       return;
     }
+
     await this.credits.writePentestAuditEntry({
       organizationId: run.organizationId,
       action: 'pentest_completed',
@@ -532,35 +554,61 @@ export class SecurityPenetrationTestsService {
     providerRunId: string,
     eventType: 'pentest.failed' | 'pentest.cancelled',
   ): Promise<void> {
-    const claimed = await db.securityPenetrationTestRun.updateMany({
-      where: { providerRunId, creditRefundedAt: null },
-      data: { creditRefundedAt: new Date() },
-    });
+    // Wrap claim + refund in a single transaction so a refund failure
+    // rolls back the claim. Without this, a transient DB blip on the
+    // wallet write would leave `creditRefundedAt` set with no actual
+    // refund, and webhook redelivery would short-circuit forever — the
+    // customer never gets their credit back.
+    try {
+      await db.$transaction(async (tx) => {
+        const claimed = await tx.securityPenetrationTestRun.updateMany({
+          where: { providerRunId, creditRefundedAt: null },
+          data: { creditRefundedAt: new Date() },
+        });
 
-    if (claimed.count === 0) {
-      // Either we don't own this run (orphan from a fast-click race —
-      // ownership row never persisted) OR the credit has already been
-      // refunded. Either way: do nothing further.
-      this.logger.log(
-        `[Webhook] ${eventType} refund skipped run=${providerRunId} (no ownership row or already refunded)`,
+        if (claimed.count === 0) {
+          // Either we don't own this run (orphan from a fast-click race
+          // — ownership row never persisted) OR the credit has already
+          // been refunded. Either way: do nothing further.
+          this.logger.log(
+            `[Webhook] ${eventType} refund skipped run=${providerRunId} (no ownership row or already refunded)`,
+          );
+          return;
+        }
+
+        const run = await tx.securityPenetrationTestRun.findUnique({
+          where: { providerRunId },
+          select: { organizationId: true },
+        });
+        if (!run) {
+          // Vanishingly rare race; abort the transaction so the claim
+          // rolls back. Webhook redelivery will retry.
+          throw new Error(
+            `Run row vanished after claim for ${providerRunId}`,
+          );
+        }
+
+        // Pass the tx client through so the wallet write happens in
+        // the same transaction as the claim. If this throws (or the
+        // caller's outer try/catch surfaces an error), the claim is
+        // undone.
+        await this.credits.refund(
+          run.organizationId,
+          providerRunId,
+          eventType,
+          tx,
+        );
+      });
+    } catch (error) {
+      // Log and let the webhook retry. The transaction rolled back, so
+      // `creditRefundedAt` is null again — a redelivered webhook will
+      // re-attempt the refund.
+      this.logger.error(
+        `[Webhook] ${eventType} refund transaction failed run=${providerRunId}: ${
+          error instanceof Error ? error.message : String(error)
+        }`,
       );
-      return;
     }
-
-    const run = await db.securityPenetrationTestRun.findUnique({
-      where: { providerRunId },
-      select: { organizationId: true },
-    });
-    if (!run) {
-      // Race: the row was deleted between updateMany and findUnique.
-      // Vanishingly rare; log and bail.
-      this.logger.warn(
-        `[Webhook] ${eventType} run row vanished after claim run=${providerRunId}`,
-      );
-      return;
-    }
-
-    await this.refundQuietly(run.organizationId, providerRunId, eventType);
   }
 
   private formatDurationMs(ms: number): string {

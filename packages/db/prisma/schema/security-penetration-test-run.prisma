@@ -11,6 +11,13 @@ model SecurityPenetrationTestRun {
   /// the second attempt sees a non-null value here.
   creditRefundedAt DateTime? @map("credit_refunded_at")
 
+  /// Set the first time we write a `pentest_completed` audit-log entry
+  /// for this run. Webhook redelivery would otherwise create duplicate
+  /// rows in `audit_log` because Maced retries `pentest.completed` on
+  /// transient delivery failures. The atomic claim on this column
+  /// guarantees one audit row per run regardless of retry count.
+  completedAuditAt DateTime? @map("completed_audit_at")
+
   organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 
   @@unique([providerRunId])

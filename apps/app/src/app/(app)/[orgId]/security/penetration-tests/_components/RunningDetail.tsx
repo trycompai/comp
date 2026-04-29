@@ -28,7 +28,11 @@ export function RunningDetail({
   onOpenFinding,
 }: RunningDetailProps) {
   const counts = tallySeverities(issues);
-  const highlighted = useNewFindingHighlights(issues);
+  // Pass the run id so the highlights hook resets its `seenRef` when
+  // the user switches to a different scan — otherwise IDs from the
+  // previous run linger and ALL of the new run's findings flash as
+  // "newly arrived" on first render.
+  const highlighted = useNewFindingHighlights(run.id, issues);
 
   const progress = run.progress;
   const completedAgents = progress?.completedAgents ?? 0;
@@ -117,10 +121,25 @@ function formatElapsed(ms: number): string {
  * Tracks which issue IDs have arrived since the last render so the findings
  * table can flash them with the severity tint. Issues that were already
  * there on mount don't flash.
+ *
+ * Keyed on `runId` — when the user navigates between scans, the seen-set
+ * resets so we don't carry over IDs from the previous run.
  */
-function useNewFindingHighlights(issues: PentestIssue[]): Set<string> {
-  const seenRef = useRef<Set<string>>(new Set(issues.map((i) => i.id)));
+function useNewFindingHighlights(
+  runId: string,
+  issues: PentestIssue[],
+): Set<string> {
+  const seenRef = useRef<Set<string>>(new Set());
+  const lastRunIdRef = useRef<string | null>(null);
   const [highlighted, setHighlighted] = useState<Set<string>>(new Set());
+
+  // On run change: prime `seenRef` with the issues already present so
+  // they don't all flash as newly-arrived. Bypass the next "newly
+  // landed" pass entirely for this run change.
+  if (lastRunIdRef.current !== runId) {
+    seenRef.current = new Set(issues.map((i) => i.id));
+    lastRunIdRef.current = runId;
+  }
 
   useEffect(() => {
     const newlyLanded: string[] = [];

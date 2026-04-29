@@ -64,9 +64,13 @@ export function SplitView({
   );
   const { createReport, isCreating } = useCreatePenetrationTest(orgId);
   const { credits } = usePentestCredits(orgId);
-  const balance = credits?.balance ?? 0;
+  // Keep `balance` undefined while credits are loading. Coalescing to 0
+  // would prematurely disable "+ New scan" before we know the user's
+  // real balance — child props treat `undefined` as "loading, allow
+  // optimistic UI" and a real `0` as "confirmed empty, block create."
+  const balance = credits?.balance;
   const trialUsed =
-    credits !== undefined && balance === 0 && credits.totalGranted > 0;
+    credits !== undefined && credits.balance === 0 && credits.totalGranted > 0;
 
   const showEmptyState =
     !listLoading &&
@@ -206,13 +210,18 @@ async function downloadArtifact({
   path: string;
   filename?: string;
 }) {
+  // Derive the Accept header from the filename's extension, not from
+  // whether `filename` is set — both Markdown and PDF callers pass a
+  // filename, so the previous `filename ? pdf : md` check requested
+  // application/pdf for both formats.
+  const accept = filename?.toLowerCase().endsWith('.pdf')
+    ? 'application/pdf'
+    : 'text/markdown';
   try {
     const response = await api.raw(path, {
       method: 'GET',
       organizationId: orgId,
-      headers: {
-        Accept: filename ? 'application/pdf' : 'text/markdown',
-      },
+      headers: { Accept: accept },
     });
     if (!response.ok) {
       const body = await response.text().catch(() => '');
