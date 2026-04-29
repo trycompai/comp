@@ -122,6 +122,12 @@ describe('Built-in role permissions — regression', () => {
         expect.arrayContaining(['create', 'read', 'update', 'delete']),
       );
     });
+
+    it('should have secret CRUD', () => {
+      expect(perms.secret).toEqual(
+        expect.arrayContaining(['create', 'read', 'update', 'delete']),
+      );
+    });
   });
 
   // ─── Admin ──────────────────────────────────────────────────────────
@@ -174,6 +180,12 @@ describe('Built-in role permissions — regression', () => {
     it('should have pentest create/read/delete', () => {
       expect(perms.pentest).toEqual(
         expect.arrayContaining(['create', 'read', 'delete']),
+      );
+    });
+
+    it('should have secret CRUD', () => {
+      expect(perms.secret).toEqual(
+        expect.arrayContaining(['create', 'read', 'update', 'delete']),
       );
     });
   });
@@ -232,6 +244,10 @@ describe('Built-in role permissions — regression', () => {
     it('should NOT have training permissions', () => {
       expect(perms.training).toBeUndefined();
     });
+
+    it('should NOT have secret permissions (auditors must never see decrypted credentials)', () => {
+      expect(perms.secret).toBeUndefined();
+    });
   });
 
   // ─── Employee ───────────────────────────────────────────────────────
@@ -269,6 +285,7 @@ describe('Built-in role permissions — regression', () => {
         'apiKey',
         'pentest',
         'training',
+        'secret',
       ]) {
         expect(perms[resource]).toBeUndefined();
       }
