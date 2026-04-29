@@ -74,7 +74,7 @@ function OnboardingState({
   canCreate: boolean;
 }) {
   return (
-    <div className="flex h-full items-center justify-center px-8 py-12">
+    <div className="flex h-full items-center justify-center px-4 py-10 md:px-8 md:py-12">
       <div className="w-full max-w-[560px]">
         <div className="font-mono text-[11px] uppercase tracking-[0.1em] text-muted-foreground">
           Penetration tests · Overview
@@ -142,7 +142,7 @@ function PostureOverview({
 
   return (
     <div className="min-h-0 overflow-y-auto">
-      <div className="mx-auto max-w-5xl px-8 py-8 space-y-6">
+      <div className="mx-auto max-w-5xl space-y-6 px-4 py-6 md:px-8 md:py-8">
         <header className="flex flex-wrap items-end justify-between gap-3 pb-3">
           <div>
             <h1 className="text-[28px] font-medium tracking-[-0.02em]">
