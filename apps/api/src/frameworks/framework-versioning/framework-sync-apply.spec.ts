@@ -40,11 +40,12 @@ function mockTx() {
     task: { create: jest.fn().mockImplementation(({ data }) => Promise.resolve({ ...data, id: `tsk_new_${Math.random()}` })), update: jest.fn(), findMany: jest.fn().mockResolvedValue([]) },
     policy: { create: jest.fn().mockImplementation(({ data }) => Promise.resolve({ ...data, id: `pol_new_${Math.random()}` })), update: jest.fn(), findMany: jest.fn().mockResolvedValue([]) },
     policyVersion: { create: jest.fn().mockResolvedValue({ id: 'pv_new', version: 2 }), findFirst: jest.fn().mockResolvedValue({ version: 1 }) },
-    requirementMap: { create: jest.fn().mockImplementation(({ data }) => Promise.resolve({ ...data, id: `rm_new_${Math.random()}` })), updateMany: jest.fn(), findMany: jest.fn().mockResolvedValue([]) },
+    requirementMap: { create: jest.fn().mockImplementation(({ data }) => Promise.resolve({ ...data, id: `rm_new_${Math.random()}` })), update: jest.fn(), updateMany: jest.fn(), findMany: jest.fn().mockResolvedValue([]) },
     frameworkInstance: { findMany: jest.fn().mockResolvedValue([]), update: jest.fn() },
     frameworkSyncOperation: { create: jest.fn().mockResolvedValue({ id: 'fso_new' }) },
     controlDocumentType: { findUnique: jest.fn().mockResolvedValue(null), create: jest.fn().mockResolvedValue({ id: 'cdt_new' }), delete: jest.fn() },
     $executeRaw: jest.fn().mockResolvedValue(0),
+    $queryRaw: jest.fn().mockResolvedValue([]),
   } as any;
 }
 
@@ -297,6 +298,196 @@ describe('applySync', () => {
       where: expect.objectContaining({ id: 'rm_1' }),
       data: expect.objectContaining({ archivedAt: expect.any(Date) }),
     }));
+  });
+
+  // Drift regression: the diff alone misses edges the (backfilled) v1
+  // manifest already claimed but the customer's actual rows never had.
+  // Sync must reconcile against the to-manifest, not just the diff.
+  it('creates missing RequirementMap edge when v1 and v2 both claim it but customer has no row (drift)', async () => {
+    const tx = mockTx();
+    tx.control.findMany.mockResolvedValue([
+      { id: 'ctl_1', controlTemplateId: 'ct_1', organizationId: 'org_1', name: 'C', description: 'D', archivedAt: null },
+    ]);
+    // Customer has no RequirementMap row for (ctl_1, rq_1) — drift between
+    // backfilled v1.0.0 manifest and the customer's actual onboarding state.
+    tx.requirementMap.findMany.mockResolvedValue([]);
+
+    const sameControl = { id: 'ct_1', name: 'C', description: 'D', requirementIds: ['rq_1'], policyIds: [], taskIds: [] };
+    await applySync(tx, {
+      instance: baseInstance as any,
+      currentVersion: {
+        id: 'fvr_v1',
+        frameworkId: 'frk_soc2',
+        manifest: manifest({
+          requirements: [{ id: 'rq_1', identifier: 'CC1', name: 'X', description: null }],
+          controls: [sameControl],
+        }),
+      } as any,
+      targetVersion: {
+        id: 'fvr_v2',
+        frameworkId: 'frk_soc2',
+        manifest: manifest({
+          requirements: [{ id: 'rq_1', identifier: 'CC1', name: 'X', description: null }],
+          controls: [sameControl],
+        }),
+      } as any,
+      memberId: 'mem_1',
+    });
+
+    expect(tx.requirementMap.create).toHaveBeenCalledWith(expect.objectContaining({
+      data: expect.objectContaining({ controlId: 'ctl_1', requirementId: 'rq_1', frameworkInstanceId: 'frm_1' }),
+    }));
+  });
+
+  it('unarchives an existing archived RequirementMap row instead of creating a duplicate', async () => {
+    const tx = mockTx();
+    tx.control.findMany.mockResolvedValue([
+      { id: 'ctl_1', controlTemplateId: 'ct_1', organizationId: 'org_1', name: 'C', description: 'D', archivedAt: null },
+    ]);
+    const archivedAt = new Date('2026-01-01');
+    tx.requirementMap.findMany.mockResolvedValue([
+      { id: 'rm_archived', controlId: 'ctl_1', requirementId: 'rq_1', frameworkInstanceId: 'frm_1', archivedAt },
+    ]);
+
+    const sameControl = { id: 'ct_1', name: 'C', description: 'D', requirementIds: ['rq_1'], policyIds: [], taskIds: [] };
+    await applySync(tx, {
+      instance: baseInstance as any,
+      currentVersion: {
+        id: 'fvr_v1',
+        frameworkId: 'frk_soc2',
+        manifest: manifest({
+          requirements: [{ id: 'rq_1', identifier: 'CC1', name: 'X', description: null }],
+          controls: [sameControl],
+        }),
+      } as any,
+      targetVersion: {
+        id: 'fvr_v2',
+        frameworkId: 'frk_soc2',
+        manifest: manifest({
+          requirements: [{ id: 'rq_1', identifier: 'CC1', name: 'X', description: null }],
+          controls: [sameControl],
+        }),
+      } as any,
+      memberId: 'mem_1',
+    });
+
+    expect(tx.requirementMap.update).toHaveBeenCalledWith(expect.objectContaining({
+      where: { id: 'rm_archived' },
+      data: { archivedAt: null },
+    }));
+    expect(tx.requirementMap.create).not.toHaveBeenCalled();
+  });
+
+  it('inserts missing _ControlToPolicy edge when v1 and v2 both claim it but customer has no row (drift)', async () => {
+    const tx = mockTx();
+    tx.control.findMany.mockResolvedValue([
+      { id: 'ctl_1', controlTemplateId: 'ct_1', organizationId: 'org_1', name: 'C', description: 'D', archivedAt: null },
+    ]);
+    tx.policy.findMany.mockResolvedValue([
+      { id: 'pol_1', policyTemplateId: 'pt_1', organizationId: 'org_1', name: 'P', description: 'd', content: [], frequency: null, department: null, status: 'draft', archivedAt: null },
+    ]);
+    // Customer's _ControlToPolicy table has no edge for (ctl_1, pol_1).
+    tx.$queryRaw.mockResolvedValue([]);
+
+    const sameControl = { id: 'ct_1', name: 'C', description: 'D', requirementIds: [], policyIds: ['pt_1'], taskIds: [] };
+    const samePolicy = { id: 'pt_1', name: 'P', description: 'd', content: [], frequency: null, department: null };
+    await applySync(tx, {
+      instance: baseInstance as any,
+      currentVersion: {
+        id: 'fvr_v1',
+        frameworkId: 'frk_soc2',
+        manifest: manifest({ controls: [sameControl], policies: [samePolicy] }),
+      } as any,
+      targetVersion: {
+        id: 'fvr_v2',
+        frameworkId: 'frk_soc2',
+        manifest: manifest({ controls: [sameControl], policies: [samePolicy] }),
+      } as any,
+      memberId: 'mem_1',
+    });
+
+    // The reconcile pass should have run an INSERT INTO _ControlToPolicy with
+    // the missing pair. We can't easily inspect the SQL strings on Prisma's
+    // tagged template through jest, so just assert $executeRaw was invoked.
+    const calls = tx.$executeRaw.mock.calls.map((c: unknown[]) => String(c[0]?.[0] ?? ''));
+    const cpInsertCalled = calls.some((s: string) => s.includes('INSERT INTO "_ControlToPolicy"'));
+    expect(cpInsertCalled).toBe(true);
+  });
+
+  it('creates missing ControlDocumentType row when v1 and v2 both claim it but customer has no row (drift)', async () => {
+    const tx = mockTx();
+    tx.control.findMany.mockResolvedValue([
+      { id: 'ctl_1', controlTemplateId: 'ct_1', organizationId: 'org_1', name: 'C', description: 'D', archivedAt: null },
+    ]);
+    tx.controlDocumentType.findUnique.mockResolvedValue(null);
+
+    const sameControl = {
+      id: 'ct_1',
+      name: 'C',
+      description: 'D',
+      requirementIds: [],
+      policyIds: [],
+      taskIds: [],
+      documentTypes: ['infrastructure_inventory'],
+    };
+    await applySync(tx, {
+      instance: baseInstance as any,
+      currentVersion: {
+        id: 'fvr_v1',
+        frameworkId: 'frk_soc2',
+        manifest: manifest({ controls: [sameControl] }),
+      } as any,
+      targetVersion: {
+        id: 'fvr_v2',
+        frameworkId: 'frk_soc2',
+        manifest: manifest({ controls: [sameControl] }),
+      } as any,
+      memberId: 'mem_1',
+    });
+
+    expect(tx.controlDocumentType.create).toHaveBeenCalledWith(expect.objectContaining({
+      data: expect.objectContaining({ controlId: 'ctl_1', formType: 'infrastructure_inventory' }),
+    }));
+  });
+
+  it('does NOT re-insert a _ControlToPolicy edge that already exists in the customer DB (no double-undo)', async () => {
+    const tx = mockTx();
+    tx.control.findMany.mockResolvedValue([
+      { id: 'ctl_1', controlTemplateId: 'ct_1', organizationId: 'org_1', name: 'C', description: 'D', archivedAt: null },
+    ]);
+    tx.policy.findMany.mockResolvedValue([
+      { id: 'pol_1', policyTemplateId: 'pt_1', organizationId: 'org_1', name: 'P', description: 'd', content: [], frequency: null, department: null, status: 'draft', archivedAt: null },
+    ]);
+    // Edge already exists (e.g., another framework's onboarding created it).
+    tx.$queryRaw.mockResolvedValue([{ A: 'ctl_1', B: 'pol_1' }]);
+
+    const sameControl = { id: 'ct_1', name: 'C', description: 'D', requirementIds: [], policyIds: ['pt_1'], taskIds: [] };
+    const samePolicy = { id: 'pt_1', name: 'P', description: 'd', content: [], frequency: null, department: null };
+    await applySync(tx, {
+      instance: baseInstance as any,
+      currentVersion: {
+        id: 'fvr_v1',
+        frameworkId: 'frk_soc2',
+        manifest: manifest({ controls: [sameControl], policies: [samePolicy] }),
+      } as any,
+      targetVersion: {
+        id: 'fvr_v2',
+        frameworkId: 'frk_soc2',
+        manifest: manifest({ controls: [sameControl], policies: [samePolicy] }),
+      } as any,
+      memberId: 'mem_1',
+    });
+
+    // Sync must not have written to _ControlToPolicy (nothing to add) and the
+    // sync operation's undo payload must NOT claim it connected this edge —
+    // otherwise rollback would delete a pre-existing edge another framework
+    // still wants.
+    const cpInserts = tx.$executeRaw.mock.calls.map((c: unknown[]) => String(c[0]?.[0] ?? ''))
+      .filter((s: string) => s.includes('INSERT INTO "_ControlToPolicy"'));
+    expect(cpInserts).toHaveLength(0);
+
+    const undoPayload = tx.frameworkSyncOperation.create.mock.calls[0][0].data.undoPayload;
+    expect(undoPayload.controlPolicyLinks.connected).toEqual([]);
   });
 
   it('writes a sync operation row with undoPayload and summary', async () => {

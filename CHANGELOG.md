@@ -1,3 +1,26 @@
+# [3.35.0](https://github.com/trycompai/comp/compare/v3.34.2...v3.35.0) (2026-04-29)
+
+
+### Features
+
+* add clear view of maps between policies<>controls<>tasks ([5e30bfb](https://github.com/trycompai/comp/commit/5e30bfb7099acfa408ffe3b9b03b03c6abc3fc58))
+
+## [3.34.2](https://github.com/trycompai/comp/compare/v3.34.1...v3.34.2) (2026-04-28)
+
+
+### Bug Fixes
+
+* **device-agent:** unbrick stuck installs (auto-update + legacy session) ([926a905](https://github.com/trycompai/comp/commit/926a905baa7805e2cc2517f5c3601c6f95710d68))
+* **sync:** validate employee.role before persisting (limbo-role guard) ([#2690](https://github.com/trycompai/comp/issues/2690)) ([382f619](https://github.com/trycompai/comp/commit/382f619a7bf16199b42e2db55404c468cb3452d2))
+
+## [3.34.1](https://github.com/trycompai/comp/compare/v3.34.0...v3.34.1) (2026-04-28)
+
+
+### Bug Fixes
+
+* fix-sync-requirement-map-drift ([a10ecc3](https://github.com/trycompai/comp/commit/a10ecc309a4e2283c5e9d36555dfe1673fd142f3))
+* **framework-editor:** don't auto-link new task/policy templates to all framework controls ([#2686](https://github.com/trycompai/comp/issues/2686)) ([b58c4d3](https://github.com/trycompai/comp/commit/b58c4d3f70ec82e56da178dac4c3562226cfed6a))
+
 # [3.34.0](https://github.com/trycompai/comp/compare/v3.33.2...v3.34.0) (2026-04-28)
 
 
