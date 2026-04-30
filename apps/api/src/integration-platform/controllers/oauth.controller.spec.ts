@@ -176,9 +176,8 @@ describe('OAuthController', () => {
       mockedGetManifest.mockReturnValue(undefined as never);
 
       await expect(
-        controller.startOAuth('org_1', {
+        controller.startOAuth('org_1', 'user_1', {
           providerSlug: 'nonexistent',
-          userId: 'user_1',
         }),
       ).rejects.toThrow(HttpException);
     });
@@ -189,9 +188,8 @@ describe('OAuthController', () => {
       } as never);
 
       await expect(
-        controller.startOAuth('org_1', {
+        controller.startOAuth('org_1', 'user_1', {
           providerSlug: 'datadog',
-          userId: 'user_1',
         }),
       ).rejects.toThrow(HttpException);
     });
@@ -219,9 +217,8 @@ describe('OAuthController', () => {
       });
 
       await expect(
-        controller.startOAuth('org_1', {
+        controller.startOAuth('org_1', 'user_1', {
           providerSlug: 'github',
-          userId: 'user_1',
         }),
       ).rejects.toThrow(HttpException);
     });
@@ -254,9 +251,8 @@ describe('OAuthController', () => {
         state: 'random_state_token',
       });
 
-      const result = await controller.startOAuth('org_1', {
+      const result = await controller.startOAuth('org_1', 'user_1', {
         providerSlug: 'github',
-        userId: 'user_1',
       });
 
       expect(result.authorizationUrl).toContain(
@@ -303,9 +299,8 @@ describe('OAuthController', () => {
         state: 'state_abc',
       });
 
-      const result = await controller.startOAuth('org_1', {
+      const result = await controller.startOAuth('org_1', 'user_1', {
         providerSlug: 'linear',
-        userId: 'user_1',
       });
 
       expect(result.authorizationUrl).toContain('code_challenge=');

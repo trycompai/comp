@@ -18,7 +18,7 @@ import { auth } from '../../auth/auth.server';
 import { HybridAuthGuard } from '../../auth/hybrid-auth.guard';
 import { PermissionGuard } from '../../auth/permission.guard';
 import { RequirePermission } from '../../auth/require-permission.decorator';
-import { OrganizationId } from '../../auth/auth-context.decorator';
+import { OrganizationId, UserId } from '../../auth/auth-context.decorator';
 import { OAuthStateRepository } from '../repositories/oauth-state.repository';
 import { ProviderRepository } from '../repositories/provider.repository';
 import { ConnectionRepository } from '../repositories/connection.repository';
@@ -30,7 +30,6 @@ import { getManifest, type OAuthConfig } from '@trycompai/integration-platform';
 
 interface StartOAuthDto {
   providerSlug: string;
-  userId: string;
   redirectUrl?: string;
 }
 
@@ -90,9 +89,10 @@ export class OAuthController {
   @RequirePermission('integration', 'create')
   async startOAuth(
     @OrganizationId() organizationId: string,
+    @UserId() userId: string,
     @Body() body: StartOAuthDto,
   ): Promise<{ authorizationUrl: string }> {
-    const { providerSlug, userId, redirectUrl } = body;
+    const { providerSlug, redirectUrl } = body;
 
     // Get manifest and OAuth config
     const manifest = getManifest(providerSlug);
