@@ -1,6 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { NotFoundException } from '@nestjs/common';
 import { FrameworksService } from './frameworks.service';
+import { TimelinesService } from '../timelines/timelines.service';
 
 jest.mock('@db', () => ({
   db: {
@@ -17,6 +18,7 @@ jest.mock('@db', () => ({
       findMany: jest.fn(),
       findFirst: jest.fn(),
       create: jest.fn(),
+      createManyAndReturn: jest.fn(),
     },
     requirementMap: {
       findMany: jest.fn(),
@@ -29,6 +31,9 @@ jest.mock('@db', () => ({
       findMany: jest.fn(),
     },
   },
+  // The frameworks-timeline helper imports FindingType (a Prisma enum) at module
+  // load. Stub it so the spec file can be evaluated without the real client.
+  FindingType: { soc2: 'soc2', iso27001: 'iso27001' },
 }));
 
 jest.mock('./frameworks-scores.helper', () => ({
@@ -50,7 +55,10 @@ describe('FrameworksService', () => {
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
-      providers: [FrameworksService],
+      providers: [
+        FrameworksService,
+        { provide: TimelinesService, useValue: {} },
+      ],
     }).compile();
 
     service = module.get<FrameworksService>(FrameworksService);
@@ -192,12 +200,13 @@ describe('FrameworksService', () => {
       expect(result.requirementDefinitions).toHaveLength(1);
     });
 
-    it('findOne on a platform FI reads only FrameworkEditorRequirement', async () => {
+    it('findOne on a platform FI merges per-instance custom requirements with platform requirements', async () => {
       (mockDb.frameworkInstance.findUnique as jest.Mock).mockResolvedValue({
         id: 'fi_platform',
         organizationId: 'org_A',
         frameworkId: 'frk_soc2',
         customFrameworkId: null,
+        currentVersionId: null,
         framework: { id: 'frk_soc2', name: 'SOC 2' },
         customFramework: null,
         requirementsMapped: [],
@@ -207,32 +216,83 @@ describe('FrameworksService', () => {
       ).mockResolvedValue([
         { id: 'frk_rq_1', name: 'CC1', identifier: 'cc1-1', description: '' },
       ]);
+      // Per-instance custom requirement attached directly to fi_platform.
+      (mockDb.customRequirement.findMany as jest.Mock).mockResolvedValue([
+        {
+          id: 'creq_local',
+          name: 'Org-local extra',
+          identifier: 'X1',
+          description: '',
+        },
+      ]);
       (mockDb.task.findMany as jest.Mock).mockResolvedValue([]);
       (mockDb.requirementMap.findMany as jest.Mock).mockResolvedValue([]);
       (mockDb.evidenceSubmission.findMany as jest.Mock).mockResolvedValue([]);
 
-      await service.findOne('fi_platform', 'org_A');
+      const result = await service.findOne('fi_platform', 'org_A');
 
       expect(mockDb.frameworkEditorRequirement.findMany).toHaveBeenCalledWith({
         where: { frameworkId: 'frk_soc2' },
         orderBy: { name: 'asc' },
       });
-      expect(mockDb.customRequirement.findMany).not.toHaveBeenCalled();
+      expect(mockDb.customRequirement.findMany).toHaveBeenCalledWith({
+        where: { frameworkInstanceId: 'fi_platform' },
+        orderBy: { name: 'asc' },
+      });
+      const ids = result.requirementDefinitions.map((r: any) => r.id);
+      expect(ids).toEqual(expect.arrayContaining(['frk_rq_1', 'creq_local']));
     });
 
-    it('createRequirement rejects a platform framework instance', async () => {
+    it('createRequirement on a custom-framework FI hangs the row off the framework', async () => {
       (mockDb.frameworkInstance.findUnique as jest.Mock).mockResolvedValue({
-        customFrameworkId: null,
+        id: 'fi_custom',
+        customFrameworkId: 'cfrm_A',
+      });
+      (mockDb.customRequirement.create as jest.Mock).mockResolvedValue({
+        id: 'creq_new',
       });
 
-      await expect(
-        service.createRequirement('fi_platform', 'org_A', {
+      await service.createRequirement('fi_custom', 'org_A', {
+        name: 'x',
+        identifier: 'x',
+        description: 'x',
+      });
+
+      expect(mockDb.customRequirement.create).toHaveBeenCalledWith({
+        data: {
           name: 'x',
           identifier: 'x',
           description: 'x',
-        }),
-      ).rejects.toThrow(/Cannot add custom requirements/);
-      expect(mockDb.customRequirement.create).not.toHaveBeenCalled();
+          organizationId: 'org_A',
+          customFrameworkId: 'cfrm_A',
+        },
+      });
+    });
+
+    it('createRequirement on a platform FI hangs the row off the instance', async () => {
+      (mockDb.frameworkInstance.findUnique as jest.Mock).mockResolvedValue({
+        id: 'fi_platform',
+        customFrameworkId: null,
+      });
+      (mockDb.customRequirement.create as jest.Mock).mockResolvedValue({
+        id: 'creq_new',
+      });
+
+      await service.createRequirement('fi_platform', 'org_A', {
+        name: 'x',
+        identifier: 'x',
+        description: 'x',
+      });
+
+      expect(mockDb.customRequirement.create).toHaveBeenCalledWith({
+        data: {
+          name: 'x',
+          identifier: 'x',
+          description: 'x',
+          organizationId: 'org_A',
+          frameworkInstanceId: 'fi_platform',
+        },
+      });
     });
   });
 });

@@ -6,6 +6,27 @@ import {
 import { db, EvidenceFormType, Prisma } from '@db';
 import { CreateControlDto } from './dto/create-control.dto';
 
+// A CustomRequirement is valid for a given FrameworkInstance when its parent
+// matches: either it lives on the FI's CustomFramework, or it was attached
+// directly to the FI itself (per-instance custom requirement on a platform
+// framework). The CustomRequirement schema's CHECK enforces that exactly one
+// of customFrameworkId / frameworkInstanceId is set.
+function isCustomReqOnInstance(
+  req: {
+    customFrameworkId: string | null;
+    frameworkInstanceId: string | null;
+  },
+  instance: { id: string; customFrameworkId: string | null },
+): boolean {
+  if (req.customFrameworkId) {
+    return (
+      instance.customFrameworkId !== null &&
+      req.customFrameworkId === instance.customFrameworkId
+    );
+  }
+  return req.frameworkInstanceId === instance.id;
+}
+
 const controlInclude = {
   policies: {
     where: { archivedAt: null },
@@ -377,16 +398,24 @@ export class ControlsService {
       customReqIds.length > 0
         ? db.customRequirement.findMany({
             where: { id: { in: customReqIds }, organizationId },
-            select: { id: true, customFrameworkId: true },
+            select: {
+              id: true,
+              customFrameworkId: true,
+              frameworkInstanceId: true,
+            },
           })
-        : Promise.resolve<{ id: string; customFrameworkId: string }[]>([]),
+        : Promise.resolve<
+            {
+              id: string;
+              customFrameworkId: string | null;
+              frameworkInstanceId: string | null;
+            }[]
+          >([]),
     ]);
     const platformReqFwById = new Map(
       platformReqs.map((r) => [r.id, r.frameworkId]),
     );
-    const customReqFwById = new Map(
-      customReqs.map((r) => [r.id, r.customFrameworkId]),
-    );
+    const customReqById = new Map(customReqs.map((r) => [r.id, r]));
 
     for (const m of mappings) {
       const instance = instanceById.get(m.frameworkInstanceId);
@@ -403,8 +432,8 @@ export class ControlsService {
           );
         }
       } else if (m.customRequirementId) {
-        const reqFwId = customReqFwById.get(m.customRequirementId);
-        if (!reqFwId || reqFwId !== instance.customFrameworkId) {
+        const req = customReqById.get(m.customRequirementId);
+        if (!req || !isCustomReqOnInstance(req, instance)) {
           throw new BadRequestException(
             'One or more requirement mappings are invalid',
           );
@@ -519,16 +548,24 @@ export class ControlsService {
       customReqIds.length > 0
         ? db.customRequirement.findMany({
             where: { id: { in: customReqIds }, organizationId },
-            select: { id: true, customFrameworkId: true },
+            select: {
+              id: true,
+              customFrameworkId: true,
+              frameworkInstanceId: true,
+            },
           })
-        : Promise.resolve<{ id: string; customFrameworkId: string }[]>([]),
+        : Promise.resolve<
+            {
+              id: string;
+              customFrameworkId: string | null;
+              frameworkInstanceId: string | null;
+            }[]
+          >([]),
     ]);
     const platformReqFwById = new Map(
       platformReqs.map((r) => [r.id, r.frameworkId]),
     );
-    const customReqFwById = new Map(
-      customReqs.map((r) => [r.id, r.customFrameworkId]),
-    );
+    const customReqById = new Map(customReqs.map((r) => [r.id, r]));
 
     const validMappings = mappings.filter((m) => {
       const instance = instanceById.get(m.frameworkInstanceId);
@@ -538,8 +575,8 @@ export class ControlsService {
         return Boolean(reqFwId) && reqFwId === instance.frameworkId;
       }
       if (m.customRequirementId) {
-        const reqFwId = customReqFwById.get(m.customRequirementId);
-        return Boolean(reqFwId) && reqFwId === instance.customFrameworkId;
+        const req = customReqById.get(m.customRequirementId);
+        return Boolean(req) && isCustomReqOnInstance(req!, instance);
       }
       return false;
     });
