@@ -1,3 +1,21 @@
+# [3.39.0](https://github.com/trycompai/comp/compare/v3.38.1...v3.39.0) (2026-04-30)
+
+
+### Bug Fixes
+
+* **api:** correct fileData max-length to 100MB and allow localhost in URL validation ([6d56a2d](https://github.com/trycompai/comp/commit/6d56a2d954ee20810672fc2a0c628fa72c133b62))
+* **api:** correct type casting for rawBody in main.ts ([7e624d4](https://github.com/trycompai/comp/commit/7e624d4d9eb95e2844fe11bb6a2aa1953dc405b1))
+* **app:** remove product app marketing pixels ([#2716](https://github.com/trycompai/comp/issues/2716)) ([26d75be](https://github.com/trycompai/comp/commit/26d75be92e8ba129add9c265106c1f69f1d90c82))
+* **background-checks:** fix 13 bugs across billing, webhooks, custom uploads, and UI ([d5df5db](https://github.com/trycompai/comp/commit/d5df5db4dc4c2f27a53a49f51c90ee52a0ec2f24))
+* **background-checks:** remove employee PII from sessionStorage ([ea082b3](https://github.com/trycompai/comp/commit/ea082b34733e9002fe65a54b8ee44338cc859979)), closes [#133](https://github.com/trycompai/comp/issues/133)
+* **background-checks:** security hardening across payment flow, validation, and logging ([8b3b39b](https://github.com/trycompai/comp/commit/8b3b39bd214908703579001eaf2d64d8f8c45caa))
+* **pentest:** bump split-view breakpoint from md to xl for tablet support ([efd1c85](https://github.com/trycompai/comp/commit/efd1c859f0bfdbf4664bd0fb42956883a71c6ab0))
+
+
+### Features
+
+* **background-checks:** add employee background checks ([0456df6](https://github.com/trycompai/comp/commit/0456df6e832b78a8ef4938bcdc5a5416cf597b6b))
+
 ## [3.38.1](https://github.com/trycompai/comp/compare/v3.38.0...v3.38.1) (2026-04-29)
 
 
