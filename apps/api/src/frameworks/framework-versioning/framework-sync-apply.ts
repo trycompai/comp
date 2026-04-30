@@ -67,17 +67,17 @@ export async function applySync(
   };
 
   // --- Controls ---
-  for (const added of diff.controls.added) {
-    if (ctlByTemplate.has(added.id)) continue;
+  for (const targetControl of to.controls) {
+    if (ctlByTemplate.has(targetControl.id)) continue;
     const created = await tx.control.create({
       data: {
         organizationId: ctx.instance.organizationId,
-        controlTemplateId: added.id,
-        name: added.name,
-        description: added.description,
+        controlTemplateId: targetControl.id,
+        name: targetControl.name,
+        description: targetControl.description,
       },
     });
-    ctlByTemplate.set(added.id, created);
+    ctlByTemplate.set(targetControl.id, created);
     undo.controls.created.push(created.id);
     summary.controlsAdded += 1;
   }
@@ -103,19 +103,19 @@ export async function applySync(
   }
 
   // --- Tasks ---
-  for (const added of diff.tasks.added) {
-    if (taskByTemplate.has(added.id)) continue;
+  for (const targetTask of to.tasks) {
+    if (taskByTemplate.has(targetTask.id)) continue;
     const created = await tx.task.create({
       data: {
         organizationId: ctx.instance.organizationId,
-        taskTemplateId: added.id,
-        title: added.name,
-        description: added.description,
-        frequency: added.frequency as Frequency | null,
-        department: added.department as Departments | null,
+        taskTemplateId: targetTask.id,
+        title: targetTask.name,
+        description: targetTask.description,
+        frequency: targetTask.frequency as Frequency | null,
+        department: targetTask.department as Departments | null,
       },
     });
-    taskByTemplate.set(added.id, created);
+    taskByTemplate.set(targetTask.id, created);
     undo.tasks.created.push(created.id);
     summary.tasksAdded += 1;
   }
