@@ -36,7 +36,7 @@ export function RunList({
       : 'No pentest runs remaining.'
     : 'Start a new scan';
   return (
-    <aside className="flex h-full min-h-0 w-full md:w-[340px] md:shrink-0 flex-col border-r border-border bg-background">
+    <aside className="flex h-full min-h-0 w-full xl:w-[340px] xl:shrink-0 flex-col border-r border-border bg-background">
       {/* Header — matches "Scans  6   Filter  Sort" from the design */}
       <div className="flex items-center justify-between border-b border-border px-4 py-3">
         <button

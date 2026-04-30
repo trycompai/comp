@@ -57,28 +57,29 @@ export class BackgroundCheckCustomService {
       throw new NotFoundException('Member not found.');
     }
 
+    const resolvedName = employeeName?.trim() || member.user.name || member.user.email;
+    const resolvedEmail = employeeEmail?.trim().toLowerCase() || member.user.email;
+
+    // Create/update the record without marking it completed yet
     const record = await db.backgroundCheckRequest.upsert({
       where: { organizationId_memberId: { organizationId, memberId } },
       create: {
         organizationId,
         memberId,
-        employeeName: employeeName?.trim() || member.user.name || member.user.email,
-        employeeEmail: employeeEmail?.trim().toLowerCase() || member.user.email,
+        employeeName: resolvedName,
+        employeeEmail: resolvedEmail,
         requesterNotes,
-        status: BackgroundCheckStatus.completed,
+        status: BackgroundCheckStatus.invited,
         lastSyncedAt: new Date(),
-        reportSyncedAt: new Date(),
       },
       update: {
-        employeeName: employeeName?.trim() || member.user.name || member.user.email,
-        employeeEmail: employeeEmail?.trim().toLowerCase() || member.user.email,
+        employeeName: resolvedName,
+        employeeEmail: resolvedEmail,
         requesterNotes,
-        status: BackgroundCheckStatus.completed,
-        lastSyncedAt: new Date(),
-        reportSyncedAt: new Date(),
       },
     });
 
+    // Upload first — if this fails the record stays non-completed
     await this.attachmentsService.uploadAttachment(
       organizationId,
       record.id,
@@ -87,6 +88,14 @@ export class BackgroundCheckCustomService {
       userId,
     );
 
-    return record;
+    // Mark completed only after a successful upload
+    return db.backgroundCheckRequest.update({
+      where: { id: record.id },
+      data: {
+        status: BackgroundCheckStatus.completed,
+        lastSyncedAt: new Date(),
+        reportSyncedAt: new Date(),
+      },
+    });
   }
 }

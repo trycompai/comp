@@ -6,20 +6,14 @@ import type { Invitation, Member, User } from '@db';
 import { db } from '@db/server';
 import { getEmployeeSyncConnections } from '../data/queries';
 import { TeamMembersClient } from './TeamMembersClient';
+import type { BackgroundCheckStatus } from '../../[employeeId]/components/backgroundCheckTypes';
+
+export type { BackgroundCheckStatus };
 
 export interface MemberWithUser extends Member {
   user: User;
   backgroundCheckRequests?: BackgroundCheckSummary[];
 }
-
-export type BackgroundCheckStatus =
-  | 'invited'
-  | 'in_progress'
-  | 'in_review'
-  | 'completed'
-  | 'completed_with_flags'
-  | 'failed'
-  | 'cancelled';
 
 export interface BackgroundCheckSummary {
   id: string;

@@ -191,8 +191,8 @@ export function EmployeeBackgroundCheck({
       }
 
       form.reset({
-        employeeName: pendingRequest.employeeName,
-        employeeEmail: pendingRequest.employeeEmail,
+        employeeName: form.getValues('employeeName') || employee.user.name || '',
+        employeeEmail: form.getValues('employeeEmail') || '',
         requesterNotes: pendingRequest.requesterNotes ?? '',
       });
       setBillingSetupComplete(true);

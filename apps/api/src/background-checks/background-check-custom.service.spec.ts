@@ -7,12 +7,14 @@ jest.mock('@db', () => ({
     background_check: 'background_check',
   },
   BackgroundCheckStatus: {
+    invited: 'invited',
     completed: 'completed',
   },
   db: {
     backgroundCheckRequest: {
       findUnique: jest.fn(),
       upsert: jest.fn(),
+      update: jest.fn(),
     },
     member: {
       findFirst: jest.fn(),
@@ -31,7 +33,7 @@ describe('BackgroundCheckCustomService', () => {
     jest.clearAllMocks();
   });
 
-  it('creates a completed background check and stores the uploaded report as an attachment', async () => {
+  it('creates a background check record, uploads the file, then marks completed', async () => {
     const uploadAttachment = jest.fn().mockResolvedValue({
       id: 'att_1',
       name: 'report.pdf',
@@ -53,8 +55,14 @@ describe('BackgroundCheckCustomService', () => {
       mockedDb.backgroundCheckRequest.upsert,
     ).mockResolvedValueOnce({
       id: 'bcr_1',
-      status: BackgroundCheckStatus.completed,
+      status: 'invited',
     } as Awaited<ReturnType<typeof db.backgroundCheckRequest.upsert>>);
+    mockAsync<Awaited<ReturnType<typeof db.backgroundCheckRequest.update>>>(
+      mockedDb.backgroundCheckRequest.update,
+    ).mockResolvedValueOnce({
+      id: 'bcr_1',
+      status: BackgroundCheckStatus.completed,
+    } as Awaited<ReturnType<typeof db.backgroundCheckRequest.update>>);
 
     await service.attachForMember({
       organizationId: 'org_1',
@@ -67,15 +75,17 @@ describe('BackgroundCheckCustomService', () => {
       userId: 'usr_1',
     });
 
+    // Record is created with non-completed status first
     expect(mockedDb.backgroundCheckRequest.upsert).toHaveBeenCalledWith(
       expect.objectContaining({
         create: expect.objectContaining({
           employeeName: 'Ada Lovelace',
           employeeEmail: 'ada@work.example',
-          status: BackgroundCheckStatus.completed,
+          status: 'invited',
         }),
       }),
     );
+    // Upload happens before marking completed
     expect(uploadAttachment).toHaveBeenCalledWith(
       'org_1',
       'bcr_1',
@@ -85,6 +95,15 @@ describe('BackgroundCheckCustomService', () => {
         fileType: 'application/pdf',
       }),
       'usr_1',
+    );
+    // Only marked completed after successful upload
+    expect(mockedDb.backgroundCheckRequest.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { id: 'bcr_1' },
+        data: expect.objectContaining({
+          status: BackgroundCheckStatus.completed,
+        }),
+      }),
     );
   });
 

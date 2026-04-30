@@ -27,6 +27,7 @@ jest.mock('@db', () => {
       backgroundCheckRequest: {
         findUnique: jest.fn(),
         findFirst: jest.fn(),
+        create: jest.fn(),
         upsert: jest.fn(),
         update: jest.fn(),
       },
@@ -219,17 +220,23 @@ describe('background checks', () => {
       id: 'mem_1',
       organizationId: 'org_1',
     } as Awaited<ReturnType<typeof db.member.findFirst>>);
-    mockAsync<Awaited<ReturnType<typeof db.backgroundCheckRequest.upsert>>>(
-      mockedDb.backgroundCheckRequest.upsert,
+    mockAsync<Awaited<ReturnType<typeof db.backgroundCheckRequest.create>>>(
+      mockedDb.backgroundCheckRequest.create,
+    ).mockResolvedValueOnce({
+      id: 'bcr_1',
+      status: 'invited',
+    } as Awaited<ReturnType<typeof db.backgroundCheckRequest.create>>);
+    mockAsync<Awaited<ReturnType<typeof db.backgroundCheckRequest.update>>>(
+      mockedDb.backgroundCheckRequest.update,
     )
       .mockResolvedValueOnce({
         id: 'bcr_1',
         status: 'invited',
-      } as Awaited<ReturnType<typeof db.backgroundCheckRequest.upsert>>)
+      } as Awaited<ReturnType<typeof db.backgroundCheckRequest.update>>)
       .mockResolvedValueOnce({
         id: 'bcr_1',
         status: 'failed',
-      } as Awaited<ReturnType<typeof db.backgroundCheckRequest.upsert>>);
+      } as Awaited<ReturnType<typeof db.backgroundCheckRequest.update>>);
 
     const identityClient = {
       createBackgroundCheck: jest.fn().mockRejectedValue(new Error('identity down')),
@@ -263,9 +270,9 @@ describe('background checks', () => {
       memberId: 'mem_1',
       paymentIntentId: 'pi_1',
     });
-    expect(mockedDb.backgroundCheckRequest.upsert).toHaveBeenCalledWith(
+    expect(mockedDb.backgroundCheckRequest.update).toHaveBeenCalledWith(
       expect.objectContaining({
-        create: expect.objectContaining({
+        data: expect.objectContaining({
           status: 'failed',
           stripeRefundId: 're_1',
         }),
@@ -283,17 +290,23 @@ describe('background checks', () => {
       id: 'mem_1',
       organizationId: 'org_1',
     } as Awaited<ReturnType<typeof db.member.findFirst>>);
-    mockAsync<Awaited<ReturnType<typeof db.backgroundCheckRequest.upsert>>>(
-      mockedDb.backgroundCheckRequest.upsert,
+    mockAsync<Awaited<ReturnType<typeof db.backgroundCheckRequest.create>>>(
+      mockedDb.backgroundCheckRequest.create,
+    ).mockResolvedValueOnce({
+      id: 'bcr_1',
+      status: 'invited',
+    } as Awaited<ReturnType<typeof db.backgroundCheckRequest.create>>);
+    mockAsync<Awaited<ReturnType<typeof db.backgroundCheckRequest.update>>>(
+      mockedDb.backgroundCheckRequest.update,
     )
       .mockResolvedValueOnce({
         id: 'bcr_1',
         status: 'invited',
-      } as Awaited<ReturnType<typeof db.backgroundCheckRequest.upsert>>)
+      } as Awaited<ReturnType<typeof db.backgroundCheckRequest.update>>)
       .mockResolvedValueOnce({
         id: 'bcr_1',
         status: 'invited',
-      } as Awaited<ReturnType<typeof db.backgroundCheckRequest.upsert>>);
+      } as Awaited<ReturnType<typeof db.backgroundCheckRequest.update>>);
 
     const identityClient = {
       createBackgroundCheck: jest.fn().mockResolvedValue({
@@ -325,32 +338,34 @@ describe('background checks', () => {
       requesterNotes: 'Expedite this check.',
     });
 
-    expect(mockedDb.backgroundCheckRequest.upsert).toHaveBeenCalledWith(
+    // Record is created with requester notes before charging
+    expect(mockedDb.backgroundCheckRequest.create).toHaveBeenCalledWith(
       expect.objectContaining({
-        create: expect.objectContaining({
+        data: expect.objectContaining({
           requesterNotes: 'Expedite this check.',
+          status: 'invited',
         }),
       }),
     );
-    expect(mockedDb.backgroundCheckRequest.upsert).toHaveBeenNthCalledWith(
-      1,
+    // Payment info is persisted via update
+    expect(mockedDb.backgroundCheckRequest.update).toHaveBeenCalledWith(
       expect.objectContaining({
-        create: expect.objectContaining({
-          status: 'invited',
+        data: expect.objectContaining({
           stripePaymentIntentId: 'pi_1',
         }),
       }),
     );
-    expect(mockedDb.backgroundCheckRequest.upsert).toHaveBeenNthCalledWith(
-      2,
+    // Identity result is persisted via update
+    expect(mockedDb.backgroundCheckRequest.update).toHaveBeenCalledWith(
       expect.objectContaining({
-        update: expect.objectContaining({
+        data: expect.objectContaining({
           identityBackgroundCheckId: 'check_1',
           candidateUrl: 'https://identity.trycomp.ai/cand_1',
         }),
       }),
     );
-    expect(invocationOrder(mockedDb.backgroundCheckRequest.upsert)).toBeLessThan(
+    // Record is created before Identity API is called
+    expect(invocationOrder(mockedDb.backgroundCheckRequest.create)).toBeLessThan(
       invocationOrder(identityClient.createBackgroundCheck),
     );
     expect(identityClient.createBackgroundCheck).toHaveBeenCalledWith(
@@ -358,6 +373,51 @@ describe('background checks', () => {
         requesterNotes: expect.any(String),
       }),
     );
+  });
+
+  it('handles concurrent requests by returning existing record on unique constraint', async () => {
+    const { Prisma } = jest.requireMock<typeof import('@db')>('@db');
+    mockAsync<Awaited<ReturnType<typeof db.backgroundCheckRequest.findUnique>>>(
+      mockedDb.backgroundCheckRequest.findUnique,
+    )
+      .mockResolvedValueOnce(null)
+      .mockResolvedValueOnce({
+        id: 'bcr_1',
+        status: 'invited',
+      } as Awaited<ReturnType<typeof db.backgroundCheckRequest.findUnique>>);
+    mockAsync<Awaited<ReturnType<typeof db.member.findFirst>>>(
+      mockedDb.member.findFirst,
+    ).mockResolvedValueOnce({
+      id: 'mem_1',
+      organizationId: 'org_1',
+    } as Awaited<ReturnType<typeof db.member.findFirst>>);
+    mockAsync<Awaited<ReturnType<typeof db.backgroundCheckRequest.create>>>(
+      mockedDb.backgroundCheckRequest.create,
+    ).mockRejectedValueOnce(
+      new Prisma.PrismaClientKnownRequestError('duplicate', {
+        code: 'P2002',
+        clientVersion: 'test',
+      }),
+    );
+
+    const paymentService = { charge: jest.fn(), refund: jest.fn() };
+    const identityClient = { createBackgroundCheck: jest.fn() };
+    const service = new BackgroundChecksService(
+      identityClient as unknown as BackgroundCheckIdentityClient,
+      paymentService as unknown as BackgroundCheckPaymentService,
+    );
+
+    const result = await service.requestForMember({
+      organizationId: 'org_1',
+      memberId: 'mem_1',
+      employeeName: 'Ada Lovelace',
+      employeeEmail: 'ada@example.com',
+      requesterEmail: 'admin@example.com',
+    });
+
+    expect(result).toEqual(expect.objectContaining({ id: 'bcr_1' }));
+    expect(paymentService.charge).not.toHaveBeenCalled();
+    expect(identityClient.createBackgroundCheck).not.toHaveBeenCalled();
   });
 
   it('uses BETTER_AUTH_URL as the local app URL fallback for setup redirects', async () => {

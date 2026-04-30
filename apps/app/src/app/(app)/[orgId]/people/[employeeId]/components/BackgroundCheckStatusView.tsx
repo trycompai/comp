@@ -44,7 +44,7 @@ export function BackgroundCheckStatusView({
     isComplete && memberId && organizationId
       ? ([`/v1/people/${memberId}/background-check/custom-attachments`, organizationId] as const)
       : null;
-  const { data: customAttachments = [] } = useSWR<
+  const { data: customAttachments, isLoading: isCustomAttachmentsLoading } = useSWR<
     CustomBackgroundCheckAttachment[],
     Error,
     readonly [string, string] | null
@@ -124,7 +124,9 @@ export function BackgroundCheckStatusView({
             snapshot={backgroundCheck.reportSnapshot}
             syncedAt={backgroundCheck.reportSyncedAt}
           />
-        ) : customAttachments.length > 0 ? (
+        ) : isCustomAttachmentsLoading ? (
+          <ReportSyncingState />
+        ) : customAttachments && customAttachments.length > 0 ? (
           <CustomReportAttachments
             attachments={customAttachments}
             organizationId={organizationId ?? ''}

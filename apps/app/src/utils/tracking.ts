@@ -13,8 +13,7 @@ export type TrackingEventName =
   | 'upgrade_started'
   | 'upgrade_completed'
   | 'checkout_started'
-  | 'purchase_completed'
-  | 'conversion';
+  | 'purchase_completed';
 
 export interface TrackingEventParameters {
   event_category?: string;
@@ -24,43 +23,13 @@ export interface TrackingEventParameters {
   [key: string]: any;
 }
 
-declare global {
-  interface Window {
-    dataLayer?: Object[];
-    lintrk?: (action: string, data: any) => void;
-  }
-}
-
 /**
- * Unified tracking that sends events to all services
+ * Product tracking that sends events to PostHog.
  */
 export function trackEvent(eventName: TrackingEventName, parameters?: TrackingEventParameters) {
   if (typeof window === 'undefined') return;
 
-  // 1. Google Tag Manager
-  if (window.dataLayer) {
-    window.dataLayer.push({
-      event: eventName,
-      ...parameters,
-    });
-  }
-
-  // 2. PostHog
   Analytics.track(eventName, parameters);
-
-  // 3. LinkedIn - for specific conversion events
-  if (eventName === 'purchase_completed' && process.env.NEXT_PUBLIC_LINKEDIN_CONVERSION_ID) {
-    trackLinkedInConversion(process.env.NEXT_PUBLIC_LINKEDIN_CONVERSION_ID);
-  }
-}
-
-/**
- * Track conversion with LinkedIn
- */
-export function trackLinkedInConversion(conversionId: string) {
-  if (typeof window !== 'undefined' && window.lintrk) {
-    window.lintrk('track', { conversion_id: conversionId });
-  }
 }
 
 /**

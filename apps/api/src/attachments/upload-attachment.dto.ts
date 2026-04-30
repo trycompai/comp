@@ -35,6 +35,7 @@ export class UploadAttachmentDto {
   })
   @IsString()
   @IsNotEmpty()
+  @MaxLength(134_217_728)
   @IsBase64()
   fileData: string;
 
