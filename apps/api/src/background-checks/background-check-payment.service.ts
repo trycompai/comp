@@ -1,12 +1,14 @@
 import { HttpException, HttpStatus, Injectable, Logger } from '@nestjs/common';
 import { db } from '@db';
+import Stripe from 'stripe';
 import { StripeService } from '../stripe/stripe.service';
 import { BackgroundCheckBillingService } from './background-check-billing.service';
 
 @Injectable()
 export class BackgroundCheckPaymentService {
-  private static readonly receiptDescription =
-    'Comp AI - Background Check x1';
+  private static readonly receiptDescription = 'Comp AI - Background Check x1';
+
+  private static readonly statementDescriptor = 'COMP AI BG CHECK';
 
   private readonly logger = new Logger(BackgroundCheckPaymentService.name);
 
@@ -15,11 +17,9 @@ export class BackgroundCheckPaymentService {
     private readonly billingService: BackgroundCheckBillingService,
   ) {}
 
-  async charge(params: {
-    organizationId: string;
-    memberId: string;
-  }): Promise<{
+  async charge(params: { organizationId: string; memberId: string }): Promise<{
     paymentIntentId: string;
+    invoiceId: string;
     status: string;
     amount: number;
     currency: string;
@@ -41,37 +41,91 @@ export class BackgroundCheckPaymentService {
 
     const price = await this.billingService.getBackgroundCheckPrice();
     const stripe = this.stripeService.getClient();
-    const paymentIntent = await stripe.paymentIntents.create(
+    const metadata = {
+      source: 'comp-background-check',
+      compOrganizationId: params.organizationId,
+      compMemberId: params.memberId,
+    };
+    const idempotencyKeyParts = [
+      'background-check',
+      params.organizationId,
+      params.memberId,
+      price.id,
+      billing.stripeBackgroundCheckPaymentMethodId,
+    ];
+
+    const invoice = await stripe.invoices.create(
       {
         customer: billing.stripeCustomerId,
-        amount: price.unitAmount,
+        collection_method: 'charge_automatically',
         currency: price.currency,
+        default_payment_method: billing.stripeBackgroundCheckPaymentMethodId,
         description: BackgroundCheckPaymentService.receiptDescription,
-        payment_method: billing.stripeBackgroundCheckPaymentMethodId,
-        off_session: true,
-        confirm: true,
-        automatic_payment_methods: {
-          enabled: true,
-          allow_redirects: 'never',
-        },
-        metadata: {
-          source: 'comp-background-check',
-          compOrganizationId: params.organizationId,
-          compMemberId: params.memberId,
-        },
+        statement_descriptor: BackgroundCheckPaymentService.statementDescriptor,
+        auto_advance: false,
+        metadata,
       },
       {
-        idempotencyKey: [
-          'background-check',
-          params.organizationId,
-          params.memberId,
-          price.id,
-          billing.stripeBackgroundCheckPaymentMethodId,
-        ].join(':'),
+        idempotencyKey: [...idempotencyKeyParts, 'invoice'].join(':'),
       },
     );
 
-    if (paymentIntent.status !== 'succeeded') {
+    await stripe.invoiceItems.create(
+      {
+        customer: billing.stripeCustomerId,
+        invoice: invoice.id,
+        pricing: {
+          price: price.id,
+        },
+        quantity: 1,
+        description: BackgroundCheckPaymentService.receiptDescription,
+        metadata,
+      },
+      {
+        idempotencyKey: [...idempotencyKeyParts, 'line-item'].join(':'),
+      },
+    );
+
+    await stripe.invoices.finalizeInvoice(
+      invoice.id,
+      { auto_advance: false },
+      {
+        idempotencyKey: [...idempotencyKeyParts, 'finalize-invoice'].join(':'),
+      },
+    );
+
+    let paidInvoice: Stripe.Invoice;
+    try {
+      paidInvoice = await stripe.invoices.pay(
+        invoice.id,
+        {
+          payment_method: billing.stripeBackgroundCheckPaymentMethodId,
+          off_session: true,
+          expand: ['payments'],
+        },
+        {
+          idempotencyKey: [...idempotencyKeyParts, 'pay-invoice'].join(':'),
+        },
+      );
+    } catch (error) {
+      await this.voidInvoice({ stripe, invoiceId: invoice.id });
+      throw new HttpException(
+        'Background check payment failed. Update billing and try again.',
+        HttpStatus.PAYMENT_REQUIRED,
+        { cause: error },
+      );
+    }
+
+    if (paidInvoice.status !== 'paid') {
+      await this.voidInvoice({ stripe, invoiceId: invoice.id });
+      throw new HttpException(
+        'Background check payment failed. Update billing and try again.',
+        HttpStatus.PAYMENT_REQUIRED,
+      );
+    }
+
+    const paymentIntentId = this.extractPaymentIntentId(paidInvoice);
+    if (!paymentIntentId) {
       throw new HttpException(
         'Background check payment failed. Update billing and try again.',
         HttpStatus.PAYMENT_REQUIRED,
@@ -79,8 +133,9 @@ export class BackgroundCheckPaymentService {
     }
 
     return {
-      paymentIntentId: paymentIntent.id,
-      status: paymentIntent.status,
+      paymentIntentId,
+      invoiceId: paidInvoice.id,
+      status: 'succeeded',
       amount: price.unitAmount,
       currency: price.currency,
     };
@@ -116,6 +171,32 @@ export class BackgroundCheckPaymentService {
         },
       );
       return null;
+    }
+  }
+
+  private extractPaymentIntentId(invoice: Stripe.Invoice): string | null {
+    const payment = invoice.payments?.data.find(
+      (invoicePayment) => invoicePayment.payment.type === 'payment_intent',
+    );
+    const paymentIntent = payment?.payment.payment_intent;
+    if (!paymentIntent) return null;
+    return typeof paymentIntent === 'string' ? paymentIntent : paymentIntent.id;
+  }
+
+  private async voidInvoice({
+    stripe,
+    invoiceId,
+  }: {
+    stripe: Stripe;
+    invoiceId: string;
+  }): Promise<void> {
+    try {
+      await stripe.invoices.voidInvoice(invoiceId);
+    } catch (error) {
+      this.logger.error('Failed to void unpaid background check invoice.', {
+        invoiceId,
+        error: error instanceof Error ? error.message : 'Unknown error',
+      });
     }
   }
 }

@@ -61,7 +61,8 @@ function mockAsync<T>(fn: unknown): jest.MockedFunction<() => Promise<T>> {
 
 function invocationOrder(fn: unknown, index = 0): number {
   return (
-    (fn as { mock: { invocationCallOrder: number[] } }).mock.invocationCallOrder[index] ?? 0
+    (fn as { mock: { invocationCallOrder: number[] } }).mock
+      .invocationCallOrder[index] ?? 0
   );
 }
 
@@ -132,7 +133,9 @@ describe('background checks', () => {
       compOrganizationId: 'org_1',
       compMemberId: 'mem_1',
     });
-    expect(body.callbackUrl).toBe('https://api.trycomp.ai/v1/background-checks/webhook');
+    expect(body.callbackUrl).toBe(
+      'https://api.trycomp.ai/v1/background-checks/webhook',
+    );
     expect(body.requesterNotes).toBeUndefined();
   });
 
@@ -192,7 +195,9 @@ describe('background checks', () => {
     mockAsync<Awaited<ReturnType<typeof db.backgroundCheckRequest.findUnique>>>(
       mockedDb.backgroundCheckRequest.findUnique,
     ).mockResolvedValueOnce(
-      existing as Awaited<ReturnType<typeof db.backgroundCheckRequest.findUnique>>,
+      existing as Awaited<
+        ReturnType<typeof db.backgroundCheckRequest.findUnique>
+      >,
     );
     const identityClient = { createBackgroundCheck: jest.fn() };
     const paymentService = { charge: jest.fn(), refund: jest.fn() };
@@ -243,7 +248,9 @@ describe('background checks', () => {
       } as Awaited<ReturnType<typeof db.backgroundCheckRequest.update>>);
 
     const identityClient = {
-      createBackgroundCheck: jest.fn().mockRejectedValue(new Error('identity down')),
+      createBackgroundCheck: jest
+        .fn()
+        .mockRejectedValue(new Error('identity down')),
     };
     const paymentService = {
       charge: jest.fn().mockResolvedValue({
@@ -369,9 +376,9 @@ describe('background checks', () => {
       }),
     );
     // Record is created before Identity API is called
-    expect(invocationOrder(mockedDb.backgroundCheckRequest.create)).toBeLessThan(
-      invocationOrder(identityClient.createBackgroundCheck),
-    );
+    expect(
+      invocationOrder(mockedDb.backgroundCheckRequest.create),
+    ).toBeLessThan(invocationOrder(identityClient.createBackgroundCheck));
     expect(identityClient.createBackgroundCheck).toHaveBeenCalledWith(
       expect.not.objectContaining({
         requesterNotes: expect.any(String),
@@ -476,8 +483,15 @@ describe('background checks', () => {
         successUrl:
           'http://localhost:3000/org_1/people/mem_1?background_check_billing=success',
         cancelUrl: 'http://localhost:3000/org_1/people/mem_1',
+        customerEmail: 'billing@trycomp.ai',
       }),
     ).resolves.toEqual({ url: 'https://checkout.stripe.com/c/session_1' });
+
+    expect(stripe.customers.create).toHaveBeenCalledWith({
+      name: 'Acme',
+      email: 'billing@trycomp.ai',
+      metadata: { organizationId: 'org_1' },
+    });
   });
 
   it('includes background check and penetration test usage in billing status', async () => {
@@ -488,13 +502,33 @@ describe('background checks', () => {
       stripeBackgroundCheckPaymentMethodId: 'pm_1',
       backgroundCheckPaymentMethodSetupAt: new Date('2026-04-29T12:00:00.000Z'),
     } as Awaited<ReturnType<typeof db.organizationBilling.findUnique>>);
-    mockAsync<number>(mockedDb.backgroundCheckRequest.count).mockResolvedValueOnce(4);
+    mockAsync<number>(
+      mockedDb.backgroundCheckRequest.count,
+    ).mockResolvedValueOnce(4);
     mockAsync<number>(
       mockedDb.securityPenetrationTestRun.count,
     ).mockResolvedValueOnce(2);
 
+    const invoicesList = jest.fn().mockResolvedValue({
+      data: [
+        {
+          id: 'in_1',
+          number: 'INV-001',
+          created: 1777464000,
+          due_date: null,
+          amount_paid: 4900,
+          amount_due: 4900,
+          currency: 'usd',
+          status: 'paid',
+          parent: null,
+          hosted_invoice_url: 'https://invoice.stripe.com/i/in_1',
+          invoice_pdf: 'https://invoice.stripe.com/i/in_1.pdf',
+        },
+      ],
+    });
     const service = new BackgroundCheckBillingService({
-      getClient: jest.fn(),
+      getClient: () => ({ invoices: { list: invoicesList } }),
+      isConfigured: () => true,
     } as unknown as StripeService);
 
     await expect(service.getStatus('org_1')).resolves.toMatchObject({
@@ -504,7 +538,17 @@ describe('background checks', () => {
         backgroundChecks: 4,
         penetrationTests: 2,
       },
+      invoices: [
+        {
+          id: 'in_1',
+          number: 'INV-001',
+          amountPaid: 4900,
+          status: 'paid',
+          type: 'One Time',
+        },
+      ],
     });
+    expect(invoicesList).toHaveBeenCalledWith({ customer: 'cus_1', limit: 10 });
     expect(mockedDb.backgroundCheckRequest.count).toHaveBeenCalledWith({
       where: { organizationId: 'org_1' },
     });

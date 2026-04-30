@@ -1,6 +1,16 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { db } from '@db';
 import { StripeService } from '../stripe/stripe.service';
+import { findOrCreateBackgroundCheckBillingCustomer } from './background-check-billing-customer';
+import {
+  type BackgroundCheckBillingInvoice,
+  listBackgroundCheckBillingInvoices,
+} from './background-check-billing-invoices';
+import { validateBackgroundCheckBillingRedirectUrl } from './background-check-billing-urls';
 
 @Injectable()
 export class BackgroundCheckBillingService {
@@ -14,6 +24,7 @@ export class BackgroundCheckBillingService {
       backgroundChecks: number;
       penetrationTests: number;
     };
+    invoices: BackgroundCheckBillingInvoice[];
   }> {
     const [billing, backgroundChecks, penetrationTests] = await Promise.all([
       db.organizationBilling.findUnique({
@@ -27,6 +38,10 @@ export class BackgroundCheckBillingService {
       db.backgroundCheckRequest.count({ where: { organizationId } }),
       db.securityPenetrationTestRun.count({ where: { organizationId } }),
     ]);
+    const invoices = await listBackgroundCheckBillingInvoices({
+      stripeService: this.stripeService,
+      stripeCustomerId: billing?.stripeCustomerId ?? null,
+    });
 
     return {
       hasBilling: !!billing,
@@ -36,6 +51,7 @@ export class BackgroundCheckBillingService {
         backgroundChecks,
         penetrationTests,
       },
+      invoices,
     };
   }
 
@@ -43,16 +59,22 @@ export class BackgroundCheckBillingService {
     organizationId,
     successUrl,
     cancelUrl,
+    customerEmail,
   }: {
     organizationId: string;
     successUrl: string;
     cancelUrl: string;
+    customerEmail?: string;
   }): Promise<{ url: string }> {
-    this.validateRedirectUrl(successUrl);
-    this.validateRedirectUrl(cancelUrl);
+    validateBackgroundCheckBillingRedirectUrl(successUrl);
+    validateBackgroundCheckBillingRedirectUrl(cancelUrl);
 
     const stripe = this.stripeService.getClient();
-    const customerId = await this.findOrCreateCustomer(organizationId);
+    const customerId = await findOrCreateBackgroundCheckBillingCustomer({
+      stripeService: this.stripeService,
+      organizationId,
+      customerEmail,
+    });
     const price = await this.getBackgroundCheckPrice();
 
     const session = await stripe.checkout.sessions.create({
@@ -68,7 +90,9 @@ export class BackgroundCheckBillingService {
     });
 
     if (!session.url) {
-      throw new BadRequestException('Failed to create Stripe Checkout session.');
+      throw new BadRequestException(
+        'Failed to create Stripe Checkout session.',
+      );
     }
 
     return { url: session.url };
@@ -118,7 +142,9 @@ export class BackgroundCheckBillingService {
 
     const paymentMethodId = this.extractStripeId(setupIntent.payment_method);
     if (!paymentMethodId) {
-      throw new BadRequestException('Setup intent is missing a payment method.');
+      throw new BadRequestException(
+        'Setup intent is missing a payment method.',
+      );
     }
 
     await stripe.customers.update(stripeCustomerId, {
@@ -152,7 +178,7 @@ export class BackgroundCheckBillingService {
     organizationId: string;
     returnUrl: string;
   }): Promise<{ url: string }> {
-    this.validateRedirectUrl(returnUrl);
+    validateBackgroundCheckBillingRedirectUrl(returnUrl);
 
     const stripe = this.stripeService.getClient();
     const billing = await db.organizationBilling.findUnique({
@@ -161,7 +187,9 @@ export class BackgroundCheckBillingService {
     });
 
     if (!billing) {
-      throw new NotFoundException('No billing record found for this organization.');
+      throw new NotFoundException(
+        'No billing record found for this organization.',
+      );
     }
 
     const portalSession = await stripe.billingPortal.sessions.create({
@@ -170,41 +198,6 @@ export class BackgroundCheckBillingService {
     });
 
     return { url: portalSession.url };
-  }
-
-  async findOrCreateCustomer(organizationId: string): Promise<string> {
-    const existingBilling = await db.organizationBilling.findUnique({
-      where: { organizationId },
-      select: { stripeCustomerId: true },
-    });
-
-    if (existingBilling) {
-      return existingBilling.stripeCustomerId;
-    }
-
-    const organization = await db.organization.findUnique({
-      where: { id: organizationId },
-      select: { name: true },
-    });
-
-    if (!organization) {
-      throw new NotFoundException('Organization not found.');
-    }
-
-    const stripe = this.stripeService.getClient();
-    const customer = await stripe.customers.create({
-      name: organization.name,
-      metadata: { organizationId },
-    });
-
-    await db.organizationBilling.create({
-      data: {
-        organizationId,
-        stripeCustomerId: customer.id,
-      },
-    });
-
-    return customer.id;
   }
 
   async getBackgroundCheckPrice(): Promise<{
@@ -234,28 +227,9 @@ export class BackgroundCheckBillingService {
     };
   }
 
-  private validateRedirectUrl(url: string): void {
-    const appUrl =
-      process.env.NEXT_PUBLIC_APP_URL ||
-      process.env.APP_URL ||
-      process.env.BETTER_AUTH_URL;
-    if (!appUrl) {
-      throw new BadRequestException('App URL is not configured on the server.');
-    }
-
-    let parsed: URL;
-    try {
-      parsed = new URL(url);
-    } catch {
-      throw new BadRequestException('Invalid redirect URL.');
-    }
-
-    if (parsed.origin !== new URL(appUrl).origin) {
-      throw new BadRequestException('Redirect URL must belong to the application origin.');
-    }
-  }
-
-  private extractStripeId(value: string | { id?: string } | null): string | null {
+  private extractStripeId(
+    value: string | { id?: string } | null,
+  ): string | null {
     if (!value) return null;
     if (typeof value === 'string') return value;
     return value.id ?? null;

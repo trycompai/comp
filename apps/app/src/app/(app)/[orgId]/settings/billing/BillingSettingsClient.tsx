@@ -13,9 +13,10 @@ import {
 } from '@trycompai/design-system';
 import { Launch } from '@trycompai/design-system/icons';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import useSWR from 'swr';
+import { BillingInvoicesTable } from './BillingInvoicesTable';
 import type { BackgroundCheckBillingStatus } from './types';
 
 interface BillingSettingsClientProps {
@@ -40,29 +41,29 @@ export function BillingSettingsClient({
   const { hasPermission } = usePermissions();
   const canManageBilling = hasPermission('organization', 'update');
 
-  const { data: billingStatus, mutate: mutateBillingStatus } =
-    useSWR<BackgroundCheckBillingStatus>(
-      ['/v1/background-check-billing/status', organizationId],
-      async ([endpoint]) => {
-        const response = await apiClient.get<BackgroundCheckBillingStatus>(
-          endpoint,
-          organizationId,
-        );
-        if (response.error || !response.data) {
-          throw new Error('Failed to load billing status');
-        }
-        return response.data;
-      },
-      {
-        fallbackData: initialBillingStatus,
-        revalidateOnMount: false,
-      },
-    );
+  const { data: billingStatus, mutate: mutateBillingStatus } = useSWR<BackgroundCheckBillingStatus>(
+    ['/v1/background-check-billing/status', organizationId],
+    async ([endpoint]) => {
+      const response = await apiClient.get<BackgroundCheckBillingStatus>(endpoint, organizationId);
+      if (response.error || !response.data) {
+        throw new Error('Failed to load billing status');
+      }
+      return response.data;
+    },
+    {
+      fallbackData: initialBillingStatus,
+      revalidateOnMount: false,
+    },
+  );
 
   const hasPaymentMethod = billingStatus?.hasPaymentMethod === true;
   const usage = billingStatus?.usage ?? initialBillingStatus.usage ?? defaultUsage;
+  const invoices = useMemo(
+    () => billingStatus?.invoices ?? initialBillingStatus.invoices ?? [],
+    [billingStatus?.invoices, initialBillingStatus.invoices],
+  );
   const statusLabel = hasPaymentMethod ? 'Billing set up' : 'Payment method needed';
-  const actionLabel = hasPaymentMethod ? 'Open Stripe portal' : 'Add payment method';
+  const actionLabel = hasPaymentMethod ? 'Update Billing Details' : 'Add payment method';
 
   useEffect(() => {
     const sessionId = searchParams.get('session_id');
@@ -89,12 +90,13 @@ export function BillingSettingsClient({
           hasPaymentMethod: true,
           setupAt: new Date().toISOString(),
           usage,
+          invoices,
         },
         { revalidate: true },
       );
       router.replace(pathname, { scroll: false });
     })();
-  }, [mutateBillingStatus, organizationId, pathname, router, searchParams]);
+  }, [invoices, mutateBillingStatus, organizationId, pathname, router, searchParams, usage]);
 
   const handleOpenBilling = async () => {
     setIsOpeningBilling(true);
@@ -109,11 +111,7 @@ export function BillingSettingsClient({
           successUrl: `${returnUrl}?background_check_billing=success&session_id={CHECKOUT_SESSION_ID}`,
           cancelUrl: returnUrl,
         };
-    const response = await apiClient.post<{ url: string }>(
-      endpoint,
-      body,
-      organizationId,
-    );
+    const response = await apiClient.post<{ url: string }>(endpoint, body, organizationId);
 
     if (response.data?.url) {
       window.location.href = response.data.url;
@@ -158,14 +156,8 @@ export function BillingSettingsClient({
                 </Text>
               </Stack>
               <div className="grid gap-6 sm:grid-cols-2">
-                <UsageMetric
-                  label="Penetration Tests"
-                  value={usage.penetrationTests}
-                />
-                <UsageMetric
-                  label="Background Checks"
-                  value={usage.backgroundChecks}
-                />
+                <UsageMetric label="Penetration Tests" value={usage.penetrationTests} />
+                <UsageMetric label="Background Checks" value={usage.backgroundChecks} />
               </div>
             </Stack>
           </div>
@@ -175,9 +167,7 @@ export function BillingSettingsClient({
                 <Stack gap="1">
                   <div className="flex flex-wrap items-center gap-2">
                     <Text weight="medium">Payment method</Text>
-                    <Badge variant={hasPaymentMethod ? 'default' : 'outline'}>
-                      {statusLabel}
-                    </Badge>
+                    <Badge variant={hasPaymentMethod ? 'default' : 'outline'}>{statusLabel}</Badge>
                   </div>
                   <Text size="sm" variant="muted" leading="relaxed">
                     {hasPaymentMethod
@@ -200,6 +190,7 @@ export function BillingSettingsClient({
           </div>
         </div>
       </Section>
+      <BillingInvoicesTable invoices={invoices} />
     </PageLayout>
   );
 }
