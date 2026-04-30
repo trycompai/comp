@@ -216,7 +216,6 @@ export function useIntegrationMutations() {
       const response = await api.post<OAuthStartResponse>('/v1/integrations/oauth/start', {
         providerSlug,
         organizationId: orgId,
-        userId: '', // Will be filled by API from auth context
         redirectUrl,
       });
 
