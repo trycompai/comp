@@ -52,6 +52,7 @@ import {
   ISO9001,
   ISO9001InProgress,
   NEN7510,
+  NEN7510InProgress,
   PCIDSS,
   PCIDSSInProgress,
   SOC2Type1,
@@ -866,7 +867,7 @@ function ComplianceFrameworkLogo({ title, status }: { title: string; status: str
   } else if (title === 'PCI DSS') {
     LogoComponent = isInProgress ? PCIDSSInProgress : PCIDSS;
   } else if (title === 'NEN 7510') {
-    LogoComponent = isInProgress ? NEN7510 : NEN7510;
+    LogoComponent = isInProgress ? NEN7510InProgress : NEN7510;
   } else if (title === 'ISO 9001') {
     LogoComponent = isInProgress ? ISO9001InProgress : ISO9001;
   } else {
