@@ -15,7 +15,12 @@ export class BackgroundCheckPaymentService {
   async charge(params: {
     organizationId: string;
     memberId: string;
-  }): Promise<{ paymentIntentId: string; status: string; amount: number; currency: string }> {
+  }): Promise<{
+    paymentIntentId: string;
+    status: string;
+    amount: number;
+    currency: string;
+  }> {
     const billing = await db.organizationBilling.findUnique({
       where: { organizationId: params.organizationId },
       select: {

@@ -60,7 +60,9 @@ export class BackgroundCheckBillingService {
     });
 
     if (!session.url) {
-      throw new BadRequestException('Failed to create Stripe Checkout session.');
+      throw new BadRequestException(
+        'Failed to create Stripe Checkout session.',
+      );
     }
 
     return { url: session.url };
@@ -82,8 +84,13 @@ export class BackgroundCheckBillingService {
       throw new BadRequestException('Checkout session is not complete.');
     }
 
-    if (session.metadata?.organizationId && session.metadata.organizationId !== organizationId) {
-      throw new BadRequestException('Checkout session does not belong to this organization.');
+    if (
+      session.metadata?.organizationId &&
+      session.metadata.organizationId !== organizationId
+    ) {
+      throw new BadRequestException(
+        'Checkout session does not belong to this organization.',
+      );
     }
 
     const stripeCustomerId = this.extractStripeId(session.customer);
@@ -98,12 +105,16 @@ export class BackgroundCheckBillingService {
 
     const setupIntent = session.setup_intent;
     if (!setupIntent || typeof setupIntent === 'string') {
-      throw new BadRequestException('Checkout session is missing a setup intent.');
+      throw new BadRequestException(
+        'Checkout session is missing a setup intent.',
+      );
     }
 
     const paymentMethodId = this.extractStripeId(setupIntent.payment_method);
     if (!paymentMethodId) {
-      throw new BadRequestException('Setup intent is missing a payment method.');
+      throw new BadRequestException(
+        'Setup intent is missing a payment method.',
+      );
     }
 
     await stripe.customers.update(stripeCustomerId, {
@@ -146,7 +157,9 @@ export class BackgroundCheckBillingService {
     });
 
     if (!billing) {
-      throw new NotFoundException('No billing record found for this organization.');
+      throw new NotFoundException(
+        'No billing record found for this organization.',
+      );
     }
 
     const portalSession = await stripe.billingPortal.sessions.create({
@@ -192,16 +205,24 @@ export class BackgroundCheckBillingService {
     return customer.id;
   }
 
-  async getBackgroundCheckPrice(): Promise<{ id: string; unitAmount: number; currency: string }> {
+  async getBackgroundCheckPrice(): Promise<{
+    id: string;
+    unitAmount: number;
+    currency: string;
+  }> {
     const priceId = process.env.STRIPE_BACKGROUND_CHECK_PRICE_ID;
     if (!priceId) {
-      throw new BadRequestException('Background check pricing is not configured. Contact support.');
+      throw new BadRequestException(
+        'Background check pricing is not configured. Contact support.',
+      );
     }
 
     const stripe = this.stripeService.getClient();
     const price = await stripe.prices.retrieve(priceId);
     if (price.unit_amount === null || price.unit_amount === undefined) {
-      throw new BadRequestException('Background check pricing is not configured. Contact support.');
+      throw new BadRequestException(
+        'Background check pricing is not configured. Contact support.',
+      );
     }
 
     return {
@@ -213,7 +234,9 @@ export class BackgroundCheckBillingService {
 
   private validateRedirectUrl(url: string): void {
     const appUrl =
-      process.env.NEXT_PUBLIC_APP_URL || process.env.APP_URL || process.env.BETTER_AUTH_URL;
+      process.env.NEXT_PUBLIC_APP_URL ||
+      process.env.APP_URL ||
+      process.env.BETTER_AUTH_URL;
     if (!appUrl) {
       throw new BadRequestException('App URL is not configured on the server.');
     }
@@ -226,11 +249,15 @@ export class BackgroundCheckBillingService {
     }
 
     if (parsed.origin !== new URL(appUrl).origin) {
-      throw new BadRequestException('Redirect URL must belong to the application origin.');
+      throw new BadRequestException(
+        'Redirect URL must belong to the application origin.',
+      );
     }
   }
 
-  private extractStripeId(value: string | { id?: string } | null): string | null {
+  private extractStripeId(
+    value: string | { id?: string } | null,
+  ): string | null {
     if (!value) return null;
     if (typeof value === 'string') return value;
     return value.id ?? null;
@@ -254,8 +281,13 @@ export class BackgroundCheckBillingService {
 
     const stripe = this.stripeService.getClient();
     const customer = await stripe.customers.retrieve(stripeCustomerId);
-    if (customer.deleted || customer.metadata?.organizationId !== organizationId) {
-      throw new BadRequestException('Checkout session does not belong to this organization.');
+    if (
+      customer.deleted ||
+      customer.metadata?.organizationId !== organizationId
+    ) {
+      throw new BadRequestException(
+        'Checkout session does not belong to this organization.',
+      );
     }
   }
 }
