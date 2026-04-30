@@ -344,13 +344,13 @@ export function MemberRow({
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
                 {isDeactivated && canEdit && (
-                  <DropdownMenuItem onSelect={handleReactivateClick} disabled={isReactivating}>
+                  <DropdownMenuItem onClick={handleReactivateClick} disabled={isReactivating}>
                     <Checkmark size={16} className="mr-2" />
                     <span>{isReactivating ? 'Reinstating...' : 'Reinstate Member'}</span>
                   </DropdownMenuItem>
                 )}
                 {!isDeactivated && canEdit && (
-                  <DropdownMenuItem onSelect={handleEditRolesClick}>
+                  <DropdownMenuItem onClick={handleEditRolesClick}>
                     <Edit size={16} className="mr-2" />
                     <span>Edit Roles</span>
                   </DropdownMenuItem>
@@ -359,7 +359,7 @@ export function MemberRow({
                   (member.fleetDmLabelId || (deviceStatus && deviceStatus !== 'not-installed')) &&
                   isCurrentUserOwner && (
                     <DropdownMenuItem
-                      onSelect={() => {
+                      onClick={() => {
                         setDropdownOpen(false);
                         setIsRemoveDeviceAlertOpen(true);
                       }}
@@ -371,7 +371,7 @@ export function MemberRow({
                 {!isDeactivated && canRemove && (
                   <DropdownMenuItem
                     variant="destructive"
-                    onSelect={() => {
+                    onClick={() => {
                       setDropdownOpen(false);
                       setIsRemoveAlertOpen(true);
                     }}
