@@ -5,6 +5,9 @@ import { BackgroundCheckBillingService } from './background-check-billing.servic
 
 @Injectable()
 export class BackgroundCheckPaymentService {
+  private static readonly receiptDescription =
+    'Comp AI - Background Check x1';
+
   private readonly logger = new Logger(BackgroundCheckPaymentService.name);
 
   constructor(
@@ -43,6 +46,7 @@ export class BackgroundCheckPaymentService {
         customer: billing.stripeCustomerId,
         amount: price.unitAmount,
         currency: price.currency,
+        description: BackgroundCheckPaymentService.receiptDescription,
         payment_method: billing.stripeBackgroundCheckPaymentMethodId,
         off_session: true,
         confirm: true,

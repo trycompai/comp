@@ -1,8 +1,4 @@
-import {
-  BadRequestException,
-  Injectable,
-  NotFoundException,
-} from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { db } from '@db';
 import { StripeService } from '../stripe/stripe.service';
 
@@ -14,20 +10,32 @@ export class BackgroundCheckBillingService {
     hasBilling: boolean;
     hasPaymentMethod: boolean;
     setupAt: Date | null;
+    usage: {
+      backgroundChecks: number;
+      penetrationTests: number;
+    };
   }> {
-    const billing = await db.organizationBilling.findUnique({
-      where: { organizationId },
-      select: {
-        stripeCustomerId: true,
-        stripeBackgroundCheckPaymentMethodId: true,
-        backgroundCheckPaymentMethodSetupAt: true,
-      },
-    });
+    const [billing, backgroundChecks, penetrationTests] = await Promise.all([
+      db.organizationBilling.findUnique({
+        where: { organizationId },
+        select: {
+          stripeCustomerId: true,
+          stripeBackgroundCheckPaymentMethodId: true,
+          backgroundCheckPaymentMethodSetupAt: true,
+        },
+      }),
+      db.backgroundCheckRequest.count({ where: { organizationId } }),
+      db.securityPenetrationTestRun.count({ where: { organizationId } }),
+    ]);
 
     return {
       hasBilling: !!billing,
       hasPaymentMethod: !!billing?.stripeBackgroundCheckPaymentMethodId,
       setupAt: billing?.backgroundCheckPaymentMethodSetupAt ?? null,
+      usage: {
+        backgroundChecks,
+        penetrationTests,
+      },
     };
   }
 
@@ -60,9 +68,7 @@ export class BackgroundCheckBillingService {
     });
 
     if (!session.url) {
-      throw new BadRequestException(
-        'Failed to create Stripe Checkout session.',
-      );
+      throw new BadRequestException('Failed to create Stripe Checkout session.');
     }
 
     return { url: session.url };
@@ -112,9 +118,7 @@ export class BackgroundCheckBillingService {
 
     const paymentMethodId = this.extractStripeId(setupIntent.payment_method);
     if (!paymentMethodId) {
-      throw new BadRequestException(
-        'Setup intent is missing a payment method.',
-      );
+      throw new BadRequestException('Setup intent is missing a payment method.');
     }
 
     await stripe.customers.update(stripeCustomerId, {
@@ -157,9 +161,7 @@ export class BackgroundCheckBillingService {
     });
 
     if (!billing) {
-      throw new NotFoundException(
-        'No billing record found for this organization.',
-      );
+      throw new NotFoundException('No billing record found for this organization.');
     }
 
     const portalSession = await stripe.billingPortal.sessions.create({
@@ -249,15 +251,11 @@ export class BackgroundCheckBillingService {
     }
 
     if (parsed.origin !== new URL(appUrl).origin) {
-      throw new BadRequestException(
-        'Redirect URL must belong to the application origin.',
-      );
+      throw new BadRequestException('Redirect URL must belong to the application origin.');
     }
   }
 
-  private extractStripeId(
-    value: string | { id?: string } | null,
-  ): string | null {
+  private extractStripeId(value: string | { id?: string } | null): string | null {
     if (!value) return null;
     if (typeof value === 'string') return value;
     return value.id ?? null;

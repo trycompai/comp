@@ -71,6 +71,7 @@ describe('BackgroundCheckPaymentService', () => {
       expect.objectContaining({
         amount: 1250,
         customer: 'cus_1',
+        description: 'Comp AI - Background Check x1',
         payment_method: 'pm_1',
       }),
       { idempotencyKey: 'background-check:org_1:mem_1:price_bg:pm_1' },

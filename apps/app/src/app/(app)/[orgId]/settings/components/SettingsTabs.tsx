@@ -17,7 +17,8 @@ export function SettingsTabs({ orgId, children }: SettingsTabsProps) {
 
   // Pages that handle their own PageLayout (with breadcrumbs)
   const hasOwnLayout =
-    pathname.match(new RegExp(`^/${orgId}/settings/roles/(?:new|[^/]+)$`)) !== null;
+    pathname.match(new RegExp(`^/${orgId}/settings/roles/(?:new|[^/]+)$`)) !== null ||
+    pathname.startsWith(`/${orgId}/settings/billing`);
 
   if (hasOwnLayout) {
     return <>{children}</>;

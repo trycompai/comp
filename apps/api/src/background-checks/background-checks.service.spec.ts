@@ -27,6 +27,7 @@ jest.mock('@db', () => {
       backgroundCheckRequest: {
         findUnique: jest.fn(),
         findFirst: jest.fn(),
+        count: jest.fn(),
         create: jest.fn(),
         upsert: jest.fn(),
         update: jest.fn(),
@@ -41,6 +42,9 @@ jest.mock('@db', () => {
         findUnique: jest.fn(),
         create: jest.fn(),
         upsert: jest.fn(),
+      },
+      securityPenetrationTestRun: {
+        count: jest.fn(),
       },
       organization: {
         findUnique: jest.fn(),
@@ -474,5 +478,38 @@ describe('background checks', () => {
         cancelUrl: 'http://localhost:3000/org_1/people/mem_1',
       }),
     ).resolves.toEqual({ url: 'https://checkout.stripe.com/c/session_1' });
+  });
+
+  it('includes background check and penetration test usage in billing status', async () => {
+    mockAsync<Awaited<ReturnType<typeof db.organizationBilling.findUnique>>>(
+      mockedDb.organizationBilling.findUnique,
+    ).mockResolvedValueOnce({
+      stripeCustomerId: 'cus_1',
+      stripeBackgroundCheckPaymentMethodId: 'pm_1',
+      backgroundCheckPaymentMethodSetupAt: new Date('2026-04-29T12:00:00.000Z'),
+    } as Awaited<ReturnType<typeof db.organizationBilling.findUnique>>);
+    mockAsync<number>(mockedDb.backgroundCheckRequest.count).mockResolvedValueOnce(4);
+    mockAsync<number>(
+      mockedDb.securityPenetrationTestRun.count,
+    ).mockResolvedValueOnce(2);
+
+    const service = new BackgroundCheckBillingService({
+      getClient: jest.fn(),
+    } as unknown as StripeService);
+
+    await expect(service.getStatus('org_1')).resolves.toMatchObject({
+      hasBilling: true,
+      hasPaymentMethod: true,
+      usage: {
+        backgroundChecks: 4,
+        penetrationTests: 2,
+      },
+    });
+    expect(mockedDb.backgroundCheckRequest.count).toHaveBeenCalledWith({
+      where: { organizationId: 'org_1' },
+    });
+    expect(mockedDb.securityPenetrationTestRun.count).toHaveBeenCalledWith({
+      where: { organizationId: 'org_1' },
+    });
   });
 });
