@@ -8,7 +8,7 @@ import {
 import { useCallback } from 'react';
 
 /**
- * React hook for unified tracking across Google Tag Manager, LinkedIn, and PostHog
+ * React hook for product analytics tracking.
  */
 export function useUnifiedTracking() {
   const track = useCallback(
