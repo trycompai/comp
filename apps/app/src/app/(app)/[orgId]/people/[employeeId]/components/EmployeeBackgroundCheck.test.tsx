@@ -280,7 +280,7 @@ describe('EmployeeBackgroundCheck', () => {
     const user = userEvent.setup();
     vi.mocked(apiClient.post)
       .mockResolvedValueOnce({
-        error: 'Background check payment failed. Update billing and try again.',
+        error: 'Invalid API Key provided: PLACEHOLDER',
         status: 402,
       })
       .mockResolvedValueOnce({ data: {}, status: 200 });
@@ -291,6 +291,10 @@ describe('EmployeeBackgroundCheck', () => {
 
     expect(
       await screen.findByRole('heading', { name: /update payment method/i }),
+    ).toBeInTheDocument();
+    expect(screen.queryByText(/PLACEHOLDER/)).not.toBeInTheDocument();
+    expect(
+      screen.getByText('Payment failed. Update payment method and try again.'),
     ).toBeInTheDocument();
 
     await user.click(screen.getByRole('button', { name: /update payment method/i }));
