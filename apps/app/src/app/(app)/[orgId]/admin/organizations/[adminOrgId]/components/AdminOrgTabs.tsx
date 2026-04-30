@@ -35,6 +35,7 @@ import { EvidenceTab } from './EvidenceTab';
 import { PoliciesTab } from './PoliciesTab';
 import { TimelineTab } from './TimelineTab';
 import { FeatureFlagsTab } from './FeatureFlagsTab';
+import { PentestCreditsTab } from './PentestCreditsTab';
 
 interface OrgMember {
   id: string;
@@ -171,6 +172,7 @@ export function AdminOrgTabs({
                 <TabsTrigger value="context">Context</TabsTrigger>
                 <TabsTrigger value="evidence">Evidence</TabsTrigger>
                 <TabsTrigger value="timeline">Timeline</TabsTrigger>
+                <TabsTrigger value="pentest-credits">Pentest credits</TabsTrigger>
                 <TabsTrigger value="feature-flags">Feature Flags</TabsTrigger>
               </TabsList>
             }
@@ -220,6 +222,9 @@ export function AdminOrgTabs({
         </TabsContent>
         <TabsContent value="timeline">
           <TimelineTab orgId={org.id} />
+        </TabsContent>
+        <TabsContent value="pentest-credits">
+          <PentestCreditsTab orgId={org.id} currentOrgId={currentOrgId} />
         </TabsContent>
         <TabsContent value="feature-flags">
           <FeatureFlagsTab orgId={org.id} />

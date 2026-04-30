@@ -1,5 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { HttpException } from '@nestjs/common';
+import type { Request } from 'express';
 import { OAuthController } from './oauth.controller';
 import { HybridAuthGuard } from '../../auth/hybrid-auth.guard';
 import { PermissionGuard } from '../../auth/permission.guard';
@@ -12,9 +13,20 @@ import { OAuthCredentialsService } from '../services/oauth-credentials.service';
 import { AutoCheckRunnerService } from '../services/auto-check-runner.service';
 import { CloudSecurityService } from '../../cloud-security/cloud-security.service';
 
+jest.mock('@db', () => ({
+  ...jest.requireActual('@prisma/client'),
+  db: {},
+}));
+
 jest.mock('../../auth/auth.server', () => ({
   auth: { api: { getSession: jest.fn() } },
 }));
+
+import { auth } from '../../auth/auth.server';
+
+const mockedGetSession = auth.api.getSession as jest.MockedFunction<
+  typeof auth.api.getSession
+>;
 
 jest.mock('../../auth/hybrid-auth.guard', () => ({
   HybridAuthGuard: class HybridAuthGuard {},
@@ -306,8 +318,36 @@ describe('OAuthController', () => {
       redirect: jest.fn(),
     } as unknown as import('express').Response;
 
+    const buildRequest = (overrides?: Partial<Request['headers']>) =>
+      ({
+        headers: {
+          cookie: 'better-auth.session_token=valid_cookie',
+          ...overrides,
+        },
+      }) as unknown as Request;
+
+    const mockRequest = buildRequest();
+
+    const setMatchingSession = (overrides?: {
+      userId?: string;
+      activeOrganizationId?: string | null;
+    }) => {
+      mockedGetSession.mockResolvedValue({
+        user: { id: overrides?.userId ?? 'user_1' },
+        session: {
+          id: 'sess_1',
+          activeOrganizationId:
+            overrides?.activeOrganizationId === null
+              ? undefined
+              : (overrides?.activeOrganizationId ?? 'org_1'),
+        },
+      } as never);
+    };
+
     beforeEach(() => {
       (mockResponse.redirect as jest.Mock).mockClear();
+      mockedGetSession.mockReset();
+      setMatchingSession();
     });
 
     it('should redirect with error when OAuth error is present', async () => {
@@ -318,6 +358,7 @@ describe('OAuthController', () => {
           error: 'access_denied',
           error_description: 'User denied access',
         },
+        mockRequest,
         mockResponse,
       );
 
@@ -327,7 +368,11 @@ describe('OAuthController', () => {
     });
 
     it('should redirect with error when code or state is missing', async () => {
-      await controller.oauthCallback({ code: '', state: '' }, mockResponse);
+      await controller.oauthCallback(
+        { code: '', state: '' },
+        mockRequest,
+        mockResponse,
+      );
 
       expect(mockResponse.redirect).toHaveBeenCalled();
       const redirectUrl = (mockResponse.redirect as jest.Mock).mock.calls[0][0];
@@ -339,6 +384,7 @@ describe('OAuthController', () => {
 
       await controller.oauthCallback(
         { code: 'auth_code', state: 'invalid_state' },
+        mockRequest,
         mockResponse,
       );
 
@@ -359,6 +405,7 @@ describe('OAuthController', () => {
 
       await controller.oauthCallback(
         { code: 'auth_code', state: 'expired_state' },
+        mockRequest,
         mockResponse,
       );
 
@@ -385,6 +432,7 @@ describe('OAuthController', () => {
 
       await controller.oauthCallback(
         { code: 'auth_code', state: 'valid_state' },
+        mockRequest,
         mockResponse,
       );
 
@@ -396,7 +444,7 @@ describe('OAuthController', () => {
       expect(redirectUrl).toContain('error=token_exchange_failed');
     });
 
-    it('should trigger initial GCP service discovery scan on successful first connect', async () => {
+    it('should redirect to success URL for GCP without triggering service detection or scan (GCP auto-detection runs after project selection, not after OAuth)', async () => {
       const futureDate = new Date(Date.now() + 600000);
       mockOAuthStateRepository.findByState.mockResolvedValue({
         state: 'valid_gcp_state',
@@ -455,23 +503,18 @@ describe('OAuthController', () => {
 
       await controller.oauthCallback(
         { code: 'auth_code', state: 'valid_gcp_state' },
+        mockRequest,
         mockResponse,
       );
 
       await new Promise<void>((resolve) => setImmediate(resolve));
 
-      expect(mockCloudSecurityService.detectServices).toHaveBeenCalledWith(
-        'conn_1',
-        'org_1',
-      );
-      expect(mockedTriggerTask).toHaveBeenCalledWith(
+      // GCP service detection / scan is now triggered AFTER the user picks
+      // projects on the integrations page, not automatically after OAuth.
+      expect(mockCloudSecurityService.detectServices).not.toHaveBeenCalled();
+      expect(mockedTriggerTask).not.toHaveBeenCalledWith(
         'run-cloud-security-scan',
-        {
-          connectionId: 'conn_1',
-          organizationId: 'org_1',
-          providerSlug: 'gcp',
-          connectionName: 'conn_1',
-        },
+        expect.anything(),
       );
       expect(mockResponse.redirect).toHaveBeenCalled();
       const redirectUrl = (mockResponse.redirect as jest.Mock).mock.calls[0][0];
@@ -546,6 +589,7 @@ describe('OAuthController', () => {
 
       await controller.oauthCallback(
         { code: 'auth_code', state: 'valid_gcp_state' },
+        mockRequest,
         mockResponse,
       );
 
@@ -557,6 +601,120 @@ describe('OAuthController', () => {
       expect(mockResponse.redirect).toHaveBeenCalled();
 
       fetchSpy.mockRestore();
+    });
+
+    describe('session defense-in-depth', () => {
+      const futureDate = new Date(Date.now() + 600000);
+      const validState = {
+        state: 'valid_state',
+        providerSlug: 'github',
+        organizationId: 'org_1',
+        userId: 'user_1',
+        codeVerifier: null,
+        redirectUrl: null,
+        expiresAt: futureDate,
+      };
+
+      it('redirects with session_mismatch when no session cookie/auth header is present', async () => {
+        mockOAuthStateRepository.findByState.mockResolvedValue(validState);
+        const reqWithoutCookie = {
+          headers: {},
+        } as unknown as Request;
+
+        await controller.oauthCallback(
+          { code: 'auth_code', state: 'valid_state' },
+          reqWithoutCookie,
+          mockResponse,
+        );
+
+        // getSession must not even be called when no auth headers are present
+        expect(mockedGetSession).not.toHaveBeenCalled();
+        expect(mockOAuthStateRepository.delete).toHaveBeenCalledWith(
+          'valid_state',
+        );
+        const redirectUrl = (mockResponse.redirect as jest.Mock).mock
+          .calls[0][0];
+        expect(redirectUrl).toContain('error=session_mismatch');
+      });
+
+      it('redirects with session_mismatch when getSession returns null', async () => {
+        mockOAuthStateRepository.findByState.mockResolvedValue(validState);
+        mockedGetSession.mockResolvedValue(null);
+
+        await controller.oauthCallback(
+          { code: 'auth_code', state: 'valid_state' },
+          mockRequest,
+          mockResponse,
+        );
+
+        expect(mockOAuthStateRepository.delete).toHaveBeenCalledWith(
+          'valid_state',
+        );
+        const redirectUrl = (mockResponse.redirect as jest.Mock).mock
+          .calls[0][0];
+        expect(redirectUrl).toContain('error=session_mismatch');
+      });
+
+      it('redirects with session_mismatch when session.user.id does not match oauthState.userId', async () => {
+        mockOAuthStateRepository.findByState.mockResolvedValue(validState);
+        setMatchingSession({ userId: 'different_user' });
+
+        await controller.oauthCallback(
+          { code: 'auth_code', state: 'valid_state' },
+          mockRequest,
+          mockResponse,
+        );
+
+        expect(mockOAuthStateRepository.delete).toHaveBeenCalledWith(
+          'valid_state',
+        );
+        // We do NOT proceed to token exchange when session doesn't match
+        expect(
+          mockOAuthCredentialsService.getCredentials,
+        ).not.toHaveBeenCalled();
+        const redirectUrl = (mockResponse.redirect as jest.Mock).mock
+          .calls[0][0];
+        expect(redirectUrl).toContain('error=session_mismatch');
+      });
+
+      it('redirects with session_mismatch when session.activeOrganizationId is set and does not match oauthState.organizationId', async () => {
+        mockOAuthStateRepository.findByState.mockResolvedValue(validState);
+        setMatchingSession({ activeOrganizationId: 'org_other' });
+
+        await controller.oauthCallback(
+          { code: 'auth_code', state: 'valid_state' },
+          mockRequest,
+          mockResponse,
+        );
+
+        expect(mockOAuthStateRepository.delete).toHaveBeenCalledWith(
+          'valid_state',
+        );
+        const redirectUrl = (mockResponse.redirect as jest.Mock).mock
+          .calls[0][0];
+        expect(redirectUrl).toContain('error=session_mismatch');
+      });
+
+      it('proceeds when session.user.id matches and activeOrganizationId is absent', async () => {
+        mockOAuthStateRepository.findByState.mockResolvedValue(validState);
+        // Session with userId match but no activeOrganizationId — still allowed,
+        // since the state itself already binds the organization.
+        setMatchingSession({ activeOrganizationId: null });
+        mockedGetManifest.mockReturnValue(undefined as never);
+
+        await controller.oauthCallback(
+          { code: 'auth_code', state: 'valid_state' },
+          mockRequest,
+          mockResponse,
+        );
+
+        // Session check passed → we reach the manifest lookup, fail there,
+        // redirect with token_exchange_failed (NOT session_mismatch).
+        const redirectUrl = (mockResponse.redirect as jest.Mock).mock
+          .calls[0][0];
+        expect(redirectUrl).toContain('error=token_exchange_failed');
+        expect(redirectUrl).not.toContain('error=session_mismatch');
+      });
     });
   });
 });

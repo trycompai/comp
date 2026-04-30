@@ -70,7 +70,8 @@ export type GRCResource =
   | 'training'
   | 'app'
   | 'trust'
-  | 'portal';
+  | 'portal'
+  | 'secret';
 
 /**
  * Action types available for GRC resources — CRUD only

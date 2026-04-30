@@ -26,6 +26,7 @@ enum AttachmentEntityType {
   comment
   trust_nda
   task_item
+  background_check
 }
 
 enum AttachmentType {

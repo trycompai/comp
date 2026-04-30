@@ -60,9 +60,11 @@ model Organization {
   integrationOAuthApps   IntegrationOAuthApp[]
   integrationSyncLogs    IntegrationSyncLog[]
 
-  // Pentest Subscription
-  pentestSubscription PentestSubscription?
-  billing             OrganizationBilling?
+  // Pentest credits — wallet of run-credits an org can spend.
+  // Source of credits (trial / future Stripe subscription / top-up)
+  // is metadata on the row; balance is unified.
+  pentestCredits PentestCredits?
+  billing        OrganizationBilling?
 
   // Browser Automation
   browserbaseContext BrowserbaseContext?
@@ -73,6 +75,9 @@ model Organization {
 
   // Device Agent
   devices Device[]
+
+  // Background Checks
+  backgroundCheckRequests BackgroundCheckRequest[]
 
   // Org Chart
   organizationChart OrganizationChart?

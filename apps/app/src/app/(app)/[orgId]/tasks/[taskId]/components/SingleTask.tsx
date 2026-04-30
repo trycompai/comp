@@ -53,6 +53,7 @@ import { TaskAutomationStatusBadge } from './TaskAutomationStatusBadge';
 import { TaskDeleteDialog } from './TaskDeleteDialog';
 import { TaskIntegrationChecks } from './TaskIntegrationChecks';
 import { TaskMainContent } from './TaskMainContent';
+import { TaskPolicies } from './TaskPolicies';
 import { TaskPropertiesSidebar } from './TaskPropertiesSidebar';
 
 type AutomationWithRuns = EvidenceAutomation & {
@@ -121,6 +122,7 @@ export function SingleTask({
 
   const canUpdateTask = hasPermission('task', 'update');
   const canDeleteTask = hasPermission('task', 'delete');
+  const canReadPolicy = hasPermission('policy', 'read');
 
   const startEditingTitle = () => {
     if (!canUpdateTask) return;
@@ -333,6 +335,7 @@ export function SingleTask({
           <TabsList variant="underline">
             <TabsTrigger value="overview">Overview</TabsTrigger>
             {task.automationStatus !== 'MANUAL' && <TabsTrigger value="automations">Automations</TabsTrigger>}
+            {canReadPolicy && <TabsTrigger value="mappings">Mappings</TabsTrigger>}
             <TabsTrigger value="comments">Comments</TabsTrigger>
             <TabsTrigger value="activity">Activity</TabsTrigger>
             <TabsTrigger value="settings">Settings</TabsTrigger>
@@ -346,6 +349,12 @@ export function SingleTask({
                 onRequestApproval={handleRequestApproval}
               />
               <TaskMainContent task={task} showComments={false} />
+            </Stack>
+          </TabsContent>
+
+          <TabsContent value="mappings">
+            <Stack gap="lg">
+              <TaskPolicies />
             </Stack>
           </TabsContent>
 

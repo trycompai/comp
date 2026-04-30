@@ -1,12 +1,13 @@
 model OrganizationBilling {
-  id               String   @id @default(dbgenerated("generate_prefixed_cuid('obil'::text)"))
-  organizationId   String   @unique @map("organization_id")
-  stripeCustomerId String   @map("stripe_customer_id")
-  createdAt        DateTime @default(now()) @map("created_at")
-  updatedAt        DateTime @updatedAt @map("updated_at")
+  id                                   String    @id @default(dbgenerated("generate_prefixed_cuid('obil'::text)"))
+  organizationId                       String    @unique @map("organization_id")
+  stripeCustomerId                     String    @map("stripe_customer_id")
+  stripeBackgroundCheckPaymentMethodId String?   @map("stripe_background_check_payment_method_id")
+  backgroundCheckPaymentMethodSetupAt  DateTime? @map("background_check_payment_method_setup_at")
+  createdAt                            DateTime  @default(now()) @map("created_at")
+  updatedAt                            DateTime  @updatedAt @map("updated_at")
 
-  organization        Organization         @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  pentestSubscription PentestSubscription?
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 
   @@map("organization_billing")
 }

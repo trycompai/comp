@@ -8,6 +8,8 @@ import { PermissionGuard } from '../auth/permission.guard';
 import type { AuthContext as AuthContextType } from '../auth/types';
 import { Readable } from 'stream';
 
+jest.mock('@db', () => ({ db: {} }));
+
 jest.mock('../auth/auth.server', () => ({
   auth: { api: { getSession: jest.fn() } },
 }));
@@ -26,6 +28,8 @@ describe('DeviceAgentController', () => {
   const mockService = {
     downloadMacAgent: jest.fn(),
     downloadWindowsAgent: jest.fn(),
+    getUpdateFile: jest.fn(),
+    headUpdateFile: jest.fn(),
   };
 
   const mockGuard = { canActivate: jest.fn().mockReturnValue(true) };
@@ -42,6 +46,7 @@ describe('DeviceAgentController', () => {
 
   const mockRes = {
     set: jest.fn(),
+    redirect: jest.fn(),
   };
 
   beforeEach(async () => {
@@ -153,6 +158,99 @@ describe('DeviceAgentController', () => {
           mockRes as never,
         ),
       ).rejects.toThrow('Agent not found');
+    });
+  });
+
+  describe('getUpdateFile', () => {
+    it('streams a yml manifest with cache headers', async () => {
+      const mockStream = Readable.from(Buffer.from('version: 1.0.5'));
+      mockService.getUpdateFile.mockResolvedValue({
+        kind: 'stream',
+        stream: mockStream,
+        contentType: 'text/yaml',
+        contentLength: 14,
+      });
+
+      const result = await controller.getUpdateFile(
+        'latest-mac.yml',
+        mockRes as never,
+      );
+
+      expect(result).toBeInstanceOf(StreamableFile);
+      expect(mockRes.set).toHaveBeenCalledWith(
+        expect.objectContaining({
+          'Content-Type': 'text/yaml',
+          'Cache-Control': 'public, max-age=300',
+          'Content-Length': '14',
+        }),
+      );
+      expect(mockRes.redirect).not.toHaveBeenCalled();
+    });
+
+    it('issues a 302 redirect to the presigned URL for binaries', async () => {
+      mockService.getUpdateFile.mockResolvedValue({
+        kind: 'redirect',
+        url: 'https://s3.example.com/signed-zip',
+      });
+
+      const result = await controller.getUpdateFile(
+        'CompAI-Device-Agent-1.0.5-arm64.zip',
+        mockRes as never,
+      );
+
+      expect(mockRes.redirect).toHaveBeenCalledWith(
+        302,
+        'https://s3.example.com/signed-zip',
+      );
+      expect(mockRes.set).toHaveBeenCalledWith(
+        expect.objectContaining({
+          'Cache-Control': 'no-store',
+        }),
+      );
+      expect(result).toBeUndefined();
+    });
+  });
+
+  describe('headUpdateFile', () => {
+    it('returns metadata headers for a yml manifest', async () => {
+      mockService.headUpdateFile.mockResolvedValue({
+        kind: 'stream',
+        contentType: 'text/yaml',
+        contentLength: 859,
+      });
+
+      const result = await controller.headUpdateFile(
+        'latest-mac.yml',
+        mockRes as never,
+      );
+
+      expect(mockRes.set).toHaveBeenCalledWith(
+        expect.objectContaining({
+          'Content-Type': 'text/yaml',
+          'Cache-Control': 'public, max-age=300',
+          'Content-Length': '859',
+        }),
+      );
+      expect(result).toBe('');
+      expect(mockRes.redirect).not.toHaveBeenCalled();
+    });
+
+    it('issues a 302 redirect for HEAD on binaries', async () => {
+      mockService.headUpdateFile.mockResolvedValue({
+        kind: 'redirect',
+        url: 'https://s3.example.com/signed-head',
+      });
+
+      const result = await controller.headUpdateFile(
+        'CompAI-Device-Agent-1.0.5-arm64.zip',
+        mockRes as never,
+      );
+
+      expect(mockRes.redirect).toHaveBeenCalledWith(
+        302,
+        'https://s3.example.com/signed-head',
+      );
+      expect(result).toBeUndefined();
     });
   });
 });

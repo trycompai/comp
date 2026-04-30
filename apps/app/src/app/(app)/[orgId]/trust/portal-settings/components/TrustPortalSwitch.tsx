@@ -68,6 +68,7 @@ const trustPortalSwitchSchema = z.object({
   primaryColor: z.string().optional(),
   soc2type1: z.boolean(),
   soc2type2: z.boolean(),
+  soc3: z.boolean(),
   iso27001: z.boolean(),
   iso42001: z.boolean(),
   gdpr: z.boolean(),
@@ -77,6 +78,7 @@ const trustPortalSwitchSchema = z.object({
   iso9001: z.boolean(),
   soc2type1Status: z.enum(['started', 'in_progress', 'compliant']),
   soc2type2Status: z.enum(['started', 'in_progress', 'compliant']),
+  soc3Status: z.enum(['started', 'in_progress', 'compliant']),
   iso27001Status: z.enum(['started', 'in_progress', 'compliant']),
   iso42001Status: z.enum(['started', 'in_progress', 'compliant']),
   gdprStatus: z.enum(['started', 'in_progress', 'compliant']),
@@ -100,6 +102,7 @@ const FRAMEWORK_KEY_TO_API_SLUG: Record<string, string> = {
   hipaa: 'hipaa',
   soc2type1: 'soc2_type1',
   soc2type2: 'soc2_type2',
+  soc3: 'soc3',
   pcidss: 'pci_dss',
   nen7510: 'nen_7510',
   iso9001: 'iso_9001',
@@ -158,6 +161,7 @@ export function TrustPortalSwitch({
   orgId,
   soc2type1,
   soc2type2,
+  soc3,
   iso27001,
   iso42001,
   gdpr,
@@ -165,6 +169,7 @@ export function TrustPortalSwitch({
   pcidss,
   soc2type1Status,
   soc2type2Status,
+  soc3Status,
   iso27001Status,
   iso42001Status,
   gdprStatus,
@@ -181,6 +186,7 @@ export function TrustPortalSwitch({
   hipaaFileName,
   soc2type1FileName,
   soc2type2FileName,
+  soc3FileName,
   pcidssFileName,
   nen7510FileName,
   iso9001FileName,
@@ -199,6 +205,7 @@ export function TrustPortalSwitch({
   orgId: string;
   soc2type1: boolean;
   soc2type2: boolean;
+  soc3: boolean;
   iso27001: boolean;
   iso42001: boolean;
   gdpr: boolean;
@@ -207,6 +214,7 @@ export function TrustPortalSwitch({
   nen7510: boolean;
   soc2type1Status: 'started' | 'in_progress' | 'compliant';
   soc2type2Status: 'started' | 'in_progress' | 'compliant';
+  soc3Status: 'started' | 'in_progress' | 'compliant';
   iso27001Status: 'started' | 'in_progress' | 'compliant';
   iso42001Status: 'started' | 'in_progress' | 'compliant';
   gdprStatus: 'started' | 'in_progress' | 'compliant';
@@ -222,6 +230,7 @@ export function TrustPortalSwitch({
   hipaaFileName?: string | null;
   soc2type1FileName?: string | null;
   soc2type2FileName?: string | null;
+  soc3FileName?: string | null;
   pcidssFileName?: string | null;
   nen7510FileName?: string | null;
   iso9001FileName?: string | null;
@@ -247,6 +256,7 @@ export function TrustPortalSwitch({
     hipaa: hipaaFileName ?? null,
     soc2type1: soc2type1FileName ?? null,
     soc2type2: soc2type2FileName ?? null,
+    soc3: soc3FileName ?? null,
     pcidss: pcidssFileName ?? null,
     nen7510: nen7510FileName ?? null,
     iso9001: iso9001FileName ?? null,
@@ -260,6 +270,7 @@ export function TrustPortalSwitch({
       hipaa: hipaaFileName ?? null,
       soc2type1: soc2type1FileName ?? null,
       soc2type2: soc2type2FileName ?? null,
+      soc3: soc3FileName ?? null,
       pcidss: pcidssFileName ?? null,
       nen7510: nen7510FileName ?? null,
       iso9001: iso9001FileName ?? null,
@@ -271,6 +282,7 @@ export function TrustPortalSwitch({
     hipaaFileName,
     soc2type1FileName,
     soc2type2FileName,
+    soc3FileName,
     pcidssFileName,
     nen7510FileName,
     iso9001FileName,
@@ -330,6 +342,7 @@ export function TrustPortalSwitch({
       primaryColor: primaryColor ?? undefined,
       soc2type1: soc2type1 ?? false,
       soc2type2: soc2type2 ?? false,
+      soc3: soc3 ?? false,
       iso27001: iso27001 ?? false,
       iso42001: iso42001 ?? false,
       gdpr: gdpr ?? false,
@@ -339,6 +352,7 @@ export function TrustPortalSwitch({
       iso9001: iso9001 ?? false,
       soc2type1Status: soc2type1Status ?? 'started',
       soc2type2Status: soc2type2Status ?? 'started',
+      soc3Status: soc3Status ?? 'started',
       iso27001Status: iso27001Status ?? 'started',
       iso42001Status: iso42001Status ?? 'started',
       gdprStatus: gdprStatus ?? 'started',
@@ -689,6 +703,39 @@ export function TrustPortalSwitch({
                   onFileUpload={handleFileUpload}
                   onFilePreview={handleFilePreview}
                   frameworkKey="soc2type2"
+                  orgId={orgId}
+                  disabled={!canUpdate}
+                />
+                {/* SOC 3 */}
+                <ComplianceFramework
+                  title="SOC 3"
+                  description="A compliance framework focused on data security, availability, and confidentiality."
+                  isEnabled={soc3}
+                  status={soc3Status}
+                  onStatusChange={async (value) => {
+                    try {
+                      await updateFrameworkSettings({
+                        soc3Status: value as 'started' | 'in_progress' | 'compliant',
+                      });
+                      toast.success('SOC 3 status updated');
+                    } catch (error) {
+                      toast.error('Failed to update SOC 3 status');
+                    }
+                  }}
+                  onToggle={async (checked) => {
+                    try {
+                      await updateFrameworkSettings({
+                        soc3: checked,
+                      });
+                      toast.success('SOC 3 status updated');
+                    } catch (error) {
+                      toast.error('Failed to update SOC 3 status');
+                    }
+                  }}
+                  fileName={certificateFiles.soc3}
+                  onFileUpload={handleFileUpload}
+                  onFilePreview={handleFilePreview}
+                  frameworkKey="soc3"
                   orgId={orgId}
                   disabled={!canUpdate}
                 />
