@@ -1,3 +1,16 @@
+# [3.40.0](https://github.com/trycompai/comp/compare/v3.39.1...v3.40.0) (2026-04-30)
+
+
+### Bug Fixes
+
+* **app:** able to click 'Edit Roles' button in People page ([0212cf3](https://github.com/trycompai/comp/commit/0212cf355b390888dd872e4b747b8aa68096bdbe))
+* **frameworks:** repair sync drift for controls and tasks ([665306b](https://github.com/trycompai/comp/commit/665306b5bba1dfdcb8a97252600a82cf4dedf55a))
+
+
+### Features
+
+* **background-checks:** enhance billing service to include usage metrics and update UI components ([30b2f22](https://github.com/trycompai/comp/commit/30b2f226e148713ddcc01b470f9e68c82d0a6c58))
+
 ## [3.39.1](https://github.com/trycompai/comp/compare/v3.39.0...v3.39.1) (2026-04-30)
 
 
