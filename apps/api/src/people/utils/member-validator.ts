@@ -42,14 +42,14 @@ export class MemberValidator {
   static async validateMemberExists(
     memberId: string,
     organizationId: string,
-  ): Promise<{ id: string; userId: string }> {
+  ): Promise<{ id: string; userId: string; role: string }> {
     const member = await db.member.findFirst({
       where: {
         id: memberId,
         organizationId,
         deactivated: false,
       },
-      select: { id: true, userId: true },
+      select: { id: true, userId: true, role: true },
     });
 
     if (!member) {

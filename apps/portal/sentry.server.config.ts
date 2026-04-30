@@ -11,7 +11,9 @@ Sentry.init({
 
   tracesSampleRate: process.env.NODE_ENV === 'development' ? 1.0 : 0.1,
 
-  includeLocalVariables: true,
+  // Off in production: local variables in stack frames can expose request-scoped
+  // data (DB rows, auth tokens, request bodies) to Sentry payloads.
+  includeLocalVariables: process.env.NODE_ENV !== 'production',
 
   enableLogs: true,
 });

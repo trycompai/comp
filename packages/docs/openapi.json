@@ -8137,6 +8137,30 @@
         ]
       }
     },
+    "/v1/device-agent/sessions/{deviceId}": {
+      "delete": {
+        "operationId": "DeviceAgentController_revokeAgentAccess_v1",
+        "parameters": [
+          {
+            "name": "deviceId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": ""
+          }
+        },
+        "summary": "Revoke a device agent session",
+        "tags": [
+          "Device Agent"
+        ]
+      }
+    },
     "/v1/tasks": {
       "get": {
         "description": "Retrieve all tasks for the authenticated organization. Employees/contractors only see their assigned tasks.",
@@ -8823,6 +8847,18 @@
                       "yearly"
                     ],
                     "example": "monthly"
+                  },
+                  "integrationScheduleFrequency": {
+                    "type": "string",
+                    "enum": [
+                      "daily",
+                      "weekly",
+                      "monthly",
+                      "quarterly",
+                      "yearly"
+                    ],
+                    "example": "daily",
+                    "description": "Cadence for running the integration check attached to this task"
                   },
                   "department": {
                     "type": "string",
@@ -12967,16 +13003,7 @@
       },
       "post": {
         "operationId": "PolicyTemplateController_create_v1",
-        "parameters": [
-          {
-            "name": "frameworkId",
-            "required": true,
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
+        "parameters": [],
         "requestBody": {
           "required": true,
           "content": {
@@ -13225,16 +13252,7 @@
       "post": {
         "description": "Create a new framework editor task template",
         "operationId": "TaskTemplateController_createTaskTemplate_v1",
-        "parameters": [
-          {
-            "name": "frameworkId",
-            "required": true,
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
+        "parameters": [],
         "requestBody": {
           "required": true,
           "description": "Create a new framework editor task template",
@@ -15288,6 +15306,36 @@
           }
         ],
         "summary": "Submit SOA document for approval",
+        "tags": [
+          "SOA"
+        ]
+      }
+    },
+    "/v1/soa/export": {
+      "post": {
+        "operationId": "SOAController_exportDocument_v1",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ExportSOADocumentDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Export SOA document to PDF"
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Export a SOA document",
         "tags": [
           "SOA"
         ]
@@ -20995,6 +21043,299 @@
           "Pentest Billing"
         ]
       }
+    },
+    "/v1/background-checks/{id}": {
+      "get": {
+        "operationId": "BackgroundChecksController_getById_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Get a background check by local or Identity ID",
+        "tags": [
+          "Background Checks"
+        ]
+      }
+    },
+    "/v1/background-checks/webhook": {
+      "post": {
+        "operationId": "BackgroundChecksController_handleWebhook_v1",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Receive Identity background check webhook events",
+        "tags": [
+          "Background Checks"
+        ]
+      }
+    },
+    "/v1/people/{id}/background-check": {
+      "get": {
+        "operationId": "PeopleBackgroundChecksController_getForMember_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Get member background check request",
+        "tags": [
+          "Background Checks"
+        ]
+      },
+      "post": {
+        "operationId": "PeopleBackgroundChecksController_requestForMember_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RequestBackgroundCheckDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Request a background check for a member",
+        "tags": [
+          "Background Checks"
+        ]
+      }
+    },
+    "/v1/people/{id}/background-check/custom-attachments": {
+      "get": {
+        "operationId": "PeopleBackgroundChecksController_getCustomAttachmentsForMember_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Get custom background check attachments for a member",
+        "tags": [
+          "Background Checks"
+        ]
+      }
+    },
+    "/v1/people/{id}/background-check/custom": {
+      "post": {
+        "operationId": "PeopleBackgroundChecksController_attachCustomForMember_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AttachCustomBackgroundCheckDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Attach a custom background check for a member",
+        "tags": [
+          "Background Checks"
+        ]
+      }
+    },
+    "/v1/background-check-billing/status": {
+      "get": {
+        "operationId": "BackgroundCheckBillingController_getStatus_v1",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Get background check billing status",
+        "tags": [
+          "Background Check Billing"
+        ]
+      }
+    },
+    "/v1/background-check-billing/setup-session": {
+      "post": {
+        "operationId": "BackgroundCheckBillingController_setupSession_v1",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BackgroundCheckSetupSessionDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Create a Stripe setup session for background checks",
+        "tags": [
+          "Background Check Billing"
+        ]
+      }
+    },
+    "/v1/background-check-billing/setup-success": {
+      "post": {
+        "operationId": "BackgroundCheckBillingController_setupSuccess_v1",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BackgroundCheckSetupSuccessDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Handle successful background check billing setup",
+        "tags": [
+          "Background Check Billing"
+        ]
+      }
+    },
+    "/v1/background-check-billing/portal": {
+      "post": {
+        "operationId": "BackgroundCheckBillingController_portal_v1",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BackgroundCheckBillingPortalDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Create a Stripe billing portal session",
+        "tags": [
+          "Background Check Billing"
+        ]
+      }
     }
   },
   "info": {
@@ -21086,6 +21427,34 @@
           "role"
         ]
       },
+      "BackgroundCheckSummaryDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Background check request ID",
+            "example": "bcr_abc123def456"
+          },
+          "status": {
+            "type": "string",
+            "description": "Background check status",
+            "enum": [
+              "invited",
+              "in_progress",
+              "in_review",
+              "completed",
+              "completed_with_flags",
+              "failed",
+              "cancelled"
+            ],
+            "example": "invited"
+          }
+        },
+        "required": [
+          "id",
+          "status"
+        ]
+      },
       "PeopleResponseDto": {
         "type": "object",
         "properties": {
@@ -21158,6 +21527,13 @@
                 "$ref": "#/components/schemas/UserResponseDto"
               }
             ]
+          },
+          "backgroundCheckRequests": {
+            "description": "Background check requests for this member",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BackgroundCheckSummaryDto"
+            }
           }
         },
         "required": [
@@ -23188,6 +23564,23 @@
             "description": "Task template ID",
             "example": "frk_tt_68406e353df3bc002994acef",
             "nullable": true
+          },
+          "integrationScheduleFrequency": {
+            "type": "string",
+            "description": "Cadence for running the integration check attached to this task",
+            "enum": [
+              "daily",
+              "weekly",
+              "monthly",
+              "quarterly",
+              "yearly"
+            ],
+            "example": "daily"
+          },
+          "integrationLastRunAt": {
+            "type": "object",
+            "description": "Last successful integration check run timestamp",
+            "nullable": true
           }
         },
         "required": [
@@ -23195,7 +23588,8 @@
           "title",
           "status",
           "createdAt",
-          "updatedAt"
+          "updatedAt",
+          "integrationScheduleFrequency"
         ]
       },
       "AttachmentResponseDto": {
@@ -23299,6 +23693,17 @@
           "evaluationCriteria": {
             "type": "string",
             "description": "Evaluation criteria for the automation"
+          },
+          "scheduleFrequency": {
+            "type": "string",
+            "enum": [
+              "daily",
+              "weekly",
+              "monthly",
+              "quarterly",
+              "yearly"
+            ],
+            "description": "Automation schedule cadence"
           }
         }
       },
@@ -24551,6 +24956,10 @@
         "type": "object",
         "properties": {}
       },
+      "ExportSOADocumentDto": {
+        "type": "object",
+        "properties": {}
+      },
       "ContextResponseDto": {
         "type": "object",
         "properties": {
@@ -24680,9 +25089,16 @@
             "type": "string",
             "description": "Optional natural-language criteria used to evaluate the automation result. When set, the run gets a pass/fail verdict."
           },
-          "schedule": {
+          "scheduleFrequency": {
             "type": "string",
-            "description": "Cron schedule expression"
+            "enum": [
+              "daily",
+              "weekly",
+              "monthly",
+              "quarterly",
+              "yearly"
+            ],
+            "description": "Automation schedule cadence"
           }
         },
         "required": [
@@ -24715,9 +25131,6 @@
           },
           "isEnabled": {
             "type": "boolean"
-          },
-          "schedule": {
-            "type": "string"
           },
           "createdAt": {
             "format": "date-time",
@@ -24762,13 +25175,20 @@
             "type": "string",
             "description": "Optional natural-language criteria used to evaluate the automation result. Pass an empty string to clear."
           },
-          "schedule": {
-            "type": "string",
-            "description": "Cron schedule expression"
-          },
           "isEnabled": {
             "type": "boolean",
             "description": "Whether automation is enabled"
+          },
+          "scheduleFrequency": {
+            "type": "string",
+            "enum": [
+              "daily",
+              "weekly",
+              "monthly",
+              "quarterly",
+              "yearly"
+            ],
+            "description": "Automation schedule cadence"
           }
         }
       },
@@ -25708,6 +26128,59 @@
         "properties": {}
       },
       "ChargeDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "RequestBackgroundCheckDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "AttachCustomBackgroundCheckDto": {
+        "type": "object",
+        "properties": {
+          "fileName": {
+            "type": "string",
+            "description": "Name of the file",
+            "example": "document.pdf",
+            "maxLength": 255
+          },
+          "fileType": {
+            "type": "string",
+            "description": "MIME type of the file",
+            "example": "application/pdf"
+          },
+          "fileData": {
+            "type": "string",
+            "description": "Base64 encoded file data",
+            "example": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8/5+hHgAHggJ/PchI7wAAAABJRU5ErkJggg=="
+          },
+          "description": {
+            "type": "string",
+            "description": "Description of the attachment",
+            "example": "Meeting notes from Q4 planning session",
+            "maxLength": 500
+          },
+          "userId": {
+            "type": "string",
+            "description": "User ID of the user uploading the attachment (required for API key auth, ignored for JWT auth)",
+            "example": "usr_abc123def456"
+          }
+        },
+        "required": [
+          "fileName",
+          "fileType",
+          "fileData"
+        ]
+      },
+      "BackgroundCheckSetupSessionDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "BackgroundCheckSetupSuccessDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "BackgroundCheckBillingPortalDto": {
         "type": "object",
         "properties": {}
       }

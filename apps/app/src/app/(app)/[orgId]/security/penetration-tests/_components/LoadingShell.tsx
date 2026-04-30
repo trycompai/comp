@@ -1,15 +1,16 @@
 /**
  * Shared loading skeleton for pentest routes. Mirrors the SplitView shell
- * one-to-one (full-bleed, 340px sidebar + main pane on desktop) so a hard
+ * one-to-one (full-bleed, 340px sidebar + main pane at xl+) so a hard
  * refresh transitions into the live page without a CLS jump.
  *
- * On mobile (<md) only ONE pane is rendered, picked by `variant` to match
- * the route the user is hard-refreshing on:
+ * Below xl (1280px) — phone, tablet, narrow laptop — only ONE pane is
+ * rendered, picked by `variant` to match the route the user is
+ * hard-refreshing on:
  *   - 'list'   — only the sidebar shape
  *   - 'detail' — only the main pane shape
  *   - 'create' — only the main pane shape
  *
- * Desktop always shows both. Pure JSX, no hooks — safe to consume from
+ * xl+ always shows both. Pure JSX, no hooks — safe to consume from
  * server-component `loading.tsx` files.
  */
 type Variant = 'list' | 'detail' | 'create';
@@ -28,8 +29,8 @@ export function LoadingShell({ variant, mainPane }: LoadingShellProps) {
     <div className="flex h-[calc(100vh-4rem)] min-h-0 -m-4 md:-m-6">
       <aside
         className={[
-          'flex h-full min-h-0 w-full md:w-[340px] md:shrink-0 flex-col border-r border-border bg-background',
-          showSidebarMobile ? 'flex' : 'hidden md:flex',
+          'flex h-full min-h-0 w-full xl:w-[340px] xl:shrink-0 flex-col border-r border-border bg-background',
+          showSidebarMobile ? 'flex' : 'hidden xl:flex',
         ].join(' ')}
         aria-hidden
       >
@@ -59,16 +60,16 @@ export function LoadingShell({ variant, mainPane }: LoadingShellProps) {
       <main
         className={[
           'min-w-0 flex-1 flex-col',
-          showMainMobile ? 'flex' : 'hidden md:flex',
+          showMainMobile ? 'flex' : 'hidden xl:flex',
         ].join(' ')}
       >
-        {/* Mobile-only back-bar skeleton on non-list routes. Matches the
-            "← Scans" bar that SplitView renders on detail/create URLs
-            below md — without this placeholder, resolving the page
-            shifts the main content down ~33px when the real bar mounts. */}
+        {/* Back-bar skeleton on non-list routes. Matches the "← Scans"
+            bar SplitView renders on detail/create URLs below xl —
+            without this placeholder, resolving the page shifts the
+            main content down ~33px when the real bar mounts. */}
         {variant !== 'list' && (
           <div
-            className="md:hidden flex items-center border-b border-border bg-background px-3 py-2"
+            className="xl:hidden flex items-center border-b border-border bg-background px-3 py-2"
             aria-hidden
           >
             <div className="h-4 w-16 rounded bg-muted animate-pulse" />

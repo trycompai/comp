@@ -1,0 +1,63 @@
+model BackgroundCheckRequest {
+  id                        String                @id @default(dbgenerated("generate_prefixed_cuid('bcr'::text)"))
+  organizationId            String
+  memberId                  String
+  employeeEmail             String
+  employeeName              String
+  requesterNotes            String?
+  identityBackgroundCheckId String?               @unique
+  candidateUrl              String?
+  status                    BackgroundCheckStatus @default(invited)
+  identityStatus            String?
+  employmentStatus          String?
+  referenceStatus           String?
+  rightToWorkStatus         String?
+  adjudicationStatus        String?
+  stripePaymentIntentId     String?
+  stripePaymentStatus       String?
+  stripeRefundId            String?
+  stripeAmountCents         Int?
+  stripeCurrency            String?
+  lastWebhookEventId        String?
+  lastSyncedAt              DateTime?
+  reportSnapshot            Json?
+  reportSyncedAt            DateTime?
+  createdAt                 DateTime              @default(now())
+  updatedAt                 DateTime              @updatedAt
+
+  organization  Organization                    @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  member        Member                          @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  webhookEvents BackgroundCheckWebhookEvent[]
+
+  @@unique([organizationId, memberId])
+  @@index([organizationId])
+  @@index([memberId])
+  @@index([status])
+  @@map("background_check_requests")
+}
+
+model BackgroundCheckWebhookEvent {
+  id                        String   @id @default(dbgenerated("generate_prefixed_cuid('bcw'::text)"))
+  eventId                   String   @unique
+  eventType                 String
+  backgroundCheckRequestId  String?
+  identityBackgroundCheckId String?
+  payload                   Json
+  processedAt               DateTime @default(now())
+
+  backgroundCheckRequest BackgroundCheckRequest? @relation(fields: [backgroundCheckRequestId], references: [id], onDelete: SetNull)
+
+  @@index([backgroundCheckRequestId])
+  @@index([identityBackgroundCheckId])
+  @@map("background_check_webhook_events")
+}
+
+enum BackgroundCheckStatus {
+  invited
+  in_progress
+  in_review
+  completed
+  completed_with_flags
+  failed
+  cancelled
+}

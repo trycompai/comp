@@ -34,6 +34,15 @@ export class MemberQueries {
         role: true,
       },
     },
+    backgroundCheckRequests: {
+      select: {
+        id: true,
+        status: true,
+        requesterNotes: true,
+      },
+      take: 1,
+      orderBy: { createdAt: 'desc' },
+    },
   } as const;
 
   /**
