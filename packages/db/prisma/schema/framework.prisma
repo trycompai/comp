@@ -20,7 +20,14 @@ model FrameworkInstance {
   requirementsMapped RequirementMap[]
   timelineInstances  TimelineInstance[]
   syncOperations     FrameworkSyncOperation[]
+  // Per-instance custom requirements (used when an org tacks an extra requirement
+  // onto a platform framework instance). Custom requirements attached to a
+  // CustomFramework hang off CustomFramework.requirements instead.
+  customRequirements CustomRequirement[]
 
+  // (id, organizationId) is the composite-FK target for CustomRequirement.frameworkInstanceId
+  // so a per-instance custom requirement can only point at an FI in its own org.
+  @@unique([id, organizationId])
   @@unique([organizationId, frameworkId])
   @@unique([organizationId, customFrameworkId])
   @@index([customFrameworkId])
