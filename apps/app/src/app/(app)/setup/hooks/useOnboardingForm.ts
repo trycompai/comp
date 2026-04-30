@@ -3,9 +3,8 @@
 import { useApi } from '@/hooks/use-api';
 import { trackEvent, trackOnboardingEvent } from '@/utils/tracking';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { sendGTMEvent } from '@next/third-parties/google';
 import { useAction } from 'next-safe-action/hooks';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useSearchParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
@@ -30,7 +29,6 @@ export function useOnboardingForm({
   initialData,
   currentStep,
 }: UseOnboardingFormProps = {}) {
-  const router = useRouter();
   const searchParams = useSearchParams();
   const api = useApi();
 
@@ -114,7 +112,6 @@ export function useOnboardingForm({
     onSuccess: async ({ data }) => {
       if (data?.success && data?.organizationId) {
         setIsFinalizing(true);
-        sendGTMEvent({ event: 'conversion' });
 
         // Track organization created
         trackEvent('organization_created', {
@@ -231,14 +228,14 @@ export function useOnboardingForm({
   const handlePrefillAll = async () => {
     try {
       // Fetch frameworks to get valid IDs
-      const response = await api.get<{ data: { id: string; visible: boolean }[] }>('/v1/frameworks/available');
+      const response = await api.get<{ data: { id: string; visible: boolean }[] }>(
+        '/v1/frameworks/available',
+      );
       const allFrameworks = Array.isArray(response.data?.data) ? response.data.data : [];
       const visibleFrameworks = allFrameworks.filter((f) => f.visible);
-      
+
       // Use first two visible frameworks, or just the first one if only one exists
-      const frameworkIds = visibleFrameworks
-        .slice(0, 2)
-        .map((f: { id: string }) => f.id);
+      const frameworkIds = visibleFrameworks.slice(0, 2).map((f: { id: string }) => f.id);
 
       const prefilledAnswers: Partial<CompanyDetails> = {
         frameworkIds: frameworkIds.length > 0 ? frameworkIds : [],

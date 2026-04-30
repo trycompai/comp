@@ -17,7 +17,7 @@ export class BackgroundCheckIdentityClient {
   }): Promise<IdentityCreateResponse> {
     const apiKey = process.env.BACKGROUND_CHECK_API_KEY;
     if (!apiKey) {
-      throw new BadRequestException('BACKGROUND_CHECK_API_KEY is not configured.');
+      throw new BadRequestException('Background check service is not configured. Contact support.');
     }
 
     const baseUrl = this.baseUrl();
@@ -90,7 +90,10 @@ export class BackgroundCheckIdentityClient {
 
   private async fetchIdentity(url: string, init: RequestInit): Promise<Response> {
     try {
-      return await fetch(url, init);
+      return await fetch(url, {
+        ...init,
+        signal: init.signal ?? AbortSignal.timeout(30_000),
+      });
     } catch (error) {
       this.logger.error('Identity background check network request failed', {
         url,

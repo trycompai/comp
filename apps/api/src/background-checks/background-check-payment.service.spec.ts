@@ -1,4 +1,4 @@
-import { HttpException } from '@nestjs/common';
+import { HttpException, HttpStatus } from '@nestjs/common';
 import { db } from '@db';
 import { StripeService } from '../stripe/stripe.service';
 import { BackgroundCheckBillingService } from './background-check-billing.service';
@@ -34,7 +34,11 @@ describe('BackgroundCheckPaymentService', () => {
 
     await expect(
       service.charge({ organizationId: 'org_1', memberId: 'mem_1' }),
-    ).rejects.toBeInstanceOf(HttpException);
+    ).rejects.toThrow(
+      expect.objectContaining({
+        status: HttpStatus.PAYMENT_REQUIRED,
+      }),
+    );
   });
 
   it('charges Stripe with payment-method scoped idempotency key', async () => {

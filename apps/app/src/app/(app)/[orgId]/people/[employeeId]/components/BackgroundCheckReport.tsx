@@ -231,7 +231,14 @@ function eventTimestamp(event: unknown): number {
   const record = toRecord(event);
   if (!record) return 0;
   const value = record.createdAt ?? record.timestamp ?? record.processedAt;
-  if (typeof value === 'number' || typeof value === 'string') {
+  if (typeof value === 'number') {
+    return value;
+  }
+  if (typeof value === 'string') {
+    const numeric = Number(value);
+    if (!Number.isNaN(numeric) && value.trim() !== '') {
+      return numeric;
+    }
     const timestamp = new Date(value).getTime();
     return Number.isNaN(timestamp) ? 0 : timestamp;
   }

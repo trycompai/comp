@@ -240,7 +240,7 @@ describe('BackgroundChecksService webhooks', () => {
     );
   });
 
-  it('dedupes webhook events', async () => {
+  it('reconciles state even on duplicate webhook events', async () => {
     const payload = webhookPayload();
     const rawBody = JSON.stringify(payload);
     const timestamp = String(Date.now());
@@ -259,8 +259,11 @@ describe('BackgroundChecksService webhooks', () => {
         clientVersion: 'test',
       }),
     );
+    const identityClient = {
+      getBackgroundCheck: jest.fn().mockResolvedValue({ status: 'completed_with_flags' }),
+    };
     const service = new BackgroundChecksService(
-      {} as unknown as BackgroundCheckIdentityClient,
+      identityClient as unknown as BackgroundCheckIdentityClient,
       {} as unknown as BackgroundCheckPaymentService,
     );
 
@@ -273,6 +276,13 @@ describe('BackgroundChecksService webhooks', () => {
     });
 
     expect(result).toEqual({ ok: true, duplicate: true });
-    expect(mockedDb.backgroundCheckRequest.update).not.toHaveBeenCalled();
+    // State reconciliation still happens on duplicates
+    expect(mockedDb.backgroundCheckRequest.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          status: 'completed_with_flags',
+        }),
+      }),
+    );
   });
 });

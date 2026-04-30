@@ -102,7 +102,15 @@ export class BackgroundCheckPaymentService {
       );
       return refund.id;
     } catch (error) {
-      this.logger.error('Failed to refund background check payment', error);
+      this.logger.error(
+        'Failed to refund background check payment — manual refund required.',
+        {
+          organizationId: params.organizationId,
+          memberId: params.memberId,
+          paymentIntentId: params.paymentIntentId,
+          error: error instanceof Error ? error.message : 'Unknown error',
+        },
+      );
       return null;
     }
   }

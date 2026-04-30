@@ -73,7 +73,9 @@ function formatDate(date: string): string {
 export function SecretsTable({ initialSecrets }: SecretsTableProps) {
   const { secrets, deleteSecret } = useSecrets({ initialData: initialSecrets });
   const { hasPermission } = usePermissions();
-  const canUpdate = hasPermission('organization', 'update');
+  const canEdit = hasPermission('secret', 'update');
+  const canDelete = hasPermission('secret', 'delete');
+  const canUpdate = canEdit || canDelete;
 
   const [revealedSecrets, setRevealedSecrets] = useState<Record<string, string>>({});
   const [loadingSecrets, setLoadingSecrets] = useState<Record<string, boolean>>({});
@@ -296,26 +298,30 @@ export function SecretsTable({ initialSecrets }: SecretsTableProps) {
                           <OverflowMenuVertical />
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
-                          <DropdownMenuItem
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setEditingSecret(secret);
-                            }}
-                          >
-                            <Edit size={16} />
-                            Edit
-                          </DropdownMenuItem>
-                          <DropdownMenuSeparator />
-                          <DropdownMenuItem
-                            variant="destructive"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleDeleteClick(secret);
-                            }}
-                          >
-                            <TrashCan size={16} />
-                            Delete
-                          </DropdownMenuItem>
+                          {canEdit && (
+                            <DropdownMenuItem
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setEditingSecret(secret);
+                              }}
+                            >
+                              <Edit size={16} />
+                              Edit
+                            </DropdownMenuItem>
+                          )}
+                          {canEdit && canDelete && <DropdownMenuSeparator />}
+                          {canDelete && (
+                            <DropdownMenuItem
+                              variant="destructive"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleDeleteClick(secret);
+                              }}
+                            >
+                              <TrashCan size={16} />
+                              Delete
+                            </DropdownMenuItem>
+                          )}
                         </DropdownMenuContent>
                       </DropdownMenu>
                     </div>

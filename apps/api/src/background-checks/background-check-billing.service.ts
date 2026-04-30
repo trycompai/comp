@@ -80,6 +80,19 @@ export class BackgroundCheckBillingService {
       expand: ['setup_intent'],
     });
 
+    if (session.status !== 'complete') {
+      throw new BadRequestException('Checkout session is not complete.');
+    }
+
+    if (
+      session.metadata?.organizationId &&
+      session.metadata.organizationId !== organizationId
+    ) {
+      throw new BadRequestException(
+        'Checkout session does not belong to this organization.',
+      );
+    }
+
     const stripeCustomerId = this.extractStripeId(session.customer);
     if (!stripeCustomerId) {
       throw new BadRequestException('Checkout session is missing a customer.');
@@ -200,15 +213,15 @@ export class BackgroundCheckBillingService {
     const priceId = process.env.STRIPE_BACKGROUND_CHECK_PRICE_ID;
     if (!priceId) {
       throw new BadRequestException(
-        'Background check billing is not configured.',
+        'Background check pricing is not configured. Contact support.',
       );
     }
 
     const stripe = this.stripeService.getClient();
     const price = await stripe.prices.retrieve(priceId);
-    if (!price.unit_amount) {
+    if (price.unit_amount === null || price.unit_amount === undefined) {
       throw new BadRequestException(
-        'Background check price has no unit amount.',
+        'Background check pricing is not configured. Contact support.',
       );
     }
 

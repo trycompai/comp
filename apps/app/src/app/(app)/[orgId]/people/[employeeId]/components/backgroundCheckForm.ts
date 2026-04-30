@@ -8,9 +8,10 @@ export const backgroundCheckSchema = z.object({
 
 export type BackgroundCheckFormValues = z.infer<typeof backgroundCheckSchema>;
 
-const pendingBackgroundCheckSchema = backgroundCheckSchema.extend({
+const pendingBackgroundCheckSchema = z.object({
   memberId: z.string(),
   organizationId: z.string(),
+  requesterNotes: z.string().optional(),
 });
 
 export type PendingBackgroundCheckRequest = z.infer<typeof pendingBackgroundCheckSchema>;
@@ -65,8 +66,6 @@ export function writePendingBackgroundCheckRequest({
   const pendingRequest: PendingBackgroundCheckRequest = {
     organizationId,
     memberId,
-    employeeName: values.employeeName,
-    employeeEmail: values.employeeEmail,
     requesterNotes: values.requesterNotes,
   };
   window.sessionStorage.setItem(

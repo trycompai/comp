@@ -65,71 +65,39 @@ export class BackgroundChecksService {
       throw new NotFoundException('Member not found.');
     }
 
-    const payment = await this.paymentService.charge({
-      organizationId,
-      memberId,
-    });
-
-    await db.backgroundCheckRequest.upsert({
-      where: { organizationId_memberId: { organizationId, memberId } },
-      create: {
-        organizationId,
-        memberId,
-        employeeName,
-        employeeEmail,
-        requesterNotes,
-        status: BackgroundCheckStatus.invited,
-        stripePaymentIntentId: payment.paymentIntentId,
-        stripePaymentStatus: payment.status,
-        stripeAmountCents: payment.amount,
-        stripeCurrency: payment.currency,
-        lastSyncedAt: new Date(),
-      },
-      update: {
-        employeeName,
-        employeeEmail,
-        requesterNotes,
-        stripePaymentIntentId: payment.paymentIntentId,
-        stripePaymentStatus: payment.status,
-        stripeAmountCents: payment.amount,
-        stripeCurrency: payment.currency,
-        lastSyncedAt: new Date(),
-      },
-    });
-
+    // Step 1: Claim the record slot before charging. Catches the TOCTOU race
+    // where two concurrent requests both pass the getForMember check.
     try {
-      const identityResult = await this.identityClient.createBackgroundCheck({
-        organizationId,
-        memberId,
-        employeeName,
-        employeeEmail,
-        requesterEmail,
-      });
-
-      return db.backgroundCheckRequest.upsert({
-        where: { organizationId_memberId: { organizationId, memberId } },
-        create: {
+      await db.backgroundCheckRequest.create({
+        data: {
           organizationId,
           memberId,
           employeeName,
           employeeEmail,
           requesterNotes,
-          identityBackgroundCheckId: identityResult.id,
-          candidateUrl: identityResult.candidateUrl ?? null,
-          status: identityResult.status,
-          stripePaymentIntentId: payment.paymentIntentId,
-          stripePaymentStatus: payment.status,
-          stripeAmountCents: payment.amount,
-          stripeCurrency: payment.currency,
+          status: BackgroundCheckStatus.invited,
           lastSyncedAt: new Date(),
         },
-        update: {
-          employeeName,
-          employeeEmail,
-          requesterNotes,
-          identityBackgroundCheckId: identityResult.id,
-          candidateUrl: identityResult.candidateUrl ?? null,
-          status: identityResult.status,
+      });
+    } catch (error) {
+      if (this.isUniqueConstraintError(error)) {
+        const raced = await this.getForMember({ organizationId, memberId });
+        if (raced) return raced;
+      }
+      throw error;
+    }
+
+    // Step 2: Charge — record exists so a failure here is recoverable
+    const payment = await this.paymentService.charge({
+      organizationId,
+      memberId,
+    });
+
+    // Step 3: Persist payment info. Refund if this write fails.
+    try {
+      await db.backgroundCheckRequest.update({
+        where: { organizationId_memberId: { organizationId, memberId } },
+        data: {
           stripePaymentIntentId: payment.paymentIntentId,
           stripePaymentStatus: payment.status,
           stripeAmountCents: payment.amount,
@@ -138,29 +106,34 @@ export class BackgroundChecksService {
         },
       });
     } catch (error) {
+      await this.paymentService.refund({
+        organizationId,
+        memberId,
+        paymentIntentId: payment.paymentIntentId,
+      });
+      throw error;
+    }
+
+    // Step 4: Call Identity API — refund on failure
+    let identityResult;
+    try {
+      identityResult = await this.identityClient.createBackgroundCheck({
+        organizationId,
+        memberId,
+        employeeName,
+        employeeEmail,
+        requesterEmail,
+      });
+    } catch (error) {
       const refundId = await this.paymentService.refund({
         organizationId,
         memberId,
         paymentIntentId: payment.paymentIntentId,
       });
 
-      await db.backgroundCheckRequest.upsert({
+      await db.backgroundCheckRequest.update({
         where: { organizationId_memberId: { organizationId, memberId } },
-        create: {
-          organizationId,
-          memberId,
-          employeeName,
-          employeeEmail,
-          requesterNotes,
-          status: BackgroundCheckStatus.failed,
-          stripePaymentIntentId: payment.paymentIntentId,
-          stripePaymentStatus: payment.status,
-          stripeRefundId: refundId,
-          stripeAmountCents: payment.amount,
-          stripeCurrency: payment.currency,
-          lastSyncedAt: new Date(),
-        },
-        update: {
+        data: {
           status: BackgroundCheckStatus.failed,
           stripeRefundId: refundId,
           lastSyncedAt: new Date(),
@@ -169,6 +142,17 @@ export class BackgroundChecksService {
 
       throw error;
     }
+
+    // Step 5: Persist Identity result
+    return db.backgroundCheckRequest.update({
+      where: { organizationId_memberId: { organizationId, memberId } },
+      data: {
+        identityBackgroundCheckId: identityResult.id,
+        candidateUrl: identityResult.candidateUrl ?? null,
+        status: identityResult.status,
+        lastSyncedAt: new Date(),
+      },
+    });
   }
 
   async getById({
@@ -231,6 +215,7 @@ export class BackgroundChecksService {
       throw new NotFoundException('Background check request not found.');
     }
 
+    let isDuplicate = false;
     try {
       await db.backgroundCheckWebhookEvent.create({
         data: {
@@ -243,9 +228,10 @@ export class BackgroundChecksService {
       });
     } catch (error) {
       if (this.isUniqueConstraintError(error)) {
-        return { ok: true, duplicate: true };
+        isDuplicate = true;
+      } else {
+        throw error;
       }
-      throw error;
     }
 
     const reportSnapshot = await fetchCompletedReportSnapshot({
@@ -278,7 +264,7 @@ export class BackgroundChecksService {
       },
     });
 
-    return { ok: true };
+    return { ok: true, ...(isDuplicate ? { duplicate: true } : {}) };
   }
 
   private isUniqueConstraintError(error: unknown): boolean {

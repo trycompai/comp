@@ -77,6 +77,8 @@ function renderSection(props?: Partial<Parameters<typeof EmployeeBackgroundCheck
 describe('EmployeeBackgroundCheck', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.mocked(apiClient.get).mockReset();
+    vi.mocked(apiClient.post).mockReset();
     window.sessionStorage.clear();
     navigationMock.pathname = '/org_1/people/mem_1';
     navigationMock.searchParams = new URLSearchParams();
@@ -188,9 +190,9 @@ describe('EmployeeBackgroundCheck', () => {
       }),
       'org_1',
     );
-    expect(window.sessionStorage.getItem('background-check:org_1:mem_1:pending-request')).toContain(
-      'ada@example.com',
-    );
+    expect(
+      window.sessionStorage.getItem('background-check:org_1:mem_1:pending-request'),
+    ).not.toContain('ada@example.com');
   });
 
   it('restores the pending check after Stripe setup before completing it', async () => {
@@ -204,8 +206,6 @@ describe('EmployeeBackgroundCheck', () => {
       JSON.stringify({
         organizationId: 'org_1',
         memberId: 'mem_1',
-        employeeName: 'Ada Lovelace',
-        employeeEmail: 'ada@example.com',
         requesterNotes: 'Recruiting requested an expedited check.',
       }),
     );
@@ -254,11 +254,15 @@ describe('EmployeeBackgroundCheck', () => {
       'org_1',
     );
     expect(await screen.findByText('Payment method saved')).toBeInTheDocument();
-    expect(screen.getByDisplayValue('ada@example.com')).toBeInTheDocument();
+    expect(screen.getByLabelText('Personal email')).toHaveValue('');
+    expect(
+      screen.getByDisplayValue('Recruiting requested an expedited check.'),
+    ).toBeInTheDocument();
     expect(window.sessionStorage.getItem('background-check:org_1:mem_1:pending-request')).toContain(
-      'ada@example.com',
+      'Recruiting requested an expedited check.',
     );
 
+    await user.type(screen.getByLabelText('Personal email'), 'ada@example.com');
     await user.click(screen.getByRole('button', { name: /complete/i }));
 
     await waitFor(() => {

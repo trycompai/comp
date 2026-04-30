@@ -1,8 +1,10 @@
-import { IsEmail, IsOptional, IsString, MaxLength, MinLength } from 'class-validator';
+import { IsEmail, IsNotEmpty, IsOptional, IsString, MaxLength } from 'class-validator';
+import { Transform } from 'class-transformer';
 
 export class RequestBackgroundCheckDto {
   @IsString()
-  @MinLength(1)
+  @Transform(({ value }) => (typeof value === 'string' ? value.trim() : value))
+  @IsNotEmpty({ message: 'employeeName must not be empty' })
   employeeName: string;
 
   @IsEmail()

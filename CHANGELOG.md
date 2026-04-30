@@ -1,3 +1,40 @@
+# [3.39.0](https://github.com/trycompai/comp/compare/v3.38.1...v3.39.0) (2026-04-30)
+
+
+### Bug Fixes
+
+* **api:** correct fileData max-length to 100MB and allow localhost in URL validation ([6d56a2d](https://github.com/trycompai/comp/commit/6d56a2d954ee20810672fc2a0c628fa72c133b62))
+* **api:** correct type casting for rawBody in main.ts ([7e624d4](https://github.com/trycompai/comp/commit/7e624d4d9eb95e2844fe11bb6a2aa1953dc405b1))
+* **app:** remove product app marketing pixels ([#2716](https://github.com/trycompai/comp/issues/2716)) ([26d75be](https://github.com/trycompai/comp/commit/26d75be92e8ba129add9c265106c1f69f1d90c82))
+* **background-checks:** fix 13 bugs across billing, webhooks, custom uploads, and UI ([d5df5db](https://github.com/trycompai/comp/commit/d5df5db4dc4c2f27a53a49f51c90ee52a0ec2f24))
+* **background-checks:** remove employee PII from sessionStorage ([ea082b3](https://github.com/trycompai/comp/commit/ea082b34733e9002fe65a54b8ee44338cc859979)), closes [#133](https://github.com/trycompai/comp/issues/133)
+* **background-checks:** security hardening across payment flow, validation, and logging ([8b3b39b](https://github.com/trycompai/comp/commit/8b3b39bd214908703579001eaf2d64d8f8c45caa))
+* **pentest:** bump split-view breakpoint from md to xl for tablet support ([efd1c85](https://github.com/trycompai/comp/commit/efd1c859f0bfdbf4664bd0fb42956883a71c6ab0))
+
+
+### Features
+
+* **background-checks:** add employee background checks ([0456df6](https://github.com/trycompai/comp/commit/0456df6e832b78a8ef4938bcdc5a5416cf597b6b))
+
+## [3.38.1](https://github.com/trycompai/comp/compare/v3.38.0...v3.38.1) (2026-04-29)
+
+
+### Bug Fixes
+
+* **security:** admin escalation, secrets RBAC, oauth session check ([#2712](https://github.com/trycompai/comp/issues/2712)) ([5627b12](https://github.com/trycompai/comp/commit/5627b1212aa62252f4542ef1b96e4c074b473490))
+
+# [3.38.0](https://github.com/trycompai/comp/compare/v3.37.0...v3.38.0) (2026-04-29)
+
+
+### Bug Fixes
+
+* **sentry:** gate includeLocalVariables and drop sendDefaultPii ([#2710](https://github.com/trycompai/comp/issues/2710)) ([e985b8b](https://github.com/trycompai/comp/commit/e985b8b5878305a6a5de8fe50ce17310204ff6c3)), closes [#2709](https://github.com/trycompai/comp/issues/2709)
+
+
+### Features
+
+* **observability:** integrate Sentry into app and portal ([#2705](https://github.com/trycompai/comp/issues/2705)) ([0aa2417](https://github.com/trycompai/comp/commit/0aa241709bc4da6d18200088e69b2a4b360b8f05))
+
 # [3.37.0](https://github.com/trycompai/comp/compare/v3.36.1...v3.37.0) (2026-04-29)
 
 
