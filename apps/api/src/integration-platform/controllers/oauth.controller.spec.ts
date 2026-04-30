@@ -4,6 +4,7 @@ import type { Request } from 'express';
 import { OAuthController } from './oauth.controller';
 import { HybridAuthGuard } from '../../auth/hybrid-auth.guard';
 import { PermissionGuard } from '../../auth/permission.guard';
+import { SessionOnlyGuard } from '../../auth/session-only.guard';
 import { OAuthStateRepository } from '../repositories/oauth-state.repository';
 import { ProviderRepository } from '../repositories/provider.repository';
 import { ConnectionRepository } from '../repositories/connection.repository';
@@ -34,6 +35,10 @@ jest.mock('../../auth/hybrid-auth.guard', () => ({
 
 jest.mock('../../auth/permission.guard', () => ({
   PermissionGuard: class PermissionGuard {},
+}));
+
+jest.mock('../../auth/session-only.guard', () => ({
+  SessionOnlyGuard: class SessionOnlyGuard {},
 }));
 
 jest.mock('@trycompai/auth', () => ({
@@ -133,6 +138,8 @@ describe('OAuthController', () => {
       ],
     })
       .overrideGuard(HybridAuthGuard)
+      .useValue(mockGuard)
+      .overrideGuard(SessionOnlyGuard)
       .useValue(mockGuard)
       .overrideGuard(PermissionGuard)
       .useValue(mockGuard)

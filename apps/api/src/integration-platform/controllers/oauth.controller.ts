@@ -17,6 +17,7 @@ import { randomBytes, createHash } from 'crypto';
 import { auth } from '../../auth/auth.server';
 import { HybridAuthGuard } from '../../auth/hybrid-auth.guard';
 import { PermissionGuard } from '../../auth/permission.guard';
+import { SessionOnlyGuard } from '../../auth/session-only.guard';
 import { RequirePermission } from '../../auth/require-permission.decorator';
 import { OrganizationId, UserId } from '../../auth/auth-context.decorator';
 import { OAuthStateRepository } from '../repositories/oauth-state.repository';
@@ -85,7 +86,11 @@ export class OAuthController {
    */
   @Post('start')
   @ApiOperation({ summary: 'Start an OAuth authorization flow' })
-  @UseGuards(HybridAuthGuard, PermissionGuard)
+  // SessionOnlyGuard rejects API-key and service-token callers with a 403
+  // before @UserId() is evaluated. The OAuth callback also requires a real
+  // session (see checkSessionMatchesState), so non-session auth could never
+  // complete the flow anyway.
+  @UseGuards(HybridAuthGuard, SessionOnlyGuard, PermissionGuard)
   @RequirePermission('integration', 'create')
   async startOAuth(
     @OrganizationId() organizationId: string,
