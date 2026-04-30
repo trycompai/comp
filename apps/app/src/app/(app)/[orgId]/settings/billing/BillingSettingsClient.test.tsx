@@ -18,9 +18,7 @@ const permissionMock = vi.hoisted(() => ({
 vi.mock('@/hooks/use-permissions', () => ({
   usePermissions: () => ({
     hasPermission: (resource: string, action: string) =>
-      resource === 'organization' &&
-      action === 'update' &&
-      permissionMock.canUpdateOrganization,
+      resource === 'organization' && action === 'update' && permissionMock.canUpdateOrganization,
   }),
 }));
 
@@ -45,10 +43,28 @@ function renderBillingSettings({
   hasPaymentMethod = true,
   backgroundChecks = 4,
   penetrationTests = 2,
+  invoices = [
+    {
+      id: 'in_1',
+      number: 'INV-001',
+      createdAt: '2026-04-30T09:35:07.000Z',
+      dueDate: null,
+      amountPaid: 4900,
+      amountDue: 4900,
+      currency: 'usd',
+      status: 'paid',
+      type: 'One Time' as const,
+      hostedInvoiceUrl: 'https://invoice.stripe.com/i/in_1',
+      invoicePdfUrl: 'https://invoice.stripe.com/i/in_1.pdf',
+    },
+  ],
 }: {
   hasPaymentMethod?: boolean;
   backgroundChecks?: number;
   penetrationTests?: number;
+  invoices?: NonNullable<
+    Parameters<typeof BillingSettingsClient>[0]['initialBillingStatus']['invoices']
+  >;
 } = {}) {
   return render(
     <SWRConfig value={{ provider: () => new Map() }}>
@@ -58,6 +74,7 @@ function renderBillingSettings({
           hasPaymentMethod,
           setupAt: null,
           usage: { backgroundChecks, penetrationTests },
+          invoices,
         }}
       />
     </SWRConfig>,
@@ -88,7 +105,11 @@ describe('BillingSettingsClient', () => {
     expect(screen.getByText('2')).toBeInTheDocument();
     expect(screen.getByText('4')).toBeInTheDocument();
     expect(screen.getByText(/update billing details, cards, and receipts/i)).toBeInTheDocument();
-    await user.click(screen.getByRole('button', { name: /open stripe portal/i }));
+    expect(screen.getByText('Invoices')).toBeInTheDocument();
+    expect(screen.getByText('INV-001')).toBeInTheDocument();
+    expect(screen.getByText('$49.00')).toBeInTheDocument();
+    expect(screen.getByText('One Time')).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: /update billing details/i }));
 
     await waitFor(() => {
       expect(apiClient.post).toHaveBeenCalledWith(
@@ -125,7 +146,7 @@ describe('BillingSettingsClient', () => {
     permissionMock.canUpdateOrganization = false;
     renderBillingSettings({ hasPaymentMethod: true });
 
-    const button = screen.getByRole('button', { name: /open stripe portal/i });
+    const button = screen.getByRole('button', { name: /update billing details/i });
     expect(button).toBeDisabled();
     await user.click(button);
 
@@ -146,5 +167,45 @@ describe('BillingSettingsClient', () => {
     );
 
     expect(screen.getAllByText('0')).toHaveLength(2);
+    expect(screen.getByText('No invoices yet.')).toBeInTheDocument();
+  });
+
+  it('filters invoices by search query', async () => {
+    const user = userEvent.setup();
+    renderBillingSettings({
+      invoices: [
+        {
+          id: 'in_1',
+          number: 'INV-001',
+          createdAt: '2026-04-30T09:35:07.000Z',
+          dueDate: null,
+          amountPaid: 4900,
+          amountDue: 4900,
+          currency: 'usd',
+          status: 'paid',
+          type: 'One Time',
+          hostedInvoiceUrl: 'https://invoice.stripe.com/i/in_1',
+          invoicePdfUrl: 'https://invoice.stripe.com/i/in_1.pdf',
+        },
+        {
+          id: 'in_2',
+          number: 'INV-002',
+          createdAt: '2026-04-01T09:35:07.000Z',
+          dueDate: null,
+          amountPaid: 0,
+          amountDue: 0,
+          currency: 'usd',
+          status: 'paid',
+          type: 'Subscription',
+          hostedInvoiceUrl: null,
+          invoicePdfUrl: null,
+        },
+      ],
+    });
+
+    await user.type(screen.getByLabelText('Search invoices'), 'subscription');
+
+    expect(screen.queryByText('INV-001')).not.toBeInTheDocument();
+    expect(screen.getByText('INV-002')).toBeInTheDocument();
   });
 });

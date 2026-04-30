@@ -10,13 +10,10 @@ const emptyBillingStatus: BackgroundCheckBillingStatus = {
     backgroundChecks: 0,
     penetrationTests: 0,
   },
+  invoices: [],
 };
 
-export default async function BillingPage({
-  params,
-}: {
-  params: Promise<{ orgId: string }>;
-}) {
+export default async function BillingPage({ params }: { params: Promise<{ orgId: string }> }) {
   const { orgId } = await params;
   const response = await serverApi.get<BackgroundCheckBillingStatus>(
     '/v1/background-check-billing/status',
