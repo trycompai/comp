@@ -34,7 +34,7 @@ export function BillingInvoicesTable({ invoices }: BillingInvoicesTableProps) {
   return (
     <div className="rounded-lg border bg-card">
       <div className="p-6">
-        <Stack gap="4">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
           <Stack gap="1">
             <Text size="lg" weight="semibold">
               Invoices
@@ -43,7 +43,7 @@ export function BillingInvoicesTable({ invoices }: BillingInvoicesTableProps) {
               View and download invoices for paid services.
             </Text>
           </Stack>
-          <div className="max-w-md">
+          <div className="w-full lg:max-w-sm">
             <div className="flex items-center gap-2">
               <span className="text-muted-foreground">
                 <Search size={16} />
@@ -56,7 +56,7 @@ export function BillingInvoicesTable({ invoices }: BillingInvoicesTableProps) {
               />
             </div>
           </div>
-        </Stack>
+        </div>
       </div>
       <div className="overflow-x-auto">
         <table className="w-full min-w-[760px] text-left text-sm">
