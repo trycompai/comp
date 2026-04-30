@@ -1,3 +1,11 @@
+## [3.39.1](https://github.com/trycompai/comp/compare/v3.39.0...v3.39.1) (2026-04-30)
+
+
+### Bug Fixes
+
+* **integrations:** gate startOAuth with SessionOnlyGuard ([210a4f7](https://github.com/trycompai/comp/commit/210a4f7e1120d01867cd20605ff84f8f0416e8bd))
+* **integrations:** source OAuth initiator userId from auth context ([b561f2c](https://github.com/trycompai/comp/commit/b561f2c08c169fb4e3c7fd1b023294288a23299d)), closes [#2712](https://github.com/trycompai/comp/issues/2712)
+
 # [3.39.0](https://github.com/trycompai/comp/compare/v3.38.1...v3.39.0) (2026-04-30)
 
 
