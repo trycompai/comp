@@ -848,28 +848,28 @@ export function TrustPortalSwitch({
   );
 }
 
-function ComplianceFrameworkLogo({ title, status }: { title: string; status: string }) {
+function ComplianceFrameworkLogo({ title, status, enabled }: { title: string; status: string; enabled: boolean }) {
   const isInProgress = status === 'in_progress';
   let LogoComponent: React.ElementType | null = null;
 
   if (title === 'ISO 27001') {
-    LogoComponent = isInProgress ? ISO27001InProgress : ISO27001;
+    LogoComponent = enabled && isInProgress ? ISO27001InProgress : ISO27001;
   } else if (title === 'ISO 42001') {
-    LogoComponent = isInProgress ? ISO42001InProgress : ISO42001;
+    LogoComponent = enabled && isInProgress ? ISO42001InProgress : ISO42001;
   } else if (title === 'GDPR') {
-    LogoComponent = isInProgress ? GDPRInProgress : GDPR;
+    LogoComponent = enabled && isInProgress ? GDPRInProgress : GDPR;
   } else if (title === 'HIPAA') {
-    LogoComponent = isInProgress ? HIPAAInProgress : HIPAA;
+    LogoComponent = enabled && isInProgress ? HIPAAInProgress : HIPAA;
   } else if (title === 'SOC 2 Type 1') {
-    LogoComponent = isInProgress ? SOC2Type1InProgress : SOC2Type1;
+    LogoComponent = enabled && isInProgress ? SOC2Type1InProgress : SOC2Type1;
   } else if (title === 'SOC 2 Type 2') {
-    LogoComponent = isInProgress ? SOC2Type2InProgress : SOC2Type2;
+    LogoComponent = enabled && isInProgress ? SOC2Type2InProgress : SOC2Type2;
   } else if (title === 'PCI DSS') {
-    LogoComponent = isInProgress ? PCIDSSInProgress : PCIDSS;
+    LogoComponent = enabled && isInProgress ? PCIDSSInProgress : PCIDSS;
   } else if (title === 'NEN 7510') {
-    LogoComponent = isInProgress ? NEN7510InProgress : NEN7510;
+    LogoComponent = enabled && isInProgress ? NEN7510InProgress : NEN7510;
   } else if (title === 'ISO 9001') {
-    LogoComponent = isInProgress ? ISO9001InProgress : ISO9001;
+    LogoComponent = enabled && isInProgress ? ISO9001InProgress : ISO9001;
   } else {
     LogoComponent = null;
   }
@@ -991,7 +991,7 @@ function ComplianceFramework({
         <CardHeader>
           <div className="flex items-center gap-4">
             <div className="shrink-0">
-              <ComplianceFrameworkLogo title={title} status={status} />
+              <ComplianceFrameworkLogo title={title} status={status} enabled={isEnabled} />
             </div>
             <div>
               <CardTitle>{title}</CardTitle>
