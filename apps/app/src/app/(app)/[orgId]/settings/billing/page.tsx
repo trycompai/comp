@@ -1,29 +1,32 @@
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@trycompai/ui/card';
+import { serverApi } from '@/lib/api-server';
 import type { Metadata } from 'next';
+import { BillingSettingsClient } from './BillingSettingsClient';
+import type { BackgroundCheckBillingStatus } from './types';
 
-export default async function BillingPage() {
+const emptyBillingStatus: BackgroundCheckBillingStatus = {
+  hasPaymentMethod: false,
+  setupAt: null,
+  usage: {
+    backgroundChecks: 0,
+    penetrationTests: 0,
+  },
+};
+
+export default async function BillingPage({
+  params,
+}: {
+  params: Promise<{ orgId: string }>;
+}) {
+  const { orgId } = await params;
+  const response = await serverApi.get<BackgroundCheckBillingStatus>(
+    '/v1/background-check-billing/status',
+  );
+
   return (
-    <div className="space-y-6">
-      <Card>
-        <CardHeader>
-          <CardTitle>Penetration Testing</CardTitle>
-          <CardDescription>
-            Every organization gets a free trial run. Paid plans are coming soon.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <p className="text-sm text-muted-foreground">
-            See your remaining trial runs on the Penetration Tests page.
-          </p>
-        </CardContent>
-      </Card>
-    </div>
+    <BillingSettingsClient
+      organizationId={orgId}
+      initialBillingStatus={response.data ?? emptyBillingStatus}
+    />
   );
 }
 
