@@ -34,6 +34,15 @@ export interface CustomBackgroundCheckAttachment {
 export interface BackgroundCheckBillingStatus {
   hasPaymentMethod: boolean;
   setupAt: string | null;
+  subscriptions?: Array<{
+    skuKey: string;
+    status: string;
+    includedQuantity: number;
+    usedQuantity: number;
+    currentPeriodStart: string | null;
+    currentPeriodEnd: string | null;
+    cancelAtPeriodEnd: boolean;
+  }>;
 }
 
 export function isCompletedBackgroundCheck(status: BackgroundCheckStatus): boolean {

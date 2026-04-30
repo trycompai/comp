@@ -229,18 +229,13 @@ export class SecurityPenetrationTestsService {
     const billingUsageSourceId = `pending:${randomUUID()}`;
     let consumedSubscriptionAllowance = false;
 
-    // Debit FIRST so concurrent fast-clicks block at the cheap DB
-    // conditional update before any of them reach Maced. Without this,
-    // double-clicks would race past the balance check, all hit Maced
-    // (creating multiple paid runs), and only one would win the debit —
-    // we'd burn money on orphaned provider-side runs. Atomic
-    // `updateMany WHERE balance > 0` guarantees only one decrement
-    // succeeds.
+    // Reserve subscription allowance before calling Maced so fast double-clicks
+    // cannot create more paid provider runs than the organization has available.
     try {
       const subscriptionUsage =
-        await this.billingEntitlements.tryConsumeIncludedUsage({
+        await this.billingEntitlements.tryConsumeIncludedUsageForProduct({
           organizationId,
-          skuKey: 'pentest_monthly_5',
+          productKey: 'pentest',
           sourceResourceId: billingUsageSourceId,
         });
       if (subscriptionUsage.status === 'exhausted') {
@@ -254,7 +249,13 @@ export class SecurityPenetrationTestsService {
         );
       }
       if (subscriptionUsage.status === 'not_configured') {
-        await this.credits.debitOrThrow(organizationId);
+        throw new HttpException(
+          {
+            error: 'Start a penetration test plan or free trial to run scans.',
+            code: 'pentest_subscription_required',
+          },
+          HttpStatus.PAYMENT_REQUIRED,
+        );
       } else {
         consumedSubscriptionAllowance = true;
       }
@@ -264,16 +265,18 @@ export class SecurityPenetrationTestsService {
         error.getStatus() === HttpStatus.PAYMENT_REQUIRED
       ) {
         // Record the blocked attempt so support / compliance can answer
-        // "did the user try to scan after their trial was used?". Best-
+        // "did the user try to scan without an allowance?". Best-
         // effort — never let an audit-log failure hide the 402 from the
         // user.
+        const response = error.getResponse();
+        const reason = getPaymentRequiredCode(response);
         await this.credits.writePentestAuditEntry({
           organizationId,
           action: 'pentest_create_blocked',
           runId: null,
-          description: 'Pentest create blocked: no credits remaining',
+          description: 'Pentest create blocked: subscription required',
           metadata: {
-            reason: 'pentest_credits_exhausted',
+            reason,
             targetUrl: payload.targetUrl,
           },
         });
@@ -678,9 +681,9 @@ export class SecurityPenetrationTestsService {
       }
 
       if (run.billingUsageSourceId) {
-        await this.billingEntitlements.refundIncludedUsage({
+        await this.billingEntitlements.refundIncludedUsageForProduct({
           organizationId: run.organizationId,
-          skuKey: 'pentest_monthly_5',
+          productKey: 'pentest',
           sourceResourceId: run.billingUsageSourceId,
           reason: eventType,
           tx,
@@ -929,9 +932,9 @@ export class SecurityPenetrationTestsService {
     reason: string;
   }): Promise<void> {
     try {
-      await this.billingEntitlements.refundIncludedUsage({
+      await this.billingEntitlements.refundIncludedUsageForProduct({
         organizationId: params.organizationId,
-        skuKey: 'pentest_monthly_5',
+        productKey: 'pentest',
         sourceResourceId: params.sourceResourceId,
         reason: params.reason,
       });
@@ -1087,4 +1090,12 @@ export class SecurityPenetrationTestsService {
 
     return hosts;
   }
+}
+
+function getPaymentRequiredCode(response: unknown): string {
+  if (typeof response !== 'object' || response === null) {
+    return 'pentest_subscription_required';
+  }
+  const code = (response as Record<string, unknown>).code;
+  return typeof code === 'string' ? code : 'pentest_subscription_required';
 }

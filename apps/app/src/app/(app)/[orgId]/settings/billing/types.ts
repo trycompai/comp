@@ -20,6 +20,10 @@ export interface BackgroundCheckBillingStatus {
     penetrationTests: number;
   };
   preferences?: BillingPreferences | null;
+  trialEligibility?: {
+    pentest: boolean;
+    background_check: boolean;
+  };
   usageRows?: BillingUsageRow[];
   subscriptions?: Array<{
     skuKey: string;

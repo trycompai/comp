@@ -168,7 +168,7 @@ export function BillingSettingsClient({
         <TabsContent value="add-ons">
           <Section
             title="Add-ons"
-            description="Choose paid Comp AI products and manage their subscription plans."
+            description="Add the monthly credits that keep security reviews and hiring checks moving without surprise spend."
           >
             <BillingAddOnsOverview
               organizationId={organizationId}

@@ -35,7 +35,7 @@ export function BillingAddOnPlansClient({
   const { hasPermission } = usePermissions();
   const canManageBilling = hasPermission('organization', 'update');
 
-  const { data: billingStatus } = useSWR<BackgroundCheckBillingStatus>(
+  const { data: billingStatus, mutate: mutateBillingStatus } = useSWR<BackgroundCheckBillingStatus>(
     ['/v1/billing/status', organizationId],
     async ([endpoint]) => {
       const response = await apiClient.get<BackgroundCheckBillingStatus>(endpoint, organizationId);
@@ -54,12 +54,17 @@ export function BillingAddOnPlansClient({
     () => billingStatus?.subscriptions ?? initialBillingStatus.subscriptions ?? [],
     [billingStatus?.subscriptions, initialBillingStatus.subscriptions],
   );
+  const trialEligibility = billingStatus?.trialEligibility ??
+    initialBillingStatus.trialEligibility ?? {
+      pentest: false,
+      background_check: false,
+    };
 
   const handleOpenSubscription = async (skuKey: BillingSkuKey) => {
     setLoadingSubscriptionSku(skuKey);
 
     const returnUrl = `${window.location.origin}/${organizationId}/settings/billing/add-ons/${addOn.slug}`;
-    const response = await apiClient.post<{ url: string }>(
+    const response = await apiClient.post<{ url?: string; changed?: true }>(
       '/v1/billing/subscription-session',
       {
         skuKey,
@@ -71,6 +76,13 @@ export function BillingAddOnPlansClient({
 
     if (response.data?.url) {
       window.location.href = response.data.url;
+      return;
+    }
+
+    if (response.data?.changed) {
+      toast.success('Plan updated');
+      await mutateBillingStatus();
+      setLoadingSubscriptionSku(null);
       return;
     }
 
@@ -105,13 +117,11 @@ export function BillingAddOnPlansClient({
         }
       >
         <TabsContent value="overview">
-          <Section
-            title="Subscription plans"
-            description="Choose a monthly plan for this add-on."
-          >
+          <Section title={addOn.planTitle} description={addOn.planDescription}>
             <BillingSubscriptionPlans
               skuKeys={addOn.skuKeys}
               subscriptions={subscriptions}
+              trialEligibility={trialEligibility}
               disabled={!canManageBilling}
               loadingSkuKey={loadingSubscriptionSku}
               onSubscribe={handleOpenSubscription}

@@ -62,13 +62,6 @@ export const createOrganization = authActionClientWithoutOrg
               role: 'owner',
             },
           },
-          pentestCredits: {
-            create: {
-              balance: 1,
-              totalGranted: 1,
-              lastGrantSource: 'trial',
-            },
-          },
           context: {
             create: steps
               .filter((step) => step.key !== 'organizationName' && step.key !== 'website')

@@ -1,6 +1,7 @@
 'use client';
 
 import { Card, CardContent, CardHeader, CardTitle, Stack, Text } from '@trycompai/design-system';
+import { getBillingSkuProductKey } from '@trycompai/billing';
 import type React from 'react';
 import type { BackgroundCheckBillingStatus, BillingUsageRow } from './types';
 
@@ -15,12 +16,14 @@ export function BillingUsageTable({ subscriptions, usageRows }: BillingUsageTabl
       <div className="grid gap-4 lg:grid-cols-2">
         <AllowanceCard
           label="Penetration Tests"
-          subscription={subscriptions.find((item) => item.skuKey === 'pentest_monthly_5')}
+          subscription={subscriptions.find(
+            (item) => getBillingSkuProductKey(item.skuKey) === 'pentest',
+          )}
         />
         <AllowanceCard
           label="Background Checks"
           subscription={subscriptions.find(
-            (item) => item.skuKey === 'background_checks_monthly_25',
+            (item) => getBillingSkuProductKey(item.skuKey) === 'background_check',
           )}
         />
       </div>

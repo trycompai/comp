@@ -43,6 +43,7 @@ const emptyBillingStatus: BackgroundCheckBillingStatus = {
   setupAt: null,
   usage: { backgroundChecks: 0, penetrationTests: 0 },
   preferences: null,
+  trialEligibility: { pentest: true, background_check: true },
   usageRows: [],
   subscriptions: [],
   invoices: [],
@@ -51,9 +52,11 @@ const emptyBillingStatus: BackgroundCheckBillingStatus = {
 function renderAddOnPlans({
   addOnSlug,
   subscriptions = [],
+  trialEligibility = emptyBillingStatus.trialEligibility,
 }: {
   addOnSlug: 'penetration-tests' | 'background-checks';
   subscriptions?: NonNullable<BackgroundCheckBillingStatus['subscriptions']>;
+  trialEligibility?: BackgroundCheckBillingStatus['trialEligibility'];
 }) {
   const addOn = getBillingAddOn(addOnSlug);
   if (!addOn) throw new Error(`Missing test add-on: ${addOnSlug}`);
@@ -66,6 +69,7 @@ function renderAddOnPlans({
         initialBillingStatus={{
           ...emptyBillingStatus,
           subscriptions,
+          trialEligibility,
         }}
       />
     </SWRConfig>,
@@ -102,13 +106,13 @@ describe('billing add-ons', () => {
     const user = userEvent.setup();
     renderAddOnPlans({ addOnSlug: 'background-checks' });
 
-    await user.click(screen.getByRole('button', { name: /subscribe to background checks/i }));
+    await user.click(screen.getByRole('button', { name: /start free trial/i }));
 
     await waitFor(() => {
       expect(apiClient.post).toHaveBeenCalledWith(
         '/v1/billing/subscription-session',
         {
-          skuKey: 'background_checks_monthly_25',
+          skuKey: 'background_checks_monthly_3',
           successUrl:
             'http://localhost:3000/org_1/settings/billing/add-ons/background-checks?billing_subscription=success&session_id={CHECKOUT_SESSION_ID}',
           cancelUrl: 'http://localhost:3000/org_1/settings/billing/add-ons/background-checks',
@@ -125,11 +129,20 @@ describe('billing add-ons', () => {
       'href',
       '/org_1/settings/billing',
     );
-    expect(screen.getByRole('heading', { name: 'Penetration Test' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Penetration Tests' })).toBeInTheDocument();
     expect(screen.getByRole('tab', { name: /^overview$/i })).toBeInTheDocument();
-    expect(
-      screen.getByRole('button', { name: /subscribe to penetration tests/i }),
-    ).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /start free trial/i })).toBeInTheDocument();
+    expect(screen.getByText('14-day free trial')).toBeInTheDocument();
+  });
+
+  it('hides trial copy once a product has subscription history', () => {
+    renderAddOnPlans({
+      addOnSlug: 'penetration-tests',
+      trialEligibility: { pentest: false, background_check: true },
+    });
+
+    expect(screen.queryByText('14-day free trial')).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /start monthly scans/i })).toBeInTheDocument();
   });
 
   it('shows active add-on subscriptions as disabled plan actions', async () => {
@@ -138,9 +151,9 @@ describe('billing add-ons', () => {
       addOnSlug: 'penetration-tests',
       subscriptions: [
         {
-          skuKey: 'pentest_monthly_5',
+          skuKey: 'pentest_monthly_1',
           status: 'active',
-          includedQuantity: 5,
+          includedQuantity: 1,
           usedQuantity: 1,
           currentPeriodStart: '2026-04-30T00:00:00.000Z',
           currentPeriodEnd: '2026-05-30T00:00:00.000Z',
@@ -149,14 +162,14 @@ describe('billing add-ons', () => {
       ],
     });
 
-    const activeButton = screen.getByRole('button', { name: /active subscription/i });
+    const activeButton = screen.getByRole('button', { name: /current plan/i });
     expect(activeButton).toBeDisabled();
-    expect(screen.getByText('1 of 5 used this period.')).toBeInTheDocument();
+    expect(screen.getByText(/0 of 1.*remaining this period/i)).toBeInTheDocument();
 
     await user.click(activeButton);
     expect(apiClient.post).not.toHaveBeenCalledWith(
       '/v1/billing/subscription-session',
-      expect.objectContaining({ skuKey: 'pentest_monthly_5' }),
+      expect.objectContaining({ skuKey: 'pentest_monthly_1' }),
       'org_1',
     );
   });

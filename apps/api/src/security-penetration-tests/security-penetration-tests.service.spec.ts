@@ -26,11 +26,11 @@ const mockPentestCreditsService: jest.Mocked<
 const mockBillingEntitlementsService: jest.Mocked<
   Pick<
     BillingEntitlementsService,
-    'tryConsumeIncludedUsage' | 'refundIncludedUsage'
+    'tryConsumeIncludedUsageForProduct' | 'refundIncludedUsageForProduct'
   >
 > = {
-  tryConsumeIncludedUsage: jest.fn(),
-  refundIncludedUsage: jest.fn(),
+  tryConsumeIncludedUsageForProduct: jest.fn(),
+  refundIncludedUsageForProduct: jest.fn(),
 };
 
 jest.mock('@db', () => ({
@@ -113,10 +113,10 @@ describe('SecurityPenetrationTestsService', () => {
       lastGrantSource: 'trial',
     });
     mockPentestCreditsService.refund.mockResolvedValue();
-    mockBillingEntitlementsService.tryConsumeIncludedUsage.mockResolvedValue({
+    mockBillingEntitlementsService.tryConsumeIncludedUsageForProduct.mockResolvedValue({
       status: 'not_configured',
     });
-    mockBillingEntitlementsService.refundIncludedUsage.mockResolvedValue();
+    mockBillingEntitlementsService.refundIncludedUsageForProduct.mockResolvedValue();
     service = new SecurityPenetrationTestsService(
       mockPentestCreditsService as unknown as PentestCreditsService,
       mockBillingEntitlementsService as unknown as BillingEntitlementsService,

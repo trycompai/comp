@@ -56,20 +56,24 @@ describe('SecurityPenetrationTestsService billing usage', () => {
   const originalMacedApiKey = process.env.MACED_API_KEY;
   const mockedDb = db as unknown as MockDb;
   const credits: jest.Mocked<
-    Pick<PentestCreditsService, 'getStatus' | 'debitOrThrow' | 'refund'>
+    Pick<
+      PentestCreditsService,
+      'getStatus' | 'debitOrThrow' | 'refund' | 'writePentestAuditEntry'
+    >
   > = {
     getStatus: jest.fn(),
     debitOrThrow: jest.fn(),
     refund: jest.fn(),
+    writePentestAuditEntry: jest.fn(),
   };
   const billingEntitlements: jest.Mocked<
     Pick<
       BillingEntitlementsService,
-      'tryConsumeIncludedUsage' | 'refundIncludedUsage'
+      'tryConsumeIncludedUsageForProduct' | 'refundIncludedUsageForProduct'
     >
   > = {
-    tryConsumeIncludedUsage: jest.fn(),
-    refundIncludedUsage: jest.fn(),
+    tryConsumeIncludedUsageForProduct: jest.fn(),
+    refundIncludedUsageForProduct: jest.fn(),
   };
   let service: SecurityPenetrationTestsService;
 
@@ -87,11 +91,12 @@ describe('SecurityPenetrationTestsService billing usage', () => {
       lastGrantSource: 'trial',
     });
     credits.refund.mockResolvedValue();
-    billingEntitlements.tryConsumeIncludedUsage.mockResolvedValue({
+    credits.writePentestAuditEntry.mockResolvedValue();
+    billingEntitlements.tryConsumeIncludedUsageForProduct.mockResolvedValue({
       status: 'consumed',
       subscriptionId: 'obs_1',
     });
-    billingEntitlements.refundIncludedUsage.mockResolvedValue();
+    billingEntitlements.refundIncludedUsageForProduct.mockResolvedValue();
     mockedDb.securityPenetrationTestRun.upsert.mockResolvedValue({});
     mockedDb.securityPenetrationTestRun.updateMany.mockResolvedValue({
       count: 1,
@@ -125,6 +130,35 @@ describe('SecurityPenetrationTestsService billing usage', () => {
     );
   });
 
+  it('requires a subscription or free trial instead of debiting wallet credits', async () => {
+    billingEntitlements.tryConsumeIncludedUsageForProduct.mockResolvedValue({
+      status: 'not_configured',
+    });
+
+    await expect(
+      service.createReport('org_123', {
+        targetUrl: 'https://app.example.com',
+      }),
+    ).rejects.toMatchObject({
+      status: 402,
+      response: expect.objectContaining({
+        code: 'pentest_subscription_required',
+      }),
+    });
+
+    expect(credits.debitOrThrow).not.toHaveBeenCalled();
+    expect(credits.writePentestAuditEntry).toHaveBeenCalledWith(
+      expect.objectContaining({
+        organizationId: 'org_123',
+        action: 'pentest_create_blocked',
+        metadata: expect.objectContaining({
+          reason: 'pentest_subscription_required',
+        }),
+      }),
+    );
+    expect(mockMacedPentestsCreate).not.toHaveBeenCalled();
+  });
+
   it('refunds subscription usage on terminal failure for subscription-backed runs', async () => {
     mockedDb.securityPenetrationTestRun.findUnique.mockResolvedValue({
       organizationId: 'org_123',
@@ -142,9 +176,11 @@ describe('SecurityPenetrationTestsService billing usage', () => {
       'pentest.failed',
     );
 
-    expect(billingEntitlements.refundIncludedUsage).toHaveBeenCalledWith({
+    expect(
+      billingEntitlements.refundIncludedUsageForProduct,
+    ).toHaveBeenCalledWith({
       organizationId: 'org_123',
-      skuKey: 'pentest_monthly_5',
+      productKey: 'pentest',
       sourceResourceId: 'pending:run_subscription',
       reason: 'pentest.failed',
       tx: mockedDb,
@@ -172,6 +208,8 @@ describe('SecurityPenetrationTestsService billing usage', () => {
       'pentest.failed',
       mockedDb,
     );
-    expect(billingEntitlements.refundIncludedUsage).not.toHaveBeenCalled();
+    expect(
+      billingEntitlements.refundIncludedUsageForProduct,
+    ).not.toHaveBeenCalled();
   });
 });

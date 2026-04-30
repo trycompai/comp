@@ -3,6 +3,7 @@
 import { usePermissions } from '@/hooks/use-permissions';
 import { apiClient } from '@/lib/api-client';
 import type { Member, User } from '@db';
+import { getBillingSkuProductKey } from '@trycompai/billing';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -93,7 +94,20 @@ export function EmployeeBackgroundCheck({
   const canRequest = hasPermission('member', 'update');
   const canManageBilling = hasPermission('organization', 'update');
   const hasPaymentMethod = billingStatus?.hasPaymentMethod === true;
-  const visibleWizardStep = hasPaymentMethod ? 'details' : wizardStep;
+  const backgroundCheckSubscription = (billingStatus?.subscriptions ?? []).find(
+    (subscription) =>
+      getBillingSkuProductKey(subscription.skuKey) === 'background_check' &&
+      (subscription.status === 'active' || subscription.status === 'trialing'),
+  );
+  const backgroundChecksRemaining = backgroundCheckSubscription
+    ? Math.max(
+        backgroundCheckSubscription.includedQuantity - backgroundCheckSubscription.usedQuantity,
+        0,
+      )
+    : null;
+  const hasBackgroundCheckAllowance =
+    backgroundChecksRemaining !== null && backgroundChecksRemaining > 0;
+  const visibleWizardStep = hasBackgroundCheckAllowance ? 'details' : wizardStep;
 
   const writePendingRequest = useCallback(
     (values: BackgroundCheckFormValues) => {
@@ -123,7 +137,8 @@ export function EmployeeBackgroundCheck({
 
       if (response.error || !response.data) {
         if (response.status === 402) {
-          setPaymentIssue('Payment failed. Update payment method and try again.');
+          toast.error('Choose or upgrade a background check plan to continue.');
+          router.push(`/${organizationId}/settings/billing/add-ons/background-checks`);
           return false;
         }
         toast.error('Failed to request background check');
@@ -138,7 +153,7 @@ export function EmployeeBackgroundCheck({
       clearPendingRequest();
       return true;
     },
-    [clearPendingRequest, employee.id, mutateBackgroundCheck, organizationId],
+    [clearPendingRequest, employee.id, mutateBackgroundCheck, organizationId, router],
   );
 
   useEffect(() => {
@@ -219,8 +234,9 @@ export function EmployeeBackgroundCheck({
   };
 
   const handleComplete = async (values: BackgroundCheckFormValues) => {
-    if (!hasPaymentMethod) {
-      await handleOpenBilling(values);
+    if (!hasBackgroundCheckAllowance) {
+      writePendingRequest(values);
+      router.push(`/${organizationId}/settings/billing/add-ons/background-checks`);
       return;
     }
 
@@ -242,13 +258,15 @@ export function EmployeeBackgroundCheck({
     <>
       {visibleWizardStep === 'overview' && (
         <OverviewStep
-          billingHref={`/${organizationId}/settings/billing`}
+          billingHref={`/${organizationId}/settings/billing/add-ons/background-checks`}
           canManageBilling={canManageBilling}
           canRequest={canRequest}
-          hasPaymentMethod={hasPaymentMethod}
+          hasPaymentMethod={hasBackgroundCheckAllowance}
           isOpeningBilling={isOpeningBilling}
           onGetStarted={() => setWizardStep('details')}
-          onOpenBilling={() => void handleOpenBilling()}
+          onOpenBilling={() =>
+            router.push(`/${organizationId}/settings/billing/add-ons/background-checks`)
+          }
         />
       )}
       {visibleWizardStep === 'details' && (
@@ -258,8 +276,9 @@ export function EmployeeBackgroundCheck({
           isOpeningBilling={isOpeningBilling}
           isRequesting={isRequesting}
           billingSetupComplete={billingSetupComplete}
-          hasPaymentMethod={hasPaymentMethod}
-          canGoBack={!hasPaymentMethod}
+          backgroundChecksRemaining={backgroundChecksRemaining}
+          canGoBack={!hasBackgroundCheckAllowance}
+          billingHref={`/${organizationId}/settings/billing/add-ons/background-checks`}
           onBack={() => setWizardStep('overview')}
           onSubmit={handleComplete}
         />

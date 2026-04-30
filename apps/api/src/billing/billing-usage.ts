@@ -1,5 +1,5 @@
 import { db } from '@db';
-import type { BillingSkuKey } from '@trycompai/billing';
+import { getBillingSkuProductKey, type BillingSkuKey } from '@trycompai/billing';
 import type { BillingUsageRow } from './billing.types';
 
 type SubscriptionSummary = {
@@ -9,8 +9,8 @@ type SubscriptionSummary = {
   currentPeriodEnd: Date | null;
 };
 
-const backgroundCheckSku = 'background_checks_monthly_25';
-const pentestSku = 'pentest_monthly_5';
+const backgroundCheckSku = 'background_checks_monthly_3';
+const pentestSku = 'pentest_monthly_1';
 
 export async function listBillingUsageRows(params: {
   organizationId: string;
@@ -121,8 +121,11 @@ function toBillingUsageRow(params: {
   updatedAt: Date;
   subscriptions: SubscriptionSummary[];
 }): BillingUsageRow {
-  const subscription = params.subscriptions.find(
-    (item) => item.skuKey === params.skuKey,
+  const productKey = getBillingSkuProductKey(params.skuKey);
+  const subscription = params.subscriptions.find((item) =>
+    productKey
+      ? getBillingSkuProductKey(item.skuKey) === productKey
+      : item.skuKey === params.skuKey,
   );
   const remaining = subscription
     ? Math.max(subscription.includedQuantity - subscription.usedQuantity, 0)

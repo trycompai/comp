@@ -1,5 +1,8 @@
 import { Injectable } from '@nestjs/common';
-import { getBillingSku } from '@trycompai/billing';
+import {
+  getBillingSku,
+  resolveBillingCatalogEnvironment,
+} from '@trycompai/billing';
 import { BillingService } from '../billing/billing.service';
 import { validateBackgroundCheckBillingRedirectUrl } from './background-check-billing-urls';
 
@@ -42,7 +45,13 @@ export class BackgroundCheckBillingService {
     unitAmount: number;
     currency: string;
   }> {
-    const sku = getBillingSku({ skuKey: 'background_check_one_time' });
+    const sku = getBillingSku({
+      environment: resolveBillingCatalogEnvironment({
+        stripeSecretKey: process.env.STRIPE_SECRET_KEY,
+        nodeEnv: process.env.NODE_ENV,
+      }),
+      skuKey: 'background_check_one_time',
+    });
     return {
       id: sku.stripePriceId,
       unitAmount: sku.unitAmount,

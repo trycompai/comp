@@ -5,6 +5,7 @@ jest.mock('@db', () => ({
   db: {
     organizationBillingSubscription: {
       findUnique: jest.fn(),
+      findMany: jest.fn(),
     },
     billingAuditEvent: {
       create: jest.fn(),
@@ -25,7 +26,7 @@ type MockTx = {
 };
 
 const mockedDb = db as unknown as {
-  organizationBillingSubscription: { findUnique: jest.Mock };
+  organizationBillingSubscription: { findUnique: jest.Mock; findMany: jest.Mock };
   billingAuditEvent: { create: jest.Mock };
   $transaction: jest.Mock;
 };
@@ -81,5 +82,46 @@ describe('BillingEntitlementsService', () => {
       }),
     );
     expect(tx.billingUsageEvent.create).not.toHaveBeenCalled();
+  });
+
+  it('consumes the active subscription for a product family', async () => {
+    mockedDb.organizationBillingSubscription.findMany.mockResolvedValue([
+      {
+        id: 'obs_1',
+        skuKey: 'pentest_monthly_4',
+        stripeStatus: 'active',
+        usedQuantity: 1,
+        includedQuantity: 4,
+        currentPeriodEnd: new Date('2026-05-30T00:00:00.000Z'),
+      },
+    ]);
+    mockedDb.organizationBillingSubscription.findUnique.mockResolvedValue({
+      id: 'obs_1',
+      skuKey: 'pentest_monthly_4',
+      stripeStatus: 'active',
+      usedQuantity: 1,
+      includedQuantity: 4,
+      stripeSubscriptionItemId: 'si_1',
+      currentPeriodStart: new Date('2026-04-30T00:00:00.000Z'),
+      currentPeriodEnd: new Date('2026-05-30T00:00:00.000Z'),
+    });
+    tx.organizationBillingSubscription.updateMany.mockResolvedValue({ count: 1 });
+
+    await expect(
+      service.tryConsumeIncludedUsageForProduct({
+        organizationId: 'org_1',
+        productKey: 'pentest',
+        sourceResourceId: 'run_1',
+      }),
+    ).resolves.toEqual({ status: 'consumed', subscriptionId: 'obs_1' });
+
+    expect(mockedDb.organizationBillingSubscription.findUnique).toHaveBeenCalledWith({
+      where: {
+        organizationId_skuKey: {
+          organizationId: 'org_1',
+          skuKey: 'pentest_monthly_4',
+        },
+      },
+    });
   });
 });

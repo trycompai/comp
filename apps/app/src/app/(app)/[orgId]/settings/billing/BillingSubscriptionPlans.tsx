@@ -1,43 +1,76 @@
 'use client';
 
-import { getBillingSku, type BillingSkuKey } from '@trycompai/billing';
-import { Button, Stack, Text } from '@trycompai/design-system';
+import { getBillingSku, getBillingSkuProductKey, type BillingSkuKey } from '@trycompai/billing';
+import { Badge, Button, Stack, Text } from '@trycompai/design-system';
 import { Launch } from '@trycompai/design-system/icons';
 import type { BackgroundCheckBillingStatus } from './types';
 
 interface BillingSubscriptionPlansProps {
   skuKeys?: readonly BillingSkuKey[];
   subscriptions: NonNullable<BackgroundCheckBillingStatus['subscriptions']>;
+  trialEligibility: {
+    pentest: boolean;
+    background_check: boolean;
+  };
   disabled: boolean;
   loadingSkuKey: string | null;
   onSubscribe: (skuKey: BillingSkuKey) => void;
 }
 
 const planSkuKeys = [
-  'pentest_monthly_5',
-  'background_checks_monthly_25',
+  'pentest_monthly_1',
+  'pentest_monthly_3',
+  'pentest_monthly_5_current',
+  'background_checks_monthly_3',
+  'background_checks_monthly_10',
+  'background_checks_monthly_20',
 ] as const satisfies readonly BillingSkuKey[];
 
 export function BillingSubscriptionPlans({
   skuKeys = planSkuKeys,
   subscriptions,
+  trialEligibility,
   disabled,
   loadingSkuKey,
   onSubscribe,
 }: BillingSubscriptionPlansProps) {
   return (
-    <div className="grid gap-4 lg:grid-cols-2">
+    <div className="grid gap-4 xl:grid-cols-3">
       {skuKeys.map((skuKey) => {
         const sku = getBillingSku({ skuKey });
-        const subscription = subscriptions.find((item) => item.skuKey === skuKey);
+        const subscription = subscriptions.find(
+          (item) => getBillingSkuProductKey(item.skuKey) === sku.productKey,
+        );
         const active = subscription?.status === 'active' || subscription?.status === 'trialing';
+        const current = active && subscription?.skuKey === skuKey;
         const included = sku.includedUsage;
+        const remaining = subscription
+          ? Math.max(subscription.includedQuantity - subscription.usedQuantity, 0)
+          : null;
+        const unit = included ? formatUsageUnit(included.unit, included.quantity) : 'credits';
+        const cta = getPlanCta({
+          active,
+          productKey: sku.productKey,
+          quantity: included?.quantity ?? 0,
+        });
+        const trialEligible =
+          !active && typeof sku.trialDays === 'number' && trialEligibility[sku.productKey];
+        const buttonLabel = trialEligible ? 'Start free trial' : cta;
 
         return (
-          <div key={sku.key} className="rounded-lg border bg-card p-5">
-            <Stack gap="4">
-              <Stack gap="1">
-                <Text weight="medium">{sku.name}</Text>
+          <div
+            key={sku.key}
+            className={`flex min-h-[360px] flex-col rounded-lg border bg-card p-5 ${
+              current ? 'border-primary shadow-sm' : ''
+            }`}
+          >
+            <div className="flex h-full flex-col gap-4">
+              <Stack gap="2">
+                <div className="flex items-center justify-between gap-3">
+                  <Text weight="medium">{sku.name}</Text>
+                  {current && <Badge variant="default">Current</Badge>}
+                  {trialEligible && <Badge variant="default">14-day free trial</Badge>}
+                </div>
                 <Text size="sm" variant="muted">
                   {sku.description}
                 </Text>
@@ -45,38 +78,48 @@ export function BillingSubscriptionPlans({
               <Stack gap="1">
                 <Text size="lg" weight="semibold">
                   {formatAmount(sku.unitAmount)}
-                  <span className="text-sm font-normal text-muted-foreground"> / month</span>
+                  <span className="text-sm font-normal text-muted-foreground"> / mo</span>
                 </Text>
                 {included && (
                   <Text size="sm" variant="muted">
-                    {included.quantity} {formatUsageUnit(included.unit)} included monthly
+                    {included.quantity} {unit} every month
                   </Text>
                 )}
               </Stack>
-              {active && subscription ? (
-                <Stack gap="2">
+              <div className="rounded-md bg-muted/30 px-3 py-2">
+                <Text size="sm" weight="medium">
+                  {trialEligible
+                    ? 'Try it free for 14 days. Add a card now, pay only if you keep it.'
+                    : getPlanPromise(sku.productKey, included?.quantity ?? 0)}
+                </Text>
+              </div>
+              {current && subscription ? (
+                <div className="mt-auto flex flex-col gap-2">
                   <Text size="sm" variant="muted">
-                    {subscription.usedQuantity} of {subscription.includedQuantity} used this
-                    period.
+                    {remaining} of {subscription.includedQuantity} {unit}
+                    remaining this period.
                   </Text>
-                  <Button type="button" variant="secondary" disabled>
-                    Active subscription
+                  <Button type="button" variant="secondary" width="full" disabled>
+                    Current plan
                   </Button>
-                </Stack>
+                </div>
               ) : (
-                <Button
-                  type="button"
-                  variant="default"
-                  aria-label={`Subscribe to ${sku.name}`}
-                  disabled={disabled || loadingSkuKey !== null}
-                  loading={loadingSkuKey === skuKey}
-                  iconRight={<Launch size={16} />}
-                  onClick={() => onSubscribe(skuKey)}
-                >
-                  Subscribe
-                </Button>
+                <div className="mt-auto">
+                  <Button
+                    type="button"
+                    variant="default"
+                    width="full"
+                    aria-label={`${buttonLabel} with ${sku.name}`}
+                    disabled={disabled || loadingSkuKey !== null}
+                    loading={loadingSkuKey === skuKey}
+                    iconRight={<Launch size={16} />}
+                    onClick={() => onSubscribe(skuKey)}
+                  >
+                    {buttonLabel}
+                  </Button>
+                </div>
               )}
-            </Stack>
+            </div>
           </div>
         );
       })}
@@ -92,6 +135,38 @@ function formatAmount(amount: number) {
   }).format(amount / 100);
 }
 
-function formatUsageUnit(unit: string) {
-  return unit === 'scan' ? 'scans' : 'background checks';
+function formatUsageUnit(unit: string, quantity: number) {
+  if (unit === 'scan') return quantity === 1 ? 'scan' : 'scans';
+  return quantity === 1 ? 'background check' : 'background checks';
+}
+
+function getPlanPromise(productKey: string, quantity: number) {
+  if (productKey === 'pentest') {
+    if (quantity === 1) return 'Validate your highest-risk app every month.';
+    if (quantity === 3) return 'Cover launch windows and retest fixes without waiting.';
+    return 'Keep critical surfaces continuously audit-ready.';
+  }
+  if (quantity === 3) return 'Cover your next hires without per-check approvals.';
+  if (quantity === 10) return 'Keep recruiting moving with predictable checks.';
+  return 'Scale hiring without surprise background-check spend.';
+}
+
+function getPlanCta({
+  active,
+  productKey,
+  quantity,
+}: {
+  active: boolean;
+  productKey: string;
+  quantity: number;
+}) {
+  const action = active ? 'Switch to' : 'Start';
+  if (productKey === 'pentest') {
+    if (quantity === 1) return `${action} monthly scans`;
+    if (quantity === 3) return `${action} release coverage`;
+    return `${action} continuous coverage`;
+  }
+  if (quantity === 3) return `${action} hiring checks`;
+  if (quantity === 10) return `${action} recruiting coverage`;
+  return `${action} hiring at scale`;
 }

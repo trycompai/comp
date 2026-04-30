@@ -10,6 +10,10 @@ export interface BillingStatus {
     penetrationTests: number;
   };
   preferences: BillingPreferences;
+  trialEligibility: {
+    pentest: boolean;
+    background_check: boolean;
+  };
   usageRows: BillingUsageRow[];
   subscriptions: Array<{
     skuKey: string;

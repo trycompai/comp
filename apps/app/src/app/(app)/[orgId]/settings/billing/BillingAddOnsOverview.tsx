@@ -2,6 +2,7 @@
 
 import { Badge, Button, Stack, Text } from '@trycompai/design-system';
 import { ArrowRight } from '@trycompai/design-system/icons';
+import { getBillingSku, getBillingSkuProductKey } from '@trycompai/billing';
 import { useRouter } from 'next/navigation';
 import { billingAddOns } from './billingAddOns';
 import type { BackgroundCheckBillingStatus } from './types';
@@ -18,39 +19,85 @@ export function BillingAddOnsOverview({
   const router = useRouter();
 
   return (
-    <div className="grid gap-4 lg:grid-cols-2">
+    <div className="grid gap-4 xl:grid-cols-2">
       {billingAddOns.map((addOn) => {
-        const skuKeys: readonly string[] = addOn.skuKeys;
+        const productKey = getBillingSku({ skuKey: addOn.skuKeys[0] }).productKey;
         const activeSubscription = subscriptions.find(
           (subscription) =>
-            skuKeys.includes(subscription.skuKey) &&
+            getBillingSkuProductKey(subscription.skuKey) === productKey &&
             (subscription.status === 'active' || subscription.status === 'trialing'),
         );
+        const remaining = activeSubscription
+          ? Math.max(activeSubscription.includedQuantity - activeSubscription.usedQuantity, 0)
+          : null;
 
         return (
-          <div key={addOn.slug} className="rounded-lg border bg-card p-5">
-            <Stack gap="4">
-              <Stack gap="2">
-                <div className="flex flex-wrap items-center gap-2">
-                  <Text weight="medium">{addOn.name}</Text>
+          <div
+            key={addOn.slug}
+            className="group relative overflow-hidden rounded-lg border bg-card p-5 transition-colors hover:border-primary/40"
+          >
+            <div className="absolute inset-x-0 top-0 h-1 bg-primary/80 opacity-0 transition-opacity group-hover:opacity-100" />
+            <Stack gap="6">
+              <Stack gap="3">
+                <div className="flex flex-wrap items-start justify-between gap-3">
+                  <div>
+                    <Text weight="medium">{addOn.name}</Text>
+                    <Text size="xs" variant="muted">
+                      {addOn.summary}
+                    </Text>
+                  </div>
                   {activeSubscription && <Badge variant="default">Active</Badge>}
                 </div>
                 <Text size="sm" variant="muted" leading="relaxed">
                   {addOn.description}
                 </Text>
+                <Text size="sm" weight="medium">
+                  {addOn.proof}
+                </Text>
               </Stack>
 
-              <Stack gap="1">
-                <Text size="sm" weight="medium">
-                  {addOn.summary}
+              <div className="grid gap-2 sm:grid-cols-3">
+                {addOn.skuKeys.map((skuKey) => {
+                  const sku = getBillingSku({ skuKey });
+                  return (
+                    <div
+                      key={skuKey}
+                      className="rounded-md border bg-background p-3 shadow-sm transition-colors group-hover:border-primary/25"
+                    >
+                      <div className="flex items-baseline gap-1">
+                        <Text size="lg" weight="semibold">
+                          {formatAmount(sku.unitAmount)}
+                        </Text>
+                        <Text size="xs" variant="muted">
+                          /mo
+                        </Text>
+                      </div>
+                      <Text size="xs" variant="muted">
+                        {sku.includedUsage?.quantity}{' '}
+                        {formatUnit({
+                          unit: sku.includedUsage?.unit,
+                          quantity: sku.includedUsage?.quantity,
+                        })}
+                      </Text>
+                    </div>
+                  );
+                })}
+              </div>
+
+              <div className="rounded-md bg-muted/30 px-3 py-2">
+                <Text size="sm" variant={remaining === null ? 'muted' : undefined}>
+                  {remaining === null
+                    ? 'No active subscription yet.'
+                    : `${remaining} of ${activeSubscription?.includedQuantity ?? 0} ${formatUnit({
+                        unit:
+                          activeSubscription &&
+                          getBillingSkuProductKey(activeSubscription.skuKey) === 'pentest'
+                            ? 'scan'
+                            : 'background_check',
+                        quantity: activeSubscription?.includedQuantity,
+                      })} remaining this period.`}
                 </Text>
-                {activeSubscription && (
-                  <Text size="sm" variant="muted">
-                    {activeSubscription.usedQuantity} of {activeSubscription.includedQuantity} used
-                    this period.
-                  </Text>
-                )}
-              </Stack>
+              </div>
 
               <div>
                 <Button
@@ -62,7 +109,7 @@ export function BillingAddOnsOverview({
                     router.push(`/${organizationId}/settings/billing/add-ons/${addOn.slug}`)
                   }
                 >
-                  View plans
+                  {addOn.ctaLabel}
                 </Button>
               </div>
             </Stack>
@@ -71,4 +118,17 @@ export function BillingAddOnsOverview({
       })}
     </div>
   );
+}
+
+function formatAmount(amount: number) {
+  return new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency: 'USD',
+    maximumFractionDigits: 0,
+  }).format(amount / 100);
+}
+
+function formatUnit(params: { unit?: string; quantity?: number }) {
+  if (params.unit === 'scan') return params.quantity === 1 ? 'scan' : 'scans';
+  return params.quantity === 1 ? 'check' : 'checks';
 }

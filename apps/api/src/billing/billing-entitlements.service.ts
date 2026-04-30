@@ -1,6 +1,10 @@
 import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
 import { Prisma, db } from '@db';
-import type { BillingSkuKey } from '@trycompai/billing';
+import {
+  getBillingSkuKeysForProduct,
+  type BillingProductKey,
+  type BillingSkuKey,
+} from '@trycompai/billing';
 import { refundIncludedUsageEvent } from './billing-included-usage-refunds';
 import {
   type BillingConsumeResult,
@@ -13,6 +17,41 @@ import {
 
 @Injectable()
 export class BillingEntitlementsService {
+  async tryConsumeIncludedUsageForProduct(params: {
+    organizationId: string;
+    productKey: BillingProductKey;
+    sourceResourceId: string;
+  }): Promise<BillingConsumeResult> {
+    const skuKeys = getBillingSkuKeysForProduct(params.productKey);
+    const subscriptions = await db.organizationBillingSubscription.findMany({
+      where: {
+        organizationId: params.organizationId,
+        skuKey: { in: skuKeys },
+      },
+      orderBy: [{ createdAt: 'desc' }],
+    });
+
+    const activeSubscription = subscriptions.find(
+      (subscription) =>
+        isAccessStatus(subscription.stripeStatus) &&
+        (!subscription.currentPeriodEnd ||
+          subscription.currentPeriodEnd.getTime() > Date.now()),
+    );
+    if (!activeSubscription) {
+      return { status: 'not_configured' };
+    }
+
+    if (activeSubscription.usedQuantity >= activeSubscription.includedQuantity) {
+      return { status: 'exhausted', subscriptionId: activeSubscription.id };
+    }
+
+    return this.tryConsumeIncludedUsage({
+      organizationId: params.organizationId,
+      skuKey: activeSubscription.skuKey as BillingSkuKey,
+      sourceResourceId: params.sourceResourceId,
+    });
+  }
+
   async tryConsumeIncludedUsage(params: {
     organizationId: string;
     skuKey: BillingSkuKey;
@@ -231,6 +270,35 @@ export class BillingEntitlementsService {
     tx?: Prisma.TransactionClient;
   }): Promise<void> {
     await refundIncludedUsageEvent(params);
+  }
+
+  async refundIncludedUsageForProduct(params: {
+    organizationId: string;
+    productKey: BillingProductKey;
+    sourceResourceId: string;
+    reason: string;
+    tx?: Prisma.TransactionClient;
+  }): Promise<void> {
+    const skuKeys = getBillingSkuKeysForProduct(params.productKey);
+    const client = params.tx ?? db;
+    const consumed = await client.billingUsageEvent.findFirst({
+      where: {
+        organizationId: params.organizationId,
+        skuKey: { in: skuKeys },
+        eventType: 'consume',
+        sourceResourceId: params.sourceResourceId,
+      },
+      orderBy: { createdAt: 'desc' },
+      select: { skuKey: true },
+    });
+    if (!consumed) return;
+    await refundIncludedUsageEvent({
+      organizationId: params.organizationId,
+      skuKey: consumed.skuKey as BillingSkuKey,
+      sourceResourceId: params.sourceResourceId,
+      reason: params.reason,
+      tx: params.tx,
+    });
   }
 
   async writeAuditEvent(params: WriteBillingAuditEventParams): Promise<void> {

@@ -5,12 +5,15 @@ import {
 } from '@nestjs/common';
 import { db } from '@db';
 import {
-  type BillingSkuKey,
+  type BillingProductKey,
   getBillingSku,
+  getBillingSkuProductKey,
+  resolveBillingCatalogEnvironment,
   isSubscriptionBillingSkuKey,
 } from '@trycompai/billing';
 import { StripeService } from '../stripe/stripe.service';
 import { findOrCreateBillingCustomer } from './billing-customer';
+import { BillingEntitlementsService } from './billing-entitlements.service';
 import { listBillingInvoices } from './billing-invoices';
 import {
   type BillingPreferencesInput,
@@ -18,14 +21,24 @@ import {
   updateBillingPreferences,
 } from './billing-preferences';
 import { validateBillingRedirectUrl } from './billing-redirect-urls';
+import {
+  createBillingSetupSession,
+  handleBillingSetupSuccess,
+} from './billing-setup-sessions';
 import { assertStripeBillingConfigured } from './billing-stripe-config';
-import { extractStripeId } from './billing-stripe-ids';
+import {
+  changeSubscriptionPlan,
+  findProductSubscriptions,
+} from './billing-subscription-plans';
 import type { BillingStatus } from './billing.types';
 import { listBillingUsageRows } from './billing-usage';
 
 @Injectable()
 export class BillingService {
-  constructor(private readonly stripeService: StripeService) {}
+  constructor(
+    private readonly stripeService: StripeService,
+    private readonly entitlements: BillingEntitlementsService,
+  ) {}
 
   async getStatus(organizationId: string): Promise<BillingStatus> {
     const [
@@ -73,6 +86,7 @@ export class BillingService {
       setupAt: billing?.paymentMethodUpdatedAt ?? null,
       usage: { backgroundChecks, penetrationTests },
       preferences,
+      trialEligibility: getTrialEligibility(subscriptions),
       usageRows,
       subscriptions: subscriptions.map((subscription) => ({
         skuKey: subscription.skuKey,
@@ -120,107 +134,20 @@ export class BillingService {
     cancelUrl: string;
     customerEmail?: string;
   }): Promise<{ url: string }> {
-    validateBillingRedirectUrl(params.successUrl);
-    validateBillingRedirectUrl(params.cancelUrl);
-    assertStripeBillingConfigured(this.stripeService);
-
-    const stripe = this.stripeService.getClient();
-    const customerId = await findOrCreateBillingCustomer({
+    return createBillingSetupSession({
+      ...params,
       stripeService: this.stripeService,
-      organizationId: params.organizationId,
-      customerEmail: params.customerEmail,
     });
-
-    const session = await stripe.checkout.sessions.create({
-      mode: 'setup',
-      customer: customerId,
-      currency: 'usd',
-      success_url: params.successUrl,
-      cancel_url: params.cancelUrl,
-      metadata: {
-        organizationId: params.organizationId,
-        source: 'comp-billing-setup',
-      },
-    });
-
-    if (!session.url) {
-      throw new BadRequestException(
-        'Failed to create Stripe Checkout session.',
-      );
-    }
-
-    return { url: session.url };
   }
 
   async handleSetupSuccess(params: {
     organizationId: string;
     sessionId: string;
   }): Promise<{ success: true }> {
-    assertStripeBillingConfigured(this.stripeService);
-
-    const stripe = this.stripeService.getClient();
-    const session = await stripe.checkout.sessions.retrieve(params.sessionId, {
-      expand: ['setup_intent'],
+    return handleBillingSetupSuccess({
+      ...params,
+      stripeService: this.stripeService,
     });
-
-    if (session.status !== 'complete') {
-      throw new BadRequestException('Checkout session is not complete.');
-    }
-
-    if (session.metadata?.organizationId !== params.organizationId) {
-      throw new BadRequestException(
-        'Checkout session does not belong to this organization.',
-      );
-    }
-
-    const stripeCustomerId = extractStripeId(session.customer);
-    if (!stripeCustomerId) {
-      throw new BadRequestException('Checkout session is missing a customer.');
-    }
-    const billing = await db.organizationBilling.findUnique({
-      where: { organizationId: params.organizationId },
-      select: { stripeCustomerId: true },
-    });
-    if (billing && billing.stripeCustomerId !== stripeCustomerId) {
-      throw new BadRequestException(
-        'Checkout session customer does not match this organization.',
-      );
-    }
-
-    const setupIntent = session.setup_intent;
-    if (!setupIntent || typeof setupIntent === 'string') {
-      throw new BadRequestException(
-        'Checkout session is missing a setup intent.',
-      );
-    }
-
-    const paymentMethodId = extractStripeId(setupIntent.payment_method);
-    if (!paymentMethodId) {
-      throw new BadRequestException(
-        'Setup intent is missing a payment method.',
-      );
-    }
-
-    await stripe.customers.update(stripeCustomerId, {
-      invoice_settings: { default_payment_method: paymentMethodId },
-    });
-
-    await db.organizationBilling.upsert({
-      where: { organizationId: params.organizationId },
-      create: {
-        organizationId: params.organizationId,
-        stripeCustomerId,
-        stripePaymentMethodId: paymentMethodId,
-        paymentMethodUpdatedAt: new Date(),
-      },
-      update: {
-        stripeCustomerId,
-        stripePaymentMethodId: paymentMethodId,
-        paymentMethodUpdatedAt: new Date(),
-      },
-    });
-
-    return { success: true };
   }
 
   async createBillingPortalSession(params: {
@@ -255,7 +182,7 @@ export class BillingService {
     successUrl: string;
     cancelUrl: string;
     customerEmail?: string;
-  }): Promise<{ url: string }> {
+  }): Promise<{ url: string } | { changed: true }> {
     validateBillingRedirectUrl(params.successUrl);
     validateBillingRedirectUrl(params.cancelUrl);
     if (!isSubscriptionBillingSkuKey(params.skuKey)) {
@@ -263,25 +190,58 @@ export class BillingService {
     }
     assertStripeBillingConfigured(this.stripeService);
 
-    const sku = getBillingSku({ skuKey: params.skuKey });
+    const environment = resolveBillingCatalogEnvironment({
+      stripeSecretKey: process.env.STRIPE_SECRET_KEY,
+      nodeEnv: process.env.NODE_ENV,
+    });
+    const sku = getBillingSku({ environment, skuKey: params.skuKey });
+    const productSubscriptions = await findProductSubscriptions({
+      organizationId: params.organizationId,
+      productKey: sku.productKey,
+    });
+    const existingSubscription =
+      productSubscriptions.find(
+        (subscription) =>
+          subscription.stripeStatus === 'active' ||
+          subscription.stripeStatus === 'trialing',
+      ) ?? null;
+    if (existingSubscription) {
+      if (existingSubscription.skuKey === sku.key) {
+        throw new BadRequestException('This plan is already active.');
+      }
+      return changeSubscriptionPlan({
+        organizationId: params.organizationId,
+        subscription: existingSubscription,
+        skuKey: sku.key,
+        stripePriceId: sku.stripePriceId,
+        includedQuantity: sku.includedUsage?.quantity ?? 0,
+        stripeService: this.stripeService,
+        entitlements: this.entitlements,
+      });
+    }
+
     const customerId = await findOrCreateBillingCustomer({
       stripeService: this.stripeService,
       organizationId: params.organizationId,
       customerEmail: params.customerEmail,
     });
     const stripe = this.stripeService.getClient();
+    const applyTrial =
+      productSubscriptions.length === 0 && typeof sku.trialDays === 'number';
     const session = await stripe.checkout.sessions.create({
       mode: 'subscription',
       customer: customerId,
       line_items: [{ price: sku.stripePriceId, quantity: 1 }],
       success_url: params.successUrl,
       cancel_url: params.cancelUrl,
+      ...(applyTrial ? { payment_method_collection: 'always' } : {}),
       metadata: {
         organizationId: params.organizationId,
         skuKey: sku.key,
         source: 'comp-billing-subscription',
       },
       subscription_data: {
+        ...(applyTrial ? { trial_period_days: sku.trialDays } : {}),
         metadata: {
           organizationId: params.organizationId,
           skuKey: sku.key,
@@ -297,4 +257,18 @@ export class BillingService {
     }
     return { url: session.url };
   }
+}
+
+function getTrialEligibility(
+  subscriptions: Array<{ skuKey: string }>,
+): Record<BillingProductKey, boolean> {
+  const productHistory = new Set<BillingProductKey>();
+  for (const subscription of subscriptions) {
+    const productKey = getBillingSkuProductKey(subscription.skuKey);
+    if (productKey) productHistory.add(productKey);
+  }
+  return {
+    pentest: !productHistory.has('pentest'),
+    background_check: !productHistory.has('background_check'),
+  };
 }
