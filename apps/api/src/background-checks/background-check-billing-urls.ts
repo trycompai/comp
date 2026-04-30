@@ -9,6 +9,15 @@ export function validateBackgroundCheckBillingRedirectUrl(url: string): void {
     throw new BadRequestException('App URL is not configured on the server.');
   }
 
+  let appOrigin: string;
+  try {
+    appOrigin = new URL(appUrl).origin;
+  } catch {
+    throw new BadRequestException(
+      'App URL is not configured correctly on the server.',
+    );
+  }
+
   let parsed: URL;
   try {
     parsed = new URL(url);
@@ -16,7 +25,7 @@ export function validateBackgroundCheckBillingRedirectUrl(url: string): void {
     throw new BadRequestException('Invalid redirect URL.');
   }
 
-  if (parsed.origin !== new URL(appUrl).origin) {
+  if (parsed.origin !== appOrigin) {
     throw new BadRequestException(
       'Redirect URL must belong to the application origin.',
     );

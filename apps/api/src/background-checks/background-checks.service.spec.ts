@@ -463,6 +463,7 @@ describe('background checks', () => {
       },
       customers: {
         create: jest.fn().mockResolvedValue({ id: 'cus_1' }),
+        update: jest.fn().mockResolvedValue({ id: 'cus_1' }),
       },
       prices: {
         retrieve: jest.fn().mockResolvedValue({
@@ -487,10 +488,15 @@ describe('background checks', () => {
       }),
     ).resolves.toEqual({ url: 'https://checkout.stripe.com/c/session_1' });
 
-    expect(stripe.customers.create).toHaveBeenCalledWith({
-      name: 'Acme',
+    expect(stripe.customers.create).toHaveBeenCalledWith(
+      {
+        name: 'Acme',
+        metadata: { organizationId: 'org_1' },
+      },
+      { idempotencyKey: 'background-check-customer:org_1' },
+    );
+    expect(stripe.customers.update).toHaveBeenCalledWith('cus_1', {
       email: 'billing@trycomp.ai',
-      metadata: { organizationId: 'org_1' },
     });
   });
 
