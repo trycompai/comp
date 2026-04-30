@@ -51,14 +51,10 @@ export function EmployeeBackgroundCheck({
   const [requestConfirmation, setRequestConfirmation] = useState<string | null>(null);
   const { hasPermission } = usePermissions();
 
-  const { data: backgroundCheck, mutate: mutateBackgroundCheck } =
-    useSWR<BackgroundCheckRecord | null>(
+  const { data: backgroundCheck, mutate: mutateBackgroundCheck } = useSWR<BackgroundCheckRecord | null>(
       [`/v1/people/${employee.id}/background-check`, organizationId],
       async ([endpoint]) => {
-        const response = await apiClient.get<BackgroundCheckRecord | null>(
-          endpoint,
-          organizationId,
-        );
+        const response = await apiClient.get<BackgroundCheckRecord | null>(endpoint, organizationId);
         if (response.error) throw new Error('Failed to load background check');
         return response.data ?? null;
       },
@@ -101,20 +97,13 @@ export function EmployeeBackgroundCheck({
 
   const writePendingRequest = useCallback(
     (values: BackgroundCheckFormValues) => {
-      writePendingBackgroundCheckRequest({
-        organizationId,
-        memberId: employee.id,
-        values,
-      });
+      writePendingBackgroundCheckRequest({ organizationId, memberId: employee.id, values });
     },
     [employee.id, organizationId],
   );
 
   const clearPendingRequest = useCallback(() => {
-    clearPendingBackgroundCheckRequest({
-      organizationId,
-      memberId: employee.id,
-    });
+    clearPendingBackgroundCheckRequest({ organizationId, memberId: employee.id });
   }, [employee.id, organizationId]);
 
   const requestBackgroundCheck = useCallback(
@@ -142,7 +131,7 @@ export function EmployeeBackgroundCheck({
       }
 
       setRequestConfirmation(
-        'The saved payment method was charged and the candidate invite has been sent.',
+        'An invitation has been sent to the employee. Ask them to check their inbox, including spam or junk folders.',
       );
       toast.success('Background check invite sent');
       await mutateBackgroundCheck(response.data, { revalidate: false });
@@ -179,10 +168,7 @@ export function EmployeeBackgroundCheck({
         { revalidate: true },
       );
 
-      const pendingRequest = readPendingBackgroundCheckRequest({
-        organizationId,
-        memberId: employee.id,
-      });
+      const pendingRequest = readPendingBackgroundCheckRequest({ organizationId, memberId: employee.id });
       if (!pendingRequest) {
         router.replace(pathname, { scroll: false });
         return;
@@ -193,8 +179,6 @@ export function EmployeeBackgroundCheck({
         employeeEmail: form.getValues('employeeEmail') || '',
         requesterNotes: pendingRequest.requesterNotes ?? '',
       });
-      setBillingSetupComplete(true);
-
       router.replace(pathname, { scroll: false });
     })();
   }, [
@@ -212,16 +196,16 @@ export function EmployeeBackgroundCheck({
     setIsOpeningBilling(true);
     if (values) writePendingRequest(values);
 
-    const backgroundCheckPath = `/${organizationId}/people/${employee.id}`;
-    const returnUrl = `${window.location.origin}${backgroundCheckPath}`;
+    const returnPath = hasPaymentMethod ? `/${organizationId}/people/${employee.id}` : `/${organizationId}/settings/billing`;
+    const returnUrl = `${window.location.origin}${returnPath}`;
     const endpoint = hasPaymentMethod
       ? '/v1/background-check-billing/portal'
       : '/v1/background-check-billing/setup-session';
     const body = hasPaymentMethod
       ? { returnUrl }
       : {
-          successUrl: `${returnUrl}?background_check_billing=success&background_check_step=details&session_id={CHECKOUT_SESSION_ID}`,
-          cancelUrl: `${returnUrl}?background_check_step=details`,
+          successUrl: `${returnUrl}?background_check_billing=success&session_id={CHECKOUT_SESSION_ID}`,
+          cancelUrl: returnUrl,
         };
     const response = await apiClient.post<{ url: string }>(endpoint, body, organizationId);
 
@@ -257,7 +241,15 @@ export function EmployeeBackgroundCheck({
   return (
     <>
       {visibleWizardStep === 'overview' && (
-        <OverviewStep canRequest={canRequest} onGetStarted={() => setWizardStep('details')} />
+        <OverviewStep
+          billingHref={`/${organizationId}/settings/billing`}
+          canManageBilling={canManageBilling}
+          canRequest={canRequest}
+          hasPaymentMethod={hasPaymentMethod}
+          isOpeningBilling={isOpeningBilling}
+          onGetStarted={() => setWizardStep('details')}
+          onOpenBilling={() => void handleOpenBilling()}
+        />
       )}
       {visibleWizardStep === 'details' && (
         <BackgroundCheckDetailsForm
