@@ -138,4 +138,99 @@ describe('BackgroundCheckPaymentService', () => {
       },
     );
   });
+
+  it('voids the invoice when adding the invoice item fails', async () => {
+    mockAsync<Awaited<ReturnType<typeof db.organizationBilling.findUnique>>>(
+      mockedDb.organizationBilling.findUnique,
+    ).mockResolvedValueOnce({
+      stripeCustomerId: 'cus_1',
+      stripeBackgroundCheckPaymentMethodId: 'pm_1',
+    } as Awaited<ReturnType<typeof db.organizationBilling.findUnique>>);
+    const invoiceItemsCreate = jest
+      .fn()
+      .mockRejectedValue(new Error('line item failed'));
+    const invoicesCreate = jest.fn().mockResolvedValue({ id: 'in_1' });
+    const finalizeInvoice = jest.fn();
+    const invoicesPay = jest.fn();
+    const voidInvoice = jest.fn().mockResolvedValue({ id: 'in_1' });
+    const service = new BackgroundCheckPaymentService(
+      {
+        getClient: () => ({
+          invoiceItems: { create: invoiceItemsCreate },
+          invoices: {
+            create: invoicesCreate,
+            finalizeInvoice,
+            pay: invoicesPay,
+            voidInvoice,
+          },
+        }),
+      } as unknown as StripeService,
+      {
+        getBackgroundCheckPrice: jest.fn().mockResolvedValue({
+          id: 'price_bg',
+          unitAmount: 1250,
+          currency: 'usd',
+        }),
+      } as unknown as BackgroundCheckBillingService,
+    );
+
+    await expect(
+      service.charge({ organizationId: 'org_1', memberId: 'mem_1' }),
+    ).rejects.toThrow(
+      expect.objectContaining({
+        status: HttpStatus.PAYMENT_REQUIRED,
+      }),
+    );
+
+    expect(voidInvoice).toHaveBeenCalledWith('in_1');
+    expect(finalizeInvoice).not.toHaveBeenCalled();
+    expect(invoicesPay).not.toHaveBeenCalled();
+  });
+
+  it('voids the invoice when finalizing fails', async () => {
+    mockAsync<Awaited<ReturnType<typeof db.organizationBilling.findUnique>>>(
+      mockedDb.organizationBilling.findUnique,
+    ).mockResolvedValueOnce({
+      stripeCustomerId: 'cus_1',
+      stripeBackgroundCheckPaymentMethodId: 'pm_1',
+    } as Awaited<ReturnType<typeof db.organizationBilling.findUnique>>);
+    const invoiceItemsCreate = jest.fn().mockResolvedValue({ id: 'ii_1' });
+    const invoicesCreate = jest.fn().mockResolvedValue({ id: 'in_1' });
+    const finalizeInvoice = jest
+      .fn()
+      .mockRejectedValue(new Error('finalize failed'));
+    const invoicesPay = jest.fn();
+    const voidInvoice = jest.fn().mockResolvedValue({ id: 'in_1' });
+    const service = new BackgroundCheckPaymentService(
+      {
+        getClient: () => ({
+          invoiceItems: { create: invoiceItemsCreate },
+          invoices: {
+            create: invoicesCreate,
+            finalizeInvoice,
+            pay: invoicesPay,
+            voidInvoice,
+          },
+        }),
+      } as unknown as StripeService,
+      {
+        getBackgroundCheckPrice: jest.fn().mockResolvedValue({
+          id: 'price_bg',
+          unitAmount: 1250,
+          currency: 'usd',
+        }),
+      } as unknown as BackgroundCheckBillingService,
+    );
+
+    await expect(
+      service.charge({ organizationId: 'org_1', memberId: 'mem_1' }),
+    ).rejects.toThrow(
+      expect.objectContaining({
+        status: HttpStatus.PAYMENT_REQUIRED,
+      }),
+    );
+
+    expect(voidInvoice).toHaveBeenCalledWith('in_1');
+    expect(invoicesPay).not.toHaveBeenCalled();
+  });
 });

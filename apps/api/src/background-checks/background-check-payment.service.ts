@@ -70,32 +70,34 @@ export class BackgroundCheckPaymentService {
       },
     );
 
-    await stripe.invoiceItems.create(
-      {
-        customer: billing.stripeCustomerId,
-        invoice: invoice.id,
-        pricing: {
-          price: price.id,
-        },
-        quantity: 1,
-        description: BackgroundCheckPaymentService.receiptDescription,
-        metadata,
-      },
-      {
-        idempotencyKey: [...idempotencyKeyParts, 'line-item'].join(':'),
-      },
-    );
-
-    await stripe.invoices.finalizeInvoice(
-      invoice.id,
-      { auto_advance: false },
-      {
-        idempotencyKey: [...idempotencyKeyParts, 'finalize-invoice'].join(':'),
-      },
-    );
-
     let paidInvoice: Stripe.Invoice;
     try {
+      await stripe.invoiceItems.create(
+        {
+          customer: billing.stripeCustomerId,
+          invoice: invoice.id,
+          pricing: {
+            price: price.id,
+          },
+          quantity: 1,
+          description: BackgroundCheckPaymentService.receiptDescription,
+          metadata,
+        },
+        {
+          idempotencyKey: [...idempotencyKeyParts, 'line-item'].join(':'),
+        },
+      );
+
+      await stripe.invoices.finalizeInvoice(
+        invoice.id,
+        { auto_advance: false },
+        {
+          idempotencyKey: [...idempotencyKeyParts, 'finalize-invoice'].join(
+            ':',
+          ),
+        },
+      );
+
       paidInvoice = await stripe.invoices.pay(
         invoice.id,
         {

@@ -1,5 +1,5 @@
 import { NotFoundException } from '@nestjs/common';
-import { db } from '@db';
+import { db, Prisma } from '@db';
 import { StripeService } from '../stripe/stripe.service';
 
 export async function findOrCreateBackgroundCheckBillingCustomer({
@@ -18,12 +18,11 @@ export async function findOrCreateBackgroundCheckBillingCustomer({
   const stripe = stripeService.getClient();
 
   if (existingBilling) {
-    if (customerEmail) {
-      await stripe.customers.update(existingBilling.stripeCustomerId, {
-        email: customerEmail,
-      });
-    }
-
+    await updateStripeCustomerEmail({
+      stripeService,
+      stripeCustomerId: existingBilling.stripeCustomerId,
+      customerEmail,
+    });
     return existingBilling.stripeCustomerId;
   }
 
@@ -36,18 +35,75 @@ export async function findOrCreateBackgroundCheckBillingCustomer({
     throw new NotFoundException('Organization not found.');
   }
 
-  const customer = await stripe.customers.create({
-    name: organization.name,
-    ...(customerEmail ? { email: customerEmail } : {}),
-    metadata: { organizationId },
-  });
-
-  await db.organizationBilling.create({
-    data: {
-      organizationId,
-      stripeCustomerId: customer.id,
+  const customer = await stripe.customers.create(
+    {
+      name: organization.name,
+      metadata: { organizationId },
     },
+    {
+      idempotencyKey: `background-check-customer:${organizationId}`,
+    },
+  );
+
+  try {
+    await db.organizationBilling.create({
+      data: {
+        organizationId,
+        stripeCustomerId: customer.id,
+      },
+    });
+  } catch (error) {
+    if (!isUniqueConstraintError(error)) {
+      throw error;
+    }
+
+    const billing = await db.organizationBilling.findUnique({
+      where: { organizationId },
+      select: { stripeCustomerId: true },
+    });
+
+    if (!billing) {
+      throw error;
+    }
+
+    await updateStripeCustomerEmail({
+      stripeService,
+      stripeCustomerId: billing.stripeCustomerId,
+      customerEmail,
+    });
+
+    return billing.stripeCustomerId;
+  }
+
+  await updateStripeCustomerEmail({
+    stripeService,
+    stripeCustomerId: customer.id,
+    customerEmail,
   });
 
   return customer.id;
+}
+
+async function updateStripeCustomerEmail({
+  stripeService,
+  stripeCustomerId,
+  customerEmail,
+}: {
+  stripeService: StripeService;
+  stripeCustomerId: string;
+  customerEmail?: string;
+}): Promise<void> {
+  if (!customerEmail) return;
+
+  const stripe = stripeService.getClient();
+  await stripe.customers.update(stripeCustomerId, {
+    email: customerEmail,
+  });
+}
+
+function isUniqueConstraintError(error: unknown): boolean {
+  return (
+    error instanceof Prisma.PrismaClientKnownRequestError &&
+    error.code === 'P2002'
+  );
 }
