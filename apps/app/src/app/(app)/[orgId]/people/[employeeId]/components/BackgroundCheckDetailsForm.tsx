@@ -10,7 +10,7 @@ import {
   Textarea,
 } from '@trycompai/design-system';
 import type { UseFormReturn } from 'react-hook-form';
-import { BillingCallout } from './BackgroundCheckWizardParts';
+import { BackgroundCheckSummary, BillingCallout } from './BackgroundCheckWizardParts';
 import type { BackgroundCheckFormValues } from './backgroundCheckForm';
 
 export function BackgroundCheckDetailsForm({
@@ -37,6 +37,8 @@ export function BackgroundCheckDetailsForm({
   return (
     <form noValidate onSubmit={form.handleSubmit(onSubmit)}>
       <Stack gap="lg">
+        <BackgroundCheckSummary />
+        <div className="border-t" />
         {billingSetupComplete && (
           <BillingCallout
             title="Payment method saved"
