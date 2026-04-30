@@ -10,18 +10,18 @@ import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import useSWR from 'swr';
 import { BackgroundCheckDetailsForm } from './BackgroundCheckDetailsForm';
-import { BackgroundCheckStatusView } from './BackgroundCheckStatusView';
-import { OverviewStep } from './BackgroundCheckWizardParts';
-import { CustomBackgroundCheckUpload } from './CustomBackgroundCheckUpload';
-import { PaymentMethodUpdateDialog } from './PaymentMethodUpdateDialog';
 import {
+  type BackgroundCheckFormValues,
   backgroundCheckSchema,
   clearPendingBackgroundCheckRequest,
   readPendingBackgroundCheckRequest,
   writePendingBackgroundCheckRequest,
-  type BackgroundCheckFormValues,
 } from './backgroundCheckForm';
+import { BackgroundCheckStatusView } from './BackgroundCheckStatusView';
 import type { BackgroundCheckBillingStatus, BackgroundCheckRecord } from './backgroundCheckTypes';
+import { OverviewStep } from './BackgroundCheckWizardParts';
+import { CustomBackgroundCheckUpload } from './CustomBackgroundCheckUpload';
+import { PaymentMethodUpdateDialog } from './PaymentMethodUpdateDialog';
 
 interface EmployeeBackgroundCheckProps {
   employee: Member & { user: User };
@@ -59,7 +59,7 @@ export function EmployeeBackgroundCheck({
           endpoint,
           organizationId,
         );
-        if (response.error) throw new Error(response.error);
+        if (response.error) throw new Error('Failed to load background check');
         return response.data ?? null;
       },
       { fallbackData: initialBackgroundCheck },
@@ -70,7 +70,7 @@ export function EmployeeBackgroundCheck({
     async ([endpoint]) => {
       const response = await apiClient.get<BackgroundCheckBillingStatus>(endpoint, organizationId);
       if (response.error || !response.data) {
-        throw new Error(response.error ?? 'Failed to load billing status');
+        throw new Error('Failed to load billing status');
       }
       return response.data;
     },
@@ -134,12 +134,10 @@ export function EmployeeBackgroundCheck({
 
       if (response.error || !response.data) {
         if (response.status === 402) {
-          setPaymentIssue(
-            response.error ?? 'Payment failed. Update billing details and try again.',
-          );
+          setPaymentIssue('Payment failed. Update payment method and try again.');
           return false;
         }
-        toast.error(response.error ?? 'Failed to request background check');
+        toast.error('Failed to request background check');
         return false;
       }
 
@@ -168,7 +166,7 @@ export function EmployeeBackgroundCheck({
         organizationId,
       );
       if (setupResponse.error) {
-        toast.error(setupResponse.error);
+        toast.error('Failed to save payment method');
         router.replace(pathname, { scroll: false });
         return;
       }
@@ -200,9 +198,9 @@ export function EmployeeBackgroundCheck({
       router.replace(pathname, { scroll: false });
     })();
   }, [
-    clearPendingRequest,
     form,
     employee.id,
+    employee.user.name,
     mutateBillingStatus,
     organizationId,
     pathname,
@@ -232,7 +230,7 @@ export function EmployeeBackgroundCheck({
       return;
     }
 
-    toast.error(response.error ?? 'Failed to open billing');
+    toast.error('Failed to open billing');
     setIsOpeningBilling(false);
   };
 
@@ -289,7 +287,9 @@ export function EmployeeBackgroundCheck({
         employeeName={employee.user.name ?? employee.user.email}
         organizationId={organizationId}
         onUploaded={async (uploadedBackgroundCheck) => {
-          await mutateBackgroundCheck(uploadedBackgroundCheck, { revalidate: false });
+          await mutateBackgroundCheck(uploadedBackgroundCheck, {
+            revalidate: false,
+          });
         }}
       />
     </>

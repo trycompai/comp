@@ -57,7 +57,7 @@ export function CustomBackgroundCheckUpload({
       );
 
       if (response.error || !response.data) {
-        toast.error(response.error ?? 'Failed to upload background check');
+        toast.error('Failed to upload background check');
         return;
       }
 
@@ -65,8 +65,8 @@ export function CustomBackgroundCheckUpload({
       setSelectedFile(null);
       if (inputRef.current) inputRef.current.value = '';
       await onUploaded(response.data);
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Failed to upload background check');
+    } catch {
+      toast.error('Failed to upload background check');
     } finally {
       setIsUploading(false);
     }
