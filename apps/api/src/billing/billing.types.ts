@@ -1,0 +1,38 @@
+import type { BillingInvoice } from './billing-invoices';
+import type { BillingPreferences } from './billing-preferences';
+
+export interface BillingStatus {
+  hasBilling: boolean;
+  hasPaymentMethod: boolean;
+  setupAt: Date | null;
+  usage: {
+    backgroundChecks: number;
+    penetrationTests: number;
+  };
+  preferences: BillingPreferences;
+  usageRows: BillingUsageRow[];
+  subscriptions: Array<{
+    skuKey: string;
+    status: string;
+    includedQuantity: number;
+    usedQuantity: number;
+    currentPeriodStart: string | null;
+    currentPeriodEnd: string | null;
+    cancelAtPeriodEnd: boolean;
+  }>;
+  invoices: BillingInvoice[];
+}
+
+export interface BillingUsageRow {
+  id: string;
+  service: 'Penetration Test' | 'Background Check';
+  skuKey: string;
+  details: string;
+  status: string;
+  billingType: string;
+  createdAt: string;
+  updatedAt: string;
+  subscriptionRemaining: number | null;
+  subscriptionIncluded: number | null;
+  subscriptionPeriodEnd: string | null;
+}

@@ -3,20 +3,24 @@
 import { usePermissions } from '@/hooks/use-permissions';
 import { apiClient } from '@/lib/api-client';
 import {
-  Badge,
-  Button,
   PageHeader,
   PageLayout,
   Section,
   Stack,
-  Text,
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
 } from '@trycompai/design-system';
-import { Launch } from '@trycompai/design-system/icons';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import useSWR from 'swr';
+import { BillingAddOnsOverview } from './BillingAddOnsOverview';
 import { BillingInvoicesTable } from './BillingInvoicesTable';
+import { BillingPaymentMethodCard } from './BillingPaymentMethodCard';
+import { BillingPreferencesForm } from './BillingPreferencesForm';
+import { BillingUsageTable } from './BillingUsageTable';
 import type { BackgroundCheckBillingStatus } from './types';
 
 interface BillingSettingsClientProps {
@@ -42,7 +46,7 @@ export function BillingSettingsClient({
   const canManageBilling = hasPermission('organization', 'update');
 
   const { data: billingStatus, mutate: mutateBillingStatus } = useSWR<BackgroundCheckBillingStatus>(
-    ['/v1/background-check-billing/status', organizationId],
+    ['/v1/billing/status', organizationId],
     async ([endpoint]) => {
       const response = await apiClient.get<BackgroundCheckBillingStatus>(endpoint, organizationId);
       if (response.error || !response.data) {
@@ -62,8 +66,19 @@ export function BillingSettingsClient({
     () => billingStatus?.invoices ?? initialBillingStatus.invoices ?? [],
     [billingStatus?.invoices, initialBillingStatus.invoices],
   );
+  const usageRows = useMemo(
+    () => billingStatus?.usageRows ?? initialBillingStatus.usageRows ?? [],
+    [billingStatus?.usageRows, initialBillingStatus.usageRows],
+  );
+  const subscriptions = useMemo(
+    () => billingStatus?.subscriptions ?? initialBillingStatus.subscriptions ?? [],
+    [billingStatus?.subscriptions, initialBillingStatus.subscriptions],
+  );
+  const preferences = useMemo(
+    () => billingStatus?.preferences ?? initialBillingStatus.preferences ?? null,
+    [billingStatus?.preferences, initialBillingStatus.preferences],
+  );
   const statusLabel = hasPaymentMethod ? 'Billing set up' : 'Payment method needed';
-  const actionLabel = hasPaymentMethod ? 'Update Billing Details' : 'Add payment method';
 
   useEffect(() => {
     const sessionId = searchParams.get('session_id');
@@ -73,7 +88,7 @@ export function BillingSettingsClient({
     handledSessionId.current = sessionId;
     void (async () => {
       const setupResponse = await apiClient.post<{ success: true }>(
-        '/v1/background-check-billing/setup-success',
+        '/v1/billing/setup-success',
         { sessionId },
         organizationId,
       );
@@ -91,20 +106,32 @@ export function BillingSettingsClient({
           setupAt: new Date().toISOString(),
           usage,
           invoices,
+          preferences,
+          usageRows,
+          subscriptions,
         },
         { revalidate: true },
       );
       router.replace(pathname, { scroll: false });
     })();
-  }, [invoices, mutateBillingStatus, organizationId, pathname, router, searchParams, usage]);
+  }, [
+    invoices,
+    mutateBillingStatus,
+    organizationId,
+    pathname,
+    router,
+    searchParams,
+    subscriptions,
+    usage,
+    preferences,
+    usageRows,
+  ]);
 
   const handleOpenBilling = async () => {
     setIsOpeningBilling(true);
 
     const returnUrl = `${window.location.origin}/${organizationId}/settings/billing`;
-    const endpoint = hasPaymentMethod
-      ? '/v1/background-check-billing/portal'
-      : '/v1/background-check-billing/setup-session';
+    const endpoint = hasPaymentMethod ? '/v1/billing/portal' : '/v1/billing/setup-session';
     const body = hasPaymentMethod
       ? { returnUrl }
       : {
@@ -118,94 +145,78 @@ export function BillingSettingsClient({
       return;
     }
 
-    toast.error('Failed to open Stripe billing');
+    toast.error('Failed to open billing portal');
     setIsOpeningBilling(false);
   };
 
   return (
-    <PageLayout
-      header={
-        <PageHeader
-          title="Billing"
-          actions={
-            <Button
-              type="button"
-              variant="default"
-              loading={isOpeningBilling}
-              disabled={!canManageBilling || isOpeningBilling}
-              iconRight={<Launch size={16} />}
-              onClick={handleOpenBilling}
-            >
-              {actionLabel}
-            </Button>
-          }
-        />
-      }
-    >
-      <Section
-        title="Overview"
-        description="Manage your payment method and review paid service activity."
+    <Tabs defaultValue="add-ons">
+      <PageLayout
+        header={
+          <PageHeader
+            title="Billing"
+            tabs={
+              <TabsList>
+                <TabsTrigger value="add-ons">Add-ons</TabsTrigger>
+                <TabsTrigger value="usage">Usage</TabsTrigger>
+                <TabsTrigger value="billing-details">Billing Details</TabsTrigger>
+              </TabsList>
+            }
+          />
+        }
       >
-        <div className="overflow-hidden rounded-lg border bg-card">
-          <div className="p-6">
-            <Stack gap="4">
-              <Stack gap="1">
-                <Text weight="medium">Historical usage</Text>
-                <Text size="sm" variant="muted">
-                  Completed paid services for this organization.
-                </Text>
-              </Stack>
-              <div className="grid gap-6 sm:grid-cols-2">
-                <UsageMetric label="Penetration Tests" value={usage.penetrationTests} />
-                <UsageMetric label="Background Checks" value={usage.backgroundChecks} />
-              </div>
-            </Stack>
-          </div>
-          <div className="border-t px-6 py-5">
-            <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-              <div className="min-w-0">
-                <Stack gap="1">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <Text weight="medium">Payment method</Text>
-                    <Badge variant={hasPaymentMethod ? 'default' : 'outline'}>{statusLabel}</Badge>
-                  </div>
-                  <Text size="sm" variant="muted" leading="relaxed">
-                    {hasPaymentMethod
-                      ? 'A payment method is connected. Open the Stripe portal to update billing details, cards, and receipts.'
-                      : 'Add a payment method to use paid services such as background checks and penetration testing.'}
-                  </Text>
-                </Stack>
-              </div>
-              <div className="flex flex-col gap-1 lg:items-end">
-                <Text size="sm" variant="muted">
-                  Managed securely in Stripe
-                </Text>
-                {!canManageBilling && (
-                  <Text size="sm" variant="muted">
-                    Ask an organization admin to update billing details.
-                  </Text>
-                )}
-              </div>
-            </div>
-          </div>
-        </div>
-      </Section>
-      <BillingInvoicesTable invoices={invoices} />
-    </PageLayout>
-  );
-}
+        <TabsContent value="add-ons">
+          <Section
+            title="Add-ons"
+            description="Choose paid Comp AI products and manage their subscription plans."
+          >
+            <BillingAddOnsOverview
+              organizationId={organizationId}
+              subscriptions={subscriptions}
+            />
+          </Section>
+        </TabsContent>
 
-function UsageMetric({ label, value }: { label: string; value: number }) {
-  return (
-    <div className="min-w-44">
-      <Stack gap="1">
-        <Text size="sm" variant="muted">
-          {label}
-        </Text>
-        <Text size="lg" weight="semibold" font="mono">
-          {value.toLocaleString()}
-        </Text>
-      </Stack>
-    </div>
+        <TabsContent value="usage">
+          <Section
+            title="Usage"
+            description="Review monthly allowance and paid service run history."
+          >
+            <BillingUsageTable subscriptions={subscriptions} usageRows={usageRows} />
+          </Section>
+        </TabsContent>
+
+        <TabsContent value="billing-details">
+          <Stack gap="8">
+            <Section
+              title="Payment method"
+              description="Manage the card used for invoices and paid services."
+            >
+              <BillingPaymentMethodCard
+                hasPaymentMethod={hasPaymentMethod}
+                statusLabel={statusLabel}
+                canManageBilling={canManageBilling}
+                isOpeningBilling={isOpeningBilling}
+                onOpenBilling={handleOpenBilling}
+              />
+            </Section>
+            <Section
+              title="Business details for invoicing"
+              description="Set the legal, tax, and invoice contact details for this organization."
+            >
+              <BillingPreferencesForm
+                organizationId={organizationId}
+                preferences={preferences}
+                disabled={!canManageBilling}
+                onSaved={(status) => {
+                  void mutateBillingStatus(status, { revalidate: false });
+                }}
+              />
+            </Section>
+            <BillingInvoicesTable invoices={invoices} />
+          </Stack>
+        </TabsContent>
+      </PageLayout>
+    </Tabs>
   );
 }

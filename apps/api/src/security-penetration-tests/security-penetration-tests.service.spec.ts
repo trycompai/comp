@@ -1,6 +1,7 @@
 import { HttpException, HttpStatus } from '@nestjs/common';
 import { db } from '@db';
 import { createHash } from 'node:crypto';
+import type { BillingEntitlementsService } from '../billing/billing-entitlements.service';
 import type { CredentialVaultService } from '../integration-platform/services/credential-vault.service';
 import type { CreatePenetrationTestDto } from './dto/create-penetration-test.dto';
 import type { PentestCreditsService } from './pentest-credits.service';
@@ -20,6 +21,16 @@ const mockPentestCreditsService: jest.Mocked<
   getStatus: jest.fn(),
   debitOrThrow: jest.fn(),
   refund: jest.fn(),
+};
+
+const mockBillingEntitlementsService: jest.Mocked<
+  Pick<
+    BillingEntitlementsService,
+    'tryConsumeIncludedUsage' | 'refundIncludedUsage'
+  >
+> = {
+  tryConsumeIncludedUsage: jest.fn(),
+  refundIncludedUsage: jest.fn(),
 };
 
 jest.mock('@db', () => ({
@@ -102,8 +113,13 @@ describe('SecurityPenetrationTestsService', () => {
       lastGrantSource: 'trial',
     });
     mockPentestCreditsService.refund.mockResolvedValue();
+    mockBillingEntitlementsService.tryConsumeIncludedUsage.mockResolvedValue({
+      status: 'not_configured',
+    });
+    mockBillingEntitlementsService.refundIncludedUsage.mockResolvedValue();
     service = new SecurityPenetrationTestsService(
       mockPentestCreditsService as unknown as PentestCreditsService,
+      mockBillingEntitlementsService as unknown as BillingEntitlementsService,
     );
     fetchMock.mockReset();
     global.fetch = fetchMock as unknown as typeof fetch;

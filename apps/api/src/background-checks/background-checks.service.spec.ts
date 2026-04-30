@@ -1,9 +1,9 @@
 import { BackgroundCheckIdentityClient } from './background-check-identity.client';
+import { BillingService } from '../billing/billing.service';
 import { BackgroundCheckBillingService } from './background-check-billing.service';
 import { BackgroundCheckPaymentService } from './background-check-payment.service';
 import { BackgroundChecksService } from './background-checks.service';
 import { db } from '@db';
-import type { StripeService } from '../stripe/stripe.service';
 
 jest.mock('@db', () => {
   class PrismaClientKnownRequestError extends Error {
@@ -432,51 +432,12 @@ describe('background checks', () => {
   });
 
   it('uses BETTER_AUTH_URL as the local app URL fallback for setup redirects', async () => {
-    process.env = {
-      ...process.env,
-      NEXT_PUBLIC_APP_URL: '',
-      APP_URL: '',
-      BETTER_AUTH_URL: 'http://localhost:3000',
-    };
-    mockAsync<Awaited<ReturnType<typeof db.organizationBilling.findUnique>>>(
-      mockedDb.organizationBilling.findUnique,
-    ).mockResolvedValueOnce(null);
-    mockAsync<Awaited<ReturnType<typeof db.organization.findUnique>>>(
-      mockedDb.organization.findUnique,
-    ).mockResolvedValueOnce({
-      name: 'Acme',
-    } as Awaited<ReturnType<typeof db.organization.findUnique>>);
-    mockAsync<Awaited<ReturnType<typeof db.organizationBilling.create>>>(
-      mockedDb.organizationBilling.create,
-    ).mockResolvedValueOnce({
-      organizationId: 'org_1',
-      stripeCustomerId: 'cus_1',
-    } as Awaited<ReturnType<typeof db.organizationBilling.create>>);
-
-    const stripe = {
-      checkout: {
-        sessions: {
-          create: jest.fn().mockResolvedValue({
-            url: 'https://checkout.stripe.com/c/session_1',
-          }),
-        },
-      },
-      customers: {
-        create: jest.fn().mockResolvedValue({ id: 'cus_1' }),
-        update: jest.fn().mockResolvedValue({ id: 'cus_1' }),
-      },
-      prices: {
-        retrieve: jest.fn().mockResolvedValue({
-          id: 'price_bg',
-          unit_amount: 4900,
-          currency: 'usd',
-        }),
-      },
-    };
-    const stripeService = {
-      getClient: () => stripe,
-    } as unknown as StripeService;
-    const service = new BackgroundCheckBillingService(stripeService);
+    const billingService = {
+      createSetupSession: jest.fn().mockResolvedValue({
+        url: 'https://checkout.stripe.com/c/session_1',
+      }),
+    } as unknown as BillingService;
+    const service = new BackgroundCheckBillingService(billingService);
 
     await expect(
       service.createSetupSession({
@@ -488,54 +449,41 @@ describe('background checks', () => {
       }),
     ).resolves.toEqual({ url: 'https://checkout.stripe.com/c/session_1' });
 
-    expect(stripe.customers.create).toHaveBeenCalledWith(
-      {
-        name: 'Acme',
-        metadata: { organizationId: 'org_1' },
-      },
-      { idempotencyKey: 'background-check-customer:org_1' },
-    );
-    expect(stripe.customers.update).toHaveBeenCalledWith('cus_1', {
-      email: 'billing@trycomp.ai',
+    expect(billingService.createSetupSession).toHaveBeenCalledWith({
+      organizationId: 'org_1',
+      successUrl:
+        'http://localhost:3000/org_1/people/mem_1?background_check_billing=success',
+      cancelUrl: 'http://localhost:3000/org_1/people/mem_1',
+      customerEmail: 'billing@trycomp.ai',
     });
   });
 
   it('includes background check and penetration test usage in billing status', async () => {
-    mockAsync<Awaited<ReturnType<typeof db.organizationBilling.findUnique>>>(
-      mockedDb.organizationBilling.findUnique,
-    ).mockResolvedValueOnce({
-      stripeCustomerId: 'cus_1',
-      stripeBackgroundCheckPaymentMethodId: 'pm_1',
-      backgroundCheckPaymentMethodSetupAt: new Date('2026-04-29T12:00:00.000Z'),
-    } as Awaited<ReturnType<typeof db.organizationBilling.findUnique>>);
-    mockAsync<number>(
-      mockedDb.backgroundCheckRequest.count,
-    ).mockResolvedValueOnce(4);
-    mockAsync<number>(
-      mockedDb.securityPenetrationTestRun.count,
-    ).mockResolvedValueOnce(2);
-
-    const invoicesList = jest.fn().mockResolvedValue({
-      data: [
-        {
-          id: 'in_1',
-          number: 'INV-001',
-          created: 1777464000,
-          due_date: null,
-          amount_paid: 4900,
-          amount_due: 4900,
-          currency: 'usd',
-          status: 'paid',
-          parent: null,
-          hosted_invoice_url: 'https://invoice.stripe.com/i/in_1',
-          invoice_pdf: 'https://invoice.stripe.com/i/in_1.pdf',
-        },
-      ],
-    });
-    const service = new BackgroundCheckBillingService({
-      getClient: () => ({ invoices: { list: invoicesList } }),
-      isConfigured: () => true,
-    } as unknown as StripeService);
+    const billingService = {
+      getStatus: jest.fn().mockResolvedValue({
+        hasBilling: true,
+        hasPaymentMethod: true,
+        setupAt: new Date('2026-04-29T12:00:00.000Z'),
+        usage: { backgroundChecks: 4, penetrationTests: 2 },
+        subscriptions: [],
+        invoices: [
+          {
+            id: 'in_1',
+            number: 'INV-001',
+            createdAt: '2026-04-30T00:00:00.000Z',
+            dueDate: null,
+            amountPaid: 4900,
+            amountDue: 4900,
+            currency: 'usd',
+            status: 'paid',
+            type: 'One Time',
+            hostedInvoiceUrl: 'https://invoice.stripe.com/i/in_1',
+            invoicePdfUrl: 'https://invoice.stripe.com/i/in_1.pdf',
+          },
+        ],
+      }),
+    } as unknown as BillingService;
+    const service = new BackgroundCheckBillingService(billingService);
 
     await expect(service.getStatus('org_1')).resolves.toMatchObject({
       hasBilling: true,
@@ -554,12 +502,6 @@ describe('background checks', () => {
         },
       ],
     });
-    expect(invoicesList).toHaveBeenCalledWith({ customer: 'cus_1', limit: 10 });
-    expect(mockedDb.backgroundCheckRequest.count).toHaveBeenCalledWith({
-      where: { organizationId: 'org_1' },
-    });
-    expect(mockedDb.securityPenetrationTestRun.count).toHaveBeenCalledWith({
-      where: { organizationId: 'org_1' },
-    });
+    expect(billingService.getStatus).toHaveBeenCalledWith('org_1');
   });
 });

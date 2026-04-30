@@ -1,5 +1,6 @@
-import { HttpException, HttpStatus } from '@nestjs/common';
+import { HttpStatus } from '@nestjs/common';
 import { db } from '@db';
+import { BillingEntitlementsService } from '../billing/billing-entitlements.service';
 import { StripeService } from '../stripe/stripe.service';
 import { BackgroundCheckBillingService } from './background-check-billing.service';
 import { BackgroundCheckPaymentService } from './background-check-payment.service';
@@ -18,6 +19,33 @@ function mockAsync<T>(fn: unknown): jest.MockedFunction<() => Promise<T>> {
   return fn as jest.MockedFunction<() => Promise<T>>;
 }
 
+function mockEntitlements(
+  overrides: Partial<BillingEntitlementsService> = {},
+): BillingEntitlementsService {
+  return {
+    tryConsumeIncludedUsage: jest
+      .fn()
+      .mockResolvedValue({ status: 'not_configured' }),
+    recordOneTimeUsage: jest.fn().mockResolvedValue(undefined),
+    refundIncludedUsage: jest.fn().mockResolvedValue(undefined),
+    syncSubscriptionItem: jest.fn().mockResolvedValue(undefined),
+    writeAuditEvent: jest.fn().mockResolvedValue(undefined),
+    ...overrides,
+  } as unknown as BillingEntitlementsService;
+}
+
+function mockBillingRow() {
+  return {
+    id: 'obil_1',
+    organizationId: 'org_1',
+    stripeCustomerId: 'cus_1',
+    stripePaymentMethodId: 'pm_1',
+    paymentMethodUpdatedAt: null,
+    createdAt: new Date('2026-04-30T00:00:00.000Z'),
+    updatedAt: new Date('2026-04-30T00:00:00.000Z'),
+  };
+}
+
 describe('BackgroundCheckPaymentService', () => {
   beforeEach(() => {
     jest.clearAllMocks();
@@ -32,6 +60,7 @@ describe('BackgroundCheckPaymentService', () => {
       {
         getBackgroundCheckPrice: jest.fn(),
       } as unknown as BackgroundCheckBillingService,
+      mockEntitlements(),
     );
 
     await expect(
@@ -46,10 +75,7 @@ describe('BackgroundCheckPaymentService', () => {
   it('creates and pays a Stripe invoice with payment-method scoped idempotency keys', async () => {
     mockAsync<Awaited<ReturnType<typeof db.organizationBilling.findUnique>>>(
       mockedDb.organizationBilling.findUnique,
-    ).mockResolvedValueOnce({
-      stripeCustomerId: 'cus_1',
-      stripeBackgroundCheckPaymentMethodId: 'pm_1',
-    } as Awaited<ReturnType<typeof db.organizationBilling.findUnique>>);
+    ).mockResolvedValueOnce(mockBillingRow());
     const invoiceItemsCreate = jest.fn().mockResolvedValue({ id: 'ii_1' });
     const invoicesCreate = jest.fn().mockResolvedValue({ id: 'in_1' });
     const finalizeInvoice = jest.fn().mockResolvedValue({ id: 'in_1' });
@@ -85,6 +111,7 @@ describe('BackgroundCheckPaymentService', () => {
           currency: 'usd',
         }),
       } as unknown as BackgroundCheckBillingService,
+      mockEntitlements(),
     );
 
     await expect(
@@ -139,20 +166,18 @@ describe('BackgroundCheckPaymentService', () => {
     );
   });
 
-  it('voids the invoice when adding the invoice item fails', async () => {
+  it('deletes the draft invoice when adding the invoice item fails', async () => {
     mockAsync<Awaited<ReturnType<typeof db.organizationBilling.findUnique>>>(
       mockedDb.organizationBilling.findUnique,
-    ).mockResolvedValueOnce({
-      stripeCustomerId: 'cus_1',
-      stripeBackgroundCheckPaymentMethodId: 'pm_1',
-    } as Awaited<ReturnType<typeof db.organizationBilling.findUnique>>);
+    ).mockResolvedValueOnce(mockBillingRow());
     const invoiceItemsCreate = jest
       .fn()
       .mockRejectedValue(new Error('line item failed'));
     const invoicesCreate = jest.fn().mockResolvedValue({ id: 'in_1' });
     const finalizeInvoice = jest.fn();
     const invoicesPay = jest.fn();
-    const voidInvoice = jest.fn().mockResolvedValue({ id: 'in_1' });
+    const deleteInvoice = jest.fn().mockResolvedValue({ id: 'in_1' });
+    const voidInvoice = jest.fn();
     const service = new BackgroundCheckPaymentService(
       {
         getClient: () => ({
@@ -161,6 +186,7 @@ describe('BackgroundCheckPaymentService', () => {
             create: invoicesCreate,
             finalizeInvoice,
             pay: invoicesPay,
+            del: deleteInvoice,
             voidInvoice,
           },
         }),
@@ -172,6 +198,7 @@ describe('BackgroundCheckPaymentService', () => {
           currency: 'usd',
         }),
       } as unknown as BackgroundCheckBillingService,
+      mockEntitlements(),
     );
 
     await expect(
@@ -182,25 +209,24 @@ describe('BackgroundCheckPaymentService', () => {
       }),
     );
 
-    expect(voidInvoice).toHaveBeenCalledWith('in_1');
+    expect(deleteInvoice).toHaveBeenCalledWith('in_1');
+    expect(voidInvoice).not.toHaveBeenCalled();
     expect(finalizeInvoice).not.toHaveBeenCalled();
     expect(invoicesPay).not.toHaveBeenCalled();
   });
 
-  it('voids the invoice when finalizing fails', async () => {
+  it('deletes the draft invoice when finalizing fails', async () => {
     mockAsync<Awaited<ReturnType<typeof db.organizationBilling.findUnique>>>(
       mockedDb.organizationBilling.findUnique,
-    ).mockResolvedValueOnce({
-      stripeCustomerId: 'cus_1',
-      stripeBackgroundCheckPaymentMethodId: 'pm_1',
-    } as Awaited<ReturnType<typeof db.organizationBilling.findUnique>>);
+    ).mockResolvedValueOnce(mockBillingRow());
     const invoiceItemsCreate = jest.fn().mockResolvedValue({ id: 'ii_1' });
     const invoicesCreate = jest.fn().mockResolvedValue({ id: 'in_1' });
     const finalizeInvoice = jest
       .fn()
       .mockRejectedValue(new Error('finalize failed'));
     const invoicesPay = jest.fn();
-    const voidInvoice = jest.fn().mockResolvedValue({ id: 'in_1' });
+    const deleteInvoice = jest.fn().mockResolvedValue({ id: 'in_1' });
+    const voidInvoice = jest.fn();
     const service = new BackgroundCheckPaymentService(
       {
         getClient: () => ({
@@ -209,6 +235,7 @@ describe('BackgroundCheckPaymentService', () => {
             create: invoicesCreate,
             finalizeInvoice,
             pay: invoicesPay,
+            del: deleteInvoice,
             voidInvoice,
           },
         }),
@@ -220,6 +247,7 @@ describe('BackgroundCheckPaymentService', () => {
           currency: 'usd',
         }),
       } as unknown as BackgroundCheckBillingService,
+      mockEntitlements(),
     );
 
     await expect(
@@ -230,7 +258,53 @@ describe('BackgroundCheckPaymentService', () => {
       }),
     );
 
-    expect(voidInvoice).toHaveBeenCalledWith('in_1');
+    expect(deleteInvoice).toHaveBeenCalledWith('in_1');
+    expect(voidInvoice).not.toHaveBeenCalled();
     expect(invoicesPay).not.toHaveBeenCalled();
+  });
+
+  it('voids the finalized invoice when paying fails', async () => {
+    mockAsync<Awaited<ReturnType<typeof db.organizationBilling.findUnique>>>(
+      mockedDb.organizationBilling.findUnique,
+    ).mockResolvedValueOnce(mockBillingRow());
+    const invoiceItemsCreate = jest.fn().mockResolvedValue({ id: 'ii_1' });
+    const invoicesCreate = jest.fn().mockResolvedValue({ id: 'in_1' });
+    const finalizeInvoice = jest.fn().mockResolvedValue({ id: 'in_1' });
+    const invoicesPay = jest.fn().mockRejectedValue(new Error('pay failed'));
+    const deleteInvoice = jest.fn();
+    const voidInvoice = jest.fn().mockResolvedValue({ id: 'in_1' });
+    const service = new BackgroundCheckPaymentService(
+      {
+        getClient: () => ({
+          invoiceItems: { create: invoiceItemsCreate },
+          invoices: {
+            create: invoicesCreate,
+            finalizeInvoice,
+            pay: invoicesPay,
+            del: deleteInvoice,
+            voidInvoice,
+          },
+        }),
+      } as unknown as StripeService,
+      {
+        getBackgroundCheckPrice: jest.fn().mockResolvedValue({
+          id: 'price_bg',
+          unitAmount: 1250,
+          currency: 'usd',
+        }),
+      } as unknown as BackgroundCheckBillingService,
+      mockEntitlements(),
+    );
+
+    await expect(
+      service.charge({ organizationId: 'org_1', memberId: 'mem_1' }),
+    ).rejects.toThrow(
+      expect.objectContaining({
+        status: HttpStatus.PAYMENT_REQUIRED,
+      }),
+    );
+
+    expect(deleteInvoice).not.toHaveBeenCalled();
+    expect(voidInvoice).toHaveBeenCalledWith('in_1');
   });
 });
