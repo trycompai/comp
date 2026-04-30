@@ -133,10 +133,12 @@ export function SplitView({
   const goToList = () =>
     router.push(`/${orgId}/security/penetration-tests`);
 
-  // Mobile shows ONE pane at a time, picked from the URL. List on
-  // `/pentests`, main pane on `/pentests/:id` and `/pentests/new`. Below
-  // `md` we hide whichever isn't active so an IDE-style split doesn't
-  // collapse into ~200px columns. On desktop both are always shown.
+  // Below `xl` (1280px) we show ONE pane at a time, picked from the URL —
+  // list on `/pentests`, main on `/pentests/:id` and `/pentests/new`.
+  // The `xl` cutoff (not `md`) covers tablets and narrower laptops where
+  // the global rail + section sub-nav already eat ~345px before the
+  // SplitView even starts; below xl, the IDE-style split squeezes the
+  // main pane to <600px and the SevTally / detail header overflow.
   const showListOnMobile = selectedRunId === null && !isCreateMode;
 
   // Empty state only shown when there are no runs AND no selection AND not
@@ -163,8 +165,8 @@ export function SplitView({
       <div
         aria-hidden={isCreateMode}
         className={cn(
-          'w-full md:w-auto md:shrink-0',
-          showListOnMobile ? 'block' : 'hidden md:block',
+          'w-full xl:w-auto xl:shrink-0',
+          showListOnMobile ? 'block' : 'hidden xl:block',
           isCreateMode ? 'pointer-events-none opacity-45' : '',
         )}
       >
@@ -180,15 +182,16 @@ export function SplitView({
       <main
         className={cn(
           'min-w-0 flex-1 flex-col',
-          showListOnMobile ? 'hidden md:flex' : 'flex',
+          showListOnMobile ? 'hidden xl:flex' : 'flex',
         )}
       >
-        {/* Mobile-only back bar. The sidebar is hidden on phones once a
-            run is selected (or in create mode), so we surface a
-            persistent path back to the list. md+ never sees this — the
-            sidebar itself is the navigation. */}
+        {/* Back-to-list bar shown below xl. The sidebar is hidden on
+            phones / tablets / narrow laptops once a run is selected (or
+            in create mode), so we surface a persistent path back to the
+            list. xl+ never sees this — the sidebar itself is the
+            navigation there. */}
         {!showListOnMobile && (
-          <div className="md:hidden flex items-center border-b border-border bg-background px-3 py-2">
+          <div className="xl:hidden flex items-center border-b border-border bg-background px-3 py-2">
             <button
               type="button"
               onClick={goToList}

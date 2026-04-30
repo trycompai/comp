@@ -10,7 +10,7 @@ import { usePeopleActions } from '@/hooks/use-people-api';
 import { parseRolesString } from '@/lib/permissions';
 import { authClient } from '@/utils/auth-client';
 import useSWR from 'swr';
-import type { Invitation, Role } from '@db';
+import type { Invitation } from '@db';
 import {
   Empty,
   EmptyDescription,
@@ -31,7 +31,6 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-  Button,
 } from '@trycompai/design-system';
 import { InProgress, Search } from '@trycompai/design-system/icons';
 
@@ -63,7 +62,6 @@ export function TeamMembersClient({
   data,
   organizationId,
   canManageMembers,
-  canInviteUsers,
   isCurrentUserOwner,
   employeeSyncData,
   taskCompletionMap,
@@ -461,7 +459,6 @@ export function TeamMembersClient({
               <TableHead>
                 <div className="w-[160px]">ROLE</div>
               </TableHead>
-              <TableHead>DEVICE</TableHead>
               <TableHead>TASKS</TableHead>
               <TableHead>ACTIONS</TableHead>
             </TableRow>
@@ -482,6 +479,9 @@ export function TeamMembersClient({
                   taskCompletion={taskCompletionMap[(item as MemberWithUser).id]}
                   deviceStatus={deviceStatusMap[(item as MemberWithUser).id]}
                   isDeviceStatusLoading={isDeviceStatusLoading}
+                  backgroundCheckStatus={
+                    (item as MemberWithUser).backgroundCheckRequests?.[0]?.status
+                  }
                 />
               ) : (
                 <PendingInvitationRow
