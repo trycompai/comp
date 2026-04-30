@@ -2,6 +2,7 @@
   "extends": "@trycompai/tsconfig/base.json",
   "compilerOptions": {
     "incremental": true,
+    "allowImportingTsExtensions": true,
     "tsBuildInfoFile": "node_modules/.cache/tsbuildinfo.json"
   },
   "include": ["src"],

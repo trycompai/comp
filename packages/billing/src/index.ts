@@ -1,4 +1,4 @@
-import { createSkus } from './sku-definitions';
+import { createSkus } from './sku-definitions.ts';
 
 export type BillingCatalogEnvironment = 'test' | 'live';
 
