@@ -5,7 +5,6 @@ import {
 } from '@nestjs/common';
 import { db } from '@db';
 import {
-  type BillingSku,
   type BillingSkuKey,
   getBillingSku,
   isSubscriptionBillingSkuKey,
@@ -19,6 +18,8 @@ import {
   updateBillingPreferences,
 } from './billing-preferences';
 import { validateBillingRedirectUrl } from './billing-redirect-urls';
+import { assertStripeBillingConfigured } from './billing-stripe-config';
+import { extractStripeId } from './billing-stripe-ids';
 import type { BillingStatus } from './billing.types';
 import { listBillingUsageRows } from './billing-usage';
 
@@ -27,27 +28,32 @@ export class BillingService {
   constructor(private readonly stripeService: StripeService) {}
 
   async getStatus(organizationId: string): Promise<BillingStatus> {
-    const [organization, billing, subscriptions, backgroundChecks, penetrationTests] =
-      await Promise.all([
-        db.organization.findUniqueOrThrow({
-          where: { id: organizationId },
-          select: { name: true },
-        }),
-        db.organizationBilling.findUnique({
-          where: { organizationId },
-          select: {
-            stripeCustomerId: true,
-            stripePaymentMethodId: true,
-            paymentMethodUpdatedAt: true,
-          },
-        }),
-        db.organizationBillingSubscription.findMany({
-          where: { organizationId },
-          orderBy: { skuKey: 'asc' },
-        }),
-        db.backgroundCheckRequest.count({ where: { organizationId } }),
-        db.securityPenetrationTestRun.count({ where: { organizationId } }),
-      ]);
+    const [
+      organization,
+      billing,
+      subscriptions,
+      backgroundChecks,
+      penetrationTests,
+    ] = await Promise.all([
+      db.organization.findUniqueOrThrow({
+        where: { id: organizationId },
+        select: { name: true },
+      }),
+      db.organizationBilling.findUnique({
+        where: { organizationId },
+        select: {
+          stripeCustomerId: true,
+          stripePaymentMethodId: true,
+          paymentMethodUpdatedAt: true,
+        },
+      }),
+      db.organizationBillingSubscription.findMany({
+        where: { organizationId },
+        orderBy: { skuKey: 'asc' },
+      }),
+      db.backgroundCheckRequest.count({ where: { organizationId } }),
+      db.securityPenetrationTestRun.count({ where: { organizationId } }),
+    ]);
     const [invoices, preferences, usageRows] = await Promise.all([
       listBillingInvoices({
         stripeService: this.stripeService,
@@ -86,6 +92,8 @@ export class BillingService {
     organizationId: string;
     preferences: BillingPreferencesInput;
   }): Promise<BillingStatus> {
+    assertStripeBillingConfigured(this.stripeService);
+
     const result = await updateBillingPreferences({
       stripeService: this.stripeService,
       organizationId: params.organizationId,
@@ -114,6 +122,7 @@ export class BillingService {
   }): Promise<{ url: string }> {
     validateBillingRedirectUrl(params.successUrl);
     validateBillingRedirectUrl(params.cancelUrl);
+    assertStripeBillingConfigured(this.stripeService);
 
     const stripe = this.stripeService.getClient();
     const customerId = await findOrCreateBillingCustomer({
@@ -147,6 +156,8 @@ export class BillingService {
     organizationId: string;
     sessionId: string;
   }): Promise<{ success: true }> {
+    assertStripeBillingConfigured(this.stripeService);
+
     const stripe = this.stripeService.getClient();
     const session = await stripe.checkout.sessions.retrieve(params.sessionId, {
       expand: ['setup_intent'],
@@ -217,6 +228,7 @@ export class BillingService {
     returnUrl: string;
   }): Promise<{ url: string }> {
     validateBillingRedirectUrl(params.returnUrl);
+    assertStripeBillingConfigured(this.stripeService);
 
     const billing = await db.organizationBilling.findUnique({
       where: { organizationId: params.organizationId },
@@ -249,6 +261,7 @@ export class BillingService {
     if (!isSubscriptionBillingSkuKey(params.skuKey)) {
       throw new BadRequestException('Unknown subscription SKU.');
     }
+    assertStripeBillingConfigured(this.stripeService);
 
     const sku = getBillingSku({ skuKey: params.skuKey });
     const customerId = await findOrCreateBillingCustomer({
@@ -284,16 +297,4 @@ export class BillingService {
     }
     return { url: session.url };
   }
-
-  getOneTimeBackgroundCheckSku(): BillingSku {
-    return getBillingSku({ skuKey: 'background_check_one_time' });
-  }
-}
-
-function extractStripeId(
-  value: string | { id?: string } | null,
-): string | null {
-  if (!value) return null;
-  if (typeof value === 'string') return value;
-  return value.id ?? null;
 }

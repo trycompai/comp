@@ -1,5 +1,13 @@
 import { subscriptionBillingSkuKeys } from '@trycompai/billing';
-import { IsEmail, IsIn, IsOptional, IsString, IsUrl, Length } from 'class-validator';
+import {
+  IsEmail,
+  IsIn,
+  IsNotEmpty,
+  IsOptional,
+  IsString,
+  IsUrl,
+  Length,
+} from 'class-validator';
 import { billingTaxIdTypes } from '../billing-preferences';
 
 export class BillingSetupSessionDto {
@@ -14,6 +22,7 @@ export class BillingSetupSessionDto {
 
 export class BillingSetupSuccessDto {
   @IsString()
+  @IsNotEmpty()
   sessionId: string;
 }
 

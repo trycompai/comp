@@ -6,6 +6,7 @@ const allowedHosts = new Set([
   'app.trycomp.ai',
   'app.staging.trycomp.ai',
 ]);
+const localDevelopmentHosts = new Set(['localhost', '127.0.0.1']);
 
 export function validateBillingRedirectUrl(value: string): void {
   let url: URL;
@@ -21,5 +22,9 @@ export function validateBillingRedirectUrl(value: string): void {
 
   if (!allowedHosts.has(url.hostname)) {
     throw new BadRequestException('Billing redirect URL is not allowed.');
+  }
+
+  if (url.protocol === 'http:' && !localDevelopmentHosts.has(url.hostname)) {
+    throw new BadRequestException('Billing redirect URL must use HTTPS.');
   }
 }

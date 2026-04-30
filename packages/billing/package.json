@@ -1,22 +1,22 @@
 {
-    "name": "@trycompai/billing",
-    "version": "1.0.0",
-    "private": true,
-    "exports": {
-        ".": "./src/index.ts"
-    },
-    "main": "src/index.ts",
-    "types": "src/index.ts",
-    "scripts": {
-        "clean": "rm -rf .turbo node_modules",
-        "format": "prettier --write .",
-        "lint": "prettier --check .",
-        "test": "bun test src/*.test.ts",
-        "typecheck": "tsc --noEmit"
-    },
-    "sideEffects": false,
-    "devDependencies": {
-        "@trycompai/tsconfig": "workspace:*",
-        "typescript": "^5.8.3"
-    }
+  "name": "@trycompai/billing",
+  "version": "1.0.0",
+  "private": true,
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "main": "src/index.ts",
+  "types": "src/index.ts",
+  "scripts": {
+    "clean": "rm -rf .turbo node_modules",
+    "format": "prettier --write .",
+    "lint": "prettier --check .",
+    "test": "bun test src/*.test.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "sideEffects": false,
+  "devDependencies": {
+    "@trycompai/tsconfig": "workspace:*",
+    "typescript": "^5.8.3"
+  }
 }

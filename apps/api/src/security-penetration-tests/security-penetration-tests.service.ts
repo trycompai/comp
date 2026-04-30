@@ -355,6 +355,7 @@ export class SecurityPenetrationTestsService {
     const ownershipPersisted = await this.persistRunOwnershipWithRetry(
       organizationId,
       providerRunId,
+      consumedSubscriptionAllowance ? billingUsageSourceId : null,
     );
     if (!ownershipPersisted) {
       // We debited and Maced created the run, but our DB rejected the
@@ -668,7 +669,7 @@ export class SecurityPenetrationTestsService {
 
       const run = await tx.securityPenetrationTestRun.findUnique({
         where: { providerRunId },
-        select: { organizationId: true },
+        select: { organizationId: true, billingUsageSourceId: true },
       });
       if (!run) {
         // Vanishingly rare race; abort the transaction so the claim
@@ -676,10 +677,17 @@ export class SecurityPenetrationTestsService {
         throw new Error(`Run row vanished after claim for ${providerRunId}`);
       }
 
-      // Pass the tx client through so the wallet write happens in
-      // the same transaction as the claim. If this throws, the claim
-      // is undone and the error propagates up to handleWebhook → Maced
-      // sees 5xx and redelivers, allowing retry.
+      if (run.billingUsageSourceId) {
+        await this.billingEntitlements.refundIncludedUsage({
+          organizationId: run.organizationId,
+          skuKey: 'pentest_monthly_5',
+          sourceResourceId: run.billingUsageSourceId,
+          reason: eventType,
+          tx,
+        });
+        return;
+      }
+
       await this.credits.refund(
         run.organizationId,
         providerRunId,
@@ -939,6 +947,7 @@ export class SecurityPenetrationTestsService {
   private async persistRunOwnership(
     organizationId: string,
     reportId: string,
+    billingUsageSourceId: string | null,
   ): Promise<void> {
     // Defensive: if a row already exists for this providerRunId, do NOT
     // overwrite its organizationId. Maced generates unique providerRunIds
@@ -955,6 +964,7 @@ export class SecurityPenetrationTestsService {
       create: {
         organizationId,
         providerRunId: reportId,
+        billingUsageSourceId,
       },
       update: {},
     });
@@ -963,10 +973,15 @@ export class SecurityPenetrationTestsService {
   private async persistRunOwnershipWithRetry(
     organizationId: string,
     reportId: string,
+    billingUsageSourceId: string | null,
   ): Promise<boolean> {
     for (let attempt = 1; attempt <= 3; attempt += 1) {
       try {
-        await this.persistRunOwnership(organizationId, reportId);
+        await this.persistRunOwnership(
+          organizationId,
+          reportId,
+          billingUsageSourceId,
+        );
         return true;
       } catch (error) {
         this.logger.error(

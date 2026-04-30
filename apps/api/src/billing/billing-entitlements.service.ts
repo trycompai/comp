@@ -1,6 +1,7 @@
 import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
-import { db } from '@db';
+import { Prisma, db } from '@db';
 import type { BillingSkuKey } from '@trycompai/billing';
+import { refundIncludedUsageEvent } from './billing-included-usage-refunds';
 import {
   type BillingConsumeResult,
   isAccessStatus,
@@ -106,19 +107,17 @@ export class BillingEntitlementsService {
       },
     });
     if (
-      existing?.currentPeriodEnd &&
-      params.currentPeriodEnd &&
-      existing.currentPeriodEnd.getTime() > params.currentPeriodEnd.getTime()
+      existing?.currentPeriodStart &&
+      params.currentPeriodStart &&
+      existing.currentPeriodStart.getTime() >
+        params.currentPeriodStart.getTime()
     ) {
       return;
     }
 
     const resetUsage =
-      !sameTime(
-        existing?.currentPeriodStart ?? null,
-        params.currentPeriodStart,
-      ) ||
-      !sameTime(existing?.currentPeriodEnd ?? null, params.currentPeriodEnd);
+      !existing ||
+      !sameTime(existing.currentPeriodStart, params.currentPeriodStart);
 
     await db.$transaction(async (tx) => {
       await tx.organizationBillingSubscription.upsert({
@@ -229,59 +228,9 @@ export class BillingEntitlementsService {
     skuKey: BillingSkuKey;
     sourceResourceId: string;
     reason: string;
+    tx?: Prisma.TransactionClient;
   }): Promise<void> {
-    const consumeKey = [
-      'consume',
-      params.organizationId,
-      params.skuKey,
-      params.sourceResourceId,
-    ].join(':');
-    const refundKey = [
-      'refund',
-      params.organizationId,
-      params.skuKey,
-      params.sourceResourceId,
-      params.reason,
-    ].join(':');
-
-    try {
-      await db.$transaction(async (tx) => {
-        const consumed = await tx.billingUsageEvent.findUnique({
-          where: { idempotencyKey: consumeKey },
-          select: {
-            stripeSubscriptionItemId: true,
-            periodStart: true,
-            periodEnd: true,
-          },
-        });
-        if (!consumed) return;
-
-        await tx.billingUsageEvent.create({
-          data: {
-            organizationId: params.organizationId,
-            skuKey: params.skuKey,
-            eventType: 'refund',
-            quantity: 1,
-            sourceResourceId: params.sourceResourceId,
-            idempotencyKey: refundKey,
-            stripeSubscriptionItemId: consumed.stripeSubscriptionItemId,
-            periodStart: consumed.periodStart,
-            periodEnd: consumed.periodEnd,
-          },
-        });
-
-        await tx.organizationBillingSubscription.updateMany({
-          where: {
-            organizationId: params.organizationId,
-            skuKey: params.skuKey,
-            usedQuantity: { gt: 0 },
-          },
-          data: { usedQuantity: { decrement: 1 } },
-        });
-      });
-    } catch (error) {
-      if (!isUniqueConstraintError(error)) throw error;
-    }
+    await refundIncludedUsageEvent(params);
   }
 
   async writeAuditEvent(params: WriteBillingAuditEventParams): Promise<void> {

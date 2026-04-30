@@ -25,6 +25,7 @@ const organizationBillingCreate = mockedDb.organizationBilling
 
 function mockStripeService(client: unknown): StripeService {
   return {
+    isConfigured: () => client !== null,
     getClient: () => client,
   } as unknown as StripeService;
 }
@@ -101,6 +102,19 @@ describe('BillingService', () => {
       service.createSubscriptionCheckoutSession({
         organizationId: 'org_1',
         skuKey: 'background_check_one_time',
+        successUrl: 'http://localhost:3000/org_1/settings/billing/success',
+        cancelUrl: 'http://localhost:3000/org_1/settings/billing',
+      }),
+    ).rejects.toBeInstanceOf(BadRequestException);
+  });
+
+  it('returns a controlled error when Stripe is not configured', async () => {
+    const service = new BillingService(mockStripeService(null));
+
+    await expect(
+      service.createSubscriptionCheckoutSession({
+        organizationId: 'org_1',
+        skuKey: 'pentest_monthly_5',
         successUrl: 'http://localhost:3000/org_1/settings/billing/success',
         cancelUrl: 'http://localhost:3000/org_1/settings/billing',
       }),

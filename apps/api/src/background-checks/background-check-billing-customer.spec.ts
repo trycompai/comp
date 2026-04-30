@@ -93,4 +93,26 @@ describe('findOrCreateBackgroundCheckBillingCustomer', () => {
       email: 'billing@trycomp.ai',
     });
   });
+
+  it('does not create a Stripe client when existing billing needs no update', async () => {
+    type OrganizationBilling = typeof db.organizationBilling;
+    const dbMocks = mockedDb as unknown as {
+      organizationBilling: {
+        findUnique: jest.MockedFunction<OrganizationBilling['findUnique']>;
+      };
+    };
+    dbMocks.organizationBilling.findUnique.mockResolvedValueOnce({
+      stripeCustomerId: 'cus_existing',
+    } as Awaited<ReturnType<typeof db.organizationBilling.findUnique>>);
+    const getClient = jest.fn();
+
+    await expect(
+      findOrCreateBackgroundCheckBillingCustomer({
+        stripeService: { getClient } as unknown as StripeService,
+        organizationId: 'org_1',
+      }),
+    ).resolves.toBe('cus_existing');
+
+    expect(getClient).not.toHaveBeenCalled();
+  });
 });

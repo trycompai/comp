@@ -92,7 +92,12 @@ export async function updateBillingPreferences(params: {
     address: toStripeAddress(params.preferences.address),
     invoice_settings: {
       custom_fields: params.preferences.purchaseOrder
-        ? [{ name: purchaseOrderFieldName, value: params.preferences.purchaseOrder }]
+        ? [
+            {
+              name: purchaseOrderFieldName,
+              value: params.preferences.purchaseOrder,
+            },
+          ]
         : '',
     },
     metadata: { organizationId: params.organizationId },
@@ -125,7 +130,9 @@ function validatePreferences(preferences: BillingPreferencesInput): void {
     throw new BadRequestException('Unsupported tax ID type.');
   }
   if ((type && !value) || (!type && value)) {
-    throw new BadRequestException('Tax ID type and value must be set together.');
+    throw new BadRequestException(
+      'Tax ID type and value must be set together.',
+    );
   }
 }
 
@@ -144,7 +151,10 @@ async function syncPrimaryTaxId(params: {
     return null;
   }
 
-  if (params.existingTaxId?.type === type && params.existingTaxId.value === value) {
+  if (
+    params.existingTaxId?.type === type &&
+    params.existingTaxId.value === value
+  ) {
     return params.existingTaxId;
   }
 
@@ -191,7 +201,10 @@ function mapCustomerPreferences(params: {
   return {
     companyName: params.customer.name ?? params.customer.business_name ?? null,
     billingEmail: params.customer.email ?? null,
-    purchaseOrder: findInvoiceCustomFieldValue(params.customer, purchaseOrderFieldName),
+    purchaseOrder: findInvoiceCustomFieldValue(
+      params.customer,
+      purchaseOrderFieldName,
+    ),
     address: {
       line1: params.customer.address?.line1 ?? null,
       line2: params.customer.address?.line2 ?? null,
@@ -211,18 +224,22 @@ function mapCustomerPreferences(params: {
   };
 }
 
-function toStripeAddress(address: BillingPreferences['address']): Stripe.AddressParam {
+function toStripeAddress(
+  address: BillingPreferences['address'],
+): Stripe.AddressParam {
   return {
-    line1: emptyToUndefined(address.line1),
-    line2: emptyToUndefined(address.line2),
-    city: emptyToUndefined(address.city),
-    state: emptyToUndefined(address.state),
-    postal_code: emptyToUndefined(address.postalCode),
-    country: emptyToUndefined(address.country)?.toUpperCase(),
+    line1: emptyToString(address.line1),
+    line2: emptyToString(address.line2),
+    city: emptyToString(address.city),
+    state: emptyToString(address.state),
+    postal_code: emptyToString(address.postalCode),
+    country: emptyToString(address.country).toUpperCase(),
   };
 }
 
-function createEmptyPreferences(params: { companyName: string | null }): BillingPreferences {
+function createEmptyPreferences(params: {
+  companyName: string | null;
+}): BillingPreferences {
   return {
     companyName: params.companyName,
     billingEmail: null,
@@ -239,15 +256,20 @@ function createEmptyPreferences(params: { companyName: string | null }): Billing
   };
 }
 
-function findInvoiceCustomFieldValue(customer: Stripe.Customer, name: string): string | null {
+function findInvoiceCustomFieldValue(
+  customer: Stripe.Customer,
+  name: string,
+): string | null {
   return (
-    customer.invoice_settings.custom_fields?.find((field) => field.name === name)?.value ?? null
+    customer.invoice_settings.custom_fields?.find(
+      (field) => field.name === name,
+    )?.value ?? null
   );
 }
 
-function emptyToUndefined(value: string | null): string | undefined {
+function emptyToString(value: string | null): string {
   const trimmed = value?.trim();
-  return trimmed ? trimmed : undefined;
+  return trimmed ? trimmed : '';
 }
 
 function isDeletedCustomer(

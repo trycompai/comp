@@ -39,6 +39,7 @@ export async function listBillingUsageRows(params: {
       select: {
         id: true,
         providerRunId: true,
+        billingUsageSourceId: true,
         createdAt: true,
         updatedAt: true,
       },
@@ -75,28 +76,38 @@ export async function listBillingUsageRows(params: {
         skuKey: backgroundCheckSku,
         details: `${request.employeeName} (${request.employeeEmail})`,
         status: formatStatus(request.status),
-        billingType: formatBillingType(usage?.eventType, usage?.stripeInvoiceId),
+        billingType: formatBillingType(
+          usage?.eventType,
+          usage?.stripeInvoiceId,
+        ),
         createdAt: request.createdAt,
         updatedAt: request.updatedAt,
         subscriptions: params.subscriptions,
       });
     }),
-    ...pentestRuns.map((run) =>
-      toBillingUsageRow({
+    ...pentestRuns.map((run) => {
+      const usage = run.billingUsageSourceId
+        ? usageBySource.get(run.billingUsageSourceId)
+        : undefined;
+      return toBillingUsageRow({
         id: run.id,
         service: 'Penetration Test',
         skuKey: pentestSku,
         details: run.providerRunId,
         status: 'Created',
-        billingType: formatPentestBillingType(params.subscriptions),
+        billingType: usage
+          ? formatBillingType(usage.eventType, usage.stripeInvoiceId)
+          : 'Trial credit',
         createdAt: run.createdAt,
         updatedAt: run.updatedAt,
         subscriptions: params.subscriptions,
-      }),
-    ),
+      });
+    }),
   ];
 
-  return rows.sort((first, second) => second.createdAt.localeCompare(first.createdAt));
+  return rows.sort((first, second) =>
+    second.createdAt.localeCompare(first.createdAt),
+  );
 }
 
 function toBillingUsageRow(params: {
@@ -110,7 +121,9 @@ function toBillingUsageRow(params: {
   updatedAt: Date;
   subscriptions: SubscriptionSummary[];
 }): BillingUsageRow {
-  const subscription = params.subscriptions.find((item) => item.skuKey === params.skuKey);
+  const subscription = params.subscriptions.find(
+    (item) => item.skuKey === params.skuKey,
+  );
   const remaining = subscription
     ? Math.max(subscription.includedQuantity - subscription.usedQuantity, 0)
     : null;
@@ -126,20 +139,19 @@ function toBillingUsageRow(params: {
     updatedAt: params.updatedAt.toISOString(),
     subscriptionRemaining: remaining,
     subscriptionIncluded: subscription?.includedQuantity ?? null,
-    subscriptionPeriodEnd: subscription?.currentPeriodEnd?.toISOString() ?? null,
+    subscriptionPeriodEnd:
+      subscription?.currentPeriodEnd?.toISOString() ?? null,
   };
 }
 
-function formatBillingType(eventType?: string, stripeInvoiceId?: string | null): string {
+function formatBillingType(
+  eventType?: string,
+  stripeInvoiceId?: string | null,
+): string {
   if (eventType === 'consume') return 'Subscription allowance';
-  if (eventType === 'one_time') return stripeInvoiceId ? 'One-time invoice' : 'One-time';
+  if (eventType === 'one_time')
+    return stripeInvoiceId ? 'One-time invoice' : 'One-time';
   return 'Legacy / manual';
-}
-
-function formatPentestBillingType(subscriptions: SubscriptionSummary[]): string {
-  return subscriptions.some((item) => item.skuKey === pentestSku)
-    ? 'Subscription allowance'
-    : 'Trial credit';
 }
 
 function formatStatus(status: string): string {

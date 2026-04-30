@@ -36,6 +36,15 @@ for (const appName of readdirSync(appsDir)) {
   for (const file of canonicalFiles) {
     if (!localFiles.has(file)) {
       errors.push(`${appName}: missing Prisma schema fragment ${file}`);
+      continue;
+    }
+
+    const canonicalPath = path.join(canonicalDir, file);
+    const localPath = path.join(schemaDir, file);
+    const canonicalContents = readFileSync(canonicalPath, 'utf8');
+    const localContents = readFileSync(localPath, 'utf8');
+    if (localContents !== canonicalContents) {
+      errors.push(`${appName}: Prisma schema fragment ${file} is out of sync`);
     }
   }
 

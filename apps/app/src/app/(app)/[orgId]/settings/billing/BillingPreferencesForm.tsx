@@ -17,7 +17,6 @@ import {
 import type React from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { toast } from 'sonner';
-import type { BackgroundCheckBillingStatus, BillingPreferences } from './types';
 import {
   billingCountries,
   billingPreferencesSchema,
@@ -28,6 +27,7 @@ import {
   toBillingPreferencesPayload,
   type BillingPreferencesFormValues,
 } from './billingPreferencesFormSchema';
+import type { BackgroundCheckBillingStatus, BillingPreferences } from './types';
 
 interface BillingPreferencesFormProps {
   organizationId: string;
@@ -215,7 +215,11 @@ export function BillingPreferencesForm({
           </div>
 
           <div className="grid gap-4 lg:grid-cols-3">
-            <FormField id="billing-tax-id-type" label="Tax ID type" error={errors.taxIdType?.message}>
+            <FormField
+              id="billing-tax-id-type"
+              label="Tax ID type"
+              error={errors.taxIdType?.message}
+            >
               <Controller
                 control={control}
                 name="taxIdType"
@@ -225,7 +229,7 @@ export function BillingPreferencesForm({
                     onValueChange={(value) => field.onChange(value ?? '')}
                     disabled={disabled}
                   >
-                    <SelectTrigger aria-invalid={!!errors.taxIdType}>
+                    <SelectTrigger id="billing-tax-id-type" aria-invalid={!!errors.taxIdType}>
                       <SelectValue>{getTaxIdTypeLabel(field.value)}</SelectValue>
                     </SelectTrigger>
                     <SelectContent align="start">
@@ -260,7 +264,6 @@ export function BillingPreferencesForm({
               />
             </FormField>
           </div>
-
         </Stack>
       </Card>
     </form>

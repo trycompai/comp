@@ -1,9 +1,9 @@
 {
-    "extends": "@trycompai/tsconfig/base.json",
-    "compilerOptions": {
-        "incremental": true,
-        "tsBuildInfoFile": "node_modules/.cache/tsbuildinfo.json"
-    },
-    "include": ["src"],
-    "exclude": ["node_modules"]
+  "extends": "@trycompai/tsconfig/base.json",
+  "compilerOptions": {
+    "incremental": true,
+    "tsBuildInfoFile": "node_modules/.cache/tsbuildinfo.json"
+  },
+  "include": ["src"],
+  "exclude": ["node_modules"]
 }

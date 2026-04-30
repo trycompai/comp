@@ -39,6 +39,7 @@ describe('listBillingUsageRows', () => {
       {
         id: 'ptr_1',
         providerRunId: 'run_1',
+        billingUsageSourceId: 'pending:run_1',
         createdAt: new Date('2026-04-30T11:00:00.000Z'),
         updatedAt: new Date('2026-04-30T11:05:00.000Z'),
       },
@@ -48,6 +49,12 @@ describe('listBillingUsageRows', () => {
         skuKey: 'background_checks_monthly_25',
         eventType: 'consume',
         sourceResourceId: 'mem_1',
+        stripeInvoiceId: null,
+      },
+      {
+        skuKey: 'pentest_monthly_5',
+        eventType: 'consume',
+        sourceResourceId: 'pending:run_1',
         stripeInvoiceId: null,
       },
     ]);
@@ -74,6 +81,7 @@ describe('listBillingUsageRows', () => {
       expect.objectContaining({
         service: 'Penetration Test',
         details: 'run_1',
+        billingType: 'Subscription allowance',
         subscriptionRemaining: 4,
       }),
       expect.objectContaining({
@@ -83,5 +91,38 @@ describe('listBillingUsageRows', () => {
         subscriptionRemaining: 23,
       }),
     ]);
+  });
+
+  it('labels legacy pentest rows independently of current subscription state', async () => {
+    backgroundCheckFindMany.mockResolvedValue([]);
+    pentestRunFindMany.mockResolvedValue([
+      {
+        id: 'ptr_legacy',
+        providerRunId: 'run_legacy',
+        billingUsageSourceId: null,
+        createdAt: new Date('2026-04-30T11:00:00.000Z'),
+        updatedAt: new Date('2026-04-30T11:05:00.000Z'),
+      },
+    ]);
+    billingUsageEventFindMany.mockResolvedValue([]);
+
+    const rows = await listBillingUsageRows({
+      organizationId: 'org_1',
+      subscriptions: [
+        {
+          skuKey: 'pentest_monthly_5',
+          includedQuantity: 5,
+          usedQuantity: 1,
+          currentPeriodEnd: new Date('2026-05-30T00:00:00.000Z'),
+        },
+      ],
+    });
+
+    expect(rows[0]).toEqual(
+      expect.objectContaining({
+        service: 'Penetration Test',
+        billingType: 'Trial credit',
+      }),
+    );
   });
 });

@@ -1,5 +1,7 @@
 import { Prisma, db } from '@db';
 
+const processingReclaimAfterMs = 15 * 60 * 1000;
+
 export type StripeWebhookClaim =
   | { status: 'claimed' }
   | { status: 'duplicate' };
@@ -21,17 +23,28 @@ export async function claimStripeWebhookEvent(params: {
     return { status: 'claimed' };
   } catch (error) {
     if (!isUniqueConstraintError(error)) throw error;
-    const existing = await db.stripeWebhookEvent.findUnique({
-      where: { stripeEventId: params.stripeEventId },
-      select: { status: true },
+    const reclaimBefore = new Date(Date.now() - processingReclaimAfterMs);
+    const reclaimed = await db.stripeWebhookEvent.updateMany({
+      where: {
+        stripeEventId: params.stripeEventId,
+        OR: [
+          { status: 'failed' },
+          { status: 'processing', processedAt: { lt: reclaimBefore } },
+        ],
+      },
+      data: {
+        eventType: params.eventType,
+        payload: params.payload,
+        status: 'processing',
+        error: null,
+        processedAt: new Date(),
+      },
     });
-    if (existing?.status === 'failed') {
-      await db.stripeWebhookEvent.update({
-        where: { stripeEventId: params.stripeEventId },
-        data: { status: 'processing', error: null },
-      });
+
+    if (reclaimed.count === 1) {
       return { status: 'claimed' };
     }
+
     return { status: 'duplicate' };
   }
 }

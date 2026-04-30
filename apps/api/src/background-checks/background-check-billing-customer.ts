@@ -15,7 +15,6 @@ export async function findOrCreateBackgroundCheckBillingCustomer({
     where: { organizationId },
     select: { stripeCustomerId: true },
   });
-  const stripe = stripeService.getClient();
 
   if (existingBilling) {
     await updateStripeCustomerEmail({
@@ -35,6 +34,7 @@ export async function findOrCreateBackgroundCheckBillingCustomer({
     throw new NotFoundException('Organization not found.');
   }
 
+  const stripe = stripeService.getClient();
   const customer = await stripe.customers.create(
     {
       name: organization.name,

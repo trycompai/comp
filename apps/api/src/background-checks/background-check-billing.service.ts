@@ -1,5 +1,7 @@
 import { Injectable } from '@nestjs/common';
+import { getBillingSku } from '@trycompai/billing';
 import { BillingService } from '../billing/billing.service';
+import { validateBackgroundCheckBillingRedirectUrl } from './background-check-billing-urls';
 
 @Injectable()
 export class BackgroundCheckBillingService {
@@ -15,6 +17,8 @@ export class BackgroundCheckBillingService {
     cancelUrl: string;
     customerEmail?: string;
   }): Promise<{ url: string }> {
+    validateBackgroundCheckBillingRedirectUrl(params.successUrl);
+    validateBackgroundCheckBillingRedirectUrl(params.cancelUrl);
     return this.billingService.createSetupSession(params);
   }
 
@@ -29,6 +33,7 @@ export class BackgroundCheckBillingService {
     organizationId: string;
     returnUrl: string;
   }): Promise<{ url: string }> {
+    validateBackgroundCheckBillingRedirectUrl(params.returnUrl);
     return this.billingService.createBillingPortalSession(params);
   }
 
@@ -37,7 +42,7 @@ export class BackgroundCheckBillingService {
     unitAmount: number;
     currency: string;
   }> {
-    const sku = this.billingService.getOneTimeBackgroundCheckSku();
+    const sku = getBillingSku({ skuKey: 'background_check_one_time' });
     return {
       id: sku.stripePriceId,
       unitAmount: sku.unitAmount,

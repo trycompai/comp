@@ -31,6 +31,8 @@ export const subscriptionBillingSkuKeys = [
   'pentest_monthly_5',
 ] as const satisfies readonly BillingSkuKey[];
 
+export type SubscriptionBillingSkuKey = (typeof subscriptionBillingSkuKeys)[number];
+
 export type BillingCatalog = {
   environment: BillingCatalogEnvironment;
   products: Record<BillingProductKey, string>;
@@ -54,8 +56,7 @@ const testSkus = {
     key: 'background_checks_monthly_25',
     productKey: 'background_check',
     name: 'Background Checks Monthly',
-    description:
-      'Monthly Comp AI background check package. Includes 25 checks per month.',
+    description: 'Monthly Comp AI background check package. Includes 25 checks per month.',
     cadence: 'month',
     currency: 'usd',
     unitAmount: 24900,
@@ -71,8 +72,7 @@ const testSkus = {
     key: 'pentest_monthly_5',
     productKey: 'pentest',
     name: 'Penetration Tests Monthly',
-    description:
-      'Monthly Comp AI penetration testing package. Includes 5 scans per month.',
+    description: 'Monthly Comp AI penetration testing package. Includes 5 scans per month.',
     cadence: 'month',
     currency: 'usd',
     unitAmount: 39900,
@@ -90,9 +90,7 @@ export const billingCatalogs = {
   test: createCatalog({ environment: 'test', skus: testSkus }),
 } satisfies Record<BillingCatalogEnvironment, BillingCatalog>;
 
-export function getBillingCatalog(
-  environment: BillingCatalogEnvironment = 'test',
-): BillingCatalog {
+export function getBillingCatalog(environment: BillingCatalogEnvironment = 'test'): BillingCatalog {
   return billingCatalogs[environment];
 }
 
@@ -110,13 +108,11 @@ export function getBillingSkuByStripePriceId(params: {
 }): BillingSku | null {
   const catalog = getBillingCatalog(params.environment);
   return (
-    Object.values(catalog.skus).find(
-      (sku) => sku.stripePriceId === params.stripePriceId,
-    ) ?? null
+    Object.values(catalog.skus).find((sku) => sku.stripePriceId === params.stripePriceId) ?? null
   );
 }
 
-export function isSubscriptionBillingSkuKey(value: string): value is BillingSkuKey {
+export function isSubscriptionBillingSkuKey(value: string): value is SubscriptionBillingSkuKey {
   return subscriptionBillingSkuKeys.some((skuKey) => skuKey === value);
 }
 
@@ -131,10 +127,8 @@ function createCatalog(params: {
       pentest: params.skus.pentest_monthly_5.stripeProductId,
     },
     prices: {
-      background_check_one_time:
-        params.skus.background_check_one_time.stripePriceId,
-      background_checks_monthly_25:
-        params.skus.background_checks_monthly_25.stripePriceId,
+      background_check_one_time: params.skus.background_check_one_time.stripePriceId,
+      background_checks_monthly_25: params.skus.background_checks_monthly_25.stripePriceId,
       pentest_monthly_5: params.skus.pentest_monthly_5.stripePriceId,
     },
     skus: params.skus,

@@ -32,9 +32,17 @@ export class BillingWebhookService {
     if (!secret)
       throw new BadRequestException('Stripe webhook secret is not configured.');
 
-    const event = this.stripeService
-      .getClient()
-      .webhooks.constructEvent(params.rawBody, params.signature, secret);
+    const stripe = this.stripeService.getClient();
+    let event: Stripe.Event;
+    try {
+      event = stripe.webhooks.constructEvent(
+        params.rawBody,
+        params.signature,
+        secret,
+      );
+    } catch {
+      throw new BadRequestException('Invalid Stripe webhook signature.');
+    }
     const claim = await claimStripeWebhookEvent({
       stripeEventId: event.id,
       eventType: event.type,

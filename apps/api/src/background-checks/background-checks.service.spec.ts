@@ -432,6 +432,9 @@ describe('background checks', () => {
   });
 
   it('uses BETTER_AUTH_URL as the local app URL fallback for setup redirects', async () => {
+    process.env.NEXT_PUBLIC_APP_URL = '';
+    process.env.APP_URL = '';
+    process.env.BETTER_AUTH_URL = 'http://localhost:3000';
     const billingService = {
       createSetupSession: jest.fn().mockResolvedValue({
         url: 'https://checkout.stripe.com/c/session_1',
