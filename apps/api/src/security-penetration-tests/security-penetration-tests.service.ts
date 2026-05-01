@@ -24,6 +24,14 @@ import {
 import { randomUUID } from 'crypto';
 
 import type { CreatePenetrationTestDto } from './dto/create-penetration-test.dto';
+import {
+  evidenceLevelValues,
+  pentestCheckValues,
+  scanDepthValues,
+  type EvidenceLevel,
+  type PentestCheck,
+  type ScanDepth,
+} from './dto/create-penetration-test.dto';
 import { BillingEntitlementsService } from '../billing/billing-entitlements.service';
 import { PentestCreditsService } from './pentest-credits.service';
 
@@ -78,6 +86,9 @@ export interface SecurityPenetrationTest {
   webhookUrl?: string | null;
   notificationEmail?: string | null;
   progress?: PentestProgress;
+  scanDepth?: ScanDepth;
+  evidenceLevel?: EvidenceLevel;
+  checks?: PentestCheck[];
 }
 
 export interface BinaryArtifact {
@@ -108,6 +119,12 @@ interface WebhookRequestMetadata {
   webhookToken?: string;
   eventId?: string;
 }
+
+type CreatePentestBodyWithScanProfile = CreatePentestBody & {
+  scanDepth?: ScanDepth;
+  evidenceLevel?: EvidenceLevel;
+  checks?: PentestCheck[];
+};
 
 @Injectable()
 export class SecurityPenetrationTestsService {
@@ -292,7 +309,7 @@ export class SecurityPenetrationTestsService {
     // with a third-party vendor. Private-repo support belongs behind an
     // explicit, scoped credential mechanism (e.g., GitHub App installation
     // tokens), not a quiet OAuth-token forward.
-    const body: CreatePentestBody = {
+    const body: CreatePentestBodyWithScanProfile = {
       targetUrl: payload.targetUrl,
       ...(payload.repoUrl ? { repoUrl: payload.repoUrl } : {}),
       ...(payload.pipelineTesting !== undefined
@@ -300,6 +317,11 @@ export class SecurityPenetrationTestsService {
         : {}),
       ...(payload.testMode !== undefined ? { testMode: payload.testMode } : {}),
       ...(resolvedWebhookUrl ? { webhookUrl: resolvedWebhookUrl } : {}),
+      ...(payload.scanDepth ? { scanDepth: payload.scanDepth } : {}),
+      ...(payload.evidenceLevel
+        ? { evidenceLevel: payload.evidenceLevel }
+        : {}),
+      ...(payload.checks ? { checks: payload.checks } : {}),
       // Attribution metadata — Maced persists this verbatim and returns it on
       // list/get. Gives us a second source of truth for the org↔run mapping
       // (our `security_penetration_test_runs` table is the primary one) so
@@ -409,6 +431,11 @@ export class SecurityPenetrationTestsService {
       temporalUiUrl: null,
       webhookUrl: resolvedWebhookUrl ?? null,
       notificationEmail: null,
+      ...(payload.scanDepth ? { scanDepth: payload.scanDepth } : {}),
+      ...(payload.evidenceLevel
+        ? { evidenceLevel: payload.evidenceLevel }
+        : {}),
+      ...(payload.checks ? { checks: payload.checks } : {}),
     };
   }
 
@@ -739,6 +766,7 @@ export class SecurityPenetrationTestsService {
         temporalUiUrl: null,
         webhookUrl: null,
         notificationEmail: null,
+        ...this.getScanProfileFields(report),
       };
     }
 
@@ -755,8 +783,61 @@ export class SecurityPenetrationTestsService {
       temporalUiUrl: null,
       webhookUrl: report.webhookUrl ?? null,
       notificationEmail: report.notificationEmail ?? null,
+      ...this.getScanProfileFields(report),
       ...('progress' in report ? { progress: report.progress } : {}),
     };
+  }
+
+  private getScanProfileFields(
+    report: Pentest | PentestWithProgress | PentestCreated,
+  ): Pick<SecurityPenetrationTest, 'scanDepth' | 'evidenceLevel' | 'checks'> {
+    const record = report as unknown;
+    if (!this.isRecord(record)) return {};
+
+    const fields: Pick<
+      SecurityPenetrationTest,
+      'scanDepth' | 'evidenceLevel' | 'checks'
+    > = {};
+
+    if (this.isScanDepth(record.scanDepth)) {
+      fields.scanDepth = record.scanDepth;
+    }
+
+    if (this.isEvidenceLevel(record.evidenceLevel)) {
+      fields.evidenceLevel = record.evidenceLevel;
+    }
+
+    if (Array.isArray(record.checks)) {
+      const checks = record.checks.filter((check): check is PentestCheck =>
+        this.isPentestCheck(check),
+      );
+      if (checks.length === record.checks.length) {
+        fields.checks = checks;
+      }
+    }
+
+    return fields;
+  }
+
+  private isScanDepth(value: unknown): value is ScanDepth {
+    return (
+      typeof value === 'string' &&
+      (scanDepthValues as readonly string[]).includes(value)
+    );
+  }
+
+  private isEvidenceLevel(value: unknown): value is EvidenceLevel {
+    return (
+      typeof value === 'string' &&
+      (evidenceLevelValues as readonly string[]).includes(value)
+    );
+  }
+
+  private isPentestCheck(value: unknown): value is PentestCheck {
+    return (
+      typeof value === 'string' &&
+      (pentestCheckValues as readonly string[]).includes(value)
+    );
   }
 
   private isRecord(value: unknown): value is Record<string, unknown> {
