@@ -1,54 +1,76 @@
 'use client';
 
 /**
- * Concise explanation of how the treatment-impact score is computed, surfaced
- * via a Popover from the hero's "How is this calculated?" affordance.
+ * Concise but specific explanation of how the treatment-impact score is
+ * computed. Uses real GRC vocabulary and shows the actual formulas a CISO
+ * would expect to see (5x5 matrix, ceil(raw/2.5) normalization, linear
+ * interpolation by task completion).
  *
- * The copy is deliberately CISO-ready (5×5 matrix, NIST/ISO references, named
- * strategy outcomes) but does NOT publish the exact step-down coefficients —
- * those live in `lib/suggested-residual.ts` and may evolve as we calibrate.
+ * Does NOT publish the exact step-down counts per strategy — those live in
+ * `lib/suggested-residual.ts` and may evolve as we calibrate against
+ * customer feedback. Strategy effects are described qualitatively (which
+ * axes move, why) without naming the step magnitudes.
  */
 export function ScoreExplainer() {
   return (
     <div className="flex flex-col gap-3 text-[13px] leading-[1.55] text-foreground">
       <div className="text-sm font-medium">How this score is calculated</div>
 
-      <Section title="Inherent risk (1–10)">
-        A standard 5×5 risk matrix scores likelihood × impact and normalizes
-        the result onto a 1–10 scale.
+      <Section title="1 · Inherent score (1–10)">
+        We rate likelihood (Very Unlikely → Very Likely) and impact
+        (Insignificant → Severe) on a standard 5×5 matrix, each axis indexed
+        1 to 5.
+        <Formula
+          lines={[
+            'raw = likelihood × impact   →   1..25',
+            'score = ⌈raw ÷ 2.5⌉          →   1..10',
+          ]}
+        />
+        Risk levels (Negligible · Low · Medium · High · Critical) map from
+        bands of the raw score.
       </Section>
 
-      <Section title="Treatment target">
-        Each strategy projects a residual:
+      <Section title="2 · Treatment target">
+        Each strategy projects a residual along defined axes:
         <ul className="mt-1 list-disc pl-4 text-muted-foreground">
           <li>
             <span className="font-medium text-foreground">Mitigate</span> —
-            reduces both likelihood and impact through linked controls and
-            tasks.
+            linked controls and tasks reduce <em>both</em> likelihood and
+            impact. The target re-runs the matrix math on the reduced inputs
+            and re-normalizes to 1–10.
           </li>
           <li>
             <span className="font-medium text-foreground">Transfer</span> —
-            reduces impact via cyber insurance or contractual indemnity.
+            insurance or contractual indemnity shifts financial impact but
+            doesn't change the probability of an event. The target reduces
+            impact only; likelihood stays at inherent.
           </li>
           <li>
             <span className="font-medium text-foreground">Accept</span> —
-            residual equals inherent; rationale documented.
-          </li>
-          <li>
-            <span className="font-medium text-foreground">Avoid</span> — pinned
-            to the lowest level; activity eliminated.
+            residual equals inherent. No reduction; rationale is documented
+            on the plan.
           </li>
         </ul>
       </Section>
 
-      <Section title="Current vs. target">
-        For Mitigate plans, the current score moves between inherent and
-        target as linked tasks are completed (or marked not relevant). 0%
-        complete shows inherent; 100% shows the target.
+      <Section title="3 · Current vs. target">
+        For Mitigate, the displayed score interpolates linearly between
+        inherent and target by task completion:
+        <Formula
+          lines={[
+            'completion = (tasks done OR not_relevant) ÷ total linked tasks',
+            'current = inherent − (inherent − target) × completion',
+          ]}
+        />
+        At 0% complete the score equals inherent; at 100% it equals the
+        target. Non-Mitigate strategies are treated as fully executed by
+        definition (the strategy itself <em>is</em> the action), so their
+        current and target are the same.
       </Section>
 
       <div className="border-t border-border pt-2 text-[11px] text-muted-foreground">
-        Aligns with NIST SP 800-30 / ISO 27005 risk-assessment guidance.
+        Methodology aligns with NIST SP 800-30 (semi-quantitative risk
+        assessment) and ISO 27005 (risk treatment).
       </div>
     </div>
   );
@@ -60,7 +82,15 @@ function Section({ title, children }: { title: string; children: React.ReactNode
       <div className="text-[11px] font-bold uppercase tracking-[0.06em] text-muted-foreground">
         {title}
       </div>
-      <div className="mt-0.5">{children}</div>
+      <div className="mt-1">{children}</div>
     </div>
+  );
+}
+
+function Formula({ lines }: { lines: string[] }) {
+  return (
+    <pre className="mt-1.5 mb-1 overflow-x-auto rounded border border-border bg-muted/40 px-2 py-1.5 font-mono text-[11px] leading-[1.55] text-foreground/80">
+      {lines.join('\n')}
+    </pre>
   );
 }
