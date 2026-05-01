@@ -4,6 +4,7 @@ import axios from 'axios';
 import { generateAuditorContentTask } from '../auditor/generate-auditor-content';
 import { generateRiskMitigationsForOrg } from './generate-risk-mitigation';
 import { generateVendorMitigationsForOrg } from './generate-vendor-mitigation';
+import type { linkRisksAndVendorsToWork } from './link-risks-and-vendors-to-work';
 import {
   createRisks,
   createVendors,
@@ -185,6 +186,23 @@ export const onboardOrganization = task({
 
       // Mark risks step as complete in metadata (real-time)
       metadata.set('risk', true);
+
+      // Auto-link risks + vendors to existing tasks before mitigation generation
+      // runs, so the AI prompt sees the linked tasks/controls and produces
+      // grounded plans. Fails-soft: a timeout/error degrades to today's behavior.
+      metadata.set('currentStep', 'Linking risks to tasks...');
+      try {
+        await tasks.triggerAndWait<typeof linkRisksAndVendorsToWork>(
+          'link-risks-and-vendors-to-work',
+          { organizationId: payload.organizationId },
+        );
+        metadata.set('linkage', true);
+      } catch (err) {
+        logger.warn('linkage step failed; continuing without grounded prompts', {
+          organizationId: payload.organizationId,
+          error: err instanceof Error ? err.message : String(err),
+        });
+      }
 
       // Get policy count for the step message
       const policyCount = policyList.length;
