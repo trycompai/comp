@@ -68,4 +68,26 @@ describe('OrganizationDetail — background-check toggle', () => {
       );
     });
   });
+
+  it('rolls back to checked state when PATCH fails', async () => {
+    patchMock.mockResolvedValue({ error: 'server error' });
+    const user = userEvent.setup();
+
+    render(
+      <OrganizationDetail
+        org={baseOrg}
+        currentOrgId="org_1"
+        hasAccess={true}
+      />,
+    );
+
+    const toggle = screen.getByRole('switch', {
+      name: /require background checks/i,
+    });
+    await user.click(toggle);
+
+    await waitFor(() => {
+      expect(toggle).toBeChecked();
+    });
+  });
 });
