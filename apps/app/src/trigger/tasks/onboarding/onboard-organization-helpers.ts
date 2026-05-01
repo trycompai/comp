@@ -17,6 +17,7 @@ import { generateObject, jsonSchema } from 'ai';
 import axios from 'axios';
 import { z } from 'zod';
 import type { researchVendor } from '../scrape/research';
+import { buildCitationsHeading } from './build-citations-heading';
 import { RISK_MITIGATION_PROMPT } from './prompts/risk-mitigation';
 import {
   citationSuffix,
@@ -309,6 +310,10 @@ const sentencesSchema = z.object({
  * Combines deterministic citations with LLM-generated sentences into the
  * final treatment-plan body that gets persisted to
  * `treatmentStrategyDescription`.
+ *
+ * The intro line is built from the actual citations so it can never lie
+ * about counts/kinds — e.g. "through 3 controls, 1 task, and 1 recommended
+ * gap" reflects exactly what's in the bullets below.
  */
 function combineSentencesWithCitations({
   treatmentStrategy,
@@ -324,10 +329,11 @@ function combineSentencesWithCitations({
   );
   return [
     `Treatment plan (${treatmentStrategy})`,
-    `This plan reduces the risk through 5 controls:`,
+    buildCitationsHeading(citations),
     ...bullets,
   ].join('\n');
 }
+
 
 /**
  * Revalidates the organization path for cache busting
