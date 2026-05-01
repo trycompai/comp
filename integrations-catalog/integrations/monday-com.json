@@ -1,0 +1,44 @@
+{
+  "slug": "monday-com",
+  "name": "Monday.com",
+  "description": "Work management platform for team collaboration. Verifies employee access, app availability, and data governance controls in Monday.com.",
+  "category": "Productivity",
+  "docsUrl": "https://developer.monday.com/api-reference/docs",
+  "baseUrl": "https://api.monday.com",
+  "authConfig": {
+    "type": "api_key",
+    "config": {
+      "setupInstructions": "1. Log in to monday.com as an admin\n2. Click your profile picture > Developers\n3. Click API token > Show\n4. Copy your personal API token\n5. Paste it below"
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "monday_app_availability",
+      "name": "Monday.com App Availability",
+      "description": "Verifies that the Monday.com API is accessible and the account is active by querying the authenticated user profile.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "monday_employee_access",
+      "name": "Monday.com Employee Access",
+      "description": "Reviews all users in the Monday.com account, verifying active/inactive status and admin roles for access governance.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "monday_data_governance",
+      "name": "Monday.com Data Governance",
+      "description": "Audits board access and sharing settings to verify data governance controls are in place.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 3,
+  "isActive": true
+}
