@@ -15,11 +15,11 @@ afterEach(() => {
 });
 
 describe('RelinkButton', () => {
-  it('renders with the "Re-link from scratch" label by default', () => {
+  it('renders with the "Re-assess" label by default', () => {
     realtimeRunMock.mockReturnValue({ run: null });
     render(<RelinkButton onRelink={vi.fn()} />);
     expect(
-      screen.getByRole('button', { name: /Re-link from scratch/i }),
+      screen.getByRole('button', { name: /Re-assess/i }),
     ).toBeInTheDocument();
   });
 
@@ -27,8 +27,8 @@ describe('RelinkButton', () => {
     realtimeRunMock.mockReturnValue({ run: null });
     const onRelink = vi.fn().mockResolvedValue({ runId: 'r1', publicAccessToken: 't1' });
     render(<RelinkButton onRelink={onRelink} />);
-    fireEvent.click(screen.getByRole('button', { name: /Re-link from scratch/i }));
-    expect(await screen.findByText(/Re-link tasks from scratch/i)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: /Re-assess/i }));
+    expect(await screen.findByText(/Re-assess linked tasks/i)).toBeInTheDocument();
     expect(onRelink).not.toHaveBeenCalled();
   });
 
@@ -36,8 +36,8 @@ describe('RelinkButton', () => {
     realtimeRunMock.mockReturnValue({ run: null });
     const onRelink = vi.fn().mockResolvedValue({ runId: 'r1', publicAccessToken: 't1' });
     render(<RelinkButton onRelink={onRelink} />);
-    fireEvent.click(screen.getByRole('button', { name: /Re-link from scratch/i }));
-    fireEvent.click(await screen.findByRole('button', { name: /Yes, re-link/i }));
+    fireEvent.click(screen.getByRole('button', { name: /Re-assess/i }));
+    fireEvent.click(await screen.findByRole('button', { name: /Yes, re-assess/i }));
     await waitFor(() => expect(onRelink).toHaveBeenCalled());
   });
 
@@ -51,8 +51,8 @@ describe('RelinkButton', () => {
     const onRelink = vi.fn().mockResolvedValue({ runId: 'r1', publicAccessToken: 't1' });
     const onAfterLink = vi.fn().mockResolvedValue(undefined);
     render(<RelinkButton onRelink={onRelink} onAfterLink={onAfterLink} />);
-    fireEvent.click(screen.getByRole('button', { name: /Re-link from scratch/i }));
-    fireEvent.click(await screen.findByRole('button', { name: /Yes, re-link/i }));
+    fireEvent.click(screen.getByRole('button', { name: /Re-assess/i }));
+    fireEvent.click(await screen.findByRole('button', { name: /Yes, re-assess/i }));
     await waitFor(() => expect(onAfterLink).toHaveBeenCalled());
   });
 });

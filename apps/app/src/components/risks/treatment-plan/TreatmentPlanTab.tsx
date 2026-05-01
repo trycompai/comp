@@ -40,9 +40,9 @@ interface TreatmentPlanTabProps {
    * Linked Work content. Older callers that don't pass this prop keep working. */
   onAutoLink?: () => Promise<{ runId: string; publicAccessToken: string }>;
   /** Optional re-link callback. When provided and the entity has at least one
-   * linked task (and the user can update), a "Re-link from scratch" button is
-   * shown above the Linked Work content. The button confirms before running
-   * since this is destructive — it wipes the user's manual unlinks. */
+   * linked task (and the user can update), a "Re-assess" button is shown in
+   * the Linked Work section header. The button confirms before running since
+   * this is destructive — it wipes the user's manual unlinks. */
   onRelink?: () => Promise<{ runId: string; publicAccessToken: string }>;
   /** Optional unlink callback. When provided, each task row in the Linked Work
    * card gets a × affordance that removes the task↔entity link. */
@@ -143,6 +143,15 @@ export function TreatmentPlanTab({
               number="03"
               title="Linked work"
               subtitle="Drives the residual estimate."
+              action={
+                entity.tasks.length > 0 && canUpdate && onRelink ? (
+                  <RelinkButton
+                    disabled={regenerating}
+                    onRelink={onRelink}
+                    onAfterLink={onRegenerate}
+                  />
+                ) : undefined
+              }
             />
           </CardHeader>
           <CardContent>
@@ -154,15 +163,6 @@ export function TreatmentPlanTab({
                   onAutoLink={onAutoLink}
                   onAfterLink={onRegenerate}
                 />
-              )}
-              {entity.tasks.length > 0 && canUpdate && onRelink && (
-                <div className="flex justify-end">
-                  <RelinkButton
-                    disabled={regenerating}
-                    onRelink={onRelink}
-                    onAfterLink={onRegenerate}
-                  />
-                </div>
               )}
               <LinkedWork
                 orgId={orgId}

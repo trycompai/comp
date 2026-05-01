@@ -14,7 +14,7 @@ import {
   Stack,
   Text,
 } from '@trycompai/design-system';
-import { Renew } from '@trycompai/design-system/icons';
+import { MagicWandFilled } from '@trycompai/design-system/icons';
 import { useRealtimeRun } from '@trigger.dev/react-hooks';
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
@@ -52,7 +52,7 @@ export function RelinkButton({ disabled, onRelink, onAfterLink }: RelinkButtonPr
       const { runId, publicAccessToken } = await onRelink();
       setState({ kind: 'running', runId, publicAccessToken });
     } catch {
-      toast.error('Re-link failed. Try again.');
+      toast.error('Re-assess failed. Try again.');
     } finally {
       setSubmitting(false);
     }
@@ -65,10 +65,10 @@ export function RelinkButton({ disabled, onRelink, onAfterLink }: RelinkButtonPr
         accessToken={state.publicAccessToken}
         onComplete={async (linked) => {
           if (linked === 0) {
-            toast.info('No matching tasks found after re-link.');
+            toast.info('No matching tasks found after re-assess.');
           } else {
             toast.success(
-              `Re-linked ${linked} task${linked === 1 ? '' : 's'} · refreshing treatment plan`,
+              `Re-assessed and linked ${linked} task${linked === 1 ? '' : 's'} · refreshing treatment plan`,
             );
             if (onAfterLink) {
               try {
@@ -81,7 +81,7 @@ export function RelinkButton({ disabled, onRelink, onAfterLink }: RelinkButtonPr
           setState({ kind: 'idle' });
         }}
         onFailed={() => {
-          toast.error('Re-link failed. Try again.');
+          toast.error('Re-assess failed. Try again.');
           setState({ kind: 'idle' });
         }}
       />
@@ -97,24 +97,24 @@ export function RelinkButton({ disabled, onRelink, onAfterLink }: RelinkButtonPr
             variant="ghost"
             size="sm"
             loading={submitting}
-            iconLeft={<Renew aria-hidden="true" />}
+            iconLeft={<MagicWandFilled aria-hidden="true" />}
           >
-            Re-link from scratch
+            Re-assess
           </Button>
         }
       />
       <AlertDialogContent>
         <AlertDialogHeader>
-          <AlertDialogTitle>Re-link tasks from scratch?</AlertDialogTitle>
+          <AlertDialogTitle>Re-assess linked tasks?</AlertDialogTitle>
           <AlertDialogDescription>
-            This removes every currently linked task and rebuilds the linkage by matching
+            This removes every currently linked task and re-runs the matching to find
             the most relevant tasks. Any manual unlinks you've made will be reverted.
             The treatment plan will refresh after.
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
           <AlertDialogCancel>Cancel</AlertDialogCancel>
-          <AlertDialogAction onClick={handleConfirm}>Yes, re-link</AlertDialogAction>
+          <AlertDialogAction onClick={handleConfirm}>Yes, re-assess</AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>
@@ -177,7 +177,7 @@ function RunProgress({ runId, accessToken, onComplete, onFailed }: RunProgressPr
             aria-hidden="true"
           />
           <Text size="xs" weight="medium">
-            Re-linking tasks
+            Re-assessing tasks
           </Text>
         </div>
         <Text size="xs" variant="muted">
