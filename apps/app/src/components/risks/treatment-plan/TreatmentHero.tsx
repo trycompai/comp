@@ -208,7 +208,7 @@ export function TreatmentHero({
                 — {completionPct}% of plan complete
               </div>
             )}
-            <p className="max-w-[540px] text-base leading-[1.55] text-foreground">
+            <p className="max-w-[540px] text-sm leading-[1.55] text-foreground">
               The plan moves this risk from{' '}
               <strong
                 className="font-bold"
