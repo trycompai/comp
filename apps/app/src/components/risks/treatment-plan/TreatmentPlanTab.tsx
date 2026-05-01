@@ -34,6 +34,14 @@ interface TreatmentPlanTabProps {
   onRegenerate: () => Promise<void>;
   regenerating: boolean;
   /**
+   * Active trigger.dev run handle for an in-flight regeneration. The
+   * description editor subscribes via `useRealtimeRun` to render live
+   * progress until the run terminates.
+   */
+  regenRun?: { runId: string; publicAccessToken: string } | null;
+  /** Called when the regeneration run terminates (success or failure). */
+  onRegenSettled?: (result: { success: boolean; reason?: string }) => void;
+  /**
    * Triggers the AI scan in suggestionsOnly mode and returns a realtime handle.
    * The component reads `run.output.suggestions` once status === COMPLETED.
    * When omitted, the legacy fall-through renders only LinkedWork.
@@ -78,6 +86,8 @@ export function TreatmentPlanTab({
   onUnlinkTask,
   onResumeAutoLink,
   onDiscardAutoLinkRun,
+  regenRun,
+  onRegenSettled,
 }: TreatmentPlanTabProps) {
   const [strategy, setStrategy] = useState(entity.treatmentStrategy);
 
@@ -178,6 +188,8 @@ export function TreatmentPlanTab({
                 onRegenerate={onRegenerate}
                 regenerating={regenerating}
                 disabled={!canUpdate}
+                regenRun={regenRun}
+                onRegenSettled={onRegenSettled}
               />
             </>
           )}

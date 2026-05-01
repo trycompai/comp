@@ -242,7 +242,9 @@ export function useVendorActions() {
   );
 
   const regenerateMitigation = useCallback(
-    async (vendorId: string) => {
+    async (
+      vendorId: string,
+    ): Promise<{ runId: string; publicAccessToken: string }> => {
       const response = await fetch(`/api/vendors/${vendorId}/regenerate-mitigation`, {
         method: 'POST',
         credentials: 'include',
@@ -251,6 +253,7 @@ export function useVendorActions() {
         const body = await response.json().catch(() => ({}));
         throw new Error(body.error || 'Failed to trigger mitigation regeneration');
       }
+      return response.json();
     },
     [],
   );

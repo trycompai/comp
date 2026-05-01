@@ -2,7 +2,7 @@ import { generateVendorMitigation } from '@/trigger/tasks/onboarding/generate-ve
 import type { PolicyContext } from '@/trigger/tasks/onboarding/onboard-organization-helpers';
 import { serverApi } from '@/lib/api-server';
 import { auth } from '@/utils/auth';
-import { tasks } from '@trigger.dev/sdk';
+import { auth as triggerAuth, tasks } from '@trigger.dev/sdk';
 import { NextRequest, NextResponse } from 'next/server';
 
 interface PeopleApiResponse {
@@ -71,7 +71,7 @@ export async function POST(
       description: policy.description,
     }));
 
-    await tasks.trigger<typeof generateVendorMitigation>(
+    const handle = await tasks.trigger<typeof generateVendorMitigation>(
       'generate-vendor-mitigation',
       {
         organizationId,
@@ -81,7 +81,12 @@ export async function POST(
       },
     );
 
-    return NextResponse.json({ success: true });
+    const publicAccessToken = await triggerAuth.createPublicToken({
+      scopes: { read: { runs: [handle.id] } },
+      expirationTime: '15m',
+    });
+
+    return NextResponse.json({ runId: handle.id, publicAccessToken });
   } catch (error) {
     console.error('Error regenerating vendor mitigation:', error);
     return NextResponse.json(

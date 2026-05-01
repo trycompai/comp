@@ -101,6 +101,10 @@ export function VendorDetailTabs({
   const [isEditingDescription, setIsEditingDescription] = useState(false);
   const [descriptionValue, setDescriptionValue] = useState('');
   const [isMitigationLoading, setIsMitigationLoading] = useState(false);
+  const [regenRun, setRegenRun] = useState<{
+    runId: string;
+    publicAccessToken: string;
+  } | null>(null);
   const [isAssessmentLoading, setIsAssessmentLoading] = useState(false);
   const [isRegenerating, setIsRegenerating] = useState(false);
   const [activeTab, setActiveTab] = useState(defaultTab);
@@ -257,17 +261,28 @@ export function VendorDetailTabs({
 
   const handleRegenerateMitigation = async () => {
     setIsMitigationLoading(true);
-    toast.info('Regenerating vendor risk mitigation...');
     try {
-      await regenerateMitigation(vendorId);
-      toast.success('Mitigation regeneration triggered.');
-      refreshVendor();
+      const handle = await regenerateMitigation(vendorId);
+      setRegenRun(handle);
     } catch {
       toast.error('Failed to trigger mitigation regeneration');
-    } finally {
       setIsMitigationLoading(false);
     }
   };
+
+  const handleRegenSettled = useCallback(
+    (result: { success: boolean; reason?: string }) => {
+      setRegenRun(null);
+      setIsMitigationLoading(false);
+      if (result.success) {
+        toast.success('Treatment plan regenerated.');
+        void refreshVendor();
+      } else {
+        toast.error(result.reason ?? 'Failed to regenerate the treatment plan.');
+      }
+    },
+    [refreshVendor],
+  );
 
   const handleUpdateStrategy = async (strategy: RiskTreatmentType) => {
     await updateVendor(vendorId, { treatmentStrategy: strategy });
@@ -497,6 +512,8 @@ export function VendorDetailTabs({
                 onUnlinkTask={handleUnlinkTask}
                 onResumeAutoLink={handleResumeAutoLink}
                 onDiscardAutoLinkRun={handleDiscardAutoLinkRun}
+                regenRun={regenRun}
+                onRegenSettled={handleRegenSettled}
               />
             </TabsContent>
 

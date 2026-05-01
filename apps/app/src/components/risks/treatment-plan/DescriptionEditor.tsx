@@ -1,7 +1,8 @@
 'use client';
 
-import { Button, Text } from '@trycompai/design-system';
+import { Button } from '@trycompai/design-system';
 import { Edit, Renew } from '@trycompai/design-system/icons';
+import { useRealtimeRun } from '@trigger.dev/react-hooks';
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -13,6 +14,49 @@ interface DescriptionEditorProps {
   onRegenerate: () => Promise<void>;
   regenerating: boolean;
   disabled?: boolean;
+  /**
+   * The trigger.dev run handle for an in-flight regeneration. When set, the
+   * editor subscribes via `useRealtimeRun`, renders status-specific progress
+   * copy, and notifies the parent via `onRegenSettled` when the run reaches
+   * a terminal state. Null/undefined while no regen is active.
+   */
+  regenRun?: { runId: string; publicAccessToken: string } | null;
+  /** Called once the regeneration run terminates (success or failure). */
+  onRegenSettled?: (result: { success: boolean; reason?: string }) => void;
+}
+
+const TERMINAL_FAILURE_STATUSES = new Set([
+  'FAILED',
+  'CANCELED',
+  'CRASHED',
+  'SYSTEM_FAILURE',
+  'EXPIRED',
+  'TIMED_OUT',
+]);
+
+function regenStatusCopy(status: string | undefined): { headline: string; sub: string } {
+  if (!status || status === 'WAITING_FOR_DEPLOY') {
+    return {
+      headline: 'Starting AI scan…',
+      sub: 'Allocating compute capacity.',
+    };
+  }
+  if (status === 'QUEUED' || status === 'DELAYED') {
+    return {
+      headline: 'Queued — waiting to start…',
+      sub: 'Your regeneration will begin in a moment.',
+    };
+  }
+  if (status === 'INTERRUPTED' || status === 'WAITING_TO_RESUME') {
+    return {
+      headline: 'Resuming…',
+      sub: 'Picking up where the run left off.',
+    };
+  }
+  return {
+    headline: 'AI is drafting your treatment plan…',
+    sub: 'Reading linked controls and tasks, then writing each citation.',
+  };
 }
 
 function countWords(text: string): number {
@@ -27,6 +71,8 @@ export function DescriptionEditor({
   onRegenerate,
   regenerating,
   disabled,
+  regenRun,
+  onRegenSettled,
 }: DescriptionEditorProps) {
   const [draft, setDraft] = useState(value);
   const [saving, setSaving] = useState(false);
@@ -152,14 +198,75 @@ export function DescriptionEditor({
           </>
         )}
       </div>
-      {regenerating && (
-        <div className="mt-2">
-          <Text size="xs" variant="muted">
-            AI is drafting — this may take up to a minute. You can keep editing; your edits will
-            win if they save before the AI finishes.
-          </Text>
-        </div>
+      {(regenerating || regenRun) && (
+        <RegenProgress
+          regenRun={regenRun ?? null}
+          onSettled={onRegenSettled}
+          /* While `regenerating` is true but no run handle yet, the POST
+             that triggers the task is in flight — show a generic starter
+             until the runId arrives. */
+          fallbackHeadline="Starting AI scan…"
+        />
       )}
+    </div>
+  );
+}
+
+function RegenProgress({
+  regenRun,
+  onSettled,
+  fallbackHeadline,
+}: {
+  regenRun: { runId: string; publicAccessToken: string } | null;
+  onSettled?: (result: { success: boolean; reason?: string }) => void;
+  fallbackHeadline: string;
+}) {
+  const { run } = useRealtimeRun(regenRun?.runId ?? '', {
+    accessToken: regenRun?.publicAccessToken ?? '',
+    enabled: !!regenRun,
+  });
+  const status = run?.status;
+
+  useEffect(() => {
+    if (!status) return;
+    if (status === 'COMPLETED') {
+      onSettled?.({ success: true });
+      return;
+    }
+    if (TERMINAL_FAILURE_STATUSES.has(status)) {
+      const reasons: Record<string, string> = {
+        FAILED: 'The AI run hit an error.',
+        CANCELED: 'The AI run was canceled.',
+        CRASHED: 'The worker crashed mid-run.',
+        SYSTEM_FAILURE: 'A system error stopped the run.',
+        EXPIRED: 'The run expired before it could start.',
+        TIMED_OUT: 'The run took too long and timed out.',
+      };
+      onSettled?.({ success: false, reason: reasons[status] ?? 'The AI run failed.' });
+    }
+  }, [status]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const { headline, sub } = regenRun
+    ? regenStatusCopy(status)
+    : { headline: fallbackHeadline, sub: 'This may take up to a minute.' };
+
+  return (
+    <div
+      className="mt-3 flex items-start gap-2 rounded-md border border-border bg-primary/[0.04] px-3 py-2.5"
+      role="status"
+      aria-live="polite"
+    >
+      <span
+        className="mt-0.5 inline-block h-3.5 w-3.5 shrink-0 animate-spin rounded-full border-2 border-border border-t-primary"
+        aria-hidden="true"
+      />
+      <div className="min-w-0">
+        <div className="text-[13px] text-foreground">{headline}</div>
+        <div className="mt-0.5 text-[11px] leading-[1.5] text-muted-foreground">{sub}</div>
+        <div className="mt-1 text-[11px] leading-[1.5] text-muted-foreground">
+          You can keep editing; your edits will win if they save before the AI finishes.
+        </div>
+      </div>
     </div>
   );
 }

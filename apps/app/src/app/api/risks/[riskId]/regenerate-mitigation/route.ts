@@ -2,7 +2,7 @@ import { generateRiskMitigation } from '@/trigger/tasks/onboarding/generate-risk
 import type { PolicyContext } from '@/trigger/tasks/onboarding/onboard-organization-helpers';
 import { serverApi } from '@/lib/api-server';
 import { auth } from '@/utils/auth';
-import { tasks } from '@trigger.dev/sdk';
+import { auth as triggerAuth, tasks } from '@trigger.dev/sdk';
 import { NextRequest, NextResponse } from 'next/server';
 
 interface PeopleApiResponse {
@@ -71,7 +71,7 @@ export async function POST(
       description: policy.description,
     }));
 
-    await tasks.trigger<typeof generateRiskMitigation>(
+    const handle = await tasks.trigger<typeof generateRiskMitigation>(
       'generate-risk-mitigation',
       {
         organizationId,
@@ -81,7 +81,14 @@ export async function POST(
       },
     );
 
-    return NextResponse.json({ success: true });
+    // Mint a 15-min public token so the UI can subscribe via useRealtimeRun
+    // and show live progress while the LLM drafts the treatment plan.
+    const publicAccessToken = await triggerAuth.createPublicToken({
+      scopes: { read: { runs: [handle.id] } },
+      expirationTime: '15m',
+    });
+
+    return NextResponse.json({ runId: handle.id, publicAccessToken });
   } catch (error) {
     console.error('Error regenerating risk mitigation:', error);
     return NextResponse.json(

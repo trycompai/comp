@@ -89,6 +89,10 @@ export function RiskPageClient({
   const [isEditingDescription, setIsEditingDescription] = useState(false);
   const [descriptionValue, setDescriptionValue] = useState('');
   const [isRegenerating, setIsRegenerating] = useState(false);
+  const [regenRun, setRegenRun] = useState<{
+    runId: string;
+    publicAccessToken: string;
+  } | null>(null);
 
   const risk = useMemo(() => {
     if (swrRisk) return normalizeRisk(swrRisk);
@@ -160,17 +164,31 @@ export function RiskPageClient({
 
   const handleRegenerateMitigation = async () => {
     setIsRegenerating(true);
-    toast.info('Regenerating risk mitigation...');
     try {
-      await regenerateMitigation(riskId);
-      toast.success('Regeneration triggered. This may take a moment.');
-      mutateRisk();
+      const handle = await regenerateMitigation(riskId);
+      // Hand control to the realtime subscription in DescriptionEditor.
+      // It calls back via onRegenSettled when the run terminates, at which
+      // point we clear isRegenerating + refetch the risk for the new prose.
+      setRegenRun(handle);
     } catch {
       toast.error('Failed to trigger mitigation regeneration');
-    } finally {
       setIsRegenerating(false);
     }
   };
+
+  const handleRegenSettled = useCallback(
+    (result: { success: boolean; reason?: string }) => {
+      setRegenRun(null);
+      setIsRegenerating(false);
+      if (result.success) {
+        toast.success('Treatment plan regenerated.');
+        void mutateRisk();
+      } else {
+        toast.error(result.reason ?? 'Failed to regenerate the treatment plan.');
+      }
+    },
+    [mutateRisk],
+  );
 
   const handleSuggest = async () => {
     return suggestRiskLinks(riskId);
@@ -328,6 +346,8 @@ export function RiskPageClient({
                 onUnlinkTask={handleUnlinkTask}
                 onResumeAutoLink={handleResumeAutoLink}
                 onDiscardAutoLinkRun={handleDiscardAutoLinkRun}
+                regenRun={regenRun}
+                onRegenSettled={handleRegenSettled}
               />
             </TabsContent>
 
