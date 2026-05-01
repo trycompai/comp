@@ -555,11 +555,6 @@ export function ConnectIntegrationDialog({
                 <p className="whitespace-pre-wrap text-xs break-words">{provider.setupInstructions}</p>
               </div>
             )}
-            {provider?.category === 'Cloud' && !provider?.setupScript && (
-              <div className="text-xs text-muted-foreground bg-muted/50 p-3 rounded-md">
-                This integration will only be used for Cloud Security Tests. Your credentials are encrypted and used exclusively to run read-only security scans.
-              </div>
-            )}
             {allFields
               .filter((field) => {
                 if (!provider?.setupScript) return true;
