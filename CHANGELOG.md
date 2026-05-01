@@ -1,3 +1,10 @@
+## [3.40.1](https://github.com/trycompai/comp/compare/v3.40.0...v3.40.1) (2026-05-01)
+
+
+### Bug Fixes
+
+* **cloud-tests:** scope to aws/gcp/azure and remove hardcoded copy ([17c7b76](https://github.com/trycompai/comp/commit/17c7b76af19589d4c2d7c10229f430fe812b26d5))
+
 # [3.40.0](https://github.com/trycompai/comp/compare/v3.39.1...v3.40.0) (2026-04-30)
 
 
