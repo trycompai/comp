@@ -17,9 +17,18 @@ function pctFor(score: number): number {
 interface RiskScaleProps {
   inherentScore: number;
   residualScore: number;
+  /** Color for the inherent marker line + label. Defaults to destructive. */
+  inherentColor?: string;
+  /** Color for the residual marker line + label. Defaults to primary. */
+  residualColor?: string;
 }
 
-export function RiskScale({ inherentScore, residualScore }: RiskScaleProps) {
+export function RiskScale({
+  inherentScore,
+  residualScore,
+  inherentColor = 'var(--destructive)',
+  residualColor = 'var(--primary)',
+}: RiskScaleProps) {
   return (
     <div className="relative pt-3 pb-6">
       <div
@@ -40,13 +49,10 @@ export function RiskScale({ inherentScore, residualScore }: RiskScaleProps) {
           transform: 'translateX(-50%)',
         }}
       >
-        <div
-          className="mx-auto"
-          style={{ width: 2, height: 18, background: 'var(--destructive)' }}
-        />
+        <div className="mx-auto" style={{ width: 2, height: 18, background: inherentColor }} />
         <div
           className="mt-0.5 text-center font-mono text-[10px] font-bold tabular-nums"
-          style={{ color: 'var(--destructive)', letterSpacing: '0.05em' }}
+          style={{ color: inherentColor, letterSpacing: '0.05em' }}
         >
           {inherentScore}
         </div>
@@ -61,10 +67,10 @@ export function RiskScale({ inherentScore, residualScore }: RiskScaleProps) {
           transform: 'translateX(-50%)',
         }}
       >
-        <div className="mx-auto" style={{ width: 2, height: 18, background: 'var(--primary)' }} />
+        <div className="mx-auto" style={{ width: 2, height: 18, background: residualColor }} />
         <div
-          className="mt-0.5 text-center font-mono text-[10px] font-bold tabular-nums text-primary"
-          style={{ letterSpacing: '0.05em' }}
+          className="mt-0.5 text-center font-mono text-[10px] font-bold tabular-nums"
+          style={{ color: residualColor, letterSpacing: '0.05em' }}
         >
           {residualScore}
         </div>

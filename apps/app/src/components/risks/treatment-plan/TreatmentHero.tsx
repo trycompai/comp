@@ -84,12 +84,12 @@ export function TreatmentHero({
               className="my-3 flex items-center gap-4 font-mono tabular-nums text-7xl font-normal leading-[0.95] tracking-[-0.05em] md:text-8xl"
               aria-label={`From ${inherent.score} to ${residual.score} out of 10`}
             >
-              <span className="text-destructive opacity-85">
+              <span style={{ color: LEVEL_COLOR[inherentLevel] }}>
                 {inherent.score}
                 <span className="align-super text-3xl font-light opacity-40">/10</span>
               </span>
               <ArrowRight size={28} className="text-muted-foreground" aria-hidden="true" />
-              <span className="text-primary">
+              <span style={{ color: LEVEL_COLOR[residualLevel] }}>
                 {residual.score}
                 <span className="align-super text-3xl font-light opacity-40">/10</span>
               </span>
@@ -149,7 +149,12 @@ export function TreatmentHero({
         </div>
 
         <div className="mt-5 border-t border-border pt-5">
-          <RiskScale inherentScore={inherent.score} residualScore={residual.score} />
+          <RiskScale
+            inherentScore={inherent.score}
+            residualScore={residual.score}
+            inherentColor={LEVEL_COLOR[inherentLevel]}
+            residualColor={LEVEL_COLOR[residualLevel]}
+          />
         </div>
       </CardContent>
     </Card>
