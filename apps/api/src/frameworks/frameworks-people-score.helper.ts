@@ -28,6 +28,7 @@ interface ComputePeopleScoreParams {
   employees: ScoreMember[];
   securityTrainingStepEnabled: boolean;
   deviceAgentStepEnabled: boolean;
+  backgroundCheckStepEnabled: boolean;
   hasHipaaFramework: boolean;
 }
 
@@ -37,6 +38,7 @@ export async function computePeopleScore({
   employees,
   securityTrainingStepEnabled,
   deviceAgentStepEnabled,
+  backgroundCheckStepEnabled,
   hasHipaaFramework,
 }: ComputePeopleScoreParams) {
   const activeEmployees = await filterComplianceMembers(
@@ -70,7 +72,9 @@ export async function computePeopleScore({
       memberIds,
       needsCompletions: securityTrainingStepEnabled || hasHipaaFramework,
     }),
-    getMembersWithCompletedBackgroundChecks({ organizationId, memberIds }),
+    backgroundCheckStepEnabled
+      ? getMembersWithCompletedBackgroundChecks({ organizationId, memberIds })
+      : Promise.resolve(new Set<string>()),
   ]);
 
   const completed = activeEmployees.filter((employee) => {
@@ -97,13 +101,16 @@ export async function computePeopleScore({
     const hasInstalledDevice = deviceAgentStepEnabled
       ? membersWithInstalledDevices.has(employee.id)
       : true;
+    const hasCompletedBackgroundCheck = backgroundCheckStepEnabled
+      ? membersWithCompletedBackgroundChecks.has(employee.id)
+      : true;
 
     return (
       hasAcceptedAllPolicies &&
       hasCompletedAllTraining &&
       hasCompletedHipaa &&
       hasInstalledDevice &&
-      membersWithCompletedBackgroundChecks.has(employee.id)
+      hasCompletedBackgroundCheck
     );
   }).length;
 

@@ -41,6 +41,7 @@ interface EmployeeProps {
   hipaaCompletedAt: Date | null;
   initialBackgroundCheck: BackgroundCheckRecord | null;
   initialBackgroundCheckBillingStatus: BackgroundCheckBillingStatus;
+  backgroundCheckStepEnabled: boolean;
 }
 
 export function Employee({
@@ -57,10 +58,12 @@ export function Employee({
   hipaaCompletedAt,
   initialBackgroundCheck,
   initialBackgroundCheckBillingStatus,
+  backgroundCheckStepEnabled,
 }: EmployeeProps) {
   const searchParams = useSearchParams();
   const querySelectedTab: EmployeeTab =
-    searchParams.get('background_check_step') || searchParams.get('background_check_billing')
+    backgroundCheckStepEnabled &&
+    (searchParams.get('background_check_step') || searchParams.get('background_check_billing'))
       ? 'background-check'
       : 'details';
   const [activeTab, setActiveTab] = useState<EmployeeTab>(querySelectedTab);
@@ -78,6 +81,7 @@ export function Employee({
           employeeName={employee.user.name ?? 'Employee'}
           orgId={orgId}
           backgroundCheck={initialBackgroundCheck}
+          backgroundCheckStepEnabled={backgroundCheckStepEnabled}
         />
       }
     >
@@ -94,7 +98,9 @@ export function Employee({
             <TabsTrigger value="training">Training Videos</TabsTrigger>
             {hasHipaaFramework && <TabsTrigger value="hipaa">HIPAA Training</TabsTrigger>}
             <TabsTrigger value="device">Device</TabsTrigger>
-            <TabsTrigger value="background-check">Background Check</TabsTrigger>
+            {backgroundCheckStepEnabled && (
+              <TabsTrigger value="background-check">Background Check</TabsTrigger>
+            )}
           </TabsList>
           <TabsContent value="details">
             <EmployeeDetails employee={employee} canEdit={canEdit} />
@@ -126,14 +132,17 @@ export function Employee({
               fleetPolicies={fleetPolicies}
             />
           </TabsContent>
-          <TabsContent value="background-check">
-            <EmployeeBackgroundCheck
-              employee={employee}
-              organizationId={orgId}
-              initialBackgroundCheck={initialBackgroundCheck}
-              initialBillingStatus={initialBackgroundCheckBillingStatus}
-            />
-          </TabsContent>
+          {backgroundCheckStepEnabled && (
+            <TabsContent value="background-check">
+              <EmployeeBackgroundCheck
+                employee={employee}
+                organizationId={orgId}
+                initialBackgroundCheck={initialBackgroundCheck}
+                initialBillingStatus={initialBackgroundCheckBillingStatus}
+                backgroundCheckStepEnabled={backgroundCheckStepEnabled}
+              />
+            </TabsContent>
+          )}
         </Stack>
       </Tabs>
     </PageLayout>

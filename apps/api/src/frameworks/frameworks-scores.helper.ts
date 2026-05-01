@@ -32,6 +32,7 @@ export async function getOverviewScores(organizationId: string) {
         select: {
           securityTrainingStepEnabled: true,
           deviceAgentStepEnabled: true,
+          backgroundCheckStepEnabled: true,
         },
       }),
       db.frameworkInstance.findFirst({
@@ -42,6 +43,7 @@ export async function getOverviewScores(organizationId: string) {
 
   const securityTrainingStepEnabled = org?.securityTrainingStepEnabled === true;
   const deviceAgentStepEnabled = org?.deviceAgentStepEnabled === true;
+  const backgroundCheckStepEnabled = org?.backgroundCheckStepEnabled === true;
   const hasHipaaFramework = !!hipaaInstance;
 
   const publishedPolicies = allPolicies.filter((p) => p.status === 'published');
@@ -66,6 +68,7 @@ export async function getOverviewScores(organizationId: string) {
     employees,
     securityTrainingStepEnabled,
     deviceAgentStepEnabled,
+    backgroundCheckStepEnabled,
     hasHipaaFramework,
   });
 
