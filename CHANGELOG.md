@@ -1,3 +1,16 @@
+# [3.41.0](https://github.com/trycompai/comp/compare/v3.40.1...v3.41.0) (2026-05-01)
+
+
+### Bug Fixes
+
+* allow cx to bypass background checks for orgs ([a1a6586](https://github.com/trycompai/comp/commit/a1a658682bb0146d1b8a5f46e6287d46b8076ce8))
+* **app:** add SOC 3 to Trust portal frameworks list ([dbea43c](https://github.com/trycompai/comp/commit/dbea43c27e1b6b888b1486797a11c69f8407fe9f))
+
+
+### Features
+
+* add soc 2 type 1 badge ([6bd2147](https://github.com/trycompai/comp/commit/6bd2147076a64143250e39e0d0d165abfb9d2a5d))
+
 ## [3.40.1](https://github.com/trycompai/comp/compare/v3.40.0...v3.40.1) (2026-05-01)
 
 
