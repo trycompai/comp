@@ -4,7 +4,7 @@
   "description": "Monitor ActivTrak workforce analytics platform for user activity monitoring, alerting, and agent deployment compliance",
   "category": "Monitoring",
   "docsUrl": "https://developers.activtrak.com/introduction",
-  "baseUrl": "https://{{credentials.region}}/",
+  "baseUrl": "https://api.activtrak.com",
   "authConfig": {
     "type": "custom",
     "config": {

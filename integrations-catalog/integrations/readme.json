@@ -6,17 +6,10 @@
   "docsUrl": "https://docs.readme.com/main/reference",
   "baseUrl": "https://dash.readme.com",
   "authConfig": {
-    "type": "custom",
+    "type": "basic",
     "config": {
-      "setupInstructions": "1. Log in to ReadMe\n2. Go to Configuration → API Key\n3. Copy your API key\n4. Paste it below as Basic Auth: run echo -n 'YOUR_API_KEY:' | base64 (or just paste the key — ReadMe supports it as Basic username)",
-      "credentialFields": [
-        {
-          "label": "API Key",
-          "type": "password",
-          "required": true,
-          "helpText": "ReadMe → Configuration → API Key"
-        }
-      ]
+      "setupInstructions": "1. Log in to ReadMe\n2. Go to your project dashboard\n3. Click on Configuration > API Keys\n4. Copy your API key\n5. Paste it as the API Key below\n6. Leave the Password field empty (ReadMe uses the API key as the username with no password)",
+      "usernameField": "api_key"
     }
   },
   "capabilities": [

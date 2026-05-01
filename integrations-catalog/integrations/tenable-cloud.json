@@ -12,7 +12,7 @@
       "credentialFields": [
         {
           "label": "Access Key",
-          "type": "text",
+          "type": "password",
           "required": true,
           "helpText": "Found in Tenable.io → Settings → My Account → API Keys."
         },

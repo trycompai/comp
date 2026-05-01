@@ -1,0 +1,58 @@
+{
+  "slug": "mailgun",
+  "name": "Mailgun",
+  "description": "Monitor Mailgun email infrastructure including account user access, API availability, and sending domain configuration and verification status",
+  "category": "Communication",
+  "docsUrl": "https://documentation.mailgun.com/docs/mailgun/api-reference/api-overview",
+  "baseUrl": "https://{{credentials.region}}",
+  "authConfig": {
+    "type": "custom",
+    "config": {
+      "setupInstructions": "1. Log in to Mailgun Dashboard (https://app.mailgun.com).\n2. Go to Account Settings (top-right) > API Keys.\n3. Click the eye icon next to 'Private API key' to reveal it.\n4. Copy the key (starts with 'key-').\n5. Select your region (US or EU) based on where your sending domains are hosted.",
+      "credentialFields": [
+        {
+          "label": "API Key",
+          "type": "password",
+          "required": true,
+          "helpText": "Your primary account API key. Found in Mailgun Dashboard > Account Settings > API Keys (Private API key)."
+        },
+        {
+          "label": "Region",
+          "type": "select",
+          "required": true,
+          "helpText": "The region where your Mailgun domains are hosted."
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "mailgun_employee_access",
+      "name": "Employee Access",
+      "description": "Lists all users on the Mailgun account with their roles, activation status, and 2FA settings to verify access control.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "mailgun_app_availability",
+      "name": "App Availability",
+      "description": "Verifies Mailgun API access by listing sending domains. A successful response confirms the API key is valid and the account is accessible.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "mailgun_domain_configuration",
+      "name": "Domain Configuration",
+      "description": "Lists all sending domains and their verification status. Domains in 'unverified' or 'disabled' state are flagged as findings requiring attention.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 3,
+  "isActive": true
+}

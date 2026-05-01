@@ -8,6 +8,7 @@
   "authConfig": {
     "type": "custom",
     "config": {
+      "setupInstructions": "1. Log in to the Twingate Admin Console\n2. Go to Settings > API\n3. Click Generate Token to create a new API key\n4. Copy the API key and your network subdomain (the part before .twingate.com in your URL)\n5. Paste both values below",
       "credentialFields": [
         {
           "label": "Twingate Network Subdomain",

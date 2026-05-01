@@ -7,7 +7,9 @@
   "baseUrl": "https://api.zapier.com",
   "authConfig": {
     "type": "api_key",
-    "config": {}
+    "config": {
+      "setupInstructions": "1. Log in to Zapier at https://zapier.com\n2. Go to Developer API settings\n3. Generate an API key\n4. Enter it below"
+    }
   },
   "capabilities": [
     "checks"

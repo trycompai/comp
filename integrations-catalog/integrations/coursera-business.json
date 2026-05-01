@@ -2,7 +2,7 @@
   "slug": "coursera-business",
   "name": "Coursera for Business",
   "description": "Coursera for Business provides enterprise learning and compliance training, enabling organizations to upskill employees with courses from top universities and industry leaders.",
-  "category": "Security",
+  "category": "Productivity",
   "docsUrl": "https://dev.coursera.com/get-started",
   "baseUrl": "https://api.coursera.com/ent",
   "authConfig": {

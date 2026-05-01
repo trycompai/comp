@@ -7,7 +7,9 @@
   "baseUrl": "https://api.wandb.ai",
   "authConfig": {
     "type": "api_key",
-    "config": {}
+    "config": {
+      "setupInstructions": "1. Log in to wandb.ai\n2. Click your avatar in the top right, then 'User Settings'\n3. Scroll to 'API Keys' and click 'Create new API key'\n4. Copy the API key and paste it below"
+    }
   },
   "capabilities": [
     "checks"

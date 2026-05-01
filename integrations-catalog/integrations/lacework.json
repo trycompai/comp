@@ -8,19 +8,25 @@
   "authConfig": {
     "type": "custom",
     "config": {
-      "setupInstructions": "1. Log in to Lacework at https://YOUR_ACCOUNT.lacework.net\n2. Go to Settings → API Keys → Create New API Key\n3. Download the JSON with keyId and secret\n4. Generate an access token: POST /api/v2/access/tokens with keyId and secret\n5. Enter your account name and access token below",
+      "setupInstructions": "1. Log in to Lacework at https://YOUR_ACCOUNT.lacework.net\n2. Go to Settings -> API Keys -> Create New API Key\n3. Download the JSON key file\n4. Enter your account name, the keyId and secret from the key file below",
       "credentialFields": [
-        {
-          "label": "API Token",
-          "type": "password",
-          "required": true,
-          "helpText": "Access Token generated via Lacework API. Use your keyId and secret to get a token from POST /api/v2/access/tokens"
-        },
         {
           "label": "Account Name",
           "type": "text",
           "required": true,
           "helpText": "Your Lacework account subdomain (e.g. mycompany from mycompany.lacework.net)"
+        },
+        {
+          "label": "API Key ID",
+          "type": "text",
+          "required": true,
+          "helpText": "Found in Lacework Settings -> API Keys -> download the JSON key file, use the keyId field"
+        },
+        {
+          "label": "API Secret",
+          "type": "password",
+          "required": true,
+          "helpText": "Found in the downloaded JSON key file, use the secret field"
         }
       ]
     }

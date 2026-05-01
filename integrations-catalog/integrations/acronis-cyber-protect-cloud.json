@@ -8,6 +8,7 @@
   "authConfig": {
     "type": "custom",
     "config": {
+      "setupInstructions": "1. Log in to the Acronis Management Portal as an administrator\n2. Navigate to Settings > API Clients\n3. Create a new API client with the required scopes\n4. Copy the Client ID and Client Secret\n5. Note your Datacenter URL (e.g., https://us-cloud.acronis.com or https://eu-cloud.acronis.com)\n6. Find your Tenant ID in the portal under Company > Overview\n7. Enter all values below",
       "credentialFields": [
         {
           "label": "Datacenter URL",

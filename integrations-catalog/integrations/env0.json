@@ -3,11 +3,15 @@
   "name": "env0",
   "description": "Infrastructure automation platform. Monitor environments and deployments.",
   "category": "Infrastructure",
-  "docsUrl": "https://developer.env0.com/",
+  "docsUrl": "https://docs.env0.com/reference/authentication",
   "baseUrl": "https://api.env0.com",
   "authConfig": {
-    "type": "api_key",
-    "config": {}
+    "type": "basic",
+    "config": {
+      "setupInstructions": "1. Log in to env0 at https://app.env0.com\n2. Go to Organization Settings > API Keys\n3. Click + Add API Key\n4. Give it a name and select Admin role (minimum)\n5. Copy the API Key ID and API Key Secret\n6. Paste them into the fields below",
+      "usernameField": "api_key_id",
+      "passwordField": "api_key_secret"
+    }
   },
   "capabilities": [
     "checks"
