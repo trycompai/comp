@@ -35,17 +35,17 @@ export function LinkedWork({ orgId, tasks, onUnlinkTask }: LinkedWorkProps) {
   const controls = [...uniqueControls.values()];
 
   return (
-    <div className="flex flex-col gap-3">
-      {/* Tasks card */}
-      <div className="bg-background rounded-md border border-border p-3">
-        <div className="mb-2 flex items-center">
+    <div className="mt-4 flex flex-col gap-4 border-t border-border pt-4">
+      {/* Tasks group */}
+      <div>
+        <div className="mb-2 flex items-center gap-2">
           <span className="text-[13px] font-normal">Tasks</span>
           <span className="flex-1" />
           <span className="font-mono text-[11px] tabular-nums text-muted-foreground">
-            {done}/{total}
+            {done} / {total}
           </span>
         </div>
-        <div className="bg-muted mb-2 h-1 w-full overflow-hidden rounded-full">
+        <div className="bg-muted mb-1.5 h-[3px] w-full overflow-hidden rounded-full">
           <span
             className="block h-full rounded-full"
             style={{ width: `${taskPct}%`, background: 'var(--warning)' }}
@@ -57,10 +57,16 @@ export function LinkedWork({ orgId, tasks, onUnlinkTask }: LinkedWorkProps) {
           </p>
         ) : (
           <ul className="flex flex-col">
-            {tasks.map((t) => {
+            {tasks.map((t, i) => {
               const isDone = isTaskDone(t.status);
               return (
-                <li key={t.id} className="flex items-center gap-2 py-1 text-[12px]">
+                <li
+                  key={t.id}
+                  className={cn(
+                    'flex items-center gap-2 py-1.5 text-[12px]',
+                    i > 0 && 'border-t border-border',
+                  )}
+                >
                   {isDone ? (
                     <Checkmark
                       size={11}
@@ -77,7 +83,7 @@ export function LinkedWork({ orgId, tasks, onUnlinkTask }: LinkedWorkProps) {
                   <Link
                     href={`/${orgId}/tasks/${t.id}`}
                     className={cn(
-                      'truncate hover:underline',
+                      'min-w-0 flex-1 truncate hover:underline',
                       isDone
                         ? 'text-muted-foreground line-through decoration-muted-foreground'
                         : 'text-foreground',
@@ -91,7 +97,7 @@ export function LinkedWork({ orgId, tasks, onUnlinkTask }: LinkedWorkProps) {
                       onClick={() => {
                         void onUnlinkTask(t.id);
                       }}
-                      className="ml-auto rounded p-0.5 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                      className="shrink-0 rounded p-0.5 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
                       aria-label={`Unlink ${t.title}`}
                     >
                       <Close size={11} aria-hidden="true" />
@@ -104,9 +110,11 @@ export function LinkedWork({ orgId, tasks, onUnlinkTask }: LinkedWorkProps) {
         )}
       </div>
 
-      {/* Controls card */}
-      <div className="bg-background rounded-md border border-border p-3">
-        <div className="mb-2 flex items-center">
+      <div className="h-px bg-border" aria-hidden="true" />
+
+      {/* Controls group */}
+      <div>
+        <div className="mb-2 flex items-center gap-2">
           <span className="text-[13px] font-normal">Controls</span>
           <span className="flex-1" />
           <span className="font-mono text-[11px] tabular-nums text-muted-foreground">
@@ -119,8 +127,14 @@ export function LinkedWork({ orgId, tasks, onUnlinkTask }: LinkedWorkProps) {
           </p>
         ) : (
           <ul className="flex flex-col">
-            {controls.map((c) => (
-              <li key={c.id} className="flex items-center gap-2 py-1 text-[12px]">
+            {controls.map((c, i) => (
+              <li
+                key={c.id}
+                className={cn(
+                  'flex items-center gap-2 py-1.5 text-[12px]',
+                  i > 0 && 'border-t border-border',
+                )}
+              >
                 <Subtract
                   size={11}
                   className="shrink-0 text-muted-foreground"
@@ -128,7 +142,7 @@ export function LinkedWork({ orgId, tasks, onUnlinkTask }: LinkedWorkProps) {
                 />
                 <Link
                   href={`/${orgId}/controls/${c.id}`}
-                  className="truncate text-foreground hover:underline"
+                  className="min-w-0 flex-1 truncate text-foreground hover:underline"
                 >
                   {c.name}
                 </Link>

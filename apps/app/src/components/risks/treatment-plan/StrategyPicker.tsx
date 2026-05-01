@@ -53,7 +53,11 @@ interface StrategyPickerProps {
 
 export function StrategyPicker({ value, onChange, disabled }: StrategyPickerProps) {
   return (
-    <div className="flex flex-col gap-1.5" role="radiogroup" aria-label="Treatment strategy">
+    <div
+      role="radiogroup"
+      aria-label="Treatment strategy"
+      className="mt-3 border-t border-border"
+    >
       {OPTIONS.map((opt) => {
         const isActive = value === opt.value;
         const Icon = opt.Icon;
@@ -67,11 +71,10 @@ export function StrategyPicker({ value, onChange, disabled }: StrategyPickerProp
             disabled={disabled}
             onClick={() => onChange(opt.value)}
             className={cn(
-              'flex items-start gap-3 rounded-md border p-3 text-left transition-all duration-200',
-              'disabled:cursor-not-allowed disabled:opacity-60',
-              isActive
-                ? 'border-primary bg-primary/[0.04] ring-1 ring-primary'
-                : 'border-border hover:bg-muted',
+              'flex w-full items-start gap-3 border-b border-l-2 border-border border-l-transparent bg-transparent px-3 py-3.5 text-left text-foreground transition-colors',
+              !disabled && 'cursor-pointer hover:bg-muted',
+              isActive && 'border-l-primary bg-primary/[0.05]',
+              disabled && 'cursor-not-allowed opacity-60',
             )}
           >
             <Icon
@@ -82,9 +85,11 @@ export function StrategyPicker({ value, onChange, disabled }: StrategyPickerProp
               )}
               aria-hidden="true"
             />
-            <div className="flex-1">
+            <div className="min-w-0 flex-1">
               <div className="text-sm font-normal">{opt.label}</div>
-              <div className="mt-0.5 text-xs leading-[1.4] text-muted-foreground">{opt.blurb}</div>
+              <div className="mt-0.5 text-xs leading-[1.4] text-muted-foreground">
+                {opt.blurb}
+              </div>
             </div>
             {isActive && (
               <Checkmark size={14} className="mt-1 shrink-0 text-primary" aria-hidden="true" />

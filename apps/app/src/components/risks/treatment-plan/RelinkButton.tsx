@@ -10,7 +10,6 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogTrigger,
-  Button,
   Stack,
   Text,
 } from '@trycompai/design-system';
@@ -93,14 +92,14 @@ export function RelinkButton({ disabled, onRelink, onAfterLink }: RelinkButtonPr
       <AlertDialogTrigger
         disabled={disabled || submitting}
         render={
-          <Button
-            variant="ghost"
-            size="sm"
-            loading={submitting}
-            iconLeft={<MagicWandFilled aria-hidden="true" />}
+          <button
+            type="button"
+            title="Re-assess all linked tasks and controls with AI"
+            className="inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[11px] text-muted-foreground transition-colors hover:bg-primary/[0.08] hover:text-primary disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
           >
-            Re-assess
-          </Button>
+            <MagicWandFilled size={11} aria-hidden="true" />
+            <span>Re-assess</span>
+          </button>
         }
       />
       <AlertDialogContent>

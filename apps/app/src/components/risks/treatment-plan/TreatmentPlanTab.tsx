@@ -1,7 +1,6 @@
 'use client';
 
 import { Impact, Likelihood, RiskTreatmentType, TaskStatus } from '@db';
-import { Button, Card, CardContent, CardHeader } from '@trycompai/design-system';
 import { MagicWandFilled } from '@trycompai/design-system/icons';
 import { useEffect, useState } from 'react';
 import { AutoLinkButton } from './AutoLinkButton';
@@ -89,89 +88,85 @@ export function TreatmentPlanTab({
         tasks={entity.tasks}
       />
 
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-[1fr_1.2fr_1fr]">
+      <div
+        className="bg-background grid grid-cols-1 overflow-hidden rounded-md border border-border lg:grid-cols-[1fr_1.2fr_1fr]"
+      >
         {/* 01 · Strategy */}
-        <Card>
-          <CardHeader>
-            <ColumnHeader number="01" title="Strategy" subtitle="How is this risk being treated?" />
-          </CardHeader>
-          <CardContent>
-            <StrategyPicker
-              value={strategy}
-              onChange={handleStrategyChange}
-              disabled={!canUpdate}
-            />
-          </CardContent>
-        </Card>
+        <div className="min-w-0 p-6">
+          <ColumnHeader
+            number="01"
+            title="Strategy"
+            subtitle="How is this risk being treated?"
+          />
+          <StrategyPicker
+            value={strategy}
+            onChange={handleStrategyChange}
+            disabled={!canUpdate}
+          />
+        </div>
 
         {/* 02 · Treatment plan */}
-        <Card>
-          <CardHeader>
-            <ColumnHeader
-              number="02"
-              title="Treatment plan"
-              subtitle="A concrete plan for the strategy above."
-              action={
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={onRegenerate}
-                  disabled={!canUpdate || regenerating}
-                  loading={regenerating}
-                  iconLeft={<MagicWandFilled aria-hidden="true" />}
-                >
-                  AI draft
-                </Button>
-              }
-            />
-          </CardHeader>
-          <CardContent>
-            <DescriptionEditor
-              value={description}
-              onSave={onUpdateDescription}
-              onRegenerate={onRegenerate}
-              regenerating={regenerating}
-              disabled={!canUpdate}
-            />
-          </CardContent>
-        </Card>
+        <div className="min-w-0 border-t border-border p-6 lg:border-l lg:border-t-0">
+          <ColumnHeader
+            number="02"
+            title="Treatment plan"
+            subtitle="A concrete plan for the strategy above."
+            action={
+              <button
+                type="button"
+                onClick={() => {
+                  void onRegenerate();
+                }}
+                disabled={!canUpdate || regenerating}
+                className="inline-flex h-[26px] items-center gap-1.5 rounded-md border border-transparent bg-transparent px-2 text-xs text-foreground transition-colors hover:bg-muted disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                <MagicWandFilled size={12} aria-hidden="true" />
+                AI draft
+              </button>
+            }
+          />
+          <DescriptionEditor
+            value={description}
+            onSave={onUpdateDescription}
+            onRegenerate={onRegenerate}
+            regenerating={regenerating}
+            disabled={!canUpdate}
+          />
+        </div>
 
         {/* 03 · Linked work */}
-        <Card>
-          <CardHeader>
-            <ColumnHeader
-              number="03"
-              title="Linked work"
-              subtitle="Drives the residual estimate."
-              action={
-                entity.tasks.length > 0 && canUpdate && onRelink ? (
-                  <RelinkButton
-                    disabled={regenerating}
-                    onRelink={onRelink}
-                    onAfterLink={onRegenerate}
-                  />
-                ) : undefined
-              }
-            />
-          </CardHeader>
-          <CardContent>
-            <div className="flex flex-col gap-3">
-              {entity.tasks.length === 0 && canUpdate && onAutoLink && (
-                <AutoLinkButton
-                  hasDescription={Boolean(description.trim())}
+        <div className="min-w-0 border-t border-border p-6 lg:border-l lg:border-t-0">
+          <ColumnHeader
+            number="03"
+            title="Linked work"
+            subtitle="Drives the residual estimate."
+            action={
+              entity.tasks.length > 0 && canUpdate && onRelink ? (
+                <RelinkButton
                   disabled={regenerating}
-                  onAutoLink={onAutoLink}
+                  onRelink={onRelink}
                   onAfterLink={onRegenerate}
                 />
-              )}
-              <LinkedWork
-                orgId={orgId}
-                tasks={entity.tasks}
-                onUnlinkTask={canUpdate ? onUnlinkTask : undefined}
+              ) : undefined
+            }
+          />
+          {entity.tasks.length === 0 && canUpdate && onAutoLink ? (
+            <div className="mt-4">
+              <AutoLinkButton
+                hasDescription={Boolean(description.trim())}
+                disabled={regenerating}
+                onAutoLink={onAutoLink}
+                onAfterLink={onRegenerate}
               />
             </div>
-          </CardContent>
-        </Card>
+          ) : (
+            <LinkedWork
+              orgId={orgId}
+              tasks={entity.tasks}
+              onUnlinkTask={canUpdate ? onUnlinkTask : undefined}
+            />
+          )}
+        </div>
       </div>
     </div>
   );
