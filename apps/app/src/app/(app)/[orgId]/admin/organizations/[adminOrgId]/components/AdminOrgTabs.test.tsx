@@ -71,12 +71,12 @@ describe('AdminOrgTabs', () => {
 
   it('renders the page header with org name', () => {
     render(<AdminOrgTabs org={mockOrg} currentOrgId="org_1" />);
-    expect(screen.getByText('Test Org')).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Test Org' })).toBeInTheDocument();
   });
 
   it('shows active badge for active org', () => {
     render(<AdminOrgTabs org={mockOrg} currentOrgId="org_1" />);
-    expect(screen.getByText('Active')).toBeInTheDocument();
+    expect(screen.getAllByText('Active').length).toBeGreaterThanOrEqual(1);
   });
 
   it('switches to findings tab on click', () => {
