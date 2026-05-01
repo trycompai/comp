@@ -21,6 +21,7 @@ import { PurgeOrganizationService } from './purge-organization.service';
 import { AdminAuditLogInterceptor } from './admin-audit-log.interceptor';
 import { SkipAdminAuditLog } from './skip-admin-audit-log.decorator';
 import { InviteMemberDto } from './dto/invite-member.dto';
+import { SetBackgroundCheckStepDto } from './dto/set-background-check-step.dto';
 import { PurgeOrganizationDto } from './dto/purge-organization.dto';
 
 @ApiExcludeController()
@@ -112,6 +113,25 @@ export class AdminOrganizationsController {
   @Throttle({ default: { ttl: 60000, limit: 5 } })
   async deactivate(@Param('id') id: string) {
     return this.service.setAccess(id, false);
+  }
+
+  @Patch(':id/background-check-step')
+  @ApiOperation({
+    summary: 'Toggle background check requirement (platform admin)',
+  })
+  @Throttle({ default: { ttl: 60000, limit: 10 } })
+  @UsePipes(
+    new ValidationPipe({
+      whitelist: true,
+      forbidNonWhitelisted: true,
+      transform: true,
+    }),
+  )
+  async setBackgroundCheckStep(
+    @Param('id') id: string,
+    @Body() body: SetBackgroundCheckStepDto,
+  ) {
+    return this.service.setBackgroundCheckStep(id, body.enabled);
   }
 
   @Post(':id/invite')

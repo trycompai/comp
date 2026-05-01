@@ -44,6 +44,7 @@ describe('AdminOrganizationsController', () => {
     listOrganizations: jest.fn(),
     getOrganization: jest.fn(),
     setAccess: jest.fn(),
+    setBackgroundCheckStep: jest.fn(),
     inviteMember: jest.fn(),
     listInvitations: jest.fn(),
     revokeInvitation: jest.fn(),
@@ -152,6 +153,36 @@ describe('AdminOrganizationsController', () => {
       const result = await controller.deactivate('org_1');
 
       expect(mockService.setAccess).toHaveBeenCalledWith('org_1', false);
+      expect(result).toEqual({ success: true });
+    });
+  });
+
+  describe('setBackgroundCheckStep', () => {
+    it('enables BG-check step', async () => {
+      mockService.setBackgroundCheckStep.mockResolvedValue({ success: true });
+
+      const result = await controller.setBackgroundCheckStep('org_1', {
+        enabled: true,
+      });
+
+      expect(mockService.setBackgroundCheckStep).toHaveBeenCalledWith(
+        'org_1',
+        true,
+      );
+      expect(result).toEqual({ success: true });
+    });
+
+    it('disables BG-check step', async () => {
+      mockService.setBackgroundCheckStep.mockResolvedValue({ success: true });
+
+      const result = await controller.setBackgroundCheckStep('org_1', {
+        enabled: false,
+      });
+
+      expect(mockService.setBackgroundCheckStep).toHaveBeenCalledWith(
+        'org_1',
+        false,
+      );
       expect(result).toEqual({ success: true });
     });
   });
