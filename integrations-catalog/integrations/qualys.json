@@ -8,6 +8,7 @@
   "authConfig": {
     "type": "custom",
     "config": {
+      "setupInstructions": "1. Log in to Qualys VMDR\n2. Go to Help > About to find your API server URL\n3. Enter your Qualys username and password\n4. Enter the API server URL (e.g. https://qualysapi.qualys.com)\n5. Ensure your account has API access enabled (contact your Qualys admin if needed)",
       "credentialFields": [
         {
           "label": "Username",
@@ -22,10 +23,10 @@
           "helpText": "Your Qualys account password"
         },
         {
-          "label": "API URL",
+          "label": "API Server URL",
           "type": "text",
           "required": true,
-          "helpText": "Your service region (e.g., us, eu, ap)"
+          "helpText": "Your Qualys API server URL (e.g. https://qualysapi.qualys.com). Find it under Help > About in Qualys."
         }
       ]
     }

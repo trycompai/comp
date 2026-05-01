@@ -6,8 +6,18 @@
   "docsUrl": "https://api-doc.qovery.com",
   "baseUrl": "https://api.qovery.com",
   "authConfig": {
-    "type": "api_key",
-    "config": {}
+    "type": "custom",
+    "config": {
+      "setupInstructions": "1. Log in to the Qovery Console (console.qovery.com)\n2. Navigate to Organization Settings > API Tokens\n3. Click Generate Token\n4. Give your token a descriptive name and set appropriate permissions\n5. Copy the token (it will only be displayed once)\n6. Paste it below",
+      "credentialFields": [
+        {
+          "label": "API Token",
+          "type": "password",
+          "required": true,
+          "helpText": "Qovery Console > Organization Settings > API Tokens > Generate Token"
+        }
+      ]
+    }
   },
   "capabilities": [
     "checks"

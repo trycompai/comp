@@ -7,7 +7,9 @@
   "baseUrl": "https://webexapis.com/",
   "authConfig": {
     "type": "api_key",
-    "config": {}
+    "config": {
+      "setupInstructions": "1. Log in to developer.webex.com\n2. Click your avatar, then 'My Webex Apps'\n3. Create a Bot or use a Personal Access Token\n4. Copy the access token and paste it below"
+    }
   },
   "capabilities": [
     "checks"

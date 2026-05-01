@@ -1,0 +1,52 @@
+{
+  "slug": "gainsight",
+  "name": "Gainsight",
+  "description": "Gainsight is a customer success platform that helps enterprise SaaS companies reduce churn, increase expansion, and drive product adoption. This integration verifies employee access and API availability.",
+  "category": "Productivity",
+  "docsUrl": "https://support.gainsight.com/gainsight_nxt/API_and_Developer_Docs",
+  "baseUrl": "https://gainsight.com",
+  "authConfig": {
+    "type": "custom",
+    "config": {
+      "setupInstructions": "1. Log in to your Gainsight instance as a Super Admin\n2. Navigate to Administration > Connectors 2.0\n3. Click Create Connection\n4. Select 'Gainsight API' from the Connector dropdown\n5. Enter a name for the connection\n6. Select 'Access_Key' as the Authentication Type\n7. Click 'Generate Access Key'\n8. Copy the generated access key\n9. Paste your Gainsight instance URL (e.g., https://yourcompany.gainsight.com) and the access key below\n\nNote: Only Super Admins who are active in User Management can generate the API Access Key. The access key does not expire but can be regenerated.",
+      "credentialFields": [
+        {
+          "label": "Gainsight Instance URL",
+          "type": "text",
+          "required": true,
+          "helpText": "Your Gainsight tenant URL (e.g., https://yourcompany.gainsight.com). Found in your browser address bar when logged into Gainsight."
+        },
+        {
+          "label": "API Access Key",
+          "type": "password",
+          "required": true,
+          "helpText": "Found in Gainsight Administration > Connectors 2.0 > Create Connection > Gainsight API > Access_Key > Generate Access Key. Only Super Admins can generate this key."
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks",
+    "sync"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": true,
+  "checks": [
+    {
+      "slug": "gainsight_app_availability",
+      "name": "Gainsight App Availability",
+      "description": "Verifies that the Gainsight REST API is accessible using the provided access key.",
+      "defaultSeverity": "high",
+      "enabled": true
+    },
+    {
+      "slug": "gainsight_employee_access",
+      "name": "Gainsight Employee Access",
+      "description": "Lists all Gainsight users with their roles, license types, and active status to verify employee access controls.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

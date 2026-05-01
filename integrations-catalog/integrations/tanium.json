@@ -8,7 +8,7 @@
   "authConfig": {
     "type": "custom",
     "config": {
-      "setupInstructions": "1. Log into Tanium Console as Administrator\n2. Navigate to Administration > Permissions > API Tokens\n3. Click 'Create API Token'\n4. Set appropriate scopes and expiration\n5. Copy the generated token (shown only once)",
+      "setupInstructions": "1. Log into Tanium Console as Administrator\n2. Navigate to Administration > Permissions > API Tokens\n3. Click Create API Token\n4. Set appropriate scopes and expiration\n5. Copy the generated token (shown only once)",
       "credentialFields": [
         {
           "label": "Tanium Server URL",
@@ -41,21 +41,21 @@
     {
       "slug": "secure_devices",
       "name": "Secure Devices",
-      "description": "Checks that endpoints managed by Tanium are secure and compliant with organizational policies",
+      "description": "Checks that endpoints managed by Tanium are secure and compliant",
       "defaultSeverity": "high",
       "enabled": true
     },
     {
       "slug": "monitoring_alerting",
       "name": "Monitoring & Alerting",
-      "description": "Verifies monitoring capabilities and alerting configuration for security and compliance events",
+      "description": "Verifies monitoring capabilities and alerting configuration",
       "defaultSeverity": "medium",
       "enabled": true
     },
     {
       "slug": "employee_access",
       "name": "Employee Access",
-      "description": "Reviews user accounts and access permissions in Tanium for proper role-based access control",
+      "description": "Lists Tanium platform users for access review and compliance",
       "defaultSeverity": "medium",
       "enabled": true
     }

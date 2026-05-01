@@ -3,7 +3,7 @@
   "name": "Egnyte",
   "description": "Egnyte is an enterprise file sharing, storage, and governance platform. This integration monitors user access, role-based controls, and encryption compliance.",
   "category": "Cloud",
-  "docsUrl": null,
+  "docsUrl": "https://developers.egnyte.com/docs",
   "baseUrl": "https://placeholder.egnyte.com",
   "authConfig": {
     "type": "custom",

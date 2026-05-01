@@ -6,8 +6,12 @@
   "docsUrl": "https://developers.greenhouse.io/harvest.html",
   "baseUrl": "https://harvest.greenhouse.io/",
   "authConfig": {
-    "type": "api_key",
-    "config": {}
+    "type": "basic",
+    "config": {
+      "setupInstructions": "1. Log in to Greenhouse\n2. Go to Configure > Dev Center > API Credential Management\n3. Create a Harvest API Key (or use existing)\n4. Grant appropriate endpoint permissions\n5. Copy the API key and paste it below as the username (leave password blank)\n\nNote: The Harvest v1/v2 API will be deprecated on August 31, 2026. Greenhouse is transitioning to Harvest v3.",
+      "usernameField": "api_key",
+      "passwordField": "password"
+    }
   },
   "capabilities": [
     "checks"

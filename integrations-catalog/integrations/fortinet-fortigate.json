@@ -8,16 +8,19 @@
   "authConfig": {
     "type": "custom",
     "config": {
+      "setupInstructions": "1. Log in to your FortiGate web UI\n2. Go to System > Administrators\n3. Click Create New > REST API Admin\n4. Set an admin profile with read permissions\n5. Copy the generated API token (shown only once)\n6. Enter your FortiGate URL and token below",
       "credentialFields": [
         {
-          "label": "Api Token",
-          "type": "secret",
-          "required": true
+          "label": "FortiGate URL",
+          "type": "text",
+          "required": true,
+          "helpText": "The HTTPS URL of your FortiGate appliance (e.g. https://fortigate.yourcompany.com)"
         },
         {
-          "label": "Server Url",
-          "type": "text",
-          "required": true
+          "label": "API Token",
+          "type": "password",
+          "required": true,
+          "helpText": "Generate a REST API token in FortiGate: System > Administrators > Create New > REST API Admin"
         }
       ]
     }

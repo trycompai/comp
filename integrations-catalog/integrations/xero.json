@@ -14,6 +14,7 @@
         "profile",
         "email",
         "accounting.contacts.read",
+        "accounting.settings.read",
         "offline_access"
       ],
       "clientAuthMethod": "body",

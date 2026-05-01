@@ -8,8 +8,14 @@
   "authConfig": {
     "type": "custom",
     "config": {
-      "setupInstructions": "1. Go to Auth0 Dashboard > Applications > Create Application\n2. Select Machine to Machine\n3. Authorize the Auth0 Management API with read:users, read:logs, read:guardian_factors permissions\n4. Deploy and copy the access token\n5. Paste it below",
+      "setupInstructions": "1. Go to Auth0 Dashboard > Applications > Create Application\n2. Select Machine to Machine\n3. Authorize the Auth0 Management API with read:users, read:logs, read:guardian_factors permissions\n4. Deploy and copy the access token\n5. Enter your Auth0 domain (e.g., myapp.auth0.com) and the access token below",
       "credentialFields": [
+        {
+          "label": "Auth0 Domain",
+          "type": "text",
+          "required": true,
+          "helpText": "Your Auth0 tenant domain, e.g. myapp.auth0.com"
+        },
         {
           "label": "Management API Token",
           "type": "password",

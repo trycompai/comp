@@ -8,13 +8,19 @@
   "authConfig": {
     "type": "custom",
     "config": {
-      "setupInstructions": "1. Go to Freshdesk Profile Settings (top-right avatar > Profile Settings)\n2. Copy your API Key\n3. Encode it: base64('your_api_key:X') — note the literal ':X' suffix\n4. Enter the encoded value below along with your subdomain",
+      "setupInstructions": "1. Log in to Freshdesk\n2. Click your avatar (top right) then Profile Settings\n3. Copy your API Key from the right side\n4. Enter your subdomain and API key below",
       "credentialFields": [
         {
-          "label": "Encoded API Key",
+          "label": "Freshdesk Subdomain",
+          "type": "text",
+          "required": true,
+          "helpText": "Your Freshdesk subdomain (e.g. 'mycompany' for mycompany.freshdesk.com)"
+        },
+        {
+          "label": "API Key",
           "type": "password",
           "required": true,
-          "helpText": "Base64 encode your API key followed by ':X'. Example: base64('your_api_key:X'). Use https://www.base64encode.org/"
+          "helpText": "Found in Freshdesk Profile Settings (top-right avatar > Profile Settings)"
         }
       ]
     }

@@ -1,0 +1,64 @@
+{
+  "slug": "plaid",
+  "name": "Plaid",
+  "description": "Monitor Plaid financial data API platform for access control, API availability, and institution coverage compliance",
+  "category": "Security",
+  "docsUrl": "https://plaid.com/docs/api/",
+  "baseUrl": "https://sandbox.plaid.com",
+  "authConfig": {
+    "type": "custom",
+    "config": {
+      "setupInstructions": "1. Log in to the Plaid Dashboard at https://dashboard.plaid.com\n2. Go to Developers -> Keys\n3. Copy your client_id (same across environments)\n4. Copy the secret for your chosen environment (Sandbox or Production)\n5. Enter the environment name: 'sandbox' or 'production'\n\nNote: Each environment has its own secret. The client_id is shared across environments.",
+      "credentialFields": [
+        {
+          "label": "Client ID",
+          "type": "text",
+          "required": true,
+          "helpText": "Found in Plaid Dashboard -> Developers -> Keys. Your Plaid API client_id."
+        },
+        {
+          "label": "Secret",
+          "type": "password",
+          "required": true,
+          "helpText": "Found in Plaid Dashboard -> Developers -> Keys. The secret for your chosen environment."
+        },
+        {
+          "label": "Environment",
+          "type": "text",
+          "required": true,
+          "helpText": "The Plaid environment to connect to: 'sandbox' or 'production'. Each environment has its own secret."
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "plaid_app_availability",
+      "name": "App Availability",
+      "description": "Verifies Plaid API is accessible and credentials are valid by making an authenticated API call",
+      "defaultSeverity": "high",
+      "enabled": true
+    },
+    {
+      "slug": "plaid_institution_access",
+      "name": "Institution Access Review",
+      "description": "Reviews accessible financial institutions and product coverage to verify appropriate API scope",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "plaid_api_key_configuration",
+      "name": "API Key Configuration",
+      "description": "Validates Plaid API key configuration by verifying credentials work across institution queries and checking environment consistency",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 3,
+  "isActive": true
+}

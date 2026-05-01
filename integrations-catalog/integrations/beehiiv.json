@@ -7,7 +7,9 @@
   "baseUrl": "https://api.beehiiv.com",
   "authConfig": {
     "type": "api_key",
-    "config": {}
+    "config": {
+      "setupInstructions": "1. Log in to beehiiv at https://app.beehiiv.com\n2. Go to Settings > Integrations > API Keys\n3. Create a new API key with read permissions\n4. Copy the API key and paste it below"
+    }
   },
   "capabilities": [
     "checks"

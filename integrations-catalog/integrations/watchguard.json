@@ -8,6 +8,7 @@
   "authConfig": {
     "type": "custom",
     "config": {
+      "setupInstructions": "1. Log in to WatchGuard Cloud at cloud.watchguard.com\n2. Go to Administration > Managed Access\n3. Create a new API credential or copy existing ones\n4. Note your Access ID, Access Password, and API Key\n5. Select your data region (USA, Europe, or Australia)\n6. Enter the credentials below",
       "credentialFields": [
         {
           "label": "API Key",

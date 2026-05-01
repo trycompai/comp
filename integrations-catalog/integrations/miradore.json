@@ -8,6 +8,7 @@
   "authConfig": {
     "type": "custom",
     "config": {
+      "setupInstructions": "1. Log in to your Miradore console at https://online.miradore.com\n2. Go to System > Infrastructure diagram\n3. Click 'Create key' to generate an API key\n4. Copy the API key\n5. Note your site name (the subdomain in your Miradore URL)\n6. Paste both values below\n\nNote: API access requires a Business or Enterprise plan.",
       "credentialFields": [
         {
           "label": "Site Name",

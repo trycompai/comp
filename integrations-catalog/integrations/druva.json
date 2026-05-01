@@ -8,6 +8,7 @@
   "authConfig": {
     "type": "custom",
     "config": {
+      "setupInstructions": "1. Log in to Druva Cloud Platform Console at https://login.druva.com/\n2. Go to Administration > API Credentials\n3. Create new API credentials\n4. Copy the Client ID and Secret Key\n5. Enter both below\n\nNote: You must be a Druva Cloud Administrator to create API credentials.",
       "credentialFields": [
         {
           "label": "Client ID",
@@ -17,7 +18,7 @@
         },
         {
           "label": "Secret Key",
-          "type": "secret",
+          "type": "password",
           "required": true,
           "helpText": "Secret Key from Druva Cloud Platform Console > API Credentials"
         }

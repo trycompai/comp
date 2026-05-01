@@ -6,8 +6,12 @@
   "docsUrl": "https://portal.dattobackup.com/integrations/xml-api",
   "baseUrl": "https://api.datto.com",
   "authConfig": {
-    "type": "api_key",
-    "config": {}
+    "type": "basic",
+    "config": {
+      "setupInstructions": "1. Log in to the Datto Partner Portal\n2. Navigate to Integrations > API Keys\n3. Generate a new API key pair\n4. Copy the Public Key and Secret Key below",
+      "usernameField": "public_key",
+      "passwordField": "secret_key"
+    }
   },
   "capabilities": [
     "checks"

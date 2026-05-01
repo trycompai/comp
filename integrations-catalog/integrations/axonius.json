@@ -4,7 +4,7 @@
   "description": "Axonius cybersecurity asset management platform integration for asset discovery, device compliance, and user visibility",
   "category": "Security",
   "docsUrl": "https://docs.axonius.com/docs/axonius-rest-api",
-  "baseUrl": null,
+  "baseUrl": "https://placeholder.axonius.com",
   "authConfig": {
     "type": "custom",
     "config": {
