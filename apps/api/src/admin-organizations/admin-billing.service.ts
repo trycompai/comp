@@ -230,9 +230,14 @@ export class AdminBillingService {
           successUrl: params.returnUrl,
           cancelUrl: params.returnUrl,
         });
-      return 'changed' in result
-        ? this.getStatus(params.organizationId)
-        : result;
+      if (!('changed' in result)) return result;
+      await writeBillingAudit({
+        organizationId: params.organizationId,
+        eventType: 'admin_subscription_set',
+        skuKey: sku.key,
+        metadata: { adminUserId: params.adminUserId, note: params.note },
+      });
+      return this.getStatus(params.organizationId);
     }
     if (current) {
       await changeSubscriptionPlan({

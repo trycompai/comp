@@ -6,6 +6,7 @@ jest.mock('@db', () => ({
     organization: { findUnique: jest.fn() },
     organizationBilling: { findUnique: jest.fn() },
     organizationBillingSubscription: { findMany: jest.fn() },
+    billingAuditEvent: { create: jest.fn() },
   },
 }));
 
@@ -13,6 +14,7 @@ const mockedDb = db as unknown as {
   organization: { findUnique: jest.Mock };
   organizationBilling: { findUnique: jest.Mock };
   organizationBillingSubscription: { findMany: jest.Mock };
+  billingAuditEvent: { create: jest.Mock };
 };
 
 describe('AdminBillingService', () => {
@@ -46,6 +48,7 @@ describe('AdminBillingService', () => {
         stripeStatus: 'active',
       },
     ]);
+    mockedDb.billingAuditEvent.create.mockResolvedValue({});
   });
 
   afterAll(() => {
@@ -94,5 +97,44 @@ describe('AdminBillingService', () => {
         }),
       }),
     );
+  });
+
+  it('writes an audit event when admin checkout immediately changes an existing subscription', async () => {
+    const service = new AdminBillingService(
+      { isConfigured: () => true } as never,
+      {
+        createSubscriptionCheckoutSession: jest
+          .fn()
+          .mockResolvedValue({ changed: true }),
+      } as never,
+      {} as never,
+      {} as never,
+    );
+    jest.spyOn(service, 'getStatus').mockResolvedValue({} as never);
+    mockedDb.organizationBilling.findUnique.mockResolvedValue({
+      organizationId: 'org_1',
+      stripeCustomerId: 'cus_org_1',
+      stripePaymentMethodId: null,
+    });
+
+    await service.setSubscription({
+      organizationId: 'org_1',
+      adminUserId: 'usr_admin',
+      skuKey: 'pentest_monthly_3',
+      returnUrl: 'http://localhost:3000/org_1/settings/billing',
+      note: 'Upgrade for customer',
+    });
+
+    expect(mockedDb.billingAuditEvent.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        organizationId: 'org_1',
+        eventType: 'admin_subscription_set',
+        skuKey: 'pentest_monthly_3',
+        metadata: {
+          adminUserId: 'usr_admin',
+          note: 'Upgrade for customer',
+        },
+      }),
+    });
   });
 });
