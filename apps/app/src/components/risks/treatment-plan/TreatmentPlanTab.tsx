@@ -48,6 +48,13 @@ interface TreatmentPlanTabProps {
   /** Optional unlink callback for individual rows in the linked-state list. */
   onUnlinkTask?: (taskId: string) => Promise<void>;
   /**
+   * Resume an in-flight or completed-but-unreviewed AI scan. Returns null when
+   * no run is persisted server-side. Used to recover progress after a reload.
+   */
+  onResumeAutoLink?: () => Promise<{ runId: string; publicAccessToken: string } | null>;
+  /** Clears the persisted runId server-side (called from Discard). */
+  onDiscardAutoLinkRun?: () => Promise<void>;
+  /**
    * @deprecated Use `onSuggest` + `onApply` instead. The previous immediate-
    * apply auto-link flow is replaced by review-before-apply.
    */
@@ -69,6 +76,8 @@ export function TreatmentPlanTab({
   onSuggest,
   onApply,
   onUnlinkTask,
+  onResumeAutoLink,
+  onDiscardAutoLinkRun,
 }: TreatmentPlanTabProps) {
   const [strategy, setStrategy] = useState(entity.treatmentStrategy);
 
@@ -157,6 +166,8 @@ export function TreatmentPlanTab({
               onAfterApply={onRegenerate}
               emptyVariant={kickoffVariant}
               onStartFromScratch={() => setEmptyDismissed(true)}
+              onResume={onResumeAutoLink}
+              onDiscardRun={onDiscardAutoLinkRun}
             />
           ) : (
             <>
@@ -189,6 +200,8 @@ export function TreatmentPlanTab({
                 onApply={onApply}
                 onAfterApply={onRegenerate}
                 onUnlinkTask={onUnlinkTask}
+                onResume={onResumeAutoLink}
+                onDiscardRun={onDiscardAutoLinkRun}
               />
             ) : (
               <LinkedWork orgId={orgId} tasks={entity.tasks} />

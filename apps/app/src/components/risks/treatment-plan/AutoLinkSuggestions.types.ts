@@ -35,7 +35,8 @@ export type State =
       tasks: SuggestedTask[];
       controls: SuggestedControl[];
       checkedTaskIds: Set<string>;
-    };
+    }
+  | { kind: 'failed'; reason: string; mode: Mode };
 
 export function isControlDerived(
   c: SuggestedControl,

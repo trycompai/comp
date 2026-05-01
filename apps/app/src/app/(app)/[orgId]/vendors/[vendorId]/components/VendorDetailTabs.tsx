@@ -80,7 +80,15 @@ export function VendorDetailTabs({
   const taskItemId = searchParams.get('taskItemId');
 
   const { vendor: swrVendor, mutate: refreshVendor } = useVendor(vendorId);
-  const { updateVendor, triggerAssessment, regenerateMitigation, suggestVendorLinks, applyVendorLinks } = useVendorActions();
+  const {
+    updateVendor,
+    triggerAssessment,
+    regenerateMitigation,
+    suggestVendorLinks,
+    applyVendorLinks,
+    fetchActiveVendorAutoLinkRun,
+    discardVendorAutoLinkRun,
+  } = useVendorActions();
   const { hasPermission } = usePermissions();
   const canUpdate = hasPermission('vendor', 'update');
   const canUpdateTask = hasPermission('task', 'update');
@@ -288,6 +296,14 @@ export function VendorDetailTabs({
     }
   };
 
+  const handleResumeAutoLink = async () => {
+    return fetchActiveVendorAutoLinkRun(vendorId);
+  };
+
+  const handleDiscardAutoLinkRun = async () => {
+    await discardVendorAutoLinkRun(vendorId);
+  };
+
   const handleUpdateDescription = async (description: string) => {
     await updateVendor(vendorId, { treatmentStrategyDescription: description });
     refreshVendor();
@@ -473,6 +489,8 @@ export function VendorDetailTabs({
                 onSuggest={handleSuggest}
                 onApply={handleApply}
                 onUnlinkTask={handleUnlinkTask}
+                onResumeAutoLink={handleResumeAutoLink}
+                onDiscardAutoLinkRun={handleDiscardAutoLinkRun}
               />
             </TabsContent>
 

@@ -51,6 +51,16 @@ export async function POST(
       { organizationId, vendorId, suggestionsOnly: true },
     );
 
+    // Persist the runId so the UI can resume an in-flight scan after a page
+    // reload. Cleared by /apply or /discard once the user reviews the result.
+    await db.vendor.update({
+      where: { id: vendorId },
+      data: {
+        autoLinkRunId: handle.id,
+        autoLinkRunStartedAt: new Date(),
+      },
+    });
+
     const publicAccessToken = await triggerAuth.createPublicToken({
       scopes: { read: { runs: [handle.id] } },
       expirationTime: '15m',

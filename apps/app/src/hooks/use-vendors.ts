@@ -333,6 +333,36 @@ export function useVendorActions() {
     [],
   );
 
+  /** See `useRiskActions.fetchActiveRiskAutoLinkRun`. */
+  const fetchActiveVendorAutoLinkRun = useCallback(
+    async (
+      vendorId: string,
+    ): Promise<{ runId: string; publicAccessToken: string } | null> => {
+      const response = await fetch(`/api/vendors/${vendorId}/auto-link/active`, {
+        credentials: 'include',
+      });
+      if (!response.ok) return null;
+      const body = (await response.json()) as
+        | { runId: string; publicAccessToken: string }
+        | { runId: null };
+      if (!body.runId) return null;
+      return { runId: body.runId, publicAccessToken: body.publicAccessToken };
+    },
+    [],
+  );
+
+  const discardVendorAutoLinkRun = useCallback(
+    async (vendorId: string): Promise<void> => {
+      await fetch(`/api/vendors/${vendorId}/auto-link/active`, {
+        method: 'DELETE',
+        credentials: 'include',
+      }).catch(() => {
+        /* best-effort */
+      });
+    },
+    [],
+  );
+
   return {
     createVendor,
     updateVendor,
@@ -343,6 +373,8 @@ export function useVendorActions() {
     relinkVendor,
     suggestVendorLinks,
     applyVendorLinks,
+    fetchActiveVendorAutoLinkRun,
+    discardVendorAutoLinkRun,
   };
 }
 

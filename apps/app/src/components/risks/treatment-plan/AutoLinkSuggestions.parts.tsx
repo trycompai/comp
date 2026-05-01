@@ -122,6 +122,103 @@ export function EmptyState({
   );
 }
 
+/**
+ * Statuses we treat as "in flight, render the loading UI". Anything outside
+ * this set is either terminal-success (COMPLETED) or terminal-failure (which
+ * we surface via FailedState).
+ */
+const IN_FLIGHT_STATUSES = new Set([
+  'WAITING_FOR_DEPLOY',
+  'DELAYED',
+  'QUEUED',
+  'EXECUTING',
+  'INTERRUPTED',
+  'WAITING_TO_RESUME',
+]);
+
+/**
+ * Terminal failures we route to FailedState. EXPIRED happens when a run sits
+ * in the queue past its TTL; TIMED_OUT when execution exceeds maxDuration.
+ */
+const TERMINAL_FAILURE_STATUSES = new Set([
+  'FAILED',
+  'CANCELED',
+  'CRASHED',
+  'SYSTEM_FAILURE',
+  'EXPIRED',
+  'TIMED_OUT',
+]);
+
+/**
+ * Phases written to `metadata.phase` by the trigger task wrapper. Mirrored
+ * from `LinkagePhase` in `lib/embedding/run-linkage.ts`.
+ */
+type PhaseName =
+  | 'starting'
+  | 'embedding-tasks'
+  | 'embedding-risks'
+  | 'embedding-vendors'
+  | 'matching-risks'
+  | 'matching-vendors'
+  | 'done';
+
+function describeStatus(
+  status: string | undefined,
+  phase: PhaseName | undefined,
+  current: number | undefined,
+  total: number | undefined,
+): { headline: string; sub: string } {
+  if (!status || status === 'WAITING_FOR_DEPLOY') {
+    return {
+      headline: 'Waiting for a worker…',
+      sub: 'Allocating compute capacity.',
+    };
+  }
+  if (status === 'QUEUED' || status === 'DELAYED') {
+    return {
+      headline: 'Queued — waiting to start…',
+      sub: 'Your scan will pick up momentarily.',
+    };
+  }
+  if (status === 'INTERRUPTED' || status === 'WAITING_TO_RESUME') {
+    return {
+      headline: 'Resuming…',
+      sub: 'Picking up where the run left off.',
+    };
+  }
+  // EXECUTING from here down — describe by phase metadata.
+  if (!phase || phase === 'starting') {
+    return {
+      headline: 'Starting AI scan…',
+      sub: 'Initializing the suggestion run.',
+    };
+  }
+  if (phase === 'embedding-tasks') {
+    const progress = total ? ` (${current ?? 0} / ${total})` : '';
+    return {
+      headline: 'Embedding your task library…',
+      sub: `Indexing tasks for semantic search${progress}.`,
+    };
+  }
+  if (phase === 'embedding-risks' || phase === 'embedding-vendors') {
+    return {
+      headline: 'Embedding the subject…',
+      sub: 'Preparing the query vector.',
+    };
+  }
+  if (phase === 'matching-risks' || phase === 'matching-vendors') {
+    return {
+      headline: 'Scanning your library…',
+      sub: 'Matching candidates and reranking with AI.',
+    };
+  }
+  // 'done' — the status itself will flip to COMPLETED imminently.
+  return {
+    headline: 'Wrapping up…',
+    sub: 'Compiling the final suggestions.',
+  };
+}
+
 export function LoadingState({
   runId,
   accessToken,
@@ -131,13 +228,18 @@ export function LoadingState({
   runId: string;
   accessToken: string;
   onReady: (s: { tasks: SuggestedTask[]; controls: SuggestedControl[] }) => void;
-  onFailed: () => void;
+  onFailed: (reason: string) => void;
 }) {
   const { run } = useRealtimeRun(runId, { accessToken, enabled: true });
   const status = run?.status;
   const output = run?.output as
     | { suggestions?: { tasks?: SuggestedTask[]; controls?: SuggestedControl[] } }
     | undefined;
+  const meta = (run?.metadata ?? {}) as {
+    phase?: PhaseName;
+    current?: number;
+    total?: number;
+  };
 
   useEffect(() => {
     if (!status) return;
@@ -149,17 +251,37 @@ export function LoadingState({
       });
       return;
     }
-    if (
-      status === 'FAILED' ||
-      status === 'CANCELED' ||
-      status === 'CRASHED' ||
-      status === 'SYSTEM_FAILURE' ||
-      status === 'EXPIRED' ||
-      status === 'TIMED_OUT'
-    ) {
-      onFailed();
+    if (TERMINAL_FAILURE_STATUSES.has(status)) {
+      const reasons: Record<string, string> = {
+        FAILED: 'The AI scan hit an error.',
+        CANCELED: 'The AI scan was canceled.',
+        CRASHED: 'The worker crashed mid-scan.',
+        SYSTEM_FAILURE: 'A system error stopped the scan.',
+        EXPIRED: 'The scan expired before it could start.',
+        TIMED_OUT: 'The scan took too long and timed out.',
+      };
+      onFailed(reasons[status] ?? 'The AI scan failed.');
     }
   }, [status]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Treat unknown / pre-subscribe state as in-flight so the spinner stays up
+  // until the realtime stream catches up.
+  const inFlight = !status || IN_FLIGHT_STATUSES.has(status);
+  if (!inFlight) {
+    // Either COMPLETED (the effect above will transition state) or terminal
+    // failure (same). Render a quiet placeholder for the brief gap.
+    return (
+      <div className="mt-4 border-t border-border pt-4" role="status" aria-live="polite">
+        <div className="text-[13px] text-muted-foreground">Finishing up…</div>
+      </div>
+    );
+  }
+
+  const { headline, sub } = describeStatus(status, meta.phase, meta.current, meta.total);
+  const showProgress = meta.phase === 'embedding-tasks' && typeof meta.total === 'number' && meta.total > 0;
+  const pct = showProgress
+    ? Math.min(100, Math.round(((meta.current ?? 0) / (meta.total ?? 1)) * 100))
+    : null;
 
   return (
     <div className="mt-4 border-t border-border pt-4" role="status" aria-live="polite">
@@ -168,11 +290,20 @@ export function LoadingState({
           className="inline-block h-3.5 w-3.5 animate-spin rounded-full border-2 border-border border-t-primary"
           aria-hidden="true"
         />
-        <span className="text-[13px]">Scanning your library…</span>
+        <span className="text-[13px]">{headline}</span>
       </div>
       <div className="mb-4 font-mono text-[11px] uppercase tracking-[0.05em] text-muted-foreground">
-        Matching tasks and controls
+        {sub}
       </div>
+      {pct !== null && (
+        <div className="mb-4 h-1 overflow-hidden rounded-full bg-muted">
+          <div
+            className="h-full rounded-full bg-primary transition-[width] duration-300 ease-out"
+            style={{ width: `${pct}%` }}
+            aria-hidden="true"
+          />
+        </div>
+      )}
       {[0, 1, 2, 3].map((i) => (
         <div
           key={i}
@@ -183,6 +314,43 @@ export function LoadingState({
           <div className="h-2 rounded bg-muted" style={{ width: `${60 + ((i * 7) % 30)}%` }} />
         </div>
       ))}
+    </div>
+  );
+}
+
+export function FailedState({
+  reason,
+  retrying,
+  onRetry,
+  onDiscard,
+}: {
+  reason: string;
+  retrying: boolean;
+  onRetry: () => void;
+  onDiscard: () => void;
+}) {
+  return (
+    <div
+      role="alert"
+      className="mt-4 flex flex-col items-start gap-3 rounded-md border border-destructive/40 bg-destructive/[0.06] px-4 py-4"
+    >
+      <div>
+        <div className="text-sm font-normal text-destructive">Auto-link failed</div>
+        <div className="mt-1 text-xs leading-[1.5] text-muted-foreground">{reason}</div>
+      </div>
+      <div className="flex items-center gap-2">
+        <Button
+          size="sm"
+          iconLeft={<MagicWandFilled aria-hidden="true" />}
+          onClick={onRetry}
+          loading={retrying}
+        >
+          Retry
+        </Button>
+        <Button variant="ghost" size="sm" onClick={onDiscard} disabled={retrying}>
+          Discard
+        </Button>
+      </div>
     </div>
   );
 }

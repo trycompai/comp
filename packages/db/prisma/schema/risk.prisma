@@ -13,6 +13,13 @@ model Risk {
   treatmentStrategyDescription String?
   treatmentStrategy            RiskTreatmentType @default(accept)
 
+  // Active auto-link suggestion run (trigger.dev). Set when the user kicks
+  // off an AI suggest scan; cleared when the user applies or discards. Lets
+  // the UI resume an in-flight or completed-but-unreviewed scan after a
+  // page reload so progress isn't lost.
+  autoLinkRunId        String?
+  autoLinkRunStartedAt DateTime?
+
   // Dates
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

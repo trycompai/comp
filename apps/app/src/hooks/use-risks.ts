@@ -351,6 +351,44 @@ export function useRiskActions() {
     [],
   );
 
+  /**
+   * Returns the active auto-link run for a risk (and a fresh access token) so
+   * the UI can resume an in-flight scan after a page reload, or `null` when
+   * no run is in flight. The runId is persisted on the Risk row by the auto-
+   * link route; this hook just fetches and re-mints the token.
+   */
+  const fetchActiveRiskAutoLinkRun = useCallback(
+    async (
+      riskId: string,
+    ): Promise<{ runId: string; publicAccessToken: string } | null> => {
+      const response = await fetch(`/api/risks/${riskId}/auto-link/active`, {
+        credentials: 'include',
+      });
+      if (!response.ok) {
+        return null;
+      }
+      const body = (await response.json()) as
+        | { runId: string; publicAccessToken: string }
+        | { runId: null };
+      if (!body.runId) return null;
+      return { runId: body.runId, publicAccessToken: body.publicAccessToken };
+    },
+    [],
+  );
+
+  /** Clears the persisted runId — used when the user discards an AI run. */
+  const discardRiskAutoLinkRun = useCallback(
+    async (riskId: string): Promise<void> => {
+      await fetch(`/api/risks/${riskId}/auto-link/active`, {
+        method: 'DELETE',
+        credentials: 'include',
+      }).catch(() => {
+        /* best-effort; the next /auto-link call replaces the runId anyway */
+      });
+    },
+    [],
+  );
+
   return {
     createRisk,
     updateRisk,
@@ -360,6 +398,8 @@ export function useRiskActions() {
     relinkRisk,
     suggestRiskLinks,
     applyRiskLinks,
+    fetchActiveRiskAutoLinkRun,
+    discardRiskAutoLinkRun,
   };
 }
 

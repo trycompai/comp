@@ -6,6 +6,7 @@ import { toast } from 'sonner';
 import { LinkedWork } from './LinkedWork';
 import {
   EmptyState,
+  FailedState,
   LoadingState,
   SuggestionsState,
 } from './AutoLinkSuggestions.parts';
@@ -46,6 +47,18 @@ export interface AutoLinkSuggestionsProps {
   /** Called when the user clicks "Start from scratch" in the kickoff panel.
    *  Parent should dismiss the kickoff state so the editor renders. */
   onStartFromScratch?: () => void;
+  /**
+   * Resumes an in-flight or completed-but-unreviewed AI scan after a page
+   * reload. Parent fetches `GET /auto-link/active`. When this returns a run,
+   * the component jumps straight into the loading state and re-subscribes to
+   * the trigger.dev run via `useRealtimeRun`.
+   */
+  onResume?: () => Promise<{ runId: string; publicAccessToken: string } | null>;
+  /**
+   * Clears the persisted runId server-side. Called when the user clicks
+   * Discard so the next reload doesn't re-resume a discarded run.
+   */
+  onDiscardRun?: () => Promise<void>;
 }
 
 export function AutoLinkSuggestions({
@@ -58,6 +71,8 @@ export function AutoLinkSuggestions({
   onUnlinkTask,
   emptyVariant = 'default',
   onStartFromScratch,
+  onResume,
+  onDiscardRun,
 }: AutoLinkSuggestionsProps) {
   const [state, setState] = useState<State>(() =>
     tasks.length > 0 ? { kind: 'linked' } : { kind: 'empty' },
@@ -66,7 +81,7 @@ export function AutoLinkSuggestions({
   const [applying, setApplying] = useState(false);
 
   // Keep linked/empty state in sync with parent task list. Don't override
-  // mid-flow loading/suggestions states.
+  // mid-flow loading/suggestions/failed states.
   useEffect(() => {
     setState((prev) => {
       if (prev.kind === 'linked' || prev.kind === 'empty') {
@@ -75,6 +90,27 @@ export function AutoLinkSuggestions({
       return prev;
     });
   }, [tasks.length]);
+
+  // On mount, if a run is already in flight (or completed-but-unreviewed) on
+  // the server, jump straight to the loading state and re-subscribe. Mode is
+  // unknown after a reload; default 'fresh' so apply stays additive (no
+  // accidental destructive replace on user side).
+  useEffect(() => {
+    if (!onResume) return;
+    let cancelled = false;
+    void onResume().then((active) => {
+      if (cancelled || !active) return;
+      setState({
+        kind: 'loading',
+        runId: active.runId,
+        publicAccessToken: active.publicAccessToken,
+        mode: 'fresh',
+      });
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [onResume]);
 
   const handleSuggest = async (mode: Mode) => {
     setSubmitting(true);
@@ -114,9 +150,12 @@ export function AutoLinkSuggestions({
     });
   };
 
-  const handleSuggestionsFailed = () => {
-    toast.error('Suggest failed. Try again.');
-    setState(tasks.length > 0 ? { kind: 'linked' } : { kind: 'empty' });
+  const handleSuggestionsFailed = (reason: string) => {
+    setState((prev) => ({
+      kind: 'failed',
+      reason,
+      mode: prev.kind === 'loading' ? prev.mode : 'fresh',
+    }));
   };
 
   const handleToggleTask = (id: string) => {
@@ -130,6 +169,9 @@ export function AutoLinkSuggestions({
   };
 
   const handleDiscard = () => {
+    if (onDiscardRun) {
+      void onDiscardRun();
+    }
     setState(tasks.length > 0 ? { kind: 'linked' } : { kind: 'empty' });
   };
 
@@ -195,6 +237,17 @@ export function AutoLinkSuggestions({
         onDiscard={handleDiscard}
         onApply={() => void handleApply()}
         onRerun={handleRerun}
+      />
+    );
+  }
+
+  if (state.kind === 'failed') {
+    return (
+      <FailedState
+        reason={state.reason}
+        retrying={submitting}
+        onRetry={() => void handleSuggest(state.mode)}
+        onDiscard={handleDiscard}
       />
     );
   }

@@ -19,7 +19,7 @@ const IMPACT_ORDER: Impact[] = [
   Impact.severe,
 ];
 
-const CELL_SIZE = 36;
+const CELL_SIZE = 44;
 
 function cellBackground(likelihoodIdx: number, impactIdx: number): string {
   const heat = (likelihoodIdx + impactIdx) / 8; // 0..1
@@ -129,21 +129,26 @@ export function RiskMatrix5x5({
           </span>
         </div>
       </div>
-      <div className="grid items-stretch gap-1.5" style={{ gridTemplateColumns: '12px 1fr' }}>
+      <div className="flex justify-center">
         <div
-          className="text-[9px] font-bold uppercase tracking-[0.08em] text-muted-foreground flex items-center justify-center"
-          style={{ writingMode: 'vertical-rl', transform: 'rotate(180deg)' }}
+          className="grid items-stretch gap-1.5"
+          style={{ gridTemplateColumns: 'auto auto' }}
         >
-          Likelihood →
-        </div>
-        <div
-          className="inline-grid"
-          style={{
-            gridTemplateColumns: `repeat(5, ${CELL_SIZE}px)`,
-            gap: 2,
-          }}
-        >
-          {cells}
+          <div
+            className="text-[9px] font-bold uppercase tracking-[0.08em] text-muted-foreground flex items-center justify-center"
+            style={{ writingMode: 'vertical-rl', transform: 'rotate(180deg)' }}
+          >
+            Likelihood →
+          </div>
+          <div
+            className="inline-grid"
+            style={{
+              gridTemplateColumns: `repeat(5, ${CELL_SIZE}px)`,
+              gap: 2,
+            }}
+          >
+            {cells}
+          </div>
         </div>
       </div>
       <div className="text-[9px] font-bold uppercase tracking-[0.08em] text-muted-foreground text-center mt-2">

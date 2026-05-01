@@ -19,6 +19,11 @@ model Vendor {
   trustPortalOrder  Int?
   complianceBadges  Json? // Array of { type: 'soc2' | 'iso27001' | etc, verified: boolean }
 
+  // Active auto-link suggestion run (trigger.dev). Same semantics as
+  // Risk.autoLinkRunId — lets the UI resume an in-flight scan on reload.
+  autoLinkRunId        String?
+  autoLinkRunStartedAt DateTime?
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 

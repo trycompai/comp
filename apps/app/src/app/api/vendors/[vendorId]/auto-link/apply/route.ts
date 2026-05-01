@@ -54,12 +54,22 @@ export async function POST(
     if (replace) {
       await db.vendor.update({
         where: { id: vendorId },
-        data: { tasks: { set: taskIds.map((id) => ({ id })) } },
+        data: {
+          tasks: { set: taskIds.map((id) => ({ id })) },
+          autoLinkRunId: null,
+          autoLinkRunStartedAt: null,
+        },
       });
-    } else if (taskIds.length > 0) {
+    } else {
       await db.vendor.update({
         where: { id: vendorId },
-        data: { tasks: { connect: taskIds.map((id) => ({ id })) } },
+        data: {
+          ...(taskIds.length > 0
+            ? { tasks: { connect: taskIds.map((id) => ({ id })) } }
+            : {}),
+          autoLinkRunId: null,
+          autoLinkRunStartedAt: null,
+        },
       });
     }
 

@@ -62,7 +62,14 @@ export function RiskPageClient({
   taskItemId,
 }: RiskPageClientProps) {
   const { risk: swrRisk, mutate: mutateRisk } = useRisk(riskId);
-  const { updateRisk, regenerateMitigation, suggestRiskLinks, applyRiskLinks } = useRiskActions();
+  const {
+    updateRisk,
+    regenerateMitigation,
+    suggestRiskLinks,
+    applyRiskLinks,
+    fetchActiveRiskAutoLinkRun,
+    discardRiskAutoLinkRun,
+  } = useRiskActions();
   const { hasPermission } = usePermissions();
   const searchParams = useSearchParams();
   const defaultTab = searchParams.get('tab') || 'overview';
@@ -187,6 +194,14 @@ export function RiskPageClient({
     }
   };
 
+  const handleResumeAutoLink = async () => {
+    return fetchActiveRiskAutoLinkRun(riskId);
+  };
+
+  const handleDiscardAutoLinkRun = async () => {
+    await discardRiskAutoLinkRun(riskId);
+  };
+
   return (
     <>
       <Breadcrumb
@@ -305,6 +320,8 @@ export function RiskPageClient({
                 onSuggest={handleSuggest}
                 onApply={handleApply}
                 onUnlinkTask={handleUnlinkTask}
+                onResumeAutoLink={handleResumeAutoLink}
+                onDiscardAutoLinkRun={handleDiscardAutoLinkRun}
               />
             </TabsContent>
 
