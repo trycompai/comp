@@ -37,13 +37,12 @@ export interface AutoLinkSuggestionsProps {
   /** Per-task unlink, plumbed through to <LinkedWork> in linked state. */
   onUnlinkTask?: (taskId: string) => Promise<void>;
   /**
-   * `'kickoff'` — the wide "Let AI kick this off" panel shown when both plan
-   *   and tasks are empty. Use with `onStartFromScratch` so the user can
-   *   bypass AI and write the plan manually.
-   * `'default'` — the smaller per-column empty CTA shown when only the
-   *   tasks section is empty.
+   * `'kickoff'` — wide panel for the truly-fresh case.
+   * `'kickoff-with-plan'` — wide panel with copy adapted to "AI will only
+   *   suggest tasks/controls; your plan stays".
+   * `'default'` — small per-column CTA (currently unused).
    */
-  emptyVariant?: 'default' | 'kickoff';
+  emptyVariant?: 'default' | 'kickoff' | 'kickoff-with-plan';
   /** Called when the user clicks "Start from scratch" in the kickoff panel.
    *  Parent should dismiss the kickoff state so the editor renders. */
   onStartFromScratch?: () => void;

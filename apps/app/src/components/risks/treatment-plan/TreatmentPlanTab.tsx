@@ -90,18 +90,20 @@ export function TreatmentPlanTab({
   const hasPlan = description.trim().length > 0;
   const hasLinkedWork = entity.tasks.length > 0;
 
-  // When Mitigate has neither plan nor linked tasks, render only the
-  // kick-off CTA panel — the user picks "Draft plan & suggest links" or
-  // "Start from scratch". Once the user dismisses the kickoff (or once
-  // either plan/tasks exist), the editor + the rest render normally.
-  const [kickoffDismissed, setKickoffDismissed] = useState(false);
+  // While Mitigate has no linked work, render only the kick-off CTA panel —
+  // the user picks "Draft plan & suggest links" / "Suggest tasks & controls"
+  // or escapes to the editor via "Start from scratch" / "Edit plan manually".
+  // The editor only appears once linked work exists OR the user dismissed.
+  const [emptyDismissed, setEmptyDismissed] = useState(false);
   useEffect(() => {
-    if (hasPlan || hasLinkedWork) setKickoffDismissed(false);
-  }, [hasPlan, hasLinkedWork]);
+    if (hasLinkedWork) setEmptyDismissed(false);
+  }, [hasLinkedWork]);
 
-  const showKickoff = isMitigate && !hasPlan && !hasLinkedWork && !kickoffDismissed;
+  const showKickoff = isMitigate && !hasLinkedWork && !emptyDismissed;
+  const kickoffVariant: 'kickoff' | 'kickoff-with-plan' = hasPlan
+    ? 'kickoff-with-plan'
+    : 'kickoff';
   const showLinkedWorkColumn = isMitigate && hasLinkedWork;
-  const showInlineLinkedWorkEmpty = isMitigate && !hasLinkedWork && !showKickoff;
 
   // For non-Mitigate strategies the "plan" is just rationale.
   const planTitle = isMitigate ? 'Treatment plan' : 'Rationale';
@@ -141,10 +143,9 @@ export function TreatmentPlanTab({
           />
         </div>
 
-        {/* 02 · Kickoff CTA (when fully empty) OR Treatment plan / Rationale.
-            The editor is intentionally not rendered in the kickoff state —
-            the user picks AI-drafted vs from-scratch, then both columns
-            appear with content. */}
+        {/* 02 · Kickoff CTA when linked work is empty (covers both "fully
+            empty" and "plan exists, no links" cases) — editor stays hidden
+            until linked work appears OR the user dismisses. */}
         <div className="min-w-0 border-t border-border p-6 lg:border-l lg:border-t-0">
           {showKickoff && onSuggest && onApply ? (
             <AutoLinkSuggestions
@@ -154,8 +155,8 @@ export function TreatmentPlanTab({
               onSuggest={onSuggest}
               onApply={onApply}
               onAfterApply={onRegenerate}
-              emptyVariant="kickoff"
-              onStartFromScratch={() => setKickoffDismissed(true)}
+              emptyVariant={kickoffVariant}
+              onStartFromScratch={() => setEmptyDismissed(true)}
             />
           ) : (
             <>
@@ -167,19 +168,6 @@ export function TreatmentPlanTab({
                 regenerating={regenerating}
                 disabled={!canUpdate}
               />
-              {showInlineLinkedWorkEmpty && onSuggest && onApply && (
-                <div className="mt-6 border-t border-border pt-6">
-                  <AutoLinkSuggestions
-                    orgId={orgId}
-                    tasks={entity.tasks}
-                    canUpdate={canUpdate}
-                    onSuggest={onSuggest}
-                    onApply={onApply}
-                    onAfterApply={onRegenerate}
-                    emptyVariant="default"
-                  />
-                </div>
-              )}
             </>
           )}
         </div>

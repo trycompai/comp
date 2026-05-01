@@ -33,17 +33,26 @@ export function EmptyState({
    */
   variant?: 'default' | 'kickoff';
 }) {
-  if (variant === 'kickoff') {
+  // Adapt kickoff copy based on whether a plan already exists. The same
+  // wide-panel layout applies in both cases.
+  const isKickoff = variant === 'kickoff' || variant === 'kickoff-with-plan';
+  if (isKickoff) {
+    const hasPlan = variant === 'kickoff-with-plan';
+    const title = hasPlan ? 'Let AI suggest tasks and controls' : 'Let AI kick this off';
+    const description = hasPlan
+      ? "Based on your treatment plan, AI can scan your library and suggest the tasks and controls most likely to drive this risk down. You'll review everything before anything is linked."
+      : "Based on the strategy above, AI can draft a treatment plan and suggest the tasks and controls most likely to drive this risk down. You'll review everything before anything is saved or linked.";
+    const primaryLabel = hasPlan ? 'Suggest tasks & controls' : 'Draft plan & suggest links';
+    const escapeLabel = hasPlan ? 'Edit plan manually' : 'Start from scratch';
+
     return (
-      <div className="flex flex-col items-center px-6 py-10 text-center">
-        <div className="flex h-14 w-14 items-center justify-center rounded-full bg-muted">
-          <MagicWandFilled size={24} className="text-foreground/60" aria-hidden="true" />
+      <div className="flex flex-col items-center rounded-md bg-primary/[0.05] px-6 py-10 text-center">
+        <div className="flex h-14 w-14 items-center justify-center rounded-full bg-primary/[0.12] text-primary">
+          <MagicWandFilled size={24} aria-hidden="true" />
         </div>
-        <h3 className="mt-4 text-xl font-normal tracking-[-0.01em]">Let AI kick this off</h3>
+        <h3 className="mt-4 text-xl font-normal tracking-[-0.01em]">{title}</h3>
         <p className="mt-3 max-w-[520px] text-sm leading-[1.55] text-muted-foreground">
-          Based on the strategy above, AI can draft a treatment plan and suggest the tasks and
-          controls most likely to drive this risk down. You'll review everything before anything is
-          saved or linked.
+          {description}
         </p>
         <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
           <Button
@@ -52,10 +61,10 @@ export function EmptyState({
             loading={submitting}
             disabled={!canUpdate}
           >
-            Draft plan & suggest links
+            {primaryLabel}
           </Button>
           <Button variant="ghost" onClick={onStartFromScratch} disabled={!canUpdate}>
-            Start from scratch
+            {escapeLabel}
           </Button>
         </div>
         <div className="mt-8 grid w-full max-w-[640px] grid-cols-1 gap-6 border-t border-border pt-5 text-left sm:grid-cols-2">
@@ -64,7 +73,9 @@ export function EmptyState({
               02 · Plan
             </div>
             <div className="mt-1.5 text-xs text-muted-foreground">
-              A concrete plan grounded in the selected tasks and controls.
+              {hasPlan
+                ? 'Your existing plan stays as-is unless you regenerate.'
+                : 'A concrete plan grounded in the selected tasks and controls.'}
             </div>
           </div>
           <div>
