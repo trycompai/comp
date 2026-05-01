@@ -154,9 +154,12 @@ describe('use-penetration-tests hooks', () => {
   });
 
   it('skips progress polling when report is completed', () => {
-    const { result } = renderHook(() => usePenetrationTestProgress('org_123', 'run_completed', 'completed'), {
-      wrapper,
-    });
+    const { result } = renderHook(
+      () => usePenetrationTestProgress('org_123', 'run_completed', 'completed'),
+      {
+        wrapper,
+      },
+    );
 
     expect(result.current.progress).toBeUndefined();
     expect(fetchMock).not.toHaveBeenCalled();
@@ -228,14 +231,9 @@ describe('use-penetration-tests hooks', () => {
     expect(requestBody.repoUrl).toBeUndefined();
   });
 
-  it('billing action failure surfaces the error after run creation', async () => {
-    // First call: create pentest (success)
+  it('creates a run through the subscription-gated create endpoint', async () => {
     fetchMock.mockResolvedValueOnce(
       createJsonResponse({ id: 'run_billed', status: 'provisioning' }),
-    );
-    // Second call: billing charge (failure via API)
-    fetchMock.mockResolvedValueOnce(
-      createJsonResponse({ error: 'No active pentest subscription.' }, 402),
     );
 
     const { result } = renderHook(() => useCreatePenetrationTest('org_123'), { wrapper });
@@ -245,11 +243,11 @@ describe('use-penetration-tests hooks', () => {
         result.current.createReport({
           targetUrl: 'https://app.example.com',
         }),
-      ).rejects.toThrow('No active pentest subscription.');
+      ).resolves.toMatchObject({ id: 'run_billed' });
     });
 
-    expect(fetchMock).toHaveBeenCalledTimes(2);
-    expect(result.current.error).toBe('No active pentest subscription.');
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(result.current.error).toBeNull();
   });
 
   it('surfaces json provider error objects from create response', async () => {

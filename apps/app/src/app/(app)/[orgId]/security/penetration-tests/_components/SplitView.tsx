@@ -1,23 +1,24 @@
 'use client';
 
 import { api } from '@/lib/api-client';
-import { cn } from '@trycompai/design-system/cn';
-import { ArrowLeft } from '@trycompai/design-system/icons';
 import type {
   PentestCreateRequest,
   PentestIssue,
   PentestRun,
 } from '@/lib/security/penetration-tests-client';
+import { getBillingSkuProductKey } from '@trycompai/billing';
+import { cn } from '@trycompai/design-system/cn';
+import { ArrowLeft } from '@trycompai/design-system/icons';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { toast } from 'sonner';
+import useSWR from 'swr';
 import {
   useCreatePenetrationTest,
   usePenetrationTest,
   usePenetrationTestEvents,
   usePenetrationTestIssues,
   usePenetrationTests,
-  usePentestCredits,
 } from '../hooks/use-penetration-tests';
 import { CreateRunPanel } from './CreateRunPanel';
 import { DetailPane } from './DetailPane';
@@ -25,6 +26,15 @@ import { EmptyState } from './EmptyState';
 import { OverviewPane } from './OverviewPane';
 import { RunList } from './RunList';
 import './pentest-tokens.css';
+
+interface BillingStatus {
+  subscriptions?: Array<{
+    skuKey: string;
+    status: string;
+    includedQuantity: number;
+    usedQuantity: number;
+  }>;
+}
 
 interface SplitViewProps {
   orgId: string;
@@ -38,15 +48,9 @@ interface SplitViewProps {
  *   - `/pentests/:id`         → Detail (selectedRunId set)
  *   - `/pentests/new`         → Create panel (mode create, list dimmed)
  */
-export function SplitView({
-  orgId,
-  selectedRunId,
-  mode = 'default',
-}: SplitViewProps) {
+export function SplitView({ orgId, selectedRunId, mode = 'default' }: SplitViewProps) {
   const router = useRouter();
-  const [selectedFinding, setSelectedFinding] = useState<PentestIssue | null>(
-    null,
-  );
+  const [selectedFinding, setSelectedFinding] = useState<PentestIssue | null>(null);
 
   const { reports, isLoading: listLoading } = usePenetrationTests(orgId);
   const {
@@ -54,36 +58,38 @@ export function SplitView({
     isLoading: runLoading,
     error: runError,
   } = usePenetrationTest(orgId, selectedRunId ?? '');
-  const { issues } = usePenetrationTestIssues(
-    orgId,
-    selectedRunId ?? '',
-    selectedRun?.status,
-  );
-  const { events } = usePenetrationTestEvents(
-    orgId,
-    selectedRunId ?? '',
-    selectedRun?.status,
-  );
+  const { issues } = usePenetrationTestIssues(orgId, selectedRunId ?? '', selectedRun?.status);
+  const { events } = usePenetrationTestEvents(orgId, selectedRunId ?? '', selectedRun?.status);
   const { createReport, isCreating } = useCreatePenetrationTest(orgId);
-  const { credits } = usePentestCredits(orgId);
-  // Keep `balance` undefined while credits are loading. Coalescing to 0
-  // would prematurely disable "+ New scan" before we know the user's
-  // real balance — child props treat `undefined` as "loading, allow
-  // optimistic UI" and a real `0` as "confirmed empty, block create."
-  const balance = credits?.balance;
-  const trialUsed =
-    credits !== undefined && credits.balance === 0 && credits.totalGranted > 0;
+  const { data: billingStatus } = useSWR<BillingStatus>(
+    orgId ? (['/v1/billing/status', orgId] as const) : null,
+    async ([endpoint, organizationId]: readonly [string, string]) => {
+      const response = await api.get<BillingStatus>(endpoint, organizationId);
+      if (response.status < 200 || response.status >= 300) {
+        throw new Error(response.error ?? 'Failed to load billing status');
+      }
+      return response.data ?? {};
+    },
+  );
+  const pentestSubscription = (billingStatus?.subscriptions ?? []).find(
+    (subscription) =>
+      getBillingSkuProductKey(subscription.skuKey) === 'pentest' &&
+      (subscription.status === 'active' || subscription.status === 'trialing'),
+  );
+  const subscriptionBalance = pentestSubscription
+    ? Math.max(pentestSubscription.includedQuantity - pentestSubscription.usedQuantity, 0)
+    : null;
+  // Keep `balance` undefined while billing is loading so the page does not
+  // flash a blocked state before subscription allowance is known.
+  const balance = subscriptionBalance ?? (billingStatus === undefined ? undefined : 0);
+  const planRequired = subscriptionBalance === null && billingStatus !== undefined;
+  const quotaLabel = 'Plan';
 
   const showEmptyState =
-    !listLoading &&
-    reports.length === 0 &&
-    selectedRunId === null &&
-    mode !== 'create';
+    !listLoading && reports.length === 0 && selectedRunId === null && mode !== 'create';
   const isCreateMode = mode === 'create';
 
-  const handleCreateSubmit = async (
-    payload: PentestCreateRequest,
-  ): Promise<{ id: string }> => {
+  const handleCreateSubmit = async (payload: PentestCreateRequest): Promise<{ id: string }> => {
     try {
       const result = await createReport(payload);
       return { id: result.id };
@@ -128,10 +134,10 @@ export function SplitView({
       filename: `penetration-test-${runId}.pdf`,
     });
 
-  const goToCreate = () =>
-    router.push(`/${orgId}/security/penetration-tests/new`);
-  const goToList = () =>
-    router.push(`/${orgId}/security/penetration-tests`);
+  const goToCreate = () => router.push(`/${orgId}/security/penetration-tests/new`);
+  const goToPentestPlans = () =>
+    router.push(`/${orgId}/settings/billing/add-ons/penetration-tests`);
+  const goToList = () => router.push(`/${orgId}/security/penetration-tests`);
 
   // Below `xl` (1280px) we show ONE pane at a time, picked from the URL —
   // list on `/pentests`, main on `/pentests/:id` and `/pentests/new`.
@@ -152,9 +158,10 @@ export function SplitView({
       // (4rem); the outer shell padding is undone by `-m-*`.
       <div className="pt-tokens h-[calc(100vh-4rem)] -m-4 md:-m-6">
         <EmptyState
-          onCreateClick={goToCreate}
+          onCreateClick={balance === 0 ? goToPentestPlans : goToCreate}
           balance={balance}
-          trialUsed={trialUsed}
+          planRequired={planRequired}
+          quotaLabel={quotaLabel}
         />
       </div>
     );
@@ -174,17 +181,13 @@ export function SplitView({
           orgId={orgId}
           runs={reports as PentestRun[]}
           selectedRunId={selectedRunId}
-          onCreateClick={goToCreate}
+          onCreateClick={balance === 0 ? goToPentestPlans : goToCreate}
           balance={balance}
-          trialUsed={trialUsed}
+          planRequired={planRequired}
+          quotaLabel={quotaLabel}
         />
       </div>
-      <main
-        className={cn(
-          'min-w-0 flex-1 flex-col',
-          showListOnMobile ? 'hidden xl:flex' : 'flex',
-        )}
-      >
+      <main className={cn('min-w-0 flex-1 flex-col', showListOnMobile ? 'hidden xl:flex' : 'flex')}>
         {/* Back-to-list bar shown below xl. The sidebar is hidden on
             phones / tablets / narrow laptops once a run is selected (or
             in create mode), so we surface a persistent path back to the
@@ -208,13 +211,14 @@ export function SplitView({
             onSubmit={handleCreateSubmit}
             isSubmitting={isCreating}
             balance={balance}
-            trialUsed={trialUsed}
+            planRequired={planRequired}
+            quotaLabel={quotaLabel}
           />
         ) : selectedRunId === null ? (
           <OverviewPane
             orgId={orgId}
             runs={reports as PentestRun[]}
-            onCreateClick={goToCreate}
+            onCreateClick={balance === 0 ? goToPentestPlans : goToCreate}
             canCreate={balance === undefined ? true : balance > 0}
             onDownloadMarkdown={handleDownloadMarkdownById}
             onDownloadPdf={handleDownloadPdfById}
@@ -251,9 +255,7 @@ async function downloadArtifact({
   // whether `filename` is set — both Markdown and PDF callers pass a
   // filename, so the previous `filename ? pdf : md` check requested
   // application/pdf for both formats.
-  const accept = filename?.toLowerCase().endsWith('.pdf')
-    ? 'application/pdf'
-    : 'text/markdown';
+  const accept = filename?.toLowerCase().endsWith('.pdf') ? 'application/pdf' : 'text/markdown';
   try {
     const response = await api.raw(path, {
       method: 'GET',
@@ -262,9 +264,7 @@ async function downloadArtifact({
     });
     if (!response.ok) {
       const body = await response.text().catch(() => '');
-      throw new Error(
-        safeErrorMessage(body) ?? `Request failed with status ${response.status}`,
-      );
+      throw new Error(safeErrorMessage(body) ?? `Request failed with status ${response.status}`);
     }
     const blob = await response.blob();
     const objectUrl = URL.createObjectURL(blob);
@@ -276,9 +276,7 @@ async function downloadArtifact({
     document.body.removeChild(link);
     window.setTimeout(() => URL.revokeObjectURL(objectUrl), 60_000);
   } catch (err) {
-    toast.error(
-      err instanceof Error ? err.message : 'Unable to download report',
-    );
+    toast.error(err instanceof Error ? err.message : 'Unable to download report');
   }
 }
 

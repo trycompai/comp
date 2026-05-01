@@ -1,20 +1,20 @@
 'use client';
 
+import type { PentestCreateRequest } from '@/lib/security/penetration-tests-client';
 import { Button } from '@trycompai/design-system';
 import { ArrowRight, Link } from '@trycompai/design-system/icons';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { toast } from 'sonner';
-import type { PentestCreateRequest } from '@/lib/security/penetration-tests-client';
 
 interface CreateRunPanelProps {
   orgId: string;
   onSubmit: (payload: PentestCreateRequest) => Promise<{ id: string }>;
   isSubmitting?: boolean;
-  /** Spendable credit balance — disables submit when 0. */
+  /** Subscription allowance balance — disables submit when 0. */
   balance?: number;
-  /** True when the trial has already been used (paid plans coming soon). */
-  trialUsed?: boolean;
+  planRequired?: boolean;
+  quotaLabel?: 'Plan';
 }
 
 /**
@@ -27,7 +27,8 @@ export function CreateRunPanel({
   onSubmit,
   isSubmitting,
   balance,
-  trialUsed,
+  planRequired,
+  quotaLabel = 'Plan',
 }: CreateRunPanelProps) {
   const router = useRouter();
   const [targetUrl, setTargetUrl] = useState('');
@@ -42,10 +43,11 @@ export function CreateRunPanel({
     e.preventDefault();
     if (!canCreate) {
       toast.error(
-        trialUsed
-          ? "You've used your trial run. Paid plans coming soon."
-          : 'No pentest runs remaining.',
+        planRequired
+          ? 'Start a plan or free trial to run penetration tests.'
+          : 'No pentest runs remaining. Choose a plan to continue.',
       );
+      router.push(`/${orgId}/settings/billing/add-ons/penetration-tests`);
       return;
     }
     const normalized = normalizeUrl(targetUrl);
@@ -58,9 +60,7 @@ export function CreateRunPanel({
         targetUrl: normalized,
         ...(repoUrl.trim() ? { repoUrl: repoUrl.trim() } : {}),
       });
-      router.push(
-        `/${orgId}/security/penetration-tests/${encodeURIComponent(result.id)}`,
-      );
+      router.push(`/${orgId}/security/penetration-tests/${encodeURIComponent(result.id)}`);
     } catch {
       // onSubmit handles its own toast.
     }
@@ -70,6 +70,7 @@ export function CreateRunPanel({
     <div className="min-h-0 overflow-y-auto">
       <div className="mx-auto w-full max-w-[680px] px-6 py-10">
         <form
+          noValidate
           onSubmit={(e) => void handleSubmit(e)}
           className="rounded-[var(--radius)] border border-border bg-card p-8 shadow-[0_24px_48px_-12px_rgba(0,0,0,0.12)]"
         >
@@ -80,15 +81,15 @@ export function CreateRunPanel({
             Start a penetration test
           </div>
           <p className="mb-5 text-xs leading-relaxed text-muted-foreground">
-            Scans typically take 1–3 hours. Findings stream in as they're
-            discovered — you don't need to keep this page open.
+            Scans typically take 1–3 hours. Findings stream in as they're discovered — you don't
+            need to keep this page open.
           </p>
 
           {!canCreate && (
             <div className="mb-5 rounded border border-destructive/40 bg-destructive/5 p-3.5 text-xs leading-relaxed text-destructive">
-              {trialUsed
-                ? "You've used your trial run. Paid plans are coming soon — contact support if you need access today."
-                : 'No pentest runs remaining.'}
+              {planRequired
+                ? 'Start a plan or free trial to run penetration tests.'
+                : 'No pentest runs remaining. Choose a plan to continue.'}
             </div>
           )}
 
@@ -100,9 +101,7 @@ export function CreateRunPanel({
               Target URL
             </label>
             <div className="flex h-9 items-center gap-1.5 rounded border border-border bg-background px-3">
-              <span className="font-mono text-xs text-muted-foreground">
-                https://
-              </span>
+              <span className="font-mono text-xs text-muted-foreground">https://</span>
               <input
                 id="pt-target-url"
                 value={targetUrl}
@@ -114,8 +113,7 @@ export function CreateRunPanel({
               />
             </div>
             <p className="mt-1 text-[11px] text-muted-foreground">
-              Must be reachable from the scanner — localhost and private IPs
-              are rejected.
+              Must be reachable from the scanner — localhost and private IPs are rejected.
             </p>
           </div>
 
@@ -136,8 +134,7 @@ export function CreateRunPanel({
               />
             </div>
             <p className="mt-1 text-[11px] text-muted-foreground">
-              Public repositories only. We use source context to write better
-              remediation steps.
+              Public repositories only. We use source context to write better remediation steps.
             </p>
           </div>
 
@@ -158,26 +155,17 @@ export function CreateRunPanel({
               ))}
             </dl>
             <p className="mt-2 text-[11px] text-muted-foreground">
-              Findings stream into this page as they're discovered — you can
-              close this tab and come back.
+              Findings stream into this page as they're discovered — you can close this tab and come
+              back.
             </p>
           </div>
 
           <div className="flex justify-end gap-2">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={handleCancel}
-              disabled={isSubmitting}
-            >
+            <Button type="button" variant="outline" onClick={handleCancel} disabled={isSubmitting}>
               Cancel
             </Button>
-            <Button
-              type="submit"
-              loading={isSubmitting}
-              disabled={!canCreate || isSubmitting}
-            >
-              Start scan
+            <Button type="submit" loading={isSubmitting} disabled={isSubmitting}>
+              {canCreate ? `Start scan (${quotaLabel})` : 'Choose plan'}
               <ArrowRight className="h-3.5 w-3.5" />
             </Button>
           </div>
@@ -190,9 +178,7 @@ export function CreateRunPanel({
 function normalizeUrl(value: string): string | null {
   const trimmed = value.trim();
   if (!trimmed) return null;
-  const withProtocol = /^https?:\/\//i.test(trimmed)
-    ? trimmed
-    : `https://${trimmed}`;
+  const withProtocol = /^https?:\/\//i.test(trimmed) ? trimmed : `https://${trimmed}`;
   try {
     const url = new URL(withProtocol);
     if (url.protocol !== 'http:' && url.protocol !== 'https:') return null;

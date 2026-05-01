@@ -28,7 +28,7 @@ jest.mock('@db', () => ({
         return mockPolicyFind;
       },
     },
-    taskItem: {
+    task: {
       get findFirst() {
         return mockTaskFind;
       },
@@ -72,6 +72,7 @@ function buildContext(overrides: {
   };
 
   return {
+    getHandler: () => buildContext,
     switchToHttp: () => ({ getRequest: () => request }),
   } as unknown as Parameters<AdminAuditLogInterceptor['intercept']>[0];
 }
@@ -303,6 +304,31 @@ describe('AdminAuditLogInterceptor', () => {
                 resource: 'admin',
                 permission: 'platform-admin',
               }),
+            }),
+          });
+          done();
+        }, 50);
+      },
+    });
+  });
+
+  it('should audit billing mutations against the organization id', (done) => {
+    const ctx = buildContext({
+      method: 'PUT',
+      url: '/v1/admin/organizations/org_1/billing/preferences',
+      params: { orgId: 'org_1' },
+      body: { billingEmail: 'accounts@example.com' },
+    });
+
+    interceptor.intercept(ctx, nextHandler).subscribe({
+      complete: () => {
+        setTimeout(() => {
+          expect(mockCreate).toHaveBeenCalledWith({
+            data: expect.objectContaining({
+              organizationId: 'org_1',
+              entityType: 'organization',
+              entityId: 'org_1',
+              description: 'Updated billing',
             }),
           });
           done();

@@ -64,8 +64,13 @@ model Organization {
   // Pentest credits — wallet of run-credits an org can spend.
   // Source of credits (trial / future Stripe subscription / top-up)
   // is metadata on the row; balance is unified.
-  pentestCredits PentestCredits?
-  billing        OrganizationBilling?
+  pentestCredits       PentestCredits?
+  billing              OrganizationBilling?
+  billingSubscriptions OrganizationBillingSubscription[]
+  billingUsageEvents   BillingUsageEvent[]
+  billingAuditEvents   BillingAuditEvent[]
+  billingCreditBalances BillingCreditBalance[]
+  billingCreditEvents   BillingCreditEvent[]
 
   // Browser Automation
   browserbaseContext BrowserbaseContext?

@@ -21,8 +21,10 @@ import {
   type PentestProgress as MacedPentestProgress,
   type PentestWithProgress,
 } from '@maced/api-client';
+import { randomUUID } from 'crypto';
 
 import type { CreatePenetrationTestDto } from './dto/create-penetration-test.dto';
+import { BillingEntitlementsService } from '../billing/billing-entitlements.service';
 import { PentestCreditsService } from './pentest-credits.service';
 
 /**
@@ -112,7 +114,10 @@ export class SecurityPenetrationTestsService {
   private readonly logger = new Logger(SecurityPenetrationTestsService.name);
   private readonly macedClient: MacedClient;
 
-  constructor(private readonly credits: PentestCreditsService) {
+  constructor(
+    private readonly credits: PentestCreditsService,
+    private readonly billingEntitlements: BillingEntitlementsService,
+  ) {
     const apiKey = process.env.MACED_API_KEY;
     if (!apiKey) {
       // Throw at construction so the app fails loudly on boot, not on first request.
@@ -168,8 +173,7 @@ export class SecurityPenetrationTestsService {
       // …). Include the constructor name + message in the log so we can tell
       // what actually broke without a debugger.
       const errName = error?.constructor?.name ?? typeof error;
-      const errMessage =
-        error instanceof Error ? error.message : String(error);
+      const errMessage = error instanceof Error ? error.message : String(error);
       this.logger.error(
         `Transport failure calling Maced (${context}): ${errName} — ${errMessage}`,
       );
@@ -222,32 +226,60 @@ export class SecurityPenetrationTestsService {
     payload: CreatePenetrationTestDto,
   ): Promise<SecurityPenetrationTest> {
     const resolvedWebhookUrl = this.resolveWebhookUrl(payload.webhookUrl);
+    const billingUsageSourceId = `pending:${randomUUID()}`;
+    let consumedSubscriptionAllowance = false;
 
-    // Debit FIRST so concurrent fast-clicks block at the cheap DB
-    // conditional update before any of them reach Maced. Without this,
-    // double-clicks would race past the balance check, all hit Maced
-    // (creating multiple paid runs), and only one would win the debit —
-    // we'd burn money on orphaned provider-side runs. Atomic
-    // `updateMany WHERE balance > 0` guarantees only one decrement
-    // succeeds.
+    // Reserve subscription allowance before calling Maced so fast double-clicks
+    // cannot create more paid provider runs than the organization has available.
     try {
-      await this.credits.debitOrThrow(organizationId);
+      const subscriptionUsage =
+        await this.billingEntitlements.tryConsumeIncludedUsageForProduct({
+          organizationId,
+          productKey: 'pentest',
+          sourceResourceId: billingUsageSourceId,
+        });
+      if (subscriptionUsage.status === 'exhausted') {
+        throw new HttpException(
+          {
+            error:
+              'No pentest runs remaining in your subscription. Upgrade or wait for your monthly allowance to reset.',
+            code: 'pentest_subscription_exhausted',
+          },
+          HttpStatus.PAYMENT_REQUIRED,
+        );
+      }
+      if (subscriptionUsage.status === 'not_configured') {
+        throw new HttpException(
+          {
+            error: 'Start a penetration test plan or free trial to run scans.',
+            code: 'pentest_subscription_required',
+          },
+          HttpStatus.PAYMENT_REQUIRED,
+        );
+      } else {
+        consumedSubscriptionAllowance = true;
+      }
     } catch (error) {
       if (
         error instanceof HttpException &&
         error.getStatus() === HttpStatus.PAYMENT_REQUIRED
       ) {
         // Record the blocked attempt so support / compliance can answer
-        // "did the user try to scan after their trial was used?". Best-
+        // "did the user try to scan without an allowance?". Best-
         // effort — never let an audit-log failure hide the 402 from the
         // user.
+        const response = error.getResponse();
+        const reason = getPaymentRequiredCode(response);
         await this.credits.writePentestAuditEntry({
           organizationId,
           action: 'pentest_create_blocked',
           runId: null,
-          description: 'Pentest create blocked: no credits remaining',
+          description:
+            reason === 'pentest_subscription_exhausted'
+              ? 'Pentest create blocked: subscription exhausted'
+              : 'Pentest create blocked: subscription required',
           metadata: {
-            reason: 'pentest_credits_exhausted',
+            reason,
             targetUrl: payload.targetUrl,
           },
         });
@@ -289,17 +321,37 @@ export class SecurityPenetrationTestsService {
     } catch (error) {
       // Provider call failed after we debited. Refund so the user isn't
       // charged for a run that never started.
-      await this.refundQuietly(organizationId, 'pending', 'maced_create_failed');
+      if (consumedSubscriptionAllowance) {
+        await this.refundBillingUsageQuietly({
+          organizationId,
+          sourceResourceId: billingUsageSourceId,
+          reason: 'maced_create_failed',
+        });
+      } else {
+        await this.refundQuietly(
+          organizationId,
+          'pending',
+          'maced_create_failed',
+        );
+      }
       throw error;
     }
 
     const providerRunId = createdReport.id;
     if (!providerRunId) {
-      await this.refundQuietly(
-        organizationId,
-        'pending',
-        'maced_missing_run_id',
-      );
+      if (consumedSubscriptionAllowance) {
+        await this.refundBillingUsageQuietly({
+          organizationId,
+          sourceResourceId: billingUsageSourceId,
+          reason: 'maced_missing_run_id',
+        });
+      } else {
+        await this.refundQuietly(
+          organizationId,
+          'pending',
+          'maced_missing_run_id',
+        );
+      }
       throw new HttpException(
         { error: 'Create response missing report identifier' },
         HttpStatus.BAD_GATEWAY,
@@ -309,6 +361,7 @@ export class SecurityPenetrationTestsService {
     const ownershipPersisted = await this.persistRunOwnershipWithRetry(
       organizationId,
       providerRunId,
+      consumedSubscriptionAllowance ? billingUsageSourceId : null,
     );
     if (!ownershipPersisted) {
       // We debited and Maced created the run, but our DB rejected the
@@ -316,11 +369,19 @@ export class SecurityPenetrationTestsService {
       // shouldn't pay for it. The Maced run is orphaned (no
       // ownership) but Maced has the `compOrganizationId` metadata if
       // support ever needs to clean it up.
-      await this.refundQuietly(
-        organizationId,
-        providerRunId,
-        'ownership_persist_failed',
-      );
+      if (consumedSubscriptionAllowance) {
+        await this.refundBillingUsageQuietly({
+          organizationId,
+          sourceResourceId: billingUsageSourceId,
+          reason: 'ownership_persist_failed',
+        });
+      } else {
+        await this.refundQuietly(
+          organizationId,
+          providerRunId,
+          'ownership_persist_failed',
+        );
+      }
       throw new HttpException(
         {
           error:
@@ -374,10 +435,7 @@ export class SecurityPenetrationTestsService {
     );
   }
 
-  async getReportIssues(
-    organizationId: string,
-    id: string,
-  ): Promise<Issue[]> {
+  async getReportIssues(organizationId: string, id: string): Promise<Issue[]> {
     await this.assertRunOwnership(organizationId, id);
     return this.callMaced(
       () => this.macedClient.pentests.issues(id),
@@ -448,7 +506,9 @@ export class SecurityPenetrationTestsService {
     eventId?: string;
   }> {
     if (!params.rawBody) {
-      throw new BadRequestException('Missing raw body for webhook verification');
+      throw new BadRequestException(
+        'Missing raw body for webhook verification',
+      );
     }
 
     const secret = process.env.MACED_WEBHOOK_SIGNING_SECRET;
@@ -524,15 +584,13 @@ export class SecurityPenetrationTestsService {
    * those are rare race-condition artifacts and don't represent
    * customer-visible state.
    */
-  private async auditPentestCompleted(
-    data: {
-      pentestId: string;
-      targetUrl: string;
-      issueCount: number;
-      durationMs: number;
-      agentCount: number;
-    },
-  ): Promise<void> {
+  private async auditPentestCompleted(data: {
+    pentestId: string;
+    targetUrl: string;
+    issueCount: number;
+    durationMs: number;
+    agentCount: number;
+  }): Promise<void> {
     // Atomic claim — only the first webhook delivery for this run gets
     // count: 1 back. Subsequent redeliveries see `completed_audit_at`
     // already set and bail out before writing a duplicate audit row.
@@ -617,20 +675,25 @@ export class SecurityPenetrationTestsService {
 
       const run = await tx.securityPenetrationTestRun.findUnique({
         where: { providerRunId },
-        select: { organizationId: true },
+        select: { organizationId: true, billingUsageSourceId: true },
       });
       if (!run) {
         // Vanishingly rare race; abort the transaction so the claim
         // rolls back. Webhook redelivery will retry.
-        throw new Error(
-          `Run row vanished after claim for ${providerRunId}`,
-        );
+        throw new Error(`Run row vanished after claim for ${providerRunId}`);
       }
 
-      // Pass the tx client through so the wallet write happens in
-      // the same transaction as the claim. If this throws, the claim
-      // is undone and the error propagates up to handleWebhook → Maced
-      // sees 5xx and redelivers, allowing retry.
+      if (run.billingUsageSourceId) {
+        await this.billingEntitlements.refundIncludedUsageForProduct({
+          organizationId: run.organizationId,
+          productKey: 'pentest',
+          sourceResourceId: run.billingUsageSourceId,
+          reason: eventType,
+          tx,
+        });
+        return;
+      }
+
       await this.credits.refund(
         run.organizationId,
         providerRunId,
@@ -866,9 +929,31 @@ export class SecurityPenetrationTestsService {
     }
   }
 
+  private async refundBillingUsageQuietly(params: {
+    organizationId: string;
+    sourceResourceId: string;
+    reason: string;
+  }): Promise<void> {
+    try {
+      await this.billingEntitlements.refundIncludedUsageForProduct({
+        organizationId: params.organizationId,
+        productKey: 'pentest',
+        sourceResourceId: params.sourceResourceId,
+        reason: params.reason,
+      });
+    } catch (error) {
+      this.logger.error(
+        `Billing usage refund failed for org=${params.organizationId} source=${params.sourceResourceId} reason=${params.reason}: ${
+          error instanceof Error ? error.message : String(error)
+        }`,
+      );
+    }
+  }
+
   private async persistRunOwnership(
     organizationId: string,
     reportId: string,
+    billingUsageSourceId: string | null,
   ): Promise<void> {
     // Defensive: if a row already exists for this providerRunId, do NOT
     // overwrite its organizationId. Maced generates unique providerRunIds
@@ -885,6 +970,7 @@ export class SecurityPenetrationTestsService {
       create: {
         organizationId,
         providerRunId: reportId,
+        billingUsageSourceId,
       },
       update: {},
     });
@@ -893,10 +979,15 @@ export class SecurityPenetrationTestsService {
   private async persistRunOwnershipWithRetry(
     organizationId: string,
     reportId: string,
+    billingUsageSourceId: string | null,
   ): Promise<boolean> {
     for (let attempt = 1; attempt <= 3; attempt += 1) {
       try {
-        await this.persistRunOwnership(organizationId, reportId);
+        await this.persistRunOwnership(
+          organizationId,
+          reportId,
+          billingUsageSourceId,
+        );
         return true;
       } catch (error) {
         this.logger.error(
@@ -1002,5 +1093,34 @@ export class SecurityPenetrationTestsService {
 
     return hosts;
   }
+}
 
+function getPaymentRequiredCode(response: unknown): string {
+  if (typeof response === 'string') {
+    return normalizePaymentRequiredCode(response);
+  }
+  if (typeof response !== 'object' || response === null) {
+    return 'pentest_subscription_required';
+  }
+  const code = (response as Record<string, unknown>).code;
+  if (typeof code === 'string') return normalizePaymentRequiredCode(code);
+
+  const message = (response as Record<string, unknown>).message;
+  return typeof message === 'string'
+    ? normalizePaymentRequiredCode(message)
+    : 'pentest_subscription_required';
+}
+
+function normalizePaymentRequiredCode(value: string): string {
+  if (
+    value === 'pentest_subscription_exhausted' ||
+    value.toLowerCase().includes('exhaust') ||
+    value.toLowerCase().includes('remaining')
+  ) {
+    return 'pentest_subscription_exhausted';
+  }
+  if (value === 'pentest_subscription_required') {
+    return 'pentest_subscription_required';
+  }
+  return 'pentest_subscription_required';
 }

@@ -1,6 +1,6 @@
 'use client';
 
-import { AlertCircle, Loader2 } from 'lucide-react';
+import { ErrorFilled, InProgress } from '@trycompai/design-system/icons';
 import type {
   PentestAgentEvent,
   PentestIssue,
@@ -48,7 +48,7 @@ export function DetailPane({
   if (isLoading && !run) {
     return (
       <div className="flex h-full items-center justify-center">
-        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+        <InProgress className="h-6 w-6 animate-spin text-muted-foreground" />
       </div>
     );
   }
@@ -57,7 +57,7 @@ export function DetailPane({
     return (
       <div className="flex h-full items-center justify-center px-8 text-center">
         <div className="max-w-md space-y-2 text-sm text-muted-foreground">
-          <AlertCircle className="mx-auto h-8 w-8 text-destructive" />
+          <ErrorFilled className="mx-auto h-8 w-8 text-destructive" />
           <p className="font-medium text-foreground">Unable to load scan</p>
           <p>{error?.message ?? 'No scan found for this organization.'}</p>
         </div>

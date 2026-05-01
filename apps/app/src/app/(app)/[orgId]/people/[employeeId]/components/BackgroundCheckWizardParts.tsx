@@ -39,12 +39,9 @@ export function OverviewStep({
         <div className="border-t bg-muted/20 p-6 lg:border-l lg:border-t-0">
           <Stack gap="4">
             <Stack gap="1">
-              <Text size="sm" variant="muted">
-                Launch price
-              </Text>
+              <Text size="sm" variant="muted">Plans from</Text>
               <Text size="lg" weight="semibold">
-                <span className="text-muted-foreground line-through">$99</span>{' '}
-                $49 per check
+                $79 / month
               </Text>
             </Stack>
             <Text size="sm" variant="muted">
@@ -63,14 +60,14 @@ export function OverviewStep({
                 iconRight={<Launch size={16} />}
                 onClick={onOpenBilling}
               >
-                Set up billing
+                View plans
               </Button>
             )}
             {!hasPaymentMethod && (
               <Text size="xs" variant="muted">
-                You can also manage payment methods from{' '}
+                Manage monthly background check credits from{' '}
                 <Link href={billingHref} className="font-medium text-primary hover:underline">
-                  Billing settings
+                  Billing plans
                 </Link>
                 .
               </Text>

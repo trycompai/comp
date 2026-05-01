@@ -1,14 +1,7 @@
 'use client';
 
-import {
-  Button,
-  Grid,
-  Input,
-  Label,
-  Stack,
-  Text,
-  Textarea,
-} from '@trycompai/design-system';
+import { Button, Grid, Input, Label, Stack, Text, Textarea } from '@trycompai/design-system';
+import Link from 'next/link';
 import type { UseFormReturn } from 'react-hook-form';
 import { BackgroundCheckSummary, BillingCallout } from './BackgroundCheckWizardParts';
 import type { BackgroundCheckFormValues } from './backgroundCheckForm';
@@ -19,7 +12,8 @@ export function BackgroundCheckDetailsForm({
   isOpeningBilling,
   isRequesting,
   billingSetupComplete,
-  hasPaymentMethod,
+  backgroundChecksRemaining,
+  billingHref,
   canGoBack,
   onBack,
   onSubmit,
@@ -29,7 +23,8 @@ export function BackgroundCheckDetailsForm({
   isOpeningBilling: boolean;
   isRequesting: boolean;
   billingSetupComplete: boolean;
-  hasPaymentMethod: boolean;
+  backgroundChecksRemaining: number | null;
+  billingHref: string;
   canGoBack: boolean;
   onBack: () => void;
   onSubmit: (values: BackgroundCheckFormValues) => Promise<void>;
@@ -104,9 +99,19 @@ export function BackgroundCheckDetailsForm({
             >
               Complete
             </Button>
-            {hasPaymentMethod && (
+            {backgroundChecksRemaining !== null && backgroundChecksRemaining > 0 && (
               <Text size="xs" variant="muted">
-                Your saved card will be charged $49 for this background check.
+                {backgroundChecksRemaining} background check
+                {backgroundChecksRemaining === 1 ? '' : 's'} remaining this period.
+              </Text>
+            )}
+            {(backgroundChecksRemaining === null || backgroundChecksRemaining === 0) && (
+              <Text size="xs" variant="muted">
+                No background checks remaining.{' '}
+                <Link href={billingHref} className="font-medium text-primary hover:underline">
+                  Choose a plan
+                </Link>
+                .
               </Text>
             )}
           </div>

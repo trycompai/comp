@@ -145,6 +145,7 @@
         "@trigger.dev/build": "4.4.3",
         "@trigger.dev/sdk": "4.4.3",
         "@trycompai/auth": "workspace:*",
+        "@trycompai/billing": "workspace:*",
         "@trycompai/company": "workspace:*",
         "@trycompai/db": "workspace:*",
         "@trycompai/email": "workspace:*",
@@ -282,6 +283,7 @@
         "@trigger.dev/react-hooks": "4.4.3",
         "@trigger.dev/sdk": "4.4.3",
         "@trycompai/auth": "workspace:*",
+        "@trycompai/billing": "workspace:*",
         "@trycompai/company": "workspace:*",
         "@trycompai/db": "workspace:*",
         "@trycompai/design-system": "^1.0.32",
@@ -510,6 +512,15 @@
       "devDependencies": {
         "@trycompai/tsconfig": "workspace:*",
         "typescript": "^5.7.3",
+      },
+    },
+    "packages/billing": {
+      "name": "@trycompai/billing",
+      "version": "1.0.0",
+      "devDependencies": {
+        "@trycompai/tsconfig": "workspace:*",
+        "tsup": "^8.5.0",
+        "typescript": "^5.8.3",
       },
     },
     "packages/company": {
@@ -2694,6 +2705,8 @@
     "@trycompai/app": ["@trycompai/app@workspace:apps/app"],
 
     "@trycompai/auth": ["@trycompai/auth@workspace:packages/auth"],
+
+    "@trycompai/billing": ["@trycompai/billing@workspace:packages/billing"],
 
     "@trycompai/company": ["@trycompai/company@workspace:packages/company"],
 

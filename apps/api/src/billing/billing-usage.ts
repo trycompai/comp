@@ -1,0 +1,175 @@
+import { db } from '@db';
+import { getBillingSkuProductKey } from '@trycompai/billing';
+import type { BillingUsageRow } from './billing.types';
+
+type SubscriptionSummary = {
+  skuKey: string;
+  includedQuantity: number;
+  usedQuantity: number;
+  currentPeriodEnd: Date | null;
+};
+
+const backgroundCheckSku = 'background_checks_monthly_3';
+const pentestSku = 'pentest_monthly_1';
+
+export async function listBillingUsageRows(params: {
+  organizationId: string;
+  subscriptions: SubscriptionSummary[];
+}): Promise<BillingUsageRow[]> {
+  const [backgroundChecks, pentestRuns] = await Promise.all([
+    db.backgroundCheckRequest.findMany({
+      where: { organizationId: params.organizationId },
+      orderBy: { createdAt: 'desc' },
+      take: 50,
+      select: {
+        id: true,
+        memberId: true,
+        employeeName: true,
+        employeeEmail: true,
+        status: true,
+        stripePaymentStatus: true,
+        createdAt: true,
+        updatedAt: true,
+      },
+    }),
+    db.securityPenetrationTestRun.findMany({
+      where: { organizationId: params.organizationId },
+      orderBy: { createdAt: 'desc' },
+      take: 50,
+      select: {
+        id: true,
+        providerRunId: true,
+        billingUsageSourceId: true,
+        createdAt: true,
+        updatedAt: true,
+      },
+    }),
+  ]);
+  const sourceResourceIds = [
+    ...backgroundChecks.map((request) => request.memberId),
+    ...pentestRuns.map((run) => run.billingUsageSourceId),
+  ].filter((value): value is string => typeof value === 'string');
+  const usageEvents =
+    sourceResourceIds.length > 0
+      ? await db.billingUsageEvent.findMany({
+          where: {
+            organizationId: params.organizationId,
+            eventType: { in: ['consume', 'one_time'] },
+            sourceResourceId: { in: sourceResourceIds },
+          },
+          orderBy: { createdAt: 'desc' },
+          select: {
+            skuKey: true,
+            eventType: true,
+            sourceResourceId: true,
+            stripeInvoiceId: true,
+          },
+        })
+      : [];
+
+  const usageBySource = new Map<string, (typeof usageEvents)[number]>();
+  for (const event of usageEvents) {
+    if (!event.sourceResourceId || usageBySource.has(event.sourceResourceId)) {
+      continue;
+    }
+    usageBySource.set(event.sourceResourceId, event);
+  }
+
+  const rows = [
+    ...backgroundChecks.map((request) => {
+      const usage = usageBySource.get(request.memberId);
+      return toBillingUsageRow({
+        id: request.id,
+        service: 'Background Check',
+        skuKey: usage?.skuKey ?? backgroundCheckSku,
+        details: `${request.employeeName} (${request.employeeEmail})`,
+        status: formatStatus(request.status),
+        billingType: formatBillingType(
+          usage?.eventType,
+          usage?.stripeInvoiceId,
+        ),
+        createdAt: request.createdAt,
+        updatedAt: request.updatedAt,
+        subscriptions: params.subscriptions,
+      });
+    }),
+    ...pentestRuns.map((run) => {
+      const usage = run.billingUsageSourceId
+        ? usageBySource.get(run.billingUsageSourceId)
+        : undefined;
+      return toBillingUsageRow({
+        id: run.id,
+        service: 'Penetration Test',
+        skuKey: usage?.skuKey ?? pentestSku,
+        details: run.providerRunId,
+        status: 'Created',
+        billingType: usage
+          ? formatBillingType(usage.eventType, usage.stripeInvoiceId)
+          : 'Trial credit',
+        createdAt: run.createdAt,
+        updatedAt: run.updatedAt,
+        subscriptions: params.subscriptions,
+      });
+    }),
+  ];
+
+  return rows.sort((first, second) =>
+    second.createdAt.localeCompare(first.createdAt),
+  );
+}
+
+function toBillingUsageRow(params: {
+  id: string;
+  service: BillingUsageRow['service'];
+  skuKey: string;
+  details: string;
+  status: string;
+  billingType: string;
+  createdAt: Date;
+  updatedAt: Date;
+  subscriptions: SubscriptionSummary[];
+}): BillingUsageRow {
+  const productKey = getBillingSkuProductKey(params.skuKey);
+  const subscription =
+    params.subscriptions.find((item) => item.skuKey === params.skuKey) ??
+    params.subscriptions.find((item) =>
+      productKey
+        ? getBillingSkuProductKey(item.skuKey) === productKey
+        : item.skuKey === params.skuKey,
+    );
+  const remaining = subscription
+    ? Math.max(subscription.includedQuantity - subscription.usedQuantity, 0)
+    : null;
+
+  return {
+    id: params.id,
+    service: params.service,
+    skuKey: params.skuKey,
+    details: params.details,
+    status: params.status,
+    billingType: params.billingType,
+    createdAt: params.createdAt.toISOString(),
+    updatedAt: params.updatedAt.toISOString(),
+    subscriptionRemaining: remaining,
+    subscriptionIncluded: subscription?.includedQuantity ?? null,
+    subscriptionPeriodEnd:
+      subscription?.currentPeriodEnd?.toISOString() ?? null,
+  };
+}
+
+function formatBillingType(
+  eventType?: string,
+  stripeInvoiceId?: string | null,
+): string {
+  if (eventType === 'consume') return 'Subscription allowance';
+  if (eventType === 'one_time')
+    return stripeInvoiceId ? 'One-time invoice' : 'One-time';
+  return 'Legacy / manual';
+}
+
+function formatStatus(status: string): string {
+  return status
+    .split('_')
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(' ');
+}

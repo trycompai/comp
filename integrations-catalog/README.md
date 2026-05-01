@@ -2,7 +2,7 @@
 
 Public catalog of all compliance integrations available in the [CompAI](https://trycomp.ai) platform.
 
-**569 integrations** across 9 categories.
+**574 integrations** across 9 categories.
 
 > Last updated: 2026-05-01
 
@@ -34,13 +34,13 @@ curl https://raw.githubusercontent.com/trycompai/comp/main/integrations-catalog/
 ## Summary by category
 
 - **Security** — 129 integrations
-- **Productivity** — 119 integrations
+- **Productivity** — 120 integrations
 - **HR & People** — 63 integrations
-- **Monitoring** — 54 integrations
+- **Monitoring** — 56 integrations
 - **Cloud** — 54 integrations
-- **Development** — 52 integrations
+- **Development** — 53 integrations
 - **Communication** — 47 integrations
-- **Infrastructure** — 31 integrations
+- **Infrastructure** — 32 integrations
 - **Identity & Access** — 20 integrations
 
 ## Full catalog
@@ -156,7 +156,7 @@ curl https://raw.githubusercontent.com/trycompai/comp/main/integrations-catalog/
 | [Wistia](integrations/wistia.json) | `wistia` | custom | 2 |  |
 | [Zoom](integrations/zoom.json) | `zoom` | oauth2 | 2 |  |
 
-### Development (52)
+### Development (53)
 
 | Integration | Slug | Auth | Checks | Sync |
 |-------------|------|------|--------|------|
@@ -191,6 +191,7 @@ curl https://raw.githubusercontent.com/trycompai/comp/main/integrations-catalog/
 | [Liveblocks](integrations/liveblocks.json) | `liveblocks` | api_key | 2 |  |
 | [Mabl](integrations/mabl.json) | `mabl` | basic | 2 |  |
 | [Mintlify](integrations/mintlify.json) | `mintlify` | custom | 2 |  |
+| [Octopus Deploy](integrations/octopus-deploy.json) | `octopus-deploy` | custom | 3 |  |
 | [OpenAI](integrations/openai.json) | `openai` | custom | 2 |  |
 | [Optimizely](integrations/optimizely.json) | `optimizely` | api_key | 2 |  |
 | [Pipedream](integrations/pipedream.json) | `pipedream` | api_key | 2 |  |
@@ -237,8 +238,8 @@ curl https://raw.githubusercontent.com/trycompai/comp/main/integrations-catalog/
 | [Freshteam](integrations/freshteam.json) | `freshteam` | custom | 3 | ✓ |
 | [Greenhouse](integrations/greenhouse.json) | `greenhouse` | basic | 2 |  |
 | [Gusto](integrations/gusto.json) | `gusto` | oauth2 | 2 |  |
-| [HiBob](integrations/bob.json) | `bob` | basic | 2 | ✓ |
 | [HiBob](integrations/hibob.json) | `hibob` | custom | 2 |  |
+| [HiBob](integrations/bob.json) | `bob` | basic | 2 | ✓ |
 | [HireRight](integrations/hireright.json) | `hireright` | custom | 1 |  |
 | [Humaans](integrations/humaans.json) | `humaans` | custom | 1 |  |
 | [Justworks](integrations/justworks.json) | `justworks` | oauth2 | 2 | ✓ |
@@ -306,7 +307,7 @@ curl https://raw.githubusercontent.com/trycompai/comp/main/integrations-catalog/
 | [Stytch](integrations/stytch.json) | `stytch` | custom | 2 |  |
 | [WorkOS](integrations/workos.json) | `workos` | api_key | 2 |  |
 
-### Infrastructure (31)
+### Infrastructure (32)
 
 | Integration | Slug | Auth | Checks | Sync |
 |-------------|------|------|--------|------|
@@ -334,6 +335,7 @@ curl https://raw.githubusercontent.com/trycompai/comp/main/integrations-catalog/
 | [Pulumi Cloud](integrations/pulumi-cloud.json) | `pulumi-cloud` | api_key | 2 |  |
 | [Qovery](integrations/qovery.json) | `qovery` | custom | 2 |  |
 | [Railway](integrations/railway.json) | `railway` | custom | 2 |  |
+| [Snipe-IT](integrations/snipe-it.json) | `snipe-it` | custom | 4 |  |
 | [Snipe-IT](integrations/snipeit.json) | `snipeit` | custom | 3 |  |
 | [Tailscale](integrations/tailscale.json) | `tailscale` | api_key | 2 |  |
 | [Teleport](integrations/teleport.json) | `teleport` | api_key | 2 |  |
@@ -342,11 +344,12 @@ curl https://raw.githubusercontent.com/trycompai/comp/main/integrations-catalog/
 | [Veeam Backup & Replication](integrations/veeam.json) | `veeam` | custom | 3 |  |
 | [ZeroTier](integrations/zerotier.json) | `zerotier` | custom | 2 |  |
 
-### Monitoring (54)
+### Monitoring (56)
 
 | Integration | Slug | Auth | Checks | Sync |
 |-------------|------|------|--------|------|
 | [ActivTrak](integrations/activtrak.json) | `activtrak` | custom | 3 |  |
+| [Airbrake](integrations/airbrake.json) | `airbrake` | api_key | 2 |  |
 | [Amplitude](integrations/amplitude.json) | `amplitude` | api_key | 2 |  |
 | [Anodot](integrations/anodot.json) | `anodot` | custom | 2 |  |
 | [Auvik](integrations/auvik.json) | `auvik` | custom | 2 |  |
@@ -372,6 +375,7 @@ curl https://raw.githubusercontent.com/trycompai/comp/main/integrations-catalog/
 | [LogicMonitor](integrations/logicmonitor.json) | `logicmonitor` | custom | 5 |  |
 | [LogRocket](integrations/logrocket.json) | `logrocket` | api_key | 2 |  |
 | [Logz.io](integrations/logzio.json) | `logzio` | custom | 2 |  |
+| [Logz.io](integrations/logz-io.json) | `logz-io` | custom | 3 |  |
 | [Lumigo](integrations/lumigo.json) | `lumigo` | custom | 1 |  |
 | [Mezmo](integrations/mezmo.json) | `mezmo` | custom | 2 |  |
 | [Mezmo (LogDNA)](integrations/logdna.json) | `logdna` | custom | 2 |  |
@@ -396,12 +400,12 @@ curl https://raw.githubusercontent.com/trycompai/comp/main/integrations-catalog/
 | [Statsig](integrations/statsig.json) | `statsig` | custom | 2 |  |
 | [StatusCake](integrations/statuscake.json) | `statuscake` | custom | 4 |  |
 | [Statuspage](integrations/statuspage.json) | `statuspage` | api_key | 2 |  |
-| [Sumo Logic](integrations/sumologic.json) | `sumologic` | custom | 2 |  |
 | [Sumo Logic](integrations/sumo-logic.json) | `sumo-logic` | custom | 2 |  |
+| [Sumo Logic](integrations/sumologic.json) | `sumologic` | custom | 2 |  |
 | [Updown.io](integrations/updown.json) | `updown` | custom | 2 |  |
 | [Uptime Robot](integrations/uptime-robot.json) | `uptime-robot` | api_key | 2 |  |
 
-### Productivity (119)
+### Productivity (120)
 
 | Integration | Slug | Auth | Checks | Sync |
 |-------------|------|------|--------|------|
@@ -441,8 +445,8 @@ curl https://raw.githubusercontent.com/trycompai/comp/main/integrations-catalog/
 | [DocuSign](integrations/docusign.json) | `docusign` | oauth2 | 2 |  |
 | [Domo](integrations/domo.json) | `domo` | custom | 2 |  |
 | [Dropbox Business](integrations/dropbox-business.json) | `dropbox-business` | oauth2 | 3 | ✓ |
-| [Dropbox Sign](integrations/hellosign.json) | `hellosign` | basic | 2 |  |
 | [Dropbox Sign](integrations/dropbox-sign.json) | `dropbox-sign` | custom | 1 |  |
+| [Dropbox Sign](integrations/hellosign.json) | `hellosign` | basic | 2 |  |
 | [Dub.co](integrations/dub.json) | `dub` | api_key | 2 |  |
 | [Dynamics 365](integrations/dynamics-365.json) | `dynamics-365` | custom | 3 |  |
 | [Expensify](integrations/expensify.json) | `expensify` | custom | 1 |  |
@@ -479,6 +483,7 @@ curl https://raw.githubusercontent.com/trycompai/comp/main/integrations-catalog/
 | [Microsoft Power BI](integrations/power-bi.json) | `power-bi` | custom | 2 |  |
 | [Miro](integrations/miro.json) | `miro` | api_key | 2 |  |
 | [Monday.com](integrations/monday.json) | `monday` | custom | 2 |  |
+| [Monday.com](integrations/monday-com.json) | `monday-com` | api_key | 3 |  |
 | [MURAL](integrations/mural.json) | `mural` | custom | 2 |  |
 | [n8n](integrations/n8n.json) | `n8n` | custom | 3 |  |
 | [NetSuite](integrations/netsuite.json) | `netsuite` | custom | 2 | ✓ |
