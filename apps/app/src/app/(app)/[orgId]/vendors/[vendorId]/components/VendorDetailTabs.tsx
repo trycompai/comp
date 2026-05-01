@@ -272,6 +272,19 @@ export function VendorDetailTabs({
     return result;
   };
 
+  const handleUnlinkTask = async (taskId: string) => {
+    try {
+      const res = await fetch(`/api/vendors/${vendorId}/tasks/${taskId}`, {
+        method: 'DELETE',
+        credentials: 'include',
+      });
+      if (!res.ok) throw new Error('unlink failed');
+      await refreshVendor();
+    } catch {
+      toast.error('Failed to unlink task');
+    }
+  };
+
   const handleUpdateDescription = async (description: string) => {
     await updateVendor(vendorId, { treatmentStrategyDescription: description });
     refreshVendor();
@@ -455,6 +468,7 @@ export function VendorDetailTabs({
                 onRegenerate={handleRegenerateMitigation}
                 regenerating={isMitigationLoading}
                 onAutoLink={handleAutoLink}
+                onUnlinkTask={handleUnlinkTask}
               />
             </TabsContent>
 

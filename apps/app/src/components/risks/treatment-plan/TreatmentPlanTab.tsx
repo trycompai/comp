@@ -38,6 +38,9 @@ interface TreatmentPlanTabProps {
    * tasks (and the user can update), an Auto-link button is shown above the
    * Linked Work content. Older callers that don't pass this prop keep working. */
   onAutoLink?: () => Promise<{ linked: number }>;
+  /** Optional unlink callback. When provided, each task row in the Linked Work
+   * card gets a × affordance that removes the task↔entity link. */
+  onUnlinkTask?: (taskId: string) => Promise<void>;
 }
 
 export function TreatmentPlanTab({
@@ -49,6 +52,7 @@ export function TreatmentPlanTab({
   onRegenerate,
   regenerating,
   onAutoLink,
+  onUnlinkTask,
 }: TreatmentPlanTabProps) {
   const [strategy, setStrategy] = useState(entity.treatmentStrategy);
 
@@ -144,7 +148,11 @@ export function TreatmentPlanTab({
                   onAfterLink={onRegenerate}
                 />
               )}
-              <LinkedWork orgId={orgId} tasks={entity.tasks} />
+              <LinkedWork
+                orgId={orgId}
+                tasks={entity.tasks}
+                onUnlinkTask={canUpdate ? onUnlinkTask : undefined}
+              />
             </div>
           </CardContent>
         </Card>

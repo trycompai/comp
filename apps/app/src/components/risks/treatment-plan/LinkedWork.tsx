@@ -2,7 +2,7 @@
 
 import { cn } from '@/lib/utils';
 import { TaskStatus } from '@db';
-import { Checkmark, Subtract } from '@trycompai/design-system/icons';
+import { Checkmark, Close, Subtract } from '@trycompai/design-system/icons';
 import Link from 'next/link';
 
 interface LinkedTask {
@@ -15,13 +15,15 @@ interface LinkedTask {
 interface LinkedWorkProps {
   orgId: string;
   tasks: LinkedTask[];
+  /** When provided, each task row renders a × button that calls this. */
+  onUnlinkTask?: (taskId: string) => Promise<void>;
 }
 
 function isTaskDone(status: TaskStatus): boolean {
   return status === TaskStatus.done || status === TaskStatus.not_relevant;
 }
 
-export function LinkedWork({ orgId, tasks }: LinkedWorkProps) {
+export function LinkedWork({ orgId, tasks, onUnlinkTask }: LinkedWorkProps) {
   const total = tasks.length;
   const done = tasks.filter((t) => isTaskDone(t.status)).length;
   const taskPct = total === 0 ? 0 : Math.round((done / total) * 100);
@@ -83,6 +85,18 @@ export function LinkedWork({ orgId, tasks }: LinkedWorkProps) {
                   >
                     {t.title}
                   </Link>
+                  {onUnlinkTask && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        void onUnlinkTask(t.id);
+                      }}
+                      className="ml-auto rounded p-0.5 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                      aria-label={`Unlink ${t.title}`}
+                    >
+                      <Close size={11} aria-hidden="true" />
+                    </button>
+                  )}
                 </li>
               );
             })}

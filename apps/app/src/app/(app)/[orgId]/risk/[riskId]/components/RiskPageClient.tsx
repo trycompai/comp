@@ -171,6 +171,19 @@ export function RiskPageClient({
     return result;
   };
 
+  const handleUnlinkTask = async (taskId: string) => {
+    try {
+      const res = await fetch(`/api/risks/${riskId}/tasks/${taskId}`, {
+        method: 'DELETE',
+        credentials: 'include',
+      });
+      if (!res.ok) throw new Error('unlink failed');
+      await mutateRisk();
+    } catch {
+      toast.error('Failed to unlink task');
+    }
+  };
+
   return (
     <>
       <Breadcrumb
@@ -287,6 +300,7 @@ export function RiskPageClient({
                 onRegenerate={handleRegenerateMitigation}
                 regenerating={isRegenerating}
                 onAutoLink={handleAutoLink}
+                onUnlinkTask={handleUnlinkTask}
               />
             </TabsContent>
 
