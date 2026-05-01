@@ -119,6 +119,198 @@ export async function ensureBaselineRisks(organizationId: string): Promise<Risk[
   return created;
 }
 
+type GroundingTask = { title: string; status: string };
+type GroundingControl = { code: string; name: string; framework: string };
+
+/**
+ * Loads tasks + deduped controls linked to a risk for use as grounding context
+ * in the mitigation-plan prompt. Returns null if the risk doesn't exist.
+ */
+async function loadRiskGroundingContext(
+  riskId: string,
+  organizationId: string,
+): Promise<{
+  linkedTasks: GroundingTask[];
+  linkedControls: GroundingControl[];
+} | null> {
+  const risk = await db.risk.findFirst({
+    where: { id: riskId, organizationId },
+    include: {
+      tasks: {
+        select: {
+          id: true,
+          title: true,
+          status: true,
+          controls: {
+            select: {
+              id: true,
+              name: true,
+              requirementsMapped: {
+                select: {
+                  frameworkInstance: {
+                    select: { framework: { select: { name: true } } },
+                  },
+                  requirement: { select: { identifier: true } },
+                  customRequirement: { select: { identifier: true } },
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+  });
+
+  if (!risk) return null;
+
+  const linkedTasks: GroundingTask[] = risk.tasks.map((t) => ({
+    title: t.title,
+    status: t.status,
+  }));
+
+  const seen = new Set<string>();
+  const linkedControls: GroundingControl[] = [];
+  for (const t of risk.tasks) {
+    for (const c of t.controls) {
+      const mapping = c.requirementsMapped[0];
+      const code =
+        mapping?.requirement?.identifier ?? mapping?.customRequirement?.identifier ?? c.id;
+      const framework = mapping?.frameworkInstance?.framework?.name ?? 'Custom';
+      const key = `${code}|${c.name}`;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      linkedControls.push({ code, name: c.name, framework });
+    }
+  }
+
+  return { linkedTasks, linkedControls };
+}
+
+function vendorCompliancePostureBlock(vendor: {
+  status: string;
+  complianceBadges: unknown;
+}): string {
+  if (vendor.status !== 'assessed') {
+    return `Assessment status: ${vendor.status} (no verified compliance signal yet).`;
+  }
+  if (!Array.isArray(vendor.complianceBadges) || vendor.complianceBadges.length === 0) {
+    return 'No verified compliance certifications.';
+  }
+  const lines = (vendor.complianceBadges as Array<{ type: string; verified?: boolean }>).map(
+    (b) => `- ${b.type}${b.verified ? ' (verified)' : ' (claimed)'}`,
+  );
+  return `Compliance posture:\n${lines.join('\n')}`;
+}
+
+/**
+ * Loads tasks, deduped controls, and a compliance posture block for a vendor.
+ * Returns null if the vendor doesn't exist.
+ */
+async function loadVendorGroundingContext(
+  vendorId: string,
+  organizationId: string,
+): Promise<{
+  linkedTasks: GroundingTask[];
+  linkedControls: GroundingControl[];
+  compliancePosture: string;
+} | null> {
+  const vendor = await db.vendor.findFirst({
+    where: { id: vendorId, organizationId },
+    include: {
+      tasks: {
+        select: {
+          id: true,
+          title: true,
+          status: true,
+          controls: {
+            select: {
+              id: true,
+              name: true,
+              requirementsMapped: {
+                select: {
+                  frameworkInstance: {
+                    select: { framework: { select: { name: true } } },
+                  },
+                  requirement: { select: { identifier: true } },
+                  customRequirement: { select: { identifier: true } },
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+  });
+  if (!vendor) return null;
+
+  const linkedTasks: GroundingTask[] = vendor.tasks.map((t) => ({
+    title: t.title,
+    status: t.status,
+  }));
+
+  const seen = new Set<string>();
+  const linkedControls: GroundingControl[] = [];
+  for (const t of vendor.tasks) {
+    for (const c of t.controls) {
+      const mapping = c.requirementsMapped[0];
+      const code =
+        mapping?.requirement?.identifier ?? mapping?.customRequirement?.identifier ?? c.id;
+      const framework = mapping?.frameworkInstance?.framework?.name ?? 'Custom';
+      const key = `${code}|${c.name}`;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      linkedControls.push({ code, name: c.name, framework });
+    }
+  }
+
+  return {
+    linkedTasks,
+    linkedControls,
+    compliancePosture: vendorCompliancePostureBlock({
+      status: vendor.status,
+      complianceBadges: vendor.complianceBadges,
+    }),
+  };
+}
+
+const CONTROL_CODE_PATTERN = /\(Control:\s*([A-Z]{2,4}-\d+)/g;
+
+/**
+ * Scans generated mitigation text for control codes and verifies they belong
+ * to the allowed set. If fabricated codes are detected, retries once with a
+ * corrective note. If retry also fabricates, returns the original text.
+ */
+async function guardAgainstHallucinatedCodes({
+  result,
+  allowedCodes,
+  retryFn,
+}: {
+  result: string;
+  allowedCodes: Set<string>;
+  retryFn: () => Promise<string>;
+}): Promise<string> {
+  const cited = new Set<string>();
+  for (const match of result.matchAll(CONTROL_CODE_PATTERN)) {
+    cited.add(match[1]);
+  }
+  const fabricated = [...cited].filter((c) => !allowedCodes.has(c));
+  if (fabricated.length === 0) return result;
+
+  logger.warn('mitigation output cited fabricated control codes; retrying once', {
+    fabricated,
+    allowedCount: allowedCodes.size,
+  });
+
+  try {
+    return await retryFn();
+  } catch (err) {
+    logger.warn('retry failed; saving original output unchanged', {
+      error: err instanceof Error ? err.message : String(err),
+    });
+    return result;
+  }
+}
+
 /**
  * Revalidates the organization path for cache busting
  */
@@ -369,20 +561,59 @@ export async function createVendorRiskComment(
           .join('\n')
       : 'No specific policies available - use standard security policy guidance.';
 
-  const riskMitigationComment = await generateText({
-    model: openai('gpt-5-mini'),
-    system: VENDOR_RISK_ASSESSMENT_PROMPT,
-    prompt: `Vendor: ${vendor.name} (${vendor.category}) - ${vendor.description}. Website: ${vendor.website}.
+  const grounding = await loadVendorGroundingContext(vendor.id, organizationId);
+
+  const linkedTasksBlock = grounding?.linkedTasks.length
+    ? grounding.linkedTasks.map((t) => `- ${t.title} (status: ${t.status})`).join('\n')
+    : 'No tasks linked to this vendor.';
+  const linkedControlsBlock = grounding?.linkedControls.length
+    ? grounding.linkedControls
+        .map((c) => `- ${c.code}: ${c.name} (framework: ${c.framework})`)
+        .join('\n')
+    : 'No controls linked to this vendor.';
+  const compliancePostureBlock =
+    grounding?.compliancePosture ?? `Assessment status: ${vendor.status ?? 'unknown'}.`;
+
+  const userPrompt = `Vendor: ${vendor.name} (${vendor.category}) - ${vendor.description}. Website: ${vendor.website}.
+
+Linked Tasks:
+${linkedTasksBlock}
+
+Linked Controls:
+${linkedControlsBlock}
+
+Vendor Compliance Posture:
+${compliancePostureBlock}
 
 Available Organization Policies:
 ${policiesContext}
 
-Please perform a comprehensive vendor risk assessment for this vendor using the available policies listed above as context for your recommendations.`,
+Please perform a comprehensive vendor risk assessment for this vendor using the available policies, linked tasks, and linked controls listed above as context for your recommendations.`;
+
+  const allowedCodes = new Set(grounding?.linkedControls.map((c) => c.code) ?? []);
+
+  const generate = async (extraNote: string = ''): Promise<string> => {
+    const { text } = await generateText({
+      model: openai('gpt-5-mini'),
+      system: VENDOR_RISK_ASSESSMENT_PROMPT,
+      prompt: `${userPrompt}${extraNote ? `\n\n${extraNote}` : ''}`,
+    });
+    return text;
+  };
+
+  let result = await generate();
+  result = await guardAgainstHallucinatedCodes({
+    result,
+    allowedCodes,
+    retryFn: () =>
+      generate(
+        'RETRY NOTE: your previous output cited control codes not in the Linked Controls list. Use only codes from that list, or the "gap: recommend adding [type] control" suffix.',
+      ),
   });
 
   await db.vendor.update({
     where: { id: vendor.id, organizationId },
-    data: { treatmentStrategyDescription: riskMitigationComment.text },
+    data: { treatmentStrategyDescription: result },
   });
 
   logger.info(
@@ -683,15 +914,62 @@ export async function createRiskMitigationComment(
           .join('\n')
       : 'No specific policies available - use standard security policy guidance.';
 
-  const mitigation = await generateText({
-    model: openai('gpt-5-mini'),
-    system: RISK_MITIGATION_PROMPT,
-    prompt: `Risk: ${risk.title} (${risk.category} / ${risk.department})\n\nDescription:\n${risk.description}\n\nTreatment Strategy:\n${risk.treatmentStrategy}: ${risk.treatmentStrategyDescription || 'N/A'}\n\nResidual Assessment: Likelihood ${risk.likelihood}, Impact ${risk.impact}\n\nAvailable Organization Policies:\n${policiesContext}\n\nWrite a pragmatic mitigation plan with concrete steps the team can implement in the next 30-90 days.`,
+  const grounding = await loadRiskGroundingContext(risk.id, organizationId);
+
+  const linkedTasksBlock = grounding?.linkedTasks.length
+    ? grounding.linkedTasks.map((t) => `- ${t.title} (status: ${t.status})`).join('\n')
+    : 'No tasks linked to this risk.';
+  const linkedControlsBlock = grounding?.linkedControls.length
+    ? grounding.linkedControls
+        .map((c) => `- ${c.code}: ${c.name} (framework: ${c.framework})`)
+        .join('\n')
+    : 'No controls linked to this risk.';
+
+  const userPrompt = `Risk: ${risk.title} (${risk.category} / ${risk.department})
+
+Description:
+${risk.description}
+
+Treatment Strategy:
+${risk.treatmentStrategy}: ${risk.treatmentStrategyDescription || 'N/A'}
+
+Residual Assessment: Likelihood ${risk.likelihood}, Impact ${risk.impact}
+
+Linked Tasks:
+${linkedTasksBlock}
+
+Linked Controls:
+${linkedControlsBlock}
+
+Available Organization Policies:
+${policiesContext}
+
+Write a pragmatic mitigation plan with concrete steps the team can implement in the next 30-90 days.`;
+
+  const allowedCodes = new Set(grounding?.linkedControls.map((c) => c.code) ?? []);
+
+  const generate = async (extraNote: string = ''): Promise<string> => {
+    const { text } = await generateText({
+      model: openai('gpt-5-mini'),
+      system: RISK_MITIGATION_PROMPT,
+      prompt: `${userPrompt}${extraNote ? `\n\n${extraNote}` : ''}`,
+    });
+    return text;
+  };
+
+  let result = await generate();
+  result = await guardAgainstHallucinatedCodes({
+    result,
+    allowedCodes,
+    retryFn: () =>
+      generate(
+        'RETRY NOTE: your previous output cited control codes not in the Linked Controls list. Use only codes from that list, or the "gap: recommend adding [type] control" suffix.',
+      ),
   });
 
   await db.risk.update({
     where: { id: risk.id, organizationId },
-    data: { treatmentStrategyDescription: mitigation.text },
+    data: { treatmentStrategyDescription: result },
   });
 
   logger.info(
