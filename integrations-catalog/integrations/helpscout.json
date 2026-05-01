@@ -6,15 +6,21 @@
   "docsUrl": "https://developer.helpscout.com/mailbox-api/",
   "baseUrl": "https://api.helpscout.net/",
   "authConfig": {
-    "type": "api_key",
+    "type": "custom",
     "config": {
-      "setupInstructions": "1. Log in to Help Scout at https://secure.helpscout.net\n2. Go to Your Profile → API Keys\n3. Create a new API key\n4. Copy and enter it below",
+      "setupInstructions": "1. Log in to Help Scout at https://secure.helpscout.net\n2. Go to Your Profile > My Apps\n3. Click 'Create My App'\n4. Enter any name and a redirect URL (e.g. https://example.com)\n5. Copy the App ID and App Secret\n6. Enter them below",
       "credentialFields": [
         {
-          "label": "API Key",
+          "label": "Application ID",
+          "type": "text",
+          "required": true,
+          "helpText": "Found in Help Scout Your Profile > My Apps"
+        },
+        {
+          "label": "Application Secret",
           "type": "password",
           "required": true,
-          "helpText": "Found in Help Scout Profile → API Keys"
+          "helpText": "Found in Help Scout Your Profile > My Apps"
         }
       ]
     }

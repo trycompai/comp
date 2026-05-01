@@ -8,13 +8,19 @@
   "authConfig": {
     "type": "custom",
     "config": {
-      "setupInstructions": "1. Log in to Mintlify\n2. Go to Dashboard → Settings → API Keys\n3. Create a new API key\n4. Paste it below",
+      "setupInstructions": "1. Log in to Mintlify Dashboard at https://dashboard.mintlify.com\n2. Go to Settings > Organization > API Keys\n3. Create a new admin API key (starts with 'mint_')\n4. Copy the API Key and the Project ID shown on that page\n5. Paste both values below",
       "credentialFields": [
         {
           "label": "API Key",
           "type": "password",
           "required": true,
-          "helpText": "Mintlify → Dashboard → Settings → API Keys"
+          "helpText": "From Mintlify Dashboard > Settings > Organization > API Keys. Keys start with 'mint_'."
+        },
+        {
+          "label": "Project ID",
+          "type": "text",
+          "required": true,
+          "helpText": "Found in Mintlify Dashboard > Settings > Organization > API Keys page, listed next to the key."
         }
       ]
     }

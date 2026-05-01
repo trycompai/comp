@@ -7,7 +7,9 @@
   "baseUrl": "https://api.fireworks.ai",
   "authConfig": {
     "type": "api_key",
-    "config": {}
+    "config": {
+      "setupInstructions": "1. Go to the Fireworks AI dashboard at https://app.fireworks.ai\n2. Navigate to Settings > API Keys\n3. Generate an API key\n4. Enter it below"
+    }
   },
   "capabilities": [
     "checks"

@@ -8,13 +8,13 @@
   "authConfig": {
     "type": "api_key",
     "config": {
-      "setupInstructions": "1. Log in to Metronome at https://metronome.com\n2. Go to Settings → API Keys\n3. Create a new API key\n4. Enter it below",
+      "setupInstructions": "1. Log in to Metronome at https://metronome.com\n2. Go to Settings > API Keys\n3. Create a new API key\n4. Enter it below",
       "credentialFields": [
         {
           "label": "API Key",
           "type": "password",
           "required": true,
-          "helpText": "Found in Metronome Settings → API Keys"
+          "helpText": "Found in Metronome Settings > API Keys"
         }
       ]
     }

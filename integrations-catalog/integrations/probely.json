@@ -7,7 +7,17 @@
   "baseUrl": "https://api.probely.com",
   "authConfig": {
     "type": "api_key",
-    "config": {}
+    "config": {
+      "setupInstructions": "1. Log in to Probely at https://plus.probely.app\n2. Go to Settings and generate an API Key\n3. Enter it below",
+      "credentialFields": [
+        {
+          "label": "API Key",
+          "type": "password",
+          "required": true,
+          "helpText": "Generate an API key from the Probely app under Settings."
+        }
+      ]
+    }
   },
   "capabilities": [
     "checks"

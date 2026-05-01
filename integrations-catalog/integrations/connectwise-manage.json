@@ -4,10 +4,44 @@
   "description": "ConnectWise PSA for service management and ticketing",
   "category": "Productivity",
   "docsUrl": "https://developer.connectwise.com/Products/Manage/REST",
-  "baseUrl": "https://placeholder.connectwise.com",
+  "baseUrl": "https://api-na.myconnectwise.net",
   "authConfig": {
     "type": "custom",
-    "config": {}
+    "config": {
+      "setupInstructions": "1. Go to your ConnectWise Manage instance\n2. Navigate to System > Members > API Members\n3. Create or select an API member\n4. Generate API keys (public + private)\n5. Get your Client ID from developer.connectwise.com\n6. Your Company ID is shown in the login screen",
+      "credentialFields": [
+        {
+          "label": "ConnectWise Site URL",
+          "type": "text",
+          "required": true,
+          "helpText": "Your ConnectWise Manage site URL (e.g., https://na.myconnectwise.net or https://api-na.myconnectwise.net)"
+        },
+        {
+          "label": "Company ID",
+          "type": "text",
+          "required": true,
+          "helpText": "Your ConnectWise company identifier"
+        },
+        {
+          "label": "Public Key",
+          "type": "text",
+          "required": true,
+          "helpText": "API member public key from ConnectWise"
+        },
+        {
+          "label": "Private Key",
+          "type": "password",
+          "required": true,
+          "helpText": "API member private key from ConnectWise"
+        },
+        {
+          "label": "Client ID",
+          "type": "text",
+          "required": true,
+          "helpText": "ConnectWise Developer Client ID (from developer.connectwise.com)"
+        }
+      ]
+    }
   },
   "capabilities": [
     "checks"

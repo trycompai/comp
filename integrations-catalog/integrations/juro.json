@@ -3,7 +3,7 @@
   "name": "Juro",
   "description": "Juro contract management and automation platform",
   "category": "Productivity",
-  "docsUrl": "https://developers.juro.com/",
+  "docsUrl": "https://juro.com/integrations",
   "baseUrl": "https://app.juro.com/api/v1",
   "authConfig": {
     "type": "custom",

@@ -6,8 +6,24 @@
   "docsUrl": "https://developers.checklyhq.com/reference/",
   "baseUrl": "https://api.checklyhq.com/",
   "authConfig": {
-    "type": "api_key",
-    "config": {}
+    "type": "custom",
+    "config": {
+      "setupInstructions": "1. Log in to Checkly at https://app.checklyhq.com\n2. Go to User Settings -> API Keys -> Create API key\n3. Copy the API key (shown only once)\n4. Go to Account Settings -> General to find your Account ID\n5. Enter both values below",
+      "credentialFields": [
+        {
+          "label": "API Key",
+          "type": "password",
+          "required": true,
+          "helpText": "Found in Checkly User Settings -> API Keys -> Create API key"
+        },
+        {
+          "label": "Account ID",
+          "type": "text",
+          "required": true,
+          "helpText": "Found in Checkly Account Settings -> General (bottom of page)"
+        }
+      ]
+    }
   },
   "capabilities": [
     "checks"

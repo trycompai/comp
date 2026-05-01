@@ -7,7 +7,17 @@
   "baseUrl": "https://api.qase.io/",
   "authConfig": {
     "type": "api_key",
-    "config": {}
+    "config": {
+      "setupInstructions": "1. Log in to Qase at https://app.qase.io\n2. Go to Settings → API Tokens\n3. Create a new token\n4. Enter it below",
+      "credentialFields": [
+        {
+          "label": "API Token",
+          "type": "password",
+          "required": true,
+          "helpText": "Found in Qase Settings → API Tokens"
+        }
+      ]
+    }
   },
   "capabilities": [
     "checks"

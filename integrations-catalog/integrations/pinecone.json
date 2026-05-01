@@ -1,0 +1,44 @@
+{
+  "slug": "pinecone",
+  "name": "Pinecone",
+  "description": "Monitor Pinecone vector database configuration including index inventory, collection backups, and API access verification for compliance evidence",
+  "category": "Cloud",
+  "docsUrl": "https://docs.pinecone.io/reference/api/introduction",
+  "baseUrl": "https://api.pinecone.io",
+  "authConfig": {
+    "type": "api_key",
+    "config": {
+      "setupInstructions": "1. Log in to the Pinecone console at https://app.pinecone.io\n2. Select your project\n3. Go to the 'API Keys' tab\n4. Create or copy an existing API key with at least ReadOnly control plane permissions\n5. Paste the API key below"
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "pinecone_app_availability",
+      "name": "App Availability",
+      "description": "Verify that Pinecone API access is working by listing indexes in the project",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "pinecone_index_inventory",
+      "name": "Index Inventory",
+      "description": "List all vector indexes in the project with their configuration details including dimensions, metric, and status",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "pinecone_collection_inventory",
+      "name": "Collection Inventory",
+      "description": "List all collections (pod-based index backups) in the project with their status and configuration",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 3,
+  "isActive": true
+}

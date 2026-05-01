@@ -7,7 +7,29 @@
   "baseUrl": null,
   "authConfig": {
     "type": "custom",
-    "config": {}
+    "config": {
+      "setupInstructions": "1. Sign in to the Veracode Platform at https://analysiscenter.veracode.com (Commercial), https://analysiscenter.veracode.eu (EU), or https://analysiscenter.veracode.us (US Federal)\n2. From the user account dropdown, select API Credentials\n3. Click Create API Credentials and choose HMAC credentials\n4. Copy the API ID and API Key\n5. Select your region and paste the credentials below",
+      "credentialFields": [
+        {
+          "label": "API ID",
+          "type": "text",
+          "required": true,
+          "helpText": "Your Veracode HMAC API ID. Found at Veracode Platform > API Credentials."
+        },
+        {
+          "label": "API Key (Secret)",
+          "type": "password",
+          "required": true,
+          "helpText": "Your Veracode HMAC API Key. Found at Veracode Platform > API Credentials."
+        },
+        {
+          "label": "Region",
+          "type": "select",
+          "required": true,
+          "helpText": "Your Veracode region. Check with your administrator if unsure."
+        }
+      ]
+    }
   },
   "capabilities": [
     "checks"

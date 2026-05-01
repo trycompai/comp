@@ -6,17 +6,14 @@
   "docsUrl": "https://api.outreach.io/api/v2/docs",
   "baseUrl": "https://api.outreach.io/",
   "authConfig": {
-    "type": "api_key",
+    "type": "oauth2",
     "config": {
-      "setupInstructions": "1. Log in to Outreach at https://app.outreach.io\n2. Go to your Profile → API Tokens\n3. Create a new API token with read access\n4. Enter it below",
-      "credentialFields": [
-        {
-          "label": "API Token",
-          "type": "password",
-          "required": true,
-          "helpText": "Found in Outreach Profile → API Tokens"
-        }
-      ]
+      "setupInstructions": "1. Go to https://developers.outreach.io and create a new OAuth app\n2. Set the redirect URI to the one provided by CompAI\n3. Copy the Client ID and Client Secret\n4. Enter them in CompAI to connect your Outreach account",
+      "scopes": [
+        "users.read"
+      ],
+      "clientAuthMethod": "body",
+      "supportsRefreshToken": true
     }
   },
   "capabilities": [
