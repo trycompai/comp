@@ -49,7 +49,7 @@ describe('BillingCreditsService', () => {
       },
     };
     mockedDb.$transaction.mockImplementation(
-      (callback: (tx: MockTx) => Promise<void>) => callback(tx),
+      (callback: (tx: MockTx) => Promise<unknown>) => callback(tx),
     );
     mockedDb.billingCreditEvent.findFirst.mockResolvedValue(null);
     service = new BillingCreditsService();
@@ -150,6 +150,59 @@ describe('BillingCreditsService', () => {
         sourceResourceId: 'mem_1',
       }),
     ).resolves.toEqual({ status: 'exhausted' });
+  });
+
+  it('tries another available balance when the first selected balance is drained concurrently', async () => {
+    mockedDb.billingCreditBalance.findMany.mockResolvedValue([
+      {
+        id: 'bcb_1',
+        organizationId: 'org_1',
+        productKey: 'background_check',
+        skuKey: null,
+        balance: 1,
+      },
+      {
+        id: 'bcb_2',
+        organizationId: 'org_1',
+        productKey: 'background_check',
+        skuKey: 'background_checks_monthly_3',
+        balance: 2,
+      },
+    ]);
+    tx.billingCreditBalance.updateMany
+      .mockResolvedValueOnce({ count: 0 })
+      .mockResolvedValueOnce({ count: 1 });
+
+    await expect(
+      service.tryConsumeForProduct({
+        organizationId: 'org_1',
+        productKey: 'background_check',
+        sourceResourceId: 'mem_1',
+      }),
+    ).resolves.toEqual({ status: 'consumed' });
+
+    expect(tx.billingCreditBalance.updateMany).toHaveBeenNthCalledWith(1, {
+      where: { id: 'bcb_1', balance: { gt: 0 } },
+      data: {
+        balance: { decrement: 1 },
+        totalConsumed: { increment: 1 },
+      },
+    });
+    expect(tx.billingCreditBalance.updateMany).toHaveBeenNthCalledWith(2, {
+      where: { id: 'bcb_2', balance: { gt: 0 } },
+      data: {
+        balance: { decrement: 1 },
+        totalConsumed: { increment: 1 },
+      },
+    });
+    expect(tx.billingCreditEvent.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          balanceId: 'bcb_2',
+          skuKey: 'background_checks_monthly_3',
+        }),
+      }),
+    );
   });
 
   it('treats consume retries as consumed before checking balance', async () => {

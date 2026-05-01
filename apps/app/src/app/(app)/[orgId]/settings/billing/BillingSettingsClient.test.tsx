@@ -226,4 +226,28 @@ describe('BillingSettingsClient', () => {
     expect(screen.getByText('No invoices yet.')).toBeInTheDocument();
   });
 
+  it('renders usage dates in UTC to keep server and client output stable', async () => {
+    const user = userEvent.setup();
+    renderBillingSettings({
+      usageRows: [
+        {
+          id: 'bue_1',
+          service: 'Background Check',
+          skuKey: 'background_checks_monthly_3',
+          details: 'Ada Lovelace',
+          billingType: 'Subscription',
+          status: 'Consumed',
+          createdAt: '2026-04-30T23:30:00.000Z',
+          updatedAt: '2026-04-30T23:30:00.000Z',
+          subscriptionRemaining: 2,
+          subscriptionIncluded: 3,
+          subscriptionPeriodEnd: '2026-05-30T00:00:00.000Z',
+        },
+      ],
+    });
+
+    await user.click(screen.getByRole('tab', { name: /^usage$/i }));
+
+    expect(screen.getByText('Apr 30, 2026')).toBeInTheDocument();
+  });
 });

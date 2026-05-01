@@ -36,7 +36,7 @@ vi.mock('next/navigation', () => ({
 }));
 
 vi.mock('sonner', () => ({
-  toast: { error: vi.fn() },
+  toast: { error: vi.fn(), success: vi.fn() },
 }));
 
 const emptyBillingStatus: BackgroundCheckBillingStatus = {
@@ -183,16 +183,30 @@ describe('billing add-ons', () => {
     expect(within(dialog).getByText('New plan')).toBeInTheDocument();
     expect(within(dialog).getByText('Continuous Assurance')).toBeInTheDocument();
     expect(within(dialog).getByText(/\$899 \/ mo with 5 scans/i)).toBeInTheDocument();
-    expect(within(dialog).getByText('This upgrade will be charged immediately.')).toBeInTheDocument();
+    expect(
+      within(dialog).getByText('This upgrade will be charged immediately.'),
+    ).toBeInTheDocument();
     expect(apiClient.post).not.toHaveBeenCalled();
 
     await user.click(screen.getByRole('button', { name: /confirm change/i }));
 
     await waitFor(() => {
-      expect(toast.error).toHaveBeenCalledWith(
-        'We could not charge the prorated upgrade amount.',
-      );
+      expect(toast.error).toHaveBeenCalledWith('We could not charge the prorated upgrade amount.');
       expect(switchButton).not.toBeDisabled();
+    });
+  });
+
+  it('resets the loading state when opening subscription checkout rejects', async () => {
+    const user = userEvent.setup();
+    vi.mocked(apiClient.post).mockRejectedValueOnce(new Error('network down'));
+    renderAddOnPlans({ addOnSlug: 'background-checks' });
+
+    const trialButton = screen.getByRole('button', { name: /start free trial/i });
+    await user.click(trialButton);
+
+    await waitFor(() => {
+      expect(toast.error).toHaveBeenCalledWith('Failed to open checkout');
+      expect(trialButton).not.toBeDisabled();
     });
   });
 

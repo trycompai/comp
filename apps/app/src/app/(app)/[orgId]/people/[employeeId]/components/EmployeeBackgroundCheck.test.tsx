@@ -230,6 +230,42 @@ describe('EmployeeBackgroundCheck', () => {
     );
   });
 
+  it('stores pending check details instead of blocking submit when no allowance remains', async () => {
+    const user = userEvent.setup();
+    renderSection({
+      initialBillingStatus: {
+        hasPaymentMethod: true,
+        setupAt: null,
+        subscriptions: [
+          {
+            ...activeBackgroundCheckSubscription,
+            usedQuantity: 3,
+          },
+        ],
+      },
+    });
+
+    await user.type(screen.getByLabelText('Personal email'), 'ada@example.com');
+    await user.type(screen.getByLabelText('Additional information'), 'Needs quick turnaround.');
+    await user.click(screen.getByRole('button', { name: /complete/i }));
+
+    await waitFor(() => {
+      expect(navigationMock.push).toHaveBeenCalledWith(
+        '/org_1/settings/billing/add-ons/background-checks',
+      );
+    });
+    expect(apiClient.post).not.toHaveBeenCalled();
+    expect(window.sessionStorage.getItem('background-check:org_1:mem_1:pending-request')).toBe(
+      JSON.stringify({
+        organizationId: 'org_1',
+        memberId: 'mem_1',
+        employeeName: 'Ada Lovelace',
+        employeeEmail: 'ada@example.com',
+        requesterNotes: 'Needs quick turnaround.',
+      }),
+    );
+  });
+
   it('keeps legacy pending check drafts that do not have employee details', async () => {
     navigationMock.searchParams = new URLSearchParams({
       background_check_billing: 'success',

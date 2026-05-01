@@ -1,7 +1,7 @@
 'use client';
 
-import { Card, CardContent, CardHeader, CardTitle, Stack, Text } from '@trycompai/design-system';
 import { getBillingSkuProductKey } from '@trycompai/billing';
+import { Card, CardContent, CardHeader, CardTitle, Stack, Text } from '@trycompai/design-system';
 import type React from 'react';
 import type { BackgroundCheckBillingStatus, BillingUsageRow } from './types';
 
@@ -142,5 +142,6 @@ function formatDate(date: string) {
     month: 'short',
     day: 'numeric',
     year: 'numeric',
+    timeZone: 'UTC',
   }).format(new Date(date));
 }

@@ -1,14 +1,6 @@
 'use client';
 
-import {
-  Button,
-  Grid,
-  Input,
-  Label,
-  Stack,
-  Text,
-  Textarea,
-} from '@trycompai/design-system';
+import { Button, Grid, Input, Label, Stack, Text, Textarea } from '@trycompai/design-system';
 import type { UseFormReturn } from 'react-hook-form';
 import { BackgroundCheckSummary, BillingCallout } from './BackgroundCheckWizardParts';
 import type { BackgroundCheckFormValues } from './backgroundCheckForm';
@@ -102,13 +94,7 @@ export function BackgroundCheckDetailsForm({
             <Button
               type="submit"
               loading={isRequesting || isOpeningBilling}
-              disabled={
-                !canRequest ||
-                isRequesting ||
-                isOpeningBilling ||
-                backgroundChecksRemaining === 0 ||
-                backgroundChecksRemaining === null
-              }
+              disabled={!canRequest || isRequesting || isOpeningBilling}
             >
               Complete
             </Button>

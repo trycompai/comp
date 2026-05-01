@@ -58,12 +58,23 @@ export class BackgroundCheckPaymentService {
     paymentIntentId: string | null;
   }): Promise<string | null> {
     if (!params.paymentIntentId) {
-      await this.entitlements.refundIncludedUsageForProduct({
-        organizationId: params.organizationId,
-        productKey: 'background_check',
-        sourceResourceId: params.memberId,
-        reason: 'background_check_failed',
-      });
+      try {
+        await this.entitlements.refundIncludedUsageForProduct({
+          organizationId: params.organizationId,
+          productKey: 'background_check',
+          sourceResourceId: params.memberId,
+          reason: 'background_check_failed',
+        });
+      } catch (error) {
+        this.logger.error(
+          'Failed to refund background check included usage - manual credit review required.',
+          {
+            organizationId: params.organizationId,
+            memberId: params.memberId,
+            error: error instanceof Error ? error.message : 'Unknown error',
+          },
+        );
+      }
       return null;
     }
 

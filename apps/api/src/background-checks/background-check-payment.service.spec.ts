@@ -1,6 +1,6 @@
 jest.mock('@db', () => ({ db: {} }));
 
-import { HttpStatus } from '@nestjs/common';
+import { HttpException, HttpStatus, Logger } from '@nestjs/common';
 import { BillingEntitlementsService } from '../billing/billing-entitlements.service';
 import { StripeService } from '../stripe/stripe.service';
 import { BackgroundCheckBillingService } from './background-check-billing.service';
@@ -24,10 +24,11 @@ describe('BackgroundCheckPaymentService', () => {
   });
 
   it('consumes background check subscription allowance', async () => {
+    const tryConsumeIncludedUsageForProduct = jest
+      .fn()
+      .mockResolvedValue({ status: 'consumed', subscriptionId: 'obs_1' });
     const entitlements = mockEntitlements({
-      tryConsumeIncludedUsageForProduct: jest
-        .fn()
-        .mockResolvedValue({ status: 'consumed', subscriptionId: 'obs_1' }),
+      tryConsumeIncludedUsageForProduct,
     });
     const service = new BackgroundCheckPaymentService(
       { getClient: jest.fn() } as unknown as StripeService,
@@ -45,7 +46,7 @@ describe('BackgroundCheckPaymentService', () => {
       currency: 'usd',
     });
 
-    expect(entitlements.tryConsumeIncludedUsageForProduct).toHaveBeenCalledWith({
+    expect(tryConsumeIncludedUsageForProduct).toHaveBeenCalledWith({
       organizationId: 'org_1',
       productKey: 'background_check',
       sourceResourceId: 'mem_1',
@@ -59,16 +60,19 @@ describe('BackgroundCheckPaymentService', () => {
       mockEntitlements(),
     );
 
-    await expect(
-      service.charge({ organizationId: 'org_1', memberId: 'mem_1' }),
-    ).rejects.toThrow(
-      expect.objectContaining({
-        status: HttpStatus.PAYMENT_REQUIRED,
-        response: expect.objectContaining({
+    try {
+      await service.charge({ organizationId: 'org_1', memberId: 'mem_1' });
+      throw new Error('Expected charge to require payment');
+    } catch (error) {
+      expect(error).toBeInstanceOf(HttpException);
+      if (!(error instanceof HttpException)) throw error;
+      expect(error.getStatus()).toBe(HttpStatus.PAYMENT_REQUIRED);
+      expect(error.getResponse()).toEqual(
+        expect.objectContaining({
           code: 'background_check_subscription_required',
         }),
-      }),
-    );
+      );
+    }
   });
 
   it('blocks when background check subscription allowance is exhausted', async () => {
@@ -82,20 +86,26 @@ describe('BackgroundCheckPaymentService', () => {
       }),
     );
 
-    await expect(
-      service.charge({ organizationId: 'org_1', memberId: 'mem_1' }),
-    ).rejects.toThrow(
-      expect.objectContaining({
-        status: HttpStatus.PAYMENT_REQUIRED,
-        response: expect.objectContaining({
+    try {
+      await service.charge({ organizationId: 'org_1', memberId: 'mem_1' });
+      throw new Error('Expected charge to require payment');
+    } catch (error) {
+      expect(error).toBeInstanceOf(HttpException);
+      if (!(error instanceof HttpException)) throw error;
+      expect(error.getStatus()).toBe(HttpStatus.PAYMENT_REQUIRED);
+      expect(error.getResponse()).toEqual(
+        expect.objectContaining({
           code: 'background_check_subscription_exhausted',
         }),
-      }),
-    );
+      );
+    }
   });
 
   it('refunds the consumed background check allowance by product family', async () => {
-    const entitlements = mockEntitlements();
+    const refundIncludedUsageForProduct = jest
+      .fn()
+      .mockResolvedValue(undefined);
+    const entitlements = mockEntitlements({ refundIncludedUsageForProduct });
     const service = new BackgroundCheckPaymentService(
       { getClient: jest.fn() } as unknown as StripeService,
       {} as BackgroundCheckBillingService,
@@ -110,11 +120,45 @@ describe('BackgroundCheckPaymentService', () => {
       }),
     ).resolves.toBeNull();
 
-    expect(entitlements.refundIncludedUsageForProduct).toHaveBeenCalledWith({
+    expect(refundIncludedUsageForProduct).toHaveBeenCalledWith({
       organizationId: 'org_1',
       productKey: 'background_check',
       sourceResourceId: 'mem_1',
       reason: 'background_check_failed',
     });
+  });
+
+  it('does not throw when refunding consumed allowance fails', async () => {
+    const loggerSpy = jest
+      .spyOn(Logger.prototype, 'error')
+      .mockImplementation();
+    const entitlements = mockEntitlements({
+      refundIncludedUsageForProduct: jest
+        .fn()
+        .mockRejectedValue(new Error('refund failed')),
+    });
+    const service = new BackgroundCheckPaymentService(
+      { getClient: jest.fn() } as unknown as StripeService,
+      {} as BackgroundCheckBillingService,
+      entitlements,
+    );
+
+    await expect(
+      service.refund({
+        organizationId: 'org_1',
+        memberId: 'mem_1',
+        paymentIntentId: null,
+      }),
+    ).resolves.toBeNull();
+
+    expect(loggerSpy).toHaveBeenCalledWith(
+      'Failed to refund background check included usage - manual credit review required.',
+      expect.objectContaining({
+        organizationId: 'org_1',
+        memberId: 'mem_1',
+        error: 'refund failed',
+      }),
+    );
+    loggerSpy.mockRestore();
   });
 });

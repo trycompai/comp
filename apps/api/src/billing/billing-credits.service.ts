@@ -5,15 +5,12 @@ import { isUniqueConstraintError } from './billing-entitlements.types';
 import {
   assertProductKey,
   type BillingCreditBalanceSummary,
-  type BillingCreditEventSummary,
   validateCreditInput,
 } from './billing-credits.types';
 
 @Injectable()
 export class BillingCreditsService {
-  async listBalances(
-    organizationId: string,
-  ): Promise<BillingCreditBalanceSummary[]> {
+  async listBalances(organizationId: string) {
     const balances = await db.billingCreditBalance.findMany({
       where: { organizationId },
       orderBy: [{ productKey: 'asc' }, { createdAt: 'asc' }],
@@ -31,10 +28,7 @@ export class BillingCreditsService {
     }));
   }
 
-  async listEvents(params: {
-    organizationId: string;
-    take?: number;
-  }): Promise<BillingCreditEventSummary[]> {
+  async listEvents(params: { organizationId: string; take?: number }) {
     return (
       await db.billingCreditEvent.findMany({
         where: { organizationId: params.organizationId },
@@ -145,44 +139,45 @@ export class BillingCreditsService {
     });
     if (existing.length === 0) return { status: 'not_configured' };
 
-    const balance = existing.find((item) => item.balance > 0);
-    if (!balance) return { status: 'exhausted' };
+    const availableBalances = existing.filter((item) => item.balance > 0);
+    if (availableBalances.length === 0) return { status: 'exhausted' };
 
-    try {
-      await db.$transaction(async (tx) => {
-        await tx.billingCreditEvent.create({
-          data: {
-            organizationId: params.organizationId,
-            balanceId: balance.id,
-            productKey: params.productKey,
-            skuKey: balance.skuKey,
-            eventType: 'consume',
-            quantity: 1,
-            source: 'manual_credit',
-            sourceResourceId: params.sourceResourceId,
-            idempotencyKey,
-          },
+    for (const balance of availableBalances) {
+      try {
+        const consumed = await db.$transaction(async (tx) => {
+          const updated = await tx.billingCreditBalance.updateMany({
+            where: { id: balance.id, balance: { gt: 0 } },
+            data: {
+              balance: { decrement: 1 },
+              totalConsumed: { increment: 1 },
+            },
+          });
+          if (updated.count === 0) return false;
+          await tx.billingCreditEvent.create({
+            data: {
+              organizationId: params.organizationId,
+              balanceId: balance.id,
+              productKey: params.productKey,
+              skuKey: balance.skuKey,
+              eventType: 'consume',
+              quantity: 1,
+              source: 'manual_credit',
+              sourceResourceId: params.sourceResourceId,
+              idempotencyKey,
+            },
+          });
+          return true;
         });
-        const updated = await tx.billingCreditBalance.updateMany({
-          where: { id: balance.id, balance: { gt: 0 } },
-          data: {
-            balance: { decrement: 1 },
-            totalConsumed: { increment: 1 },
-          },
-        });
-        if (updated.count === 0) {
-          throw new CreditBalanceExhaustedError();
+        if (consumed) {
+          return { status: 'consumed' };
         }
-      });
-    } catch (error) {
-      if (error instanceof CreditBalanceExhaustedError) {
-        return { status: 'exhausted' };
+      } catch (error) {
+        if (isUniqueConstraintError(error)) return { status: 'consumed' };
+        throw error;
       }
-      if (isUniqueConstraintError(error)) return { status: 'consumed' };
-      throw error;
     }
 
-    return { status: 'consumed' };
+    return { status: 'exhausted' };
   }
 
   async refundForProduct(params: {
@@ -302,5 +297,3 @@ export class BillingCreditsService {
     };
   }
 }
-
-class CreditBalanceExhaustedError extends Error {}

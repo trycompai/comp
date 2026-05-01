@@ -62,32 +62,40 @@ export function BillingAddOnPlansClient({
 
   const handleOpenSubscription = async (skuKey: BillingSkuKey) => {
     setLoadingSubscriptionSku(skuKey);
+    let shouldResetLoading = true;
 
-    const returnUrl = `${window.location.origin}/${organizationId}/settings/billing/add-ons/${addOn.slug}`;
-    const response = await apiClient.post<{ url?: string; changed?: true }>(
-      '/v1/billing/subscription-session',
-      {
-        skuKey,
-        successUrl: `${returnUrl}?billing_subscription=success&session_id={CHECKOUT_SESSION_ID}`,
-        cancelUrl: returnUrl,
-      },
-      organizationId,
-    );
+    try {
+      const returnUrl = `${window.location.origin}/${organizationId}/settings/billing/add-ons/${addOn.slug}`;
+      const response = await apiClient.post<{ url?: string; changed?: true }>(
+        '/v1/billing/subscription-session',
+        {
+          skuKey,
+          successUrl: `${returnUrl}?billing_subscription=success&session_id={CHECKOUT_SESSION_ID}`,
+          cancelUrl: returnUrl,
+        },
+        organizationId,
+      );
 
-    if (response.data?.url) {
-      window.location.href = response.data.url;
-      return;
+      if (response.data?.url) {
+        shouldResetLoading = false;
+        window.location.href = response.data.url;
+        return;
+      }
+
+      if (response.data?.changed) {
+        await mutateBillingStatus();
+        toast.success('Plan updated');
+        return;
+      }
+
+      toast.error(response.error ?? 'Failed to open checkout');
+    } catch {
+      toast.error('Failed to open checkout');
+    } finally {
+      if (shouldResetLoading) {
+        setLoadingSubscriptionSku(null);
+      }
     }
-
-    if (response.data?.changed) {
-      toast.success('Plan updated');
-      await mutateBillingStatus();
-      setLoadingSubscriptionSku(null);
-      return;
-    }
-
-    toast.error(response.error ?? 'Failed to open checkout');
-    setLoadingSubscriptionSku(null);
   };
 
   return (
