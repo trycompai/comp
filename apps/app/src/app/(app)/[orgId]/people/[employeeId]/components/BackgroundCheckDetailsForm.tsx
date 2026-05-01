@@ -1,6 +1,7 @@
 'use client';
 
 import { Button, Grid, Input, Label, Stack, Text, Textarea } from '@trycompai/design-system';
+import Link from 'next/link';
 import type { UseFormReturn } from 'react-hook-form';
 import { BackgroundCheckSummary, BillingCallout } from './BackgroundCheckWizardParts';
 import type { BackgroundCheckFormValues } from './backgroundCheckForm';
@@ -107,9 +108,9 @@ export function BackgroundCheckDetailsForm({
             {(backgroundChecksRemaining === null || backgroundChecksRemaining === 0) && (
               <Text size="xs" variant="muted">
                 No background checks remaining.{' '}
-                <a href={billingHref} className="font-medium text-primary hover:underline">
+                <Link href={billingHref} className="font-medium text-primary hover:underline">
                   Choose a plan
-                </a>
+                </Link>
                 .
               </Text>
             )}

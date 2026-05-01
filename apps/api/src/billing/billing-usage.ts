@@ -67,11 +67,13 @@ export async function listBillingUsageRows(params: {
         })
       : [];
 
-  const usageBySource = new Map(
-    usageEvents
-      .filter((event) => event.sourceResourceId)
-      .map((event) => [event.sourceResourceId as string, event]),
-  );
+  const usageBySource = new Map<string, (typeof usageEvents)[number]>();
+  for (const event of usageEvents) {
+    if (!event.sourceResourceId || usageBySource.has(event.sourceResourceId)) {
+      continue;
+    }
+    usageBySource.set(event.sourceResourceId, event);
+  }
 
   const rows = [
     ...backgroundChecks.map((request) => {

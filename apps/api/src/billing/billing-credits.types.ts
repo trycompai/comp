@@ -12,6 +12,19 @@ export type BillingCreditEventType =
   | 'adjustment'
   | 'migration';
 
+export function assertCreditEventType(value: string): BillingCreditEventType {
+  if (
+    value === 'grant' ||
+    value === 'consume' ||
+    value === 'refund' ||
+    value === 'adjustment' ||
+    value === 'migration'
+  ) {
+    return value;
+  }
+  throw new BadRequestException('Unsupported billing credit event type.');
+}
+
 export interface BillingCreditBalanceSummary {
   id: string;
   productKey: BillingProductKey;
@@ -28,7 +41,7 @@ export interface BillingCreditEventSummary {
   id: string;
   productKey: BillingProductKey;
   skuKey: string | null;
-  eventType: string;
+  eventType: BillingCreditEventType;
   quantity: number;
   source: string;
   note: string | null;

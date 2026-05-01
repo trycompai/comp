@@ -157,7 +157,7 @@ export class AdminAuditLogInterceptor implements NestInterceptor {
     }
 
     const mapped = SEGMENT_TO_RESOURCE[resourceSegment];
-    if (mapped?.entity === AuditLogEntityType.organization) {
+    if (resourceSegment === 'billing' && mapped) {
       return {
         resource: mapped.singular,
         entityType: mapped.entity,

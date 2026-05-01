@@ -55,7 +55,11 @@ export class BillingWebhookService {
       await markStripeWebhookProcessed(event.id);
       return { ok: true };
     } catch (error) {
-      await markStripeWebhookFailed({ stripeEventId: event.id, error });
+      try {
+        await markStripeWebhookFailed({ stripeEventId: event.id, error });
+      } catch {
+        // Preserve the processing error so Stripe retries for the real failure.
+      }
       throw error;
     }
   }
