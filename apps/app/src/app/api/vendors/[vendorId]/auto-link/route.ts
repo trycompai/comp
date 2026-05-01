@@ -1,5 +1,6 @@
 import { runLinkage } from '@/lib/embedding/run-linkage';
 import { auth } from '@/utils/auth';
+import { db } from '@db/server';
 import { NextRequest, NextResponse } from 'next/server';
 
 /**
@@ -32,6 +33,15 @@ export async function POST(
     }
 
     const organizationId = session.session.activeOrganizationId;
+
+    const vendor = await db.vendor.findUnique({
+      where: { id: vendorId },
+      select: { id: true, organizationId: true },
+    });
+
+    if (!vendor || vendor.organizationId !== organizationId) {
+      return NextResponse.json({ error: 'Not found' }, { status: 404 });
+    }
 
     const { vendorLinks } = await runLinkage({
       organizationId,
