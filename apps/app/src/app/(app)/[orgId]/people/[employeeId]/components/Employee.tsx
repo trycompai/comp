@@ -41,6 +41,7 @@ interface EmployeeProps {
   hipaaCompletedAt: Date | null;
   initialBackgroundCheck: BackgroundCheckRecord | null;
   initialBackgroundCheckBillingStatus: BackgroundCheckBillingStatus;
+  backgroundCheckStepEnabled: boolean;
 }
 
 export function Employee({
@@ -57,6 +58,7 @@ export function Employee({
   hipaaCompletedAt,
   initialBackgroundCheck,
   initialBackgroundCheckBillingStatus,
+  backgroundCheckStepEnabled,
 }: EmployeeProps) {
   const searchParams = useSearchParams();
   const querySelectedTab: EmployeeTab =
@@ -132,6 +134,7 @@ export function Employee({
               organizationId={orgId}
               initialBackgroundCheck={initialBackgroundCheck}
               initialBillingStatus={initialBackgroundCheckBillingStatus}
+              backgroundCheckStepEnabled={backgroundCheckStepEnabled}
             />
           </TabsContent>
         </Stack>

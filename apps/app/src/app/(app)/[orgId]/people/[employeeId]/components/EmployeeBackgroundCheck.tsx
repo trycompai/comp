@@ -3,7 +3,9 @@
 import { usePermissions } from '@/hooks/use-permissions';
 import { apiClient } from '@/lib/api-client';
 import type { Member, User } from '@db';
+import { Text } from '@trycompai/design-system';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { Info } from 'lucide-react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useForm } from 'react-hook-form';
@@ -28,6 +30,7 @@ interface EmployeeBackgroundCheckProps {
   organizationId: string;
   initialBackgroundCheck: BackgroundCheckRecord | null;
   initialBillingStatus: BackgroundCheckBillingStatus;
+  backgroundCheckStepEnabled: boolean;
 }
 
 export function EmployeeBackgroundCheck({
@@ -35,6 +38,7 @@ export function EmployeeBackgroundCheck({
   organizationId,
   initialBackgroundCheck,
   initialBillingStatus,
+  backgroundCheckStepEnabled,
 }: EmployeeBackgroundCheckProps) {
   const router = useRouter();
   const pathname = usePathname();
@@ -226,6 +230,23 @@ export function EmployeeBackgroundCheck({
 
     await requestBackgroundCheck(values);
   };
+
+  if (!backgroundCheckStepEnabled) {
+    return (
+      <div className="flex items-start gap-3 rounded-lg border border-muted bg-muted/30 p-4">
+        <Info className="mt-0.5 h-5 w-5 shrink-0 text-muted-foreground" />
+        <div>
+          <Text weight="medium">
+            Background checks are not required for your organization
+          </Text>
+          <Text size="sm" variant="muted">
+            Comp AI support disabled this requirement. Existing background-check
+            requests, if any, remain accessible from your billing portal.
+          </Text>
+        </div>
+      </div>
+    );
+  }
 
   if (backgroundCheck) {
     return (
