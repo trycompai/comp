@@ -152,6 +152,26 @@ describe('CreateRunPanel', () => {
     expect(screen.getByText('Custom · 17 min-38 min')).toBeInTheDocument();
   });
 
+  it('does not show an inverted runtime range when no checks are selected', async () => {
+    const user = userEvent.setup();
+
+    render(<CreateRunPanel orgId="org_1" balance={1} onSubmit={vi.fn()} />);
+
+    await user.click(screen.getByText('Quick'));
+    await user.click(screen.getByRole('button', { name: /customize scan/i }));
+    await user.click(screen.getByLabelText(/secrets & info disclosure/i));
+    await user.click(screen.getByLabelText(/technology config/i));
+    await user.click(screen.getByLabelText(/^discovery$/i));
+
+    expect(screen.getByText('Custom · 5 min-5 min')).toBeInTheDocument();
+  });
+
+  it('labels the optional repository field for assistive technology', () => {
+    render(<CreateRunPanel orgId="org_1" balance={1} onSubmit={vi.fn()} />);
+
+    expect(screen.getByLabelText(/repository/i)).toBeInTheDocument();
+  });
+
   it('uses design-system radio styling for evidence options', async () => {
     const user = userEvent.setup();
     render(<CreateRunPanel orgId="org_1" balance={1} onSubmit={vi.fn()} />);
