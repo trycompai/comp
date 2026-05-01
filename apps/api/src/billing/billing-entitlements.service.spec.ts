@@ -7,6 +7,10 @@ jest.mock('@db', () => ({
       findUnique: jest.fn(),
       findMany: jest.fn(),
     },
+    billingUsageEvent: {
+      findFirst: jest.fn(),
+      findUnique: jest.fn(),
+    },
     billingAuditEvent: {
       create: jest.fn(),
     },
@@ -21,12 +25,17 @@ type MockTx = {
   };
   billingUsageEvent: {
     create: jest.Mock;
+    findFirst: jest.Mock;
     findUnique: jest.Mock;
   };
 };
 
 const mockedDb = db as unknown as {
-  organizationBillingSubscription: { findUnique: jest.Mock; findMany: jest.Mock };
+  organizationBillingSubscription: {
+    findUnique: jest.Mock;
+    findMany: jest.Mock;
+  };
+  billingUsageEvent: { findFirst: jest.Mock; findUnique: jest.Mock };
   billingAuditEvent: { create: jest.Mock };
   $transaction: jest.Mock;
 };
@@ -44,9 +53,12 @@ describe('BillingEntitlementsService', () => {
       },
       billingUsageEvent: {
         create: jest.fn(),
+        findFirst: jest.fn(),
         findUnique: jest.fn(),
       },
     };
+    mockedDb.billingUsageEvent.findFirst.mockResolvedValue(null);
+    mockedDb.billingUsageEvent.findUnique.mockResolvedValue(null);
     mockedDb.$transaction.mockImplementation(
       (callback: (tx: MockTx) => Promise<void>) => callback(tx),
     );
@@ -105,7 +117,9 @@ describe('BillingEntitlementsService', () => {
       currentPeriodStart: new Date('2026-04-30T00:00:00.000Z'),
       currentPeriodEnd: new Date('2026-05-30T00:00:00.000Z'),
     });
-    tx.organizationBillingSubscription.updateMany.mockResolvedValue({ count: 1 });
+    tx.organizationBillingSubscription.updateMany.mockResolvedValue({
+      count: 1,
+    });
 
     await expect(
       service.tryConsumeIncludedUsageForProduct({
@@ -115,7 +129,9 @@ describe('BillingEntitlementsService', () => {
       }),
     ).resolves.toEqual({ status: 'consumed', subscriptionId: 'obs_1' });
 
-    expect(mockedDb.organizationBillingSubscription.findUnique).toHaveBeenCalledWith({
+    expect(
+      mockedDb.organizationBillingSubscription.findUnique,
+    ).toHaveBeenCalledWith({
       where: {
         organizationId_skuKey: {
           organizationId: 'org_1',
@@ -123,5 +139,147 @@ describe('BillingEntitlementsService', () => {
         },
       },
     });
+  });
+
+  it('treats product consumption retries as consumed before credit fallback', async () => {
+    const credits = { tryConsumeForProduct: jest.fn() };
+    service = new BillingEntitlementsService(credits as never);
+    mockedDb.organizationBillingSubscription.findMany.mockResolvedValue([
+      {
+        id: 'obs_1',
+        skuKey: 'pentest_monthly_1',
+        stripeStatus: 'active',
+        usedQuantity: 1,
+        includedQuantity: 1,
+        currentPeriodEnd: new Date('2026-05-30T00:00:00.000Z'),
+      },
+    ]);
+    mockedDb.billingUsageEvent.findFirst.mockResolvedValue({
+      skuKey: 'pentest_monthly_1',
+    });
+
+    await expect(
+      service.tryConsumeIncludedUsageForProduct({
+        organizationId: 'org_1',
+        productKey: 'pentest',
+        sourceResourceId: 'run_1',
+      }),
+    ).resolves.toEqual({ status: 'consumed', subscriptionId: 'obs_1' });
+
+    expect(credits.tryConsumeForProduct).not.toHaveBeenCalled();
+  });
+
+  it('falls back to credits when included usage is exhausted during consume', async () => {
+    const credits = {
+      tryConsumeForProduct: jest.fn().mockResolvedValue({ status: 'consumed' }),
+    };
+    service = new BillingEntitlementsService(credits as never);
+    mockedDb.organizationBillingSubscription.findMany.mockResolvedValue([
+      {
+        id: 'obs_1',
+        skuKey: 'pentest_monthly_1',
+        stripeStatus: 'active',
+        usedQuantity: 0,
+        includedQuantity: 1,
+        currentPeriodEnd: new Date('2026-05-30T00:00:00.000Z'),
+      },
+    ]);
+    mockedDb.organizationBillingSubscription.findUnique.mockResolvedValue({
+      id: 'obs_1',
+      skuKey: 'pentest_monthly_1',
+      stripeStatus: 'active',
+      usedQuantity: 0,
+      includedQuantity: 1,
+      stripeSubscriptionItemId: 'si_1',
+      currentPeriodStart: new Date('2026-04-30T00:00:00.000Z'),
+      currentPeriodEnd: new Date('2026-05-30T00:00:00.000Z'),
+    });
+    tx.organizationBillingSubscription.updateMany.mockResolvedValue({
+      count: 0,
+    });
+
+    await expect(
+      service.tryConsumeIncludedUsageForProduct({
+        organizationId: 'org_1',
+        productKey: 'pentest',
+        sourceResourceId: 'run_1',
+      }),
+    ).resolves.toEqual({ status: 'consumed', subscriptionId: 'manual_credit' });
+
+    expect(credits.tryConsumeForProduct).toHaveBeenCalledWith({
+      organizationId: 'org_1',
+      productKey: 'pentest',
+      sourceResourceId: 'run_1',
+    });
+  });
+
+  it('returns exhausted instead of throwing when allowance is concurrently exhausted', async () => {
+    mockedDb.organizationBillingSubscription.findUnique.mockResolvedValue({
+      id: 'obs_1',
+      skuKey: 'background_checks_monthly_3',
+      stripeStatus: 'active',
+      usedQuantity: 0,
+      includedQuantity: 1,
+      stripeSubscriptionItemId: 'si_1',
+      currentPeriodStart: new Date('2026-04-30T00:00:00.000Z'),
+      currentPeriodEnd: new Date('2026-05-30T00:00:00.000Z'),
+    });
+    tx.organizationBillingSubscription.updateMany.mockResolvedValue({
+      count: 0,
+    });
+
+    await expect(
+      service.tryConsumeIncludedUsage({
+        organizationId: 'org_1',
+        skuKey: 'background_checks_monthly_3',
+        sourceResourceId: 'mem_1',
+      }),
+    ).resolves.toEqual({ status: 'exhausted', subscriptionId: 'obs_1' });
+  });
+
+  it('uses credit refund fallback even with a transaction client', async () => {
+    const credits = { refundForProduct: jest.fn().mockResolvedValue(true) };
+    service = new BillingEntitlementsService(credits as never);
+    tx.billingUsageEvent.findFirst.mockResolvedValue(null);
+
+    await service.refundIncludedUsageForProduct({
+      organizationId: 'org_1',
+      productKey: 'pentest',
+      sourceResourceId: 'run_1',
+      reason: 'canceled',
+      tx: tx as never,
+    });
+
+    expect(credits.refundForProduct).toHaveBeenCalledWith({
+      organizationId: 'org_1',
+      productKey: 'pentest',
+      sourceResourceId: 'run_1',
+      reason: 'canceled',
+      tx,
+    });
+  });
+
+  it('uses a stable included-usage refund key across reasons', async () => {
+    tx.billingUsageEvent.findUnique.mockResolvedValue({
+      stripeSubscriptionItemId: 'si_1',
+      periodStart: new Date('2026-04-30T00:00:00.000Z'),
+      periodEnd: new Date('2026-05-30T00:00:00.000Z'),
+    });
+
+    await service.refundIncludedUsage({
+      organizationId: 'org_1',
+      skuKey: 'pentest_monthly_1',
+      sourceResourceId: 'run_1',
+      reason: 'first reason',
+      tx: tx as never,
+    });
+
+    expect(tx.billingUsageEvent.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          idempotencyKey: 'refund:org_1:pentest_monthly_1:run_1',
+        }),
+      }),
+    );
   });
 });

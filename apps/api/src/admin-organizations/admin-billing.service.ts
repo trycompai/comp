@@ -158,7 +158,7 @@ export class AdminBillingService {
     const current = subscriptions.find(
       (item) =>
         item.stripeStatus !== 'canceled' &&
-        getProductFromSku(item.skuKey as BillingSkuKey) === sku.productKey,
+        getProductFromSku(item.skuKey) === sku.productKey,
     );
     const prorationDate = Math.floor(Date.now() / 1000);
     const invoice = await this.stripeService
@@ -207,7 +207,7 @@ export class AdminBillingService {
     const current = subscriptions.find(
       (item) =>
         item.stripeStatus !== 'canceled' &&
-        getProductFromSku(item.skuKey as BillingSkuKey) === sku.productKey,
+        getProductFromSku(item.skuKey) === sku.productKey,
     );
     if (
       current &&

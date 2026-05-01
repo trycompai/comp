@@ -106,7 +106,7 @@ export async function updateBillingPreferences(params: {
   const taxId = await syncPrimaryTaxId({
     stripe,
     stripeCustomerId,
-    existingTaxId: existingTaxIds[0] ?? null,
+    existingTaxIds,
     taxId: params.preferences.taxId,
   });
 
@@ -139,27 +139,33 @@ function validatePreferences(preferences: BillingPreferencesInput): void {
 async function syncPrimaryTaxId(params: {
   stripe: Stripe;
   stripeCustomerId: string;
-  existingTaxId: Stripe.TaxId | null;
+  existingTaxIds: Stripe.TaxId[];
   taxId: BillingPreferencesInput['taxId'];
 }): Promise<Stripe.TaxId | null> {
   const type = params.taxId?.type?.trim() ?? '';
   const value = params.taxId?.value?.trim() ?? '';
   if (!type || !value) {
-    if (params.existingTaxId) {
-      await params.stripe.taxIds.del(params.existingTaxId.id);
+    for (const existingTaxId of params.existingTaxIds) {
+      await params.stripe.taxIds.del(existingTaxId.id);
     }
     return null;
   }
 
-  if (
-    params.existingTaxId?.type === type &&
-    params.existingTaxId.value === value
-  ) {
-    return params.existingTaxId;
+  const matchingTaxId = params.existingTaxIds.find(
+    (existingTaxId) =>
+      existingTaxId.type === type && existingTaxId.value === value,
+  );
+  if (matchingTaxId) {
+    for (const existingTaxId of params.existingTaxIds) {
+      if (existingTaxId.id !== matchingTaxId.id) {
+        await params.stripe.taxIds.del(existingTaxId.id);
+      }
+    }
+    return matchingTaxId;
   }
 
-  if (params.existingTaxId) {
-    await params.stripe.taxIds.del(params.existingTaxId.id);
+  for (const existingTaxId of params.existingTaxIds) {
+    await params.stripe.taxIds.del(existingTaxId.id);
   }
 
   if (!isSupportedTaxIdType(type)) {
@@ -187,11 +193,20 @@ async function listCustomerTaxIds(params: {
   stripe: Stripe;
   stripeCustomerId: string;
 }): Promise<Stripe.TaxId[]> {
-  const taxIds = await params.stripe.taxIds.list({
-    owner: { type: 'customer', customer: params.stripeCustomerId },
-    limit: 5,
-  });
-  return taxIds.data;
+  const taxIds: Stripe.TaxId[] = [];
+  let startingAfter: string | undefined;
+
+  do {
+    const page = await params.stripe.taxIds.list({
+      owner: { type: 'customer', customer: params.stripeCustomerId },
+      limit: 100,
+      ...(startingAfter ? { starting_after: startingAfter } : {}),
+    });
+    taxIds.push(...page.data);
+    startingAfter = page.has_more ? page.data.at(-1)?.id : undefined;
+  } while (startingAfter);
+
+  return taxIds;
 }
 
 function mapCustomerPreferences(params: {

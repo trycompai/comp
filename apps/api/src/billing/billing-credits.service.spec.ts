@@ -51,6 +51,7 @@ describe('BillingCreditsService', () => {
     mockedDb.$transaction.mockImplementation(
       (callback: (tx: MockTx) => Promise<void>) => callback(tx),
     );
+    mockedDb.billingCreditEvent.findFirst.mockResolvedValue(null);
     service = new BillingCreditsService();
   });
 
@@ -149,5 +150,76 @@ describe('BillingCreditsService', () => {
         sourceResourceId: 'mem_1',
       }),
     ).resolves.toEqual({ status: 'exhausted' });
+  });
+
+  it('treats consume retries as consumed before checking balance', async () => {
+    mockedDb.billingCreditEvent.findFirst.mockResolvedValue({ id: 'bce_1' });
+
+    await expect(
+      service.tryConsumeForProduct({
+        organizationId: 'org_1',
+        productKey: 'background_check',
+        sourceResourceId: 'mem_1',
+      }),
+    ).resolves.toEqual({ status: 'consumed' });
+
+    expect(mockedDb.billingCreditBalance.findMany).not.toHaveBeenCalled();
+  });
+
+  it('uses a stable refund idempotency key across reasons', async () => {
+    mockedDb.billingCreditEvent.findFirst.mockResolvedValue({
+      id: 'bce_consume_1',
+      balanceId: 'bcb_1',
+      productKey: 'pentest',
+      skuKey: null,
+      quantity: 1,
+    });
+
+    await expect(
+      service.refundForProduct({
+        organizationId: 'org_1',
+        productKey: 'pentest',
+        sourceResourceId: 'run_1',
+        reason: 'first reason',
+      }),
+    ).resolves.toBe(true);
+
+    expect(tx.billingCreditEvent.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          idempotencyKey: 'credit-refund:org_1:pentest:run_1',
+          note: 'first reason',
+        }),
+      }),
+    );
+  });
+
+  it('uses the provided transaction client for credit refunds', async () => {
+    const transactionClient = {
+      billingCreditEvent: {
+        findFirst: jest.fn().mockResolvedValue({
+          id: 'bce_consume_1',
+          balanceId: 'bcb_1',
+          productKey: 'pentest',
+          skuKey: null,
+          quantity: 1,
+        }),
+        create: jest.fn(),
+      },
+      billingCreditBalance: { update: jest.fn() },
+    };
+
+    await expect(
+      service.refundForProduct({
+        organizationId: 'org_1',
+        productKey: 'pentest',
+        sourceResourceId: 'run_1',
+        reason: 'canceled',
+        tx: transactionClient as never,
+      }),
+    ).resolves.toBe(true);
+
+    expect(transactionClient.billingCreditEvent.create).toHaveBeenCalled();
+    expect(mockedDb.$transaction).not.toHaveBeenCalled();
   });
 });

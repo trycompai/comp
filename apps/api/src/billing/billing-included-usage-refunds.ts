@@ -20,7 +20,6 @@ export async function refundIncludedUsageEvent(params: {
     params.organizationId,
     params.skuKey,
     params.sourceResourceId,
-    params.reason,
   ].join(':');
 
   try {

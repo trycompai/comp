@@ -1,4 +1,4 @@
-import { BadRequestException } from '@nestjs/common';
+import { HttpException, HttpStatus } from '@nestjs/common';
 import type { StripeService } from '../stripe/stripe.service';
 
 export function assertStripeBillingConfigured(
@@ -6,5 +6,8 @@ export function assertStripeBillingConfigured(
 ): void {
   if (stripeService.isConfigured()) return;
 
-  throw new BadRequestException('Stripe billing is not configured.');
+  throw new HttpException(
+    'Stripe billing is not configured.',
+    HttpStatus.PAYMENT_REQUIRED,
+  );
 }

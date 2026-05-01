@@ -19,4 +19,24 @@ describe('validateBackgroundCheckBillingRedirectUrl', () => {
       ),
     ).toThrow(BadRequestException);
   });
+
+  it('rejects opaque configured app URLs', () => {
+    process.env.NEXT_PUBLIC_APP_URL = 'file:///tmp/app.html';
+    process.env.APP_URL = '';
+    process.env.BETTER_AUTH_URL = '';
+
+    expect(() =>
+      validateBackgroundCheckBillingRedirectUrl('file:///tmp/return.html'),
+    ).toThrow(BadRequestException);
+  });
+
+  it('rejects opaque redirect URLs', () => {
+    process.env.NEXT_PUBLIC_APP_URL = 'https://app.trycomp.ai';
+    process.env.APP_URL = '';
+    process.env.BETTER_AUTH_URL = '';
+
+    expect(() =>
+      validateBackgroundCheckBillingRedirectUrl('data:text/html,ok'),
+    ).toThrow(BadRequestException);
+  });
 });

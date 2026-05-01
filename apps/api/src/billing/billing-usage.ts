@@ -16,7 +16,7 @@ export async function listBillingUsageRows(params: {
   organizationId: string;
   subscriptions: SubscriptionSummary[];
 }): Promise<BillingUsageRow[]> {
-  const [backgroundChecks, pentestRuns, usageEvents] = await Promise.all([
+  const [backgroundChecks, pentestRuns] = await Promise.all([
     db.backgroundCheckRequest.findMany({
       where: { organizationId: params.organizationId },
       orderBy: { createdAt: 'desc' },
@@ -44,22 +44,28 @@ export async function listBillingUsageRows(params: {
         updatedAt: true,
       },
     }),
-    db.billingUsageEvent.findMany({
-      where: {
-        organizationId: params.organizationId,
-        eventType: { in: ['consume', 'one_time'] },
-        sourceResourceId: { not: null },
-      },
-      orderBy: { createdAt: 'desc' },
-      take: 100,
-      select: {
-        skuKey: true,
-        eventType: true,
-        sourceResourceId: true,
-        stripeInvoiceId: true,
-      },
-    }),
   ]);
+  const sourceResourceIds = [
+    ...backgroundChecks.map((request) => request.memberId),
+    ...pentestRuns.map((run) => run.billingUsageSourceId),
+  ].filter((value): value is string => typeof value === 'string');
+  const usageEvents =
+    sourceResourceIds.length > 0
+      ? await db.billingUsageEvent.findMany({
+          where: {
+            organizationId: params.organizationId,
+            eventType: { in: ['consume', 'one_time'] },
+            sourceResourceId: { in: sourceResourceIds },
+          },
+          orderBy: { createdAt: 'desc' },
+          select: {
+            skuKey: true,
+            eventType: true,
+            sourceResourceId: true,
+            stripeInvoiceId: true,
+          },
+        })
+      : [];
 
   const usageBySource = new Map(
     usageEvents

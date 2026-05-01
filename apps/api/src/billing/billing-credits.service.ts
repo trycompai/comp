@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { db } from '@db';
+import { Prisma, db } from '@db';
 import type { BillingProductKey, BillingSkuKey } from '@trycompai/billing';
 import { isUniqueConstraintError } from './billing-entitlements.types';
 import {
@@ -35,12 +35,13 @@ export class BillingCreditsService {
     organizationId: string;
     take?: number;
   }): Promise<BillingCreditEventSummary[]> {
-    const events = await db.billingCreditEvent.findMany({
-      where: { organizationId: params.organizationId },
-      orderBy: { createdAt: 'desc' },
-      take: params.take ?? 50,
-    });
-    return events.map((event) => ({
+    return (
+      await db.billingCreditEvent.findMany({
+        where: { organizationId: params.organizationId },
+        orderBy: { createdAt: 'desc' },
+        take: params.take ?? 50,
+      })
+    ).map((event) => ({
       id: event.id,
       productKey: assertProductKey(event.productKey),
       skuKey: event.skuKey,
@@ -118,6 +119,23 @@ export class BillingCreditsService {
     productKey: BillingProductKey;
     sourceResourceId: string;
   }): Promise<{ status: 'consumed' | 'not_configured' | 'exhausted' }> {
+    const idempotencyKey = [
+      'credit-consume',
+      params.organizationId,
+      params.productKey,
+      params.sourceResourceId,
+    ].join(':');
+    const existingConsumption = await db.billingCreditEvent.findFirst({
+      where: {
+        organizationId: params.organizationId,
+        productKey: params.productKey,
+        eventType: 'consume',
+        idempotencyKey,
+      },
+      select: { id: true },
+    });
+    if (existingConsumption) return { status: 'consumed' };
+
     const existing = await db.billingCreditBalance.findMany({
       where: {
         organizationId: params.organizationId,
@@ -129,13 +147,6 @@ export class BillingCreditsService {
 
     const balance = existing.find((item) => item.balance > 0);
     if (!balance) return { status: 'exhausted' };
-
-    const idempotencyKey = [
-      'credit-consume',
-      params.organizationId,
-      params.productKey,
-      params.sourceResourceId,
-    ].join(':');
 
     try {
       await db.$transaction(async (tx) => {
@@ -179,8 +190,10 @@ export class BillingCreditsService {
     productKey: BillingProductKey;
     sourceResourceId: string;
     reason: string;
+    tx?: Prisma.TransactionClient;
   }): Promise<boolean> {
-    const consumed = await db.billingCreditEvent.findFirst({
+    const client = params.tx ?? db;
+    const consumed = await client.billingCreditEvent.findFirst({
       where: {
         organizationId: params.organizationId,
         productKey: params.productKey,
@@ -196,11 +209,10 @@ export class BillingCreditsService {
       params.organizationId,
       params.productKey,
       params.sourceResourceId,
-      params.reason,
     ].join(':');
 
     try {
-      await db.$transaction(async (tx) => {
+      const writeRefund = async (tx: Prisma.TransactionClient) => {
         await tx.billingCreditEvent.create({
           data: {
             organizationId: params.organizationId,
@@ -225,7 +237,12 @@ export class BillingCreditsService {
             lastSource: 'refund',
           },
         });
-      });
+      };
+      if (params.tx) {
+        await writeRefund(params.tx);
+      } else {
+        await db.$transaction(writeRefund);
+      }
     } catch (error) {
       if (!isUniqueConstraintError(error)) throw error;
     }

@@ -9,10 +9,15 @@ export function validateBackgroundCheckBillingRedirectUrl(url: string): void {
     throw new BadRequestException('App URL is not configured on the server.');
   }
 
-  let appOrigin: string;
+  let appUrlParsed: URL;
   try {
-    appOrigin = new URL(appUrl).origin;
+    appUrlParsed = new URL(appUrl);
   } catch {
+    throw new BadRequestException(
+      'App URL is not configured correctly on the server.',
+    );
+  }
+  if (!isWebUrl(appUrlParsed)) {
     throw new BadRequestException(
       'App URL is not configured correctly on the server.',
     );
@@ -24,10 +29,20 @@ export function validateBackgroundCheckBillingRedirectUrl(url: string): void {
   } catch {
     throw new BadRequestException('Invalid redirect URL.');
   }
+  if (!isWebUrl(parsed)) {
+    throw new BadRequestException('Invalid redirect URL.');
+  }
 
-  if (parsed.origin !== appOrigin) {
+  if (parsed.origin !== appUrlParsed.origin) {
     throw new BadRequestException(
       'Redirect URL must belong to the application origin.',
     );
   }
+}
+
+function isWebUrl(url: URL): boolean {
+  return (
+    url.origin !== 'null' &&
+    (url.protocol === 'https:' || url.protocol === 'http:')
+  );
 }

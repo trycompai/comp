@@ -1,4 +1,4 @@
-import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { Prisma, db } from '@db';
 import {
   getBillingSkuKeysForProduct,
@@ -50,6 +50,14 @@ export class BillingEntitlementsService {
     if (
       activeSubscription.usedQuantity >= activeSubscription.includedQuantity
     ) {
+      const existingUsage = await this.findExistingIncludedUsageForProduct({
+        organizationId: params.organizationId,
+        skuKeys,
+        sourceResourceId: params.sourceResourceId,
+        subscriptions,
+      });
+      if (existingUsage) return existingUsage;
+
       const creditResult = await this.tryConsumeCreditFallback({
         ...params,
         fallbackStatus: 'exhausted',
@@ -59,11 +67,19 @@ export class BillingEntitlementsService {
         : { status: 'exhausted', subscriptionId: activeSubscription.id };
     }
 
-    return this.tryConsumeIncludedUsage({
+    const usageResult = await this.tryConsumeIncludedUsage({
       organizationId: params.organizationId,
       skuKey: activeSubscription.skuKey as BillingSkuKey,
       sourceResourceId: params.sourceResourceId,
     });
+    if (usageResult.status === 'consumed') return usageResult;
+
+    const creditResult = await this.tryConsumeCreditFallback({
+      ...params,
+      fallbackStatus:
+        usageResult.status === 'exhausted' ? 'exhausted' : 'not_configured',
+    });
+    return creditResult.status === 'consumed' ? creditResult : usageResult;
   }
 
   async tryConsumeIncludedUsage(params: {
@@ -84,6 +100,20 @@ export class BillingEntitlementsService {
       return { status: 'not_configured' };
     }
 
+    const idempotencyKey = [
+      'consume',
+      params.organizationId,
+      params.skuKey,
+      params.sourceResourceId,
+    ].join(':');
+    const existingUsage = await db.billingUsageEvent.findUnique({
+      where: { idempotencyKey },
+      select: { id: true },
+    });
+    if (existingUsage) {
+      return { status: 'consumed', subscriptionId: subscription.id };
+    }
+
     if (
       subscription.currentPeriodEnd &&
       subscription.currentPeriodEnd.getTime() <= Date.now()
@@ -94,13 +124,6 @@ export class BillingEntitlementsService {
     if (subscription.usedQuantity >= subscription.includedQuantity) {
       return { status: 'exhausted', subscriptionId: subscription.id };
     }
-
-    const idempotencyKey = [
-      'consume',
-      params.organizationId,
-      params.skuKey,
-      params.sourceResourceId,
-    ].join(':');
 
     try {
       await db.$transaction(async (tx) => {
@@ -127,13 +150,13 @@ export class BillingEntitlementsService {
         });
 
         if (updated.count === 0) {
-          throw new HttpException(
-            'Subscription allowance has been exhausted.',
-            HttpStatus.PAYMENT_REQUIRED,
-          );
+          throw new BillingAllowanceExhaustedError();
         }
       });
     } catch (error) {
+      if (error instanceof BillingAllowanceExhaustedError) {
+        return { status: 'exhausted', subscriptionId: subscription.id };
+      }
       if (isUniqueConstraintError(error)) {
         return { status: 'consumed', subscriptionId: subscription.id };
       }
@@ -306,12 +329,13 @@ export class BillingEntitlementsService {
       select: { skuKey: true },
     });
     if (!consumed) {
-      if (params.tx || !this.credits) return;
+      if (!this.credits) return;
       await this.credits.refundForProduct({
         organizationId: params.organizationId,
         productKey: params.productKey,
         sourceResourceId: params.sourceResourceId,
         reason: params.reason,
+        tx: params.tx,
       });
       return;
     }
@@ -347,6 +371,33 @@ export class BillingEntitlementsService {
         : { status: 'not_configured' };
   }
 
+  private async findExistingIncludedUsageForProduct(params: {
+    organizationId: string;
+    skuKeys: string[];
+    sourceResourceId: string;
+    subscriptions: { id: string; skuKey: string }[];
+  }): Promise<BillingConsumeResult | null> {
+    const existingUsage = await db.billingUsageEvent.findFirst({
+      where: {
+        organizationId: params.organizationId,
+        skuKey: { in: params.skuKeys },
+        eventType: 'consume',
+        sourceResourceId: params.sourceResourceId,
+      },
+      select: { skuKey: true },
+      orderBy: { createdAt: 'desc' },
+    });
+    if (!existingUsage) return null;
+
+    const subscription = params.subscriptions.find(
+      (item) => item.skuKey === existingUsage.skuKey,
+    );
+    return {
+      status: 'consumed',
+      subscriptionId: subscription?.id ?? 'included_usage',
+    };
+  }
+
   async writeAuditEvent(params: WriteBillingAuditEventParams): Promise<void> {
     await db.billingAuditEvent.create({
       data: {
@@ -359,3 +410,5 @@ export class BillingEntitlementsService {
     });
   }
 }
+
+class BillingAllowanceExhaustedError extends Error {}

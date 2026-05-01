@@ -57,8 +57,8 @@ export function mapAdminSubscription(subscription: {
   };
 }
 
-export function getProductFromSku(skuKey: BillingSkuKey): BillingProductKey {
-  return getBillingSku({ skuKey }).productKey;
+export function getProductFromSku(skuKey: string): BillingProductKey | null {
+  return getBillingSkuProductKey(skuKey);
 }
 
 export function isDowngrade(params: {

@@ -165,4 +165,52 @@ describe('updateBillingPreferences', () => {
       }),
     );
   });
+
+  it('deletes all stale tax IDs when replacing tax details', async () => {
+    const customersUpdate = jest.fn().mockResolvedValue(createCustomer());
+    const taxIdsDelete = jest.fn().mockResolvedValue({});
+    const taxIdsCreate = jest.fn().mockResolvedValue({
+      id: 'txi_new',
+      type: 'gb_vat',
+      value: 'GB987654321',
+      verification: { status: 'verified' },
+    });
+    const taxIdsList = jest.fn().mockResolvedValue({
+      data: [
+        { id: 'txi_old_1', type: 'gb_vat', value: 'GB111111111' },
+        { id: 'txi_old_2', type: 'us_ein', value: '12-3456789' },
+      ],
+      has_more: false,
+    });
+
+    await updateBillingPreferences({
+      stripeService: mockStripeService({
+        customers: { update: customersUpdate },
+        taxIds: {
+          list: taxIdsList,
+          create: taxIdsCreate,
+          del: taxIdsDelete,
+        },
+      }),
+      organizationId: 'org_1',
+      preferences: {
+        companyName: 'Test Company',
+        billingEmail: 'accounts@example.com',
+        purchaseOrder: null,
+        address: {
+          line1: '1 Test Street',
+          line2: null,
+          city: 'London',
+          state: null,
+          postalCode: 'SW1A 1AA',
+          country: 'GB',
+        },
+        taxId: { type: 'gb_vat', value: 'GB987654321' },
+      },
+    });
+
+    expect(taxIdsDelete).toHaveBeenCalledWith('txi_old_1');
+    expect(taxIdsDelete).toHaveBeenCalledWith('txi_old_2');
+    expect(taxIdsCreate).toHaveBeenCalled();
+  });
 });

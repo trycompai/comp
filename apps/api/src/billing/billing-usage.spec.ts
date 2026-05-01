@@ -175,4 +175,40 @@ describe('listBillingUsageRows', () => {
       }),
     );
   });
+
+  it('fetches usage events for the displayed source resources without a global cap', async () => {
+    backgroundCheckFindMany.mockResolvedValue([
+      {
+        id: 'bcr_3',
+        memberId: 'mem_3',
+        employeeName: 'Katherine Johnson',
+        employeeEmail: 'katherine@example.com',
+        status: 'completed',
+        stripePaymentStatus: 'succeeded',
+        createdAt: new Date('2026-04-30T13:00:00.000Z'),
+        updatedAt: new Date('2026-04-30T13:05:00.000Z'),
+      },
+    ]);
+    pentestRunFindMany.mockResolvedValue([
+      {
+        id: 'ptr_3',
+        providerRunId: 'run_3',
+        billingUsageSourceId: 'pending:run_3',
+        createdAt: new Date('2026-04-30T14:00:00.000Z'),
+        updatedAt: new Date('2026-04-30T14:05:00.000Z'),
+      },
+    ]);
+    billingUsageEventFindMany.mockResolvedValue([]);
+
+    await listBillingUsageRows({
+      organizationId: 'org_1',
+      subscriptions: [],
+    });
+
+    const usageQuery = billingUsageEventFindMany.mock.calls[0][0];
+    expect(usageQuery.where.sourceResourceId).toEqual({
+      in: ['mem_3', 'pending:run_3'],
+    });
+    expect(usageQuery).not.toHaveProperty('take');
+  });
 });

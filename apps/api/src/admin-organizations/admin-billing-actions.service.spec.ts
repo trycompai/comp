@@ -1,4 +1,4 @@
-import { BadRequestException, NotFoundException } from '@nestjs/common';
+import { HttpStatus, NotFoundException } from '@nestjs/common';
 import { db } from '@db';
 import { AdminBillingActionsService } from './admin-billing-actions.service';
 
@@ -83,7 +83,9 @@ describe('AdminBillingActionsService', () => {
         invoiceId: 'in_open',
         note: 'retry payment',
       }),
-    ).rejects.toBeInstanceOf(BadRequestException);
+    ).rejects.toMatchObject({
+      status: HttpStatus.PAYMENT_REQUIRED,
+    });
     expect(getClient).not.toHaveBeenCalled();
   });
 });

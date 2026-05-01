@@ -537,6 +537,8 @@ describe('BillingService', () => {
         successUrl: 'http://localhost:3000/org_1/settings/billing/success',
         cancelUrl: 'http://localhost:3000/org_1/settings/billing',
       }),
-    ).rejects.toBeInstanceOf(BadRequestException);
+    ).rejects.toMatchObject({
+      status: HttpStatus.PAYMENT_REQUIRED,
+    });
   });
 });

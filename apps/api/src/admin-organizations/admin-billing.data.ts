@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto';
 import { NotFoundException } from '@nestjs/common';
 import { db, Prisma } from '@db';
 import type { BillingSkuKey } from '@trycompai/billing';
@@ -69,6 +70,7 @@ export async function createAdminSubscription(params: {
           'admin-subscription-create',
           params.organizationId,
           params.skuKey,
+          randomUUID(),
         ].join(':'),
       },
     );
