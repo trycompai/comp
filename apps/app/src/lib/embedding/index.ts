@@ -29,7 +29,13 @@ export interface SimilarTaskResult {
   department?: Departments;
 }
 
-const EMBEDDING_MODEL = 'text-embedding-3-small';
+// `text-embedding-3-large` truncated to 1536 dims via Matryoshka. The
+// truncated 1536-dim form of -3-large still outperforms -3-small on MTEB
+// while keeping the existing Upstash Vector index (which is provisioned at
+// 1536 dims) usable as-is. Bumping to the full 3072 dims would require a
+// new index + a one-time re-embed of every org.
+const EMBEDDING_MODEL = 'text-embedding-3-large';
+const EMBEDDING_DIMENSIONS = 1536;
 const DEFAULT_TOP_K = 25;
 
 let cachedIndex: Index | null = null;
@@ -69,6 +75,7 @@ export async function upsertEntityEmbeddings({
   const { embeddings } = await embedMany({
     model: openai.embedding(EMBEDDING_MODEL),
     values: valid.map((e) => e.text),
+    providerOptions: { openai: { dimensions: EMBEDDING_DIMENSIONS } },
   });
 
   const index = getIndex();
@@ -103,6 +110,7 @@ export async function findSimilarTasks({
   const { embeddings } = await embedMany({
     model: openai.embedding(EMBEDDING_MODEL),
     values: [queryText],
+    providerOptions: { openai: { dimensions: EMBEDDING_DIMENSIONS } },
   });
 
   const index = getIndex();
