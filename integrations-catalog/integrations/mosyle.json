@@ -3,11 +3,39 @@
   "name": "Mosyle",
   "description": "Apple Mobile Device Management (MDM) solution for managing iPads, iPhones, Macs, and Apple TVs in educational and enterprise environments.",
   "category": "Security",
-  "docsUrl": null,
-  "baseUrl": null,
+  "docsUrl": "https://mosyle.com",
+  "baseUrl": "https://businessapi.mosyle.com/v1",
   "authConfig": {
     "type": "custom",
-    "config": {}
+    "config": {
+      "setupInstructions": "1. Log in to your Mosyle admin console\n2. Go to Organization > API Integration\n3. Enable the API and generate an Access Token\n4. Copy the Access Token\n5. Enter the token along with your admin email and password",
+      "credentialFields": [
+        {
+          "label": "Mosyle Environment",
+          "type": "select",
+          "required": true,
+          "helpText": "Select your Mosyle product type"
+        },
+        {
+          "label": "Access Token",
+          "type": "password",
+          "required": true,
+          "helpText": "API access token from Organization > API Integration"
+        },
+        {
+          "label": "Admin Email",
+          "type": "text",
+          "required": true,
+          "helpText": "Email address of an admin user for API authentication"
+        },
+        {
+          "label": "Admin Password",
+          "type": "password",
+          "required": true,
+          "helpText": "Password for the admin user account"
+        }
+      ]
+    }
   },
   "capabilities": [
     "checks"

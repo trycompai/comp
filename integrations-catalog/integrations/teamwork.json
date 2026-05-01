@@ -4,10 +4,26 @@
   "description": "Project management and team collaboration platform.",
   "category": "Productivity",
   "docsUrl": "https://developer.teamwork.com/",
-  "baseUrl": "https://api.teamwork.com",
+  "baseUrl": "https://{{credentials.site_name}}.teamwork.com",
   "authConfig": {
-    "type": "api_key",
-    "config": {}
+    "type": "custom",
+    "config": {
+      "setupInstructions": "1. Log in to Teamwork at https://yoursite.teamwork.com\n2. Click your profile icon (top right) > Edit My Details\n3. Go to the 'API & Mobile' tab\n4. Click 'Show Your Token' to reveal your API key\n5. Your site name is the subdomain in your URL (e.g., 'mycompany' from mycompany.teamwork.com)\n6. Enter both values below",
+      "credentialFields": [
+        {
+          "label": "Teamwork Site Name",
+          "type": "text",
+          "required": true,
+          "helpText": "Your Teamwork site name (the part before .teamwork.com). For example, if your URL is mycompany.teamwork.com, enter 'mycompany'."
+        },
+        {
+          "label": "API Key",
+          "type": "password",
+          "required": true,
+          "helpText": "Found in Teamwork > Click your profile > Edit My Details > API & Mobile tab > Show Your Token."
+        }
+      ]
+    }
   },
   "capabilities": [
     "checks"

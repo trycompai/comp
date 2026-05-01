@@ -3,11 +3,21 @@
   "name": "Postman",
   "description": "Monitor Postman workspaces and team API collections for development compliance",
   "category": "Development",
-  "docsUrl": "https://www.postman.com/postman/postman-postman/documentation/",
+  "docsUrl": "https://learning.postman.com/docs/developer/postman-api/authentication/",
   "baseUrl": "https://api.getpostman.com/",
   "authConfig": {
     "type": "api_key",
-    "config": {}
+    "config": {
+      "setupInstructions": "1. Log in to Postman\n2. Click Settings (gear icon) > Account Settings\n3. Go to API Keys\n4. Click Generate API Key\n5. Give it a name and copy the key\n6. Enter it below",
+      "credentialFields": [
+        {
+          "label": "Postman API Key",
+          "type": "password",
+          "required": true,
+          "helpText": "Found in Postman Settings > Account Settings > API Keys"
+        }
+      ]
+    }
   },
   "capabilities": [
     "checks"

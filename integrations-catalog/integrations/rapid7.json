@@ -19,8 +19,8 @@
         {
           "label": "Region",
           "type": "text",
-          "required": false,
-          "helpText": "Your Insight Platform region: us, us2, us3, eu, ca, au, ap (default: us)"
+          "required": true,
+          "helpText": "Your Insight Platform region code: us, us2, us3, eu, ca, au, ap, me1, aps2"
         }
       ]
     }

@@ -7,7 +7,23 @@
   "baseUrl": null,
   "authConfig": {
     "type": "custom",
-    "config": {}
+    "config": {
+      "setupInstructions": "1. Log in to IT Glue as an Administrator\n2. Go to Account > Settings > API Keys\n3. Generate a new API key (store it safely - it cannot be viewed again)\n4. Select your region (check your IT Glue login URL)\n5. Enter the API key and select your region below",
+      "credentialFields": [
+        {
+          "label": "API Key",
+          "type": "password",
+          "required": true,
+          "helpText": "Your IT Glue API key. Go to Account > Settings > API Keys to generate one."
+        },
+        {
+          "label": "Region",
+          "type": "select",
+          "required": true,
+          "helpText": "Select the region where your IT Glue account is hosted"
+        }
+      ]
+    }
   },
   "capabilities": [
     "checks"

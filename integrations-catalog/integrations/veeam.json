@@ -8,6 +8,7 @@
   "authConfig": {
     "type": "custom",
     "config": {
+      "setupInstructions": "1. Log in to your Veeam Backup & Replication console\n2. Ensure the REST API service is running (port 9419 by default)\n3. Use an administrator account with API access\n4. Enter your Veeam server URL (e.g. https://veeam.company.com:9419), username, and password below",
       "credentialFields": [
         {
           "label": "Server URL",
@@ -23,7 +24,7 @@
         },
         {
           "label": "Password",
-          "type": "secret",
+          "type": "password",
           "required": true,
           "helpText": "Veeam administrator password"
         }

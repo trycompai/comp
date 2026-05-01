@@ -7,7 +7,9 @@
   "baseUrl": "https://vault.example.com/",
   "authConfig": {
     "type": "api_key",
-    "config": {}
+    "config": {
+      "setupInstructions": "1. Get a Vault token with appropriate permissions (read access to sys/health and sys/mounts)\n2. You can create a token using: vault token create -policy=<policy-name>\n3. Copy the token and paste it below"
+    }
   },
   "capabilities": [
     "checks"

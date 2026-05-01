@@ -8,7 +8,7 @@
   "authConfig": {
     "type": "custom",
     "config": {
-      "setupInstructions": "1. Log in to Domo at https://developer.domo.com\n2. Go to New Client → create a client with User Read scope\n3. Copy the Client ID and Client Secret\n4. Enter both below",
+      "setupInstructions": "1. Log in to Domo at your-instance.domo.com\n2. Go to Admin > Security > API Clients (or visit developer.domo.com and log in)\n3. Create a new client with User Read scope\n4. Copy the Client ID and Client Secret\n5. Enter both below",
       "credentialFields": [
         {
           "label": "Client ID",
