@@ -269,7 +269,7 @@ export function useRiskActions() {
   );
 
   const autoLinkRisk = useCallback(
-    async (riskId: string): Promise<{ linked: number }> => {
+    async (riskId: string): Promise<{ runId: string; publicAccessToken: string }> => {
       const response = await fetch(`/api/risks/${riskId}/auto-link`, {
         method: 'POST',
         credentials: 'include',

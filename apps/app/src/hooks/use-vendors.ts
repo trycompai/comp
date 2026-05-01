@@ -256,7 +256,7 @@ export function useVendorActions() {
   );
 
   const autoLinkVendor = useCallback(
-    async (vendorId: string): Promise<{ linked: number }> => {
+    async (vendorId: string): Promise<{ runId: string; publicAccessToken: string }> => {
       const response = await fetch(`/api/vendors/${vendorId}/auto-link`, {
         method: 'POST',
         credentials: 'include',

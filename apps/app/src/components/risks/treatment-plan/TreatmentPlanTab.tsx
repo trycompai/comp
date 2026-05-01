@@ -37,7 +37,7 @@ interface TreatmentPlanTabProps {
   /** Optional auto-link callback. When provided and the entity has zero linked
    * tasks (and the user can update), an Auto-link button is shown above the
    * Linked Work content. Older callers that don't pass this prop keep working. */
-  onAutoLink?: () => Promise<{ linked: number }>;
+  onAutoLink?: () => Promise<{ runId: string; publicAccessToken: string }>;
   /** Optional unlink callback. When provided, each task row in the Linked Work
    * card gets a × affordance that removes the task↔entity link. */
   onUnlinkTask?: (taskId: string) => Promise<void>;
