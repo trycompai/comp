@@ -319,17 +319,24 @@ function combineSentencesWithCitations({
   treatmentStrategy,
   sentences,
   citations,
+  linkedTotals,
 }: {
   treatmentStrategy: string;
   sentences: string[];
   citations: MitigationCitation[];
+  /**
+   * Full linked-work totals for the entity. The heading reports these so
+   * the prose matches the Linked Work column, even when the bullets are a
+   * curated subset (max 3 controls + 2 tasks).
+   */
+  linkedTotals: { controls: number; tasks: number };
 }): string {
   const bullets = sentences.map(
     (sentence, i) => `- ${sentence.trim()}${citationSuffix(citations[i])}`,
   );
   return [
     `Treatment plan (${treatmentStrategy})`,
-    buildCitationsHeading(citations),
+    buildCitationsHeading({ citations, linkedTotals }),
     ...bullets,
   ].join('\n');
 }
@@ -622,6 +629,10 @@ ${formatCitationsBlock(citations)}`;
     treatmentStrategy,
     sentences: result.object.sentences,
     citations,
+    linkedTotals: {
+      controls: grounding?.linkedControls.length ?? 0,
+      tasks: grounding?.linkedTasks.length ?? 0,
+    },
   });
 
   await db.vendor.update({
@@ -955,6 +966,10 @@ ${formatCitationsBlock(citations)}`;
     treatmentStrategy: risk.treatmentStrategy,
     sentences: result.object.sentences,
     citations,
+    linkedTotals: {
+      controls: grounding?.linkedControls.length ?? 0,
+      tasks: grounding?.linkedTasks.length ?? 0,
+    },
   });
 
   await db.risk.update({

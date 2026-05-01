@@ -19,58 +19,74 @@ const gap = (controlTypeHint: string): MitigationCitation => ({
 });
 
 describe('buildCitationsHeading', () => {
-  it('counts each kind and lists them grammatically', () => {
-    const heading = buildCitationsHeading([
-      ctrl('CC1.1', 'Awareness'),
-      ctrl('CC6.1', 'MFA'),
-      ctrl('CC7.2', 'Logging'),
-      tsk('Quarterly review'),
-      pol('Acceptable Use'),
-    ]);
+  it('reports full linked totals (not citation counts) when work is linked', () => {
+    const heading = buildCitationsHeading({
+      citations: [
+        ctrl('CC1.1', 'Awareness'),
+        ctrl('CC6.1', 'MFA'),
+        ctrl('CC7.2', 'Logging'),
+        tsk('Quarterly review'),
+        tsk('Annual audit'),
+      ],
+      linkedTotals: { controls: 6, tasks: 8 },
+    });
+    // 6 + 8 linked, but bullets only reference 3 controls + 2 tasks → highlights
     expect(heading).toBe(
-      'This plan addresses the risk through 3 controls, 1 task, and 1 policy:',
+      'This plan addresses the risk through 6 controls and 8 tasks. Highlights below:',
+    );
+  });
+
+  it('omits the "Highlights" tail when bullets cover the full linked work', () => {
+    const heading = buildCitationsHeading({
+      citations: [ctrl('CC1.1', 'X'), ctrl('CC1.2', 'Y'), tsk('Z')],
+      linkedTotals: { controls: 2, tasks: 1 },
+    });
+    expect(heading).toBe(
+      'This plan addresses the risk through 2 controls and 1 task:',
     );
   });
 
   it('singularizes correctly', () => {
-    const heading = buildCitationsHeading([ctrl('CC1.1', 'X'), tsk('Y')]);
+    const heading = buildCitationsHeading({
+      citations: [ctrl('CC1.1', 'X'), tsk('Y')],
+      linkedTotals: { controls: 1, tasks: 1 },
+    });
     expect(heading).toBe('This plan addresses the risk through 1 control and 1 task:');
   });
 
-  it('omits kinds with zero count', () => {
-    const heading = buildCitationsHeading([
-      ctrl('CC1.1', 'X'),
-      ctrl('CC1.2', 'Y'),
-    ]);
-    expect(heading).toBe('This plan addresses the risk through 2 controls:');
-  });
-
-  it('mentions gaps with the "recommended" qualifier', () => {
-    const heading = buildCitationsHeading([
-      ctrl('CC1.1', 'X'),
-      gap('technical'),
-      gap('compliance'),
-    ]);
+  it('shows highlights when policies/gaps are present even at full coverage', () => {
+    const heading = buildCitationsHeading({
+      citations: [ctrl('CC1.1', 'X'), tsk('Y'), pol('Acceptable Use'), gap('compliance')],
+      linkedTotals: { controls: 1, tasks: 1 },
+    });
     expect(heading).toBe(
-      'This plan addresses the risk through 1 control and 2 recommended gaps:',
+      'This plan addresses the risk through 1 control and 1 task. Highlights below:',
     );
   });
 
-  it('falls back to a generic intro when every citation is a gap', () => {
-    const heading = buildCitationsHeading([gap('technical'), gap('technical')]);
+  it('falls back to citation kinds when no work is linked (only gaps)', () => {
+    const heading = buildCitationsHeading({
+      citations: [gap('technical'), gap('technical'), gap('compliance')],
+      linkedTotals: { controls: 0, tasks: 0 },
+    });
     expect(heading).toBe(
-      'This plan addresses the risk through 2 recommended gaps:',
+      'This plan addresses the risk through 3 recommended gaps:',
+    );
+  });
+
+  it('falls back to citation kinds when no work is linked (mixed policies + gaps)', () => {
+    const heading = buildCitationsHeading({
+      citations: [pol('A'), pol('B'), gap('compliance')],
+      linkedTotals: { controls: 0, tasks: 0 },
+    });
+    expect(heading).toBe(
+      'This plan addresses the risk through 2 policies and 1 recommended gap:',
     );
   });
 
   it('handles the empty case', () => {
-    expect(buildCitationsHeading([])).toBe('This plan addresses the risk:');
-  });
-
-  it('pluralizes "policy" → "policies" correctly', () => {
-    const heading = buildCitationsHeading([pol('A'), pol('B'), pol('C')]);
-    expect(heading).toBe(
-      'This plan addresses the risk through 3 policies:',
-    );
+    expect(
+      buildCitationsHeading({ citations: [], linkedTotals: { controls: 0, tasks: 0 } }),
+    ).toBe('This plan addresses the risk:');
   });
 });
