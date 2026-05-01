@@ -105,6 +105,7 @@ export default async function EmployeeDetailsPage({
           setupAt: null,
         }
       }
+      backgroundCheckStepEnabled={organization.backgroundCheckStepEnabled === true}
     />
   );
 }

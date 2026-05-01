@@ -4,6 +4,8 @@ import { usePermissions } from '@/hooks/use-permissions';
 import { apiClient } from '@/lib/api-client';
 import type { Member, User } from '@db';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { Text } from '@trycompai/design-system';
+import { Information } from '@trycompai/design-system/icons';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useForm } from 'react-hook-form';
@@ -32,6 +34,7 @@ interface EmployeeBackgroundCheckProps {
   organizationId: string;
   initialBackgroundCheck: BackgroundCheckRecord | null;
   initialBillingStatus: BackgroundCheckBillingStatus;
+  backgroundCheckStepEnabled: boolean;
 }
 
 export function EmployeeBackgroundCheck({
@@ -39,6 +42,7 @@ export function EmployeeBackgroundCheck({
   organizationId,
   initialBackgroundCheck,
   initialBillingStatus,
+  backgroundCheckStepEnabled,
 }: EmployeeBackgroundCheckProps) {
   const router = useRouter();
   const pathname = usePathname();
@@ -56,11 +60,13 @@ export function EmployeeBackgroundCheck({
   const { hasPermission } = usePermissions();
 
   const { data: backgroundCheck, mutate: mutateBackgroundCheck } = useBackgroundCheckRecord({
+    enabled: backgroundCheckStepEnabled,
     employeeId: employee.id,
     initialBackgroundCheck,
     organizationId,
   });
   const { data: billingStatus, mutate: mutateBillingStatus } = useBackgroundCheckBillingStatus({
+    enabled: backgroundCheckStepEnabled,
     initialBillingStatus,
     organizationId,
   });
@@ -228,6 +234,23 @@ export function EmployeeBackgroundCheck({
 
     await requestBackgroundCheck(values);
   };
+
+  if (!backgroundCheckStepEnabled) {
+    return (
+      <div className="flex items-start gap-3 rounded-lg border border-muted bg-muted/30 p-4">
+        <span className="mt-0.5 shrink-0 text-muted-foreground">
+          <Information size={20} />
+        </span>
+        <div>
+          <Text weight="medium">Background checks are not required for your organization</Text>
+          <Text size="sm" variant="muted">
+            Comp AI support disabled this requirement. Existing background-check requests, if any,
+            remain accessible from your billing portal.
+          </Text>
+        </div>
+      </div>
+    );
+  }
 
   if (backgroundCheck) {
     return (

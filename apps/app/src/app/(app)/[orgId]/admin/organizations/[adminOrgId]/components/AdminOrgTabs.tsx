@@ -49,6 +49,7 @@ export interface AdminOrgDetail {
   hasAccess: boolean;
   onboardingCompleted: boolean;
   website: string | null;
+  backgroundCheckStepEnabled: boolean;
   members: OrgMember[];
 }
 
@@ -70,7 +71,7 @@ export function AdminOrgTabs({ org, currentOrgId }: { org: AdminOrgDetail; curre
       return;
     }
     setToggling(true);
-    const res = await api.patch(`/v1/admin/organizations/${org.id}/activate`);
+    const res = await api.patch(`/v1/admin/organizations/${org.id}`, { hasAccess: true });
     if (!res.error) setHasAccess(true);
     setToggling(false);
   };
@@ -78,7 +79,7 @@ export function AdminOrgTabs({ org, currentOrgId }: { org: AdminOrgDetail; curre
   const handleConfirmDeactivate = async () => {
     setDeactivateDialogOpen(false);
     setToggling(true);
-    const res = await api.patch(`/v1/admin/organizations/${org.id}/deactivate`);
+    const res = await api.patch(`/v1/admin/organizations/${org.id}`, { hasAccess: false });
     if (!res.error) setHasAccess(false);
     setToggling(false);
   };

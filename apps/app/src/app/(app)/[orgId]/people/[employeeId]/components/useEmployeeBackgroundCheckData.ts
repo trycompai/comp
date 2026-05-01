@@ -6,16 +6,18 @@ import useSWR from 'swr';
 import type { BackgroundCheckBillingStatus, BackgroundCheckRecord } from './backgroundCheckTypes';
 
 export function useBackgroundCheckRecord({
+  enabled = true,
   employeeId,
   initialBackgroundCheck,
   organizationId,
 }: {
+  enabled?: boolean;
   employeeId: string;
   initialBackgroundCheck: BackgroundCheckRecord | null;
   organizationId: string;
 }) {
   return useSWR<BackgroundCheckRecord | null>(
-    [`/v1/people/${employeeId}/background-check`, organizationId],
+    enabled ? [`/v1/people/${employeeId}/background-check`, organizationId] : null,
     async ([endpoint]) => {
       const response = await apiClient.get<BackgroundCheckRecord | null>(endpoint, organizationId);
       if (response.error) throw new Error('Failed to load background check');
@@ -26,14 +28,16 @@ export function useBackgroundCheckRecord({
 }
 
 export function useBackgroundCheckBillingStatus({
+  enabled = true,
   initialBillingStatus,
   organizationId,
 }: {
+  enabled?: boolean;
   initialBillingStatus: BackgroundCheckBillingStatus;
   organizationId: string;
 }) {
   return useSWR<BackgroundCheckBillingStatus>(
-    ['/v1/background-check-billing/status', organizationId],
+    enabled ? ['/v1/background-check-billing/status', organizationId] : null,
     async ([endpoint]) => {
       const response = await apiClient.get<BackgroundCheckBillingStatus>(endpoint, organizationId);
       if (response.error || !response.data) {
