@@ -183,6 +183,11 @@ describe('AdminOrganizationsService', () => {
       const result = await service.getOrganization('org_1');
       expect(result.id).toBe('org_1');
       expect(result.members).toHaveLength(1);
+      expect(mockDb.organization.findUnique).toHaveBeenCalledWith(
+        expect.objectContaining({
+          select: expect.objectContaining({ backgroundCheckStepEnabled: true }),
+        }),
+      );
     });
 
     it('should throw NotFoundException for missing org', async () => {
@@ -237,6 +242,52 @@ describe('AdminOrganizationsService', () => {
       await expect(service.setAccess('org_missing', true)).rejects.toThrow(
         NotFoundException,
       );
+    });
+  });
+
+  describe('setBackgroundCheckStep', () => {
+    it('enables the BG-check step', async () => {
+      (mockDb.organization.findUnique as jest.Mock).mockResolvedValue({
+        id: 'org_1',
+      });
+      (mockDb.organization.update as jest.Mock).mockResolvedValue({
+        id: 'org_1',
+        backgroundCheckStepEnabled: true,
+      });
+
+      const result = await service.setBackgroundCheckStep('org_1', true);
+
+      expect(result.success).toBe(true);
+      expect(mockDb.organization.update).toHaveBeenCalledWith({
+        where: { id: 'org_1' },
+        data: { backgroundCheckStepEnabled: true },
+      });
+    });
+
+    it('disables the BG-check step (CX bypass)', async () => {
+      (mockDb.organization.findUnique as jest.Mock).mockResolvedValue({
+        id: 'org_1',
+      });
+      (mockDb.organization.update as jest.Mock).mockResolvedValue({
+        id: 'org_1',
+        backgroundCheckStepEnabled: false,
+      });
+
+      const result = await service.setBackgroundCheckStep('org_1', false);
+
+      expect(result.success).toBe(true);
+      expect(mockDb.organization.update).toHaveBeenCalledWith({
+        where: { id: 'org_1' },
+        data: { backgroundCheckStepEnabled: false },
+      });
+    });
+
+    it('throws NotFoundException for missing org', async () => {
+      (mockDb.organization.findUnique as jest.Mock).mockResolvedValue(null);
+
+      await expect(
+        service.setBackgroundCheckStep('org_missing', true),
+      ).rejects.toThrow(NotFoundException);
     });
   });
 

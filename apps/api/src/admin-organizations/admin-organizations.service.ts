@@ -238,6 +238,7 @@ export class AdminOrganizationsService {
         hasAccess: true,
         onboardingCompleted: true,
         website: true,
+        backgroundCheckStepEnabled: true,
         members: {
           where: { isActive: true, deactivated: false },
           select: {
@@ -275,6 +276,21 @@ export class AdminOrganizationsService {
     await db.organization.update({
       where: { id },
       data: { hasAccess },
+    });
+
+    return { success: true };
+  }
+
+  async setBackgroundCheckStep(id: string, enabled: boolean) {
+    const org = await db.organization.findUnique({ where: { id } });
+
+    if (!org) {
+      throw new NotFoundException(`Organization ${id} not found`);
+    }
+
+    await db.organization.update({
+      where: { id },
+      data: { backgroundCheckStepEnabled: enabled },
     });
 
     return { success: true };
