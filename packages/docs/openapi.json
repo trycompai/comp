@@ -21065,6 +21065,196 @@
         ]
       }
     },
+    "/v1/billing/status": {
+      "get": {
+        "operationId": "BillingController_getStatus_v1",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Get organization billing status",
+        "tags": [
+          "Billing"
+        ]
+      }
+    },
+    "/v1/billing/preferences": {
+      "put": {
+        "operationId": "BillingController_updatePreferences_v1",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BillingPreferencesDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Update organization billing preferences",
+        "tags": [
+          "Billing"
+        ]
+      }
+    },
+    "/v1/billing/setup-session": {
+      "post": {
+        "operationId": "BillingController_setupSession_v1",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BillingSetupSessionDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Create a Stripe setup session",
+        "tags": [
+          "Billing"
+        ]
+      }
+    },
+    "/v1/billing/setup-success": {
+      "post": {
+        "operationId": "BillingController_setupSuccess_v1",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BillingSetupSuccessDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Persist a successful Stripe setup session",
+        "tags": [
+          "Billing"
+        ]
+      }
+    },
+    "/v1/billing/portal": {
+      "post": {
+        "operationId": "BillingController_portal_v1",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BillingPortalDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Create a Stripe billing portal session",
+        "tags": [
+          "Billing"
+        ]
+      }
+    },
+    "/v1/billing/subscription-session": {
+      "post": {
+        "operationId": "BillingController_subscriptionSession_v1",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BillingSubscriptionCheckoutDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Create a Stripe subscription Checkout session",
+        "tags": [
+          "Billing"
+        ]
+      }
+    },
+    "/v1/billing/webhook": {
+      "post": {
+        "operationId": "BillingController_webhook_v1",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Receive Stripe billing webhook events",
+        "tags": [
+          "Billing"
+        ]
+      }
+    },
     "/v1/background-checks/{id}": {
       "get": {
         "operationId": "BackgroundChecksController_getById_v1",
@@ -26123,6 +26313,26 @@
         "required": [
           "targetUrl"
         ]
+      },
+      "BillingPreferencesDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "BillingSetupSessionDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "BillingSetupSuccessDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "BillingPortalDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "BillingSubscriptionCheckoutDto": {
+        "type": "object",
+        "properties": {}
       },
       "RequestBackgroundCheckDto": {
         "type": "object",

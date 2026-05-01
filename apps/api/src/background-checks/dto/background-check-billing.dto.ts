@@ -1,4 +1,4 @@
-import { IsString, IsUrl } from 'class-validator';
+import { IsNotEmpty, IsString, IsUrl } from 'class-validator';
 
 export class BackgroundCheckSetupSessionDto {
   @IsString()
@@ -12,6 +12,7 @@ export class BackgroundCheckSetupSessionDto {
 
 export class BackgroundCheckSetupSuccessDto {
   @IsString()
+  @IsNotEmpty()
   sessionId: string;
 }
 

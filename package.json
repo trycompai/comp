@@ -61,6 +61,7 @@
   "scripts": {
     "build": "turbo build",
     "check:env": "node scripts/check-unused-env.js",
+    "check:prisma-schemas": "node scripts/check-generated-prisma-schemas.js",
     "clean": "git clean -xdf node_modules",
     "clean:workspaces": "turbo clean",
     "deploy:trigger-prod": "npx trigger.dev@4.4.3 deploy",
@@ -71,7 +72,7 @@
     "deps:update": "syncpack update",
     "deps:upgrade": "syncpack update && bun install",
     "dev": "turbo dev --parallel",
-    "db:generate": "turbo run db:generate --filter=@trycompai/db --filter=@trycompai/app --filter=@trycompai/portal --filter=@trycompai/api",
+    "db:generate": "turbo run db:generate --filter=@trycompai/db --filter=@trycompai/app --filter=@trycompai/portal --filter=@trycompai/api --filter=@trycompai/framework-editor",
     "docker:clean": "bun run -F @trycompai/db docker:clean",
     "docker:down": "bun run -F @trycompai/db docker:down",
     "docker:up": "bun run -F @trycompai/db docker:up",

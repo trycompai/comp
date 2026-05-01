@@ -77,6 +77,19 @@ export async function proxy(request: NextRequest) {
       return NextResponse.redirect(url);
     }
 
+    const billingAddOnMatch = nextUrl.pathname.match(
+      /^\/([^/]+)\/settings\/billing\/add-ons\/([^/]+)$/,
+    );
+    if (billingAddOnMatch) {
+      const [, orgId, addOn] = billingAddOnMatch;
+      const url = new URL(`/${orgId}/settings/billing`, request.url);
+      nextUrl.searchParams.forEach((value, key) => {
+        url.searchParams.set(key, value);
+      });
+      url.searchParams.set('addOn', addOn);
+      return NextResponse.rewrite(url);
+    }
+
     // Org existence and membership checks happen in the app layouts/pages so
     // users get the proper redirect instead of a raw 403 response from middleware.
 

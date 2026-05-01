@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { AttachmentsModule } from '../attachments/attachments.module';
 import { AuthModule } from '../auth/auth.module';
+import { BillingModule } from '../billing/billing.module';
 import { BackgroundCheckBillingController } from './background-check-billing.controller';
 import { BackgroundCheckBillingService } from './background-check-billing.service';
 import { BackgroundCheckCustomService } from './background-check-custom.service';
@@ -13,7 +14,7 @@ import {
 import { BackgroundChecksService } from './background-checks.service';
 
 @Module({
-  imports: [AuthModule, AttachmentsModule],
+  imports: [AuthModule, AttachmentsModule, BillingModule],
   controllers: [
     BackgroundChecksController,
     PeopleBackgroundChecksController,

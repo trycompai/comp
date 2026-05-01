@@ -1,0 +1,29 @@
+{
+  "name": "@trycompai/billing",
+  "version": "1.0.0",
+  "private": true,
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.js"
+    }
+  },
+  "main": "./dist/index.js",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.ts",
+  "scripts": {
+    "build": "tsup src/index.ts --format cjs,esm --dts",
+    "clean": "rm -rf .turbo node_modules",
+    "format": "prettier --write .",
+    "lint": "prettier --check .",
+    "test": "bun test src/*.test.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "sideEffects": false,
+  "devDependencies": {
+    "@trycompai/tsconfig": "workspace:*",
+    "tsup": "^8.5.0",
+    "typescript": "^5.8.3"
+  }
+}
