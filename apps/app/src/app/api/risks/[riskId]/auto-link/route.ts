@@ -1,19 +1,15 @@
-import { linkRisksAndVendorsToWork } from '@/trigger/tasks/onboarding/link-risks-and-vendors-to-work';
+import { runLinkage } from '@/lib/embedding/run-linkage';
 import { auth } from '@/utils/auth';
-import { tasks } from '@trigger.dev/sdk';
 import { NextRequest, NextResponse } from 'next/server';
 
 /**
  * POST /api/risks/[riskId]/auto-link
  *
- * Triggers the link-risks-and-vendors-to-work task scoped to a single risk.
- *
- * Mirrors the fire-and-forget pattern used by regenerate-mitigation: we kick the
- * trigger task off and return immediately. The task itself returns a count of
- * linked tasks, but we cannot synchronously wait for that result from a Next.js
- * route (triggerAndWait only works inside another trigger task). Returning
- * `{ linked: 0 }` is intentional — the client revalidates SWR after this call,
- * so the user sees newly linked tasks via polling once the task completes.
+ * Runs the auto-linkage logic synchronously for a single risk, returning the
+ * real number of tasks linked so the AutoLinkButton can show an accurate toast
+ * and chain into the regenerate-mitigation flow. Latency is bounded (a single
+ * embedding query + Prisma update), so we do the work inline instead of
+ * dispatching a trigger task.
  */
 export async function POST(
   req: NextRequest,
@@ -38,23 +34,20 @@ export async function POST(
 
     const organizationId = session.session.activeOrganizationId;
 
-    await tasks.trigger<typeof linkRisksAndVendorsToWork>(
-      'link-risks-and-vendors-to-work',
-      {
-        organizationId,
-        riskId,
-      },
-    );
+    const { riskLinks } = await runLinkage({
+      organizationId,
+      riskId,
+    });
 
-    return NextResponse.json({ linked: 0 });
+    return NextResponse.json({ linked: riskLinks });
   } catch (error) {
-    console.error('Error triggering risk auto-link:', error);
+    console.error('Error running risk auto-link:', error);
     return NextResponse.json(
       {
         error:
           error instanceof Error
             ? error.message
-            : 'Failed to trigger auto-link',
+            : 'Failed to run auto-link',
       },
       { status: 500 },
     );
