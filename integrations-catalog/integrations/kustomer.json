@@ -8,7 +8,7 @@
   "authConfig": {
     "type": "custom",
     "config": {
-      "setupInstructions": "1. Log in to Kustomer\n2. Settings → API Keys\n3. Create a key with read permissions\n4. Paste it below",
+      "setupInstructions": "1. Log in to Kustomer\n2. Go to Settings > Security > API Keys\n3. Create a new API key with read permissions\n4. Copy the key and paste it below",
       "credentialFields": [
         {
           "label": "API Key",

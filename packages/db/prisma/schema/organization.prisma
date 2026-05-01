@@ -13,6 +13,7 @@ model Organization {
   evidenceApprovalEnabled     Boolean     @default(false)
   deviceAgentStepEnabled      Boolean     @default(true)
   securityTrainingStepEnabled Boolean     @default(true)
+  backgroundCheckStepEnabled  Boolean     @default(true)
   whistleblowerReportEnabled  Boolean     @default(true)
   accessRequestFormEnabled    Boolean     @default(true)
 

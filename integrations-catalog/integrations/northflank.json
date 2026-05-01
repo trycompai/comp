@@ -7,7 +7,17 @@
   "baseUrl": "https://api.northflank.com",
   "authConfig": {
     "type": "api_key",
-    "config": {}
+    "config": {
+      "setupInstructions": "1. Log in to Northflank at https://app.northflank.com\n2. Go to Account Settings > API\n3. Click Create new token\n4. Give it a name and select Read permissions\n5. Copy the token and paste it below",
+      "credentialFields": [
+        {
+          "label": "API Token",
+          "type": "password",
+          "required": true,
+          "helpText": "Your Northflank API token. Go to Account Settings > API > Create new token."
+        }
+      ]
+    }
   },
   "capabilities": [
     "checks"

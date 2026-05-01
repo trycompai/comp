@@ -2,7 +2,7 @@
   "slug": "pagerduty",
   "name": "PagerDuty",
   "description": "Monitor PagerDuty incident response configuration including services, escalation policies, and on-call schedules for compliance evidence",
-  "category": "Security",
+  "category": "Monitoring",
   "docsUrl": "https://developer.pagerduty.com/api-reference/",
   "baseUrl": "https://api.pagerduty.com",
   "authConfig": {

@@ -4,7 +4,7 @@
   "description": "Grain meeting recording and intelligence platform integration for monitoring meeting recordings, team access, and compliance",
   "category": "Productivity",
   "docsUrl": "https://developers.grain.com/",
-  "baseUrl": null,
+  "baseUrl": "https://api.grain.com",
   "authConfig": {
     "type": "custom",
     "config": {

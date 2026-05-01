@@ -19,8 +19,8 @@
         {
           "label": "Region Endpoint",
           "type": "text",
-          "required": false,
-          "helpText": "Your region API host. Examples: api.coralogix.com (US), api.eu2.coralogix.com (EU), api.coralogixsg.com (AP)"
+          "required": true,
+          "helpText": "Your Coralogix API endpoint domain. Required. Examples: api.coralogix.com (US1), api.eu2.coralogix.com (EU2), api.coralogixsg.com (AP1), api.app.coralogix.in (AP2), api.eu1.coralogix.com (EU1)"
         }
       ]
     }

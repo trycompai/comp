@@ -6,8 +6,18 @@
   "docsUrl": "https://docs.checkr.com/reference",
   "baseUrl": "https://api.checkr.com/",
   "authConfig": {
-    "type": "api_key",
-    "config": {}
+    "type": "custom",
+    "config": {
+      "setupInstructions": "1. Log in to Checkr at https://dashboard.checkr.com\n2. Go to Developer Settings -> API Keys\n3. Copy your API key\n4. Enter it below",
+      "credentialFields": [
+        {
+          "label": "API Key",
+          "type": "password",
+          "required": true,
+          "helpText": "Found in Checkr Dashboard -> Developer Settings -> API Keys"
+        }
+      ]
+    }
   },
   "capabilities": [
     "checks"

@@ -7,7 +7,9 @@
   "baseUrl": "https://api.openphone.com",
   "authConfig": {
     "type": "api_key",
-    "config": {}
+    "config": {
+      "setupInstructions": "1. Log in to OpenPhone at https://app.openphone.com\n2. Go to Settings > API tab (requires admin privileges)\n3. Click 'Generate API key' and provide a label\n4. Copy the API key and paste it below"
+    }
   },
   "capabilities": [
     "checks"

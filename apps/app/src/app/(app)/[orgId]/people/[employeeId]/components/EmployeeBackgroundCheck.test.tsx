@@ -68,6 +68,7 @@ function renderSection(props?: Partial<Parameters<typeof EmployeeBackgroundCheck
         organizationId="org_1"
         initialBackgroundCheck={null}
         initialBillingStatus={{ hasPaymentMethod: true, setupAt: null }}
+        backgroundCheckStepEnabled={true}
         {...props}
       />
     </SWRConfig>,
@@ -287,6 +288,43 @@ describe('EmployeeBackgroundCheck', () => {
     expect(
       window.sessionStorage.getItem('background-check:org_1:mem_1:pending-request'),
     ).toBeNull();
+  });
+
+  it('renders the bypass info card when backgroundCheckStepEnabled is false', () => {
+    render(
+      <EmployeeBackgroundCheck
+        employee={employee}
+        organizationId="org_1"
+        initialBackgroundCheck={null}
+        initialBillingStatus={{ hasPaymentMethod: false, setupAt: null }}
+        backgroundCheckStepEnabled={false}
+      />,
+    );
+
+    expect(
+      screen.getByText(/background checks are not required/i),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole('button', { name: /get started/i }),
+    ).not.toBeInTheDocument();
+  });
+
+  it('does not fetch background-check or billing data when bypassed', async () => {
+    render(
+      <EmployeeBackgroundCheck
+        employee={employee}
+        organizationId="org_1"
+        initialBackgroundCheck={null}
+        initialBillingStatus={{ hasPaymentMethod: false, setupAt: null }}
+        backgroundCheckStepEnabled={false}
+      />,
+    );
+
+    // Allow any pending microtasks/SWR scheduling to settle.
+    await Promise.resolve();
+    await Promise.resolve();
+
+    expect(apiClient.get).not.toHaveBeenCalled();
   });
 
   it('shows an update payment dialog when payment fails', async () => {

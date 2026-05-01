@@ -183,6 +183,11 @@ describe('AdminOrganizationsService', () => {
       const result = await service.getOrganization('org_1');
       expect(result.id).toBe('org_1');
       expect(result.members).toHaveLength(1);
+      expect(mockDb.organization.findUnique).toHaveBeenCalledWith(
+        expect.objectContaining({
+          select: expect.objectContaining({ backgroundCheckStepEnabled: true }),
+        }),
+      );
     });
 
     it('should throw NotFoundException for missing org', async () => {
@@ -194,8 +199,8 @@ describe('AdminOrganizationsService', () => {
     });
   });
 
-  describe('setAccess', () => {
-    it('should activate an organization', async () => {
+  describe('updateOrganization', () => {
+    it('single-field update (hasAccess)', async () => {
       (mockDb.organization.findUnique as jest.Mock).mockResolvedValue({
         id: 'org_1',
       });
@@ -204,7 +209,9 @@ describe('AdminOrganizationsService', () => {
         hasAccess: true,
       });
 
-      const result = await service.setAccess('org_1', true);
+      const result = await service.updateOrganization('org_1', {
+        hasAccess: true,
+      });
 
       expect(result.success).toBe(true);
       expect(mockDb.organization.update).toHaveBeenCalledWith({
@@ -213,30 +220,54 @@ describe('AdminOrganizationsService', () => {
       });
     });
 
-    it('should deactivate an organization', async () => {
+    it('single-field update (backgroundCheckStepEnabled)', async () => {
       (mockDb.organization.findUnique as jest.Mock).mockResolvedValue({
         id: 'org_1',
       });
       (mockDb.organization.update as jest.Mock).mockResolvedValue({
         id: 'org_1',
-        hasAccess: false,
+        backgroundCheckStepEnabled: false,
       });
 
-      const result = await service.setAccess('org_1', false);
+      const result = await service.updateOrganization('org_1', {
+        backgroundCheckStepEnabled: false,
+      });
 
       expect(result.success).toBe(true);
       expect(mockDb.organization.update).toHaveBeenCalledWith({
         where: { id: 'org_1' },
-        data: { hasAccess: false },
+        data: { backgroundCheckStepEnabled: false },
       });
     });
 
-    it('should throw NotFoundException for missing org', async () => {
+    it('multi-field update', async () => {
+      (mockDb.organization.findUnique as jest.Mock).mockResolvedValue({
+        id: 'org_1',
+      });
+      (mockDb.organization.update as jest.Mock).mockResolvedValue({
+        id: 'org_1',
+        hasAccess: true,
+        backgroundCheckStepEnabled: false,
+      });
+
+      const result = await service.updateOrganization('org_1', {
+        hasAccess: true,
+        backgroundCheckStepEnabled: false,
+      });
+
+      expect(result.success).toBe(true);
+      expect(mockDb.organization.update).toHaveBeenCalledWith({
+        where: { id: 'org_1' },
+        data: { hasAccess: true, backgroundCheckStepEnabled: false },
+      });
+    });
+
+    it('throws NotFoundException for missing org', async () => {
       (mockDb.organization.findUnique as jest.Mock).mockResolvedValue(null);
 
-      await expect(service.setAccess('org_missing', true)).rejects.toThrow(
-        NotFoundException,
-      );
+      await expect(
+        service.updateOrganization('org_missing', { hasAccess: true }),
+      ).rejects.toThrow(NotFoundException);
     });
   });
 

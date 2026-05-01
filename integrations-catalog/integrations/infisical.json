@@ -7,7 +7,9 @@
   "baseUrl": "https://app.infisical.com/",
   "authConfig": {
     "type": "api_key",
-    "config": {}
+    "config": {
+      "setupInstructions": "1. In Infisical, go to Organization Settings > Access Control > Identities\n2. Create a Machine Identity with the 'Member' role\n3. Under Authentication, configure Universal Auth\n4. Note the Client ID and Client Secret\n5. Obtain an access token: POST https://app.infisical.com/api/v1/auth/universal-auth/login with clientId and clientSecret\n6. Paste the access token below\n\nNote: Access tokens expire (default 30 days). You may need to refresh periodically."
+    }
   },
   "capabilities": [
     "checks"

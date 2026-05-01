@@ -2,7 +2,7 @@
   "slug": "barracuda-email-gateway-defense",
   "name": "Barracuda Email Gateway Defense",
   "description": "Monitor Barracuda Email Gateway Defense cloud email security platform for domain configuration, account access, and security compliance",
-  "category": "Communication",
+  "category": "Security",
   "docsUrl": "https://documentation.campus.barracuda.com/wiki/spaces/EGD/pages/2851437/Getting+Started+with+the+API",
   "baseUrl": "https://api.barracudanetworks.com/",
   "authConfig": {
@@ -12,7 +12,7 @@
         "ess:account:read"
       ],
       "clientAuthMethod": "body",
-      "supportsRefreshToken": false
+      "supportsRefreshToken": true
     }
   },
   "capabilities": [

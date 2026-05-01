@@ -6,8 +6,18 @@
   "docsUrl": "https://docs.mezmo.com/reference",
   "baseUrl": "https://api.mezmo.com",
   "authConfig": {
-    "type": "api_key",
-    "config": {}
+    "type": "custom",
+    "config": {
+      "setupInstructions": "1. Log in to Mezmo (formerly LogDNA)\n2. Go to Settings > Organization > API Keys\n3. Copy a Service Key (not an Ingestion Key)\n4. Paste it below",
+      "credentialFields": [
+        {
+          "label": "Service Key",
+          "type": "password",
+          "required": true,
+          "helpText": "Found in Mezmo (LogDNA) Settings > Organization > API Keys. Copy a Service Key."
+        }
+      ]
+    }
   },
   "capabilities": [
     "checks"

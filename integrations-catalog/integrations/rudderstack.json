@@ -7,7 +7,9 @@
   "baseUrl": "https://api.rudderstack.com",
   "authConfig": {
     "type": "api_key",
-    "config": {}
+    "config": {
+      "setupInstructions": "1. Log in to your RudderStack dashboard at https://app.rudderstack.com\n2. Go to Settings > Service Access Tokens\n3. Generate a workspace-level Service Access Token\n4. Enter the token below"
+    }
   },
   "capabilities": [
     "checks"
