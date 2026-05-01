@@ -273,12 +273,21 @@ async function loadVendorGroundingContext(
   };
 }
 
-const CONTROL_CODE_PATTERN = /\(Control:\s*([A-Z]{2,4}-\d+)/g;
+// Matches `(Control: CC1-1 ...)` style citations. Case-insensitive because the
+// model often title-cases codes even when our `identifier` values are lowercase
+// (e.g. `cc1-1`). Allows alphanumeric prefixes like `iso27001-a-5-1` since
+// frameworks use varied conventions.
+const CONTROL_CODE_PATTERN = /\(Control:\s*([A-Za-z0-9][A-Za-z0-9-]+)/g;
+
+function normalizeCode(code: string): string {
+  return code.toLowerCase();
+}
 
 /**
  * Scans generated mitigation text for control codes and verifies they belong
- * to the allowed set. If fabricated codes are detected, retries once with a
- * corrective note. If retry also fabricates, returns the original text.
+ * to the allowed set. Comparison is case-insensitive. If fabricated codes are
+ * detected, retries once with a corrective note. If retry also fabricates,
+ * returns the original text.
  */
 async function guardAgainstHallucinatedCodes({
   result,
@@ -289,11 +298,12 @@ async function guardAgainstHallucinatedCodes({
   allowedCodes: Set<string>;
   retryFn: () => Promise<string>;
 }): Promise<string> {
+  const allowedNormalized = new Set([...allowedCodes].map(normalizeCode));
   const cited = new Set<string>();
   for (const match of result.matchAll(CONTROL_CODE_PATTERN)) {
     cited.add(match[1]);
   }
-  const fabricated = [...cited].filter((c) => !allowedCodes.has(c));
+  const fabricated = [...cited].filter((c) => !allowedNormalized.has(normalizeCode(c)));
   if (fabricated.length === 0) return result;
 
   logger.warn('mitigation output cited fabricated control codes; retrying once', {
