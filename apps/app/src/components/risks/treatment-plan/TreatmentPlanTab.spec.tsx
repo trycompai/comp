@@ -63,12 +63,16 @@ describe('TreatmentPlanTab', () => {
   });
 
   it('renders the hero numerals using strategy-derived residual', () => {
-    // strategy=mitigate, no tasks → completion=0 → preview residual = inherent.
-    // inherent: likely × major = 16 raw → score = ceil(16/2.5) = 7
+    // strategy=mitigate, no tasks. The headline always shows the
+    // full-completion target — partial completion only affects the
+    // "Currently X/10" subline. With Mitigate's -1 likelihood / -1 impact:
+    //   inherent: likely × major = 4×4 = 16 raw → ceil(16/2.5) = 7
+    //   target:   possible × moderate = 3×3 = 9 raw → ceil(9/2.5) = 4
     render(<TreatmentPlanTab {...buildProps()} />);
-    const headline = screen.getByLabelText(/From 7 to 7 out of 10/i);
+    const headline = screen.getByLabelText(/From 7 to 4 out of 10/i);
     expect(headline).toBeInTheDocument();
     expect(headline.textContent).toContain('7');
+    expect(headline.textContent).toContain('4');
   });
 
   it('calls onUpdateStrategy when strategy card is clicked', async () => {

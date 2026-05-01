@@ -91,17 +91,24 @@ export function TreatmentHero({
 }: TreatmentHeroProps) {
   const inherent = getRiskScore(inherentLikelihood, inherentImpact);
   // Target = the residual the strategy would produce at full execution.
-  // Used as the matrix cell marker.
+  // Headline numerals are always inherent → target — the forecast you'd land
+  // on if every linked task ships. The numerals don't move based on partial
+  // task completion (that was confusing: the narrative already says
+  // "assuming linked tasks complete on schedule"). Instead, real-time
+  // progress shows up as a smaller "Currently X/10" line under the headline
+  // when the user is part-way through the plan.
   const target = previewResidual({
     inherentLikelihood,
     inherentImpact,
     strategy,
   });
   const targetScore = getRiskScore(target.likelihood, target.impact);
+  const targetRaw =
+    targetScore.score === inherent.score
+      ? inherent.raw
+      : approximateRawFromScore(targetScore.score);
 
-  // For Mitigate, the displayed score interpolates between inherent and
-  // target by linked-task completion so partial progress shows in the
-  // numeral even when the matrix cell would otherwise stay at inherent.
+  // Mitigate is the only strategy with a meaningful in-progress concept.
   // Non-Mitigate strategies are "always at full completion" — the strategy
   // itself is the action.
   const completion =
@@ -115,19 +122,22 @@ export function TreatmentHero({
       : 1;
   const completionPct = Math.round(completion * 100);
 
-  const displayedResidualScore = interpolatedResidualScore({
+  // Current interpolated score — shown as a smaller subline under the
+  // headline when partway through (Mitigate, 0 < completion < 1).
+  const currentScore = interpolatedResidualScore({
     inherentScore: inherent.score,
     targetScore: targetScore.score,
     completion,
   });
-  const delta = inherent.score - displayedResidualScore;
+  const currentRaw =
+    currentScore === inherent.score ? inherent.raw : approximateRawFromScore(currentScore);
+  const currentLevel = getRiskLevel(currentRaw);
+  const showCurrentSubline =
+    strategy === RiskTreatmentType.mitigate && completion > 0 && completion < 1;
+
+  const delta = inherent.score - targetScore.score;
   const inherentLevel = getRiskLevel(inherent.raw);
-  // Color the residual numeral by where the displayed score falls on the
-  // level scale (very-low/low/medium/high/very-high). We approximate raw
-  // from the displayed score so the level lookup is consistent.
-  const displayedRaw =
-    displayedResidualScore === inherent.score ? inherent.raw : approximateRawFromScore(displayedResidualScore);
-  const residualLevel = getRiskLevel(displayedRaw);
+  const residualLevel = getRiskLevel(targetRaw);
 
   const thirdStat = STRATEGY_THIRD_STAT[strategy];
   const thirdStatValue =
@@ -144,7 +154,7 @@ export function TreatmentHero({
             </div>
             <h1
               className="my-3 flex items-center gap-4 font-mono tabular-nums text-7xl font-normal leading-[0.95] tracking-[-0.05em] md:text-8xl"
-              aria-label={`From ${inherent.score} to ${displayedResidualScore} out of 10`}
+              aria-label={`From ${inherent.score} to ${targetScore.score} out of 10`}
             >
               <span style={{ color: LEVEL_COLOR[inherentLevel] }}>
                 {inherent.score}
@@ -152,10 +162,22 @@ export function TreatmentHero({
               </span>
               <ArrowRight size={28} className="text-muted-foreground" aria-hidden="true" />
               <span style={{ color: LEVEL_COLOR[residualLevel] }}>
-                {displayedResidualScore}
+                {targetScore.score}
                 <span className="align-super text-3xl font-light opacity-40">/10</span>
               </span>
             </h1>
+            {showCurrentSubline && (
+              <div className="-mt-1 mb-3 text-xs text-muted-foreground">
+                Currently{' '}
+                <span
+                  className="font-mono font-bold tabular-nums"
+                  style={{ color: LEVEL_COLOR[currentLevel] }}
+                >
+                  {currentScore}/10
+                </span>{' '}
+                — {completionPct}% of plan complete
+              </div>
+            )}
             <p className="max-w-[540px] text-base leading-[1.55] text-foreground">
               The plan moves this risk from{' '}
               <strong
@@ -214,7 +236,7 @@ export function TreatmentHero({
         <div className="mt-5 border-t border-border pt-5">
           <RiskScale
             inherentScore={inherent.score}
-            residualScore={displayedResidualScore}
+            residualScore={targetScore.score}
             inherentColor={LEVEL_COLOR[inherentLevel]}
             residualColor={LEVEL_COLOR[residualLevel]}
           />
