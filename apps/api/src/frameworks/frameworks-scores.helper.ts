@@ -43,7 +43,7 @@ export async function getOverviewScores(organizationId: string) {
 
   const securityTrainingStepEnabled = org?.securityTrainingStepEnabled === true;
   const deviceAgentStepEnabled = org?.deviceAgentStepEnabled === true;
-  const backgroundCheckStepEnabled = org?.backgroundCheckStepEnabled !== false;
+  const backgroundCheckStepEnabled = org?.backgroundCheckStepEnabled === true;
   const hasHipaaFramework = !!hipaaInstance;
 
   const publishedPolicies = allPolicies.filter((p) => p.status === 'published');
