@@ -274,7 +274,10 @@ export class SecurityPenetrationTestsService {
           organizationId,
           action: 'pentest_create_blocked',
           runId: null,
-          description: 'Pentest create blocked: subscription required',
+          description:
+            reason === 'pentest_subscription_exhausted'
+              ? 'Pentest create blocked: subscription exhausted'
+              : 'Pentest create blocked: subscription required',
           metadata: {
             reason,
             targetUrl: payload.targetUrl,
@@ -1093,9 +1096,31 @@ export class SecurityPenetrationTestsService {
 }
 
 function getPaymentRequiredCode(response: unknown): string {
+  if (typeof response === 'string') {
+    return normalizePaymentRequiredCode(response);
+  }
   if (typeof response !== 'object' || response === null) {
     return 'pentest_subscription_required';
   }
   const code = (response as Record<string, unknown>).code;
-  return typeof code === 'string' ? code : 'pentest_subscription_required';
+  if (typeof code === 'string') return normalizePaymentRequiredCode(code);
+
+  const message = (response as Record<string, unknown>).message;
+  return typeof message === 'string'
+    ? normalizePaymentRequiredCode(message)
+    : 'pentest_subscription_required';
+}
+
+function normalizePaymentRequiredCode(value: string): string {
+  if (
+    value === 'pentest_subscription_exhausted' ||
+    value.toLowerCase().includes('exhaust') ||
+    value.toLowerCase().includes('remaining')
+  ) {
+    return 'pentest_subscription_exhausted';
+  }
+  if (value === 'pentest_subscription_required') {
+    return 'pentest_subscription_required';
+  }
+  return 'pentest_subscription_required';
 }

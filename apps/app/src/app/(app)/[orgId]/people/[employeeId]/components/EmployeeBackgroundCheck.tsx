@@ -3,13 +3,11 @@
 import { usePermissions } from '@/hooks/use-permissions';
 import { apiClient } from '@/lib/api-client';
 import type { Member, User } from '@db';
-import { getBillingSkuProductKey } from '@trycompai/billing';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
-import useSWR from 'swr';
 import { BackgroundCheckDetailsForm } from './BackgroundCheckDetailsForm';
 import {
   type BackgroundCheckFormValues,
@@ -23,6 +21,11 @@ import type { BackgroundCheckBillingStatus, BackgroundCheckRecord } from './back
 import { OverviewStep } from './BackgroundCheckWizardParts';
 import { CustomBackgroundCheckUpload } from './CustomBackgroundCheckUpload';
 import { PaymentMethodUpdateDialog } from './PaymentMethodUpdateDialog';
+import {
+  getBackgroundChecksRemaining,
+  useBackgroundCheckBillingStatus,
+  useBackgroundCheckRecord,
+} from './useEmployeeBackgroundCheckData';
 
 interface EmployeeBackgroundCheckProps {
   employee: Member & { user: User };
@@ -52,27 +55,15 @@ export function EmployeeBackgroundCheck({
   const [requestConfirmation, setRequestConfirmation] = useState<string | null>(null);
   const { hasPermission } = usePermissions();
 
-  const { data: backgroundCheck, mutate: mutateBackgroundCheck } = useSWR<BackgroundCheckRecord | null>(
-      [`/v1/people/${employee.id}/background-check`, organizationId],
-      async ([endpoint]) => {
-        const response = await apiClient.get<BackgroundCheckRecord | null>(endpoint, organizationId);
-        if (response.error) throw new Error('Failed to load background check');
-        return response.data ?? null;
-      },
-      { fallbackData: initialBackgroundCheck },
-    );
-
-  const { data: billingStatus, mutate: mutateBillingStatus } = useSWR<BackgroundCheckBillingStatus>(
-    ['/v1/background-check-billing/status', organizationId],
-    async ([endpoint]) => {
-      const response = await apiClient.get<BackgroundCheckBillingStatus>(endpoint, organizationId);
-      if (response.error || !response.data) {
-        throw new Error('Failed to load billing status');
-      }
-      return response.data;
-    },
-    { fallbackData: initialBillingStatus },
-  );
+  const { data: backgroundCheck, mutate: mutateBackgroundCheck } = useBackgroundCheckRecord({
+    employeeId: employee.id,
+    initialBackgroundCheck,
+    organizationId,
+  });
+  const { data: billingStatus, mutate: mutateBillingStatus } = useBackgroundCheckBillingStatus({
+    initialBillingStatus,
+    organizationId,
+  });
 
   const form = useForm<BackgroundCheckFormValues>({
     resolver: zodResolver(backgroundCheckSchema),
@@ -94,17 +85,7 @@ export function EmployeeBackgroundCheck({
   const canRequest = hasPermission('member', 'update');
   const canManageBilling = hasPermission('organization', 'update');
   const hasPaymentMethod = billingStatus?.hasPaymentMethod === true;
-  const backgroundCheckSubscription = (billingStatus?.subscriptions ?? []).find(
-    (subscription) =>
-      getBillingSkuProductKey(subscription.skuKey) === 'background_check' &&
-      (subscription.status === 'active' || subscription.status === 'trialing'),
-  );
-  const backgroundChecksRemaining = backgroundCheckSubscription
-    ? Math.max(
-        backgroundCheckSubscription.includedQuantity - backgroundCheckSubscription.usedQuantity,
-        0,
-      )
-    : null;
+  const backgroundChecksRemaining = getBackgroundChecksRemaining({ billingStatus });
   const hasBackgroundCheckAllowance =
     backgroundChecksRemaining !== null && backgroundChecksRemaining > 0;
   const visibleWizardStep = hasBackgroundCheckAllowance ? 'details' : wizardStep;
@@ -137,6 +118,7 @@ export function EmployeeBackgroundCheck({
 
       if (response.error || !response.data) {
         if (response.status === 402) {
+          writePendingRequest(values);
           toast.error('Choose or upgrade a background check plan to continue.');
           router.push(`/${organizationId}/settings/billing/add-ons/background-checks`);
           return false;
@@ -153,7 +135,14 @@ export function EmployeeBackgroundCheck({
       clearPendingRequest();
       return true;
     },
-    [clearPendingRequest, employee.id, mutateBackgroundCheck, organizationId, router],
+    [
+      clearPendingRequest,
+      employee.id,
+      mutateBackgroundCheck,
+      organizationId,
+      router,
+      writePendingRequest,
+    ],
   );
 
   useEffect(() => {
@@ -183,35 +172,31 @@ export function EmployeeBackgroundCheck({
         { revalidate: true },
       );
 
-      const pendingRequest = readPendingBackgroundCheckRequest({ organizationId, memberId: employee.id });
+      const pendingRequest = readPendingBackgroundCheckRequest({
+        organizationId,
+        memberId: employee.id,
+      });
       if (!pendingRequest) {
         router.replace(pathname, { scroll: false });
         return;
       }
 
       form.reset({
-        employeeName: form.getValues('employeeName') || employee.user.name || '',
-        employeeEmail: form.getValues('employeeEmail') || '',
+        employeeName: pendingRequest.employeeName,
+        employeeEmail: pendingRequest.employeeEmail,
         requesterNotes: pendingRequest.requesterNotes ?? '',
       });
       router.replace(pathname, { scroll: false });
     })();
-  }, [
-    form,
-    employee.id,
-    employee.user.name,
-    mutateBillingStatus,
-    organizationId,
-    pathname,
-    router,
-    searchParams,
-  ]);
+  }, [form, employee.id, mutateBillingStatus, organizationId, pathname, router, searchParams]);
 
   const handleOpenBilling = async (values?: BackgroundCheckFormValues) => {
     setIsOpeningBilling(true);
     if (values) writePendingRequest(values);
 
-    const returnPath = hasPaymentMethod ? `/${organizationId}/people/${employee.id}` : `/${organizationId}/settings/billing`;
+    const returnPath = hasPaymentMethod
+      ? `/${organizationId}/people/${employee.id}`
+      : `/${organizationId}/settings/billing`;
     const returnUrl = `${window.location.origin}${returnPath}`;
     const endpoint = hasPaymentMethod
       ? '/v1/background-check-billing/portal'
@@ -298,9 +283,7 @@ export function EmployeeBackgroundCheck({
         employeeName={employee.user.name ?? employee.user.email}
         organizationId={organizationId}
         onUploaded={async (uploadedBackgroundCheck) => {
-          await mutateBackgroundCheck(uploadedBackgroundCheck, {
-            revalidate: false,
-          });
+          await mutateBackgroundCheck(uploadedBackgroundCheck, { revalidate: false });
         }}
       />
     </>

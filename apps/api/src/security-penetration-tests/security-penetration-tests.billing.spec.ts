@@ -1,4 +1,5 @@
 import { db } from '@db';
+import { HttpException, HttpStatus } from '@nestjs/common';
 import type { BillingEntitlementsService } from '../billing/billing-entitlements.service';
 import type { PentestCreditsService } from './pentest-credits.service';
 import { SecurityPenetrationTestsService } from './security-penetration-tests.service';
@@ -153,6 +154,34 @@ describe('SecurityPenetrationTestsService billing usage', () => {
         action: 'pentest_create_blocked',
         metadata: expect.objectContaining({
           reason: 'pentest_subscription_required',
+        }),
+      }),
+    );
+    expect(mockMacedPentestsCreate).not.toHaveBeenCalled();
+  });
+
+  it('preserves exhausted subscription reasons from string payment errors', async () => {
+    billingEntitlements.tryConsumeIncludedUsageForProduct.mockRejectedValue(
+      new HttpException(
+        'pentest_subscription_exhausted',
+        HttpStatus.PAYMENT_REQUIRED,
+      ),
+    );
+
+    await expect(
+      service.createReport('org_123', {
+        targetUrl: 'https://app.example.com',
+      }),
+    ).rejects.toMatchObject({
+      status: 402,
+    });
+
+    expect(credits.writePentestAuditEntry).toHaveBeenCalledWith(
+      expect.objectContaining({
+        organizationId: 'org_123',
+        action: 'pentest_create_blocked',
+        metadata: expect.objectContaining({
+          reason: 'pentest_subscription_exhausted',
         }),
       }),
     );

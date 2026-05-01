@@ -1,5 +1,5 @@
 import { db } from '@db';
-import { getBillingSkuProductKey, type BillingSkuKey } from '@trycompai/billing';
+import { getBillingSkuProductKey } from '@trycompai/billing';
 import type { BillingUsageRow } from './billing.types';
 
 type SubscriptionSummary = {
@@ -73,7 +73,7 @@ export async function listBillingUsageRows(params: {
       return toBillingUsageRow({
         id: request.id,
         service: 'Background Check',
-        skuKey: backgroundCheckSku,
+        skuKey: usage?.skuKey ?? backgroundCheckSku,
         details: `${request.employeeName} (${request.employeeEmail})`,
         status: formatStatus(request.status),
         billingType: formatBillingType(
@@ -92,7 +92,7 @@ export async function listBillingUsageRows(params: {
       return toBillingUsageRow({
         id: run.id,
         service: 'Penetration Test',
-        skuKey: pentestSku,
+        skuKey: usage?.skuKey ?? pentestSku,
         details: run.providerRunId,
         status: 'Created',
         billingType: usage
@@ -113,7 +113,7 @@ export async function listBillingUsageRows(params: {
 function toBillingUsageRow(params: {
   id: string;
   service: BillingUsageRow['service'];
-  skuKey: BillingSkuKey;
+  skuKey: string;
   details: string;
   status: string;
   billingType: string;
@@ -122,11 +122,13 @@ function toBillingUsageRow(params: {
   subscriptions: SubscriptionSummary[];
 }): BillingUsageRow {
   const productKey = getBillingSkuProductKey(params.skuKey);
-  const subscription = params.subscriptions.find((item) =>
-    productKey
-      ? getBillingSkuProductKey(item.skuKey) === productKey
-      : item.skuKey === params.skuKey,
-  );
+  const subscription =
+    params.subscriptions.find((item) => item.skuKey === params.skuKey) ??
+    params.subscriptions.find((item) =>
+      productKey
+        ? getBillingSkuProductKey(item.skuKey) === productKey
+        : item.skuKey === params.skuKey,
+    );
   const remaining = subscription
     ? Math.max(subscription.includedQuantity - subscription.usedQuantity, 0)
     : null;

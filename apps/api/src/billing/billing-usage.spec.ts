@@ -125,4 +125,54 @@ describe('listBillingUsageRows', () => {
       }),
     );
   });
+
+  it('uses the usage event sku when multiple subscriptions share a product', async () => {
+    backgroundCheckFindMany.mockResolvedValue([
+      {
+        id: 'bcr_2',
+        memberId: 'mem_2',
+        employeeName: 'Grace Hopper',
+        employeeEmail: 'grace@example.com',
+        status: 'completed',
+        stripePaymentStatus: 'succeeded',
+        createdAt: new Date('2026-04-30T12:00:00.000Z'),
+        updatedAt: new Date('2026-04-30T12:05:00.000Z'),
+      },
+    ]);
+    pentestRunFindMany.mockResolvedValue([]);
+    billingUsageEventFindMany.mockResolvedValue([
+      {
+        skuKey: 'background_checks_monthly_10',
+        eventType: 'consume',
+        sourceResourceId: 'mem_2',
+        stripeInvoiceId: null,
+      },
+    ]);
+
+    const rows = await listBillingUsageRows({
+      organizationId: 'org_1',
+      subscriptions: [
+        {
+          skuKey: 'background_checks_monthly_3',
+          includedQuantity: 3,
+          usedQuantity: 3,
+          currentPeriodEnd: new Date('2026-05-30T00:00:00.000Z'),
+        },
+        {
+          skuKey: 'background_checks_monthly_10',
+          includedQuantity: 10,
+          usedQuantity: 4,
+          currentPeriodEnd: new Date('2026-05-30T00:00:00.000Z'),
+        },
+      ],
+    });
+
+    expect(rows[0]).toEqual(
+      expect.objectContaining({
+        skuKey: 'background_checks_monthly_10',
+        subscriptionRemaining: 6,
+        subscriptionIncluded: 10,
+      }),
+    );
+  });
 });

@@ -142,9 +142,7 @@ describe('EmployeeBackgroundCheck', () => {
 
     expect(screen.getByText('Employee Background Check')).toBeInTheDocument();
     expect(screen.getByLabelText('Personal email')).toBeInTheDocument();
-    expect(
-      screen.getByText('2 background checks remaining this period.'),
-    ).toBeInTheDocument();
+    expect(screen.getByText('2 background checks remaining this period.')).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /back/i })).not.toBeInTheDocument();
   });
 
@@ -201,7 +199,7 @@ describe('EmployeeBackgroundCheck', () => {
     ).toBeNull();
   });
 
-  it('stores the pending check and routes to plans when allowance disappears', async () => {
+  it('stores the pending check details and routes to plans when allowance disappears', async () => {
     const user = userEvent.setup();
     vi.mocked(apiClient.post).mockResolvedValueOnce({
       error: 'No credits',
@@ -221,8 +219,14 @@ describe('EmployeeBackgroundCheck', () => {
         '/org_1/settings/billing/add-ons/background-checks',
       );
     });
-    expect(
-      window.sessionStorage.getItem('background-check:org_1:mem_1:pending-request'),
-    ).toBeNull();
+    expect(window.sessionStorage.getItem('background-check:org_1:mem_1:pending-request')).toBe(
+      JSON.stringify({
+        organizationId: 'org_1',
+        memberId: 'mem_1',
+        employeeName: 'Ada Lovelace',
+        employeeEmail: 'ada@example.com',
+        requesterNotes: 'Recruiting requested an expedited check.',
+      }),
+    );
   });
 });

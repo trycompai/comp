@@ -39,9 +39,11 @@ export function BillingSubscriptionPlans({
       {skuKeys.map((skuKey) => {
         const sku = getBillingSku({ skuKey });
         const subscription = subscriptions.find(
-          (item) => getBillingSkuProductKey(item.skuKey) === sku.productKey,
+          (item) =>
+            getBillingSkuProductKey(item.skuKey) === sku.productKey &&
+            (item.status === 'active' || item.status === 'trialing'),
         );
-        const active = subscription?.status === 'active' || subscription?.status === 'trialing';
+        const active = subscription !== undefined;
         const current = active && subscription?.skuKey === skuKey;
         const included = sku.includedUsage;
         const remaining = subscription

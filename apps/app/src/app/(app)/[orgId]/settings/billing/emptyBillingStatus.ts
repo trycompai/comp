@@ -10,8 +10,8 @@ export const emptyBillingStatus: BackgroundCheckBillingStatus = {
   invoices: [],
   subscriptions: [],
   trialEligibility: {
-    pentest: true,
-    background_check: true,
+    pentest: false,
+    background_check: false,
   },
   usageRows: [],
   preferences: null,

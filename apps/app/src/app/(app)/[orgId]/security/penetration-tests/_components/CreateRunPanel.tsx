@@ -70,6 +70,7 @@ export function CreateRunPanel({
     <div className="min-h-0 overflow-y-auto">
       <div className="mx-auto w-full max-w-[680px] px-6 py-10">
         <form
+          noValidate
           onSubmit={(e) => void handleSubmit(e)}
           className="rounded-[var(--radius)] border border-border bg-card p-8 shadow-[0_24px_48px_-12px_rgba(0,0,0,0.12)]"
         >

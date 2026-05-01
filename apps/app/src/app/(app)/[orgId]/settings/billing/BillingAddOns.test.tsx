@@ -199,4 +199,35 @@ describe('billing add-ons', () => {
       'org_1',
     );
   });
+
+  it('ignores inactive same-product subscriptions when selecting the current plan', () => {
+    renderAddOnPlans({
+      addOnSlug: 'penetration-tests',
+      subscriptions: [
+        {
+          skuKey: 'pentest_monthly_1',
+          status: 'canceled',
+          includedQuantity: 1,
+          usedQuantity: 1,
+          currentPeriodStart: '2026-03-30T00:00:00.000Z',
+          currentPeriodEnd: '2026-04-30T00:00:00.000Z',
+          cancelAtPeriodEnd: false,
+        },
+        {
+          skuKey: 'pentest_monthly_3',
+          status: 'active',
+          includedQuantity: 3,
+          usedQuantity: 1,
+          currentPeriodStart: '2026-04-30T00:00:00.000Z',
+          currentPeriodEnd: '2026-05-30T00:00:00.000Z',
+          cancelAtPeriodEnd: false,
+        },
+      ],
+      trialEligibility: { pentest: false, background_check: true },
+    });
+
+    expect(screen.getByRole('button', { name: /current plan/i })).toBeDisabled();
+    expect(screen.getByText(/2 of 3.*remaining this period/i)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /switch to monthly scans/i })).toBeInTheDocument();
+  });
 });
