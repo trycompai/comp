@@ -242,7 +242,7 @@ describe('MemberRow device status', () => {
 
     expect(screen.queryByText(/background check/i)).not.toBeInTheDocument();
     expect(
-      screen.queryByLabelText(/background check verified/i),
+      screen.queryByLabelText('Employee has completed a background check'),
     ).not.toBeInTheDocument();
   });
 });

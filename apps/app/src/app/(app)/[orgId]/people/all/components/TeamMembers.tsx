@@ -80,21 +80,23 @@ export async function TeamMembers(props: TeamMembersProps) {
   const employeeMembers = await filterComplianceMembers(members, organizationId);
   const complianceMemberIds = employeeMembers.map((m) => m.id);
 
-  const orgFlags = await db.organization.findUnique({
-    where: { id: organizationId },
-    select: {
-      securityTrainingStepEnabled: true,
-      backgroundCheckStepEnabled: true,
-    },
-  });
-  const backgroundCheckStepEnabled = orgFlags?.backgroundCheckStepEnabled === true;
-
-  if (employeeMembers.length > 0) {
-    const hipaaInstance = await db.frameworkInstance.findFirst({
+  const [orgFlags, hipaaInstance] = await Promise.all([
+    db.organization.findUnique({
+      where: { id: organizationId },
+      select: {
+        securityTrainingStepEnabled: true,
+        backgroundCheckStepEnabled: true,
+      },
+    }),
+    db.frameworkInstance.findFirst({
       where: { organizationId, framework: { name: 'HIPAA' } },
       select: { id: true },
-    });
-    const hasHipaaFramework = !!hipaaInstance;
+    }),
+  ]);
+  const backgroundCheckStepEnabled = orgFlags?.backgroundCheckStepEnabled === true;
+  const hasHipaaFramework = !!hipaaInstance;
+
+  if (employeeMembers.length > 0) {
 
     const policies = await db.policy.findMany({
       where: {
