@@ -309,6 +309,24 @@ describe('EmployeeBackgroundCheck', () => {
     ).not.toBeInTheDocument();
   });
 
+  it('does not fetch background-check or billing data when bypassed', async () => {
+    render(
+      <EmployeeBackgroundCheck
+        employee={employee}
+        organizationId="org_1"
+        initialBackgroundCheck={null}
+        initialBillingStatus={{ hasPaymentMethod: false, setupAt: null }}
+        backgroundCheckStepEnabled={false}
+      />,
+    );
+
+    // Allow any pending microtasks/SWR scheduling to settle.
+    await Promise.resolve();
+    await Promise.resolve();
+
+    expect(apiClient.get).not.toHaveBeenCalled();
+  });
+
   it('shows an update payment dialog when payment fails', async () => {
     const user = userEvent.setup();
     vi.mocked(apiClient.post)

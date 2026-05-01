@@ -56,7 +56,9 @@ export function EmployeeBackgroundCheck({
   const { hasPermission } = usePermissions();
 
   const { data: backgroundCheck, mutate: mutateBackgroundCheck } = useSWR<BackgroundCheckRecord | null>(
-      [`/v1/people/${employee.id}/background-check`, organizationId],
+      backgroundCheckStepEnabled
+        ? [`/v1/people/${employee.id}/background-check`, organizationId]
+        : null,
       async ([endpoint]) => {
         const response = await apiClient.get<BackgroundCheckRecord | null>(endpoint, organizationId);
         if (response.error) throw new Error('Failed to load background check');
@@ -66,7 +68,9 @@ export function EmployeeBackgroundCheck({
     );
 
   const { data: billingStatus, mutate: mutateBillingStatus } = useSWR<BackgroundCheckBillingStatus>(
-    ['/v1/background-check-billing/status', organizationId],
+    backgroundCheckStepEnabled
+      ? ['/v1/background-check-billing/status', organizationId]
+      : null,
     async ([endpoint]) => {
       const response = await apiClient.get<BackgroundCheckBillingStatus>(endpoint, organizationId);
       if (response.error || !response.data) {
