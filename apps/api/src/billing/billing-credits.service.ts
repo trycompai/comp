@@ -3,6 +3,7 @@ import { Prisma, db } from '@db';
 import type { BillingProductKey, BillingSkuKey } from '@trycompai/billing';
 import { isUniqueConstraintError } from './billing-entitlements.types';
 import {
+  assertCreditEventType,
   assertProductKey,
   type BillingCreditBalanceSummary,
   validateCreditInput,
@@ -39,7 +40,7 @@ export class BillingCreditsService {
       id: event.id,
       productKey: assertProductKey(event.productKey),
       skuKey: event.skuKey,
-      eventType: event.eventType,
+      eventType: assertCreditEventType(event.eventType),
       quantity: event.quantity,
       source: event.source,
       note: event.note,

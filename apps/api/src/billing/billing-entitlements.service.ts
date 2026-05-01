@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Optional } from '@nestjs/common';
 import { Prisma, db } from '@db';
 import {
   getBillingSkuKeysForProduct,
@@ -18,7 +18,7 @@ import {
 
 @Injectable()
 export class BillingEntitlementsService {
-  constructor(private readonly credits?: BillingCreditsService) {}
+  constructor(@Optional() private readonly credits?: BillingCreditsService) {}
 
   async tryConsumeIncludedUsageForProduct(params: {
     organizationId: string;

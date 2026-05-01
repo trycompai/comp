@@ -22,7 +22,6 @@ export async function findOrCreateBillingCustomer(params: {
   const customer = await stripe.customers.create(
     {
       name: organization.name,
-      email: params.customerEmail,
       metadata: { organizationId: organization.id },
     },
     {
@@ -39,6 +38,11 @@ export async function findOrCreateBillingCustomer(params: {
         stripeCustomerId: customer.id,
       },
     });
+    if (params.customerEmail) {
+      await stripe.customers.update(customer.id, {
+        email: params.customerEmail,
+      });
+    }
   } catch (error) {
     if (!isUniqueConstraintError(error)) throw error;
     const raced = await db.organizationBilling.findUniqueOrThrow({

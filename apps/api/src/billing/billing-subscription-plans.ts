@@ -50,6 +50,7 @@ export async function changeSubscriptionPlan(params: {
     stripeSubscriptionItemId: string;
     currentPeriodStart: Date | null;
     currentPeriodEnd: Date | null;
+    updatedAt: Date;
   };
   skuKey: BillingSkuKey;
   stripePriceId: string;
@@ -62,7 +63,8 @@ export async function changeSubscriptionPlan(params: {
     currentSkuKey: params.subscription.skuKey,
     nextSkuKey: params.skuKey,
   });
-  const shouldEndTrial = isUpgrade && params.subscription.stripeStatus === 'trialing';
+  const shouldEndTrial =
+    isUpgrade && params.subscription.stripeStatus === 'trialing';
   const updateParams = {
     items: [
       isUpgrade
@@ -101,7 +103,9 @@ export async function changeSubscriptionPlan(params: {
           'subscription-plan-change-v2',
           params.organizationId,
           params.subscription.stripeSubscriptionItemId,
+          params.subscription.skuKey,
           params.skuKey,
+          params.subscription.updatedAt.getTime(),
         ].join(':'),
       },
     );
