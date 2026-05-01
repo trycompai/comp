@@ -122,7 +122,7 @@ export function estimateRuntime(params: {
     params.checks.reduce((sum, check) => sum + checkWeights[check], 0) *
     evidenceMultipliers[params.evidenceLevel];
   const min = Math.max(5, Math.floor(total * 0.7));
-  const max = Math.ceil(total * 1.5);
+  const max = Math.max(min, Math.ceil(total * 1.5));
 
   return `${formatRuntimeMinutes(min)}-${formatRuntimeMinutes(max)}`;
 }
