@@ -28,10 +28,13 @@ export function EmptyState({
    * `'kickoff'` — the wide centered panel ("Let AI kick this off") shown when
    *   plan and tasks are both empty. Has a primary "Draft plan & suggest
    *   links" button plus a "Start from scratch" escape hatch.
+   * `'kickoff-with-plan'` — same wide panel, copy adapted for the case where
+   *   a plan already exists ("AI will only suggest tasks/controls; your plan
+   *   stays as-is unless you regenerate").
    * `'default'` — the smaller per-column empty CTA shown when the user has a
    *   plan but no linked tasks yet.
    */
-  variant?: 'default' | 'kickoff';
+  variant?: 'default' | 'kickoff' | 'kickoff-with-plan';
 }) {
   // Adapt kickoff copy based on whether a plan already exists. The same
   // wide-panel layout applies in both cases.

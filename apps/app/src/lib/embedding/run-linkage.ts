@@ -74,6 +74,14 @@ export interface RunLinkageOutput {
 }
 
 const RISK_QUERY_TOP_K = 25;
+// In review-before-apply mode the user picks from the suggested list, so we
+// favor recall over precision: lower threshold + larger top-K so genuinely
+// related tasks (e.g. backup/DR work for a backup-failure risk) surface even
+// when their cosine similarity sits in the 0.4-0.6 band that dominates
+// `text-embedding-3-small` for compliance prose.
+const SUGGESTIONS_QUERY_TOP_K = 50;
+const SUGGESTIONS_THRESHOLD = 0.4;
+const SUGGESTIONS_TOP_K = 15;
 
 function riskQueryText(risk: {
   title: string;
@@ -228,8 +236,18 @@ export async function runLinkage({
     where: { organizationId, ...(vendorId ? { id: vendorId } : {}) },
     select: { id: true, name: true, description: true, category: true },
   });
+  // Scope tasks to purchased-framework coverage. `Control.archivedAt` is set
+  // when the org's framework subscription no longer references the control, so
+  // an unarchived control implies a currently-purchased framework. Custom user
+  // tasks with no controls are kept (still org-owned and worth suggesting).
   const tasks = await db.task.findMany({
-    where: { organizationId },
+    where: {
+      organizationId,
+      OR: [
+        { controls: { some: { archivedAt: null } } },
+        { controls: { none: {} } },
+      ],
+    },
     select: { id: true, title: true, description: true, department: true },
   });
 
@@ -314,11 +332,14 @@ export async function runLinkage({
     const similar = await findSimilarTasks({
       organizationId,
       queryText: riskQueryText(risk),
-      topK: RISK_QUERY_TOP_K,
+      topK: suggestionsOnly ? SUGGESTIONS_QUERY_TOP_K : RISK_QUERY_TOP_K,
     });
     const links = linkSuggestions({
       source: { department: risk.department ?? undefined },
       candidates: similar.map((s) => ({ id: s.id, score: s.score, department: s.department })),
+      ...(suggestionsOnly
+        ? { threshold: SUGGESTIONS_THRESHOLD, topK: SUGGESTIONS_TOP_K }
+        : {}),
     });
     if (links.length === 0) continue;
 
@@ -350,11 +371,14 @@ export async function runLinkage({
     const similar = await findSimilarTasks({
       organizationId,
       queryText: vendorQueryText(vendor),
-      topK: RISK_QUERY_TOP_K,
+      topK: suggestionsOnly ? SUGGESTIONS_QUERY_TOP_K : RISK_QUERY_TOP_K,
     });
     const links = linkSuggestions({
       source: {},
       candidates: similar.map((s) => ({ id: s.id, score: s.score, department: s.department })),
+      ...(suggestionsOnly
+        ? { threshold: SUGGESTIONS_THRESHOLD, topK: SUGGESTIONS_TOP_K }
+        : {}),
     });
     if (links.length === 0) continue;
 
