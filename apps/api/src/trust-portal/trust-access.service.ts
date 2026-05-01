@@ -281,15 +281,54 @@ export class TrustAccessService {
         },
       },
       include: {
-        accessRequest: true,
+        accessRequest: {
+          include: {
+            organization: true,
+          },
+        },
       },
     });
 
     if (existingGrant) {
+      // Reuse the reclaim flow: rotate the access token if needed and email a
+      // fresh portal link to the requester so they don't need a separate
+      // "Reclaim access" step.
+      let accessToken = existingGrant.accessToken;
+      let accessTokenExpiresAt = existingGrant.accessTokenExpiresAt;
+
+      if (
+        !accessToken ||
+        !accessTokenExpiresAt ||
+        accessTokenExpiresAt < new Date()
+      ) {
+        accessToken = this.generateToken(32);
+        accessTokenExpiresAt = new Date();
+        accessTokenExpiresAt.setHours(accessTokenExpiresAt.getHours() + 24);
+
+        await db.trustAccessGrant.update({
+          where: { id: existingGrant.id },
+          data: { accessToken, accessTokenExpiresAt },
+        });
+      }
+
+      const accessLink = await this.buildPortalAccessUrl({
+        organizationId: trust.organizationId,
+        organizationName: existingGrant.accessRequest.organization.name,
+        accessToken,
+      });
+
+      await this.emailService.sendAccessReclaimEmail({
+        toEmail: dto.email,
+        toName: existingGrant.accessRequest.name,
+        organizationName: existingGrant.accessRequest.organization.name,
+        accessLink,
+        expiresAt: existingGrant.expiresAt,
+      });
+
       return {
         id: existingGrant.id,
         status: 'already_approved',
-        message: 'You already have active access',
+        message: 'A fresh access link was sent to your email',
         grant: {
           expiresAt: existingGrant.expiresAt,
         },
@@ -2280,6 +2319,97 @@ export class TrustAccessService {
 
     // Fallback for non-ASCII only names
     return safeName || 'policy';
+  }
+
+  async downloadPolicyByAccessToken(token: string, policyId: string) {
+    const grant = await this.validateAccessToken(token);
+
+    const policy = await db.policy.findFirst({
+      where: {
+        id: policyId,
+        organizationId: grant.accessRequest.organizationId,
+        status: 'published',
+        isArchived: false,
+        archivedAt: null,
+      },
+      select: {
+        id: true,
+        name: true,
+        content: true,
+        pdfUrl: true,
+        currentVersion: {
+          select: {
+            content: true,
+            pdfUrl: true,
+          },
+        },
+      },
+    });
+
+    if (!policy) {
+      throw new NotFoundException('Policy not found');
+    }
+
+    const effectiveContent = policy.currentVersion?.content ?? policy.content;
+    const effectivePdfUrl = policy.currentVersion?.pdfUrl ?? policy.pdfUrl;
+    const hasUploadedPdf = effectivePdfUrl && effectivePdfUrl.trim() !== '';
+
+    let policyPdfBuffer: Buffer;
+    if (hasUploadedPdf) {
+      try {
+        const rawBuffer =
+          await this.attachmentsService.getObjectBuffer(effectivePdfUrl);
+        policyPdfBuffer = Buffer.from(rawBuffer);
+      } catch (error) {
+        console.warn(
+          `Failed to fetch uploaded PDF for policy ${policy.id}, falling back to content rendering:`,
+          error,
+        );
+        policyPdfBuffer = this.pdfRendererService.renderPoliciesPdfBuffer(
+          [{ name: policy.name, content: effectiveContent }],
+          undefined,
+          grant.accessRequest.organization.primaryColor,
+        );
+      }
+    } else {
+      policyPdfBuffer = this.pdfRendererService.renderPoliciesPdfBuffer(
+        [{ name: policy.name, content: effectiveContent }],
+        undefined,
+        grant.accessRequest.organization.primaryColor,
+      );
+    }
+
+    const docId = `policy-${policy.id}-${Date.now()}`;
+    const watermarked = await this.ndaPdfService.watermarkExistingPdf(
+      policyPdfBuffer,
+      {
+        name: grant.accessRequest.name,
+        email: grant.subjectEmail,
+        docId,
+      },
+    );
+
+    const safeName = this.toSafeFilename(policy.name);
+    const fileName = `${safeName}.pdf`;
+    const key = await this.attachmentsService.uploadToS3(
+      watermarked,
+      `policy-${policy.id}-grant-${grant.id}-${Date.now()}.pdf`,
+      'application/pdf',
+      grant.accessRequest.organizationId,
+      'trust_policy_downloads',
+      `${grant.id}`,
+    );
+
+    const signedUrl =
+      await this.attachmentsService.getPresignedDownloadUrlWithFilename(
+        key,
+        fileName,
+      );
+
+    return {
+      signedUrl,
+      fileName,
+    };
   }
 
   async downloadAllPoliciesAsZipByAccessToken(token: string) {
