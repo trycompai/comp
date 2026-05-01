@@ -164,15 +164,11 @@ async function syncPrimaryTaxId(params: {
     return matchingTaxId;
   }
 
-  for (const existingTaxId of params.existingTaxIds) {
-    await params.stripe.taxIds.del(existingTaxId.id);
-  }
-
   if (!isSupportedTaxIdType(type)) {
     throw new BadRequestException('Unsupported tax ID type.');
   }
 
-  return params.stripe.taxIds.create(
+  const createdTaxId = await params.stripe.taxIds.create(
     {
       type,
       value,
@@ -187,6 +183,12 @@ async function syncPrimaryTaxId(params: {
       ].join(':'),
     },
   );
+
+  for (const existingTaxId of params.existingTaxIds) {
+    await params.stripe.taxIds.del(existingTaxId.id);
+  }
+
+  return createdTaxId;
 }
 
 async function listCustomerTaxIds(params: {

@@ -1,4 +1,3 @@
-import { randomUUID } from 'node:crypto';
 import { NotFoundException } from '@nestjs/common';
 import { db, Prisma } from '@db';
 import type { BillingSkuKey } from '@trycompai/billing';
@@ -49,6 +48,7 @@ export async function createAdminSubscription(params: {
   skuKey: BillingSkuKey;
   stripePriceId: string;
   includedQuantity: number;
+  idempotencyKey: string;
   stripeService: StripeService;
   entitlements: BillingEntitlementsService;
 }) {
@@ -66,12 +66,7 @@ export async function createAdminSubscription(params: {
         expand: ['items.data.price'],
       },
       {
-        idempotencyKey: [
-          'admin-subscription-create',
-          params.organizationId,
-          params.skuKey,
-          randomUUID(),
-        ].join(':'),
+        idempotencyKey: params.idempotencyKey,
       },
     );
   const item = subscription.items.data[0];

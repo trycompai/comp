@@ -20,7 +20,8 @@ jest.mock('@db', () => ({
 
 type MockTx = {
   organizationBillingSubscription: {
-    upsert: jest.Mock;
+    create: jest.Mock;
+    findUnique: jest.Mock;
     updateMany: jest.Mock;
   };
   billingUsageEvent: {
@@ -48,8 +49,9 @@ describe('BillingEntitlementsService', () => {
     jest.clearAllMocks();
     tx = {
       organizationBillingSubscription: {
-        upsert: jest.fn(),
-        updateMany: jest.fn(),
+        create: jest.fn(),
+        findUnique: jest.fn(),
+        updateMany: jest.fn().mockResolvedValue({ count: 1 }),
       },
       billingUsageEvent: {
         create: jest.fn(),
@@ -60,14 +62,15 @@ describe('BillingEntitlementsService', () => {
     mockedDb.billingUsageEvent.findFirst.mockResolvedValue(null);
     mockedDb.billingUsageEvent.findUnique.mockResolvedValue(null);
     mockedDb.$transaction.mockImplementation(
-      (callback: (tx: MockTx) => Promise<void>) => callback(tx),
+      (callback: (tx: MockTx) => Promise<unknown>) => callback(tx),
     );
     mockedDb.billingAuditEvent.create.mockResolvedValue({});
     service = new BillingEntitlementsService();
   });
 
   it('applies same-period subscription updates that shorten currentPeriodEnd', async () => {
-    mockedDb.organizationBillingSubscription.findUnique.mockResolvedValue({
+    tx.organizationBillingSubscription.findUnique.mockResolvedValue({
+      id: 'obs_1',
       stripeSubscriptionItemId: 'si_1',
       currentPeriodStart: new Date('2026-04-01T00:00:00.000Z'),
       currentPeriodEnd: new Date('2026-05-01T00:00:00.000Z'),
@@ -88,12 +91,84 @@ describe('BillingEntitlementsService', () => {
       stripeEventId: 'evt_1',
     });
 
-    expect(tx.organizationBillingSubscription.upsert).toHaveBeenCalledWith(
+    expect(tx.organizationBillingSubscription.updateMany).toHaveBeenCalledWith(
       expect.objectContaining({
-        update: expect.not.objectContaining({ usedQuantity: 0 }),
+        where: expect.objectContaining({
+          id: 'obs_1',
+          currentPeriodStart: new Date('2026-04-01T00:00:00.000Z'),
+        }),
+        data: expect.not.objectContaining({ usedQuantity: 0 }),
       }),
     );
     expect(tx.billingUsageEvent.create).not.toHaveBeenCalled();
+  });
+
+  it('retries without resetting usage when another sync already advanced the period', async () => {
+    tx.organizationBillingSubscription.findUnique
+      .mockResolvedValueOnce({
+        id: 'obs_1',
+        stripeSubscriptionItemId: 'si_1',
+        currentPeriodStart: new Date('2026-04-01T00:00:00.000Z'),
+        currentPeriodEnd: new Date('2026-05-01T00:00:00.000Z'),
+      })
+      .mockResolvedValueOnce({
+        id: 'obs_1',
+        stripeSubscriptionItemId: 'si_1',
+        currentPeriodStart: new Date('2026-05-01T00:00:00.000Z'),
+        currentPeriodEnd: new Date('2026-06-01T00:00:00.000Z'),
+      });
+    tx.organizationBillingSubscription.updateMany
+      .mockResolvedValueOnce({ count: 0 })
+      .mockResolvedValueOnce({ count: 1 });
+
+    await service.syncSubscriptionItem({
+      organizationId: 'org_1',
+      skuKey: 'pentest_monthly_5',
+      stripeSubscriptionId: 'sub_1',
+      stripeSubscriptionItemId: 'si_1',
+      stripePriceId: 'price_1',
+      stripeStatus: 'active',
+      currentPeriodStart: new Date('2026-05-01T00:00:00.000Z'),
+      currentPeriodEnd: new Date('2026-06-01T00:00:00.000Z'),
+      includedQuantity: 5,
+      cancelAtPeriodEnd: false,
+      canceledAt: null,
+      stripeEventId: 'evt_2',
+    });
+
+    expect(
+      tx.organizationBillingSubscription.updateMany,
+    ).toHaveBeenNthCalledWith(
+      1,
+      expect.objectContaining({
+        where: {
+          id: 'obs_1',
+          currentPeriodStart: new Date('2026-04-01T00:00:00.000Z'),
+        },
+        data: expect.objectContaining({ usedQuantity: 0 }),
+      }),
+    );
+    expect(
+      tx.organizationBillingSubscription.updateMany,
+    ).toHaveBeenNthCalledWith(
+      2,
+      expect.objectContaining({
+        where: {
+          id: 'obs_1',
+          currentPeriodStart: new Date('2026-05-01T00:00:00.000Z'),
+        },
+        data: expect.not.objectContaining({ usedQuantity: 0 }),
+      }),
+    );
+    expect(tx.billingUsageEvent.create).not.toHaveBeenCalled();
+    expect(mockedDb.billingAuditEvent.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          eventType: 'subscription_synced',
+          skuKey: 'pentest_monthly_5',
+        }),
+      }),
+    );
   });
 
   it('consumes the active subscription for a product family', async () => {

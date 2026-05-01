@@ -209,6 +209,9 @@ export class AdminBillingService {
         item.stripeStatus !== 'canceled' &&
         getProductFromSku(item.skuKey) === sku.productKey,
     );
+    const latestProductSubscription = subscriptions.find(
+      (item) => getProductFromSku(item.skuKey) === sku.productKey,
+    );
     if (
       current &&
       isDowngrade({
@@ -248,6 +251,13 @@ export class AdminBillingService {
         skuKey: sku.key,
         stripePriceId: sku.stripePriceId,
         includedQuantity: sku.includedUsage?.quantity ?? 0,
+        idempotencyKey: [
+          'admin-subscription-create',
+          params.organizationId,
+          sku.key,
+          billing.stripeCustomerId,
+          latestProductSubscription?.stripeSubscriptionId ?? 'none',
+        ].join(':'),
         stripeService: this.stripeService,
         entitlements: this.entitlements,
       });

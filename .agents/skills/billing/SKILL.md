@@ -22,15 +22,15 @@ Comp AI billing is SKU-first and subscription-ready. Stripe is the payment provi
 
 ## Current SKU Shape
 
-- `background_check_one_time`: one-time `$49` background check.
-- `background_checks_monthly_25`: `$249/mo`, includes 25 background checks per month.
-- `pentest_monthly_5`: `$399/mo`, includes 5 penetration-test scans per month.
+- Active background-check subscriptions: `background_checks_monthly_3` ($79/mo, 3 checks), `background_checks_monthly_10` ($199/mo, 10 checks), and `background_checks_monthly_20` ($399/mo, 20 checks).
+- Active penetration-test subscriptions: `pentest_monthly_1` ($299/mo, 1 scan), `pentest_monthly_3` ($499/mo, 3 scans), and `pentest_monthly_5_current` ($899/mo, 5 scans).
+- Deprecated / legacy SKUs remain in the catalog for historical Stripe records: `background_check_one_time`, `background_checks_monthly_25`, `pentest_monthly_4`, `pentest_monthly_5`, and `pentest_monthly_10`.
 
 Live catalog entries should only be added after deliberate live Stripe object creation.
 
 ## Implementation Pattern
 
-1. Add or update the SKU in `packages/billing/src/catalog.ts`.
+1. Add or update SKU definitions and Stripe IDs in `packages/billing/src/index.ts` and `packages/billing/src/sku-definitions.ts`.
 2. Store Stripe IDs in the catalog by environment rather than adding new env vars.
 3. Create subscriptions through Stripe Checkout `mode: subscription`.
 4. Use the shared Stripe customer default payment method unless the product explicitly needs overrides.

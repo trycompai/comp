@@ -11,8 +11,9 @@ jest.mock('@db', () => ({
   },
 }));
 
-const organizationBillingFindUnique = db.organizationBilling
-  .findUnique as unknown as jest.Mock;
+const mockedDb = db as unknown as {
+  organizationBilling: { findUnique: jest.Mock };
+};
 
 function mockStripeService(client: unknown): StripeService {
   return {
@@ -54,7 +55,7 @@ function createCustomer(): Stripe.Customer {
 describe('updateBillingPreferences', () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    organizationBillingFindUnique.mockResolvedValue({
+    mockedDb.organizationBilling.findUnique.mockResolvedValue({
       stripeCustomerId: 'cus_1',
     });
   });
@@ -166,7 +167,7 @@ describe('updateBillingPreferences', () => {
     );
   });
 
-  it('deletes all stale tax IDs when replacing tax details', async () => {
+  it('creates the replacement tax ID before deleting stale tax IDs', async () => {
     const customersUpdate = jest.fn().mockResolvedValue(createCustomer());
     const taxIdsDelete = jest.fn().mockResolvedValue({});
     const taxIdsCreate = jest.fn().mockResolvedValue({
@@ -212,5 +213,50 @@ describe('updateBillingPreferences', () => {
     expect(taxIdsDelete).toHaveBeenCalledWith('txi_old_1');
     expect(taxIdsDelete).toHaveBeenCalledWith('txi_old_2');
     expect(taxIdsCreate).toHaveBeenCalled();
+    expect(taxIdsCreate.mock.invocationCallOrder[0]).toBeLessThan(
+      taxIdsDelete.mock.invocationCallOrder[0],
+    );
+  });
+
+  it('keeps existing tax IDs when Stripe rejects the replacement tax ID', async () => {
+    const customersUpdate = jest.fn().mockResolvedValue(createCustomer());
+    const taxIdsDelete = jest.fn().mockResolvedValue({});
+    const taxIdsCreate = jest
+      .fn()
+      .mockRejectedValue(new Error('invalid tax id'));
+    const taxIdsList = jest.fn().mockResolvedValue({
+      data: [{ id: 'txi_old_1', type: 'gb_vat', value: 'GB111111111' }],
+      has_more: false,
+    });
+
+    await expect(
+      updateBillingPreferences({
+        stripeService: mockStripeService({
+          customers: { update: customersUpdate },
+          taxIds: {
+            list: taxIdsList,
+            create: taxIdsCreate,
+            del: taxIdsDelete,
+          },
+        }),
+        organizationId: 'org_1',
+        preferences: {
+          companyName: 'Test Company',
+          billingEmail: 'accounts@example.com',
+          purchaseOrder: null,
+          address: {
+            line1: '1 Test Street',
+            line2: null,
+            city: 'London',
+            state: null,
+            postalCode: 'SW1A 1AA',
+            country: 'GB',
+          },
+          taxId: { type: 'gb_vat', value: 'GB987654321' },
+        },
+      }),
+    ).rejects.toThrow('invalid tax id');
+
+    expect(taxIdsDelete).not.toHaveBeenCalled();
   });
 });

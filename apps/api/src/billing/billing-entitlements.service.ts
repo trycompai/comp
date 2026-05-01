@@ -169,104 +169,124 @@ export class BillingEntitlementsService {
   async syncSubscriptionItem(
     params: SyncSubscriptionItemParams,
   ): Promise<void> {
-    const existing = await db.organizationBillingSubscription.findUnique({
-      where: {
-        organizationId_skuKey: {
-          organizationId: params.organizationId,
-          skuKey: params.skuKey,
-        },
-      },
-      select: {
-        stripeSubscriptionItemId: true,
-        currentPeriodStart: true,
-        currentPeriodEnd: true,
-      },
-    });
-    if (
-      existing?.currentPeriodStart &&
-      params.currentPeriodStart &&
-      existing.currentPeriodStart.getTime() >
-        params.currentPeriodStart.getTime()
-    ) {
-      return;
-    }
+    for (let attempt = 0; attempt < 2; attempt += 1) {
+      let syncResult: { didSync: boolean; retry: boolean };
+      try {
+        syncResult = await db.$transaction(async (tx) => {
+          const existing = await tx.organizationBillingSubscription.findUnique({
+            where: {
+              organizationId_skuKey: {
+                organizationId: params.organizationId,
+                skuKey: params.skuKey,
+              },
+            },
+            select: {
+              id: true,
+              currentPeriodStart: true,
+            },
+          });
+          if (
+            existing?.currentPeriodStart &&
+            params.currentPeriodStart &&
+            existing.currentPeriodStart.getTime() >
+              params.currentPeriodStart.getTime()
+          ) {
+            return { didSync: false, retry: false };
+          }
 
-    const resetUsage =
-      !existing ||
-      !sameTime(existing.currentPeriodStart, params.currentPeriodStart);
+          const resetUsage =
+            !existing ||
+            !sameTime(existing.currentPeriodStart, params.currentPeriodStart);
+          if (!existing) {
+            await tx.organizationBillingSubscription.create({
+              data: {
+                organizationId: params.organizationId,
+                skuKey: params.skuKey,
+                stripeSubscriptionId: params.stripeSubscriptionId,
+                stripeSubscriptionItemId: params.stripeSubscriptionItemId,
+                stripePriceId: params.stripePriceId,
+                stripeStatus: params.stripeStatus,
+                currentPeriodStart: params.currentPeriodStart,
+                currentPeriodEnd: params.currentPeriodEnd,
+                includedQuantity: params.includedQuantity,
+                cancelAtPeriodEnd: params.cancelAtPeriodEnd,
+                canceledAt: params.canceledAt,
+              },
+            });
+          } else {
+            const updated = await tx.organizationBillingSubscription.updateMany(
+              {
+                where: {
+                  id: existing.id,
+                  currentPeriodStart: existing.currentPeriodStart,
+                },
+                data: {
+                  stripeSubscriptionId: params.stripeSubscriptionId,
+                  stripeSubscriptionItemId: params.stripeSubscriptionItemId,
+                  stripePriceId: params.stripePriceId,
+                  stripeStatus: params.stripeStatus,
+                  currentPeriodStart: params.currentPeriodStart,
+                  currentPeriodEnd: params.currentPeriodEnd,
+                  includedQuantity: params.includedQuantity,
+                  ...(resetUsage ? { usedQuantity: 0 } : {}),
+                  cancelAtPeriodEnd: params.cancelAtPeriodEnd,
+                  canceledAt: params.canceledAt,
+                },
+              },
+            );
+            if (updated.count === 0) {
+              return { didSync: false, retry: true };
+            }
+          }
 
-    await db.$transaction(async (tx) => {
-      await tx.organizationBillingSubscription.upsert({
-        where: {
-          organizationId_skuKey: {
-            organizationId: params.organizationId,
-            skuKey: params.skuKey,
-          },
-        },
-        create: {
-          organizationId: params.organizationId,
-          skuKey: params.skuKey,
+          if (resetUsage) {
+            const idempotencyKey = [
+              'grant',
+              params.organizationId,
+              params.skuKey,
+              params.stripeSubscriptionItemId,
+              params.currentPeriodStart?.toISOString() ?? 'none',
+              params.currentPeriodEnd?.toISOString() ?? 'none',
+              params.stripeEventId ?? 'manual',
+            ].join(':');
+            await tx.billingUsageEvent.create({
+              data: {
+                organizationId: params.organizationId,
+                skuKey: params.skuKey,
+                eventType: 'grant',
+                quantity: params.includedQuantity,
+                idempotencyKey,
+                stripeEventId: params.stripeEventId,
+                stripeSubscriptionItemId: params.stripeSubscriptionItemId,
+                periodStart: params.currentPeriodStart,
+                periodEnd: params.currentPeriodEnd,
+              },
+            });
+          }
+          return { didSync: true, retry: false };
+        });
+      } catch (error) {
+        if (isUniqueConstraintError(error)) {
+          return;
+        }
+        throw error;
+      }
+      if (!syncResult.didSync && syncResult.retry) continue;
+      if (!syncResult.didSync) return;
+
+      await this.writeAuditEvent({
+        organizationId: params.organizationId,
+        eventType: 'subscription_synced',
+        skuKey: params.skuKey,
+        stripeEventId: params.stripeEventId,
+        metadata: {
           stripeSubscriptionId: params.stripeSubscriptionId,
           stripeSubscriptionItemId: params.stripeSubscriptionItemId,
-          stripePriceId: params.stripePriceId,
           stripeStatus: params.stripeStatus,
-          currentPeriodStart: params.currentPeriodStart,
-          currentPeriodEnd: params.currentPeriodEnd,
-          includedQuantity: params.includedQuantity,
-          cancelAtPeriodEnd: params.cancelAtPeriodEnd,
-          canceledAt: params.canceledAt,
-        },
-        update: {
-          stripeSubscriptionId: params.stripeSubscriptionId,
-          stripeSubscriptionItemId: params.stripeSubscriptionItemId,
-          stripePriceId: params.stripePriceId,
-          stripeStatus: params.stripeStatus,
-          currentPeriodStart: params.currentPeriodStart,
-          currentPeriodEnd: params.currentPeriodEnd,
-          includedQuantity: params.includedQuantity,
-          ...(resetUsage ? { usedQuantity: 0 } : {}),
-          cancelAtPeriodEnd: params.cancelAtPeriodEnd,
-          canceledAt: params.canceledAt,
         },
       });
-
-      if (resetUsage) {
-        const idempotencyKey = [
-          'grant',
-          params.organizationId,
-          params.skuKey,
-          params.stripeSubscriptionItemId,
-          params.currentPeriodStart?.toISOString() ?? 'none',
-          params.currentPeriodEnd?.toISOString() ?? 'none',
-          params.stripeEventId ?? 'manual',
-        ].join(':');
-        await tx.billingUsageEvent.create({
-          data: {
-            organizationId: params.organizationId,
-            skuKey: params.skuKey,
-            eventType: 'grant',
-            quantity: params.includedQuantity,
-            idempotencyKey,
-            stripeEventId: params.stripeEventId,
-            stripeSubscriptionItemId: params.stripeSubscriptionItemId,
-            periodStart: params.currentPeriodStart,
-            periodEnd: params.currentPeriodEnd,
-          },
-        });
-      }
-    });
-
-    await this.writeAuditEvent({
-      organizationId: params.organizationId,
-      eventType: 'subscription_synced',
-      skuKey: params.skuKey,
-      stripeEventId: params.stripeEventId,
-      metadata: {
-        stripeSubscriptionId: params.stripeSubscriptionId,
-        stripeSubscriptionItemId: params.stripeSubscriptionItemId,
-        stripeStatus: params.stripeStatus,
-      },
-    });
+      return;
+    }
   }
 
   async recordOneTimeUsage(params: {

@@ -6,7 +6,7 @@ jest.mock('@db', () => ({
 }));
 
 describe('createAdminSubscription', () => {
-  it('uses a fresh Stripe idempotency key for each create attempt', async () => {
+  it('uses a stable Stripe idempotency key for subscription create retries', async () => {
     const subscription = {
       id: 'sub_1',
       status: 'active',
@@ -31,6 +31,8 @@ describe('createAdminSubscription', () => {
       skuKey: 'pentest_monthly_1',
       stripePriceId: 'price_1',
       includedQuantity: 1,
+      idempotencyKey:
+        'admin-subscription-create:org_1:pentest_monthly_1:cus_1:none',
       stripeService: {
         getClient: () => ({
           subscriptions: { create: subscriptionsCreate },
@@ -44,6 +46,8 @@ describe('createAdminSubscription', () => {
       skuKey: 'pentest_monthly_1',
       stripePriceId: 'price_1',
       includedQuantity: 1,
+      idempotencyKey:
+        'admin-subscription-create:org_1:pentest_monthly_1:cus_1:none',
       stripeService: {
         getClient: () => ({
           subscriptions: { create: subscriptionsCreate },
@@ -54,12 +58,9 @@ describe('createAdminSubscription', () => {
 
     const firstKey = subscriptionsCreate.mock.calls[0][1].idempotencyKey;
     const secondKey = subscriptionsCreate.mock.calls[1][1].idempotencyKey;
-    expect(firstKey).toMatch(
-      /^admin-subscription-create:org_1:pentest_monthly_1:/,
+    expect(firstKey).toBe(
+      'admin-subscription-create:org_1:pentest_monthly_1:cus_1:none',
     );
-    expect(secondKey).toMatch(
-      /^admin-subscription-create:org_1:pentest_monthly_1:/,
-    );
-    expect(firstKey).not.toBe(secondKey);
+    expect(secondKey).toBe(firstKey);
   });
 });
