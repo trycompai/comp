@@ -106,19 +106,26 @@ describe('EmployeeBackgroundCheck', () => {
       initialBillingStatus: { hasPaymentMethod: false, setupAt: null },
     });
 
-    expect(screen.getByText('Streamline background checks now in Comp AI')).toBeInTheDocument();
+    expect(screen.getByText('Employee Background Check')).toBeInTheDocument();
+    expect(screen.getByText('Required for Compliance')).toBeInTheDocument();
     expect(screen.getByText('Full audited report / background check')).toBeInTheDocument();
-    expect(screen.queryByText('Launch pricing')).not.toBeInTheDocument();
-    expect(screen.queryByText('$49')).not.toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /get started/i })).toBeInTheDocument();
+    expect(
+      screen.getByText('Streamline employee background checks with Comp AI.'),
+    ).toBeInTheDocument();
+    expect(screen.getByText('$99')).toBeInTheDocument();
+    expect(screen.getByText('$49 per check')).toBeInTheDocument();
+    expect(screen.queryByText('$49', { selector: '[data-slot=\"badge\"]' })).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /set up billing/i })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /billing settings/i })).toHaveAttribute(
+      'href',
+      '/org_1/settings/billing',
+    );
   });
 
   it('skips the overview when a payment method is already saved', () => {
     renderSection();
 
-    expect(
-      screen.queryByText('Streamline background checks now in Comp AI'),
-    ).not.toBeInTheDocument();
+    expect(screen.getByText('Employee Background Check')).toBeInTheDocument();
     expect(screen.getByLabelText('Personal email')).toBeInTheDocument();
     expect(
       screen.getByText('Your saved card will be charged $49 for this background check.'),
@@ -157,9 +164,13 @@ describe('EmployeeBackgroundCheck', () => {
         'org_1',
       );
     });
+    expect(
+      await screen.findByText(/an invitation has been sent to the employee/i),
+    ).toBeInTheDocument();
+    expect(screen.getByText(/spam or junk folders/i)).toBeInTheDocument();
   });
 
-  it('starts billing setup from Complete when no payment method exists', async () => {
+  it('starts billing setup from the overview when no payment method exists', async () => {
     const user = userEvent.setup();
     vi.mocked(apiClient.post).mockResolvedValueOnce({
       data: {},
@@ -169,16 +180,14 @@ describe('EmployeeBackgroundCheck', () => {
       initialBillingStatus: { hasPaymentMethod: false, setupAt: null },
     });
 
-    await user.click(screen.getByRole('button', { name: /get started/i }));
-    await user.type(screen.getByLabelText('Personal email'), 'ada@example.com');
-    await user.click(screen.getByRole('button', { name: /complete/i }));
+    await user.click(screen.getByRole('button', { name: /set up billing/i }));
 
     await waitFor(() => {
       expect(apiClient.post).toHaveBeenCalledWith(
         '/v1/background-check-billing/setup-session',
         expect.objectContaining({
           successUrl: expect.stringContaining('background_check_billing=success'),
-          cancelUrl: expect.stringContaining('background_check_step=details'),
+          cancelUrl: 'http://localhost:3000/org_1/settings/billing',
         }),
         'org_1',
       );
@@ -186,13 +195,13 @@ describe('EmployeeBackgroundCheck', () => {
     expect(apiClient.post).toHaveBeenCalledWith(
       '/v1/background-check-billing/setup-session',
       expect.objectContaining({
-        successUrl: expect.stringContaining('/org_1/people/mem_1?'),
+        successUrl: expect.stringContaining('/org_1/settings/billing?'),
       }),
       'org_1',
     );
     expect(
       window.sessionStorage.getItem('background-check:org_1:mem_1:pending-request'),
-    ).not.toContain('ada@example.com');
+    ).toBeNull();
   });
 
   it('restores the pending check after Stripe setup before completing it', async () => {

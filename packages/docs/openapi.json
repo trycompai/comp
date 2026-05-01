@@ -6145,6 +6145,46 @@
         ]
       }
     },
+    "/v1/policies/{id}/evidence-tasks": {
+      "get": {
+        "operationId": "PoliciesController_getPolicyEvidenceTasks_v1",
+        "parameters": [
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "description": "Organization ID (required for session auth, optional for API key auth)",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "description": "Policy ID",
+            "schema": {
+              "example": "pol_abc123def456",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Get tasks that serve as evidence for a policy, grouped by control",
+        "tags": [
+          "Policies"
+        ]
+      }
+    },
     "/v1/policies/{id}/regenerate": {
       "post": {
         "operationId": "PoliciesController_regeneratePolicy_v1",
@@ -8957,6 +8997,37 @@
           }
         ],
         "summary": "Delete a task",
+        "tags": [
+          "Tasks"
+        ]
+      }
+    },
+    "/v1/tasks/{taskId}/policies": {
+      "get": {
+        "operationId": "TasksController_getTaskPolicies_v1",
+        "parameters": [
+          {
+            "name": "taskId",
+            "required": true,
+            "in": "path",
+            "description": "Unique task identifier",
+            "schema": {
+              "example": "tsk_abc123def456",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Get policies that reference a task via shared controls",
         "tags": [
           "Tasks"
         ]
@@ -20680,37 +20751,6 @@
         ]
       }
     },
-    "/v1/security-penetration-tests/github/repos": {
-      "get": {
-        "description": "Returns GitHub repositories accessible with the connected GitHub integration.",
-        "operationId": "SecurityPenetrationTestsController_listGithubRepos_v1",
-        "parameters": [
-          {
-            "name": "X-Organization-Id",
-            "in": "header",
-            "description": "Organization ID (required for session auth, optional for API key auth)",
-            "required": false,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Repository list returned"
-          }
-        },
-        "security": [
-          {
-            "apikey": []
-          }
-        ],
-        "summary": "List accessible GitHub repositories",
-        "tags": [
-          "Security Penetration Tests"
-        ]
-      }
-    },
     "/v1/security-penetration-tests/{id}": {
       "get": {
         "description": "Returns a penetration test run with progress metadata.",
@@ -20792,6 +20832,84 @@
         ]
       }
     },
+    "/v1/security-penetration-tests/{id}/issues": {
+      "get": {
+        "description": "Returns the structured findings discovered during the run. Grows over time during a live scan as agents discover more issues.",
+        "operationId": "SecurityPenetrationTestsController_getIssues_v1",
+        "parameters": [
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "description": "Organization ID (required for session auth, optional for API key auth)",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Issues returned"
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Get penetration test issues",
+        "tags": [
+          "Security Penetration Tests"
+        ]
+      }
+    },
+    "/v1/security-penetration-tests/{id}/events": {
+      "get": {
+        "description": "Returns the real-time agent activity log emitted during a run (tool calls, observations, etc.). Noisy — meant for activity feeds and debugging.",
+        "operationId": "SecurityPenetrationTestsController_getEvents_v1",
+        "parameters": [
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "description": "Organization ID (required for session auth, optional for API key auth)",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Events returned"
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Get penetration test agent events",
+        "tags": [
+          "Security Penetration Tests"
+        ]
+      }
+    },
     "/v1/security-penetration-tests/{id}/report": {
       "get": {
         "description": "Returns the markdown report output for a completed run.",
@@ -20833,7 +20951,7 @@
     },
     "/v1/security-penetration-tests/{id}/pdf": {
       "get": {
-        "description": "Returns the PDF version of a completed report.",
+        "description": "Returns the PDF version of a completed report. Streams the binary PDF via Maced SDK.",
         "operationId": "SecurityPenetrationTestsController_getPdf_v1",
         "parameters": [
           {
@@ -20872,7 +20990,7 @@
     },
     "/v1/security-penetration-tests/webhook": {
       "post": {
-        "description": "Receives callback payloads from the penetration test provider when a run is updated. Per-run webhook token validation is enforced when handshake state exists.",
+        "description": "Receives signed JSON events from Maced. Signature is verified against MACED_WEBHOOK_SIGNING_SECRET using the SDK's verifyMacedWebhook helper.",
         "operationId": "SecurityPenetrationTestsController_handleWebhook_v1",
         "parameters": [
           {
@@ -20885,26 +21003,10 @@
             }
           },
           {
-            "name": "webhookToken",
-            "required": false,
-            "in": "query",
-            "description": "Per-job webhook token used for handshake validation when callbacks are sent to Comp.",
-            "schema": {}
-          },
-          {
-            "name": "X-Webhook-Token",
+            "name": "X-Maced-Signature",
             "in": "header",
-            "description": "Optional webhook token header. Query param webhookToken is also accepted.",
-            "required": false,
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "X-Webhook-Id",
-            "in": "header",
-            "description": "Optional provider event identifier used for idempotency detection.",
-            "required": false,
+            "description": "HMAC signature header set by Maced (format: t=...,v1=...)",
+            "required": true,
             "schema": {
               "type": "string"
             }
@@ -20916,6 +21018,9 @@
           },
           "400": {
             "description": "Invalid webhook payload"
+          },
+          "403": {
+            "description": "Invalid webhook signature"
           }
         },
         "security": [
@@ -20929,118 +21034,34 @@
         ]
       }
     },
-    "/v1/pentest-billing/status": {
+    "/v1/pentest-credits/status": {
       "get": {
-        "operationId": "PentestBillingController_getStatus_v1",
-        "parameters": [],
-        "responses": {
-          "200": {
-            "description": "Subscription status returned"
-          }
-        },
-        "summary": "Get pentest subscription status",
-        "tags": [
-          "Pentest Billing"
-        ]
-      }
-    },
-    "/v1/pentest-billing/subscribe": {
-      "post": {
-        "operationId": "PentestBillingController_subscribe_v1",
-        "parameters": [],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/SubscribeDto"
-              }
+        "description": "Current spendable balance plus lifetime granted/consumed totals.",
+        "operationId": "PentestCreditsController_getStatus_v1",
+        "parameters": [
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "description": "Organization ID (required for session auth, optional for API key auth)",
+            "required": false,
+            "schema": {
+              "type": "string"
             }
           }
-        },
+        ],
         "responses": {
           "200": {
-            "description": "Checkout URL returned"
+            "description": "Credits status"
           }
         },
-        "summary": "Create a Stripe checkout session for pentest subscription",
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Get pentest credit status",
         "tags": [
-          "Pentest Billing"
-        ]
-      }
-    },
-    "/v1/pentest-billing/handle-success": {
-      "post": {
-        "operationId": "PentestBillingController_handleSuccess_v1",
-        "parameters": [],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/HandleSuccessDto"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Subscription activated"
-          }
-        },
-        "summary": "Handle Stripe checkout success callback",
-        "tags": [
-          "Pentest Billing"
-        ]
-      }
-    },
-    "/v1/pentest-billing/portal": {
-      "post": {
-        "operationId": "PentestBillingController_portal_v1",
-        "parameters": [],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/PortalDto"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Portal URL returned"
-          }
-        },
-        "summary": "Create a Stripe billing portal session",
-        "tags": [
-          "Pentest Billing"
-        ]
-      }
-    },
-    "/v1/pentest-billing/charge": {
-      "post": {
-        "operationId": "PentestBillingController_charge_v1",
-        "parameters": [],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/ChargeDto"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Charge result returned"
-          }
-        },
-        "summary": "Check and charge overage for a pentest run",
-        "tags": [
-          "Pentest Billing"
+          "Pentest Credits"
         ]
       }
     },
@@ -26084,22 +26105,10 @@
             "description": "Repository URL containing the target application code",
             "example": "https://github.com/org/repo"
           },
-          "githubToken": {
-            "type": "string",
-            "description": "GitHub token used for cloning private repositories"
-          },
-          "configYaml": {
-            "type": "string",
-            "description": "Optional YAML configuration for the pentest run"
-          },
           "pipelineTesting": {
             "type": "boolean",
             "description": "Whether to enable pipeline testing mode",
             "default": false
-          },
-          "workspace": {
-            "type": "string",
-            "description": "Workspace identifier used by the pentest engine"
           },
           "webhookUrl": {
             "type": "string",
@@ -26114,22 +26123,6 @@
         "required": [
           "targetUrl"
         ]
-      },
-      "SubscribeDto": {
-        "type": "object",
-        "properties": {}
-      },
-      "HandleSuccessDto": {
-        "type": "object",
-        "properties": {}
-      },
-      "PortalDto": {
-        "type": "object",
-        "properties": {}
-      },
-      "ChargeDto": {
-        "type": "object",
-        "properties": {}
       },
       "RequestBackgroundCheckDto": {
         "type": "object",
