@@ -78,12 +78,27 @@ describe('computePeopleScore', () => {
     });
   });
 
-  it('treats employees as complete without a BG check when backgroundCheckStepEnabled is false', async () => {
-    // Only mem_1 has a completed BG check; mem_2 has none
+  it('counts all employees when BG checks are enabled and all have completed checks', async () => {
     (mockDb.backgroundCheckRequest.findMany as jest.Mock).mockResolvedValue([
       { memberId: 'mem_1' },
+      { memberId: 'mem_2' },
     ]);
 
+    const score = await computePeopleScore({
+      organizationId: 'org_1',
+      allPolicies: [],
+      employees: members,
+      securityTrainingStepEnabled: false,
+      deviceAgentStepEnabled: false,
+      backgroundCheckStepEnabled: true,
+      hasHipaaFramework: false,
+    });
+
+    expect(score).toEqual({ total: 2, completed: 2 });
+  });
+
+  it('treats employees as complete without a BG check when backgroundCheckStepEnabled is false', async () => {
+    // BG-check mock value is irrelevant — the bypass path never calls findMany.
     const score = await computePeopleScore({
       organizationId: 'org_1',
       allPolicies: [],
