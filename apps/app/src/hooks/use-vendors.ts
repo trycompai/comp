@@ -245,6 +245,7 @@ export function useVendorActions() {
     async (vendorId: string) => {
       const response = await fetch(`/api/vendors/${vendorId}/regenerate-mitigation`, {
         method: 'POST',
+        credentials: 'include',
       });
       if (!response.ok) {
         const body = await response.json().catch(() => ({}));
