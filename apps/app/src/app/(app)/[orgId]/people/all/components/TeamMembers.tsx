@@ -80,17 +80,20 @@ export async function TeamMembers(props: TeamMembersProps) {
   const employeeMembers = await filterComplianceMembers(members, organizationId);
   const complianceMemberIds = employeeMembers.map((m) => m.id);
 
+  const orgFlags = await db.organization.findUnique({
+    where: { id: organizationId },
+    select: {
+      securityTrainingStepEnabled: true,
+      backgroundCheckStepEnabled: true,
+    },
+  });
+  const backgroundCheckStepEnabled = orgFlags?.backgroundCheckStepEnabled === true;
+
   if (employeeMembers.length > 0) {
-    const [org, hipaaInstance] = await Promise.all([
-      db.organization.findUnique({
-        where: { id: organizationId },
-        select: { securityTrainingStepEnabled: true },
-      }),
-      db.frameworkInstance.findFirst({
-        where: { organizationId, framework: { name: 'HIPAA' } },
-        select: { id: true },
-      }),
-    ]);
+    const hipaaInstance = await db.frameworkInstance.findFirst({
+      where: { organizationId, framework: { name: 'HIPAA' } },
+      select: { id: true },
+    });
     const hasHipaaFramework = !!hipaaInstance;
 
     const policies = await db.policy.findMany({
@@ -103,21 +106,21 @@ export async function TeamMembers(props: TeamMembersProps) {
     });
 
     const employeeIds = employeeMembers.map((m) => m.id);
-    const trainingCompletions = org?.securityTrainingStepEnabled
+    const trainingCompletions = orgFlags?.securityTrainingStepEnabled
       ? await db.employeeTrainingVideoCompletion.findMany({
           where: { memberId: { in: employeeIds } },
         })
       : [];
 
     const totalPolicies = policies.length;
-    const totalTrainingVideos = org?.securityTrainingStepEnabled ? trainingVideosData.length : 0;
+    const totalTrainingVideos = orgFlags?.securityTrainingStepEnabled ? trainingVideosData.length : 0;
     const totalHipaaTraining = hasHipaaFramework ? 1 : 0;
     const totalTasks = totalPolicies + totalTrainingVideos + totalHipaaTraining;
 
     for (const employee of employeeMembers) {
       const policiesCompleted = policies.filter((p) => p.signedBy.includes(employee.id)).length;
 
-      const trainingsCompleted = org?.securityTrainingStepEnabled
+      const trainingsCompleted = orgFlags?.securityTrainingStepEnabled
         ? trainingCompletions.filter(
             (tc) =>
               tc.memberId === employee.id &&
@@ -159,6 +162,7 @@ export async function TeamMembers(props: TeamMembersProps) {
       employeeSyncData={employeeSyncData}
       taskCompletionMap={taskCompletionMap}
       complianceMemberIds={complianceMemberIds}
+      backgroundCheckStepEnabled={backgroundCheckStepEnabled}
     />
   );
 }

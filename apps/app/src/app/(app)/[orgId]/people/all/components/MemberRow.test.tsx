@@ -214,4 +214,35 @@ describe('MemberRow device status', () => {
 
     expect(screen.getByText('Device 1/1')).toBeInTheDocument();
   });
+
+  it('hides the background-check task counter and verified tick when bypassed', () => {
+    render(
+      <table>
+        <tbody>
+          <MemberRow
+            member={baseMember}
+            onRemove={noop}
+            onRemoveDevice={noop}
+            onUpdateRole={noop}
+            onReactivate={noop}
+            canEdit={false}
+            isCurrentUserOwner={false}
+            backgroundCheckStatus="completed"
+            backgroundCheckStepEnabled={false}
+            taskCompletion={{
+              completed: 1,
+              total: 1,
+              policies: { completed: 1, total: 1 },
+              training: { completed: 0, total: 0 },
+            }}
+          />
+        </tbody>
+      </table>,
+    );
+
+    expect(screen.queryByText(/background check/i)).not.toBeInTheDocument();
+    expect(
+      screen.queryByLabelText(/background check verified/i),
+    ).not.toBeInTheDocument();
+  });
 });
