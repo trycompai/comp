@@ -36,6 +36,12 @@ export interface AutoLinkSuggestionsProps {
   onAfterApply?: () => Promise<void>;
   /** Per-task unlink, plumbed through to <LinkedWork> in linked state. */
   onUnlinkTask?: (taskId: string) => Promise<void>;
+  /**
+   * `'plan'` — used when the merged 02+03 column hosts this component (no
+   * plan and no tasks yet). The empty-state copy emphasizes plan creation.
+   * `'default'` — per-column empty state ("No tasks or controls linked yet").
+   */
+  emptyVariant?: 'default' | 'plan';
 }
 
 export function AutoLinkSuggestions({
@@ -46,6 +52,7 @@ export function AutoLinkSuggestions({
   onApply,
   onAfterApply,
   onUnlinkTask,
+  emptyVariant = 'default',
 }: AutoLinkSuggestionsProps) {
   const [state, setState] = useState<State>(() =>
     tasks.length > 0 ? { kind: 'linked' } : { kind: 'empty' },
@@ -154,6 +161,7 @@ export function AutoLinkSuggestions({
         canUpdate={canUpdate}
         submitting={submitting}
         onSuggest={() => void handleSuggest('fresh')}
+        variant={emptyVariant}
       />
     );
   }
@@ -202,11 +210,7 @@ export function AutoLinkSuggestions({
           </button>
         </div>
       )}
-      <LinkedWork
-        orgId={orgId}
-        tasks={tasks}
-        onUnlinkTask={canUpdate ? onUnlinkTask : undefined}
-      />
+      <LinkedWork orgId={orgId} tasks={tasks} />
     </div>
   );
 }

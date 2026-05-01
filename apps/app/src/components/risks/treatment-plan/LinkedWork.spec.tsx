@@ -1,6 +1,6 @@
 import { TaskStatus } from '@db';
-import { fireEvent, render, screen } from '@testing-library/react';
-import { describe, expect, it, vi } from 'vitest';
+import { render, screen } from '@testing-library/react';
+import { describe, expect, it } from 'vitest';
 import { LinkedWork } from './LinkedWork';
 
 const tasks = [
@@ -9,21 +9,42 @@ const tasks = [
 ];
 
 describe('LinkedWork', () => {
-  it('does not render unlink buttons when onUnlinkTask is not provided', () => {
+  it('renders task titles as links that open in a new tab', () => {
     render(<LinkedWork orgId="org_1" tasks={tasks} />);
-    expect(screen.queryByLabelText(/Unlink/i)).toBeNull();
+    const a = screen.getByRole('link', { name: /Awareness training/i });
+    expect(a).toHaveAttribute('href', '/org_1/tasks/tsk_a');
+    expect(a).toHaveAttribute('target', '_blank');
+    const b = screen.getByRole('link', { name: /Phishing simulation/i });
+    expect(b).toHaveAttribute('target', '_blank');
   });
 
-  it('renders an unlink button per task when onUnlinkTask is provided', () => {
-    render(<LinkedWork orgId="org_1" tasks={tasks} onUnlinkTask={vi.fn()} />);
-    expect(screen.getByLabelText('Unlink Awareness training')).toBeInTheDocument();
-    expect(screen.getByLabelText('Unlink Phishing simulation')).toBeInTheDocument();
+  it('marks incomplete tasks visually distinct from done tasks', () => {
+    render(<LinkedWork orgId="org_1" tasks={tasks} />);
+    // Done task gets line-through styling on its title.
+    const done = screen.getByRole('link', { name: /Awareness training/i });
+    expect(done.className).toMatch(/line-through/);
+    const incomplete = screen.getByRole('link', { name: /Phishing simulation/i });
+    expect(incomplete.className).not.toMatch(/line-through/);
   });
 
-  it('calls onUnlinkTask with the right id when clicked', () => {
-    const onUnlinkTask = vi.fn().mockResolvedValue(undefined);
-    render(<LinkedWork orgId="org_1" tasks={tasks} onUnlinkTask={onUnlinkTask} />);
-    fireEvent.click(screen.getByLabelText('Unlink Awareness training'));
-    expect(onUnlinkTask).toHaveBeenCalledWith('tsk_a');
+  it('derives controls completeness from parent tasks', () => {
+    const linkedTasks = [
+      {
+        id: 'tsk_a',
+        title: 'A',
+        status: TaskStatus.done,
+        controls: [{ id: 'c1', name: 'Awareness Training' }],
+      },
+      {
+        id: 'tsk_b',
+        title: 'B',
+        status: TaskStatus.todo,
+        controls: [{ id: 'c1', name: 'Awareness Training' }],
+      },
+    ];
+    render(<LinkedWork orgId="org_1" tasks={linkedTasks} />);
+    // Control c1 has one done + one todo parent → not complete.
+    const control = screen.getByRole('link', { name: /Awareness Training/i });
+    expect(control.className).not.toMatch(/line-through/);
   });
 });

@@ -2,7 +2,7 @@
 
 import { cn } from '@/lib/utils';
 import { TaskStatus } from '@db';
-import { Checkmark, Close, Subtract } from '@trycompai/design-system/icons';
+import { Checkmark, Close } from '@trycompai/design-system/icons';
 import Link from 'next/link';
 
 interface LinkedTask {
@@ -15,24 +15,60 @@ interface LinkedTask {
 interface LinkedWorkProps {
   orgId: string;
   tasks: LinkedTask[];
-  /** When provided, each task row renders a × button that calls this. */
-  onUnlinkTask?: (taskId: string) => Promise<void>;
 }
 
 function isTaskDone(status: TaskStatus): boolean {
   return status === TaskStatus.done || status === TaskStatus.not_relevant;
 }
 
-export function LinkedWork({ orgId, tasks, onUnlinkTask }: LinkedWorkProps) {
+interface DerivedControl {
+  id: string;
+  name: string;
+  /** True only when every linked task that brings in this control is done. */
+  isComplete: boolean;
+}
+
+function deriveControls(tasks: LinkedTask[]): DerivedControl[] {
+  const map = new Map<string, { name: string; parentDone: boolean[] }>();
+  for (const t of tasks) {
+    for (const c of t.controls) {
+      const entry = map.get(c.id) ?? { name: c.name, parentDone: [] };
+      entry.parentDone.push(isTaskDone(t.status));
+      map.set(c.id, entry);
+    }
+  }
+  return [...map.entries()].map(([id, { name, parentDone }]) => ({
+    id,
+    name,
+    isComplete: parentDone.length > 0 && parentDone.every(Boolean),
+  }));
+}
+
+function StatusIcon({ done }: { done: boolean }) {
+  if (done) {
+    return (
+      <Checkmark
+        size={11}
+        className="shrink-0 text-green-600 dark:text-green-400"
+        aria-hidden="true"
+      />
+    );
+  }
+  return (
+    <Close
+      size={11}
+      className="shrink-0 text-red-600 dark:text-red-400"
+      aria-hidden="true"
+    />
+  );
+}
+
+export function LinkedWork({ orgId, tasks }: LinkedWorkProps) {
   const total = tasks.length;
   const done = tasks.filter((t) => isTaskDone(t.status)).length;
   const taskPct = total === 0 ? 0 : Math.round((done / total) * 100);
-
-  const uniqueControls = new Map<string, { id: string; name: string }>();
-  for (const t of tasks) {
-    for (const c of t.controls) uniqueControls.set(c.id, c);
-  }
-  const controls = [...uniqueControls.values()];
+  const controls = deriveControls(tasks);
+  const controlsDone = controls.filter((c) => c.isComplete).length;
 
   return (
     <div className="mt-4 flex flex-col gap-4 border-t border-border pt-4">
@@ -58,51 +94,26 @@ export function LinkedWork({ orgId, tasks, onUnlinkTask }: LinkedWorkProps) {
         ) : (
           <ul className="flex flex-col">
             {tasks.map((t, i) => {
-              const isDone = isTaskDone(t.status);
+              const taskDone = isTaskDone(t.status);
               return (
                 <li
                   key={t.id}
-                  className={cn(
-                    'flex items-center gap-2 py-1.5 text-[12px]',
-                    i > 0 && 'border-t border-border',
-                  )}
+                  className={cn(i > 0 && 'border-t border-border')}
                 >
-                  {isDone ? (
-                    <Checkmark
-                      size={11}
-                      className="shrink-0 text-green-600 dark:text-green-400"
-                      aria-hidden="true"
-                    />
-                  ) : (
-                    <Subtract
-                      size={11}
-                      className="shrink-0 text-muted-foreground"
-                      aria-hidden="true"
-                    />
-                  )}
                   <Link
                     href={`/${orgId}/tasks/${t.id}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
                     className={cn(
-                      'min-w-0 flex-1 truncate hover:underline',
-                      isDone
+                      'flex items-center gap-2 py-1.5 text-[12px] transition-colors hover:bg-muted',
+                      taskDone
                         ? 'text-muted-foreground line-through decoration-muted-foreground'
                         : 'text-foreground',
                     )}
                   >
-                    {t.title}
+                    <StatusIcon done={taskDone} />
+                    <span className="min-w-0 flex-1 truncate">{t.title}</span>
                   </Link>
-                  {onUnlinkTask && (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        void onUnlinkTask(t.id);
-                      }}
-                      className="shrink-0 rounded p-0.5 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-                      aria-label={`Unlink ${t.title}`}
-                    >
-                      <Close size={11} aria-hidden="true" />
-                    </button>
-                  )}
                 </li>
               );
             })}
@@ -118,7 +129,7 @@ export function LinkedWork({ orgId, tasks, onUnlinkTask }: LinkedWorkProps) {
           <span className="text-[13px] font-normal">Controls</span>
           <span className="flex-1" />
           <span className="font-mono text-[11px] tabular-nums text-muted-foreground">
-            {controls.length}
+            {controlsDone} / {controls.length}
           </span>
         </div>
         {controls.length === 0 ? (
@@ -130,21 +141,21 @@ export function LinkedWork({ orgId, tasks, onUnlinkTask }: LinkedWorkProps) {
             {controls.map((c, i) => (
               <li
                 key={c.id}
-                className={cn(
-                  'flex items-center gap-2 py-1.5 text-[12px]',
-                  i > 0 && 'border-t border-border',
-                )}
+                className={cn(i > 0 && 'border-t border-border')}
               >
-                <Subtract
-                  size={11}
-                  className="shrink-0 text-muted-foreground"
-                  aria-hidden="true"
-                />
                 <Link
                   href={`/${orgId}/controls/${c.id}`}
-                  className="min-w-0 flex-1 truncate text-foreground hover:underline"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className={cn(
+                    'flex items-center gap-2 py-1.5 text-[12px] transition-colors hover:bg-muted',
+                    c.isComplete
+                      ? 'text-muted-foreground line-through decoration-muted-foreground'
+                      : 'text-foreground',
+                  )}
                 >
-                  {c.name}
+                  <StatusIcon done={c.isComplete} />
+                  <span className="min-w-0 flex-1 truncate">{c.name}</span>
                 </Link>
               </li>
             ))}

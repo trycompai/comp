@@ -9,7 +9,7 @@ const baseEntity: TreatmentPlanEntity = {
   inherentImpact: Impact.major,
   residualLikelihood: Likelihood.unlikely,
   residualImpact: Impact.minor,
-  treatmentStrategy: RiskTreatmentType.accept,
+  treatmentStrategy: RiskTreatmentType.mitigate,
   treatmentStrategyDescription: null,
   tasks: [],
 };
@@ -30,21 +30,46 @@ function buildProps(overrides?: Partial<Props>): Props {
 }
 
 describe('TreatmentPlanTab', () => {
-  it('renders the three workspace columns', () => {
-    render(<TreatmentPlanTab {...buildProps()} />);
-    expect(screen.getByText('Strategy')).toBeInTheDocument();
-    expect(screen.getByText('Treatment plan')).toBeInTheDocument();
-    expect(screen.getByText('Linked work')).toBeInTheDocument();
+  it('renders all three workspace columns when Mitigate has plan or linked tasks', () => {
+    const entity: TreatmentPlanEntity = {
+      ...baseEntity,
+      treatmentStrategy: RiskTreatmentType.mitigate,
+      treatmentStrategyDescription: 'Existing plan content.',
+    };
+    render(<TreatmentPlanTab {...buildProps({ entity })} />);
+    expect(screen.getByRole('heading', { name: 'Strategy' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Treatment plan' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Linked work' })).toBeInTheDocument();
   });
 
-  it('renders the hero numerals for inherent and residual scores', () => {
-    // likely × major = 4 × 4 = 16 raw → score = ceil(16/2.5) = 7
-    // unlikely × minor = 2 × 2 = 4 raw → score = ceil(4/2.5) = 2
+  it('merges columns 02+03 into a single "Mitigation plan" CTA when Mitigate is fully empty', () => {
     render(<TreatmentPlanTab {...buildProps()} />);
-    const headline = screen.getByLabelText(/From 7 to 2 out of 10/i);
+    expect(screen.getByRole('heading', { name: 'Strategy' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Mitigation plan' })).toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: 'Linked work' })).toBeNull();
+    expect(screen.queryByRole('heading', { name: 'Treatment plan' })).toBeNull();
+  });
+
+  it('hides Linked Work and shows "Rationale" when strategy is Accept', () => {
+    const entity: TreatmentPlanEntity = {
+      ...baseEntity,
+      treatmentStrategy: RiskTreatmentType.accept,
+    };
+    render(<TreatmentPlanTab {...buildProps({ entity })} />);
+    // Column titles render as <h3>; queries are role-scoped to disambiguate
+    // from the hero's "Strategy" stat label.
+    expect(screen.getByRole('heading', { name: 'Strategy' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Rationale' })).toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: 'Linked work' })).toBeNull();
+  });
+
+  it('renders the hero numerals using strategy-derived residual', () => {
+    // strategy=mitigate, no tasks → completion=0 → preview residual = inherent.
+    // inherent: likely × major = 16 raw → score = ceil(16/2.5) = 7
+    render(<TreatmentPlanTab {...buildProps()} />);
+    const headline = screen.getByLabelText(/From 7 to 7 out of 10/i);
     expect(headline).toBeInTheDocument();
     expect(headline.textContent).toContain('7');
-    expect(headline.textContent).toContain('2');
   });
 
   it('calls onUpdateStrategy when strategy card is clicked', async () => {

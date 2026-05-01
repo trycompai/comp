@@ -2,6 +2,7 @@
 
 import { cn } from '@/lib/utils';
 import { RiskTreatmentType } from '@db';
+import type { CarbonIconType } from '@carbon/icons-react';
 import {
   ArrowsHorizontal,
   Checkmark,
@@ -9,7 +10,6 @@ import {
   CloseOutline,
   Security,
 } from '@trycompai/design-system/icons';
-import type { CarbonIconType } from '@carbon/icons-react';
 
 interface StrategyOption {
   value: RiskTreatmentType;
@@ -18,24 +18,22 @@ interface StrategyOption {
   Icon: CarbonIconType;
 }
 
-const OPTIONS: StrategyOption[] = [
-  {
-    value: RiskTreatmentType.accept,
-    label: 'Accept',
-    blurb: 'Live with the risk; document the rationale. Residual equals inherent.',
-    Icon: CheckmarkOutline,
-  },
-  {
-    value: RiskTreatmentType.avoid,
-    label: 'Avoid',
-    blurb: 'Eliminate the activity that causes the risk. Residual pins to the minimum.',
-    Icon: CloseOutline,
-  },
+// Mitigate first (default + the workhorse). Accept and Transfer follow.
+// Avoid is intentionally not offered as a new selection — too rarely used in
+// SaaS GRC programs to be worth the cognitive load. Existing risks with
+// avoid still render the option so users aren't surprised by missing state.
+const PRIMARY_OPTIONS: StrategyOption[] = [
   {
     value: RiskTreatmentType.mitigate,
     label: 'Mitigate',
     blurb: 'Apply controls to reduce likelihood and impact.',
     Icon: Security,
+  },
+  {
+    value: RiskTreatmentType.accept,
+    label: 'Accept',
+    blurb: 'Live with the risk; document the rationale. Residual equals inherent.',
+    Icon: CheckmarkOutline,
   },
   {
     value: RiskTreatmentType.transfer,
@@ -45,6 +43,13 @@ const OPTIONS: StrategyOption[] = [
   },
 ];
 
+const LEGACY_AVOID_OPTION: StrategyOption = {
+  value: RiskTreatmentType.avoid,
+  label: 'Avoid',
+  blurb: 'Eliminate the activity that causes the risk. Residual pins to the minimum.',
+  Icon: CloseOutline,
+};
+
 interface StrategyPickerProps {
   value: RiskTreatmentType;
   onChange: (next: RiskTreatmentType) => void;
@@ -52,13 +57,18 @@ interface StrategyPickerProps {
 }
 
 export function StrategyPicker({ value, onChange, disabled }: StrategyPickerProps) {
+  const options =
+    value === RiskTreatmentType.avoid
+      ? [...PRIMARY_OPTIONS, LEGACY_AVOID_OPTION]
+      : PRIMARY_OPTIONS;
+
   return (
     <div
       role="radiogroup"
       aria-label="Treatment strategy"
       className="mt-3 border-t border-border"
     >
-      {OPTIONS.map((opt) => {
+      {options.map((opt) => {
         const isActive = value === opt.value;
         const Icon = opt.Icon;
         return (

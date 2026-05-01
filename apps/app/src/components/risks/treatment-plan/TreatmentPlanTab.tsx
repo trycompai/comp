@@ -1,7 +1,7 @@
 'use client';
 
+import { cn } from '@/lib/utils';
 import { Impact, Likelihood, RiskTreatmentType, TaskStatus } from '@db';
-import { MagicWandFilled } from '@trycompai/design-system/icons';
 import { useEffect, useState } from 'react';
 import { AutoLinkSuggestions } from './AutoLinkSuggestions';
 import { DescriptionEditor } from './DescriptionEditor';
@@ -86,6 +86,26 @@ export function TreatmentPlanTab({
   };
 
   const description = entity.treatmentStrategyDescription ?? '';
+  const isMitigate = strategy === RiskTreatmentType.mitigate;
+  const hasPlan = description.trim().length > 0;
+  const hasLinkedWork = entity.tasks.length > 0;
+  // When Mitigate has neither plan nor linked tasks, merge cols 02+03 into a
+  // single empty-state CTA — there's nothing to mitigate against yet.
+  const isMitigateEmpty = isMitigate && !hasPlan && !hasLinkedWork;
+  const showLinkedWorkColumn = isMitigate && !isMitigateEmpty;
+
+  // For non-Mitigate strategies the "plan" is just rationale — there's no
+  // linked work to track because the score doesn't drive off task completion.
+  const planTitle = isMitigateEmpty
+    ? 'Mitigation plan'
+    : isMitigate
+      ? 'Treatment plan'
+      : 'Rationale';
+  const planSubtitle = isMitigateEmpty
+    ? 'Create a plan and link the tasks and controls that will mitigate this risk.'
+    : isMitigate
+      ? 'A concrete plan for the strategy above.'
+      : 'Document why this strategy is right for this risk.';
 
   return (
     <div className="flex flex-col gap-6">
@@ -96,9 +116,15 @@ export function TreatmentPlanTab({
         residualImpact={entity.residualImpact}
         strategy={strategy}
         tasks={entity.tasks}
+        isEmpty={isMitigateEmpty}
       />
 
-      <div className="bg-background grid grid-cols-1 overflow-hidden rounded-md border border-border lg:grid-cols-[1fr_1.2fr_1fr]">
+      <div
+        className={cn(
+          'bg-background grid grid-cols-1 overflow-hidden rounded-md border border-border',
+          showLinkedWorkColumn ? 'lg:grid-cols-[1fr_1.2fr_1fr]' : 'lg:grid-cols-[1fr_2fr]',
+        )}
+      >
         {/* 01 · Strategy */}
         <div className="min-w-0 p-6">
           <ColumnHeader
@@ -113,43 +139,10 @@ export function TreatmentPlanTab({
           />
         </div>
 
-        {/* 02 · Treatment plan */}
+        {/* 02 · Treatment plan / Rationale / merged Mitigation plan empty state */}
         <div className="min-w-0 border-t border-border p-6 lg:border-l lg:border-t-0">
-          <ColumnHeader
-            number="02"
-            title="Treatment plan"
-            subtitle="A concrete plan for the strategy above."
-            action={
-              <button
-                type="button"
-                onClick={() => {
-                  void onRegenerate();
-                }}
-                disabled={!canUpdate || regenerating}
-                className="inline-flex h-[26px] items-center gap-1.5 rounded-md border border-transparent bg-transparent px-2 text-xs text-foreground transition-colors hover:bg-muted disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                <MagicWandFilled size={12} aria-hidden="true" />
-                AI draft
-              </button>
-            }
-          />
-          <DescriptionEditor
-            value={description}
-            onSave={onUpdateDescription}
-            onRegenerate={onRegenerate}
-            regenerating={regenerating}
-            disabled={!canUpdate}
-          />
-        </div>
-
-        {/* 03 · Linked work */}
-        <div className="min-w-0 border-t border-border p-6 lg:border-l lg:border-t-0">
-          <ColumnHeader
-            number="03"
-            title="Linked work"
-            subtitle="Drives the residual estimate."
-          />
-          {onSuggest && onApply ? (
+          <ColumnHeader number="02" title={planTitle} subtitle={planSubtitle} />
+          {isMitigateEmpty && onSuggest && onApply ? (
             <AutoLinkSuggestions
               orgId={orgId}
               tasks={entity.tasks}
@@ -157,16 +150,44 @@ export function TreatmentPlanTab({
               onSuggest={onSuggest}
               onApply={onApply}
               onAfterApply={onRegenerate}
-              onUnlinkTask={onUnlinkTask}
+              emptyVariant="plan"
             />
           ) : (
-            <LinkedWork
-              orgId={orgId}
-              tasks={entity.tasks}
-              onUnlinkTask={canUpdate ? onUnlinkTask : undefined}
+            <DescriptionEditor
+              value={description}
+              onSave={onUpdateDescription}
+              onRegenerate={onRegenerate}
+              regenerating={regenerating}
+              disabled={!canUpdate}
             />
           )}
         </div>
+
+        {/* 03 · Linked work — only when Mitigate is in progress (some plan or
+            linked tasks already exist). The fully-empty Mitigate state lives
+            in the merged 02 column above. */}
+        {showLinkedWorkColumn && (
+          <div className="min-w-0 border-t border-border p-6 lg:border-l lg:border-t-0">
+            <ColumnHeader
+              number="03"
+              title="Linked work"
+              subtitle="Drives the residual estimate."
+            />
+            {onSuggest && onApply ? (
+              <AutoLinkSuggestions
+                orgId={orgId}
+                tasks={entity.tasks}
+                canUpdate={canUpdate}
+                onSuggest={onSuggest}
+                onApply={onApply}
+                onAfterApply={onRegenerate}
+                onUnlinkTask={onUnlinkTask}
+              />
+            ) : (
+              <LinkedWork orgId={orgId} tasks={entity.tasks} />
+            )}
+          </div>
+        )}
       </div>
     </div>
   );

@@ -92,3 +92,73 @@ export function suggestedResidual({
     completion,
   };
 }
+
+export interface PreviewResidualInput {
+  inherentLikelihood: Likelihood;
+  inherentImpact: Impact;
+  strategy: RiskTreatmentType;
+}
+
+export interface PreviewResidualOutput {
+  likelihood: Likelihood;
+  impact: Impact;
+}
+
+/**
+ * The residual the chosen strategy *would* produce at full execution.
+ * Used as the target marker on the Risk Matrix and the goal score for the
+ * hero's interpolated numeral. Doesn't depend on linked-task completion —
+ * use `interpolatedResidualScore` for the in-progress numeral.
+ *
+ * - Accept   → residual = inherent
+ * - Avoid    → residual pins to (very_unlikely, insignificant)
+ * - Transfer → residual.impact = stepDown(inherent.impact, 1) (assume the
+ *              transfer arrangement — insurance, indemnity — is in place)
+ * - Mitigate → likelihood −1, impact −1 (the full-completion outcome)
+ */
+export function previewResidual({
+  inherentLikelihood,
+  inherentImpact,
+  strategy,
+}: PreviewResidualInput): PreviewResidualOutput {
+  switch (strategy) {
+    case RiskTreatmentType.accept:
+      return { likelihood: inherentLikelihood, impact: inherentImpact };
+    case RiskTreatmentType.avoid:
+      return { likelihood: Likelihood.very_unlikely, impact: Impact.insignificant };
+    case RiskTreatmentType.transfer:
+      return {
+        likelihood: inherentLikelihood,
+        impact: stepDownImpact(inherentImpact, 1),
+      };
+    case RiskTreatmentType.mitigate:
+    default:
+      return {
+        likelihood: stepDownLikelihood(inherentLikelihood, 1),
+        impact: stepDownImpact(inherentImpact, 1),
+      };
+  }
+}
+
+export interface InterpolatedScoreInput {
+  inherentScore: number;
+  targetScore: number;
+  /** 0..1 — only meaningful for Mitigate; non-Mitigate strategies pass 1. */
+  completion: number;
+}
+
+/**
+ * Linearly interpolate between inherent and target score by completion %.
+ * The Mitigate strategy gates on real task completion so the numeral moves
+ * in proportion to actual progress. Non-Mitigate strategies pass
+ * completion=1 (the strategy itself is the action; there's no in-progress
+ * concept).
+ */
+export function interpolatedResidualScore({
+  inherentScore,
+  targetScore,
+  completion,
+}: InterpolatedScoreInput): number {
+  const lerp = inherentScore - (inherentScore - targetScore) * completion;
+  return Math.round(lerp);
+}

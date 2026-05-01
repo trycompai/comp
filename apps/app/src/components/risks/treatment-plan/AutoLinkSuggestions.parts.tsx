@@ -15,20 +15,33 @@ export function EmptyState({
   canUpdate,
   submitting,
   onSuggest,
+  variant = 'default',
 }: {
   canUpdate: boolean;
   submitting: boolean;
   onSuggest: () => void;
+  /**
+   * `'plan'` is used in the merged 02+03 column when both plan and tasks are
+   * empty — copy emphasizes the plan creation. `'default'` is the per-column
+   * empty state shown when only the tasks section is empty.
+   */
+  variant?: 'default' | 'plan';
 }) {
+  const isPlan = variant === 'plan';
+  const title = isPlan ? 'No mitigation plan yet' : 'No tasks or controls linked yet';
+  const description = isPlan
+    ? 'AI will scan your library, suggest the relevant tasks and controls, and draft a mitigation plan grounded in them.'
+    : 'Have AI scan your library and suggest the tasks and controls most likely to drive this risk down.';
+  const buttonLabel = isPlan ? 'Create with AI' : 'Suggest with AI';
+
   return (
     <div className="mt-4 flex flex-col items-center rounded-md border border-dashed border-border bg-primary/[0.02] px-4 py-7 text-center">
       <div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary/[0.12] text-primary">
         <MagicWandFilled size={20} aria-hidden="true" />
       </div>
-      <div className="mt-3 text-sm font-normal">No tasks or controls linked yet</div>
-      <div className="mt-1 max-w-[280px] text-xs leading-[1.5] text-muted-foreground">
-        Have AI scan your library and suggest the tasks and controls most likely to drive this risk
-        down.
+      <div className="mt-3 text-sm font-normal">{title}</div>
+      <div className="mt-1 max-w-[320px] text-xs leading-[1.5] text-muted-foreground">
+        {description}
       </div>
       <div className="mt-4">
         <Button
@@ -38,7 +51,7 @@ export function EmptyState({
           loading={submitting}
           disabled={!canUpdate}
         >
-          Suggest with AI
+          {buttonLabel}
         </Button>
       </div>
       <div className="mt-2.5 text-[11px] text-muted-foreground">
