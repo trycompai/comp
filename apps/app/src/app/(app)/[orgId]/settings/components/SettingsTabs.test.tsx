@@ -106,4 +106,17 @@ describe('SettingsTabs permission gating', () => {
     expect(screen.getByTestId('child-content')).toBeInTheDocument();
     expect(screen.queryByTestId('page-layout')).not.toBeInTheDocument();
   });
+
+  it('lets billing render its own page layout for header actions', () => {
+    setMockPermissions(ADMIN_PERMISSIONS);
+    mockPathname = '/org-1/settings/billing';
+    render(
+      <SettingsTabs orgId="org-1" showBrowserTab={false}>
+        <div data-testid="billing-content">billing content</div>
+      </SettingsTabs>,
+    );
+
+    expect(screen.getByTestId('billing-content')).toBeInTheDocument();
+    expect(screen.queryByTestId('page-layout')).not.toBeInTheDocument();
+  });
 });

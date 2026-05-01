@@ -24,6 +24,7 @@ import {
   type Control,
   type Member,
   type Task,
+  type TaskFrequency,
   type TaskStatus,
   type User,
 } from '@db';
@@ -52,6 +53,7 @@ import { TaskAutomationStatusBadge } from './TaskAutomationStatusBadge';
 import { TaskDeleteDialog } from './TaskDeleteDialog';
 import { TaskIntegrationChecks } from './TaskIntegrationChecks';
 import { TaskMainContent } from './TaskMainContent';
+import { TaskPolicies } from './TaskPolicies';
 import { TaskPropertiesSidebar } from './TaskPropertiesSidebar';
 
 type AutomationWithRuns = EvidenceAutomation & {
@@ -120,6 +122,7 @@ export function SingleTask({
 
   const canUpdateTask = hasPermission('task', 'update');
   const canDeleteTask = hasPermission('task', 'delete');
+  const canReadPolicy = hasPermission('policy', 'read');
 
   const startEditingTitle = () => {
     if (!canUpdateTask) return;
@@ -160,6 +163,16 @@ export function SingleTask({
       mutateActivity();
     } catch {
       toast.error('Failed to update description');
+    }
+  };
+
+  const handleUpdateIntegrationSchedule = async (value: TaskFrequency) => {
+    try {
+      await updateTask({ integrationScheduleFrequency: value });
+      toast.success('Schedule updated');
+      mutateActivity();
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Failed to update schedule');
     }
   };
 
@@ -322,6 +335,7 @@ export function SingleTask({
           <TabsList variant="underline">
             <TabsTrigger value="overview">Overview</TabsTrigger>
             {task.automationStatus !== 'MANUAL' && <TabsTrigger value="automations">Automations</TabsTrigger>}
+            {canReadPolicy && <TabsTrigger value="mappings">Mappings</TabsTrigger>}
             <TabsTrigger value="comments">Comments</TabsTrigger>
             <TabsTrigger value="activity">Activity</TabsTrigger>
             <TabsTrigger value="settings">Settings</TabsTrigger>
@@ -338,12 +352,23 @@ export function SingleTask({
             </Stack>
           </TabsContent>
 
+          <TabsContent value="mappings">
+            <Stack gap="lg">
+              <TaskPolicies />
+            </Stack>
+          </TabsContent>
+
           <TabsContent value="automations">
             <Stack gap="lg">
               <TaskIntegrationChecks
                 taskId={task.id}
                 onTaskUpdated={() => mutateTask()}
                 isManualTask={task.automationStatus === 'MANUAL'}
+                scheduleFrequency={task.integrationScheduleFrequency ?? undefined}
+                lastRunAt={task.integrationLastRunAt ?? null}
+                onScheduleChange={
+                  canUpdateTask ? handleUpdateIntegrationSchedule : undefined
+                }
               />
               <TaskAutomations
                 automations={automations || []}

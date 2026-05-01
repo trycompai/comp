@@ -122,8 +122,12 @@ export const policyAcknowledgmentDigest = schedules.task({
     // counts 2 — same semantic as the pre-rollup implementation.
     let orgsSkippedUnsubscribed = 0;
 
-    // Rollup across orgs, keyed by user id so one person = one email even
-    // when they hold separate member records in multiple organizations.
+    // Rollup across orgs, keyed by normalized email so one person = one
+    // email even when they hold separate member records in multiple
+    // organizations. Keyed on email (not user.id) because User.email is
+    // not @unique in the schema — the same person can end up with multiple
+    // user rows, typically when invited to separate orgs through different
+    // flows, and keying on user.id split those duplicates into one email each.
     const rollup = new Map<string, RollupEntry>();
 
     for (const org of organizations) {
@@ -178,11 +182,12 @@ export const policyAcknowledgmentDigest = schedules.task({
           continue;
         }
 
-        const existing = rollup.get(member.user.id);
+        const rollupKey = member.user.email.trim().toLowerCase();
+        const existing = rollup.get(rollupKey);
         if (existing) {
           existing.orgs.push({ id: org.id, name: org.name, policies });
         } else {
-          rollup.set(member.user.id, {
+          rollup.set(rollupKey, {
             email: member.user.email,
             userName: member.user.name ?? '',
             primaryOrgId: org.id,

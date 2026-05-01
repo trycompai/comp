@@ -1,3 +1,5 @@
+import type { TaskFrequency } from '@db';
+
 export interface BrowserAutomationRun {
   id: string;
   status: string;
@@ -15,8 +17,11 @@ export interface BrowserAutomation {
   description?: string;
   targetUrl: string;
   instruction: string;
+  evaluationCriteria?: string | null;
   isEnabled: boolean;
   schedule?: string;
+  scheduleFrequency?: TaskFrequency;
+  lastRunAt?: string | null;
   createdAt: string;
   runs?: BrowserAutomationRun[];
 }

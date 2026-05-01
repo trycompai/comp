@@ -1564,6 +1564,7 @@ export class TrustAccessService {
         organizationId: grant.accessRequest.organizationId,
         status: 'published',
         isArchived: false,
+        archivedAt: null,
       },
       select: {
         id: true,
@@ -2000,6 +2001,7 @@ export class TrustAccessService {
         organizationId: grant.accessRequest.organizationId,
         status: 'published',
         isArchived: false,
+        archivedAt: null,
       },
       select: {
         id: true,
@@ -2288,6 +2290,7 @@ export class TrustAccessService {
         organizationId: grant.accessRequest.organizationId,
         status: 'published',
         isArchived: false,
+        archivedAt: null,
       },
       select: {
         id: true,

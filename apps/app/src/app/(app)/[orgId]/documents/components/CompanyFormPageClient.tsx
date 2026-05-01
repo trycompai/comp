@@ -594,7 +594,7 @@ export function CompanyFormPageClient({
           <DialogHeader>
             <DialogTitle>Upload Evidence</DialogTitle>
             <DialogDescription>
-              Upload a PDF or image as evidence for this document.
+              Upload a PDF, image, Markdown, or CSV file as evidence for this document.
             </DialogDescription>
           </DialogHeader>
           <div ref={setUploadSelectPortalRoot} className="min-w-0 space-y-4 overflow-visible">
@@ -630,7 +630,7 @@ export function CompanyFormPageClient({
             <input
               ref={fileInputRef}
               type="file"
-              accept=".pdf,.png,.jpg,.jpeg"
+              accept=".pdf,.png,.jpg,.jpeg,.md,.markdown,.csv,application/pdf,image/png,image/jpeg,text/markdown,text/csv"
               onChange={(e) => setSelectedFile(e.target.files?.[0] ?? null)}
               className="block w-full text-sm text-foreground file:mr-4 file:rounded-md file:border-0 file:bg-muted file:px-4 file:py-2 file:text-sm file:font-medium file:text-foreground hover:file:bg-muted/80 file:cursor-pointer cursor-pointer"
             />

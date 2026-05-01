@@ -13,6 +13,11 @@ interface FrameworkSummary {
   visible: boolean;
 }
 
+interface PublishedVersion {
+  id: string;
+  version: string;
+}
+
 export default async function FrameworkLayout({
   children,
   params,
@@ -32,6 +37,19 @@ export default async function FrameworkLayout({
     notFound();
   }
 
+  // Fetch the latest published version (our new FrameworkVersion table).
+  // Fall back to the catalog version string if no versions have been published.
+  let latestVersion: string = framework.version;
+  try {
+    const versionsRes = await serverApi<{ data: PublishedVersion[] }>(
+      `/framework/${frameworkId}/versions`,
+    );
+    const latest = Array.isArray(versionsRes?.data) ? versionsRes.data[0] : undefined;
+    if (latest?.version) latestVersion = latest.version;
+  } catch {
+    // ignore — endpoint may not exist or no versions yet
+  }
+
   return (
     <PageLayout
       breadcrumbs={[
@@ -41,7 +59,7 @@ export default async function FrameworkLayout({
     >
       <div className="mb-4 flex items-center gap-3">
         <h1 className="text-2xl font-bold">{framework.name}</h1>
-        <Badge variant="outline">v{framework.version}</Badge>
+        <Badge variant="outline">v{latestVersion}</Badge>
         <Badge variant={framework.visible ? 'default' : 'secondary'}>
           {framework.visible ? 'Visible' : 'Hidden'}
         </Badge>

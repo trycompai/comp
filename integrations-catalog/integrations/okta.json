@@ -51,8 +51,22 @@
       "description": "Verifies that Okta groups are configured for role-based access management",
       "defaultSeverity": "medium",
       "enabled": true
+    },
+    {
+      "slug": "okta_password_policy",
+      "name": "Password Policy",
+      "description": "Verifies that Okta password policies meet security requirements for length, complexity, and account lockout",
+      "defaultSeverity": "high",
+      "enabled": true
+    },
+    {
+      "slug": "okta_admin_audit",
+      "name": "Admin Role Audit",
+      "description": "Lists users with admin roles assigned and flags excessive admin privilege concentration",
+      "defaultSeverity": "medium",
+      "enabled": true
     }
   ],
-  "checkCount": 3,
+  "checkCount": 5,
   "isActive": true
 }

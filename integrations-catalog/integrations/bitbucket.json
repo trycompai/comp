@@ -8,13 +8,19 @@
   "authConfig": {
     "type": "custom",
     "config": {
-      "setupInstructions": "1. Log in to Bitbucket\n2. Go to Personal Settings > App passwords\n3. Create an App Password with Repositories:Read and Account:Read permissions\n4. Base64-encode 'your_username:app_password'\n5. Paste the encoded string below",
+      "setupInstructions": "1. Log in to Bitbucket\n2. Go to Personal Settings > App passwords\n3. Create an App Password with Repositories:Read and Account:Read permissions\n4. Enter your Bitbucket username and the App Password below",
       "credentialFields": [
         {
-          "label": "Base64 Encoded Token",
+          "label": "Bitbucket Username",
+          "type": "text",
+          "required": true,
+          "helpText": "Your Bitbucket username (not email)"
+        },
+        {
+          "label": "App Password",
           "type": "password",
           "required": true,
-          "helpText": "Base64-encode 'username:app_password'. Create an App Password in Bitbucket > Personal Settings > App passwords"
+          "helpText": "Created in Bitbucket > Personal Settings > App passwords"
         }
       ]
     }

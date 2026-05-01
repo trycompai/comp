@@ -61,6 +61,7 @@
         "@aws-sdk/s3-request-presigner": "3.1013.0",
         "@browserbasehq/sdk": "2.6.0",
         "@browserbasehq/stagehand": "^3.2.1",
+        "@maced/api-client": "^0.9.1",
         "@mendable/firecrawl-js": "^4.9.3",
         "@nestjs/common": "^11.0.1",
         "@nestjs/config": "^4.0.2",
@@ -157,6 +158,9 @@
         "transform": {
             "^.+\\.(t|j)sx?$": "ts-jest"
         },
+        "transformIgnorePatterns": [
+            "node_modules/(?!(@maced/api-client|better-auth)/)"
+        ],
         "collectCoverageFrom": [
             "**/*.(t|j)s"
         ],
@@ -184,6 +188,7 @@
         "deploy:trigger-prod": "npx trigger.dev@4.4.3 deploy",
         "dev": "bunx concurrently --kill-others --names \"nest,trigger\" --prefix-colors \"green,blue\" \"nest start --watch\" \"trigger dev\"",
         "dev:nest": "nest start --watch",
+        "dev:no-trigger": "nest start --watch",
         "dev:trigger": "trigger dev",
         "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
         "lint": "eslint \"{src,apps,libs,test}/**/*.ts\" --fix",
@@ -196,7 +201,6 @@
         "test:cov": "jest --coverage",
         "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
         "test:e2e": "jest --config ./test/jest-e2e.json",
-        "test:e2e:maced": "MACED_CONTRACT_E2E=1 jest --config ./test/jest-e2e.json --runInBand ./maced-contract.e2e-spec.ts",
         "test:watch": "jest --watch",
         "typecheck": "tsc --noEmit"
     }

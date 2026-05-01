@@ -10,7 +10,7 @@ import { usePeopleActions } from '@/hooks/use-people-api';
 import { parseRolesString } from '@/lib/permissions';
 import { authClient } from '@/utils/auth-client';
 import useSWR from 'swr';
-import type { Invitation, Role } from '@db';
+import type { Invitation } from '@db';
 import {
   Empty,
   EmptyDescription,
@@ -31,7 +31,6 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-  Button,
 } from '@trycompai/design-system';
 import { InProgress, Search } from '@trycompai/design-system/icons';
 
@@ -40,6 +39,7 @@ import { useMemo } from 'react';
 import { useAgentDevices } from '../../devices/hooks/useAgentDevices';
 import { useFleetHosts } from '../../devices/hooks/useFleetHosts';
 import { buildDisplayItems, filterDisplayItems } from './filter-members';
+import { computeDeviceStatusMap } from './compute-device-status-map';
 import { MemberRow } from './MemberRow';
 import { PendingInvitationRow } from './PendingInvitationRow';
 import type { MemberWithUser, TaskCompletion, TeamMembersData } from './TeamMembers';
@@ -62,7 +62,6 @@ export function TeamMembersClient({
   data,
   organizationId,
   canManageMembers,
-  canInviteUsers,
   isCurrentUserOwner,
   employeeSyncData,
   taskCompletionMap,
@@ -72,35 +71,10 @@ export function TeamMembersClient({
   const { fleetHosts, isLoading: isFleetHostsLoading } = useFleetHosts();
   const isDeviceStatusLoading = isAgentDevicesLoading || isFleetHostsLoading;
 
-  const deviceStatusMap = useMemo(() => {
-    const map: Record<string, 'compliant' | 'non-compliant' | 'not-installed'> =
-      {};
-    const complianceSet = new Set(complianceMemberIds);
-    for (const id of complianceSet) {
-      map[id] = 'not-installed';
-    }
-
-    const agentComplianceByMember = new Map<string, boolean>();
-    for (const d of agentDevices) {
-      if (!d.memberId || !complianceSet.has(d.memberId)) continue;
-      const prev = agentComplianceByMember.get(d.memberId);
-      agentComplianceByMember.set(d.memberId, (prev ?? true) && d.isCompliant);
-    }
-    for (const [memberId, allCompliant] of agentComplianceByMember) {
-      map[memberId] = allCompliant ? 'compliant' : 'non-compliant';
-    }
-
-    for (const host of fleetHosts) {
-      if (!host.member_id || !complianceSet.has(host.member_id)) continue;
-      if (agentComplianceByMember.has(host.member_id)) continue;
-      const isCompliant = host.policies.every((p) => p.response === 'pass');
-      if (map[host.member_id] !== 'non-compliant') {
-        map[host.member_id] = isCompliant ? 'compliant' : 'non-compliant';
-      }
-    }
-
-    return map;
-  }, [agentDevices, fleetHosts, complianceMemberIds]);
+  const deviceStatusMap = useMemo(
+    () => computeDeviceStatusMap({ agentDevices, fleetHosts, complianceMemberIds }),
+    [agentDevices, fleetHosts, complianceMemberIds],
+  );
   const router = useRouter();
   const [searchQuery, setSearchQuery] = useState('');
   const [roleFilter, setRoleFilter] = useState('');
@@ -485,7 +459,6 @@ export function TeamMembersClient({
               <TableHead>
                 <div className="w-[160px]">ROLE</div>
               </TableHead>
-              <TableHead>DEVICE</TableHead>
               <TableHead>TASKS</TableHead>
               <TableHead>ACTIONS</TableHead>
             </TableRow>
@@ -506,6 +479,9 @@ export function TeamMembersClient({
                   taskCompletion={taskCompletionMap[(item as MemberWithUser).id]}
                   deviceStatus={deviceStatusMap[(item as MemberWithUser).id]}
                   isDeviceStatusLoading={isDeviceStatusLoading}
+                  backgroundCheckStatus={
+                    (item as MemberWithUser).backgroundCheckRequests?.[0]?.status
+                  }
                 />
               ) : (
                 <PendingInvitationRow

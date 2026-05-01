@@ -5,18 +5,20 @@ import {
   toExternalEvidenceFormType,
 } from '@trycompai/company';
 import { db } from '@db';
-import { filterComplianceMembers } from '../utils/compliance-filters';
+import { ISO27001_FRAMEWORK_NAMES } from '../soa/utils/constants';
+import { computePeopleScore } from './frameworks-people-score.helper';
 
 const SIX_MONTHS_MS = 6 * 30 * 24 * 60 * 60 * 1000;
 
-const GENERAL_TRAINING_IDS = ['sat-1', 'sat-2', 'sat-3', 'sat-4', 'sat-5'];
-const HIPAA_TRAINING_ID = 'hipaa-sat-1';
+export { computeFrameworkComplianceScore } from './frameworks-compliance-score.helper';
 
 export async function getOverviewScores(organizationId: string) {
   const [allPolicies, allTasks, employees, onboarding, org, hipaaInstance] =
     await Promise.all([
-      db.policy.findMany({ where: { organizationId } }),
-      db.task.findMany({ where: { organizationId } }),
+      db.policy.findMany({
+        where: { organizationId, isArchived: false, archivedAt: null },
+      }),
+      db.task.findMany({ where: { organizationId, archivedAt: null } }),
       db.member.findMany({
         where: { organizationId, deactivated: false },
         include: { user: true },
@@ -42,7 +44,6 @@ export async function getOverviewScores(organizationId: string) {
   const deviceAgentStepEnabled = org?.deviceAgentStepEnabled === true;
   const hasHipaaFramework = !!hipaaInstance;
 
-  // Policy breakdown
   const publishedPolicies = allPolicies.filter((p) => p.status === 'published');
   const draftPolicies = allPolicies.filter((p) => p.status === 'draft');
   const policiesInReview = allPolicies.filter(
@@ -52,7 +53,6 @@ export async function getOverviewScores(organizationId: string) {
     (p) => p.status === 'draft' || p.status === 'needs_review',
   );
 
-  // Task breakdown
   const doneTasks = allTasks.filter(
     (t) => t.status === 'done' || t.status === 'not_relevant',
   );
@@ -60,106 +60,14 @@ export async function getOverviewScores(organizationId: string) {
     (t) => t.status === 'todo' || t.status === 'in_progress',
   );
 
-  // People score — filter to members with compliance:required permission
-  const activeEmployees = await filterComplianceMembers(
-    employees,
+  const people = await computePeopleScore({
     organizationId,
-  );
-
-  let completedMembers = 0;
-
-  if (activeEmployees.length > 0) {
-    const requiredPolicies = allPolicies.filter(
-      (p) => p.isRequiredToSign && p.status === 'published' && !p.isArchived,
-    );
-
-    const memberIds = activeEmployees.map((e) => e.id);
-    const memberUserIds = activeEmployees
-      .map((e) => e.userId)
-      .filter((id): id is string => !!id);
-    const needsCompletions = securityTrainingStepEnabled || hasHipaaFramework;
-    let membersWithInstalledDevices = new Set<string>();
-
-    if (deviceAgentStepEnabled) {
-      const [installedDevices, membersWithFleetLabels, fleetPolicyResults] =
-        await Promise.all([
-          db.device.findMany({
-            where: {
-              organizationId,
-              memberId: { in: memberIds },
-            },
-            select: { memberId: true },
-            distinct: ['memberId'],
-          }),
-          db.member.findMany({
-            where: {
-              organizationId,
-              id: { in: memberIds },
-              NOT: { fleetDmLabelId: null },
-            },
-            select: { id: true, userId: true },
-          }),
-          memberUserIds.length > 0
-            ? db.fleetPolicyResult.findMany({
-                where: {
-                  organizationId,
-                  userId: { in: memberUserIds },
-                },
-                select: { userId: true },
-                distinct: ['userId'],
-              })
-            : Promise.resolve([]),
-        ]);
-
-      const fleetUserIdsWithData = new Set(
-        fleetPolicyResults.map((result) => result.userId),
-      );
-      const memberIdsWithFleetData = membersWithFleetLabels
-        .filter((member) => fleetUserIdsWithData.has(member.userId))
-        .map((member) => member.id);
-
-      membersWithInstalledDevices = new Set([
-        ...installedDevices.map((device) => device.memberId),
-        ...memberIdsWithFleetData,
-      ]);
-    }
-
-    const trainingCompletions = needsCompletions
-      ? await db.employeeTrainingVideoCompletion.findMany({
-          where: { memberId: { in: memberIds } },
-        })
-      : [];
-
-    for (const emp of activeEmployees) {
-      const hasAcceptedAllPolicies =
-        requiredPolicies.length === 0 ||
-        requiredPolicies.every((p) => p.signedBy.includes(emp.id));
-
-      const completedVideoIds = trainingCompletions
-        .filter((c) => c.memberId === emp.id && c.completedAt !== null)
-        .map((c) => c.videoId);
-
-      const hasCompletedAllTraining = securityTrainingStepEnabled
-        ? GENERAL_TRAINING_IDS.every((vid) => completedVideoIds.includes(vid))
-        : true;
-
-      const hasCompletedHipaa = hasHipaaFramework
-        ? completedVideoIds.includes(HIPAA_TRAINING_ID)
-        : true;
-      const hasInstalledDevice = deviceAgentStepEnabled
-        ? membersWithInstalledDevices.has(emp.id)
-        : true;
-
-      if (
-        hasAcceptedAllPolicies &&
-        hasCompletedAllTraining &&
-        hasCompletedHipaa &&
-        hasInstalledDevice
-      ) {
-        completedMembers++;
-      }
-    }
-  }
+    allPolicies,
+    employees,
+    securityTrainingStepEnabled,
+    deviceAgentStepEnabled,
+    hasHipaaFramework,
+  });
 
   return {
     policies: {
@@ -174,10 +82,7 @@ export async function getOverviewScores(organizationId: string) {
       done: doneTasks.length,
       incompleteTasks,
     },
-    people: {
-      total: activeEmployees.length,
-      completed: completedMembers,
-    },
+    people,
     onboardingTriggerJobId: onboarding?.triggerJobId ?? null,
     documents: await computeDocumentsScore(organizationId),
     findings: await getOrganizationFindings(organizationId),
@@ -185,11 +90,24 @@ export async function getOverviewScores(organizationId: string) {
 }
 
 async function computeDocumentsScore(organizationId: string) {
-  const groupedStatuses = await db.evidenceSubmission.groupBy({
-    by: ['formType'],
-    where: { organizationId },
-    _max: { submittedAt: true },
-  });
+  const [groupedStatuses, isoFrameworkInstances] = await Promise.all([
+    db.evidenceSubmission.groupBy({
+      by: ['formType'],
+      where: { organizationId },
+      _max: { submittedAt: true },
+    }),
+    db.frameworkInstance.findMany({
+      where: {
+        organizationId,
+        framework: {
+          name: {
+            in: ISO27001_FRAMEWORK_NAMES,
+          },
+        },
+      },
+      select: { frameworkId: true },
+    }),
+  ]);
 
   const statuses: Record<string, { lastSubmittedAt: string | null }> = {};
   for (const form of evidenceFormDefinitionList) {
@@ -204,8 +122,7 @@ async function computeDocumentsScore(organizationId: string) {
   const includedForms = evidenceFormDefinitionList.filter(
     (f) => !f.hidden && !f.optional,
   );
-  const totalDocuments = includedForms.length;
-  const outstandingDocuments = includedForms.reduce((count, form) => {
+  const nonSOAOutstandingDocuments = includedForms.reduce((count, form) => {
     if (form.type === 'meeting') {
       const allMeetingsOutstanding = meetingSubTypeValues.every((subType) => {
         const lastSubmitted = statuses[subType]?.lastSubmittedAt;
@@ -222,6 +139,39 @@ async function computeDocumentsScore(organizationId: string) {
       Date.now() - new Date(lastSubmitted).getTime() > SIX_MONTHS_MS;
     return isOutstanding ? count + 1 : count;
   }, 0);
+
+  const isoFrameworkIds = isoFrameworkInstances
+    .map((instance) => instance.frameworkId)
+    .filter((id): id is string => !!id);
+  const hasSOADocumentRequirement = isoFrameworkIds.length > 0;
+
+  let soaCompleted = false;
+  if (hasSOADocumentRequirement) {
+    const latestSOADocument = await db.sOADocument.findFirst({
+      where: {
+        organizationId,
+        isLatest: true,
+        frameworkId: { in: isoFrameworkIds },
+      },
+      select: {
+        approvedAt: true,
+        status: true,
+      },
+      orderBy: {
+        updatedAt: 'desc',
+      },
+    });
+    soaCompleted =
+      latestSOADocument?.status === 'completed' &&
+      !!latestSOADocument.approvedAt;
+  }
+
+  const soaTotalDocuments = hasSOADocumentRequirement ? 1 : 0;
+  const soaOutstandingDocuments =
+    hasSOADocumentRequirement && !soaCompleted ? 1 : 0;
+  const totalDocuments = includedForms.length + soaTotalDocuments;
+  const outstandingDocuments =
+    nonSOAOutstandingDocuments + soaOutstandingDocuments;
 
   return {
     totalDocuments,
@@ -260,97 +210,4 @@ export async function getCurrentMember(organizationId: string, userId: string) {
     select: { id: true, role: true },
   });
   return member;
-}
-
-interface ControlForScoring {
-  id: string;
-  policies: { id: string; status: string }[];
-  controlDocumentTypes?: { formType: string }[];
-}
-
-interface FrameworkWithControlsForScoring {
-  controls: ControlForScoring[];
-}
-
-interface TaskWithControls {
-  id: string;
-  status: string;
-  controls: { id: string }[];
-}
-
-interface EvidenceSubmissionForScoring {
-  formType: string;
-  submittedAt: Date | string;
-}
-
-function hasAnyArtifact(
-  control: ControlForScoring,
-  tasks: TaskWithControls[],
-): boolean {
-  const policies = control.policies ?? [];
-  const documentTypes = control.controlDocumentTypes ?? [];
-  const controlTasks = tasks.filter((t) =>
-    t.controls.some((c) => c.id === control.id),
-  );
-  return (
-    policies.length > 0 || controlTasks.length > 0 || documentTypes.length > 0
-  );
-}
-
-function isControlCompleted(
-  control: ControlForScoring,
-  tasks: TaskWithControls[],
-  evidenceSubmissions: EvidenceSubmissionForScoring[],
-): boolean {
-  const policies = control.policies ?? [];
-  const documentTypes = control.controlDocumentTypes ?? [];
-  const controlTasks = tasks.filter((t) =>
-    t.controls.some((c) => c.id === control.id),
-  );
-
-  const policiesComplete =
-    policies.length === 0 ||
-    policies.every((p) => p.status === 'published');
-
-  const tasksComplete =
-    controlTasks.length === 0 ||
-    controlTasks.every(
-      (t) => t.status === 'done' || t.status === 'not_relevant',
-    );
-
-  let documentsComplete = true;
-  if (documentTypes.length > 0) {
-    const sorted = [...evidenceSubmissions].sort(
-      (a, b) =>
-        new Date(b.submittedAt).getTime() - new Date(a.submittedAt).getTime(),
-    );
-    const now = Date.now();
-    for (const dt of documentTypes) {
-      const latest = sorted.find((es) => es.formType === dt.formType);
-      if (
-        !latest ||
-        now - new Date(latest.submittedAt).getTime() > SIX_MONTHS_MS
-      ) {
-        documentsComplete = false;
-        break;
-      }
-    }
-  }
-
-  return policiesComplete && tasksComplete && documentsComplete;
-}
-
-export function computeFrameworkComplianceScore(
-  framework: FrameworkWithControlsForScoring,
-  tasks: TaskWithControls[],
-  evidenceSubmissions: EvidenceSubmissionForScoring[] = [],
-): number {
-  const controls = (framework.controls ?? []).filter((c) =>
-    hasAnyArtifact(c, tasks),
-  );
-  if (controls.length === 0) return 0;
-  const completed = controls.filter((c) =>
-    isControlCompleted(c, tasks, evidenceSubmissions),
-  ).length;
-  return Math.round((completed / controls.length) * 100);
 }

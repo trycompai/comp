@@ -6,9 +6,18 @@ import type { Invitation, Member, User } from '@db';
 import { db } from '@db/server';
 import { getEmployeeSyncConnections } from '../data/queries';
 import { TeamMembersClient } from './TeamMembersClient';
+import type { BackgroundCheckStatus } from '../../[employeeId]/components/backgroundCheckTypes';
+
+export type { BackgroundCheckStatus };
 
 export interface MemberWithUser extends Member {
   user: User;
+  backgroundCheckRequests?: BackgroundCheckSummary[];
+}
+
+export interface BackgroundCheckSummary {
+  id: string;
+  status: BackgroundCheckStatus;
 }
 
 export interface TeamMembersData {

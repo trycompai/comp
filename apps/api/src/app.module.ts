@@ -41,6 +41,7 @@ import { OrgChartModule } from './org-chart/org-chart.module';
 import { TrainingModule } from './training/training.module';
 import { EvidenceFormsModule } from './evidence-forms/evidence-forms.module';
 import { FrameworksModule } from './frameworks/frameworks.module';
+import { FrameworkVersionsModule } from './framework-editor-versions/framework-versions.module';
 import { AuditModule } from './audit/audit.module';
 import { ControlsModule } from './controls/controls.module';
 import { RolesModule } from './roles/roles.module';
@@ -51,6 +52,7 @@ import { StripeModule } from './stripe/stripe.module';
 import { AdminOrganizationsModule } from './admin-organizations/admin-organizations.module';
 import { AdminFeatureFlagsModule } from './admin-feature-flags/admin-feature-flags.module';
 import { TimelinesModule } from './timelines/timelines.module';
+import { BackgroundChecksModule } from './background-checks/background-checks.module';
 
 @Module({
   imports: [
@@ -104,6 +106,7 @@ import { TimelinesModule } from './timelines/timelines.module';
     OrgChartModule,
     EvidenceFormsModule,
     FrameworksModule,
+    FrameworkVersionsModule,
     RolesModule,
     AuditModule,
     ControlsModule,
@@ -111,6 +114,7 @@ import { TimelinesModule } from './timelines/timelines.module';
     SecretsModule,
     SecurityPenetrationTestsModule,
     StripeModule,
+    BackgroundChecksModule,
     AdminOrganizationsModule,
     AdminFeatureFlagsModule,
     TimelinesModule,

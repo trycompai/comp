@@ -24,6 +24,7 @@ export function DocumentControlsCell({
   onControlLinked,
   onControlUnlinked,
 }: DocumentControlsCellProps) {
+  const isSOADocument = documentType === 'statement_of_applicability';
   const [isExpanded, setIsExpanded] = useState(false);
   const [isSearching, setIsSearching] = useState(false);
   const [search, setSearch] = useState('');
@@ -67,6 +68,11 @@ export function DocumentControlsCell({
 
   const handleLink = useCallback(
     async (control: { id: string; name: string }) => {
+      if (isSOADocument) {
+        toast.info('Linking controls is disabled for Statement of Applicability');
+        return;
+      }
+
       try {
         const current = await apiClient<ControlTemplate>(`/control-template/${control.id}`);
         const currentTypes: string[] = Array.isArray(current.documentTypes)
@@ -86,7 +92,7 @@ export function DocumentControlsCell({
       setSearch('');
       setIsSearching(false);
     },
-    [documentType, onControlLinked],
+    [documentType, isSOADocument, onControlLinked],
   );
 
   const handleUnlink = useCallback(
@@ -211,11 +217,17 @@ export function DocumentControlsCell({
           <button
             type="button"
             onClick={() => setIsSearching(true)}
-            className="border-border hover:bg-muted flex w-full items-center justify-center gap-1 rounded-xs border px-3 py-1.5 text-sm"
+            disabled={isSOADocument}
+            className="border-border hover:bg-muted disabled:text-muted-foreground disabled:bg-muted/40 disabled:cursor-not-allowed flex w-full items-center justify-center gap-1 rounded-xs border px-3 py-1.5 text-sm"
           >
             <Plus className="h-3 w-3" />
             Add Control
           </button>
+        )}
+        {isSOADocument && (
+          <p className="text-muted-foreground mt-2 text-xs">
+            Linking controls is disabled for Statement of Applicability.
+          </p>
         )}
       </div>
     </div>

@@ -8,19 +8,19 @@
   "authConfig": {
     "type": "custom",
     "config": {
-      "setupInstructions": "1. Log in to Chargebee at https://app.chargebee.com\n2. Go to Settings → Configure Chargebee → API Keys\n3. Copy your Full-Access or Read-Only API key\n4. Base64 encode 'api_key:' (with trailing colon, empty password)\n5. Enter your site name and encoded key below",
+      "setupInstructions": "1. Log in to Chargebee at https://app.chargebee.com\n2. Go to Settings > Configure Chargebee > API Keys\n3. Copy your Full-Access or Read-Only API key\n4. Enter your site name and API key below",
       "credentialFields": [
         {
           "label": "Site Name",
           "type": "text",
           "required": true,
-          "helpText": "Your Chargebee site name (e.g. mycompany — the subdomain of your Chargebee URL)"
+          "helpText": "Your Chargebee site name (the subdomain in your Chargebee URL)"
         },
         {
-          "label": "Encoded API Key",
+          "label": "API Key",
           "type": "password",
           "required": true,
-          "helpText": "Base64 encode 'api_key:' (with colon, empty password). Command: echo -n 'your_api_key:' | base64"
+          "helpText": "Found in Settings > Configure Chargebee > API Keys"
         }
       ]
     }

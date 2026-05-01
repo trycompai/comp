@@ -6,8 +6,17 @@
   "docsUrl": "https://docs.anthropic.com/en/api/",
   "baseUrl": "https://api.anthropic.com",
   "authConfig": {
-    "type": "api_key",
-    "config": {}
+    "type": "custom",
+    "config": {
+      "setupInstructions": "1. Go to console.anthropic.com and sign in\n2. Navigate to Settings > Admin API Keys (requires Organization Admin role)\n3. Create a new Admin API key\n4. Copy the key and enter it above\n5. Note: Admin API keys are required for organization-level checks. Regular API keys only work for model access checks.",
+      "credentialFields": [
+        {
+          "label": "API Key",
+          "type": "password",
+          "required": true
+        }
+      ]
+    }
   },
   "capabilities": [
     "checks"
@@ -25,7 +34,7 @@
     {
       "slug": "anthropic_employee_access",
       "name": "Anthropic Employee Access",
-      "description": "Verifies employee access to Anthropic via API.",
+      "description": "Review Anthropic organization access by listing API keys, pending invitations, and workspaces",
       "defaultSeverity": "medium",
       "enabled": true
     }

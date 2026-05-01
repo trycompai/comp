@@ -520,4 +520,197 @@ describe('RolesService', () => {
       );
     });
   });
+
+  describe('filterMembersWithPermission', () => {
+    const organizationId = 'org_1';
+
+    it('returns empty array when members list is empty', async () => {
+      const result = await service.filterMembersWithPermission(
+        organizationId,
+        [],
+        'task',
+        'update',
+      );
+      expect(result).toEqual([]);
+      expect(mockDb.organizationRole.findMany).not.toHaveBeenCalled();
+    });
+
+    it('keeps built-in roles that grant the permission (owner has task:update)', async () => {
+      const members = [
+        { id: 'm1', role: 'owner' },
+        { id: 'm2', role: 'admin' },
+      ];
+      const result = await service.filterMembersWithPermission(
+        organizationId,
+        members,
+        'task',
+        'update',
+      );
+      expect(result.map((m) => m.id).sort()).toEqual(['m1', 'm2']);
+    });
+
+    it('excludes built-in roles that lack the permission (employee has no task perms)', async () => {
+      const members = [
+        { id: 'm1', role: 'employee' },
+        { id: 'm2', role: 'contractor' },
+        { id: 'm3', role: 'owner' },
+      ];
+      const result = await service.filterMembersWithPermission(
+        organizationId,
+        members,
+        'task',
+        'update',
+      );
+      expect(result.map((m) => m.id)).toEqual(['m3']);
+    });
+
+    it('excludes auditor for task:update but keeps them for task:read', async () => {
+      const members = [{ id: 'm1', role: 'auditor' }];
+
+      const forUpdate = await service.filterMembersWithPermission(
+        organizationId,
+        members,
+        'task',
+        'update',
+      );
+      expect(forUpdate).toEqual([]);
+
+      const forRead = await service.filterMembersWithPermission(
+        organizationId,
+        members,
+        'task',
+        'read',
+      );
+      expect(forRead.map((m) => m.id)).toEqual(['m1']);
+    });
+
+    it('treats comma-separated roles as a union (employee,admin gets included)', async () => {
+      const members = [{ id: 'm1', role: 'employee,admin' }];
+      const result = await service.filterMembersWithPermission(
+        organizationId,
+        members,
+        'task',
+        'update',
+      );
+      expect(result.map((m) => m.id)).toEqual(['m1']);
+    });
+
+    it('includes a member whose custom role grants the permission', async () => {
+      (mockDb.organizationRole.findMany as jest.Mock).mockResolvedValue([
+        {
+          name: 'compliance-lead',
+          permissions: JSON.stringify({
+            task: ['read', 'update'],
+            app: ['read'],
+          }),
+        },
+      ]);
+      const members = [{ id: 'm1', role: 'compliance-lead' }];
+      const result = await service.filterMembersWithPermission(
+        organizationId,
+        members,
+        'task',
+        'update',
+      );
+      expect(result.map((m) => m.id)).toEqual(['m1']);
+      expect(mockDb.organizationRole.findMany).toHaveBeenCalledTimes(1);
+    });
+
+    it('excludes a member whose custom role lacks the permission', async () => {
+      (mockDb.organizationRole.findMany as jest.Mock).mockResolvedValue([
+        {
+          name: 'readonly',
+          permissions: JSON.stringify({ task: ['read'] }),
+        },
+      ]);
+      const members = [{ id: 'm1', role: 'readonly' }];
+      const result = await service.filterMembersWithPermission(
+        organizationId,
+        members,
+        'task',
+        'update',
+      );
+      expect(result).toEqual([]);
+    });
+
+    it('excludes members with null, empty, or unknown roles', async () => {
+      (mockDb.organizationRole.findMany as jest.Mock).mockResolvedValue([]);
+      const members = [
+        { id: 'm1', role: null },
+        { id: 'm2', role: '' },
+        { id: 'm3', role: 'nonexistent-role' },
+      ];
+      const result = await service.filterMembersWithPermission(
+        organizationId,
+        members,
+        'task',
+        'update',
+      );
+      expect(result).toEqual([]);
+    });
+
+    it('makes exactly one DB query regardless of member count', async () => {
+      (mockDb.organizationRole.findMany as jest.Mock).mockResolvedValue([
+        {
+          name: 'custom-a',
+          permissions: JSON.stringify({ task: ['update'] }),
+        },
+      ]);
+      const members = Array.from({ length: 25 }, (_, i) => ({
+        id: `m${i}`,
+        role: i % 2 === 0 ? 'custom-a' : 'employee',
+      }));
+      const result = await service.filterMembersWithPermission(
+        organizationId,
+        members,
+        'task',
+        'update',
+      );
+      expect(result.length).toBe(13); // 0,2,4,...,24 → 13 members
+      expect(mockDb.organizationRole.findMany).toHaveBeenCalledTimes(1);
+    });
+
+    it('skips the DB query when all roles are built-in', async () => {
+      const members = [
+        { id: 'm1', role: 'owner' },
+        { id: 'm2', role: 'admin,auditor' },
+        { id: 'm3', role: 'employee' },
+      ];
+      await service.filterMembersWithPermission(
+        organizationId,
+        members,
+        'app',
+        'read',
+      );
+      expect(mockDb.organizationRole.findMany).not.toHaveBeenCalled();
+    });
+
+    it('parses permissions that are already objects (not strings)', async () => {
+      (mockDb.organizationRole.findMany as jest.Mock).mockResolvedValue([
+        {
+          name: 'object-role',
+          permissions: { task: ['update'] },
+        },
+      ]);
+      const members = [{ id: 'm1', role: 'object-role' }];
+      const result = await service.filterMembersWithPermission(
+        organizationId,
+        members,
+        'task',
+        'update',
+      );
+      expect(result.map((m) => m.id)).toEqual(['m1']);
+    });
+
+    it('trims whitespace around comma-separated role names', async () => {
+      const members = [{ id: 'm1', role: 'employee ,  admin' }];
+      const result = await service.filterMembersWithPermission(
+        organizationId,
+        members,
+        'task',
+        'update',
+      );
+      expect(result.map((m) => m.id)).toEqual(['m1']);
+    });
+  });
 });

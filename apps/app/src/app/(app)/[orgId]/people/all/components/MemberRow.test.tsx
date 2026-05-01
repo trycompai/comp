@@ -60,7 +60,9 @@ const baseMember = {
 
 const noop = vi.fn();
 
-function renderMemberRow(deviceStatus?: 'compliant' | 'non-compliant' | 'not-installed') {
+function renderMemberRow(
+  deviceStatus?: 'compliant' | 'non-compliant' | 'stale' | 'not-installed',
+) {
   return render(
     <table>
       <tbody>
@@ -84,29 +86,29 @@ describe('MemberRow device status', () => {
     vi.clearAllMocks();
   });
 
-  it('shows "Not Installed" with red dot when deviceStatus is not-installed', () => {
+  it('shows "Device 0/1" when deviceStatus is not-installed', () => {
     renderMemberRow('not-installed');
-    expect(screen.getByText('Not Installed')).toBeInTheDocument();
-    expect(screen.getByText('Not Installed').className).toContain('text-muted-foreground');
+    expect(screen.getByText('Device 0/1')).toBeInTheDocument();
   });
 
   it('shows dash when deviceStatus is omitted (no compliance obligation)', () => {
     renderMemberRow();
-    expect(screen.queryByText('Not Installed')).not.toBeInTheDocument();
-    expect(screen.queryByText('Compliant')).not.toBeInTheDocument();
-    expect(screen.queryByText('Non-Compliant')).not.toBeInTheDocument();
+    expect(screen.queryByText(/^Device /)).not.toBeInTheDocument();
   });
 
-  it('shows "Compliant" with green dot when deviceStatus is compliant', () => {
+  it('shows "Device 1/1" when deviceStatus is compliant', () => {
     renderMemberRow('compliant');
-    expect(screen.getByText('Compliant')).toBeInTheDocument();
-    expect(screen.getByText('Compliant').className).toContain('text-foreground');
+    expect(screen.getByText('Device 1/1')).toBeInTheDocument();
   });
 
-  it('shows "Non-Compliant" with yellow dot when deviceStatus is non-compliant', () => {
+  it('shows "Device 0/1" when deviceStatus is non-compliant', () => {
     renderMemberRow('non-compliant');
-    expect(screen.getByText('Non-Compliant')).toBeInTheDocument();
-    expect(screen.getByText('Non-Compliant').className).toContain('text-foreground');
+    expect(screen.getByText('Device 0/1')).toBeInTheDocument();
+  });
+
+  it('shows "Device 0/1" when deviceStatus is stale', () => {
+    renderMemberRow('stale');
+    expect(screen.getByText('Device 0/1')).toBeInTheDocument();
   });
 
   it('does not show device status for platform admin', () => {
@@ -132,9 +134,7 @@ describe('MemberRow device status', () => {
       </table>,
     );
 
-    expect(screen.queryByText('Compliant')).not.toBeInTheDocument();
-    expect(screen.queryByText('Non-Compliant')).not.toBeInTheDocument();
-    expect(screen.queryByText('Not Installed')).not.toBeInTheDocument();
+    expect(screen.queryByText(/^Device /)).not.toBeInTheDocument();
   });
 
   it('does not show device status for deactivated member', () => {
@@ -160,24 +160,7 @@ describe('MemberRow device status', () => {
       </table>,
     );
 
-    expect(screen.queryByText('Non-Compliant')).not.toBeInTheDocument();
-    expect(screen.queryByText('Compliant')).not.toBeInTheDocument();
-  });
-
-  it('renders correct dot colors for each status', () => {
-    const { container, unmount } = renderMemberRow('compliant');
-    const greenDot = container.querySelector('.bg-green-500');
-    expect(greenDot).toBeInTheDocument();
-    unmount();
-
-    const { container: c2, unmount: u2 } = renderMemberRow('non-compliant');
-    const yellowDot = c2.querySelector('.bg-yellow-500');
-    expect(yellowDot).toBeInTheDocument();
-    u2();
-
-    const { container: c3 } = renderMemberRow('not-installed');
-    const redDot = c3.querySelector('.bg-red-400');
-    expect(redDot).toBeInTheDocument();
+    expect(screen.queryByText(/^Device /)).not.toBeInTheDocument();
   });
 
   it('does not show device status for member without compliance obligation (e.g. auditor)', () => {
@@ -203,9 +186,7 @@ describe('MemberRow device status', () => {
       </table>,
     );
 
-    expect(screen.queryByText('Not Installed')).not.toBeInTheDocument();
-    expect(screen.queryByText('Compliant')).not.toBeInTheDocument();
-    expect(screen.queryByText('Non-Compliant')).not.toBeInTheDocument();
+    expect(screen.queryByText(/^Device /)).not.toBeInTheDocument();
   });
 
   it('still shows device status for member with compliance obligation', () => {
@@ -231,6 +212,6 @@ describe('MemberRow device status', () => {
       </table>,
     );
 
-    expect(screen.getByText('Compliant')).toBeInTheDocument();
+    expect(screen.getByText('Device 1/1')).toBeInTheDocument();
   });
 });

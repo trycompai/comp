@@ -1,8 +1,31 @@
 import { getManifest } from '@trycompai/integration-platform';
-import { db } from '@db';
+import { db, TaskFrequency } from '@db';
 import { logger, schedules } from '@trigger.dev/sdk';
 import { runTaskIntegrationChecks } from './run-task-integration-checks';
 import { parseDisabledTaskChecks } from '../../integration-platform/utils/disabled-task-checks';
+import { isDueToday } from '../shared/is-due-today';
+
+/**
+ * Pure helper extracted for unit testing. Filters a list of candidate tasks
+ * down to those whose schedule says they are due at `now`.
+ *
+ * Kept in-memory (Shape A from the plan) because the single source of truth
+ * for schedule math is `isDueToday`; duplicating it in SQL would create drift.
+ */
+export function filterDueTasks<
+  T extends {
+    integrationScheduleFrequency: TaskFrequency;
+    integrationLastRunAt: Date | null;
+  },
+>({ tasks, now }: { tasks: T[]; now: Date }): T[] {
+  return tasks.filter((t) =>
+    isDueToday({
+      scheduleFrequency: t.integrationScheduleFrequency,
+      lastRunAt: t.integrationLastRunAt,
+      now,
+    }),
+  );
+}
 
 /**
  * Daily scheduled task (orchestrator) that finds all tasks with integration checks
@@ -17,6 +40,8 @@ export const integrationChecksSchedule = schedules.task({
       scheduledAt: payload.timestamp,
       lastRun: payload.lastTimestamp,
     });
+
+    const now = new Date();
 
     // Get all active integration connections
     const activeConnections = await db.integrationConnection.findMany({
@@ -63,7 +88,7 @@ export const integrationChecksSchedule = schedules.task({
       }
 
       // Find tasks in this org that match these templates
-      const tasks = await db.task.findMany({
+      const candidateTasks = await db.task.findMany({
         where: {
           organizationId: connection.organizationId,
           taskTemplateId: { in: taskTemplateIds as string[] },
@@ -72,8 +97,21 @@ export const integrationChecksSchedule = schedules.task({
           id: true,
           title: true,
           taskTemplateId: true,
+          integrationScheduleFrequency: true,
+          integrationLastRunAt: true,
         },
       });
+
+      // Filter by the task's integration schedule. `lastRunAt` is only written
+      // on success inside `runTaskIntegrationChecks`, so failures naturally
+      // retry on the next orchestrator tick (the "crude retry" behavior).
+      const tasks = filterDueTasks({ tasks: candidateTasks, now });
+
+      if (tasks.length < candidateTasks.length) {
+        logger.info(
+          `Skipped ${candidateTasks.length - tasks.length} task(s) not due yet for connection ${connection.id}`,
+        );
+      }
 
       // Per-task disabled checks are stored on the connection's metadata so
       // users can disconnect individual checks from individual tasks without

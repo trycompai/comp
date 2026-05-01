@@ -1,0 +1,35 @@
+enum FrameworkSyncOperationKind {
+  SYNC
+  ROLLBACK
+}
+
+model FrameworkSyncOperation {
+  id                  String            @id @default(dbgenerated("generate_prefixed_cuid('fso'::text)"))
+  frameworkInstanceId String
+  frameworkInstance   FrameworkInstance @relation(fields: [frameworkInstanceId], references: [id], onDelete: Cascade)
+
+  fromVersionId String
+  fromVersion   FrameworkVersion @relation("FrameworkSyncOperationFromVersion", fields: [fromVersionId], references: [id])
+  toVersionId   String
+  toVersion     FrameworkVersion @relation("FrameworkSyncOperationToVersion", fields: [toVersionId], references: [id])
+
+  kind FrameworkSyncOperationKind
+
+  performedAt   DateTime @default(now())
+  performedById String?
+  performedBy   Member?  @relation("FrameworkSyncOperationPerformer", fields: [performedById], references: [id], onDelete: SetNull)
+
+  // Only set when kind = SYNC
+  rollbackExpiresAt DateTime?
+
+  // Self-reference: when this sync was reversed, points at the rollback op.
+  rolledBackByOperationId String?                 @unique
+  rolledBackByOperation   FrameworkSyncOperation? @relation("FrameworkSyncOperationRollback", fields: [rolledBackByOperationId], references: [id])
+  rolledBackOperation     FrameworkSyncOperation? @relation("FrameworkSyncOperationRollback")
+
+  undoPayload Json // structured per undo-payload.types.ts
+  summary     Json // counts for audit log / UI
+
+  @@index([frameworkInstanceId, performedAt])
+  @@index([frameworkInstanceId, kind])
+}

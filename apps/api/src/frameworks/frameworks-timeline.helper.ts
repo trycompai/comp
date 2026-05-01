@@ -174,10 +174,12 @@ async function runPhaseAdvancement({
     where: { id: { in: frameworkInstanceIds }, organizationId },
     include: {
       requirementsMapped: {
+        where: { archivedAt: null },
         include: {
           control: {
             include: {
               policies: {
+                where: { archivedAt: null },
                 select: { id: true, name: true, status: true },
               },
             },
@@ -223,12 +225,13 @@ async function runPhaseAdvancement({
       ? db.task.findMany({
           where: {
             organizationId,
-            controls: { some: { id: { in: allControlIds } } },
+            archivedAt: null,
+            controls: { some: { id: { in: allControlIds }, archivedAt: null } },
           },
           select: {
             id: true,
             status: true,
-            controls: { select: { id: true } },
+            controls: { where: { archivedAt: null }, select: { id: true } },
           },
         })
       : Promise.resolve([]);

@@ -48,6 +48,12 @@ jest.mock('@db', () => ({
       update: jest.fn(),
     },
   },
+  FindingType: { soc2: 'soc2', iso27001: 'iso27001' },
+  FindingStatus: { open: 'open', closed: 'closed' },
+  PhaseCompletionType: { manual: 'manual', auto: 'auto' },
+  TimelinePhaseStatus: { pending: 'pending', completed: 'completed' },
+  TimelineStatus: { draft: 'draft', active: 'active' },
+  Departments: { it: 'it', none: 'none' },
 }));
 
 jest.mock('@trycompai/auth', () => ({
@@ -223,17 +229,40 @@ describe('PeopleService', () => {
   });
 
   describe('updateById', () => {
+    const setupCallerMember = (
+      callerUserId: string,
+      organizationId: string,
+      role: string,
+    ) => {
+      (db.member.findFirst as jest.Mock).mockImplementation(
+        (args: { where: { userId?: string; organizationId?: string } }) => {
+          if (
+            args?.where?.userId === callerUserId &&
+            args?.where?.organizationId === organizationId
+          ) {
+            return Promise.resolve({
+              id: 'mem_caller',
+              userId: callerUserId,
+              organizationId,
+              role,
+            });
+          }
+          return Promise.resolve(null);
+        },
+      );
+    };
+
     it('should update a member', async () => {
-      const updateData = { role: 'admin' };
+      const updateData = { role: 'auditor' };
       const existingMember = {
         id: 'mem_1',
-        userId: 'usr_1',
+        userId: 'usr_target',
         role: 'employee',
       };
       const updatedMember = {
         id: 'mem_1',
         user: { name: 'Alice' },
-        role: 'admin',
+        role: 'auditor',
       };
 
       (MemberValidator.validateOrganization as jest.Mock).mockResolvedValue(
@@ -245,11 +274,13 @@ describe('PeopleService', () => {
       (MemberQueries.updateMember as jest.Mock).mockResolvedValue(
         updatedMember,
       );
+      setupCallerMember('usr_caller', 'org_123', 'admin,auditor');
 
       const result = await service.updateById(
         'mem_1',
         'org_123',
         updateData as any,
+        'usr_caller',
       );
 
       expect(result).toEqual(updatedMember);
@@ -286,8 +317,14 @@ describe('PeopleService', () => {
       (MemberQueries.updateMember as jest.Mock).mockResolvedValue(
         updatedMember,
       );
+      setupCallerMember('usr_caller', 'org_123', 'admin');
 
-      await service.updateById('mem_1', 'org_123', updateData as any);
+      await service.updateById(
+        'mem_1',
+        'org_123',
+        updateData as any,
+        'usr_caller',
+      );
 
       expect(MemberValidator.validateUser).toHaveBeenCalledWith('usr_new');
       expect(MemberValidator.validateUserNotMember).toHaveBeenCalledWith(
@@ -304,10 +341,178 @@ describe('PeopleService', () => {
       (MemberValidator.validateMemberExists as jest.Mock).mockRejectedValue(
         new NotFoundException('Member not found'),
       );
+      setupCallerMember('usr_caller', 'org_123', 'admin');
 
       await expect(
-        service.updateById('mem_none', 'org_123', {} as any),
+        service.updateById('mem_none', 'org_123', {} as any, 'usr_caller'),
       ).rejects.toThrow(NotFoundException);
+    });
+
+    describe('role authorization', () => {
+      const targetMember = {
+        id: 'mem_target',
+        userId: 'usr_target',
+        role: 'employee',
+      };
+
+      beforeEach(() => {
+        (MemberValidator.validateOrganization as jest.Mock).mockResolvedValue(
+          undefined,
+        );
+        (MemberValidator.validateMemberExists as jest.Mock).mockResolvedValue(
+          targetMember,
+        );
+        (MemberQueries.updateMember as jest.Mock).mockResolvedValue({
+          id: 'mem_target',
+          user: { name: 'Target' },
+          role: 'employee',
+        });
+      });
+
+      it('should forbid admin from assigning owner role to themselves', async () => {
+        const callerMember = {
+          id: 'mem_self',
+          userId: 'usr_caller',
+          role: 'admin',
+        };
+        (MemberValidator.validateMemberExists as jest.Mock).mockResolvedValue(
+          callerMember,
+        );
+        setupCallerMember('usr_caller', 'org_123', 'admin');
+
+        await expect(
+          service.updateById(
+            'mem_self',
+            'org_123',
+            { role: 'owner' } as any,
+            'usr_caller',
+          ),
+        ).rejects.toThrow(ForbiddenException);
+      });
+
+      it('should forbid admin from assigning owner role to another user', async () => {
+        setupCallerMember('usr_caller', 'org_123', 'admin');
+
+        await expect(
+          service.updateById(
+            'mem_target',
+            'org_123',
+            { role: 'owner' } as any,
+            'usr_caller',
+          ),
+        ).rejects.toThrow(ForbiddenException);
+      });
+
+      it('should forbid admin from changing their own role at all', async () => {
+        const callerMember = {
+          id: 'mem_self',
+          userId: 'usr_caller',
+          role: 'admin',
+        };
+        (MemberValidator.validateMemberExists as jest.Mock).mockResolvedValue(
+          callerMember,
+        );
+        setupCallerMember('usr_caller', 'org_123', 'admin');
+
+        await expect(
+          service.updateById(
+            'mem_self',
+            'org_123',
+            { role: 'auditor' } as any,
+            'usr_caller',
+          ),
+        ).rejects.toThrow(ForbiddenException);
+      });
+
+      it('should forbid admin from assigning a role they do not have', async () => {
+        setupCallerMember('usr_caller', 'org_123', 'admin');
+
+        await expect(
+          service.updateById(
+            'mem_target',
+            'org_123',
+            { role: 'custom_special' } as any,
+            'usr_caller',
+          ),
+        ).rejects.toThrow(ForbiddenException);
+      });
+
+      it('should allow admin to assign auditor to another user', async () => {
+        setupCallerMember('usr_caller', 'org_123', 'admin,auditor');
+
+        await expect(
+          service.updateById(
+            'mem_target',
+            'org_123',
+            { role: 'auditor' } as any,
+            'usr_caller',
+          ),
+        ).resolves.toBeDefined();
+
+        expect(MemberQueries.updateMember).toHaveBeenCalled();
+      });
+
+      it('should allow owner to demote/promote others without using owner role', async () => {
+        setupCallerMember('usr_caller', 'org_123', 'owner');
+
+        await expect(
+          service.updateById(
+            'mem_target',
+            'org_123',
+            { role: 'admin' } as any,
+            'usr_caller',
+          ),
+        ).resolves.toBeDefined();
+
+        expect(MemberQueries.updateMember).toHaveBeenCalled();
+      });
+
+      it('should forbid demoting the owner via this endpoint (downgrade requires transfer-ownership)', async () => {
+        const ownerTarget = {
+          id: 'mem_target',
+          userId: 'usr_target',
+          role: 'owner',
+        };
+        (MemberValidator.validateMemberExists as jest.Mock).mockResolvedValue(
+          ownerTarget,
+        );
+        setupCallerMember('usr_caller', 'org_123', 'owner');
+
+        await expect(
+          service.updateById(
+            'mem_target',
+            'org_123',
+            { role: 'admin' } as any,
+            'usr_caller',
+          ),
+        ).rejects.toThrow(ForbiddenException);
+      });
+
+      it('should forbid update when caller is not a member of the org', async () => {
+        (db.member.findFirst as jest.Mock).mockResolvedValue(null);
+
+        await expect(
+          service.updateById(
+            'mem_target',
+            'org_123',
+            { role: 'auditor' } as any,
+            'usr_caller',
+          ),
+        ).rejects.toThrow(ForbiddenException);
+      });
+
+      it('should skip role authorization when role is not being changed', async () => {
+        // When role is not in the update payload, no caller-role lookup or
+        // self-mod check happens — non-role updates flow through unchanged.
+        await expect(
+          service.updateById(
+            'mem_target',
+            'org_123',
+            { jobTitle: 'Director' } as any,
+            'usr_caller',
+          ),
+        ).resolves.toBeDefined();
+      });
     });
   });
 

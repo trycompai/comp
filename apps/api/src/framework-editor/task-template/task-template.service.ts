@@ -7,25 +7,17 @@ import { UpdateTaskTemplateDto } from './dto/update-task-template.dto';
 export class TaskTemplateService {
   private readonly logger = new Logger(TaskTemplateService.name);
 
-  async create(dto: CreateTaskTemplateDto, frameworkId?: string) {
-    const controlIds = frameworkId
-      ? await db.frameworkEditorControlTemplate
-          .findMany({
-            where: { requirements: { some: { frameworkId } } },
-            select: { id: true },
-          })
-          .then((cts) => cts.map((ct) => ({ id: ct.id })))
-      : [];
-
+  // New primitives are created unlinked. CX explicitly attaches them to
+  // controls via the dedicated link endpoints — auto-linking to every
+  // control in a framework was wrong (CX rarely wants the new task on
+  // every control) and forced manual cleanup after each create.
+  async create(dto: CreateTaskTemplateDto) {
     const taskTemplate = await db.frameworkEditorTaskTemplate.create({
       data: {
         name: dto.name,
         description: dto.description ?? '',
         frequency: dto.frequency ?? Frequency.monthly,
         department: dto.department ?? Departments.none,
-        ...(controlIds.length > 0 && {
-          controlTemplates: { connect: controlIds },
-        }),
       },
     });
 
