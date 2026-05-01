@@ -24,6 +24,12 @@ export interface RunLinkageInput {
   /** When set, only link this single vendor. */
   vendorId?: string;
   /**
+   * When `true`, disconnect ALL existing task links on the in-scope risk(s) /
+   * vendor(s) before running the embedding match. This is destructive — it
+   * wipes any manual unlinks the user made. Default `false` (additive).
+   */
+  replace?: boolean;
+  /**
    * Optional progress callback. The trigger.dev wrapper passes this and writes
    * each phase to `metadata.set(...)` so the UI can subscribe via realtime.
    * Pure callers (e.g. tests, server-side scripts) can omit it.
@@ -82,6 +88,7 @@ export async function runLinkage({
   organizationId,
   riskId,
   vendorId,
+  replace,
   onPhase,
 }: RunLinkageInput): Promise<RunLinkageOutput> {
   onPhase?.({ name: 'starting' });
@@ -98,6 +105,24 @@ export async function runLinkage({
     where: { organizationId },
     select: { id: true, title: true, description: true, department: true },
   });
+
+  // When replace=true, wipe existing task links on every in-scope entity BEFORE
+  // the embedding/matching loops so the connect step below builds linkage from
+  // scratch. This is destructive — clears manual unlinks too.
+  if (replace) {
+    for (const risk of risks) {
+      await db.risk.update({
+        where: { id: risk.id },
+        data: { tasks: { set: [] } },
+      });
+    }
+    for (const vendor of vendors) {
+      await db.vendor.update({
+        where: { id: vendor.id },
+        data: { tasks: { set: [] } },
+      });
+    }
+  }
 
   if (tasks.length === 0) {
     onPhase?.({ name: 'done', riskLinks: 0, vendorLinks: 0 });

@@ -283,12 +283,28 @@ export function useRiskActions() {
     [],
   );
 
+  const relinkRisk = useCallback(
+    async (riskId: string): Promise<{ runId: string; publicAccessToken: string }> => {
+      const response = await fetch(`/api/risks/${riskId}/relink`, {
+        method: 'POST',
+        credentials: 'include',
+      });
+      if (!response.ok) {
+        const body = await response.json().catch(() => ({}));
+        throw new Error(body.error || 'Failed to trigger relink');
+      }
+      return response.json();
+    },
+    [],
+  );
+
   return {
     createRisk,
     updateRisk,
     deleteRisk,
     regenerateMitigation,
     autoLinkRisk,
+    relinkRisk,
   };
 }
 

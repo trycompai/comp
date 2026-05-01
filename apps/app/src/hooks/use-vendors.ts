@@ -270,6 +270,21 @@ export function useVendorActions() {
     [],
   );
 
+  const relinkVendor = useCallback(
+    async (vendorId: string): Promise<{ runId: string; publicAccessToken: string }> => {
+      const response = await fetch(`/api/vendors/${vendorId}/relink`, {
+        method: 'POST',
+        credentials: 'include',
+      });
+      if (!response.ok) {
+        const body = await response.json().catch(() => ({}));
+        throw new Error(body.error || 'Failed to trigger relink');
+      }
+      return response.json();
+    },
+    [],
+  );
+
   return {
     createVendor,
     updateVendor,
@@ -277,6 +292,7 @@ export function useVendorActions() {
     triggerAssessment,
     regenerateMitigation,
     autoLinkVendor,
+    relinkVendor,
   };
 }
 

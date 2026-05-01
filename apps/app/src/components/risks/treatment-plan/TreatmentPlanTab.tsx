@@ -7,6 +7,7 @@ import { useEffect, useState } from 'react';
 import { AutoLinkButton } from './AutoLinkButton';
 import { DescriptionEditor } from './DescriptionEditor';
 import { LinkedWork } from './LinkedWork';
+import { RelinkButton } from './RelinkButton';
 import { StrategyPicker } from './StrategyPicker';
 import { TreatmentHero } from './TreatmentHero';
 
@@ -38,6 +39,11 @@ interface TreatmentPlanTabProps {
    * tasks (and the user can update), an Auto-link button is shown above the
    * Linked Work content. Older callers that don't pass this prop keep working. */
   onAutoLink?: () => Promise<{ runId: string; publicAccessToken: string }>;
+  /** Optional re-link callback. When provided and the entity has at least one
+   * linked task (and the user can update), a "Re-link from scratch" button is
+   * shown above the Linked Work content. The button confirms before running
+   * since this is destructive — it wipes the user's manual unlinks. */
+  onRelink?: () => Promise<{ runId: string; publicAccessToken: string }>;
   /** Optional unlink callback. When provided, each task row in the Linked Work
    * card gets a × affordance that removes the task↔entity link. */
   onUnlinkTask?: (taskId: string) => Promise<void>;
@@ -52,6 +58,7 @@ export function TreatmentPlanTab({
   onRegenerate,
   regenerating,
   onAutoLink,
+  onRelink,
   onUnlinkTask,
 }: TreatmentPlanTabProps) {
   const [strategy, setStrategy] = useState(entity.treatmentStrategy);
@@ -147,6 +154,15 @@ export function TreatmentPlanTab({
                   onAutoLink={onAutoLink}
                   onAfterLink={onRegenerate}
                 />
+              )}
+              {entity.tasks.length > 0 && canUpdate && onRelink && (
+                <div className="flex justify-end">
+                  <RelinkButton
+                    disabled={regenerating}
+                    onRelink={onRelink}
+                    onAfterLink={onRegenerate}
+                  />
+                </div>
               )}
               <LinkedWork
                 orgId={orgId}

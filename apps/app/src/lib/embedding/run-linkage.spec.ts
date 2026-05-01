@@ -114,4 +114,84 @@ describe('runLinkage onPhase', () => {
       vendorLinks: 0,
     });
   });
+
+  it('replace=true disconnects all tasks before linking', async () => {
+    dbMock.risk.findMany.mockResolvedValueOnce([
+      {
+        id: 'rsk_1',
+        title: 'Phishing',
+        description: '',
+        category: 'people',
+        department: Departments.hr,
+      },
+    ]);
+    dbMock.vendor.findMany.mockResolvedValueOnce([]);
+    dbMock.task.findMany.mockResolvedValueOnce([
+      { id: 'tsk_a', title: 'awareness', description: '', department: Departments.hr },
+    ]);
+    findSimilarTasksMock.mockResolvedValueOnce([
+      { id: 'tsk_a', score: 0.9, department: Departments.hr },
+    ]);
+
+    await runLinkage({ organizationId: 'org_1', riskId: 'rsk_1', replace: true });
+
+    // Expect disconnect-all (set: []) BEFORE the connect call.
+    const updateCalls = dbMock.risk.update.mock.calls.map((c) => c[0]);
+    expect(updateCalls[0]).toEqual({
+      where: { id: 'rsk_1' },
+      data: { tasks: { set: [] } },
+    });
+    expect(updateCalls[1]).toEqual({
+      where: { id: 'rsk_1' },
+      data: { tasks: { connect: [{ id: 'tsk_a' }] } },
+    });
+  });
+
+  it('replace=true on a vendor disconnects vendor tasks', async () => {
+    dbMock.risk.findMany.mockResolvedValueOnce([]);
+    dbMock.vendor.findMany.mockResolvedValueOnce([
+      { id: 'vnd_1', name: 'V', description: '', category: 'software_as_a_service' },
+    ]);
+    dbMock.task.findMany.mockResolvedValueOnce([
+      { id: 'tsk_a', title: 'review', description: '', department: Departments.gov },
+    ]);
+    findSimilarTasksMock.mockResolvedValueOnce([
+      { id: 'tsk_a', score: 0.9, department: Departments.gov },
+    ]);
+
+    await runLinkage({ organizationId: 'org_1', vendorId: 'vnd_1', replace: true });
+
+    const updateCalls = dbMock.vendor.update.mock.calls.map((c) => c[0]);
+    expect(updateCalls[0]).toEqual({
+      where: { id: 'vnd_1' },
+      data: { tasks: { set: [] } },
+    });
+  });
+
+  it('replace=false (default) does not disconnect existing links', async () => {
+    dbMock.risk.findMany.mockResolvedValueOnce([
+      {
+        id: 'rsk_1',
+        title: 'a',
+        description: '',
+        category: 'people',
+        department: Departments.hr,
+      },
+    ]);
+    dbMock.vendor.findMany.mockResolvedValueOnce([]);
+    dbMock.task.findMany.mockResolvedValueOnce([
+      { id: 'tsk_a', title: 'b', description: '', department: Departments.hr },
+    ]);
+    findSimilarTasksMock.mockResolvedValueOnce([
+      { id: 'tsk_a', score: 0.9, department: Departments.hr },
+    ]);
+
+    await runLinkage({ organizationId: 'org_1', riskId: 'rsk_1' });
+
+    // Only one update call: the connect. No `set: []` precedes it.
+    const setCalls = dbMock.risk.update.mock.calls
+      .map((c) => c[0])
+      .filter((arg) => arg.data.tasks.set !== undefined);
+    expect(setCalls).toHaveLength(0);
+  });
 });
