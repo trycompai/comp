@@ -7,9 +7,12 @@ import { NextRequest, NextResponse } from 'next/server';
 /**
  * POST /api/risks/[riskId]/auto-link
  *
- * Triggers the linkage task for one risk and returns a public-access token so
- * the frontend can subscribe via `useRealtimeRun` and display live progress
- * (embedding, matching, linking) plus the final link count.
+ * Triggers the linkage task in `suggestionsOnly` mode for one risk and returns
+ * a public-access token so the frontend can subscribe via `useRealtimeRun`,
+ * display live progress, and read `run.output.suggestions` once complete.
+ *
+ * No DB writes happen here — the user reviews the suggestions in the UI and
+ * the apply endpoint (`/auto-link/apply`) persists their final selection.
  */
 export async function POST(
   req: NextRequest,
@@ -45,7 +48,7 @@ export async function POST(
 
     const handle = await tasks.trigger<typeof linkRisksAndVendorsToWork>(
       'link-risks-and-vendors-to-work',
-      { organizationId, riskId },
+      { organizationId, riskId, suggestionsOnly: true },
     );
 
     const publicAccessToken = await triggerAuth.createPublicToken({

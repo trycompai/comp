@@ -30,6 +30,13 @@ export interface RunLinkageInput {
    */
   replace?: boolean;
   /**
+   * When `true`, runs the embedding + matching loop but DOES NOT persist any
+   * task connections. The output includes a `suggestions` block the caller
+   * can render in a review-before-apply UI. Mutually exclusive with `replace`
+   * — when both are passed, suggestionsOnly wins (no DB writes).
+   */
+  suggestionsOnly?: boolean;
+  /**
    * Optional progress callback. The trigger.dev wrapper passes this and writes
    * each phase to `metadata.set(...)` so the UI can subscribe via realtime.
    * Pure callers (e.g. tests, server-side scripts) can omit it.
@@ -37,9 +44,33 @@ export interface RunLinkageInput {
   onPhase?: (phase: LinkagePhase) => void;
 }
 
+export interface SuggestedTask {
+  id: string;
+  title: string;
+  status: string;
+  score: number;
+}
+
+export interface SuggestedControl {
+  id: string;
+  code: string;
+  name: string;
+  framework: string;
+  /** Highest score of any suggested task that brought this control in. */
+  score: number;
+  /** Task ids that introduced this control (used by the UI to dim derived rows). */
+  viaTaskIds: string[];
+}
+
 export interface RunLinkageOutput {
   riskLinks: number;
   vendorLinks: number;
+  suggestions?: {
+    forRiskId?: string;
+    forVendorId?: string;
+    tasks: SuggestedTask[];
+    controls: SuggestedControl[];
+  };
 }
 
 const RISK_QUERY_TOP_K = 25;
@@ -72,6 +103,98 @@ function taskQueryText(t: { title: string; description: string }): string {
   return [t.title, t.description].filter(Boolean).join('\n');
 }
 
+interface RawTaskWithControls {
+  id: string;
+  title: string;
+  status: string;
+  controls: Array<{
+    id: string;
+    name: string;
+    requirementsMapped: Array<{
+      frameworkInstance: { framework: { name: string } } | null;
+      requirement: { identifier: string } | null;
+      customRequirement: { identifier: string } | null;
+    }>;
+  }>;
+}
+
+/**
+ * Build SuggestedTask + SuggestedControl arrays for a single source entity
+ * given the candidate task ids + scores returned by the matching step.
+ */
+async function buildSuggestions({
+  organizationId,
+  taskScores,
+}: {
+  organizationId: string;
+  taskScores: Map<string, number>;
+}): Promise<{ tasks: SuggestedTask[]; controls: SuggestedControl[] }> {
+  const ids = [...taskScores.keys()];
+  if (ids.length === 0) return { tasks: [], controls: [] };
+
+  const enriched = (await db.task.findMany({
+    where: { id: { in: ids }, organizationId },
+    select: {
+      id: true,
+      title: true,
+      status: true,
+      controls: {
+        select: {
+          id: true,
+          name: true,
+          requirementsMapped: {
+            select: {
+              frameworkInstance: {
+                select: { framework: { select: { name: true } } },
+              },
+              requirement: { select: { identifier: true } },
+              customRequirement: { select: { identifier: true } },
+            },
+          },
+        },
+      },
+    },
+  })) as unknown as RawTaskWithControls[];
+
+  // Sort by score desc so deterministic ordering survives the trip.
+  const tasks: SuggestedTask[] = enriched
+    .map((t) => ({
+      id: t.id,
+      title: t.title,
+      status: t.status,
+      score: taskScores.get(t.id) ?? 0,
+    }))
+    .sort((a, b) => b.score - a.score);
+
+  const byId = new Map<string, SuggestedControl>();
+  for (const t of enriched) {
+    const taskScore = taskScores.get(t.id) ?? 0;
+    for (const c of t.controls) {
+      const mapping = c.requirementsMapped[0];
+      const code =
+        mapping?.requirement?.identifier ?? mapping?.customRequirement?.identifier ?? c.id;
+      const framework = mapping?.frameworkInstance?.framework?.name ?? 'Custom';
+      const existing = byId.get(c.id);
+      if (existing) {
+        if (taskScore > existing.score) existing.score = taskScore;
+        if (!existing.viaTaskIds.includes(t.id)) existing.viaTaskIds.push(t.id);
+        continue;
+      }
+      byId.set(c.id, {
+        id: c.id,
+        code,
+        name: c.name,
+        framework,
+        score: taskScore,
+        viaTaskIds: [t.id],
+      });
+    }
+  }
+
+  const controls = [...byId.values()].sort((a, b) => b.score - a.score);
+  return { tasks, controls };
+}
+
 /**
  * Embeds the org's risks/vendors/tasks (idempotent), then for each risk and
  * vendor in scope finds the top-K similar tasks above the threshold and
@@ -83,12 +206,16 @@ function taskQueryText(t: { title: string; description: string }): string {
  * The optional `onPhase` callback emits structured progress events. The pure
  * function stays pure — the caller decides whether to wire it to metadata,
  * logs, or nothing at all.
+ *
+ * When `suggestionsOnly` is true, persistence is skipped and `output.suggestions`
+ * is populated so the caller can present a review-before-apply UI.
  */
 export async function runLinkage({
   organizationId,
   riskId,
   vendorId,
   replace,
+  suggestionsOnly,
   onPhase,
 }: RunLinkageInput): Promise<RunLinkageOutput> {
   onPhase?.({ name: 'starting' });
@@ -109,7 +236,8 @@ export async function runLinkage({
   // When replace=true, wipe existing task links on every in-scope entity BEFORE
   // the embedding/matching loops so the connect step below builds linkage from
   // scratch. This is destructive — clears manual unlinks too.
-  if (replace) {
+  // When suggestionsOnly is set, skip this step entirely (no DB writes).
+  if (replace && !suggestionsOnly) {
     for (const risk of risks) {
       await db.risk.update({
         where: { id: risk.id },
@@ -179,6 +307,7 @@ export async function runLinkage({
   }
 
   let riskLinks = 0;
+  let suggestions: RunLinkageOutput['suggestions'];
   for (let i = 0; i < risks.length; i++) {
     const risk = risks[i];
     onPhase?.({ name: 'matching-risks', current: i, total: risks.length });
@@ -192,6 +321,18 @@ export async function runLinkage({
       candidates: similar.map((s) => ({ id: s.id, score: s.score, department: s.department })),
     });
     if (links.length === 0) continue;
+
+    if (suggestionsOnly) {
+      // For the single-risk suggestionsOnly path, pin the suggestions to this
+      // risk. (The endpoint always passes a riskId, so there's only one.)
+      const taskScores = new Map<string, number>();
+      for (const l of links) taskScores.set(l.id, l.score);
+      const built = await buildSuggestions({ organizationId, taskScores });
+      suggestions = { forRiskId: risk.id, ...built };
+      riskLinks += links.length;
+      continue;
+    }
+
     await db.risk.update({
       where: { id: risk.id },
       data: { tasks: { connect: links.map((l) => ({ id: l.id })) } },
@@ -216,6 +357,16 @@ export async function runLinkage({
       candidates: similar.map((s) => ({ id: s.id, score: s.score, department: s.department })),
     });
     if (links.length === 0) continue;
+
+    if (suggestionsOnly) {
+      const taskScores = new Map<string, number>();
+      for (const l of links) taskScores.set(l.id, l.score);
+      const built = await buildSuggestions({ organizationId, taskScores });
+      suggestions = { forVendorId: vendor.id, ...built };
+      vendorLinks += links.length;
+      continue;
+    }
+
     await db.vendor.update({
       where: { id: vendor.id },
       data: { tasks: { connect: links.map((l) => ({ id: l.id })) } },
@@ -227,5 +378,5 @@ export async function runLinkage({
   }
 
   onPhase?.({ name: 'done', riskLinks, vendorLinks });
-  return { riskLinks, vendorLinks };
+  return suggestionsOnly ? { riskLinks, vendorLinks, suggestions } : { riskLinks, vendorLinks };
 }

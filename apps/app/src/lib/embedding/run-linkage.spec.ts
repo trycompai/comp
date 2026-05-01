@@ -12,6 +12,11 @@ const { dbMock, upsertMock, findSimilarTasksMock } = vi.hoisted(() => ({
   findSimilarTasksMock: vi.fn(),
 }));
 
+function emptyControls() {
+  // Default `task.findMany` shape for the suggestions-enrichment lookup.
+  return [] as unknown[];
+}
+
 vi.mock('@db/server', () => ({ db: dbMock }));
 
 vi.mock('./index', () => ({
@@ -166,6 +171,141 @@ describe('runLinkage onPhase', () => {
       where: { id: 'vnd_1' },
       data: { tasks: { set: [] } },
     });
+  });
+
+  it('suggestionsOnly=true does NOT call db.risk.update and returns suggestions', async () => {
+    dbMock.risk.findMany.mockResolvedValueOnce([
+      {
+        id: 'rsk_1',
+        title: 'Phishing',
+        description: '',
+        category: 'people',
+        department: Departments.hr,
+      },
+    ]);
+    dbMock.vendor.findMany.mockResolvedValueOnce([]);
+    dbMock.task.findMany
+      .mockResolvedValueOnce([
+        { id: 'tsk_a', title: 'Awareness', description: '', department: Departments.hr },
+        { id: 'tsk_b', title: 'MFA', description: '', department: Departments.hr },
+      ])
+      // Enrichment lookup for suggestions.
+      .mockResolvedValueOnce([
+        {
+          id: 'tsk_a',
+          title: 'Awareness',
+          status: 'todo',
+          controls: [
+            {
+              id: 'ctl_1',
+              name: 'Security Awareness',
+              requirementsMapped: [
+                {
+                  frameworkInstance: { framework: { name: 'SOC 2' } },
+                  requirement: { identifier: 'CC1.1' },
+                  customRequirement: null,
+                },
+              ],
+            },
+          ],
+        },
+        {
+          id: 'tsk_b',
+          title: 'MFA',
+          status: 'in_progress',
+          controls: [
+            {
+              id: 'ctl_1',
+              name: 'Security Awareness',
+              requirementsMapped: [
+                {
+                  frameworkInstance: { framework: { name: 'SOC 2' } },
+                  requirement: { identifier: 'CC1.1' },
+                  customRequirement: null,
+                },
+              ],
+            },
+            {
+              id: 'ctl_2',
+              name: 'MFA Required',
+              requirementsMapped: [
+                {
+                  frameworkInstance: { framework: { name: 'SOC 2' } },
+                  requirement: { identifier: 'CC6.1' },
+                  customRequirement: null,
+                },
+              ],
+            },
+          ],
+        },
+      ]);
+    findSimilarTasksMock.mockResolvedValueOnce([
+      { id: 'tsk_a', score: 0.9, department: Departments.hr },
+      { id: 'tsk_b', score: 0.95, department: Departments.hr },
+    ]);
+
+    const result = await runLinkage({
+      organizationId: 'org_1',
+      riskId: 'rsk_1',
+      suggestionsOnly: true,
+    });
+
+    // No persistence.
+    expect(dbMock.risk.update).not.toHaveBeenCalled();
+
+    // Suggestions populated and pinned to the risk.
+    expect(result.suggestions?.forRiskId).toBe('rsk_1');
+    expect(result.suggestions?.tasks.map((t) => t.id).sort()).toEqual(['tsk_a', 'tsk_b']);
+
+    // Controls deduped by id (ctl_1 appears in both tasks but should only show once).
+    const controlIds = result.suggestions?.controls.map((c) => c.id) ?? [];
+    expect(controlIds).toHaveLength(2);
+    expect(controlIds).toContain('ctl_1');
+    expect(controlIds).toContain('ctl_2');
+
+    // ctl_1 should carry the higher of the two task scores. linkSuggestions
+    // applies a +0.05 same-department boost, so raw 0.95 → 1.00 (tsk_b) and
+    // 0.9 → 0.95 (tsk_a). The dedupe should keep the larger score.
+    const ctl1 = result.suggestions?.controls.find((c) => c.id === 'ctl_1');
+    expect(ctl1?.score).toBeCloseTo(1.0, 5);
+    expect(ctl1?.code).toBe('CC1.1');
+    expect(ctl1?.framework).toBe('SOC 2');
+    // viaTaskIds includes both tasks that brought it in.
+    expect(ctl1?.viaTaskIds.sort()).toEqual(['tsk_a', 'tsk_b']);
+  });
+
+  it('suggestionsOnly=true wins over replace=true (no DB writes)', async () => {
+    dbMock.risk.findMany.mockResolvedValueOnce([
+      {
+        id: 'rsk_1',
+        title: 'a',
+        description: '',
+        category: 'people',
+        department: Departments.hr,
+      },
+    ]);
+    dbMock.vendor.findMany.mockResolvedValueOnce([]);
+    dbMock.task.findMany
+      .mockResolvedValueOnce([
+        { id: 'tsk_a', title: 'b', description: '', department: Departments.hr },
+      ])
+      .mockResolvedValueOnce([
+        { id: 'tsk_a', title: 'b', status: 'todo', controls: [] },
+      ]);
+    findSimilarTasksMock.mockResolvedValueOnce([
+      { id: 'tsk_a', score: 0.9, department: Departments.hr },
+    ]);
+
+    void emptyControls();
+
+    await runLinkage({
+      organizationId: 'org_1',
+      riskId: 'rsk_1',
+      replace: true,
+      suggestionsOnly: true,
+    });
+
+    expect(dbMock.risk.update).not.toHaveBeenCalled();
   });
 
   it('replace=false (default) does not disconnect existing links', async () => {
