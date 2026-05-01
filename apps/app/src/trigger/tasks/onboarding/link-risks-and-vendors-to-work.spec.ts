@@ -21,6 +21,7 @@ vi.mock('@/lib/embedding', () => ({
 vi.mock('@trigger.dev/sdk', () => ({
   task: (def: { run: Function }) => ({ run: def.run }),
   logger: { info: vi.fn(), warn: vi.fn(), error: vi.fn() },
+  metadata: { set: vi.fn() },
 }));
 
 import { linkRisksAndVendorsToWork } from './link-risks-and-vendors-to-work';

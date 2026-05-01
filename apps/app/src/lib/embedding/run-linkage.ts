@@ -2,12 +2,33 @@ import { db } from '@db/server';
 import { upsertEntityEmbeddings, findSimilarTasks } from './index';
 import { linkSuggestions } from '../link-suggestions';
 
+/**
+ * Phase emitted by `runLinkage` via the optional `onPhase` callback.
+ *
+ * Consumed by the trigger.dev wrapper to mirror progress into run metadata so
+ * the frontend can render a live progress indicator via `useRealtimeRun`.
+ */
+export type LinkagePhase =
+  | { name: 'starting' }
+  | { name: 'embedding-tasks'; current: number; total: number }
+  | { name: 'embedding-risks'; current: number; total: number }
+  | { name: 'embedding-vendors'; current: number; total: number }
+  | { name: 'matching-risks'; current: number; total: number }
+  | { name: 'matching-vendors'; current: number; total: number }
+  | { name: 'done'; riskLinks: number; vendorLinks: number };
+
 export interface RunLinkageInput {
   organizationId: string;
   /** When set, only link this single risk. */
   riskId?: string;
   /** When set, only link this single vendor. */
   vendorId?: string;
+  /**
+   * Optional progress callback. The trigger.dev wrapper passes this and writes
+   * each phase to `metadata.set(...)` so the UI can subscribe via realtime.
+   * Pure callers (e.g. tests, server-side scripts) can omit it.
+   */
+  onPhase?: (phase: LinkagePhase) => void;
 }
 
 export interface RunLinkageOutput {
@@ -52,12 +73,19 @@ function taskQueryText(t: { title: string; description: string }): string {
  *
  * Used by both the onboarding trigger task and the on-demand API endpoints,
  * so the API route can return the real link count without polling a trigger.
+ *
+ * The optional `onPhase` callback emits structured progress events. The pure
+ * function stays pure — the caller decides whether to wire it to metadata,
+ * logs, or nothing at all.
  */
 export async function runLinkage({
   organizationId,
   riskId,
   vendorId,
+  onPhase,
 }: RunLinkageInput): Promise<RunLinkageOutput> {
+  onPhase?.({ name: 'starting' });
+
   const risks = await db.risk.findMany({
     where: { organizationId, ...(riskId ? { id: riskId } : {}) },
     select: { id: true, title: true, description: true, category: true, department: true },
@@ -72,7 +100,18 @@ export async function runLinkage({
   });
 
   if (tasks.length === 0) {
+    onPhase?.({ name: 'done', riskLinks: 0, vendorLinks: 0 });
     return { riskLinks: 0, vendorLinks: 0 };
+  }
+
+  if (tasks.length > 0) {
+    onPhase?.({ name: 'embedding-tasks', current: 0, total: tasks.length });
+  }
+  if (risks.length > 0) {
+    onPhase?.({ name: 'embedding-risks', current: 0, total: risks.length });
+  }
+  if (vendors.length > 0) {
+    onPhase?.({ name: 'embedding-vendors', current: 0, total: vendors.length });
   }
 
   await Promise.all([
@@ -104,8 +143,20 @@ export async function runLinkage({
     }),
   ]);
 
+  if (tasks.length > 0) {
+    onPhase?.({ name: 'embedding-tasks', current: tasks.length, total: tasks.length });
+  }
+  if (risks.length > 0) {
+    onPhase?.({ name: 'embedding-risks', current: risks.length, total: risks.length });
+  }
+  if (vendors.length > 0) {
+    onPhase?.({ name: 'embedding-vendors', current: vendors.length, total: vendors.length });
+  }
+
   let riskLinks = 0;
-  for (const risk of risks) {
+  for (let i = 0; i < risks.length; i++) {
+    const risk = risks[i];
+    onPhase?.({ name: 'matching-risks', current: i, total: risks.length });
     const similar = await findSimilarTasks({
       organizationId,
       queryText: riskQueryText(risk),
@@ -122,9 +173,14 @@ export async function runLinkage({
     });
     riskLinks += links.length;
   }
+  if (risks.length > 0) {
+    onPhase?.({ name: 'matching-risks', current: risks.length, total: risks.length });
+  }
 
   let vendorLinks = 0;
-  for (const vendor of vendors) {
+  for (let i = 0; i < vendors.length; i++) {
+    const vendor = vendors[i];
+    onPhase?.({ name: 'matching-vendors', current: i, total: vendors.length });
     const similar = await findSimilarTasks({
       organizationId,
       queryText: vendorQueryText(vendor),
@@ -141,6 +197,10 @@ export async function runLinkage({
     });
     vendorLinks += links.length;
   }
+  if (vendors.length > 0) {
+    onPhase?.({ name: 'matching-vendors', current: vendors.length, total: vendors.length });
+  }
 
+  onPhase?.({ name: 'done', riskLinks, vendorLinks });
   return { riskLinks, vendorLinks };
 }
