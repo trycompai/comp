@@ -69,8 +69,39 @@ export function ScoreExplainer() {
       </Section>
 
       <div className="border-t border-border pt-2 text-[11px] text-muted-foreground">
-        Methodology aligns with NIST SP 800-30 (semi-quantitative risk
-        assessment) and ISO 27005 (risk treatment).
+        <div className="font-bold uppercase tracking-[0.06em]">References</div>
+        <ul className="mt-1 list-disc space-y-1 pl-4">
+          <li>
+            <a
+              href="https://csrc.nist.gov/pubs/sp/800/30/r1/final"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-foreground underline-offset-2 hover:underline focus-visible:underline"
+            >
+              NIST SP 800-30 Rev. 1
+            </a>{' '}
+            — recognizes 5×5 matrices as a valid semi-quantitative risk
+            assessment approach (Appendix I).
+          </li>
+          <li>
+            <a
+              href="https://www.iso.org/standard/80585.html"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-foreground underline-offset-2 hover:underline focus-visible:underline"
+            >
+              ISO/IEC 27005:2022
+            </a>{' '}
+            — defines our treatment categories: <em>risk modification</em>{' '}
+            (Mitigate), <em>risk sharing</em> (Transfer), <em>risk
+            retention</em> (Accept).
+          </li>
+        </ul>
+        <div className="mt-1.5 italic">
+          The matrix structure and treatment categories align with these
+          standards; the specific 1–10 normalization and step-down magnitudes
+          are Comp AI's calibration.
+        </div>
       </div>
     </div>
   );

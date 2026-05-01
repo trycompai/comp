@@ -7,13 +7,8 @@ import {
   suggestedResidual,
 } from '@/lib/suggested-residual';
 import { Impact, Likelihood, RiskTreatmentType, TaskStatus } from '@db';
-import {
-  Card,
-  CardContent,
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from '@trycompai/design-system';
+import { Popover as BasePopover } from '@base-ui/react/popover';
+import { Card, CardContent } from '@trycompai/design-system';
 import { ArrowRight, Information } from '@trycompai/design-system/icons';
 import { RiskMatrix5x5 } from './RiskMatrix5x5';
 import { RiskScale } from './RiskScale';
@@ -160,22 +155,32 @@ export function TreatmentHero({
               <div className="text-[10px] font-bold uppercase tracking-[0.08em] text-muted-foreground">
                 Risk Reduction — Treatment Impact
               </div>
-              <Popover>
-                <PopoverTrigger
+              <BasePopover.Root>
+                <BasePopover.Trigger
                   className="inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[11px] text-muted-foreground transition-colors hover:bg-primary/[0.08] hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
                   aria-label="How is this score calculated?"
                 >
                   <Information size={11} aria-hidden="true" />
                   <span>How is this calculated?</span>
-                </PopoverTrigger>
-                <PopoverContent
-                  align="end"
-                  side="bottom"
-                  style={{ width: 360 }}
-                >
-                  <ScoreExplainer />
-                </PopoverContent>
-              </Popover>
+                </BasePopover.Trigger>
+                <BasePopover.Portal>
+                  {/* Subtle backdrop blur — focuses attention on the
+                      explainer without making it feel modal. */}
+                  <BasePopover.Backdrop className="fixed inset-0 z-40 bg-background/30 backdrop-blur-[2px] transition-[opacity,backdrop-filter] duration-150 data-[ending-style]:opacity-0 data-[starting-style]:opacity-0" />
+                  <BasePopover.Positioner
+                    align="end"
+                    side="bottom"
+                    sideOffset={6}
+                    className="isolate z-50"
+                  >
+                    <BasePopover.Popup
+                      className="bg-popover text-popover-foreground ring-foreground/10 origin-(--transform-origin) data-open:animate-in data-closed:animate-out data-closed:fade-out-0 data-open:fade-in-0 data-closed:zoom-out-95 data-open:zoom-in-95 data-[side=bottom]:slide-in-from-top-2 data-[side=top]:slide-in-from-bottom-2 flex w-[360px] flex-col gap-2.5 rounded-lg p-3 text-sm shadow-md ring-1 outline-hidden duration-100"
+                    >
+                      <ScoreExplainer />
+                    </BasePopover.Popup>
+                  </BasePopover.Positioner>
+                </BasePopover.Portal>
+              </BasePopover.Root>
             </div>
             <h1
               className="my-3 flex items-center gap-4 font-mono tabular-nums text-7xl font-normal leading-[0.95] tracking-[-0.05em] md:text-8xl"
