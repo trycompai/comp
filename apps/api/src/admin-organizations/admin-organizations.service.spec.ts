@@ -199,8 +199,8 @@ describe('AdminOrganizationsService', () => {
     });
   });
 
-  describe('setAccess', () => {
-    it('should activate an organization', async () => {
+  describe('updateOrganization', () => {
+    it('single-field update (hasAccess)', async () => {
       (mockDb.organization.findUnique as jest.Mock).mockResolvedValue({
         id: 'org_1',
       });
@@ -209,7 +209,9 @@ describe('AdminOrganizationsService', () => {
         hasAccess: true,
       });
 
-      const result = await service.setAccess('org_1', true);
+      const result = await service.updateOrganization('org_1', {
+        hasAccess: true,
+      });
 
       expect(result.success).toBe(true);
       expect(mockDb.organization.update).toHaveBeenCalledWith({
@@ -218,53 +220,7 @@ describe('AdminOrganizationsService', () => {
       });
     });
 
-    it('should deactivate an organization', async () => {
-      (mockDb.organization.findUnique as jest.Mock).mockResolvedValue({
-        id: 'org_1',
-      });
-      (mockDb.organization.update as jest.Mock).mockResolvedValue({
-        id: 'org_1',
-        hasAccess: false,
-      });
-
-      const result = await service.setAccess('org_1', false);
-
-      expect(result.success).toBe(true);
-      expect(mockDb.organization.update).toHaveBeenCalledWith({
-        where: { id: 'org_1' },
-        data: { hasAccess: false },
-      });
-    });
-
-    it('should throw NotFoundException for missing org', async () => {
-      (mockDb.organization.findUnique as jest.Mock).mockResolvedValue(null);
-
-      await expect(service.setAccess('org_missing', true)).rejects.toThrow(
-        NotFoundException,
-      );
-    });
-  });
-
-  describe('setBackgroundCheckStep', () => {
-    it('enables the BG-check step', async () => {
-      (mockDb.organization.findUnique as jest.Mock).mockResolvedValue({
-        id: 'org_1',
-      });
-      (mockDb.organization.update as jest.Mock).mockResolvedValue({
-        id: 'org_1',
-        backgroundCheckStepEnabled: true,
-      });
-
-      const result = await service.setBackgroundCheckStep('org_1', true);
-
-      expect(result.success).toBe(true);
-      expect(mockDb.organization.update).toHaveBeenCalledWith({
-        where: { id: 'org_1' },
-        data: { backgroundCheckStepEnabled: true },
-      });
-    });
-
-    it('disables the BG-check step (CX bypass)', async () => {
+    it('single-field update (backgroundCheckStepEnabled)', async () => {
       (mockDb.organization.findUnique as jest.Mock).mockResolvedValue({
         id: 'org_1',
       });
@@ -273,7 +229,9 @@ describe('AdminOrganizationsService', () => {
         backgroundCheckStepEnabled: false,
       });
 
-      const result = await service.setBackgroundCheckStep('org_1', false);
+      const result = await service.updateOrganization('org_1', {
+        backgroundCheckStepEnabled: false,
+      });
 
       expect(result.success).toBe(true);
       expect(mockDb.organization.update).toHaveBeenCalledWith({
@@ -282,11 +240,33 @@ describe('AdminOrganizationsService', () => {
       });
     });
 
+    it('multi-field update', async () => {
+      (mockDb.organization.findUnique as jest.Mock).mockResolvedValue({
+        id: 'org_1',
+      });
+      (mockDb.organization.update as jest.Mock).mockResolvedValue({
+        id: 'org_1',
+        hasAccess: true,
+        backgroundCheckStepEnabled: false,
+      });
+
+      const result = await service.updateOrganization('org_1', {
+        hasAccess: true,
+        backgroundCheckStepEnabled: false,
+      });
+
+      expect(result.success).toBe(true);
+      expect(mockDb.organization.update).toHaveBeenCalledWith({
+        where: { id: 'org_1' },
+        data: { hasAccess: true, backgroundCheckStepEnabled: false },
+      });
+    });
+
     it('throws NotFoundException for missing org', async () => {
       (mockDb.organization.findUnique as jest.Mock).mockResolvedValue(null);
 
       await expect(
-        service.setBackgroundCheckStep('org_missing', true),
+        service.updateOrganization('org_missing', { hasAccess: true }),
       ).rejects.toThrow(NotFoundException);
     });
   });

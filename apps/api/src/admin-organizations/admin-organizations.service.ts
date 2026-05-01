@@ -7,6 +7,7 @@ import {
 import { AuditLogEntityType, db } from '@db';
 import { triggerEmail } from '../email/trigger-email';
 import { InviteEmail } from '../email/templates/invite-member';
+import { UpdateAdminOrganizationDto } from './dto/update-admin-organization.dto';
 
 @Injectable()
 export class AdminOrganizationsService {
@@ -266,7 +267,7 @@ export class AdminOrganizationsService {
     return org;
   }
 
-  async setAccess(id: string, hasAccess: boolean) {
+  async updateOrganization(id: string, data: UpdateAdminOrganizationDto) {
     const org = await db.organization.findUnique({ where: { id } });
 
     if (!org) {
@@ -275,22 +276,7 @@ export class AdminOrganizationsService {
 
     await db.organization.update({
       where: { id },
-      data: { hasAccess },
-    });
-
-    return { success: true };
-  }
-
-  async setBackgroundCheckStep(id: string, enabled: boolean) {
-    const org = await db.organization.findUnique({ where: { id } });
-
-    if (!org) {
-      throw new NotFoundException(`Organization ${id} not found`);
-    }
-
-    await db.organization.update({
-      where: { id },
-      data: { backgroundCheckStepEnabled: enabled },
+      data,
     });
 
     return { success: true };
