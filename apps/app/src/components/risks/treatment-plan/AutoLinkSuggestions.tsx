@@ -37,11 +37,16 @@ export interface AutoLinkSuggestionsProps {
   /** Per-task unlink, plumbed through to <LinkedWork> in linked state. */
   onUnlinkTask?: (taskId: string) => Promise<void>;
   /**
-   * `'plan'` — used when the merged 02+03 column hosts this component (no
-   * plan and no tasks yet). The empty-state copy emphasizes plan creation.
-   * `'default'` — per-column empty state ("No tasks or controls linked yet").
+   * `'kickoff'` — the wide "Let AI kick this off" panel shown when both plan
+   *   and tasks are empty. Use with `onStartFromScratch` so the user can
+   *   bypass AI and write the plan manually.
+   * `'default'` — the smaller per-column empty CTA shown when only the
+   *   tasks section is empty.
    */
-  emptyVariant?: 'default' | 'plan';
+  emptyVariant?: 'default' | 'kickoff';
+  /** Called when the user clicks "Start from scratch" in the kickoff panel.
+   *  Parent should dismiss the kickoff state so the editor renders. */
+  onStartFromScratch?: () => void;
 }
 
 export function AutoLinkSuggestions({
@@ -53,6 +58,7 @@ export function AutoLinkSuggestions({
   onAfterApply,
   onUnlinkTask,
   emptyVariant = 'default',
+  onStartFromScratch,
 }: AutoLinkSuggestionsProps) {
   const [state, setState] = useState<State>(() =>
     tasks.length > 0 ? { kind: 'linked' } : { kind: 'empty' },
@@ -161,6 +167,7 @@ export function AutoLinkSuggestions({
         canUpdate={canUpdate}
         submitting={submitting}
         onSuggest={() => void handleSuggest('fresh')}
+        onStartFromScratch={onStartFromScratch}
         variant={emptyVariant}
       />
     );

@@ -15,33 +15,80 @@ export function EmptyState({
   canUpdate,
   submitting,
   onSuggest,
+  onStartFromScratch,
   variant = 'default',
 }: {
   canUpdate: boolean;
   submitting: boolean;
   onSuggest: () => void;
+  /** Required when variant === 'kickoff' — dismisses the kickoff so the user
+   *  can write the plan manually. Ignored for other variants. */
+  onStartFromScratch?: () => void;
   /**
-   * `'plan'` is used in the merged 02+03 column when both plan and tasks are
-   * empty — copy emphasizes the plan creation. `'default'` is the per-column
-   * empty state shown when only the tasks section is empty.
+   * `'kickoff'` — the wide centered panel ("Let AI kick this off") shown when
+   *   plan and tasks are both empty. Has a primary "Draft plan & suggest
+   *   links" button plus a "Start from scratch" escape hatch.
+   * `'default'` — the smaller per-column empty CTA shown when the user has a
+   *   plan but no linked tasks yet.
    */
-  variant?: 'default' | 'plan';
+  variant?: 'default' | 'kickoff';
 }) {
-  const isPlan = variant === 'plan';
-  const title = isPlan ? 'No mitigation plan yet' : 'No tasks or controls linked yet';
-  const description = isPlan
-    ? 'AI will scan your library, suggest the relevant tasks and controls, and draft a mitigation plan grounded in them.'
-    : 'Have AI scan your library and suggest the tasks and controls most likely to drive this risk down.';
-  const buttonLabel = isPlan ? 'Create with AI' : 'Suggest with AI';
+  if (variant === 'kickoff') {
+    return (
+      <div className="flex flex-col items-center px-6 py-10 text-center">
+        <div className="flex h-14 w-14 items-center justify-center rounded-full bg-muted">
+          <MagicWandFilled size={24} className="text-foreground/60" aria-hidden="true" />
+        </div>
+        <h3 className="mt-4 text-xl font-normal tracking-[-0.01em]">Let AI kick this off</h3>
+        <p className="mt-3 max-w-[520px] text-sm leading-[1.55] text-muted-foreground">
+          Based on the strategy above, AI can draft a treatment plan and suggest the tasks and
+          controls most likely to drive this risk down. You'll review everything before anything is
+          saved or linked.
+        </p>
+        <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
+          <Button
+            iconLeft={<MagicWandFilled aria-hidden="true" />}
+            onClick={onSuggest}
+            loading={submitting}
+            disabled={!canUpdate}
+          >
+            Draft plan & suggest links
+          </Button>
+          <Button variant="ghost" onClick={onStartFromScratch} disabled={!canUpdate}>
+            Start from scratch
+          </Button>
+        </div>
+        <div className="mt-8 grid w-full max-w-[640px] grid-cols-1 gap-6 border-t border-border pt-5 text-left sm:grid-cols-2">
+          <div>
+            <div className="font-mono text-[10px] uppercase tracking-[0.1em] text-muted-foreground">
+              02 · Plan
+            </div>
+            <div className="mt-1.5 text-xs text-muted-foreground">
+              A concrete plan grounded in the selected tasks and controls.
+            </div>
+          </div>
+          <div>
+            <div className="font-mono text-[10px] uppercase tracking-[0.1em] text-muted-foreground">
+              03 · Links
+            </div>
+            <div className="mt-1.5 text-xs text-muted-foreground">
+              Tasks and framework controls AI ranks for this risk.
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="mt-4 flex flex-col items-center rounded-md border border-dashed border-border bg-primary/[0.02] px-4 py-7 text-center">
       <div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary/[0.12] text-primary">
         <MagicWandFilled size={20} aria-hidden="true" />
       </div>
-      <div className="mt-3 text-sm font-normal">{title}</div>
+      <div className="mt-3 text-sm font-normal">No tasks or controls linked yet</div>
       <div className="mt-1 max-w-[320px] text-xs leading-[1.5] text-muted-foreground">
-        {description}
+        Have AI scan your library and suggest the tasks and controls most likely to drive this risk
+        down.
       </div>
       <div className="mt-4">
         <Button
@@ -51,7 +98,7 @@ export function EmptyState({
           loading={submitting}
           disabled={!canUpdate}
         >
-          {buttonLabel}
+          Suggest with AI
         </Button>
       </div>
       <div className="mt-2.5 text-[11px] text-muted-foreground">

@@ -30,11 +30,11 @@ function buildProps(overrides?: Partial<Props>): Props {
 }
 
 describe('TreatmentPlanTab', () => {
-  it('renders all three workspace columns when Mitigate has plan or linked tasks', () => {
+  it('renders the Linked work column when Mitigate has linked tasks', () => {
     const entity: TreatmentPlanEntity = {
       ...baseEntity,
       treatmentStrategy: RiskTreatmentType.mitigate,
-      treatmentStrategyDescription: 'Existing plan content.',
+      tasks: [{ id: 't1', title: 'Task 1', status: TaskStatus.todo, controls: [] }],
     };
     render(<TreatmentPlanTab {...buildProps({ entity })} />);
     expect(screen.getByRole('heading', { name: 'Strategy' })).toBeInTheDocument();
@@ -42,12 +42,11 @@ describe('TreatmentPlanTab', () => {
     expect(screen.getByRole('heading', { name: 'Linked work' })).toBeInTheDocument();
   });
 
-  it('merges columns 02+03 into a single "Mitigation plan" CTA when Mitigate is fully empty', () => {
+  it('hides Linked work column and stacks the empty CTA in col 02 when Mitigate has no linked tasks', () => {
     render(<TreatmentPlanTab {...buildProps()} />);
     expect(screen.getByRole('heading', { name: 'Strategy' })).toBeInTheDocument();
-    expect(screen.getByRole('heading', { name: 'Mitigation plan' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Treatment plan' })).toBeInTheDocument();
     expect(screen.queryByRole('heading', { name: 'Linked work' })).toBeNull();
-    expect(screen.queryByRole('heading', { name: 'Treatment plan' })).toBeNull();
   });
 
   it('hides Linked Work and shows "Rationale" when strategy is Accept', () => {

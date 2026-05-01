@@ -89,23 +89,25 @@ export function TreatmentPlanTab({
   const isMitigate = strategy === RiskTreatmentType.mitigate;
   const hasPlan = description.trim().length > 0;
   const hasLinkedWork = entity.tasks.length > 0;
-  // When Mitigate has neither plan nor linked tasks, merge cols 02+03 into a
-  // single empty-state CTA — there's nothing to mitigate against yet.
-  const isMitigateEmpty = isMitigate && !hasPlan && !hasLinkedWork;
-  const showLinkedWorkColumn = isMitigate && !isMitigateEmpty;
 
-  // For non-Mitigate strategies the "plan" is just rationale — there's no
-  // linked work to track because the score doesn't drive off task completion.
-  const planTitle = isMitigateEmpty
-    ? 'Mitigation plan'
-    : isMitigate
-      ? 'Treatment plan'
-      : 'Rationale';
-  const planSubtitle = isMitigateEmpty
-    ? 'Create a plan and link the tasks and controls that will mitigate this risk.'
-    : isMitigate
-      ? 'A concrete plan for the strategy above.'
-      : 'Document why this strategy is right for this risk.';
+  // When Mitigate has neither plan nor linked tasks, render only the
+  // kick-off CTA panel — the user picks "Draft plan & suggest links" or
+  // "Start from scratch". Once the user dismisses the kickoff (or once
+  // either plan/tasks exist), the editor + the rest render normally.
+  const [kickoffDismissed, setKickoffDismissed] = useState(false);
+  useEffect(() => {
+    if (hasPlan || hasLinkedWork) setKickoffDismissed(false);
+  }, [hasPlan, hasLinkedWork]);
+
+  const showKickoff = isMitigate && !hasPlan && !hasLinkedWork && !kickoffDismissed;
+  const showLinkedWorkColumn = isMitigate && hasLinkedWork;
+  const showInlineLinkedWorkEmpty = isMitigate && !hasLinkedWork && !showKickoff;
+
+  // For non-Mitigate strategies the "plan" is just rationale.
+  const planTitle = isMitigate ? 'Treatment plan' : 'Rationale';
+  const planSubtitle = isMitigate
+    ? 'A concrete plan for the strategy above.'
+    : 'Document why this strategy is right for this risk.';
 
   return (
     <div className="flex flex-col gap-6">
@@ -116,7 +118,7 @@ export function TreatmentPlanTab({
         residualImpact={entity.residualImpact}
         strategy={strategy}
         tasks={entity.tasks}
-        isEmpty={isMitigateEmpty}
+        isEmpty={isMitigate && !hasPlan && !hasLinkedWork}
       />
 
       <div
@@ -139,10 +141,12 @@ export function TreatmentPlanTab({
           />
         </div>
 
-        {/* 02 · Treatment plan / Rationale / merged Mitigation plan empty state */}
+        {/* 02 · Kickoff CTA (when fully empty) OR Treatment plan / Rationale.
+            The editor is intentionally not rendered in the kickoff state —
+            the user picks AI-drafted vs from-scratch, then both columns
+            appear with content. */}
         <div className="min-w-0 border-t border-border p-6 lg:border-l lg:border-t-0">
-          <ColumnHeader number="02" title={planTitle} subtitle={planSubtitle} />
-          {isMitigateEmpty && onSuggest && onApply ? (
+          {showKickoff && onSuggest && onApply ? (
             <AutoLinkSuggestions
               orgId={orgId}
               tasks={entity.tasks}
@@ -150,22 +154,37 @@ export function TreatmentPlanTab({
               onSuggest={onSuggest}
               onApply={onApply}
               onAfterApply={onRegenerate}
-              emptyVariant="plan"
+              emptyVariant="kickoff"
+              onStartFromScratch={() => setKickoffDismissed(true)}
             />
           ) : (
-            <DescriptionEditor
-              value={description}
-              onSave={onUpdateDescription}
-              onRegenerate={onRegenerate}
-              regenerating={regenerating}
-              disabled={!canUpdate}
-            />
+            <>
+              <ColumnHeader number="02" title={planTitle} subtitle={planSubtitle} />
+              <DescriptionEditor
+                value={description}
+                onSave={onUpdateDescription}
+                onRegenerate={onRegenerate}
+                regenerating={regenerating}
+                disabled={!canUpdate}
+              />
+              {showInlineLinkedWorkEmpty && onSuggest && onApply && (
+                <div className="mt-6 border-t border-border pt-6">
+                  <AutoLinkSuggestions
+                    orgId={orgId}
+                    tasks={entity.tasks}
+                    canUpdate={canUpdate}
+                    onSuggest={onSuggest}
+                    onApply={onApply}
+                    onAfterApply={onRegenerate}
+                    emptyVariant="default"
+                  />
+                </div>
+              )}
+            </>
           )}
         </div>
 
-        {/* 03 · Linked work — only when Mitigate is in progress (some plan or
-            linked tasks already exist). The fully-empty Mitigate state lives
-            in the merged 02 column above. */}
+        {/* 03 · Linked work — only when Mitigate already has linked tasks. */}
         {showLinkedWorkColumn && (
           <div className="min-w-0 border-t border-border p-6 lg:border-l lg:border-t-0">
             <ColumnHeader
