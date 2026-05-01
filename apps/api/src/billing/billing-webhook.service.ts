@@ -4,6 +4,7 @@ import { getBillingSkuByStripePriceId } from '@trycompai/billing';
 import Stripe from 'stripe';
 import { StripeService } from '../stripe/stripe.service';
 import { BillingEntitlementsService } from './billing-entitlements.service';
+import { cancelTrialAtPeriodEndImmediately } from './billing-trial-cancellations';
 import {
   claimStripeWebhookEvent,
   markStripeWebhookFailed,
@@ -118,8 +119,15 @@ export class BillingWebhookService {
     const organizationId =
       await this.resolveSubscriptionOrganization(subscription);
     if (!organizationId) return;
-    await this.syncSubscriptionItems({
+    const subscriptionToSync = await cancelTrialAtPeriodEndImmediately({
+      stripeService: this.stripeService,
+      entitlements: this.entitlements,
       subscription,
+      organizationId,
+      stripeEventId: event.id,
+    });
+    await this.syncSubscriptionItems({
+      subscription: subscriptionToSync,
       organizationId,
       stripeEventId: event.id,
     });
