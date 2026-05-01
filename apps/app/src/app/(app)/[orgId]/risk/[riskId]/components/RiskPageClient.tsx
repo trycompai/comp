@@ -25,7 +25,7 @@ import {
 } from '@trycompai/design-system';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
-import { useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 
 type RiskWithAssignee = Risk & {
@@ -194,13 +194,19 @@ export function RiskPageClient({
     }
   };
 
-  const handleResumeAutoLink = async () => {
-    return fetchActiveRiskAutoLinkRun(riskId);
-  };
+  // Memoize so AutoLinkSuggestions' resume effect (which depends on the
+  // callback identity) doesn't re-fire on every parent re-render.
+  const handleResumeAutoLink = useCallback(
+    () => fetchActiveRiskAutoLinkRun(riskId),
+    [fetchActiveRiskAutoLinkRun, riskId],
+  );
 
-  const handleDiscardAutoLinkRun = async () => {
-    await discardRiskAutoLinkRun(riskId);
-  };
+  const handleDiscardAutoLinkRun = useCallback(
+    async () => {
+      await discardRiskAutoLinkRun(riskId);
+    },
+    [discardRiskAutoLinkRun, riskId],
+  );
 
   return (
     <>

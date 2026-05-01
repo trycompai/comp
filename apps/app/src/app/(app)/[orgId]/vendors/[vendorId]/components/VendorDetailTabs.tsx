@@ -296,13 +296,19 @@ export function VendorDetailTabs({
     }
   };
 
-  const handleResumeAutoLink = async () => {
-    return fetchActiveVendorAutoLinkRun(vendorId);
-  };
+  // Memoize so AutoLinkSuggestions' resume effect (which depends on the
+  // callback identity) doesn't re-fire on every parent re-render.
+  const handleResumeAutoLink = useCallback(
+    () => fetchActiveVendorAutoLinkRun(vendorId),
+    [fetchActiveVendorAutoLinkRun, vendorId],
+  );
 
-  const handleDiscardAutoLinkRun = async () => {
-    await discardVendorAutoLinkRun(vendorId);
-  };
+  const handleDiscardAutoLinkRun = useCallback(
+    async () => {
+      await discardVendorAutoLinkRun(vendorId);
+    },
+    [discardVendorAutoLinkRun, vendorId],
+  );
 
   const handleUpdateDescription = async (description: string) => {
     await updateVendor(vendorId, { treatmentStrategyDescription: description });
