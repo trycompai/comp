@@ -1,6 +1,12 @@
 import { db } from '@db/server';
 import { upsertEntityEmbeddings, findSimilarTasks } from './index';
 import { linkSuggestions } from '../link-suggestions';
+import {
+  rerankSuggestions,
+  type RerankCandidate,
+  type RerankedCandidate,
+  type RerankSource,
+} from '../rerank-suggestions';
 
 /**
  * Phase emitted by `runLinkage` via the optional `onPhase` callback.
@@ -74,14 +80,14 @@ export interface RunLinkageOutput {
 }
 
 const RISK_QUERY_TOP_K = 25;
-// In review-before-apply mode the user picks from the suggested list, so we
-// favor recall over precision: lower threshold + larger top-K so genuinely
-// related tasks (e.g. backup/DR work for a backup-failure risk) surface even
-// when their cosine similarity sits in the 0.4-0.6 band that dominates
-// `text-embedding-3-small` for compliance prose.
+// In review-before-apply mode we go wide on recall (50 candidates from the
+// vector store, no threshold filter, top-30 by cosine fed to the reranker),
+// then let the LLM reranker do the precision step and surface the final 15.
+// Cosine alone collapses into a tight 0.6 band on short compliance prose, so
+// it's bad at ordering — but fine at "show me 30 that are at least related".
 const SUGGESTIONS_QUERY_TOP_K = 50;
-const SUGGESTIONS_THRESHOLD = 0.4;
-const SUGGESTIONS_TOP_K = 15;
+const SUGGESTIONS_RERANK_INPUT_TOP_K = 30;
+const SUGGESTIONS_FINAL_TOP_K = 15;
 
 function riskQueryText(risk: {
   title: string;
@@ -201,6 +207,52 @@ async function buildSuggestions({
 
   const controls = [...byId.values()].sort((a, b) => b.score - a.score);
   return { tasks, controls };
+}
+
+/**
+ * Run the LLM reranker against the cosine candidates and return a final score
+ * map (0-1, scaled from the reranker's 0-10 so it slots into the existing
+ * SuggestedTask `score` field). Falls back to cosine ordering if the reranker
+ * call fails so a transient OpenAI outage doesn't break the suggestions UI.
+ */
+async function rerankAndBuildScoreMap({
+  source,
+  links,
+  taskById,
+}: {
+  source: RerankSource;
+  links: Array<{ id: string; score: number }>;
+  taskById: Map<string, { id: string; title: string; description: string }>;
+}): Promise<Map<string, number>> {
+  const candidates: RerankCandidate[] = [];
+  for (const l of links) {
+    const t = taskById.get(l.id);
+    if (!t) continue;
+    candidates.push({
+      id: l.id,
+      title: t.title,
+      description: t.description,
+      cosineScore: l.score,
+    });
+  }
+  if (candidates.length === 0) return new Map();
+
+  let reranked: RerankedCandidate[];
+  try {
+    reranked = await rerankSuggestions({ source, candidates });
+  } catch (err) {
+    console.error('[runLinkage] rerankSuggestions failed; falling back to cosine', err);
+    reranked = candidates
+      .map((c) => ({
+        id: c.id,
+        cosineScore: c.cosineScore,
+        rerankScore: c.cosineScore * 10,
+      }))
+      .sort((a, b) => b.rerankScore - a.rerankScore);
+  }
+
+  const top = reranked.slice(0, SUGGESTIONS_FINAL_TOP_K);
+  return new Map(top.map((r) => [r.id, r.rerankScore / 10]));
 }
 
 /**
@@ -324,6 +376,10 @@ export async function runLinkage({
     onPhase?.({ name: 'embedding-vendors', current: vendors.length, total: vendors.length });
   }
 
+  // Map for the LLM reranker (suggestionsOnly path) to look up titles/desc
+  // without an extra DB round trip.
+  const taskById = new Map(tasks.map((t) => [t.id, t]));
+
   let riskLinks = 0;
   let suggestions: RunLinkageOutput['suggestions'];
   for (let i = 0; i < risks.length; i++) {
@@ -337,20 +393,28 @@ export async function runLinkage({
     const links = linkSuggestions({
       source: { department: risk.department ?? undefined },
       candidates: similar.map((s) => ({ id: s.id, score: s.score, department: s.department })),
-      ...(suggestionsOnly
-        ? { threshold: SUGGESTIONS_THRESHOLD, topK: SUGGESTIONS_TOP_K }
-        : {}),
+      ...(suggestionsOnly ? { threshold: 0, topK: SUGGESTIONS_RERANK_INPUT_TOP_K } : {}),
     });
     if (links.length === 0) continue;
 
     if (suggestionsOnly) {
-      // For the single-risk suggestionsOnly path, pin the suggestions to this
-      // risk. (The endpoint always passes a riskId, so there's only one.)
-      const taskScores = new Map<string, number>();
-      for (const l of links) taskScores.set(l.id, l.score);
+      // Cosine got us recall; the LLM reranker does precision and slices to
+      // the user-facing top-K. Score map values are scaled to 0-1 so the
+      // existing SuggestedTask UI displays them as a percentage.
+      const taskScores = await rerankAndBuildScoreMap({
+        source: {
+          kind: 'risk',
+          title: risk.title,
+          description: risk.description,
+          category: risk.category,
+          department: risk.department ?? undefined,
+        },
+        links,
+        taskById,
+      });
       const built = await buildSuggestions({ organizationId, taskScores });
       suggestions = { forRiskId: risk.id, ...built };
-      riskLinks += links.length;
+      riskLinks += taskScores.size;
       continue;
     }
 
@@ -376,18 +440,24 @@ export async function runLinkage({
     const links = linkSuggestions({
       source: {},
       candidates: similar.map((s) => ({ id: s.id, score: s.score, department: s.department })),
-      ...(suggestionsOnly
-        ? { threshold: SUGGESTIONS_THRESHOLD, topK: SUGGESTIONS_TOP_K }
-        : {}),
+      ...(suggestionsOnly ? { threshold: 0, topK: SUGGESTIONS_RERANK_INPUT_TOP_K } : {}),
     });
     if (links.length === 0) continue;
 
     if (suggestionsOnly) {
-      const taskScores = new Map<string, number>();
-      for (const l of links) taskScores.set(l.id, l.score);
+      const taskScores = await rerankAndBuildScoreMap({
+        source: {
+          kind: 'vendor',
+          title: vendor.name,
+          description: vendor.description,
+          category: vendor.category,
+        },
+        links,
+        taskById,
+      });
       const built = await buildSuggestions({ organizationId, taskScores });
       suggestions = { forVendorId: vendor.id, ...built };
-      vendorLinks += links.length;
+      vendorLinks += taskScores.size;
       continue;
     }
 

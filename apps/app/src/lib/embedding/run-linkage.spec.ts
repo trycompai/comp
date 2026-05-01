@@ -2,7 +2,7 @@ import { Departments } from '@db';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { LinkagePhase } from './run-linkage';
 
-const { dbMock, upsertMock, findSimilarTasksMock } = vi.hoisted(() => ({
+const { dbMock, upsertMock, findSimilarTasksMock, rerankMock } = vi.hoisted(() => ({
   dbMock: {
     risk: { findMany: vi.fn(), update: vi.fn() },
     vendor: { findMany: vi.fn(), update: vi.fn() },
@@ -10,6 +10,7 @@ const { dbMock, upsertMock, findSimilarTasksMock } = vi.hoisted(() => ({
   },
   upsertMock: vi.fn(),
   findSimilarTasksMock: vi.fn(),
+  rerankMock: vi.fn(),
 }));
 
 function emptyControls() {
@@ -24,11 +25,23 @@ vi.mock('./index', () => ({
   findSimilarTasks: findSimilarTasksMock,
 }));
 
+vi.mock('../rerank-suggestions', () => ({
+  rerankSuggestions: rerankMock,
+}));
+
 import { runLinkage } from './run-linkage';
 
 beforeEach(() => {
   upsertMock.mockReset();
   findSimilarTasksMock.mockReset();
+  rerankMock.mockReset();
+  // Default reranker pass-through: scale cosine 0-1 → 0-10 so existing tests
+  // that don't explicitly mock the reranker still get a deterministic order.
+  rerankMock.mockImplementation(async ({ candidates }: { candidates: Array<{ id: string; cosineScore: number }> }) =>
+    candidates
+      .map((c) => ({ id: c.id, cosineScore: c.cosineScore, rerankScore: c.cosineScore * 10 }))
+      .sort((a, b) => b.rerankScore - a.rerankScore),
+  );
   Object.values(dbMock).forEach((m) =>
     Object.values(m as Record<string, ReturnType<typeof vi.fn>>).forEach((fn) => fn.mockReset()),
   );
@@ -306,6 +319,95 @@ describe('runLinkage onPhase', () => {
     });
 
     expect(dbMock.risk.update).not.toHaveBeenCalled();
+  });
+
+  it('suggestionsOnly=true reorders by LLM rerank score, not cosine', async () => {
+    // Cosine ranks tsk_noise above tsk_real, but the reranker (the precision
+    // step we added precisely for this case) boosts tsk_real to the top.
+    dbMock.risk.findMany.mockResolvedValueOnce([
+      {
+        id: 'rsk_1',
+        title: 'Data Leakage via Personal Laptops',
+        description: 'Laptops can be lost or compromised',
+        category: 'technology',
+        department: Departments.it,
+      },
+    ]);
+    dbMock.vendor.findMany.mockResolvedValueOnce([]);
+    dbMock.task.findMany
+      .mockResolvedValueOnce([
+        { id: 'tsk_real', title: 'Secure Devices', description: 'BitLocker, FileVault, MDM', department: Departments.it },
+        { id: 'tsk_noise', title: 'Office Door Monitoring', description: 'Physical access', department: Departments.it },
+      ])
+      // Enrichment lookup for buildSuggestions.
+      .mockResolvedValueOnce([
+        { id: 'tsk_real', title: 'Secure Devices', status: 'todo', controls: [] },
+        { id: 'tsk_noise', title: 'Office Door Monitoring', status: 'todo', controls: [] },
+      ]);
+    findSimilarTasksMock.mockResolvedValueOnce([
+      { id: 'tsk_noise', score: 0.7, department: Departments.it },
+      { id: 'tsk_real', score: 0.55, department: Departments.it },
+    ]);
+    // Override the default pass-through: the LLM says tsk_real is the primary
+    // control (10) and tsk_noise is irrelevant (1).
+    rerankMock.mockImplementationOnce(async () => [
+      { id: 'tsk_real', cosineScore: 0.55, rerankScore: 10 },
+      { id: 'tsk_noise', cosineScore: 0.7, rerankScore: 1 },
+    ]);
+
+    const result = await runLinkage({
+      organizationId: 'org_1',
+      riskId: 'rsk_1',
+      suggestionsOnly: true,
+    });
+
+    expect(result.suggestions?.tasks.map((t) => t.id)).toEqual(['tsk_real', 'tsk_noise']);
+    expect(result.suggestions?.tasks[0].score).toBe(1.0); // 10/10 → 1.0
+    expect(result.suggestions?.tasks[1].score).toBeCloseTo(0.1, 5); // 1/10 → 0.1
+    expect(rerankMock).toHaveBeenCalledTimes(1);
+    expect(rerankMock.mock.calls[0][0].source).toEqual({
+      kind: 'risk',
+      title: 'Data Leakage via Personal Laptops',
+      description: 'Laptops can be lost or compromised',
+      category: 'technology',
+      department: Departments.it,
+    });
+  });
+
+  it('suggestionsOnly=true falls back to cosine ordering when reranker throws', async () => {
+    dbMock.risk.findMany.mockResolvedValueOnce([
+      {
+        id: 'rsk_1',
+        title: 'a',
+        description: 'b',
+        category: 'people',
+        department: Departments.hr,
+      },
+    ]);
+    dbMock.vendor.findMany.mockResolvedValueOnce([]);
+    dbMock.task.findMany
+      .mockResolvedValueOnce([
+        { id: 'tsk_a', title: 'A', description: 'a', department: Departments.hr },
+        { id: 'tsk_b', title: 'B', description: 'b', department: Departments.hr },
+      ])
+      .mockResolvedValueOnce([
+        { id: 'tsk_a', title: 'A', status: 'todo', controls: [] },
+        { id: 'tsk_b', title: 'B', status: 'todo', controls: [] },
+      ]);
+    findSimilarTasksMock.mockResolvedValueOnce([
+      { id: 'tsk_a', score: 0.6, department: Departments.hr },
+      { id: 'tsk_b', score: 0.9, department: Departments.hr },
+    ]);
+    rerankMock.mockRejectedValueOnce(new Error('OpenAI down'));
+
+    const result = await runLinkage({
+      organizationId: 'org_1',
+      riskId: 'rsk_1',
+      suggestionsOnly: true,
+    });
+
+    // Fallback: ordered by cosine desc (with dept boost: 0.95, 0.65).
+    expect(result.suggestions?.tasks.map((t) => t.id)).toEqual(['tsk_b', 'tsk_a']);
   });
 
   it('replace=false (default) does not disconnect existing links', async () => {
