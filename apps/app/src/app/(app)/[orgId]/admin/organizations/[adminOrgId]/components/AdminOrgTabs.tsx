@@ -58,6 +58,7 @@ export interface AdminOrgDetail {
   hasAccess: boolean;
   onboardingCompleted: boolean;
   website: string | null;
+  backgroundCheckStepEnabled: boolean;
   members: OrgMember[];
 }
 

@@ -37,6 +37,7 @@ const mockOrg: AdminOrgDetail = {
   hasAccess: true,
   onboardingCompleted: true,
   website: 'https://test.com',
+  backgroundCheckStepEnabled: true,
   members: [
     {
       id: 'mem_1',

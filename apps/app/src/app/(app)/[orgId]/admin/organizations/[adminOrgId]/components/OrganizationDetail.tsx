@@ -1,5 +1,8 @@
 'use client';
 
+import { useState } from 'react';
+import { toast } from 'sonner';
+import useSWR from 'swr';
 import { apiClient } from '@/lib/api-client';
 import { RecentAuditLogs } from '@/components/RecentAuditLogs';
 import type { AuditLogWithRelations } from '@/hooks/use-audit-logs';
@@ -7,9 +10,9 @@ import {
   Badge,
   Section,
   Stack,
+  Switch,
   Text,
 } from '@trycompai/design-system';
-import useSWR from 'swr';
 
 interface AdminOrgDetail {
   id: string;
@@ -18,6 +21,7 @@ interface AdminOrgDetail {
   createdAt: string;
   onboardingCompleted: boolean;
   members: { id: string }[];
+  backgroundCheckStepEnabled: boolean;
 }
 
 export function OrganizationDetail({
@@ -28,6 +32,36 @@ export function OrganizationDetail({
   currentOrgId: string;
   hasAccess: boolean;
 }) {
+  const [bgCheckEnabled, setBgCheckEnabled] = useState(
+    org.backgroundCheckStepEnabled,
+  );
+  const [savingBgCheck, setSavingBgCheck] = useState(false);
+
+  const handleToggleBgCheck = async (next: boolean) => {
+    const previous = bgCheckEnabled;
+    setBgCheckEnabled(next);
+    setSavingBgCheck(true);
+
+    const res = await apiClient.patch(
+      `/v1/admin/organizations/${org.id}/background-check-step`,
+      { enabled: next },
+    );
+
+    setSavingBgCheck(false);
+
+    if (res.error) {
+      setBgCheckEnabled(previous);
+      toast.error('Failed to update background check setting');
+      return;
+    }
+
+    toast.success(
+      next
+        ? 'Background checks now required'
+        : 'Background checks bypassed for this organization',
+    );
+  };
+
   const { data: logs = [], isLoading } = useSWR(
     `/v1/admin/organizations/${org.id}/audit-logs`,
     async (url: string) => {
@@ -56,6 +90,25 @@ export function OrganizationDetail({
           value={org.onboardingCompleted ? 'Completed' : 'Pending'}
         />
       </div>
+
+      <Section title="Compliance settings">
+        <div className="flex items-start justify-between gap-4 rounded-lg border p-4">
+          <div className="flex-1">
+            <Text weight="medium">Require background checks</Text>
+            <Text size="sm" variant="muted">
+              When off, this org&apos;s members do not need to pass a background
+              check to count toward people completion. Existing requests stay
+              accessible.
+            </Text>
+          </div>
+          <Switch
+            checked={bgCheckEnabled}
+            disabled={savingBgCheck}
+            onCheckedChange={handleToggleBgCheck}
+            aria-label="Require background checks"
+          />
+        </div>
+      </Section>
 
       {isLoading ? (
         <Section title="Recent Activity">
