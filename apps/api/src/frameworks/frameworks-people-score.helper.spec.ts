@@ -62,6 +62,7 @@ describe('computePeopleScore', () => {
       employees: members,
       securityTrainingStepEnabled: false,
       deviceAgentStepEnabled: false,
+      backgroundCheckStepEnabled: true,
       hasHipaaFramework: false,
     });
 
@@ -75,5 +76,38 @@ describe('computePeopleScore', () => {
       select: { memberId: true },
       distinct: ['memberId'],
     });
+  });
+
+  it('treats employees as complete without a BG check when backgroundCheckStepEnabled is false', async () => {
+    // Only mem_1 has a completed BG check; mem_2 has none
+    (mockDb.backgroundCheckRequest.findMany as jest.Mock).mockResolvedValue([
+      { memberId: 'mem_1' },
+    ]);
+
+    const score = await computePeopleScore({
+      organizationId: 'org_1',
+      allPolicies: [],
+      employees: members,
+      securityTrainingStepEnabled: false,
+      deviceAgentStepEnabled: false,
+      backgroundCheckStepEnabled: false,
+      hasHipaaFramework: false,
+    });
+
+    expect(score).toEqual({ total: 2, completed: 2 });
+  });
+
+  it('skips the BG-check query entirely when backgroundCheckStepEnabled is false', async () => {
+    await computePeopleScore({
+      organizationId: 'org_1',
+      allPolicies: [],
+      employees: members,
+      securityTrainingStepEnabled: false,
+      deviceAgentStepEnabled: false,
+      backgroundCheckStepEnabled: false,
+      hasHipaaFramework: false,
+    });
+
+    expect(mockDb.backgroundCheckRequest.findMany).not.toHaveBeenCalled();
   });
 });
