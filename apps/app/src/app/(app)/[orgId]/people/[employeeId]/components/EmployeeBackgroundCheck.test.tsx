@@ -229,4 +229,37 @@ describe('EmployeeBackgroundCheck', () => {
       }),
     );
   });
+
+  it('keeps legacy pending check drafts that do not have employee details', async () => {
+    navigationMock.searchParams = new URLSearchParams({
+      background_check_billing: 'success',
+      session_id: 'cs_test_legacy',
+    });
+    window.sessionStorage.setItem(
+      'background-check:org_1:mem_1:pending-request',
+      JSON.stringify({
+        organizationId: 'org_1',
+        memberId: 'mem_1',
+        requesterNotes: 'Legacy note before billing.',
+      }),
+    );
+
+    renderSection();
+
+    await waitFor(() => {
+      expect(apiClient.post).toHaveBeenCalledWith(
+        '/v1/background-check-billing/setup-success',
+        { sessionId: 'cs_test_legacy' },
+        'org_1',
+      );
+    });
+    expect(screen.getByLabelText('Employee name')).toHaveValue('Ada Lovelace');
+    expect(screen.getByLabelText('Personal email')).toHaveValue('');
+    expect(screen.getByLabelText('Additional information')).toHaveValue(
+      'Legacy note before billing.',
+    );
+    expect(
+      window.sessionStorage.getItem('background-check:org_1:mem_1:pending-request'),
+    ).not.toBeNull();
+  });
 });

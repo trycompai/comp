@@ -182,8 +182,9 @@ export function EmployeeBackgroundCheck({
       }
 
       form.reset({
-        employeeName: pendingRequest.employeeName,
-        employeeEmail: pendingRequest.employeeEmail,
+        employeeName:
+          pendingRequest.employeeName ?? form.getValues('employeeName') ?? employee.user.name ?? '',
+        employeeEmail: pendingRequest.employeeEmail ?? form.getValues('employeeEmail') ?? '',
         requesterNotes: pendingRequest.requesterNotes ?? '',
       });
       router.replace(pathname, { scroll: false });
