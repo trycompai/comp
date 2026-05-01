@@ -7,10 +7,17 @@ import {
   suggestedResidual,
 } from '@/lib/suggested-residual';
 import { Impact, Likelihood, RiskTreatmentType, TaskStatus } from '@db';
-import { Card, CardContent } from '@trycompai/design-system';
-import { ArrowRight } from '@trycompai/design-system/icons';
+import {
+  Card,
+  CardContent,
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@trycompai/design-system';
+import { ArrowRight, Information } from '@trycompai/design-system/icons';
 import { RiskMatrix5x5 } from './RiskMatrix5x5';
 import { RiskScale } from './RiskScale';
+import { ScoreExplainer } from './ScoreExplainer';
 
 const LEVEL_LABEL: Record<RiskLevel, string> = {
   'very-low': 'LOW',
@@ -149,8 +156,26 @@ export function TreatmentHero({
         <div className="grid grid-cols-1 items-center gap-10 md:grid-cols-[1.4fr_1fr]">
           {/* LEFT: narrative */}
           <div>
-            <div className="text-[10px] font-bold uppercase tracking-[0.08em] text-muted-foreground">
-              Risk Reduction — Treatment Impact
+            <div className="flex items-center justify-between gap-3">
+              <div className="text-[10px] font-bold uppercase tracking-[0.08em] text-muted-foreground">
+                Risk Reduction — Treatment Impact
+              </div>
+              <Popover>
+                <PopoverTrigger
+                  className="inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[11px] text-muted-foreground transition-colors hover:bg-primary/[0.08] hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
+                  aria-label="How is this score calculated?"
+                >
+                  <Information size={11} aria-hidden="true" />
+                  <span>How is this calculated?</span>
+                </PopoverTrigger>
+                <PopoverContent
+                  align="end"
+                  side="bottom"
+                  style={{ width: 360 }}
+                >
+                  <ScoreExplainer />
+                </PopoverContent>
+              </Popover>
             </div>
             <h1
               className="my-3 flex items-center gap-4 font-mono tabular-nums text-7xl font-normal leading-[0.95] tracking-[-0.05em] md:text-8xl"
