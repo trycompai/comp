@@ -268,6 +268,10 @@ export function useRiskActions() {
     [],
   );
 
+  /**
+   * @deprecated Prefer `suggestRiskLinks` which returns AI suggestions for the
+   * user to review before applying. Kept for any direct callers.
+   */
   const autoLinkRisk = useCallback(
     async (riskId: string): Promise<{ runId: string; publicAccessToken: string }> => {
       const response = await fetch(`/api/risks/${riskId}/auto-link`, {
@@ -283,6 +287,11 @@ export function useRiskActions() {
     [],
   );
 
+  /**
+   * @deprecated The new flow runs `suggestRiskLinks` then `applyRiskLinks`
+   * with `replace: true`. This direct relink endpoint is kept for backwards
+   * compatibility but no longer used by the treatment-plan UI.
+   */
   const relinkRisk = useCallback(
     async (riskId: string): Promise<{ runId: string; publicAccessToken: string }> => {
       const response = await fetch(`/api/risks/${riskId}/relink`, {
@@ -298,6 +307,50 @@ export function useRiskActions() {
     [],
   );
 
+  /**
+   * Triggers an AI scan that returns suggestions WITHOUT persisting any link.
+   * The realtime run output contains `suggestions: { tasks, controls }` for the
+   * UI to render in a review-before-apply card.
+   */
+  const suggestRiskLinks = useCallback(
+    async (riskId: string): Promise<{ runId: string; publicAccessToken: string }> => {
+      const response = await fetch(`/api/risks/${riskId}/auto-link`, {
+        method: 'POST',
+        credentials: 'include',
+      });
+      if (!response.ok) {
+        const body = await response.json().catch(() => ({}));
+        throw new Error(body.error || 'Failed to trigger suggest');
+      }
+      return response.json();
+    },
+    [],
+  );
+
+  /**
+   * Persists the user-confirmed task selection. `replace: true` is used by the
+   * re-assess flow (sync semantics — connect ONLY these tasks). `replace: false`
+   * is the additive fresh-suggest flow.
+   */
+  const applyRiskLinks = useCallback(
+    async (
+      riskId: string,
+      params: { taskIds: string[]; replace: boolean },
+    ): Promise<void> => {
+      const response = await fetch(`/api/risks/${riskId}/auto-link/apply`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(params),
+      });
+      if (!response.ok) {
+        const body = await response.json().catch(() => ({}));
+        throw new Error(body.error || 'Failed to apply suggestions');
+      }
+    },
+    [],
+  );
+
   return {
     createRisk,
     updateRisk,
@@ -305,6 +358,8 @@ export function useRiskActions() {
     regenerateMitigation,
     autoLinkRisk,
     relinkRisk,
+    suggestRiskLinks,
+    applyRiskLinks,
   };
 }
 

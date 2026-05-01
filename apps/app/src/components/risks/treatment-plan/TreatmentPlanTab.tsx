@@ -3,10 +3,9 @@
 import { Impact, Likelihood, RiskTreatmentType, TaskStatus } from '@db';
 import { MagicWandFilled } from '@trycompai/design-system/icons';
 import { useEffect, useState } from 'react';
-import { AutoLinkButton } from './AutoLinkButton';
+import { AutoLinkSuggestions } from './AutoLinkSuggestions';
 import { DescriptionEditor } from './DescriptionEditor';
 import { LinkedWork } from './LinkedWork';
-import { RelinkButton } from './RelinkButton';
 import { StrategyPicker } from './StrategyPicker';
 import { TreatmentHero } from './TreatmentHero';
 
@@ -34,18 +33,29 @@ interface TreatmentPlanTabProps {
   onUpdateDescription: (description: string) => Promise<void>;
   onRegenerate: () => Promise<void>;
   regenerating: boolean;
-  /** Optional auto-link callback. When provided and the entity has zero linked
-   * tasks (and the user can update), an Auto-link button is shown above the
-   * Linked Work content. Older callers that don't pass this prop keep working. */
-  onAutoLink?: () => Promise<{ runId: string; publicAccessToken: string }>;
-  /** Optional re-link callback. When provided and the entity has at least one
-   * linked task (and the user can update), a "Re-assess" button is shown in
-   * the Linked Work section header. The button confirms before running since
-   * this is destructive — it wipes the user's manual unlinks. */
-  onRelink?: () => Promise<{ runId: string; publicAccessToken: string }>;
-  /** Optional unlink callback. When provided, each task row in the Linked Work
-   * card gets a × affordance that removes the task↔entity link. */
+  /**
+   * Triggers the AI scan in suggestionsOnly mode and returns a realtime handle.
+   * The component reads `run.output.suggestions` once status === COMPLETED.
+   * When omitted, the legacy fall-through renders only LinkedWork.
+   */
+  onSuggest?: () => Promise<{ runId: string; publicAccessToken: string }>;
+  /**
+   * Persists the user-confirmed selection.
+   * `replace: true` for re-assess (sync semantics — connect ONLY these).
+   * `replace: false` for fresh suggest (additive).
+   */
+  onApply?: (params: { taskIds: string[]; replace: boolean }) => Promise<void>;
+  /** Optional unlink callback for individual rows in the linked-state list. */
   onUnlinkTask?: (taskId: string) => Promise<void>;
+  /**
+   * @deprecated Use `onSuggest` + `onApply` instead. The previous immediate-
+   * apply auto-link flow is replaced by review-before-apply.
+   */
+  onAutoLink?: () => Promise<{ runId: string; publicAccessToken: string }>;
+  /**
+   * @deprecated Use `onSuggest` + `onApply({ replace: true })` instead.
+   */
+  onRelink?: () => Promise<{ runId: string; publicAccessToken: string }>;
 }
 
 export function TreatmentPlanTab({
@@ -56,8 +66,8 @@ export function TreatmentPlanTab({
   onUpdateDescription,
   onRegenerate,
   regenerating,
-  onAutoLink,
-  onRelink,
+  onSuggest,
+  onApply,
   onUnlinkTask,
 }: TreatmentPlanTabProps) {
   const [strategy, setStrategy] = useState(entity.treatmentStrategy);
@@ -88,9 +98,7 @@ export function TreatmentPlanTab({
         tasks={entity.tasks}
       />
 
-      <div
-        className="bg-background grid grid-cols-1 overflow-hidden rounded-md border border-border lg:grid-cols-[1fr_1.2fr_1fr]"
-      >
+      <div className="bg-background grid grid-cols-1 overflow-hidden rounded-md border border-border lg:grid-cols-[1fr_1.2fr_1fr]">
         {/* 01 · Strategy */}
         <div className="min-w-0 p-6">
           <ColumnHeader
@@ -140,25 +148,17 @@ export function TreatmentPlanTab({
             number="03"
             title="Linked work"
             subtitle="Drives the residual estimate."
-            action={
-              entity.tasks.length > 0 && canUpdate && onRelink ? (
-                <RelinkButton
-                  disabled={regenerating}
-                  onRelink={onRelink}
-                  onAfterLink={onRegenerate}
-                />
-              ) : undefined
-            }
           />
-          {entity.tasks.length === 0 && canUpdate && onAutoLink ? (
-            <div className="mt-4">
-              <AutoLinkButton
-                hasDescription={Boolean(description.trim())}
-                disabled={regenerating}
-                onAutoLink={onAutoLink}
-                onAfterLink={onRegenerate}
-              />
-            </div>
+          {onSuggest && onApply ? (
+            <AutoLinkSuggestions
+              orgId={orgId}
+              tasks={entity.tasks}
+              canUpdate={canUpdate}
+              onSuggest={onSuggest}
+              onApply={onApply}
+              onAfterApply={onRegenerate}
+              onUnlinkTask={onUnlinkTask}
+            />
           ) : (
             <LinkedWork
               orgId={orgId}

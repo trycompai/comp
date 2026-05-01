@@ -62,7 +62,7 @@ export function RiskPageClient({
   taskItemId,
 }: RiskPageClientProps) {
   const { risk: swrRisk, mutate: mutateRisk } = useRisk(riskId);
-  const { updateRisk, regenerateMitigation, autoLinkRisk, relinkRisk } = useRiskActions();
+  const { updateRisk, regenerateMitigation, suggestRiskLinks, applyRiskLinks } = useRiskActions();
   const { hasPermission } = usePermissions();
   const searchParams = useSearchParams();
   const defaultTab = searchParams.get('tab') || 'overview';
@@ -165,16 +165,13 @@ export function RiskPageClient({
     }
   };
 
-  const handleAutoLink = async () => {
-    const result = await autoLinkRisk(riskId);
-    await mutateRisk();
-    return result;
+  const handleSuggest = async () => {
+    return suggestRiskLinks(riskId);
   };
 
-  const handleRelink = async () => {
-    const result = await relinkRisk(riskId);
+  const handleApply = async (params: { taskIds: string[]; replace: boolean }) => {
+    await applyRiskLinks(riskId, params);
     await mutateRisk();
-    return result;
   };
 
   const handleUnlinkTask = async (taskId: string) => {
@@ -305,8 +302,8 @@ export function RiskPageClient({
                 onUpdateDescription={handleUpdateDescription}
                 onRegenerate={handleRegenerateMitigation}
                 regenerating={isRegenerating}
-                onAutoLink={handleAutoLink}
-                onRelink={handleRelink}
+                onSuggest={handleSuggest}
+                onApply={handleApply}
                 onUnlinkTask={handleUnlinkTask}
               />
             </TabsContent>

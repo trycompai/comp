@@ -80,7 +80,7 @@ export function VendorDetailTabs({
   const taskItemId = searchParams.get('taskItemId');
 
   const { vendor: swrVendor, mutate: refreshVendor } = useVendor(vendorId);
-  const { updateVendor, triggerAssessment, regenerateMitigation, autoLinkVendor, relinkVendor } = useVendorActions();
+  const { updateVendor, triggerAssessment, regenerateMitigation, suggestVendorLinks, applyVendorLinks } = useVendorActions();
   const { hasPermission } = usePermissions();
   const canUpdate = hasPermission('vendor', 'update');
   const canUpdateTask = hasPermission('task', 'update');
@@ -266,16 +266,13 @@ export function VendorDetailTabs({
     refreshVendor();
   };
 
-  const handleAutoLink = async () => {
-    const result = await autoLinkVendor(vendorId);
-    await refreshVendor();
-    return result;
+  const handleSuggest = async () => {
+    return suggestVendorLinks(vendorId);
   };
 
-  const handleRelink = async () => {
-    const result = await relinkVendor(vendorId);
+  const handleApply = async (params: { taskIds: string[]; replace: boolean }) => {
+    await applyVendorLinks(vendorId, params);
     await refreshVendor();
-    return result;
   };
 
   const handleUnlinkTask = async (taskId: string) => {
@@ -473,8 +470,8 @@ export function VendorDetailTabs({
                 onUpdateDescription={handleUpdateDescription}
                 onRegenerate={handleRegenerateMitigation}
                 regenerating={isMitigationLoading}
-                onAutoLink={handleAutoLink}
-                onRelink={handleRelink}
+                onSuggest={handleSuggest}
+                onApply={handleApply}
                 onUnlinkTask={handleUnlinkTask}
               />
             </TabsContent>

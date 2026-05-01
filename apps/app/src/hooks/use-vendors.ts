@@ -255,6 +255,9 @@ export function useVendorActions() {
     [],
   );
 
+  /**
+   * @deprecated Prefer `suggestVendorLinks` (review-before-apply flow).
+   */
   const autoLinkVendor = useCallback(
     async (vendorId: string): Promise<{ runId: string; publicAccessToken: string }> => {
       const response = await fetch(`/api/vendors/${vendorId}/auto-link`, {
@@ -270,6 +273,10 @@ export function useVendorActions() {
     [],
   );
 
+  /**
+   * @deprecated The new flow runs `suggestVendorLinks` then `applyVendorLinks`
+   * with `replace: true`.
+   */
   const relinkVendor = useCallback(
     async (vendorId: string): Promise<{ runId: string; publicAccessToken: string }> => {
       const response = await fetch(`/api/vendors/${vendorId}/relink`, {
@@ -285,6 +292,47 @@ export function useVendorActions() {
     [],
   );
 
+  /**
+   * Triggers an AI scan that returns suggestions WITHOUT persisting any link.
+   */
+  const suggestVendorLinks = useCallback(
+    async (vendorId: string): Promise<{ runId: string; publicAccessToken: string }> => {
+      const response = await fetch(`/api/vendors/${vendorId}/auto-link`, {
+        method: 'POST',
+        credentials: 'include',
+      });
+      if (!response.ok) {
+        const body = await response.json().catch(() => ({}));
+        throw new Error(body.error || 'Failed to trigger suggest');
+      }
+      return response.json();
+    },
+    [],
+  );
+
+  /**
+   * Persists the user-confirmed task selection. `replace: true` is used by the
+   * re-assess flow (sync semantics).
+   */
+  const applyVendorLinks = useCallback(
+    async (
+      vendorId: string,
+      params: { taskIds: string[]; replace: boolean },
+    ): Promise<void> => {
+      const response = await fetch(`/api/vendors/${vendorId}/auto-link/apply`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(params),
+      });
+      if (!response.ok) {
+        const body = await response.json().catch(() => ({}));
+        throw new Error(body.error || 'Failed to apply suggestions');
+      }
+    },
+    [],
+  );
+
   return {
     createVendor,
     updateVendor,
@@ -293,6 +341,8 @@ export function useVendorActions() {
     regenerateMitigation,
     autoLinkVendor,
     relinkVendor,
+    suggestVendorLinks,
+    applyVendorLinks,
   };
 }
 
