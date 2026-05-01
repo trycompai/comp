@@ -89,6 +89,31 @@ const SUGGESTIONS_QUERY_TOP_K = 50;
 const SUGGESTIONS_RERANK_INPUT_TOP_K = 30;
 const SUGGESTIONS_FINAL_TOP_K = 15;
 
+// How many risks/vendors to match concurrently in the bulk onboarding path.
+// Each iteration makes 1 vector query (Upstash) + 1 OpenAI rerank call + 1
+// Prisma update — so a small fan-out gives a big wall-clock win without
+// hammering rate limits. Tuned for the typical onboarding workload (~10-20
+// entities); raise if needed once we have telemetry.
+const MATCH_CONCURRENCY = 4;
+
+async function mapWithConcurrency<T, R>(
+  items: T[],
+  limit: number,
+  fn: (item: T, index: number) => Promise<R>,
+): Promise<R[]> {
+  const results: R[] = new Array(items.length);
+  let next = 0;
+  const workers = Array.from({ length: Math.min(limit, items.length) }, async () => {
+    for (;;) {
+      const i = next++;
+      if (i >= items.length) return;
+      results[i] = await fn(items[i], i);
+    }
+  });
+  await Promise.all(workers);
+  return results;
+}
+
 function riskQueryText(risk: {
   title: string;
   description: string;
@@ -239,9 +264,17 @@ async function rerankAndBuildScoreMap({
 
   let reranked: RerankedCandidate[];
   try {
+    console.info(
+      `[linkage] reranking ${candidates.length} candidates for ${source.kind} "${source.title}"`,
+    );
+    const t0 = Date.now();
     reranked = await rerankSuggestions({ source, candidates });
+    const top10 = reranked.slice(0, 10).map((r) => `${r.id}=${r.rerankScore.toFixed(1)}`);
+    console.info(
+      `[linkage] rerank done in ${((Date.now() - t0) / 1000).toFixed(2)}s; top: ${top10.join(', ')}`,
+    );
   } catch (err) {
-    console.error('[runLinkage] rerankSuggestions failed; falling back to cosine', err);
+    console.error('[linkage] rerank failed; falling back to cosine', err);
     reranked = candidates
       .map((c) => ({
         id: c.id,
@@ -280,46 +313,59 @@ export async function runLinkage({
 }: RunLinkageInput): Promise<RunLinkageOutput> {
   onPhase?.({ name: 'starting' });
 
-  const risks = await db.risk.findMany({
-    where: { organizationId, ...(riskId ? { id: riskId } : {}) },
-    select: { id: true, title: true, description: true, category: true, department: true },
-  });
-  const vendors = await db.vendor.findMany({
-    where: { organizationId, ...(vendorId ? { id: vendorId } : {}) },
-    select: { id: true, name: true, description: true, category: true },
-  });
-  // Scope tasks to purchased-framework coverage. `Control.archivedAt` is set
-  // when the org's framework subscription no longer references the control, so
-  // an unarchived control implies a currently-purchased framework. Custom user
-  // tasks with no controls are kept (still org-owned and worth suggesting).
-  const tasks = await db.task.findMany({
-    where: {
-      organizationId,
-      OR: [
-        { controls: { some: { archivedAt: null } } },
-        { controls: { none: {} } },
-      ],
-    },
-    select: { id: true, title: true, description: true, department: true },
-  });
+  // When the caller pins a specific entity, skip loading the other side
+  // entirely — embedding all vendors when the user only asked about one risk
+  // is wasted OpenAI cost (and vice versa).
+  const wantRisks = !vendorId;
+  const wantVendors = !riskId;
 
-  // When replace=true, wipe existing task links on every in-scope entity BEFORE
-  // the embedding/matching loops so the connect step below builds linkage from
-  // scratch. This is destructive — clears manual unlinks too.
+  // The 3 initial scope queries are independent — fan them out instead of
+  // serializing. Tasks are scoped to purchased-framework coverage:
+  // `Control.archivedAt` is set when the org's framework subscription drops
+  // the control, so unarchived implies actively-purchased. Custom user tasks
+  // with no controls are kept (still org-owned and worth suggesting).
+  const [risks, vendors, tasks] = await Promise.all([
+    wantRisks
+      ? db.risk.findMany({
+          where: { organizationId, ...(riskId ? { id: riskId } : {}) },
+          select: { id: true, title: true, description: true, category: true, department: true },
+        })
+      : Promise.resolve([] as Awaited<ReturnType<typeof db.risk.findMany>>),
+    wantVendors
+      ? db.vendor.findMany({
+          where: { organizationId, ...(vendorId ? { id: vendorId } : {}) },
+          select: { id: true, name: true, description: true, category: true },
+        })
+      : Promise.resolve([] as Awaited<ReturnType<typeof db.vendor.findMany>>),
+    db.task.findMany({
+      where: {
+        organizationId,
+        OR: [
+          { controls: { some: { archivedAt: null } } },
+          { controls: { none: {} } },
+        ],
+      },
+      select: { id: true, title: true, description: true, department: true },
+    }),
+  ]);
+
+  console.info(
+    `[linkage] scope: ${tasks.length} tasks, ${risks.length} risks, ${vendors.length} vendors (org=${organizationId})`,
+  );
+
+  // When replace=true, wipe existing task links on every in-scope entity
+  // BEFORE the matching loops so the connect step below builds linkage from
+  // scratch. Run all the disconnects in parallel.
   // When suggestionsOnly is set, skip this step entirely (no DB writes).
   if (replace && !suggestionsOnly) {
-    for (const risk of risks) {
-      await db.risk.update({
-        where: { id: risk.id },
-        data: { tasks: { set: [] } },
-      });
-    }
-    for (const vendor of vendors) {
-      await db.vendor.update({
-        where: { id: vendor.id },
-        data: { tasks: { set: [] } },
-      });
-    }
+    await Promise.all([
+      ...risks.map((r) =>
+        db.risk.update({ where: { id: r.id }, data: { tasks: { set: [] } } }),
+      ),
+      ...vendors.map((v) =>
+        db.vendor.update({ where: { id: v.id }, data: { tasks: { set: [] } } }),
+      ),
+    ]);
   }
 
   if (tasks.length === 0) {
@@ -380,11 +426,16 @@ export async function runLinkage({
   // without an extra DB round trip.
   const taskById = new Map(tasks.map((t) => [t.id, t]));
 
-  let riskLinks = 0;
   let suggestions: RunLinkageOutput['suggestions'];
-  for (let i = 0; i < risks.length; i++) {
-    const risk = risks[i];
-    onPhase?.({ name: 'matching-risks', current: i, total: risks.length });
+
+  // Risk matching — fan out with bounded concurrency. Each iteration is one
+  // vector query + (rerank | DB update). Order doesn't matter here; we sum
+  // riskLinks at the end and emit `current` based on completion count.
+  if (risks.length > 0) {
+    onPhase?.({ name: 'matching-risks', current: 0, total: risks.length });
+  }
+  let completedRisks = 0;
+  const riskOutcomes = await mapWithConcurrency(risks, MATCH_CONCURRENCY, async (risk) => {
     const similar = await findSimilarTasks({
       organizationId,
       queryText: riskQueryText(risk),
@@ -395,43 +446,52 @@ export async function runLinkage({
       candidates: similar.map((s) => ({ id: s.id, score: s.score, department: s.department })),
       ...(suggestionsOnly ? { threshold: 0, topK: SUGGESTIONS_RERANK_INPUT_TOP_K } : {}),
     });
-    if (links.length === 0) continue;
-
-    if (suggestionsOnly) {
-      // Cosine got us recall; the LLM reranker does precision and slices to
-      // the user-facing top-K. Score map values are scaled to 0-1 so the
-      // existing SuggestedTask UI displays them as a percentage.
-      const taskScores = await rerankAndBuildScoreMap({
-        source: {
-          kind: 'risk',
-          title: risk.title,
-          description: risk.description,
-          category: risk.category,
-          department: risk.department ?? undefined,
-        },
-        links,
-        taskById,
-      });
-      const built = await buildSuggestions({ organizationId, taskScores });
-      suggestions = { forRiskId: risk.id, ...built };
-      riskLinks += taskScores.size;
-      continue;
+    let count = 0;
+    let perEntitySuggestions: RunLinkageOutput['suggestions'];
+    if (links.length > 0) {
+      if (suggestionsOnly) {
+        const taskScores = await rerankAndBuildScoreMap({
+          source: {
+            kind: 'risk',
+            title: risk.title,
+            description: risk.description,
+            category: risk.category,
+            department: risk.department ?? undefined,
+          },
+          links,
+          taskById,
+        });
+        const built = await buildSuggestions({ organizationId, taskScores });
+        perEntitySuggestions = { forRiskId: risk.id, ...built };
+        count = taskScores.size;
+      } else {
+        await db.risk.update({
+          where: { id: risk.id },
+          data: { tasks: { connect: links.map((l) => ({ id: l.id })) } },
+        });
+        count = links.length;
+      }
     }
-
-    await db.risk.update({
-      where: { id: risk.id },
-      data: { tasks: { connect: links.map((l) => ({ id: l.id })) } },
-    });
-    riskLinks += links.length;
+    completedRisks += 1;
+    onPhase?.({ name: 'matching-risks', current: completedRisks, total: risks.length });
+    return { count, perEntitySuggestions };
+  });
+  const riskLinks = riskOutcomes.reduce((sum, r) => sum + r.count, 0);
+  // suggestionsOnly endpoints always pass a single riskId, so at most one
+  // outcome carries suggestions — pick the first non-null.
+  for (const r of riskOutcomes) {
+    if (r.perEntitySuggestions) {
+      suggestions = r.perEntitySuggestions;
+      break;
+    }
   }
-  if (risks.length > 0) {
-    onPhase?.({ name: 'matching-risks', current: risks.length, total: risks.length });
-  }
 
-  let vendorLinks = 0;
-  for (let i = 0; i < vendors.length; i++) {
-    const vendor = vendors[i];
-    onPhase?.({ name: 'matching-vendors', current: i, total: vendors.length });
+  // Vendor matching — same pattern.
+  if (vendors.length > 0) {
+    onPhase?.({ name: 'matching-vendors', current: 0, total: vendors.length });
+  }
+  let completedVendors = 0;
+  const vendorOutcomes = await mapWithConcurrency(vendors, MATCH_CONCURRENCY, async (vendor) => {
     const similar = await findSimilarTasks({
       organizationId,
       queryText: vendorQueryText(vendor),
@@ -442,33 +502,43 @@ export async function runLinkage({
       candidates: similar.map((s) => ({ id: s.id, score: s.score, department: s.department })),
       ...(suggestionsOnly ? { threshold: 0, topK: SUGGESTIONS_RERANK_INPUT_TOP_K } : {}),
     });
-    if (links.length === 0) continue;
-
-    if (suggestionsOnly) {
-      const taskScores = await rerankAndBuildScoreMap({
-        source: {
-          kind: 'vendor',
-          title: vendor.name,
-          description: vendor.description,
-          category: vendor.category,
-        },
-        links,
-        taskById,
-      });
-      const built = await buildSuggestions({ organizationId, taskScores });
-      suggestions = { forVendorId: vendor.id, ...built };
-      vendorLinks += taskScores.size;
-      continue;
+    let count = 0;
+    let perEntitySuggestions: RunLinkageOutput['suggestions'];
+    if (links.length > 0) {
+      if (suggestionsOnly) {
+        const taskScores = await rerankAndBuildScoreMap({
+          source: {
+            kind: 'vendor',
+            title: vendor.name,
+            description: vendor.description,
+            category: vendor.category,
+          },
+          links,
+          taskById,
+        });
+        const built = await buildSuggestions({ organizationId, taskScores });
+        perEntitySuggestions = { forVendorId: vendor.id, ...built };
+        count = taskScores.size;
+      } else {
+        await db.vendor.update({
+          where: { id: vendor.id },
+          data: { tasks: { connect: links.map((l) => ({ id: l.id })) } },
+        });
+        count = links.length;
+      }
     }
-
-    await db.vendor.update({
-      where: { id: vendor.id },
-      data: { tasks: { connect: links.map((l) => ({ id: l.id })) } },
-    });
-    vendorLinks += links.length;
-  }
-  if (vendors.length > 0) {
-    onPhase?.({ name: 'matching-vendors', current: vendors.length, total: vendors.length });
+    completedVendors += 1;
+    onPhase?.({ name: 'matching-vendors', current: completedVendors, total: vendors.length });
+    return { count, perEntitySuggestions };
+  });
+  const vendorLinks = vendorOutcomes.reduce((sum, v) => sum + v.count, 0);
+  if (!suggestions) {
+    for (const v of vendorOutcomes) {
+      if (v.perEntitySuggestions) {
+        suggestions = v.perEntitySuggestions;
+        break;
+      }
+    }
   }
 
   onPhase?.({ name: 'done', riskLinks, vendorLinks });
