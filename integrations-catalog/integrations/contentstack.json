@@ -8,13 +8,19 @@
   "authConfig": {
     "type": "custom",
     "config": {
-      "setupInstructions": "1. Log in to Contentstack at https://app.contentstack.com\n2. Go to Account Settings → Tokens → Auth Tokens\n3. Generate a new auth token\n4. Enter it below",
+      "setupInstructions": "1. Log in to Contentstack at https://app.contentstack.com\n2. Go to Account Settings > Tokens > Auth Tokens\n3. Generate a new auth token\n4. Determine your region from your Contentstack URL:\n   - US: api.contentstack.io\n   - EU: eu-api.contentstack.com\n   - AU: au-api.contentstack.com\n   - Azure NA: azure-na-api.contentstack.com\n   - Azure EU: azure-eu-api.contentstack.com\n5. Enter both values below",
       "credentialFields": [
         {
           "label": "Auth Token",
           "type": "password",
           "required": true,
           "helpText": "Found in Contentstack Account → Tokens → Auth Tokens"
+        },
+        {
+          "label": "API Region",
+          "type": "text",
+          "required": true,
+          "helpText": "Your Contentstack region API host. Examples: api.contentstack.io (US), eu-api.contentstack.com (EU), au-api.contentstack.com (AU)"
         }
       ]
     }

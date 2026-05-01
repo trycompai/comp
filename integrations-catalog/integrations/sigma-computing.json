@@ -6,15 +6,21 @@
   "docsUrl": "https://help.sigmacomputing.com/reference/overview-1",
   "baseUrl": "https://api.sigmacomputing.com/",
   "authConfig": {
-    "type": "api_key",
+    "type": "custom",
     "config": {
-      "setupInstructions": "1. Log in to Sigma at https://app.sigmacomputing.com\n2. Go to Administration → Developer Access → API Tokens\n3. Create a new API token\n4. Enter it below",
+      "setupInstructions": "1. Log in to Sigma Computing as an Admin\n2. Go to Administration > Developer Access\n3. Click 'Create new' to generate API client credentials\n4. Copy the Client ID and Client Secret\n5. Enter them below",
       "credentialFields": [
         {
-          "label": "API Token",
+          "label": "Client ID",
+          "type": "text",
+          "required": true,
+          "helpText": "From Sigma Administration > Developer Access > Create new client credentials"
+        },
+        {
+          "label": "Client Secret",
           "type": "password",
           "required": true,
-          "helpText": "Found in Sigma Administration → Developer Access → API Tokens"
+          "helpText": "The secret generated with your Client ID"
         }
       ]
     }

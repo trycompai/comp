@@ -21,7 +21,9 @@
           "required": true,
           "helpText": "Secret Key from Account Settings > API Credentials in Huntress portal"
         }
-      ]
+      ],
+      "usernameField": "api_key",
+      "passwordField": "secret_key"
     }
   },
   "capabilities": [

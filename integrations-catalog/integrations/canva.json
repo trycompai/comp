@@ -6,8 +6,17 @@
   "docsUrl": "https://www.canva.dev/docs/connect/",
   "baseUrl": "https://api.canva.com",
   "authConfig": {
-    "type": "api_key",
-    "config": {}
+    "type": "oauth2",
+    "config": {
+      "setupInstructions": "1. Go to the Canva Developer Portal at https://www.canva.com/developers/integrations/\n2. Create a new integration\n3. Generate a client secret\n4. Select required scopes (design:content:read, design:meta:read, profile:read)\n5. Add the CompAI callback URL as a redirect URI\n6. Copy your Client ID and Client Secret into CompAI\n7. Click Connect to authorize",
+      "scopes": [
+        "design:content:read",
+        "design:meta:read",
+        "profile:read"
+      ],
+      "clientAuthMethod": "header",
+      "supportsRefreshToken": true
+    }
   },
   "capabilities": [
     "checks"

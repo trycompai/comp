@@ -8,6 +8,7 @@
   "authConfig": {
     "type": "custom",
     "config": {
+      "setupInstructions": "1. Log in to Employment Hero\n2. Go to your profile menu > Developer Portal\n3. Register a new application or use an existing one\n4. Generate a Bearer token (OAuth2 access token)\n5. Find your Organisation ID via GET /api/v1/organisations\n6. Paste the Bearer token and Organisation ID below",
       "credentialFields": [
         {
           "label": "API Token (Bearer Token)",

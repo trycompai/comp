@@ -4,7 +4,7 @@
   "description": "Kolide device security and compliance for remote teams",
   "category": "Security",
   "docsUrl": "https://www.kolide.com/docs/developers/api",
-  "baseUrl": "https://k2.kolide.com/api/v0",
+  "baseUrl": "https://api.kolide.com",
   "authConfig": {
     "type": "custom",
     "config": {

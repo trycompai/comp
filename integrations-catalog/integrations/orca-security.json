@@ -8,13 +8,19 @@
   "authConfig": {
     "type": "custom",
     "config": {
-      "setupInstructions": "1. Log in to Orca Security at https://app.us.orcasecurity.io\n2. Go to Settings → API Tokens\n3. Create a new token with read access\n4. Enter it below",
+      "setupInstructions": "1. Log in to Orca Security\n2. Go to Settings > API Tokens\n3. Create a new token with read access\n4. Select your region:\n   - US: app.us.orcasecurity.io\n   - EU: app.eu.orcasecurity.io\n5. Enter the token and region host",
       "credentialFields": [
         {
           "label": "API Token",
           "type": "password",
           "required": true,
-          "helpText": "Found in Orca Security Settings → API Tokens"
+          "helpText": "Found in Orca Security Settings > API Tokens"
+        },
+        {
+          "label": "Region Host",
+          "type": "text",
+          "required": true,
+          "helpText": "US: app.us.orcasecurity.io, EU: app.eu.orcasecurity.io"
         }
       ]
     }
@@ -28,14 +34,14 @@
     {
       "slug": "orca_monitoring",
       "name": "Monitoring & Alerting",
-      "description": "Verifies Orca Security is actively scanning cloud environments for threats",
+      "description": "Verifies Orca Security is actively scanning and checks for critical alerts",
       "defaultSeverity": "high",
       "enabled": true
     },
     {
-      "slug": "orca_employee_access",
-      "name": "Employee Access",
-      "description": "Reviews Orca Security users with access to cloud security findings",
+      "slug": "orca_asset_inventory",
+      "name": "Asset Inventory",
+      "description": "Verifies Orca Security has visibility into cloud assets",
       "defaultSeverity": "medium",
       "enabled": true
     }

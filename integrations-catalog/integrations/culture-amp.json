@@ -1,0 +1,52 @@
+{
+  "slug": "culture-amp",
+  "name": "Culture Amp",
+  "description": "Culture Amp is an employee engagement and performance management platform that helps organizations collect employee feedback, run performance reviews, and drive workplace culture improvements.",
+  "category": "HR & People",
+  "docsUrl": "https://docs.api.cultureamp.com/",
+  "baseUrl": "https://api.cultureamp.com",
+  "authConfig": {
+    "type": "custom",
+    "config": {
+      "setupInstructions": "1. Log in to Culture Amp as an Account Administrator\n2. Open Settings > Account > API\n3. Click to create a new API credential\n4. Select the 'employees-read' scope (and 'employee-demographics-read' if needed)\n5. Copy the Client ID and Client Secret\n6. Enter them below\n\nNote: The entity ID used in the OAuth scope (8ed17dce-...) is a Culture Amp platform-level constant for the production API, shared by all customers. It is NOT tenant-specific. See https://docs.api.cultureamp.com/docs/customer-guide-authorization-scopes for details.",
+      "credentialFields": [
+        {
+          "label": "Client ID",
+          "type": "text",
+          "required": true,
+          "helpText": "Your Culture Amp API credential Client ID. Found in Culture Amp Settings > Account > API."
+        },
+        {
+          "label": "Client Secret",
+          "type": "password",
+          "required": true,
+          "helpText": "Your Culture Amp API credential Client Secret. Found in Culture Amp Settings > Account > API."
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks",
+    "sync"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": true,
+  "checks": [
+    {
+      "slug": "culture_amp_employee_access",
+      "name": "Employee Access",
+      "description": "Lists all users/members in Culture Amp with their names, emails, and identifiers to verify employee access controls.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "culture_amp_app_availability",
+      "name": "App Availability",
+      "description": "Verifies that the Culture Amp API is accessible and the provided credentials are valid by authenticating and making a test API call.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

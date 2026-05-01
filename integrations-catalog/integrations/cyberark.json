@@ -3,11 +3,12 @@
   "name": "CyberArk",
   "description": "CyberArk Privileged Access Management (PAM) platform that secures, manages, and monitors privileged accounts across your infrastructure.",
   "category": "Identity & Access",
-  "docsUrl": null,
-  "baseUrl": null,
+  "docsUrl": "https://docs.cyberark.com/pam-self-hosted/latest/en/content/webservices/implement-restapi.htm",
+  "baseUrl": "https://your-cyberark-instance.com",
   "authConfig": {
     "type": "custom",
     "config": {
+      "setupInstructions": "1. Log in to your CyberArk PVWA web interface\n2. Ensure the CyberArk user has API access permissions\n3. Enter your PVWA server URL (e.g., https://your-cyberark-instance.com)\n4. Enter the username and password for the API user",
       "credentialFields": [
         {
           "type": "string",

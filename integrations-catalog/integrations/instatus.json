@@ -8,13 +8,13 @@
   "authConfig": {
     "type": "custom",
     "config": {
-      "setupInstructions": "1. Log in to Instatus\n2. Go to Account Settings\n3. Copy your API key\n4. Paste it below",
+      "setupInstructions": "1. Log in to Instatus\n2. Go to User Settings > Developer Settings\n3. Copy your API key\n4. Paste it below",
       "credentialFields": [
         {
           "label": "API Key",
           "type": "password",
           "required": true,
-          "helpText": "Instatus → Account Settings → API Key"
+          "helpText": "Instatus > User Settings > Developer Settings (https://dashboard.instatus.com/developer)"
         }
       ]
     }

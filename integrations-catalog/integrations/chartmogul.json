@@ -6,15 +6,15 @@
   "docsUrl": "https://dev.chartmogul.com/reference/introduction",
   "baseUrl": "https://api.chartmogul.com/",
   "authConfig": {
-    "type": "api_key",
+    "type": "custom",
     "config": {
-      "setupInstructions": "1. Log in to ChartMogul at https://app.chartmogul.com\n2. Go to Profile → View API Key\n3. Copy your API key\n4. Enter it below",
+      "setupInstructions": "1. Log in to ChartMogul at https://app.chartmogul.com\n2. Go to Profile -> View API Key\n3. Copy your API key\n4. Enter it below",
       "credentialFields": [
         {
           "label": "API Key",
           "type": "password",
           "required": true,
-          "helpText": "Found in ChartMogul Profile → View API Key"
+          "helpText": "Found in ChartMogul Profile -> View API Key"
         }
       ]
     }

@@ -8,6 +8,7 @@
   "authConfig": {
     "type": "custom",
     "config": {
+      "setupInstructions": "1. Log in to Atera at https://app.atera.com\n2. Go to Admin > API Management\n3. Generate a new API key or copy an existing one\n4. Paste the API key below",
       "credentialFields": [
         {
           "label": "API Key",

@@ -8,6 +8,7 @@
   "authConfig": {
     "type": "oauth2",
     "config": {
+      "setupInstructions": "1. Go to the Ramp Developer Portal (developer.ramp.com)\n2. Register a new application\n3. Set the redirect URI to: https://api.trycomp.ai/v1/integrations/oauth/callback\n4. Copy the Client ID and Client Secret\n5. Enter them in the CompAI admin panel\n6. Click Connect to authorize access to your Ramp account",
       "scopes": [
         "users:read"
       ],

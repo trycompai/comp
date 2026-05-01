@@ -3,7 +3,7 @@
   "name": "Bonusly",
   "description": "Bonusly employee recognition and rewards platform",
   "category": "HR & People",
-  "docsUrl": "https://bonusly.docs.apiary.io/",
+  "docsUrl": "https://docs.bonus.ly/reference/authentication",
   "baseUrl": "https://bonus.ly/api/v1",
   "authConfig": {
     "type": "custom",

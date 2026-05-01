@@ -4,7 +4,7 @@
   "description": "Monitor Brex corporate card users and accounts for financial compliance",
   "category": "Cloud",
   "docsUrl": "https://developer.brex.com/docs/authentication/",
-  "baseUrl": "https://platform.brexapis.com/",
+  "baseUrl": "https://api.brex.com/",
   "authConfig": {
     "type": "api_key",
     "config": {}

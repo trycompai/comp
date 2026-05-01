@@ -6,8 +6,18 @@
   "docsUrl": "https://developer.close.com/",
   "baseUrl": "https://api.close.com",
   "authConfig": {
-    "type": "api_key",
-    "config": {}
+    "type": "custom",
+    "config": {
+      "setupInstructions": "1. Log in to Close at https://app.close.com\n2. Go to Settings > Developer > API Keys\n3. Create a new API key\n4. Copy the API key and paste it below",
+      "credentialFields": [
+        {
+          "label": "API Key",
+          "type": "password",
+          "required": true,
+          "helpText": "Found in Close Settings > Developer > API Keys"
+        }
+      ]
+    }
   },
   "capabilities": [
     "checks"

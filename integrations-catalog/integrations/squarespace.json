@@ -1,0 +1,45 @@
+{
+  "slug": "squarespace",
+  "name": "Squarespace",
+  "description": "Monitor Squarespace website configuration, commerce products, and orders for operational compliance.",
+  "category": "Productivity",
+  "docsUrl": "https://developers.squarespace.com/commerce-apis",
+  "baseUrl": "https://api.squarespace.com",
+  "authConfig": {
+    "type": "custom",
+    "config": {
+      "setupInstructions": "Requires: a Squarespace Commerce plan (Basic or Advanced) with Developer API Keys access.\n\n1. Log in to your Squarespace site\n2. In the left nav, click Settings, then scroll down and click Advanced\n3. Click Developer API Keys\n4. Click the GENERATE KEY button\n5. Enter a key name (e.g. CompAI) and select permissions: Products (Read Only)\n6. Record the generated key - it will only be shown once\n7. Paste the API key below\n\nNote: Each API key is specific to a single Squarespace website.",
+      "credentialFields": [
+        {
+          "label": "API Key",
+          "type": "password",
+          "required": true,
+          "helpText": "Your Squarespace Commerce API key. Generate it in Settings > Advanced > Developer API Keys."
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "squarespace_app_availability",
+      "name": "App Availability",
+      "description": "Verify Squarespace API access by retrieving basic site information via the Authorization API endpoint.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "squarespace_commerce_configuration",
+      "name": "Commerce Configuration",
+      "description": "List products from the Squarespace Commerce API to verify e-commerce configuration and product catalog access.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

@@ -3,11 +3,12 @@
   "name": "Commvault",
   "description": "Enterprise backup, recovery, and data management platform for cloud, virtual, and physical environments",
   "category": "Security",
-  "docsUrl": null,
+  "docsUrl": "https://api.commvault.com/",
   "baseUrl": "https://commvault.example.com",
   "authConfig": {
     "type": "custom",
     "config": {
+      "setupInstructions": "1. Log in to your Commvault Command Center\n2. Navigate to Manage > Security > Accounts\n3. Use an admin account with REST API access\n4. Enter the Web Console URL (e.g., https://commvault.company.com)\n5. Enter the admin username and password",
       "credentialFields": [
         {
           "label": "Commvault Server URL",

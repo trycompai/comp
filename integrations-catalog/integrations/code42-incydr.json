@@ -8,6 +8,7 @@
   "authConfig": {
     "type": "custom",
     "config": {
+      "setupInstructions": "1. Log in to Code42 Incydr console\n2. Go to Settings > API Clients\n3. Create a new API client with appropriate permissions\n4. Copy the Client ID and Client Secret\n5. Select your region from the dropdown below",
       "credentialFields": [
         {
           "label": "Client ID",

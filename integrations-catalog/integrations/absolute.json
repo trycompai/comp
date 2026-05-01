@@ -8,21 +8,25 @@
   "authConfig": {
     "type": "custom",
     "config": {
+      "setupInstructions": "1. Log in to the Absolute console\n2. Go to Settings > API Token Management\n3. Create a new API token\n4. Copy the Token ID and Secret Key (secret is shown only once)\n5. Determine your API Base URL based on your region:\n   - US Commercial: https://api.absolute.com\n   - US Federal: https://api.us.absolute.com\n   - EU: https://api.eu.absolute.com\n6. Enter all values below",
       "credentialFields": [
         {
           "label": "Token ID",
           "type": "text",
-          "required": true
+          "required": true,
+          "helpText": "API Token ID from the Absolute Console. Go to Settings > API Token Management to create one."
         },
         {
           "label": "Secret Key",
           "type": "password",
-          "required": true
+          "required": true,
+          "helpText": "The Secret Key paired with your Token ID. Shown only once at creation."
         },
         {
           "label": "API Base URL",
           "type": "text",
-          "required": true
+          "required": true,
+          "helpText": "Your Absolute API base URL. US: https://api.absolute.com, US Federal: https://api.us.absolute.com, EU: https://api.eu.absolute.com"
         }
       ]
     }

@@ -8,6 +8,7 @@
   "authConfig": {
     "type": "custom",
     "config": {
+      "setupInstructions": "1. Log in to Rubrik Security Cloud (RSC)\n2. Go to Settings > Service Accounts\n3. Create a service account and note the Client ID and Client Secret\n4. Your RSC URL is your cloud URL (e.g. mycompany.my.rubrik.com)\n5. Enter all values below",
       "credentialFields": [
         {
           "label": "RSC URL",

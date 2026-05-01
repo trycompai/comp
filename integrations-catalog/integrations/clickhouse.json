@@ -6,8 +6,12 @@
   "docsUrl": "https://clickhouse.com/docs/en/cloud/manage/api/api-overview",
   "baseUrl": "https://api.clickhouse.cloud",
   "authConfig": {
-    "type": "api_key",
-    "config": {}
+    "type": "basic",
+    "config": {
+      "setupInstructions": "1. Log in to ClickHouse Cloud console at https://console.clickhouse.cloud\n2. Go to API Keys in the left menu\n3. Click New API Key\n4. Set a name, choose Admin or Developer permissions, and set expiration\n5. Copy the Key ID and Key Secret (shown only once)\n6. Enter them below",
+      "usernameField": "key_id",
+      "passwordField": "key_secret"
+    }
   },
   "capabilities": [
     "checks"

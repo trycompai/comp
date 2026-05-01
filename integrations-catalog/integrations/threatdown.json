@@ -17,7 +17,7 @@
         },
         {
           "label": "Client Secret",
-          "type": "secret",
+          "type": "password",
           "required": true,
           "helpText": "Your ThreatDown OAuth2 application client secret"
         },
