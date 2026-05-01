@@ -13,11 +13,17 @@ import {
 } from '@db';
 import { db } from '@db/server';
 import { logger, metadata, tasks } from '@trigger.dev/sdk';
-import { generateObject, generateText, jsonSchema } from 'ai';
+import { generateObject, jsonSchema } from 'ai';
 import axios from 'axios';
+import { z } from 'zod';
 import type { researchVendor } from '../scrape/research';
 import { RISK_MITIGATION_PROMPT } from './prompts/risk-mitigation';
-import { VENDOR_RISK_ASSESSMENT_PROMPT } from './prompts/vendor-risk-assessment';
+import {
+  citationSuffix,
+  GAP_HINT_BY_RISK_CATEGORY,
+  selectMitigationCitations,
+  type MitigationCitation,
+} from './select-mitigation-citations';
 import { updatePolicy } from './update-policy';
 
 type VendorForRiskAssessmentTrigger = {
@@ -273,52 +279,54 @@ async function loadVendorGroundingContext(
   };
 }
 
-// Matches `(Control: CC1-1 ...)` style citations. Case-insensitive because the
-// model often title-cases codes even when our `identifier` values are lowercase
-// (e.g. `cc1-1`). Allows alphanumeric prefixes like `iso27001-a-5-1` since
-// frameworks use varied conventions.
-const CONTROL_CODE_PATTERN = /\(Control:\s*([A-Za-z0-9][A-Za-z0-9-]+)/g;
-
-function normalizeCode(code: string): string {
-  return code.toLowerCase();
+/**
+ * Builds the citations block of the user prompt — a numbered list the LLM
+ * uses as a 1:1 mapping between sentences[i] and citations[i].
+ */
+function formatCitationsBlock(citations: MitigationCitation[]): string {
+  return citations
+    .map((c, i) => {
+      const idx = i + 1;
+      switch (c.kind) {
+        case 'control':
+          return `${idx}. CONTROL — code: ${c.code}, name: ${c.name}`;
+        case 'task':
+          return `${idx}. TASK — name: ${c.name}, status: ${c.status}`;
+        case 'policy':
+          return `${idx}. POLICY — name: ${c.name}`;
+        case 'gap':
+          return `${idx}. GAP — recommend adding ${c.controlTypeHint} control`;
+      }
+    })
+    .join('\n');
 }
 
+const sentencesSchema = z.object({
+  sentences: z.array(z.string().min(8).max(200)).length(5),
+});
+
 /**
- * Scans generated mitigation text for control codes and verifies they belong
- * to the allowed set. Comparison is case-insensitive. If fabricated codes are
- * detected, retries once with a corrective note. If retry also fabricates,
- * returns the original text.
+ * Combines deterministic citations with LLM-generated sentences into the
+ * final treatment-plan body that gets persisted to
+ * `treatmentStrategyDescription`.
  */
-async function guardAgainstHallucinatedCodes({
-  result,
-  allowedCodes,
-  retryFn,
+function combineSentencesWithCitations({
+  treatmentStrategy,
+  sentences,
+  citations,
 }: {
-  result: string;
-  allowedCodes: Set<string>;
-  retryFn: () => Promise<string>;
-}): Promise<string> {
-  const allowedNormalized = new Set([...allowedCodes].map(normalizeCode));
-  const cited = new Set<string>();
-  for (const match of result.matchAll(CONTROL_CODE_PATTERN)) {
-    cited.add(match[1]);
-  }
-  const fabricated = [...cited].filter((c) => !allowedNormalized.has(normalizeCode(c)));
-  if (fabricated.length === 0) return result;
-
-  logger.warn('mitigation output cited fabricated control codes; retrying once', {
-    fabricated,
-    allowedCount: allowedCodes.size,
-  });
-
-  try {
-    return await retryFn();
-  } catch (err) {
-    logger.warn('retry failed; saving original output unchanged', {
-      error: err instanceof Error ? err.message : String(err),
-    });
-    return result;
-  }
+  treatmentStrategy: string;
+  sentences: string[];
+  citations: MitigationCitation[];
+}): string {
+  const bullets = sentences.map(
+    (sentence, i) => `- ${sentence.trim()}${citationSuffix(citations[i])}`,
+  );
+  return [
+    `Treatment plan (${treatmentStrategy})`,
+    `This plan reduces the risk through 5 controls:`,
+    ...bullets,
+  ].join('\n');
 }
 
 /**
@@ -556,7 +564,12 @@ export async function extractVendorsFromContext(
 }
 
 /**
- * Creates a risk mitigation comment for a vendor
+ * Creates a risk mitigation comment for a vendor.
+ *
+ * The 5 citations are picked deterministically by `selectMitigationCitations`
+ * (controls → tasks → policies → gap fillers). The LLM only produces 5 prose
+ * sentences via `generateObject`; the (Control/Task/Policy/gap) suffixes are
+ * appended programmatically so they cannot be hallucinated.
  */
 export async function createVendorRiskComment(
   vendor: any,
@@ -564,66 +577,50 @@ export async function createVendorRiskComment(
   organizationId: string,
   authorId: string,
 ): Promise<void> {
-  const policiesContext =
-    policies.length > 0
-      ? policies
-          .map((p) => `- ${p.name}: ${p.description || 'No description available'}`)
-          .join('\n')
-      : 'No specific policies available - use standard security policy guidance.';
-
   const grounding = await loadVendorGroundingContext(vendor.id, organizationId);
 
-  const linkedTasksBlock = grounding?.linkedTasks.length
-    ? grounding.linkedTasks.map((t) => `- ${t.title} (status: ${t.status})`).join('\n')
-    : 'No tasks linked to this vendor.';
-  const linkedControlsBlock = grounding?.linkedControls.length
-    ? grounding.linkedControls
-        .map((c) => `- ${c.code}: ${c.name} (framework: ${c.framework})`)
-        .join('\n')
-    : 'No controls linked to this vendor.';
+  const citations = selectMitigationCitations({
+    linkedControls: grounding?.linkedControls.map((c) => ({ code: c.code, name: c.name })) ?? [],
+    linkedTasks: grounding?.linkedTasks.map((t) => ({ name: t.title, status: t.status })) ?? [],
+    policies: policies.map((p) => ({ name: p.name })),
+    // Vendors don't have a RiskCategory; their plan always centers on
+    // third-party / vendor-management style mitigations.
+    gapHint: 'third-party',
+  });
+
   const compliancePostureBlock =
     grounding?.compliancePosture ?? `Assessment status: ${vendor.status ?? 'unknown'}.`;
 
-  const userPrompt = `Vendor: ${vendor.name} (${vendor.category}) - ${vendor.description}. Website: ${vendor.website}.
-
-Linked Tasks:
-${linkedTasksBlock}
-
-Linked Controls:
-${linkedControlsBlock}
+  const userPrompt = `Vendor: ${vendor.name} (${vendor.category})
+Description: ${vendor.description ?? 'unspecified'}
+Website: ${vendor.website ?? 'unspecified'}
+Status: ${vendor.status ?? 'unknown'}
 
 Vendor Compliance Posture:
 ${compliancePostureBlock}
 
-Available Organization Policies:
-${policiesContext}
+Citations (write one sentence per item, in order):
+${formatCitationsBlock(citations)}`;
 
-Please perform a comprehensive vendor risk assessment for this vendor using the available policies, linked tasks, and linked controls listed above as context for your recommendations.`;
+  const result = await generateObject({
+    model: openai('gpt-5-mini'),
+    system: RISK_MITIGATION_PROMPT,
+    prompt: userPrompt,
+    schema: sentencesSchema,
+  });
 
-  const allowedCodes = new Set(grounding?.linkedControls.map((c) => c.code) ?? []);
+  const treatmentStrategy =
+    typeof vendor.treatmentStrategy === 'string' ? vendor.treatmentStrategy : 'mitigate';
 
-  const generate = async (extraNote: string = ''): Promise<string> => {
-    const { text } = await generateText({
-      model: openai('gpt-5-mini'),
-      system: VENDOR_RISK_ASSESSMENT_PROMPT,
-      prompt: `${userPrompt}${extraNote ? `\n\n${extraNote}` : ''}`,
-    });
-    return text;
-  };
-
-  let result = await generate();
-  result = await guardAgainstHallucinatedCodes({
-    result,
-    allowedCodes,
-    retryFn: () =>
-      generate(
-        'RETRY NOTE: your previous output cited control codes not in the Linked Controls list. Use only codes from that list, or the "gap: recommend adding [type] control" suffix.',
-      ),
+  const finalText = combineSentencesWithCitations({
+    treatmentStrategy,
+    sentences: result.object.sentences,
+    citations,
   });
 
   await db.vendor.update({
     where: { id: vendor.id, organizationId },
-    data: { treatmentStrategyDescription: result },
+    data: { treatmentStrategyDescription: finalText },
   });
 
   logger.info(
@@ -909,7 +906,12 @@ export async function createVendorRiskComments(
 }
 
 /**
- * Creates a risk mitigation comment for a risk
+ * Creates a risk mitigation comment for a risk.
+ *
+ * The 5 citations are picked deterministically by `selectMitigationCitations`
+ * (controls → tasks → policies → gap fillers). The LLM only produces 5 prose
+ * sentences via `generateObject`; the (Control/Task/Policy/gap) suffixes are
+ * appended programmatically so they cannot be hallucinated.
  */
 export async function createRiskMitigationComment(
   risk: Risk,
@@ -917,69 +919,41 @@ export async function createRiskMitigationComment(
   organizationId: string,
   authorId: string,
 ): Promise<void> {
-  const policiesContext =
-    policies.length > 0
-      ? policies
-          .map((p) => `- ${p.name}: ${p.description || 'No description available'}`)
-          .join('\n')
-      : 'No specific policies available - use standard security policy guidance.';
-
   const grounding = await loadRiskGroundingContext(risk.id, organizationId);
 
-  const linkedTasksBlock = grounding?.linkedTasks.length
-    ? grounding.linkedTasks.map((t) => `- ${t.title} (status: ${t.status})`).join('\n')
-    : 'No tasks linked to this risk.';
-  const linkedControlsBlock = grounding?.linkedControls.length
-    ? grounding.linkedControls
-        .map((c) => `- ${c.code}: ${c.name} (framework: ${c.framework})`)
-        .join('\n')
-    : 'No controls linked to this risk.';
+  const citations = selectMitigationCitations({
+    linkedControls: grounding?.linkedControls.map((c) => ({ code: c.code, name: c.name })) ?? [],
+    linkedTasks: grounding?.linkedTasks.map((t) => ({ name: t.title, status: t.status })) ?? [],
+    policies: policies.map((p) => ({ name: p.name })),
+    gapHint: GAP_HINT_BY_RISK_CATEGORY[risk.category] ?? 'general',
+  });
 
-  const userPrompt = `Risk: ${risk.title} (${risk.category} / ${risk.department})
+  const userPrompt = `Risk: ${risk.title}
+Description: ${risk.description}
+Category: ${risk.category}
+Department: ${risk.department ?? 'unspecified'}
+Residual: likelihood=${risk.residualLikelihood}, impact=${risk.residualImpact}
+Treatment strategy: ${risk.treatmentStrategy}
 
-Description:
-${risk.description}
+Citations (write one sentence per item, in order):
+${formatCitationsBlock(citations)}`;
 
-Treatment Strategy:
-${risk.treatmentStrategy}: ${risk.treatmentStrategyDescription || 'N/A'}
+  const result = await generateObject({
+    model: openai('gpt-5-mini'),
+    system: RISK_MITIGATION_PROMPT,
+    prompt: userPrompt,
+    schema: sentencesSchema,
+  });
 
-Residual Assessment: Likelihood ${risk.likelihood}, Impact ${risk.impact}
-
-Linked Tasks:
-${linkedTasksBlock}
-
-Linked Controls:
-${linkedControlsBlock}
-
-Available Organization Policies:
-${policiesContext}
-
-Write a pragmatic mitigation plan with concrete steps the team can implement in the next 30-90 days.`;
-
-  const allowedCodes = new Set(grounding?.linkedControls.map((c) => c.code) ?? []);
-
-  const generate = async (extraNote: string = ''): Promise<string> => {
-    const { text } = await generateText({
-      model: openai('gpt-5-mini'),
-      system: RISK_MITIGATION_PROMPT,
-      prompt: `${userPrompt}${extraNote ? `\n\n${extraNote}` : ''}`,
-    });
-    return text;
-  };
-
-  let result = await generate();
-  result = await guardAgainstHallucinatedCodes({
-    result,
-    allowedCodes,
-    retryFn: () =>
-      generate(
-        'RETRY NOTE: your previous output cited control codes not in the Linked Controls list. Use only codes from that list, or the "gap: recommend adding [type] control" suffix.',
-      ),
+  const finalText = combineSentencesWithCitations({
+    treatmentStrategy: risk.treatmentStrategy,
+    sentences: result.object.sentences,
+    citations,
   });
 
   await db.risk.update({
     where: { id: risk.id, organizationId },
-    data: { treatmentStrategyDescription: result },
+    data: { treatmentStrategyDescription: finalText },
   });
 
   logger.info(
