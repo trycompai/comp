@@ -7,7 +7,11 @@ import { EvidenceFormsModule } from '../evidence-forms/evidence-forms.module';
 import { PoliciesModule } from '../policies/policies.module';
 import { CommentsModule } from '../comments/comments.module';
 import { AttachmentsModule } from '../attachments/attachments.module';
+import { BillingModule } from '../billing/billing.module';
 import { SecurityPenetrationTestsModule } from '../security-penetration-tests/security-penetration-tests.module';
+import { AdminBillingActionsService } from './admin-billing-actions.service';
+import { AdminBillingController } from './admin-billing.controller';
+import { AdminBillingService } from './admin-billing.service';
 import { AdminOrganizationsController } from './admin-organizations.controller';
 import { AdminOrganizationsService } from './admin-organizations.service';
 import { PurgeOrganizationService } from './purge-organization.service';
@@ -31,6 +35,7 @@ import { AdminPentestCreditsController } from './admin-pentest-credits.controlle
     PoliciesModule,
     CommentsModule,
     AttachmentsModule,
+    BillingModule,
     SecurityPenetrationTestsModule,
   ],
   controllers: [
@@ -42,9 +47,12 @@ import { AdminPentestCreditsController } from './admin-pentest-credits.controlle
     AdminContextController,
     AdminEvidenceController,
     AdminPentestCreditsController,
+    AdminBillingController,
   ],
   providers: [
     AdminOrganizationsService,
+    AdminBillingService,
+    AdminBillingActionsService,
     PurgeOrganizationService,
     PurgeOrganizationSnapshotService,
     PurgeOrganizationExternalService,

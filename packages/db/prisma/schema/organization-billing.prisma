@@ -93,3 +93,48 @@ model BillingAuditEvent {
   @@index([skuKey])
   @@map("billing_audit_events")
 }
+
+model BillingCreditBalance {
+  id             String   @id @default(dbgenerated("generate_prefixed_cuid('bcb'::text)"))
+  organizationId String   @map("organization_id")
+  productKey     String   @map("product_key")
+  skuKey         String?  @map("sku_key")
+  balance        Int      @default(0)
+  totalGranted   Int      @default(0) @map("total_granted")
+  totalConsumed  Int      @default(0) @map("total_consumed")
+  totalRefunded  Int      @default(0) @map("total_refunded")
+  lastSource     String   @default("manual") @map("last_source")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  organization Organization         @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  events       BillingCreditEvent[]
+
+  @@index([organizationId, productKey])
+  @@map("billing_credit_balances")
+}
+
+model BillingCreditEvent {
+  id                String   @id @default(dbgenerated("generate_prefixed_cuid('bce'::text)"))
+  organizationId    String   @map("organization_id")
+  balanceId         String   @map("balance_id")
+  productKey        String   @map("product_key")
+  skuKey            String?  @map("sku_key")
+  eventType         String   @map("event_type")
+  quantity          Int
+  source            String
+  note              String?
+  adminUserId       String?  @map("admin_user_id")
+  sourceResourceId  String?  @map("source_resource_id")
+  linkedEventId     String?  @map("linked_event_id")
+  idempotencyKey    String   @unique @map("idempotency_key")
+  createdAt         DateTime @default(now()) @map("created_at")
+
+  organization Organization         @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  balance      BillingCreditBalance @relation(fields: [balanceId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId, productKey])
+  @@index([sourceResourceId])
+  @@index([linkedEventId])
+  @@map("billing_credit_events")
+}

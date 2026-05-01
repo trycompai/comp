@@ -5,6 +5,7 @@ import {
   type BillingProductKey,
   type BillingSkuKey,
 } from '@trycompai/billing';
+import { BillingCreditsService } from './billing-credits.service';
 import { refundIncludedUsageEvent } from './billing-included-usage-refunds';
 import {
   type BillingConsumeResult,
@@ -17,6 +18,8 @@ import {
 
 @Injectable()
 export class BillingEntitlementsService {
+  constructor(private readonly credits?: BillingCreditsService) {}
+
   async tryConsumeIncludedUsageForProduct(params: {
     organizationId: string;
     productKey: BillingProductKey;
@@ -38,11 +41,22 @@ export class BillingEntitlementsService {
           subscription.currentPeriodEnd.getTime() > Date.now()),
     );
     if (!activeSubscription) {
-      return { status: 'not_configured' };
+      return this.tryConsumeCreditFallback({
+        ...params,
+        fallbackStatus: 'not_configured',
+      });
     }
 
-    if (activeSubscription.usedQuantity >= activeSubscription.includedQuantity) {
-      return { status: 'exhausted', subscriptionId: activeSubscription.id };
+    if (
+      activeSubscription.usedQuantity >= activeSubscription.includedQuantity
+    ) {
+      const creditResult = await this.tryConsumeCreditFallback({
+        ...params,
+        fallbackStatus: 'exhausted',
+      });
+      return creditResult.status === 'consumed'
+        ? creditResult
+        : { status: 'exhausted', subscriptionId: activeSubscription.id };
     }
 
     return this.tryConsumeIncludedUsage({
@@ -291,7 +305,16 @@ export class BillingEntitlementsService {
       orderBy: { createdAt: 'desc' },
       select: { skuKey: true },
     });
-    if (!consumed) return;
+    if (!consumed) {
+      if (params.tx || !this.credits) return;
+      await this.credits.refundForProduct({
+        organizationId: params.organizationId,
+        productKey: params.productKey,
+        sourceResourceId: params.sourceResourceId,
+        reason: params.reason,
+      });
+      return;
+    }
     await refundIncludedUsageEvent({
       organizationId: params.organizationId,
       skuKey: consumed.skuKey as BillingSkuKey,
@@ -299,6 +322,29 @@ export class BillingEntitlementsService {
       reason: params.reason,
       tx: params.tx,
     });
+  }
+
+  private async tryConsumeCreditFallback(params: {
+    organizationId: string;
+    productKey: BillingProductKey;
+    sourceResourceId: string;
+    fallbackStatus: 'not_configured' | 'exhausted';
+  }): Promise<BillingConsumeResult> {
+    if (!this.credits) {
+      return params.fallbackStatus === 'exhausted'
+        ? { status: 'exhausted', subscriptionId: 'manual_credit' }
+        : { status: 'not_configured' };
+    }
+    const creditResult = await this.credits.tryConsumeForProduct({
+      organizationId: params.organizationId,
+      productKey: params.productKey,
+      sourceResourceId: params.sourceResourceId,
+    });
+    return creditResult.status === 'consumed'
+      ? { status: 'consumed', subscriptionId: 'manual_credit' }
+      : params.fallbackStatus === 'exhausted'
+        ? { status: 'exhausted', subscriptionId: 'manual_credit' }
+        : { status: 'not_configured' };
   }
 
   async writeAuditEvent(params: WriteBillingAuditEventParams): Promise<void> {

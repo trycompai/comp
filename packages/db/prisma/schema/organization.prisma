@@ -68,6 +68,8 @@ model Organization {
   billingSubscriptions OrganizationBillingSubscription[]
   billingUsageEvents   BillingUsageEvent[]
   billingAuditEvents   BillingAuditEvent[]
+  billingCreditBalances BillingCreditBalance[]
+  billingCreditEvents   BillingCreditEvent[]
 
   // Browser Automation
   browserbaseContext BrowserbaseContext?

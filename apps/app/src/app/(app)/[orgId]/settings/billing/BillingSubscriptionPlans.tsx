@@ -1,8 +1,15 @@
 'use client';
 
-import { getBillingSku, getBillingSkuProductKey, type BillingSkuKey } from '@trycompai/billing';
+import {
+  getBillingSku,
+  getBillingSkuProductKey,
+  isSubscriptionBillingSkuKey,
+  type BillingSkuKey,
+} from '@trycompai/billing';
 import { Badge, Button, Stack, Text } from '@trycompai/design-system';
 import { Launch } from '@trycompai/design-system/icons';
+import { useState } from 'react';
+import { ConfirmPlanChangeDialog } from './BillingPlanChangeDialog';
 import type { BackgroundCheckBillingStatus } from './types';
 
 interface BillingSubscriptionPlansProps {
@@ -34,6 +41,8 @@ export function BillingSubscriptionPlans({
   loadingSkuKey,
   onSubscribe,
 }: BillingSubscriptionPlansProps) {
+  const [confirmingSkuKey, setConfirmingSkuKey] = useState<BillingSkuKey | null>(null);
+
   return (
     <div className="grid gap-4 xl:grid-cols-3">
       {skuKeys.map((skuKey) => {
@@ -45,6 +54,10 @@ export function BillingSubscriptionPlans({
         );
         const active = subscription !== undefined;
         const current = active && subscription?.skuKey === skuKey;
+        const currentSku =
+          subscription && isSubscriptionBillingSkuKey(subscription.skuKey)
+            ? getBillingSku({ skuKey: subscription.skuKey })
+            : null;
         const included = sku.includedUsage;
         const remaining = subscription
           ? Math.max(subscription.includedQuantity - subscription.usedQuantity, 0)
@@ -58,6 +71,8 @@ export function BillingSubscriptionPlans({
         const trialEligible =
           !active && typeof sku.trialDays === 'number' && trialEligibility[sku.productKey];
         const buttonLabel = trialEligible ? 'Start free trial' : cta;
+        const requiresConfirmation = active && !current;
+        const isUpgrade = currentSku !== null && sku.unitAmount > currentSku.unitAmount;
 
         return (
           <div
@@ -100,7 +115,7 @@ export function BillingSubscriptionPlans({
               {current && subscription ? (
                 <div className="mt-auto flex flex-col gap-2">
                   <Text size="sm" variant="muted">
-                    {remaining} of {subscription.includedQuantity} {unit}
+                    {remaining} of {subscription.includedQuantity} {unit}{' '}
                     remaining this period.
                   </Text>
                   <Button type="button" variant="secondary" width="full" disabled>
@@ -117,10 +132,33 @@ export function BillingSubscriptionPlans({
                     disabled={disabled || loadingSkuKey !== null}
                     loading={loadingSkuKey === skuKey}
                     iconRight={<Launch size={16} />}
-                    onClick={() => onSubscribe(skuKey)}
+                    onClick={() => {
+                      if (requiresConfirmation) {
+                        setConfirmingSkuKey(skuKey);
+                        return;
+                      }
+                      onSubscribe(skuKey);
+                    }}
                   >
                     {buttonLabel}
                   </Button>
+                  {requiresConfirmation && (
+                    <ConfirmPlanChangeDialog
+                      open={confirmingSkuKey === skuKey}
+                      currentSku={currentSku}
+                      nextSku={sku}
+                      isUpgrade={isUpgrade}
+                      isTrialing={subscription?.status === 'trialing'}
+                      loading={loadingSkuKey === skuKey}
+                      onOpenChange={(open) => {
+                        if (!open) setConfirmingSkuKey(null);
+                      }}
+                      onConfirm={() => {
+                        setConfirmingSkuKey(null);
+                        onSubscribe(skuKey);
+                      }}
+                    />
+                  )}
                 </div>
               )}
             </div>

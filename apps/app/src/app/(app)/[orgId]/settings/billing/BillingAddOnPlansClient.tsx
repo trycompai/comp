@@ -86,7 +86,7 @@ export function BillingAddOnPlansClient({
       return;
     }
 
-    toast.error('Failed to open checkout');
+    toast.error(response.error ?? 'Failed to open checkout');
     setLoadingSubscriptionSku(null);
   };
 

@@ -1,6 +1,10 @@
+import { HttpException, HttpStatus } from '@nestjs/common';
 import { db } from '@db';
 import {
+  billingCatalogs,
+  getBillingSku,
   type BillingProductKey,
+  type BillingSku,
   type BillingSkuKey,
   getBillingSkuProductKey,
 } from '@trycompai/billing';
@@ -41,6 +45,7 @@ export async function changeSubscriptionPlan(params: {
   subscription: {
     id: string;
     skuKey: string;
+    stripeStatus: string;
     stripeSubscriptionId: string;
     stripeSubscriptionItemId: string;
     currentPeriodStart: Date | null;
@@ -53,30 +58,62 @@ export async function changeSubscriptionPlan(params: {
   entitlements: BillingEntitlementsService;
 }): Promise<{ changed: true }> {
   const stripe = params.stripeService.getClient();
-  const updatedSubscription = await stripe.subscriptions.update(
-    params.subscription.stripeSubscriptionId,
-    {
-      items: [
-        {
-          id: params.subscription.stripeSubscriptionItemId,
-          price: params.stripePriceId,
-        },
-      ],
-      metadata: {
-        organizationId: params.organizationId,
-        skuKey: params.skuKey,
-        source: 'comp-billing-subscription',
+  const isUpgrade = isPlanUpgrade({
+    currentSkuKey: params.subscription.skuKey,
+    nextSkuKey: params.skuKey,
+  });
+  const shouldEndTrial = isUpgrade && params.subscription.stripeStatus === 'trialing';
+  const updateParams = {
+    items: [
+      isUpgrade
+        ? {
+            id: params.subscription.stripeSubscriptionItemId,
+            price: params.stripePriceId,
+            quantity: 1,
+          }
+        : {
+            id: params.subscription.stripeSubscriptionItemId,
+            price: params.stripePriceId,
+          },
+    ],
+    metadata: {
+      organizationId: params.organizationId,
+      skuKey: params.skuKey,
+      source: 'comp-billing-subscription',
+    },
+    ...(isUpgrade
+      ? {
+          proration_behavior: 'always_invoice' as const,
+          payment_behavior: 'error_if_incomplete' as const,
+        }
+      : {}),
+    ...(shouldEndTrial ? { trial_end: 'now' as const } : {}),
+  };
+  let updatedSubscription: Awaited<
+    ReturnType<typeof stripe.subscriptions.update>
+  >;
+  try {
+    updatedSubscription = await stripe.subscriptions.update(
+      params.subscription.stripeSubscriptionId,
+      updateParams,
+      {
+        idempotencyKey: [
+          'subscription-plan-change-v2',
+          params.organizationId,
+          params.subscription.stripeSubscriptionItemId,
+          params.skuKey,
+        ].join(':'),
       },
-    },
-    {
-      idempotencyKey: [
-        'subscription-plan-change',
-        params.organizationId,
-        params.subscription.stripeSubscriptionItemId,
-        params.skuKey,
-      ].join(':'),
-    },
-  );
+    );
+  } catch (error) {
+    if (isUpgrade && isPaymentRequiredStripeError(error)) {
+      throw new HttpException(
+        'We could not charge the prorated upgrade amount. Please update your payment method and try again.',
+        HttpStatus.PAYMENT_REQUIRED,
+      );
+    }
+    throw error;
+  }
 
   const updatedItem =
     updatedSubscription.items.data.find(
@@ -130,4 +167,27 @@ function readNumber(value: unknown, key: string): number | null {
   if (typeof value !== 'object' || value === null) return null;
   const raw = (value as Record<string, unknown>)[key];
   return typeof raw === 'number' ? raw : null;
+}
+
+function isPlanUpgrade(params: {
+  currentSkuKey: string;
+  nextSkuKey: BillingSkuKey;
+}): boolean {
+  const currentSku = findBillingSku(params.currentSkuKey);
+  const nextSku = getBillingSku({ skuKey: params.nextSkuKey });
+  return currentSku !== null && nextSku.unitAmount > currentSku.unitAmount;
+}
+
+function findBillingSku(skuKey: string): BillingSku | null {
+  for (const catalog of Object.values(billingCatalogs)) {
+    const sku = Object.values(catalog.skus).find((item) => item.key === skuKey);
+    if (sku) return sku;
+  }
+  return null;
+}
+
+function isPaymentRequiredStripeError(error: unknown): boolean {
+  if (typeof error !== 'object' || error === null) return false;
+  const record = error as Record<string, unknown>;
+  return record.statusCode === HttpStatus.PAYMENT_REQUIRED;
 }

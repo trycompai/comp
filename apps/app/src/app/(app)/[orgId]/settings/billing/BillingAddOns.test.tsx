@@ -1,6 +1,7 @@
 import { apiClient } from '@/lib/api-client';
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { toast } from 'sonner';
 import { SWRConfig } from 'swr';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { BillingAddOnPlansClient } from './BillingAddOnPlansClient';
@@ -100,12 +101,12 @@ describe('billing add-ons', () => {
     expect(screen.getByText('Background Checks')).toBeInTheDocument();
     expect(screen.getAllByText('14-day free trial')).toHaveLength(2);
     expect(screen.getAllByText(/no charge today/i)).toHaveLength(2);
-    screen.getByRole('button', { name: /view penetration tests plans/i }).click();
-    expect(navigationMock.push).toHaveBeenCalledWith(
+    expect(screen.getByRole('link', { name: /view penetration tests plans/i })).toHaveAttribute(
+      'href',
       '/org_1/settings/billing/add-ons/penetration-tests',
     );
-    screen.getByRole('button', { name: /view background checks plans/i }).click();
-    expect(navigationMock.push).toHaveBeenCalledWith(
+    expect(screen.getByRole('link', { name: /view background checks plans/i })).toHaveAttribute(
+      'href',
       '/org_1/settings/billing/add-ons/background-checks',
     );
   });
@@ -146,6 +147,81 @@ describe('billing add-ons', () => {
         'org_1',
       );
     });
+  });
+
+  it('shows the API error when a plan update payment fails', async () => {
+    const user = userEvent.setup();
+    vi.mocked(apiClient.post).mockResolvedValueOnce({
+      error: 'We could not charge the prorated upgrade amount.',
+      status: 402,
+    });
+    renderAddOnPlans({
+      addOnSlug: 'penetration-tests',
+      subscriptions: [
+        {
+          skuKey: 'pentest_monthly_3',
+          status: 'active',
+          includedQuantity: 3,
+          usedQuantity: 0,
+          currentPeriodStart: '2026-04-30T00:00:00.000Z',
+          currentPeriodEnd: '2026-05-30T00:00:00.000Z',
+          cancelAtPeriodEnd: false,
+        },
+      ],
+    });
+
+    const switchButton = screen.getByRole('button', {
+      name: /switch to continuous coverage/i,
+    });
+    await user.click(switchButton);
+
+    const dialog = screen.getByRole('dialog', { name: /confirm plan change/i });
+    expect(dialog).toBeInTheDocument();
+    expect(within(dialog).getByText('Current plan')).toBeInTheDocument();
+    expect(within(dialog).getByText('Release Shield')).toBeInTheDocument();
+    expect(within(dialog).getByText(/\$499 \/ mo with 3 scans/i)).toBeInTheDocument();
+    expect(within(dialog).getByText('New plan')).toBeInTheDocument();
+    expect(within(dialog).getByText('Continuous Assurance')).toBeInTheDocument();
+    expect(within(dialog).getByText(/\$899 \/ mo with 5 scans/i)).toBeInTheDocument();
+    expect(within(dialog).getByText('This upgrade will be charged immediately.')).toBeInTheDocument();
+    expect(apiClient.post).not.toHaveBeenCalled();
+
+    await user.click(screen.getByRole('button', { name: /confirm change/i }));
+
+    await waitFor(() => {
+      expect(toast.error).toHaveBeenCalledWith(
+        'We could not charge the prorated upgrade amount.',
+      );
+      expect(switchButton).not.toBeDisabled();
+    });
+  });
+
+  it('warns that trial upgrades end the trial before charging', async () => {
+    const user = userEvent.setup();
+    renderAddOnPlans({
+      addOnSlug: 'background-checks',
+      subscriptions: [
+        {
+          skuKey: 'background_checks_monthly_3',
+          status: 'trialing',
+          includedQuantity: 3,
+          usedQuantity: 0,
+          currentPeriodStart: '2026-04-30T00:00:00.000Z',
+          currentPeriodEnd: '2026-05-14T00:00:00.000Z',
+          cancelAtPeriodEnd: false,
+        },
+      ],
+    });
+
+    await user.click(screen.getByRole('button', { name: /switch to hiring at scale/i }));
+
+    const dialog = screen.getByRole('dialog', { name: /confirm plan change/i });
+    expect(within(dialog).getByText('Hiring Starter')).toBeInTheDocument();
+    expect(within(dialog).getByText('Hiring Scale')).toBeInTheDocument();
+    expect(
+      within(dialog).getByText('Your trial will end and this upgrade will be charged immediately.'),
+    ).toBeInTheDocument();
+    expect(apiClient.post).not.toHaveBeenCalled();
   });
 
   it('shows add-on plans on a standalone overview tab', () => {
@@ -190,7 +266,7 @@ describe('billing add-ons', () => {
 
     const activeButton = screen.getByRole('button', { name: /current plan/i });
     expect(activeButton).toBeDisabled();
-    expect(screen.getByText(/0 of 1.*remaining this period/i)).toBeInTheDocument();
+    expect(screen.getByText(/0 of 1 scan remaining this period/i)).toBeInTheDocument();
 
     await user.click(activeButton);
     expect(apiClient.post).not.toHaveBeenCalledWith(
@@ -227,7 +303,7 @@ describe('billing add-ons', () => {
     });
 
     expect(screen.getByRole('button', { name: /current plan/i })).toBeDisabled();
-    expect(screen.getByText(/2 of 3.*remaining this period/i)).toBeInTheDocument();
+    expect(screen.getByText(/2 of 3 scans remaining this period/i)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /switch to monthly scans/i })).toBeInTheDocument();
   });
 });

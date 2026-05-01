@@ -1,4 +1,4 @@
-import { BadRequestException } from '@nestjs/common';
+import { BadRequestException, HttpException, HttpStatus } from '@nestjs/common';
 import { db } from '@db';
 import { BillingService } from './billing.service';
 import type { StripeService } from '../stripe/stripe.service';
@@ -235,7 +235,7 @@ describe('BillingService', () => {
     });
   });
 
-  it('changes an existing product subscription instead of creating another checkout', async () => {
+  it('charges immediately when upgrading an existing product subscription', async () => {
     const subscriptionsUpdate = jest.fn().mockResolvedValue({
       id: 'sub_1',
       status: 'active',
@@ -255,7 +255,7 @@ describe('BillingService', () => {
     organizationBillingSubscriptionFindMany.mockResolvedValue([
       {
         id: 'obs_1',
-        skuKey: 'pentest_monthly_1',
+        skuKey: 'pentest_monthly_3',
         stripeSubscriptionId: 'sub_1',
         stripeSubscriptionItemId: 'si_1',
         stripeStatus: 'active',
@@ -274,7 +274,7 @@ describe('BillingService', () => {
     await expect(
       service.createSubscriptionCheckoutSession({
         organizationId: 'org_1',
-        skuKey: 'pentest_monthly_3',
+        skuKey: 'pentest_monthly_5_current',
         successUrl: 'http://localhost:3000/org_1/settings/billing/success',
         cancelUrl: 'http://localhost:3000/org_1/settings/billing',
       }),
@@ -283,7 +283,15 @@ describe('BillingService', () => {
     expect(subscriptionsUpdate).toHaveBeenCalledWith(
       'sub_1',
       expect.objectContaining({
-        items: [{ id: 'si_1', price: 'price_1TS3ziCkFWhKYvHI1nbXC7UU' }],
+        items: [
+          {
+            id: 'si_1',
+            price: 'price_1TS3zjCkFWhKYvHISBHjtZXB',
+            quantity: 1,
+          },
+        ],
+        proration_behavior: 'always_invoice',
+        payment_behavior: 'error_if_incomplete',
       }),
       expect.anything(),
     );
@@ -291,9 +299,9 @@ describe('BillingService', () => {
       expect.objectContaining({
         where: { id: 'obs_1' },
         data: expect.objectContaining({
-          skuKey: 'pentest_monthly_3',
+          skuKey: 'pentest_monthly_5_current',
           stripeSubscriptionItemId: 'si_1',
-          includedQuantity: 3,
+          includedQuantity: 5,
         }),
       }),
     );
@@ -301,8 +309,201 @@ describe('BillingService', () => {
       expect.objectContaining({
         organizationId: 'org_1',
         eventType: 'subscription_plan_changed',
-        skuKey: 'pentest_monthly_3',
+        skuKey: 'pentest_monthly_5_current',
       }),
+    );
+  });
+
+  it('ends the trial immediately when upgrading from a trial plan', async () => {
+    const subscriptionsUpdate = jest.fn().mockResolvedValue({
+      id: 'sub_1',
+      status: 'active',
+      cancel_at_period_end: false,
+      canceled_at: null,
+      items: {
+        data: [
+          {
+            id: 'si_1',
+            current_period_start: 1775001600,
+            current_period_end: 1777593600,
+          },
+        ],
+      },
+    });
+    organizationBillingSubscriptionFindMany.mockResolvedValue([
+      {
+        id: 'obs_1',
+        skuKey: 'background_checks_monthly_3',
+        stripeSubscriptionId: 'sub_1',
+        stripeSubscriptionItemId: 'si_1',
+        stripeStatus: 'trialing',
+        currentPeriodStart: new Date('2026-04-01T00:00:00.000Z'),
+        currentPeriodEnd: new Date('2026-05-01T00:00:00.000Z'),
+        createdAt: new Date('2026-04-01T00:00:00.000Z'),
+      },
+    ]);
+    const service = new BillingService(
+      mockStripeService({
+        subscriptions: { update: subscriptionsUpdate },
+      }),
+      { syncSubscriptionItem: jest.fn(), writeAuditEvent: jest.fn() } as never,
+    );
+
+    await service.createSubscriptionCheckoutSession({
+      organizationId: 'org_1',
+      skuKey: 'background_checks_monthly_20',
+      successUrl: 'http://localhost:3000/org_1/settings/billing/success',
+      cancelUrl: 'http://localhost:3000/org_1/settings/billing',
+    });
+
+    expect(subscriptionsUpdate).toHaveBeenCalledWith(
+      'sub_1',
+      expect.objectContaining({
+        items: [
+          {
+            id: 'si_1',
+            price: 'price_1TS3zjCkFWhKYvHIU5jMCCWs',
+            quantity: 1,
+          },
+        ],
+        proration_behavior: 'always_invoice',
+        payment_behavior: 'error_if_incomplete',
+        trial_end: 'now',
+      }),
+      expect.objectContaining({
+        idempotencyKey:
+          'subscription-plan-change-v2:org_1:si_1:background_checks_monthly_20',
+      }),
+    );
+  });
+
+  it('does not grant upgraded credits when immediate upgrade payment fails', async () => {
+    const subscriptionsUpdate = jest.fn().mockRejectedValue(
+      Object.assign(new Error('Card declined'), {
+        statusCode: HttpStatus.PAYMENT_REQUIRED,
+      }),
+    );
+    const writeAuditEvent = jest.fn().mockResolvedValue(undefined);
+    organizationBillingSubscriptionFindMany.mockResolvedValue([
+      {
+        id: 'obs_1',
+        skuKey: 'pentest_monthly_3',
+        stripeSubscriptionId: 'sub_1',
+        stripeSubscriptionItemId: 'si_1',
+        stripeStatus: 'active',
+        currentPeriodStart: new Date('2026-04-01T00:00:00.000Z'),
+        currentPeriodEnd: new Date('2026-05-01T00:00:00.000Z'),
+        createdAt: new Date('2026-04-01T00:00:00.000Z'),
+      },
+    ]);
+    const service = new BillingService(
+      mockStripeService({
+        subscriptions: { update: subscriptionsUpdate },
+      }),
+      { syncSubscriptionItem: jest.fn(), writeAuditEvent } as never,
+    );
+
+    try {
+      await service.createSubscriptionCheckoutSession({
+        organizationId: 'org_1',
+        skuKey: 'pentest_monthly_5_current',
+        successUrl: 'http://localhost:3000/org_1/settings/billing/success',
+        cancelUrl: 'http://localhost:3000/org_1/settings/billing',
+      });
+      throw new Error('Expected upgrade payment failure');
+    } catch (error) {
+      expect(error).toBeInstanceOf(HttpException);
+      if (error instanceof HttpException) {
+        expect(error.getStatus()).toBe(HttpStatus.PAYMENT_REQUIRED);
+      }
+    }
+    expect(organizationBillingSubscriptionUpdate).not.toHaveBeenCalled();
+    expect(writeAuditEvent).not.toHaveBeenCalled();
+  });
+
+  it('keeps same-plan subscription changes rejected before calling Stripe', async () => {
+    const subscriptionsUpdate = jest.fn();
+    organizationBillingSubscriptionFindMany.mockResolvedValue([
+      {
+        id: 'obs_1',
+        skuKey: 'pentest_monthly_3',
+        stripeSubscriptionId: 'sub_1',
+        stripeSubscriptionItemId: 'si_1',
+        stripeStatus: 'active',
+        createdAt: new Date('2026-04-01T00:00:00.000Z'),
+      },
+    ]);
+    const service = new BillingService(
+      mockStripeService({
+        subscriptions: { update: subscriptionsUpdate },
+      }),
+      { syncSubscriptionItem: jest.fn(), writeAuditEvent: jest.fn() } as never,
+    );
+
+    await expect(
+      service.createSubscriptionCheckoutSession({
+        organizationId: 'org_1',
+        skuKey: 'pentest_monthly_3',
+        successUrl: 'http://localhost:3000/org_1/settings/billing/success',
+        cancelUrl: 'http://localhost:3000/org_1/settings/billing',
+      }),
+    ).rejects.toBeInstanceOf(BadRequestException);
+    expect(subscriptionsUpdate).not.toHaveBeenCalled();
+  });
+
+  it('does not immediately invoice lower-priced plan switches', async () => {
+    const subscriptionsUpdate = jest.fn().mockResolvedValue({
+      id: 'sub_1',
+      status: 'active',
+      cancel_at_period_end: false,
+      canceled_at: null,
+      items: {
+        data: [
+          {
+            id: 'si_1',
+            current_period_start: 1775001600,
+            current_period_end: 1777593600,
+          },
+        ],
+      },
+    });
+    organizationBillingSubscriptionFindMany.mockResolvedValue([
+      {
+        id: 'obs_1',
+        skuKey: 'pentest_monthly_5_current',
+        stripeSubscriptionId: 'sub_1',
+        stripeSubscriptionItemId: 'si_1',
+        stripeStatus: 'active',
+        currentPeriodStart: new Date('2026-04-01T00:00:00.000Z'),
+        currentPeriodEnd: new Date('2026-05-01T00:00:00.000Z'),
+        createdAt: new Date('2026-04-01T00:00:00.000Z'),
+      },
+    ]);
+    const service = new BillingService(
+      mockStripeService({
+        subscriptions: { update: subscriptionsUpdate },
+      }),
+      { syncSubscriptionItem: jest.fn(), writeAuditEvent: jest.fn() } as never,
+    );
+
+    await service.createSubscriptionCheckoutSession({
+      organizationId: 'org_1',
+      skuKey: 'pentest_monthly_3',
+      successUrl: 'http://localhost:3000/org_1/settings/billing/success',
+      cancelUrl: 'http://localhost:3000/org_1/settings/billing',
+    });
+
+    expect(subscriptionsUpdate).toHaveBeenCalledWith(
+      'sub_1',
+      {
+        items: [{ id: 'si_1', price: 'price_1TS3ziCkFWhKYvHI1nbXC7UU' }],
+        metadata: {
+          organizationId: 'org_1',
+          skuKey: 'pentest_monthly_3',
+          source: 'comp-billing-subscription',
+        },
+      },
+      expect.anything(),
     );
   });
 

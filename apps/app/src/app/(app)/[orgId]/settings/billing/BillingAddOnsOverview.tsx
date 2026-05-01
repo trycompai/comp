@@ -1,9 +1,9 @@
 'use client';
 
 import { getBillingSku, getBillingSkuProductKey } from '@trycompai/billing';
-import { Badge, Button, Stack, Text } from '@trycompai/design-system';
+import { Badge, Stack, Text, buttonVariants } from '@trycompai/design-system';
 import { ArrowRight } from '@trycompai/design-system/icons';
-import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { billingAddOns } from './billingAddOns';
 import type { BackgroundCheckBillingStatus } from './types';
 
@@ -18,8 +18,6 @@ export function BillingAddOnsOverview({
   subscriptions,
   trialEligibility,
 }: BillingAddOnsOverviewProps) {
-  const router = useRouter();
-
   return (
     <div className="grid gap-4 xl:grid-cols-2">
       {billingAddOns.map((addOn) => {
@@ -33,11 +31,14 @@ export function BillingAddOnsOverview({
         const remaining = activeSubscription
           ? Math.max(activeSubscription.includedQuantity - activeSubscription.usedQuantity, 0)
           : null;
+        const plansHref = `/${organizationId}/settings/billing/add-ons/${addOn.slug}`;
 
         return (
-          <div
+          <Link
             key={addOn.slug}
-            className="group relative overflow-hidden rounded-lg border bg-card p-5 transition-colors hover:border-primary/40"
+            href={plansHref}
+            aria-label={`View ${addOn.name} plans`}
+            className="group relative block overflow-hidden rounded-lg border bg-card p-5 transition-colors hover:border-primary/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
           >
             <div className="absolute inset-x-0 top-0 h-1 bg-primary/80 opacity-0 transition-opacity group-hover:opacity-100" />
             <Stack gap="6">
@@ -107,21 +108,16 @@ export function BillingAddOnsOverview({
                 </Text>
               </div>
 
-              <div>
-                <Button
-                  type="button"
-                  variant="secondary"
-                  aria-label={`View ${addOn.name} plans`}
-                  iconRight={<ArrowRight size={16} />}
-                  onClick={() =>
-                    router.push(`/${organizationId}/settings/billing/add-ons/${addOn.slug}`)
-                  }
-                >
+              <div className="flex justify-end">
+                <span className={buttonVariants({ variant: 'default' })}>
                   {addOn.ctaLabel}
-                </Button>
+                  <span data-icon="inline-end" className="shrink-0">
+                    <ArrowRight size={16} />
+                  </span>
+                </span>
               </div>
             </Stack>
-          </div>
+          </Link>
         );
       })}
     </div>

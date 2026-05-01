@@ -24,6 +24,10 @@ const SEGMENT_TO_RESOURCE: Record<
     entity: AuditLogEntityType.pentest,
     singular: 'pentest credits',
   },
+  billing: {
+    entity: AuditLogEntityType.organization,
+    singular: 'billing',
+  },
 };
 
 const SPECIAL_ACTION_DESCRIPTIONS: Record<string, string> = {
