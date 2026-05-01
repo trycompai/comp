@@ -1,7 +1,8 @@
 'use client';
 
+import { cn } from '@/lib/utils';
 import { TaskStatus } from '@db';
-import { Badge, HStack, Stack, Text } from '@trycompai/design-system';
+import { Checkmark, Subtract } from '@trycompai/design-system/icons';
 import Link from 'next/link';
 
 interface LinkedTask {
@@ -16,20 +17,14 @@ interface LinkedWorkProps {
   tasks: LinkedTask[];
 }
 
-const STATUS_LABEL: Record<TaskStatus, string> = {
-  [TaskStatus.todo]: 'To do',
-  [TaskStatus.in_progress]: 'In progress',
-  [TaskStatus.in_review]: 'In review',
-  [TaskStatus.done]: 'Done',
-  [TaskStatus.not_relevant]: 'Not relevant',
-  [TaskStatus.failed]: 'Failed',
-};
+function isTaskDone(status: TaskStatus): boolean {
+  return status === TaskStatus.done || status === TaskStatus.not_relevant;
+}
 
 export function LinkedWork({ orgId, tasks }: LinkedWorkProps) {
-  const doneCount = tasks.filter(
-    (t) => t.status === TaskStatus.done || t.status === TaskStatus.not_relevant,
-  ).length;
-  const completionPct = tasks.length === 0 ? 0 : Math.round((doneCount / tasks.length) * 100);
+  const total = tasks.length;
+  const done = tasks.filter((t) => isTaskDone(t.status)).length;
+  const taskPct = total === 0 ? 0 : Math.round((done / total) * 100);
 
   const uniqueControls = new Map<string, { id: string; name: string }>();
   for (const t of tasks) {
@@ -38,59 +33,96 @@ export function LinkedWork({ orgId, tasks }: LinkedWorkProps) {
   const controls = [...uniqueControls.values()];
 
   return (
-    <HStack gap="lg" align="start">
-      <div className="flex-1">
-        <Stack gap="xs">
-          <HStack justify="between" align="baseline">
-            <Text size="sm" weight="medium">
-              Linked tasks
-            </Text>
-            <Text size="xs" variant="muted">
-              {doneCount}/{tasks.length} done · {completionPct}%
-            </Text>
-          </HStack>
-          {tasks.length === 0 ? (
-            <Text size="xs" variant="muted">
-              No tasks linked. Link tasks from the Tasks tab to track mitigation progress.
-            </Text>
-          ) : (
-            <Stack gap="xs">
-              {tasks.map((t) => (
-                <HStack key={t.id} justify="between" align="center">
-                  <Link href={`/${orgId}/tasks/${t.id}`} className="text-sm hover:underline">
+    <div className="flex flex-col gap-3">
+      {/* Tasks card */}
+      <div className="bg-background rounded-md border border-border p-3">
+        <div className="mb-2 flex items-center">
+          <span className="text-[13px] font-normal">Tasks</span>
+          <span className="flex-1" />
+          <span className="font-mono text-[11px] tabular-nums text-muted-foreground">
+            {done}/{total}
+          </span>
+        </div>
+        <div className="bg-muted mb-2 h-1 w-full overflow-hidden rounded-full">
+          <span
+            className="block h-full rounded-full"
+            style={{ width: `${taskPct}%`, background: 'var(--warning)' }}
+          />
+        </div>
+        {tasks.length === 0 ? (
+          <p className="text-[12px] text-muted-foreground">
+            No tasks linked. Link tasks from the Tasks tab to track mitigation progress.
+          </p>
+        ) : (
+          <ul className="flex flex-col">
+            {tasks.map((t) => {
+              const isDone = isTaskDone(t.status);
+              return (
+                <li key={t.id} className="flex items-center gap-2 py-1 text-[12px]">
+                  {isDone ? (
+                    <Checkmark
+                      size={11}
+                      className="shrink-0 text-green-600 dark:text-green-400"
+                      aria-hidden="true"
+                    />
+                  ) : (
+                    <Subtract
+                      size={11}
+                      className="shrink-0 text-muted-foreground"
+                      aria-hidden="true"
+                    />
+                  )}
+                  <Link
+                    href={`/${orgId}/tasks/${t.id}`}
+                    className={cn(
+                      'truncate hover:underline',
+                      isDone
+                        ? 'text-muted-foreground line-through decoration-muted-foreground'
+                        : 'text-foreground',
+                    )}
+                  >
                     {t.title}
                   </Link>
-                  <Badge>{STATUS_LABEL[t.status]}</Badge>
-                </HStack>
-              ))}
-            </Stack>
-          )}
-        </Stack>
+                </li>
+              );
+            })}
+          </ul>
+        )}
       </div>
-      <div className="flex-1">
-        <Stack gap="xs">
-          <Text size="sm" weight="medium">
-            Linked controls
-          </Text>
-          {controls.length === 0 ? (
-            <Text size="xs" variant="muted">
-              No controls linked (derived from task ↔ control relations).
-            </Text>
-          ) : (
-            <Stack gap="xs">
-              {controls.map((c) => (
+
+      {/* Controls card */}
+      <div className="bg-background rounded-md border border-border p-3">
+        <div className="mb-2 flex items-center">
+          <span className="text-[13px] font-normal">Controls</span>
+          <span className="flex-1" />
+          <span className="font-mono text-[11px] tabular-nums text-muted-foreground">
+            {controls.length}
+          </span>
+        </div>
+        {controls.length === 0 ? (
+          <p className="text-[12px] text-muted-foreground">
+            No controls linked (derived from tasks).
+          </p>
+        ) : (
+          <ul className="flex flex-col">
+            {controls.map((c) => (
+              <li key={c.id} className="flex items-center gap-2 py-1 text-[12px]">
+                <Subtract
+                  size={11}
+                  className="shrink-0 text-muted-foreground"
+                  aria-hidden="true"
+                />
                 <Link
-                  key={c.id}
                   href={`/${orgId}/controls/${c.id}`}
-                  className="text-sm hover:underline"
+                  className="truncate text-foreground hover:underline"
                 >
                   {c.name}
                 </Link>
-              ))}
-            </Stack>
-          )}
-        </Stack>
+              </li>
+            ))}
+          </ul>
+        )}
       </div>
-    </HStack>
+    </div>
   );
 }

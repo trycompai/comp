@@ -1,13 +1,13 @@
 'use client';
 
-import { suggestedResidual } from '@/lib/suggested-residual';
 import { Impact, Likelihood, RiskTreatmentType, TaskStatus } from '@db';
-import { Section, Stack } from '@trycompai/design-system';
+import { Button, Card, CardContent, CardHeader } from '@trycompai/design-system';
+import { MagicWandFilled } from '@trycompai/design-system/icons';
 import { useEffect, useState } from 'react';
-import { DeltaChip } from './DeltaChip';
 import { DescriptionEditor } from './DescriptionEditor';
 import { LinkedWork } from './LinkedWork';
 import { StrategyPicker } from './StrategyPicker';
+import { TreatmentHero } from './TreatmentHero';
 
 export interface TreatmentPlanEntity {
   id: string;
@@ -59,51 +59,105 @@ export function TreatmentPlanTab({
     }
   };
 
-  const suggestion = suggestedResidual({
-    likelihood: entity.inherentLikelihood,
-    impact: entity.inherentImpact,
-    strategy,
-    tasks: entity.tasks,
-  });
+  const description = entity.treatmentStrategyDescription ?? '';
 
   return (
-    <Stack gap="lg">
-      <Section title="Current risk">
-        <DeltaChip
-          inherentLikelihood={entity.inherentLikelihood}
-          inherentImpact={entity.inherentImpact}
-          residualLikelihood={entity.residualLikelihood}
-          residualImpact={entity.residualImpact}
-        />
-      </Section>
+    <div className="flex flex-col gap-6">
+      <TreatmentHero
+        inherentLikelihood={entity.inherentLikelihood}
+        inherentImpact={entity.inherentImpact}
+        residualLikelihood={entity.residualLikelihood}
+        residualImpact={entity.residualImpact}
+        strategy={strategy}
+        tasks={entity.tasks}
+      />
 
-      <Section title="Strategy" description="How is this risk being treated?">
-        <StrategyPicker
-          value={strategy}
-          onChange={handleStrategyChange}
-          disabled={!canUpdate}
-        />
-      </Section>
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-[1fr_1.2fr_1fr]">
+        {/* 01 · Strategy */}
+        <Card>
+          <CardHeader>
+            <ColumnHeader number="01" title="Strategy" subtitle="How is this risk being treated?" />
+          </CardHeader>
+          <CardContent>
+            <StrategyPicker
+              value={strategy}
+              onChange={handleStrategyChange}
+              disabled={!canUpdate}
+            />
+          </CardContent>
+        </Card>
 
-      <Section
-        title="Treatment plan"
-        description="A concrete plan for the strategy above. Use AI to draft, then edit by hand."
-      >
-        <DescriptionEditor
-          value={entity.treatmentStrategyDescription ?? ''}
-          onSave={onUpdateDescription}
-          onRegenerate={onRegenerate}
-          regenerating={regenerating}
-          disabled={!canUpdate}
-        />
-      </Section>
+        {/* 02 · Treatment plan */}
+        <Card>
+          <CardHeader>
+            <ColumnHeader
+              number="02"
+              title="Treatment plan"
+              subtitle="A concrete plan for the strategy above."
+              action={
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={onRegenerate}
+                  disabled={!canUpdate || regenerating}
+                  loading={regenerating}
+                  iconLeft={<MagicWandFilled aria-hidden="true" />}
+                >
+                  AI draft
+                </Button>
+              }
+            />
+          </CardHeader>
+          <CardContent>
+            <DescriptionEditor
+              value={description}
+              onSave={onUpdateDescription}
+              onRegenerate={onRegenerate}
+              regenerating={regenerating}
+              disabled={!canUpdate}
+            />
+          </CardContent>
+        </Card>
 
-      <Section
-        title="Linked work"
-        description={`Suggested residual based on your strategy and linked-task completion: ${suggestion.likelihood} × ${suggestion.impact} (${Math.round(suggestion.completion * 100)}% complete).`}
-      >
-        <LinkedWork orgId={orgId} tasks={entity.tasks} />
-      </Section>
-    </Stack>
+        {/* 03 · Linked work */}
+        <Card>
+          <CardHeader>
+            <ColumnHeader
+              number="03"
+              title="Linked work"
+              subtitle="Drives the residual estimate."
+            />
+          </CardHeader>
+          <CardContent>
+            <LinkedWork orgId={orgId} tasks={entity.tasks} />
+          </CardContent>
+        </Card>
+      </div>
+    </div>
+  );
+}
+
+interface ColumnHeaderProps {
+  number: string;
+  title: string;
+  subtitle: string;
+  action?: React.ReactNode;
+}
+
+function ColumnHeader({ number, title, subtitle, action }: ColumnHeaderProps) {
+  return (
+    <div className="flex flex-col gap-1">
+      <div className="flex items-center gap-2.5">
+        <span className="font-mono text-[11px] tracking-[0.1em] text-primary">{number}</span>
+        <h3 className="text-lg font-normal tracking-[-0.01em]">{title}</h3>
+        {action && (
+          <>
+            <span className="flex-1" />
+            {action}
+          </>
+        )}
+      </div>
+      <div className="text-xs text-muted-foreground">{subtitle}</div>
+    </div>
   );
 }
