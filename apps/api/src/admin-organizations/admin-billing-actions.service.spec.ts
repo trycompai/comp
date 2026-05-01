@@ -1,4 +1,4 @@
-import { NotFoundException } from '@nestjs/common';
+import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { db } from '@db';
 import { AdminBillingActionsService } from './admin-billing-actions.service';
 
@@ -62,5 +62,28 @@ describe('AdminBillingActionsService', () => {
         note: 'customer asked',
       }),
     ).rejects.toBeInstanceOf(NotFoundException);
+  });
+
+  it('rejects invoice recovery links when Stripe billing is not configured', async () => {
+    const getClient = jest.fn();
+    const service = new AdminBillingActionsService(
+      {
+        getClient,
+        isConfigured: () => false,
+      } as never,
+      {} as never,
+      {} as never,
+      {} as never,
+    );
+
+    await expect(
+      service.getInvoiceRetryLink({
+        organizationId: 'org_1',
+        adminUserId: 'usr_admin',
+        invoiceId: 'in_open',
+        note: 'retry payment',
+      }),
+    ).rejects.toBeInstanceOf(BadRequestException);
+    expect(getClient).not.toHaveBeenCalled();
   });
 });

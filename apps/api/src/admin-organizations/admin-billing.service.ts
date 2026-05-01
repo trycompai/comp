@@ -151,7 +151,10 @@ export class AdminBillingService {
     );
     if (!billing) throw new NotFoundException('Billing customer not found.');
     assertStripeBillingConfigured(this.stripeService);
-    const sku = getBillingSku({ skuKey: params.skuKey });
+    const sku = getBillingSku({
+      environment: resolveBillingCatalogEnvironment(),
+      skuKey: params.skuKey,
+    });
     const current = subscriptions.find(
       (item) =>
         item.stripeStatus !== 'canceled' &&

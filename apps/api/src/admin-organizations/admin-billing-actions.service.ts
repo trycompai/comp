@@ -152,6 +152,7 @@ export class AdminBillingActionsService {
     invoiceId: string;
     note: string;
   }) {
+    assertStripeBillingConfigured(this.stripeService);
     const { billing } = await getOrgBillingContext(params.organizationId);
     if (!billing) throw new NotFoundException('Billing customer not found.');
     const invoice = await this.stripeService

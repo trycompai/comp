@@ -129,4 +129,25 @@ describe('BillingCreditsService', () => {
       },
     });
   });
+
+  it('returns exhausted when a concurrent consume drains the selected balance', async () => {
+    mockedDb.billingCreditBalance.findMany.mockResolvedValue([
+      {
+        id: 'bcb_1',
+        organizationId: 'org_1',
+        productKey: 'background_check',
+        skuKey: null,
+        balance: 1,
+      },
+    ]);
+    tx.billingCreditBalance.updateMany.mockResolvedValue({ count: 0 });
+
+    await expect(
+      service.tryConsumeForProduct({
+        organizationId: 'org_1',
+        productKey: 'background_check',
+        sourceResourceId: 'mem_1',
+      }),
+    ).resolves.toEqual({ status: 'exhausted' });
+  });
 });

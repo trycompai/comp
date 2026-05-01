@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { db } from '@db';
 import type { BillingProductKey, BillingSkuKey } from '@trycompai/billing';
 import { isUniqueConstraintError } from './billing-entitlements.types';
@@ -160,10 +160,13 @@ export class BillingCreditsService {
           },
         });
         if (updated.count === 0) {
-          throw new BadRequestException('Credit balance is exhausted.');
+          throw new CreditBalanceExhaustedError();
         }
       });
     } catch (error) {
+      if (error instanceof CreditBalanceExhaustedError) {
+        return { status: 'exhausted' };
+      }
       if (isUniqueConstraintError(error)) return { status: 'consumed' };
       throw error;
     }
@@ -282,3 +285,5 @@ export class BillingCreditsService {
     };
   }
 }
+
+class CreditBalanceExhaustedError extends Error {}
