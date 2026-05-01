@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { db } from '@db';
 import { getManifest } from '@trycompai/integration-platform';
 
-const CLOUD_PROVIDER_CATEGORY = 'Cloud';
+const CLOUD_PROVIDER_SLUGS = ['aws', 'gcp', 'azure'] as const;
 
 /** Scan window for filtering legacy results to latest scan only */
 const SCAN_WINDOW_MS = 10 * 60 * 1000; // 10 minutes
@@ -88,7 +88,7 @@ export class CloudSecurityQueryService {
       where: {
         organizationId,
         status: 'active',
-        provider: { category: CLOUD_PROVIDER_CATEGORY },
+        provider: { slug: { in: [...CLOUD_PROVIDER_SLUGS] } },
       },
       include: { provider: true },
     });
@@ -98,10 +98,9 @@ export class CloudSecurityQueryService {
       where: { organizationId },
     });
 
-    const activeLegacy = legacyIntegrations.filter((i) => {
-      const manifest = getManifest(i.integrationId);
-      return manifest?.category === CLOUD_PROVIDER_CATEGORY;
-    });
+    const activeLegacy = legacyIntegrations.filter((i) =>
+      (CLOUD_PROVIDER_SLUGS as readonly string[]).includes(i.integrationId),
+    );
 
     // Map new connections
     const newProviders: CloudProvider[] = newConnections.map((conn) => {
@@ -207,7 +206,7 @@ export class CloudSecurityQueryService {
       where: {
         organizationId,
         status: 'active',
-        provider: { category: CLOUD_PROVIDER_CATEGORY },
+        provider: { slug: { in: [...CLOUD_PROVIDER_SLUGS] } },
       },
       include: { provider: true },
     });
@@ -303,10 +302,9 @@ export class CloudSecurityQueryService {
       where: { organizationId },
     });
 
-    const activeLegacy = legacyIntegrations.filter((i) => {
-      const manifest = getManifest(i.integrationId);
-      return manifest?.category === CLOUD_PROVIDER_CATEGORY;
-    });
+    const activeLegacy = legacyIntegrations.filter((i) =>
+      (CLOUD_PROVIDER_SLUGS as readonly string[]).includes(i.integrationId),
+    );
 
     const legacyIds = activeLegacy.map((i) => i.id);
     if (legacyIds.length === 0) return [];
