@@ -87,7 +87,8 @@ export function AdminOrgTabs({
     }
     setToggling(true);
     const res = await api.patch(
-      `/v1/admin/organizations/${org.id}/activate`,
+      `/v1/admin/organizations/${org.id}`,
+      { hasAccess: true },
     );
     if (!res.error) setHasAccess(true);
     setToggling(false);
@@ -97,7 +98,8 @@ export function AdminOrgTabs({
     setDeactivateDialogOpen(false);
     setToggling(true);
     const res = await api.patch(
-      `/v1/admin/organizations/${org.id}/deactivate`,
+      `/v1/admin/organizations/${org.id}`,
+      { hasAccess: false },
     );
     if (!res.error) setHasAccess(false);
     setToggling(false);

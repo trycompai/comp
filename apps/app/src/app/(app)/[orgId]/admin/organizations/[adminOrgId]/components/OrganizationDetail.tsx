@@ -43,8 +43,8 @@ export function OrganizationDetail({
     setSavingBgCheck(true);
 
     const res = await apiClient.patch(
-      `/v1/admin/organizations/${org.id}/background-check-step`,
-      { enabled: next },
+      `/v1/admin/organizations/${org.id}`,
+      { backgroundCheckStepEnabled: next },
     );
 
     setSavingBgCheck(false);

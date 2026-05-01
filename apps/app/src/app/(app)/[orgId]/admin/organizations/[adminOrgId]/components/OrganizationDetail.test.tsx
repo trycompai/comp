@@ -63,8 +63,8 @@ describe('OrganizationDetail — background-check toggle', () => {
 
     await waitFor(() => {
       expect(patchMock).toHaveBeenCalledWith(
-        '/v1/admin/organizations/org_1/background-check-step',
-        { enabled: false },
+        '/v1/admin/organizations/org_1',
+        { backgroundCheckStepEnabled: false },
       );
     });
   });
