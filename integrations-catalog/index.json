@@ -1,17 +1,17 @@
 {
-  "generatedAt": "2026-05-01T16:01:14.900Z",
-  "total": 569,
-  "sourceCount": 569,
-  "uniqueSlugs": 569,
+  "generatedAt": "2026-05-01T19:08:04.283Z",
+  "total": 574,
+  "sourceCount": 574,
+  "uniqueSlugs": 574,
   "byCategory": {
     "HR & People": 63,
     "Security": 129,
-    "Productivity": 119,
-    "Infrastructure": 31,
+    "Productivity": 120,
+    "Infrastructure": 32,
     "Communication": 47,
-    "Monitoring": 54,
+    "Monitoring": 56,
     "Cloud": 54,
-    "Development": 52,
+    "Development": 53,
     "Identity & Access": 20
   },
   "integrations": [
@@ -158,6 +158,15 @@
       "checkCount": 2,
       "syncSupported": false,
       "file": "integrations/aikido.json"
+    },
+    {
+      "slug": "airbrake",
+      "name": "Airbrake",
+      "category": "Monitoring",
+      "authType": "api_key",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/airbrake.json"
     },
     {
       "slug": "airbyte",
@@ -1501,15 +1510,6 @@
       "file": "integrations/dropbox-business.json"
     },
     {
-      "slug": "hellosign",
-      "name": "Dropbox Sign",
-      "category": "Productivity",
-      "authType": "basic",
-      "checkCount": 2,
-      "syncSupported": false,
-      "file": "integrations/hellosign.json"
-    },
-    {
       "slug": "dropbox-sign",
       "name": "Dropbox Sign",
       "category": "Productivity",
@@ -1517,6 +1517,15 @@
       "checkCount": 1,
       "syncSupported": false,
       "file": "integrations/dropbox-sign.json"
+    },
+    {
+      "slug": "hellosign",
+      "name": "Dropbox Sign",
+      "category": "Productivity",
+      "authType": "basic",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/hellosign.json"
     },
     {
       "slug": "druva",
@@ -1582,15 +1591,6 @@
       "file": "integrations/egnyte.json"
     },
     {
-      "slug": "elastic-cloud",
-      "name": "Elastic Cloud",
-      "category": "Cloud",
-      "authType": "custom",
-      "checkCount": 2,
-      "syncSupported": false,
-      "file": "integrations/elastic-cloud.json"
-    },
-    {
       "slug": "elastic",
       "name": "Elastic Cloud",
       "category": "Monitoring",
@@ -1598,6 +1598,15 @@
       "checkCount": 2,
       "syncSupported": false,
       "file": "integrations/elastic.json"
+    },
+    {
+      "slug": "elastic-cloud",
+      "name": "Elastic Cloud",
+      "category": "Cloud",
+      "authType": "custom",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/elastic-cloud.json"
     },
     {
       "slug": "employment-hero",
@@ -2113,15 +2122,6 @@
       "file": "integrations/hexnode.json"
     },
     {
-      "slug": "bob",
-      "name": "HiBob",
-      "category": "HR & People",
-      "authType": "basic",
-      "checkCount": 2,
-      "syncSupported": true,
-      "file": "integrations/bob.json"
-    },
-    {
       "slug": "hibob",
       "name": "HiBob",
       "category": "HR & People",
@@ -2129,6 +2129,15 @@
       "checkCount": 2,
       "syncSupported": false,
       "file": "integrations/hibob.json"
+    },
+    {
+      "slug": "bob",
+      "name": "HiBob",
+      "category": "HR & People",
+      "authType": "basic",
+      "checkCount": 2,
+      "syncSupported": true,
+      "file": "integrations/bob.json"
     },
     {
       "slug": "highlight-io",
@@ -2698,6 +2707,15 @@
       "file": "integrations/logzio.json"
     },
     {
+      "slug": "logz-io",
+      "name": "Logz.io",
+      "category": "Monitoring",
+      "authType": "custom",
+      "checkCount": 3,
+      "syncSupported": false,
+      "file": "integrations/logz-io.json"
+    },
+    {
       "slug": "looker",
       "name": "Looker",
       "category": "Productivity",
@@ -3013,6 +3031,15 @@
       "file": "integrations/monday.json"
     },
     {
+      "slug": "monday-com",
+      "name": "Monday.com",
+      "category": "Productivity",
+      "authType": "api_key",
+      "checkCount": 3,
+      "syncSupported": false,
+      "file": "integrations/monday-com.json"
+    },
+    {
       "slug": "mongodb-atlas",
       "name": "MongoDB Atlas",
       "category": "Cloud",
@@ -3227,6 +3254,15 @@
       "checkCount": 2,
       "syncSupported": false,
       "file": "integrations/ns1.json"
+    },
+    {
+      "slug": "octopus-deploy",
+      "name": "Octopus Deploy",
+      "category": "Development",
+      "authType": "custom",
+      "checkCount": 3,
+      "syncSupported": false,
+      "file": "integrations/octopus-deploy.json"
     },
     {
       "slug": "okta",
@@ -4165,6 +4201,15 @@
       "file": "integrations/smartsheet.json"
     },
     {
+      "slug": "snipe-it",
+      "name": "Snipe-IT",
+      "category": "Infrastructure",
+      "authType": "custom",
+      "checkCount": 4,
+      "syncSupported": false,
+      "file": "integrations/snipe-it.json"
+    },
+    {
       "slug": "snipeit",
       "name": "Snipe-IT",
       "category": "Infrastructure",
@@ -4426,15 +4471,6 @@
       "file": "integrations/stytch.json"
     },
     {
-      "slug": "sumologic",
-      "name": "Sumo Logic",
-      "category": "Monitoring",
-      "authType": "custom",
-      "checkCount": 2,
-      "syncSupported": false,
-      "file": "integrations/sumologic.json"
-    },
-    {
       "slug": "sumo-logic",
       "name": "Sumo Logic",
       "category": "Monitoring",
@@ -4442,6 +4478,15 @@
       "checkCount": 2,
       "syncSupported": false,
       "file": "integrations/sumo-logic.json"
+    },
+    {
+      "slug": "sumologic",
+      "name": "Sumo Logic",
+      "category": "Monitoring",
+      "authType": "custom",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/sumologic.json"
     },
     {
       "slug": "supabase",

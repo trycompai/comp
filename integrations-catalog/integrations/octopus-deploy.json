@@ -1,0 +1,58 @@
+{
+  "slug": "octopus-deploy",
+  "name": "Octopus Deploy",
+  "description": "Continuous deployment and release management platform. Connects to the Octopus Deploy REST API to verify server status, user access, and deployment audit trails.",
+  "category": "Development",
+  "docsUrl": null,
+  "baseUrl": "https://placeholder.octopus.app",
+  "authConfig": {
+    "type": "custom",
+    "config": {
+      "setupInstructions": "1. Log in to your Octopus Deploy instance\n2. Click your profile image and select Profile\n3. Click My API Keys\n4. Click New API key, provide a purpose, and click Generate New\n5. Copy the API key and paste it in CompAI\n6. Enter your Octopus Deploy instance URL (e.g., https://your-instance.octopus.app)",
+      "credentialFields": [
+        {
+          "label": "Octopus Deploy Instance URL",
+          "type": "text",
+          "required": false,
+          "helpText": "The base URL of your Octopus Deploy instance (e.g., https://mycompany.octopus.app or https://octopus.mycompany.com)"
+        },
+        {
+          "label": "API Key",
+          "type": "password",
+          "required": false,
+          "helpText": "Your Octopus Deploy API key. Found under Profile > My API Keys."
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "octopus_deploy_app_availability",
+      "name": "App Availability",
+      "description": "Verifies connectivity to the Octopus Deploy instance by checking the server status endpoint.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "octopus_deploy_employee_access",
+      "name": "Employee Access",
+      "description": "Reviews users configured in the Octopus Deploy instance to verify employee access controls.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "octopus_deploy_deployment_audit",
+      "name": "Deployment Audit",
+      "description": "Reviews recent deployments in Octopus Deploy to verify deployment activity and audit trails.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 3,
+  "isActive": true
+}
