@@ -83,4 +83,35 @@ describe('RiskMatrixChart', () => {
     );
     expect(document.querySelectorAll('.border-dashed').length).toBe(0);
   });
+
+  describe('preliminary subtitle', () => {
+    it('does not render the preliminary subtitle by default', () => {
+      render(
+        <RiskMatrixChart
+          title="Residual Risk"
+          description="x"
+          riskId="rsk_1"
+          activeLikelihood={Likelihood.possible}
+          activeImpact={Impact.moderate}
+          saveAction={vi.fn()}
+        />,
+      );
+      expect(screen.queryByText(/Preliminary/i)).toBeNull();
+    });
+
+    it('renders the preliminary subtitle when preliminary=true', () => {
+      render(
+        <RiskMatrixChart
+          title="Residual Risk"
+          description="x"
+          riskId="rsk_1"
+          activeLikelihood={Likelihood.possible}
+          activeImpact={Impact.moderate}
+          saveAction={vi.fn()}
+          preliminary
+        />,
+      );
+      expect(screen.getByText(/Preliminary — assessment still running/i)).toBeInTheDocument();
+    });
+  });
 });

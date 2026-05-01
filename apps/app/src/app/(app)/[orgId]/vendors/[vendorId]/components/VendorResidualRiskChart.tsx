@@ -1,19 +1,40 @@
 'use client';
 
 import { RiskMatrixChart } from '@/components/risks/charts/RiskMatrixChart';
+import { NotAssessedState } from '@/components/risks/treatment-plan/NotAssessedState';
 import { usePermissions } from '@/hooks/use-permissions';
 import { useVendor, useVendorActions } from '@/hooks/use-vendors';
 import { suggestedResidual } from '@/lib/suggested-residual';
-import type { TaskStatus, Vendor } from '@db';
+import { VendorStatus, type TaskStatus, type Vendor } from '@db';
+import { toast } from 'sonner';
 
 interface ResidualRiskChartProps {
   vendor: Vendor & { tasks?: { status: TaskStatus }[] };
 }
 
 export function VendorResidualRiskChart({ vendor }: ResidualRiskChartProps) {
-  const { updateVendor } = useVendorActions();
+  const { updateVendor, triggerAssessment } = useVendorActions();
   const { mutate } = useVendor(vendor.id);
   const { hasPermission } = usePermissions();
+
+  const canUpdate = hasPermission('vendor', 'update');
+
+  if (vendor.status === VendorStatus.not_assessed) {
+    return (
+      <NotAssessedState
+        disabled={!canUpdate}
+        onAssess={async () => {
+          try {
+            await triggerAssessment(vendor.id);
+            toast.success('Risk assessment started. This may take a moment.');
+            await mutate();
+          } catch {
+            toast.error('Failed to start risk assessment');
+          }
+        }}
+      />
+    );
+  }
 
   // Only compute a suggestion when tasks are actually loaded — falling back to
   // [] would render a misleading "0% complete" ghost cell on vendors that
@@ -27,6 +48,8 @@ export function VendorResidualRiskChart({ vendor }: ResidualRiskChartProps) {
       })
     : undefined;
 
+  const preliminary = vendor.status === VendorStatus.in_progress;
+
   return (
     <RiskMatrixChart
       title={'Residual Risk'}
@@ -39,7 +62,8 @@ export function VendorResidualRiskChart({ vendor }: ResidualRiskChartProps) {
       activeImpact={vendor.residualImpact}
       suggestedLikelihood={suggestion?.likelihood}
       suggestedImpact={suggestion?.impact}
-      readOnly={!hasPermission('vendor', 'update')}
+      readOnly={!canUpdate}
+      preliminary={preliminary}
       saveAction={async ({ id, probability, impact }) => {
         await updateVendor(id, {
           residualProbability: probability,

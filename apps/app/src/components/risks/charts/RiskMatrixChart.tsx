@@ -29,6 +29,8 @@ interface RiskMatrixChartProps {
   suggestedImpact?: Impact;
   /** Tooltip body shown on the title info icon. */
   titleInfo?: string;
+  /** When true, render a small "Preliminary — assessment still running" subtitle below the matrix. */
+  preliminary?: boolean;
 }
 
 export function RiskMatrixChart({
@@ -42,6 +44,7 @@ export function RiskMatrixChart({
   suggestedLikelihood,
   suggestedImpact,
   titleInfo,
+  preliminary,
 }: RiskMatrixChartProps) {
   const [initialLikelihood, setInitialLikelihood] = useState<Likelihood>(initialLikelihoodProp);
   const [initialImpact, setInitialImpact] = useState<Impact>(initialImpactProp);
@@ -120,6 +123,13 @@ export function RiskMatrixChart({
           </Button>
           <Text size="xs" variant="muted">
             Ghost cell shows the residual suggested by this entity&apos;s treatment plan.
+          </Text>
+        </div>
+      )}
+      {preliminary && (
+        <div className="mt-2">
+          <Text size="xs" variant="muted">
+            Preliminary — assessment still running
           </Text>
         </div>
       )}

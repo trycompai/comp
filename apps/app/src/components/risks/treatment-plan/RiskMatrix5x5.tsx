@@ -37,6 +37,8 @@ interface RiskMatrix5x5Props {
   inherentImpact: Impact;
   residualLikelihood: Likelihood;
   residualImpact: Impact;
+  /** When true, render a small "Preliminary — assessment still running" subtitle below the matrix. */
+  preliminary?: boolean;
 }
 
 export function RiskMatrix5x5({
@@ -44,6 +46,7 @@ export function RiskMatrix5x5({
   inherentImpact,
   residualLikelihood,
   residualImpact,
+  preliminary,
 }: RiskMatrix5x5Props) {
   const inherentL = LIKELIHOOD_ORDER.indexOf(inherentLikelihood);
   const inherentI = IMPACT_ORDER.indexOf(inherentImpact);
@@ -146,6 +149,13 @@ export function RiskMatrix5x5({
       <div className="text-[9px] font-bold uppercase tracking-[0.08em] text-muted-foreground text-center mt-2">
         ← Impact →
       </div>
+      {preliminary && (
+        <div className="mt-2">
+          <Text size="xs" variant="muted">
+            Preliminary — assessment still running
+          </Text>
+        </div>
+      )}
     </div>
   );
 }
