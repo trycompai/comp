@@ -11,8 +11,7 @@ import type {
   PentestRun,
 } from '@/lib/security/penetration-tests-client';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useSWRConfig } from 'swr';
-import useSWR from 'swr';
+import useSWR, { useSWRConfig } from 'swr';
 import { isReportInProgress, sortReportsByUpdatedAtDesc } from '../lib';
 
 const reportListEndpoint = '/v1/security-penetration-tests';
@@ -25,11 +24,7 @@ const reportIssuesEndpoint = (reportId: string): string =>
   `/v1/security-penetration-tests/${encodeURIComponent(reportId)}/issues`;
 const reportEventsEndpoint = (reportId: string): string =>
   `/v1/security-penetration-tests/${encodeURIComponent(reportId)}/events`;
-const inProgressStatus: readonly PentestReportStatus[] = [
-  'provisioning',
-  'cloning',
-  'running',
-];
+const inProgressStatus: readonly PentestReportStatus[] = ['provisioning', 'cloning', 'running'];
 const allStatuses: readonly PentestReportStatus[] = [
   'provisioning',
   'cloning',
@@ -45,10 +40,8 @@ const reportListKey = (organizationId: string): ReportsSWRKey =>
   [reportListEndpoint, organizationId] as const;
 const reportKey = (organizationId: string, reportId: string): ReportsSWRKey =>
   [reportEndpoint(reportId), organizationId] as const;
-const reportProgressKey = (
-  organizationId: string,
-  reportId: string,
-): ReportsSWRKey => [reportProgressEndpoint(reportId), organizationId] as const;
+const reportProgressKey = (organizationId: string, reportId: string): ReportsSWRKey =>
+  [reportProgressEndpoint(reportId), organizationId] as const;
 
 async function fetchApiJson<T>([endpoint, organizationId]: ReportsSWRKey): Promise<T> {
   const response = await api.get<T>(endpoint, organizationId);
@@ -60,9 +53,7 @@ async function fetchApiJson<T>([endpoint, organizationId]: ReportsSWRKey): Promi
   return (response.data ?? null) as T;
 }
 
-const resolveCreateStatus = (
-  status: string | undefined,
-): PentestReportStatus => {
+const resolveCreateStatus = (status: string | undefined): PentestReportStatus => {
   if (!status) {
     return 'provisioning';
   }
@@ -72,12 +63,7 @@ const resolveCreateStatus = (
     : 'provisioning';
 };
 
-interface CreatePayload {
-  targetUrl: string;
-  repoUrl?: string;
-  pipelineTesting?: boolean;
-  testMode?: boolean;
-}
+type CreatePayload = PentestCreateRequest;
 
 type CreateReportApiPayload = PentestCreateRequest;
 
@@ -109,9 +95,7 @@ interface UseCreatePenetrationTestReturn {
   resetError: () => void;
 }
 
-export function usePenetrationTests(
-  organizationId: string,
-): UsePenetrationTestsReturn {
+export function usePenetrationTests(organizationId: string): UsePenetrationTestsReturn {
   const shouldFetchReports = Boolean(organizationId);
   const { data, error, mutate } = useSWR<PentestRun[]>(
     shouldFetchReports ? reportListKey(organizationId) : null,
@@ -181,9 +165,7 @@ export function usePenetrationTestProgress(
   reportId: string,
   status: PentestReportStatus | undefined,
 ) {
-  const shouldFetch = Boolean(
-    organizationId && reportId && status && isReportInProgress(status),
-  );
+  const shouldFetch = Boolean(organizationId && reportId && status && isReportInProgress(status));
 
   const { data } = useSWR<PentestProgress>(
     shouldFetch ? reportProgressKey(organizationId, reportId) : null,
@@ -200,15 +182,11 @@ export function usePenetrationTestProgress(
   } satisfies UsePenetrationTestProgressReturn;
 }
 
-const reportIssuesKey = (
-  organizationId: string,
-  reportId: string,
-): ReportsSWRKey => [reportIssuesEndpoint(reportId), organizationId] as const;
+const reportIssuesKey = (organizationId: string, reportId: string): ReportsSWRKey =>
+  [reportIssuesEndpoint(reportId), organizationId] as const;
 
-const reportEventsKey = (
-  organizationId: string,
-  reportId: string,
-): ReportsSWRKey => [reportEventsEndpoint(reportId), organizationId] as const;
+const reportEventsKey = (organizationId: string, reportId: string): ReportsSWRKey =>
+  [reportEventsEndpoint(reportId), organizationId] as const;
 
 // Polls the issues list continuously while the run is in-progress, and once
 // after completion to load the final set. During a live ~1-hr scan, findings
@@ -333,9 +311,7 @@ export function usePentestCredits(organizationId: string): {
   };
 }
 
-export function useCreatePenetrationTest(
-  organizationId: string,
-): UseCreatePenetrationTestReturn {
+export function useCreatePenetrationTest(organizationId: string): UseCreatePenetrationTestReturn {
   const { mutate } = useSWRConfig();
   const [isCreating, setIsCreating] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -355,6 +331,9 @@ export function useCreatePenetrationTest(
             repoUrl: payload.repoUrl,
             pipelineTesting: payload.pipelineTesting,
             testMode: payload.testMode,
+            scanDepth: payload.scanDepth,
+            evidenceLevel: payload.evidenceLevel,
+            checks: payload.checks,
           } satisfies CreateReportApiPayload,
           organizationId,
         );
@@ -386,6 +365,9 @@ export function useCreatePenetrationTest(
           failedReason: null,
           temporalUiUrl: null,
           webhookUrl: null,
+          scanDepth: payload.scanDepth,
+          evidenceLevel: payload.evidenceLevel,
+          checks: payload.checks,
         };
 
         setIsCreating(false);
@@ -399,11 +381,9 @@ export function useCreatePenetrationTest(
             },
             { revalidate: false },
           );
-          await mutate(
-            reportKey(organizationId, reportId),
-            optimisticReport,
-            { revalidate: false },
-          );
+          await mutate(reportKey(organizationId, reportId), optimisticReport, {
+            revalidate: false,
+          });
         } catch (cacheMutationError) {
           console.error(
             'Created penetration test but failed to optimistically update report cache',
@@ -418,9 +398,7 @@ export function useCreatePenetrationTest(
         return data;
       } catch (reportError) {
         const message =
-          reportError instanceof Error
-            ? reportError.message
-            : 'Failed to create report';
+          reportError instanceof Error ? reportError.message : 'Failed to create report';
         setError(message);
         setIsCreating(false);
         throw new Error(message);
