@@ -71,11 +71,13 @@ export function BillingSubscriptionPlans({
                   {current && <Badge variant="default">Current</Badge>}
                   {trialEligible && <Badge variant="default">14-day free trial</Badge>}
                 </div>
-                <Text size="sm" variant="muted">
-                  {sku.description}
-                </Text>
+                <div className="min-h-[56px]">
+                  <Text size="sm" variant="muted">
+                    {sku.description}
+                  </Text>
+                </div>
               </Stack>
-              <Stack gap="1">
+              <div className="min-h-[72px]">
                 <Text size="lg" weight="semibold">
                   {formatAmount(sku.unitAmount)}
                   <span className="text-sm font-normal text-muted-foreground"> / mo</span>
@@ -85,8 +87,8 @@ export function BillingSubscriptionPlans({
                     {included.quantity} {unit} every month
                   </Text>
                 )}
-              </Stack>
-              <div className="rounded-md bg-muted/30 px-3 py-2">
+              </div>
+              <div className="flex min-h-[64px] items-center rounded-md bg-muted/30 px-3 py-2">
                 <Text size="sm" weight="medium">
                   {trialEligible
                     ? 'Try it free for 14 days. Add a card now, pay only if you keep it.'
@@ -142,13 +144,13 @@ function formatUsageUnit(unit: string, quantity: number) {
 
 function getPlanPromise(productKey: string, quantity: number) {
   if (productKey === 'pentest') {
-    if (quantity === 1) return 'Validate your highest-risk app every month.';
-    if (quantity === 3) return 'Cover launch windows and retest fixes without waiting.';
-    return 'Keep critical surfaces continuously audit-ready.';
+    if (quantity === 1) return 'Validate critical surfaces every month.';
+    if (quantity === 3) return 'Launch and retest fixes with confidence.';
+    return 'Keep key surfaces audit-ready.';
   }
-  if (quantity === 3) return 'Cover your next hires without per-check approvals.';
-  if (quantity === 10) return 'Keep recruiting moving with predictable checks.';
-  return 'Scale hiring without surprise background-check spend.';
+  if (quantity === 3) return 'Cover new hires without approval delays.';
+  if (quantity === 10) return 'Keep recruiting moving predictably.';
+  return 'Scale screening without surprise spend.';
 }
 
 function getPlanCta({

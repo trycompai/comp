@@ -1,8 +1,8 @@
 'use client';
 
+import { getBillingSku, getBillingSkuProductKey } from '@trycompai/billing';
 import { Badge, Button, Stack, Text } from '@trycompai/design-system';
 import { ArrowRight } from '@trycompai/design-system/icons';
-import { getBillingSku, getBillingSkuProductKey } from '@trycompai/billing';
 import { useRouter } from 'next/navigation';
 import { billingAddOns } from './billingAddOns';
 import type { BackgroundCheckBillingStatus } from './types';
@@ -10,11 +10,13 @@ import type { BackgroundCheckBillingStatus } from './types';
 interface BillingAddOnsOverviewProps {
   organizationId: string;
   subscriptions: NonNullable<BackgroundCheckBillingStatus['subscriptions']>;
+  trialEligibility?: BackgroundCheckBillingStatus['trialEligibility'];
 }
 
 export function BillingAddOnsOverview({
   organizationId,
   subscriptions,
+  trialEligibility,
 }: BillingAddOnsOverviewProps) {
   const router = useRouter();
 
@@ -27,6 +29,7 @@ export function BillingAddOnsOverview({
             getBillingSkuProductKey(subscription.skuKey) === productKey &&
             (subscription.status === 'active' || subscription.status === 'trialing'),
         );
+        const trialEligible = !activeSubscription && trialEligibility?.[productKey] === true;
         const remaining = activeSubscription
           ? Math.max(activeSubscription.includedQuantity - activeSubscription.usedQuantity, 0)
           : null;
@@ -46,13 +49,18 @@ export function BillingAddOnsOverview({
                       {addOn.summary}
                     </Text>
                   </div>
-                  {activeSubscription && <Badge variant="default">Active</Badge>}
+                  <div className="flex flex-wrap items-center gap-2">
+                    {trialEligible && <Badge variant="default">14-day free trial</Badge>}
+                    {activeSubscription && <Badge variant="default">Active</Badge>}
+                  </div>
                 </div>
                 <Text size="sm" variant="muted" leading="relaxed">
                   {addOn.description}
                 </Text>
                 <Text size="sm" weight="medium">
-                  {addOn.proof}
+                  {trialEligible
+                    ? 'Start with a 14-day free trial on the first tier. Card required, no charge today.'
+                    : addOn.proof}
                 </Text>
               </Stack>
 

@@ -74,6 +74,11 @@ export function BillingSettingsClient({
     () => billingStatus?.subscriptions ?? initialBillingStatus.subscriptions ?? [],
     [billingStatus?.subscriptions, initialBillingStatus.subscriptions],
   );
+  const trialEligibility = billingStatus?.trialEligibility ??
+    initialBillingStatus.trialEligibility ?? {
+      pentest: false,
+      background_check: false,
+    };
   const preferences = useMemo(
     () => billingStatus?.preferences ?? initialBillingStatus.preferences ?? null,
     [billingStatus?.preferences, initialBillingStatus.preferences],
@@ -173,6 +178,7 @@ export function BillingSettingsClient({
             <BillingAddOnsOverview
               organizationId={organizationId}
               subscriptions={subscriptions}
+              trialEligibility={trialEligibility}
             />
           </Section>
         </TabsContent>

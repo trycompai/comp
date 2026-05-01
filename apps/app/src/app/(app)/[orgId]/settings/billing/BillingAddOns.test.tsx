@@ -88,10 +88,18 @@ describe('billing add-ons', () => {
   });
 
   it('shows product-level add-ons before plan selection', () => {
-    render(<BillingAddOnsOverview organizationId="org_1" subscriptions={[]} />);
+    render(
+      <BillingAddOnsOverview
+        organizationId="org_1"
+        subscriptions={[]}
+        trialEligibility={emptyBillingStatus.trialEligibility}
+      />,
+    );
 
     expect(screen.getByText('Penetration Tests')).toBeInTheDocument();
     expect(screen.getByText('Background Checks')).toBeInTheDocument();
+    expect(screen.getAllByText('14-day free trial')).toHaveLength(2);
+    expect(screen.getAllByText(/no charge today/i)).toHaveLength(2);
     screen.getByRole('button', { name: /view penetration tests plans/i }).click();
     expect(navigationMock.push).toHaveBeenCalledWith(
       '/org_1/settings/billing/add-ons/penetration-tests',
@@ -100,6 +108,24 @@ describe('billing add-ons', () => {
     expect(navigationMock.push).toHaveBeenCalledWith(
       '/org_1/settings/billing/add-ons/background-checks',
     );
+  });
+
+  it('hides overview trial copy for products with subscription history', () => {
+    render(
+      <BillingAddOnsOverview
+        organizationId="org_1"
+        subscriptions={[]}
+        trialEligibility={{ pentest: false, background_check: true }}
+      />,
+    );
+
+    expect(screen.getAllByText('14-day free trial')).toHaveLength(1);
+    expect(
+      screen.queryByText(/start with a 14-day free trial on the first tier/i),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText('Turn every release into an audit-ready security check.'),
+    ).toBeInTheDocument();
   });
 
   it('opens subscription checkout for an add-on plan', async () => {
