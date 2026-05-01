@@ -59,6 +59,8 @@ import {
   SOC2Type1InProgress,
   SOC2Type2,
   SOC2Type2InProgress,
+  SOC3,
+  SOC3InProgress,
 } from './logos';
 
 // Client-side form schema (includes all fields for form state)
@@ -918,7 +920,7 @@ function ComplianceFrameworkLogo({ title, status, enabled }: { title: string; st
   } else if (title === 'ISO 9001') {
     LogoComponent = enabled && isInProgress ? ISO9001InProgress : ISO9001;
   } else if (title === 'SOC 3') {
-    LogoComponent = enabled && isInProgress ? ISO9001 : ISO9001;
+    LogoComponent = enabled && isInProgress ? SOC3InProgress : SOC3;
   } else {
     LogoComponent = null;
   }
