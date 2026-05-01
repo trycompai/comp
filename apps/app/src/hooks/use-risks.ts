@@ -268,11 +268,27 @@ export function useRiskActions() {
     [],
   );
 
+  const autoLinkRisk = useCallback(
+    async (riskId: string): Promise<{ linked: number }> => {
+      const response = await fetch(`/api/risks/${riskId}/auto-link`, {
+        method: 'POST',
+        credentials: 'include',
+      });
+      if (!response.ok) {
+        const body = await response.json().catch(() => ({}));
+        throw new Error(body.error || 'Failed to trigger auto-link');
+      }
+      return response.json();
+    },
+    [],
+  );
+
   return {
     createRisk,
     updateRisk,
     deleteRisk,
     regenerateMitigation,
+    autoLinkRisk,
   };
 }
 

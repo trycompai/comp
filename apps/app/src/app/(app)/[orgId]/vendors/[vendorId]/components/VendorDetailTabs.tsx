@@ -80,7 +80,7 @@ export function VendorDetailTabs({
   const taskItemId = searchParams.get('taskItemId');
 
   const { vendor: swrVendor, mutate: refreshVendor } = useVendor(vendorId);
-  const { updateVendor, triggerAssessment, regenerateMitigation } = useVendorActions();
+  const { updateVendor, triggerAssessment, regenerateMitigation, autoLinkVendor } = useVendorActions();
   const { hasPermission } = usePermissions();
   const canUpdate = hasPermission('vendor', 'update');
   const canUpdateTask = hasPermission('task', 'update');
@@ -266,6 +266,12 @@ export function VendorDetailTabs({
     refreshVendor();
   };
 
+  const handleAutoLink = async () => {
+    const result = await autoLinkVendor(vendorId);
+    await refreshVendor();
+    return result;
+  };
+
   const handleUpdateDescription = async (description: string) => {
     await updateVendor(vendorId, { treatmentStrategyDescription: description });
     refreshVendor();
@@ -448,6 +454,7 @@ export function VendorDetailTabs({
                 onUpdateDescription={handleUpdateDescription}
                 onRegenerate={handleRegenerateMitigation}
                 regenerating={isMitigationLoading}
+                onAutoLink={handleAutoLink}
               />
             </TabsContent>
 

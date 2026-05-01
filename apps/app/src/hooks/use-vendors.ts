@@ -254,12 +254,28 @@ export function useVendorActions() {
     [],
   );
 
+  const autoLinkVendor = useCallback(
+    async (vendorId: string): Promise<{ linked: number }> => {
+      const response = await fetch(`/api/vendors/${vendorId}/auto-link`, {
+        method: 'POST',
+        credentials: 'include',
+      });
+      if (!response.ok) {
+        const body = await response.json().catch(() => ({}));
+        throw new Error(body.error || 'Failed to trigger auto-link');
+      }
+      return response.json();
+    },
+    [],
+  );
+
   return {
     createVendor,
     updateVendor,
     deleteVendor,
     triggerAssessment,
     regenerateMitigation,
+    autoLinkVendor,
   };
 }
 

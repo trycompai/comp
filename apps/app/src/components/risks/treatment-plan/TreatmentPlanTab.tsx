@@ -4,6 +4,7 @@ import { Impact, Likelihood, RiskTreatmentType, TaskStatus } from '@db';
 import { Button, Card, CardContent, CardHeader } from '@trycompai/design-system';
 import { MagicWandFilled } from '@trycompai/design-system/icons';
 import { useEffect, useState } from 'react';
+import { AutoLinkButton } from './AutoLinkButton';
 import { DescriptionEditor } from './DescriptionEditor';
 import { LinkedWork } from './LinkedWork';
 import { StrategyPicker } from './StrategyPicker';
@@ -33,6 +34,10 @@ interface TreatmentPlanTabProps {
   onUpdateDescription: (description: string) => Promise<void>;
   onRegenerate: () => Promise<void>;
   regenerating: boolean;
+  /** Optional auto-link callback. When provided and the entity has zero linked
+   * tasks (and the user can update), an Auto-link button is shown above the
+   * Linked Work content. Older callers that don't pass this prop keep working. */
+  onAutoLink?: () => Promise<{ linked: number }>;
 }
 
 export function TreatmentPlanTab({
@@ -43,6 +48,7 @@ export function TreatmentPlanTab({
   onUpdateDescription,
   onRegenerate,
   regenerating,
+  onAutoLink,
 }: TreatmentPlanTabProps) {
   const [strategy, setStrategy] = useState(entity.treatmentStrategy);
 
@@ -129,7 +135,17 @@ export function TreatmentPlanTab({
             />
           </CardHeader>
           <CardContent>
-            <LinkedWork orgId={orgId} tasks={entity.tasks} />
+            <div className="flex flex-col gap-3">
+              {entity.tasks.length === 0 && canUpdate && onAutoLink && (
+                <AutoLinkButton
+                  hasDescription={Boolean(description.trim())}
+                  disabled={regenerating}
+                  onAutoLink={onAutoLink}
+                  onAfterLink={onRegenerate}
+                />
+              )}
+              <LinkedWork orgId={orgId} tasks={entity.tasks} />
+            </div>
           </CardContent>
         </Card>
       </div>
