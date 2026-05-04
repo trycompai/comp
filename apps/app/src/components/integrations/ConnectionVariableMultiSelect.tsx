@@ -133,6 +133,7 @@ export function ConnectionVariableMultiSelect({
               </div>
               <button
                 type="button"
+                aria-label={`Remove ${config.repo}`}
                 onClick={() => handleRemoveRepo(config.repo)}
                 className="shrink-0 rounded p-1 hover:bg-destructive/10 text-muted-foreground hover:text-destructive"
               >

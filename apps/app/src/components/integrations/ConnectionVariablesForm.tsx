@@ -156,7 +156,7 @@ export function ConnectionVariablesFields({
               />
             ) : variable.type === 'select' ? (
               <Select
-                value={String(variableValues[variable.id] || '')}
+                value={String(variableValues[variable.id] ?? '')}
                 onValueChange={(value) => {
                   if (value === null) return;
                   setVariableValues((prev) => ({ ...prev, [variable.id]: value }));
@@ -212,12 +212,14 @@ export function ConnectionVariablesFields({
               <Input
                 id={variable.id}
                 type={variable.type === 'number' ? 'number' : 'text'}
-                value={String(variableValues[variable.id] || '')}
+                value={String(variableValues[variable.id] ?? '')}
                 onChange={(event) =>
                   setVariableValues((prev) => ({
                     ...prev,
                     [variable.id]:
-                      variable.type === 'number' ? Number(event.target.value) : event.target.value,
+                      variable.type === 'number' && event.target.value !== ''
+                        ? Number(event.target.value)
+                        : event.target.value,
                   }))
                 }
                 placeholder={variable.placeholder || `Enter ${variable.label.toLowerCase()}`}
