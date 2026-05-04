@@ -3,7 +3,7 @@ const SIX_MONTHS_MS = 6 * 30 * 24 * 60 * 60 * 1000;
 interface ControlForScoring {
   id: string;
   policies: { id: string; status: string }[];
-  controlDocumentTypes?: { formType: string }[];
+  controlDocumentTypes?: { formType: string; isNotRelevant?: boolean }[];
 }
 
 interface FrameworkWithControlsForScoring {
@@ -50,6 +50,7 @@ export function computeFrameworkComplianceScore(
   const documentFormTypes = new Set<string>();
   for (const control of controls) {
     for (const documentType of control.controlDocumentTypes ?? []) {
+      if (documentType.isNotRelevant === true) continue;
       documentFormTypes.add(documentType.formType);
     }
   }

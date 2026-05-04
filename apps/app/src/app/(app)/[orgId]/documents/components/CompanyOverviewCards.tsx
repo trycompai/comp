@@ -2,7 +2,7 @@
 
 import { conciseFormDescriptions } from '@/app/(app)/[orgId]/documents/form-descriptions';
 import { useOrganizationFindings } from '@/hooks/use-findings-api';
-import { api } from '@/lib/api-client';
+import { apiClient } from '@/lib/api-client';
 import { FindingStatus } from '@db';
 import {
   Badge,
@@ -20,7 +20,7 @@ import useSWR from 'swr';
 import { evidenceFormDefinitionList, meetingSubTypeValues } from '../forms';
 import { SOAOverviewCard } from './SOAOverviewCard';
 
-type FormStatuses = Record<string, { lastSubmittedAt: string | null }>;
+type FormStatuses = Record<string, { lastSubmittedAt: string | null; isNotRelevant?: boolean }>;
 type FrameworkListResponse = {
   data: Array<{
     id: string;
@@ -74,6 +74,19 @@ function StatusBadge({
     );
   }
 
+  if (statuses[form.type]?.isNotRelevant === true) {
+    return (
+      <div className="flex items-center gap-1.5">
+        <Badge variant="secondary">Not relevant</Badge>
+        {activeIssues > 0 && (
+          <span className="inline-flex items-center rounded-sm bg-red-100 px-1.5 py-1 text-[10px] font-semibold uppercase tracking-wider leading-none text-red-800 dark:bg-red-950/30 dark:text-red-400">
+            {activeIssues === 1 ? '1 Issue' : `${activeIssues} Issues`}
+          </span>
+        )}
+      </div>
+    );
+  }
+
   const showTodo =
     form.type === 'meeting'
       ? isMeetingTodo(statuses)
@@ -111,7 +124,7 @@ export function CompanyOverviewCards({ organizationId }: { organizationId: strin
   const { data: statuses } = useSWR<FormStatuses>(
     swrKey,
     async ([endpoint, orgId]: readonly [string, string]) => {
-      const response = await api.get<FormStatuses>(endpoint);
+      const response = await apiClient.get<FormStatuses>(endpoint, orgId);
       if (response.error || !response.data) {
         throw new Error(response.error ?? 'Failed to load form statuses');
       }
@@ -122,8 +135,8 @@ export function CompanyOverviewCards({ organizationId }: { organizationId: strin
   const { data: findingsResponse } = useOrganizationFindings();
   const { data: frameworksResponse } = useSWR<FrameworkListResponse>(
     ['/v1/frameworks', organizationId] as const,
-    async ([endpoint]: readonly [string, string]) => {
-      const response = await api.get<FrameworkListResponse>(endpoint);
+    async ([endpoint, orgId]: readonly [string, string]) => {
+      const response = await apiClient.get<FrameworkListResponse>(endpoint, orgId);
       if (response.error || !response.data) {
         throw new Error(response.error ?? 'Failed to load frameworks');
       }

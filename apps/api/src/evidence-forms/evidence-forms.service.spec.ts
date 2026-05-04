@@ -11,6 +11,14 @@ jest.mock(
   { virtual: true },
 );
 
+jest.mock('../frameworks/frameworks-timeline.helper', () => ({
+  checkAutoCompletePhases: jest.fn(),
+}));
+
+jest.mock('../timelines/timelines.service', () => ({
+  TimelinesService: class TimelinesService {},
+}));
+
 jest.mock('@db', () => {
   const evidenceFormTypeEnum = {
     board_meeting: 'board_meeting',
@@ -23,6 +31,8 @@ jest.mock('@db', () => {
     rbac_matrix: 'rbac_matrix',
     infrastructure_inventory: 'infrastructure_inventory',
     employee_performance_evaluation: 'employee_performance_evaluation',
+    network_diagram: 'network_diagram',
+    tabletop_exercise: 'tabletop_exercise',
   };
 
   return {
@@ -30,7 +40,12 @@ jest.mock('@db', () => {
     db: {
       evidenceSubmission: {
         findFirst: jest.fn(),
+        groupBy: jest.fn(),
         update: jest.fn(),
+      },
+      evidenceFormSetting: {
+        findMany: jest.fn(),
+        upsert: jest.fn(),
       },
     },
   };
@@ -39,7 +54,12 @@ jest.mock('@db', () => {
 type MockDb = {
   evidenceSubmission: {
     findFirst: jest.Mock;
+    groupBy: jest.Mock;
     update: jest.Mock;
+  };
+  evidenceFormSetting: {
+    findMany: jest.Mock;
+    upsert: jest.Mock;
   };
 };
 
@@ -59,13 +79,112 @@ describe('EvidenceFormsService', () => {
     getPresignedDownloadUrl: jest.fn(),
   } as unknown as AttachmentsService;
 
-  const timelinesServiceMock = {} as unknown as import('../timelines/timelines.service').TimelinesService;
+  const timelinesServiceMock =
+    {} as unknown as import('../timelines/timelines.service').TimelinesService;
 
-  const service = new EvidenceFormsService(attachmentsServiceMock, timelinesServiceMock);
+  const service = new EvidenceFormsService(
+    attachmentsServiceMock,
+    timelinesServiceMock,
+  );
   const mockedDb = db as unknown as MockDb;
 
   beforeEach(() => {
     jest.clearAllMocks();
+  });
+
+  describe('getFormStatuses', () => {
+    it('includes relevance settings alongside latest submission dates', async () => {
+      mockedDb.evidenceSubmission.groupBy.mockResolvedValue([
+        {
+          formType: 'meeting',
+          _max: { submittedAt: new Date('2026-01-01T00:00:00.000Z') },
+        },
+      ]);
+      mockedDb.evidenceFormSetting.findMany.mockResolvedValue([
+        { formType: 'meeting', isNotRelevant: true },
+      ]);
+
+      const result = await service.getFormStatuses('org_123');
+
+      expect(mockedDb.evidenceFormSetting.findMany).toHaveBeenCalledWith({
+        where: { organizationId: 'org_123' },
+        select: { formType: true, isNotRelevant: true },
+      });
+      expect(result.meeting).toEqual({
+        lastSubmittedAt: '2026-01-01T00:00:00.000Z',
+        isNotRelevant: true,
+      });
+      expect(result['access-request']).toEqual({
+        lastSubmittedAt: null,
+        isNotRelevant: false,
+      });
+    });
+  });
+
+  describe('getFormSettings', () => {
+    it('returns one setting entry for every document form', async () => {
+      mockedDb.evidenceFormSetting.findMany.mockResolvedValue([
+        {
+          formType: 'access_request',
+          isNotRelevant: true,
+          updatedAt: new Date('2026-01-02T00:00:00.000Z'),
+        },
+      ]);
+
+      const result = await service.getFormSettings('org_123');
+
+      expect(result).toContainEqual({
+        formType: 'access-request',
+        isNotRelevant: true,
+        updatedAt: '2026-01-02T00:00:00.000Z',
+      });
+      expect(result).toContainEqual({
+        formType: 'meeting',
+        isNotRelevant: false,
+        updatedAt: null,
+      });
+    });
+  });
+
+  describe('updateFormSetting', () => {
+    it('upserts a document relevance setting', async () => {
+      mockedDb.evidenceFormSetting.upsert.mockResolvedValue({
+        formType: 'meeting',
+        isNotRelevant: true,
+        updatedAt: new Date('2026-01-03T00:00:00.000Z'),
+      });
+
+      const result = await service.updateFormSetting({
+        organizationId: 'org_123',
+        formType: 'meeting',
+        payload: { isNotRelevant: true },
+      });
+
+      expect(mockedDb.evidenceFormSetting.upsert).toHaveBeenCalledWith({
+        where: {
+          organizationId_formType: {
+            organizationId: 'org_123',
+            formType: 'meeting',
+          },
+        },
+        create: {
+          organizationId: 'org_123',
+          formType: 'meeting',
+          isNotRelevant: true,
+        },
+        update: { isNotRelevant: true },
+        select: {
+          formType: true,
+          isNotRelevant: true,
+          updatedAt: true,
+        },
+      });
+      expect(result).toEqual({
+        formType: 'meeting',
+        isNotRelevant: true,
+        updatedAt: '2026-01-03T00:00:00.000Z',
+      });
+    });
   });
 
   describe('reviewSubmission', () => {

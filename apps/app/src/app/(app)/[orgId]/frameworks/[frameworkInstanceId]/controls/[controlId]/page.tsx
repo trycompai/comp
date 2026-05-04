@@ -14,7 +14,7 @@ import { FrameworkControlShell } from './components/FrameworkControlShell';
 type ControlDetail = Control & {
   policies: Policy[];
   tasks: Task[];
-  controlDocumentTypes?: { formType: string }[];
+  controlDocumentTypes?: { formType: string; isNotRelevant?: boolean }[];
   submissionCountsByFormType?: Record<string, number>;
   requirementsMapped: (RequirementMap & {
     frameworkInstance: FrameworkInstance & {
@@ -51,8 +51,7 @@ export default async function FrameworkControlPage({ params }: PageProps) {
     (rm) => rm.frameworkInstanceId === frameworkInstanceId,
   );
   const requirementLabel =
-    matchedRequirement?.requirement?.identifier?.trim() ||
-    matchedRequirement?.requirement?.name;
+    matchedRequirement?.requirement?.identifier?.trim() || matchedRequirement?.requirement?.name;
   const requirementId = matchedRequirement?.requirement?.id;
   const requirementHref = requirementId
     ? `/${orgId}/frameworks/${frameworkInstanceId}/requirements/${requirementId}`
@@ -72,8 +71,8 @@ export default async function FrameworkControlPage({ params }: PageProps) {
 
   const documentRows = (control.controlDocumentTypes ?? []).map((d) => ({
     formType: d.formType,
-    submissionCount:
-      control.submissionCountsByFormType?.[d.formType] ?? 0,
+    isNotRelevant: d.isNotRelevant === true,
+    submissionCount: control.submissionCountsByFormType?.[d.formType] ?? 0,
   }));
 
   return (
