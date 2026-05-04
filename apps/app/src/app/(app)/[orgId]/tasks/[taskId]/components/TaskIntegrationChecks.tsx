@@ -214,6 +214,57 @@ export function TaskIntegrationChecks({
     [],
   );
 
+  // Split checks into three groups:
+  //   1. connectedChecks        — active + not disabled for this task
+  //   2. disabledForTaskChecks  — connected but manually disconnected from this task
+  //   3. disconnectedChecks     — no connection at all (suggestions)
+  const connectedChecks = checks.filter((c) => c.isConnected && !c.isDisabledForTask);
+  const disabledForTaskChecks = checks.filter((c) => c.isConnected && c.isDisabledForTask);
+  const disconnectedChecks = checks.filter((c) => !c.isConnected);
+  const [suggestionsPage, setSuggestionsPage] = useState(1);
+  const [suggestionsSearchQuery, setSuggestionsSearchQuery] = useState('');
+
+  const uniqueDisconnectedIntegrations = useMemo(
+    () =>
+      Array.from(new Map(disconnectedChecks.map((check) => [check.integrationId, check])).values()),
+    [disconnectedChecks],
+  );
+
+  const filteredDisconnectedIntegrations = useMemo(() => {
+    const query = suggestionsSearchQuery.trim().toLowerCase();
+    if (!query) return uniqueDisconnectedIntegrations;
+
+    return uniqueDisconnectedIntegrations.filter((integration) =>
+      integration.integrationName.toLowerCase().includes(query),
+    );
+  }, [uniqueDisconnectedIntegrations, suggestionsSearchQuery]);
+
+  const suggestionsPageCount = Math.max(
+    1,
+    Math.ceil(filteredDisconnectedIntegrations.length / INTEGRATIONS_PER_PAGE),
+  );
+  const currentSuggestionsPage = Math.min(suggestionsPage, suggestionsPageCount);
+  const paginatedDisconnectedIntegrations = filteredDisconnectedIntegrations.slice(
+    (currentSuggestionsPage - 1) * INTEGRATIONS_PER_PAGE,
+    currentSuggestionsPage * INTEGRATIONS_PER_PAGE,
+  );
+
+  useEffect(() => {
+    setSuggestionsPage(1);
+  }, [suggestionsSearchQuery]);
+
+  const handleSuggestionsSearchChange = (event: ChangeEvent<HTMLInputElement>) => {
+    setSuggestionsSearchQuery(event.target.value);
+  };
+
+  const handlePreviousSuggestionsPage = () => {
+    setSuggestionsPage((current) => Math.max(1, current - 1));
+  };
+
+  const handleNextSuggestionsPage = () => {
+    setSuggestionsPage((current) => Math.min(suggestionsPageCount, current + 1));
+  };
+
   if (loading) {
     return (
       <div className="space-y-5">
@@ -230,14 +281,6 @@ export function TaskIntegrationChecks({
       </div>
     );
   }
-
-  // Split checks into three groups:
-  //   1. connectedChecks        — active + not disabled for this task
-  //   2. disabledForTaskChecks  — connected but manually disconnected from this task
-  //   3. disconnectedChecks     — no connection at all (suggestions)
-  const connectedChecks = checks.filter((c) => c.isConnected && !c.isDisabledForTask);
-  const disabledForTaskChecks = checks.filter((c) => c.isConnected && c.isDisabledForTask);
-  const disconnectedChecks = checks.filter((c) => !c.isConnected);
 
   // If there are no checks at all for this task, don't render anything
   if (checks.length === 0) {
@@ -732,15 +775,40 @@ export function TaskIntegrationChecks({
             {/* Disconnected Checks as Suggestions */}
             {disconnectedChecks.length > 0 && (
               <div className="pt-4 border-t border-border/40">
-                <p className="text-xs font-medium text-muted-foreground mb-3">
-                  More integrations available
-                </p>
+                <div className="mb-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                  <p className="text-xs font-medium text-muted-foreground">
+                    More integrations available
+                  </p>
+                  {uniqueDisconnectedIntegrations.length > INTEGRATIONS_PER_PAGE && (
+                    <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+                      <input
+                        value={suggestionsSearchQuery}
+                        onChange={handleSuggestionsSearchChange}
+                        aria-label="Search integrations"
+                        placeholder="Search integrations"
+                        className="h-8 w-full rounded-md border border-border bg-background px-3 text-xs text-foreground outline-none transition-colors placeholder:text-muted-foreground focus:border-primary sm:w-56"
+                      />
+                      <span className="text-xs text-muted-foreground whitespace-nowrap">
+                        {filteredDisconnectedIntegrations.length} of{' '}
+                        {uniqueDisconnectedIntegrations.length}
+                      </span>
+                    </div>
+                  )}
+                </div>
                 <div className="space-y-1">
-                  {disconnectedChecks.map((check) => {
-                    const monitorName = getMonitorDisplayName(check);
+                  {paginatedDisconnectedIntegrations.length === 0 && (
+                    <div className="py-6 text-center">
+                      <p className="text-sm font-medium text-foreground">No integrations found</p>
+                      <p className="mt-1 text-xs text-muted-foreground">
+                        Try a different search term.
+                      </p>
+                    </div>
+                  )}
+
+                  {paginatedDisconnectedIntegrations.map((integration) => {
                     return (
                       <Link
-                        key={`${check.integrationId}-${check.checkId}`}
+                        key={integration.integrationId}
                         href={`/${orgId}/integrations`}
                         className={cn(
                           'flex flex-row items-center justify-between py-2 px-3 rounded-md',
@@ -750,15 +818,15 @@ export function TaskIntegrationChecks({
                       >
                         <div className="flex items-center gap-3">
                           <Image
-                            src={check.integrationLogoUrl}
-                            alt={check.integrationName}
+                            src={integration.integrationLogoUrl}
+                            alt={integration.integrationName}
                             width={20}
                             height={20}
                             className="rounded opacity-50 group-hover:opacity-100 transition-opacity"
                           />
                           <div>
                             <p className="text-sm text-muted-foreground group-hover:text-foreground transition-colors">
-                              {monitorName}
+                              {integration.integrationName}
                             </p>
                           </div>
                         </div>
@@ -767,6 +835,31 @@ export function TaskIntegrationChecks({
                     );
                   })}
                 </div>
+                {suggestionsPageCount > 1 && (
+                  <div className="mt-3 flex items-center justify-between gap-3">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-8 px-3"
+                      disabled={currentSuggestionsPage === 1}
+                      onClick={handlePreviousSuggestionsPage}
+                    >
+                      Previous
+                    </Button>
+                    <span className="text-xs text-muted-foreground">
+                      Page {currentSuggestionsPage} of {suggestionsPageCount}
+                    </span>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-8 px-3"
+                      disabled={currentSuggestionsPage === suggestionsPageCount}
+                      onClick={handleNextSuggestionsPage}
+                    >
+                      Next
+                    </Button>
+                  </div>
+                )}
               </div>
             )}
           </div>
