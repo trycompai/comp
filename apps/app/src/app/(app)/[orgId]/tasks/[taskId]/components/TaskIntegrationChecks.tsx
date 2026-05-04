@@ -4,11 +4,9 @@ import { ConnectIntegrationDialog } from '@/components/integrations/ConnectInteg
 import { ManageIntegrationDialog } from '@/components/integrations/ManageIntegrationDialog';
 import { SchedulePicker } from '@/components/schedule-picker';
 import { downloadAutomationPDF } from '@/lib/evidence-download';
-import type { TaskFrequency } from '@db';
-import type { TaskIntegrationCheck, StoredCheckRun } from '../hooks/useIntegrationChecks';
-import { useIntegrationChecks } from '../hooks/useIntegrationChecks';
 import { cn } from '@/lib/utils';
 import { useActiveOrganization } from '@/utils/auth-client';
+import type { TaskFrequency } from '@db';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -43,8 +41,10 @@ import {
 import Image from 'next/image';
 import Link from 'next/link';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type ChangeEvent } from 'react';
 import { toast } from 'sonner';
+import type { StoredCheckRun, TaskIntegrationCheck } from '../hooks/useIntegrationChecks';
+import { useIntegrationChecks } from '../hooks/useIntegrationChecks';
 import { EvidenceJsonView } from './EvidenceJsonView';
 
 interface TaskIntegrationChecksProps {
@@ -59,6 +59,8 @@ interface TaskIntegrationChecksProps {
   lastRunAt?: Date | string | null;
   onScheduleChange?: (value: TaskFrequency) => void | Promise<void>;
 }
+
+const INTEGRATIONS_PER_PAGE = 10;
 
 export function TaskIntegrationChecks({
   taskId,
@@ -173,8 +175,7 @@ export function TaskIntegrationChecks({
 
   const handleConfirmDisconnect = useCallback(async () => {
     if (!disconnectTarget) return;
-    const { connectionId, checkId, checkName, integrationName } =
-      disconnectTarget;
+    const { connectionId, checkId, checkName, integrationName } = disconnectTarget;
     const monitorName = integrationName || checkName;
     setTogglingCheck(checkId);
     setDisconnectError(null);
@@ -184,9 +185,7 @@ export function TaskIntegrationChecks({
       setDisconnectTarget(null);
     } catch (err) {
       console.error('Failed to disconnect check:', err);
-      setDisconnectError(
-        err instanceof Error ? err.message : 'Failed to disconnect check',
-      );
+      setDisconnectError(err instanceof Error ? err.message : 'Failed to disconnect check');
     } finally {
       setTogglingCheck(null);
     }
@@ -201,9 +200,7 @@ export function TaskIntegrationChecks({
         toast.success(`Reconnected "${checkName}" to this task.`);
       } catch (err) {
         console.error('Failed to reconnect check:', err);
-        setError(
-          err instanceof Error ? err.message : 'Failed to reconnect check',
-        );
+        setError(err instanceof Error ? err.message : 'Failed to reconnect check');
       } finally {
         setTogglingCheck(null);
       }
@@ -238,12 +235,8 @@ export function TaskIntegrationChecks({
   //   1. connectedChecks        — active + not disabled for this task
   //   2. disabledForTaskChecks  — connected but manually disconnected from this task
   //   3. disconnectedChecks     — no connection at all (suggestions)
-  const connectedChecks = checks.filter(
-    (c) => c.isConnected && !c.isDisabledForTask,
-  );
-  const disabledForTaskChecks = checks.filter(
-    (c) => c.isConnected && c.isDisabledForTask,
-  );
+  const connectedChecks = checks.filter((c) => c.isConnected && !c.isDisabledForTask);
+  const disabledForTaskChecks = checks.filter((c) => c.isConnected && c.isDisabledForTask);
   const disconnectedChecks = checks.filter((c) => !c.isConnected);
 
   // If there are no checks at all for this task, don't render anything
@@ -286,9 +279,7 @@ export function TaskIntegrationChecks({
     };
     const last = lastRunAt ? new Date(lastRunAt) : null;
     const periodDays = PERIOD_DAYS[scheduleFrequency ?? 'daily'];
-    const earliestDueFromLast = last
-      ? addDays(last, periodDays)
-      : now;
+    const earliestDueFromLast = last ? addDays(last, periodDays) : now;
     // Snap to next 6 AM UTC at or after the earliest-due date
     let nextRun = setMinutes(setHours(earliestDueFromLast, 6), 0);
     if (isBefore(nextRun, now)) {
@@ -298,10 +289,8 @@ export function TaskIntegrationChecks({
   };
 
   const nextRun = connectedChecks.length > 0 ? getNextScheduledRun() : null;
-  const hasConfiguredChecks =
-    connectedChecks.length > 0 || disabledForTaskChecks.length > 0;
-  const showSchedulePicker =
-    hasConfiguredChecks && !!scheduleFrequency && !!onScheduleChange;
+  const hasConfiguredChecks = connectedChecks.length > 0 || disabledForTaskChecks.length > 0;
+  const showSchedulePicker = hasConfiguredChecks && !!scheduleFrequency && !!onScheduleChange;
 
   return (
     <div className="rounded-lg border border-border bg-card overflow-hidden">
@@ -349,8 +338,7 @@ export function TaskIntegrationChecks({
 
       {/* Card Content */}
       <div className="p-5">
-        {connectedChecks.length === 0 &&
-        disabledForTaskChecks.length === 0 ? (
+        {connectedChecks.length === 0 && disabledForTaskChecks.length === 0 ? (
           <IntegrationEmptyState
             disconnectedChecks={disconnectedChecks}
             hasNoMappedChecks={disconnectedChecks.length === 0}
@@ -514,9 +502,7 @@ export function TaskIntegrationChecks({
                             {monitorName}
                           </p>
                           {check.checkName !== monitorName && (
-                            <span className="text-xs text-muted-foreground">
-                              {check.checkName}
-                            </span>
+                            <span className="text-xs text-muted-foreground">{check.checkName}</span>
                           )}
                         </div>
                         {needsConfig ? (
@@ -597,7 +583,7 @@ export function TaskIntegrationChecks({
                                       automationName: check.checkName,
                                     });
                                     toast.success('Evidence PDF downloaded');
-                                  } catch (err) {
+                                  } catch {
                                     toast.error('Failed to download evidence');
                                   }
                                 }}
@@ -726,11 +712,7 @@ export function TaskIntegrationChecks({
                           className="h-8 px-3"
                           disabled={isToggling}
                           onClick={() =>
-                            handleReconnect(
-                              check.connectionId!,
-                              check.checkId,
-                              monitorName,
-                            )
+                            handleReconnect(check.connectionId!, check.checkId, monitorName)
                           }
                         >
                           {isToggling ? (
@@ -809,21 +791,16 @@ export function TaskIntegrationChecks({
             <AlertDialogDescription>
               {disconnectTarget ? (
                 <>
-                  <strong>
-                    {disconnectTarget.integrationName ||
-                      disconnectTarget.checkName}
-                  </strong>
+                  <strong>{disconnectTarget.integrationName || disconnectTarget.checkName}</strong>
                   {disconnectTarget.checkName !==
-                    (disconnectTarget.integrationName ||
-                      disconnectTarget.checkName) && (
+                    (disconnectTarget.integrationName || disconnectTarget.checkName) && (
                     <>
                       {' '}
                       (<strong>{disconnectTarget.checkName}</strong> check)
                     </>
                   )}{' '}
-                  will no longer run for this task. The integration itself
-                  stays connected and will continue running for other tasks. You
-                  can reconnect it to this task at any time.
+                  will no longer run for this task. The integration itself stays connected and will
+                  continue running for other tasks. You can reconnect it to this task at any time.
                 </>
               ) : null}
             </AlertDialogDescription>
@@ -835,9 +812,7 @@ export function TaskIntegrationChecks({
             </div>
           )}
           <AlertDialogFooter>
-            <AlertDialogCancel disabled={togglingCheck !== null}>
-              Cancel
-            </AlertDialogCancel>
+            <AlertDialogCancel disabled={togglingCheck !== null}>Cancel</AlertDialogCancel>
             <AlertDialogAction
               onClick={(e) => {
                 // Radix's AlertDialogAction auto-closes the dialog on click.
@@ -896,25 +871,6 @@ function GroupedCheckRuns({
   organizationName: string;
 }) {
   const [showAll, setShowAll] = useState(false);
-
-  // Group runs by date
-  const groupedRuns = useMemo(() => {
-    const groups: Record<string, StoredCheckRun[]> = {};
-
-    runs.forEach((run) => {
-      const date = new Date(run.createdAt).toLocaleDateString('en-US', {
-        month: 'short',
-        day: 'numeric',
-        year: 'numeric',
-      });
-      if (!groups[date]) {
-        groups[date] = [];
-      }
-      groups[date].push(run);
-    });
-
-    return groups;
-  }, [runs]);
 
   // Get the runs to display (limited or all)
   const displayRuns = showAll ? runs : runs.slice(0, maxRuns);
@@ -1259,10 +1215,46 @@ function IntegrationEmptyState({
     };
   }, []);
 
+  const [page, setPage] = useState(1);
+  const [searchQuery, setSearchQuery] = useState('');
+
   // Get unique integrations from disconnected checks
-  const uniqueIntegrations = Array.from(
-    new Map(disconnectedChecks.map((c) => [c.integrationId, c])).values(),
+  const uniqueIntegrations = useMemo(
+    () => Array.from(new Map(disconnectedChecks.map((c) => [c.integrationId, c])).values()),
+    [disconnectedChecks],
   );
+
+  const filteredIntegrations = useMemo(() => {
+    if (!searchQuery.trim()) return uniqueIntegrations;
+    const query = searchQuery.trim().toLowerCase();
+    return uniqueIntegrations.filter((integration) =>
+      integration.integrationName.toLowerCase().includes(query),
+    );
+  }, [uniqueIntegrations, searchQuery]);
+
+  const pageCount = Math.max(1, Math.ceil(filteredIntegrations.length / INTEGRATIONS_PER_PAGE));
+  const currentPage = Math.min(page, pageCount);
+
+  const paginatedIntegrations = filteredIntegrations.slice(
+    (currentPage - 1) * INTEGRATIONS_PER_PAGE,
+    currentPage * INTEGRATIONS_PER_PAGE,
+  );
+
+  useEffect(() => {
+    setPage(1);
+  }, [searchQuery]);
+
+  const handleSearchChange = (event: ChangeEvent<HTMLInputElement>) => {
+    setSearchQuery(event.target.value);
+  };
+
+  const handlePreviousPage = () => {
+    setPage((current) => Math.max(1, current - 1));
+  };
+
+  const handleNextPage = () => {
+    setPage((current) => Math.min(pageCount, current + 1));
+  };
 
   const handleConnectClick = (integration: TaskIntegrationCheck) => {
     setSelectedIntegration(integration);
@@ -1369,8 +1361,32 @@ function IntegrationEmptyState({
 
           {/* Options */}
           <div className="border-t border-primary/10 divide-y divide-primary/10">
+            {uniqueIntegrations.length > INTEGRATIONS_PER_PAGE && (
+              <div className="px-6 py-3 bg-background/60">
+                <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                  <input
+                    value={searchQuery}
+                    onChange={handleSearchChange}
+                    aria-label="Search integrations"
+                    placeholder="Search integrations"
+                    className="h-9 w-full rounded-md border border-border bg-background px-3 text-sm text-foreground outline-none transition-colors placeholder:text-muted-foreground focus:border-primary sm:max-w-xs"
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    {filteredIntegrations.length} of {uniqueIntegrations.length}
+                  </p>
+                </div>
+              </div>
+            )}
+
             {/* Pre-built integrations */}
-            {uniqueIntegrations.map((integration) => {
+            {paginatedIntegrations.length === 0 && (
+              <div className="px-6 py-6 text-center">
+                <p className="text-sm font-medium text-foreground">No integrations found</p>
+                <p className="mt-1 text-xs text-muted-foreground">Try a different search term.</p>
+              </div>
+            )}
+
+            {paginatedIntegrations.map((integration) => {
               const checksForIntegration = disconnectedChecks.filter(
                 (c) => c.integrationId === integration.integrationId,
               );
@@ -1437,6 +1453,32 @@ function IntegrationEmptyState({
                 </button>
               );
             })}
+
+            {pageCount > 1 && (
+              <div className="flex items-center justify-between gap-3 px-6 py-3 bg-background/60">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-8 px-3"
+                  disabled={currentPage === 1}
+                  onClick={handlePreviousPage}
+                >
+                  Previous
+                </Button>
+                <span className="text-xs text-muted-foreground">
+                  Page {currentPage} of {pageCount}
+                </span>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-8 px-3"
+                  disabled={currentPage === pageCount}
+                  onClick={handleNextPage}
+                >
+                  Next
+                </Button>
+              </div>
+            )}
 
             {/* Custom automation option */}
             <Link

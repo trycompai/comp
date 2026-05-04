@@ -1,5 +1,6 @@
 'use client';
 
+import { normalizeVariableValue } from '@/components/integrations/ConnectionVariablesForm';
 import type { IntegrationProvider } from '@/hooks/use-integration-platform';
 import {
   useIntegrationConnection,
@@ -37,15 +38,9 @@ export function AccountSettingsOAuthBody({
   onUpdated,
   onOpenChange,
 }: AccountSettingsOAuthProps) {
-  const { connection, isLoading } = useIntegrationConnection(
-    open ? connectionId : null,
-  );
-  const {
-    getConnectionVariables,
-    saveConnectionVariables,
-    getVariableOptions,
-    deleteConnection,
-  } = useIntegrationMutations();
+  const { connection, isLoading } = useIntegrationConnection(open ? connectionId : null);
+  const { getConnectionVariables, saveConnectionVariables, getVariableOptions, deleteConnection } =
+    useIntegrationMutations();
 
   const [variables, setVariables] = useState<OAuthVariableRow[]>([]);
   const [variableValues, setVariableValues] = useState<
@@ -68,7 +63,7 @@ export function AccountSettingsOAuthBody({
         const next: Record<string, string | number | boolean | string[]> = {};
         for (const v of result.data.variables) {
           if (v.currentValue !== undefined) {
-            next[v.id] = v.currentValue as string | number | boolean | string[];
+            next[v.id] = normalizeVariableValue(v, v.currentValue);
           }
         }
         setVariableValues(next);
@@ -151,11 +146,7 @@ export function AccountSettingsOAuthBody({
   return (
     <div className="space-y-5 py-5">
       <div className="rounded-md border bg-muted/20 px-3 py-2.5 space-y-1">
-        <AccountSettingsInfoRow
-          label="Integration"
-          value={provider.name}
-          valueTruncate
-        />
+        <AccountSettingsInfoRow label="Integration" value={provider.name} valueTruncate />
         <AccountSettingsInfoRow
           label="Status"
           badge={
@@ -204,9 +195,7 @@ export function AccountSettingsOAuthBody({
             <AlertTriangle className="h-3.5 w-3.5 text-destructive shrink-0" />
             <div className="min-w-0">
               <p className="text-xs font-medium">Disconnect</p>
-              <p className="text-[10px] text-muted-foreground">
-                Remove this account and all data
-              </p>
+              <p className="text-[10px] text-muted-foreground">Remove this account and all data</p>
             </div>
           </div>
           <Button

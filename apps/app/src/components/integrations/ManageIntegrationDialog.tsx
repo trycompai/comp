@@ -1,6 +1,12 @@
 'use client';
 
 import {
+  ConnectionVariablesFields,
+  normalizeVariableValue,
+  validateTargetRepos,
+  type ConnectionVariable,
+} from '@/components/integrations/ConnectionVariablesForm';
+import {
   useIntegrationConnections,
   useIntegrationMutations,
 } from '@/hooks/use-integration-platform';
@@ -17,28 +23,21 @@ import {
 import { Input } from '@trycompai/ui/input';
 import { Label } from '@trycompai/ui/label';
 import MultipleSelector from '@trycompai/ui/multiple-selector';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@trycompai/ui/select';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@trycompai/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@trycompai/ui/tabs';
-import { Key, Loader2, Settings, Trash2, X } from 'lucide-react';
+import { Key, Loader2, Settings, Trash2 } from 'lucide-react';
 import Image from 'next/image';
 import { useParams } from 'next/navigation';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { toast } from 'sonner';
 
-interface CheckVariable {
-  id: string;
-  label: string;
-  description?: string;
-  helpText?: string;
-  placeholder?: string;
-  type: 'string' | 'number' | 'boolean' | 'select' | 'multi-select';
-  required: boolean;
-  default?: string | number | boolean | string[];
-  options?: { value: string; label: string }[];
-  hasDynamicOptions?: boolean;
-}
-
-interface VariableWithValue extends CheckVariable {
+interface VariableWithValue extends ConnectionVariable {
   currentValue?: string | number | boolean | string[];
 }
 
@@ -93,58 +92,10 @@ interface ManageIntegrationDialogProps {
   onSaved?: () => void;
 }
 
-const validateTargetRepos = (
-  values: Record<string, string | number | boolean | string[]>,
-): boolean => {
-  const targetReposValue = values.target_repos;
-  if (!Array.isArray(targetReposValue) || targetReposValue.length === 0) {
-    return true;
-  }
-  for (const value of targetReposValue) {
-    const stringValue = String(value ?? '').trim();
-    if (!stringValue) {
-      return false;
-    }
-    const colonIndex = stringValue.lastIndexOf(':');
-    if (colonIndex === 0) {
-      return false;
-    }
-    if (colonIndex > 0) {
-      const repo = stringValue.substring(0, colonIndex).trim();
-      if (!repo) {
-        return false;
-      }
-    }
-  }
-  return true;
-};
-
-const normalizeMultiSelectValue = (value: unknown): string[] => {
-  if (Array.isArray(value)) {
-    return Array.from(
-      new Set(value.map((item) => String(item).trim()).filter((item) => item.length > 0)),
-    );
-  }
-
-  if (typeof value === 'string') {
-    return Array.from(
-      new Set(
-        value
-          .split(/[\n,;]+/)
-          .map((item) => item.trim())
-          .filter((item) => item.length > 0),
-      ),
-    );
-  }
-
-  return [];
-};
-
 export function ManageIntegrationDialog({
   open,
   onOpenChange,
   connectionId,
-  integrationId,
   integrationName,
   integrationLogoUrl,
   configureOnly = false,
@@ -164,7 +115,7 @@ export function ManageIntegrationDialog({
   const { refresh: refreshConnections } = useIntegrationConnections();
 
   // Variables state
-  const [variables, setVariables] = useState<CheckVariable[]>([]);
+  const [variables, setVariables] = useState<ConnectionVariable[]>([]);
   const [variableValues, setVariableValues] = useState<
     Record<string, string | number | boolean | string[]>
   >({});
@@ -223,11 +174,7 @@ export function ManageIntegrationDialog({
         const values: Record<string, string | number | boolean | string[]> = {};
         for (const v of vars) {
           if (v.currentValue !== undefined) {
-            if (v.type === 'multi-select') {
-              values[v.id] = normalizeMultiSelectValue(v.currentValue);
-            } else {
-              values[v.id] = v.currentValue;
-            }
+            values[v.id] = normalizeVariableValue(v, v.currentValue);
           }
         }
         setVariableValues(values);
@@ -488,7 +435,7 @@ function ConfigurationContent({
   activeTab,
   setActiveTab,
 }: {
-  variables: CheckVariable[];
+  variables: ConnectionVariable[];
   variableValues: Record<string, string | number | boolean | string[]>;
   setVariableValues: React.Dispatch<
     React.SetStateAction<Record<string, string | number | boolean | string[]>>
@@ -514,142 +461,17 @@ function ConfigurationContent({
     );
   }
 
-  const syncModeVariable = variables.find((variable) => variable.id === 'sync_user_filter_mode');
-  const hasSyncModeVariable = Boolean(syncModeVariable);
-  const rawSyncMode = variableValues.sync_user_filter_mode ?? syncModeVariable?.default ?? 'all';
-  const effectiveSyncMode = String(rawSyncMode).toLowerCase();
-  const hasSyncScopedFields =
-    hasSyncModeVariable &&
-    variables.some(
-      (variable) =>
-        variable.id === 'sync_excluded_emails' || variable.id === 'sync_included_emails',
-    );
-
-  const shouldShowVariable = (variable: CheckVariable): boolean => {
-    if (variable.id === 'sync_excluded_emails' && hasSyncModeVariable) {
-      return effectiveSyncMode === 'exclude';
-    }
-
-    if (variable.id === 'sync_included_emails' && hasSyncModeVariable) {
-      return effectiveSyncMode === 'include';
-    }
-
-    return true;
-  };
-
   const variablesContent = hasVariables && (
     <div className="space-y-4">
       {!showTabs && <h4 className="text-sm font-medium">Configuration</h4>}
-      {hasSyncScopedFields && effectiveSyncMode === 'all' && (
-        <p className="text-xs text-muted-foreground">
-          Employee sync is set to all users. Include and exclude fields are hidden because they are
-          not used in this mode.
-        </p>
-      )}
-      {variables.filter(shouldShowVariable).map((variable) => {
-        const options = dynamicOptions[variable.id] || variable.options || [];
-        const isLoadingOptions = loadingDynamicOptions[variable.id];
-
-        return (
-          <div key={variable.id} className="space-y-2">
-            <Label htmlFor={variable.id}>
-              {variable.label}
-              {variable.required && <span className="text-destructive ml-1">*</span>}
-            </Label>
-            {variable.description && (
-              <p className="text-xs text-muted-foreground">{variable.description}</p>
-            )}
-            {variable.helpText && (
-              <p className="text-xs text-muted-foreground">{variable.helpText}</p>
-            )}
-            {variable.placeholder && !variable.description && !variable.helpText && (
-              <p className="text-xs text-muted-foreground">Example: {variable.placeholder}</p>
-            )}
-
-            {variable.type === 'multi-select' ? (
-              <MultiSelectWithBranches
-                variable={variable}
-                options={options}
-                isLoadingOptions={isLoadingOptions}
-                value={variableValues[variable.id]}
-                onChange={(val) =>
-                  setVariableValues((prev) => ({
-                    ...prev,
-                    [variable.id]: val,
-                  }))
-                }
-                onLoadOptions={() => fetchDynamicOptions(variable.id)}
-              />
-            ) : variable.type === 'select' ? (
-              <Select
-                value={String(variableValues[variable.id] || '')}
-                onValueChange={(val) =>
-                  setVariableValues((prev) => ({ ...prev, [variable.id]: val }))
-                }
-                onOpenChange={(isOpen) => {
-                  if (isOpen && variable.hasDynamicOptions && !options.length) {
-                    fetchDynamicOptions(variable.id);
-                  }
-                }}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder={`Select ${variable.label.toLowerCase()}`} />
-                </SelectTrigger>
-                <SelectContent>
-                  {isLoadingOptions ? (
-                    <div className="py-2 px-3 text-sm text-muted-foreground flex items-center gap-2">
-                      <Loader2 className="h-3 w-3 animate-spin" />
-                      Loading options...
-                    </div>
-                  ) : options.length === 0 ? (
-                    <div className="py-2 px-3 text-sm text-muted-foreground">
-                      No options available
-                    </div>
-                  ) : (
-                    options.map((opt) => (
-                      <SelectItem key={opt.value} value={opt.value}>
-                        {opt.label}
-                      </SelectItem>
-                    ))
-                  )}
-                </SelectContent>
-              </Select>
-            ) : variable.type === 'boolean' ? (
-              <Select
-                value={String(variableValues[variable.id] ?? variable.default ?? 'false')}
-                onValueChange={(val) =>
-                  setVariableValues((prev) => ({
-                    ...prev,
-                    [variable.id]: val === 'true',
-                  }))
-                }
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="true">Yes</SelectItem>
-                  <SelectItem value="false">No</SelectItem>
-                </SelectContent>
-              </Select>
-            ) : (
-              <Input
-                id={variable.id}
-                type={variable.type === 'number' ? 'number' : 'text'}
-                value={String(variableValues[variable.id] || '')}
-                onChange={(e) =>
-                  setVariableValues((prev) => ({
-                    ...prev,
-                    [variable.id]:
-                      variable.type === 'number' ? Number(e.target.value) : e.target.value,
-                  }))
-                }
-                placeholder={`Enter ${variable.label.toLowerCase()}`}
-              />
-            )}
-          </div>
-        );
-      })}
+      <ConnectionVariablesFields
+        variables={variables}
+        variableValues={variableValues}
+        setVariableValues={setVariableValues}
+        dynamicOptions={dynamicOptions}
+        loadingOptions={loadingDynamicOptions}
+        fetchOptions={fetchDynamicOptions}
+      />
     </div>
   );
 
@@ -898,189 +720,6 @@ function ConfigurationFooterActions({
             'Update Credentials'
           )}
         </Button>
-      )}
-    </div>
-  );
-}
-
-/**
- * Parse a stored value like "owner/repo:branch" into parts.
- * Handles trailing colons, empty branches, and non-string values.
- */
-const parseRepoBranch = (value: unknown): { repo: string; branch: string } => {
-  // Safely convert to string to handle corrupted/migrated data
-  const stringValue = String(value ?? '');
-  // Remove trailing colon if present
-  const cleanValue = stringValue.endsWith(':') ? stringValue.slice(0, -1) : stringValue;
-  const colonIndex = cleanValue.lastIndexOf(':');
-
-  if (colonIndex > 0 && colonIndex < cleanValue.length - 1) {
-    return {
-      repo: cleanValue.substring(0, colonIndex),
-      branch: cleanValue.substring(colonIndex + 1),
-    };
-  }
-  // No branch specified - return empty string so user can type
-  return { repo: cleanValue, branch: '' };
-};
-
-/**
- * Format repo and branch into stored format.
- * If branch is empty, just store the repo (will default to main on parse).
- */
-const formatRepoBranch = (repo: string, branch: string): string => {
-  const trimmedBranch = branch.trim();
-  if (!trimmedBranch) {
-    return repo; // No colon when branch is empty
-  }
-  return `${repo}:${trimmedBranch}`;
-};
-
-/**
- * Multi-select with optional branch inputs for GitHub repos.
- * When variable.id is 'target_repos', shows branch input for each selected repo.
- */
-function MultiSelectWithBranches({
-  variable,
-  options,
-  isLoadingOptions,
-  value,
-  onChange,
-  onLoadOptions,
-}: {
-  variable: CheckVariable;
-  options: { value: string; label: string }[];
-  isLoadingOptions: boolean;
-  value: string | number | boolean | string[] | undefined;
-  onChange: (val: string[]) => void;
-  onLoadOptions: () => void;
-}) {
-  const selectedValues = Array.isArray(value) ? value : [];
-  const normalizedSelectedValues = selectedValues
-    .map((item) => String(item).trim())
-    .filter((item) => item.length > 0);
-  const hasLoadedRef = useRef(false);
-
-  // For target_repos, parse values to extract repos and branches
-  const isGitHubRepos = variable.id === 'target_repos';
-  const parsedConfigs = isGitHubRepos ? normalizedSelectedValues.map(parseRepoBranch) : [];
-
-  useEffect(() => {
-    if (
-      variable.hasDynamicOptions &&
-      options.length === 0 &&
-      !hasLoadedRef.current &&
-      !isLoadingOptions
-    ) {
-      hasLoadedRef.current = true;
-      onLoadOptions();
-    }
-  }, [variable.hasDynamicOptions, options.length, isLoadingOptions, onLoadOptions]);
-
-  // Handle repo selection change
-  const handleRepoSelectionChange = (selectedRepos: string[]) => {
-    if (!isGitHubRepos) {
-      onChange(selectedRepos);
-      return;
-    }
-
-    // For GitHub repos, preserve existing branches when repos are reselected
-    const newValues = selectedRepos
-      .map((repo) => repo.trim())
-      .filter(Boolean)
-      .map((repo) => {
-        // Check if this repo already exists in current values
-        const existing = parsedConfigs.find((c) => c.repo === repo);
-        // Use existing branch, or empty string for new repos (user will type it)
-        return formatRepoBranch(repo, existing?.branch || '');
-      });
-    onChange(newValues);
-  };
-
-  // Handle branch change for a specific repo
-  const handleBranchChange = (repo: string, branch: string) => {
-    const newValues = normalizedSelectedValues.map((v) => {
-      const parsed = parseRepoBranch(v);
-      if (parsed.repo === repo) {
-        // Allow empty string during editing - will default to main on save if empty
-        return formatRepoBranch(repo, branch);
-      }
-      return v;
-    });
-    onChange(newValues);
-  };
-
-  // Handle removing a repo
-  const handleRemoveRepo = (repo: string) => {
-    const newValues = normalizedSelectedValues.filter((v) => parseRepoBranch(v).repo !== repo);
-    onChange(newValues);
-  };
-
-  // Get repos from values for display in multi-select
-  const reposForSelector = isGitHubRepos
-    ? parsedConfigs.map((c) => c.repo)
-    : normalizedSelectedValues;
-  const isCreatable = isGitHubRepos || options.length === 0;
-
-  return (
-    <div className="space-y-3">
-      <MultipleSelector
-        value={reposForSelector.map((v) => ({
-          value: v,
-          label: options.find((o) => o.value === v)?.label || v,
-        }))}
-        onChange={(selected) => handleRepoSelectionChange(selected.map((s) => s.value))}
-        defaultOptions={options.map((o) => ({ value: o.value, label: o.label }))}
-        options={options.map((o) => ({ value: o.value, label: o.label }))}
-        placeholder={variable.placeholder || `Select ${variable.label.toLowerCase()}...`}
-        creatable={isCreatable}
-        emptyIndicator={
-          isLoadingOptions ? (
-            <div className="flex items-center gap-2 py-2 px-3 text-sm text-muted-foreground">
-              <Loader2 className="h-3 w-3 animate-spin" />
-              Loading options...
-            </div>
-          ) : isCreatable ? (
-            <p className="text-center text-sm text-muted-foreground">
-              Type a value and press Enter
-            </p>
-          ) : (
-            <p className="text-center text-sm text-muted-foreground">No options available</p>
-          )
-        }
-      />
-
-      {/* Branch inputs for GitHub repos */}
-      {isGitHubRepos && parsedConfigs.length > 0 && (
-        <div className="space-y-2 rounded-md border border-border bg-muted/30 p-3">
-          <p className="text-xs font-medium text-muted-foreground">
-            Optional: specify branches for each repository (comma-separated). Leave blank to use the
-            default branch (main).
-          </p>
-          {parsedConfigs.map((config) => {
-            return (
-              <div key={config.repo} className="flex items-center gap-2">
-                <span className="shrink-0 rounded bg-secondary px-2 py-1 font-mono text-xs">
-                  {config.repo}
-                </span>
-                <span className="text-muted-foreground">:</span>
-                <Input
-                  value={config.branch}
-                  onChange={(e) => handleBranchChange(config.repo, e.target.value)}
-                  placeholder="main, develop"
-                  className="h-8 flex-1 font-mono text-sm"
-                />
-                <button
-                  type="button"
-                  onClick={() => handleRemoveRepo(config.repo)}
-                  className="shrink-0 rounded p-1 hover:bg-destructive/10 text-muted-foreground hover:text-destructive"
-                >
-                  <X className="h-4 w-4" />
-                </button>
-              </div>
-            );
-          })}
-        </div>
       )}
     </div>
   );
