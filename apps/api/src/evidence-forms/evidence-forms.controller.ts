@@ -55,6 +55,36 @@ export class EvidenceFormsController {
     return this.evidenceFormsService.getFormStatuses(organizationId);
   }
 
+  @Get('settings')
+  @RequirePermission('evidence', 'read')
+  @ApiOperation({
+    summary: 'Get document relevance settings',
+    description:
+      'Returns organization-scoped relevance settings for evidence forms',
+  })
+  async getFormSettings(@OrganizationId() organizationId: string) {
+    return this.evidenceFormsService.getFormSettings(organizationId);
+  }
+
+  @Patch(':formType/settings')
+  @RequirePermission('evidence', 'update')
+  @ApiOperation({
+    summary: 'Update document relevance setting',
+    description:
+      'Marks an evidence form as relevant or not relevant for the active organization',
+  })
+  async updateFormSetting(
+    @OrganizationId() organizationId: string,
+    @Param('formType') formType: string,
+    @Body() body: unknown,
+  ) {
+    return this.evidenceFormsService.updateFormSetting({
+      organizationId,
+      formType,
+      payload: body,
+    });
+  }
+
   @Get('my-submissions')
   @RequirePermission('evidence', 'read')
   @ApiOperation({

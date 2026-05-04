@@ -1,6 +1,5 @@
 import { StatusType } from '@/components/status-indicator';
-import type { Control } from '@db';
-import type { Task } from '@db';
+import type { Control, Task } from '@db';
 
 export type SelectedPolicy = {
   status: string | null;
@@ -8,6 +7,7 @@ export type SelectedPolicy = {
 
 export interface DocumentType {
   formType: string;
+  isNotRelevant?: boolean;
 }
 
 export interface EvidenceSubmissionInfo {
@@ -29,8 +29,7 @@ export function getControlStatus(
 
   const allPoliciesDraft =
     !policies.length || policies.every((policy) => policy.status === 'draft');
-  const allTasksTodo =
-    !controlTasks.length || controlTasks.every((task) => task.status === 'todo');
+  const allTasksTodo = !controlTasks.length || controlTasks.every((task) => task.status === 'todo');
 
   const allPoliciesPublished =
     policies.length > 0 && policies.every((policy) => policy.status === 'published');
@@ -40,17 +39,24 @@ export function getControlStatus(
 
   let allDocumentsFresh = true;
   let hasDocumentRequirements = false;
+  let hasNotRelevantDocumentRequirements = false;
   let anyDocumentSubmitted = false;
 
   if (documentTypes?.length && evidenceSubmissions) {
-    hasDocumentRequirements = true;
+    const relevantDocumentTypes = documentTypes.filter(
+      (documentType) => documentType.isNotRelevant !== true,
+    );
+    hasDocumentRequirements = relevantDocumentTypes.length > 0;
+    hasNotRelevantDocumentRequirements = documentTypes.some(
+      (documentType) => documentType.isNotRelevant === true,
+    );
     const now = Date.now();
 
     const sorted = [...evidenceSubmissions].sort(
       (a, b) => new Date(b.submittedAt).getTime() - new Date(a.submittedAt).getTime(),
     );
 
-    for (const dt of documentTypes) {
+    for (const dt of relevantDocumentTypes) {
       const latestSubmission = sorted.find((es) => es.formType === dt.formType);
       if (!latestSubmission) {
         allDocumentsFresh = false;
@@ -68,8 +74,10 @@ export function getControlStatus(
   const documentsComplete = !hasDocumentRequirements || allDocumentsFresh;
 
   if (policiesComplete && tasksComplete && documentsComplete) {
-    const hasAnyArtifact = policies.length > 0 || controlTasks.length > 0 || hasDocumentRequirements;
+    const hasAnyArtifact =
+      policies.length > 0 || controlTasks.length > 0 || hasDocumentRequirements;
     if (hasAnyArtifact) return 'completed';
+    if (hasNotRelevantDocumentRequirements) return 'not_relevant';
   }
 
   if (allPoliciesDraft && allTasksTodo && !anyDocumentSubmitted) return 'not_started';
@@ -83,9 +91,7 @@ export interface RequirementStatusBadge {
   variant: RequirementStatusVariant;
 }
 
-export function getRequirementStatus(
-  controlStatuses: StatusType[],
-): RequirementStatusBadge {
+export function getRequirementStatus(controlStatuses: StatusType[]): RequirementStatusBadge {
   if (controlStatuses.length === 0) {
     return { label: 'No Controls', variant: 'secondary' };
   }
@@ -93,6 +99,11 @@ export function getRequirementStatus(
   const allCompleted = controlStatuses.every((s) => s === 'completed');
   if (allCompleted) {
     return { label: 'Satisfied', variant: 'default' };
+  }
+
+  const allNotRelevant = controlStatuses.every((s) => s === 'not_relevant');
+  if (allNotRelevant) {
+    return { label: 'Not Relevant', variant: 'secondary' };
   }
 
   const allNotStarted = controlStatuses.every((s) => s === 'not_started');
@@ -123,18 +134,18 @@ export function getControlProgressPercent(
   }
 
   if (documentTypes?.length) {
-    totalItems += documentTypes.length;
+    const relevantDocumentTypes = documentTypes.filter(
+      (documentType) => documentType.isNotRelevant !== true,
+    );
+    totalItems += relevantDocumentTypes.length;
     if (evidenceSubmissions?.length) {
       const now = Date.now();
       const sorted = [...evidenceSubmissions].sort(
         (a, b) => new Date(b.submittedAt).getTime() - new Date(a.submittedAt).getTime(),
       );
-      for (const dt of documentTypes) {
+      for (const dt of relevantDocumentTypes) {
         const latest = sorted.find((es) => es.formType === dt.formType);
-        if (
-          latest &&
-          now - new Date(latest.submittedAt).getTime() <= SIX_MONTHS_MS
-        ) {
+        if (latest && now - new Date(latest.submittedAt).getTime() <= SIX_MONTHS_MS) {
           completedItems++;
         }
       }
@@ -144,9 +155,7 @@ export function getControlProgressPercent(
   return totalItems > 0 ? Math.round((completedItems / totalItems) * 100) : 0;
 }
 
-export function getRequirementCompliancePercent(
-  controlProgressPercents: number[],
-): number {
+export function getRequirementCompliancePercent(controlProgressPercents: number[]): number {
   if (controlProgressPercents.length === 0) return 0;
   const sum = controlProgressPercents.reduce((a, b) => a + b, 0);
   return Math.round(sum / controlProgressPercents.length);
@@ -155,7 +164,7 @@ export function getRequirementCompliancePercent(
 export interface ControlForRequirementCounts {
   id: string;
   policies?: Array<{ id: string; status: string | null }> | null;
-  controlDocumentTypes?: Array<{ formType: string }> | null;
+  controlDocumentTypes?: Array<{ formType: string; isNotRelevant?: boolean }> | null;
 }
 
 export interface RequirementArtifactCounts {
@@ -188,6 +197,7 @@ export function getRequirementArtifactCounts(
   const documentFormTypes = new Set<string>();
   for (const control of controls) {
     for (const dt of control.controlDocumentTypes ?? []) {
+      if (dt.isNotRelevant === true) continue;
       documentFormTypes.add(dt.formType);
     }
   }
@@ -226,11 +236,9 @@ export function getFrameworkAggregatePercent(
   evidenceSubmissions?: EvidenceSubmissionInfo[],
 ): number {
   const counts = getRequirementArtifactCounts(controls, tasks, evidenceSubmissions);
-  const total =
-    counts.policies.total + counts.tasks.total + counts.documents.total;
+  const total = counts.policies.total + counts.tasks.total + counts.documents.total;
   if (total === 0) return 0;
-  const completed =
-    counts.policies.completed + counts.tasks.completed + counts.documents.completed;
+  const completed = counts.policies.completed + counts.tasks.completed + counts.documents.completed;
   return Math.round((completed / total) * 100);
 }
 

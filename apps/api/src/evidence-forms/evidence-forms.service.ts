@@ -48,6 +48,10 @@ const reviewSchema = z.object({
   reason: z.string().trim().optional(),
 });
 
+const formSettingSchema = z.object({
+  isNotRelevant: z.boolean(),
+});
+
 const EVIDENCE_FORM_REVIEWER_ROLES = ['owner', 'admin', 'auditor'] as const;
 const EVIDENCE_FORM_DELETE_ROLES = ['owner', 'admin'] as const;
 const MAX_UPLOAD_FILE_SIZE_BYTES = 100 * 1024 * 1024;
@@ -239,24 +243,106 @@ export class EvidenceFormsService {
   }
 
   async getFormStatuses(organizationId: string) {
-    const results = await db.evidenceSubmission.groupBy({
-      by: ['formType'],
-      where: { organizationId },
-      _max: { submittedAt: true },
-    });
+    const [results, settings] = await Promise.all([
+      db.evidenceSubmission.groupBy({
+        by: ['formType'],
+        where: { organizationId },
+        _max: { submittedAt: true },
+      }),
+      db.evidenceFormSetting.findMany({
+        where: { organizationId },
+        select: { formType: true, isNotRelevant: true },
+      }),
+    ]);
 
-    const statuses: Record<string, { lastSubmittedAt: string | null }> = {};
+    const notRelevantFormTypes = new Set(
+      settings
+        .filter((setting) => setting.isNotRelevant)
+        .map((setting) => setting.formType),
+    );
+
+    const statuses: Record<
+      string,
+      { lastSubmittedAt: string | null; isNotRelevant: boolean }
+    > = {};
 
     for (const form of evidenceFormDefinitionList) {
       const match = results.find(
         (r) => r.formType === toDbEvidenceFormType(form.type),
       );
+      const dbFormType = toDbEvidenceFormType(form.type);
       statuses[form.type] = {
         lastSubmittedAt: match?._max.submittedAt?.toISOString() ?? null,
+        isNotRelevant: notRelevantFormTypes.has(dbFormType),
       };
     }
 
     return statuses;
+  }
+
+  async getFormSettings(organizationId: string) {
+    const settings = await db.evidenceFormSetting.findMany({
+      where: { organizationId },
+      select: { formType: true, isNotRelevant: true, updatedAt: true },
+    });
+
+    const settingsByFormType = new Map(
+      settings.map((setting) => [setting.formType, setting]),
+    );
+
+    return evidenceFormDefinitionList.map((form) => {
+      const setting = settingsByFormType.get(toDbEvidenceFormType(form.type));
+      return {
+        formType: form.type,
+        isNotRelevant: setting?.isNotRelevant ?? false,
+        updatedAt: setting?.updatedAt?.toISOString() ?? null,
+      };
+    });
+  }
+
+  async updateFormSetting(params: {
+    organizationId: string;
+    formType: string;
+    payload: unknown;
+  }) {
+    const parsedType = evidenceFormTypeSchema.safeParse(params.formType);
+    if (!parsedType.success) {
+      throw new BadRequestException('Unsupported form type');
+    }
+
+    const parsedPayload = formSettingSchema.safeParse(params.payload);
+    if (!parsedPayload.success) {
+      throw new BadRequestException(parsedPayload.error.flatten());
+    }
+
+    const dbFormType = toDbEvidenceFormType(parsedType.data);
+    const setting = await db.evidenceFormSetting.upsert({
+      where: {
+        organizationId_formType: {
+          organizationId: params.organizationId,
+          formType: dbFormType,
+        },
+      },
+      create: {
+        organizationId: params.organizationId,
+        formType: dbFormType,
+        isNotRelevant: parsedPayload.data.isNotRelevant,
+      },
+      update: {
+        isNotRelevant: parsedPayload.data.isNotRelevant,
+      },
+      select: {
+        formType: true,
+        isNotRelevant: true,
+        updatedAt: true,
+      },
+    });
+
+    return {
+      formType: toExternalEvidenceFormType(setting.formType),
+      isNotRelevant: setting.isNotRelevant,
+      updatedAt: setting.updatedAt.toISOString(),
+    };
   }
 
   async getFormWithSubmissions(params: {
