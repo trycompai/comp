@@ -1,3 +1,4 @@
+import { env } from '@/env.mjs';
 import { serverApi } from '@/lib/api-server';
 import { auth } from '@/utils/auth';
 import { db } from '@db/server';
@@ -68,18 +69,33 @@ export default async function UpgradePage({ params }: PageProps) {
 
   let hasAccess = member.organization.hasAccess;
 
-  // Auto-approval (self-hosted, trycomp emails, domain-matched Stripe customers)
-  // is decided server-side by the API, which also persists hasAccess. Soft-fail
-  // so a transient API error never blocks the booking step from rendering.
   if (!hasAccess) {
-    const response = await serverApi.post<AutoApproveResponse>(
-      '/v1/organization-access/auto-approve',
-    );
-
-    if (response.data?.hasAccess) {
+    // Self-hosted instances auto-approve every org. The flag is a Next.js
+    // build-time env var (NEXT_PUBLIC_SELF_HOSTED) that the OSS Docker
+    // deployment sets on the app container only — the API container does NOT
+    // have this env, so the check stays on the page. The DB write here is the
+    // single exception to "all mutations through the API" — it's gated on a
+    // build-time deploy flag, not user input.
+    if (env.NEXT_PUBLIC_SELF_HOSTED === 'true') {
+      await db.organization.update({
+        where: { id: orgId },
+        data: { hasAccess: true },
+      });
       hasAccess = true;
-    } else if (response.error) {
-      console.error('[UpgradePage] auto-approve API error:', response.error);
+    } else {
+      // Stripe-domain auto-approval (and the @trycomp.ai shortcut) live in the
+      // API so STRIPE_SECRET_KEY only has to exist on the API and the
+      // hasAccess flip is RBAC-checked + audit-logged. Soft-fail so a transient
+      // API error never blocks the booking step from rendering.
+      const response = await serverApi.post<AutoApproveResponse>(
+        '/v1/organization-access/auto-approve',
+      );
+
+      if (response.data?.hasAccess) {
+        hasAccess = true;
+      } else if (response.error) {
+        console.error('[UpgradePage] auto-approve API error:', response.error);
+      }
     }
   }
 
