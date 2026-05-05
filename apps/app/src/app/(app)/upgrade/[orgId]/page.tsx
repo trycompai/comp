@@ -1,6 +1,5 @@
-import { extractDomain, isDomainActiveStripeCustomer, isPublicEmailDomain } from '@/lib/stripe';
+import { serverApi } from '@/lib/api-server';
 import { auth } from '@/utils/auth';
-import { env } from '@/env.mjs';
 import { db } from '@db/server';
 import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
@@ -11,6 +10,12 @@ interface PageProps {
   params: Promise<{
     orgId: string;
   }>;
+}
+
+interface AutoApproveResponse {
+  hasAccess: boolean;
+  autoApproved: boolean;
+  reason: string;
 }
 
 export default async function UpgradePage({ params }: PageProps) {
@@ -44,7 +49,9 @@ export default async function UpgradePage({ params }: PageProps) {
     redirect('/');
   }
 
-  // Sync activeOrganizationId only after membership is verified
+  // Sync activeOrganizationId only after membership is verified.
+  // Required so the API's HybridAuthGuard resolves the right org from session
+  // when we call /v1/organization-access/auto-approve below.
   const currentActiveOrgId = authSession.session.activeOrganizationId;
   if (!currentActiveOrgId || currentActiveOrgId !== orgId) {
     try {
@@ -61,45 +68,18 @@ export default async function UpgradePage({ params }: PageProps) {
 
   let hasAccess = member.organization.hasAccess;
 
-  // Auto-approve based on user's email domain or self-hosted instance
+  // Auto-approval (self-hosted, trycomp emails, domain-matched Stripe customers)
+  // is decided server-side by the API, which also persists hasAccess. Soft-fail
+  // so a transient API error never blocks the booking step from rendering.
   if (!hasAccess) {
-    // Auto-approve for self-hosted/OSS instances
-    const isSelfHosted = env.NEXT_PUBLIC_SELF_HOSTED === 'true';
+    const response = await serverApi.post<AutoApproveResponse>(
+      '/v1/organization-access/auto-approve',
+    );
 
-    if (isSelfHosted) {
-      await db.organization.update({
-        where: { id: orgId },
-        data: { hasAccess: true },
-      });
+    if (response.data?.hasAccess) {
       hasAccess = true;
-    } else {
-      const userEmail = authSession.user.email;
-      const userEmailDomain = extractDomain(userEmail ?? '');
-      const orgWebsiteDomain = extractDomain(member.organization.website ?? '');
-
-      if (userEmailDomain) {
-        // Auto-approve for trycomp.ai emails (internal team)
-        const isTrycompEmail = userEmailDomain === 'trycomp.ai';
-
-        const canAutoApproveViaDomain =
-          !isTrycompEmail &&
-          Boolean(orgWebsiteDomain) &&
-          userEmailDomain === orgWebsiteDomain &&
-          !isPublicEmailDomain(userEmailDomain);
-
-        // Check Stripe for other domains
-        const isStripeCustomer = canAutoApproveViaDomain
-          ? await isDomainActiveStripeCustomer(userEmailDomain)
-          : false;
-
-        if (isTrycompEmail || isStripeCustomer) {
-          await db.organization.update({
-            where: { id: orgId },
-            data: { hasAccess: true },
-          });
-          hasAccess = true;
-        }
-      }
+    } else if (response.error) {
+      console.error('[UpgradePage] auto-approve API error:', response.error);
     }
   }
 
