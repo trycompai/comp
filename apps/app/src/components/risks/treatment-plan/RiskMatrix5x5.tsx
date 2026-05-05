@@ -21,15 +21,32 @@ const IMPACT_ORDER: Impact[] = [
 
 const CELL_SIZE = 44;
 
+// Cell colors mirror the 5 score-band segments used by RiskScale at the
+// bottom of the hero, so the matrix, the headline numeral color, and the
+// bottom scale all agree on what counts as Low / Medium / High / etc.
+//
+// Score for cell (L_idx, I_idx) = ceil((L_idx+1)(I_idx+1) / 2.5), then bucket
+// by the same thresholds as `getRiskLevelFromScore`:
+//   1-2 → very-low,  3-4 → low,  5-6 → medium,  7-8 → high,  9-10 → very-high
+const CELL_BACKGROUND_BY_SCORE_BAND: Record<
+  'very-low' | 'low' | 'medium' | 'high' | 'very-high',
+  string
+> = {
+  'very-low': 'color-mix(in oklab, var(--success) 35%, transparent)',
+  low: 'color-mix(in oklab, var(--success) 25%, var(--warning) 35%)',
+  medium: 'color-mix(in oklab, var(--warning) 35%, transparent)',
+  high: 'color-mix(in oklab, var(--warning) 25%, var(--destructive) 35%)',
+  'very-high': 'color-mix(in oklab, var(--destructive) 35%, transparent)',
+};
+
 function cellBackground(likelihoodIdx: number, impactIdx: number): string {
-  const heat = (likelihoodIdx + impactIdx) / 8; // 0..1
-  if (heat > 0.7) {
-    return `color-mix(in oklab, var(--destructive) ${(heat * 40).toFixed(0)}%, transparent)`;
-  }
-  if (heat > 0.4) {
-    return `color-mix(in oklab, var(--warning) ${(heat * 40).toFixed(0)}%, transparent)`;
-  }
-  return `color-mix(in oklab, var(--success) ${((1 - heat) * 30).toFixed(0)}%, transparent)`;
+  const raw = (likelihoodIdx + 1) * (impactIdx + 1);
+  const score = Math.max(1, Math.ceil(raw / 2.5));
+  if (score >= 9) return CELL_BACKGROUND_BY_SCORE_BAND['very-high'];
+  if (score >= 7) return CELL_BACKGROUND_BY_SCORE_BAND.high;
+  if (score >= 5) return CELL_BACKGROUND_BY_SCORE_BAND.medium;
+  if (score >= 3) return CELL_BACKGROUND_BY_SCORE_BAND.low;
+  return CELL_BACKGROUND_BY_SCORE_BAND['very-low'];
 }
 
 interface RiskMatrix5x5Props {
