@@ -97,6 +97,16 @@ export interface PreviewResidualInput {
   inherentLikelihood: Likelihood;
   inherentImpact: Impact;
   strategy: RiskTreatmentType;
+  /**
+   * Coverage gate — when false, the function returns inherent regardless of
+   * strategy. Forces the projected target to honor the "no linked work, no
+   * claimed reduction" rule for strategies that require operational evidence
+   * (Mitigate, Transfer). Accept naturally returns inherent already, so the
+   * flag has no effect there. Defaults to `true` so existing pure callers
+   * (and the StrategyPicker preview that shows "what would Mitigate look
+   * like") continue to see the full ceiling.
+   */
+  hasLinkedWork?: boolean;
 }
 
 export interface PreviewResidualOutput {
@@ -115,12 +125,21 @@ export interface PreviewResidualOutput {
  * - Transfer → residual.impact = stepDown(inherent.impact, 1) (assume the
  *              transfer arrangement — insurance, indemnity — is in place)
  * - Mitigate → likelihood −1, impact −1 (the full-completion outcome)
+ *
+ * Coverage gate: when `hasLinkedWork === false`, all strategies that
+ * require operational evidence (everything except Accept) collapse to
+ * `inherent`. We don't claim a reduction without at least one linked
+ * task — the strategy alone isn't audit evidence.
  */
 export function previewResidual({
   inherentLikelihood,
   inherentImpact,
   strategy,
+  hasLinkedWork = true,
 }: PreviewResidualInput): PreviewResidualOutput {
+  if (!hasLinkedWork && strategy !== RiskTreatmentType.accept) {
+    return { likelihood: inherentLikelihood, impact: inherentImpact };
+  }
   switch (strategy) {
     case RiskTreatmentType.accept:
       return { likelihood: inherentLikelihood, impact: inherentImpact };

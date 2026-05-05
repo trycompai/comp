@@ -99,12 +99,21 @@ export function TreatmentHero({
   // "assuming linked tasks complete on schedule"). Instead, real-time
   // progress shows up as a smaller "Currently X/10" line under the headline
   // when the user is part-way through the plan.
+  // Coverage gate: don't claim a target reduction without linked work.
+  // Mitigate / Transfer require operational evidence (a control or task
+  // documenting the arrangement) before we project any reduction. Accept
+  // returns inherent regardless (no work to do), so the gate is a no-op
+  // there.
+  const hasLinkedWork = tasks.length > 0;
   const target = previewResidual({
     inherentLikelihood,
     inherentImpact,
     strategy,
+    hasLinkedWork,
   });
   const targetScore = getRiskScore(target.likelihood, target.impact);
+  const isGatedByCoverage =
+    !hasLinkedWork && strategy !== RiskTreatmentType.accept;
 
   // Mitigate is the only strategy with a meaningful in-progress concept.
   // Non-Mitigate strategies are "always at full completion" — the strategy
@@ -230,7 +239,13 @@ export function TreatmentHero({
                   point swing
                 </>
               )}{' '}
-              {isEmpty ? 'since no mitigation plan is in place yet.' : STRATEGY_NARRATIVE[strategy]}
+              {isGatedByCoverage
+                ? strategy === RiskTreatmentType.transfer
+                  ? 'until a task documenting the transfer arrangement is linked.'
+                  : 'until tasks supporting the strategy are linked.'
+                : isEmpty
+                ? 'since no mitigation plan is in place yet.'
+                : STRATEGY_NARRATIVE[strategy]}
             </p>
             <div className="mt-6 grid grid-cols-3 gap-4 border-t border-border pt-5">
               <HeroStatPair

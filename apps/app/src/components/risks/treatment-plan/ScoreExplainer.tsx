@@ -53,7 +53,15 @@ export function ScoreExplainer() {
         </ul>
       </Section>
 
-      <Section title="3 · Current vs. target">
+      <Section title="3 · Coverage gate">
+        Strategies that require operational evidence (Mitigate, Transfer)
+        only project a target reduction when at least one task is linked
+        to the risk. Without linked work, the target collapses back to
+        inherent — the strategy alone isn't audit evidence. Accept is
+        unaffected (its target is inherent by definition).
+      </Section>
+
+      <Section title="4 · Current vs. target">
         For Mitigate, the displayed score interpolates linearly between
         inherent and target by task completion:
         <Formula

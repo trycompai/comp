@@ -63,16 +63,30 @@ describe('TreatmentPlanTab', () => {
   });
 
   it('renders the hero numerals using strategy-derived residual', () => {
-    // strategy=mitigate, no tasks. The headline always shows the
-    // full-completion target — partial completion only affects the
-    // "Currently X/10" subline. With Mitigate's -1 likelihood / -1 impact:
-    //   inherent: likely × major = 4×4 = 16 raw → ceil(16/2.5) = 7
-    //   target:   possible × moderate = 3×3 = 9 raw → ceil(9/2.5) = 4
-    render(<TreatmentPlanTab {...buildProps()} />);
+    // Mitigate with linked work shows the full-completion target.
+    // inherent: likely × major = 4×4 = 16 raw → ceil(16/2.5) = 7
+    // target:   possible × moderate = 3×3 = 9 raw → ceil(9/2.5) = 4
+    const entity: TreatmentPlanEntity = {
+      ...baseEntity,
+      tasks: [{ id: 't1', title: 'Task 1', status: TaskStatus.todo, controls: [] }],
+    };
+    render(<TreatmentPlanTab {...buildProps({ entity })} />);
     const headline = screen.getByLabelText(/From 7 to 4 out of 10/i);
     expect(headline).toBeInTheDocument();
     expect(headline.textContent).toContain('7');
     expect(headline.textContent).toContain('4');
+  });
+
+  it('coverage gate: Mitigate with no linked work shows inherent as the target', () => {
+    // No linked tasks → target collapses to inherent regardless of strategy.
+    // The headline shows 7 → 7 ("no change") with the explanatory copy
+    // pointing the user at linking work.
+    render(<TreatmentPlanTab {...buildProps()} />);
+    const headline = screen.getByLabelText(/From 7 to 7 out of 10/i);
+    expect(headline).toBeInTheDocument();
+    expect(
+      screen.getByText(/until tasks supporting the strategy are linked/i),
+    ).toBeInTheDocument();
   });
 
   it('calls onUpdateStrategy when strategy card is clicked', async () => {
