@@ -22,11 +22,16 @@ const LEVEL_LABEL: Record<RiskLevel, string> = {
   'very-high': 'CRITICAL',
 };
 
+// Solid (full-opacity) versions of the RiskScale bar's segment hues — so the
+// big numeral, the strong tag in the narrative, and the matching segment
+// below the hero all read as the same color band. The bar mixes these tokens
+// with `transparent` to look soft; the numeral wants the opaque mix at the
+// same hue ratio.
 const LEVEL_COLOR: Record<RiskLevel, string> = {
-  'very-low': 'oklch(0.45 0.14 145)',
-  low: 'oklch(0.45 0.14 145)',
-  medium: 'oklch(0.5 0.14 85)',
-  high: 'oklch(0.5 0.18 50)',
+  'very-low': 'var(--success)',
+  low: 'color-mix(in oklab, var(--success) 50%, var(--warning))',
+  medium: 'var(--warning)',
+  high: 'color-mix(in oklab, var(--warning) 50%, var(--destructive))',
   'very-high': 'var(--destructive)',
 };
 
