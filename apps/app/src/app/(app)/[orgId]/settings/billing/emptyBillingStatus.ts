@@ -9,6 +9,7 @@ export const emptyBillingStatus: BackgroundCheckBillingStatus = {
   },
   invoices: [],
   subscriptions: [],
+  creditBalances: [],
   trialEligibility: {
     pentest: false,
     background_check: false,
