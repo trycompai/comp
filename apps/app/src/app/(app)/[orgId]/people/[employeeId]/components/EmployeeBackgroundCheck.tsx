@@ -36,6 +36,7 @@ interface EmployeeBackgroundCheckProps {
   initialBillingStatus: BackgroundCheckBillingStatus;
   backgroundCheckStepEnabled: boolean;
   memberBackgroundCheckExempt: boolean;
+  onMemberBackgroundCheckExemptChange?: (next: boolean) => void;
 }
 
 export function EmployeeBackgroundCheck({
@@ -45,6 +46,7 @@ export function EmployeeBackgroundCheck({
   initialBillingStatus,
   backgroundCheckStepEnabled,
   memberBackgroundCheckExempt,
+  onMemberBackgroundCheckExemptChange,
 }: EmployeeBackgroundCheckProps) {
   const router = useRouter();
   const pathname = usePathname();
@@ -59,7 +61,16 @@ export function EmployeeBackgroundCheck({
   const [billingSetupComplete, setBillingSetupComplete] = useState(false);
   const [paymentIssue, setPaymentIssue] = useState<string | null>(null);
   const [requestConfirmation, setRequestConfirmation] = useState<string | null>(null);
-  const [exempt, setExempt] = useState(memberBackgroundCheckExempt);
+  const [internalExempt, setInternalExempt] = useState(memberBackgroundCheckExempt);
+  const isExemptControlled = onMemberBackgroundCheckExemptChange !== undefined;
+  const exempt = isExemptControlled ? memberBackgroundCheckExempt : internalExempt;
+  const setExempt = (next: boolean) => {
+    if (isExemptControlled) {
+      onMemberBackgroundCheckExemptChange(next);
+    } else {
+      setInternalExempt(next);
+    }
+  };
   const [savingExempt, setSavingExempt] = useState(false);
   const { hasPermission } = usePermissions();
 

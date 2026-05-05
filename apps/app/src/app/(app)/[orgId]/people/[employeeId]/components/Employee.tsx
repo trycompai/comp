@@ -69,6 +69,7 @@ export function Employee({
       ? 'background-check'
       : 'details';
   const [activeTab, setActiveTab] = useState<EmployeeTab>(querySelectedTab);
+  const [memberExempt, setMemberExempt] = useState(memberBackgroundCheckExempt);
 
   useEffect(() => {
     if (querySelectedTab === 'background-check') {
@@ -84,7 +85,7 @@ export function Employee({
           orgId={orgId}
           backgroundCheck={initialBackgroundCheck}
           backgroundCheckStepEnabled={backgroundCheckStepEnabled}
-          memberBackgroundCheckExempt={memberBackgroundCheckExempt}
+          memberBackgroundCheckExempt={memberExempt}
         />
       }
     >
@@ -143,7 +144,8 @@ export function Employee({
                 initialBackgroundCheck={initialBackgroundCheck}
                 initialBillingStatus={initialBackgroundCheckBillingStatus}
                 backgroundCheckStepEnabled={backgroundCheckStepEnabled}
-                memberBackgroundCheckExempt={memberBackgroundCheckExempt}
+                memberBackgroundCheckExempt={memberExempt}
+                onMemberBackgroundCheckExemptChange={setMemberExempt}
               />
             </TabsContent>
           )}

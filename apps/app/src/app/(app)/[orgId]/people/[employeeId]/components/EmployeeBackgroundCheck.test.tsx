@@ -378,6 +378,33 @@ describe('EmployeeBackgroundCheck', () => {
     ).not.toBeInTheDocument();
   });
 
+  it('calls onMemberBackgroundCheckExemptChange when toggled (controlled mode)', async () => {
+    const onChange = vi.fn();
+    vi.mocked(apiClient.patch).mockResolvedValue({ data: { id: 'mem_1' }, status: 200 });
+    const user = userEvent.setup();
+
+    render(
+      <EmployeeBackgroundCheck
+        employee={employee}
+        organizationId="org_1"
+        initialBackgroundCheck={null}
+        initialBillingStatus={{ hasPaymentMethod: false, setupAt: null }}
+        backgroundCheckStepEnabled={true}
+        memberBackgroundCheckExempt={false}
+        onMemberBackgroundCheckExemptChange={onChange}
+      />,
+    );
+
+    const toggle = screen.getByRole('switch', {
+      name: /exempt this employee/i,
+    });
+    await user.click(toggle);
+
+    await waitFor(() => {
+      expect(onChange).toHaveBeenCalledWith(true);
+    });
+  });
+
   it('toggles exempt on and PATCHes /v1/people/:id', async () => {
     const user = userEvent.setup();
     vi.mocked(apiClient.patch).mockResolvedValue({ data: { id: 'mem_1' }, status: 200 });
