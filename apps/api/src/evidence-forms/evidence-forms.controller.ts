@@ -105,7 +105,7 @@ export class EvidenceFormsController {
   }
 
   @Get('my-submissions/pending-count')
-  @RequirePermission('evidence', 'read')
+  @RequirePermission('portal', 'update')
   @ApiOperation({
     summary: 'Get pending submission count for current user',
     description:
