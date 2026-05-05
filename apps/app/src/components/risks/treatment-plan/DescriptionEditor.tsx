@@ -85,11 +85,15 @@ export function DescriptionEditor({
   );
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
 
+  // Resync the draft from upstream `value` ONLY when the user isn't
+  // actively editing. Without the `mode === 'edit'` guard, a background
+  // SWR revalidation, AI regeneration, or any other prop change would
+  // wipe whatever the user was typing. (Cubic finding on PR #2671.)
   useEffect(() => {
-    if (!saving) {
-      setDraft(value);
-    }
-  }, [value, saving]);
+    if (saving) return;
+    if (mode === 'edit') return;
+    setDraft(value);
+  }, [value, saving, mode]);
 
   // When a fresh value arrives from upstream (regenerate, server update) and
   // we're not actively editing, drop back to preview.

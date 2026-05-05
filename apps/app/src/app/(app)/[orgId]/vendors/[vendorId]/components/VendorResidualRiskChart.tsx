@@ -23,6 +23,7 @@ export function VendorResidualRiskChart({ vendor }: ResidualRiskChartProps) {
     return (
       <NotAssessedState
         disabled={!canUpdate}
+        description="Run the AI risk assessment to enable a suggested residual based on the vendor's data handling, exposure, and compliance posture."
         onAssess={async () => {
           try {
             await triggerAssessment(vendor.id);

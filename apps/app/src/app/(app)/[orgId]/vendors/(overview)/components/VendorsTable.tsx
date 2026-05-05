@@ -339,6 +339,16 @@ export function VendorsTable({
         return sort.desc ? -comparison : comparison;
       }
       if (sort.id === 'residualRisk') {
+        // Unassessed vendors carry default residual values (very_unlikely
+        // × insignificant = 1). Without this branch they'd cluster at the
+        // bottom (or top, when desc) of the residual sort even though we
+        // render them as `—` and they have no real residual yet. Force
+        // them to the end of the list regardless of sort direction so
+        // assessed vendors are always grouped together. (Cubic finding
+        // on PR #2671.)
+        const aAssessed = a.status === 'assessed';
+        const bAssessed = b.status === 'assessed';
+        if (aAssessed !== bAssessed) return aAssessed ? -1 : 1;
         const aScore = getRiskScore(a.residualProbability, a.residualImpact).raw;
         const bScore = getRiskScore(b.residualProbability, b.residualImpact).raw;
         const comparison = aScore - bScore;

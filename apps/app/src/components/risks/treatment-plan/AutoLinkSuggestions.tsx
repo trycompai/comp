@@ -190,7 +190,8 @@ export function AutoLinkSuggestions({
     setApplying(true);
     try {
       const taskIds = [...state.checkedTaskIds];
-      await onApply({ taskIds, replace: state.mode === 'reassess' });
+      const isReassess = state.mode === 'reassess';
+      await onApply({ taskIds, replace: isReassess });
       if (onAfterApply) {
         try {
           await onAfterApply();
@@ -199,7 +200,16 @@ export function AutoLinkSuggestions({
         }
       }
       toast.success(`Linked ${taskIds.length} task${taskIds.length === 1 ? '' : 's'}`);
-      setState(taskIds.length > 0 ? { kind: 'linked' } : { kind: 'empty' });
+      // Reassess (replace=true) wipes the existing set, so the post-apply
+      // state is exactly taskIds. Additive (replace=false) keeps existing
+      // linked tasks, so we should land in `linked` if EITHER the existing
+      // set has any rows OR we just added any. Without this, applying 0
+      // new tasks in additive mode wrongly swaps the linked-state UI back
+      // to the kickoff "empty" state. (Cubic finding on PR #2671.)
+      const willHaveLinked = isReassess
+        ? taskIds.length > 0
+        : tasks.length > 0 || taskIds.length > 0;
+      setState(willHaveLinked ? { kind: 'linked' } : { kind: 'empty' });
     } catch {
       toast.error('Failed to apply suggestions.');
     } finally {

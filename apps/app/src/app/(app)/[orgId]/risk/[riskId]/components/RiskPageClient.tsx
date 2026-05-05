@@ -356,7 +356,11 @@ export function RiskPageClient({
                 regenerating={isRegenerating}
                 onSuggest={handleSuggest}
                 onApply={handleApply}
-                onUnlinkTask={handleUnlinkTask}
+                // Gate the unlink affordance behind risk:update so the trash
+                // button doesn't render for read-only users. The Next API
+                // route enforces the same check server-side as defense in
+                // depth. (Cubic finding on PR #2671.)
+                onUnlinkTask={canUpdate ? handleUnlinkTask : undefined}
                 onResumeAutoLink={handleResumeAutoLink}
                 onDiscardAutoLinkRun={handleDiscardAutoLinkRun}
                 regenRun={regenRun}

@@ -515,7 +515,10 @@ export function VendorDetailTabs({
                 regenerating={isMitigationLoading}
                 onSuggest={handleSuggest}
                 onApply={handleApply}
-                onUnlinkTask={handleUnlinkTask}
+                // Gate the unlink affordance behind vendor:update so it
+                // doesn't render for read-only users. The Next API route
+                // also enforces this check server-side.
+                onUnlinkTask={canUpdate ? handleUnlinkTask : undefined}
                 onResumeAutoLink={handleResumeAutoLink}
                 onDiscardAutoLinkRun={handleDiscardAutoLinkRun}
                 regenRun={regenRun}

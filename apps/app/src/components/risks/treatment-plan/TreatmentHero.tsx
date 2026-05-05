@@ -244,12 +244,19 @@ export function TreatmentHero({
                   point swing
                 </>
               )}{' '}
-              {isGatedByCoverage
+              {/* `isEmpty` (Mitigate + no plan + no linked work) is a
+                   strict subset of `isGatedByCoverage` (no linked work,
+                   strategy != Accept). It's the more specific case, so
+                   it must be checked first — otherwise the gated-by-
+                   coverage branch shadows it and the user never sees
+                   the "no plan in place yet" copy. (Cubic finding on
+                   PR #2671.) */}
+              {isEmpty
+                ? 'since no mitigation plan is in place yet.'
+                : isGatedByCoverage
                 ? strategy === RiskTreatmentType.transfer
                   ? 'until a task documenting the transfer arrangement is linked.'
                   : 'until tasks supporting the strategy are linked.'
-                : isEmpty
-                ? 'since no mitigation plan is in place yet.'
                 : STRATEGY_NARRATIVE[strategy]}
             </p>
             <div className="mt-6 grid grid-cols-3 gap-4 border-t border-border pt-5">

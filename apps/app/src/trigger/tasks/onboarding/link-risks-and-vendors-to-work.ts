@@ -38,12 +38,17 @@ export const linkRisksAndVendorsToWork = task({
     const phaseStartedAt: Partial<Record<LinkagePhase['name'], number>> = {};
 
     const onPhase = (phase: LinkagePhase) => {
-      // Mirror to metadata for the realtime UI subscriber.
+      // Mirror to metadata for the realtime UI subscriber. Always write
+      // every field — using `null` when the new phase doesn't include a
+      // field — so subscribers don't see stale `current`/`total` from
+      // an earlier progress phase leak into a later non-progress phase
+      // (e.g. waiting-for-index showing the embedding-tasks counts).
+      // (Cubic finding on PR #2671.)
       metadata.set('phase', phase.name);
-      if ('current' in phase) metadata.set('current', phase.current);
-      if ('total' in phase) metadata.set('total', phase.total);
-      if ('riskLinks' in phase) metadata.set('riskLinks', phase.riskLinks);
-      if ('vendorLinks' in phase) metadata.set('vendorLinks', phase.vendorLinks);
+      metadata.set('current', 'current' in phase ? phase.current : null);
+      metadata.set('total', 'total' in phase ? phase.total : null);
+      metadata.set('riskLinks', 'riskLinks' in phase ? phase.riskLinks : null);
+      metadata.set('vendorLinks', 'vendorLinks' in phase ? phase.vendorLinks : null);
 
       // Structured per-phase logs. We log once at phase start (current=0 or
       // first sighting) and once at phase completion (current === total) so
