@@ -42,6 +42,7 @@ interface EmployeeProps {
   initialBackgroundCheck: BackgroundCheckRecord | null;
   initialBackgroundCheckBillingStatus: BackgroundCheckBillingStatus;
   backgroundCheckStepEnabled: boolean;
+  memberBackgroundCheckExempt: boolean;
 }
 
 export function Employee({
@@ -59,6 +60,7 @@ export function Employee({
   initialBackgroundCheck,
   initialBackgroundCheckBillingStatus,
   backgroundCheckStepEnabled,
+  memberBackgroundCheckExempt,
 }: EmployeeProps) {
   const searchParams = useSearchParams();
   const querySelectedTab: EmployeeTab =
@@ -140,6 +142,7 @@ export function Employee({
                 initialBackgroundCheck={initialBackgroundCheck}
                 initialBillingStatus={initialBackgroundCheckBillingStatus}
                 backgroundCheckStepEnabled={backgroundCheckStepEnabled}
+                memberBackgroundCheckExempt={memberBackgroundCheckExempt}
               />
             </TabsContent>
           )}

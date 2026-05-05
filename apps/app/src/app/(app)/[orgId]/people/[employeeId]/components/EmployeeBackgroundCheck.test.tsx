@@ -25,6 +25,7 @@ vi.mock('@/lib/api-client', () => ({
   apiClient: {
     get: vi.fn(),
     post: vi.fn(),
+    patch: vi.fn(),
   },
 }));
 
@@ -84,6 +85,7 @@ function renderSection(props?: Partial<Parameters<typeof EmployeeBackgroundCheck
           subscriptions: [activeBackgroundCheckSubscription],
         }}
         backgroundCheckStepEnabled={true}
+        memberBackgroundCheckExempt={false}
         {...props}
       />
     </SWRConfig>,
@@ -308,6 +310,7 @@ describe('EmployeeBackgroundCheck', () => {
         initialBackgroundCheck={null}
         initialBillingStatus={{ hasPaymentMethod: false, setupAt: null }}
         backgroundCheckStepEnabled={false}
+        memberBackgroundCheckExempt={false}
       />,
     );
 
@@ -323,6 +326,7 @@ describe('EmployeeBackgroundCheck', () => {
         initialBackgroundCheck={null}
         initialBillingStatus={{ hasPaymentMethod: false, setupAt: null }}
         backgroundCheckStepEnabled={false}
+        memberBackgroundCheckExempt={false}
       />,
     );
 
@@ -331,5 +335,54 @@ describe('EmployeeBackgroundCheck', () => {
     await Promise.resolve();
 
     expect(apiClient.get).not.toHaveBeenCalled();
+  });
+
+  it('renders the exempt info card when memberBackgroundCheckExempt is true', () => {
+    render(
+      <EmployeeBackgroundCheck
+        employee={employee}
+        organizationId="org_1"
+        initialBackgroundCheck={null}
+        initialBillingStatus={{ hasPaymentMethod: false, setupAt: null }}
+        backgroundCheckStepEnabled={true}
+        memberBackgroundCheckExempt={true}
+      />,
+    );
+
+    expect(
+      screen.getByText(/this employee is exempt/i),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole('button', { name: /get started/i }),
+    ).not.toBeInTheDocument();
+  });
+
+  it('toggles exempt on and PATCHes /v1/people/:id', async () => {
+    const user = userEvent.setup();
+    vi.mocked(apiClient.patch).mockResolvedValue({ data: { id: 'mem_1' }, status: 200 });
+
+    render(
+      <EmployeeBackgroundCheck
+        employee={employee}
+        organizationId="org_1"
+        initialBackgroundCheck={null}
+        initialBillingStatus={{ hasPaymentMethod: false, setupAt: null }}
+        backgroundCheckStepEnabled={true}
+        memberBackgroundCheckExempt={false}
+      />,
+    );
+
+    const toggle = screen.getByRole('switch', {
+      name: /exempt this employee/i,
+    });
+    await user.click(toggle);
+
+    await waitFor(() => {
+      expect(apiClient.patch).toHaveBeenCalledWith(
+        '/v1/people/mem_1',
+        { backgroundCheckExempt: true },
+        'org_1',
+      );
+    });
   });
 });

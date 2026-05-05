@@ -29,6 +29,7 @@ export default defineConfig({
   resolve: {
     alias: {
       '@': resolve(__dirname, './src'),
+      '@trycompai/billing': resolve(__dirname, '../../packages/billing/src/index.ts'),
     },
   },
 });
