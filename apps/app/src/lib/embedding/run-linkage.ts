@@ -89,6 +89,18 @@ const SUGGESTIONS_QUERY_TOP_K = 50;
 const SUGGESTIONS_RERANK_INPUT_TOP_K = 30;
 const SUGGESTIONS_FINAL_TOP_K = 15;
 
+// Autonomous (onboarding bulk) linking shares the same recall + rerank
+// pipeline as suggestions-only — without it, the strict 0.65 cosine
+// threshold lets through almost nothing in the 0.4–0.6 band that
+// dominates short compliance prose, leaving most onboarding-created
+// risks with zero linked work. We persist only the high-confidence
+// matches (reranker ≥ 5/10) so false positives stay out of the user's
+// linkage without any review step.
+const AUTONOMOUS_QUERY_TOP_K = 50;
+const AUTONOMOUS_RERANK_INPUT_TOP_K = 30;
+const AUTONOMOUS_FINAL_TOP_K = 8;
+const AUTONOMOUS_MIN_RERANK_SCORE = 5;
+
 // How many risks/vendors to match concurrently in the bulk onboarding path.
 // Each iteration makes 1 vector query (Upstash) + 1 OpenAI rerank call + 1
 // Prisma update — so a small fan-out gives a big wall-clock win without
@@ -289,6 +301,54 @@ async function rerankAndBuildScoreMap({
 }
 
 /**
+ * Autonomous-path variant: same recall + rerank pipeline as suggestionsOnly,
+ * but returns the IDs to persist directly. Filters by a minimum reranker
+ * score so we only auto-link confidently-relevant work — the user isn't
+ * reviewing these, so false positives stick until manually unlinked.
+ */
+async function rerankForAutonomousPersist({
+  source,
+  links,
+  taskById,
+}: {
+  source: RerankSource;
+  links: Array<{ id: string; score: number }>;
+  taskById: Map<string, { id: string; title: string; description: string }>;
+}): Promise<string[]> {
+  const candidates: RerankCandidate[] = [];
+  for (const l of links) {
+    const t = taskById.get(l.id);
+    if (!t) continue;
+    candidates.push({
+      id: l.id,
+      title: t.title,
+      description: t.description,
+      cosineScore: l.score,
+    });
+  }
+  if (candidates.length === 0) return [];
+
+  let reranked: RerankedCandidate[];
+  try {
+    reranked = await rerankSuggestions({ source, candidates });
+  } catch (err) {
+    console.error('[linkage] autonomous rerank failed; falling back to cosine', err);
+    reranked = candidates
+      .map((c) => ({
+        id: c.id,
+        cosineScore: c.cosineScore,
+        rerankScore: c.cosineScore * 10,
+      }))
+      .sort((a, b) => b.rerankScore - a.rerankScore);
+  }
+
+  return reranked
+    .filter((r) => r.rerankScore >= AUTONOMOUS_MIN_RERANK_SCORE)
+    .slice(0, AUTONOMOUS_FINAL_TOP_K)
+    .map((r) => r.id);
+}
+
+/**
  * Embeds the org's risks/vendors/tasks (idempotent), then for each risk and
  * vendor in scope finds the top-K similar tasks above the threshold and
  * persists `Risk.tasks` / `Vendor.tasks` connections via Prisma.
@@ -439,25 +499,29 @@ export async function runLinkage({
     const similar = await findSimilarTasks({
       organizationId,
       queryText: riskQueryText(risk),
-      topK: suggestionsOnly ? SUGGESTIONS_QUERY_TOP_K : RISK_QUERY_TOP_K,
+      topK: suggestionsOnly ? SUGGESTIONS_QUERY_TOP_K : AUTONOMOUS_QUERY_TOP_K,
     });
+    // Both paths feed the reranker — autonomous needs it just as badly to
+    // get past the 0.4-0.6 cosine band that dominates compliance prose.
     const links = linkSuggestions({
       source: { department: risk.department ?? undefined },
       candidates: similar.map((s) => ({ id: s.id, score: s.score, department: s.department })),
-      ...(suggestionsOnly ? { threshold: 0, topK: SUGGESTIONS_RERANK_INPUT_TOP_K } : {}),
+      threshold: 0,
+      topK: suggestionsOnly ? SUGGESTIONS_RERANK_INPUT_TOP_K : AUTONOMOUS_RERANK_INPUT_TOP_K,
     });
     let count = 0;
     let perEntitySuggestions: RunLinkageOutput['suggestions'];
     if (links.length > 0) {
+      const source: RerankSource = {
+        kind: 'risk',
+        title: risk.title,
+        description: risk.description,
+        category: risk.category,
+        department: risk.department ?? undefined,
+      };
       if (suggestionsOnly) {
         const taskScores = await rerankAndBuildScoreMap({
-          source: {
-            kind: 'risk',
-            title: risk.title,
-            description: risk.description,
-            category: risk.category,
-            department: risk.department ?? undefined,
-          },
+          source,
           links,
           taskById,
         });
@@ -465,11 +529,18 @@ export async function runLinkage({
         perEntitySuggestions = { forRiskId: risk.id, ...built };
         count = taskScores.size;
       } else {
-        await db.risk.update({
-          where: { id: risk.id },
-          data: { tasks: { connect: links.map((l) => ({ id: l.id })) } },
+        const idsToConnect = await rerankForAutonomousPersist({
+          source,
+          links,
+          taskById,
         });
-        count = links.length;
+        if (idsToConnect.length > 0) {
+          await db.risk.update({
+            where: { id: risk.id },
+            data: { tasks: { connect: idsToConnect.map((id) => ({ id })) } },
+          });
+        }
+        count = idsToConnect.length;
       }
     }
     completedRisks += 1;
@@ -495,24 +566,26 @@ export async function runLinkage({
     const similar = await findSimilarTasks({
       organizationId,
       queryText: vendorQueryText(vendor),
-      topK: suggestionsOnly ? SUGGESTIONS_QUERY_TOP_K : RISK_QUERY_TOP_K,
+      topK: suggestionsOnly ? SUGGESTIONS_QUERY_TOP_K : AUTONOMOUS_QUERY_TOP_K,
     });
     const links = linkSuggestions({
       source: {},
       candidates: similar.map((s) => ({ id: s.id, score: s.score, department: s.department })),
-      ...(suggestionsOnly ? { threshold: 0, topK: SUGGESTIONS_RERANK_INPUT_TOP_K } : {}),
+      threshold: 0,
+      topK: suggestionsOnly ? SUGGESTIONS_RERANK_INPUT_TOP_K : AUTONOMOUS_RERANK_INPUT_TOP_K,
     });
     let count = 0;
     let perEntitySuggestions: RunLinkageOutput['suggestions'];
     if (links.length > 0) {
+      const source: RerankSource = {
+        kind: 'vendor',
+        title: vendor.name,
+        description: vendor.description,
+        category: vendor.category,
+      };
       if (suggestionsOnly) {
         const taskScores = await rerankAndBuildScoreMap({
-          source: {
-            kind: 'vendor',
-            title: vendor.name,
-            description: vendor.description,
-            category: vendor.category,
-          },
+          source,
           links,
           taskById,
         });
@@ -520,11 +593,18 @@ export async function runLinkage({
         perEntitySuggestions = { forVendorId: vendor.id, ...built };
         count = taskScores.size;
       } else {
-        await db.vendor.update({
-          where: { id: vendor.id },
-          data: { tasks: { connect: links.map((l) => ({ id: l.id })) } },
+        const idsToConnect = await rerankForAutonomousPersist({
+          source,
+          links,
+          taskById,
         });
-        count = links.length;
+        if (idsToConnect.length > 0) {
+          await db.vendor.update({
+            where: { id: vendor.id },
+            data: { tasks: { connect: idsToConnect.map((id) => ({ id })) } },
+          });
+        }
+        count = idsToConnect.length;
       }
     }
     completedVendors += 1;

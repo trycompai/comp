@@ -42,11 +42,14 @@ export const generateRiskMitigation = task({
 
     await createRiskMitigationComment(risk, policies, organizationId, authorId ?? '');
 
-    // Mark risk as closed; reassign to owner/admin only if we have one.
+    // Mark risk as PENDING (not closed) — the AI drafted a plan but the
+    // user still needs to review it. Closing on the user's behalf would
+    // skip review and feel automated-away. Reassign to owner/admin only
+    // if we have one.
     await db.risk.update({
       where: { id: risk.id, organizationId },
       data: {
-        status: RiskStatus.closed,
+        status: RiskStatus.pending,
         ...(authorId ? { assigneeId: authorId } : {}),
       },
     });
