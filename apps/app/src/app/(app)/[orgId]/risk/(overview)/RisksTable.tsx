@@ -477,6 +477,7 @@ export const RisksTable = ({
                       {getSortIcon('title')}
                     </button>
                   </TableHead>
+                  <TableHead>SEVERITY</TableHead>
                   <TableHead>RISK SCORE</TableHead>
                   <TableHead>STATUS</TableHead>
                   <TableHead>OWNER</TableHead>
@@ -509,16 +510,25 @@ export const RisksTable = ({
                           <Text>{risk.title}</Text>
                         </HStack>
                       </TableCell>
-                      <TableCell>
-                        {/* Single risk-score column showing the current
-                            state with treatment progress factored in
-                            (interpolated between inherent and the strategy
-                            target by task completion). The detail page has
-                            the full inherent → target breakdown; in the
-                            list view a single number is what the user
-                            actually scans. */}
-                        <RiskScoreBadge score={currentSeverityScore(risk)} />
-                      </TableCell>
+                      {(() => {
+                        // Both columns reflect the *current* treatment-aware
+                        // state — inherent interpolated toward the strategy
+                        // target by task completion. SEVERITY is the
+                        // qualitative band (Low / Medium / High / etc.) for
+                        // at-a-glance triage; RISK SCORE is the precise 1-10
+                        // number. Computed once, rendered twice.
+                        const score = currentSeverityScore(risk);
+                        return (
+                          <>
+                            <TableCell>
+                              <RiskScoreBadge score={score} labelOnly />
+                            </TableCell>
+                            <TableCell>
+                              <RiskScoreBadge score={score} />
+                            </TableCell>
+                          </>
+                        );
+                      })()}
                       <TableCell>{getStatusBadge(risk.status)}</TableCell>
                       <TableCell>
                         <Text>{risk.assignee?.user?.name || 'Unassigned'}</Text>

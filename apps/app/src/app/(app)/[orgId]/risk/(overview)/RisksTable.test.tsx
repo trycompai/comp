@@ -229,24 +229,24 @@ describe('RisksTable permission gating', () => {
     render(<RisksTable {...defaultProps} />);
 
     expect(screen.getByText('RISK')).toBeInTheDocument();
+    expect(screen.getByText('SEVERITY')).toBeInTheDocument();
     expect(screen.getByText('RISK SCORE')).toBeInTheDocument();
     expect(screen.getByText('STATUS')).toBeInTheDocument();
     expect(screen.getByText('OWNER')).toBeInTheDocument();
     expect(screen.getByText('UPDATED')).toBeInTheDocument();
   });
 
-  it('renders a single risk score badge per row (interpolated current state)', () => {
+  it('renders SEVERITY label + RISK SCORE number, both from current state', () => {
     setMockPermissions({});
 
     render(<RisksTable {...defaultProps} />);
 
     // Fixture: possible × moderate, mitigate, no linked tasks.
     //   inherent: 3 × 3 = 9 raw → ceil(9/2.5) = 4
-    //   coverage gate active (no tasks) → target = inherent
-    //   completion = 0 → current = inherent
-    // → single 4/10 badge in the row.
-    const badges = screen.getAllByText('4/10');
-    expect(badges.length).toBe(1);
+    //   coverage gate (no tasks) → target = inherent → current = 4
+    // → severity label "Low" (score 4 → low band) + numeric "4/10".
+    expect(screen.getByText('Low')).toBeInTheDocument();
+    expect(screen.getByText('4/10')).toBeInTheDocument();
   });
 
   it('renders search bar regardless of permissions', () => {

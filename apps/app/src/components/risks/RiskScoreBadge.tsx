@@ -19,12 +19,18 @@ export interface RiskScoreBadgeProps {
   /**
    * Provide a precomputed 1-10 score directly, or pass `likelihood` + `impact`
    * to have the badge derive it via `getRiskScore`. The score-derived path is
-   * what callers use when they want a current/interpolated value (e.g. Risks
-   * table SEVERITY column factoring in task completion).
+   * what callers use when they want a current/interpolated value.
    */
   score?: number;
   likelihood?: Likelihood;
   impact?: Impact;
+  /**
+   * When true, renders the level label (Low / Medium / High / etc.) instead
+   * of the score numeral. Same color treatment either way. Useful for the
+   * Risks list "Severity" column where a qualitative label scans faster
+   * than a number.
+   */
+  labelOnly?: boolean;
   className?: string;
 }
 
@@ -32,6 +38,7 @@ export function RiskScoreBadge({
   score,
   likelihood,
   impact,
+  labelOnly,
   className,
 }: RiskScoreBadgeProps) {
   const resolvedScore =
@@ -40,7 +47,8 @@ export function RiskScoreBadge({
   return (
     <span
       className={cn(
-        'inline-flex w-fit items-center rounded-md border px-2 py-0.5 text-xs font-medium tabular-nums',
+        'inline-flex w-fit items-center rounded-md border px-2 py-0.5 text-xs font-medium',
+        !labelOnly && 'tabular-nums',
         className,
       )}
       style={
@@ -53,7 +61,7 @@ export function RiskScoreBadge({
       }
       title={`${LEVEL_LABEL[level]} risk`}
     >
-      {resolvedScore}/10
+      {labelOnly ? LEVEL_LABEL[level] : `${resolvedScore}/10`}
     </span>
   );
 }
