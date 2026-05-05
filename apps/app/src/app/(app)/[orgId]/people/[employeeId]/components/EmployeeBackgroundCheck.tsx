@@ -93,7 +93,6 @@ export function EmployeeBackgroundCheck({
   }, [backgroundCheck, employee.user.name, form]);
 
   const canRequest = hasPermission('member', 'update');
-  const canUpdateMember = hasPermission('member', 'update');
   const canManageBilling = hasPermission('organization', 'update');
   const hasPaymentMethod = billingStatus?.hasPaymentMethod === true;
   const backgroundChecksRemaining = getBackgroundChecksRemaining({ billingStatus });
@@ -287,7 +286,7 @@ export function EmployeeBackgroundCheck({
         <ExemptToggleCard
           exempt={exempt}
           saving={savingExempt}
-          canUpdate={canUpdateMember}
+          canUpdate={canRequest}
           onToggle={handleToggleExempt}
         />
         <div className="flex items-start gap-3 rounded-lg border border-muted bg-muted/30 p-4">
@@ -311,7 +310,7 @@ export function EmployeeBackgroundCheck({
         <ExemptToggleCard
           exempt={exempt}
           saving={savingExempt}
-          canUpdate={canUpdateMember}
+          canUpdate={canRequest}
           onToggle={handleToggleExempt}
         />
         <BackgroundCheckStatusView
@@ -329,7 +328,7 @@ export function EmployeeBackgroundCheck({
       <ExemptToggleCard
         exempt={exempt}
         saving={savingExempt}
-        canUpdate={canUpdateMember}
+        canUpdate={canRequest}
         onToggle={handleToggleExempt}
       />
       <>
