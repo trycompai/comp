@@ -143,19 +143,27 @@ async function loadRiskGroundingContext(
   linkedTasks: GroundingTask[];
   linkedControls: GroundingControl[];
 } | null> {
+  // Order tasks by createdAt then id, and the controls inside each task
+  // the same way, so the citation selection (which preserves input order
+  // for determinism) produces identical output across re-runs. Without
+  // these `orderBy` clauses Prisma returns relation rows in undefined
+  // order — see Cubic finding #40 on PR #2671.
   const risk = await db.risk.findFirst({
     where: { id: riskId, organizationId },
     include: {
       tasks: {
+        orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
         select: {
           id: true,
           title: true,
           status: true,
           controls: {
+            orderBy: [{ name: 'asc' }, { id: 'asc' }],
             select: {
               id: true,
               name: true,
               requirementsMapped: {
+                orderBy: [{ id: 'asc' }],
                 select: {
                   frameworkInstance: {
                     select: { framework: { select: { name: true } } },
@@ -224,19 +232,23 @@ async function loadVendorGroundingContext(
   linkedControls: GroundingControl[];
   compliancePosture: string;
 } | null> {
+  // Same orderBy as the risk loader — see Cubic finding #40.
   const vendor = await db.vendor.findFirst({
     where: { id: vendorId, organizationId },
     include: {
       tasks: {
+        orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
         select: {
           id: true,
           title: true,
           status: true,
           controls: {
+            orderBy: [{ name: 'asc' }, { id: 'asc' }],
             select: {
               id: true,
               name: true,
               requirementsMapped: {
+                orderBy: [{ id: 'asc' }],
                 select: {
                   frameworkInstance: {
                     select: { framework: { select: { name: true } } },

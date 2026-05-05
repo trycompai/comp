@@ -76,6 +76,15 @@ export function suggestedResidual({
   const reduction = STRATEGY_REDUCTION[strategy];
 
   if (reduction === 'pin-minimum') {
+    // Avoid pins to the floor — but only once there's operational evidence
+    // (at least one linked task) that the avoidance is actually being
+    // executed. With zero linked work the strategy is just a written
+    // intention, so the residual stays at inherent until coverage exists.
+    // Same gate Mitigate / Transfer apply via the `hasLinkedWork` flag in
+    // `previewResidual`. (Cubic finding #39 on PR #2671.)
+    if (total === 0) {
+      return { likelihood, impact, completion: 0 };
+    }
     return {
       likelihood: Likelihood.very_unlikely,
       impact: Impact.insignificant,

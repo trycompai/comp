@@ -1,7 +1,7 @@
 import { generateVendorMitigation } from '@/trigger/tasks/onboarding/generate-vendor-mitigation';
 import type { PolicyContext } from '@/trigger/tasks/onboarding/onboard-organization-helpers';
 import { serverApi } from '@/lib/api-server';
-import { auth } from '@/utils/auth';
+import { requireApiPermission } from '@/lib/permissions.server';
 import { db } from '@db/server';
 import { tasks as triggerTasks } from '@trigger.dev/sdk';
 import { NextRequest, NextResponse } from 'next/server';
@@ -56,13 +56,9 @@ export async function DELETE(
   { params }: { params: Promise<{ vendorId: string; taskId: string }> },
 ) {
   try {
-    const session = await auth.api.getSession({
-      headers: req.headers,
-    });
-
-    if (!session?.session?.activeOrganizationId) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+    const ctx = await requireApiPermission(req, 'vendor', 'update');
+    if (ctx instanceof NextResponse) return ctx;
+    const { organizationId } = ctx;
 
     const { vendorId, taskId } = await params;
     if (!vendorId || !taskId) {
@@ -72,15 +68,24 @@ export async function DELETE(
       );
     }
 
-    const organizationId = session.session.activeOrganizationId;
-
+    // Verify the vendor + the link in one query, scoped to the active org.
+    // (Cubic #22.)
     const vendor = await db.vendor.findUnique({
       where: { id: vendorId },
-      select: { id: true, organizationId: true },
+      select: {
+        id: true,
+        organizationId: true,
+        tasks: { where: { id: taskId }, select: { id: true } },
+      },
     });
-
     if (!vendor || vendor.organizationId !== organizationId) {
       return NextResponse.json({ error: 'Not found' }, { status: 404 });
+    }
+    if (vendor.tasks.length === 0) {
+      return NextResponse.json(
+        { error: 'Task is not linked to this vendor' },
+        { status: 404 },
+      );
     }
 
     await db.vendor.update({
@@ -88,17 +93,12 @@ export async function DELETE(
       data: { tasks: { disconnect: { id: taskId } } },
     });
 
-    await refreshVendorTreatmentPlan(organizationId, vendorId);
+    // Fire-and-forget — see risks counterpart. (Cubic #31.)
+    void refreshVendorTreatmentPlan(organizationId, vendorId);
 
     return NextResponse.json({ ok: true });
   } catch (error) {
     console.error('Error unlinking task from vendor:', error);
-    return NextResponse.json(
-      {
-        error:
-          error instanceof Error ? error.message : 'Failed to unlink task',
-      },
-      { status: 500 },
-    );
+    return NextResponse.json({ error: 'Failed to unlink task' }, { status: 500 });
   }
 }

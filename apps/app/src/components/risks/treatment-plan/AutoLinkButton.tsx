@@ -65,11 +65,20 @@ export function AutoLinkButton({
                 hasDescription ? ' · refreshing treatment plan' : ' · generating treatment plan'
               }`,
             );
+            // Post-link refresh (mitigation regen, swr revalidation) is
+            // separate from the link itself succeeding. If it fails we
+            // surface a distinct toast so the user knows the link landed
+            // but the plan refresh did not. Without this branch a
+            // refresh failure could either be silent or — worse — get
+            // mistaken for a link failure. (Cubic finding #23.)
             if (onAfterLink) {
               try {
                 await onAfterLink();
-              } catch {
-                // toasts inside onAfterLink will surface errors; we just reset state.
+              } catch (err) {
+                console.error('[AutoLinkButton] post-link refresh failed', err);
+                toast.warning(
+                  'Linked the tasks, but refreshing the treatment plan failed. Try regenerating manually.',
+                );
               }
             }
           }

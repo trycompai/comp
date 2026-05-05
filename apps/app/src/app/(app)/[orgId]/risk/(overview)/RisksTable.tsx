@@ -193,12 +193,19 @@ export const RisksTable = ({
   );
 
   // Build query params for the API. Status and assignee are server-side;
-  // severity is applied later (see `risks` memo below).
+  // severity is computed from the current treatment-aware score (which the
+  // API can't query directly), so when severity is filtered we fetch
+  // the org's full risk set in one page and paginate after the filter.
+  // Without this, severity filtering would only see whatever happened to
+  // be on the current server page — causing wrong/missing results and an
+  // incorrect total count. (Cubic finding #27 on PR #2671.)
+  const FILTER_ALL_PAGE_SIZE = 1000;
+  const fetchAllForSeverity = Boolean(severityFilter);
   const queryParams = useMemo<RisksQueryParams>(() => {
     const currentSort = sort[0];
     return {
-      page,
-      perPage,
+      page: fetchAllForSeverity ? 1 : page,
+      perPage: fetchAllForSeverity ? FILTER_ALL_PAGE_SIZE : perPage,
       ...(title && { title }),
       ...(statusFilter && { status: statusFilter }),
       ...(assigneeFilter && { assigneeId: assigneeFilter }),
@@ -207,7 +214,7 @@ export const RisksTable = ({
         sortDirection: currentSort.desc ? 'desc' as const : 'asc' as const,
       }),
     };
-  }, [page, perPage, title, statusFilter, assigneeFilter, sort]);
+  }, [page, perPage, title, statusFilter, assigneeFilter, sort, fetchAllForSeverity]);
 
   // Use the useRisks hook with query params
   const { data: risksData, mutate: mutateRisks } = useRisks({
@@ -217,19 +224,34 @@ export const RisksTable = ({
     keepPreviousData: true,
   });
 
-  const risks = useMemo(() => {
+  // Full result set from the API — already narrowed by status/assignee/title.
+  const fullList = useMemo(() => {
     const apiData = risksData?.data?.data;
-    const list = Array.isArray(apiData) ? apiData : initialRisks;
-    if (!severityFilter) return list;
-    // Severity is derived from the current (treatment-aware) score so it's
-    // filtered after fetching.
-    return list.filter((risk) => {
+    return Array.isArray(apiData) ? apiData : initialRisks;
+  }, [risksData, initialRisks]);
+
+  // After server filtering, apply the (derived) severity filter and then
+  // re-paginate client-side so totals reflect the filtered result.
+  const filteredList = useMemo(() => {
+    if (!severityFilter) return fullList;
+    return fullList.filter((risk) => {
       const score = currentSeverityScore(risk);
       return getRiskLevelFromScore(score) === severityFilter;
     });
-  }, [risksData, initialRisks, severityFilter]);
+  }, [fullList, severityFilter]);
 
-  const pageCount = risksData?.data?.pageCount ?? initialPageCount;
+  const risks = useMemo(() => {
+    if (!fetchAllForSeverity) return filteredList;
+    const start = (page - 1) * perPage;
+    return filteredList.slice(start, start + perPage);
+  }, [filteredList, fetchAllForSeverity, page, perPage]);
+
+  const pageCount = useMemo(() => {
+    if (fetchAllForSeverity) {
+      return Math.max(1, Math.ceil(filteredList.length / perPage));
+    }
+    return risksData?.data?.pageCount ?? initialPageCount;
+  }, [fetchAllForSeverity, filteredList.length, perPage, risksData, initialPageCount]);
 
   // Check if all risks are done assessing
   const allRisksDoneAssessing = useMemo(() => {

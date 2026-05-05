@@ -8,7 +8,7 @@ import { RiskOverview } from '@/components/risks/risk-overview';
 import { TreatmentPlanTab } from '@/components/risks/treatment-plan/TreatmentPlanTab';
 import { TaskItems } from '@/components/task-items/TaskItems';
 import { useAuditLogs } from '@/hooks/use-audit-logs';
-import { useRisk, useRiskActions, type RiskResponse } from '@/hooks/use-risks';
+import { useRisk, useRiskActions, type RiskLinkedTask, type RiskResponse } from '@/hooks/use-risks';
 import { useTaskItems, useTaskItemActions } from '@/hooks/use-task-items';
 import { usePermissions } from '@/hooks/use-permissions';
 import { CommentEntityType } from '@db';
@@ -340,7 +340,14 @@ export function RiskPageClient({
                       | Partial<Record<RiskTreatmentType, string>>
                       | null
                       | undefined ?? null,
-                  tasks: swrRisk?.tasks ?? [],
+                  // Fall through to the server-rendered initial risk so the
+                  // Linked Work column doesn't blink empty between SSR and
+                  // the first SWR resolution. (Cubic finding #28.)
+                  tasks:
+                    swrRisk?.tasks ??
+                    (initialRisk as unknown as { tasks?: RiskLinkedTask[] })
+                      .tasks ??
+                    [],
                 }}
                 canUpdate={canUpdate}
                 onUpdateStrategy={handleUpdateStrategy}

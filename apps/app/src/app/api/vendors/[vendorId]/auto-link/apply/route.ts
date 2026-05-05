@@ -1,4 +1,4 @@
-import { auth } from '@/utils/auth';
+import { requireApiPermission } from '@/lib/permissions.server';
 import { db } from '@db/server';
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
@@ -21,17 +21,14 @@ export async function POST(
   { params }: { params: Promise<{ vendorId: string }> },
 ) {
   try {
-    const session = await auth.api.getSession({ headers: req.headers });
-    if (!session?.session?.activeOrganizationId) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+    const ctx = await requireApiPermission(req, 'vendor', 'update');
+    if (ctx instanceof NextResponse) return ctx;
+    const { organizationId } = ctx;
 
     const { vendorId } = await params;
     if (!vendorId) {
       return NextResponse.json({ error: 'Vendor ID is required' }, { status: 400 });
     }
-
-    const organizationId = session.session.activeOrganizationId;
 
     const vendor = await db.vendor.findUnique({
       where: { id: vendorId },
@@ -50,6 +47,21 @@ export async function POST(
       );
     }
     const { taskIds, replace } = parsed.data;
+
+    // Validate tenancy of every taskId — see risks/auto-link/apply/route.ts
+    // for the same rationale (Prisma `connect`/`set` doesn't enforce it).
+    if (taskIds.length > 0) {
+      const ownedTasks = await db.task.findMany({
+        where: { id: { in: taskIds }, organizationId },
+        select: { id: true },
+      });
+      if (ownedTasks.length !== taskIds.length) {
+        return NextResponse.json(
+          { error: 'One or more tasks do not belong to this organization' },
+          { status: 400 },
+        );
+      }
+    }
 
     if (replace) {
       await db.vendor.update({
@@ -76,11 +88,6 @@ export async function POST(
     return NextResponse.json({ linked: taskIds.length });
   } catch (error) {
     console.error('Error applying vendor auto-link:', error);
-    return NextResponse.json(
-      {
-        error: error instanceof Error ? error.message : 'Failed to apply auto-link',
-      },
-      { status: 500 },
-    );
+    return NextResponse.json({ error: 'Failed to apply auto-link' }, { status: 500 });
   }
 }

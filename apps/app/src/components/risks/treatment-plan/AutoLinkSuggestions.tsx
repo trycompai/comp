@@ -95,16 +95,26 @@ export function AutoLinkSuggestions({
   // the server, jump straight to the loading state and re-subscribe. Mode is
   // unknown after a reload; default 'fresh' so apply stays additive (no
   // accidental destructive replace on user side).
+  //
+  // Guard against overwriting a newer transition: the user might click
+  // "Suggest" before /active resolves, in which case `state` will already
+  // be `loading` (with their own runId) and we must NOT clobber it with
+  // the server-side resume payload. Same goes for `review` / `confirming`
+  // — only apply the resume when we're still in the initial render state.
+  // (Cubic finding #33 on PR #2671.)
   useEffect(() => {
     if (!onResume) return;
     let cancelled = false;
     void onResume().then((active) => {
       if (cancelled || !active) return;
-      setState({
-        kind: 'loading',
-        runId: active.runId,
-        publicAccessToken: active.publicAccessToken,
-        mode: 'fresh',
+      setState((prev) => {
+        if (prev.kind !== 'empty' && prev.kind !== 'linked') return prev;
+        return {
+          kind: 'loading',
+          runId: active.runId,
+          publicAccessToken: active.publicAccessToken,
+          mode: 'fresh',
+        };
       });
     });
     return () => {
@@ -269,7 +279,7 @@ export function AutoLinkSuggestions({
           </button>
         </div>
       )}
-      <LinkedWork orgId={orgId} tasks={tasks} />
+      <LinkedWork orgId={orgId} tasks={tasks} onUnlinkTask={onUnlinkTask} />
     </div>
   );
 }

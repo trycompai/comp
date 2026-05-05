@@ -1,4 +1,4 @@
-import { auth } from '@/utils/auth';
+import { requireApiPermission } from '@/lib/permissions.server';
 import { db } from '@db/server';
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
@@ -28,17 +28,14 @@ export async function POST(
   { params }: { params: Promise<{ riskId: string }> },
 ) {
   try {
-    const session = await auth.api.getSession({ headers: req.headers });
-    if (!session?.session?.activeOrganizationId) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+    const ctx = await requireApiPermission(req, 'risk', 'update');
+    if (ctx instanceof NextResponse) return ctx;
+    const { organizationId } = ctx;
 
     const { riskId } = await params;
     if (!riskId) {
       return NextResponse.json({ error: 'Risk ID is required' }, { status: 400 });
     }
-
-    const organizationId = session.session.activeOrganizationId;
 
     const risk = await db.risk.findUnique({
       where: { id: riskId },
@@ -57,6 +54,22 @@ export async function POST(
       );
     }
     const { taskIds, replace } = parsed.data;
+
+    // Validate every taskId belongs to the active organization. Without this,
+    // a malicious caller could connect another org's tasks to this risk by
+    // crafting the request — Prisma's `connect`/`set` doesn't check tenancy.
+    if (taskIds.length > 0) {
+      const ownedTasks = await db.task.findMany({
+        where: { id: { in: taskIds }, organizationId },
+        select: { id: true },
+      });
+      if (ownedTasks.length !== taskIds.length) {
+        return NextResponse.json(
+          { error: 'One or more tasks do not belong to this organization' },
+          { status: 400 },
+        );
+      }
+    }
 
     if (replace) {
       await db.risk.update({
@@ -83,11 +96,6 @@ export async function POST(
     return NextResponse.json({ linked: taskIds.length });
   } catch (error) {
     console.error('Error applying risk auto-link:', error);
-    return NextResponse.json(
-      {
-        error: error instanceof Error ? error.message : 'Failed to apply auto-link',
-      },
-      { status: 500 },
-    );
+    return NextResponse.json({ error: 'Failed to apply auto-link' }, { status: 500 });
   }
 }

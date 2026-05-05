@@ -80,17 +80,25 @@ describe('linkSuggestions', () => {
   });
 
   it('does not boost when candidate department is "none" (default Task value)', () => {
+    // Source department `none` matches a candidate `none` literally — but
+    // the boost rule excludes `none` explicitly so the boost should NOT
+    // apply. Without the exclusion, the candidate at 0.62 would beat the
+    // one at 0.66 (0.62 + 0.05 > 0.66). Asserting the un-boosted candidate
+    // wins is what proves the rule. (Cubic finding #24 on PR #2671.)
     const result = linkSuggestions({
-      source: { department: Departments.hr },
+      source: { department: Departments.none },
       candidates: [
-        candidate('a', 0.65, Departments.none),
+        candidate('a', 0.62, Departments.none),
         candidate('b', 0.66, Departments.it),
       ],
-      threshold: 0.6,
+      threshold: 0.5,
       topK: 2,
       departmentBoost: 0.05,
     });
     expect(result[0].id).toBe('b');
+    expect(result[0].score).toBeCloseTo(0.66, 2);
+    expect(result[1].id).toBe('a');
+    expect(result[1].score).toBeCloseTo(0.62, 2);
   });
 
   it('returns results sorted by descending boosted score', () => {

@@ -19,7 +19,7 @@ describe('suggestedResidual', () => {
     });
   });
 
-  it('avoid: pins to (very_unlikely, insignificant) regardless of completion', () => {
+  it('avoid with NO linked tasks stays at inherent (no operational evidence yet)', () => {
     const out = suggestedResidual({
       likelihood: Likelihood.likely,
       impact: Impact.major,
@@ -27,9 +27,23 @@ describe('suggestedResidual', () => {
       tasks: [],
     });
     expect(out).toEqual({
+      likelihood: Likelihood.likely,
+      impact: Impact.major,
+      completion: 0,
+    });
+  });
+
+  it('avoid with linked tasks pins residual to (very_unlikely, insignificant)', () => {
+    const out = suggestedResidual({
+      likelihood: Likelihood.likely,
+      impact: Impact.major,
+      strategy: RiskTreatmentType.avoid,
+      tasks: [task(TaskStatus.done), task(TaskStatus.todo)],
+    });
+    expect(out).toEqual({
       likelihood: Likelihood.very_unlikely,
       impact: Impact.insignificant,
-      completion: 0,
+      completion: 0.5,
     });
   });
 

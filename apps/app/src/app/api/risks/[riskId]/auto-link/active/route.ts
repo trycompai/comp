@@ -1,7 +1,27 @@
-import { auth } from '@/utils/auth';
+import { requireApiPermission } from '@/lib/permissions.server';
 import { db } from '@db/server';
 import { auth as triggerAuth } from '@trigger.dev/sdk';
 import { NextRequest, NextResponse } from 'next/server';
+
+/**
+ * Decide whether a `createPublicToken` failure is the "run was purged"
+ * terminal case (drop the stored runId — the run is permanently gone) or
+ * something transient (a network blip, rate limit, auth issue) where we
+ * should keep the runId so the next attempt can recover.
+ *
+ * Trigger.dev surfaces purged/missing runs as 404 with a "not found" body.
+ * Anything else — including unauthorized, timeouts, 5xx — gets treated as
+ * transient and bubbles up as a 502 from the route. See Cubic finding
+ * #4/#5 on PR #2671.
+ */
+function isRunGoneError(err: unknown): boolean {
+  if (!err) return false;
+  const e = err as { status?: number; statusCode?: number; message?: string };
+  const status = e.status ?? e.statusCode;
+  if (status === 404) return true;
+  const msg = (e.message ?? String(err)).toLowerCase();
+  return msg.includes('not found') || msg.includes('purged');
+}
 
 /**
  * GET /api/risks/[riskId]/auto-link/active
@@ -22,13 +42,11 @@ export async function GET(
   { params }: { params: Promise<{ riskId: string }> },
 ) {
   try {
-    const session = await auth.api.getSession({ headers: req.headers });
-    if (!session?.session?.activeOrganizationId) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+    const ctx = await requireApiPermission(req, 'risk', 'read');
+    if (ctx instanceof NextResponse) return ctx;
+    const { organizationId } = ctx;
 
     const { riskId } = await params;
-    const organizationId = session.session.activeOrganizationId;
 
     const risk = await db.risk.findUnique({
       where: { id: riskId },
@@ -49,14 +67,23 @@ export async function GET(
       });
       return NextResponse.json({ runId: risk.autoLinkRunId, publicAccessToken });
     } catch (err) {
-      // Run was purged by trigger.dev (retention TTL). Clear the stale id so
-      // the next /auto-link call starts cleanly.
-      console.warn('[auto-link/active] failed to mint token, dropping stale runId', err);
-      await db.risk.update({
-        where: { id: riskId },
-        data: { autoLinkRunId: null, autoLinkRunStartedAt: null },
-      });
-      return NextResponse.json({ runId: null });
+      if (isRunGoneError(err)) {
+        // Run was purged by trigger.dev (retention TTL or never existed).
+        // Drop the stale id so the next /auto-link call starts cleanly.
+        console.warn('[auto-link/active] run gone, clearing stored runId', err);
+        await db.risk.update({
+          where: { id: riskId },
+          data: { autoLinkRunId: null, autoLinkRunStartedAt: null },
+        });
+        return NextResponse.json({ runId: null });
+      }
+      // Transient failure (network, 5xx, rate limit). Keep the runId so a
+      // retry can recover; the UI treats 502 as "try again later".
+      console.error('[auto-link/active] transient token mint failure', err);
+      return NextResponse.json(
+        { error: 'Failed to mint access token; try again' },
+        { status: 502 },
+      );
     }
   } catch (error) {
     console.error('Error reading active risk auto-link run:', error);
@@ -69,13 +96,11 @@ export async function DELETE(
   { params }: { params: Promise<{ riskId: string }> },
 ) {
   try {
-    const session = await auth.api.getSession({ headers: req.headers });
-    if (!session?.session?.activeOrganizationId) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+    const ctx = await requireApiPermission(req, 'risk', 'update');
+    if (ctx instanceof NextResponse) return ctx;
+    const { organizationId } = ctx;
 
     const { riskId } = await params;
-    const organizationId = session.session.activeOrganizationId;
 
     const risk = await db.risk.findUnique({
       where: { id: riskId },

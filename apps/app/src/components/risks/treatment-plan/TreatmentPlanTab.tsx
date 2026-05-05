@@ -147,7 +147,12 @@ export function TreatmentPlanTab({
   const kickoffVariant: 'kickoff' | 'kickoff-with-plan' = hasPlan
     ? 'kickoff-with-plan'
     : 'kickoff';
-  const showLinkedWorkColumn = isMitigate && hasLinkedWork;
+  // Linked Work is part of the audit trail regardless of strategy — Accept,
+  // Transfer, and Avoid all benefit from showing what evidence is connected
+  // to the risk (per ENG-221). The kickoff CTA above stays Mitigate-only
+  // because AI suggestion is a Mitigate-shaped flow; for other strategies
+  // users link manually via the Tasks UI.
+  const showLinkedWorkColumn = hasLinkedWork;
 
   // For non-Mitigate strategies the "plan" is just rationale.
   const planTitle = isMitigate ? 'Treatment plan' : 'Rationale';

@@ -3,7 +3,7 @@
 import { Button } from '@trycompai/design-system';
 import { MagicWandFilled } from '@trycompai/design-system/icons';
 import { useRealtimeRun } from '@trigger.dev/react-hooks';
-import { useEffect, useMemo } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import { ControlsSection, TasksSection } from './AutoLinkSuggestions.sections';
 import {
   isControlDerived,
@@ -248,11 +248,22 @@ export function LoadingState({
     total?: number;
   };
 
+  // Stash callbacks in refs so the effect can fire only on `status` changes
+  // (we never want to re-fire on every parent render that changes callback
+  // identity), but always read the freshest `output` and handlers — avoids
+  // the stale-closure race Cubic flagged (#32 on PR #2671).
+  const outputRef = useRef(output);
+  outputRef.current = output;
+  const onReadyRef = useRef(onReady);
+  onReadyRef.current = onReady;
+  const onFailedRef = useRef(onFailed);
+  onFailedRef.current = onFailed;
+
   useEffect(() => {
     if (!status) return;
     if (status === 'COMPLETED') {
-      const sugg = output?.suggestions;
-      onReady({
+      const sugg = outputRef.current?.suggestions;
+      onReadyRef.current({
         tasks: Array.isArray(sugg?.tasks) ? sugg.tasks : [],
         controls: Array.isArray(sugg?.controls) ? sugg.controls : [],
       });
@@ -267,9 +278,9 @@ export function LoadingState({
         EXPIRED: 'The scan expired before it could start.',
         TIMED_OUT: 'The scan took too long and timed out.',
       };
-      onFailed(reasons[status] ?? 'The AI scan failed.');
+      onFailedRef.current(reasons[status] ?? 'The AI scan failed.');
     }
-  }, [status]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [status]);
 
   // Treat unknown / pre-subscribe state as in-flight so the spinner stays up
   // until the realtime stream catches up.

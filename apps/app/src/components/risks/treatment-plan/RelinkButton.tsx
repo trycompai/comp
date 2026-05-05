@@ -1,5 +1,6 @@
 'use client';
 
+import type { linkRisksAndVendorsToWork } from '@/trigger/tasks/onboarding/link-risks-and-vendors-to-work';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -129,7 +130,10 @@ interface RunProgressProps {
 }
 
 function RunProgress({ runId, accessToken, onComplete, onFailed }: RunProgressProps) {
-  const { run } = useRealtimeRun(runId, { accessToken, enabled: true });
+  const { run } = useRealtimeRun<typeof linkRisksAndVendorsToWork>(runId, {
+    accessToken,
+    enabled: true,
+  });
 
   const meta = (run?.metadata ?? {}) as Record<string, unknown>;
   const phase = typeof meta.phase === 'string' ? meta.phase : 'starting';
@@ -137,11 +141,15 @@ function RunProgress({ runId, accessToken, onComplete, onFailed }: RunProgressPr
   const total = typeof meta.total === 'number' ? meta.total : null;
 
   const status = run?.status;
+  // Pull link counts from the typed `run.output` (canonical result of the
+  // task) instead of metadata. Metadata is mirror-only progress state and
+  // can lag behind the status transition by a tick — reading from output
+  // here avoids the stale-closure race Cubic flagged (#6 on PR #2671).
+  const riskLinks = typeof run?.output?.riskLinks === 'number' ? run.output.riskLinks : 0;
+  const vendorLinks = typeof run?.output?.vendorLinks === 'number' ? run.output.vendorLinks : 0;
   useEffect(() => {
     if (!status) return;
     if (status === 'COMPLETED') {
-      const riskLinks = typeof meta.riskLinks === 'number' ? meta.riskLinks : 0;
-      const vendorLinks = typeof meta.vendorLinks === 'number' ? meta.vendorLinks : 0;
       onComplete(riskLinks + vendorLinks);
       return;
     }
@@ -155,7 +163,7 @@ function RunProgress({ runId, accessToken, onComplete, onFailed }: RunProgressPr
     ) {
       onFailed();
     }
-  }, [status]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [status, riskLinks, vendorLinks, onComplete, onFailed]);
 
   const showProgress = phase !== 'done' && phase in PHASE_LABEL;
   const label = showProgress ? PHASE_LABEL[phase] : PHASE_LABEL.starting;

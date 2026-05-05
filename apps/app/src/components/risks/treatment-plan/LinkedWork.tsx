@@ -2,8 +2,9 @@
 
 import { cn } from '@/lib/utils';
 import { TaskStatus } from '@db';
-import { Checkmark, Close } from '@trycompai/design-system/icons';
+import { Checkmark, Close, TrashCan } from '@trycompai/design-system/icons';
 import Link from 'next/link';
+import { useState } from 'react';
 
 interface LinkedTask {
   id: string;
@@ -15,6 +16,12 @@ interface LinkedTask {
 interface LinkedWorkProps {
   orgId: string;
   tasks: LinkedTask[];
+  /**
+   * Per-task unlink. When provided, a trash-can icon button appears on
+   * hover next to each task title. When omitted (e.g. read-only views),
+   * no unlink affordance is rendered.
+   */
+  onUnlinkTask?: (taskId: string) => Promise<void>;
 }
 
 function isTaskDone(status: TaskStatus): boolean {
@@ -63,12 +70,22 @@ function StatusIcon({ done }: { done: boolean }) {
   );
 }
 
-export function LinkedWork({ orgId, tasks }: LinkedWorkProps) {
+export function LinkedWork({ orgId, tasks, onUnlinkTask }: LinkedWorkProps) {
   const total = tasks.length;
   const done = tasks.filter((t) => isTaskDone(t.status)).length;
   const taskPct = total === 0 ? 0 : Math.round((done / total) * 100);
   const controls = deriveControls(tasks);
   const controlsDone = controls.filter((c) => c.isComplete).length;
+  const [unlinking, setUnlinking] = useState<string | null>(null);
+  const handleUnlink = async (taskId: string) => {
+    if (!onUnlinkTask) return;
+    setUnlinking(taskId);
+    try {
+      await onUnlinkTask(taskId);
+    } finally {
+      setUnlinking((current) => (current === taskId ? null : current));
+    }
+  };
 
   return (
     <div className="mt-4 flex flex-col gap-4 border-t border-border pt-4">
@@ -95,17 +112,21 @@ export function LinkedWork({ orgId, tasks }: LinkedWorkProps) {
           <ul className="flex flex-col">
             {tasks.map((t, i) => {
               const taskDone = isTaskDone(t.status);
+              const isUnlinking = unlinking === t.id;
               return (
                 <li
                   key={t.id}
-                  className={cn(i > 0 && 'border-t border-border')}
+                  className={cn(
+                    'group flex items-center gap-2',
+                    i > 0 && 'border-t border-border',
+                  )}
                 >
                   <Link
                     href={`/${orgId}/tasks/${t.id}`}
                     target="_blank"
                     rel="noopener noreferrer"
                     className={cn(
-                      'flex items-center gap-2 py-1.5 text-[12px] transition-colors hover:bg-muted',
+                      'flex flex-1 items-center gap-2 py-1.5 text-[12px] transition-colors hover:bg-muted',
                       taskDone
                         ? 'text-muted-foreground line-through decoration-muted-foreground'
                         : 'text-foreground',
@@ -114,6 +135,18 @@ export function LinkedWork({ orgId, tasks }: LinkedWorkProps) {
                     <StatusIcon done={taskDone} />
                     <span className="min-w-0 flex-1 truncate">{t.title}</span>
                   </Link>
+                  {onUnlinkTask && (
+                    <button
+                      type="button"
+                      onClick={() => void handleUnlink(t.id)}
+                      disabled={isUnlinking}
+                      title="Unlink task from this risk"
+                      aria-label={`Unlink ${t.title}`}
+                      className="rounded px-1.5 py-1 text-muted-foreground opacity-0 transition-opacity hover:text-destructive focus-visible:opacity-100 group-hover:opacity-100 disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      <TrashCan size={12} aria-hidden="true" />
+                    </button>
+                  )}
                 </li>
               );
             })}

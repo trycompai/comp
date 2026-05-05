@@ -1,3 +1,5 @@
+import 'server-only';
+
 import { Departments } from '@db';
 import { Index } from '@upstash/vector';
 import { openai } from '@ai-sdk/openai';
