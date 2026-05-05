@@ -103,10 +103,12 @@ const AUTONOMOUS_MIN_RERANK_SCORE = 5;
 
 // How many risks/vendors to match concurrently in the bulk onboarding path.
 // Each iteration makes 1 vector query (Upstash) + 1 OpenAI rerank call + 1
-// Prisma update — so a small fan-out gives a big wall-clock win without
-// hammering rate limits. Tuned for the typical onboarding workload (~10-20
-// entities); raise if needed once we have telemetry.
-const MATCH_CONCURRENCY = 4;
+// Prisma update — typical wall-clock per iteration is 3–5 seconds, so a
+// higher fan-out cuts onboarding latency proportionally. 16 is a safe
+// middle ground: well within Upstash + OpenAI rate limits for the typical
+// onboarding workload (10–25 entities), but high enough that a 20-entity
+// onboarding finishes in ~2 batches instead of ~5.
+const MATCH_CONCURRENCY = 16;
 
 async function mapWithConcurrency<T, R>(
   items: T[],

@@ -89,7 +89,9 @@ const BASELINE_RISKS: Array<{
       'Intentional misrepresentation or deception by an internal actor (employee, contractor) or by the organization as a whole, for the purpose of achieving an unauthorized or improper gain.',
     category: RiskCategory.governance,
     department: Departments.gov,
-    status: RiskStatus.closed,
+    // Pending (not closed) so the user reviews + signs off before the risk
+    // shows up as resolved — same rule we apply after AI mitigation.
+    status: RiskStatus.pending,
   },
 ];
 
