@@ -229,34 +229,24 @@ describe('RisksTable permission gating', () => {
     render(<RisksTable {...defaultProps} />);
 
     expect(screen.getByText('RISK')).toBeInTheDocument();
-    expect(screen.getByText('SEVERITY')).toBeInTheDocument();
-    expect(screen.getByText('RESIDUAL RISK')).toBeInTheDocument();
+    expect(screen.getByText('RISK SCORE')).toBeInTheDocument();
     expect(screen.getByText('STATUS')).toBeInTheDocument();
     expect(screen.getByText('OWNER')).toBeInTheDocument();
     expect(screen.getByText('UPDATED')).toBeInTheDocument();
   });
 
-  it('renders the RESIDUAL RISK column immediately after SEVERITY', () => {
+  it('renders a single risk score badge per row (interpolated current state)', () => {
     setMockPermissions({});
 
     render(<RisksTable {...defaultProps} />);
 
-    const headers = screen
-      .getAllByRole('columnheader')
-      .map((h) => (h.textContent || '').toUpperCase());
-    const severityIdx = headers.findIndex((h) => h.includes('SEVERITY'));
-    const residualIdx = headers.findIndex((h) => h.includes('RESIDUAL RISK'));
-    expect(severityIdx).toBeGreaterThanOrEqual(0);
-    expect(residualIdx).toBe(severityIdx + 1);
-  });
-
-  it('renders a residual score badge for risks', () => {
-    setMockPermissions({});
-
-    render(<RisksTable {...defaultProps} />);
-
-    // Test Risk residual (unlikely × minor) → raw 4 → score 2/10
-    expect(screen.getByText('2/10')).toBeInTheDocument();
+    // Fixture: possible × moderate, mitigate, no linked tasks.
+    //   inherent: 3 × 3 = 9 raw → ceil(9/2.5) = 4
+    //   coverage gate active (no tasks) → target = inherent
+    //   completion = 0 → current = inherent
+    // → single 4/10 badge in the row.
+    const badges = screen.getAllByText('4/10');
+    expect(badges.length).toBe(1);
   });
 
   it('renders search bar regardless of permissions', () => {

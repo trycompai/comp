@@ -10,7 +10,13 @@ import {
   type RisksQueryParams,
 } from '@/hooks/use-risks';
 import { getSortingStateParser } from '@/lib/parsers';
-import { previewResidual } from '@/lib/suggested-residual';
+import { getRiskScore } from '@/lib/risk-score';
+import {
+  interpolatedResidualScore,
+  previewResidual,
+  suggestedResidual,
+} from '@/lib/suggested-residual';
+import { TaskStatus } from '@db';
 import type { Member, User } from '@db';
 import { Risk as RiskType } from '@db';
 import {
@@ -68,33 +74,40 @@ const ACTIVE_STATUSES: Array<'pending' | 'processing' | 'created' | 'assessing'>
   'assessing',
 ];
 
-function getSeverityBadge(likelihood: string, impact: string) {
-  // Calculate severity based on likelihood and impact
-  const likelihoodScore: Record<string, number> = {
-    very_unlikely: 1,
-    unlikely: 2,
-    possible: 3,
-    likely: 4,
-    very_likely: 5,
-  };
-  const impactScore: Record<string, number> = {
-    insignificant: 1,
-    minor: 2,
-    moderate: 3,
-    major: 4,
-    severe: 5,
-  };
-
-  const score = (likelihoodScore[likelihood] || 1) * (impactScore[impact] || 1);
-
-  if (score >= 15) {
-    return <Badge variant="destructive">High</Badge>;
-  }
-  if (score >= 8) {
-    return <Badge variant="secondary">Medium</Badge>;
-  }
-  return <Badge variant="outline">Low</Badge>;
+/**
+ * The risk's current severity score (1-10), interpolated by linked-task
+ * completion the same way the Treatment Plan hero does it. Returns the
+ * inherent score when there's no linked work or the strategy doesn't
+ * project a reduction. Falls back to inherent on malformed input.
+ */
+function currentSeverityScore(risk: {
+  likelihood: ApiRisk['likelihood'];
+  impact: ApiRisk['impact'];
+  treatmentStrategy: ApiRisk['treatmentStrategy'];
+  tasks?: Array<{ status: TaskStatus }>;
+}): number {
+  const inherent = getRiskScore(risk.likelihood, risk.impact);
+  const tasks = risk.tasks ?? [];
+  const target = previewResidual({
+    inherentLikelihood: risk.likelihood,
+    inherentImpact: risk.impact,
+    strategy: risk.treatmentStrategy,
+    hasLinkedWork: tasks.length > 0,
+  });
+  const targetScore = getRiskScore(target.likelihood, target.impact).score;
+  const completion = suggestedResidual({
+    likelihood: risk.likelihood,
+    impact: risk.impact,
+    strategy: risk.treatmentStrategy,
+    tasks,
+  }).completion;
+  return interpolatedResidualScore({
+    inherentScore: inherent.score,
+    targetScore,
+    completion,
+  });
 }
+
 
 function getStatusBadge(status: string) {
   switch (status) {
@@ -464,8 +477,7 @@ export const RisksTable = ({
                       {getSortIcon('title')}
                     </button>
                   </TableHead>
-                  <TableHead>SEVERITY</TableHead>
-                  <TableHead>RESIDUAL RISK</TableHead>
+                  <TableHead>RISK SCORE</TableHead>
                   <TableHead>STATUS</TableHead>
                   <TableHead>OWNER</TableHead>
                   <TableHead>
@@ -497,26 +509,15 @@ export const RisksTable = ({
                           <Text>{risk.title}</Text>
                         </HStack>
                       </TableCell>
-                      <TableCell>{getSeverityBadge(risk.likelihood, risk.impact)}</TableCell>
                       <TableCell>
-                        {(() => {
-                          // Derive residual from the strategy + inherent so
-                          // the table matches the Treatment Plan hero. The
-                          // stored `residualLikelihood`/`residualImpact`
-                          // fields can be stale relative to the user's
-                          // current strategy choice.
-                          const target = previewResidual({
-                            inherentLikelihood: risk.likelihood,
-                            inherentImpact: risk.impact,
-                            strategy: risk.treatmentStrategy,
-                          });
-                          return (
-                            <RiskScoreBadge
-                              likelihood={target.likelihood}
-                              impact={target.impact}
-                            />
-                          );
-                        })()}
+                        {/* Single risk-score column showing the current
+                            state with treatment progress factored in
+                            (interpolated between inherent and the strategy
+                            target by task completion). The detail page has
+                            the full inherent → target breakdown; in the
+                            list view a single number is what the user
+                            actually scans. */}
+                        <RiskScoreBadge score={currentSeverityScore(risk)} />
                       </TableCell>
                       <TableCell>{getStatusBadge(risk.status)}</TableCell>
                       <TableCell>

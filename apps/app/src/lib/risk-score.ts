@@ -48,6 +48,20 @@ export function getRiskLevelFromScore(score: number): RiskLevel {
   return 'very-low';
 }
 
+/**
+ * Solid (full-opacity) color tokens for each risk level. Built from the
+ * `--success` / `--warning` / `--destructive` design tokens that drive the
+ * RiskScale bar segments, so any UI surface that shows a level (numeral,
+ * badge, tick, narrative tag, matrix cell) reads as the same color family.
+ */
+export const LEVEL_COLOR: Record<RiskLevel, string> = {
+  'very-low': 'var(--success)',
+  low: 'color-mix(in oklab, var(--success) 50%, var(--warning))',
+  medium: 'var(--warning)',
+  high: 'color-mix(in oklab, var(--warning) 50%, var(--destructive))',
+  'very-high': 'var(--destructive)',
+};
+
 export function getRiskScore(likelihood: Likelihood, impact: Impact): RiskScore {
   const raw = LIKELIHOOD_SCORES[likelihood] * IMPACT_SCORES[impact];
   const score = Math.max(1, Math.ceil(raw / 2.5));

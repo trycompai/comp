@@ -95,6 +95,10 @@ export class RisksService {
                 },
               },
             },
+            // Linked task statuses are needed by the table to compute the
+            // current (interpolated) severity score so the badge reflects
+            // treatment progress, not just inherent risk.
+            tasks: { select: { id: true, status: true } },
           },
         }),
         db.risk.count({ where }),
