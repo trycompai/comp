@@ -485,7 +485,7 @@
         },
         "responses": {
           "default": {
-            "description": "Ownership transferred successfully",
+            "description": "Not found - Organization or member not found\n\nForbidden - Only organization owner can transfer ownership\n\nUnauthorized - Invalid or missing authentication\n\nBad request - Invalid input\n\nOwnership transferred successfully",
             "content": {
               "application/json": {
                 "schema": {
@@ -8092,7 +8092,7 @@
         "parameters": [],
         "responses": {
           "default": {
-            "description": "macOS agent DMG file download",
+            "description": "Internal server error\n\nmacOS agent file not found in S3\n\nUnauthorized - Invalid or missing authentication\n\nmacOS agent DMG file download",
             "content": {
               "application/x-apple-diskimage": {
                 "schema": {
@@ -8138,7 +8138,7 @@
         "parameters": [],
         "responses": {
           "default": {
-            "description": "Windows agent ZIP file download containing MSI installer and setup scripts",
+            "description": "Internal server error\n\nWindows agent file not found in S3\n\nUnauthorized - Invalid or missing authentication\n\nWindows agent ZIP file download containing MSI installer and setup scripts",
             "content": {
               "application/zip": {
                 "schema": {
@@ -11957,6 +11957,44 @@
           }
         },
         "summary": "Download all policies as watermarked PDF",
+        "tags": [
+          "Trust Access"
+        ]
+      }
+    },
+    "/v1/trust-access/access/{token}/policies/{policyId}/download": {
+      "get": {
+        "description": "Generate watermarked PDF for a specific published policy and return a signed download URL",
+        "operationId": "TrustAccessController_downloadPolicy_v1",
+        "parameters": [
+          {
+            "name": "token",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "policyId",
+            "required": true,
+            "in": "path",
+            "description": "Policy ID",
+            "schema": {
+              "example": "pol_abc123",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Signed URL for watermarked PDF returned"
+          },
+          "404": {
+            "description": "Policy not found"
+          }
+        },
+        "summary": "Download single policy as watermarked PDF",
         "tags": [
           "Trust Access"
         ]
@@ -22001,6 +22039,11 @@
             "type": "string",
             "description": "Member join date (createdAt override)",
             "example": "2024-01-15T00:00:00.000Z"
+          },
+          "backgroundCheckExempt": {
+            "type": "boolean",
+            "description": "When true, this member is exempt from the org-level background check requirement and will count as complete in people scores.",
+            "example": false
           }
         }
       },
@@ -22525,6 +22568,23 @@
               "major",
               "severe"
             ]
+          },
+          "treatmentStrategy": {
+            "type": "string",
+            "description": "Risk treatment strategy",
+            "enum": [
+              "accept",
+              "avoid",
+              "mitigate",
+              "transfer"
+            ],
+            "default": "accept",
+            "example": "mitigate"
+          },
+          "treatmentStrategyDescription": {
+            "type": "object",
+            "description": "Description of the treatment strategy",
+            "example": "We isolated the vendor to a dedicated VPC."
           },
           "website": {
             "type": "string",
@@ -25643,6 +25703,7 @@
           "assignee": {
             "description": "Assignee information",
             "nullable": true,
+            "type": "object",
             "allOf": [
               {
                 "$ref": "#/components/schemas/TaskItemAssigneeDto"
@@ -25660,6 +25721,7 @@
           "updatedBy": {
             "description": "Last updater information",
             "nullable": true,
+            "type": "object",
             "allOf": [
               {
                 "$ref": "#/components/schemas/TaskItemUpdaterDto"
