@@ -149,6 +149,7 @@ export function MemberRow({
   const isDeactivated = member.deactivated || !member.isActive;
   const profileHref = `/${orgId}/people/${memberId}`;
   const hasCompletedBackgroundCheck = isBackgroundCheckComplete(backgroundCheckStatus);
+  const memberExempt = member.backgroundCheckExempt === true;
   const shouldShowTaskRequirements = !isPlatformAdmin && !isDeactivated;
   const taskItems: TaskCountItem[] = [];
 
@@ -184,7 +185,7 @@ export function MemberRow({
     });
   }
 
-  if (shouldShowTaskRequirements && backgroundCheckStepEnabled) {
+  if (shouldShowTaskRequirements && backgroundCheckStepEnabled && !memberExempt) {
     taskItems.push({
       label: 'Background check',
       completed: hasCompletedBackgroundCheck ? 1 : 0,
@@ -274,7 +275,7 @@ export function MemberRow({
                 >
                   {memberName}
                 </Link>
-                {backgroundCheckStepEnabled && hasCompletedBackgroundCheck && (
+                {backgroundCheckStepEnabled && !memberExempt && hasCompletedBackgroundCheck && (
                   <BackgroundCheckVerifiedTick />
                 )}
               </div>

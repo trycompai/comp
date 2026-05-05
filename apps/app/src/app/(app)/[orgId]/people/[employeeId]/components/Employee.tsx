@@ -84,6 +84,7 @@ export function Employee({
           orgId={orgId}
           backgroundCheck={initialBackgroundCheck}
           backgroundCheckStepEnabled={backgroundCheckStepEnabled}
+          memberBackgroundCheckExempt={memberBackgroundCheckExempt}
         />
       }
     >
