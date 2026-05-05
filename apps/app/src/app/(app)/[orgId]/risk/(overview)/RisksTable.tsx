@@ -10,7 +10,7 @@ import {
   type RisksQueryParams,
 } from '@/hooks/use-risks';
 import { getSortingStateParser } from '@/lib/parsers';
-import { getRiskScore } from '@/lib/risk-score';
+import { getRiskLevelFromScore, getRiskScore, LEVEL_LABEL } from '@/lib/risk-score';
 import {
   interpolatedResidualScore,
   previewResidual,
@@ -511,17 +511,17 @@ export const RisksTable = ({
                         </HStack>
                       </TableCell>
                       {(() => {
-                        // Both columns reflect the *current* treatment-aware
-                        // state — inherent interpolated toward the strategy
-                        // target by task completion. SEVERITY is the
-                        // qualitative band (Low / Medium / High / etc.) for
-                        // at-a-glance triage; RISK SCORE is the precise 1-10
-                        // number. Computed once, rendered twice.
+                        // Both columns describe the *current* treatment-aware
+                        // state. SEVERITY shows the qualitative level as
+                        // plain text (no chip — the colored chip is on RISK
+                        // SCORE, so a single visual signal carries the band
+                        // and the second column adds the precise number).
                         const score = currentSeverityScore(risk);
+                        const level = getRiskLevelFromScore(score);
                         return (
                           <>
                             <TableCell>
-                              <RiskScoreBadge score={score} labelOnly />
+                              <Text>{LEVEL_LABEL[level]}</Text>
                             </TableCell>
                             <TableCell>
                               <RiskScoreBadge score={score} />

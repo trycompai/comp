@@ -62,6 +62,15 @@ export const LEVEL_COLOR: Record<RiskLevel, string> = {
   'very-high': 'var(--destructive)',
 };
 
+/** Human-readable level labels for risk badges and table cells. */
+export const LEVEL_LABEL: Record<RiskLevel, string> = {
+  'very-low': 'Very low',
+  low: 'Low',
+  medium: 'Medium',
+  high: 'High',
+  'very-high': 'Very high',
+};
+
 export function getRiskScore(likelihood: Likelihood, impact: Impact): RiskScore {
   const raw = LIKELIHOOD_SCORES[likelihood] * IMPACT_SCORES[impact];
   const score = Math.max(1, Math.ceil(raw / 2.5));

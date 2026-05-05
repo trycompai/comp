@@ -1,19 +1,11 @@
 import { cn } from '@/lib/utils';
 import {
   LEVEL_COLOR,
+  LEVEL_LABEL,
   getRiskLevelFromScore,
   getRiskScore,
-  type RiskLevel,
 } from '@/lib/risk-score';
 import type { Impact, Likelihood } from '@db';
-
-const LEVEL_LABEL: Record<RiskLevel, string> = {
-  'very-low': 'Very low',
-  low: 'Low',
-  medium: 'Medium',
-  high: 'High',
-  'very-high': 'Very high',
-};
 
 export interface RiskScoreBadgeProps {
   /**
