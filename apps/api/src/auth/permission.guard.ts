@@ -179,9 +179,19 @@ export class PermissionGuard implements CanActivate {
       return false;
     }
 
+    // better-auth 1.4.x's `hasPermission` body schema is a discriminated
+    // union that requires BOTH keys present, with the unused side set to
+    // an explicit `undefined`. zod 4 (which better-auth's plugin uses
+    // internally) rejects "key is absent" — only "key is undefined" passes
+    // the `z.undefined()` branch. Without the explicit `permission: undefined`,
+    // the schema rejects every request with `[body] Invalid input`, the
+    // catch in canActivate turns that into a generic "Unable to verify
+    // permissions" 403, and EVERY cookie-authenticated request returns 403.
+    // Reproduced repo-side via `bun run zod-repro.mjs`. Discovered on
+    // ENG-221 and the same fix applies here.
     const result = await auth.api.hasPermission({
       headers,
-      body: { permissions },
+      body: { permissions, permission: undefined },
     });
 
     return result.success === true;
