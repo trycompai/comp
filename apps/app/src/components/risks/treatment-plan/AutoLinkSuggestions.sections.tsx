@@ -2,12 +2,61 @@
 
 import { cn } from '@/lib/utils';
 import { Text } from '@trycompai/design-system';
-import { Checkmark } from '@trycompai/design-system/icons';
+import { ChevronLeft, ChevronRight, Checkmark } from '@trycompai/design-system/icons';
+import { useEffect, useState } from 'react';
 import {
   isControlDerived,
   type SuggestedControl,
   type SuggestedTask,
 } from './AutoLinkSuggestions.types';
+
+const PAGE_SIZE = 10;
+
+function Pagination({
+  page,
+  pageCount,
+  onPageChange,
+  total,
+}: {
+  page: number;
+  pageCount: number;
+  onPageChange: (next: number) => void;
+  total: number;
+}) {
+  if (pageCount <= 1) return null;
+  const start = (page - 1) * PAGE_SIZE + 1;
+  const end = Math.min(page * PAGE_SIZE, total);
+  return (
+    <div className="mt-2 flex items-center justify-between gap-2 px-1 text-[11px] text-muted-foreground">
+      <span className="font-mono tabular-nums">
+        {start}–{end} of {total}
+      </span>
+      <div className="flex items-center gap-1">
+        <button
+          type="button"
+          onClick={() => onPageChange(Math.max(1, page - 1))}
+          disabled={page === 1}
+          className="inline-flex h-6 w-6 items-center justify-center rounded border border-border bg-transparent text-foreground transition-colors hover:bg-muted disabled:cursor-not-allowed disabled:opacity-40"
+          aria-label="Previous page"
+        >
+          <ChevronLeft size={12} aria-hidden="true" />
+        </button>
+        <span className="font-mono tabular-nums">
+          {page} / {pageCount}
+        </span>
+        <button
+          type="button"
+          onClick={() => onPageChange(Math.min(pageCount, page + 1))}
+          disabled={page === pageCount}
+          className="inline-flex h-6 w-6 items-center justify-center rounded border border-border bg-transparent text-foreground transition-colors hover:bg-muted disabled:cursor-not-allowed disabled:opacity-40"
+          aria-label="Next page"
+        >
+          <ChevronRight size={12} aria-hidden="true" />
+        </button>
+      </div>
+    </div>
+  );
+}
 
 export function ConfidencePill({ score }: { score: number }) {
   if (score <= 0) {
@@ -47,6 +96,17 @@ export function TasksSection({
   checkedTaskIds: Set<string>;
   onToggle: (id: string) => void;
 }) {
+  const pageCount = Math.max(1, Math.ceil(tasks.length / PAGE_SIZE));
+  const [page, setPage] = useState(1);
+  // Re-clamp the page when the list shrinks (e.g. after a re-run returns
+  // fewer tasks). Keeps the user on a valid page rather than rendering
+  // empty space.
+  useEffect(() => {
+    if (page > pageCount) setPage(pageCount);
+  }, [page, pageCount]);
+  const start = (page - 1) * PAGE_SIZE;
+  const visible = tasks.slice(start, start + PAGE_SIZE);
+
   return (
     <div>
       <div className="mb-1 flex items-center justify-between text-xs font-normal">
@@ -60,34 +120,42 @@ export function TasksSection({
           No tasks suggested. Try rerunning or link manually.
         </p>
       ) : (
-        tasks.map((t) => {
-          const checked = checkedTaskIds.has(t.id);
-          return (
-            <button
-              key={t.id}
-              type="button"
-              onClick={() => onToggle(t.id)}
-              aria-pressed={checked}
-              aria-label={`${checked ? 'Uncheck' : 'Check'} task ${t.title}`}
-              className="flex w-full items-start gap-2.5 border-b border-border bg-transparent px-1 py-2.5 text-left transition-colors hover:bg-muted"
-            >
-              <span
-                className={cn(
-                  'mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-[3px] border transition-colors',
-                  checked ? 'border-primary bg-primary' : 'border-border bg-background',
-                )}
+        <>
+          {visible.map((t) => {
+            const checked = checkedTaskIds.has(t.id);
+            return (
+              <button
+                key={t.id}
+                type="button"
+                onClick={() => onToggle(t.id)}
+                aria-pressed={checked}
+                aria-label={`${checked ? 'Uncheck' : 'Check'} task ${t.title}`}
+                className="flex w-full items-start gap-2.5 border-b border-border bg-transparent px-1 py-2.5 text-left transition-colors hover:bg-muted"
               >
-                {checked && (
-                  <Checkmark size={11} className="text-primary-foreground" aria-hidden="true" />
-                )}
-              </span>
-              <div className={cn('min-w-0 flex-1', !checked && 'opacity-55')}>
-                <div className="text-[13px] leading-[1.4]">{t.title}</div>
-              </div>
-              <ConfidencePill score={t.score} />
-            </button>
-          );
-        })
+                <span
+                  className={cn(
+                    'mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-[3px] border transition-colors',
+                    checked ? 'border-primary bg-primary' : 'border-border bg-background',
+                  )}
+                >
+                  {checked && (
+                    <Checkmark size={11} className="text-primary-foreground" aria-hidden="true" />
+                  )}
+                </span>
+                <div className={cn('min-w-0 flex-1', !checked && 'opacity-55')}>
+                  <div className="text-[13px] leading-[1.4]">{t.title}</div>
+                </div>
+                <ConfidencePill score={t.score} />
+              </button>
+            );
+          })}
+          <Pagination
+            page={page}
+            pageCount={pageCount}
+            onPageChange={setPage}
+            total={tasks.length}
+          />
+        </>
       )}
     </div>
   );
@@ -102,6 +170,14 @@ export function ControlsSection({
   checkedTaskIds: Set<string>;
   derivedControlsCount: number;
 }) {
+  const pageCount = Math.max(1, Math.ceil(controls.length / PAGE_SIZE));
+  const [page, setPage] = useState(1);
+  useEffect(() => {
+    if (page > pageCount) setPage(pageCount);
+  }, [page, pageCount]);
+  const start = (page - 1) * PAGE_SIZE;
+  const visible = controls.slice(start, start + PAGE_SIZE);
+
   return (
     <div className="mt-4 border-t border-border pt-4">
       <div className="mb-1 flex items-center justify-between text-xs font-normal">
@@ -114,7 +190,7 @@ export function ControlsSection({
         These controls will be linked through the selected tasks.
       </Text>
       <div className="mt-2">
-        {controls.map((c) => {
+        {visible.map((c) => {
           const isDerived = isControlDerived(c, checkedTaskIds);
           return (
             <div
@@ -137,6 +213,12 @@ export function ControlsSection({
             </div>
           );
         })}
+        <Pagination
+          page={page}
+          pageCount={pageCount}
+          onPageChange={setPage}
+          total={controls.length}
+        />
       </div>
     </div>
   );
