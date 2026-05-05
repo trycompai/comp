@@ -17,6 +17,14 @@ export interface TreatmentPlanEntity {
   residualImpact: Impact;
   treatmentStrategy: RiskTreatmentType;
   treatmentStrategyDescription: string | null;
+  /**
+   * Per-strategy saved descriptions. Lets the UI swap the displayed
+   * description instantly when the user picks a different strategy,
+   * without waiting for the API to round-trip and the SWR cache to
+   * revalidate. Server keeps these in sync; see
+   * `apps/api/src/risks/strategy-descriptions.ts`.
+   */
+  strategyDescriptions?: Partial<Record<RiskTreatmentType, string>> | null;
   tasks: {
     id: string;
     title: string;
@@ -104,7 +112,17 @@ export function TreatmentPlanTab({
     }
   };
 
-  const description = entity.treatmentStrategyDescription ?? '';
+  // When the local strategy state matches the persisted strategy on the
+  // entity, use the active `treatmentStrategyDescription` (most up-to-date).
+  // When it differs (the user just clicked a different strategy and the
+  // SWR cache hasn't revalidated yet), fall back to the saved text for
+  // that strategy from `strategyDescriptions`. Without this, switching
+  // strategies briefly shows the previous strategy's content under the
+  // new strategy's heading.
+  const description =
+    strategy === entity.treatmentStrategy
+      ? (entity.treatmentStrategyDescription ?? '')
+      : (entity.strategyDescriptions?.[strategy] ?? '');
   const isMitigate = strategy === RiskTreatmentType.mitigate;
   const hasPlan = description.trim().length > 0;
   const hasLinkedWork = entity.tasks.length > 0;

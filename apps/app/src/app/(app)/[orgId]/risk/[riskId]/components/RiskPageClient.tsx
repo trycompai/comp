@@ -334,6 +334,12 @@ export function RiskPageClient({
                   residualImpact: risk.residualImpact,
                   treatmentStrategy: risk.treatmentStrategy,
                   treatmentStrategyDescription: risk.treatmentStrategyDescription,
+                  strategyDescriptions:
+                    (swrRisk as { strategyDescriptions?: unknown } | undefined)
+                      ?.strategyDescriptions as
+                      | Partial<Record<RiskTreatmentType, string>>
+                      | null
+                      | undefined ?? null,
                   tasks: swrRisk?.tasks ?? [],
                 }}
                 canUpdate={canUpdate}

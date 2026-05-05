@@ -500,6 +500,12 @@ export function VendorDetailTabs({
                   residualImpact: resolvedVendor.residualImpact,
                   treatmentStrategy: resolvedVendor.treatmentStrategy,
                   treatmentStrategyDescription: resolvedVendor.treatmentStrategyDescription,
+                  strategyDescriptions:
+                    (resolvedVendor as { strategyDescriptions?: unknown })
+                      .strategyDescriptions as
+                      | Partial<Record<RiskTreatmentType, string>>
+                      | null
+                      | undefined ?? null,
                   tasks: swrVendor?.tasks ?? [],
                 }}
                 canUpdate={canUpdate}
