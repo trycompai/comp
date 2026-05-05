@@ -518,6 +518,15 @@ export async function runLinkage({
       queryText: riskQueryText(risk),
       topK: suggestionsOnly ? SUGGESTIONS_QUERY_TOP_K : AUTONOMOUS_QUERY_TOP_K,
     });
+    console.info(
+      `[linkage] risk "${risk.title}" → cosine returned ${similar.length} candidates` +
+        (similar.length > 0
+          ? ` (top scores: ${similar
+              .slice(0, 3)
+              .map((s) => s.score.toFixed(2))
+              .join(', ')})`
+          : ''),
+    );
     // Both paths feed the reranker — autonomous needs it just as badly to
     // get past the 0.4-0.6 cosine band that dominates compliance prose.
     const links = linkSuggestions({
@@ -528,6 +537,12 @@ export async function runLinkage({
     });
     let count = 0;
     let perEntitySuggestions: RunLinkageOutput['suggestions'];
+    const inScopeMatches = links.filter((l) => taskById.has(l.id)).length;
+    if (inScopeMatches !== links.length) {
+      console.warn(
+        `[linkage] risk "${risk.title}" → ${links.length - inScopeMatches} of ${links.length} cosine matches dropped (not in task scope after filter)`,
+      );
+    }
     if (links.length > 0) {
       const source: RerankSource = {
         kind: 'risk',
@@ -545,6 +560,9 @@ export async function runLinkage({
         const built = await buildSuggestions({ organizationId, taskScores });
         perEntitySuggestions = { forRiskId: risk.id, ...built };
         count = taskScores.size;
+        console.info(
+          `[linkage] risk "${risk.title}" → suggestions: ${count} tasks, ${built.controls.length} controls`,
+        );
       } else {
         const idsToConnect = await rerankForAutonomousPersist({
           source,
@@ -558,7 +576,14 @@ export async function runLinkage({
           });
         }
         count = idsToConnect.length;
+        console.info(
+          `[linkage] risk "${risk.title}" → persisted ${count} task link(s)`,
+        );
       }
+    } else {
+      console.warn(
+        `[linkage] risk "${risk.title}" → 0 candidates after linkSuggestions; skipping rerank`,
+      );
     }
     completedRisks += 1;
     onPhase?.({ name: 'matching-risks', current: completedRisks, total: risks.length });
