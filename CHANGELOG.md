@@ -1,3 +1,10 @@
+## [3.43.1](https://github.com/trycompai/comp/compare/v3.43.0...v3.43.1) (2026-05-05)
+
+
+### Bug Fixes
+
+* **api:** pass explicit permission undefined to better-auth ([46a0112](https://github.com/trycompai/comp/commit/46a011235514b2a9397c759fefdf15d26e025aac))
+
 # [3.43.0](https://github.com/trycompai/comp/compare/v3.42.0...v3.43.0) (2026-05-05)
 
 
