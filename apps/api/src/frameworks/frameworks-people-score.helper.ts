@@ -61,6 +61,7 @@ export async function computePeopleScore({
     membersWithInstalledDevices,
     trainingCompletions,
     membersWithCompletedBackgroundChecks,
+    exemptMemberIds,
   ] = await Promise.all([
     getMembersWithInstalledDevices({
       organizationId,
@@ -74,6 +75,9 @@ export async function computePeopleScore({
     }),
     backgroundCheckStepEnabled
       ? getMembersWithCompletedBackgroundChecks({ organizationId, memberIds })
+      : Promise.resolve(new Set<string>()),
+    backgroundCheckStepEnabled
+      ? getExemptMemberIds({ organizationId, memberIds })
       : Promise.resolve(new Set<string>()),
   ]);
 
@@ -101,7 +105,9 @@ export async function computePeopleScore({
     const hasInstalledDevice = deviceAgentStepEnabled
       ? membersWithInstalledDevices.has(employee.id)
       : true;
-    const hasCompletedBackgroundCheck = backgroundCheckStepEnabled
+    const memberRequiresBgCheck =
+      backgroundCheckStepEnabled && !exemptMemberIds.has(employee.id);
+    const hasCompletedBackgroundCheck = memberRequiresBgCheck
       ? membersWithCompletedBackgroundChecks.has(employee.id)
       : true;
 
@@ -204,4 +210,23 @@ async function getMembersWithCompletedBackgroundChecks({
   });
 
   return new Set(completedBackgroundChecks.map((check) => check.memberId));
+}
+
+async function getExemptMemberIds({
+  organizationId,
+  memberIds,
+}: {
+  organizationId: string;
+  memberIds: string[];
+}) {
+  const exemptMembers = await db.member.findMany({
+    where: {
+      organizationId,
+      id: { in: memberIds },
+      backgroundCheckExempt: true,
+    },
+    select: { id: true },
+  });
+
+  return new Set(exemptMembers.map((member) => member.id));
 }

@@ -7,6 +7,42 @@ import { PermissionGuard } from '../auth/permission.guard';
 import { PeopleController } from './people.controller';
 import { BadRequestException } from '@nestjs/common';
 
+// Mock @db to avoid PrismaClient initialization in controller tests
+jest.mock('@db', () => ({
+  db: {
+    member: {
+      findMany: jest.fn(),
+      findFirst: jest.fn(),
+      findFirstOrThrow: jest.fn(),
+      create: jest.fn(),
+      update: jest.fn(),
+      delete: jest.fn(),
+      createMany: jest.fn(),
+    },
+    user: { update: jest.fn() },
+    organization: { findUnique: jest.fn() },
+    session: { deleteMany: jest.fn() },
+    task: { findMany: jest.fn(), updateMany: jest.fn() },
+    policy: { findMany: jest.fn(), updateMany: jest.fn() },
+    risk: { findMany: jest.fn(), updateMany: jest.fn() },
+    vendor: { findMany: jest.fn(), updateMany: jest.fn() },
+    organizationChart: { findUnique: jest.fn(), update: jest.fn() },
+  },
+  BackgroundCheckStatus: {
+    pending: 'pending',
+    in_progress: 'in_progress',
+    completed: 'completed',
+    completed_with_flags: 'completed_with_flags',
+    cancelled: 'cancelled',
+  },
+  FindingType: { soc2: 'soc2', iso27001: 'iso27001' },
+  FindingStatus: { open: 'open', closed: 'closed' },
+  PhaseCompletionType: { manual: 'manual', auto: 'auto' },
+  TimelinePhaseStatus: { pending: 'pending', completed: 'completed' },
+  TimelineStatus: { draft: 'draft', active: 'active' },
+  Departments: { it: 'it', none: 'none' },
+}));
+
 // Mock auth.server to avoid importing better-auth ESM in Jest
 jest.mock('../auth/auth.server', () => ({
   auth: {
@@ -217,6 +253,24 @@ describe('PeopleController', () => {
         'mem_1',
         'org_123',
         dto,
+        'usr_123',
+      );
+    });
+
+    it('passes backgroundCheckExempt through to the service', async () => {
+      mockPeopleService.updateById.mockResolvedValue({ id: 'mem_1' });
+
+      await controller.updateMember(
+        'mem_1',
+        { backgroundCheckExempt: true } as any,
+        'org_123',
+        mockAuthContext,
+      );
+
+      expect(mockPeopleService.updateById).toHaveBeenCalledWith(
+        'mem_1',
+        'org_123',
+        { backgroundCheckExempt: true },
         'usr_123',
       );
     });

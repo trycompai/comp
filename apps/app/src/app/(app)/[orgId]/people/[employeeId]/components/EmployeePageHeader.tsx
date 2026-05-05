@@ -10,11 +10,13 @@ export function EmployeePageHeader({
   orgId,
   backgroundCheck,
   backgroundCheckStepEnabled,
+  memberBackgroundCheckExempt,
 }: {
   employeeName: string;
   orgId: string;
   backgroundCheck: BackgroundCheckRecord | null;
   backgroundCheckStepEnabled: boolean;
+  memberBackgroundCheckExempt: boolean;
 }) {
   const isVerified = backgroundCheck
     ? isCompletedBackgroundCheck(backgroundCheck.status)
@@ -33,7 +35,7 @@ export function EmployeePageHeader({
       </div>
       <div className="flex min-w-0 items-center gap-2">
         <Heading level="1">{employeeName}</Heading>
-        {backgroundCheckStepEnabled && isVerified && (
+        {backgroundCheckStepEnabled && !memberBackgroundCheckExempt && isVerified && (
           <BackgroundCheckVerifiedTick size={18} lift />
         )}
       </div>
