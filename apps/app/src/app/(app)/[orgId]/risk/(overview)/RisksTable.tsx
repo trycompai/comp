@@ -10,6 +10,7 @@ import {
   type RisksQueryParams,
 } from '@/hooks/use-risks';
 import { getSortingStateParser } from '@/lib/parsers';
+import { previewResidual } from '@/lib/suggested-residual';
 import type { Member, User } from '@db';
 import { Risk as RiskType } from '@db';
 import {
@@ -498,10 +499,24 @@ export const RisksTable = ({
                       </TableCell>
                       <TableCell>{getSeverityBadge(risk.likelihood, risk.impact)}</TableCell>
                       <TableCell>
-                        <RiskScoreBadge
-                          likelihood={risk.residualLikelihood}
-                          impact={risk.residualImpact}
-                        />
+                        {(() => {
+                          // Derive residual from the strategy + inherent so
+                          // the table matches the Treatment Plan hero. The
+                          // stored `residualLikelihood`/`residualImpact`
+                          // fields can be stale relative to the user's
+                          // current strategy choice.
+                          const target = previewResidual({
+                            inherentLikelihood: risk.likelihood,
+                            inherentImpact: risk.impact,
+                            strategy: risk.treatmentStrategy,
+                          });
+                          return (
+                            <RiskScoreBadge
+                              likelihood={target.likelihood}
+                              impact={target.impact}
+                            />
+                          );
+                        })()}
                       </TableCell>
                       <TableCell>{getStatusBadge(risk.status)}</TableCell>
                       <TableCell>

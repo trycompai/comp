@@ -70,6 +70,34 @@ vi.mock('@/hooks/use-risks', () => ({
 // Mock @db
 vi.mock('@db', () => ({
   Risk: {},
+  // Enums used by suggested-residual / risk-score helpers. Values mirror
+  // the real Prisma enum string values.
+  Likelihood: {
+    very_unlikely: 'very_unlikely',
+    unlikely: 'unlikely',
+    possible: 'possible',
+    likely: 'likely',
+    very_likely: 'very_likely',
+  },
+  Impact: {
+    insignificant: 'insignificant',
+    minor: 'minor',
+    moderate: 'moderate',
+    major: 'major',
+    severe: 'severe',
+  },
+  RiskTreatmentType: {
+    accept: 'accept',
+    avoid: 'avoid',
+    mitigate: 'mitigate',
+    transfer: 'transfer',
+  },
+  TaskStatus: {
+    todo: 'todo',
+    in_progress: 'in_progress',
+    done: 'done',
+    not_relevant: 'not_relevant',
+  },
 }));
 
 // Mock onboarding hooks
