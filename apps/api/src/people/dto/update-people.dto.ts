@@ -44,4 +44,14 @@ export class UpdatePeopleDto extends PartialType(CreatePeopleDto) {
   @IsOptional()
   @IsDateString()
   createdAt?: string;
+
+  @ApiProperty({
+    description:
+      'When true, this member is exempt from the org-level background check requirement and will count as complete in people scores.',
+    example: false,
+    required: false,
+  })
+  @IsOptional()
+  @IsBoolean()
+  backgroundCheckExempt?: boolean;
 }

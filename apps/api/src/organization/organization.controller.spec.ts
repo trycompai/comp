@@ -1,3 +1,7 @@
+jest.mock('@db', () => ({
+  db: {},
+}));
+
 import { Test, TestingModule } from '@nestjs/testing';
 import { BadRequestException } from '@nestjs/common';
 import { OrganizationController } from './organization.controller';
@@ -166,6 +170,23 @@ describe('OrganizationController', () => {
 
       expect(result.isOwner).toBeUndefined();
       expect(mockOrganizationService.getOwnershipData).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('updateOrganization', () => {
+    it('passes backgroundCheckStepEnabled through to the service', async () => {
+      mockOrganizationService.updateById.mockResolvedValue({ id: 'org_123' });
+
+      await controller.updateOrganization(
+        'org_123',
+        sessionAuthContext,
+        { backgroundCheckStepEnabled: false },
+      );
+
+      expect(mockOrganizationService.updateById).toHaveBeenCalledWith(
+        'org_123',
+        { backgroundCheckStepEnabled: false },
+      );
     });
   });
 

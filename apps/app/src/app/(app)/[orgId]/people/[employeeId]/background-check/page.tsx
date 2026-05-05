@@ -59,6 +59,7 @@ export default async function EmployeeBackgroundCheckPage({
           }
         }
         backgroundCheckStepEnabled={backgroundCheckStepEnabled}
+        memberBackgroundCheckExempt={employee.backgroundCheckExempt === true}
       />
     </PageLayout>
   );

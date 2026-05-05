@@ -9,6 +9,18 @@ jest.mock('../auth/auth.server', () => ({
   auth: { api: { getSession: jest.fn() } },
 }));
 
+jest.mock('./evidence-forms.service', () => ({
+  EvidenceFormsService: class EvidenceFormsService {},
+}));
+
+jest.mock('../auth/hybrid-auth.guard', () => ({
+  HybridAuthGuard: class HybridAuthGuard {},
+}));
+
+jest.mock('../auth/permission.guard', () => ({
+  PermissionGuard: class PermissionGuard {},
+}));
+
 jest.mock('@trycompai/auth', () => ({
   statement: {
     evidence: ['create', 'read', 'update', 'delete'],
@@ -23,6 +35,8 @@ describe('EvidenceFormsController', () => {
   const mockService = {
     listForms: jest.fn(),
     getFormStatuses: jest.fn(),
+    getFormSettings: jest.fn(),
+    updateFormSetting: jest.fn(),
     getMySubmissions: jest.fn(),
     getPendingSubmissionCount: jest.fn(),
     getFormWithSubmissions: jest.fn(),
@@ -85,6 +99,39 @@ describe('EvidenceFormsController', () => {
 
       expect(result).toEqual(mockStatuses);
       expect(service.getFormStatuses).toHaveBeenCalledWith('org_1');
+    });
+  });
+
+  describe('getFormSettings', () => {
+    it('should call service.getFormSettings with organizationId', async () => {
+      const mockSettings = [{ formType: 'meeting', isNotRelevant: false }];
+      mockService.getFormSettings.mockResolvedValue(mockSettings);
+
+      const result = await controller.getFormSettings('org_1');
+
+      expect(result).toEqual(mockSettings);
+      expect(service.getFormSettings).toHaveBeenCalledWith('org_1');
+    });
+  });
+
+  describe('updateFormSetting', () => {
+    it('should call service.updateFormSetting with correct params', async () => {
+      const mockSetting = { formType: 'meeting', isNotRelevant: true };
+      const payload = { isNotRelevant: true };
+      mockService.updateFormSetting.mockResolvedValue(mockSetting);
+
+      const result = await controller.updateFormSetting(
+        'org_1',
+        'meeting',
+        payload,
+      );
+
+      expect(result).toEqual(mockSetting);
+      expect(service.updateFormSetting).toHaveBeenCalledWith({
+        organizationId: 'org_1',
+        formType: 'meeting',
+        payload,
+      });
     });
   });
 

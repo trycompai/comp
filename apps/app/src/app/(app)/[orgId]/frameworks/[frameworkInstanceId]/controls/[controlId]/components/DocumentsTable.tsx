@@ -1,7 +1,7 @@
 'use client';
 
-import { apiClient } from '@/lib/api-client';
 import { usePermissions } from '@/hooks/use-permissions';
+import { apiClient } from '@/lib/api-client';
 import {
   Badge,
   Button,
@@ -22,6 +22,7 @@ import { getDocumentTypeLabel, toDocumentUrlSlug } from './documentTypeLabels';
 interface DocumentTypeRow {
   formType: string;
   submissionCount: number;
+  isNotRelevant: boolean;
 }
 
 export function DocumentsTable({
@@ -50,9 +51,7 @@ export function DocumentsTable({
       toast.success('Document unlinked');
       router.refresh();
     } catch (error) {
-      toast.error(
-        error instanceof Error ? error.message : 'Failed to unlink document',
-      );
+      toast.error(error instanceof Error ? error.message : 'Failed to unlink document');
     } finally {
       setPending(null);
     }
@@ -80,33 +79,32 @@ export function DocumentsTable({
         {rows.map((row) => {
           const label = getDocumentTypeLabel(row.formType);
           const satisfied = row.submissionCount > 0;
+          const badgeLabel = row.isNotRelevant
+            ? 'Not relevant'
+            : satisfied
+              ? 'Submitted'
+              : 'Missing';
+          const badgeVariant = row.isNotRelevant
+            ? 'secondary'
+            : satisfied
+              ? 'default'
+              : 'destructive';
           return (
             <TableRow
               key={row.formType}
-              onClick={() =>
-                router.push(
-                  `/${orgId}/documents/${toDocumentUrlSlug(row.formType)}`,
-                )
-              }
+              onClick={() => router.push(`/${orgId}/documents/${toDocumentUrlSlug(row.formType)}`)}
               style={{ cursor: 'pointer' }}
             >
               <TableCell>
-                <span
-                  className="block max-w-[320px] truncate text-sm"
-                  title={label}
-                >
+                <span className="block max-w-[320px] truncate text-sm" title={label}>
                   {label}
                 </span>
               </TableCell>
               <TableCell>
-                <Badge variant={satisfied ? 'default' : 'destructive'}>
-                  {satisfied ? 'Submitted' : 'Missing'}
-                </Badge>
+                <Badge variant={badgeVariant}>{badgeLabel}</Badge>
               </TableCell>
               <TableCell>
-                <span className="tabular-nums text-sm">
-                  {row.submissionCount}
-                </span>
+                <span className="tabular-nums text-sm">{row.submissionCount}</span>
               </TableCell>
               {canUpdate ? (
                 <TableCell>

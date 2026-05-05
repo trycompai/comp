@@ -1,27 +1,74 @@
 'use client';
 
-import type { PentestCreateRequest } from '@/lib/security/penetration-tests-client';
-import { Button } from '@trycompai/design-system';
-import { ArrowRight, Link } from '@trycompai/design-system/icons';
+import type { PentestCheck, PentestCreateRequest } from '@/lib/security/penetration-tests-client';
+import { zodResolver } from '@hookform/resolvers/zod';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  Button,
+} from '@trycompai/design-system';
+import { ArrowRight } from '@trycompai/design-system/icons';
 import { useRouter } from 'next/navigation';
-import { useState } from 'react';
+import type { FormEvent } from 'react';
+import { useMemo, useState } from 'react';
+import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
+import { z } from 'zod';
+import { CreateRunTargetFields } from './CreateRunTargetFields';
+import { RunExpectationSummary } from './RunExpectationSummary';
+import { ScanAdvancedOptions } from './ScanAdvancedOptions';
+import { ScanProfilePicker } from './ScanProfilePicker';
+import {
+  estimateRuntime,
+  resolveEffectiveScanMode,
+  scanProfiles,
+  withRequiredDiscovery,
+  type ScanProfileId,
+} from './scan-profiles';
 
 interface CreateRunPanelProps {
   orgId: string;
   onSubmit: (payload: PentestCreateRequest) => Promise<{ id: string }>;
   isSubmitting?: boolean;
-  /** Subscription allowance balance — disables submit when 0. */
   balance?: number;
   planRequired?: boolean;
   quotaLabel?: 'Plan';
 }
 
-/**
- * Inline right-pane form that replaces the old modal Dialog. Matches the
- * design-handoff layout: centered card with header label, target + repo
- * inputs, scope-summary box, and Cancel / Start-scan actions.
- */
+const createRunSchema = z.object({
+  targetUrl: z.string().min(1, 'Target URL is required.'),
+  repoUrl: z.string().optional(),
+  selectedProfile: z.enum(['quick', 'standard', 'deep']),
+  scanDepth: z.enum(['quick', 'standard', 'deep']),
+  evidenceLevel: z.enum(['report_only', 'safe_proof', 'impact_proof']),
+  checks: z
+    .array(
+      z.enum([
+        'discovery',
+        'secrets_info_disclosure',
+        'technology_config',
+        'xss',
+        'injection',
+        'authentication',
+        'authorization',
+        'idor_bola',
+        'ssrf_xxe',
+        'csrf',
+        'race_conditions',
+        'business_logic',
+      ]),
+    )
+    .min(1, 'Select at least one check.'),
+});
+
+export type CreateRunForm = z.infer<typeof createRunSchema>;
+
 export function CreateRunPanel({
   orgId,
   onSubmit,
@@ -31,16 +78,66 @@ export function CreateRunPanel({
   quotaLabel = 'Plan',
 }: CreateRunPanelProps) {
   const router = useRouter();
-  const [targetUrl, setTargetUrl] = useState('');
-  const [repoUrl, setRepoUrl] = useState('');
+  const [advancedOpen, setAdvancedOpen] = useState(false);
+  const [confirmationOpen, setConfirmationOpen] = useState(false);
   const canCreate = balance === undefined ? true : balance > 0;
+  const standardDefaults = scanProfiles.standard;
+  const form = useForm<CreateRunForm>({
+    resolver: zodResolver(createRunSchema),
+    defaultValues: {
+      targetUrl: '',
+      repoUrl: '',
+      selectedProfile: 'standard',
+      scanDepth: standardDefaults.scanDepth,
+      evidenceLevel: standardDefaults.evidenceLevel,
+      checks: standardDefaults.checks,
+    },
+  });
+  const selectedProfile = form.watch('selectedProfile');
+  const evidenceLevel = form.watch('evidenceLevel');
+  const checks = form.watch('checks');
+  const effectiveMode = useMemo(
+    () =>
+      resolveEffectiveScanMode({
+        evidenceLevel,
+        checks,
+      }),
+    [checks, evidenceLevel],
+  );
+  const runtimeEstimate = useMemo(
+    () =>
+      estimateRuntime({
+        effectiveMode,
+        evidenceLevel,
+        checks,
+      }),
+    [checks, effectiveMode, evidenceLevel],
+  );
+  const effectiveLabel =
+    effectiveMode === 'custom' ? 'Custom' : effectiveMode[0].toUpperCase() + effectiveMode.slice(1);
 
   const handleCancel = () => {
     router.push(`/${orgId}/security/penetration-tests`);
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleProfileChange = (profile: ScanProfileId) => {
+    const defaults = scanProfiles[profile];
+    form.setValue('selectedProfile', profile, { shouldDirty: true });
+    form.setValue('scanDepth', defaults.scanDepth, { shouldDirty: true });
+    form.setValue('evidenceLevel', defaults.evidenceLevel, {
+      shouldDirty: true,
+    });
+    form.setValue('checks', defaults.checks, { shouldDirty: true });
+  };
+
+  const handleChecksChange = (nextChecks: PentestCheck[]) => {
+    form.setValue('checks', withRequiredDiscovery(nextChecks), {
+      shouldDirty: true,
+      shouldValidate: true,
+    });
+  };
+
+  const handleSubmitForm = async (values: CreateRunForm, confirmed = false) => {
     if (!canCreate) {
       toast.error(
         planRequired
@@ -50,15 +147,32 @@ export function CreateRunPanel({
       router.push(`/${orgId}/settings/billing/add-ons/penetration-tests`);
       return;
     }
-    const normalized = normalizeUrl(targetUrl);
+
+    const resolvedMode = resolveEffectiveScanMode({
+      evidenceLevel: values.evidenceLevel,
+      checks: values.checks,
+    });
+    const submitScanDepth =
+      resolvedMode === 'custom' ? values.scanDepth : scanProfiles[resolvedMode].scanDepth;
+
+    if (!confirmed && (submitScanDepth === 'deep' || values.evidenceLevel === 'impact_proof')) {
+      setConfirmationOpen(true);
+      return;
+    }
+
+    const normalized = normalizeUrl(values.targetUrl);
     if (!normalized) {
       toast.error('Target URL is required.');
       return;
     }
+
     try {
       const result = await onSubmit({
         targetUrl: normalized,
-        ...(repoUrl.trim() ? { repoUrl: repoUrl.trim() } : {}),
+        ...(values.repoUrl?.trim() ? { repoUrl: values.repoUrl.trim() } : {}),
+        scanDepth: submitScanDepth,
+        evidenceLevel: values.evidenceLevel,
+        checks: values.checks,
       });
       router.push(`/${orgId}/security/penetration-tests/${encodeURIComponent(result.id)}`);
     } catch {
@@ -66,23 +180,35 @@ export function CreateRunPanel({
     }
   };
 
+  const handleConfirmSubmit = () => {
+    setConfirmationOpen(false);
+    void handleSubmitForm(form.getValues(), true);
+  };
+
+  const handleFormSubmit = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!canCreate) {
+      void handleSubmitForm(form.getValues());
+      return;
+    }
+
+    void form.handleSubmit((values) => handleSubmitForm(values))(event);
+  };
+
   return (
     <div className="min-h-0 overflow-y-auto">
-      <div className="mx-auto w-full max-w-[680px] px-6 py-10">
+      <div className="mx-auto w-full max-w-[760px] px-3 py-4 sm:px-6 sm:py-10">
         <form
           noValidate
-          onSubmit={(e) => void handleSubmit(e)}
-          className="rounded-[var(--radius)] border border-border bg-card p-8 shadow-[0_24px_48px_-12px_rgba(0,0,0,0.12)]"
+          onSubmit={handleFormSubmit}
+          className="rounded-[var(--radius)] border border-border bg-card p-4 shadow-[0_24px_48px_-12px_rgba(0,0,0,0.12)] sm:p-8"
         >
           <div className="mb-1.5 text-[10px] font-bold uppercase tracking-[0.1em] text-muted-foreground">
             New scan
           </div>
-          <div className="mb-1 text-[20px] font-normal tracking-[-0.01em]">
-            Start a penetration test
-          </div>
+          <div className="mb-1 text-[20px] font-normal">Start a penetration test</div>
           <p className="mb-5 text-xs leading-relaxed text-muted-foreground">
-            Scans typically take 1–3 hours. Findings stream in as they're discovered — you don't
-            need to keep this page open.
+            Findings stream in as they're discovered. You don't need to keep this page open.
           </p>
 
           {!canCreate && (
@@ -93,84 +219,69 @@ export function CreateRunPanel({
             </div>
           )}
 
-          <div className="mb-4">
-            <label
-              htmlFor="pt-target-url"
-              className="mb-1.5 block text-[11px] font-medium uppercase tracking-[0.1em] text-muted-foreground"
-            >
-              Target URL
-            </label>
-            <div className="flex h-9 items-center gap-1.5 rounded border border-border bg-background px-3">
-              <span className="font-mono text-xs text-muted-foreground">https://</span>
-              <input
-                id="pt-target-url"
-                value={targetUrl}
-                onChange={(e) => setTargetUrl(e.target.value)}
-                placeholder="your.staging.app"
-                autoFocus
-                required
-                className="flex-1 bg-transparent font-mono text-xs outline-none"
-              />
-            </div>
-            <p className="mt-1 text-[11px] text-muted-foreground">
-              Must be reachable from the scanner — localhost and private IPs are rejected.
-            </p>
-          </div>
+          <ScanProfilePicker
+            activeProfile={effectiveMode === 'custom' ? null : effectiveMode}
+            headerLabel={effectiveLabel}
+            runtimeEstimate={runtimeEstimate}
+            onChange={handleProfileChange}
+          />
 
-          <div className="mb-5">
-            <div className="mb-1.5 flex items-center gap-1.5 text-[11px] font-medium uppercase tracking-[0.1em] text-muted-foreground">
-              <span>Repository</span>
-              <span className="font-normal normal-case tracking-normal text-muted-foreground">
-                (optional)
-              </span>
-            </div>
-            <div className="flex h-9 items-center gap-1.5 rounded border border-border bg-background px-3">
-              <Link className="h-3 w-3 text-muted-foreground" />
-              <input
-                value={repoUrl}
-                onChange={(e) => setRepoUrl(e.target.value)}
-                placeholder="github.com/acme/platform"
-                className="flex-1 bg-transparent font-mono text-xs outline-none"
-              />
-            </div>
-            <p className="mt-1 text-[11px] text-muted-foreground">
-              Public repositories only. We use source context to write better remediation steps.
-            </p>
-          </div>
+          <CreateRunTargetFields form={form} />
 
-          <div className="mb-5 rounded border border-border bg-muted/50 p-3.5">
-            <div className="mb-2 text-[11px] font-medium uppercase tracking-[0.1em] text-muted-foreground">
-              What to expect
-            </div>
-            <dl className="space-y-1 text-xs leading-loose">
-              {[
-                ['Typical duration', '1–3 hours'],
-                ['Output', 'Findings + markdown & PDF report'],
-                ['Mode', 'Read-only — never modifies your target'],
-              ].map(([label, value]) => (
-                <div key={label} className="flex items-center justify-between">
-                  <dt className="text-muted-foreground">{label}</dt>
-                  <dd className="font-mono text-right">{value}</dd>
-                </div>
-              ))}
-            </dl>
-            <p className="mt-2 text-[11px] text-muted-foreground">
-              Findings stream into this page as they're discovered — you can close this tab and come
-              back.
-            </p>
-          </div>
+          <ScanAdvancedOptions
+            open={advancedOpen}
+            evidenceLevel={evidenceLevel}
+            checks={checks}
+            onOpenChange={setAdvancedOpen}
+            onEvidenceLevelChange={(nextEvidenceLevel) =>
+              form.setValue('evidenceLevel', nextEvidenceLevel, {
+                shouldDirty: true,
+              })
+            }
+            onChecksChange={handleChecksChange}
+          />
 
-          <div className="flex justify-end gap-2">
-            <Button type="button" variant="outline" onClick={handleCancel} disabled={isSubmitting}>
-              Cancel
-            </Button>
-            <Button type="submit" loading={isSubmitting} disabled={isSubmitting}>
-              {canCreate ? `Start scan (${quotaLabel})` : 'Choose plan'}
-              <ArrowRight className="h-3.5 w-3.5" />
-            </Button>
+          <RunExpectationSummary
+            runtimeEstimate={runtimeEstimate}
+            effectiveLabel={effectiveLabel}
+            checksError={form.formState.errors.checks?.message}
+          />
+
+          <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+            <div className="w-full sm:w-auto">
+              <Button type="button" variant="outline" onClick={handleCancel} disabled={isSubmitting}>
+                Cancel
+              </Button>
+            </div>
+            <div className="w-full sm:w-auto">
+              <Button
+                type="submit"
+                loading={isSubmitting}
+                disabled={isSubmitting}
+                iconRight={canCreate ? <ArrowRight /> : undefined}
+              >
+                {canCreate ? `Start scan (${quotaLabel})` : 'Choose plan'}
+              </Button>
+            </div>
           </div>
         </form>
       </div>
+
+      <AlertDialog open={confirmationOpen} onOpenChange={setConfirmationOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirm scan intensity</AlertDialogTitle>
+            <AlertDialogDescription>
+              Deep scans and impact proof may take longer and perform stronger validation against
+              the target. Confirm this target is approved for that scan intensity.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleConfirmSubmit}>Start scan</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
