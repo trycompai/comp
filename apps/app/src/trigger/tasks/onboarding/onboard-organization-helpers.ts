@@ -17,6 +17,7 @@ import { generateObject, jsonSchema } from 'ai';
 import axios from 'axios';
 import { z } from 'zod';
 import type { researchVendor } from '../scrape/research';
+import { mirrorActiveDescriptionIntoMap } from '@/lib/strategy-descriptions';
 import { buildCitationsHeading } from './build-citations-heading';
 import { RISK_MITIGATION_PROMPT } from './prompts/risk-mitigation';
 import {
@@ -635,9 +636,20 @@ ${formatCitationsBlock(citations)}`;
     },
   });
 
+  // Mirror the new text into the per-strategy map so switching strategies
+  // doesn't lose this draft.
+  const vendorActiveStrategy =
+    typeof vendor.treatmentStrategy === 'string' ? vendor.treatmentStrategy : 'mitigate';
   await db.vendor.update({
     where: { id: vendor.id, organizationId },
-    data: { treatmentStrategyDescription: finalText },
+    data: {
+      treatmentStrategyDescription: finalText,
+      strategyDescriptions: mirrorActiveDescriptionIntoMap({
+        strategy: vendorActiveStrategy,
+        description: finalText,
+        current: vendor.strategyDescriptions,
+      }),
+    },
   });
 
   logger.info(
@@ -974,7 +986,14 @@ ${formatCitationsBlock(citations)}`;
 
   await db.risk.update({
     where: { id: risk.id, organizationId },
-    data: { treatmentStrategyDescription: finalText },
+    data: {
+      treatmentStrategyDescription: finalText,
+      strategyDescriptions: mirrorActiveDescriptionIntoMap({
+        strategy: risk.treatmentStrategy,
+        description: finalText,
+        current: risk.strategyDescriptions,
+      }),
+    },
   });
 
   logger.info(

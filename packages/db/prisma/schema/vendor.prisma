@@ -10,6 +10,8 @@ model Vendor {
   residualImpact      Impact         @default(insignificant)
   treatmentStrategy            RiskTreatmentType @default(accept)
   treatmentStrategyDescription String?
+  // See `Risk.strategyDescriptions`.
+  strategyDescriptions         Json?
   website             String?
   isSubProcessor      Boolean        @default(false)
 

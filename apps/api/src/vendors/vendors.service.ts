@@ -11,6 +11,7 @@ import { tasks } from '@trigger.dev/sdk';
 import { Prisma } from '@db';
 import type { TriggerVendorRiskAssessmentVendorDto } from './dto/trigger-vendor-risk-assessment.dto';
 import { resolveTaskCreatorAndAssignee } from '../trigger/vendor/vendor-risk-assessment/assignee';
+import { resolveStrategyDescriptionUpdate } from '../risks/strategy-descriptions';
 
 const normalizeWebsite = (
   website: string | null | undefined,
@@ -634,9 +635,16 @@ export class VendorsService {
         );
       }
 
+      // Keep per-strategy descriptions independent across treatment
+      // strategies — see `apps/api/src/risks/strategy-descriptions.ts`.
+      const resolvedStrategyFields = resolveStrategyDescriptionUpdate(
+        existing,
+        updateVendorDto,
+      );
+
       const updatedVendor = await db.vendor.update({
         where: { id },
-        data: updateVendorDto,
+        data: { ...updateVendorDto, ...resolvedStrategyFields },
       });
 
       this.logger.log(`Updated vendor: ${updatedVendor.name} (${id})`);
