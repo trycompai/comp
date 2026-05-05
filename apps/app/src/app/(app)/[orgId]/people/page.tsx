@@ -10,6 +10,7 @@ import { PeoplePageTabs } from './components/PeoplePageTabs';
 import { EmployeesOverview } from './dashboard/components/EmployeesOverview';
 import { DevicesTabContent } from './devices/components/DevicesTabContent';
 import { OrgChartTabContent } from './org-chart/components/OrgChartTabContent';
+import { PeopleSettings } from './settings/components/PeopleSettings';
 
 export default async function PeoplePage({ params }: { params: Promise<{ orgId: string }> }) {
   const { orgId } = await params;
@@ -34,6 +35,17 @@ export default async function PeoplePage({ params }: { params: Promise<{ orgId: 
   const canInviteUsers = canManageMembers || isAuditor;
   const isCurrentUserOwner = currentUserRoles.includes('owner');
 
+  const canManageOrgSettings = currentUserRoles.some((role) =>
+    ['owner', 'admin'].includes(role),
+  );
+
+  const organization = canManageOrgSettings
+    ? await db.organization.findUnique({
+        where: { id: orgId },
+        select: { backgroundCheckStepEnabled: true },
+      })
+    : null;
+
   return (
     <PeoplePageTabs
       peopleContent={
@@ -52,6 +64,16 @@ export default async function PeoplePage({ params }: { params: Promise<{ orgId: 
       findingsContent={null}
       showRoleMapping={false}
       roleMappingContent={null}
+      showSettings={canManageOrgSettings}
+      settingsContent={
+        canManageOrgSettings && organization ? (
+          <PeopleSettings
+            backgroundCheckStepEnabled={
+              organization.backgroundCheckStepEnabled === true
+            }
+          />
+        ) : null
+      }
       showEmployeeTasks
       canInviteUsers={canInviteUsers}
       canManageMembers={canManageMembers}
