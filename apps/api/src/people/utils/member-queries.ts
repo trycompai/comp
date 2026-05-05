@@ -20,6 +20,7 @@ export class MemberQueries {
     jobTitle: true,
     isActive: true,
     deactivated: true,
+    backgroundCheckExempt: true,
     fleetDmLabelId: true,
     user: {
       select: {
