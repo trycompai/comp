@@ -1,5 +1,5 @@
 import { db } from '@db/server';
-import { upsertEntityEmbeddings, findSimilarTasks } from './index';
+import { upsertEntityEmbeddings, findSimilarTasks, waitForIndexed } from './index';
 import { linkSuggestions } from '../link-suggestions';
 import {
   rerankSuggestions,
@@ -19,6 +19,13 @@ export type LinkagePhase =
   | { name: 'embedding-tasks'; current: number; total: number }
   | { name: 'embedding-risks'; current: number; total: number }
   | { name: 'embedding-vendors'; current: number; total: number }
+  /**
+   * Upstash Vector indexes upserted vectors asynchronously — emitted between
+   * the embedding phase and matching phase while we poll `info()` until
+   * `pendingVectorCount === 0`. Without this gate, the cosine queries can
+   * race ahead of indexing and silently return zero candidates.
+   */
+  | { name: 'waiting-for-index' }
   | { name: 'matching-risks'; current: number; total: number }
   | { name: 'matching-vendors'; current: number; total: number }
   | { name: 'done'; riskLinks: number; vendorLinks: number };
@@ -405,13 +412,26 @@ export async function runLinkage({
     wantRisks
       ? db.risk.findMany({
           where: { organizationId, ...(riskId ? { id: riskId } : {}) },
-          select: { id: true, title: true, description: true, category: true, department: true },
+          select: {
+            id: true,
+            title: true,
+            description: true,
+            category: true,
+            department: true,
+            embeddingHash: true,
+          },
         })
       : Promise.resolve([] as Awaited<ReturnType<typeof db.risk.findMany>>),
     wantVendors
       ? db.vendor.findMany({
           where: { organizationId, ...(vendorId ? { id: vendorId } : {}) },
-          select: { id: true, name: true, description: true, category: true },
+          select: {
+            id: true,
+            name: true,
+            description: true,
+            category: true,
+            embeddingHash: true,
+          },
         })
       : Promise.resolve([] as Awaited<ReturnType<typeof db.vendor.findMany>>),
     db.task.findMany({
@@ -422,7 +442,13 @@ export async function runLinkage({
           { controls: { none: {} } },
         ],
       },
-      select: { id: true, title: true, description: true, department: true },
+      select: {
+        id: true,
+        title: true,
+        description: true,
+        department: true,
+        embeddingHash: true,
+      },
     }),
   ]);
 
@@ -460,7 +486,23 @@ export async function runLinkage({
     onPhase?.({ name: 'embedding-vendors', current: 0, total: vendors.length });
   }
 
-  await Promise.all([
+  // Build id → hash maps for skip-if-unchanged. Anything with a non-null
+  // hash that still matches the current text gets skipped at the upsert
+  // layer — saving both the OpenAI embedding call and the Upstash write.
+  const taskHashes = new Map<string, string>();
+  for (const t of tasks) {
+    if (t.embeddingHash !== null) taskHashes.set(t.id, t.embeddingHash);
+  }
+  const riskHashes = new Map<string, string>();
+  for (const r of risks) {
+    if (r.embeddingHash !== null) riskHashes.set(r.id, r.embeddingHash);
+  }
+  const vendorHashes = new Map<string, string>();
+  for (const v of vendors) {
+    if (v.embeddingHash !== null) vendorHashes.set(v.id, v.embeddingHash);
+  }
+
+  const [taskUpsert, riskUpsert, vendorUpsert] = await Promise.all([
     upsertEntityEmbeddings({
       organizationId,
       kind: 'task',
@@ -469,6 +511,7 @@ export async function runLinkage({
         text: taskQueryText(t),
         department: t.department ?? undefined,
       })),
+      existingHashes: taskHashes,
     }),
     upsertEntityEmbeddings({
       organizationId,
@@ -478,6 +521,7 @@ export async function runLinkage({
         text: riskQueryText(r),
         department: r.department ?? undefined,
       })),
+      existingHashes: riskHashes,
     }),
     upsertEntityEmbeddings({
       organizationId,
@@ -486,8 +530,33 @@ export async function runLinkage({
         id: v.id,
         text: vendorQueryText(v),
       })),
+      existingHashes: vendorHashes,
     }),
   ]);
+
+  // Persist the freshly-computed hashes so the next linkage run can skip
+  // these entities. Rows whose content was unchanged are not in the
+  // appliedHashes list, so they keep their existing hash. Run all three
+  // kinds' updates in parallel.
+  const persistHashWrites: Array<Promise<unknown>> = [];
+  for (const { id, hash } of taskUpsert.appliedHashes) {
+    persistHashWrites.push(db.task.update({ where: { id }, data: { embeddingHash: hash } }));
+  }
+  for (const { id, hash } of riskUpsert.appliedHashes) {
+    persistHashWrites.push(db.risk.update({ where: { id }, data: { embeddingHash: hash } }));
+  }
+  for (const { id, hash } of vendorUpsert.appliedHashes) {
+    persistHashWrites.push(db.vendor.update({ where: { id }, data: { embeddingHash: hash } }));
+  }
+  if (persistHashWrites.length > 0) {
+    await Promise.all(persistHashWrites);
+  }
+
+  console.info(
+    `[linkage] embeddings: tasks ${taskUpsert.appliedHashes.length} new / ${taskUpsert.skippedCount} cached, ` +
+      `risks ${riskUpsert.appliedHashes.length} new / ${riskUpsert.skippedCount} cached, ` +
+      `vendors ${vendorUpsert.appliedHashes.length} new / ${vendorUpsert.skippedCount} cached`,
+  );
 
   if (tasks.length > 0) {
     onPhase?.({ name: 'embedding-tasks', current: tasks.length, total: tasks.length });
@@ -497,6 +566,36 @@ export async function runLinkage({
   }
   if (vendors.length > 0) {
     onPhase?.({ name: 'embedding-vendors', current: vendors.length, total: vendors.length });
+  }
+
+  // Block matching until Upstash has finished indexing the vectors we just
+  // wrote. The HNSW index is built asynchronously after upsert, so cosine
+  // queries that race ahead silently return zero candidates for IDs that
+  // are still pending. We hit this in onboarding when 6 of 11 risks got 0
+  // links because their queries fired ~4s after upsert vs the next 5 risks
+  // that fired ~5s after and got full results.
+  //
+  // Skip the wait entirely when every embedding was served from the cache
+  // (the dedup hash path) — the existing vectors are already queryable
+  // and there's nothing pending from this run.
+  const upsertedCount =
+    taskUpsert.appliedHashes.length +
+    riskUpsert.appliedHashes.length +
+    vendorUpsert.appliedHashes.length;
+  if (upsertedCount > 0) {
+    onPhase?.({ name: 'waiting-for-index' });
+    const indexWait = await waitForIndexed({ maxWaitMs: 30_000 });
+    if (indexWait.pendingAtTimeout !== undefined) {
+      console.warn(
+        `[linkage] vector index still has ${indexWait.pendingAtTimeout} pending vector(s) after ${indexWait.waitedMs}ms (${indexWait.polls} polls); proceeding anyway`,
+      );
+    } else {
+      console.info(
+        `[linkage] vector index drained in ${indexWait.waitedMs}ms (${indexWait.polls} polls)`,
+      );
+    }
+  } else {
+    console.info('[linkage] all embeddings cached; skipping index drain wait');
   }
 
   // Map for the LLM reranker (suggestionsOnly path) to look up titles/desc

@@ -2,6 +2,7 @@ import { Departments } from '@db';
 import { Index } from '@upstash/vector';
 import { openai } from '@ai-sdk/openai';
 import { embedMany } from 'ai';
+import { createHash } from 'node:crypto';
 
 export type EntityKind = 'risk' | 'vendor' | 'task';
 
@@ -15,6 +16,24 @@ interface UpsertOptions {
   organizationId: string;
   kind: EntityKind;
   entities: EntityInput[];
+  /**
+   * Optional id → hash map of the embeddings currently stored for these
+   * entities. Any entity whose freshly-computed `contentHash` matches its
+   * stored value is skipped — both the OpenAI embedding call AND the
+   * Upstash upsert. Pass an empty map (or omit) to force re-embedding.
+   *
+   * Stored hashes live on `Task/Risk/Vendor.embeddingHash` in Postgres;
+   * `runLinkage` reads them up-front and writes the new hashes back after
+   * upsert via `appliedHashes`.
+   */
+  existingHashes?: Map<string, string>;
+}
+
+export interface UpsertEntityEmbeddingsResult {
+  /** Newly embedded entities that should have their hash persisted. */
+  appliedHashes: Array<{ id: string; hash: string }>;
+  /** How many entities we skipped because their content was unchanged. */
+  skippedCount: number;
 }
 
 interface FindSimilarTasksOptions {
@@ -58,6 +77,27 @@ function embeddingId(kind: EntityKind, organizationId: string, sourceId: string)
 }
 
 /**
+ * Stable hash of everything that determines the stored embedding: the text
+ * (which produces the vector), the model + dimensions (which model produced
+ * it), and the department (which is stored as metadata and returned by
+ * queries). Any change to these fields requires a re-embed AND a re-upsert.
+ *
+ * Exported so callers writing the hash back to Postgres can compute it
+ * exactly the way the upsert path does.
+ */
+export function computeEntityContentHash({
+  text,
+  department,
+}: {
+  text: string;
+  department?: Departments;
+}): string {
+  return createHash('sha256')
+    .update(`${EMBEDDING_MODEL}:${EMBEDDING_DIMENSIONS}:${department ?? ''}:${text}`)
+    .digest('hex');
+}
+
+/**
  * Upsert per-org entity embeddings into Upstash Vector.
  *
  * NOTE: this duplicates a thin slice of `apps/api/src/vector-store/`. Consolidate
@@ -68,19 +108,36 @@ export async function upsertEntityEmbeddings({
   organizationId,
   kind,
   entities,
-}: UpsertOptions): Promise<void> {
+  existingHashes,
+}: UpsertOptions): Promise<UpsertEntityEmbeddingsResult> {
   const valid = entities.filter((e) => e.text.trim().length > 0);
-  if (valid.length === 0) return;
+  if (valid.length === 0) return { appliedHashes: [], skippedCount: 0 };
+
+  // Skip entities whose stored hash matches the current content hash —
+  // text + model + dims + department haven't changed, so the existing
+  // vector is still authoritative. Saves the OpenAI embed AND the Upstash
+  // upsert (the two non-trivial costs in this path).
+  const withHashes = valid.map((entity) => ({
+    entity,
+    hash: computeEntityContentHash({ text: entity.text, department: entity.department }),
+  }));
+  const toEmbed = withHashes.filter(
+    ({ entity, hash }) => existingHashes?.get(entity.id) !== hash,
+  );
+  const skippedCount = withHashes.length - toEmbed.length;
+  if (toEmbed.length === 0) {
+    return { appliedHashes: [], skippedCount };
+  }
 
   const { embeddings } = await embedMany({
     model: openai.embedding(EMBEDDING_MODEL),
-    values: valid.map((e) => e.text),
+    values: toEmbed.map(({ entity }) => entity.text),
     providerOptions: { openai: { dimensions: EMBEDDING_DIMENSIONS } },
   });
 
   const index = getIndex();
   await Promise.all(
-    valid.map((entity, i) =>
+    toEmbed.map(({ entity }, i) =>
       index.upsert({
         id: embeddingId(kind, organizationId, entity.id),
         vector: embeddings[i],
@@ -94,6 +151,11 @@ export async function upsertEntityEmbeddings({
       }),
     ),
   );
+
+  return {
+    appliedHashes: toEmbed.map(({ entity, hash }) => ({ id: entity.id, hash })),
+    skippedCount,
+  };
 }
 
 /**
@@ -129,4 +191,57 @@ export async function findSimilarTasks({
       department: meta.department ? (meta.department as Departments) : undefined,
     };
   });
+}
+
+interface WaitForIndexedOptions {
+  /** Hard ceiling. Resolves with `pendingAtTimeout` set if exceeded. */
+  maxWaitMs?: number;
+  /** Poll cadence. */
+  intervalMs?: number;
+}
+
+export interface WaitForIndexedResult {
+  waitedMs: number;
+  polls: number;
+  /** Defined only when we hit `maxWaitMs` without reaching pending=0. */
+  pendingAtTimeout?: number;
+}
+
+/**
+ * Block until Upstash Vector has finished indexing every previously-upserted
+ * vector (i.e. `info().pendingVectorCount === 0`).
+ *
+ * Upstash returns 200 from `upsert` as soon as the write is durable, but the
+ * HNSW index is built asynchronously. Vectors sit in `pendingVectorCount` for
+ * a few hundred ms to several seconds before they become queryable. Querying
+ * during that window returns empty results for the not-yet-indexed IDs even
+ * though the upsert succeeded — see ENG-221 for the race we hit during
+ * onboarding (6 of 11 risks got 0 cosine candidates because their queries
+ * raced ahead of indexing).
+ *
+ * Call this AFTER `upsertEntityEmbeddings` and BEFORE any query that depends
+ * on the just-written vectors being searchable.
+ */
+export async function waitForIndexed({
+  maxWaitMs = 30_000,
+  intervalMs = 250,
+}: WaitForIndexedOptions = {}): Promise<WaitForIndexedResult> {
+  const index = getIndex();
+  const start = Date.now();
+  let polls = 0;
+  while (Date.now() - start < maxWaitMs) {
+    polls += 1;
+    const info = await index.info();
+    if (info.pendingVectorCount === 0) {
+      return { waitedMs: Date.now() - start, polls };
+    }
+    await new Promise((resolve) => setTimeout(resolve, intervalMs));
+  }
+  // Timed out — fetch one more time so the caller can log how far behind we are.
+  const final = await index.info().catch(() => null);
+  return {
+    waitedMs: Date.now() - start,
+    polls,
+    pendingAtTimeout: final?.pendingVectorCount,
+  };
 }

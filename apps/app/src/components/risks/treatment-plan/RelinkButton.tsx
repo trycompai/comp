@@ -36,6 +36,7 @@ const PHASE_LABEL: Record<string, string> = {
   'embedding-tasks': 'Embedding tasks',
   'embedding-risks': 'Embedding risks',
   'embedding-vendors': 'Embedding vendors',
+  'waiting-for-index': 'Waiting for the index',
   'matching-risks': 'Matching tasks to risks',
   'matching-vendors': 'Matching tasks to vendors',
   done: 'Finishing up…',

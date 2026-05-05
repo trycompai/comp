@@ -158,6 +158,7 @@ type PhaseName =
   | 'embedding-tasks'
   | 'embedding-risks'
   | 'embedding-vendors'
+  | 'waiting-for-index'
   | 'matching-risks'
   | 'matching-vendors'
   | 'done';
@@ -204,6 +205,12 @@ function describeStatus(
     return {
       headline: 'Embedding the subject…',
       sub: 'Preparing the query vector.',
+    };
+  }
+  if (phase === 'waiting-for-index') {
+    return {
+      headline: 'Waiting for the index…',
+      sub: 'Letting the vector store finish ingesting before we query it.',
     };
   }
   if (phase === 'matching-risks' || phase === 'matching-vendors') {

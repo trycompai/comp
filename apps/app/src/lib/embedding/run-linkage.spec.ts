@@ -2,14 +2,15 @@ import { Departments } from '@db';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { LinkagePhase } from './run-linkage';
 
-const { dbMock, upsertMock, findSimilarTasksMock, rerankMock } = vi.hoisted(() => ({
+const { dbMock, upsertMock, findSimilarTasksMock, waitForIndexedMock, rerankMock } = vi.hoisted(() => ({
   dbMock: {
     risk: { findMany: vi.fn(), update: vi.fn() },
     vendor: { findMany: vi.fn(), update: vi.fn() },
-    task: { findMany: vi.fn() },
+    task: { findMany: vi.fn(), update: vi.fn() },
   },
   upsertMock: vi.fn(),
   findSimilarTasksMock: vi.fn(),
+  waitForIndexedMock: vi.fn(),
   rerankMock: vi.fn(),
 }));
 
@@ -23,6 +24,7 @@ vi.mock('@db/server', () => ({ db: dbMock }));
 vi.mock('./index', () => ({
   upsertEntityEmbeddings: upsertMock,
   findSimilarTasks: findSimilarTasksMock,
+  waitForIndexed: waitForIndexedMock,
 }));
 
 vi.mock('../rerank-suggestions', () => ({
@@ -34,6 +36,17 @@ import { runLinkage } from './run-linkage';
 beforeEach(() => {
   upsertMock.mockReset();
   findSimilarTasksMock.mockReset();
+  waitForIndexedMock.mockReset();
+  // Default: index is already drained — runLinkage proceeds immediately.
+  // Tests that exercise the race resolve `findSimilarTasks` differently
+  // depending on call order rather than blocking on the wait.
+  waitForIndexedMock.mockResolvedValue({ waitedMs: 0, polls: 1 });
+  // Default: every entity is embedded as if for the first time. Tests that
+  // exercise the cache-skip path override this per-test.
+  upsertMock.mockImplementation(async ({ entities }: { entities: Array<{ id: string }> }) => ({
+    appliedHashes: entities.map((e) => ({ id: e.id, hash: `hash_${e.id}` })),
+    skippedCount: 0,
+  }));
   rerankMock.mockReset();
   // Default reranker pass-through: scale cosine 0-1 → 0-10 so existing tests
   // that don't explicitly mock the reranker still get a deterministic order.
@@ -153,13 +166,16 @@ describe('runLinkage onPhase', () => {
 
     await runLinkage({ organizationId: 'org_1', riskId: 'rsk_1', replace: true });
 
-    // Expect disconnect-all (set: []) BEFORE the connect call.
-    const updateCalls = dbMock.risk.update.mock.calls.map((c) => c[0]);
-    expect(updateCalls[0]).toEqual({
+    // Expect disconnect-all (set: []) BEFORE the connect call. Filter to
+    // only the task-link writes; embeddingHash writes intersperse them.
+    const linkCalls = dbMock.risk.update.mock.calls
+      .map((c) => c[0])
+      .filter((arg) => arg.data?.tasks !== undefined);
+    expect(linkCalls[0]).toEqual({
       where: { id: 'rsk_1' },
       data: { tasks: { set: [] } },
     });
-    expect(updateCalls[1]).toEqual({
+    expect(linkCalls[1]).toEqual({
       where: { id: 'rsk_1' },
       data: { tasks: { connect: [{ id: 'tsk_a' }] } },
     });
@@ -179,8 +195,10 @@ describe('runLinkage onPhase', () => {
 
     await runLinkage({ organizationId: 'org_1', vendorId: 'vnd_1', replace: true });
 
-    const updateCalls = dbMock.vendor.update.mock.calls.map((c) => c[0]);
-    expect(updateCalls[0]).toEqual({
+    const linkCalls = dbMock.vendor.update.mock.calls
+      .map((c) => c[0])
+      .filter((arg) => arg.data?.tasks !== undefined);
+    expect(linkCalls[0]).toEqual({
       where: { id: 'vnd_1' },
       data: { tasks: { set: [] } },
     });
@@ -263,8 +281,13 @@ describe('runLinkage onPhase', () => {
       suggestionsOnly: true,
     });
 
-    // No persistence.
-    expect(dbMock.risk.update).not.toHaveBeenCalled();
+    // No task-link persistence (the embeddingHash write is allowed —
+    // suggestionsOnly still upserts vectors and should record their hashes
+    // so subsequent runs can dedup).
+    const linkCalls = dbMock.risk.update.mock.calls
+      .map((c) => c[0])
+      .filter((arg) => arg.data?.tasks !== undefined);
+    expect(linkCalls).toHaveLength(0);
 
     // Suggestions populated and pinned to the risk.
     expect(result.suggestions?.forRiskId).toBe('rsk_1');
@@ -318,7 +341,11 @@ describe('runLinkage onPhase', () => {
       suggestionsOnly: true,
     });
 
-    expect(dbMock.risk.update).not.toHaveBeenCalled();
+    // suggestionsOnly wins → no link persistence. Hash writes still allowed.
+    const linkCalls = dbMock.risk.update.mock.calls
+      .map((c) => c[0])
+      .filter((arg) => arg.data?.tasks !== undefined);
+    expect(linkCalls).toHaveLength(0);
   });
 
   it('suggestionsOnly=true reorders by LLM rerank score, not cosine', async () => {
@@ -430,10 +457,249 @@ describe('runLinkage onPhase', () => {
 
     await runLinkage({ organizationId: 'org_1', riskId: 'rsk_1' });
 
-    // Only one update call: the connect. No `set: []` precedes it.
+    // No `set: []` (disconnect) call should appear. embeddingHash writes
+    // and the connect call are fine; we just want to confirm we didn't
+    // wipe existing links.
     const setCalls = dbMock.risk.update.mock.calls
       .map((c) => c[0])
-      .filter((arg) => arg.data.tasks.set !== undefined);
+      .filter((arg) => arg.data?.tasks?.set !== undefined);
     expect(setCalls).toHaveLength(0);
+  });
+});
+
+describe('runLinkage waits for the vector index to drain before matching', () => {
+  // ENG-221: 6 of 11 risks landed with 0 cosine candidates because their
+  // queries fired before Upstash had finished indexing the just-upserted
+  // task vectors. These tests pin the fix in place.
+
+  it('emits waiting-for-index between embedding and matching phases', async () => {
+    dbMock.risk.findMany.mockResolvedValueOnce([
+      {
+        id: 'rsk_1',
+        title: 'Phishing',
+        description: '',
+        category: 'people',
+        department: Departments.hr,
+      },
+    ]);
+    dbMock.vendor.findMany.mockResolvedValueOnce([]);
+    dbMock.task.findMany.mockResolvedValueOnce([
+      { id: 'tsk_a', title: 'Awareness', description: '', department: Departments.hr },
+    ]);
+    findSimilarTasksMock.mockResolvedValueOnce([
+      { id: 'tsk_a', score: 0.9, department: Departments.hr },
+    ]);
+
+    const phases: LinkagePhase[] = [];
+    await runLinkage({
+      organizationId: 'org_1',
+      riskId: 'rsk_1',
+      onPhase: (p) => phases.push(p),
+    });
+
+    const names = phases.map((p) => p.name);
+    const embeddingTasksAt = names.indexOf('embedding-tasks');
+    const waitAt = names.indexOf('waiting-for-index');
+    const matchingAt = names.indexOf('matching-risks');
+
+    expect(embeddingTasksAt).toBeGreaterThanOrEqual(0);
+    expect(waitAt).toBeGreaterThan(embeddingTasksAt);
+    expect(matchingAt).toBeGreaterThan(waitAt);
+  });
+
+  it('blocks findSimilarTasks until waitForIndexed resolves (race-condition guard)', async () => {
+    dbMock.risk.findMany.mockResolvedValueOnce([
+      {
+        id: 'rsk_1',
+        title: 'Phishing',
+        description: '',
+        category: 'people',
+        department: Departments.hr,
+      },
+    ]);
+    dbMock.vendor.findMany.mockResolvedValueOnce([]);
+    dbMock.task.findMany.mockResolvedValueOnce([
+      { id: 'tsk_a', title: 'Awareness', description: '', department: Departments.hr },
+    ]);
+
+    // Track call order: any `findSimilarTasks` call before `waitForIndexed`
+    // resolves would be a regression.
+    const eventLog: string[] = [];
+    let resolveWait: (() => void) | null = null;
+    waitForIndexedMock.mockImplementationOnce(
+      () =>
+        new Promise<{ waitedMs: number; polls: number }>((resolve) => {
+          eventLog.push('waitForIndexed:invoked');
+          resolveWait = () => {
+            eventLog.push('waitForIndexed:resolved');
+            resolve({ waitedMs: 250, polls: 2 });
+          };
+        }),
+    );
+    findSimilarTasksMock.mockImplementationOnce(async () => {
+      eventLog.push('findSimilarTasks:invoked');
+      return [{ id: 'tsk_a', score: 0.9, department: Departments.hr }];
+    });
+
+    const runPromise = runLinkage({ organizationId: 'org_1', riskId: 'rsk_1' });
+
+    // Yield enough microtasks for runLinkage to reach the wait. Without the
+    // fix, findSimilarTasks would have been called by now.
+    await new Promise((r) => setTimeout(r, 20));
+    expect(eventLog).toEqual(['waitForIndexed:invoked']);
+    expect(findSimilarTasksMock).not.toHaveBeenCalled();
+
+    resolveWait!();
+    await runPromise;
+
+    expect(eventLog).toEqual([
+      'waitForIndexed:invoked',
+      'waitForIndexed:resolved',
+      'findSimilarTasks:invoked',
+    ]);
+  });
+
+  it('persists the new embedding hash on each entity that was actually re-embedded', async () => {
+    dbMock.risk.findMany.mockResolvedValueOnce([
+      {
+        id: 'rsk_1',
+        title: 'Phishing',
+        description: '',
+        category: 'people',
+        department: Departments.hr,
+        embeddingHash: null,
+      },
+    ]);
+    dbMock.vendor.findMany.mockResolvedValueOnce([]);
+    dbMock.task.findMany.mockResolvedValueOnce([
+      {
+        id: 'tsk_a',
+        title: 'Awareness',
+        description: '',
+        department: Departments.hr,
+        embeddingHash: null,
+      },
+      {
+        id: 'tsk_b',
+        title: 'Cached MFA',
+        description: '',
+        department: Departments.hr,
+        embeddingHash: 'old_hash_b',
+      },
+    ]);
+    findSimilarTasksMock.mockResolvedValueOnce([
+      { id: 'tsk_a', score: 0.9, department: Departments.hr },
+    ]);
+    // Tasks: tsk_a is re-embedded with new hash, tsk_b is cached.
+    upsertMock.mockImplementation(async ({ kind, entities }: { kind: string; entities: Array<{ id: string }> }) => {
+      if (kind === 'task') {
+        return {
+          appliedHashes: [{ id: 'tsk_a', hash: 'new_hash_a' }],
+          skippedCount: 1,
+        };
+      }
+      return {
+        appliedHashes: entities.map((e) => ({ id: e.id, hash: `hash_${e.id}` })),
+        skippedCount: 0,
+      };
+    });
+
+    await runLinkage({ organizationId: 'org_1', riskId: 'rsk_1' });
+
+    // tsk_a got the hash write; tsk_b was cached so no write.
+    const taskUpdateCalls = dbMock.task.update.mock.calls.map((c) => c[0]);
+    const hashWrite = taskUpdateCalls.find(
+      (call) => call.where.id === 'tsk_a' && call.data.embeddingHash === 'new_hash_a',
+    );
+    expect(hashWrite).toBeDefined();
+    expect(
+      taskUpdateCalls.some(
+        (call) => call.where.id === 'tsk_b' && call.data.embeddingHash !== undefined,
+      ),
+    ).toBe(false);
+
+    // The risk also got embedded (it had null hash) → write its new hash.
+    const riskUpdateCalls = dbMock.risk.update.mock.calls.map((c) => c[0]);
+    expect(
+      riskUpdateCalls.some(
+        (call) => call.where.id === 'rsk_1' && call.data.embeddingHash === 'hash_rsk_1',
+      ),
+    ).toBe(true);
+  });
+
+  it('skips the index wait when every embedding is served from the cache', async () => {
+    dbMock.risk.findMany.mockResolvedValueOnce([
+      {
+        id: 'rsk_1',
+        title: 'Phishing',
+        description: '',
+        category: 'people',
+        department: Departments.hr,
+        embeddingHash: 'cached',
+      },
+    ]);
+    dbMock.vendor.findMany.mockResolvedValueOnce([]);
+    dbMock.task.findMany.mockResolvedValueOnce([
+      {
+        id: 'tsk_a',
+        title: 'Awareness',
+        description: '',
+        department: Departments.hr,
+        embeddingHash: 'cached',
+      },
+    ]);
+    findSimilarTasksMock.mockResolvedValueOnce([
+      { id: 'tsk_a', score: 0.9, department: Departments.hr },
+    ]);
+    // Simulate every entity hitting the cache — no new vectors written.
+    upsertMock.mockImplementation(async ({ entities }: { entities: Array<{ id: string }> }) => ({
+      appliedHashes: [],
+      skippedCount: entities.length,
+    }));
+
+    const phases: LinkagePhase[] = [];
+    await runLinkage({
+      organizationId: 'org_1',
+      riskId: 'rsk_1',
+      onPhase: (p) => phases.push(p),
+    });
+
+    // No upserts → no need to wait for the index to drain.
+    expect(waitForIndexedMock).not.toHaveBeenCalled();
+    expect(phases.some((p) => p.name === 'waiting-for-index')).toBe(false);
+  });
+
+  it('still proceeds when the index wait times out (logs but does not throw)', async () => {
+    dbMock.risk.findMany.mockResolvedValueOnce([
+      {
+        id: 'rsk_1',
+        title: 'Phishing',
+        description: '',
+        category: 'people',
+        department: Departments.hr,
+      },
+    ]);
+    dbMock.vendor.findMany.mockResolvedValueOnce([]);
+    dbMock.task.findMany.mockResolvedValueOnce([
+      { id: 'tsk_a', title: 'Awareness', description: '', department: Departments.hr },
+    ]);
+    findSimilarTasksMock.mockResolvedValueOnce([
+      { id: 'tsk_a', score: 0.9, department: Departments.hr },
+    ]);
+
+    waitForIndexedMock.mockResolvedValueOnce({
+      waitedMs: 30_000,
+      polls: 120,
+      pendingAtTimeout: 4,
+    });
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+
+    const result = await runLinkage({ organizationId: 'org_1', riskId: 'rsk_1' });
+
+    // Linkage still completes — the floor mechanism downstream protects us
+    // from zero-link risks even when some vectors are still pending.
+    expect(result.riskLinks).toBeGreaterThan(0);
+    expect(warnSpy).toHaveBeenCalled();
+    warnSpy.mockRestore();
   });
 });

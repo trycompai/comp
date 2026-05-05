@@ -26,6 +26,9 @@ model Vendor {
   autoLinkRunId        String?
   autoLinkRunStartedAt DateTime?
 
+  // See Task.embeddingHash — skip-if-unchanged guard for re-embedding.
+  embeddingHash String?
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
