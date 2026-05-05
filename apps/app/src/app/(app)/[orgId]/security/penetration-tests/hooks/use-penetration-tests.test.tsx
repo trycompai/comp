@@ -205,6 +205,56 @@ describe('use-penetration-tests hooks', () => {
     expect(requestBody.mockCheckout).toBeUndefined();
   });
 
+  it('posts scan profile fields when creating a report', async () => {
+    fetchMock.mockResolvedValueOnce(
+      createJsonResponse({
+        id: 'run_profile',
+        status: 'provisioning',
+      }),
+    );
+
+    const { result } = renderHook(() => useCreatePenetrationTest('org_123'), { wrapper });
+
+    await act(async () => {
+      await result.current.createReport({
+        targetUrl: 'https://app.example.com',
+        scanDepth: 'standard',
+        evidenceLevel: 'safe_proof',
+        checks: ['discovery', 'xss'],
+      });
+    });
+
+    const init = fetchMock.mock.calls[0][1] as RequestInit;
+    const requestBody = JSON.parse((init.body ?? '{}') as string);
+    expect(requestBody.scanDepth).toBe('standard');
+    expect(requestBody.evidenceLevel).toBe('safe_proof');
+    expect(requestBody.checks).toEqual(['discovery', 'xss']);
+  });
+
+  it('posts webhook and notification fields when creating a report', async () => {
+    fetchMock.mockResolvedValueOnce(
+      createJsonResponse({
+        id: 'run_notifications',
+        status: 'provisioning',
+      }),
+    );
+
+    const { result } = renderHook(() => useCreatePenetrationTest('org_123'), { wrapper });
+
+    await act(async () => {
+      await result.current.createReport({
+        targetUrl: 'https://app.example.com',
+        webhookUrl: 'https://hooks.example.com/pentest',
+        notificationEmail: 'security@example.com',
+      });
+    });
+
+    const init = fetchMock.mock.calls[0][1] as RequestInit;
+    const requestBody = JSON.parse((init.body ?? '{}') as string);
+    expect(requestBody.webhookUrl).toBe('https://hooks.example.com/pentest');
+    expect(requestBody.notificationEmail).toBe('security@example.com');
+  });
+
   it('supports creating a report without repository URL for black-box mode', async () => {
     fetchMock.mockResolvedValueOnce(
       createJsonResponse({

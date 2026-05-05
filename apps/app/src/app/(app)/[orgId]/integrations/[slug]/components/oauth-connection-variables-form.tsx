@@ -1,36 +1,21 @@
 'use client';
 
-import { Button, Label } from '@trycompai/design-system';
-import { Input } from '@trycompai/ui/input';
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@trycompai/ui/select';
-import { Loader2 } from 'lucide-react';
+  ConnectionVariablesFields,
+  validateTargetRepos,
+  type ConnectionVariable,
+} from '@/components/integrations/ConnectionVariablesForm';
+import { Button } from '@trycompai/design-system';
 import type { Dispatch, SetStateAction } from 'react';
 
-export type OAuthVariableRow = {
-  id: string;
-  label: string;
-  type: string;
-  required: boolean;
-  helpText?: string;
-  placeholder?: string;
-  description?: string;
+export type OAuthVariableRow = ConnectionVariable & {
   currentValue?: string | number | boolean | string[];
-  hasDynamicOptions?: boolean;
-  options?: { value: string; label: string }[];
 };
 
 type Props = {
   variables: OAuthVariableRow[];
   variableValues: Record<string, string | number | boolean | string[]>;
-  setVariableValues: Dispatch<
-    SetStateAction<Record<string, string | number | boolean | string[]>>
-  >;
+  setVariableValues: Dispatch<SetStateAction<Record<string, string | number | boolean | string[]>>>;
   dynamicOptions: Record<string, { value: string; label: string }[]>;
   loadingOptions: Record<string, boolean>;
   fetchOptions: (variableId: string) => void;
@@ -48,6 +33,8 @@ export function OAuthConnectionVariablesForm({
   onSave,
   savingVariables,
 }: Props) {
+  const isTargetReposValid = validateTargetRepos(variableValues);
+
   if (variables.length === 0) {
     return (
       <p className="text-xs text-muted-foreground">
@@ -61,93 +48,18 @@ export function OAuthConnectionVariablesForm({
       <p className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground/60">
         Configuration
       </p>
-      {variables.map((variable) => {
-        const options = dynamicOptions[variable.id] ?? variable.options ?? [];
-        return (
-          <div key={variable.id} className="space-y-2">
-            <Label htmlFor={variable.id}>
-              {variable.label}
-              {variable.required ? <span className="text-destructive ml-1">*</span> : null}
-            </Label>
-            {variable.description ? (
-              <p className="text-xs text-muted-foreground">{variable.description}</p>
-            ) : null}
-            {variable.helpText ? (
-              <p className="text-xs text-muted-foreground">{variable.helpText}</p>
-            ) : null}
-
-            {variable.type === 'boolean' ? (
-              <Select
-                value={String(variableValues[variable.id] ?? 'false')}
-                onValueChange={(val) =>
-                  setVariableValues((prev) => ({
-                    ...prev,
-                    [variable.id]: val === 'true',
-                  }))
-                }
-              >
-                <SelectTrigger id={variable.id}>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="true">Yes</SelectItem>
-                  <SelectItem value="false">No</SelectItem>
-                </SelectContent>
-              </Select>
-            ) : variable.type === 'select' ? (
-              <Select
-                value={String(variableValues[variable.id] ?? '')}
-                onValueChange={(val) =>
-                  setVariableValues((prev) => ({ ...prev, [variable.id]: val }))
-                }
-                onOpenChange={(openSel) => {
-                  if (openSel && variable.hasDynamicOptions && options.length === 0) {
-                    void fetchOptions(variable.id);
-                  }
-                }}
-              >
-                <SelectTrigger id={variable.id}>
-                  <SelectValue placeholder={`Select ${variable.label.toLowerCase()}`} />
-                </SelectTrigger>
-                <SelectContent>
-                  {loadingOptions[variable.id] ? (
-                    <div className="py-2 px-3 text-sm text-muted-foreground flex items-center gap-2">
-                      <Loader2 className="h-3 w-3 animate-spin" />
-                      Loading…
-                    </div>
-                  ) : options.length === 0 ? (
-                    <div className="py-2 px-3 text-sm text-muted-foreground">No options</div>
-                  ) : (
-                    options.map((opt) => (
-                      <SelectItem key={opt.value} value={opt.value}>
-                        {opt.label}
-                      </SelectItem>
-                    ))
-                  )}
-                </SelectContent>
-              </Select>
-            ) : (
-              <Input
-                id={variable.id}
-                type={variable.type === 'number' ? 'number' : 'text'}
-                value={String(variableValues[variable.id] ?? '')}
-                onChange={(e) =>
-                  setVariableValues((prev) => ({
-                    ...prev,
-                    [variable.id]:
-                      variable.type === 'number' ? Number(e.target.value) : e.target.value,
-                  }))
-                }
-                placeholder={variable.placeholder}
-              />
-            )}
-          </div>
-        );
-      })}
+      <ConnectionVariablesFields
+        variables={variables}
+        variableValues={variableValues}
+        setVariableValues={setVariableValues}
+        dynamicOptions={dynamicOptions}
+        loadingOptions={loadingOptions}
+        fetchOptions={fetchOptions}
+      />
       <Button
         onClick={() => void onSave()}
         loading={savingVariables}
-        disabled={savingVariables}
+        disabled={savingVariables || !isTargetReposValid}
         size="sm"
       >
         Save configuration

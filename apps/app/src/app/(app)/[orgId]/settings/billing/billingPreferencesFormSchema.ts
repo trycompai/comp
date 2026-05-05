@@ -43,10 +43,7 @@ export const billingCountries = [
   { value: 'US', label: 'United States' },
 ] as const;
 
-const taxIdTypeValues = taxIdTypes.map((type) => type.value) as [
-  string,
-  ...string[],
-];
+const taxIdTypeValues = taxIdTypes.map((type) => type.value) as [string, ...string[]];
 
 export const billingPreferencesSchema = z
   .object({
@@ -122,6 +119,7 @@ export function getTaxIdTypeLabel(value: string) {
 
 export function getCountryLabel(value: string) {
   if (!value) return 'No country';
+  if (value.toLowerCase() === 'none') return 'No country';
   const normalizedValue = value.toUpperCase();
   const country = billingCountries.find((item) => item.value === normalizedValue);
   return country ? `${country.label} (${country.value})` : normalizedValue;

@@ -176,6 +176,48 @@ describe('listBillingUsageRows', () => {
     );
   });
 
+  it('uses the newest usage event for each source resource', async () => {
+    backgroundCheckFindMany.mockResolvedValue([
+      {
+        id: 'bcr_4',
+        memberId: 'mem_4',
+        employeeName: 'Mary Jackson',
+        employeeEmail: 'mary@example.com',
+        status: 'completed',
+        stripePaymentStatus: 'succeeded',
+        createdAt: new Date('2026-04-30T15:00:00.000Z'),
+        updatedAt: new Date('2026-04-30T15:05:00.000Z'),
+      },
+    ]);
+    pentestRunFindMany.mockResolvedValue([]);
+    billingUsageEventFindMany.mockResolvedValue([
+      {
+        skuKey: 'background_checks_monthly_10',
+        eventType: 'one_time',
+        sourceResourceId: 'mem_4',
+        stripeInvoiceId: 'in_latest',
+      },
+      {
+        skuKey: 'background_checks_monthly_3',
+        eventType: 'consume',
+        sourceResourceId: 'mem_4',
+        stripeInvoiceId: null,
+      },
+    ]);
+
+    const rows = await listBillingUsageRows({
+      organizationId: 'org_1',
+      subscriptions: [],
+    });
+
+    expect(rows[0]).toEqual(
+      expect.objectContaining({
+        skuKey: 'background_checks_monthly_10',
+        billingType: 'One-time invoice',
+      }),
+    );
+  });
+
   it('fetches usage events for the displayed source resources without a global cap', async () => {
     backgroundCheckFindMany.mockResolvedValue([
       {

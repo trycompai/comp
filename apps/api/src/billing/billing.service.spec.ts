@@ -87,12 +87,13 @@ describe('BillingService', () => {
 
   it('creates a Stripe subscription checkout session from the billing catalog', async () => {
     const customersCreate = jest.fn().mockResolvedValue({ id: 'cus_1' });
+    const customersUpdate = jest.fn().mockResolvedValue({ id: 'cus_1' });
     const sessionsCreate = jest.fn().mockResolvedValue({
       url: 'https://checkout.stripe.test/session',
     });
     const service = new BillingService(
       mockStripeService({
-        customers: { create: customersCreate },
+        customers: { create: customersCreate, update: customersUpdate },
         checkout: { sessions: { create: sessionsCreate } },
       }),
       { syncSubscriptionItem: jest.fn() } as never,
@@ -110,11 +111,13 @@ describe('BillingService', () => {
 
     expect(customersCreate).toHaveBeenCalledWith(
       expect.objectContaining({
-        email: 'admin@example.com',
         metadata: { organizationId: 'org_1' },
       }),
       { idempotencyKey: 'organization-billing-customer:org_1' },
     );
+    expect(customersUpdate).toHaveBeenCalledWith('cus_1', {
+      email: 'admin@example.com',
+    });
     expect(sessionsCreate).toHaveBeenCalledWith(
       expect.objectContaining({
         mode: 'subscription',
@@ -261,6 +264,7 @@ describe('BillingService', () => {
         stripeStatus: 'active',
         currentPeriodStart: new Date('2026-04-01T00:00:00.000Z'),
         currentPeriodEnd: new Date('2026-05-01T00:00:00.000Z'),
+        updatedAt: new Date('2026-04-30T09:00:00.000Z'),
         createdAt: new Date('2026-04-01T00:00:00.000Z'),
       },
     ]);
@@ -339,6 +343,7 @@ describe('BillingService', () => {
         stripeStatus: 'trialing',
         currentPeriodStart: new Date('2026-04-01T00:00:00.000Z'),
         currentPeriodEnd: new Date('2026-05-01T00:00:00.000Z'),
+        updatedAt: new Date('2026-04-30T09:00:00.000Z'),
         createdAt: new Date('2026-04-01T00:00:00.000Z'),
       },
     ]);
@@ -371,8 +376,14 @@ describe('BillingService', () => {
         trial_end: 'now',
       }),
       expect.objectContaining({
-        idempotencyKey:
-          'subscription-plan-change-v2:org_1:si_1:background_checks_monthly_20',
+        idempotencyKey: [
+          'subscription-plan-change-v2',
+          'org_1',
+          'si_1',
+          'background_checks_monthly_3',
+          'background_checks_monthly_20',
+          new Date('2026-04-30T09:00:00.000Z').getTime(),
+        ].join(':'),
       }),
     );
   });
@@ -393,6 +404,7 @@ describe('BillingService', () => {
         stripeStatus: 'active',
         currentPeriodStart: new Date('2026-04-01T00:00:00.000Z'),
         currentPeriodEnd: new Date('2026-05-01T00:00:00.000Z'),
+        updatedAt: new Date('2026-04-30T09:00:00.000Z'),
         createdAt: new Date('2026-04-01T00:00:00.000Z'),
       },
     ]);
@@ -476,6 +488,7 @@ describe('BillingService', () => {
         stripeStatus: 'active',
         currentPeriodStart: new Date('2026-04-01T00:00:00.000Z'),
         currentPeriodEnd: new Date('2026-05-01T00:00:00.000Z'),
+        updatedAt: new Date('2026-04-30T09:00:00.000Z'),
         createdAt: new Date('2026-04-01T00:00:00.000Z'),
       },
     ]);

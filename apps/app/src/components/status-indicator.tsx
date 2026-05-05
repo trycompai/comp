@@ -1,4 +1,4 @@
-import { cn } from '@trycompai/ui/cn';
+import { cn } from '@trycompai/design-system';
 
 // Consolidated status types from Prisma schema
 export const STATUS_TYPES = [
@@ -44,6 +44,7 @@ export const STATUS_COLORS: Record<StatusType, string> = {
   // Neutral - Gray
   archived: 'bg-gray-500 dark:bg-gray-400',
   todo: 'bg-gray-500 dark:bg-gray-400',
+  not_relevant: 'bg-gray-500 dark:bg-gray-400',
 
   // In Progress - Yellow
   draft: 'bg-yellow-500 dark:bg-yellow-400',
@@ -56,8 +57,6 @@ export const STATUS_COLORS: Record<StatusType, string> = {
   // Warning/Error - Red
   needs_review: 'bg-red-600 dark:bg-red-400',
   not_started: 'bg-red-600 dark:bg-red-400',
-  not_relevant: 'bg-red-600 dark:bg-red-400',
-
   // Failed - Red
   failed: 'bg-red-600 dark:bg-red-400',
 } as const;
@@ -87,6 +86,8 @@ export const getStatusTranslation = (status: StatusType) => {
       return 'Pending';
     case 'closed':
       return 'Closed';
+    case 'not_relevant':
+      return 'Not relevant';
 
     default: {
       // Fallback for unmapped statuses

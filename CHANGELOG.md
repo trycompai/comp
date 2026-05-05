@@ -1,3 +1,28 @@
+# [3.42.0](https://github.com/trycompai/comp/compare/v3.41.0...v3.42.0) (2026-05-01)
+
+
+### Bug Fixes
+
+* **billing:** handle allowance edge cases ([78ce9c6](https://github.com/trycompai/comp/commit/78ce9c663d25383a3aab114370b5fa79e0897be8))
+* **billing:** handle subscription edge cases ([c8cfb04](https://github.com/trycompai/comp/commit/c8cfb04952f3151342b33cdf6591b81862d5140e))
+* **billing:** harden billing idempotency and redirects ([daf0eed](https://github.com/trycompai/comp/commit/daf0eed1f18f54476f02e256f4aba6f43faebcb0))
+* **billing:** harden stripe flows ([7697765](https://github.com/trycompai/comp/commit/7697765ae9d6802d3ae468f23b83dac8618ddc0e))
+* **billing:** harden subscription and credit edge cases ([a3e5ebc](https://github.com/trycompai/comp/commit/a3e5ebc1ef08b3c2576871a79291d569bdb1b438))
+* **billing:** harden subscription sync retries ([1740e05](https://github.com/trycompai/comp/commit/1740e0537dd23e13030a6f46ca2c1f205ddea145))
+* **billing:** preserve legacy background check drafts ([f655f37](https://github.com/trycompai/comp/commit/f655f37d86ee08c5beec82eb9cb4c01415236ec3))
+* **billing:** update layout of BillingInvoicesTable component ([9acb95e](https://github.com/trycompai/comp/commit/9acb95ebc6a865b547de8aabb5787c377addc095))
+
+
+### Features
+
+* **billing:** add billing add-ons functionality and trial eligibility ([519bebb](https://github.com/trycompai/comp/commit/519bebb5810cc5b301715687c400c16d1a0febfa))
+* **billing:** add tests for background check billing customer and URL validation ([11efc56](https://github.com/trycompai/comp/commit/11efc56a554ed471f48a7249c4236aabd3a60d2d))
+* **billing:** enhance billing services and subscription management ([f7e5e9f](https://github.com/trycompai/comp/commit/f7e5e9fdb56f92a8d9e00f6580108d515c04d017))
+* **billing:** implement admin billing actions and controller ([be9027b](https://github.com/trycompai/comp/commit/be9027b8666106edd8821ea4d5f29a7c23360c86))
+* **billing:** implement background check billing customer and invoice management ([f316c50](https://github.com/trycompai/comp/commit/f316c505c4403034bd184d273a54a2f147977e47))
+* **billing:** implement billing audit logging and improve event handling ([4db12d5](https://github.com/trycompai/comp/commit/4db12d526a60c1584e7e95455cd21a1d4d75f2d2))
+* **billing:** integrate billing module and enhance background check services ([435c235](https://github.com/trycompai/comp/commit/435c235cf10304b92c2a39a091c34e1a12dba2c2))
+
 # [3.41.0](https://github.com/trycompai/comp/compare/v3.40.1...v3.41.0) (2026-05-01)
 
 

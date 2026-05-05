@@ -19136,6 +19136,76 @@
         ]
       }
     },
+    "/v1/evidence-forms/settings": {
+      "get": {
+        "description": "Returns organization-scoped relevance settings for evidence forms",
+        "operationId": "EvidenceFormsController_getFormSettings_v1",
+        "parameters": [
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "description": "Organization ID (required for session auth, optional for API key auth)",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Get document relevance settings",
+        "tags": [
+          "Evidence Forms"
+        ]
+      }
+    },
+    "/v1/evidence-forms/{formType}/settings": {
+      "patch": {
+        "description": "Marks an evidence form as relevant or not relevant for the active organization",
+        "operationId": "EvidenceFormsController_updateFormSetting_v1",
+        "parameters": [
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "description": "Organization ID (required for session auth, optional for API key auth)",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "formType",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Update document relevance setting",
+        "tags": [
+          "Evidence Forms"
+        ]
+      }
+    },
     "/v1/evidence-forms/my-submissions": {
       "get": {
         "description": "Returns all evidence form submissions by the authenticated user for the active organization",
@@ -26308,6 +26378,45 @@
             "type": "boolean",
             "description": "Whether to run the pentest in simulation mode",
             "default": false
+          },
+          "scanDepth": {
+            "type": "string",
+            "description": "Scan depth profile to run",
+            "enum": [
+              "quick",
+              "standard",
+              "deep"
+            ]
+          },
+          "evidenceLevel": {
+            "type": "string",
+            "description": "Evidence validation level for findings",
+            "enum": [
+              "report_only",
+              "safe_proof",
+              "impact_proof"
+            ]
+          },
+          "checks": {
+            "type": "array",
+            "description": "Maced check IDs to include in the scan",
+            "items": {
+              "type": "string",
+              "enum": [
+                "discovery",
+                "secrets_info_disclosure",
+                "technology_config",
+                "xss",
+                "injection",
+                "authentication",
+                "authorization",
+                "idor_bola",
+                "ssrf_xxe",
+                "csrf",
+                "race_conditions",
+                "business_logic"
+              ]
+            }
           }
         },
         "required": [
