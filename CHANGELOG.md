@@ -1,3 +1,22 @@
+# [3.43.0](https://github.com/trycompai/comp/compare/v3.42.0...v3.43.0) (2026-05-05)
+
+
+### Bug Fixes
+
+* **integrations:** move settings into detail page ([9f9e6a6](https://github.com/trycompai/comp/commit/9f9e6a6bbe0ac0e006607539c7d98379900fa02d))
+* **integrations:** preserve empty variable input state ([f3c5d57](https://github.com/trycompai/comp/commit/f3c5d57b32b14e41a36bfaffaac28163cadd741e))
+* move background check toggle to people tab ([bc7ee77](https://github.com/trycompai/comp/commit/bc7ee771f63091778dfece59f124106a4c8a556b))
+* **pentest:** address scan setup review issues ([6f11e03](https://github.com/trycompai/comp/commit/6f11e0355a07eb242b66281cbe00f42bb573b760))
+* **pentest:** forward create notification fields ([96325ab](https://github.com/trycompai/comp/commit/96325ab9d285775073b2550498263cae8e1f551b))
+* **tasks:** paginate available integration suggestions ([4caa61b](https://github.com/trycompai/comp/commit/4caa61b8e68c852b0d332dd69f173083cc00b98a))
+
+
+### Features
+
+* **api:** add per-policy download + reclaim flow for trust access ([#2739](https://github.com/trycompai/comp/issues/2739)) ([54f47d0](https://github.com/trycompai/comp/commit/54f47d07a1d9de0c46205e6454380ad56782b0c7))
+* **documents:** add relevance settings ([#2745](https://github.com/trycompai/comp/issues/2745)) ([2a7552d](https://github.com/trycompai/comp/commit/2a7552de0f3b78c80c8f37e9fd9a7c71c218c723))
+* **pentest:** improve scan setup UX ([ee0bccf](https://github.com/trycompai/comp/commit/ee0bccf5d03d5b3ddbc1bfa2f8965e06df12104a))
+
 # [3.42.0](https://github.com/trycompai/comp/compare/v3.41.0...v3.42.0) (2026-05-01)
 
 
