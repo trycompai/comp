@@ -2,6 +2,7 @@ import {
   BadRequestException,
   Injectable,
   NotFoundException,
+  Optional,
 } from '@nestjs/common';
 import { db } from '@db';
 import {
@@ -12,6 +13,7 @@ import {
   isSubscriptionBillingSkuKey,
 } from '@trycompai/billing';
 import { StripeService } from '../stripe/stripe.service';
+import { BillingCreditsService } from './billing-credits.service';
 import { findOrCreateBillingCustomer } from './billing-customer';
 import { BillingEntitlementsService } from './billing-entitlements.service';
 import { listBillingInvoices } from './billing-invoices';
@@ -38,6 +40,10 @@ export class BillingService {
   constructor(
     private readonly stripeService: StripeService,
     private readonly entitlements: BillingEntitlementsService,
+    // Optional so existing unit tests that hand-construct BillingService
+    // (without a credits service) keep working. In production the
+    // BillingModule always provides it.
+    @Optional() private readonly credits?: BillingCreditsService,
   ) {}
 
   async getStatus(organizationId: string): Promise<BillingStatus> {
@@ -67,18 +73,31 @@ export class BillingService {
       db.backgroundCheckRequest.count({ where: { organizationId } }),
       db.securityPenetrationTestRun.count({ where: { organizationId } }),
     ]);
-    const [invoices, preferences, usageRows] = await Promise.all([
-      listBillingInvoices({
-        stripeService: this.stripeService,
-        stripeCustomerId: billing?.stripeCustomerId ?? null,
-      }),
-      getBillingPreferences({
-        stripeService: this.stripeService,
-        stripeCustomerId: billing?.stripeCustomerId ?? null,
-        fallbackCompanyName: organization.name,
-      }),
-      listBillingUsageRows({ organizationId, subscriptions }),
-    ]);
+    const [invoices, preferences, usageRows, creditBalances] =
+      await Promise.all([
+        listBillingInvoices({
+          stripeService: this.stripeService,
+          stripeCustomerId: billing?.stripeCustomerId ?? null,
+        }),
+        getBillingPreferences({
+          stripeService: this.stripeService,
+          stripeCustomerId: billing?.stripeCustomerId ?? null,
+          fallbackCompanyName: organization.name,
+        }),
+        listBillingUsageRows({ organizationId, subscriptions }),
+        // Sum wallet balances per product. There can be multiple
+        // BillingCreditBalance rows per (org, product) when grants are
+        // scoped to a specific SKU, so we aggregate before returning.
+        this.credits
+          ? this.credits.listBalances(organizationId)
+          : Promise.resolve([]),
+      ]);
+
+    const creditBalancesByProduct = new Map<BillingProductKey, number>();
+    for (const balance of creditBalances) {
+      const current = creditBalancesByProduct.get(balance.productKey) ?? 0;
+      creditBalancesByProduct.set(balance.productKey, current + balance.balance);
+    }
 
     return {
       hasBilling: !!billing,
@@ -98,6 +117,9 @@ export class BillingService {
         currentPeriodEnd: subscription.currentPeriodEnd?.toISOString() ?? null,
         cancelAtPeriodEnd: subscription.cancelAtPeriodEnd,
       })),
+      creditBalances: Array.from(creditBalancesByProduct.entries()).map(
+        ([productKey, balance]) => ({ productKey, balance }),
+      ),
       invoices,
     };
   }

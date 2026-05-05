@@ -208,6 +208,87 @@ describe('BillingService', () => {
     );
   });
 
+  it('aggregates wallet credit balances per product in getStatus', async () => {
+    // The customer-facing /v1/billing/status response is the only
+    // surface the pentest + BG-check UIs read from. If we ever stop
+    // including creditBalances here, both UIs silently regress to
+    // paywalling users whose admin-granted credits would be consumed
+    // by the create endpoint. Lock the contract with this test.
+    const listBalances = jest.fn().mockResolvedValue([
+      {
+        id: 'bcb_1',
+        productKey: 'pentest',
+        skuKey: null,
+        balance: 3,
+        totalGranted: 5,
+        totalConsumed: 2,
+        totalRefunded: 0,
+        lastSource: 'manual',
+        updatedAt: '2026-05-01T00:00:00.000Z',
+      },
+      {
+        id: 'bcb_2',
+        productKey: 'pentest',
+        skuKey: 'pentest_monthly_1',
+        balance: 2,
+        totalGranted: 2,
+        totalConsumed: 0,
+        totalRefunded: 0,
+        lastSource: 'topup',
+        updatedAt: '2026-05-01T00:00:00.000Z',
+      },
+      {
+        id: 'bcb_3',
+        productKey: 'background_check',
+        skuKey: null,
+        balance: 4,
+        totalGranted: 4,
+        totalConsumed: 0,
+        totalRefunded: 0,
+        lastSource: 'manual',
+        updatedAt: '2026-05-01T00:00:00.000Z',
+      },
+    ]);
+    const service = new BillingService(
+      mockStripeService({
+        invoices: { list: jest.fn().mockResolvedValue({ data: [] }) },
+        customers: { retrieve: jest.fn().mockResolvedValue({}) },
+        paymentMethods: { retrieve: jest.fn() },
+      }),
+      { syncSubscriptionItem: jest.fn() } as never,
+      { listBalances } as never,
+    );
+
+    const result = await service.getStatus('org_1');
+
+    expect(listBalances).toHaveBeenCalledWith('org_1');
+    expect(result.creditBalances).toEqual(
+      expect.arrayContaining([
+        { productKey: 'pentest', balance: 5 },
+        { productKey: 'background_check', balance: 4 },
+      ]),
+    );
+    expect(result.creditBalances).toHaveLength(2);
+  });
+
+  it('returns an empty creditBalances array when no credits service is wired in', async () => {
+    // BillingCreditsService is @Optional() so unit tests can keep
+    // hand-constructing BillingService without it. Verify the absent-
+    // dependency branch produces a typesafe empty array, not undefined.
+    const service = new BillingService(
+      mockStripeService({
+        invoices: { list: jest.fn().mockResolvedValue({ data: [] }) },
+        customers: { retrieve: jest.fn().mockResolvedValue({}) },
+        paymentMethods: { retrieve: jest.fn() },
+      }),
+      { syncSubscriptionItem: jest.fn() } as never,
+    );
+
+    const result = await service.getStatus('org_1');
+
+    expect(result.creditBalances).toEqual([]);
+  });
+
   it('marks trial eligibility false after any product subscription history', async () => {
     organizationBillingSubscriptionFindMany.mockResolvedValue([
       {

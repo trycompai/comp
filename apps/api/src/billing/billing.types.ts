@@ -1,3 +1,4 @@
+import type { BillingProductKey } from '@trycompai/billing';
 import type { BillingInvoice } from './billing-invoices';
 import type { BillingPreferences } from './billing-preferences';
 
@@ -23,6 +24,15 @@ export interface BillingStatus {
     currentPeriodStart: string | null;
     currentPeriodEnd: string | null;
     cancelAtPeriodEnd: boolean;
+  }>;
+  // Aggregated wallet balance per product. Mirrors what
+  // `BillingEntitlementsService.tryConsumeIncludedUsageForProduct` falls
+  // back to when a Stripe subscription is missing or exhausted, so the UI
+  // can keep its allowance display in sync with the backend's actual
+  // consumption decision.
+  creditBalances: Array<{
+    productKey: BillingProductKey;
+    balance: number;
   }>;
   invoices: BillingInvoice[];
 }
