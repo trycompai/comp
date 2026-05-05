@@ -7,7 +7,9 @@
   "baseUrl": "https://api.cohere.com",
   "authConfig": {
     "type": "api_key",
-    "config": {}
+    "config": {
+      "setupInstructions": "1. Log in to the Cohere Dashboard at https://dashboard.cohere.com\n2. Navigate to API Keys\n3. Click 'Create Trial Key' or use an existing production key\n4. Copy and paste the key below"
+    }
   },
   "capabilities": [
     "checks"

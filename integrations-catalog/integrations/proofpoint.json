@@ -6,17 +6,11 @@
   "docsUrl": "https://help.proofpoint.com/Threat_Insight_Dashboard/API_Documentation/Threat_API",
   "baseUrl": "https://tap-api-v2.proofpoint.com/",
   "authConfig": {
-    "type": "custom",
+    "type": "basic",
     "config": {
-      "setupInstructions": "1. Log in to Proofpoint TAP at https://threatinsight.proofpoint.com\n2. Go to Settings → Connected Applications\n3. Create a new Service Principal\n4. Base64 encode 'service_principal:secret': echo -n 'principal:secret' | base64\n5. Enter the encoded value below",
-      "credentialFields": [
-        {
-          "label": "Encoded Credentials",
-          "type": "password",
-          "required": true,
-          "helpText": "Base64 encode 'service_principal:secret'. Found in Proofpoint TAP dashboard → Settings → Connected Applications. Command: echo -n 'principal:secret' | base64"
-        }
-      ]
+      "setupInstructions": "1. Log in to Proofpoint TAP at https://threatinsight.proofpoint.com\n2. Go to Settings → Connected Applications\n3. Create a new Service Principal\n4. Copy the Service Principal (username) and Secret (password)\n5. Enter them below",
+      "usernameField": "service_principal",
+      "passwordField": "service_secret"
     }
   },
   "capabilities": [

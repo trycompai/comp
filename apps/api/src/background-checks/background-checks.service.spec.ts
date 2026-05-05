@@ -1,9 +1,9 @@
 import { BackgroundCheckIdentityClient } from './background-check-identity.client';
+import { BillingService } from '../billing/billing.service';
 import { BackgroundCheckBillingService } from './background-check-billing.service';
 import { BackgroundCheckPaymentService } from './background-check-payment.service';
 import { BackgroundChecksService } from './background-checks.service';
 import { db } from '@db';
-import type { StripeService } from '../stripe/stripe.service';
 
 jest.mock('@db', () => {
   class PrismaClientKnownRequestError extends Error {
@@ -27,6 +27,7 @@ jest.mock('@db', () => {
       backgroundCheckRequest: {
         findUnique: jest.fn(),
         findFirst: jest.fn(),
+        count: jest.fn(),
         create: jest.fn(),
         upsert: jest.fn(),
         update: jest.fn(),
@@ -41,6 +42,9 @@ jest.mock('@db', () => {
         findUnique: jest.fn(),
         create: jest.fn(),
         upsert: jest.fn(),
+      },
+      securityPenetrationTestRun: {
+        count: jest.fn(),
       },
       organization: {
         findUnique: jest.fn(),
@@ -57,7 +61,8 @@ function mockAsync<T>(fn: unknown): jest.MockedFunction<() => Promise<T>> {
 
 function invocationOrder(fn: unknown, index = 0): number {
   return (
-    (fn as { mock: { invocationCallOrder: number[] } }).mock.invocationCallOrder[index] ?? 0
+    (fn as { mock: { invocationCallOrder: number[] } }).mock
+      .invocationCallOrder[index] ?? 0
   );
 }
 
@@ -128,7 +133,9 @@ describe('background checks', () => {
       compOrganizationId: 'org_1',
       compMemberId: 'mem_1',
     });
-    expect(body.callbackUrl).toBe('https://api.trycomp.ai/v1/background-checks/webhook');
+    expect(body.callbackUrl).toBe(
+      'https://api.trycomp.ai/v1/background-checks/webhook',
+    );
     expect(body.requesterNotes).toBeUndefined();
   });
 
@@ -188,7 +195,9 @@ describe('background checks', () => {
     mockAsync<Awaited<ReturnType<typeof db.backgroundCheckRequest.findUnique>>>(
       mockedDb.backgroundCheckRequest.findUnique,
     ).mockResolvedValueOnce(
-      existing as Awaited<ReturnType<typeof db.backgroundCheckRequest.findUnique>>,
+      existing as Awaited<
+        ReturnType<typeof db.backgroundCheckRequest.findUnique>
+      >,
     );
     const identityClient = { createBackgroundCheck: jest.fn() };
     const paymentService = { charge: jest.fn(), refund: jest.fn() };
@@ -239,7 +248,9 @@ describe('background checks', () => {
       } as Awaited<ReturnType<typeof db.backgroundCheckRequest.update>>);
 
     const identityClient = {
-      createBackgroundCheck: jest.fn().mockRejectedValue(new Error('identity down')),
+      createBackgroundCheck: jest
+        .fn()
+        .mockRejectedValue(new Error('identity down')),
     };
     const paymentService = {
       charge: jest.fn().mockResolvedValue({
@@ -365,9 +376,9 @@ describe('background checks', () => {
       }),
     );
     // Record is created before Identity API is called
-    expect(invocationOrder(mockedDb.backgroundCheckRequest.create)).toBeLessThan(
-      invocationOrder(identityClient.createBackgroundCheck),
-    );
+    expect(
+      invocationOrder(mockedDb.backgroundCheckRequest.create),
+    ).toBeLessThan(invocationOrder(identityClient.createBackgroundCheck));
     expect(identityClient.createBackgroundCheck).toHaveBeenCalledWith(
       expect.not.objectContaining({
         requesterNotes: expect.any(String),
@@ -421,50 +432,15 @@ describe('background checks', () => {
   });
 
   it('uses BETTER_AUTH_URL as the local app URL fallback for setup redirects', async () => {
-    process.env = {
-      ...process.env,
-      NEXT_PUBLIC_APP_URL: '',
-      APP_URL: '',
-      BETTER_AUTH_URL: 'http://localhost:3000',
-    };
-    mockAsync<Awaited<ReturnType<typeof db.organizationBilling.findUnique>>>(
-      mockedDb.organizationBilling.findUnique,
-    ).mockResolvedValueOnce(null);
-    mockAsync<Awaited<ReturnType<typeof db.organization.findUnique>>>(
-      mockedDb.organization.findUnique,
-    ).mockResolvedValueOnce({
-      name: 'Acme',
-    } as Awaited<ReturnType<typeof db.organization.findUnique>>);
-    mockAsync<Awaited<ReturnType<typeof db.organizationBilling.create>>>(
-      mockedDb.organizationBilling.create,
-    ).mockResolvedValueOnce({
-      organizationId: 'org_1',
-      stripeCustomerId: 'cus_1',
-    } as Awaited<ReturnType<typeof db.organizationBilling.create>>);
-
-    const stripe = {
-      checkout: {
-        sessions: {
-          create: jest.fn().mockResolvedValue({
-            url: 'https://checkout.stripe.com/c/session_1',
-          }),
-        },
-      },
-      customers: {
-        create: jest.fn().mockResolvedValue({ id: 'cus_1' }),
-      },
-      prices: {
-        retrieve: jest.fn().mockResolvedValue({
-          id: 'price_bg',
-          unit_amount: 4900,
-          currency: 'usd',
-        }),
-      },
-    };
-    const stripeService = {
-      getClient: () => stripe,
-    } as unknown as StripeService;
-    const service = new BackgroundCheckBillingService(stripeService);
+    process.env.NEXT_PUBLIC_APP_URL = '';
+    process.env.APP_URL = '';
+    process.env.BETTER_AUTH_URL = 'http://localhost:3000';
+    const billingService = {
+      createSetupSession: jest.fn().mockResolvedValue({
+        url: 'https://checkout.stripe.com/c/session_1',
+      }),
+    } as unknown as BillingService;
+    const service = new BackgroundCheckBillingService(billingService);
 
     await expect(
       service.createSetupSession({
@@ -472,7 +448,63 @@ describe('background checks', () => {
         successUrl:
           'http://localhost:3000/org_1/people/mem_1?background_check_billing=success',
         cancelUrl: 'http://localhost:3000/org_1/people/mem_1',
+        customerEmail: 'billing@trycomp.ai',
       }),
     ).resolves.toEqual({ url: 'https://checkout.stripe.com/c/session_1' });
+
+    expect(billingService.createSetupSession).toHaveBeenCalledWith({
+      organizationId: 'org_1',
+      successUrl:
+        'http://localhost:3000/org_1/people/mem_1?background_check_billing=success',
+      cancelUrl: 'http://localhost:3000/org_1/people/mem_1',
+      customerEmail: 'billing@trycomp.ai',
+    });
+  });
+
+  it('includes background check and penetration test usage in billing status', async () => {
+    const billingService = {
+      getStatus: jest.fn().mockResolvedValue({
+        hasBilling: true,
+        hasPaymentMethod: true,
+        setupAt: new Date('2026-04-29T12:00:00.000Z'),
+        usage: { backgroundChecks: 4, penetrationTests: 2 },
+        subscriptions: [],
+        invoices: [
+          {
+            id: 'in_1',
+            number: 'INV-001',
+            createdAt: '2026-04-30T00:00:00.000Z',
+            dueDate: null,
+            amountPaid: 4900,
+            amountDue: 4900,
+            currency: 'usd',
+            status: 'paid',
+            type: 'One Time',
+            hostedInvoiceUrl: 'https://invoice.stripe.com/i/in_1',
+            invoicePdfUrl: 'https://invoice.stripe.com/i/in_1.pdf',
+          },
+        ],
+      }),
+    } as unknown as BillingService;
+    const service = new BackgroundCheckBillingService(billingService);
+
+    await expect(service.getStatus('org_1')).resolves.toMatchObject({
+      hasBilling: true,
+      hasPaymentMethod: true,
+      usage: {
+        backgroundChecks: 4,
+        penetrationTests: 2,
+      },
+      invoices: [
+        {
+          id: 'in_1',
+          number: 'INV-001',
+          amountPaid: 4900,
+          status: 'paid',
+          type: 'One Time',
+        },
+      ],
+    });
+    expect(billingService.getStatus).toHaveBeenCalledWith('org_1');
   });
 });

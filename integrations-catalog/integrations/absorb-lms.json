@@ -8,6 +8,7 @@
   "authConfig": {
     "type": "custom",
     "config": {
+      "setupInstructions": "1. Log in to your Absorb LMS portal as an administrator\n2. Note your portal URL (e.g., yourcompany.myabsorb.com)\n3. Contact Absorb Support or your System Admin to obtain your API Private Key (GUID)\n4. Use your admin account username and password\n5. Enter all values below\n\nNote: The API Private Key is a unique GUID assigned to your portal. It is NOT the same as your password.",
       "credentialFields": [
         {
           "label": "Portal URL",

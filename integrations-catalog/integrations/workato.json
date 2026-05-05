@@ -8,13 +8,19 @@
   "authConfig": {
     "type": "custom",
     "config": {
-      "setupInstructions": "1. Log in to Workato at https://app.workato.com\n2. Go to Account Settings → API Token\n3. Copy your API token\n4. Enter it below",
+      "setupInstructions": "1. Log in to Workato\n2. Go to Workspace Admin > API Clients\n3. Create an API Client with appropriate client role\n4. Copy the API token\n5. Select your data center URL (US: https://www.workato.com, EU: https://app.eu.workato.com, etc.)\n6. Enter both below",
       "credentialFields": [
         {
-          "label": "API Token",
+          "label": "Data Center",
+          "type": "text",
+          "required": true,
+          "helpText": "Your Workato data center base URL (e.g., https://www.workato.com for US, https://app.eu.workato.com for EU, https://app.jp.workato.com for JP, https://app.sg.workato.com for SG, https://app.au.workato.com for AU)"
+        },
+        {
+          "label": "API Client Token",
           "type": "password",
           "required": true,
-          "helpText": "Found in Workato Account Settings → API token"
+          "helpText": "API Client token from Workspace Admin > API Clients. Requires appropriate client role."
         }
       ]
     }

@@ -1,29 +1,39 @@
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@trycompai/ui/card';
+import { serverApi } from '@/lib/api-server';
 import type { Metadata } from 'next';
+import { notFound } from 'next/navigation';
+import { BillingAddOnPlansClient } from './BillingAddOnPlansClient';
+import { BillingSettingsClient } from './BillingSettingsClient';
+import { getBillingAddOn } from './billingAddOns';
+import { emptyBillingStatus } from './emptyBillingStatus';
+import type { BackgroundCheckBillingStatus } from './types';
 
-export default async function BillingPage() {
+export default async function BillingPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ orgId: string }>;
+  searchParams?: Promise<{ addOn?: string }>;
+}) {
+  const { orgId } = await params;
+  const addOnSlug = (await searchParams)?.addOn;
+  const response = await serverApi.get<BackgroundCheckBillingStatus>('/v1/billing/status');
+  const initialBillingStatus = response.data ?? emptyBillingStatus;
+
+  if (addOnSlug) {
+    const addOn = getBillingAddOn(addOnSlug);
+    if (!addOn) notFound();
+
+    return (
+      <BillingAddOnPlansClient
+        organizationId={orgId}
+        addOn={addOn}
+        initialBillingStatus={initialBillingStatus}
+      />
+    );
+  }
+
   return (
-    <div className="space-y-6">
-      <Card>
-        <CardHeader>
-          <CardTitle>Penetration Testing</CardTitle>
-          <CardDescription>
-            Every organization gets a free trial run. Paid plans are coming soon.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <p className="text-sm text-muted-foreground">
-            See your remaining trial runs on the Penetration Tests page.
-          </p>
-        </CardContent>
-      </Card>
-    </div>
+    <BillingSettingsClient organizationId={orgId} initialBillingStatus={initialBillingStatus} />
   );
 }
 

@@ -6,17 +6,9 @@
   "docsUrl": "https://apidoc.factorialhr.com",
   "baseUrl": "https://api.factorialhr.com",
   "authConfig": {
-    "type": "custom",
+    "type": "api_key",
     "config": {
-      "setupInstructions": "1. Log in to Factorial\n2. Go to Settings → API\n3. Generate a new API key\n4. Paste it below",
-      "credentialFields": [
-        {
-          "label": "API Key",
-          "type": "password",
-          "required": true,
-          "helpText": "Factorial → Settings → API → Generate API Key"
-        }
-      ]
+      "setupInstructions": "1. Log in to Factorial as an admin\n2. Go to Settings > API Keys\n3. Create a new API key\n4. Copy the key and paste it below\n\nNote: API Keys have full admin access. Store securely."
     }
   },
   "capabilities": [

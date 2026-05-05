@@ -19,6 +19,7 @@ export type FrameworkInstanceWithControls = FrameworkInstance & {
     requirementsMapped: RequirementMap[];
     controlDocumentTypes?: Array<{
       formType: string;
+      isNotRelevant?: boolean;
     }>;
   })[];
 };

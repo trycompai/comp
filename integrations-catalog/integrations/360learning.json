@@ -3,8 +3,8 @@
   "name": "360Learning",
   "description": "Monitor 360Learning LMS for compliance training completion and user management.",
   "category": "Security",
-  "docsUrl": null,
-  "baseUrl": null,
+  "docsUrl": "https://360learning.readme.io/reference",
+  "baseUrl": "https://app.360learning.com",
   "authConfig": {
     "type": "custom",
     "config": {

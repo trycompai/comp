@@ -4,6 +4,7 @@ import type { Request } from 'express';
 import { OAuthController } from './oauth.controller';
 import { HybridAuthGuard } from '../../auth/hybrid-auth.guard';
 import { PermissionGuard } from '../../auth/permission.guard';
+import { SessionOnlyGuard } from '../../auth/session-only.guard';
 import { OAuthStateRepository } from '../repositories/oauth-state.repository';
 import { ProviderRepository } from '../repositories/provider.repository';
 import { ConnectionRepository } from '../repositories/connection.repository';
@@ -34,6 +35,10 @@ jest.mock('../../auth/hybrid-auth.guard', () => ({
 
 jest.mock('../../auth/permission.guard', () => ({
   PermissionGuard: class PermissionGuard {},
+}));
+
+jest.mock('../../auth/session-only.guard', () => ({
+  SessionOnlyGuard: class SessionOnlyGuard {},
 }));
 
 jest.mock('@trycompai/auth', () => ({
@@ -134,6 +139,8 @@ describe('OAuthController', () => {
     })
       .overrideGuard(HybridAuthGuard)
       .useValue(mockGuard)
+      .overrideGuard(SessionOnlyGuard)
+      .useValue(mockGuard)
       .overrideGuard(PermissionGuard)
       .useValue(mockGuard)
       .compile();
@@ -176,9 +183,8 @@ describe('OAuthController', () => {
       mockedGetManifest.mockReturnValue(undefined as never);
 
       await expect(
-        controller.startOAuth('org_1', {
+        controller.startOAuth('org_1', 'user_1', {
           providerSlug: 'nonexistent',
-          userId: 'user_1',
         }),
       ).rejects.toThrow(HttpException);
     });
@@ -189,9 +195,8 @@ describe('OAuthController', () => {
       } as never);
 
       await expect(
-        controller.startOAuth('org_1', {
+        controller.startOAuth('org_1', 'user_1', {
           providerSlug: 'datadog',
-          userId: 'user_1',
         }),
       ).rejects.toThrow(HttpException);
     });
@@ -219,9 +224,8 @@ describe('OAuthController', () => {
       });
 
       await expect(
-        controller.startOAuth('org_1', {
+        controller.startOAuth('org_1', 'user_1', {
           providerSlug: 'github',
-          userId: 'user_1',
         }),
       ).rejects.toThrow(HttpException);
     });
@@ -254,9 +258,8 @@ describe('OAuthController', () => {
         state: 'random_state_token',
       });
 
-      const result = await controller.startOAuth('org_1', {
+      const result = await controller.startOAuth('org_1', 'user_1', {
         providerSlug: 'github',
-        userId: 'user_1',
       });
 
       expect(result.authorizationUrl).toContain(
@@ -303,9 +306,8 @@ describe('OAuthController', () => {
         state: 'state_abc',
       });
 
-      const result = await controller.startOAuth('org_1', {
+      const result = await controller.startOAuth('org_1', 'user_1', {
         providerSlug: 'linear',
-        userId: 'user_1',
       });
 
       expect(result.authorizationUrl).toContain('code_challenge=');

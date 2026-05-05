@@ -1,5 +1,11 @@
 'use client';
 
+import {
+  type EvidenceSubmissionInfo,
+  getControlProgressPercent,
+  getControlStatus,
+  getRequirementArtifactCounts,
+} from '@/lib/control-compliance';
 import type { Control, Task } from '@db';
 import {
   Badge,
@@ -18,18 +24,12 @@ import { Launch, Search } from '@trycompai/design-system/icons';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { useEffect, useMemo, useState } from 'react';
-import {
-  type EvidenceSubmissionInfo,
-  getControlProgressPercent,
-  getControlStatus,
-  getRequirementArtifactCounts,
-} from '@/lib/control-compliance';
 
 const PAGE_SIZE_OPTIONS = [10, 25, 50, 100];
 
 type ControlWithPolicies = Control & {
   policies?: Array<{ id: string; name: string; status: string }>;
-  controlDocumentTypes?: Array<{ formType: string }>;
+  controlDocumentTypes?: Array<{ formType: string; isNotRelevant?: boolean }>;
 };
 
 interface RequirementControlsTableProps {
@@ -48,6 +48,8 @@ function getStatusBadge(status: string): {
       return { label: 'Satisfied', variant: 'default' };
     case 'in_progress':
       return { label: 'In Progress', variant: 'secondary' };
+    case 'not_relevant':
+      return { label: 'Not Relevant', variant: 'secondary' };
     default:
       return { label: 'Not Started', variant: 'destructive' };
   }
@@ -160,11 +162,7 @@ export function RequirementControlsTable({
               // Use the shared aggregator so per-control counts (especially
               // documents) honour the same 6-month freshness rule as
               // getControlStatus / getControlProgressPercent below.
-              const counts = getRequirementArtifactCounts(
-                [control],
-                tasks,
-                evidenceSubmissions,
-              );
+              const counts = getRequirementArtifactCounts([control], tasks, evidenceSubmissions);
 
               const status = getControlStatus(
                 policies,
@@ -194,10 +192,7 @@ export function RequirementControlsTable({
                       onClick={(e) => e.stopPropagation()}
                       className="group flex items-center gap-2"
                     >
-                      <span
-                        className="block max-w-[280px] truncate text-sm"
-                        title={control.name}
-                      >
+                      <span className="block max-w-[280px] truncate text-sm" title={control.name}>
                         {control.name}
                       </span>
                       <Launch

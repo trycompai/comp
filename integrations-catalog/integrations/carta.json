@@ -1,0 +1,43 @@
+{
+  "slug": "carta",
+  "name": "Carta",
+  "description": "Carta is an equity management and cap table platform used by VC-backed startups for managing equity, valuations, and stakeholder records.",
+  "category": "HR & People",
+  "docsUrl": "https://docs.carta.com/api-platform/docs/introduction",
+  "baseUrl": "https://api.carta.com",
+  "authConfig": {
+    "type": "oauth2",
+    "config": {
+      "setupInstructions": "To connect Carta:\n1. You need a Carta developer portal invite or API access from Carta\n2. Create an OAuth app in the Carta developer portal at https://developers.app.carta.com\n3. Set the grant type to Authorization Code\n4. Add the CompAI callback URL to your allowed redirect URIs\n5. Select scopes: read_issuer_info and read_issuer_stakeholders\n6. Copy your Client ID and Client Secret into CompAI\n7. Click Connect to authorize access",
+      "scopes": [
+        "read_issuer_info",
+        "read_issuer_stakeholders"
+      ],
+      "clientAuthMethod": "header",
+      "supportsRefreshToken": true
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "carta_app_availability",
+      "name": "App Availability",
+      "description": "Verifies that the Carta API connection is active and accessible by listing the issuers (companies) the authenticated user has access to.",
+      "defaultSeverity": "high",
+      "enabled": true
+    },
+    {
+      "slug": "carta_employee_access",
+      "name": "Employee Access",
+      "description": "Lists stakeholders (equity holders) across all issuers the authenticated user has access to, showing their roles and relationships for compliance review.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

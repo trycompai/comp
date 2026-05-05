@@ -58,6 +58,7 @@ interface MemberRowProps {
   deviceStatus?: 'compliant' | 'non-compliant' | 'stale' | 'not-installed';
   isDeviceStatusLoading?: boolean;
   backgroundCheckStatus?: BackgroundCheckStatus;
+  backgroundCheckStepEnabled?: boolean;
 }
 
 function getInitials(name?: string | null, email?: string | null): string {
@@ -122,6 +123,7 @@ export function MemberRow({
   deviceStatus,
   isDeviceStatusLoading = false,
   backgroundCheckStatus,
+  backgroundCheckStepEnabled = true,
 }: MemberRowProps) {
   const { orgId } = useParams<{ orgId: string }>();
 
@@ -182,7 +184,7 @@ export function MemberRow({
     });
   }
 
-  if (shouldShowTaskRequirements) {
+  if (shouldShowTaskRequirements && backgroundCheckStepEnabled) {
     taskItems.push({
       label: 'Background check',
       completed: hasCompletedBackgroundCheck ? 1 : 0,
@@ -272,7 +274,9 @@ export function MemberRow({
                 >
                   {memberName}
                 </Link>
-                {hasCompletedBackgroundCheck && <BackgroundCheckVerifiedTick />}
+                {backgroundCheckStepEnabled && hasCompletedBackgroundCheck && (
+                  <BackgroundCheckVerifiedTick />
+                )}
               </div>
               <Text variant="muted">{memberEmail}</Text>
             </div>
@@ -344,13 +348,13 @@ export function MemberRow({
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
                 {isDeactivated && canEdit && (
-                  <DropdownMenuItem onSelect={handleReactivateClick} disabled={isReactivating}>
+                  <DropdownMenuItem onClick={handleReactivateClick} disabled={isReactivating}>
                     <Checkmark size={16} className="mr-2" />
                     <span>{isReactivating ? 'Reinstating...' : 'Reinstate Member'}</span>
                   </DropdownMenuItem>
                 )}
                 {!isDeactivated && canEdit && (
-                  <DropdownMenuItem onSelect={handleEditRolesClick}>
+                  <DropdownMenuItem onClick={handleEditRolesClick}>
                     <Edit size={16} className="mr-2" />
                     <span>Edit Roles</span>
                   </DropdownMenuItem>
@@ -359,7 +363,7 @@ export function MemberRow({
                   (member.fleetDmLabelId || (deviceStatus && deviceStatus !== 'not-installed')) &&
                   isCurrentUserOwner && (
                     <DropdownMenuItem
-                      onSelect={() => {
+                      onClick={() => {
                         setDropdownOpen(false);
                         setIsRemoveDeviceAlertOpen(true);
                       }}
@@ -371,7 +375,7 @@ export function MemberRow({
                 {!isDeactivated && canRemove && (
                   <DropdownMenuItem
                     variant="destructive"
-                    onSelect={() => {
+                    onClick={() => {
                       setDropdownOpen(false);
                       setIsRemoveAlertOpen(true);
                     }}

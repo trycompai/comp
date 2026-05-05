@@ -6,9 +6,9 @@ import { toast } from 'sonner';
 import useSWR from 'swr';
 import { BackgroundCheckReport } from './BackgroundCheckReport';
 import {
-  type CustomBackgroundCheckAttachment,
   type BackgroundCheckRecord,
   type BackgroundCheckStatus,
+  type CustomBackgroundCheckAttachment,
   isCompletedBackgroundCheck,
 } from './backgroundCheckTypes';
 
@@ -48,17 +48,13 @@ export function BackgroundCheckStatusView({
     CustomBackgroundCheckAttachment[],
     Error,
     readonly [string, string] | null
-  >(
-    customAttachmentsKey,
-    async ([endpoint, orgId]) => {
-      const response = await apiClient.get<CustomBackgroundCheckAttachment[]>(
-        endpoint,
-        orgId,
-      );
-      if (response.error) throw new Error(response.error);
-      return response.data ?? [];
-    },
-  );
+  >(customAttachmentsKey, async ([endpoint, orgId]) => {
+    const response = await apiClient.get<CustomBackgroundCheckAttachment[]>(endpoint, orgId);
+    if (response.error) {
+      throw new Error('Failed to load custom background check attachments');
+    }
+    return response.data ?? [];
+  });
 
   const handleCopyCandidateLink = async () => {
     if (!backgroundCheck.candidateUrl) return;
@@ -152,7 +148,7 @@ function CustomReportAttachments({
     );
 
     if (response.error || !response.data?.downloadUrl) {
-      toast.error(response.error ?? 'Failed to open background check');
+      toast.error('Failed to open background check');
       return;
     }
 
@@ -177,11 +173,7 @@ function CustomReportAttachments({
                   Uploaded {new Date(attachment.createdAt).toLocaleString()}
                 </Text>
               </Stack>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => handleDownload(attachment.id)}
-              >
+              <Button type="button" variant="outline" onClick={() => handleDownload(attachment.id)}>
                 Open
               </Button>
             </HStack>
@@ -192,11 +184,7 @@ function CustomReportAttachments({
   );
 }
 
-function ComponentStatuses({
-  backgroundCheck,
-}: {
-  backgroundCheck: BackgroundCheckRecord;
-}) {
+function ComponentStatuses({ backgroundCheck }: { backgroundCheck: BackgroundCheckRecord }) {
   const statuses = COMPONENT_LABELS.flatMap(([key, label]) => {
     const value = backgroundCheck[key];
     return value ? [{ label, value }] : [];

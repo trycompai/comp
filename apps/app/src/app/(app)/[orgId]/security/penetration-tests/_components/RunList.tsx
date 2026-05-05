@@ -1,10 +1,10 @@
 'use client';
 
-import { cn } from '@trycompai/design-system/cn';
+import type { PentestRun } from '@/lib/security/penetration-tests-client';
 import { Progress } from '@trycompai/design-system';
+import { cn } from '@trycompai/design-system/cn';
 import { Add } from '@trycompai/design-system/icons';
 import { useRouter } from 'next/navigation';
-import type { PentestRun } from '@/lib/security/penetration-tests-client';
 import { formatReportDate } from '../lib';
 import { StatusPill } from './StatusPill';
 import { isRunInProgress } from './severity';
@@ -14,10 +14,10 @@ interface RunListProps {
   runs: PentestRun[];
   selectedRunId: string | null;
   onCreateClick: () => void;
-  /** Spendable credit balance — drives the "X runs left" badge. */
+  /** Subscription allowance balance — drives the "X runs left" badge. */
   balance?: number;
-  /** True when the user has used their initial trial (balance 0, totalGranted > 0). */
-  trialUsed?: boolean;
+  planRequired?: boolean;
+  quotaLabel?: 'Plan';
 }
 
 export function RunList({
@@ -26,14 +26,13 @@ export function RunList({
   selectedRunId,
   onCreateClick,
   balance,
-  trialUsed,
+  planRequired,
+  quotaLabel = 'Plan',
 }: RunListProps) {
   const router = useRouter();
   const canCreate = balance === undefined ? true : balance > 0;
   const newButtonTitle = !canCreate
-    ? trialUsed
-      ? "You've used your trial run. Paid plans coming soon."
-      : 'No pentest runs remaining.'
+    ? 'Choose a plan or start a free trial to continue scanning.'
     : 'Start a new scan';
   return (
     <aside className="flex h-full min-h-0 w-full xl:w-[340px] xl:shrink-0 flex-col border-r border-border bg-background">
@@ -53,13 +52,10 @@ export function RunList({
           <button
             type="button"
             onClick={onCreateClick}
-            disabled={!canCreate}
             title={newButtonTitle}
             className={cn(
               'flex items-center gap-1 rounded border border-border bg-background px-2 py-1 text-[11px] font-semibold',
-              canCreate
-                ? 'hover:bg-muted'
-                : 'cursor-not-allowed opacity-50',
+              canCreate ? 'hover:bg-muted' : 'hover:bg-muted',
             )}
           >
             <Add className="h-3 w-3" />
@@ -75,18 +71,18 @@ export function RunList({
         ) : (
           <ul role="list" className="divide-y divide-border">
             {runs.map((run) => (
-              <RunRow
-                key={run.id}
-                orgId={orgId}
-                run={run}
-                selected={run.id === selectedRunId}
-              />
+              <RunRow key={run.id} orgId={orgId} run={run} selected={run.id === selectedRunId} />
             ))}
           </ul>
         )}
       </div>
       {balance !== undefined && (
-        <QuotaFooter balance={balance} trialUsed={Boolean(trialUsed)} />
+        <QuotaFooter
+          balance={balance}
+          planRequired={Boolean(planRequired)}
+          quotaLabel={quotaLabel}
+          orgId={orgId}
+        />
       )}
     </aside>
   );
@@ -94,7 +90,9 @@ export function RunList({
 
 interface QuotaFooterProps {
   balance: number;
-  trialUsed: boolean;
+  planRequired: boolean;
+  quotaLabel: 'Plan';
+  orgId: string;
 }
 
 /**
@@ -103,18 +101,16 @@ interface QuotaFooterProps {
  * actions. Falls back to a "Contact support" mailto when the user is at
  * zero so they have a clear next step.
  */
-function QuotaFooter({ balance, trialUsed }: QuotaFooterProps) {
+function QuotaFooter({ balance, planRequired, quotaLabel, orgId }: QuotaFooterProps) {
   if (balance > 0) {
     return (
       <div className="border-t border-border px-4 py-3">
         <div className="flex items-center justify-between text-[11px] text-muted-foreground">
           <span>
-            <span className="font-mono tabular-nums text-foreground">
-              {balance}
-            </span>{' '}
-            scan{balance === 1 ? '' : 's'} remaining
+            <span className="font-mono tabular-nums text-foreground">{balance}</span> scan
+            {balance === 1 ? '' : 's'} remaining
           </span>
-          <span className="text-[10px] uppercase tracking-[0.06em]">Trial</span>
+          <span className="text-[10px] uppercase tracking-[0.06em]">{quotaLabel}</span>
         </div>
       </div>
     );
@@ -123,15 +119,15 @@ function QuotaFooter({ balance, trialUsed }: QuotaFooterProps) {
   return (
     <div className="border-t border-border px-4 py-3">
       <div className="text-[11px] font-medium">
-        {trialUsed ? "You've used your trial scan" : 'No scans available'}
+        {planRequired ? 'Plan required' : 'No scans available'}
       </div>
       <div className="mt-0.5 text-[11px] text-muted-foreground">
-        Paid plans coming soon —{' '}
+        Choose a plan or start a free trial to keep scanning —{' '}
         <a
-          href="mailto:support@trycomp.ai?subject=Pentest%20scan%20access"
+          href={`/${orgId}/settings/billing/add-ons/penetration-tests`}
           className="underline hover:text-foreground"
         >
-          contact support
+          view plans
         </a>
         .
       </div>
@@ -164,16 +160,12 @@ function RunRow({ orgId, run, selected }: RunRowProps) {
       tabIndex={0}
       aria-current={selected ? 'true' : undefined}
       onClick={() =>
-        router.push(
-          `/${orgId}/security/penetration-tests/${encodeURIComponent(run.id)}`,
-        )
+        router.push(`/${orgId}/security/penetration-tests/${encodeURIComponent(run.id)}`)
       }
       onKeyDown={(e) => {
         if (e.key === 'Enter' || e.key === ' ') {
           e.preventDefault();
-          router.push(
-            `/${orgId}/security/penetration-tests/${encodeURIComponent(run.id)}`,
-          );
+          router.push(`/${orgId}/security/penetration-tests/${encodeURIComponent(run.id)}`);
         }
       }}
       className={cn(
@@ -184,9 +176,7 @@ function RunRow({ orgId, run, selected }: RunRowProps) {
     >
       <div className="flex items-center gap-2">
         <StatusPill status={run.status} />
-        <span className="font-mono text-[11px] text-muted-foreground">
-          {shortId}
-        </span>
+        <span className="font-mono text-[11px] text-muted-foreground">{shortId}</span>
       </div>
       <div className="truncate font-mono text-sm">{target}</div>
       <div className="font-mono text-[11px] text-muted-foreground">

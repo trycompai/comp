@@ -8,6 +8,7 @@
   "authConfig": {
     "type": "custom",
     "config": {
+      "setupInstructions": "1. Log in to Quave Cloud dashboard\n2. Navigate to Settings > API Access\n3. Generate or copy your API token\n4. Enter your Account ID (found in the dashboard URL or account settings)\n5. Optionally enter specific App IDs (comma-separated) to restrict checks to certain apps",
       "credentialFields": [
         {
           "label": "API Token",

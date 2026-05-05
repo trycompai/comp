@@ -32,6 +32,7 @@ export async function getOverviewScores(organizationId: string) {
         select: {
           securityTrainingStepEnabled: true,
           deviceAgentStepEnabled: true,
+          backgroundCheckStepEnabled: true,
         },
       }),
       db.frameworkInstance.findFirst({
@@ -42,6 +43,7 @@ export async function getOverviewScores(organizationId: string) {
 
   const securityTrainingStepEnabled = org?.securityTrainingStepEnabled === true;
   const deviceAgentStepEnabled = org?.deviceAgentStepEnabled === true;
+  const backgroundCheckStepEnabled = org?.backgroundCheckStepEnabled === true;
   const hasHipaaFramework = !!hipaaInstance;
 
   const publishedPolicies = allPolicies.filter((p) => p.status === 'published');
@@ -66,6 +68,7 @@ export async function getOverviewScores(organizationId: string) {
     employees,
     securityTrainingStepEnabled,
     deviceAgentStepEnabled,
+    backgroundCheckStepEnabled,
     hasHipaaFramework,
   });
 
@@ -90,7 +93,7 @@ export async function getOverviewScores(organizationId: string) {
 }
 
 async function computeDocumentsScore(organizationId: string) {
-  const [groupedStatuses, isoFrameworkInstances] = await Promise.all([
+  const [groupedStatuses, isoFrameworkInstances, settings] = await Promise.all([
     db.evidenceSubmission.groupBy({
       by: ['formType'],
       where: { organizationId },
@@ -107,20 +110,33 @@ async function computeDocumentsScore(organizationId: string) {
       },
       select: { frameworkId: true },
     }),
+    db.evidenceFormSetting.findMany({
+      where: { organizationId },
+      select: { formType: true, isNotRelevant: true },
+    }),
   ]);
 
-  const statuses: Record<string, { lastSubmittedAt: string | null }> = {};
+  const notRelevantFormTypes = new Set(
+    settings
+      .filter((setting) => setting.isNotRelevant)
+      .map((setting) => setting.formType),
+  );
+  const statuses: Record<
+    string,
+    { lastSubmittedAt: string | null; isNotRelevant: boolean }
+  > = {};
   for (const form of evidenceFormDefinitionList) {
     const match = groupedStatuses.find(
       (entry) => entry.formType === toDbEvidenceFormType(form.type),
     );
     statuses[form.type] = {
       lastSubmittedAt: match?._max.submittedAt?.toISOString() ?? null,
+      isNotRelevant: notRelevantFormTypes.has(toDbEvidenceFormType(form.type)),
     };
   }
 
   const includedForms = evidenceFormDefinitionList.filter(
-    (f) => !f.hidden && !f.optional,
+    (f) => !f.hidden && !f.optional && !statuses[f.type]?.isNotRelevant,
   );
   const nonSOAOutstandingDocuments = includedForms.reduce((count, form) => {
     if (form.type === 'meeting') {

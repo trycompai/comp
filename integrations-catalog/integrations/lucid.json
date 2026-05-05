@@ -6,8 +6,18 @@
   "docsUrl": "https://developer.lucid.co/",
   "baseUrl": "https://api.lucid.co",
   "authConfig": {
-    "type": "api_key",
-    "config": {}
+    "type": "custom",
+    "config": {
+      "setupInstructions": "1. Log in to your Lucid account as an admin\n2. Go to developer.lucid.co\n3. Create an API key with AccountReadonly grant\n4. Copy the API key and paste it below",
+      "credentialFields": [
+        {
+          "label": "API Key",
+          "type": "password",
+          "required": true,
+          "helpText": "Create an API key in the Lucid Developer Portal at developer.lucid.co. Requires AccountReadonly grant."
+        }
+      ]
+    }
   },
   "capabilities": [
     "checks"

@@ -15,6 +15,7 @@ jest.mock('@db', () => ({
     fleetPolicyResult: { findMany: jest.fn() },
     backgroundCheckRequest: { findMany: jest.fn() },
     evidenceSubmission: { groupBy: jest.fn() },
+    evidenceFormSetting: { findMany: jest.fn() },
     finding: { findMany: jest.fn() },
     sOADocument: { findFirst: jest.fn() },
   },
@@ -57,9 +58,33 @@ describe('frameworks-scores.helper', () => {
       { memberId: 'mem_2' },
     ]);
     (mockDb.evidenceSubmission.groupBy as jest.Mock).mockResolvedValue([]);
+    (mockDb.evidenceFormSetting.findMany as jest.Mock).mockResolvedValue([]);
     (mockDb.finding.findMany as jest.Mock).mockResolvedValue([]);
     (mockDb.frameworkInstance.findMany as jest.Mock).mockResolvedValue([]);
-    ((mockDb as any).sOADocument.findFirst as jest.Mock).mockResolvedValue(null);
+    ((mockDb as any).sOADocument.findFirst as jest.Mock).mockResolvedValue(
+      null,
+    );
+  });
+
+  it('excludes not relevant documents from overview document totals', async () => {
+    (mockDb.member.findMany as jest.Mock).mockResolvedValue([]);
+    mockFilterComplianceMembers.mockResolvedValue([]);
+    (mockDb.organization.findUnique as jest.Mock).mockResolvedValue({
+      securityTrainingStepEnabled: false,
+      deviceAgentStepEnabled: false,
+      backgroundCheckStepEnabled: false,
+    });
+    (mockDb.evidenceFormSetting.findMany as jest.Mock).mockResolvedValue([
+      { formType: 'penetration_test', isNotRelevant: true },
+    ]);
+
+    const scores = await getOverviewScores('org_1');
+
+    expect(scores.documents).toEqual({
+      totalDocuments: 6,
+      completedDocuments: 0,
+      outstandingDocuments: 6,
+    });
   });
 
   it('requires installed device for people completion when device agent step is enabled', async () => {
@@ -260,9 +285,7 @@ describe('frameworks-scores.helper', () => {
 
   describe('computeFrameworkComplianceScore', () => {
     it('returns 0 when the framework has no artifacts', () => {
-      expect(
-        computeFrameworkComplianceScore({ controls: [] }, [], []),
-      ).toBe(0);
+      expect(computeFrameworkComplianceScore({ controls: [] }, [], [])).toBe(0);
     });
 
     it('returns 100 when every artifact across the framework is complete', () => {
@@ -275,9 +298,7 @@ describe('frameworks-scores.helper', () => {
           },
         ],
       };
-      const tasks = [
-        { id: 't1', status: 'done', controls: [{ id: 'c1' }] },
-      ];
+      const tasks = [{ id: 't1', status: 'done', controls: [{ id: 'c1' }] }];
       expect(computeFrameworkComplianceScore(framework, tasks, [])).toBe(100);
     });
 
@@ -328,6 +349,22 @@ describe('frameworks-scores.helper', () => {
       expect(computeFrameworkComplianceScore(framework, [], submissions)).toBe(
         50,
       );
+    });
+
+    it('excludes not relevant document requirements from framework scores', () => {
+      const framework = {
+        controls: [
+          {
+            id: 'c1',
+            policies: [{ id: 'p1', status: 'published' }],
+            controlDocumentTypes: [
+              { formType: 'penetration_test', isNotRelevant: true },
+            ],
+          },
+        ],
+      };
+
+      expect(computeFrameworkComplianceScore(framework, [], [])).toBe(100);
     });
 
     it('deduplicates artifacts shared across controls', () => {

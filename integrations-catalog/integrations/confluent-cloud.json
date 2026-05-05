@@ -6,8 +6,24 @@
   "docsUrl": "https://docs.confluent.io/cloud/current/api.html",
   "baseUrl": "https://api.confluent.cloud",
   "authConfig": {
-    "type": "basic",
-    "config": {}
+    "type": "custom",
+    "config": {
+      "setupInstructions": "Go to confluent.cloud, open the sidebar menu and click API keys (or go directly to confluent.cloud/settings/api-keys). Click Add API key, select My account or a Service account, choose Cloud resource management as the scope, then copy the API Key and Secret. The key needs OrganizationAdmin role to access users, environments, and clusters.",
+      "credentialFields": [
+        {
+          "label": "Cloud API Key",
+          "type": "text",
+          "required": true,
+          "helpText": "Your Confluent Cloud API Key ID"
+        },
+        {
+          "label": "Cloud API Secret",
+          "type": "password",
+          "required": true,
+          "helpText": "The API Secret shown once at key creation"
+        }
+      ]
+    }
   },
   "capabilities": [
     "checks"
