@@ -32,6 +32,22 @@ export function getRiskLevel(raw: number): RiskLevel {
   return 'very-low';
 }
 
+/**
+ * Like `getRiskLevel`, but indexed off the normalized 1-10 score so callers
+ * that show the score (Treatment Plan hero, RiskScale) and the level label
+ * stay consistent. Buckets mirror RiskScale's 5 visual segments (2 score
+ * units each):
+ *
+ *   1-2 → very-low,  3-4 → low,  5-6 → medium,  7-8 → high,  9-10 → very-high
+ */
+export function getRiskLevelFromScore(score: number): RiskLevel {
+  if (score >= 9) return 'very-high';
+  if (score >= 7) return 'high';
+  if (score >= 5) return 'medium';
+  if (score >= 3) return 'low';
+  return 'very-low';
+}
+
 export function getRiskScore(likelihood: Likelihood, impact: Impact): RiskScore {
   const raw = LIKELIHOOD_SCORES[likelihood] * IMPACT_SCORES[impact];
   const score = Math.max(1, Math.ceil(raw / 2.5));

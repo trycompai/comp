@@ -1,6 +1,6 @@
 'use client';
 
-import { getRiskLevel, getRiskScore, type RiskLevel } from '@/lib/risk-score';
+import { getRiskLevelFromScore, getRiskScore, type RiskLevel } from '@/lib/risk-score';
 import {
   interpolatedResidualScore,
   previewResidual,
@@ -105,10 +105,6 @@ export function TreatmentHero({
     strategy,
   });
   const targetScore = getRiskScore(target.likelihood, target.impact);
-  const targetRaw =
-    targetScore.score === inherent.score
-      ? inherent.raw
-      : approximateRawFromScore(targetScore.score);
 
   // Mitigate is the only strategy with a meaningful in-progress concept.
   // Non-Mitigate strategies are "always at full completion" — the strategy
@@ -131,15 +127,13 @@ export function TreatmentHero({
     targetScore: targetScore.score,
     completion,
   });
-  const currentRaw =
-    currentScore === inherent.score ? inherent.raw : approximateRawFromScore(currentScore);
-  const currentLevel = getRiskLevel(currentRaw);
+  const currentLevel = getRiskLevelFromScore(currentScore);
   const showCurrentSubline =
     strategy === RiskTreatmentType.mitigate && completion > 0 && completion < 1;
 
   const delta = inherent.score - targetScore.score;
-  const inherentLevel = getRiskLevel(inherent.raw);
-  const residualLevel = getRiskLevel(targetRaw);
+  const inherentLevel = getRiskLevelFromScore(inherent.score);
+  const residualLevel = getRiskLevelFromScore(targetScore.score);
 
   const thirdStat = STRATEGY_THIRD_STAT[strategy];
   const thirdStatValue =
@@ -274,17 +268,6 @@ export function TreatmentHero({
       </CardContent>
     </Card>
   );
-}
-
-/**
- * Approximate raw L×I from a 1-10 score. Inverse of getRiskScore's
- * `Math.ceil(raw / 2.5)` — used to color the lerped residual numeral.
- * Multiple raw values map to one score; pick the lower bound of each band:
- * score=1→raw=1, score=2→raw=3, score=3→raw=6, ..., generally raw ≈ (score-1)*2.5+1.
- */
-function approximateRawFromScore(score: number): number {
-  if (score <= 1) return 1;
-  return (score - 1) * 2.5 + 0.5;
 }
 
 function HeroStatPair({ label, from, to }: { label: string; from: string; to: string }) {
