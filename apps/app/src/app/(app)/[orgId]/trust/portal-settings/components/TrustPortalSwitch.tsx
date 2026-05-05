@@ -1,9 +1,8 @@
 'use client';
 
-import { useDebounce } from '@/hooks/useDebounce';
 import { usePermissions } from '@/hooks/use-permissions';
 import { useTrustPortalSettings } from '@/hooks/use-trust-portal-settings';
-import { Form } from '@trycompai/ui/form';
+import { useDebounce } from '@/hooks/useDebounce';
 import { zodResolver } from '@hookform/resolvers/zod';
 import {
   Button,
@@ -25,20 +24,12 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from '@trycompai/design-system';
+import { Form } from '@trycompai/ui/form';
 import { Download, Eye, FileCheck2, Upload } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import { z } from 'zod';
-import {
-  TrustPortalAdditionalDocumentsSection,
-  type TrustPortalDocument,
-} from './TrustPortalAdditionalDocumentsSection';
-import { TrustPortalCustomLinks } from './TrustPortalCustomLinks';
-import { TrustPortalFaqBuilder } from './TrustPortalFaqBuilder';
-import { TrustPortalOverview } from './TrustPortalOverview';
-import { TrustPortalVendors } from './TrustPortalVendors';
-import { UpdateTrustFavicon } from './UpdateTrustFavicon';
 import { BrandSettings } from './BrandSettings';
 import {
   GDPR,
@@ -62,6 +53,15 @@ import {
   SOC3,
   SOC3InProgress,
 } from './logos';
+import {
+  TrustPortalAdditionalDocumentsSection,
+  type TrustPortalDocument,
+} from './TrustPortalAdditionalDocumentsSection';
+import { TrustPortalCustomLinks } from './TrustPortalCustomLinks';
+import { TrustPortalFaqBuilder } from './TrustPortalFaqBuilder';
+import { TrustPortalOverview } from './TrustPortalOverview';
+import { TrustPortalVendors } from './TrustPortalVendors';
+import { UpdateTrustFavicon } from './UpdateTrustFavicon';
 
 // Client-side form schema (includes all fields for form state)
 const trustPortalSwitchSchema = z.object({
@@ -521,7 +521,10 @@ export function TrustPortalSwitch({
                       });
                       toast.success('ISO 27001 status updated');
                     } catch (error) {
-                      toast.error('Failed to update ISO 27001 status');
+                      console.error('[trust framework update] failed', error);
+                      toast.error('Failed to update ISO 27001 status', {
+                        description: error instanceof Error ? error.message : undefined,
+                      });
                     }
                   }}
                   onToggle={async (checked) => {
@@ -531,7 +534,10 @@ export function TrustPortalSwitch({
                       });
                       toast.success('ISO 27001 status updated');
                     } catch (error) {
-                      toast.error('Failed to update ISO 27001 status');
+                      console.error('[trust framework update] failed', error);
+                      toast.error('Failed to update ISO 27001 status', {
+                        description: error instanceof Error ? error.message : undefined,
+                      });
                     }
                   }}
                   fileName={certificateFiles.iso27001}
@@ -554,7 +560,10 @@ export function TrustPortalSwitch({
                       });
                       toast.success('ISO 42001 status updated');
                     } catch (error) {
-                      toast.error('Failed to update ISO 42001 status');
+                      console.error('[trust framework update] failed', error);
+                      toast.error('Failed to update ISO 42001 status', {
+                        description: error instanceof Error ? error.message : undefined,
+                      });
                     }
                   }}
                   onToggle={async (checked) => {
@@ -564,7 +573,10 @@ export function TrustPortalSwitch({
                       });
                       toast.success('ISO 42001 status updated');
                     } catch (error) {
-                      toast.error('Failed to update ISO 42001 status');
+                      console.error('[trust framework update] failed', error);
+                      toast.error('Failed to update ISO 42001 status', {
+                        description: error instanceof Error ? error.message : undefined,
+                      });
                     }
                   }}
                   fileName={certificateFiles.iso42001}
@@ -587,7 +599,10 @@ export function TrustPortalSwitch({
                       });
                       toast.success('GDPR status updated');
                     } catch (error) {
-                      toast.error('Failed to update GDPR status');
+                      console.error('[trust framework update] failed', error);
+                      toast.error('Failed to update GDPR status', {
+                        description: error instanceof Error ? error.message : undefined,
+                      });
                     }
                   }}
                   onToggle={async (checked) => {
@@ -597,7 +612,10 @@ export function TrustPortalSwitch({
                       });
                       toast.success('GDPR status updated');
                     } catch (error) {
-                      toast.error('Failed to update GDPR status');
+                      console.error('[trust framework update] failed', error);
+                      toast.error('Failed to update GDPR status', {
+                        description: error instanceof Error ? error.message : undefined,
+                      });
                     }
                   }}
                   fileName={certificateFiles.gdpr}
@@ -620,7 +638,10 @@ export function TrustPortalSwitch({
                       });
                       toast.success('HIPAA status updated');
                     } catch (error) {
-                      toast.error('Failed to update HIPAA status');
+                      console.error('[trust framework update] failed', error);
+                      toast.error('Failed to update HIPAA status', {
+                        description: error instanceof Error ? error.message : undefined,
+                      });
                     }
                   }}
                   onToggle={async (checked) => {
@@ -630,7 +651,10 @@ export function TrustPortalSwitch({
                       });
                       toast.success('HIPAA status updated');
                     } catch (error) {
-                      toast.error('Failed to update HIPAA status');
+                      console.error('[trust framework update] failed', error);
+                      toast.error('Failed to update HIPAA status', {
+                        description: error instanceof Error ? error.message : undefined,
+                      });
                     }
                   }}
                   fileName={certificateFiles.hipaa}
@@ -653,7 +677,10 @@ export function TrustPortalSwitch({
                       });
                       toast.success('SOC 2 Type 1 status updated');
                     } catch (error) {
-                      toast.error('Failed to update SOC 2 Type 1 status');
+                      console.error('[trust framework update] failed', error);
+                      toast.error('Failed to update SOC 2 Type 1 status', {
+                        description: error instanceof Error ? error.message : undefined,
+                      });
                     }
                   }}
                   onToggle={async (checked) => {
@@ -663,7 +690,10 @@ export function TrustPortalSwitch({
                       });
                       toast.success('SOC 2 Type 1 status updated');
                     } catch (error) {
-                      toast.error('Failed to update SOC 2 Type 1 status');
+                      console.error('[trust framework update] failed', error);
+                      toast.error('Failed to update SOC 2 Type 1 status', {
+                        description: error instanceof Error ? error.message : undefined,
+                      });
                     }
                   }}
                   fileName={certificateFiles.soc2type1}
@@ -686,19 +716,23 @@ export function TrustPortalSwitch({
                       });
                       toast.success('SOC 2 Type 2 status updated');
                     } catch (error) {
-                      toast.error('Failed to update SOC 2 Type 2 status');
+                      console.error('[trust framework update] failed', error);
+                      toast.error('Failed to update SOC 2 Type 2 status', {
+                        description: error instanceof Error ? error.message : undefined,
+                      });
                     }
                   }}
                   onToggle={async (checked) => {
                     try {
                       await updateFrameworkSettings(
-                        checked
-                          ? { soc2type2: true }
-                          : { soc2: false, soc2type2: false },
+                        checked ? { soc2type2: true } : { soc2: false, soc2type2: false },
                       );
                       toast.success('SOC 2 Type 2 status updated');
                     } catch (error) {
-                      toast.error('Failed to update SOC 2 Type 2 status');
+                      console.error('[trust framework update] failed', error);
+                      toast.error('Failed to update SOC 2 Type 2 status', {
+                        description: error instanceof Error ? error.message : undefined,
+                      });
                     }
                   }}
                   fileName={certificateFiles.soc2type2}
@@ -721,7 +755,10 @@ export function TrustPortalSwitch({
                       });
                       toast.success('SOC 3 status updated');
                     } catch (error) {
-                      toast.error('Failed to update SOC 3 status');
+                      console.error('[trust framework update] failed', error);
+                      toast.error('Failed to update SOC 3 status', {
+                        description: error instanceof Error ? error.message : undefined,
+                      });
                     }
                   }}
                   onToggle={async (checked) => {
@@ -731,7 +768,10 @@ export function TrustPortalSwitch({
                       });
                       toast.success('SOC 3 status updated');
                     } catch (error) {
-                      toast.error('Failed to update SOC 3 status');
+                      console.error('[trust framework update] failed', error);
+                      toast.error('Failed to update SOC 3 status', {
+                        description: error instanceof Error ? error.message : undefined,
+                      });
                     }
                   }}
                   fileName={certificateFiles.soc3}
@@ -754,7 +794,10 @@ export function TrustPortalSwitch({
                       });
                       toast.success('PCI DSS status updated');
                     } catch (error) {
-                      toast.error('Failed to update PCI DSS status');
+                      console.error('[trust framework update] failed', error);
+                      toast.error('Failed to update PCI DSS status', {
+                        description: error instanceof Error ? error.message : undefined,
+                      });
                     }
                   }}
                   onToggle={async (checked) => {
@@ -764,7 +807,10 @@ export function TrustPortalSwitch({
                       });
                       toast.success('PCI DSS status updated');
                     } catch (error) {
-                      toast.error('Failed to update PCI DSS status');
+                      console.error('[trust framework update] failed', error);
+                      toast.error('Failed to update PCI DSS status', {
+                        description: error instanceof Error ? error.message : undefined,
+                      });
                     }
                   }}
                   fileName={certificateFiles.pcidss}
@@ -787,7 +833,10 @@ export function TrustPortalSwitch({
                       });
                       toast.success('NEN 7510 status updated');
                     } catch (error) {
-                      toast.error('Failed to update NEN 7510 status');
+                      console.error('[trust framework update] failed', error);
+                      toast.error('Failed to update NEN 7510 status', {
+                        description: error instanceof Error ? error.message : undefined,
+                      });
                     }
                   }}
                   onToggle={async (checked) => {
@@ -797,7 +846,10 @@ export function TrustPortalSwitch({
                       });
                       toast.success('NEN 7510 status updated');
                     } catch (error) {
-                      toast.error('Failed to update NEN 7510 status');
+                      console.error('[trust framework update] failed', error);
+                      toast.error('Failed to update NEN 7510 status', {
+                        description: error instanceof Error ? error.message : undefined,
+                      });
                     }
                   }}
                   fileName={certificateFiles.nen7510}
@@ -820,7 +872,10 @@ export function TrustPortalSwitch({
                       });
                       toast.success('ISO 9001 status updated');
                     } catch (error) {
-                      toast.error('Failed to update ISO 9001 status');
+                      console.error('[trust framework update] failed', error);
+                      toast.error('Failed to update ISO 9001 status', {
+                        description: error instanceof Error ? error.message : undefined,
+                      });
                     }
                   }}
                   onToggle={async (checked) => {
@@ -830,7 +885,10 @@ export function TrustPortalSwitch({
                       });
                       toast.success('ISO 9001 status updated');
                     } catch (error) {
-                      toast.error('Failed to update ISO 9001 status');
+                      console.error('[trust framework update] failed', error);
+                      toast.error('Failed to update ISO 9001 status', {
+                        description: error instanceof Error ? error.message : undefined,
+                      });
                     }
                   }}
                   fileName={certificateFiles.iso9001}
@@ -890,14 +948,21 @@ export function TrustPortalSwitch({
               />
             </div>
           </TabsContent>
-
         </Tabs>
       </form>
     </Form>
   );
 }
 
-function ComplianceFrameworkLogo({ title, status, enabled }: { title: string; status: string; enabled: boolean }) {
+function ComplianceFrameworkLogo({
+  title,
+  status,
+  enabled,
+}: {
+  title: string;
+  status: string;
+  enabled: boolean;
+}) {
   const isInProgress = status === 'in_progress';
   let LogoComponent: React.ElementType | null = null;
 
@@ -1047,9 +1112,7 @@ function ComplianceFramework({
             <div>
               <CardTitle>{title}</CardTitle>
               <div className="line-clamp-3">
-                <CardDescription>
-                  {description}
-                </CardDescription>
+                <CardDescription>{description}</CardDescription>
               </div>
             </div>
           </div>
@@ -1059,20 +1122,31 @@ function ComplianceFramework({
           <div className="flex flex-row items-center justify-between gap-6">
             <div className="min-w-0 flex-1">
               {isEnabled ? (
-                <Select disabled={disabled} defaultValue={status} value={status} onValueChange={async (value) => {
-                  if (!value) return;
-                  const prev = status;
-                  setStatus(value);
-                  try {
-                    await onStatusChange(value);
-                  } catch {
-                    setStatus(prev);
-                  }
-                }}>
+                <Select
+                  disabled={disabled}
+                  defaultValue={status}
+                  value={status}
+                  onValueChange={async (value) => {
+                    if (!value) return;
+                    const prev = status;
+                    setStatus(value);
+                    try {
+                      await onStatusChange(value);
+                    } catch {
+                      setStatus(prev);
+                    }
+                  }}
+                >
                   <SelectTrigger>
                     <span className="flex items-center gap-2">
-                      <span className={`inline-block h-4 w-4 rounded-sm ${status === 'compliant' ? 'bg-primary' : status === 'in_progress' ? 'bg-yellow-400' : 'bg-gray-300'}`} />
-                      {status === 'compliant' ? 'Compliant' : status === 'in_progress' ? 'In Progress' : 'Started'}
+                      <span
+                        className={`inline-block h-4 w-4 rounded-sm ${status === 'compliant' ? 'bg-primary' : status === 'in_progress' ? 'bg-yellow-400' : 'bg-gray-300'}`}
+                      />
+                      {status === 'compliant'
+                        ? 'Compliant'
+                        : status === 'in_progress'
+                          ? 'In Progress'
+                          : 'Started'}
                     </span>
                   </SelectTrigger>
                   <SelectContent>
@@ -1103,14 +1177,18 @@ function ComplianceFramework({
               )}
             </div>
             <div className="shrink-0 pl-2">
-              <Switch disabled={disabled} checked={isEnabled} onCheckedChange={async (checked) => {
-                setIsEnabled(checked);
-                try {
-                  await onToggle(checked);
-                } catch {
-                  setIsEnabled(!checked);
-                }
-              }} />
+              <Switch
+                disabled={disabled}
+                checked={isEnabled}
+                onCheckedChange={async (checked) => {
+                  setIsEnabled(checked);
+                  try {
+                    await onToggle(checked);
+                  } catch {
+                    setIsEnabled(!checked);
+                  }
+                }}
+              />
             </div>
           </div>
 
