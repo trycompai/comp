@@ -114,6 +114,13 @@ function currentSeverityScore(risk: {
 }
 
 
+const STATUS_LABEL: Record<string, string> = {
+  open: 'Open',
+  pending: 'Pending',
+  closed: 'Closed',
+  archived: 'Archived',
+};
+
 function getStatusBadge(status: string) {
   switch (status) {
     case 'open':
@@ -446,7 +453,13 @@ export const RisksTable = ({
               onValueChange={(v) => setSeverityFilter(v === 'all' ? null : v)}
             >
               <SelectTrigger>
-                <SelectValue placeholder="Severity" />
+                <SelectValue placeholder="Severity">
+                  {(value: string) =>
+                    value && value !== 'all'
+                      ? LEVEL_LABEL[value as keyof typeof LEVEL_LABEL] ?? value
+                      : 'All severities'
+                  }
+                </SelectValue>
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All severities</SelectItem>
@@ -464,7 +477,13 @@ export const RisksTable = ({
               onValueChange={(v) => setStatusFilter(v === 'all' ? null : v)}
             >
               <SelectTrigger>
-                <SelectValue placeholder="Status" />
+                <SelectValue placeholder="Status">
+                  {(value: string) =>
+                    value && value !== 'all'
+                      ? STATUS_LABEL[value] ?? value
+                      : 'All statuses'
+                  }
+                </SelectValue>
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All statuses</SelectItem>
@@ -481,7 +500,13 @@ export const RisksTable = ({
               onValueChange={(v) => setAssigneeFilter(v === 'all' ? null : v)}
             >
               <SelectTrigger>
-                <SelectValue placeholder="Owner" />
+                <SelectValue placeholder="Owner">
+                  {(value: string) => {
+                    if (!value || value === 'all') return 'All owners';
+                    const a = assignees.find((m) => m.id === value);
+                    return a?.user?.name || a?.user?.email || 'Unknown';
+                  }}
+                </SelectValue>
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All owners</SelectItem>
