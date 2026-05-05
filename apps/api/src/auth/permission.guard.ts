@@ -179,10 +179,15 @@ export class PermissionGuard implements CanActivate {
       return false;
     }
 
-    const result = await auth.api.hasPermission({
-      headers,
-      body: { permissions },
-    });
+    // better-auth's body schema is a discriminated union with `z.undefined()`
+    // on the unused key — under zod 4 that requires the key to be EXPLICITLY
+    // present with `undefined` value, not absent. Sending only `{ permissions }`
+    // fails the union check with "[body] Invalid input" at runtime. Spell
+    // both keys out via a variable so TS's excess-property check (which is
+    // only applied to object literals) doesn't reject the extra `permission`
+    // key — the runtime accepts the wider shape per the union schema.
+    const body = { permissions, permission: undefined };
+    const result = await auth.api.hasPermission({ headers, body });
 
     return result.success === true;
   }
