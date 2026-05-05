@@ -42,6 +42,7 @@ interface EmployeeProps {
   initialBackgroundCheck: BackgroundCheckRecord | null;
   initialBackgroundCheckBillingStatus: BackgroundCheckBillingStatus;
   backgroundCheckStepEnabled: boolean;
+  memberBackgroundCheckExempt: boolean;
 }
 
 export function Employee({
@@ -59,6 +60,7 @@ export function Employee({
   initialBackgroundCheck,
   initialBackgroundCheckBillingStatus,
   backgroundCheckStepEnabled,
+  memberBackgroundCheckExempt,
 }: EmployeeProps) {
   const searchParams = useSearchParams();
   const querySelectedTab: EmployeeTab =
@@ -67,6 +69,13 @@ export function Employee({
       ? 'background-check'
       : 'details';
   const [activeTab, setActiveTab] = useState<EmployeeTab>(querySelectedTab);
+  const [memberExempt, setMemberExempt] = useState(memberBackgroundCheckExempt);
+  const [lastSyncedExempt, setLastSyncedExempt] = useState(memberBackgroundCheckExempt);
+
+  if (memberBackgroundCheckExempt !== lastSyncedExempt) {
+    setLastSyncedExempt(memberBackgroundCheckExempt);
+    setMemberExempt(memberBackgroundCheckExempt);
+  }
 
   useEffect(() => {
     if (querySelectedTab === 'background-check') {
@@ -82,6 +91,7 @@ export function Employee({
           orgId={orgId}
           backgroundCheck={initialBackgroundCheck}
           backgroundCheckStepEnabled={backgroundCheckStepEnabled}
+          memberBackgroundCheckExempt={memberExempt}
         />
       }
     >
@@ -140,6 +150,8 @@ export function Employee({
                 initialBackgroundCheck={initialBackgroundCheck}
                 initialBillingStatus={initialBackgroundCheckBillingStatus}
                 backgroundCheckStepEnabled={backgroundCheckStepEnabled}
+                memberBackgroundCheckExempt={memberExempt}
+                onMemberBackgroundCheckExemptChange={setMemberExempt}
               />
             </TabsContent>
           )}

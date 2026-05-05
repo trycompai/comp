@@ -245,4 +245,37 @@ describe('MemberRow device status', () => {
       screen.queryByLabelText('Employee has completed a background check'),
     ).not.toBeInTheDocument();
   });
+
+  it('hides the background-check counter and verified tick for an exempt member', () => {
+    render(
+      <table>
+        <tbody>
+          <MemberRow
+            {...{
+              member: { ...baseMember, backgroundCheckExempt: true },
+              onRemove: noop,
+              onRemoveDevice: noop,
+              onUpdateRole: noop,
+              onReactivate: noop,
+              canEdit: false,
+              isCurrentUserOwner: false,
+              backgroundCheckStatus: 'completed' as const,
+              backgroundCheckStepEnabled: true,
+              taskCompletion: {
+                completed: 1,
+                total: 1,
+                policies: { completed: 1, total: 1 },
+                training: { completed: 0, total: 0 },
+              },
+            }}
+          />
+        </tbody>
+      </table>,
+    );
+
+    expect(screen.queryByText(/background check/i)).not.toBeInTheDocument();
+    expect(
+      screen.queryByLabelText('Employee has completed a background check'),
+    ).not.toBeInTheDocument();
+  });
 });

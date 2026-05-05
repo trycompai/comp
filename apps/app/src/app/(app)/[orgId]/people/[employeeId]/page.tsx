@@ -106,6 +106,7 @@ export default async function EmployeeDetailsPage({
         }
       }
       backgroundCheckStepEnabled={organization.backgroundCheckStepEnabled === true}
+      memberBackgroundCheckExempt={employee.backgroundCheckExempt === true}
     />
   );
 }
