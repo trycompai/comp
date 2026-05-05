@@ -2,6 +2,7 @@
 
 import { Impact, Likelihood } from '@db';
 import { Text } from '@trycompai/design-system';
+import { Checkmark } from '@trycompai/design-system/icons';
 
 const LIKELIHOOD_ORDER: Likelihood[] = [
   Likelihood.very_unlikely,
@@ -85,6 +86,13 @@ export function RiskMatrix5x5({
   // completion=1; lands somewhere in-between for partial progress.
   const nowLFloat = inherentL + (residualL - inherentL) * c;
   const nowIFloat = inherentI + (residualI - inherentI) * c;
+  // "Goal reached" — Now interpolated all the way to Target AND the strategy
+  // actually projects a reduction (so target ≠ inherent). When true we show
+  // a single celebratory marker instead of two stacked dots that hide each
+  // other. Accept (target === inherent) is excluded so an Accept-from-day-
+  // one risk doesn't claim a "completed" reduction.
+  const isAtTarget =
+    c >= 1 && (inherentL !== residualL || inherentI !== residualI);
   // Pixel offset within the grid (top-left = (0,0)). Rows render top-to-
   // bottom in descending likelihood order, so the y-axis is flipped (4 - L).
   const stepPx = CELL_SIZE + GAP;
@@ -106,7 +114,7 @@ export function RiskMatrix5x5({
             background: cellBackground(row, col),
           }}
         >
-          {isResidual && (
+          {isResidual && !isAtTarget && (
             <span
               aria-label="Target risk"
               className="rounded-full"
@@ -174,22 +182,50 @@ export function RiskMatrix5x5({
             {cells}
             {/* "Now" marker — rendered as an absolute overlay so it can sit
                 between cells when partial completion lands its position
-                off-grid. */}
-            <span
-              aria-label="Current risk"
-              className="rounded-full pointer-events-none"
-              style={{
-                position: 'absolute',
-                width: CELL_SIZE * 0.55,
-                height: CELL_SIZE * 0.55,
-                background: 'var(--destructive)',
-                outline: '2px solid var(--background)',
-                left: nowOffsetX,
-                top: nowOffsetY,
-                transform: 'translate(-50%, -50%)',
-                transition: 'left 200ms ease-out, top 200ms ease-out',
-              }}
-            />
+                off-grid. When the user reaches 100% completion (Now lands
+                on Target), we swap to a single primary-colored marker with
+                a checkmark — otherwise the red Now would just hide the
+                green Target and the user wouldn't see the win. */}
+            {isAtTarget ? (
+              <span
+                aria-label="Risk reduced to target — plan complete"
+                className="pointer-events-none flex items-center justify-center rounded-full"
+                style={{
+                  position: 'absolute',
+                  width: CELL_SIZE * 0.65,
+                  height: CELL_SIZE * 0.65,
+                  background: 'var(--primary)',
+                  outline: '2px solid var(--background)',
+                  boxShadow: '0 0 0 4px color-mix(in oklab, var(--primary) 25%, transparent)',
+                  left: nowOffsetX,
+                  top: nowOffsetY,
+                  transform: 'translate(-50%, -50%)',
+                  transition: 'left 200ms ease-out, top 200ms ease-out',
+                }}
+              >
+                <Checkmark
+                  size={Math.round(CELL_SIZE * 0.4)}
+                  style={{ color: 'var(--background)' }}
+                  aria-hidden="true"
+                />
+              </span>
+            ) : (
+              <span
+                aria-label="Current risk"
+                className="rounded-full pointer-events-none"
+                style={{
+                  position: 'absolute',
+                  width: CELL_SIZE * 0.55,
+                  height: CELL_SIZE * 0.55,
+                  background: 'var(--destructive)',
+                  outline: '2px solid var(--background)',
+                  left: nowOffsetX,
+                  top: nowOffsetY,
+                  transform: 'translate(-50%, -50%)',
+                  transition: 'left 200ms ease-out, top 200ms ease-out',
+                }}
+              />
+            )}
           </div>
         </div>
       </div>
