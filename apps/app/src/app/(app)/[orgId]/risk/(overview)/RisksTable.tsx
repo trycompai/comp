@@ -42,6 +42,11 @@ import {
   InputGroup,
   InputGroupAddon,
   InputGroupInput,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
   Spinner,
   Stack,
   Table,
@@ -161,24 +166,41 @@ export const RisksTable = ({
 
   // Read current search params from URL
   const [title, setTitle] = useQueryState('title', parseAsString.withDefault(''));
+  const [statusFilter, setStatusFilter] = useQueryState(
+    'status',
+    parseAsString.withDefault(''),
+  );
+  const [assigneeFilter, setAssigneeFilter] = useQueryState(
+    'assignee',
+    parseAsString.withDefault(''),
+  );
+  // Severity is computed from the current treatment-aware score, so it's
+  // filtered client-side after fetch (the API can't query a derived value).
+  const [severityFilter, setSeverityFilter] = useQueryState(
+    'severity',
+    parseAsString.withDefault(''),
+  );
   const [sort, setSort] = useQueryState(
     'sort',
     getSortingStateParser<RiskType>().withDefault([{ id: 'title', desc: false }]),
   );
 
-  // Build query params for the API
+  // Build query params for the API. Status and assignee are server-side;
+  // severity is applied later (see `risks` memo below).
   const queryParams = useMemo<RisksQueryParams>(() => {
     const currentSort = sort[0];
     return {
       page,
       perPage,
       ...(title && { title }),
+      ...(statusFilter && { status: statusFilter }),
+      ...(assigneeFilter && { assigneeId: assigneeFilter }),
       ...(currentSort && {
         sort: currentSort.id,
         sortDirection: currentSort.desc ? 'desc' as const : 'asc' as const,
       }),
     };
-  }, [page, perPage, title, sort]);
+  }, [page, perPage, title, statusFilter, assigneeFilter, sort]);
 
   // Use the useRisks hook with query params
   const { data: risksData, mutate: mutateRisks } = useRisks({
@@ -190,8 +212,15 @@ export const RisksTable = ({
 
   const risks = useMemo(() => {
     const apiData = risksData?.data?.data;
-    return Array.isArray(apiData) ? apiData : initialRisks;
-  }, [risksData, initialRisks]);
+    const list = Array.isArray(apiData) ? apiData : initialRisks;
+    if (!severityFilter) return list;
+    // Severity is derived from the current (treatment-aware) score so it's
+    // filtered after fetching.
+    return list.filter((risk) => {
+      const score = currentSeverityScore(risk);
+      return getRiskLevelFromScore(score) === severityFilter;
+    });
+  }, [risksData, initialRisks, severityFilter]);
 
   const pageCount = risksData?.data?.pageCount ?? initialPageCount;
 
@@ -395,18 +424,89 @@ export const RisksTable = ({
   return (
     <RiskOnboardingProvider statuses={itemStatuses}>
       <Stack gap="4">
-        {/* Search Bar */}
-        <div className="w-full md:max-w-[300px]">
-          <InputGroup>
-            <InputGroupAddon>
-              <Search size={16} />
-            </InputGroupAddon>
-            <InputGroupInput
-              placeholder="Search risks..."
-              value={title}
-              onChange={(e) => setTitle(e.target.value || null)}
-            />
-          </InputGroup>
+        {/* Search + Filters. Severity is client-side (derived score),
+            Status and Owner are server-side via the risks API. Each
+            filter is URL-backed so links are shareable. */}
+        <div className="flex w-full flex-col gap-2 md:flex-row md:flex-wrap md:items-center">
+          <div className="w-full md:max-w-[300px]">
+            <InputGroup>
+              <InputGroupAddon>
+                <Search size={16} />
+              </InputGroupAddon>
+              <InputGroupInput
+                placeholder="Search risks..."
+                value={title}
+                onChange={(e) => setTitle(e.target.value || null)}
+              />
+            </InputGroup>
+          </div>
+          <div className="w-full md:w-[160px]">
+            <Select
+              value={severityFilter || 'all'}
+              onValueChange={(v) => setSeverityFilter(v === 'all' ? null : v)}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Severity" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All severities</SelectItem>
+                <SelectItem value="very-high">Very high</SelectItem>
+                <SelectItem value="high">High</SelectItem>
+                <SelectItem value="medium">Medium</SelectItem>
+                <SelectItem value="low">Low</SelectItem>
+                <SelectItem value="very-low">Very low</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="w-full md:w-[160px]">
+            <Select
+              value={statusFilter || 'all'}
+              onValueChange={(v) => setStatusFilter(v === 'all' ? null : v)}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All statuses</SelectItem>
+                <SelectItem value="open">Open</SelectItem>
+                <SelectItem value="pending">Pending</SelectItem>
+                <SelectItem value="closed">Closed</SelectItem>
+                <SelectItem value="archived">Archived</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="w-full md:w-[200px]">
+            <Select
+              value={assigneeFilter || 'all'}
+              onValueChange={(v) => setAssigneeFilter(v === 'all' ? null : v)}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Owner" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All owners</SelectItem>
+                {assignees.map((a) => (
+                  <SelectItem key={a.id} value={a.id}>
+                    {a.user?.name || a.user?.email || 'Unknown'}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          {(severityFilter || statusFilter || assigneeFilter || title) && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => {
+                void setTitle(null);
+                void setSeverityFilter(null);
+                void setStatusFilter(null);
+                void setAssigneeFilter(null);
+              }}
+            >
+              Clear filters
+            </Button>
+          )}
         </div>
 
         {/* Onboarding Progress Banner */}
