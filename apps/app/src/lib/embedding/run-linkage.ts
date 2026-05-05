@@ -90,16 +90,17 @@ const SUGGESTIONS_RERANK_INPUT_TOP_K = 30;
 const SUGGESTIONS_FINAL_TOP_K = 15;
 
 // Autonomous (onboarding bulk) linking shares the same recall + rerank
-// pipeline as suggestions-only — without it, the strict 0.65 cosine
-// threshold lets through almost nothing in the 0.4–0.6 band that
-// dominates short compliance prose, leaving most onboarding-created
-// risks with zero linked work. We persist only the high-confidence
-// matches (reranker ≥ 5/10) so false positives stay out of the user's
-// linkage without any review step.
+// pipeline as suggestions-only. We persist any match scored ≥ 5/10 by
+// the reranker (high confidence) AND always keep at least the top-N
+// reranker scores so a risk never lands with zero linked work just
+// because the LLM was conservative on a niche subject — the user can
+// always unlink, but starting from "nothing" is worse UX than starting
+// from "decent matches the user can review".
 const AUTONOMOUS_QUERY_TOP_K = 50;
 const AUTONOMOUS_RERANK_INPUT_TOP_K = 30;
 const AUTONOMOUS_FINAL_TOP_K = 8;
 const AUTONOMOUS_MIN_RERANK_SCORE = 5;
+const AUTONOMOUS_MIN_LINKS_FLOOR = 3;
 
 // How many risks/vendors to match concurrently in the bulk onboarding path.
 // Each iteration makes 1 vector query (Upstash) + 1 OpenAI rerank call + 1
@@ -349,10 +350,19 @@ async function rerankForAutonomousPersist({
       .sort((a, b) => b.rerankScore - a.rerankScore);
   }
 
-  return reranked
-    .filter((r) => r.rerankScore >= AUTONOMOUS_MIN_RERANK_SCORE)
-    .slice(0, AUTONOMOUS_FINAL_TOP_K)
-    .map((r) => r.id);
+  // Sorted desc by rerankScore (rerankSuggestions guarantees this).
+  const highConfidence = reranked.filter(
+    (r) => r.rerankScore >= AUTONOMOUS_MIN_RERANK_SCORE,
+  );
+  // If the reranker was conservative for this entity, fall back to the
+  // top-N by score so the risk isn't left with zero links. The user
+  // reviews via the Linked Work column; better to have 3 decent matches
+  // than nothing.
+  const finalList =
+    highConfidence.length >= AUTONOMOUS_MIN_LINKS_FLOOR
+      ? highConfidence
+      : reranked.slice(0, AUTONOMOUS_MIN_LINKS_FLOOR);
+  return finalList.slice(0, AUTONOMOUS_FINAL_TOP_K).map((r) => r.id);
 }
 
 /**
