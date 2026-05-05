@@ -433,4 +433,40 @@ describe('EmployeeBackgroundCheck', () => {
       );
     });
   });
+
+  it('resyncs internal exempt state when the prop changes (uncontrolled mode)', () => {
+    const { rerender } = render(
+      <EmployeeBackgroundCheck
+        employee={employee}
+        organizationId="org_1"
+        initialBackgroundCheck={null}
+        initialBillingStatus={{ hasPaymentMethod: false, setupAt: null }}
+        backgroundCheckStepEnabled={true}
+        memberBackgroundCheckExempt={false}
+      />,
+    );
+
+    // Wizard is rendered (member is not exempt)
+    expect(
+      screen.getByRole('switch', { name: /exempt this employee/i }),
+    ).toBeInTheDocument();
+    expect(screen.queryByText(/this employee is exempt/i)).not.toBeInTheDocument();
+
+    // Parent re-renders with the prop flipped
+    rerender(
+      <EmployeeBackgroundCheck
+        employee={employee}
+        organizationId="org_1"
+        initialBackgroundCheck={null}
+        initialBillingStatus={{ hasPaymentMethod: false, setupAt: null }}
+        backgroundCheckStepEnabled={true}
+        memberBackgroundCheckExempt={true}
+      />,
+    );
+
+    // Exempt info card is now rendered
+    expect(
+      screen.getByText(/this employee is exempt/i),
+    ).toBeInTheDocument();
+  });
 });

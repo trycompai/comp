@@ -62,6 +62,12 @@ export function EmployeeBackgroundCheck({
   const [paymentIssue, setPaymentIssue] = useState<string | null>(null);
   const [requestConfirmation, setRequestConfirmation] = useState<string | null>(null);
   const [internalExempt, setInternalExempt] = useState(memberBackgroundCheckExempt);
+  const [lastSyncedExempt, setLastSyncedExempt] = useState(memberBackgroundCheckExempt);
+
+  if (memberBackgroundCheckExempt !== lastSyncedExempt) {
+    setLastSyncedExempt(memberBackgroundCheckExempt);
+    setInternalExempt(memberBackgroundCheckExempt);
+  }
   const isExemptControlled = onMemberBackgroundCheckExemptChange !== undefined;
   const exempt = isExemptControlled ? memberBackgroundCheckExempt : internalExempt;
   const setExempt = (next: boolean) => {
