@@ -11,6 +11,9 @@ vi.mock('@/lib/api-client', () => ({
     patch: (...args: unknown[]) => patchMock(...args),
   },
 }));
+vi.mock('@/hooks/use-permissions', () => ({
+  usePermissions: () => ({ hasPermission: () => true }),
+}));
 
 describe('PeopleSettings — background-check toggle', () => {
   beforeEach(() => {

@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { toast } from 'sonner';
+import { usePermissions } from '@/hooks/use-permissions';
 import { apiClient } from '@/lib/api-client';
 import { Section, Stack, Switch, Text } from '@trycompai/design-system';
 
@@ -12,6 +13,9 @@ interface PeopleSettingsProps {
 export function PeopleSettings({
   backgroundCheckStepEnabled: initialEnabled,
 }: PeopleSettingsProps) {
+  const { hasPermission } = usePermissions();
+  const canUpdate = hasPermission('organization', 'update');
+
   const [enabled, setEnabled] = useState(initialEnabled);
   const [saving, setSaving] = useState(false);
 
@@ -53,7 +57,7 @@ export function PeopleSettings({
           </div>
           <Switch
             checked={enabled}
-            disabled={saving}
+            disabled={saving || !canUpdate}
             onCheckedChange={handleToggle}
             aria-label="Require background checks"
           />

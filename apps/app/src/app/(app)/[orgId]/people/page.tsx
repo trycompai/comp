@@ -1,3 +1,4 @@
+import { hasPermission, resolveBuiltInPermissions } from '@/lib/permissions';
 import { auth } from '@/utils/auth';
 import { db } from '@db/server';
 import type { Metadata } from 'next';
@@ -35,9 +36,8 @@ export default async function PeoplePage({ params }: { params: Promise<{ orgId: 
   const canInviteUsers = canManageMembers || isAuditor;
   const isCurrentUserOwner = currentUserRoles.includes('owner');
 
-  const canManageOrgSettings = currentUserRoles.some((role) =>
-    ['owner', 'admin'].includes(role),
-  );
+  const { permissions } = resolveBuiltInPermissions(currentUserMember?.role);
+  const canManageOrgSettings = hasPermission(permissions, 'organization', 'update');
 
   const organization = canManageOrgSettings
     ? await db.organization.findUnique({
