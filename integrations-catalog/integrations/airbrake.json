@@ -1,0 +1,35 @@
+{
+  "slug": "airbrake",
+  "name": "Airbrake",
+  "description": "Error monitoring and performance tracking platform. Connects to the Airbrake API to verify project configuration and error monitoring capabilities.",
+  "category": "Monitoring",
+  "docsUrl": null,
+  "baseUrl": "https://api.airbrake.io",
+  "authConfig": {
+    "type": "api_key",
+    "config": {}
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "airbrake_app_availability",
+      "name": "App Availability",
+      "description": "Verifies connectivity to Airbrake by listing projects accessible to the API key.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "airbrake_error_monitoring",
+      "name": "Error Monitoring",
+      "description": "Verifies that Airbrake error monitoring is active by checking error groups across all projects.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

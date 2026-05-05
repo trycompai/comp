@@ -1,5 +1,9 @@
 'use client';
 
+import { useFrameworkInstance } from '@/hooks/use-framework-instance';
+import { usePermissions } from '@/hooks/use-permissions';
+import { getFrameworkAggregatePercent } from '@/lib/control-compliance';
+import type { FrameworkUpdateStatus } from '@/types/framework-versioning';
 import { useFeatureFlag } from '@trycompai/analytics';
 import {
   Button,
@@ -21,10 +25,6 @@ import {
 import Link from 'next/link';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useCallback, useState } from 'react';
-import { useFrameworkInstance } from '@/hooks/use-framework-instance';
-import { usePermissions } from '@/hooks/use-permissions';
-import { getControlStatus } from '@/lib/control-compliance';
-import type { FrameworkUpdateStatus } from '@/types/framework-versioning';
 import { AddCustomRequirementSheet } from './AddCustomRequirementSheet';
 import { FrameworkDeleteDialog } from './FrameworkDeleteDialog';
 import { FrameworkProgress } from './FrameworkProgress';
@@ -67,8 +67,7 @@ export function FrameworkDetailContent({
     controls: framework.controls ?? [],
   };
 
-  const frameworkName =
-    framework.framework?.name ?? framework.customFramework?.name ?? 'Framework';
+  const frameworkName = framework.framework?.name ?? framework.customFramework?.name ?? 'Framework';
   const frameworkDescription =
     framework.framework?.description ?? framework.customFramework?.description ?? '';
 
@@ -230,12 +229,5 @@ function computeCompliancePercent(
   tasks: any[],
   evidenceSubmissions: any[],
 ): number {
-  const total = controls.length;
-  if (total === 0) return 0;
-  const compliant = controls.filter(
-    (c) =>
-      getControlStatus(c.policies, tasks, c.id, c.controlDocumentTypes, evidenceSubmissions) ===
-      'completed',
-  ).length;
-  return Math.round((compliant / total) * 100);
+  return getFrameworkAggregatePercent(controls, tasks, evidenceSubmissions);
 }

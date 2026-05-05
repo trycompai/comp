@@ -52,6 +52,8 @@ import { StripeModule } from './stripe/stripe.module';
 import { AdminOrganizationsModule } from './admin-organizations/admin-organizations.module';
 import { AdminFeatureFlagsModule } from './admin-feature-flags/admin-feature-flags.module';
 import { TimelinesModule } from './timelines/timelines.module';
+import { BackgroundChecksModule } from './background-checks/background-checks.module';
+import { BillingModule } from './billing/billing.module';
 
 @Module({
   imports: [
@@ -113,6 +115,8 @@ import { TimelinesModule } from './timelines/timelines.module';
     SecretsModule,
     SecurityPenetrationTestsModule,
     StripeModule,
+    BillingModule,
+    BackgroundChecksModule,
     AdminOrganizationsModule,
     AdminFeatureFlagsModule,
     TimelinesModule,

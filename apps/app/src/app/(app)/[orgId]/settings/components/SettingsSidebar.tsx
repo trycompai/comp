@@ -22,6 +22,12 @@ export function SettingsSidebar({ orgId, showBrowserTab, showBillingTab }: Setti
 
   const items: SettingsNavItem[] = [
     { id: 'general', label: 'General', path: `/${orgId}/settings` },
+    {
+      id: 'billing',
+      label: 'Billing',
+      path: `/${orgId}/settings/billing`,
+      hidden: !showBillingTab,
+    },
     { id: 'context', label: 'Context', path: `/${orgId}/settings/context-hub` },
     { id: 'api', label: 'API Keys', path: `/${orgId}/settings/api-keys` },
     { id: 'portal', label: 'Portal', path: `/${orgId}/settings/portal` },
@@ -33,12 +39,6 @@ export function SettingsSidebar({ orgId, showBrowserTab, showBillingTab }: Setti
       label: 'Browser',
       path: `/${orgId}/settings/browser-connection`,
       hidden: !showBrowserTab,
-    },
-    {
-      id: 'billing',
-      label: 'Billing',
-      path: `/${orgId}/settings/billing`,
-      hidden: !showBillingTab,
     },
     { id: 'user', label: 'User Settings', path: `/${orgId}/settings/user` },
   ];

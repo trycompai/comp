@@ -1,5 +1,11 @@
 'use client';
 
+import {
+  type EvidenceSubmissionInfo,
+  getControlProgressPercent,
+  getControlStatus,
+  getRequirementArtifactCounts,
+} from '@/lib/control-compliance';
 import type { Control, Task } from '@db';
 import {
   Badge,
@@ -17,19 +23,14 @@ import {
 import { Launch, Search } from '@trycompai/design-system/icons';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
-import { useMemo, useState } from 'react';
-import { getControlStatus } from '@/lib/control-compliance';
+import { useEffect, useMemo, useState } from 'react';
+
+const PAGE_SIZE_OPTIONS = [10, 25, 50, 100];
 
 type ControlWithPolicies = Control & {
   policies?: Array<{ id: string; name: string; status: string }>;
-  controlDocumentTypes?: Array<{ formType: string }>;
+  controlDocumentTypes?: Array<{ formType: string; isNotRelevant?: boolean }>;
 };
-
-interface EvidenceSubmissionInfo {
-  id: string;
-  formType: string;
-  createdAt: Date | string;
-}
 
 interface RequirementControlsTableProps {
   controls: ControlWithPolicies[];
@@ -47,6 +48,8 @@ function getStatusBadge(status: string): {
       return { label: 'Satisfied', variant: 'default' };
     case 'in_progress':
       return { label: 'In Progress', variant: 'secondary' };
+    case 'not_relevant':
+      return { label: 'Not Relevant', variant: 'secondary' };
     default:
       return { label: 'Not Started', variant: 'destructive' };
   }
@@ -61,6 +64,8 @@ export function RequirementControlsTable({
   const { orgId } = useParams<{ orgId: string }>();
   const router = useRouter();
   const [searchTerm, setSearchTerm] = useState('');
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
 
   const filteredControls = useMemo(() => {
     if (!controls?.length) return [];
@@ -73,6 +78,17 @@ export function RequirementControlsTable({
         control.description?.toLowerCase().includes(searchLower),
     );
   }, [controls, searchTerm]);
+
+  const pageCount = Math.max(1, Math.ceil(filteredControls.length / pageSize));
+  const paginatedControls = useMemo(
+    () => filteredControls.slice((page - 1) * pageSize, page * pageSize),
+    [filteredControls, page, pageSize],
+  );
+
+  // Snap back to page 1 when filtering or page-size changes shrink the result set.
+  useEffect(() => {
+    if (page > pageCount) setPage(1);
+  }, [page, pageCount]);
 
   const getControlHref = (controlId: string) =>
     `/${orgId}/frameworks/${frameworkInstanceId}/controls/${controlId}`;
@@ -104,42 +120,65 @@ export function RequirementControlsTable({
         </InputGroup>
       </div>
 
-      <Table variant="bordered">
+      <Table
+        variant="bordered"
+        pagination={{
+          page,
+          pageCount,
+          onPageChange: setPage,
+          pageSize,
+          pageSizeOptions: PAGE_SIZE_OPTIONS,
+          onPageSizeChange: (size) => {
+            setPageSize(size);
+            setPage(1);
+          },
+        }}
+      >
         <TableHeader>
           <TableRow>
             <TableHead>Name</TableHead>
             <TableHead>Description</TableHead>
+            <TableHead>Compliance</TableHead>
+            <TableHead>Status</TableHead>
             <TableHead>Policies</TableHead>
             <TableHead>Tasks</TableHead>
-            <TableHead>Status</TableHead>
+            <TableHead>Documents</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
-          {filteredControls.length === 0 ? (
+          {paginatedControls.length === 0 ? (
             <TableRow>
-              <TableCell colSpan={5}>
+              <TableCell colSpan={7}>
                 <Text size="sm" variant="muted">
                   No controls found.
                 </Text>
               </TableCell>
             </TableRow>
           ) : (
-            filteredControls.map((control) => {
-              const controlTasks = tasks.filter((t) => t.controls.some((c) => c.id === control.id));
+            paginatedControls.map((control) => {
               const policies = control.policies ?? [];
-              const publishedCount = policies.filter((p) => p.status === 'published').length;
-              const doneTasks = controlTasks.filter(
-                (t) => t.status === 'done' || t.status === 'not_relevant',
-              ).length;
+              const documentTypes = control.controlDocumentTypes ?? [];
+
+              // Use the shared aggregator so per-control counts (especially
+              // documents) honour the same 6-month freshness rule as
+              // getControlStatus / getControlProgressPercent below.
+              const counts = getRequirementArtifactCounts([control], tasks, evidenceSubmissions);
 
               const status = getControlStatus(
                 policies,
                 tasks,
                 control.id,
-                control.controlDocumentTypes,
+                documentTypes,
                 evidenceSubmissions,
               );
               const badge = getStatusBadge(status);
+              const compliancePercent = getControlProgressPercent(
+                policies,
+                tasks,
+                control.id,
+                documentTypes,
+                evidenceSubmissions,
+              );
 
               return (
                 <TableRow
@@ -153,10 +192,7 @@ export function RequirementControlsTable({
                       onClick={(e) => e.stopPropagation()}
                       className="group flex items-center gap-2"
                     >
-                      <span
-                        className="block max-w-[280px] truncate text-sm"
-                        title={control.name}
-                      >
+                      <span className="block max-w-[280px] truncate text-sm" title={control.name}>
                         {control.name}
                       </span>
                       <Launch
@@ -167,28 +203,50 @@ export function RequirementControlsTable({
                   </TableCell>
                   <TableCell>
                     <span
-                      className="block max-w-[420px] truncate text-sm"
+                      className="block max-w-[240px] truncate text-sm"
                       title={control.description || ''}
                     >
                       {control.description || '—'}
                     </span>
                   </TableCell>
                   <TableCell>
-                    <div className="tabular-nums">
-                      <Text size="sm" variant="muted">
-                        {publishedCount}/{policies.length}
-                      </Text>
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <div className="tabular-nums">
-                      <Text size="sm" variant="muted">
-                        {doneTasks}/{controlTasks.length}
-                      </Text>
+                    <div className="flex items-center gap-2 min-w-[100px]">
+                      <div className="flex-1 rounded-full bg-muted/50 h-1.5">
+                        <div
+                          className="h-full rounded-full bg-primary transition-all duration-300"
+                          style={{ width: `${compliancePercent}%` }}
+                        />
+                      </div>
+                      <div className="tabular-nums w-10 text-right">
+                        <Text size="sm" variant="muted">
+                          {compliancePercent}%
+                        </Text>
+                      </div>
                     </div>
                   </TableCell>
                   <TableCell>
                     <Badge variant={badge.variant}>{badge.label}</Badge>
+                  </TableCell>
+                  <TableCell>
+                    <div className="tabular-nums">
+                      <Text size="sm" variant="muted">
+                        {counts.policies.completed}/{counts.policies.total}
+                      </Text>
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <div className="tabular-nums">
+                      <Text size="sm" variant="muted">
+                        {counts.tasks.completed}/{counts.tasks.total}
+                      </Text>
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <div className="tabular-nums">
+                      <Text size="sm" variant="muted">
+                        {counts.documents.completed}/{counts.documents.total}
+                      </Text>
+                    </div>
                   </TableCell>
                 </TableRow>
               );

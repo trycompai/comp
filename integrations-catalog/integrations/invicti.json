@@ -1,0 +1,79 @@
+{
+  "slug": "invicti",
+  "name": "Invicti",
+  "description": "Web application security scanner (formerly Netsparker). Monitor vulnerability scanning, application security posture, scan coverage, and security policy compliance.",
+  "category": "Security",
+  "docsUrl": "https://docs.invicti.com/ip/start-invicti-api",
+  "baseUrl": "https://{{credentials.instance_url}}",
+  "authConfig": {
+    "type": "custom",
+    "config": {
+      "setupInstructions": "1. Log in to your Invicti Platform\n2. Click your initials at the top right, then select User Settings\n3. Click API Key in the left menu\n4. Click Generate New API Key (or Copy if you already have one)\n5. Enter your Instance URL (e.g. platform.invicti.com for US region, platform-eu.invicti.com for EU, platform-ca.invicti.com for Canada)\n6. Paste your API key below",
+      "credentialFields": [
+        {
+          "label": "Instance URL",
+          "type": "text",
+          "required": true,
+          "helpText": "Your Invicti platform URL without https:// (e.g. platform.invicti.com for US, platform-eu.invicti.com for EU, platform-ca.invicti.com for Canada, or your on-premises URL)."
+        },
+        {
+          "label": "API Key",
+          "type": "password",
+          "required": true,
+          "helpText": "Your Invicti API key (JWT format). Found in User Settings > API Key."
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "invicti_app_availability",
+      "name": "Invicti App Availability",
+      "description": "Verifies the Invicti Platform API is accessible and the API key is valid.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "invicti_critical_vulnerabilities",
+      "name": "Invicti Critical Vulnerability Monitoring",
+      "description": "Checks for open critical-severity vulnerabilities across all scanned applications.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "invicti_scan_coverage",
+      "name": "Invicti Scan Coverage",
+      "description": "Verifies that all configured targets have been scanned and checks for stale scan coverage.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "invicti_scan_health",
+      "name": "Invicti Scan Health",
+      "description": "Monitors recent scan status for failed or aborted scans that may indicate configuration issues.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "invicti_sso_configuration",
+      "name": "Invicti SSO Configuration",
+      "description": "Verifies that SAML SSO is configured for the Invicti Platform to enforce centralized authentication.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "invicti_audit_logging",
+      "name": "Invicti Audit Logging",
+      "description": "Verifies that audit logging is active and capturing user and system activities.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 6,
+  "isActive": true
+}

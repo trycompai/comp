@@ -7,7 +7,9 @@
   "baseUrl": "https://api.miro.com/",
   "authConfig": {
     "type": "api_key",
-    "config": {}
+    "config": {
+      "setupInstructions": "1. Log in to Miro at https://miro.com\n2. Go to your Profile Settings > Your apps (or https://miro.com/app/settings/user-profile/apps)\n3. Create a new app or use an existing one\n4. Under 'OAuth scopes', enable: boards:read, team:read\n5. Install the app to your team\n6. Copy the access token\n7. Paste it below"
+    }
   },
   "capabilities": [
     "checks"

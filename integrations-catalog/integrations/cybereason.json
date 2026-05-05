@@ -1,0 +1,71 @@
+{
+  "slug": "cybereason",
+  "name": "Cybereason",
+  "description": "Cybereason is an endpoint detection and response (EDR) platform that provides real-time threat detection, MalOp (Malicious Operation) investigation, and automated incident response across enterprise endpoints.",
+  "category": "Security",
+  "docsUrl": "https://nest.cybereason.com/documentation/api-documentation",
+  "baseUrl": null,
+  "authConfig": {
+    "type": "custom",
+    "config": {
+      "setupInstructions": "Prerequisites:\n- Cybereason management console access with admin privileges\n- The user MUST be created as type 'API' (not 'GUI/Console' user). GUI users with 2FA enabled cannot be used for this integration.\n\nSteps:\n1. Log in to your Cybereason management console as an admin\n2. Navigate to the admin area (typically System > Users or Settings > Users depending on your version)\n3. Create a new user of type 'API' (not GUI/Console user)\n4. Assign the API user the 'System Admin' role for full API access\n5. Enter your Cybereason server URL below (e.g., https://yourcompany.cybereason.net)\n6. Enter the API user credentials\n\nNote: The integration authenticates via session cookies. API-type users are designed for programmatic access and do not require 2FA, unlike GUI users which require interactive two-factor authentication.",
+      "credentialFields": [
+        {
+          "label": "Server URL",
+          "type": "text",
+          "required": true,
+          "helpText": "Your Cybereason server URL (e.g., https://yourcompany.cybereason.net). This is the base URL of your Cybereason management console."
+        },
+        {
+          "label": "API Username",
+          "type": "text",
+          "required": true,
+          "helpText": "The username for your Cybereason API user. Must be an API-type user (not a GUI/Console user)."
+        },
+        {
+          "label": "Password",
+          "type": "password",
+          "required": true,
+          "helpText": "The password for your Cybereason API user."
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "cybereason_secure_devices",
+      "name": "Secure Devices",
+      "description": "Verifies that endpoint protection sensors are actively running on monitored devices. Checks the status of all sensors and flags any that are disconnected, stale, or have outdated protection versions.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "cybereason_device_list",
+      "name": "Device List",
+      "description": "Lists all monitored endpoints and sensors in the Cybereason environment. Provides a comprehensive inventory of all devices under endpoint protection management.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "cybereason_monitoring_alerting",
+      "name": "Monitoring and Alerting",
+      "description": "Checks that Cybereason is actively detecting and generating MalOps (Malicious Operations) and security alerts. Verifies that the detection engine is operational and threats are being identified.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "cybereason_incident_response",
+      "name": "Incident Response",
+      "description": "Verifies that security incidents (MalOps) are being tracked, investigated, and remediated. Checks for unresolved incidents and validates that response workflows are in place.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 4,
+  "isActive": true
+}

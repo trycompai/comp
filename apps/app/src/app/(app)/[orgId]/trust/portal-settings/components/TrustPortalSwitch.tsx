@@ -16,7 +16,6 @@ import {
   SelectContent,
   SelectItem,
   SelectTrigger,
-  SelectValue,
   Switch,
   Tabs,
   TabsContent,
@@ -41,17 +40,27 @@ import { TrustPortalOverview } from './TrustPortalOverview';
 import { TrustPortalVendors } from './TrustPortalVendors';
 import { UpdateTrustFavicon } from './UpdateTrustFavicon';
 import { BrandSettings } from './BrandSettings';
-import type { FaqItem } from '../types/faq';
 import {
   GDPR,
+  GDPRInProgress,
   HIPAA,
+  HIPAAInProgress,
   ISO27001,
+  ISO27001InProgress,
   ISO42001,
+  ISO42001InProgress,
   ISO9001,
+  ISO9001InProgress,
   NEN7510,
+  NEN7510InProgress,
   PCIDSS,
+  PCIDSSInProgress,
   SOC2Type1,
+  SOC2Type1InProgress,
   SOC2Type2,
+  SOC2Type2InProgress,
+  SOC3,
+  SOC3InProgress,
 } from './logos';
 
 // Client-side form schema (includes all fields for form state)
@@ -61,6 +70,7 @@ const trustPortalSwitchSchema = z.object({
   primaryColor: z.string().optional(),
   soc2type1: z.boolean(),
   soc2type2: z.boolean(),
+  soc3: z.boolean(),
   iso27001: z.boolean(),
   iso42001: z.boolean(),
   gdpr: z.boolean(),
@@ -70,6 +80,7 @@ const trustPortalSwitchSchema = z.object({
   iso9001: z.boolean(),
   soc2type1Status: z.enum(['started', 'in_progress', 'compliant']),
   soc2type2Status: z.enum(['started', 'in_progress', 'compliant']),
+  soc3Status: z.enum(['started', 'in_progress', 'compliant']),
   iso27001Status: z.enum(['started', 'in_progress', 'compliant']),
   iso42001Status: z.enum(['started', 'in_progress', 'compliant']),
   gdprStatus: z.enum(['started', 'in_progress', 'compliant']),
@@ -93,6 +104,7 @@ const FRAMEWORK_KEY_TO_API_SLUG: Record<string, string> = {
   hipaa: 'hipaa',
   soc2type1: 'soc2_type1',
   soc2type2: 'soc2_type2',
+  soc3: 'soc3',
   pcidss: 'pci_dss',
   nen7510: 'nen_7510',
   iso9001: 'iso_9001',
@@ -151,6 +163,7 @@ export function TrustPortalSwitch({
   orgId,
   soc2type1,
   soc2type2,
+  soc3,
   iso27001,
   iso42001,
   gdpr,
@@ -158,6 +171,7 @@ export function TrustPortalSwitch({
   pcidss,
   soc2type1Status,
   soc2type2Status,
+  soc3Status,
   iso27001Status,
   iso42001Status,
   gdprStatus,
@@ -174,6 +188,7 @@ export function TrustPortalSwitch({
   hipaaFileName,
   soc2type1FileName,
   soc2type2FileName,
+  soc3FileName,
   pcidssFileName,
   nen7510FileName,
   iso9001FileName,
@@ -192,6 +207,7 @@ export function TrustPortalSwitch({
   orgId: string;
   soc2type1: boolean;
   soc2type2: boolean;
+  soc3: boolean;
   iso27001: boolean;
   iso42001: boolean;
   gdpr: boolean;
@@ -200,6 +216,7 @@ export function TrustPortalSwitch({
   nen7510: boolean;
   soc2type1Status: 'started' | 'in_progress' | 'compliant';
   soc2type2Status: 'started' | 'in_progress' | 'compliant';
+  soc3Status: 'started' | 'in_progress' | 'compliant';
   iso27001Status: 'started' | 'in_progress' | 'compliant';
   iso42001Status: 'started' | 'in_progress' | 'compliant';
   gdprStatus: 'started' | 'in_progress' | 'compliant';
@@ -215,6 +232,7 @@ export function TrustPortalSwitch({
   hipaaFileName?: string | null;
   soc2type1FileName?: string | null;
   soc2type2FileName?: string | null;
+  soc3FileName?: string | null;
   pcidssFileName?: string | null;
   nen7510FileName?: string | null;
   iso9001FileName?: string | null;
@@ -240,6 +258,7 @@ export function TrustPortalSwitch({
     hipaa: hipaaFileName ?? null,
     soc2type1: soc2type1FileName ?? null,
     soc2type2: soc2type2FileName ?? null,
+    soc3: soc3FileName ?? null,
     pcidss: pcidssFileName ?? null,
     nen7510: nen7510FileName ?? null,
     iso9001: iso9001FileName ?? null,
@@ -253,6 +272,7 @@ export function TrustPortalSwitch({
       hipaa: hipaaFileName ?? null,
       soc2type1: soc2type1FileName ?? null,
       soc2type2: soc2type2FileName ?? null,
+      soc3: soc3FileName ?? null,
       pcidss: pcidssFileName ?? null,
       nen7510: nen7510FileName ?? null,
       iso9001: iso9001FileName ?? null,
@@ -264,6 +284,7 @@ export function TrustPortalSwitch({
     hipaaFileName,
     soc2type1FileName,
     soc2type2FileName,
+    soc3FileName,
     pcidssFileName,
     nen7510FileName,
     iso9001FileName,
@@ -323,6 +344,7 @@ export function TrustPortalSwitch({
       primaryColor: primaryColor ?? undefined,
       soc2type1: soc2type1 ?? false,
       soc2type2: soc2type2 ?? false,
+      soc3: soc3 ?? false,
       iso27001: iso27001 ?? false,
       iso42001: iso42001 ?? false,
       gdpr: gdpr ?? false,
@@ -332,6 +354,7 @@ export function TrustPortalSwitch({
       iso9001: iso9001 ?? false,
       soc2type1Status: soc2type1Status ?? 'started',
       soc2type2Status: soc2type2Status ?? 'started',
+      soc3Status: soc3Status ?? 'started',
       iso27001Status: iso27001Status ?? 'started',
       iso42001Status: iso42001Status ?? 'started',
       gdprStatus: gdprStatus ?? 'started',
@@ -685,6 +708,39 @@ export function TrustPortalSwitch({
                   orgId={orgId}
                   disabled={!canUpdate}
                 />
+                {/* SOC 3 */}
+                <ComplianceFramework
+                  title="SOC 3"
+                  description="A compliance framework focused on data security, availability, and confidentiality."
+                  isEnabled={soc3}
+                  status={soc3Status}
+                  onStatusChange={async (value) => {
+                    try {
+                      await updateFrameworkSettings({
+                        soc3Status: value as 'started' | 'in_progress' | 'compliant',
+                      });
+                      toast.success('SOC 3 status updated');
+                    } catch (error) {
+                      toast.error('Failed to update SOC 3 status');
+                    }
+                  }}
+                  onToggle={async (checked) => {
+                    try {
+                      await updateFrameworkSettings({
+                        soc3: checked,
+                      });
+                      toast.success('SOC 3 status updated');
+                    } catch (error) {
+                      toast.error('Failed to update SOC 3 status');
+                    }
+                  }}
+                  fileName={certificateFiles.soc3}
+                  onFileUpload={handleFileUpload}
+                  onFilePreview={handleFilePreview}
+                  frameworkKey="soc3"
+                  orgId={orgId}
+                  disabled={!canUpdate}
+                />
                 {/* PCI DSS */}
                 <ComplianceFramework
                   title="PCI DSS"
@@ -841,6 +897,45 @@ export function TrustPortalSwitch({
   );
 }
 
+function ComplianceFrameworkLogo({ title, status, enabled }: { title: string; status: string; enabled: boolean }) {
+  const isInProgress = status === 'in_progress';
+  let LogoComponent: React.ElementType | null = null;
+
+  if (title === 'ISO 27001') {
+    LogoComponent = enabled && isInProgress ? ISO27001InProgress : ISO27001;
+  } else if (title === 'ISO 42001') {
+    LogoComponent = enabled && isInProgress ? ISO42001InProgress : ISO42001;
+  } else if (title === 'GDPR') {
+    LogoComponent = enabled && isInProgress ? GDPRInProgress : GDPR;
+  } else if (title === 'HIPAA') {
+    LogoComponent = enabled && isInProgress ? HIPAAInProgress : HIPAA;
+  } else if (title === 'SOC 2 Type 1') {
+    LogoComponent = enabled && isInProgress ? SOC2Type1InProgress : SOC2Type1;
+  } else if (title === 'SOC 2 Type 2') {
+    LogoComponent = enabled && isInProgress ? SOC2Type2InProgress : SOC2Type2;
+  } else if (title === 'PCI DSS') {
+    LogoComponent = enabled && isInProgress ? PCIDSSInProgress : PCIDSS;
+  } else if (title === 'NEN 7510') {
+    LogoComponent = enabled && isInProgress ? NEN7510InProgress : NEN7510;
+  } else if (title === 'ISO 9001') {
+    LogoComponent = enabled && isInProgress ? ISO9001InProgress : ISO9001;
+  } else if (title === 'SOC 3') {
+    LogoComponent = enabled && isInProgress ? SOC3InProgress : SOC3;
+  } else {
+    LogoComponent = null;
+  }
+
+  if (LogoComponent) {
+    return (
+      <div className="h-16 w-16 flex items-center justify-center">
+        <LogoComponent className="max-h-full max-w-full" />
+      </div>
+    );
+  }
+
+  return null;
+}
+
 // Extracted component for compliance frameworks to reduce repetition and improve readability
 function ComplianceFramework({
   title,
@@ -941,51 +1036,14 @@ function ComplianceFramework({
     }
   };
 
-  const logo =
-    title === 'ISO 27001' ? (
-      <div className="h-16 w-16 flex items-center justify-center">
-        <ISO27001 className="max-h-full max-w-full" />
-      </div>
-    ) : title === 'ISO 42001' ? (
-      <div className="h-16 w-16 flex items-center justify-center">
-        <ISO42001 className="max-h-full max-w-full" />
-      </div>
-    ) : title === 'GDPR' ? (
-      <div className="h-16 w-16 flex items-center justify-center">
-        <GDPR className="max-h-full max-w-full" />
-      </div>
-    ) : title === 'HIPAA' ? (
-      <div className="h-16 w-16 flex items-center justify-center">
-        <HIPAA className="max-h-full max-w-full" />
-      </div>
-    ) : title === 'SOC 2 Type 1' ? (
-      <div className="h-16 w-16 flex items-center justify-center">
-        <SOC2Type1 className="max-h-full max-w-full" />
-      </div>
-    ) : title === 'SOC 2 Type 2' ? (
-      <div className="h-16 w-16 flex items-center justify-center">
-        <SOC2Type2 className="max-h-full max-w-full" />
-      </div>
-    ) : title === 'PCI DSS' ? (
-      <div className="h-16 w-16 flex items-center justify-center">
-        <PCIDSS className="max-h-full max-w-full" />
-      </div>
-    ) : title === 'NEN 7510' ? (
-      <div className="h-16 w-16 flex items-center justify-center">
-        <NEN7510 className="max-h-full max-w-full" />
-      </div>
-    ) : title === 'ISO 9001' ? (
-      <div className="h-16 w-16 flex items-center justify-center">
-        <ISO9001 className="max-h-full max-w-full" />
-      </div>
-    ) : null;
-
   return (
     <>
       <Card>
         <CardHeader>
           <div className="flex items-center gap-4">
-            <div className="shrink-0">{logo}</div>
+            <div className="shrink-0">
+              <ComplianceFrameworkLogo title={title} status={status} enabled={isEnabled} />
+            </div>
             <div>
               <CardTitle>{title}</CardTitle>
               <div className="line-clamp-3">

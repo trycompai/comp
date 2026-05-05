@@ -6,21 +6,21 @@
   "docsUrl": "https://docs.logz.io/api/",
   "baseUrl": "https://api.logz.io/",
   "authConfig": {
-    "type": "api_key",
+    "type": "custom",
     "config": {
-      "setupInstructions": "1. Log in to Logz.io\n2. Go to Settings → Manage tokens → API tokens\n3. Create a new API token\n4. Select your region and enter the token below",
+      "setupInstructions": "1. Log in to Logz.io\n2. Go to Settings > Manage tokens > API tokens\n3. Create or copy an existing API token\n4. Select your region based on your Logz.io URL",
       "credentialFields": [
         {
           "label": "API Token",
           "type": "password",
           "required": true,
-          "helpText": "Found in Logz.io Settings → Manage tokens → API tokens"
+          "helpText": "Found in Logz.io Settings > Manage tokens > API tokens"
         },
         {
-          "label": "Region Base URL",
-          "type": "text",
+          "label": "Region",
+          "type": "select",
           "required": true,
-          "helpText": "Your Logz.io API base URL: api.logz.io (US), api-eu.logz.io (EU), api-nl.logz.io (EU2), api-ca.logz.io (CA)"
+          "helpText": "Your Logz.io API region. Found in your Logz.io URL (e.g., app.logz.io = US East)."
         }
       ]
     }

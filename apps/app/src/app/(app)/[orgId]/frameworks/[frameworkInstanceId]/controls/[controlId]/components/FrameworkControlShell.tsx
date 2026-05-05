@@ -1,5 +1,7 @@
 'use client';
 
+import { PoliciesTable } from '@/app/(app)/[orgId]/controls/[controlId]/components/PoliciesTable';
+import { TasksTable } from '@/app/(app)/[orgId]/controls/[controlId]/components/TasksTable';
 import type {
   Control,
   FrameworkEditorFramework,
@@ -20,8 +22,6 @@ import {
   TabsTrigger,
 } from '@trycompai/design-system';
 import { useState } from 'react';
-import { PoliciesTable } from '@/app/(app)/[orgId]/controls/[controlId]/components/PoliciesTable';
-import { TasksTable } from '@/app/(app)/[orgId]/controls/[controlId]/components/TasksTable';
 import { DocumentsTable } from './DocumentsTable';
 import { LinkDocumentTypeSheet } from './LinkDocumentTypeSheet';
 import { LinkPolicySheet } from './LinkPolicySheet';
@@ -30,12 +30,13 @@ import { LinkTaskSheet } from './LinkTaskSheet';
 interface DocumentRow {
   formType: string;
   submissionCount: number;
+  isNotRelevant: boolean;
 }
 
 type ControlDetail = Control & {
   policies: Policy[];
   tasks: Task[];
-  controlDocumentTypes?: { formType: string }[];
+  controlDocumentTypes?: { formType: string; isNotRelevant?: boolean }[];
   requirementsMapped: (RequirementMap & {
     frameworkInstance: FrameworkInstance & {
       framework: FrameworkEditorFramework;
@@ -57,36 +58,20 @@ interface Props {
   documentRows: DocumentRow[];
 }
 
-export function FrameworkControlShell({
-  orgId,
-  control,
-  breadcrumbs,
-  documentRows,
-}: Props) {
+export function FrameworkControlShell({ orgId, control, breadcrumbs, documentRows }: Props) {
   const [activeTab, setActiveTab] = useState('policies');
 
   const linkedPolicyIds = control.policies.map((p) => p.id);
   const linkedTaskIds = control.tasks.map((t) => t.id);
-  const linkedFormTypes = (control.controlDocumentTypes ?? []).map(
-    (d) => d.formType,
-  );
+  const linkedFormTypes = (control.controlDocumentTypes ?? []).map((d) => d.formType);
 
   const actions =
     activeTab === 'policies' ? (
-      <LinkPolicySheet
-        controlId={control.id}
-        alreadyLinkedPolicyIds={linkedPolicyIds}
-      />
+      <LinkPolicySheet controlId={control.id} alreadyLinkedPolicyIds={linkedPolicyIds} />
     ) : activeTab === 'tasks' ? (
-      <LinkTaskSheet
-        controlId={control.id}
-        alreadyLinkedTaskIds={linkedTaskIds}
-      />
+      <LinkTaskSheet controlId={control.id} alreadyLinkedTaskIds={linkedTaskIds} />
     ) : (
-      <LinkDocumentTypeSheet
-        controlId={control.id}
-        alreadyLinkedFormTypes={linkedFormTypes}
-      />
+      <LinkDocumentTypeSheet controlId={control.id} alreadyLinkedFormTypes={linkedFormTypes} />
     );
 
   return (
@@ -100,15 +85,9 @@ export function FrameworkControlShell({
       >
         <Stack gap="lg">
           <TabsList variant="underline">
-            <TabsTrigger value="policies">
-              Policies ({control.policies.length})
-            </TabsTrigger>
-            <TabsTrigger value="tasks">
-              Tasks ({control.tasks.length})
-            </TabsTrigger>
-            <TabsTrigger value="documents">
-              Documents ({documentRows.length})
-            </TabsTrigger>
+            <TabsTrigger value="policies">Policies ({control.policies.length})</TabsTrigger>
+            <TabsTrigger value="tasks">Tasks ({control.tasks.length})</TabsTrigger>
+            <TabsTrigger value="documents">Documents ({documentRows.length})</TabsTrigger>
           </TabsList>
 
           <TabsContent value="policies">
@@ -120,11 +99,7 @@ export function FrameworkControlShell({
           </TabsContent>
 
           <TabsContent value="documents">
-            <DocumentsTable
-              controlId={control.id}
-              orgId={orgId}
-              rows={documentRows}
-            />
+            <DocumentsTable controlId={control.id} orgId={orgId} rows={documentRows} />
           </TabsContent>
         </Stack>
       </PageLayout>

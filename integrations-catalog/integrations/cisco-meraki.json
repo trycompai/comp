@@ -6,17 +6,9 @@
   "docsUrl": "https://developer.cisco.com/meraki/api-v1/",
   "baseUrl": "https://api.meraki.com",
   "authConfig": {
-    "type": "custom",
+    "type": "api_key",
     "config": {
-      "setupInstructions": "1. Log in to Meraki Dashboard\n2. Go to Organization → Settings\n3. Under API access, enable API and generate an API key\n4. Copy the key and paste it below",
-      "credentialFields": [
-        {
-          "label": "API Key",
-          "type": "password",
-          "required": true,
-          "helpText": "Found in Meraki Dashboard → Organization → Settings → API access → Generate API key."
-        }
-      ]
+      "setupInstructions": "1. Log in to Meraki Dashboard at https://dashboard.meraki.com\n2. Go to Organization > API & Webhooks from the left nav\n3. Select API keys and access from the top tabs\n4. Generate a new API key\n5. Copy and paste it below\n\nNote: Treat your API key like a password. Store it securely."
     }
   },
   "capabilities": [

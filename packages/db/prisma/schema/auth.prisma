@@ -118,6 +118,7 @@ model Member {
   jobTitle                        String?
   isActive                        Boolean                           @default(true)
   deactivated                     Boolean                           @default(false)
+  backgroundCheckExempt           Boolean                           @default(false)
   externalUserId                  String?
   externalUserSource              String?
   employeeTrainingVideoCompletion EmployeeTrainingVideoCompletion[]
@@ -143,6 +144,7 @@ model Member {
   performedFrameworkSyncOperations FrameworkSyncOperation[] @relation("FrameworkSyncOperationPerformer")
   approvedTasks                    Task[]                   @relation("TaskApprover")
   devices                          Device[]
+  backgroundCheckRequests          BackgroundCheckRequest[]
 }
 
 model Invitation {

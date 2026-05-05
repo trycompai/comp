@@ -1,9 +1,20 @@
 import { serverApi } from '@/lib/api-server';
-import type { IntegrationProviderResponse } from '@trycompai/integration-platform';
-import type { ConnectionListItemResponse } from '@trycompai/integration-platform';
 import { PageLayout } from '@trycompai/design-system';
+import type {
+  ConnectionListItemResponse,
+  IntegrationProviderResponse,
+} from '@trycompai/integration-platform';
 import { redirect } from 'next/navigation';
 import { ProviderDetailView } from './components/ProviderDetailView';
+
+interface TaskApiResponse {
+  data: Array<{
+    id: string;
+    title: string;
+    description: string;
+    taskTemplateId: string | null;
+  }>;
+}
 
 interface PageProps {
   params: Promise<{ orgId: string; slug: string }>;
@@ -15,16 +26,12 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
   const sp = await searchParams;
   const success = typeof sp.success === 'string' ? sp.success : '';
   const providerParam = typeof sp.provider === 'string' ? sp.provider : '';
-  const gcpOAuthJustConnected =
-    slug === 'gcp' && success === 'true' && providerParam === 'gcp';
+  const gcpOAuthJustConnected = slug === 'gcp' && success === 'true' && providerParam === 'gcp';
 
-  const [providerResult, connectionsResult] = await Promise.all([
-    serverApi.get<IntegrationProviderResponse>(
-      `/v1/integrations/connections/providers/${slug}`,
-    ),
-    serverApi.get<ConnectionListItemResponse[]>(
-      '/v1/integrations/connections',
-    ),
+  const [providerResult, connectionsResult, tasksResult] = await Promise.all([
+    serverApi.get<IntegrationProviderResponse>(`/v1/integrations/connections/providers/${slug}`),
+    serverApi.get<ConnectionListItemResponse[]>('/v1/integrations/connections'),
+    serverApi.get<TaskApiResponse>('/v1/tasks'),
   ]);
 
   if (!providerResult.data || providerResult.error) {
@@ -32,15 +39,23 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
   }
 
   const provider = providerResult.data;
-  const connections = (connectionsResult.data ?? []).filter(
-    (c) => c.providerSlug === slug,
-  );
+  const connections = (connectionsResult.data ?? []).filter((c) => c.providerSlug === slug);
+  const taskTemplates = (tasksResult.data?.data ?? [])
+    .filter((task) => task.taskTemplateId)
+    .map((task) => ({
+      id: task.taskTemplateId as string,
+      taskId: task.id,
+      name: task.title,
+      description: task.description,
+    }))
+    .sort((a, b) => a.name.localeCompare(b.name));
 
   return (
     <PageLayout>
       <ProviderDetailView
         provider={provider}
         initialConnections={connections}
+        taskTemplates={taskTemplates}
         gcpOAuthJustConnected={gcpOAuthJustConnected}
       />
     </PageLayout>

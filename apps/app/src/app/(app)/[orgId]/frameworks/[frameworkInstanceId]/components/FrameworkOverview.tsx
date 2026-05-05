@@ -16,17 +16,14 @@ import {
 } from '@trycompai/ui/dropdown-menu';
 import { useState } from 'react';
 import { usePermissions } from '@/hooks/use-permissions';
-import { getControlStatus } from '@/lib/control-compliance';
+import {
+  type EvidenceSubmissionInfo,
+  getControlStatus,
+} from '@/lib/control-compliance';
 import type { FrameworkInstanceWithControls } from '@/lib/types/framework';
 import { FrameworkDeleteDialog } from './FrameworkDeleteDialog';
 import { AddCustomRequirementSheet } from './AddCustomRequirementSheet';
 import { LinkRequirementSheet } from './LinkRequirementSheet';
-
-interface EvidenceSubmissionInfo {
-  id: string;
-  formType: string;
-  createdAt: Date | string;
-}
 
 interface FrameworkOverviewProps {
   frameworkInstanceWithControls: FrameworkInstanceWithControls;

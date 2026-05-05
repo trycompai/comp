@@ -67,17 +67,17 @@ export async function applySync(
   };
 
   // --- Controls ---
-  for (const added of diff.controls.added) {
-    if (ctlByTemplate.has(added.id)) continue;
+  for (const targetControl of to.controls) {
+    if (ctlByTemplate.has(targetControl.id)) continue;
     const created = await tx.control.create({
       data: {
         organizationId: ctx.instance.organizationId,
-        controlTemplateId: added.id,
-        name: added.name,
-        description: added.description,
+        controlTemplateId: targetControl.id,
+        name: targetControl.name,
+        description: targetControl.description,
       },
     });
-    ctlByTemplate.set(added.id, created);
+    ctlByTemplate.set(targetControl.id, created);
     undo.controls.created.push(created.id);
     summary.controlsAdded += 1;
   }
@@ -103,19 +103,19 @@ export async function applySync(
   }
 
   // --- Tasks ---
-  for (const added of diff.tasks.added) {
-    if (taskByTemplate.has(added.id)) continue;
+  for (const targetTask of to.tasks) {
+    if (taskByTemplate.has(targetTask.id)) continue;
     const created = await tx.task.create({
       data: {
         organizationId: ctx.instance.organizationId,
-        taskTemplateId: added.id,
-        title: added.name,
-        description: added.description,
-        frequency: added.frequency as Frequency | null,
-        department: added.department as Departments | null,
+        taskTemplateId: targetTask.id,
+        title: targetTask.name,
+        description: targetTask.description,
+        frequency: targetTask.frequency as Frequency | null,
+        department: targetTask.department as Departments | null,
       },
     });
-    taskByTemplate.set(added.id, created);
+    taskByTemplate.set(targetTask.id, created);
     undo.tasks.created.push(created.id);
     summary.tasksAdded += 1;
   }
@@ -216,34 +216,74 @@ export async function applySync(
   }
 
   // --- RequirementMap edges ---
+  // Reconcile every edge declared by the to-manifest with the customer's
+  // RequirementMap rows, instead of only applying the v1→v2 diff. Diff alone
+  // misses edges the backfilled v1.0.0 manifest claimed exist but the
+  // customer's actual rows never had — drift introduced when CX added a
+  // control↔requirement link between the customer's onboarding and the
+  // backfill. The to-manifest is authoritative for what a v2-pinned customer
+  // should see, regardless of what v1 said.
+  //
+  // Query both active and archived rows because the unique constraint
+  // (controlId, frameworkInstanceId, requirementId) ignores archivedAt — a
+  // plain `create` over an archived row would violate it. If a row exists
+  // archived, unarchive it instead.
   const existingEdges = await tx.requirementMap.findMany({
-    where: { frameworkInstanceId: ctx.instance.id, archivedAt: null },
-    select: { id: true, controlId: true, requirementId: true },
+    where: { frameworkInstanceId: ctx.instance.id },
+    select: { id: true, controlId: true, requirementId: true, archivedAt: true },
   });
   const keyOf = (controlId: string, requirementId: string) => `${controlId}::${requirementId}`;
   const existingByKey = new Map(
     existingEdges.filter((e) => e.requirementId).map((e) => [keyOf(e.controlId, e.requirementId!), e]),
   );
 
-  for (const edge of diff.requirementMapEdges.added) {
-    const ctlInst = ctlByTemplate.get(edge.controlTemplateId);
+  const toReqIds = new Set(to.requirements.map((r) => r.id));
+  for (const c of to.controls) {
+    const ctlInst = ctlByTemplate.get(c.id);
     if (!ctlInst) continue;
-    if (existingByKey.has(keyOf(ctlInst.id, edge.requirementTemplateId))) continue;
-    const created = await tx.requirementMap.create({
-      data: {
-        frameworkInstanceId: ctx.instance.id,
+    for (const rid of c.requirementIds) {
+      // Strip cross-framework refs the same way the diff sanitizer does.
+      if (!toReqIds.has(rid)) continue;
+      const key = keyOf(ctlInst.id, rid);
+      const existing = existingByKey.get(key);
+      if (existing) {
+        if (existing.archivedAt === null) continue;
+        // Unarchive — the row exists from a prior sync that archived it,
+        // and to-manifest wants it back.
+        const prevArchivedAt = existing.archivedAt;
+        await tx.requirementMap.update({
+          where: { id: existing.id },
+          data: { archivedAt: null },
+        });
+        existing.archivedAt = null;
+        undo.requirementMaps.archived.push({ id: existing.id, prevArchivedAt });
+        summary.requirementMapsAdded += 1;
+        continue;
+      }
+      const created = await tx.requirementMap.create({
+        data: {
+          frameworkInstanceId: ctx.instance.id,
+          controlId: ctlInst.id,
+          requirementId: rid,
+        },
+      });
+      existingByKey.set(key, {
+        id: created.id,
         controlId: ctlInst.id,
-        requirementId: edge.requirementTemplateId,
-      },
-    });
-    undo.requirementMaps.created.push(created.id);
-    summary.requirementMapsAdded += 1;
+        requirementId: rid,
+        archivedAt: null,
+      });
+      undo.requirementMaps.created.push(created.id);
+      summary.requirementMapsAdded += 1;
+    }
   }
+
+  // Archive edges still claimed by v1 but absent from v2.
   for (const edge of diff.requirementMapEdges.removed) {
     const ctlInst = ctlByTemplate.get(edge.controlTemplateId);
     if (!ctlInst) continue;
     const existing = existingByKey.get(keyOf(ctlInst.id, edge.requirementTemplateId));
-    if (!existing) continue;
+    if (!existing || existing.archivedAt !== null) continue;
     await tx.requirementMap.updateMany({
       where: { id: existing.id, archivedAt: null },
       data: { archivedAt: new Date() },
@@ -253,18 +293,35 @@ export async function applySync(
   }
 
   // --- Control<->Policy / Control<->Task relations (Prisma implicit M:N) ---
-  // Use raw SQL on the junction tables — Prisma 7's implicit-M:N `disconnect`
-  // is strict and throws P2025 if the edge isn't there, which breaks sync in
-  // the (rare) case where manifest/instance state disagrees about whether an
-  // edge exists (e.g., a manual edit or a prior partial sync). Raw INSERT …
-  // ON CONFLICT / DELETE … WHERE IN is naturally idempotent.
+  // Same drift story as RequirementMap: reconcile against to-manifest, not
+  // just diff. These tables are org-scoped (shared across frameworks), so we
+  // only ADD missing edges — removing extras would clobber edges another
+  // framework still wants. Pre-check existence so undo records only edges
+  // this sync actually created (otherwise rollback would delete a pre-
+  // existing edge that a different framework's onboarding had created).
+  const ctlInstIds = Array.from(ctlByTemplate.values()).map((c) => c.id);
+
+  const existingCp =
+    ctlInstIds.length > 0
+      ? await tx.$queryRaw<Array<{ A: string; B: string }>>`
+          SELECT "A", "B" FROM "_ControlToPolicy"
+          WHERE "A" IN (${Prisma.join(ctlInstIds)})
+        `
+      : [];
+  const existingCpKey = new Set(existingCp.map((r) => `${r.A}::${r.B}`));
+
   const cpAdded: Array<{ controlId: string; policyId: string }> = [];
-  for (const edge of diff.controlPolicyEdges.added) {
-    const ctlInst = ctlByTemplate.get(edge.controlTemplateId);
-    const polInst = polByTemplate.get(edge.policyTemplateId);
-    if (!ctlInst || !polInst) continue;
-    cpAdded.push({ controlId: ctlInst.id, policyId: polInst.id });
-    undo.controlPolicyLinks.connected.push({ controlId: ctlInst.id, otherId: polInst.id });
+  for (const c of to.controls) {
+    const ctlInst = ctlByTemplate.get(c.id);
+    if (!ctlInst) continue;
+    for (const pid of c.policyIds) {
+      const polInst = polByTemplate.get(pid);
+      if (!polInst) continue;
+      if (existingCpKey.has(`${ctlInst.id}::${polInst.id}`)) continue;
+      cpAdded.push({ controlId: ctlInst.id, policyId: polInst.id });
+      undo.controlPolicyLinks.connected.push({ controlId: ctlInst.id, otherId: polInst.id });
+      existingCpKey.add(`${ctlInst.id}::${polInst.id}`);
+    }
   }
   if (cpAdded.length > 0) {
     const rows = Prisma.join(
@@ -273,6 +330,7 @@ export async function applySync(
     await tx.$executeRaw`INSERT INTO "_ControlToPolicy" ("A", "B") VALUES ${rows} ON CONFLICT ("A", "B") DO NOTHING`;
   }
 
+  // Diff-based removal: only edges v1 claimed and v2 dropped.
   const cpRemoved: Array<{ controlId: string; policyId: string }> = [];
   for (const edge of diff.controlPolicyEdges.removed) {
     const ctlInst = ctlByTemplate.get(edge.controlTemplateId);
@@ -288,13 +346,27 @@ export async function applySync(
     await tx.$executeRaw`DELETE FROM "_ControlToPolicy" WHERE ("A", "B") IN (${pairs})`;
   }
 
+  const existingCt =
+    ctlInstIds.length > 0
+      ? await tx.$queryRaw<Array<{ A: string; B: string }>>`
+          SELECT "A", "B" FROM "_ControlToTask"
+          WHERE "A" IN (${Prisma.join(ctlInstIds)})
+        `
+      : [];
+  const existingCtKey = new Set(existingCt.map((r) => `${r.A}::${r.B}`));
+
   const ctAdded: Array<{ controlId: string; taskId: string }> = [];
-  for (const edge of diff.controlTaskEdges.added) {
-    const ctlInst = ctlByTemplate.get(edge.controlTemplateId);
-    const tInst = taskByTemplate.get(edge.taskTemplateId);
-    if (!ctlInst || !tInst) continue;
-    ctAdded.push({ controlId: ctlInst.id, taskId: tInst.id });
-    undo.controlTaskLinks.connected.push({ controlId: ctlInst.id, otherId: tInst.id });
+  for (const c of to.controls) {
+    const ctlInst = ctlByTemplate.get(c.id);
+    if (!ctlInst) continue;
+    for (const tid of c.taskIds) {
+      const tInst = taskByTemplate.get(tid);
+      if (!tInst) continue;
+      if (existingCtKey.has(`${ctlInst.id}::${tInst.id}`)) continue;
+      ctAdded.push({ controlId: ctlInst.id, taskId: tInst.id });
+      undo.controlTaskLinks.connected.push({ controlId: ctlInst.id, otherId: tInst.id });
+      existingCtKey.add(`${ctlInst.id}::${tInst.id}`);
+    }
   }
   if (ctAdded.length > 0) {
     const rows = Prisma.join(
@@ -319,25 +391,28 @@ export async function applySync(
   }
 
   // --- Control <-> DocumentType (explicit junction table ControlDocumentType) ---
-  // formType is an enum; uniqueness is on (controlId, formType). We treat adds
-  // as real row creates and removals as hard-deletes because this table has no
-  // archivedAt column and there's no need to preserve archived edges (the
-  // formType is just metadata describing what evidence the control accepts).
-  for (const edge of diff.controlDocumentTypeEdges.added) {
-    const ctlInst = ctlByTemplate.get(edge.controlTemplateId);
+  // formType is an enum; uniqueness is on (controlId, formType). Same drift
+  // story as the other edge types — reconcile against to-manifest, not just
+  // diff.added, so customers missing rows the v1 manifest already claimed
+  // get them on sync. Removals stay diff-based (this table has no archivedAt
+  // and the row is shared across frameworks, so we should only hard-delete
+  // when the to-manifest explicitly drops it).
+  for (const c of to.controls) {
+    const ctlInst = ctlByTemplate.get(c.id);
     if (!ctlInst) continue;
-    const formType = normalizeFormType(edge.formType);
-    // Idempotent create: skip if already present (shared-entity case).
-    const existing = await tx.controlDocumentType.findUnique({
-      where: { controlId_formType: { controlId: ctlInst.id, formType: formType as never } },
-      select: { id: true },
-    });
-    if (existing) continue;
-    const created = await tx.controlDocumentType.create({
-      data: { controlId: ctlInst.id, formType: formType as never },
-    });
-    undo.controlDocumentTypes.created.push(created.id);
-    summary.controlDocumentTypesAdded += 1;
+    for (const rawFormType of c.documentTypes ?? []) {
+      const formType = normalizeFormType(rawFormType);
+      const existing = await tx.controlDocumentType.findUnique({
+        where: { controlId_formType: { controlId: ctlInst.id, formType: formType as never } },
+        select: { id: true },
+      });
+      if (existing) continue;
+      const created = await tx.controlDocumentType.create({
+        data: { controlId: ctlInst.id, formType: formType as never },
+      });
+      undo.controlDocumentTypes.created.push(created.id);
+      summary.controlDocumentTypesAdded += 1;
+    }
   }
   for (const edge of diff.controlDocumentTypeEdges.removed) {
     const ctlInst = ctlByTemplate.get(edge.controlTemplateId);

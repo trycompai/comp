@@ -7,6 +7,7 @@ import {
 import { AuditLogEntityType, db } from '@db';
 import { triggerEmail } from '../email/trigger-email';
 import { InviteEmail } from '../email/templates/invite-member';
+import { UpdateAdminOrganizationDto } from './dto/update-admin-organization.dto';
 
 @Injectable()
 export class AdminOrganizationsService {
@@ -238,6 +239,7 @@ export class AdminOrganizationsService {
         hasAccess: true,
         onboardingCompleted: true,
         website: true,
+        backgroundCheckStepEnabled: true,
         members: {
           where: { isActive: true, deactivated: false },
           select: {
@@ -265,7 +267,7 @@ export class AdminOrganizationsService {
     return org;
   }
 
-  async setAccess(id: string, hasAccess: boolean) {
+  async updateOrganization(id: string, data: UpdateAdminOrganizationDto) {
     const org = await db.organization.findUnique({ where: { id } });
 
     if (!org) {
@@ -274,7 +276,7 @@ export class AdminOrganizationsService {
 
     await db.organization.update({
       where: { id },
-      data: { hasAccess },
+      data,
     });
 
     return { success: true };

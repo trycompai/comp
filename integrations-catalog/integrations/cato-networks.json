@@ -3,11 +3,27 @@
   "name": "Cato Networks",
   "description": "SASE platform providing SD-WAN and security services through a global cloud network",
   "category": "Security",
-  "docsUrl": null,
-  "baseUrl": null,
+  "docsUrl": "https://api.catonetworks.com/documentation/",
+  "baseUrl": "https://api.catonetworks.com",
   "authConfig": {
     "type": "custom",
-    "config": {}
+    "config": {
+      "setupInstructions": "1. Log in to the Cato Management Application\n2. Go to Administration > API Keys\n3. Generate a new API key with read permissions\n4. Copy your Account ID from Administration > Account Info\n5. Enter both values below",
+      "credentialFields": [
+        {
+          "label": "API Key",
+          "type": "password",
+          "required": true,
+          "helpText": "Your Cato Networks API key from the Cato Management Application"
+        },
+        {
+          "label": "Account ID",
+          "type": "text",
+          "required": true,
+          "helpText": "Your Cato Networks Account ID (found in Administration > Account Info)"
+        }
+      ]
+    }
   },
   "capabilities": [
     "checks"

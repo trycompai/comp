@@ -7,7 +7,9 @@
   "baseUrl": "https://gateway.remote.com",
   "authConfig": {
     "type": "api_key",
-    "config": {}
+    "config": {
+      "setupInstructions": "1. Log in to Remote at https://remote.com\n2. Go to Company Settings → Integrations & APIs → Integrations\n3. Click on the Remote API card\n4. Click Generate API token\n5. Copy the token (starts with ra_live_) and paste it below"
+    }
   },
   "capabilities": [
     "checks"

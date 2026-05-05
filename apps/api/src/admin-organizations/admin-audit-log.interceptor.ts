@@ -20,6 +20,14 @@ const SEGMENT_TO_RESOURCE: Record<
   tasks: { entity: AuditLogEntityType.task, singular: 'task' },
   vendors: { entity: AuditLogEntityType.vendor, singular: 'vendor' },
   context: { entity: AuditLogEntityType.organization, singular: 'context' },
+  'pentest-credits': {
+    entity: AuditLogEntityType.pentest,
+    singular: 'pentest credits',
+  },
+  billing: {
+    entity: AuditLogEntityType.organization,
+    singular: 'billing',
+  },
 };
 
 const SPECIAL_ACTION_DESCRIPTIONS: Record<string, string> = {
@@ -149,6 +157,14 @@ export class AdminAuditLogInterceptor implements NestInterceptor {
     }
 
     const mapped = SEGMENT_TO_RESOURCE[resourceSegment];
+    if (resourceSegment === 'billing' && mapped) {
+      return {
+        resource: mapped.singular,
+        entityType: mapped.entity,
+        entityId: orgId,
+        actionSegment: possibleEntityId ?? null,
+      };
+    }
 
     return {
       resource: mapped?.singular ?? resourceSegment,

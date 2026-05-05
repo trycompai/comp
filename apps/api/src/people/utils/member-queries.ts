@@ -20,6 +20,7 @@ export class MemberQueries {
     jobTitle: true,
     isActive: true,
     deactivated: true,
+    backgroundCheckExempt: true,
     fleetDmLabelId: true,
     user: {
       select: {
@@ -33,6 +34,15 @@ export class MemberQueries {
         lastLogin: true,
         role: true,
       },
+    },
+    backgroundCheckRequests: {
+      select: {
+        id: true,
+        status: true,
+        requesterNotes: true,
+      },
+      take: 1,
+      orderBy: { createdAt: 'desc' },
     },
   } as const;
 

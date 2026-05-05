@@ -1,3 +1,170 @@
+# [3.42.0](https://github.com/trycompai/comp/compare/v3.41.0...v3.42.0) (2026-05-01)
+
+
+### Bug Fixes
+
+* **billing:** handle allowance edge cases ([78ce9c6](https://github.com/trycompai/comp/commit/78ce9c663d25383a3aab114370b5fa79e0897be8))
+* **billing:** handle subscription edge cases ([c8cfb04](https://github.com/trycompai/comp/commit/c8cfb04952f3151342b33cdf6591b81862d5140e))
+* **billing:** harden billing idempotency and redirects ([daf0eed](https://github.com/trycompai/comp/commit/daf0eed1f18f54476f02e256f4aba6f43faebcb0))
+* **billing:** harden stripe flows ([7697765](https://github.com/trycompai/comp/commit/7697765ae9d6802d3ae468f23b83dac8618ddc0e))
+* **billing:** harden subscription and credit edge cases ([a3e5ebc](https://github.com/trycompai/comp/commit/a3e5ebc1ef08b3c2576871a79291d569bdb1b438))
+* **billing:** harden subscription sync retries ([1740e05](https://github.com/trycompai/comp/commit/1740e0537dd23e13030a6f46ca2c1f205ddea145))
+* **billing:** preserve legacy background check drafts ([f655f37](https://github.com/trycompai/comp/commit/f655f37d86ee08c5beec82eb9cb4c01415236ec3))
+* **billing:** update layout of BillingInvoicesTable component ([9acb95e](https://github.com/trycompai/comp/commit/9acb95ebc6a865b547de8aabb5787c377addc095))
+
+
+### Features
+
+* **billing:** add billing add-ons functionality and trial eligibility ([519bebb](https://github.com/trycompai/comp/commit/519bebb5810cc5b301715687c400c16d1a0febfa))
+* **billing:** add tests for background check billing customer and URL validation ([11efc56](https://github.com/trycompai/comp/commit/11efc56a554ed471f48a7249c4236aabd3a60d2d))
+* **billing:** enhance billing services and subscription management ([f7e5e9f](https://github.com/trycompai/comp/commit/f7e5e9fdb56f92a8d9e00f6580108d515c04d017))
+* **billing:** implement admin billing actions and controller ([be9027b](https://github.com/trycompai/comp/commit/be9027b8666106edd8821ea4d5f29a7c23360c86))
+* **billing:** implement background check billing customer and invoice management ([f316c50](https://github.com/trycompai/comp/commit/f316c505c4403034bd184d273a54a2f147977e47))
+* **billing:** implement billing audit logging and improve event handling ([4db12d5](https://github.com/trycompai/comp/commit/4db12d526a60c1584e7e95455cd21a1d4d75f2d2))
+* **billing:** integrate billing module and enhance background check services ([435c235](https://github.com/trycompai/comp/commit/435c235cf10304b92c2a39a091c34e1a12dba2c2))
+
+# [3.41.0](https://github.com/trycompai/comp/compare/v3.40.1...v3.41.0) (2026-05-01)
+
+
+### Bug Fixes
+
+* allow cx to bypass background checks for orgs ([a1a6586](https://github.com/trycompai/comp/commit/a1a658682bb0146d1b8a5f46e6287d46b8076ce8))
+* **app:** add SOC 3 to Trust portal frameworks list ([dbea43c](https://github.com/trycompai/comp/commit/dbea43c27e1b6b888b1486797a11c69f8407fe9f))
+
+
+### Features
+
+* add soc 2 type 1 badge ([6bd2147](https://github.com/trycompai/comp/commit/6bd2147076a64143250e39e0d0d165abfb9d2a5d))
+
+## [3.40.1](https://github.com/trycompai/comp/compare/v3.40.0...v3.40.1) (2026-05-01)
+
+
+### Bug Fixes
+
+* **cloud-tests:** scope to aws/gcp/azure and remove hardcoded copy ([17c7b76](https://github.com/trycompai/comp/commit/17c7b76af19589d4c2d7c10229f430fe812b26d5))
+
+# [3.40.0](https://github.com/trycompai/comp/compare/v3.39.1...v3.40.0) (2026-04-30)
+
+
+### Bug Fixes
+
+* **app:** able to click 'Edit Roles' button in People page ([0212cf3](https://github.com/trycompai/comp/commit/0212cf355b390888dd872e4b747b8aa68096bdbe))
+* **frameworks:** repair sync drift for controls and tasks ([665306b](https://github.com/trycompai/comp/commit/665306b5bba1dfdcb8a97252600a82cf4dedf55a))
+
+
+### Features
+
+* **background-checks:** enhance billing service to include usage metrics and update UI components ([30b2f22](https://github.com/trycompai/comp/commit/30b2f226e148713ddcc01b470f9e68c82d0a6c58))
+
+## [3.39.1](https://github.com/trycompai/comp/compare/v3.39.0...v3.39.1) (2026-04-30)
+
+
+### Bug Fixes
+
+* **integrations:** gate startOAuth with SessionOnlyGuard ([210a4f7](https://github.com/trycompai/comp/commit/210a4f7e1120d01867cd20605ff84f8f0416e8bd))
+* **integrations:** source OAuth initiator userId from auth context ([b561f2c](https://github.com/trycompai/comp/commit/b561f2c08c169fb4e3c7fd1b023294288a23299d)), closes [#2712](https://github.com/trycompai/comp/issues/2712)
+
+# [3.39.0](https://github.com/trycompai/comp/compare/v3.38.1...v3.39.0) (2026-04-30)
+
+
+### Bug Fixes
+
+* **api:** correct fileData max-length to 100MB and allow localhost in URL validation ([6d56a2d](https://github.com/trycompai/comp/commit/6d56a2d954ee20810672fc2a0c628fa72c133b62))
+* **api:** correct type casting for rawBody in main.ts ([7e624d4](https://github.com/trycompai/comp/commit/7e624d4d9eb95e2844fe11bb6a2aa1953dc405b1))
+* **app:** remove product app marketing pixels ([#2716](https://github.com/trycompai/comp/issues/2716)) ([26d75be](https://github.com/trycompai/comp/commit/26d75be92e8ba129add9c265106c1f69f1d90c82))
+* **background-checks:** fix 13 bugs across billing, webhooks, custom uploads, and UI ([d5df5db](https://github.com/trycompai/comp/commit/d5df5db4dc4c2f27a53a49f51c90ee52a0ec2f24))
+* **background-checks:** remove employee PII from sessionStorage ([ea082b3](https://github.com/trycompai/comp/commit/ea082b34733e9002fe65a54b8ee44338cc859979)), closes [#133](https://github.com/trycompai/comp/issues/133)
+* **background-checks:** security hardening across payment flow, validation, and logging ([8b3b39b](https://github.com/trycompai/comp/commit/8b3b39bd214908703579001eaf2d64d8f8c45caa))
+* **pentest:** bump split-view breakpoint from md to xl for tablet support ([efd1c85](https://github.com/trycompai/comp/commit/efd1c859f0bfdbf4664bd0fb42956883a71c6ab0))
+
+
+### Features
+
+* **background-checks:** add employee background checks ([0456df6](https://github.com/trycompai/comp/commit/0456df6e832b78a8ef4938bcdc5a5416cf597b6b))
+
+## [3.38.1](https://github.com/trycompai/comp/compare/v3.38.0...v3.38.1) (2026-04-29)
+
+
+### Bug Fixes
+
+* **security:** admin escalation, secrets RBAC, oauth session check ([#2712](https://github.com/trycompai/comp/issues/2712)) ([5627b12](https://github.com/trycompai/comp/commit/5627b1212aa62252f4542ef1b96e4c074b473490))
+
+# [3.38.0](https://github.com/trycompai/comp/compare/v3.37.0...v3.38.0) (2026-04-29)
+
+
+### Bug Fixes
+
+* **sentry:** gate includeLocalVariables and drop sendDefaultPii ([#2710](https://github.com/trycompai/comp/issues/2710)) ([e985b8b](https://github.com/trycompai/comp/commit/e985b8b5878305a6a5de8fe50ce17310204ff6c3)), closes [#2709](https://github.com/trycompai/comp/issues/2709)
+
+
+### Features
+
+* **observability:** integrate Sentry into app and portal ([#2705](https://github.com/trycompai/comp/issues/2705)) ([0aa2417](https://github.com/trycompai/comp/commit/0aa241709bc4da6d18200088e69b2a4b360b8f05))
+
+# [3.37.0](https://github.com/trycompai/comp/compare/v3.36.1...v3.37.0) (2026-04-29)
+
+
+### Bug Fixes
+
+* **pentest:** include running/failed scans in Recent activity list ([6ae7ea3](https://github.com/trycompai/comp/commit/6ae7ea38158c1abdf0a4210d71bc84963550456f))
+* **pentest:** mirror mobile back-bar in detail/create loading skeletons ([aea5f1a](https://github.com/trycompai/comp/commit/aea5f1ae18cf303b0f32c1454c041a311d540364))
+* **pentest:** mirror split-view shell in loading.tsx to prevent layout shift ([f69854e](https://github.com/trycompai/comp/commit/f69854e1a1b8aeeaa40fc258c24d1ca41512f2a0))
+* **pentest:** surface in-progress scans on overview when no completed runs ([c009ae8](https://github.com/trycompai/comp/commit/c009ae89f18dce3be625d6e4d15a7aaab3d0af33))
+
+
+### Features
+
+* **pentest:** mobile-friendly split-view + per-route loading skeletons ([84ae91a](https://github.com/trycompai/comp/commit/84ae91a6030e96d9f435172f4c6ebe7f5b36aee2))
+
+## [3.36.1](https://github.com/trycompai/comp/compare/v3.36.0...v3.36.1) (2026-04-29)
+
+
+### Bug Fixes
+
+* **app:** bubble up artifact-based progress through control/requirement/framework views (CS-316) ([33a7b90](https://github.com/trycompai/comp/commit/33a7b903beab9726ceafce66481b3af740b1bc7d)), closes [#2695](https://github.com/trycompai/comp/issues/2695)
+
+# [3.36.0](https://github.com/trycompai/comp/compare/v3.35.0...v3.36.0) (2026-04-29)
+
+
+### Bug Fixes
+
+* **api:** purge snapshot — null out stripe IDs from dropped tables ([f7a9ce9](https://github.com/trycompai/comp/commit/f7a9ce9adef73ea35a6d7305d449d5066bd68585))
+* **app:** able to upload markdowns or CSVs as evidence for documents ([#2684](https://github.com/trycompai/comp/issues/2684)) ([6a3f631](https://github.com/trycompai/comp/commit/6a3f631c0ee48be449de6bd859adb49424ae70a5))
+* fix progress counts for frameworks, requirements and controls ([0a2d766](https://github.com/trycompai/comp/commit/0a2d766a95ae3cfbea655a8b4653dc6d7675c1b6))
+* **pentest:** address cubic-AI review — refund tx, audit dedup, UX bugs ([ebed6cc](https://github.com/trycompai/comp/commit/ebed6cc7b63c057f62b37d00302bcd1210dcfa36))
+* **pentest:** api-side maced filter, schema docs, drop stale planning files ([4aeef2a](https://github.com/trycompai/comp/commit/4aeef2af51402d84cae9af4c145158f045706dc5))
+* **pentest:** second cubic review pass — refund retry, ux + correctness ([f5e2528](https://github.com/trycompai/comp/commit/f5e2528418c34bdbab6e7b7912e78d90621899ba))
+
+
+### Features
+
+* **app:** add SOC 3 ([0e7492c](https://github.com/trycompai/comp/commit/0e7492caebf0fe68f32e4802fa8db0568d39dfa8))
+* **pentest:** credits wallet, admin grants, audit logging, UX polish ([f494299](https://github.com/trycompai/comp/commit/f494299f957b1775909e2fd620ca00dbdc839726))
+* **pentest:** full v1 rebuild — split-view UI, SDK swap, signed webhooks ([db0e7e7](https://github.com/trycompai/comp/commit/db0e7e7fb5045573d4026f59c807bf7874a2103c))
+
+# [3.35.0](https://github.com/trycompai/comp/compare/v3.34.2...v3.35.0) (2026-04-29)
+
+
+### Features
+
+* add clear view of maps between policies<>controls<>tasks ([5e30bfb](https://github.com/trycompai/comp/commit/5e30bfb7099acfa408ffe3b9b03b03c6abc3fc58))
+
+## [3.34.2](https://github.com/trycompai/comp/compare/v3.34.1...v3.34.2) (2026-04-28)
+
+
+### Bug Fixes
+
+* **device-agent:** unbrick stuck installs (auto-update + legacy session) ([926a905](https://github.com/trycompai/comp/commit/926a905baa7805e2cc2517f5c3601c6f95710d68))
+* **sync:** validate employee.role before persisting (limbo-role guard) ([#2690](https://github.com/trycompai/comp/issues/2690)) ([382f619](https://github.com/trycompai/comp/commit/382f619a7bf16199b42e2db55404c468cb3452d2))
+
+## [3.34.1](https://github.com/trycompai/comp/compare/v3.34.0...v3.34.1) (2026-04-28)
+
+
+### Bug Fixes
+
+* fix-sync-requirement-map-drift ([a10ecc3](https://github.com/trycompai/comp/commit/a10ecc309a4e2283c5e9d36555dfe1673fd142f3))
+* **framework-editor:** don't auto-link new task/policy templates to all framework controls ([#2686](https://github.com/trycompai/comp/issues/2686)) ([b58c4d3](https://github.com/trycompai/comp/commit/b58c4d3f70ec82e56da178dac4c3562226cfed6a))
+
 # [3.34.0](https://github.com/trycompai/comp/compare/v3.33.2...v3.34.0) (2026-04-28)
 
 

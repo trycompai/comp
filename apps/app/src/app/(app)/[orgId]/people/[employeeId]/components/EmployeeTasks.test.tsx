@@ -1,24 +1,7 @@
 import { render, screen } from '@testing-library/react';
-import type { ReactNode } from 'react';
 import { describe, expect, it, vi } from 'vitest';
 
 import type { DeviceWithChecks, FleetPolicy, Host } from '../../devices/types';
-
-// Radix Tabs renders non-active content with `hidden`. For device-tab tests we
-// stub Tabs/TabsContent to always render children so assertions work without
-// user interaction.
-vi.mock('@trycompai/design-system', async (importOriginal) => {
-  const mod = await importOriginal<typeof import('@trycompai/design-system')>();
-  return {
-    ...mod,
-    Tabs: ({ children }: { children: ReactNode }) => <div>{children}</div>,
-    TabsList: ({ children }: { children: ReactNode }) => <div>{children}</div>,
-    TabsTrigger: ({ children }: { children: ReactNode }) => <div>{children}</div>,
-    TabsContent: ({ children, value }: { children: ReactNode; value: string }) => (
-      <div data-tab={value}>{children}</div>
-    ),
-  };
-});
 
 // PolicyItem pulls in heavy UI modules; none of its behaviour matters here.
 vi.mock('../../devices/components/PolicyItem', () => ({
@@ -33,40 +16,14 @@ vi.mock('../actions/download-hipaa-certificate', () => ({
   downloadHipaaCertificate: vi.fn(),
 }));
 
-import { EmployeeTasks } from './EmployeeTasks';
-
-const baseEmployee = {
-  id: 'mem_1',
-  userId: 'usr_1',
-  organizationId: 'org_1',
-  role: 'employee',
-  department: null,
-  isActive: true,
-  deactivated: false,
-  fleetDmLabelId: null,
-  createdAt: new Date(),
-  updatedAt: new Date(),
-  user: {
-    id: 'usr_1',
-    name: 'Jane Doe',
-    email: 'jane@example.com',
-    emailVerified: true,
-    image: null,
-    role: 'user',
-    createdAt: new Date(),
-    updatedAt: new Date(),
-    banned: false,
-    banReason: null,
-    banExpires: null,
-  },
-} as unknown as Parameters<typeof EmployeeTasks>[0]['employee'];
+import { EmployeeDevice } from './EmployeeDevice';
 
 const baseOrganization = {
   id: 'org_1',
   name: 'Test Org',
   securityTrainingStepEnabled: true,
   deviceAgentStepEnabled: true,
-} as unknown as Parameters<typeof EmployeeTasks>[0]['organization'];
+} as unknown as Parameters<typeof EmployeeDevice>[0]['organization'];
 
 function makeDevice(overrides: Partial<DeviceWithChecks> = {}): DeviceWithChecks {
   return {
@@ -98,21 +55,16 @@ function makeDevice(overrides: Partial<DeviceWithChecks> = {}): DeviceWithChecks
 
 function renderWithDevice(memberDevice: DeviceWithChecks | null) {
   return render(
-    <EmployeeTasks
-      employee={baseEmployee}
-      policies={[]}
-      trainingVideos={[]}
+    <EmployeeDevice
       host={null as unknown as Host}
       fleetPolicies={[] as FleetPolicy[]}
       organization={baseOrganization}
       memberDevice={memberDevice}
-      hasHipaaFramework={false}
-      hipaaCompletedAt={null}
     />,
   );
 }
 
-describe('EmployeeTasks device compliance badge', () => {
+describe('EmployeeDevice compliance badge', () => {
   it('shows "Compliant" badge when complianceStatus is compliant', () => {
     renderWithDevice(makeDevice({ complianceStatus: 'compliant' }));
     expect(screen.getByText('Compliant')).toBeInTheDocument();
@@ -130,7 +82,7 @@ describe('EmployeeTasks device compliance badge', () => {
     expect(screen.getByText('Non-Compliant')).toBeInTheDocument();
   });
 
-  it('shows "Stale (Nd)" badge and em-dash check badges when complianceStatus is stale', () => {
+  it('shows "Stale (Nd)" badge and unknown check badges when complianceStatus is stale', () => {
     renderWithDevice(
       makeDevice({
         complianceStatus: 'stale',
@@ -143,7 +95,7 @@ describe('EmployeeTasks device compliance badge', () => {
     expect(screen.queryByText('Pass')).not.toBeInTheDocument();
     expect(screen.queryByText('Fail')).not.toBeInTheDocument();
     // One per check (4 checks)
-    expect(screen.getAllByText('—').length).toBe(4);
+    expect(screen.getAllByText('-').length).toBe(4);
   });
 
   it('shows plain "Stale" when daysSinceLastCheckIn is null', () => {

@@ -7,7 +7,23 @@
   "baseUrl": null,
   "authConfig": {
     "type": "custom",
-    "config": {}
+    "config": {
+      "setupInstructions": "1. Log in to Addigy at https://app.addigy.com\n2. Go to Account > Integrations > API v2\n3. Generate or copy your API Token\n4. Find your Parent Organization ID in Account > Organization\n5. Enter both values below",
+      "credentialFields": [
+        {
+          "label": "API Token",
+          "type": "password",
+          "required": true,
+          "helpText": "Your Addigy API v2 token from Account > Integrations > API v2"
+        },
+        {
+          "label": "Organization ID",
+          "type": "text",
+          "required": true,
+          "helpText": "Your Addigy Parent Organization ID"
+        }
+      ]
+    }
   },
   "capabilities": [
     "checks"

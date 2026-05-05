@@ -8,31 +8,25 @@ import {
   type ConnectionListItem,
   type IntegrationProvider,
 } from '@/hooks/use-integration-platform';
-import {
-  CLOUD_RECONNECT_CUTOFF_LABEL,
-  requiresCloudReconnect,
-} from '@/lib/cloud-reconnect-policy';
 import { api } from '@/lib/api-client';
-import {
-  Breadcrumb,
-  Button,
-  Stack,
-} from '@trycompai/design-system';
-import { Add, Security } from '@trycompai/design-system/icons';
-import { GcpProjectPicker } from './GcpProjectPicker';
+import { CLOUD_RECONNECT_CUTOFF_LABEL, requiresCloudReconnect } from '@/lib/cloud-reconnect-policy';
+import { Breadcrumb, Button, Stack } from '@trycompai/design-system';
 import Link from 'next/link';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import { AccountSettingsSheet } from './AccountSettingsSheet';
 import { getConnectionDisplayLabel } from './connection-display';
-import { IntegrationProviderHero } from './IntegrationProviderHero';
 import { EmptyStateOnboarding } from './EmptyStateOnboarding';
+import { GcpProjectPicker } from './GcpProjectPicker';
+import { IntegrationEvidenceTasks, type IntegrationTaskTemplate } from './IntegrationEvidenceTasks';
+import { IntegrationProviderHero } from './IntegrationProviderHero';
 import { ServicesGrid } from './services-grid';
 
 interface ProviderDetailViewProps {
   provider: IntegrationProvider;
   initialConnections: ConnectionListItem[];
+  taskTemplates: IntegrationTaskTemplate[];
   /** Server passes true when URL was ?success=true&provider=gcp (OAuth return) */
   gcpOAuthJustConnected?: boolean;
 }
@@ -40,10 +34,12 @@ interface ProviderDetailViewProps {
 export function ProviderDetailView({
   provider,
   initialConnections,
+  taskTemplates,
   gcpOAuthJustConnected = false,
 }: ProviderDetailViewProps) {
   const { orgId } = useParams<{ orgId: string }>();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { connections: allConnections, refresh: refreshConnections } = useIntegrationConnections();
   const { startOAuth } = useIntegrationMutations();
   const [showAddAccount, setShowAddAccount] = useState(false);
@@ -70,12 +66,20 @@ export function ProviderDetailView({
     return activeConnections[0] ?? null;
   }, [selectedConnectionId, activeConnections]);
 
-  const services =
-    (
-      provider as IntegrationProvider & {
-        services?: Array<{ id: string; name: string; description: string; implemented?: boolean }>;
-      }
-    ).services ?? [];
+  const services = useMemo(
+    () =>
+      (
+        provider as IntegrationProvider & {
+          services?: Array<{
+            id: string;
+            name: string;
+            description: string;
+            implemented?: boolean;
+          }>;
+        }
+      ).services ?? [],
+    [provider],
+  );
   const isCloudProvider = provider.category === 'Cloud';
   const selectedConnectionRequiresReconnect = useMemo(() => {
     if (!isCloudProvider || !selectedConnection) return false;
@@ -83,8 +87,7 @@ export function ProviderDetailView({
     return requiresCloudReconnect({
       providerId: provider.id,
       createdAt: selectedConnection.createdAt,
-      reconnectedAt:
-        typeof metadata.reconnectedAt === 'string' ? metadata.reconnectedAt : null,
+      reconnectedAt: typeof metadata.reconnectedAt === 'string' ? metadata.reconnectedAt : null,
       status: selectedConnection.status,
     });
   }, [isCloudProvider, provider.id, selectedConnection]);
@@ -106,6 +109,7 @@ export function ProviderDetailView({
   >([]);
   const [gcpSelectedProjectIds, setGcpSelectedProjectIds] = useState<string[]>([]);
   const oauthBootstrapHandledRef = useRef(false);
+  const settingsQueryHandledRef = useRef(false);
 
   const handleToggleService = useCallback(
     async (serviceId: string, enabled: boolean): Promise<boolean> => {
@@ -141,13 +145,7 @@ export function ProviderDetailView({
 
     // For GCP: only detect orgs/projects — service detection waits for project selection
     // (The detect-gcp-org effect already fires on connection)
-  }, [
-    gcpOAuthJustConnected,
-    provider.id,
-    selectedConnection?.id,
-    orgId,
-    router,
-  ]);
+  }, [gcpOAuthJustConnected, provider.id, selectedConnection?.id, orgId, router]);
 
   // Auto-detect GCP organization after OAuth connect
   const gcpDetectedRef = useRef<Set<string>>(new Set());
@@ -169,9 +167,7 @@ export function ProviderDetailView({
           projects: Array<{ id: string; name: string }>;
         }>;
         selectedProjectIds?: string[];
-      }>(
-        `/v1/cloud-security/detect-gcp-org/${selectedConnection.id}`,
-      )
+      }>(`/v1/cloud-security/detect-gcp-org/${selectedConnection.id}`)
       .then((res) => {
         const orgs = res.data?.organizations ?? [];
         if (orgs.length > 0) setGcpOrgs(orgs);
@@ -202,9 +198,7 @@ export function ProviderDetailView({
 
     const connectionForRun = selectedConnection;
     api
-      .post<{ services: string[] }>(
-        `/v1/cloud-security/detect-services/${connectionForRun.id}`,
-      )
+      .post<{ services: string[] }>(`/v1/cloud-security/detect-services/${connectionForRun.id}`)
       .then((res) => {
         if (res.error) return;
         detectedConnections.current.add(connectionForRun.id);
@@ -216,11 +210,11 @@ export function ProviderDetailView({
         return refreshServices();
       })
       .catch(() => {});
-  }, [isCloudProvider, isConnected, selectedConnection?.id, refreshServices, provider.id]);
+  }, [isCloudProvider, isConnected, selectedConnection, refreshServices, provider.id]);
 
   const handleConnect = useCallback(async () => {
     if (provider.authType === 'oauth2') {
-      const redirectUrl = `${window.location.origin}/${orgId}/integrations/${provider.id}?success=true`;
+      const redirectUrl = `${window.location.origin}/${orgId}/integrations/${provider.id}?success=true&settings=true`;
       const result = await startOAuth(provider.id, redirectUrl);
       if (result?.authorizationUrl) {
         window.location.href = result.authorizationUrl;
@@ -233,6 +227,21 @@ export function ProviderDetailView({
       setShowAddAccount(true);
     }
   }, [provider, orgId, startOAuth]);
+
+  useEffect(() => {
+    if (!selectedConnection?.id || settingsQueryHandledRef.current) return;
+
+    const shouldOpenSettings =
+      searchParams.get('settings') === 'true' ||
+      searchParams.get('configure') === 'true' ||
+      searchParams.get('success') === 'true';
+
+    if (!shouldOpenSettings) return;
+
+    settingsQueryHandledRef.current = true;
+    setSettingsOpen(true);
+    router.replace(`/${orgId}/integrations/${provider.id}`, { scroll: false });
+  }, [orgId, provider.id, router, searchParams, selectedConnection?.id]);
 
   return (
     <>
@@ -258,12 +267,15 @@ export function ProviderDetailView({
           onAddAccount={() => void handleConnect()}
         />
 
+        <IntegrationEvidenceTasks provider={provider} taskTemplates={taskTemplates} orgId={orgId} />
+
         {selectedConnectionRequiresReconnect && (
           <div className="rounded-lg border border-warning/30 bg-warning/10 px-4 py-3 flex items-center justify-between gap-3">
             <div>
               <p className="text-sm font-medium">Reconnect this account</p>
               <p className="text-xs text-muted-foreground mt-0.5">
-                This connection was created before {CLOUD_RECONNECT_CUTOFF_LABEL}. Reconnect it to keep scans and remediation fully reliable.
+                This connection was created before {CLOUD_RECONNECT_CUTOFF_LABEL}. Reconnect it to
+                keep scans and remediation fully reliable.
               </p>
             </div>
             <Button size="sm" variant="outline" onClick={() => setReconnectDialogOpen(true)}>
@@ -295,7 +307,9 @@ export function ProviderDetailView({
               className="flex items-center justify-between rounded-xl border bg-background shadow-sm px-5 py-4 hover:bg-muted/30 transition-colors group"
             >
               <div>
-                <p className="text-sm font-semibold group-hover:text-primary transition-colors">View Findings & Auto-Fix</p>
+                <p className="text-sm font-semibold group-hover:text-primary transition-colors">
+                  View Findings & Auto-Fix
+                </p>
                 <p className="text-xs text-muted-foreground mt-0.5">
                   Security findings, auto-remediation, and batch fixes are now in Cloud Tests.
                 </p>
@@ -327,10 +341,11 @@ export function ProviderDetailView({
                     }
                   }
                   void api
-                    .post(
-                      `/v1/cloud-security/select-gcp-projects/${selectedConnection.id}`,
-                      { projectIds: next, projectNames, gcpOrganizationId: gcpOrgId },
-                    )
+                    .post(`/v1/cloud-security/select-gcp-projects/${selectedConnection.id}`, {
+                      projectIds: next,
+                      projectNames,
+                      gcpOrganizationId: gcpOrgId,
+                    })
                     .then(async (res) => {
                       if (res.error) {
                         setGcpSelectedProjectIds(prev);
@@ -361,19 +376,29 @@ export function ProviderDetailView({
                 {provider.id === 'gcp' && gcpSelectedProjectIds.length === 0 ? (
                   <div className="flex items-start gap-3 rounded-lg border bg-muted/30 px-4 py-3.5">
                     <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-muted mt-0.5">
-                      <svg className="h-4 w-4 text-muted-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 12.75V12A2.25 2.25 0 014.5 9.75h15A2.25 2.25 0 0121.75 12v.75m-8.69-6.44l-2.12-2.12a1.5 1.5 0 00-1.061-.44H4.5A2.25 2.25 0 002.25 6v12a2.25 2.25 0 002.25 2.25h15A2.25 2.25 0 0021.75 18V9a2.25 2.25 0 00-2.25-2.25h-5.379a1.5 1.5 0 01-1.06-.44z" />
+                      <svg
+                        className="h-4 w-4 text-muted-foreground"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                        strokeWidth={1.5}
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          d="M2.25 12.75V12A2.25 2.25 0 014.5 9.75h15A2.25 2.25 0 0121.75 12v.75m-8.69-6.44l-2.12-2.12a1.5 1.5 0 00-1.061-.44H4.5A2.25 2.25 0 002.25 6v12a2.25 2.25 0 002.25 2.25h15A2.25 2.25 0 0021.75 18V9a2.25 2.25 0 00-2.25-2.25h-5.379a1.5 1.5 0 01-1.06-.44z"
+                        />
                       </svg>
                     </div>
                     <div>
                       <p className="text-sm font-medium">Select projects first</p>
                       <p className="text-xs text-muted-foreground mt-0.5">
-                        Choose GCP projects above to detect which services are active. Service toggles will appear here once projects are selected.
+                        Choose GCP projects above to detect which services are active. Service
+                        toggles will appear here once projects are selected.
                       </p>
                     </div>
                   </div>
-                ) : provider.id === 'gcp' &&
-                  servicesMeta.detectionReady === false ? (
+                ) : provider.id === 'gcp' && servicesMeta.detectionReady === false ? (
                   <div className="rounded-lg border bg-muted/20 px-4 py-3">
                     <p className="text-sm font-medium text-foreground">
                       Detecting active GCP services…
@@ -439,4 +464,3 @@ export function ProviderDetailView({
     </>
   );
 }
-

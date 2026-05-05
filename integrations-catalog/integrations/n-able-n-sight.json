@@ -8,17 +8,18 @@
   "authConfig": {
     "type": "custom",
     "config": {
+      "setupInstructions": "1. Log in to N-able N-sight RMM Dashboard\n2. Go to Settings > General Settings > API\n3. Enable API access if not already enabled\n4. Copy your API Key\n5. Determine your server URL based on your region\n6. Enter both below",
       "credentialFields": [
         {
           "label": "Server URL",
           "type": "text",
-          "required": false,
-          "helpText": "Your N-sight RMM server URL (varies by region)"
+          "required": true,
+          "helpText": "Your N-sight RMM server URL (varies by region). Common servers: www.systemmonitor.co.uk (UK), www.systemmonitor.us (US), www.am.remote.management (APAC)."
         },
         {
           "label": "API Key",
           "type": "password",
-          "required": false,
+          "required": true,
           "helpText": "API key from N-sight RMM Dashboard > Account Settings > API Access"
         }
       ]

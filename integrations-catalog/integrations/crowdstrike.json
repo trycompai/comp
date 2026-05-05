@@ -3,12 +3,12 @@
   "name": "CrowdStrike Falcon",
   "description": "Monitor CrowdStrike Falcon endpoint security platform for device protection and threat detection compliance",
   "category": "Security",
-  "docsUrl": "https://developer.crowdstrike.com/crowdstrike/docs/welcome",
+  "docsUrl": "https://developer.crowdstrike.com/",
   "baseUrl": "https://api.crowdstrike.com/",
   "authConfig": {
     "type": "custom",
     "config": {
-      "setupInstructions": "1. Log in to Falcon Console at https://falcon.crowdstrike.com\n2. Go to Support & Resources → API Clients and Keys\n3. Click Add new API client\n4. Enable scopes: Hosts (Read), User Management (Read)\n5. Copy the Client ID and Secret",
+      "setupInstructions": "1. Log in to Falcon Console at https://falcon.crowdstrike.com\n2. Go to Support & Resources - API Clients and Keys\n3. Click Add new API client\n4. Enable scopes: Hosts (Read), User Management (Read), Prevention Policies (Read), Spotlight Vulnerabilities (Read)\n5. Copy the Client ID and Secret\n6. Enter the API Base URL for your cloud region (default: api.crowdstrike.com for US-1). Other regions: US-2: api.us-2.crowdstrike.com, EU-1: api.eu-1.crowdstrike.com, US-GOV: api.laggar.gcw.crowdstrike.com",
       "credentialFields": [
         {
           "label": "Client ID",
@@ -21,6 +21,12 @@
           "type": "password",
           "required": true,
           "helpText": "Generated when creating an API client in Falcon Console"
+        },
+        {
+          "label": "API Base URL",
+          "type": "text",
+          "required": false,
+          "helpText": "Your CrowdStrike cloud region base URL. US-1: api.crowdstrike.com, US-2: api.us-2.crowdstrike.com, EU-1: api.eu-1.crowdstrike.com, US-GOV: api.laggar.gcw.crowdstrike.com"
         }
       ]
     }
@@ -44,8 +50,29 @@
       "description": "Reviews CrowdStrike Falcon users with access to the endpoint security platform",
       "defaultSeverity": "medium",
       "enabled": true
+    },
+    {
+      "slug": "crowdstrike_prevention_policy",
+      "name": "Prevention Policy Enforcement",
+      "description": "Verifies that CrowdStrike Falcon prevention policies are configured and enabled",
+      "defaultSeverity": "high",
+      "enabled": true
+    },
+    {
+      "slug": "crowdstrike_vulnerability_management",
+      "name": "Vulnerability Management",
+      "description": "Monitors CrowdStrike Spotlight for open vulnerabilities across managed endpoints",
+      "defaultSeverity": "high",
+      "enabled": true
+    },
+    {
+      "slug": "crowdstrike_sensor_coverage",
+      "name": "Sensor Coverage",
+      "description": "Assesses CrowdStrike Falcon sensor deployment coverage and health across endpoints",
+      "defaultSeverity": "medium",
+      "enabled": true
     }
   ],
-  "checkCount": 2,
+  "checkCount": 5,
   "isActive": true
 }

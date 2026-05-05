@@ -6,8 +6,18 @@
   "docsUrl": "https://kenjo.readme.io/reference",
   "baseUrl": "https://api.kenjo.io",
   "authConfig": {
-    "type": "api_key",
-    "config": {}
+    "type": "custom",
+    "config": {
+      "setupInstructions": "1. Log in to Kenjo as an admin\n2. Go to Settings > Integrations > API keys\n3. Click GENERATE NEW API KEY\n4. Copy the API key immediately (it is shown only once)\n5. Paste it below\n\nNote: API access must be activated by the Kenjo Customer Success team first.",
+      "credentialFields": [
+        {
+          "label": "API Key",
+          "type": "password",
+          "required": true,
+          "helpText": "Generated in Kenjo Settings > Integrations > API keys"
+        }
+      ]
+    }
   },
   "capabilities": [
     "checks",

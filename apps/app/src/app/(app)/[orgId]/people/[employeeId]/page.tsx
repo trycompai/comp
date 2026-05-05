@@ -1,21 +1,23 @@
 import { auth } from '@/utils/auth';
 
+import { HIPAA_TRAINING_ID } from '@/lib/data/hipaa-training-content';
 import {
   type TrainingVideo,
   trainingVideos as trainingVideosData,
 } from '@/lib/data/training-videos';
-import { HIPAA_TRAINING_ID } from '@/lib/data/hipaa-training-content';
 import { getFleetInstance } from '@/lib/fleet';
+import { serverApi } from '@/lib/server-api-client';
 import type { EmployeeTrainingVideoCompletion, Member, User } from '@db';
 import { db } from '@db/server';
+import { daysSinceCheckIn, getDeviceComplianceStatus } from '@trycompai/utils/devices';
 import type { Metadata } from 'next';
 import { headers } from 'next/headers';
 import { notFound, redirect } from 'next/navigation';
-import {
-  daysSinceCheckIn,
-  getDeviceComplianceStatus,
-} from '@trycompai/utils/devices';
 import type { CheckDetails, DeviceWithChecks } from '../devices/types';
+import type {
+  BackgroundCheckBillingStatus,
+  BackgroundCheckRecord,
+} from './components/backgroundCheckTypes';
 import { Employee } from './components/Employee';
 
 const MDM_POLICY_ID = -9999;
@@ -45,13 +47,22 @@ export default async function EmployeeDetailsPage({
     redirect('/');
   }
 
-  const [policies, employeeTrainingVideos, employee, hipaaCompletion] = await Promise.all([
+  const [
+    policies,
+    employeeTrainingVideos,
+    employee,
+    hipaaCompletion,
+    backgroundCheckRes,
+    backgroundCheckBillingRes,
+  ] = await Promise.all([
     getPoliciesTasks(employeeId),
     getTrainingVideos(employeeId),
     getEmployee(employeeId),
     db.employeeTrainingVideoCompletion.findFirst({
       where: { memberId: employeeId, videoId: HIPAA_TRAINING_ID },
     }),
+    serverApi.get<BackgroundCheckRecord | null>(`/v1/people/${employeeId}/background-check`),
+    serverApi.get<BackgroundCheckBillingStatus>('/v1/background-check-billing/status'),
   ]);
 
   // If employee doesn't exist, show 404 page
@@ -87,6 +98,15 @@ export default async function EmployeeDetailsPage({
       orgId={orgId}
       hasHipaaFramework={!!hipaaFramework}
       hipaaCompletedAt={hipaaCompletion?.completedAt ?? null}
+      initialBackgroundCheck={backgroundCheckRes.data ?? null}
+      initialBackgroundCheckBillingStatus={
+        backgroundCheckBillingRes.data ?? {
+          hasPaymentMethod: false,
+          setupAt: null,
+        }
+      }
+      backgroundCheckStepEnabled={organization.backgroundCheckStepEnabled === true}
+      memberBackgroundCheckExempt={employee.backgroundCheckExempt === true}
     />
   );
 }
@@ -324,7 +344,6 @@ const getMemberDevice = async (
     complianceStatus,
     daysSinceLastCheckIn: daysSinceCheckIn(device.lastCheckIn),
     hasActiveAgentSession:
-      !!device.agentSession &&
-      device.agentSession.expiresAt.getTime() > Date.now(),
+      !!device.agentSession && device.agentSession.expiresAt.getTime() > Date.now(),
   };
 };

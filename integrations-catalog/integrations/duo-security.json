@@ -8,13 +8,19 @@
   "authConfig": {
     "type": "custom",
     "config": {
-      "setupInstructions": "1. Log in to Duo Admin Panel at https://admin.duosecurity.com\n2. Go to Applications → Protect an Application\n3. Find Admin API → click Protect\n4. Copy the Integration Key, Secret Key, and API Hostname\n5. Base64 encode 'integration_key:secret_key': echo -n 'ikey:skey' | base64\n6. Enter both below",
+      "setupInstructions": "1. Log in to Duo Admin Panel at https://admin.duosecurity.com\n2. Go to Applications > Protect an Application\n3. Find Admin API > click Protect\n4. Copy the Integration Key, Secret Key, and API Hostname\n5. Paste them into the fields below",
       "credentialFields": [
         {
-          "label": "Encoded Credentials",
+          "label": "Integration Key",
+          "type": "text",
+          "required": true,
+          "helpText": "Found in Duo Admin Panel > Applications > Admin API"
+        },
+        {
+          "label": "Secret Key",
           "type": "password",
           "required": true,
-          "helpText": "Base64 encode 'integration_key:secret_key'. Found in Duo Admin Panel → Applications → Admin API. Command: echo -n 'DIXXXXXXXX:secret' | base64"
+          "helpText": "Found in Duo Admin Panel > Applications > Admin API"
         },
         {
           "label": "API Hostname",

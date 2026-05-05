@@ -1,26 +1,32 @@
 {
   "slug": "zuora",
   "name": "Zuora",
-  "description": "Zuora subscription management and recurring billing platform",
+  "description": "Zuora subscription management and recurring billing platform. Monitor API access and user management.",
   "category": "Productivity",
   "docsUrl": "https://developer.zuora.com",
   "baseUrl": "https://rest.zuora.com",
   "authConfig": {
     "type": "custom",
     "config": {
-      "setupInstructions": "1. Log in to Zuora\n2. Go to Settings → Administration → OAuth Client Management\n3. Create a new OAuth Client\n4. Enter the Client ID and Client Secret below",
+      "setupInstructions": "1. Log in to Zuora\n2. Go to Settings > Administration > OAuth Client Management\n3. Create a new OAuth Client with appropriate permissions\n4. Copy the Client ID and Client Secret\n5. If your Zuora tenant is not on US Cloud 2, enter your base URL (e.g. rest.eu.zuora.com for EU)\n6. Enter the values below",
       "credentialFields": [
         {
           "label": "Client ID",
           "type": "text",
           "required": true,
-          "helpText": "Zuora → Settings → Administration → OAuth Client Management"
+          "helpText": "Zuora OAuth Client ID. Go to Settings > Administration > OAuth Client Management."
         },
         {
           "label": "Client Secret",
           "type": "password",
           "required": true,
-          "helpText": "Zuora → Settings → Administration → OAuth Client Management"
+          "helpText": "Zuora OAuth Client Secret. Generated when creating an OAuth client."
+        },
+        {
+          "label": "Zuora API Base URL",
+          "type": "text",
+          "required": false,
+          "helpText": "Your Zuora REST API base URL. Examples: rest.zuora.com (US Prod Cloud 2), rest.na.zuora.com (US Prod Cloud 1), rest.eu.zuora.com (EU), rest.ap.zuora.com (APAC), rest.sandbox.na.zuora.com (US Sandbox). Default: rest.zuora.com"
         }
       ]
     }
@@ -34,14 +40,14 @@
     {
       "slug": "zuora_app_availability",
       "name": "App Availability",
-      "description": "Verifies Zuora billing platform is accessible",
+      "description": "Verifies Zuora billing platform is accessible by authenticating via OAuth and checking the catalog.",
       "defaultSeverity": "medium",
       "enabled": true
     },
     {
       "slug": "zuora_employee_access",
       "name": "Employee Access",
-      "description": "Lists Zuora users to verify billing access is managed",
+      "description": "Queries Zuora platform users to verify billing access is managed.",
       "defaultSeverity": "medium",
       "enabled": true
     }

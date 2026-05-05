@@ -8,13 +8,13 @@
   "authConfig": {
     "type": "custom",
     "config": {
-      "setupInstructions": "1. Log in to KeyCDN\n2. Go to Account → API\n3. Copy your API Key\n4. Paste it below\n\nNote: The API key is used with HTTP Basic Auth (pass 'api_key_here' as both username and empty password)",
+      "setupInstructions": "1. Log in to KeyCDN\n2. Go to Account > API\n3. Copy your API Key\n4. Paste it below\n\nNote: The API key is used with HTTP Basic Auth (API key as username with empty password).",
       "credentialFields": [
         {
           "label": "API Key",
           "type": "password",
           "required": true,
-          "helpText": "KeyCDN → Account → API → API Key"
+          "helpText": "KeyCDN > Account > API > API Key"
         }
       ]
     }

@@ -6145,6 +6145,46 @@
         ]
       }
     },
+    "/v1/policies/{id}/evidence-tasks": {
+      "get": {
+        "operationId": "PoliciesController_getPolicyEvidenceTasks_v1",
+        "parameters": [
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "description": "Organization ID (required for session auth, optional for API key auth)",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "description": "Policy ID",
+            "schema": {
+              "example": "pol_abc123def456",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Get tasks that serve as evidence for a policy, grouped by control",
+        "tags": [
+          "Policies"
+        ]
+      }
+    },
     "/v1/policies/{id}/regenerate": {
       "post": {
         "operationId": "PoliciesController_regeneratePolicy_v1",
@@ -8137,6 +8177,30 @@
         ]
       }
     },
+    "/v1/device-agent/sessions/{deviceId}": {
+      "delete": {
+        "operationId": "DeviceAgentController_revokeAgentAccess_v1",
+        "parameters": [
+          {
+            "name": "deviceId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": ""
+          }
+        },
+        "summary": "Revoke a device agent session",
+        "tags": [
+          "Device Agent"
+        ]
+      }
+    },
     "/v1/tasks": {
       "get": {
         "description": "Retrieve all tasks for the authenticated organization. Employees/contractors only see their assigned tasks.",
@@ -8824,6 +8888,18 @@
                     ],
                     "example": "monthly"
                   },
+                  "integrationScheduleFrequency": {
+                    "type": "string",
+                    "enum": [
+                      "daily",
+                      "weekly",
+                      "monthly",
+                      "quarterly",
+                      "yearly"
+                    ],
+                    "example": "daily",
+                    "description": "Cadence for running the integration check attached to this task"
+                  },
                   "department": {
                     "type": "string",
                     "enum": [
@@ -8921,6 +8997,37 @@
           }
         ],
         "summary": "Delete a task",
+        "tags": [
+          "Tasks"
+        ]
+      }
+    },
+    "/v1/tasks/{taskId}/policies": {
+      "get": {
+        "operationId": "TasksController_getTaskPolicies_v1",
+        "parameters": [
+          {
+            "name": "taskId",
+            "required": true,
+            "in": "path",
+            "description": "Unique task identifier",
+            "schema": {
+              "example": "tsk_abc123def456",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Get policies that reference a task via shared controls",
         "tags": [
           "Tasks"
         ]
@@ -12022,6 +12129,7 @@
                 "hipaa",
                 "soc2_type1",
                 "soc2_type2",
+                "soc3",
                 "pci_dss",
                 "nen_7510",
                 "iso_9001"
@@ -12966,16 +13074,7 @@
       },
       "post": {
         "operationId": "PolicyTemplateController_create_v1",
-        "parameters": [
-          {
-            "name": "frameworkId",
-            "required": true,
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
+        "parameters": [],
         "requestBody": {
           "required": true,
           "content": {
@@ -13224,16 +13323,7 @@
       "post": {
         "description": "Create a new framework editor task template",
         "operationId": "TaskTemplateController_createTaskTemplate_v1",
-        "parameters": [
-          {
-            "name": "frameworkId",
-            "required": true,
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
+        "parameters": [],
         "requestBody": {
           "required": true,
           "description": "Create a new framework editor task template",
@@ -15287,6 +15377,36 @@
           }
         ],
         "summary": "Submit SOA document for approval",
+        "tags": [
+          "SOA"
+        ]
+      }
+    },
+    "/v1/soa/export": {
+      "post": {
+        "operationId": "SOAController_exportDocument_v1",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ExportSOADocumentDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Export SOA document to PDF"
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Export a SOA document",
         "tags": [
           "SOA"
         ]
@@ -19016,6 +19136,76 @@
         ]
       }
     },
+    "/v1/evidence-forms/settings": {
+      "get": {
+        "description": "Returns organization-scoped relevance settings for evidence forms",
+        "operationId": "EvidenceFormsController_getFormSettings_v1",
+        "parameters": [
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "description": "Organization ID (required for session auth, optional for API key auth)",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Get document relevance settings",
+        "tags": [
+          "Evidence Forms"
+        ]
+      }
+    },
+    "/v1/evidence-forms/{formType}/settings": {
+      "patch": {
+        "description": "Marks an evidence form as relevant or not relevant for the active organization",
+        "operationId": "EvidenceFormsController_updateFormSetting_v1",
+        "parameters": [
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "description": "Organization ID (required for session auth, optional for API key auth)",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "formType",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Update document relevance setting",
+        "tags": [
+          "Evidence Forms"
+        ]
+      }
+    },
     "/v1/evidence-forms/my-submissions": {
       "get": {
         "description": "Returns all evidence form submissions by the authenticated user for the active organization",
@@ -20631,37 +20821,6 @@
         ]
       }
     },
-    "/v1/security-penetration-tests/github/repos": {
-      "get": {
-        "description": "Returns GitHub repositories accessible with the connected GitHub integration.",
-        "operationId": "SecurityPenetrationTestsController_listGithubRepos_v1",
-        "parameters": [
-          {
-            "name": "X-Organization-Id",
-            "in": "header",
-            "description": "Organization ID (required for session auth, optional for API key auth)",
-            "required": false,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Repository list returned"
-          }
-        },
-        "security": [
-          {
-            "apikey": []
-          }
-        ],
-        "summary": "List accessible GitHub repositories",
-        "tags": [
-          "Security Penetration Tests"
-        ]
-      }
-    },
     "/v1/security-penetration-tests/{id}": {
       "get": {
         "description": "Returns a penetration test run with progress metadata.",
@@ -20743,6 +20902,84 @@
         ]
       }
     },
+    "/v1/security-penetration-tests/{id}/issues": {
+      "get": {
+        "description": "Returns the structured findings discovered during the run. Grows over time during a live scan as agents discover more issues.",
+        "operationId": "SecurityPenetrationTestsController_getIssues_v1",
+        "parameters": [
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "description": "Organization ID (required for session auth, optional for API key auth)",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Issues returned"
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Get penetration test issues",
+        "tags": [
+          "Security Penetration Tests"
+        ]
+      }
+    },
+    "/v1/security-penetration-tests/{id}/events": {
+      "get": {
+        "description": "Returns the real-time agent activity log emitted during a run (tool calls, observations, etc.). Noisy — meant for activity feeds and debugging.",
+        "operationId": "SecurityPenetrationTestsController_getEvents_v1",
+        "parameters": [
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "description": "Organization ID (required for session auth, optional for API key auth)",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Events returned"
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Get penetration test agent events",
+        "tags": [
+          "Security Penetration Tests"
+        ]
+      }
+    },
     "/v1/security-penetration-tests/{id}/report": {
       "get": {
         "description": "Returns the markdown report output for a completed run.",
@@ -20784,7 +21021,7 @@
     },
     "/v1/security-penetration-tests/{id}/pdf": {
       "get": {
-        "description": "Returns the PDF version of a completed report.",
+        "description": "Returns the PDF version of a completed report. Streams the binary PDF via Maced SDK.",
         "operationId": "SecurityPenetrationTestsController_getPdf_v1",
         "parameters": [
           {
@@ -20823,7 +21060,7 @@
     },
     "/v1/security-penetration-tests/webhook": {
       "post": {
-        "description": "Receives callback payloads from the penetration test provider when a run is updated. Per-run webhook token validation is enforced when handshake state exists.",
+        "description": "Receives signed JSON events from Maced. Signature is verified against MACED_WEBHOOK_SIGNING_SECRET using the SDK's verifyMacedWebhook helper.",
         "operationId": "SecurityPenetrationTestsController_handleWebhook_v1",
         "parameters": [
           {
@@ -20836,26 +21073,10 @@
             }
           },
           {
-            "name": "webhookToken",
-            "required": false,
-            "in": "query",
-            "description": "Per-job webhook token used for handshake validation when callbacks are sent to Comp.",
-            "schema": {}
-          },
-          {
-            "name": "X-Webhook-Token",
+            "name": "X-Maced-Signature",
             "in": "header",
-            "description": "Optional webhook token header. Query param webhookToken is also accepted.",
-            "required": false,
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "X-Webhook-Id",
-            "in": "header",
-            "description": "Optional provider event identifier used for idempotency detection.",
-            "required": false,
+            "description": "HMAC signature header set by Maced (format: t=...,v1=...)",
+            "required": true,
             "schema": {
               "type": "string"
             }
@@ -20867,6 +21088,9 @@
           },
           "400": {
             "description": "Invalid webhook payload"
+          },
+          "403": {
+            "description": "Invalid webhook signature"
           }
         },
         "security": [
@@ -20880,118 +21104,517 @@
         ]
       }
     },
-    "/v1/pentest-billing/status": {
+    "/v1/pentest-credits/status": {
       "get": {
-        "operationId": "PentestBillingController_getStatus_v1",
-        "parameters": [],
+        "description": "Current spendable balance plus lifetime granted/consumed totals.",
+        "operationId": "PentestCreditsController_getStatus_v1",
+        "parameters": [
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "description": "Organization ID (required for session auth, optional for API key auth)",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
-            "description": "Subscription status returned"
+            "description": "Credits status"
           }
         },
-        "summary": "Get pentest subscription status",
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Get pentest credit status",
         "tags": [
-          "Pentest Billing"
+          "Pentest Credits"
         ]
       }
     },
-    "/v1/pentest-billing/subscribe": {
-      "post": {
-        "operationId": "PentestBillingController_subscribe_v1",
+    "/v1/billing/status": {
+      "get": {
+        "operationId": "BillingController_getStatus_v1",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Get organization billing status",
+        "tags": [
+          "Billing"
+        ]
+      }
+    },
+    "/v1/billing/preferences": {
+      "put": {
+        "operationId": "BillingController_updatePreferences_v1",
         "parameters": [],
         "requestBody": {
           "required": true,
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/SubscribeDto"
+                "$ref": "#/components/schemas/BillingPreferencesDto"
               }
             }
           }
         },
         "responses": {
           "200": {
-            "description": "Checkout URL returned"
+            "description": ""
           }
         },
-        "summary": "Create a Stripe checkout session for pentest subscription",
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Update organization billing preferences",
         "tags": [
-          "Pentest Billing"
+          "Billing"
         ]
       }
     },
-    "/v1/pentest-billing/handle-success": {
+    "/v1/billing/setup-session": {
       "post": {
-        "operationId": "PentestBillingController_handleSuccess_v1",
+        "operationId": "BillingController_setupSession_v1",
         "parameters": [],
         "requestBody": {
           "required": true,
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/HandleSuccessDto"
+                "$ref": "#/components/schemas/BillingSetupSessionDto"
               }
             }
           }
         },
         "responses": {
           "200": {
-            "description": "Subscription activated"
+            "description": ""
           }
         },
-        "summary": "Handle Stripe checkout success callback",
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Create a Stripe setup session",
         "tags": [
-          "Pentest Billing"
+          "Billing"
         ]
       }
     },
-    "/v1/pentest-billing/portal": {
+    "/v1/billing/setup-success": {
       "post": {
-        "operationId": "PentestBillingController_portal_v1",
+        "operationId": "BillingController_setupSuccess_v1",
         "parameters": [],
         "requestBody": {
           "required": true,
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/PortalDto"
+                "$ref": "#/components/schemas/BillingSetupSuccessDto"
               }
             }
           }
         },
         "responses": {
           "200": {
-            "description": "Portal URL returned"
+            "description": ""
           }
         },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Persist a successful Stripe setup session",
+        "tags": [
+          "Billing"
+        ]
+      }
+    },
+    "/v1/billing/portal": {
+      "post": {
+        "operationId": "BillingController_portal_v1",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BillingPortalDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
         "summary": "Create a Stripe billing portal session",
         "tags": [
-          "Pentest Billing"
+          "Billing"
         ]
       }
     },
-    "/v1/pentest-billing/charge": {
+    "/v1/billing/subscription-session": {
       "post": {
-        "operationId": "PentestBillingController_charge_v1",
+        "operationId": "BillingController_subscriptionSession_v1",
         "parameters": [],
         "requestBody": {
           "required": true,
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/ChargeDto"
+                "$ref": "#/components/schemas/BillingSubscriptionCheckoutDto"
               }
             }
           }
         },
         "responses": {
           "200": {
-            "description": "Charge result returned"
+            "description": ""
           }
         },
-        "summary": "Check and charge overage for a pentest run",
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Create a Stripe subscription Checkout session",
         "tags": [
-          "Pentest Billing"
+          "Billing"
+        ]
+      }
+    },
+    "/v1/billing/webhook": {
+      "post": {
+        "operationId": "BillingController_webhook_v1",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Receive Stripe billing webhook events",
+        "tags": [
+          "Billing"
+        ]
+      }
+    },
+    "/v1/background-checks/{id}": {
+      "get": {
+        "operationId": "BackgroundChecksController_getById_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Get a background check by local or Identity ID",
+        "tags": [
+          "Background Checks"
+        ]
+      }
+    },
+    "/v1/background-checks/webhook": {
+      "post": {
+        "operationId": "BackgroundChecksController_handleWebhook_v1",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Receive Identity background check webhook events",
+        "tags": [
+          "Background Checks"
+        ]
+      }
+    },
+    "/v1/people/{id}/background-check": {
+      "get": {
+        "operationId": "PeopleBackgroundChecksController_getForMember_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Get member background check request",
+        "tags": [
+          "Background Checks"
+        ]
+      },
+      "post": {
+        "operationId": "PeopleBackgroundChecksController_requestForMember_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RequestBackgroundCheckDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Request a background check for a member",
+        "tags": [
+          "Background Checks"
+        ]
+      }
+    },
+    "/v1/people/{id}/background-check/custom-attachments": {
+      "get": {
+        "operationId": "PeopleBackgroundChecksController_getCustomAttachmentsForMember_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Get custom background check attachments for a member",
+        "tags": [
+          "Background Checks"
+        ]
+      }
+    },
+    "/v1/people/{id}/background-check/custom": {
+      "post": {
+        "operationId": "PeopleBackgroundChecksController_attachCustomForMember_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AttachCustomBackgroundCheckDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Attach a custom background check for a member",
+        "tags": [
+          "Background Checks"
+        ]
+      }
+    },
+    "/v1/background-check-billing/status": {
+      "get": {
+        "operationId": "BackgroundCheckBillingController_getStatus_v1",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Get background check billing status",
+        "tags": [
+          "Background Check Billing"
+        ]
+      }
+    },
+    "/v1/background-check-billing/setup-session": {
+      "post": {
+        "operationId": "BackgroundCheckBillingController_setupSession_v1",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BackgroundCheckSetupSessionDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Create a Stripe setup session for background checks",
+        "tags": [
+          "Background Check Billing"
+        ]
+      }
+    },
+    "/v1/background-check-billing/setup-success": {
+      "post": {
+        "operationId": "BackgroundCheckBillingController_setupSuccess_v1",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BackgroundCheckSetupSuccessDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Handle successful background check billing setup",
+        "tags": [
+          "Background Check Billing"
+        ]
+      }
+    },
+    "/v1/background-check-billing/portal": {
+      "post": {
+        "operationId": "BackgroundCheckBillingController_portal_v1",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BackgroundCheckBillingPortalDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Create a Stripe billing portal session",
+        "tags": [
+          "Background Check Billing"
         ]
       }
     }
@@ -21085,6 +21708,34 @@
           "role"
         ]
       },
+      "BackgroundCheckSummaryDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Background check request ID",
+            "example": "bcr_abc123def456"
+          },
+          "status": {
+            "type": "string",
+            "description": "Background check status",
+            "enum": [
+              "invited",
+              "in_progress",
+              "in_review",
+              "completed",
+              "completed_with_flags",
+              "failed",
+              "cancelled"
+            ],
+            "example": "invited"
+          }
+        },
+        "required": [
+          "id",
+          "status"
+        ]
+      },
       "PeopleResponseDto": {
         "type": "object",
         "properties": {
@@ -21157,6 +21808,13 @@
                 "$ref": "#/components/schemas/UserResponseDto"
               }
             ]
+          },
+          "backgroundCheckRequests": {
+            "description": "Background check requests for this member",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BackgroundCheckSummaryDto"
+            }
           }
         },
         "required": [
@@ -23187,6 +23845,23 @@
             "description": "Task template ID",
             "example": "frk_tt_68406e353df3bc002994acef",
             "nullable": true
+          },
+          "integrationScheduleFrequency": {
+            "type": "string",
+            "description": "Cadence for running the integration check attached to this task",
+            "enum": [
+              "daily",
+              "weekly",
+              "monthly",
+              "quarterly",
+              "yearly"
+            ],
+            "example": "daily"
+          },
+          "integrationLastRunAt": {
+            "type": "object",
+            "description": "Last successful integration check run timestamp",
+            "nullable": true
           }
         },
         "required": [
@@ -23194,7 +23869,8 @@
           "title",
           "status",
           "createdAt",
-          "updatedAt"
+          "updatedAt",
+          "integrationScheduleFrequency"
         ]
       },
       "AttachmentResponseDto": {
@@ -23298,6 +23974,17 @@
           "evaluationCriteria": {
             "type": "string",
             "description": "Evaluation criteria for the automation"
+          },
+          "scheduleFrequency": {
+            "type": "string",
+            "enum": [
+              "daily",
+              "weekly",
+              "monthly",
+              "quarterly",
+              "yearly"
+            ],
+            "description": "Automation schedule cadence"
           }
         }
       },
@@ -23568,6 +24255,7 @@
               "hipaa",
               "soc2_type1",
               "soc2_type2",
+              "soc3",
               "pci_dss",
               "nen_7510",
               "iso_9001"
@@ -23609,6 +24297,7 @@
               "hipaa",
               "soc2_type1",
               "soc2_type2",
+              "soc3",
               "pci_dss",
               "nen_7510",
               "iso_9001"
@@ -23651,6 +24340,7 @@
               "hipaa",
               "soc2_type1",
               "soc2_type2",
+              "soc3",
               "pci_dss",
               "nen_7510",
               "iso_9001"
@@ -24547,6 +25237,10 @@
         "type": "object",
         "properties": {}
       },
+      "ExportSOADocumentDto": {
+        "type": "object",
+        "properties": {}
+      },
       "ContextResponseDto": {
         "type": "object",
         "properties": {
@@ -24676,9 +25370,16 @@
             "type": "string",
             "description": "Optional natural-language criteria used to evaluate the automation result. When set, the run gets a pass/fail verdict."
           },
-          "schedule": {
+          "scheduleFrequency": {
             "type": "string",
-            "description": "Cron schedule expression"
+            "enum": [
+              "daily",
+              "weekly",
+              "monthly",
+              "quarterly",
+              "yearly"
+            ],
+            "description": "Automation schedule cadence"
           }
         },
         "required": [
@@ -24711,9 +25412,6 @@
           },
           "isEnabled": {
             "type": "boolean"
-          },
-          "schedule": {
-            "type": "string"
           },
           "createdAt": {
             "format": "date-time",
@@ -24758,13 +25456,20 @@
             "type": "string",
             "description": "Optional natural-language criteria used to evaluate the automation result. Pass an empty string to clear."
           },
-          "schedule": {
-            "type": "string",
-            "description": "Cron schedule expression"
-          },
           "isEnabled": {
             "type": "boolean",
             "description": "Whether automation is enabled"
+          },
+          "scheduleFrequency": {
+            "type": "string",
+            "enum": [
+              "daily",
+              "weekly",
+              "monthly",
+              "quarterly",
+              "yearly"
+            ],
+            "description": "Automation schedule cadence"
           }
         }
       },
@@ -25660,22 +26365,10 @@
             "description": "Repository URL containing the target application code",
             "example": "https://github.com/org/repo"
           },
-          "githubToken": {
-            "type": "string",
-            "description": "GitHub token used for cloning private repositories"
-          },
-          "configYaml": {
-            "type": "string",
-            "description": "Optional YAML configuration for the pentest run"
-          },
           "pipelineTesting": {
             "type": "boolean",
             "description": "Whether to enable pipeline testing mode",
             "default": false
-          },
-          "workspace": {
-            "type": "string",
-            "description": "Workspace identifier used by the pentest engine"
           },
           "webhookUrl": {
             "type": "string",
@@ -25685,25 +26378,121 @@
             "type": "boolean",
             "description": "Whether to run the pentest in simulation mode",
             "default": false
+          },
+          "scanDepth": {
+            "type": "string",
+            "description": "Scan depth profile to run",
+            "enum": [
+              "quick",
+              "standard",
+              "deep"
+            ]
+          },
+          "evidenceLevel": {
+            "type": "string",
+            "description": "Evidence validation level for findings",
+            "enum": [
+              "report_only",
+              "safe_proof",
+              "impact_proof"
+            ]
+          },
+          "checks": {
+            "type": "array",
+            "description": "Maced check IDs to include in the scan",
+            "items": {
+              "type": "string",
+              "enum": [
+                "discovery",
+                "secrets_info_disclosure",
+                "technology_config",
+                "xss",
+                "injection",
+                "authentication",
+                "authorization",
+                "idor_bola",
+                "ssrf_xxe",
+                "csrf",
+                "race_conditions",
+                "business_logic"
+              ]
+            }
           }
         },
         "required": [
           "targetUrl"
         ]
       },
-      "SubscribeDto": {
+      "BillingPreferencesDto": {
         "type": "object",
         "properties": {}
       },
-      "HandleSuccessDto": {
+      "BillingSetupSessionDto": {
         "type": "object",
         "properties": {}
       },
-      "PortalDto": {
+      "BillingSetupSuccessDto": {
         "type": "object",
         "properties": {}
       },
-      "ChargeDto": {
+      "BillingPortalDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "BillingSubscriptionCheckoutDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "RequestBackgroundCheckDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "AttachCustomBackgroundCheckDto": {
+        "type": "object",
+        "properties": {
+          "fileName": {
+            "type": "string",
+            "description": "Name of the file",
+            "example": "document.pdf",
+            "maxLength": 255
+          },
+          "fileType": {
+            "type": "string",
+            "description": "MIME type of the file",
+            "example": "application/pdf"
+          },
+          "fileData": {
+            "type": "string",
+            "description": "Base64 encoded file data",
+            "example": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8/5+hHgAHggJ/PchI7wAAAABJRU5ErkJggg=="
+          },
+          "description": {
+            "type": "string",
+            "description": "Description of the attachment",
+            "example": "Meeting notes from Q4 planning session",
+            "maxLength": 500
+          },
+          "userId": {
+            "type": "string",
+            "description": "User ID of the user uploading the attachment (required for API key auth, ignored for JWT auth)",
+            "example": "usr_abc123def456"
+          }
+        },
+        "required": [
+          "fileName",
+          "fileType",
+          "fileData"
+        ]
+      },
+      "BackgroundCheckSetupSessionDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "BackgroundCheckSetupSuccessDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "BackgroundCheckBillingPortalDto": {
         "type": "object",
         "properties": {}
       }

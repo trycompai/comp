@@ -8,13 +8,13 @@
   "authConfig": {
     "type": "custom",
     "config": {
-      "setupInstructions": "1. Go to Freshservice Profile Settings (top-right avatar)\n2. Copy your API Key\n3. Encode: base64('your_api_key:X')\n4. Enter the encoded value below along with your subdomain",
+      "setupInstructions": "1. Log in to Freshservice\n2. Go to Profile Settings (top-right avatar)\n3. Copy your API Key\n4. Enter the API key below along with your subdomain in each check",
       "credentialFields": [
         {
-          "label": "Encoded API Key",
+          "label": "API Key",
           "type": "password",
           "required": true,
-          "helpText": "Base64 encode your API key: base64('your_api_key:X'). Use https://www.base64encode.org/ — note the literal ':X' suffix"
+          "helpText": "Found in Freshservice Profile Settings (top-right avatar > Profile Settings)"
         }
       ]
     }

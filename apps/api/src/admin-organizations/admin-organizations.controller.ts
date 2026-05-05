@@ -21,6 +21,7 @@ import { PurgeOrganizationService } from './purge-organization.service';
 import { AdminAuditLogInterceptor } from './admin-audit-log.interceptor';
 import { SkipAdminAuditLog } from './skip-admin-audit-log.decorator';
 import { InviteMemberDto } from './dto/invite-member.dto';
+import { UpdateAdminOrganizationDto } from './dto/update-admin-organization.dto';
 import { PurgeOrganizationDto } from './dto/purge-organization.dto';
 
 @ApiExcludeController()
@@ -100,18 +101,21 @@ export class AdminOrganizationsController {
     return this.service.getOrganization(id);
   }
 
-  @Patch(':id/activate')
-  @ApiOperation({ summary: 'Activate organization access (platform admin)' })
-  @Throttle({ default: { ttl: 60000, limit: 5 } })
-  async activate(@Param('id') id: string) {
-    return this.service.setAccess(id, true);
-  }
-
-  @Patch(':id/deactivate')
-  @ApiOperation({ summary: 'Deactivate organization access (platform admin)' })
-  @Throttle({ default: { ttl: 60000, limit: 5 } })
-  async deactivate(@Param('id') id: string) {
-    return this.service.setAccess(id, false);
+  @Patch(':id')
+  @ApiOperation({ summary: 'Update organization fields (platform admin)' })
+  @Throttle({ default: { ttl: 60000, limit: 10 } })
+  @UsePipes(
+    new ValidationPipe({
+      whitelist: true,
+      forbidNonWhitelisted: true,
+      transform: true,
+    }),
+  )
+  async update(
+    @Param('id') id: string,
+    @Body() body: UpdateAdminOrganizationDto,
+  ) {
+    return this.service.updateOrganization(id, body);
   }
 
   @Post(':id/invite')

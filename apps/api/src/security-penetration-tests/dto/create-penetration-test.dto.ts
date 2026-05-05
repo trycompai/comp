@@ -1,5 +1,38 @@
-import { IsBoolean, IsOptional, IsString, IsUrl } from 'class-validator';
+import {
+  ArrayUnique,
+  IsArray,
+  IsBoolean,
+  IsEnum,
+  IsOptional,
+  IsUrl,
+} from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+
+export const scanDepthValues = ['quick', 'standard', 'deep'] as const;
+export type ScanDepth = (typeof scanDepthValues)[number];
+
+export const evidenceLevelValues = [
+  'report_only',
+  'safe_proof',
+  'impact_proof',
+] as const;
+export type EvidenceLevel = (typeof evidenceLevelValues)[number];
+
+export const pentestCheckValues = [
+  'discovery',
+  'secrets_info_disclosure',
+  'technology_config',
+  'xss',
+  'injection',
+  'authentication',
+  'authorization',
+  'idor_bola',
+  'ssrf_xxe',
+  'csrf',
+  'race_conditions',
+  'business_logic',
+] as const;
+export type PentestCheck = (typeof pentestCheckValues)[number];
 
 export class CreatePenetrationTestDto {
   @ApiProperty({
@@ -19,22 +52,6 @@ export class CreatePenetrationTestDto {
   repoUrl?: string;
 
   @ApiPropertyOptional({
-    description: 'GitHub token used for cloning private repositories',
-    required: false,
-  })
-  @IsOptional()
-  @IsString()
-  githubToken?: string;
-
-  @ApiPropertyOptional({
-    description: 'Optional YAML configuration for the pentest run',
-    required: false,
-  })
-  @IsOptional()
-  @IsString()
-  configYaml?: string;
-
-  @ApiPropertyOptional({
     description: 'Whether to enable pipeline testing mode',
     required: false,
     default: false,
@@ -42,14 +59,6 @@ export class CreatePenetrationTestDto {
   @IsOptional()
   @IsBoolean()
   pipelineTesting?: boolean;
-
-  @ApiPropertyOptional({
-    description: 'Workspace identifier used by the pentest engine',
-    required: false,
-  })
-  @IsOptional()
-  @IsString()
-  workspace?: string;
 
   @ApiPropertyOptional({
     description:
@@ -68,4 +77,34 @@ export class CreatePenetrationTestDto {
   @IsOptional()
   @IsBoolean()
   testMode?: boolean;
+
+  @ApiPropertyOptional({
+    description: 'Scan depth profile to run',
+    enum: scanDepthValues,
+    required: false,
+  })
+  @IsOptional()
+  @IsEnum(scanDepthValues)
+  scanDepth?: ScanDepth;
+
+  @ApiPropertyOptional({
+    description: 'Evidence validation level for findings',
+    enum: evidenceLevelValues,
+    required: false,
+  })
+  @IsOptional()
+  @IsEnum(evidenceLevelValues)
+  evidenceLevel?: EvidenceLevel;
+
+  @ApiPropertyOptional({
+    description: 'Maced check IDs to include in the scan',
+    enum: pentestCheckValues,
+    isArray: true,
+    required: false,
+  })
+  @IsOptional()
+  @IsArray()
+  @ArrayUnique()
+  @IsEnum(pentestCheckValues, { each: true })
+  checks?: PentestCheck[];
 }

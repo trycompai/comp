@@ -42,7 +42,7 @@
     "private": true,
     "scripts": {
         "build": "next build",
-        "db:generate": "find ../../packages/db/prisma/schema -name '*.prisma' ! -name 'schema.prisma' -exec cp {} prisma/schema/ \\; && prisma generate --schema=prisma/schema && node ../../packages/db/scripts/fix-generated-extensions.js src/generated/prisma",
+        "db:generate": "find prisma/schema -name '*.prisma' ! -name 'schema.prisma' -delete && find ../../packages/db/prisma/schema -name '*.prisma' ! -name 'schema.prisma' -exec cp {} prisma/schema/ \\; && prisma generate --schema=prisma/schema && node ../../packages/db/scripts/fix-generated-extensions.js src/generated/prisma",
         "dev": "next dev --port 3004",
         "lint": "echo 'no lint configured'",
         "prebuild": "bun run db:generate",

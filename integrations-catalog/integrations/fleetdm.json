@@ -3,11 +3,27 @@
   "name": "FleetDM",
   "description": "Open-source device management platform for monitoring and securing endpoints",
   "category": "Security",
-  "docsUrl": null,
-  "baseUrl": null,
+  "docsUrl": "https://fleetdm.com/docs/rest-api/rest-api",
+  "baseUrl": "https://fleet.example.com",
   "authConfig": {
     "type": "custom",
-    "config": {}
+    "config": {
+      "setupInstructions": "1. Log in to your Fleet dashboard\n2. Go to My account (click your avatar)\n3. Click 'Get API token'\n4. Copy the token\n5. Enter your Fleet server URL and token below",
+      "credentialFields": [
+        {
+          "label": "Fleet Server URL",
+          "type": "text",
+          "required": true,
+          "helpText": "The URL of your Fleet server (e.g. https://fleet.yourcompany.com)"
+        },
+        {
+          "label": "API Token",
+          "type": "password",
+          "required": true,
+          "helpText": "Your Fleet API token. Get it from My account > Get API token in the Fleet UI."
+        }
+      ]
+    }
   },
   "capabilities": [
     "checks"

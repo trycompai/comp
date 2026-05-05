@@ -4,19 +4,13 @@
   "description": "Monitor Fivetran data pipeline connectors and user access for data integration compliance",
   "category": "Cloud",
   "docsUrl": "https://fivetran.com/docs/rest-api",
-  "baseUrl": "https://api.fivetran.com/",
+  "baseUrl": "https://api.fivetran.com",
   "authConfig": {
-    "type": "custom",
+    "type": "basic",
     "config": {
-      "setupInstructions": "1. Go to Fivetran Dashboard → Settings → API Config\n2. Generate an API key and secret\n3. Encode them: base64('api_key:api_secret')\n4. Enter the encoded value below",
-      "credentialFields": [
-        {
-          "label": "Encoded API Credentials",
-          "type": "password",
-          "required": true,
-          "helpText": "Base64 encode 'api_key:api_secret'. Command: echo -n 'key:secret' | base64"
-        }
-      ]
+      "setupInstructions": "1. Log in to Fivetran Dashboard\n2. Click your username in the top right\n3. Click API Key\n4. Generate an API key (or generate a new one)\n5. Note down both the API Key and API Secret\n6. Enter them below",
+      "usernameField": "api_key",
+      "passwordField": "api_secret"
     }
   },
   "capabilities": [

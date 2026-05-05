@@ -3,24 +3,30 @@
   "name": "Sumo Logic",
   "description": "Monitor Sumo Logic log management and analytics platform for user access and monitoring compliance",
   "category": "Monitoring",
-  "docsUrl": "https://api.sumologic.com/docs/",
+  "docsUrl": "https://help.sumologic.com/docs/api/",
   "baseUrl": "https://api.sumologic.com/",
   "authConfig": {
     "type": "custom",
     "config": {
-      "setupInstructions": "1. Log in to Sumo Logic\n2. Go to your name → Preferences → Access Keys\n3. Create a new access key — copy the Access ID and Access Key\n4. Base64 encode 'accessId:accessKey': echo -n 'id:key' | base64\n5. Find your API endpoint at https://help.sumologic.com/docs/api/getting-started/#sumo-logic-endpoints\n6. Enter both below",
+      "setupInstructions": "1. Log in to Sumo Logic\n2. Go to your name > Preferences > Access Keys\n3. Create a new access key - copy the Access ID and Access Key\n4. Find your API endpoint at https://help.sumologic.com/docs/api/getting-started/#sumo-logic-endpoints\n5. Enter all values below",
       "credentialFields": [
         {
-          "label": "Encoded Credentials",
+          "label": "Access ID",
+          "type": "text",
+          "required": true,
+          "helpText": "Your Sumo Logic Access ID. Go to Preferences > Access Keys."
+        },
+        {
+          "label": "Access Key",
           "type": "password",
           "required": true,
-          "helpText": "Base64 encode 'accessId:accessKey'. Found in Sumo Logic Preferences → Access Keys. Command: echo -n 'accessId:accessKey' | base64"
+          "helpText": "Your Sumo Logic Access Key (generated with the Access ID)."
         },
         {
           "label": "API Endpoint",
           "type": "text",
           "required": true,
-          "helpText": "Your Sumo Logic API endpoint based on your deployment (e.g. api.us2.sumologic.com, api.eu.sumologic.com). See https://help.sumologic.com/docs/api/getting-started/#sumo-logic-endpoints"
+          "helpText": "Your Sumo Logic API endpoint based on deployment region (e.g. api.us2.sumologic.com). See https://help.sumologic.com/docs/api/getting-started/#sumo-logic-endpoints"
         }
       ]
     }
@@ -41,7 +47,7 @@
     {
       "slug": "sumologic_monitoring",
       "name": "Monitoring & Alerting",
-      "description": "Verifies Sumo Logic monitors are configured for log-based alerting",
+      "description": "Verifies Sumo Logic collectors are configured for log-based monitoring",
       "defaultSeverity": "medium",
       "enabled": true
     }
