@@ -272,8 +272,9 @@ export function EmployeeBackgroundCheck({
         <div>
           <Text weight="medium">Background checks are not required for your organization</Text>
           <Text size="sm" variant="muted">
-            Comp AI support disabled this requirement. Existing background-check requests, if any,
-            remain accessible from your billing portal.
+            Background checks are disabled for your organization. This can be changed in People
+            &gt; Settings. Existing background-check requests, if any, remain accessible from your
+            billing portal.
           </Text>
         </div>
       </div>

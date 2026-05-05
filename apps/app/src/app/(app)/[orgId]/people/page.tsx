@@ -64,7 +64,7 @@ export default async function PeoplePage({ params }: { params: Promise<{ orgId: 
       findingsContent={null}
       showRoleMapping={false}
       roleMappingContent={null}
-      showSettings={canManageOrgSettings}
+      showSettings={canManageOrgSettings && organization !== null}
       settingsContent={
         canManageOrgSettings && organization ? (
           <PeopleSettings

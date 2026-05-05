@@ -185,6 +185,30 @@ describe('computePeopleScore', () => {
     expect(score).toEqual({ total: 2, completed: 2 });
   });
 
+  it('counts every member as complete when all members are exempt', async () => {
+    (mockDb.backgroundCheckRequest.findMany as jest.Mock).mockResolvedValue([]);
+    (mockDb.member.findMany as jest.Mock).mockImplementation(async (args: {
+      where?: { backgroundCheckExempt?: boolean };
+    }) => {
+      if (args?.where?.backgroundCheckExempt === true) {
+        return [{ id: 'mem_1' }, { id: 'mem_2' }];
+      }
+      return [];
+    });
+
+    const score = await computePeopleScore({
+      organizationId: 'org_1',
+      allPolicies: [],
+      employees: members,
+      securityTrainingStepEnabled: false,
+      deviceAgentStepEnabled: false,
+      backgroundCheckStepEnabled: true,
+      hasHipaaFramework: false,
+    });
+
+    expect(score).toEqual({ total: 2, completed: 2 });
+  });
+
   it('skips the exempt query entirely when backgroundCheckStepEnabled is false', async () => {
     (mockDb.member.findMany as jest.Mock).mockClear();
 

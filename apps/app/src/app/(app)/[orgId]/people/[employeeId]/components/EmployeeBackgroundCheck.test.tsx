@@ -357,6 +357,27 @@ describe('EmployeeBackgroundCheck', () => {
     ).not.toBeInTheDocument();
   });
 
+  it('prefers the org-level bypass over per-member exempt when both are set', () => {
+    render(
+      <EmployeeBackgroundCheck
+        employee={employee}
+        organizationId="org_1"
+        initialBackgroundCheck={null}
+        initialBillingStatus={{ hasPaymentMethod: false, setupAt: null }}
+        backgroundCheckStepEnabled={false}
+        memberBackgroundCheckExempt={true}
+      />,
+    );
+
+    // Org-level bypass card wins; per-member exempt toggle should not appear.
+    expect(
+      screen.getByText(/background checks are disabled for your organization/i),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole('switch', { name: /exempt this employee/i }),
+    ).not.toBeInTheDocument();
+  });
+
   it('toggles exempt on and PATCHes /v1/people/:id', async () => {
     const user = userEvent.setup();
     vi.mocked(apiClient.patch).mockResolvedValue({ data: { id: 'mem_1' }, status: 200 });
