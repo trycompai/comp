@@ -54,27 +54,47 @@ interface RiskMatrix5x5Props {
   inherentImpact: Impact;
   residualLikelihood: Likelihood;
   residualImpact: Impact;
+  /**
+   * 0..1 — completion of the linked treatment work. The "Now" marker is
+   * rendered at a position interpolated between the inherent cell and the
+   * residual (target) cell by this fraction. Default 0 means the Now
+   * marker sits on the inherent cell (no progress yet).
+   */
+  completion?: number;
   /** When true, render a small "Preliminary — assessment still running" subtitle below the matrix. */
   preliminary?: boolean;
 }
+
+const GAP = 2;
 
 export function RiskMatrix5x5({
   inherentLikelihood,
   inherentImpact,
   residualLikelihood,
   residualImpact,
+  completion,
   preliminary,
 }: RiskMatrix5x5Props) {
   const inherentL = LIKELIHOOD_ORDER.indexOf(inherentLikelihood);
   const inherentI = IMPACT_ORDER.indexOf(inherentImpact);
   const residualL = LIKELIHOOD_ORDER.indexOf(residualLikelihood);
   const residualI = IMPACT_ORDER.indexOf(residualImpact);
+  const c = Math.min(1, Math.max(0, completion ?? 0));
+  // Fractional "Now" position — interpolated between inherent and target by
+  // task completion. Snaps to inherent when completion=0 and to target when
+  // completion=1; lands somewhere in-between for partial progress.
+  const nowLFloat = inherentL + (residualL - inherentL) * c;
+  const nowIFloat = inherentI + (residualI - inherentI) * c;
+  // Pixel offset within the grid (top-left = (0,0)). Rows render top-to-
+  // bottom in descending likelihood order, so the y-axis is flipped (4 - L).
+  const stepPx = CELL_SIZE + GAP;
+  const nowOffsetX = nowIFloat * stepPx + CELL_SIZE / 2;
+  const nowOffsetY = (4 - nowLFloat) * stepPx + CELL_SIZE / 2;
 
   const cells: React.ReactNode[] = [];
   // Render rows top-to-bottom: highest likelihood first (row 4 → 0)
   for (let row = 4; row >= 0; row--) {
     for (let col = 0; col < 5; col++) {
-      const isInherent = row === inherentL && col === inherentI;
       const isResidual = row === residualL && col === residualI;
       cells.push(
         <div
@@ -86,22 +106,9 @@ export function RiskMatrix5x5({
             background: cellBackground(row, col),
           }}
         >
-          {isInherent && (
-            <span
-              aria-label="Current risk"
-              className="rounded-full"
-              style={{
-                width: CELL_SIZE * 0.55,
-                height: CELL_SIZE * 0.55,
-                background: 'var(--destructive)',
-                outline: '2px solid var(--background)',
-                position: 'absolute',
-              }}
-            />
-          )}
           {isResidual && (
             <span
-              aria-label="Residual risk"
+              aria-label="Target risk"
               className="rounded-full"
               style={{
                 width: CELL_SIZE * 0.55,
@@ -158,13 +165,31 @@ export function RiskMatrix5x5({
             Likelihood →
           </div>
           <div
-            className="inline-grid"
+            className="inline-grid relative"
             style={{
               gridTemplateColumns: `repeat(5, ${CELL_SIZE}px)`,
-              gap: 2,
+              gap: GAP,
             }}
           >
             {cells}
+            {/* "Now" marker — rendered as an absolute overlay so it can sit
+                between cells when partial completion lands its position
+                off-grid. */}
+            <span
+              aria-label="Current risk"
+              className="rounded-full pointer-events-none"
+              style={{
+                position: 'absolute',
+                width: CELL_SIZE * 0.55,
+                height: CELL_SIZE * 0.55,
+                background: 'var(--destructive)',
+                outline: '2px solid var(--background)',
+                left: nowOffsetX,
+                top: nowOffsetY,
+                transform: 'translate(-50%, -50%)',
+                transition: 'left 200ms ease-out, top 200ms ease-out',
+              }}
+            />
           </div>
         </div>
       </div>

@@ -262,13 +262,15 @@ export function TreatmentHero({
             </div>
           </div>
 
-          {/* RIGHT: matrix — the marker shows the strategy's full-completion
-              target, regardless of in-progress completion. */}
+          {/* RIGHT: matrix — Target stays at the strategy's full-completion
+              target cell. Now interpolates from inherent → target by task
+              completion so partial progress is visually reflected. */}
           <RiskMatrix5x5
             inherentLikelihood={inherentLikelihood}
             inherentImpact={inherentImpact}
             residualLikelihood={target.likelihood}
             residualImpact={target.impact}
+            completion={completion}
           />
         </div>
 
