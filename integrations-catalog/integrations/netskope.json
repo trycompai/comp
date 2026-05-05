@@ -13,12 +13,14 @@
         {
           "label": "Tenant Name",
           "type": "text",
-          "required": true
+          "required": true,
+          "helpText": "Your Netskope tenant name (e.g. if your URL is mycompany.goskope.com, enter mycompany)"
         },
         {
           "label": "API Token",
           "type": "password",
-          "required": true
+          "required": true,
+          "helpText": "REST API token from Netskope Admin Console"
         }
       ]
     }

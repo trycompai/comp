@@ -120,6 +120,20 @@ export class ControlsService {
     const formTypes = (control.controlDocumentTypes ?? []).map(
       (d) => d.formType,
     );
+    const notRelevantSettings =
+      formTypes.length > 0
+        ? await db.evidenceFormSetting.findMany({
+            where: {
+              organizationId,
+              formType: { in: formTypes },
+              isNotRelevant: true,
+            },
+            select: { formType: true },
+          })
+        : [];
+    const notRelevantFormTypes = new Set(
+      notRelevantSettings.map((setting) => setting.formType),
+    );
     const submissionCountsByFormType: Record<string, number> = {};
     if (formTypes.length > 0) {
       const grouped = await db.evidenceSubmission.groupBy({
@@ -154,6 +168,12 @@ export class ControlsService {
 
     return {
       ...control,
+      controlDocumentTypes: (control.controlDocumentTypes ?? []).map(
+        (documentType) => ({
+          ...documentType,
+          isNotRelevant: notRelevantFormTypes.has(documentType.formType),
+        }),
+      ),
       submissionCountsByFormType,
       progress: {
         total: totalItems,
@@ -330,7 +350,12 @@ export class ControlsService {
     // policies. Checking only archivedAt would let user-archived policies
     // get re-linked to a control and surface back through the UI.
     const policies = await db.policy.findMany({
-      where: { id: { in: uniqueIds }, organizationId, archivedAt: null, isArchived: false },
+      where: {
+        id: { in: uniqueIds },
+        organizationId,
+        archivedAt: null,
+        isArchived: false,
+      },
       select: { id: true },
     });
     if (policies.length !== uniqueIds.length) {

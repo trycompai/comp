@@ -27,6 +27,8 @@ describe('EmployeePageHeader', () => {
         employeeName="Jane Doe"
         orgId="org_123"
         backgroundCheck={backgroundCheck}
+        backgroundCheckStepEnabled={true}
+        memberBackgroundCheckExempt={false}
       />,
     );
 
@@ -40,9 +42,43 @@ describe('EmployeePageHeader', () => {
         employeeName="Jane Doe"
         orgId="org_123"
         backgroundCheck={{ ...backgroundCheck, status: 'invited' }}
+        backgroundCheckStepEnabled={true}
+        memberBackgroundCheckExempt={false}
       />,
     );
 
     expect(screen.queryByLabelText('Employee has completed a background check')).not.toBeInTheDocument();
+  });
+
+  it('hides the verified tick when background checks are bypassed, even if the check is complete', () => {
+    render(
+      <EmployeePageHeader
+        employeeName="Jane Doe"
+        orgId="org_123"
+        backgroundCheck={backgroundCheck}
+        backgroundCheckStepEnabled={false}
+        memberBackgroundCheckExempt={false}
+      />,
+    );
+
+    expect(screen.getByRole('heading', { name: 'Jane Doe' })).toBeInTheDocument();
+    expect(screen.queryByLabelText('Employee has completed a background check')).not.toBeInTheDocument();
+  });
+
+  it('hides the verified tick when the member is exempt', () => {
+    render(
+      <EmployeePageHeader
+        employeeName="Jane Doe"
+        orgId="org_123"
+        backgroundCheck={backgroundCheck}
+        backgroundCheckStepEnabled={true}
+        memberBackgroundCheckExempt={true}
+      />,
+    );
+
+    expect(screen.getByRole('heading', { name: 'Jane Doe' })).toBeInTheDocument();
+    expect(
+      screen.queryByLabelText('Employee has completed a background check'),
+    ).not.toBeInTheDocument();
   });
 });

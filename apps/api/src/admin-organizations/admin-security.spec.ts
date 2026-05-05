@@ -155,24 +155,14 @@ describe('Admin controllers security baseline', () => {
     expect(AdminIntegrationsController).toBeDefined();
   });
 
-  describe('destructive endpoints have tighter rate limits', () => {
-    it('activate has a limit of 5 per minute', () => {
+  describe('update endpoint rate limits', () => {
+    it('update has a limit of 10 per minute', () => {
       const metadata = Reflect.getMetadata(
         'THROTTLER:LIMIT',
-        AdminOrganizationsController.prototype.activate,
+        AdminOrganizationsController.prototype.update,
       );
       if (metadata) {
-        expect(metadata).toBeLessThanOrEqual(5);
-      }
-    });
-
-    it('deactivate has a limit of 5 per minute', () => {
-      const metadata = Reflect.getMetadata(
-        'THROTTLER:LIMIT',
-        AdminOrganizationsController.prototype.deactivate,
-      );
-      if (metadata) {
-        expect(metadata).toBeLessThanOrEqual(5);
+        expect(metadata).toBeLessThanOrEqual(10);
       }
     });
   });

@@ -8,13 +8,13 @@
   "authConfig": {
     "type": "api_key",
     "config": {
-      "setupInstructions": "1. Log in to FullStory at https://app.fullstory.com\n2. Go to Settings → Integrations → API Keys\n3. Generate a Server API key\n4. Copy and enter it below (the key itself, no encoding needed)",
+      "setupInstructions": "1. Log in to FullStory at https://app.fullstory.com\n2. Go to Settings > Integrations > API Keys\n3. Generate a Server API key\n4. Copy and enter it below (the key itself, no encoding needed)",
       "credentialFields": [
         {
           "label": "Server API Key",
           "type": "password",
           "required": true,
-          "helpText": "Found in FullStory Settings → Integrations → API Keys (Server API key)"
+          "helpText": "Found in FullStory Settings > Integrations > API Keys (Server API key)"
         }
       ]
     }
@@ -28,7 +28,7 @@
     {
       "slug": "fullstory_employee_access",
       "name": "Employee Access",
-      "description": "Reviews FullStory users with access to session replay data",
+      "description": "Verifies account access to FullStory by listing segments",
       "defaultSeverity": "medium",
       "enabled": true
     },

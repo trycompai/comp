@@ -58,6 +58,7 @@ interface MemberRowProps {
   deviceStatus?: 'compliant' | 'non-compliant' | 'stale' | 'not-installed';
   isDeviceStatusLoading?: boolean;
   backgroundCheckStatus?: BackgroundCheckStatus;
+  backgroundCheckStepEnabled?: boolean;
 }
 
 function getInitials(name?: string | null, email?: string | null): string {
@@ -122,6 +123,7 @@ export function MemberRow({
   deviceStatus,
   isDeviceStatusLoading = false,
   backgroundCheckStatus,
+  backgroundCheckStepEnabled = true,
 }: MemberRowProps) {
   const { orgId } = useParams<{ orgId: string }>();
 
@@ -147,6 +149,7 @@ export function MemberRow({
   const isDeactivated = member.deactivated || !member.isActive;
   const profileHref = `/${orgId}/people/${memberId}`;
   const hasCompletedBackgroundCheck = isBackgroundCheckComplete(backgroundCheckStatus);
+  const memberExempt = member.backgroundCheckExempt === true;
   const shouldShowTaskRequirements = !isPlatformAdmin && !isDeactivated;
   const taskItems: TaskCountItem[] = [];
 
@@ -182,7 +185,7 @@ export function MemberRow({
     });
   }
 
-  if (shouldShowTaskRequirements) {
+  if (shouldShowTaskRequirements && backgroundCheckStepEnabled && !memberExempt) {
     taskItems.push({
       label: 'Background check',
       completed: hasCompletedBackgroundCheck ? 1 : 0,
@@ -272,7 +275,9 @@ export function MemberRow({
                 >
                   {memberName}
                 </Link>
-                {hasCompletedBackgroundCheck && <BackgroundCheckVerifiedTick />}
+                {backgroundCheckStepEnabled && !memberExempt && hasCompletedBackgroundCheck && (
+                  <BackgroundCheckVerifiedTick />
+                )}
               </div>
               <Text variant="muted">{memberEmail}</Text>
             </div>

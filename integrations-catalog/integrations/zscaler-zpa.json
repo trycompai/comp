@@ -1,13 +1,35 @@
 {
   "slug": "zscaler-zpa",
   "name": "Zscaler Private Access",
-  "description": "Zero trust network access platform. Monitor application access and policies.",
+  "description": "Zero trust network access platform. Monitor application segments, access policies, app connectors, and admin users.",
   "category": "Security",
   "docsUrl": "https://help.zscaler.com/zpa/api",
   "baseUrl": "https://config.private.zscaler.com",
   "authConfig": {
-    "type": "api_key",
-    "config": {}
+    "type": "custom",
+    "config": {
+      "setupInstructions": "1. Log in to the ZPA Admin Portal\n2. Go to Administration > API Key Management\n3. Add a new API Key with Read-Only permissions\n4. Copy the Client ID and Client Secret\n5. Go to Administration > Company to find your Customer ID\n6. Enter all three values below",
+      "credentialFields": [
+        {
+          "label": "Client ID",
+          "type": "text",
+          "required": true,
+          "helpText": "ZPA API Client ID. Found in ZPA Admin Portal > Administration > API Key Management."
+        },
+        {
+          "label": "Client Secret",
+          "type": "password",
+          "required": true,
+          "helpText": "ZPA API Client Secret Key. Found in ZPA Admin Portal > Administration > API Key Management."
+        },
+        {
+          "label": "Customer ID",
+          "type": "text",
+          "required": true,
+          "helpText": "Your ZPA tenant/customer ID. Found in ZPA Admin Portal > Administration > Company."
+        }
+      ]
+    }
   },
   "capabilities": [
     "checks"
@@ -17,15 +39,15 @@
   "checks": [
     {
       "slug": "zscaler_zpa_app_availability",
-      "name": "Zscaler ZPA App Availability",
-      "description": "Checks that the Zscaler ZPA API is accessible.",
-      "defaultSeverity": "medium",
+      "name": "App Availability",
+      "description": "Verifies the Zscaler ZPA API is accessible by authenticating and retrieving application segments.",
+      "defaultSeverity": "high",
       "enabled": true
     },
     {
       "slug": "zscaler_zpa_employee_access",
-      "name": "Zscaler ZPA Employee Access",
-      "description": "Verifies access to Zscaler ZPA.",
+      "name": "Employee Access",
+      "description": "Reviews ZPA app connectors to verify that the private access infrastructure is operational and connected.",
       "defaultSeverity": "medium",
       "enabled": true
     }

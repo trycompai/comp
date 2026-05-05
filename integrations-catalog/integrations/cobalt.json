@@ -7,7 +7,9 @@
   "baseUrl": "https://api.cobalt.io",
   "authConfig": {
     "type": "api_key",
-    "config": {}
+    "config": {
+      "setupInstructions": "1. Log in to Cobalt at https://app.cobalt.io\n2. Go to Settings > API > Generate API Token\n3. Copy the token and paste it below"
+    }
   },
   "capabilities": [
     "checks"

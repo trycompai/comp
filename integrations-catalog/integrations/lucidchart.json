@@ -4,7 +4,7 @@
   "description": "Lucidchart visual collaboration platform for diagrams and flowcharts",
   "category": "Productivity",
   "docsUrl": "https://developer.lucid.co",
-  "baseUrl": "https://api.lucid.app",
+  "baseUrl": "https://api.lucid.co",
   "authConfig": {
     "type": "custom",
     "config": {

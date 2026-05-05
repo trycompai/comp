@@ -7,7 +7,9 @@
   "baseUrl": "https://api.groq.com",
   "authConfig": {
     "type": "api_key",
-    "config": {}
+    "config": {
+      "setupInstructions": "1. Go to https://console.groq.com/keys\n2. Create a new API key\n3. Copy the API key and paste it below"
+    }
   },
   "capabilities": [
     "checks"

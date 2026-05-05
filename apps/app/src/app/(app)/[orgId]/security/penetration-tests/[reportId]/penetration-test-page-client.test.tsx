@@ -1,13 +1,23 @@
 import { render, screen } from '@testing-library/react';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { ReactNode } from 'react';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import type { PentestRun } from '@/lib/security/penetration-tests-client';
 import { PenetrationTestPageClient } from './penetration-test-page-client';
 
 const usePenetrationTestMock = vi.fn();
 const usePenetrationTestProgressMock = vi.fn();
+const usePenetrationTestsMock = vi.fn();
 const pushMock = vi.fn();
+
+vi.mock('@/lib/api-client', () => ({
+  api: {
+    get: vi.fn().mockResolvedValue({
+      status: 200,
+      data: { subscriptions: [] },
+    }),
+  },
+}));
 
 vi.mock('next/link', () => ({
   default: ({ href, children, ...props }: { href: string; children: ReactNode }) => (
@@ -20,6 +30,15 @@ vi.mock('next/link', () => ({
 vi.mock('../hooks/use-penetration-tests', () => ({
   usePenetrationTest: (...args: never[]) => usePenetrationTestMock(...args),
   usePenetrationTestProgress: (...args: never[]) => usePenetrationTestProgressMock(...args),
+  usePenetrationTests: (...args: never[]) => usePenetrationTestsMock(...args),
+  usePenetrationTestIssues: () => ({ issues: [], isLoading: false, error: undefined }),
+  usePenetrationTestEvents: () => ({ events: [], isLoading: false }),
+  useCreatePenetrationTest: () => ({
+    createReport: vi.fn(),
+    isCreating: false,
+    error: null,
+    resetError: vi.fn(),
+  }),
 }));
 
 vi.mock('next/navigation', () => ({
@@ -33,10 +52,19 @@ vi.mock('next/navigation', () => ({
 
 const reportMock = usePenetrationTestMock as ReturnType<typeof vi.fn>;
 const progressMock = usePenetrationTestProgressMock as ReturnType<typeof vi.fn>;
+const reportsMock = usePenetrationTestsMock as ReturnType<typeof vi.fn>;
 
 describe('PenetrationTestPageClient', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    reportsMock.mockReturnValue({
+      reports: [],
+      isLoading: false,
+      error: undefined,
+      mutate: vi.fn(),
+      activeReports: [],
+      completedReports: [],
+    });
   });
 
   it('shows a loading indicator before the report is available', () => {

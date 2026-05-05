@@ -24,6 +24,8 @@ interface PeoplePageTabsProps {
   roleMappingContent: ReactNode | null;
   showRoleMapping: boolean;
   showEmployeeTasks: boolean;
+  settingsContent: ReactNode | null;
+  showSettings: boolean;
   canInviteUsers: boolean;
   canManageMembers: boolean;
   organizationId: string;
@@ -34,6 +36,7 @@ function tabParamToInternal(
   tabParam: string | null,
   showEmployeeTasks: boolean,
   showRoleMapping: boolean,
+  showSettings: boolean,
 ): string {
   if (!tabParam || tabParam === 'people') {
     return 'people';
@@ -50,6 +53,9 @@ function tabParamToInternal(
   if (tabParam === 'role-mapping') {
     return showRoleMapping ? 'role-mapping' : 'people';
   }
+  if (tabParam === 'settings') {
+    return showSettings ? 'settings' : 'people';
+  }
   return 'people';
 }
 
@@ -63,6 +69,7 @@ function internalValueToTabParam(value: string): string {
     case 'people':
     case 'devices':
     case 'role-mapping':
+    case 'settings':
       return value;
     default:
       return 'people';
@@ -78,6 +85,8 @@ export function PeoplePageTabs({
   roleMappingContent,
   showRoleMapping,
   showEmployeeTasks,
+  settingsContent,
+  showSettings,
   canInviteUsers,
   canManageMembers,
   organizationId,
@@ -91,6 +100,7 @@ export function PeoplePageTabs({
     searchParams.get('tab'),
     showEmployeeTasks,
     showRoleMapping,
+    showSettings,
   );
 
   const handleTabChange = useCallback(
@@ -121,6 +131,7 @@ export function PeoplePageTabs({
                 <TabsTrigger value="devices">Devices</TabsTrigger>
                 <TabsTrigger value="org-chart">Chart</TabsTrigger>
                 {showRoleMapping && <TabsTrigger value="role-mapping">Role Mapping</TabsTrigger>}
+                {showSettings && <TabsTrigger value="settings">Settings</TabsTrigger>}
               </TabsList>
             }
             actions={
@@ -143,6 +154,9 @@ export function PeoplePageTabs({
         <TabsContent value="org-chart">{orgChartContent}</TabsContent>
         {showRoleMapping && (
           <TabsContent value="role-mapping">{roleMappingContent}</TabsContent>
+        )}
+        {showSettings && (
+          <TabsContent value="settings">{settingsContent}</TabsContent>
         )}
       </PageLayout>
 

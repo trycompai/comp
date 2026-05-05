@@ -7,7 +7,9 @@
   "baseUrl": "https://withpersona.com",
   "authConfig": {
     "type": "api_key",
-    "config": {}
+    "config": {
+      "setupInstructions": "1. Log in to your Persona Dashboard at https://app.withpersona.com\n2. Go to Settings -> API Keys\n3. Create a new API key or copy an existing one\n4. The key starts with 'persona_key_...'\n5. Paste it below"
+    }
   },
   "capabilities": [
     "checks"

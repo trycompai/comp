@@ -1,3 +1,4 @@
+import type { Control, Task } from '@db';
 import { describe, expect, it } from 'vitest';
 import {
   getControlProgressPercent,
@@ -8,7 +9,6 @@ import {
   getRequirementStatus,
   type EvidenceSubmissionInfo,
 } from './control-compliance';
-import type { Control, Task } from '@db';
 
 const SIX_MONTHS_MS = 6 * 30 * 24 * 60 * 60 * 1000;
 
@@ -85,6 +85,17 @@ describe('getControlStatus', () => {
     );
     expect(status).toBe('in_progress');
   });
+
+  it('returns not_relevant when only linked documents are marked not relevant', () => {
+    const status = getControlStatus(
+      [],
+      [],
+      'c1',
+      [{ formType: 'access_control_policy', isNotRelevant: true }],
+      [],
+    );
+    expect(status).toBe('not_relevant');
+  });
 });
 
 describe('getRequirementStatus', () => {
@@ -106,6 +117,13 @@ describe('getRequirementStatus', () => {
     expect(getRequirementStatus(['not_started', 'not_started'])).toEqual({
       label: 'Not Started',
       variant: 'destructive',
+    });
+  });
+
+  it('returns "Not Relevant" when every control is not_relevant', () => {
+    expect(getRequirementStatus(['not_relevant', 'not_relevant'])).toEqual({
+      label: 'Not Relevant',
+      variant: 'secondary',
     });
   });
 
@@ -143,10 +161,7 @@ describe('getControlProgressPercent', () => {
   it('returns 67 when 2 of 3 artifacts are complete (1 policy published, 1 of 2 tasks done)', () => {
     const percent = getControlProgressPercent(
       [{ status: 'published' }],
-      [
-        makeTask({ id: 't1', status: 'done' }),
-        makeTask({ id: 't2', status: 'todo' }),
-      ],
+      [makeTask({ id: 't1', status: 'done' }), makeTask({ id: 't2', status: 'todo' })],
       'c1',
       [],
       [],
@@ -176,6 +191,17 @@ describe('getControlProgressPercent', () => {
       [{ id: 'evs1', formType: 'access_control_policy', submittedAt: stale }],
     );
     expect(percent).toBe(0);
+  });
+
+  it('excludes not relevant documents from progress', () => {
+    const percent = getControlProgressPercent(
+      [{ status: 'published' }],
+      [],
+      'c1',
+      [{ formType: 'access_control_policy', isNotRelevant: true }],
+      [],
+    );
+    expect(percent).toBe(100);
   });
 
   it('only counts tasks linked to the given control', () => {
@@ -291,6 +317,21 @@ describe('getRequirementArtifactCounts', () => {
     const counts = getRequirementArtifactCounts(controls, [], submissions);
     expect(counts.documents).toEqual({ total: 2, completed: 1 });
   });
+
+  it('excludes not relevant document types from counts', () => {
+    const controls = [
+      {
+        id: 'c1',
+        policies: [],
+        controlDocumentTypes: [
+          { formType: 'access_control_policy', isNotRelevant: true },
+          { formType: 'incident_response_plan' },
+        ],
+      },
+    ];
+    const counts = getRequirementArtifactCounts(controls, [], []);
+    expect(counts.documents).toEqual({ total: 1, completed: 0 });
+  });
 });
 
 describe('getFrameworkAggregatePercent', () => {
@@ -306,9 +347,7 @@ describe('getFrameworkAggregatePercent', () => {
         controlDocumentTypes: [],
       },
     ];
-    const tasks = [
-      makeTask({ id: 't1', status: 'done', controls: [{ id: 'c1' } as Control] }),
-    ];
+    const tasks = [makeTask({ id: 't1', status: 'done', controls: [{ id: 'c1' } as Control] })];
     expect(getFrameworkAggregatePercent(controls, tasks, [])).toBe(100);
   });
 
@@ -331,5 +370,16 @@ describe('getFrameworkAggregatePercent', () => {
     ];
     // 5 total artifacts (2 policies, 2 tasks, 1 doc), 2 completed → 40%
     expect(getFrameworkAggregatePercent(controls, tasks, [])).toBe(40);
+  });
+
+  it('excludes not relevant documents from aggregate progress', () => {
+    const controls = [
+      {
+        id: 'c1',
+        policies: [{ id: 'p1', status: 'published' }],
+        controlDocumentTypes: [{ formType: 'access_control_policy', isNotRelevant: true }],
+      },
+    ];
+    expect(getFrameworkAggregatePercent(controls, [], [])).toBe(100);
   });
 });

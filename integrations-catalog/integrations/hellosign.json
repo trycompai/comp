@@ -6,8 +6,12 @@
   "docsUrl": "https://developers.hellosign.com/",
   "baseUrl": "https://api.hellosign.com",
   "authConfig": {
-    "type": "api_key",
-    "config": {}
+    "type": "basic",
+    "config": {
+      "setupInstructions": "1. Log in to Dropbox Sign\n2. Go to Settings > Integrations > API\n3. Copy your API key and paste it below as the username (leave password blank)\n\nNote: This integration uses the hellosign slug. A separate 'dropbox-sign' integration also exists.",
+      "usernameField": "api_key",
+      "passwordField": "password"
+    }
   },
   "capabilities": [
     "checks"

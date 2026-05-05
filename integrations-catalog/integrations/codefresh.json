@@ -7,7 +7,9 @@
   "baseUrl": "https://g.codefresh.io",
   "authConfig": {
     "type": "api_key",
-    "config": {}
+    "config": {
+      "setupInstructions": "1. Log in to Codefresh at https://g.codefresh.io\n2. Click your avatar dropdown and select 'User Settings'\n3. Scroll down to 'API Keys' and click 'Generate'\n4. Name your key and select the required scopes (at minimum: Audit, Build, Pipeline)\n5. Copy the generated token"
+    }
   },
   "capabilities": [
     "checks"

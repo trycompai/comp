@@ -6,17 +6,25 @@
   "docsUrl": "https://help.mabl.com/hc/en-us/articles/360017810591-Using-the-Mabl-REST-API",
   "baseUrl": "https://api.mabl.com/",
   "authConfig": {
-    "type": "custom",
+    "type": "basic",
     "config": {
-      "setupInstructions": "1. Log in to Mabl at https://app.mabl.com\n2. Go to Settings → API → API Keys\n3. Generate an API key\n4. Base64 encode 'key:your_api_key' (where 'key' is the literal username)\n5. Enter the encoded value below",
+      "setupInstructions": "1. Log in to mabl at https://app.mabl.com\n2. Go to Settings > API > API Keys\n3. Generate a new API key\n4. Enter \"key\" as the Username and paste the API key below",
       "credentialFields": [
         {
-          "label": "Encoded API Key",
+          "label": "Username",
+          "type": "text",
+          "required": true,
+          "helpText": "Enter \"key\" (literal text). mabl uses the word \"key\" as the Basic auth username."
+        },
+        {
+          "label": "API Key",
           "type": "password",
           "required": true,
-          "helpText": "Base64 encode 'key:your_api_key' (literally 'key' as username). Command: echo -n 'key:your_api_key' | base64"
+          "helpText": "Found in mabl Settings > API > API Keys. Generate a new key if needed."
         }
-      ]
+      ],
+      "usernameField": "username",
+      "passwordField": "api_key"
     }
   },
   "capabilities": [

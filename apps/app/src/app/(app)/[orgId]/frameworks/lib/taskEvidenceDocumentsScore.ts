@@ -1,15 +1,18 @@
+import { db } from '@db/server';
 import {
   evidenceFormDefinitionList,
   meetingSubTypeValues,
   toDbEvidenceFormType,
 } from '@trycompai/company';
-import { db } from '@db/server';
 
 const SIX_MONTHS_MS = 6 * 30 * 24 * 60 * 60 * 1000;
 
 const MEETING_SUB_TYPES = meetingSubTypeValues;
 
-export type DocumentFormStatuses = Record<string, { lastSubmittedAt: string | null }>;
+export type DocumentFormStatuses = Record<
+  string,
+  { lastSubmittedAt: string | null; isNotRelevant?: boolean }
+>;
 
 type EvidenceAutomationRunLite = {
   status: string;
@@ -42,8 +45,9 @@ function isMeetingOutstanding(statuses: DocumentFormStatuses): boolean {
 
 export function computeDocumentsProgress(statuses: DocumentFormStatuses) {
   const includedForms = evidenceFormDefinitionList.filter((form) => !form.hidden && !form.optional);
-  const totalDocuments = includedForms.length;
-  const outstandingDocuments = includedForms.reduce((count, form) => {
+  const relevantForms = includedForms.filter((form) => statuses[form.type]?.isNotRelevant !== true);
+  const totalDocuments = relevantForms.length;
+  const outstandingDocuments = relevantForms.reduce((count, form) => {
     if (form.type === 'meeting') {
       return isMeetingOutstanding(statuses) ? count + 1 : count;
     }
@@ -61,11 +65,20 @@ export function computeDocumentsProgress(statuses: DocumentFormStatuses) {
 export async function getDocumentFormStatusesForOrganization(
   organizationId: string,
 ): Promise<DocumentFormStatuses> {
-  const groupedStatuses = await db.evidenceSubmission.groupBy({
-    by: ['formType'],
-    where: { organizationId },
-    _max: { submittedAt: true },
-  });
+  const [groupedStatuses, settings] = await Promise.all([
+    db.evidenceSubmission.groupBy({
+      by: ['formType'],
+      where: { organizationId },
+      _max: { submittedAt: true },
+    }),
+    db.evidenceFormSetting.findMany({
+      where: { organizationId },
+      select: { formType: true, isNotRelevant: true },
+    }),
+  ]);
+  const notRelevantFormTypes = new Set(
+    settings.filter((setting) => setting.isNotRelevant).map((setting) => setting.formType),
+  );
 
   const statuses: DocumentFormStatuses = {};
   for (const form of evidenceFormDefinitionList) {
@@ -74,6 +87,7 @@ export async function getDocumentFormStatusesForOrganization(
     );
     statuses[form.type] = {
       lastSubmittedAt: match?._max.submittedAt?.toISOString() ?? null,
+      isNotRelevant: notRelevantFormTypes.has(toDbEvidenceFormType(form.type)),
     };
   }
 

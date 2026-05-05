@@ -3,18 +3,24 @@
   "name": "Paychex",
   "description": "Monitor Paychex payroll platform for employee data access and HR compliance",
   "category": "HR & People",
-  "docsUrl": "https://developer.paychex.com/documentation",
+  "docsUrl": "https://developer.paychex.com/getting-started/authentication",
   "baseUrl": "https://api.paychex.com/",
   "authConfig": {
     "type": "custom",
     "config": {
-      "setupInstructions": "1. Sign up at https://developer.paychex.com\n2. Go to My Apps → Create App\n3. Copy Client ID and Client Secret\n4. Base64 encode 'client_id:client_secret': echo -n 'id:secret' | base64\n5. Enter the encoded value below",
+      "setupInstructions": "1. Sign up at https://developer.paychex.com\n2. Go to My Apps and create an App\n3. Copy Client ID and Client Secret\n4. Enter both values below",
       "credentialFields": [
         {
-          "label": "Encoded Credentials",
+          "label": "Client ID",
+          "type": "text",
+          "required": true,
+          "helpText": "From Paychex Developer Portal - My Apps"
+        },
+        {
+          "label": "Client Secret",
           "type": "password",
           "required": true,
-          "helpText": "Base64 encode 'client_id:client_secret'. Found in Paychex Developer Portal → My Apps. Command: echo -n 'id:secret' | base64"
+          "helpText": "From Paychex Developer Portal - My Apps"
         }
       ]
     }

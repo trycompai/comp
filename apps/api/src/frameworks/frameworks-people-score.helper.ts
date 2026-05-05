@@ -28,6 +28,7 @@ interface ComputePeopleScoreParams {
   employees: ScoreMember[];
   securityTrainingStepEnabled: boolean;
   deviceAgentStepEnabled: boolean;
+  backgroundCheckStepEnabled: boolean;
   hasHipaaFramework: boolean;
 }
 
@@ -37,6 +38,7 @@ export async function computePeopleScore({
   employees,
   securityTrainingStepEnabled,
   deviceAgentStepEnabled,
+  backgroundCheckStepEnabled,
   hasHipaaFramework,
 }: ComputePeopleScoreParams) {
   const activeEmployees = await filterComplianceMembers(
@@ -59,6 +61,7 @@ export async function computePeopleScore({
     membersWithInstalledDevices,
     trainingCompletions,
     membersWithCompletedBackgroundChecks,
+    exemptMemberIds,
   ] = await Promise.all([
     getMembersWithInstalledDevices({
       organizationId,
@@ -70,7 +73,12 @@ export async function computePeopleScore({
       memberIds,
       needsCompletions: securityTrainingStepEnabled || hasHipaaFramework,
     }),
-    getMembersWithCompletedBackgroundChecks({ organizationId, memberIds }),
+    backgroundCheckStepEnabled
+      ? getMembersWithCompletedBackgroundChecks({ organizationId, memberIds })
+      : Promise.resolve(new Set<string>()),
+    backgroundCheckStepEnabled
+      ? getExemptMemberIds({ organizationId, memberIds })
+      : Promise.resolve(new Set<string>()),
   ]);
 
   const completed = activeEmployees.filter((employee) => {
@@ -97,13 +105,18 @@ export async function computePeopleScore({
     const hasInstalledDevice = deviceAgentStepEnabled
       ? membersWithInstalledDevices.has(employee.id)
       : true;
+    const memberRequiresBgCheck =
+      backgroundCheckStepEnabled && !exemptMemberIds.has(employee.id);
+    const hasCompletedBackgroundCheck = memberRequiresBgCheck
+      ? membersWithCompletedBackgroundChecks.has(employee.id)
+      : true;
 
     return (
       hasAcceptedAllPolicies &&
       hasCompletedAllTraining &&
       hasCompletedHipaa &&
       hasInstalledDevice &&
-      membersWithCompletedBackgroundChecks.has(employee.id)
+      hasCompletedBackgroundCheck
     );
   }).length;
 
@@ -197,4 +210,23 @@ async function getMembersWithCompletedBackgroundChecks({
   });
 
   return new Set(completedBackgroundChecks.map((check) => check.memberId));
+}
+
+async function getExemptMemberIds({
+  organizationId,
+  memberIds,
+}: {
+  organizationId: string;
+  memberIds: string[];
+}) {
+  const exemptMembers = await db.member.findMany({
+    where: {
+      organizationId,
+      id: { in: memberIds },
+      backgroundCheckExempt: true,
+    },
+    select: { id: true },
+  });
+
+  return new Set(exemptMembers.map((member) => member.id));
 }

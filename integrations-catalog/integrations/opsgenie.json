@@ -7,7 +7,9 @@
   "baseUrl": "https://api.opsgenie.com/",
   "authConfig": {
     "type": "api_key",
-    "config": {}
+    "config": {
+      "setupInstructions": "1. Log in to Opsgenie at https://app.opsgenie.com\n2. Go to Settings > API key management\n3. Create a new API key with 'Read' access\n4. Copy the API key and paste it below"
+    }
   },
   "capabilities": [
     "checks"

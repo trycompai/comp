@@ -1,9 +1,17 @@
-import { Body, Controller, Get, HttpCode, Post, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  HttpCode,
+  Post,
+  UseGuards,
+} from '@nestjs/common';
 import { ApiOperation, ApiSecurity, ApiTags } from '@nestjs/swagger';
-import { OrganizationId } from '../auth/auth-context.decorator';
+import { AuthContext, OrganizationId } from '../auth/auth-context.decorator';
 import { HybridAuthGuard } from '../auth/hybrid-auth.guard';
 import { PermissionGuard } from '../auth/permission.guard';
 import { RequirePermission } from '../auth/require-permission.decorator';
+import type { AuthContext as AuthContextType } from '../auth/types';
 import { BackgroundCheckBillingService } from './background-check-billing.service';
 import {
   BackgroundCheckBillingPortalDto,
@@ -28,15 +36,19 @@ export class BackgroundCheckBillingController {
   @Post('setup-session')
   @RequirePermission('organization', 'update')
   @HttpCode(200)
-  @ApiOperation({ summary: 'Create a Stripe setup session for background checks' })
+  @ApiOperation({
+    summary: 'Create a Stripe setup session for background checks',
+  })
   async setupSession(
     @OrganizationId() organizationId: string,
+    @AuthContext() authContext: AuthContextType,
     @Body() body: BackgroundCheckSetupSessionDto,
   ) {
     return this.billingService.createSetupSession({
       organizationId,
       successUrl: body.successUrl,
       cancelUrl: body.cancelUrl,
+      customerEmail: authContext.userEmail,
     });
   }
 

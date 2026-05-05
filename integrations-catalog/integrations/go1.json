@@ -3,8 +3,8 @@
   "name": "Go1",
   "description": "Go1 is a learning content aggregator and training platform used for compliance training, L&D, and security awareness. Connect Go1 to verify employee access and training enrollment status.",
   "category": "Security",
-  "docsUrl": null,
-  "baseUrl": null,
+  "docsUrl": "https://www.go1.com/developers",
+  "baseUrl": "https://gateway.go1.com",
   "authConfig": {
     "type": "oauth2",
     "config": {

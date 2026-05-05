@@ -1,96 +1,83 @@
 import { HttpException, HttpStatus, Injectable, Logger } from '@nestjs/common';
-import { db } from '@db';
+import { BillingEntitlementsService } from '../billing/billing-entitlements.service';
 import { StripeService } from '../stripe/stripe.service';
 import { BackgroundCheckBillingService } from './background-check-billing.service';
 
 @Injectable()
 export class BackgroundCheckPaymentService {
-  private static readonly receiptDescription =
-    'Comp AI - Background Check x1';
-
   private readonly logger = new Logger(BackgroundCheckPaymentService.name);
 
   constructor(
     private readonly stripeService: StripeService,
     private readonly billingService: BackgroundCheckBillingService,
+    private readonly entitlements: BillingEntitlementsService,
   ) {}
 
-  async charge(params: {
-    organizationId: string;
-    memberId: string;
-  }): Promise<{
-    paymentIntentId: string;
+  async charge(params: { organizationId: string; memberId: string }): Promise<{
+    paymentIntentId: string | null;
+    invoiceId: string | null;
     status: string;
     amount: number;
     currency: string;
   }> {
-    const billing = await db.organizationBilling.findUnique({
-      where: { organizationId: params.organizationId },
-      select: {
-        stripeCustomerId: true,
-        stripeBackgroundCheckPaymentMethodId: true,
-      },
-    });
+    const includedUsage =
+      await this.entitlements.tryConsumeIncludedUsageForProduct({
+        organizationId: params.organizationId,
+        productKey: 'background_check',
+        sourceResourceId: params.memberId,
+      });
 
-    if (!billing?.stripeBackgroundCheckPaymentMethodId) {
-      throw new HttpException(
-        'No background check payment method on file. Update billing first.',
-        HttpStatus.PAYMENT_REQUIRED,
-      );
+    if (includedUsage.status === 'consumed') {
+      return {
+        paymentIntentId: null,
+        invoiceId: null,
+        status: 'subscription_included',
+        amount: 0,
+        currency: 'usd',
+      };
     }
 
-    const price = await this.billingService.getBackgroundCheckPrice();
-    const stripe = this.stripeService.getClient();
-    const paymentIntent = await stripe.paymentIntents.create(
+    throw new HttpException(
       {
-        customer: billing.stripeCustomerId,
-        amount: price.unitAmount,
-        currency: price.currency,
-        description: BackgroundCheckPaymentService.receiptDescription,
-        payment_method: billing.stripeBackgroundCheckPaymentMethodId,
-        off_session: true,
-        confirm: true,
-        automatic_payment_methods: {
-          enabled: true,
-          allow_redirects: 'never',
-        },
-        metadata: {
-          source: 'comp-background-check',
-          compOrganizationId: params.organizationId,
-          compMemberId: params.memberId,
-        },
+        error:
+          includedUsage.status === 'exhausted'
+            ? 'No background checks remaining in your subscription. Upgrade or wait for your monthly allowance to reset.'
+            : 'Choose a background check plan before requesting a background check.',
+        code:
+          includedUsage.status === 'exhausted'
+            ? 'background_check_subscription_exhausted'
+            : 'background_check_subscription_required',
       },
-      {
-        idempotencyKey: [
-          'background-check',
-          params.organizationId,
-          params.memberId,
-          price.id,
-          billing.stripeBackgroundCheckPaymentMethodId,
-        ].join(':'),
-      },
+      HttpStatus.PAYMENT_REQUIRED,
     );
-
-    if (paymentIntent.status !== 'succeeded') {
-      throw new HttpException(
-        'Background check payment failed. Update billing and try again.',
-        HttpStatus.PAYMENT_REQUIRED,
-      );
-    }
-
-    return {
-      paymentIntentId: paymentIntent.id,
-      status: paymentIntent.status,
-      amount: price.unitAmount,
-      currency: price.currency,
-    };
   }
 
   async refund(params: {
     organizationId: string;
     memberId: string;
-    paymentIntentId: string;
+    paymentIntentId: string | null;
   }): Promise<string | null> {
+    if (!params.paymentIntentId) {
+      try {
+        await this.entitlements.refundIncludedUsageForProduct({
+          organizationId: params.organizationId,
+          productKey: 'background_check',
+          sourceResourceId: params.memberId,
+          reason: 'background_check_failed',
+        });
+      } catch (error) {
+        this.logger.error(
+          'Failed to refund background check included usage - manual credit review required.',
+          {
+            organizationId: params.organizationId,
+            memberId: params.memberId,
+            error: error instanceof Error ? error.message : 'Unknown error',
+          },
+        );
+      }
+      return null;
+    }
+
     try {
       const stripe = this.stripeService.getClient();
       const refund = await stripe.refunds.create(
@@ -107,7 +94,7 @@ export class BackgroundCheckPaymentService {
       return refund.id;
     } catch (error) {
       this.logger.error(
-        'Failed to refund background check payment — manual refund required.',
+        'Failed to refund background check payment - manual refund required.',
         {
           organizationId: params.organizationId,
           memberId: params.memberId,
@@ -117,5 +104,9 @@ export class BackgroundCheckPaymentService {
       );
       return null;
     }
+  }
+
+  async getBackgroundCheckPrice() {
+    return this.billingService.getBackgroundCheckPrice();
   }
 }

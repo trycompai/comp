@@ -24,10 +24,16 @@ export default async function EmployeeBackgroundCheckPage({
     notFound();
   }
 
-  const [backgroundCheckRes, backgroundCheckBillingRes] = await Promise.all([
+  const [backgroundCheckRes, backgroundCheckBillingRes, org] = await Promise.all([
     serverApi.get<BackgroundCheckRecord | null>(`/v1/people/${employeeId}/background-check`),
     serverApi.get<BackgroundCheckBillingStatus>('/v1/background-check-billing/status'),
+    db.organization.findUnique({
+      where: { id: orgId },
+      select: { backgroundCheckStepEnabled: true },
+    }),
   ]);
+
+  const backgroundCheckStepEnabled = org?.backgroundCheckStepEnabled === true;
 
   return (
     <PageLayout
@@ -52,6 +58,8 @@ export default async function EmployeeBackgroundCheckPage({
             setupAt: null,
           }
         }
+        backgroundCheckStepEnabled={backgroundCheckStepEnabled}
+        memberBackgroundCheckExempt={employee.backgroundCheckExempt === true}
       />
     </PageLayout>
   );

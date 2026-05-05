@@ -7,7 +7,9 @@
   "baseUrl": "https://api.webflow.com/",
   "authConfig": {
     "type": "api_key",
-    "config": {}
+    "config": {
+      "setupInstructions": "1. Log in to webflow.com\n2. Go to Account Settings > Integrations > API Access\n3. Generate an API token with sites:read scope\n4. Copy the token and paste it below"
+    }
   },
   "capabilities": [
     "checks"

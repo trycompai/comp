@@ -35,6 +35,17 @@ export class FrameworksService {
 
   constructor(private readonly timelinesService: TimelinesService) {}
 
+  private async getNotRelevantFormTypes(
+    organizationId: string,
+  ): Promise<Set<EvidenceFormType>> {
+    const settings = await db.evidenceFormSetting.findMany({
+      where: { organizationId, isNotRelevant: true },
+      select: { formType: true },
+    });
+
+    return new Set(settings.map((setting) => setting.formType));
+  }
+
   private async loadRequirementDefinitions(fi: {
     id?: string;
     frameworkId: string | null;
@@ -160,6 +171,9 @@ export class FrameworksService {
       return frameworkInstances;
     }
 
+    const notRelevantFormTypes =
+      await this.getNotRelevantFormTypes(organizationId);
+
     const frameworksWithControls = frameworkInstances.map((fi: any) => {
       const controlsMap = new Map<string, any>();
       for (const rm of fi.requirementsMapped || []) {
@@ -168,6 +182,12 @@ export class FrameworksService {
           controlsMap.set(rm.control.id, {
             ...controlData,
             policies: rm.control.policies || [],
+            controlDocumentTypes: (rm.control.controlDocumentTypes || []).map(
+              (documentType: { formType: EvidenceFormType }) => ({
+                ...documentType,
+                isNotRelevant: notRelevantFormTypes.has(documentType.formType),
+              }),
+            ),
             requirementsMapped: rm.control.requirementsMapped || [],
           });
         }
@@ -233,6 +253,9 @@ export class FrameworksService {
       throw new NotFoundException('Framework instance not found');
     }
 
+    const notRelevantFormTypes =
+      await this.getNotRelevantFormTypes(organizationId);
+
     const controlsMap = new Map<string, any>();
     for (const rm of fi.requirementsMapped) {
       if (rm.control && !controlsMap.has(rm.control.id)) {
@@ -241,7 +264,12 @@ export class FrameworksService {
           ...controlData,
           policies: rm.control.policies || [],
           requirementsMapped: rm.control.requirementsMapped || [],
-          controlDocumentTypes: rm.control.controlDocumentTypes || [],
+          controlDocumentTypes: (rm.control.controlDocumentTypes || []).map(
+            (documentType) => ({
+              ...documentType,
+              isNotRelevant: notRelevantFormTypes.has(documentType.formType),
+            }),
+          ),
         });
       }
     }
@@ -250,32 +278,41 @@ export class FrameworksService {
     const allFormTypes = new Set<EvidenceFormType>();
     for (const control of controlsMap.values()) {
       for (const dt of control.controlDocumentTypes) {
+        if (dt.isNotRelevant === true) continue;
         allFormTypes.add(dt.formType);
       }
     }
 
-    const [requirementDefinitions, tasks, requirementMaps, evidenceSubmissions] =
-      await Promise.all([
-        this.loadRequirementDefinitions(fi),
-        db.task.findMany({
-          where: { organizationId, archivedAt: null, controls: { some: { organizationId, archivedAt: null } } },
-          include: { controls: { where: { archivedAt: null } } },
-        }),
-        db.requirementMap.findMany({
-          where: { frameworkInstanceId, archivedAt: null },
-          include: { control: true },
-        }),
-        allFormTypes.size > 0
-          ? db.evidenceSubmission.findMany({
-              where: {
-                organizationId,
-                formType: { in: Array.from(allFormTypes) },
-              },
-              select: { id: true, formType: true, submittedAt: true },
-              orderBy: { submittedAt: 'desc' },
-            })
-          : Promise.resolve([]),
-      ]);
+    const [
+      requirementDefinitions,
+      tasks,
+      requirementMaps,
+      evidenceSubmissions,
+    ] = await Promise.all([
+      this.loadRequirementDefinitions(fi),
+      db.task.findMany({
+        where: {
+          organizationId,
+          archivedAt: null,
+          controls: { some: { organizationId, archivedAt: null } },
+        },
+        include: { controls: { where: { archivedAt: null } } },
+      }),
+      db.requirementMap.findMany({
+        where: { frameworkInstanceId, archivedAt: null },
+        include: { control: true },
+      }),
+      allFormTypes.size > 0
+        ? db.evidenceSubmission.findMany({
+            where: {
+              organizationId,
+              formType: { in: Array.from(allFormTypes) },
+            },
+            select: { id: true, formType: true, submittedAt: true },
+            orderBy: { submittedAt: 'desc' },
+          })
+        : Promise.resolve([]),
+    ]);
 
     return {
       ...rest,
@@ -541,7 +578,10 @@ export class FrameworksService {
       frameworkEditorIds: result.finalIds,
       timelinesService: this.timelinesService,
     }).catch((err) => {
-      this.logger.warn('createTimelinesForFrameworks failed after framework add', err);
+      this.logger.warn(
+        'createTimelinesForFrameworks failed after framework add',
+        err,
+      );
     });
 
     return { success: result.success, frameworksAdded: result.frameworksAdded };
@@ -554,7 +594,12 @@ export class FrameworksService {
   ) {
     const fi = await db.frameworkInstance.findUnique({
       where: { id: frameworkInstanceId, organizationId },
-      select: { id: true, frameworkId: true, customFrameworkId: true, currentVersionId: true },
+      select: {
+        id: true,
+        frameworkId: true,
+        customFrameworkId: true,
+        currentVersionId: true,
+      },
     });
     if (!fi) {
       throw new NotFoundException('Framework instance not found');
@@ -566,7 +611,7 @@ export class FrameworksService {
       throw new NotFoundException('Requirement not found');
     }
 
-    const [relatedControls, tasks] = await Promise.all([
+    const [relatedControls, tasks, notRelevantFormTypes] = await Promise.all([
       db.requirementMap.findMany({
         where: {
           frameworkInstanceId,
@@ -591,11 +636,13 @@ export class FrameworksService {
         where: { organizationId, archivedAt: null },
         include: { controls: { where: { archivedAt: null } } },
       }),
+      this.getNotRelevantFormTypes(organizationId),
     ]);
 
     const formTypes = new Set<EvidenceFormType>();
     for (const rc of relatedControls) {
       for (const dt of rc.control.controlDocumentTypes || []) {
+        if (notRelevantFormTypes.has(dt.formType)) continue;
         formTypes.add(dt.formType);
       }
     }
@@ -618,7 +665,18 @@ export class FrameworksService {
 
     return {
       requirement,
-      relatedControls,
+      relatedControls: relatedControls.map((relatedControl) => ({
+        ...relatedControl,
+        control: {
+          ...relatedControl.control,
+          controlDocumentTypes: relatedControl.control.controlDocumentTypes.map(
+            (documentType) => ({
+              ...documentType,
+              isNotRelevant: notRelevantFormTypes.has(documentType.formType),
+            }),
+          ),
+        },
+      })),
       tasks,
       evidenceSubmissions,
       siblingRequirements,
@@ -653,19 +711,29 @@ export class FrameworksService {
       throw new NotFoundException('Framework instance not found');
     }
     if (!instance.frameworkId) {
-      return { currentVersion: null, latestVersion: null, updateAvailable: false };
+      return {
+        currentVersion: null,
+        latestVersion: null,
+        updateAvailable: false,
+      };
     }
 
     const latest = await db.frameworkVersion.findFirst({
       where: { frameworkId: instance.frameworkId },
       orderBy: { publishedAt: 'desc' },
-      select: { id: true, version: true, publishedAt: true, releaseNotes: true },
+      select: {
+        id: true,
+        version: true,
+        publishedAt: true,
+        releaseNotes: true,
+      },
     });
 
     return {
       currentVersion: instance.currentVersion,
       latestVersion: latest,
-      updateAvailable: latest !== null && latest.id !== instance.currentVersion?.id,
+      updateAvailable:
+        latest !== null && latest.id !== instance.currentVersion?.id,
     };
   }
 
@@ -692,7 +760,8 @@ export class FrameworksService {
       throw new NotFoundException('No update available');
     }
 
-    const fromManifest = instance.currentVersion.manifest as unknown as FrameworkManifest;
+    const fromManifest = instance.currentVersion
+      .manifest as unknown as FrameworkManifest;
     const toManifest = latest.manifest as unknown as FrameworkManifest;
     const templateControlIds = [
       ...new Set([
@@ -713,29 +782,30 @@ export class FrameworksService {
       ]),
     ];
 
-    const [instanceControls, instancePolicies, instanceTasks] = await Promise.all([
-      db.control.findMany({
-        where: {
-          organizationId: params.organizationId,
-          controlTemplateId: { in: templateControlIds },
-          archivedAt: null,
-        },
-      }),
-      db.policy.findMany({
-        where: {
-          organizationId: params.organizationId,
-          policyTemplateId: { in: templatePolicyIds },
-          archivedAt: null,
-        },
-      }),
-      db.task.findMany({
-        where: {
-          organizationId: params.organizationId,
-          taskTemplateId: { in: templateTaskIds },
-          archivedAt: null,
-        },
-      }),
-    ]);
+    const [instanceControls, instancePolicies, instanceTasks] =
+      await Promise.all([
+        db.control.findMany({
+          where: {
+            organizationId: params.organizationId,
+            controlTemplateId: { in: templateControlIds },
+            archivedAt: null,
+          },
+        }),
+        db.policy.findMany({
+          where: {
+            organizationId: params.organizationId,
+            policyTemplateId: { in: templatePolicyIds },
+            archivedAt: null,
+          },
+        }),
+        db.task.findMany({
+          where: {
+            organizationId: params.organizationId,
+            taskTemplateId: { in: templateTaskIds },
+            archivedAt: null,
+          },
+        }),
+      ]);
 
     return buildUpdatePreview({
       fromManifest,
@@ -764,7 +834,10 @@ export class FrameworksService {
         department: p.department,
         status: p.status,
       })),
-      fromVersionLabel: { id: instance.currentVersion.id, version: instance.currentVersion.version },
+      fromVersionLabel: {
+        id: instance.currentVersion.id,
+        version: instance.currentVersion.version,
+      },
       toVersionLabel: { id: latest.id, version: latest.version },
       releaseNotes: latest.releaseNotes,
     });

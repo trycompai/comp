@@ -56,6 +56,7 @@ interface TeamMembersClientProps {
   employeeSyncData: EmployeeSyncConnectionsData;
   taskCompletionMap: Record<string, TaskCompletion>;
   complianceMemberIds: string[];
+  backgroundCheckStepEnabled: boolean;
 }
 
 export function TeamMembersClient({
@@ -66,6 +67,7 @@ export function TeamMembersClient({
   employeeSyncData,
   taskCompletionMap,
   complianceMemberIds,
+  backgroundCheckStepEnabled,
 }: TeamMembersClientProps) {
   const { agentDevices, isLoading: isAgentDevicesLoading } = useAgentDevices();
   const { fleetHosts, isLoading: isFleetHostsLoading } = useFleetHosts();
@@ -482,6 +484,7 @@ export function TeamMembersClient({
                   backgroundCheckStatus={
                     (item as MemberWithUser).backgroundCheckRequests?.[0]?.status
                   }
+                  backgroundCheckStepEnabled={backgroundCheckStepEnabled}
                 />
               ) : (
                 <PendingInvitationRow

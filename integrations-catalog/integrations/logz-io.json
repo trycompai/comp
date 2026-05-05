@@ -1,0 +1,58 @@
+{
+  "slug": "logz-io",
+  "name": "Logz.io",
+  "description": "Monitor Logz.io for user access management, account health, and log monitoring configuration",
+  "category": "Monitoring",
+  "docsUrl": "https://api-docs.logz.io/docs/logz/logz-io-api/",
+  "baseUrl": "https://api.logz.io",
+  "authConfig": {
+    "type": "custom",
+    "config": {
+      "setupInstructions": "Log into Logz.io, go to Settings (gear icon) > Tools > Manage tokens > API tokens. Generate a new token. Your region is the two-letter code in your login URL (e.g. app.logz.io = US, app-eu.logz.io = EU).",
+      "credentialFields": [
+        {
+          "label": "Account Region",
+          "type": "select",
+          "required": true,
+          "helpText": "Your Logz.io account region (check your login URL)"
+        },
+        {
+          "label": "API Token",
+          "type": "password",
+          "required": true,
+          "helpText": "Generate at Settings > Tools > Manage tokens > API tokens"
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "logzio_app_availability",
+      "name": "App Availability",
+      "description": "Verifies connectivity to Logz.io API by retrieving the account's user list",
+      "defaultSeverity": "high",
+      "enabled": true
+    },
+    {
+      "slug": "logzio_employee_access",
+      "name": "Employee Access",
+      "description": "Lists all users across the Logz.io account and sub-accounts to verify access is appropriate",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "logzio_monitoring_alerts",
+      "name": "Monitoring & Alerting",
+      "description": "Reviews configured alerts in Logz.io to verify monitoring is active",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 3,
+  "isActive": true
+}

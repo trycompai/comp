@@ -8,13 +8,19 @@
   "authConfig": {
     "type": "custom",
     "config": {
-      "setupInstructions": "1. Log in to Kombo\n2. Go to Settings → API Keys\n3. Create a new API key\n4. Paste it below",
+      "setupInstructions": "1. Log in to the Kombo Dashboard at https://app.kombo.dev\n2. Go to Secrets page and create or copy your API Key\n3. Go to Integrations, click the HRIS integration you want to monitor\n4. Copy the Integration ID from the details page\n5. Enter both values below",
       "credentialFields": [
         {
           "label": "API Key",
           "type": "password",
           "required": true,
-          "helpText": "Kombo → Settings → API Keys → Create API Key"
+          "helpText": "Kombo Dashboard -> Secrets page -> Create API Key"
+        },
+        {
+          "label": "Integration ID",
+          "type": "text",
+          "required": true,
+          "helpText": "Found in Kombo Dashboard -> Integrations -> click on the integration -> copy the ID"
         }
       ]
     }

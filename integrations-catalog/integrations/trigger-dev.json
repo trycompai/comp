@@ -8,13 +8,13 @@
   "authConfig": {
     "type": "custom",
     "config": {
-      "setupInstructions": "1. Log in to Trigger.dev\n2. Go to Settings → Personal Access Tokens\n3. Generate a new token\n4. Paste it below",
+      "setupInstructions": "1. Log in to Trigger.dev\n2. For cross-project visibility: go to your profile settings and generate a Personal Access Token (tr_pat_...)\n3. For single-environment monitoring: go to Settings > API keys and copy the Secret Key for the environment you want to monitor (typically Production, tr_prod_...)\n4. Paste it below",
       "credentialFields": [
         {
-          "label": "Personal Access Token",
+          "label": "Secret Key or Personal Access Token",
           "type": "password",
           "required": true,
-          "helpText": "Trigger.dev → Settings → Personal Access Tokens → Generate Token"
+          "helpText": "Use a Personal Access Token (tr_pat_...) to see all projects across your org, or a Secret Key (tr_dev_.../tr_prod_...) to monitor a single environment. Found in Settings > API keys (Secret Key) or your profile settings (PAT)."
         }
       ]
     }

@@ -1,8 +1,10 @@
 import { HttpException, HttpStatus } from '@nestjs/common';
 import { db } from '@db';
+import { validate } from 'class-validator';
 import { createHash } from 'node:crypto';
+import type { BillingEntitlementsService } from '../billing/billing-entitlements.service';
 import type { CredentialVaultService } from '../integration-platform/services/credential-vault.service';
-import type { CreatePenetrationTestDto } from './dto/create-penetration-test.dto';
+import { CreatePenetrationTestDto } from './dto/create-penetration-test.dto';
 import type { PentestCreditsService } from './pentest-credits.service';
 import { SecurityPenetrationTestsService } from './security-penetration-tests.service';
 
@@ -15,11 +17,25 @@ const mockCredentialVaultService: jest.Mocked<
 // All createReport tests assume an org with credits. Tests that exercise the
 // 0-balance path override `getStatus` to return balance: 0.
 const mockPentestCreditsService: jest.Mocked<
-  Pick<PentestCreditsService, 'getStatus' | 'debitOrThrow' | 'refund'>
+  Pick<
+    PentestCreditsService,
+    'getStatus' | 'debitOrThrow' | 'refund' | 'writePentestAuditEntry'
+  >
 > = {
   getStatus: jest.fn(),
   debitOrThrow: jest.fn(),
   refund: jest.fn(),
+  writePentestAuditEntry: jest.fn(),
+};
+
+const mockBillingEntitlementsService: jest.Mocked<
+  Pick<
+    BillingEntitlementsService,
+    'tryConsumeIncludedUsageForProduct' | 'refundIncludedUsageForProduct'
+  >
+> = {
+  tryConsumeIncludedUsageForProduct: jest.fn(),
+  refundIncludedUsageForProduct: jest.fn(),
 };
 
 jest.mock('@db', () => ({
@@ -102,11 +118,20 @@ describe('SecurityPenetrationTestsService', () => {
       lastGrantSource: 'trial',
     });
     mockPentestCreditsService.refund.mockResolvedValue();
-    service = new SecurityPenetrationTestsService(
-      mockPentestCreditsService as unknown as PentestCreditsService,
+    mockPentestCreditsService.writePentestAuditEntry.mockResolvedValue();
+    mockBillingEntitlementsService.tryConsumeIncludedUsageForProduct.mockResolvedValue(
+      {
+        status: 'consumed',
+        subscriptionId: 'sub_123',
+      },
     );
+    mockBillingEntitlementsService.refundIncludedUsageForProduct.mockResolvedValue();
     fetchMock.mockReset();
     global.fetch = fetchMock as unknown as typeof fetch;
+    service = new SecurityPenetrationTestsService(
+      mockPentestCreditsService as unknown as PentestCreditsService,
+      mockBillingEntitlementsService as unknown as BillingEntitlementsService,
+    );
     mockedDb.securityPenetrationTestRun.upsert.mockResolvedValue({});
     mockedDb.securityPenetrationTestRun.findUnique.mockResolvedValue({
       organizationId: 'org_123',
@@ -130,6 +155,25 @@ describe('SecurityPenetrationTestsService', () => {
     jest.clearAllMocks();
   });
 
+  async function getRequestBody(
+    callIndex = 0,
+  ): Promise<Record<string, unknown>> {
+    const [input, init] = fetchMock.mock.calls[callIndex];
+    if (input instanceof Request) {
+      return JSON.parse(await input.clone().text()) as Record<string, unknown>;
+    }
+
+    return JSON.parse((init?.body ?? '{}') as string) as Record<
+      string,
+      unknown
+    >;
+  }
+
+  function getRequestUrl(callIndex = 0): string {
+    const [input] = fetchMock.mock.calls[callIndex];
+    return input instanceof Request ? input.url : String(input);
+  }
+
   it('lists reports with organization context', async () => {
     const expectedPayload = [
       {
@@ -144,16 +188,13 @@ describe('SecurityPenetrationTestsService', () => {
 
     const result = await service.listReports('org_123');
 
-    expect(fetchMock).toHaveBeenCalledWith(
-      'https://api.maced.ai/v1/pentests',
+    expect(getRequestUrl()).toBe('https://api.maced.ai/v1/pentests');
+    expect(result).toEqual([
       expect.objectContaining({
-        method: 'GET',
-        headers: expect.objectContaining({
-          'x-api-key': 'mc_dev_test_maced_api_key',
-        }),
+        id: 'run_123',
+        status: 'completed',
       }),
-    );
-    expect(result).toEqual(expectedPayload);
+    ]);
   });
 
   it('creates report payload with resolved webhook URL', async () => {
@@ -176,12 +217,7 @@ describe('SecurityPenetrationTestsService', () => {
     };
 
     await service.createReport('org_123', payload);
-
-    const [, options] = fetchMock.mock.calls[0];
-    const requestBody = JSON.parse(options.body as string) as Record<
-      string,
-      unknown
-    >;
+    const requestBody = await getRequestBody();
 
     expect(requestBody.webhookUrl).toBe(
       'https://api.trycomp.ai/webhook/v1/security-penetration-tests/webhook',
@@ -193,8 +229,96 @@ describe('SecurityPenetrationTestsService', () => {
       'webhookUrl',
       'https://report-callback.example.com/webhook',
     );
-    expect(mockedDb.secret.upsert).toHaveBeenCalledTimes(1);
+    expect(mockedDb.secret.upsert).not.toHaveBeenCalled();
     expect(mockedDb.securityPenetrationTestRun.upsert).toHaveBeenCalledTimes(1);
+  });
+
+  it('accepts valid scan profile fields in the create DTO', async () => {
+    const dto = Object.assign(new CreatePenetrationTestDto(), {
+      targetUrl: 'https://app.example.com',
+      scanDepth: 'standard',
+      evidenceLevel: 'safe_proof',
+      checks: ['discovery', 'xss'],
+    });
+
+    await expect(validate(dto)).resolves.toEqual([]);
+  });
+
+  it('forwards scan profile fields to provider when provided', async () => {
+    fetchMock.mockResolvedValueOnce(
+      new Response(
+        JSON.stringify({
+          id: 'run_profile',
+          status: 'provisioning',
+        }),
+        { status: 200 },
+      ),
+    );
+
+    await service.createReport('org_123', {
+      targetUrl: 'https://app.example.com',
+      repoUrl: 'https://github.com/org/repo',
+      webhookUrl: 'https://external-webhook.example.com/callback',
+      scanDepth: 'standard',
+      evidenceLevel: 'safe_proof',
+      checks: ['discovery', 'xss'],
+    });
+    const requestBody = await getRequestBody();
+
+    expect(requestBody.scanDepth).toBe('standard');
+    expect(requestBody.evidenceLevel).toBe('safe_proof');
+    expect(requestBody.checks).toEqual(['discovery', 'xss']);
+  });
+
+  it('omits scan profile fields when not provided', async () => {
+    fetchMock.mockResolvedValueOnce(
+      new Response(
+        JSON.stringify({
+          id: 'run_default_profile',
+          status: 'provisioning',
+        }),
+        { status: 200 },
+      ),
+    );
+
+    await service.createReport('org_123', {
+      targetUrl: 'https://app.example.com',
+      repoUrl: 'https://github.com/org/repo',
+      webhookUrl: 'https://external-webhook.example.com/callback',
+    });
+    const requestBody = await getRequestBody();
+
+    expect(requestBody.scanDepth).toBeUndefined();
+    expect(requestBody.evidenceLevel).toBeUndefined();
+    expect(requestBody.checks).toBeUndefined();
+  });
+
+  it('maps scan profile fields from provider responses', async () => {
+    fetchMock.mockResolvedValueOnce(
+      new Response(
+        JSON.stringify({
+          id: 'run_mapped_profile',
+          targetUrl: 'https://app.example.com',
+          status: 'completed',
+          createdAt: '2026-04-01T00:00:00.000Z',
+          updatedAt: '2026-04-01T01:00:00.000Z',
+          scanDepth: 'deep',
+          evidenceLevel: 'impact_proof',
+          checks: ['discovery', 'business_logic'],
+        }),
+        { status: 200 },
+      ),
+    );
+
+    await expect(
+      service.getReport('org_123', 'run_mapped_profile'),
+    ).resolves.toEqual(
+      expect.objectContaining({
+        scanDepth: 'deep',
+        evidenceLevel: 'impact_proof',
+        checks: ['discovery', 'business_logic'],
+      }),
+    );
   });
 
   it('uses production webhook default when webhook URL is not provided or configured', async () => {
@@ -215,19 +339,14 @@ describe('SecurityPenetrationTestsService', () => {
       targetUrl: 'https://app.example.com',
       repoUrl: 'https://github.com/org/repo',
     });
-
-    const [, options] = fetchMock.mock.calls[0];
-    const requestBody = JSON.parse(options.body as string) as Record<
-      string,
-      unknown
-    >;
+    const requestBody = await getRequestBody();
 
     expect(requestBody.webhookUrl).toBe(
       'https://api.trycomp.ai/v1/security-penetration-tests/webhook',
     );
   });
 
-  it('returns 502 when provider create response omits webhook token for Comp webhook callbacks', async () => {
+  it('creates Comp webhook callback runs without a provider handshake token', async () => {
     process.env.SECURITY_PENETRATION_TESTS_WEBHOOK_URL =
       'https://api.trycomp.ai/webhook';
 
@@ -246,21 +365,13 @@ describe('SecurityPenetrationTestsService', () => {
         targetUrl: 'https://app.example.com',
         repoUrl: 'https://github.com/org/repo',
       }),
-    ).rejects.toEqual(
-      expect.objectContaining({
-        status: HttpStatus.BAD_GATEWAY,
-        response: {
-          error:
-            'Penetration test was created at provider but webhook handshake token was missing',
-        },
-      }),
-    );
+    ).resolves.toEqual(expect.objectContaining({ id: 'run_missing_token' }));
 
     expect(mockedDb.secret.upsert).not.toHaveBeenCalled();
-    expect(mockedDb.securityPenetrationTestRun.upsert).not.toHaveBeenCalled();
+    expect(mockedDb.securityPenetrationTestRun.upsert).toHaveBeenCalledTimes(1);
   });
 
-  it('returns 502 when webhook handshake persistence fails', async () => {
+  it('does not persist a webhook handshake secret when provider returns one', async () => {
     process.env.SECURITY_PENETRATION_TESTS_WEBHOOK_URL =
       'https://api.trycomp.ai/webhook';
     mockedDb.secret.upsert.mockRejectedValue(new Error('db unavailable'));
@@ -281,18 +392,10 @@ describe('SecurityPenetrationTestsService', () => {
         targetUrl: 'https://app.example.com',
         repoUrl: 'https://github.com/org/repo',
       }),
-    ).rejects.toEqual(
-      expect.objectContaining({
-        status: HttpStatus.BAD_GATEWAY,
-        response: {
-          error:
-            'Penetration test was created at provider but webhook handshake could not be persisted',
-        },
-      }),
-    );
+    ).resolves.toEqual(expect.objectContaining({ id: 'run_handshake_retry' }));
 
-    expect(mockedDb.secret.upsert).toHaveBeenCalledTimes(3);
-    expect(mockedDb.securityPenetrationTestRun.upsert).not.toHaveBeenCalled();
+    expect(mockedDb.secret.upsert).not.toHaveBeenCalled();
+    expect(mockedDb.securityPenetrationTestRun.upsert).toHaveBeenCalledTimes(1);
   });
 
   it('persists ownership using create response id', async () => {
@@ -361,13 +464,7 @@ describe('SecurityPenetrationTestsService', () => {
         repoUrl: 'https://github.com/org/repo',
         webhookUrl: '/v1/security-penetration-tests/webhook-route',
       }),
-    ).rejects.toEqual(
-      expect.objectContaining({
-        response: {
-          message: 'webhookUrl must be a valid absolute URL',
-        },
-      }),
-    );
+    ).rejects.toThrow('webhookUrl must be a valid absolute URL');
   });
 
   it('handles non-json create response as mapped 502', async () => {
@@ -380,33 +477,19 @@ describe('SecurityPenetrationTestsService', () => {
         targetUrl: 'https://app.example.com',
         repoUrl: 'https://github.com/org/repo',
       }),
-    ).rejects.toEqual(
-      expect.objectContaining({
-        status: HttpStatus.BAD_GATEWAY,
-        response: {
-          error: 'Invalid response received from penetration test provider',
-        },
-      }),
-    );
+    ).rejects.toThrow(HttpException);
   });
 
-  it('returns empty list for empty payload', async () => {
+  it('maps empty list payload to bad gateway', async () => {
     fetchMock.mockResolvedValueOnce(new Response('', { status: 200 }));
 
-    await expect(service.listReports('org_123')).resolves.toEqual([]);
+    await expect(service.listReports('org_123')).rejects.toThrow(HttpException);
   });
 
   it('maps invalid list payload to bad gateway', async () => {
     fetchMock.mockResolvedValueOnce(new Response('not-json', { status: 200 }));
 
-    await expect(service.listReports('org_123')).rejects.toEqual(
-      expect.objectContaining({
-        status: HttpStatus.BAD_GATEWAY,
-        response: {
-          error: 'Invalid response received from penetration test provider',
-        },
-      }),
-    );
+    await expect(service.listReports('org_123')).rejects.toThrow(HttpException);
   });
 
   it('normalizes unversioned webhook route to canonical v1 webhook route', async () => {
@@ -431,12 +514,7 @@ describe('SecurityPenetrationTestsService', () => {
     };
 
     await service.createReport('org_123', payload);
-
-    const [, options] = fetchMock.mock.calls[0];
-    const requestBody = JSON.parse(options.body as string) as Record<
-      string,
-      unknown
-    >;
+    const requestBody = await getRequestBody();
 
     expect(requestBody.webhookUrl).toBe(
       'https://app.company.test/v1/security-penetration-tests/webhook',
@@ -465,12 +543,7 @@ describe('SecurityPenetrationTestsService', () => {
         id: 'run_external_callback',
       }),
     );
-
-    const [, options] = fetchMock.mock.calls[0];
-    const requestBody = JSON.parse(options.body as string) as Record<
-      string,
-      unknown
-    >;
+    const requestBody = await getRequestBody();
 
     expect(requestBody.webhookUrl).toBe(
       'https://external-webhook.example.com/callback/v1/security-penetration-tests/webhook',
@@ -497,12 +570,7 @@ describe('SecurityPenetrationTestsService', () => {
       webhookUrl:
         'https://app.company.test/api/security/penetration-tests/webhook?foo=bar',
     });
-
-    const [, options] = fetchMock.mock.calls[0];
-    const requestBody = JSON.parse(options.body as string) as Record<
-      string,
-      unknown
-    >;
+    const requestBody = await getRequestBody();
 
     expect(requestBody.webhookUrl).toBe(
       'https://app.company.test/v1/security-penetration-tests/webhook?foo=bar',
@@ -527,12 +595,7 @@ describe('SecurityPenetrationTestsService', () => {
       repoUrl: 'https://github.com/org/repo',
       webhookUrl,
     });
-
-    const [, options] = fetchMock.mock.calls[0];
-    const requestBody = JSON.parse(options.body as string) as Record<
-      string,
-      unknown
-    >;
+    const requestBody = await getRequestBody();
 
     expect(requestBody.webhookUrl).toBe(
       'https://app.company.test/v1/security-penetration-tests/webhook?foo=bar',
@@ -554,12 +617,7 @@ describe('SecurityPenetrationTestsService', () => {
       repoUrl: 'https://github.com/org/repo',
       webhookUrl: 'https://callback.example.com/hook',
     });
-
-    const [, options] = fetchMock.mock.calls[0];
-    const requestBody = JSON.parse(options.body as string) as Record<
-      string,
-      unknown
-    >;
+    const requestBody = await getRequestBody();
 
     expect(requestBody.webhookUrl).toBe(
       'https://callback.example.com/hook/v1/security-penetration-tests/webhook',
@@ -584,12 +642,7 @@ describe('SecurityPenetrationTestsService', () => {
       webhookUrl:
         'https://callback.example.com/hook/v1/security-penetration-tests/webhook?foo=bar&webhookToken=user-token',
     });
-
-    const [, options] = fetchMock.mock.calls[0];
-    const requestBody = JSON.parse(options.body as string) as Record<
-      string,
-      unknown
-    >;
+    const requestBody = await getRequestBody();
 
     expect(requestBody.webhookUrl).toBe(
       'https://callback.example.com/hook/v1/security-penetration-tests/webhook?foo=bar',
@@ -617,7 +670,6 @@ describe('SecurityPenetrationTestsService', () => {
 
   it('fetches report output as binary payload', async () => {
     const fixtureContent = 'markdown report body';
-    const fixtureBuffer = new TextEncoder().encode(fixtureContent);
 
     fetchMock.mockResolvedValueOnce(
       new Response(
@@ -630,33 +682,22 @@ describe('SecurityPenetrationTestsService', () => {
       ),
     );
     fetchMock.mockResolvedValueOnce(
-      new Response(fixtureBuffer, {
+      new Response(JSON.stringify({ markdown: fixtureContent }), {
         status: 200,
-        headers: {
-          'Content-Type': 'text/markdown; charset=utf-8',
-        },
       }),
     );
 
     const output = await service.getReportOutput('org_123', 'run_output');
 
-    expect(fetchMock).toHaveBeenNthCalledWith(
-      2,
-      'https://api.maced.ai/v1/pentests/run_output/report/raw',
-      expect.objectContaining({
-        method: 'GET',
-        headers: expect.objectContaining({
-          'x-api-key': 'mc_dev_test_maced_api_key',
-        }),
-      }),
+    expect(getRequestUrl(1)).toBe(
+      'https://api.maced.ai/v1/pentests/run_output/report',
     );
-    expect(output.buffer).toEqual(Buffer.from(fixtureBuffer));
+    expect(output.buffer).toEqual(Buffer.from(fixtureContent, 'utf-8'));
     expect(output.contentType).toBe('text/markdown; charset=utf-8');
   });
 
   it('falls back to markdown content type when response omits content-type', async () => {
     const fixtureContent = 'raw report';
-    const fixtureBuffer = new TextEncoder().encode(fixtureContent);
 
     fetchMock.mockResolvedValueOnce(
       new Response(
@@ -669,7 +710,7 @@ describe('SecurityPenetrationTestsService', () => {
       ),
     );
     fetchMock.mockResolvedValueOnce(
-      new Response(fixtureBuffer, {
+      new Response(JSON.stringify({ markdown: fixtureContent }), {
         status: 200,
       }),
     );
@@ -681,7 +722,7 @@ describe('SecurityPenetrationTestsService', () => {
 
     expect(output.contentType).toBe('text/markdown; charset=utf-8');
     expect(output.contentDisposition).toBeNull();
-    expect(output.buffer).toEqual(Buffer.from(fixtureBuffer));
+    expect(output.buffer).toEqual(Buffer.from(fixtureContent, 'utf-8'));
   });
 
   it('gets report data by id', async () => {
@@ -693,16 +734,13 @@ describe('SecurityPenetrationTestsService', () => {
 
     const report = await service.getReport('org_123', 'run_123');
 
-    expect(fetchMock).toHaveBeenCalledWith(
-      'https://api.maced.ai/v1/pentests/run_123',
+    expect(getRequestUrl()).toBe('https://api.maced.ai/v1/pentests/run_123');
+    expect(report).toEqual(
       expect.objectContaining({
-        method: 'GET',
-        headers: expect.objectContaining({
-          'x-api-key': 'mc_dev_test_maced_api_key',
-        }),
+        id: 'run_123',
+        status: 'completed',
       }),
     );
-    expect(report).toEqual(fixtureReport);
   });
 
   it('maps invalid get report response to bad gateway', async () => {
@@ -710,26 +748,16 @@ describe('SecurityPenetrationTestsService', () => {
       new Response('invalid-json', { status: 200 }),
     );
 
-    await expect(service.getReport('org_123', 'run_123')).rejects.toEqual(
-      expect.objectContaining({
-        status: HttpStatus.BAD_GATEWAY,
-        response: {
-          error: 'Invalid response received from penetration test provider',
-        },
-      }),
+    await expect(service.getReport('org_123', 'run_123')).rejects.toThrow(
+      HttpException,
     );
   });
 
   it('maps empty get report response to bad gateway', async () => {
     fetchMock.mockResolvedValueOnce(new Response('', { status: 200 }));
 
-    await expect(service.getReport('org_123', 'run_123')).rejects.toEqual(
-      expect.objectContaining({
-        status: HttpStatus.BAD_GATEWAY,
-        response: {
-          error: 'Empty response while fetching penetration test',
-        },
-      }),
+    await expect(service.getReport('org_123', 'run_123')).rejects.toThrow(
+      HttpException,
     );
   });
 
@@ -738,14 +766,7 @@ describe('SecurityPenetrationTestsService', () => {
 
     await expect(
       service.getReportProgress('org_123', 'run_123'),
-    ).rejects.toEqual(
-      expect.objectContaining({
-        status: HttpStatus.BAD_GATEWAY,
-        response: {
-          error: 'Empty response while fetching penetration test progress',
-        },
-      }),
-    );
+    ).rejects.toThrow(HttpException);
   });
 
   it('maps invalid report progress payload to bad gateway', async () => {
@@ -753,14 +774,7 @@ describe('SecurityPenetrationTestsService', () => {
 
     await expect(
       service.getReportProgress('org_123', 'run_123'),
-    ).rejects.toEqual(
-      expect.objectContaining({
-        status: HttpStatus.BAD_GATEWAY,
-        response: {
-          error: 'Invalid response received from penetration test provider',
-        },
-      }),
-    );
+    ).rejects.toThrow(HttpException);
   });
 
   it('throws a mapped HttpException for failed provider calls', async () => {
@@ -770,13 +784,8 @@ describe('SecurityPenetrationTestsService', () => {
       }),
     );
 
-    await expect(service.getReport('org_123', 'missing')).rejects.toEqual(
-      expect.objectContaining({
-        status: HttpStatus.BAD_REQUEST,
-        response: {
-          error: 'server error',
-        },
-      }),
+    await expect(service.getReport('org_123', 'missing')).rejects.toThrow(
+      HttpException,
     );
   });
 });

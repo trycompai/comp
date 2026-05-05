@@ -339,6 +339,58 @@ describe('applySync', () => {
     }));
   });
 
+  it('creates missing control row before reconciling RequirementMap drift when v1 and v2 both claim it', async () => {
+    const tx = mockTx();
+    tx.control.create.mockResolvedValue({
+      id: 'ctl_created',
+      controlTemplateId: 'ct_1',
+      organizationId: 'org_1',
+      name: 'C',
+      description: 'D',
+      archivedAt: null,
+    });
+    tx.control.findMany.mockResolvedValue([]);
+    tx.requirementMap.findMany.mockResolvedValue([]);
+
+    const sameControl = { id: 'ct_1', name: 'C', description: 'D', requirementIds: ['rq_1'], policyIds: [], taskIds: [] };
+    await applySync(tx, {
+      instance: baseInstance as any,
+      currentVersion: {
+        id: 'fvr_v1',
+        frameworkId: 'frk_soc2',
+        manifest: manifest({
+          requirements: [{ id: 'rq_1', identifier: 'CC1', name: 'X', description: null }],
+          controls: [sameControl],
+        }),
+      } as any,
+      targetVersion: {
+        id: 'fvr_v2',
+        frameworkId: 'frk_soc2',
+        manifest: manifest({
+          requirements: [{ id: 'rq_1', identifier: 'CC1', name: 'X', description: null }],
+          controls: [sameControl],
+        }),
+      } as any,
+      memberId: 'mem_1',
+    });
+
+    expect(tx.control.create).toHaveBeenCalledWith(expect.objectContaining({
+      data: expect.objectContaining({
+        organizationId: 'org_1',
+        controlTemplateId: 'ct_1',
+        name: 'C',
+        description: 'D',
+      }),
+    }));
+    expect(tx.requirementMap.create).toHaveBeenCalledWith(expect.objectContaining({
+      data: expect.objectContaining({
+        controlId: 'ctl_created',
+        requirementId: 'rq_1',
+        frameworkInstanceId: 'frm_1',
+      }),
+    }));
+  });
+
   it('unarchives an existing archived RequirementMap row instead of creating a duplicate', async () => {
     const tx = mockTx();
     tx.control.findMany.mockResolvedValue([
@@ -412,6 +464,54 @@ describe('applySync', () => {
     const calls = tx.$executeRaw.mock.calls.map((c: unknown[]) => String(c[0]?.[0] ?? ''));
     const cpInsertCalled = calls.some((s: string) => s.includes('INSERT INTO "_ControlToPolicy"'));
     expect(cpInsertCalled).toBe(true);
+  });
+
+  it('creates missing task row before reconciling _ControlToTask drift when v1 and v2 both claim it', async () => {
+    const tx = mockTx();
+    tx.control.findMany.mockResolvedValue([
+      { id: 'ctl_1', controlTemplateId: 'ct_1', organizationId: 'org_1', name: 'C', description: 'D', archivedAt: null },
+    ]);
+    tx.task.findMany.mockResolvedValue([]);
+    tx.task.create.mockResolvedValue({
+      id: 'tsk_created',
+      taskTemplateId: 'tt_1',
+      organizationId: 'org_1',
+      title: 'T',
+      description: 'D',
+      frequency: null,
+      department: null,
+      archivedAt: null,
+    });
+    tx.$queryRaw.mockResolvedValue([]);
+
+    const sameControl = { id: 'ct_1', name: 'C', description: 'D', requirementIds: [], policyIds: [], taskIds: ['tt_1'] };
+    const sameTask = { id: 'tt_1', name: 'T', description: 'D', frequency: null, department: null };
+    await applySync(tx, {
+      instance: baseInstance as any,
+      currentVersion: {
+        id: 'fvr_v1',
+        frameworkId: 'frk_soc2',
+        manifest: manifest({ controls: [sameControl], tasks: [sameTask] }),
+      } as any,
+      targetVersion: {
+        id: 'fvr_v2',
+        frameworkId: 'frk_soc2',
+        manifest: manifest({ controls: [sameControl], tasks: [sameTask] }),
+      } as any,
+      memberId: 'mem_1',
+    });
+
+    expect(tx.task.create).toHaveBeenCalledWith(expect.objectContaining({
+      data: expect.objectContaining({
+        organizationId: 'org_1',
+        taskTemplateId: 'tt_1',
+        title: 'T',
+        description: 'D',
+      }),
+    }));
+    const calls = tx.$executeRaw.mock.calls.map((c: unknown[]) => String(c[0]?.[0] ?? ''));
+    const ctInsertCalled = calls.some((s: string) => s.includes('INSERT INTO "_ControlToTask"'));
+    expect(ctInsertCalled).toBe(true);
   });
 
   it('creates missing ControlDocumentType row when v1 and v2 both claim it but customer has no row (drift)', async () => {

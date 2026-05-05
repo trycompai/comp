@@ -1,17 +1,17 @@
 'use client';
 
-import type { Control, RequirementMap, Task } from '@db';
-import { Badge, Heading, Text } from '@trycompai/design-system';
 import {
   type EvidenceSubmissionInfo,
   getControlStatus,
   getFrameworkAggregatePercent,
 } from '@/lib/control-compliance';
+import type { Control, RequirementMap, Task } from '@db';
+import { Badge, Heading, Text } from '@trycompai/design-system';
 import { RequirementControlsTable } from './table/RequirementControlsTable';
 
 type ControlWithRelations = Control & {
   policies?: Array<{ id: string; name: string; status: string }>;
-  controlDocumentTypes?: Array<{ formType: string }>;
+  controlDocumentTypes?: Array<{ formType: string; isNotRelevant?: boolean }>;
 };
 
 interface RequirementControlsProps {

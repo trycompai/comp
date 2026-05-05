@@ -53,6 +53,12 @@ describe('computePeopleScore', () => {
     (mockDb.backgroundCheckRequest.findMany as jest.Mock).mockResolvedValue([
       { memberId: 'mem_1' },
     ]);
+    (mockDb.member.findMany as jest.Mock).mockImplementation(
+      async (args: { where?: { backgroundCheckExempt?: boolean } }) => {
+        if (args?.where?.backgroundCheckExempt === true) return [];
+        return [];
+      },
+    );
   });
 
   it('requires a completed or uploaded background check for people completion', async () => {
@@ -62,6 +68,7 @@ describe('computePeopleScore', () => {
       employees: members,
       securityTrainingStepEnabled: false,
       deviceAgentStepEnabled: false,
+      backgroundCheckStepEnabled: true,
       hasHipaaFramework: false,
     });
 
@@ -75,5 +82,152 @@ describe('computePeopleScore', () => {
       select: { memberId: true },
       distinct: ['memberId'],
     });
+  });
+
+  it('counts all employees when BG checks are enabled and all have completed checks', async () => {
+    (mockDb.backgroundCheckRequest.findMany as jest.Mock).mockResolvedValue([
+      { memberId: 'mem_1' },
+      { memberId: 'mem_2' },
+    ]);
+
+    const score = await computePeopleScore({
+      organizationId: 'org_1',
+      allPolicies: [],
+      employees: members,
+      securityTrainingStepEnabled: false,
+      deviceAgentStepEnabled: false,
+      backgroundCheckStepEnabled: true,
+      hasHipaaFramework: false,
+    });
+
+    expect(score).toEqual({ total: 2, completed: 2 });
+  });
+
+  it('treats employees as complete without a BG check when backgroundCheckStepEnabled is false', async () => {
+    // BG-check mock value is irrelevant — the bypass path never calls findMany.
+    const score = await computePeopleScore({
+      organizationId: 'org_1',
+      allPolicies: [],
+      employees: members,
+      securityTrainingStepEnabled: false,
+      deviceAgentStepEnabled: false,
+      backgroundCheckStepEnabled: false,
+      hasHipaaFramework: false,
+    });
+
+    expect(score).toEqual({ total: 2, completed: 2 });
+  });
+
+  it('skips the BG-check query entirely when backgroundCheckStepEnabled is false', async () => {
+    await computePeopleScore({
+      organizationId: 'org_1',
+      allPolicies: [],
+      employees: members,
+      securityTrainingStepEnabled: false,
+      deviceAgentStepEnabled: false,
+      backgroundCheckStepEnabled: false,
+      hasHipaaFramework: false,
+    });
+
+    expect(mockDb.backgroundCheckRequest.findMany).not.toHaveBeenCalled();
+  });
+
+  it('treats an exempt member as complete without a BG check (org-level on)', async () => {
+    // mem_1 has no completed BG check; mem_2 has none either. Mark mem_1 exempt.
+    (mockDb.backgroundCheckRequest.findMany as jest.Mock).mockResolvedValue([]);
+    (mockDb.member.findMany as jest.Mock).mockImplementation(
+      async (args: { where?: { backgroundCheckExempt?: boolean } }) => {
+        if (args?.where?.backgroundCheckExempt === true) {
+          return [{ id: 'mem_1' }];
+        }
+        return [];
+      },
+    );
+
+    const score = await computePeopleScore({
+      organizationId: 'org_1',
+      allPolicies: [],
+      employees: members,
+      securityTrainingStepEnabled: false,
+      deviceAgentStepEnabled: false,
+      backgroundCheckStepEnabled: true,
+      hasHipaaFramework: false,
+    });
+
+    // mem_1 exempt → counts complete; mem_2 not exempt + no BG check → not complete
+    expect(score).toEqual({ total: 2, completed: 1 });
+  });
+
+  it('counts a mix of completed BG checks and exempt members correctly', async () => {
+    // mem_1 has a completed BG check; mem_2 is exempt
+    (mockDb.backgroundCheckRequest.findMany as jest.Mock).mockResolvedValue([
+      { memberId: 'mem_1' },
+    ]);
+    (mockDb.member.findMany as jest.Mock).mockImplementation(
+      async (args: { where?: { backgroundCheckExempt?: boolean } }) => {
+        if (args?.where?.backgroundCheckExempt === true) {
+          return [{ id: 'mem_2' }];
+        }
+        return [];
+      },
+    );
+
+    const score = await computePeopleScore({
+      organizationId: 'org_1',
+      allPolicies: [],
+      employees: members,
+      securityTrainingStepEnabled: false,
+      deviceAgentStepEnabled: false,
+      backgroundCheckStepEnabled: true,
+      hasHipaaFramework: false,
+    });
+
+    expect(score).toEqual({ total: 2, completed: 2 });
+  });
+
+  it('counts every member as complete when all members are exempt', async () => {
+    (mockDb.backgroundCheckRequest.findMany as jest.Mock).mockResolvedValue([]);
+    (mockDb.member.findMany as jest.Mock).mockImplementation(async (args: {
+      where?: { backgroundCheckExempt?: boolean };
+    }) => {
+      if (args?.where?.backgroundCheckExempt === true) {
+        return [{ id: 'mem_1' }, { id: 'mem_2' }];
+      }
+      return [];
+    });
+
+    const score = await computePeopleScore({
+      organizationId: 'org_1',
+      allPolicies: [],
+      employees: members,
+      securityTrainingStepEnabled: false,
+      deviceAgentStepEnabled: false,
+      backgroundCheckStepEnabled: true,
+      hasHipaaFramework: false,
+    });
+
+    expect(score).toEqual({ total: 2, completed: 2 });
+  });
+
+  it('skips the exempt query entirely when backgroundCheckStepEnabled is false', async () => {
+    (mockDb.member.findMany as jest.Mock).mockClear();
+
+    await computePeopleScore({
+      organizationId: 'org_1',
+      allPolicies: [],
+      employees: members,
+      securityTrainingStepEnabled: false,
+      deviceAgentStepEnabled: false,
+      backgroundCheckStepEnabled: false,
+      hasHipaaFramework: false,
+    });
+
+    // The exempt query targets backgroundCheckExempt: true. Confirm it was not called with that arg.
+    const findManyCalls = (mockDb.member.findMany as jest.Mock).mock.calls;
+    const exemptQueryCalled = findManyCalls.some(
+      ([args]: [{ where?: { backgroundCheckExempt?: boolean } }]) =>
+        args?.where?.backgroundCheckExempt === true,
+    );
+    expect(exemptQueryCalled).toBe(false);
   });
 });
