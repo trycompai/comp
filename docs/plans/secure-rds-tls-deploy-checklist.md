@@ -4,23 +4,37 @@ After merging the secure-rds-tls PR, the following env vars must be set per envi
 
 ## Vercel (apps/app and apps/portal)
 
-Set on each Vercel project, all environments (preview + production):
+Set on each Vercel project, all environments (Production + Preview + Development):
 
 ```
 NODE_EXTRA_CA_CERTS=/var/task/packages/db/certs/rds-global-bundle.pem
 ```
 
-The cert is bundled into the deployed function via `outputFileTracingIncludes` in `next.config.ts`.
-At Vercel runtime the function CWD is conventionally `/var/task`, so the path above is the first
-candidate. If a preview deploy crashes with "Refusing to connect" or "ENOENT", the runtime cwd
-isn't `/var/task` — try instead:
+Verified on staging (apps/app): `process.cwd()` is `/var/task/apps/app`, the cert is traced
+into the deploy at `/var/task/packages/db/certs/rds-global-bundle.pem` (165408 bytes), and
+`/api/health` succeeds end-to-end. The cert is bundled via `outputFileTracingIncludes` in
+each app's `next.config.ts`.
 
-```
-NODE_EXTRA_CA_CERTS=/vercel/path0/packages/db/certs/rds-global-bundle.pem
-```
+## Downstream consumers (comp-private/apps/enterprise-api, etc.)
 
-Both paths can be tested with a preview deploy. The wrong one produces an ENOENT error at boot;
-the right one succeeds silently.
+The CA bundle now ships with the published `@trycompai/db` package (added to the `files` array
+in this PR). After the next `@trycompai/db` publish, downstream consumers can ship the cert with
+their own Vercel/Docker/Trigger.dev builds without committing a copy.
+
+For Vercel-deployed apps that install `@trycompai/db` from npm:
+
+1. Bump the dependency to the version that includes `certs/`.
+2. Add `outputFileTracingIncludes` to `next.config.{ts,mjs}`:
+   ```ts
+   outputFileTracingIncludes: {
+     '/**/*': ['./node_modules/@trycompai/db/certs/rds-global-bundle.pem'],
+   },
+   ```
+3. Set the Vercel env var:
+   ```
+   NODE_EXTRA_CA_CERTS=/var/task/node_modules/@trycompai/db/certs/rds-global-bundle.pem
+   ```
+4. Apply the same strict-TLS Prisma client logic (or import a shared helper from `@trycompai/db`).
 
 ## Trigger.dev (api and app projects, staging + prod)
 
