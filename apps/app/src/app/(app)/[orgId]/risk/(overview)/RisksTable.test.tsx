@@ -70,6 +70,34 @@ vi.mock('@/hooks/use-risks', () => ({
 // Mock @db
 vi.mock('@db', () => ({
   Risk: {},
+  // Enums used by suggested-residual / risk-score helpers. Values mirror
+  // the real Prisma enum string values.
+  Likelihood: {
+    very_unlikely: 'very_unlikely',
+    unlikely: 'unlikely',
+    possible: 'possible',
+    likely: 'likely',
+    very_likely: 'very_likely',
+  },
+  Impact: {
+    insignificant: 'insignificant',
+    minor: 'minor',
+    moderate: 'moderate',
+    major: 'major',
+    severe: 'severe',
+  },
+  RiskTreatmentType: {
+    accept: 'accept',
+    avoid: 'avoid',
+    mitigate: 'mitigate',
+    transfer: 'transfer',
+  },
+  TaskStatus: {
+    todo: 'todo',
+    in_progress: 'in_progress',
+    done: 'done',
+    not_relevant: 'not_relevant',
+  },
 }));
 
 // Mock onboarding hooks
@@ -116,6 +144,11 @@ vi.mock('@trycompai/design-system', () => ({
   InputGroup: ({ children }: any) => <div>{children}</div>,
   InputGroupAddon: ({ children }: any) => <span>{children}</span>,
   InputGroupInput: (props: any) => <input {...props} />,
+  Select: ({ children }: any) => <div data-testid="select">{children}</div>,
+  SelectContent: ({ children }: any) => <div>{children}</div>,
+  SelectItem: ({ children, value }: any) => <button data-value={value}>{children}</button>,
+  SelectTrigger: ({ children }: any) => <div>{children}</div>,
+  SelectValue: ({ placeholder }: any) => <span>{placeholder}</span>,
   Spinner: () => <span data-testid="spinner" />,
   Stack: ({ children }: any) => <div>{children}</div>,
   Table: ({ children, pagination }: any) => <table>{children}</table>,
@@ -202,9 +235,25 @@ describe('RisksTable permission gating', () => {
 
     expect(screen.getByText('RISK')).toBeInTheDocument();
     expect(screen.getByText('SEVERITY')).toBeInTheDocument();
+    expect(screen.getByText('RISK SCORE')).toBeInTheDocument();
     expect(screen.getByText('STATUS')).toBeInTheDocument();
     expect(screen.getByText('OWNER')).toBeInTheDocument();
     expect(screen.getByText('UPDATED')).toBeInTheDocument();
+  });
+
+  it('renders SEVERITY label + RISK SCORE number, both from current state', () => {
+    setMockPermissions({});
+
+    render(<RisksTable {...defaultProps} />);
+
+    // Fixture: possible × moderate, mitigate, no linked tasks.
+    //   inherent: 3 × 3 = 9 raw → ceil(9/2.5) = 4
+    //   coverage gate (no tasks) → target = inherent → current = 4
+    // → severity label "Low" (score 4 → low band) + numeric "4/10".
+    // The severity filter dropdown also contains "Low" as an option, so
+    // we expect at least one (row + dropdown option).
+    expect(screen.getAllByText('Low').length).toBeGreaterThanOrEqual(1);
+    expect(screen.getByText('4/10')).toBeInTheDocument();
   });
 
   it('renders search bar regardless of permissions', () => {

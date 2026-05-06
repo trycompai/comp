@@ -2,6 +2,10 @@
 import '@testing-library/jest-dom/vitest';
 import { afterAll, afterEach, beforeAll, vi } from 'vitest';
 
+// Stub `server-only` so modules that use the marker can still be imported
+// in jsdom test runs (the package throws on client environments by design).
+vi.mock('server-only', () => ({}));
+
 // Mock Next.js modules globally
 vi.mock('next/navigation', () => ({
   useRouter: vi.fn(() => ({

@@ -253,7 +253,7 @@ async function generateSectionContent(
   contextHubText: string,
 ): Promise<string> {
   const { text } = await generateText({
-    model: openai('gpt-5.2'),
+    model: openai('gpt-5.5'),
     system: `You are an expert at extracting and organizing company information for audit purposes.
 
 CRITICAL RULES:

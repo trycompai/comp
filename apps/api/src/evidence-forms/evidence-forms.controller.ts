@@ -86,7 +86,7 @@ export class EvidenceFormsController {
   }
 
   @Get('my-submissions')
-  @RequirePermission('evidence', 'read')
+  @RequirePermission('portal', 'update')
   @ApiOperation({
     summary: 'Get current user submissions',
     description:
@@ -105,7 +105,7 @@ export class EvidenceFormsController {
   }
 
   @Get('my-submissions/pending-count')
-  @RequirePermission('evidence', 'read')
+  @RequirePermission('portal', 'update')
   @ApiOperation({
     summary: 'Get pending submission count for current user',
     description:
@@ -188,7 +188,7 @@ export class EvidenceFormsController {
   }
 
   @Post(':formType/submissions')
-  @RequirePermission('evidence', 'create')
+  @RequirePermission('portal', 'update')
   @ApiOperation({
     summary: 'Submit evidence form entry',
     description:
@@ -253,7 +253,7 @@ export class EvidenceFormsController {
   }
 
   @Post('uploads')
-  @RequirePermission('evidence', 'create')
+  @RequirePermission('portal', 'update')
   @ApiOperation({
     summary: 'Upload evidence form file',
     description:

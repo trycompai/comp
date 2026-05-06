@@ -10,10 +10,28 @@
 export const firecrawlAgentJsonSchema = {
   type: 'object',
   properties: {
-    risk_level: {
+    likelihood: {
+      type: 'string',
+      enum: [
+        'very_unlikely',
+        'unlikely',
+        'possible',
+        'likely',
+        'very_likely',
+      ],
+      description:
+        'Probability of an incident originating from or involving this vendor. Score independently of impact.',
+    },
+    impact: {
+      type: 'string',
+      enum: ['insignificant', 'minor', 'moderate', 'major', 'severe'],
+      description:
+        'Blast radius if the vendor is compromised. Score independently of likelihood.',
+    },
+    rationale: {
       type: 'string',
       description:
-        'Overall vendor risk level: critical, high, medium, low, or very_low',
+        'Two to four sentences justifying both scores. Name the data handled and the adversary motivation.',
     },
     security_assessment: {
       type: 'string',
@@ -91,5 +109,5 @@ export const firecrawlAgentJsonSchema = {
       },
     },
   },
-  required: ['security_assessment'],
+  required: ['security_assessment', 'likelihood', 'impact', 'rationale'],
 } as const;

@@ -11,7 +11,15 @@ import type {
   Likelihood,
   Impact,
   RiskTreatmentType,
+  TaskStatus,
 } from '@db';
+
+export interface RiskLinkedTask {
+  id: string;
+  title: string;
+  status: TaskStatus;
+  controls: { id: string; name: string }[];
+}
 
 // Default polling interval for real-time updates (5 seconds)
 const DEFAULT_POLLING_INTERVAL = 5000;
@@ -42,6 +50,7 @@ export interface Risk {
   organizationId: string;
   assigneeId: string | null;
   assignee?: RiskAssignee | null;
+  tasks?: RiskLinkedTask[];
   createdAt: string;
   updatedAt: string;
 }
@@ -246,7 +255,9 @@ export function useRiskActions() {
   );
 
   const regenerateMitigation = useCallback(
-    async (riskId: string) => {
+    async (
+      riskId: string,
+    ): Promise<{ runId: string; publicAccessToken: string }> => {
       const response = await fetch(`/api/risks/${riskId}/regenerate-mitigation`, {
         method: 'POST',
         credentials: 'include',
@@ -255,6 +266,128 @@ export function useRiskActions() {
         const body = await response.json().catch(() => ({}));
         throw new Error(body.error || 'Failed to trigger mitigation regeneration');
       }
+      return response.json();
+    },
+    [],
+  );
+
+  /**
+   * @deprecated Prefer `suggestRiskLinks` which returns AI suggestions for the
+   * user to review before applying. Kept for any direct callers.
+   */
+  const autoLinkRisk = useCallback(
+    async (riskId: string): Promise<{ runId: string; publicAccessToken: string }> => {
+      const response = await fetch(`/api/risks/${riskId}/auto-link`, {
+        method: 'POST',
+        credentials: 'include',
+      });
+      if (!response.ok) {
+        const body = await response.json().catch(() => ({}));
+        throw new Error(body.error || 'Failed to trigger auto-link');
+      }
+      return response.json();
+    },
+    [],
+  );
+
+  /**
+   * @deprecated The new flow runs `suggestRiskLinks` then `applyRiskLinks`
+   * with `replace: true`. This direct relink endpoint is kept for backwards
+   * compatibility but no longer used by the treatment-plan UI.
+   */
+  const relinkRisk = useCallback(
+    async (riskId: string): Promise<{ runId: string; publicAccessToken: string }> => {
+      const response = await fetch(`/api/risks/${riskId}/relink`, {
+        method: 'POST',
+        credentials: 'include',
+      });
+      if (!response.ok) {
+        const body = await response.json().catch(() => ({}));
+        throw new Error(body.error || 'Failed to trigger relink');
+      }
+      return response.json();
+    },
+    [],
+  );
+
+  /**
+   * Triggers an AI scan that returns suggestions WITHOUT persisting any link.
+   * The realtime run output contains `suggestions: { tasks, controls }` for the
+   * UI to render in a review-before-apply card.
+   */
+  const suggestRiskLinks = useCallback(
+    async (riskId: string): Promise<{ runId: string; publicAccessToken: string }> => {
+      const response = await fetch(`/api/risks/${riskId}/auto-link`, {
+        method: 'POST',
+        credentials: 'include',
+      });
+      if (!response.ok) {
+        const body = await response.json().catch(() => ({}));
+        throw new Error(body.error || 'Failed to trigger suggest');
+      }
+      return response.json();
+    },
+    [],
+  );
+
+  /**
+   * Persists the user-confirmed task selection. `replace: true` is used by the
+   * re-assess flow (sync semantics — connect ONLY these tasks). `replace: false`
+   * is the additive fresh-suggest flow.
+   */
+  const applyRiskLinks = useCallback(
+    async (
+      riskId: string,
+      params: { taskIds: string[]; replace: boolean },
+    ): Promise<void> => {
+      const response = await fetch(`/api/risks/${riskId}/auto-link/apply`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(params),
+      });
+      if (!response.ok) {
+        const body = await response.json().catch(() => ({}));
+        throw new Error(body.error || 'Failed to apply suggestions');
+      }
+    },
+    [],
+  );
+
+  /**
+   * Returns the active auto-link run for a risk (and a fresh access token) so
+   * the UI can resume an in-flight scan after a page reload, or `null` when
+   * no run is in flight. The runId is persisted on the Risk row by the auto-
+   * link route; this hook just fetches and re-mints the token.
+   */
+  const fetchActiveRiskAutoLinkRun = useCallback(
+    async (
+      riskId: string,
+    ): Promise<{ runId: string; publicAccessToken: string } | null> => {
+      const response = await fetch(`/api/risks/${riskId}/auto-link/active`, {
+        credentials: 'include',
+      });
+      if (!response.ok) {
+        return null;
+      }
+      const body = (await response.json()) as
+        | { runId: string; publicAccessToken: string }
+        | { runId: null };
+      if (!body.runId) return null;
+      return { runId: body.runId, publicAccessToken: body.publicAccessToken };
+    },
+    [],
+  );
+
+  /** Clears the persisted runId — used when the user discards an AI run. */
+  const discardRiskAutoLinkRun = useCallback(
+    async (riskId: string): Promise<void> => {
+      await fetch(`/api/risks/${riskId}/auto-link/active`, {
+        method: 'DELETE',
+        credentials: 'include',
+      }).catch(() => {
+        /* best-effort; the next /auto-link call replaces the runId anyway */
+      });
     },
     [],
   );
@@ -264,6 +397,12 @@ export function useRiskActions() {
     updateRisk,
     deleteRisk,
     regenerateMitigation,
+    autoLinkRisk,
+    relinkRisk,
+    suggestRiskLinks,
+    applyRiskLinks,
+    fetchActiveRiskAutoLinkRun,
+    discardRiskAutoLinkRun,
   };
 }
 

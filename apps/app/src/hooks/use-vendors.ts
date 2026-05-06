@@ -10,7 +10,16 @@ import type {
   Likelihood,
   Impact,
   Prisma,
+  RiskTreatmentType,
+  TaskStatus,
 } from '@db';
+
+export interface VendorLinkedTask {
+  id: string;
+  title: string;
+  status: TaskStatus;
+  controls: { id: string; name: string }[];
+}
 
 // Default polling interval for real-time updates (5 seconds)
 const DEFAULT_POLLING_INTERVAL = 5000;
@@ -40,6 +49,9 @@ export interface Vendor {
   organizationId: string;
   assigneeId: string | null;
   assignee?: VendorAssignee | null;
+  treatmentStrategy: RiskTreatmentType;
+  treatmentStrategyDescription: string | null;
+  tasks?: VendorLinkedTask[];
   createdAt: string;
   updatedAt: string;
 }
@@ -79,6 +91,8 @@ interface UpdateVendorData {
   inherentImpact?: Impact;
   residualProbability?: Likelihood;
   residualImpact?: Impact;
+  treatmentStrategy?: RiskTreatmentType;
+  treatmentStrategyDescription?: string | null;
 }
 
 export interface UseVendorsOptions extends UseApiSWROptions<VendorsResponse> {
@@ -228,14 +242,126 @@ export function useVendorActions() {
   );
 
   const regenerateMitigation = useCallback(
-    async (vendorId: string) => {
+    async (
+      vendorId: string,
+    ): Promise<{ runId: string; publicAccessToken: string }> => {
       const response = await fetch(`/api/vendors/${vendorId}/regenerate-mitigation`, {
         method: 'POST',
+        credentials: 'include',
       });
       if (!response.ok) {
         const body = await response.json().catch(() => ({}));
         throw new Error(body.error || 'Failed to trigger mitigation regeneration');
       }
+      return response.json();
+    },
+    [],
+  );
+
+  /**
+   * @deprecated Prefer `suggestVendorLinks` (review-before-apply flow).
+   */
+  const autoLinkVendor = useCallback(
+    async (vendorId: string): Promise<{ runId: string; publicAccessToken: string }> => {
+      const response = await fetch(`/api/vendors/${vendorId}/auto-link`, {
+        method: 'POST',
+        credentials: 'include',
+      });
+      if (!response.ok) {
+        const body = await response.json().catch(() => ({}));
+        throw new Error(body.error || 'Failed to trigger auto-link');
+      }
+      return response.json();
+    },
+    [],
+  );
+
+  /**
+   * @deprecated The new flow runs `suggestVendorLinks` then `applyVendorLinks`
+   * with `replace: true`.
+   */
+  const relinkVendor = useCallback(
+    async (vendorId: string): Promise<{ runId: string; publicAccessToken: string }> => {
+      const response = await fetch(`/api/vendors/${vendorId}/relink`, {
+        method: 'POST',
+        credentials: 'include',
+      });
+      if (!response.ok) {
+        const body = await response.json().catch(() => ({}));
+        throw new Error(body.error || 'Failed to trigger relink');
+      }
+      return response.json();
+    },
+    [],
+  );
+
+  /**
+   * Triggers an AI scan that returns suggestions WITHOUT persisting any link.
+   */
+  const suggestVendorLinks = useCallback(
+    async (vendorId: string): Promise<{ runId: string; publicAccessToken: string }> => {
+      const response = await fetch(`/api/vendors/${vendorId}/auto-link`, {
+        method: 'POST',
+        credentials: 'include',
+      });
+      if (!response.ok) {
+        const body = await response.json().catch(() => ({}));
+        throw new Error(body.error || 'Failed to trigger suggest');
+      }
+      return response.json();
+    },
+    [],
+  );
+
+  /**
+   * Persists the user-confirmed task selection. `replace: true` is used by the
+   * re-assess flow (sync semantics).
+   */
+  const applyVendorLinks = useCallback(
+    async (
+      vendorId: string,
+      params: { taskIds: string[]; replace: boolean },
+    ): Promise<void> => {
+      const response = await fetch(`/api/vendors/${vendorId}/auto-link/apply`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(params),
+      });
+      if (!response.ok) {
+        const body = await response.json().catch(() => ({}));
+        throw new Error(body.error || 'Failed to apply suggestions');
+      }
+    },
+    [],
+  );
+
+  /** See `useRiskActions.fetchActiveRiskAutoLinkRun`. */
+  const fetchActiveVendorAutoLinkRun = useCallback(
+    async (
+      vendorId: string,
+    ): Promise<{ runId: string; publicAccessToken: string } | null> => {
+      const response = await fetch(`/api/vendors/${vendorId}/auto-link/active`, {
+        credentials: 'include',
+      });
+      if (!response.ok) return null;
+      const body = (await response.json()) as
+        | { runId: string; publicAccessToken: string }
+        | { runId: null };
+      if (!body.runId) return null;
+      return { runId: body.runId, publicAccessToken: body.publicAccessToken };
+    },
+    [],
+  );
+
+  const discardVendorAutoLinkRun = useCallback(
+    async (vendorId: string): Promise<void> => {
+      await fetch(`/api/vendors/${vendorId}/auto-link/active`, {
+        method: 'DELETE',
+        credentials: 'include',
+      }).catch(() => {
+        /* best-effort */
+      });
     },
     [],
   );
@@ -246,6 +372,12 @@ export function useVendorActions() {
     deleteVendor,
     triggerAssessment,
     regenerateMitigation,
+    autoLinkVendor,
+    relinkVendor,
+    suggestVendorLinks,
+    applyVendorLinks,
+    fetchActiveVendorAutoLinkRun,
+    discardVendorAutoLinkRun,
   };
 }
 
