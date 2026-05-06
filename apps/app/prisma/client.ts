@@ -1,7 +1,7 @@
 import { PrismaClient } from '@prisma/client';
 import { PrismaPg } from '@prisma/adapter-pg';
 
-import { resolveSslConfig } from './ssl-config';
+import { resolveSslConfig } from '@trycompai/db/ssl-config';
 
 const globalForPrisma = global as unknown as { prisma: PrismaClient };
 

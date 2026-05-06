@@ -21,9 +21,14 @@
             "default": "./dist/index.js"
         },
         "./postinstall": {
-            "import": "./dist/postinstall.js",
             "types": "./src/postinstall.ts",
+            "import": "./dist/postinstall.js",
             "default": "./dist/postinstall.js"
+        },
+        "./ssl-config": {
+            "types": "./src/ssl-config.ts",
+            "import": "./dist/ssl-config.js",
+            "default": "./dist/ssl-config.js"
         }
     },
     "bin": {

@@ -16,7 +16,7 @@ function isLocalhostUrl(connectionString: string): boolean {
 
 export function resolveSslConfig(
   databaseUrl: string,
-  env: NodeJS.ProcessEnv = process.env,
+  env: Partial<NodeJS.ProcessEnv> = process.env,
 ): SslConfig {
   const isLocalhost = isLocalhostUrl(databaseUrl);
   const hasCABundle = !!env.NODE_EXTRA_CA_CERTS;
