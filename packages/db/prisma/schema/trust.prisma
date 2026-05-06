@@ -25,6 +25,8 @@ model Trust {
   hipaa         Boolean @default(false)
   pci_dss       Boolean @default(false)
   iso9001       Boolean @default(false)
+  pipeda        Boolean @default(false)
+  ccpa          Boolean @default(false)
 
   soc2_status      FrameworkStatus @default(started)
   soc2type1_status FrameworkStatus @default(started)
@@ -37,6 +39,8 @@ model Trust {
   hipaa_status     FrameworkStatus @default(started)
   pci_dss_status   FrameworkStatus @default(started)
   iso9001_status   FrameworkStatus @default(started)
+  pipeda_status    FrameworkStatus @default(started)
+  ccpa_status      FrameworkStatus @default(started)
 
   // Overview section for public trust portal
   overviewTitle   String?
