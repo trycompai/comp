@@ -27,11 +27,18 @@ function createPrismaClient(): PrismaClient {
   const hasCABundle = !!process.env.NODE_EXTRA_CA_CERTS;
   const allowInsecure = process.env.PRISMA_ALLOW_INSECURE_TLS === '1';
 
-  let ssl: undefined | true | { rejectUnauthorized: false };
+  let ssl:
+    | undefined
+    | { checkServerIdentity: () => undefined }
+    | { rejectUnauthorized: false };
   if (isLocalhost) {
     ssl = undefined;
   } else if (hasCABundle) {
-    ssl = true;
+    // Verified TLS: rely on Node's TLS context (NODE_EXTRA_CA_CERTS adds the AWS
+    // RDS CA to the trust store). Skip hostname check because connections may
+    // traverse an AWS NLB whose hostname isn't in the RDS Proxy cert's SAN list.
+    // The chain check still rejects forged or wrong-CA certs.
+    ssl = { checkServerIdentity: () => undefined };
   } else if (allowInsecure) {
     ssl = { rejectUnauthorized: false };
   } else {

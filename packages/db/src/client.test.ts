@@ -14,12 +14,14 @@ describe('resolveSslConfig', () => {
     expect(resolveSslConfig('postgresql://u:p@[::1]:5432/x', {})).toBeUndefined();
   });
 
-  it('returns true (verified) when NODE_EXTRA_CA_CERTS is set', () => {
-    expect(
-      resolveSslConfig('postgresql://u:p@db.prod.example.com:5432/x', {
-        NODE_EXTRA_CA_CERTS: '/etc/ssl/certs/ca-certificates.crt',
-      }),
-    ).toBe(true);
+  it('returns checkServerIdentity-noop when NODE_EXTRA_CA_CERTS is set', () => {
+    const result = resolveSslConfig('postgresql://u:p@db.prod.example.com:5432/x', {
+      NODE_EXTRA_CA_CERTS: '/etc/ssl/certs/ca-certificates.crt',
+    });
+    expect(result).toBeDefined();
+    expect(typeof (result as { checkServerIdentity: unknown }).checkServerIdentity).toBe('function');
+    // The function returns undefined (no error → identity accepted)
+    expect((result as { checkServerIdentity: () => undefined }).checkServerIdentity()).toBeUndefined();
   });
 
   it('returns rejectUnauthorized:false when PRISMA_ALLOW_INSECURE_TLS=1', () => {
@@ -41,11 +43,11 @@ describe('resolveSslConfig', () => {
   });
 
   it('prefers verified TLS over insecure opt-in when both are set', () => {
-    expect(
-      resolveSslConfig('postgresql://u:p@db.prod.example.com:5432/x', {
-        NODE_EXTRA_CA_CERTS: '/etc/ssl/certs/ca-certificates.crt',
-        PRISMA_ALLOW_INSECURE_TLS: '1',
-      }),
-    ).toBe(true);
+    const result = resolveSslConfig('postgresql://u:p@db.prod.example.com:5432/x', {
+      NODE_EXTRA_CA_CERTS: '/etc/ssl/certs/ca-certificates.crt',
+      PRISMA_ALLOW_INSECURE_TLS: '1',
+    });
+    expect(result).toBeDefined();
+    expect(typeof (result as { checkServerIdentity: unknown }).checkServerIdentity).toBe('function');
   });
 });
