@@ -1,7 +1,10 @@
 import { PrismaClient } from '../src/generated/prisma/client';
 import { PrismaPg } from '@prisma/adapter-pg';
+import { rootCertificates } from 'node:tls';
 
 import { RDS_CA_BUNDLE } from './rds-ca-bundle';
+
+const COMBINED_CA = [RDS_CA_BUNDLE, ...rootCertificates];
 
 const globalForPrisma = global as unknown as { prisma?: PrismaClient };
 
@@ -30,14 +33,14 @@ function createPrismaClient(): PrismaClient {
 
   let ssl:
     | undefined
-    | { ca: string; checkServerIdentity: () => undefined }
+    | { ca: string[]; checkServerIdentity: () => undefined }
     | { rejectUnauthorized: false };
   if (isLocalhost) {
     ssl = undefined;
   } else if (allowInsecure) {
     ssl = { rejectUnauthorized: false };
   } else {
-    ssl = { ca: RDS_CA_BUNDLE, checkServerIdentity: () => undefined };
+    ssl = { ca: COMBINED_CA, checkServerIdentity: () => undefined };
   }
 
   const url = ssl !== undefined ? stripSslMode(rawUrl) : rawUrl;

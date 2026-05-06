@@ -1,7 +1,14 @@
 import { PrismaClient } from '@prisma/client';
 import { PrismaPg } from '@prisma/adapter-pg';
+import { rootCertificates } from 'node:tls';
 
 import { RDS_CA_BUNDLE } from './rds-ca-bundle';
+
+// Combine the inlined AWS RDS CA bundle with Node's default trust roots.
+// Node's `ssl.ca` *replaces* the trust store rather than augmenting it, so
+// passing only the RDS bundle drops the public Mozilla roots — including
+// Amazon Root CA 1, which is what AWS RDS Proxy chains terminate at.
+const COMBINED_CA = [RDS_CA_BUNDLE, ...rootCertificates];
 
 const globalForPrisma = global as unknown as { prisma?: PrismaClient };
 
@@ -30,18 +37,18 @@ function createPrismaClient(): PrismaClient {
 
   let ssl:
     | undefined
-    | { ca: string; checkServerIdentity: () => undefined }
+    | { ca: string[]; checkServerIdentity: () => undefined }
     | { rejectUnauthorized: false };
   if (isLocalhost) {
     ssl = undefined;
   } else if (allowInsecure) {
     ssl = { rejectUnauthorized: false };
   } else {
-    // Verified TLS using the inlined AWS RDS CA bundle. Skip hostname check
-    // because connections may traverse an AWS NLB whose hostname isn't in the
-    // RDS Proxy cert's SAN list. The chain check still rejects forged or
-    // wrong-CA certs.
-    ssl = { ca: RDS_CA_BUNDLE, checkServerIdentity: () => undefined };
+    // Verified TLS using inlined AWS RDS bundle + Node defaults. Skip hostname
+    // check because connections may traverse an AWS NLB whose hostname isn't
+    // in the RDS Proxy cert's SAN list. The chain check still rejects forged
+    // or wrong-CA certs.
+    ssl = { ca: COMBINED_CA, checkServerIdentity: () => undefined };
   }
 
   const url = ssl !== undefined ? stripSslMode(rawUrl) : rawUrl;
