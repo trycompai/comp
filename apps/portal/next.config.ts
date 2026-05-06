@@ -65,9 +65,6 @@ const config = {
   },
   skipTrailingSlashRedirect: true,
   outputFileTracingRoot: path.join(__dirname, '../../'),
-  outputFileTracingIncludes: {
-    '/**/*': ['../../packages/db/certs/rds-global-bundle.pem'],
-  },
   ...(isStandalone
     ? {
         output: 'standalone' as const,
