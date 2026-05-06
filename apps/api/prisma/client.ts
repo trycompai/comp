@@ -1,7 +1,7 @@
 import { PrismaClient } from '@prisma/client';
 import { PrismaPg } from '@prisma/adapter-pg';
 
-const globalForPrisma = global as unknown as { prisma: PrismaClient };
+const globalForPrisma = global as unknown as { prisma?: PrismaClient };
 
 const LOCAL_HOSTNAMES = new Set(['localhost', '127.0.0.1', '::1']);
 
@@ -40,11 +40,18 @@ function createPrismaClient(): PrismaClient {
   //   silently downgrading.
   const hasCABundle = !!process.env.NODE_EXTRA_CA_CERTS;
   const allowInsecure = process.env.PRISMA_ALLOW_INSECURE_TLS === '1';
-  let ssl: undefined | true | { rejectUnauthorized: false };
+  let ssl:
+    | undefined
+    | { checkServerIdentity: () => undefined }
+    | { rejectUnauthorized: false };
   if (isLocalhost) {
     ssl = undefined;
   } else if (hasCABundle) {
-    ssl = true;
+    // Verified TLS: rely on Node's TLS context (NODE_EXTRA_CA_CERTS adds the AWS
+    // RDS CA to the trust store). Skip hostname check because connections may
+    // traverse an AWS NLB whose hostname isn't in the RDS Proxy cert's SAN list.
+    // The chain check still rejects forged or wrong-CA certs.
+    ssl = { checkServerIdentity: () => undefined };
   } else if (allowInsecure) {
     ssl = { rejectUnauthorized: false };
   } else {
@@ -63,6 +70,21 @@ function createPrismaClient(): PrismaClient {
   });
 }
 
-export const db = globalForPrisma.prisma || createPrismaClient();
+// Lazy initialization. Importing this module does NOT construct a Prisma client
+// — that only happens on first property access on `db`. Critical so that
+// Next.js `next build` (which imports every route handler to analyze it) does
+// not trigger the strict TLS check at build time when no actual queries run.
+function getClient(): PrismaClient {
+  if (!globalForPrisma.prisma) {
+    globalForPrisma.prisma = createPrismaClient();
+  }
+  return globalForPrisma.prisma;
+}
 
-if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = db;
+export const db = new Proxy({} as PrismaClient, {
+  get(_target, prop, _receiver) {
+    const client = getClient();
+    const value = Reflect.get(client, prop, client);
+    return typeof value === 'function' ? value.bind(client) : value;
+  },
+});
