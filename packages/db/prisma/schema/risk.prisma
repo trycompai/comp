@@ -12,6 +12,23 @@ model Risk {
   residualImpact               Impact            @default(insignificant)
   treatmentStrategyDescription String?
   treatmentStrategy            RiskTreatmentType @default(accept)
+  // Per-strategy text store. When the user switches strategies, the current
+  // `treatmentStrategyDescription` is moved into this map under the OLD
+  // strategy key, and the NEW strategy's saved value is loaded back into the
+  // active field. Lets users keep an independent Mitigate plan + Accept
+  // rationale + Transfer rationale on the same risk.
+  // Shape: { mitigate?: string, accept?: string, transfer?: string, avoid?: string }
+  strategyDescriptions         Json?
+
+  // Active auto-link suggestion run (trigger.dev). Set when the user kicks
+  // off an AI suggest scan; cleared when the user applies or discards. Lets
+  // the UI resume an in-flight or completed-but-unreviewed scan after a
+  // page reload so progress isn't lost.
+  autoLinkRunId        String?
+  autoLinkRunStartedAt DateTime?
+
+  // See Task.embeddingHash — skip-if-unchanged guard for re-embedding.
+  embeddingHash String?
 
   // Dates
   createdAt DateTime @default(now())

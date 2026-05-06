@@ -4,6 +4,7 @@ import axios from 'axios';
 import { generateAuditorContentTask } from '../auditor/generate-auditor-content';
 import { generateRiskMitigationsForOrg } from './generate-risk-mitigation';
 import { generateVendorMitigationsForOrg } from './generate-vendor-mitigation';
+import type { linkRisksAndVendorsToWork } from './link-risks-and-vendors-to-work';
 import {
   createRisks,
   createVendors,
@@ -161,14 +162,6 @@ export const onboardOrganization = task({
       metadata.set('vendors', true);
       metadata.set('currentStep', 'Creating Risks...');
 
-      // Fan-out vendor mitigations as separate jobs
-      await tasks.trigger<typeof generateVendorMitigationsForOrg>(
-        'generate-vendor-mitigations-for-org',
-        {
-          organizationId: payload.organizationId,
-        },
-      );
-
       // Create risks (tracking is handled inside createRisks)
       const risks = await createRisks(
         questionsAndAnswers,
@@ -186,17 +179,42 @@ export const onboardOrganization = task({
       // Mark risks step as complete in metadata (real-time)
       metadata.set('risk', true);
 
+      // Auto-link risks + vendors to existing tasks BEFORE mitigation generation
+      // runs, so the AI prompt for both risks AND vendors sees the linked
+      // tasks/controls and produces grounded plans. Fan-out for both happens
+      // after this gate. Fails-soft: a timeout/error degrades to today's
+      // behavior. (ENG-221 + Cubic findings #7 / #26.)
+      metadata.set('currentStep', 'Linking risks to tasks...');
+      try {
+        await tasks.triggerAndWait<typeof linkRisksAndVendorsToWork>(
+          'link-risks-and-vendors-to-work',
+          { organizationId: payload.organizationId },
+        );
+        metadata.set('linkage', true);
+      } catch (err) {
+        logger.warn('linkage step failed; continuing without grounded prompts', {
+          organizationId: payload.organizationId,
+          error: err instanceof Error ? err.message : String(err),
+        });
+      }
+
       // Get policy count for the step message
       const policyCount = policyList.length;
       metadata.set('currentStep', `Tailoring Policies... (0/${policyCount})`);
 
-      // Fan-out risk mitigations as separate jobs
-      await tasks.trigger<typeof generateRiskMitigationsForOrg>(
-        'generate-risk-mitigations-for-org',
-        {
-          organizationId: payload.organizationId,
-        },
-      );
+      // Fan-out vendor + risk mitigations now that linkage has populated the
+      // grounding context for both kinds of entities. Done in parallel —
+      // each fan-out task itself batchTriggers per-entity children.
+      await Promise.all([
+        tasks.trigger<typeof generateVendorMitigationsForOrg>(
+          'generate-vendor-mitigations-for-org',
+          { organizationId: payload.organizationId },
+        ),
+        tasks.trigger<typeof generateRiskMitigationsForOrg>(
+          'generate-risk-mitigations-for-org',
+          { organizationId: payload.organizationId },
+        ),
+      ]);
 
       // Update policies with progress tracking
       await updateOrganizationPolicies(payload.organizationId, questionsAndAnswers, frameworks);

@@ -1,8 +1,8 @@
 import { generateVendorMitigation } from '@/trigger/tasks/onboarding/generate-vendor-mitigation';
 import type { PolicyContext } from '@/trigger/tasks/onboarding/onboard-organization-helpers';
 import { serverApi } from '@/lib/api-server';
-import { auth } from '@/utils/auth';
-import { tasks } from '@trigger.dev/sdk';
+import { requireApiPermission } from '@/lib/permissions.server';
+import { auth as triggerAuth, tasks } from '@trigger.dev/sdk';
 import { NextRequest, NextResponse } from 'next/server';
 
 interface PeopleApiResponse {
@@ -27,13 +27,9 @@ export async function POST(
   { params }: { params: Promise<{ vendorId: string }> },
 ) {
   try {
-    const session = await auth.api.getSession({
-      headers: req.headers,
-    });
-
-    if (!session?.session?.activeOrganizationId) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+    const ctx = await requireApiPermission(req, 'vendor', 'update');
+    if (ctx instanceof NextResponse) return ctx;
+    const { organizationId } = ctx;
 
     const { vendorId } = await params;
     if (!vendorId) {
@@ -42,8 +38,6 @@ export async function POST(
         { status: 400 },
       );
     }
-
-    const organizationId = session.session.activeOrganizationId;
 
     const [peopleResult, policiesResult] = await Promise.all([
       serverApi.get<PeopleApiResponse>('/v1/people'),
@@ -71,7 +65,7 @@ export async function POST(
       description: policy.description,
     }));
 
-    await tasks.trigger<typeof generateVendorMitigation>(
+    const handle = await tasks.trigger<typeof generateVendorMitigation>(
       'generate-vendor-mitigation',
       {
         organizationId,
@@ -81,17 +75,24 @@ export async function POST(
       },
     );
 
-    return NextResponse.json({ success: true });
+    // See risks/regenerate-mitigation: don't fail the request when only the
+    // token mint fails, since the run is already in flight. (Cubic #29.)
+    let publicAccessToken: string | null = null;
+    try {
+      publicAccessToken = await triggerAuth.createPublicToken({
+        scopes: { read: { runs: [handle.id] } },
+        expirationTime: '15m',
+      });
+    } catch (mintErr) {
+      console.error(
+        '[regenerate-mitigation] vendor run triggered but token mint failed; client must resume via /active',
+        { runId: handle.id, mintErr },
+      );
+    }
+
+    return NextResponse.json({ runId: handle.id, publicAccessToken });
   } catch (error) {
     console.error('Error regenerating vendor mitigation:', error);
-    return NextResponse.json(
-      {
-        error:
-          error instanceof Error
-            ? error.message
-            : 'Failed to regenerate mitigation',
-      },
-      { status: 500 },
-    );
+    return NextResponse.json({ error: 'Failed to regenerate mitigation' }, { status: 500 });
   }
 }

@@ -187,12 +187,13 @@ export class PermissionGuard implements CanActivate {
     // the schema rejects every request with `[body] Invalid input`, the
     // catch in canActivate turns that into a generic "Unable to verify
     // permissions" 403, and EVERY cookie-authenticated request returns 403.
-    // Reproduced repo-side via `bun run zod-repro.mjs`. Discovered on
-    // ENG-221 and the same fix applies here.
-    const result = await auth.api.hasPermission({
-      headers,
-      body: { permissions, permission: undefined },
-    });
+    //
+    // Spell the body out via a separate variable so TypeScript's excess-
+    // property check (only applied to fresh object literals) doesn't
+    // reject the extra `permission` key — the runtime accepts the wider
+    // shape per the union schema.
+    const body = { permissions, permission: undefined };
+    const result = await auth.api.hasPermission({ headers, body });
 
     return result.success === true;
   }

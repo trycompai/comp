@@ -3,12 +3,14 @@ import 'server-only';
 import { auth } from '@/utils/auth';
 import { db } from '@db/server';
 import { headers } from 'next/headers';
+import { NextResponse } from 'next/server';
 import { redirect } from 'next/navigation';
 import {
   type UserPermissions,
   canAccessAuditorView,
   canAccessRoute,
   getDefaultRoute,
+  hasPermission,
   mergePermissions,
   resolveBuiltInPermissions,
 } from './permissions';
@@ -171,4 +173,53 @@ export async function requireAuditorViewAccess(orgId: string): Promise<void> {
     ? getDefaultRoute(permissions, orgId)
     : null;
   redirect(defaultRoute ?? '/no-access');
+}
+
+export interface ApiPermissionContext {
+  organizationId: string;
+  userId: string;
+  permissions: UserPermissions;
+}
+
+/**
+ * Permission guard for Next.js Route Handlers (`app/api/.../route.ts`). On
+ * success, returns a context object with the active org id, user id, and
+ * resolved permissions. On failure, returns a `NextResponse` to forward to
+ * the client. Caller pattern:
+ *
+ *     const ctx = await requireApiPermission(req, 'risk', 'update');
+ *     if (ctx instanceof NextResponse) return ctx;
+ *     // ...use ctx.organizationId, ctx.permissions...
+ *
+ * The Next.js mutation routes for risk/vendor auto-link, relink, and unlink
+ * orchestrate work that the NestJS API doesn't host directly (trigger.dev
+ * tokens, Upstash queries, Prisma joins). These endpoints still need the
+ * same RBAC contract as the API — see Cubic finding #9 on PR #2671.
+ */
+export async function requireApiPermission(
+  req: Request,
+  resource: string,
+  action: string,
+): Promise<ApiPermissionContext | NextResponse> {
+  const session = await auth.api.getSession({ headers: req.headers });
+  if (!session?.user?.id || !session?.session?.activeOrganizationId) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+  const organizationId = session.session.activeOrganizationId;
+  const userId = session.user.id;
+
+  const member = await db.member.findFirst({
+    where: { userId, organizationId, deactivated: false },
+    select: { role: true },
+  });
+  if (!member) {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+  }
+
+  const permissions = await resolveUserPermissions(member.role, organizationId);
+  if (!hasPermission(permissions, resource, action)) {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+  }
+
+  return { organizationId, userId, permissions };
 }

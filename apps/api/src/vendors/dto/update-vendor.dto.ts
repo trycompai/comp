@@ -6,9 +6,16 @@ import {
   IsEnum,
   IsUrl,
   IsBoolean,
+  MaxLength,
 } from 'class-validator';
 import { Transform } from 'class-transformer';
-import { VendorCategory, VendorStatus, Likelihood, Impact } from '@db';
+import {
+  VendorCategory,
+  VendorStatus,
+  Likelihood,
+  Impact,
+  RiskTreatmentType,
+} from '@db';
 
 /**
  * DTO for PATCH /vendors/:id
@@ -66,6 +73,25 @@ export class UpdateVendorDto {
   @IsOptional()
   @IsEnum(Impact)
   residualImpact?: Impact;
+
+  @ApiPropertyOptional({
+    description: 'Risk treatment strategy',
+    enum: RiskTreatmentType,
+    default: RiskTreatmentType.accept,
+    example: RiskTreatmentType.mitigate,
+  })
+  @IsOptional()
+  @IsEnum(RiskTreatmentType)
+  treatmentStrategy?: RiskTreatmentType;
+
+  @ApiPropertyOptional({
+    description: 'Description of the treatment strategy',
+    example: 'We isolated the vendor to a dedicated VPC.',
+  })
+  @IsOptional()
+  @IsString()
+  @MaxLength(20_000)
+  treatmentStrategyDescription?: string | null;
 
   @ApiPropertyOptional({ description: 'Vendor website URL' })
   @IsOptional()

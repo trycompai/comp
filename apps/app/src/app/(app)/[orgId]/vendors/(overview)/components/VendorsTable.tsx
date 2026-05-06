@@ -171,7 +171,7 @@ export function VendorsTable({
   // Local state for search, sorting, and pagination
   const [searchQuery, setSearchQuery] = useState('');
   const [sort, setSort] = useState<{
-    id: 'name' | 'updatedAt' | 'inherentRisk';
+    id: 'name' | 'updatedAt' | 'inherentRisk' | 'residualRisk';
     desc: boolean;
   }>({
     id: 'name',
@@ -264,6 +264,8 @@ export function VendorsTable({
         inherentImpact: 'insignificant' as const,
         residualProbability: 'very_unlikely' as const,
         residualImpact: 'insignificant' as const,
+        treatmentStrategy: 'accept' as const,
+        treatmentStrategyDescription: null,
         website: null,
         isSubProcessor: false,
         logoUrl: null,
@@ -290,6 +292,8 @@ export function VendorsTable({
         inherentImpact: 'insignificant' as const,
         residualProbability: 'very_unlikely' as const,
         residualImpact: 'insignificant' as const,
+        treatmentStrategy: 'accept' as const,
+        treatmentStrategyDescription: null,
         website: null,
         isSubProcessor: false,
         logoUrl: null,
@@ -331,6 +335,22 @@ export function VendorsTable({
       if (sort.id === 'inherentRisk') {
         const aScore = getRiskScore(a.inherentProbability, a.inherentImpact).raw;
         const bScore = getRiskScore(b.inherentProbability, b.inherentImpact).raw;
+        const comparison = aScore - bScore;
+        return sort.desc ? -comparison : comparison;
+      }
+      if (sort.id === 'residualRisk') {
+        // Unassessed vendors carry default residual values (very_unlikely
+        // × insignificant = 1). Without this branch they'd cluster at the
+        // bottom (or top, when desc) of the residual sort even though we
+        // render them as `—` and they have no real residual yet. Force
+        // them to the end of the list regardless of sort direction so
+        // assessed vendors are always grouped together. (Cubic finding
+        // on PR #2671.)
+        const aAssessed = a.status === 'assessed';
+        const bAssessed = b.status === 'assessed';
+        if (aAssessed !== bAssessed) return aAssessed ? -1 : 1;
+        const aScore = getRiskScore(a.residualProbability, a.residualImpact).raw;
+        const bScore = getRiskScore(b.residualProbability, b.residualImpact).raw;
         const comparison = aScore - bScore;
         return sort.desc ? -comparison : comparison;
       }
@@ -392,7 +412,7 @@ export function VendorsTable({
     router.push(`/${orgId}/vendors/${vendorId}`);
   };
 
-  const handleSort = (columnId: 'name' | 'updatedAt' | 'inherentRisk') => {
+  const handleSort = (columnId: 'name' | 'updatedAt' | 'inherentRisk' | 'residualRisk') => {
     if (sort.id === columnId) {
       setSort({ id: columnId, desc: !sort.desc });
     } else {
@@ -400,7 +420,7 @@ export function VendorsTable({
     }
   };
 
-  const getSortIcon = (columnId: 'name' | 'updatedAt' | 'inherentRisk') => {
+  const getSortIcon = (columnId: 'name' | 'updatedAt' | 'inherentRisk' | 'residualRisk') => {
     if (sort.id !== columnId) {
       return <ArrowUpDown className="ml-1 h-3 w-3 text-muted-foreground" />;
     }
@@ -545,6 +565,16 @@ export function VendorsTable({
                     {getSortIcon('inherentRisk')}
                   </button>
                 </TableHead>
+                <TableHead>
+                  <button
+                    type="button"
+                    onClick={() => handleSort('residualRisk')}
+                    className="flex items-center hover:text-foreground"
+                  >
+                    RESIDUAL RISK
+                    {getSortIcon('residualRisk')}
+                  </button>
+                </TableHead>
                 <TableHead>CATEGORY</TableHead>
                 <TableHead>OWNER</TableHead>
                 {hasPermission('vendor', 'delete') && <TableHead>ACTIONS</TableHead>}
@@ -573,6 +603,16 @@ export function VendorsTable({
                         <RiskScoreBadge
                           likelihood={vendor.inherentProbability}
                           impact={vendor.inherentImpact}
+                        />
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      {vendor.status === 'not_assessed' ? (
+                        <Text variant="muted" size="sm">—</Text>
+                      ) : (
+                        <RiskScoreBadge
+                          likelihood={vendor.residualProbability}
+                          impact={vendor.residualImpact}
                         />
                       )}
                     </TableCell>

@@ -207,7 +207,10 @@ export async function firecrawlResearchCore(params: {
     verifiedAgentCertCount: certifications.filter(
       (c) => c.status === 'verified',
     ).length,
-    agentRiskLevel: parsed.data.risk_level ?? null,
+    agentLikelihood: parsed.data.likelihood ?? null,
+    agentImpact: parsed.data.impact ?? null,
+    agentRationaleLength: parsed.data.rationale?.length ?? 0,
+    agentRiskLevelLegacy: parsed.data.risk_level ?? null,
   });
 
   const deepScrapeSourceUrl = pickDeepScrapeSourceUrl({
@@ -287,6 +290,9 @@ export async function firecrawlResearchCore(params: {
     lastResearchedAt:
       normalizeIso(parsed.data.last_researched_at ?? null) ??
       new Date().toISOString(),
+    likelihood: parsed.data.likelihood ?? null,
+    impact: parsed.data.impact ?? null,
+    rationale: parsed.data.rationale ?? null,
     riskLevel: parsed.data.risk_level ?? null,
     securityAssessment: parsed.data.security_assessment ?? null,
     certifications:
