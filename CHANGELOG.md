@@ -1,3 +1,16 @@
+## [3.44.1](https://github.com/trycompai/comp/compare/v3.44.0...v3.44.1) (2026-05-06)
+
+
+### Bug Fixes
+
+* **db:** inline RDS CA bundle to bypass Turbopack ignoring outputFileTracingIncludes ([2694ece](https://github.com/trycompai/comp/commit/2694eced5a23e666b463f654c3cd22363b9c9bed))
+
+
+### Performance Improvements
+
+* **app:** pin Vercel SSR functions to iad1 ([ae20aaa](https://github.com/trycompai/comp/commit/ae20aaac161cd1766fac6aeacb6ee55fc717d74b))
+* **portal:** pin Vercel SSR functions to iad1 ([1a06cec](https://github.com/trycompai/comp/commit/1a06cec285864ec7d1a34535e9eec5e99c96122f))
+
 # [3.44.0](https://github.com/trycompai/comp/compare/v3.43.1...v3.44.0) (2026-05-06)
 
 
