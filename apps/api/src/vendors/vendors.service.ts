@@ -107,6 +107,11 @@ export class VendorsService {
               },
             },
           },
+          // Linked task statuses are needed by the vendors table to compute
+          // the current (interpolated) severity score so the residual badge
+          // reflects treatment progress, not just the static residual
+          // probability/impact. Mirrors the risks service.
+          tasks: { select: { id: true, status: true } },
         },
       });
 

@@ -17,7 +17,10 @@ import { generateObject, jsonSchema } from 'ai';
 import axios from 'axios';
 import { z } from 'zod';
 import type { researchVendor } from '../scrape/research';
-import { mirrorActiveDescriptionIntoMap } from '@/lib/strategy-descriptions';
+import {
+  applyMitigationPlanFields,
+  mirrorActiveDescriptionIntoMap,
+} from '@/lib/strategy-descriptions';
 import { buildCitationsHeading } from './build-citations-heading';
 import { RISK_MITIGATION_PROMPT } from './prompts/risk-mitigation';
 import {
@@ -667,11 +670,11 @@ ${formatCitationsBlock(citations)}`;
     schema: sentencesSchema,
   });
 
-  const treatmentStrategy =
-    typeof vendor.treatmentStrategy === 'string' ? vendor.treatmentStrategy : 'mitigate';
-
+  // See createRiskMitigationComment — pin the prose label to 'mitigate'
+  // since the saved strategy is forced to mitigate by
+  // `applyMitigationPlanFields` below.
   const finalText = combineSentencesWithCitations({
-    treatmentStrategy,
+    treatmentStrategy: 'mitigate',
     sentences: result.object.sentences,
     citations,
     linkedTotals: {
@@ -680,20 +683,22 @@ ${formatCitationsBlock(citations)}`;
     },
   });
 
-  // Mirror the new text into the per-strategy map so switching strategies
-  // doesn't lose this draft.
-  const vendorActiveStrategy =
-    typeof vendor.treatmentStrategy === 'string' ? vendor.treatmentStrategy : 'mitigate';
+  // The AI generated a mitigation plan — force the strategy to mitigate
+  // so the plan lands in the correct slot, even if the vendor was
+  // previously on Accept / Transfer / Avoid (e.g. older rows created
+  // before the schema default flipped to mitigate). Any prior non-
+  // mitigate text is preserved under its own slot.
   await db.vendor.update({
     where: { id: vendor.id, organizationId },
-    data: {
-      treatmentStrategyDescription: finalText,
-      strategyDescriptions: mirrorActiveDescriptionIntoMap({
-        strategy: vendorActiveStrategy,
-        description: finalText,
-        current: vendor.strategyDescriptions,
-      }),
-    },
+    data: applyMitigationPlanFields({
+      plan: finalText,
+      currentStrategy:
+        typeof vendor.treatmentStrategy === 'string'
+          ? vendor.treatmentStrategy
+          : 'mitigate',
+      currentDescription: vendor.treatmentStrategyDescription ?? null,
+      currentMap: vendor.strategyDescriptions,
+    }),
   });
 
   logger.info(
@@ -1001,12 +1006,18 @@ export async function createRiskMitigationComment(
     gapHint: GAP_HINT_BY_RISK_CATEGORY[risk.category] ?? 'general',
   });
 
+  // The AI mitigation generator always produces a *mitigation* plan, and
+  // `applyMitigationPlanFields` below forces the saved strategy to
+  // 'mitigate'. Pin the prompt + prose label to 'mitigate' too so the
+  // generated text isn't labeled with the row's previous strategy
+  // (e.g. "Treatment plan (accept)" stored under strategy=mitigate).
+  const PLAN_STRATEGY = 'mitigate';
   const userPrompt = `Risk: ${risk.title}
 Description: ${risk.description}
 Category: ${risk.category}
 Department: ${risk.department ?? 'unspecified'}
 Residual: likelihood=${risk.residualLikelihood}, impact=${risk.residualImpact}
-Treatment strategy: ${risk.treatmentStrategy}
+Treatment strategy: ${PLAN_STRATEGY}
 
 Citations (write one sentence per item, in order):
 ${formatCitationsBlock(citations)}`;
@@ -1019,7 +1030,7 @@ ${formatCitationsBlock(citations)}`;
   });
 
   const finalText = combineSentencesWithCitations({
-    treatmentStrategy: risk.treatmentStrategy,
+    treatmentStrategy: PLAN_STRATEGY,
     sentences: result.object.sentences,
     citations,
     linkedTotals: {
@@ -1028,16 +1039,17 @@ ${formatCitationsBlock(citations)}`;
     },
   });
 
+  // See createVendorRiskMitigationComment — the AI plan is a mitigation
+  // plan, so force strategy=mitigate and preserve any prior non-mitigate
+  // description under its own slot.
   await db.risk.update({
     where: { id: risk.id, organizationId },
-    data: {
-      treatmentStrategyDescription: finalText,
-      strategyDescriptions: mirrorActiveDescriptionIntoMap({
-        strategy: risk.treatmentStrategy,
-        description: finalText,
-        current: risk.strategyDescriptions,
-      }),
-    },
+    data: applyMitigationPlanFields({
+      plan: finalText,
+      currentStrategy: risk.treatmentStrategy,
+      currentDescription: risk.treatmentStrategyDescription,
+      currentMap: risk.strategyDescriptions,
+    }),
   });
 
   logger.info(
@@ -1159,7 +1171,11 @@ export async function createRisksFromData(
     metadata.set(`risk_temp_${index}_status`, 'processing');
   });
 
-  // Create all risks concurrently
+  // Create all risks concurrently. Strategy is intentionally NOT taken
+  // from the LLM extraction — we always start with mitigate (the
+  // workhorse strategy + schema default) so the AI mitigation plan that
+  // runs immediately after lands in the correct slot. The user can
+  // switch to accept / transfer / avoid manually if needed.
   const createPromises = riskData.map((risk) =>
     db.risk.create({
       data: {
@@ -1169,8 +1185,6 @@ export async function createRisksFromData(
         department: risk.department,
         likelihood: risk.risk_residual_probability,
         impact: risk.risk_residual_impact,
-        treatmentStrategy: risk.risk_treatment_strategy,
-        treatmentStrategyDescription: risk.risk_treatment_strategy_description,
         organizationId,
       },
     }),
@@ -1220,6 +1234,9 @@ async function createRisksFromDataWithBaseline(
         },
       });
     } else if (risk.riskData) {
+      // Same rationale as createRisksFromData — strategy is fixed to
+      // mitigate (schema default) so the AI plan generated right after
+      // lands in the correct slot.
       return db.risk.create({
         data: {
           title: risk.riskData.risk_name,
@@ -1228,8 +1245,6 @@ async function createRisksFromDataWithBaseline(
           department: risk.riskData.department,
           likelihood: risk.riskData.risk_residual_probability,
           impact: risk.riskData.risk_residual_impact,
-          treatmentStrategy: risk.riskData.risk_treatment_strategy,
-          treatmentStrategyDescription: risk.riskData.risk_treatment_strategy_description,
           organizationId,
         },
       });

@@ -1,7 +1,18 @@
 import { researchJobCore } from '@/trigger/lib/research';
 import { db } from '@db/server';
-import { schemaTask } from '@trigger.dev/sdk';
+import { queue, schemaTask } from '@trigger.dev/sdk';
 import { z } from 'zod';
+
+// Each research run can hold a slot for minutes (firecrawl scrape + LLM
+// extraction). Without a cap, a 10-vendor onboarding can hog the whole
+// 25-slot dev env budget for the entire research window — starving the
+// mitigation + policy fan-outs that fire right after. Capping at 5 lets
+// research progress in batches while leaving 20 slots free for the rest
+// of the onboarding pipeline.
+const researchVendorQueue = queue({
+  name: 'research-vendor',
+  concurrencyLimit: 5,
+});
 
 const firecrawlDataSchema = z.object({
   company_name: z.string().optional().nullable(),
@@ -35,6 +46,7 @@ const firecrawlDataSchema = z.object({
 
 export const researchVendor = schemaTask({
   id: 'research-vendor',
+  queue: researchVendorQueue,
   schema: z.object({
     website: z.string().url(),
   }),

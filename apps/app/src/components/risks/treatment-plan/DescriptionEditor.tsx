@@ -113,18 +113,49 @@ export function DescriptionEditor({
   // Regenerate-with-AI bypasses the in-edit guard above. When a regen run
   // terminates (`regenRun` flips from set → null), the user explicitly
   // asked to overwrite whatever they had — keeping the stale draft and
-  // requiring a refresh to see the new prose was confusing. Force a
-  // preview reset so the new value lands immediately.
+  // requiring a refresh to see the new prose was confusing.
+  //
+  // The new prose may already be in `value` at the moment regenRun
+  // clears (sync write before the parent flips the run handle), or it
+  // may arrive in a later render after SWR refetches. Both paths are
+  // handled:
+  //
+  // 1. Sync arrival: when regenRun flips set→null, immediately apply
+  //    the current value and force preview.
+  // 2. Async arrival: capture the value-at-clear-time. The next render
+  //    where `value` differs from the captured snapshot is the AI prose
+  //    landing — apply it, force preview, and clear the latch.
+  //
+  // Without (2), a regen that completes BEFORE the SWR refetch would
+  // sync-apply the OLD value, and the new prose arriving moments later
+  // would be ignored because the in-edit guard skips resync while
+  // mode === 'edit'.
   const prevRegenRunRef = useRef(regenRun);
+  const valueAtRegenClearRef = useRef<string | null>(null);
   useEffect(() => {
-    const wasRunning = prevRegenRunRef.current !== null && prevRegenRunRef.current !== undefined;
-    const isRunning = regenRun !== null && regenRun !== undefined;
+    const wasRunning = prevRegenRunRef.current != null;
+    const isRunning = regenRun != null;
     prevRegenRunRef.current = regenRun;
     if (wasRunning && !isRunning) {
+      // Path 1: sync arrival — value has already updated.
+      valueAtRegenClearRef.current = value;
       setDraft(value);
       if (value.trim().length > 0) setMode('preview');
     }
   }, [regenRun, value]);
+
+  useEffect(() => {
+    const captured = valueAtRegenClearRef.current;
+    if (captured === null) return;
+    if (value === captured) return;
+    // Path 2: async arrival — value just changed since regen cleared,
+    // so this is the AI prose landing. Overwrite even if user is in
+    // edit mode (they explicitly opted into the overwrite by clicking
+    // Regenerate).
+    valueAtRegenClearRef.current = null;
+    setDraft(value);
+    if (value.trim().length > 0) setMode('preview');
+  }, [value]);
 
   // Auto-grow the textarea to fit content, but cap at TEXTAREA_MAX_PX so a
   // long draft doesn't stretch the Treatment plan column past the Strategy
