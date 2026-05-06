@@ -625,7 +625,8 @@ export const RisksTable = ({
                     </button>
                   </TableHead>
                   <TableHead>SEVERITY</TableHead>
-                  <TableHead>RISK SCORE</TableHead>
+                  <TableHead>INHERENT RISK</TableHead>
+                  <TableHead>CURRENT RISK</TableHead>
                   <TableHead>STATUS</TableHead>
                   <TableHead>OWNER</TableHead>
                   <TableHead>
@@ -658,17 +659,28 @@ export const RisksTable = ({
                         </HStack>
                       </TableCell>
                       {(() => {
-                        // Both columns describe the *current* treatment-aware
-                        // state. SEVERITY shows the qualitative level as
-                        // plain text (no chip — the colored chip is on RISK
-                        // SCORE, so a single visual signal carries the band
-                        // and the second column adds the precise number).
+                        // Three score columns paint the before-vs-now picture:
+                        //   SEVERITY = current treatment-aware level (text).
+                        //   INHERENT = raw score before treatment, fixed.
+                        //   CURRENT  = treatment-aware score interpolated by
+                        //              linked-task completion. Named "Current"
+                        //              (not "Residual") because the canonical
+                        //              residual is the *target* score at 100%
+                        //              completion — what's shown here moves
+                        //              with progress and matches the hero's
+                        //              "Currently X/10" subline.
+                        // SEVERITY is plain text and CURRENT carries the
+                        // colored chip so we don't double-paint the band.
+                        const inherentScore = getRiskScore(risk.likelihood, risk.impact).score;
                         const score = currentSeverityScore(risk);
                         const level = getRiskLevelFromScore(score);
                         return (
                           <>
                             <TableCell>
                               <Text>{LEVEL_LABEL[level]}</Text>
+                            </TableCell>
+                            <TableCell>
+                              <RiskScoreBadge score={inherentScore} />
                             </TableCell>
                             <TableCell>
                               <RiskScoreBadge score={score} />
