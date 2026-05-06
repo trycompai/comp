@@ -626,7 +626,7 @@ export const RisksTable = ({
                   </TableHead>
                   <TableHead>SEVERITY</TableHead>
                   <TableHead>INHERENT</TableHead>
-                  <TableHead>RISK SCORE</TableHead>
+                  <TableHead>RESIDUAL</TableHead>
                   <TableHead>STATUS</TableHead>
                   <TableHead>OWNER</TableHead>
                   <TableHead>
@@ -660,10 +660,11 @@ export const RisksTable = ({
                       </TableCell>
                       {(() => {
                         // Three score columns paint the before-vs-now picture:
-                        //   INHERENT  = the raw score before treatment, fixed.
-                        //   SEVERITY  = current treatment-aware level (text).
-                        //   RISK SCORE = current treatment-aware score (chip).
-                        // SEVERITY is plain text and RISK SCORE carries the
+                        //   SEVERITY = current treatment-aware level (text).
+                        //   INHERENT = raw score before treatment, fixed.
+                        //   RESIDUAL = current treatment-aware score (chip),
+                        //              interpolated by linked-task completion.
+                        // SEVERITY is plain text and RESIDUAL carries the
                         // colored chip so we don't double-paint the band.
                         const inherentScore = getRiskScore(risk.likelihood, risk.impact).score;
                         const score = currentSeverityScore(risk);
