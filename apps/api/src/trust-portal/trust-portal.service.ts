@@ -628,6 +628,8 @@ export class TrustPortalService {
       pci_dss: 'pci_dss',
       nen7510: 'nen7510',
       iso9001: 'iso9001',
+      pipeda: 'pipeda',
+      ccpa: 'ccpa',
     };
 
     // Map framework status fields (frontend sends camelCase like "iso27001Status", DB uses "iso27001_status")
@@ -642,6 +644,8 @@ export class TrustPortalService {
       pcidssStatus: 'pci_dss_status',
       nen7510Status: 'nen7510_status',
       iso9001Status: 'iso9001_status',
+      pipedaStatus: 'pipeda_status',
+      ccpaStatus: 'ccpa_status',
       // Also support snake_case input (from other callers)
       soc2type1_status: 'soc2type1_status',
       soc2type2_status: 'soc2type2_status',
@@ -653,6 +657,8 @@ export class TrustPortalService {
       pci_dss_status: 'pci_dss_status',
       nen7510_status: 'nen7510_status',
       iso9001_status: 'iso9001_status',
+      pipeda_status: 'pipeda_status',
+      ccpa_status: 'ccpa_status',
     };
 
     for (const [inputKey, dbField] of Object.entries(boolFieldMap)) {
@@ -1533,6 +1539,8 @@ export class TrustPortalService {
       pcidss: trust.pci_dss ?? false,
       nen7510: trust.nen7510 ?? false,
       iso9001: trust.iso9001 ?? false,
+      pipeda: trust.pipeda ?? false,
+      ccpa: trust.ccpa ?? false,
       // Framework statuses
       soc2type1Status: trust.soc2type1_status ?? 'started',
       soc2type2Status:
@@ -1547,6 +1555,8 @@ export class TrustPortalService {
       pcidssStatus: trust.pci_dss_status ?? 'started',
       nen7510Status: trust.nen7510_status ?? 'started',
       iso9001Status: trust.iso9001_status ?? 'started',
+      pipedaStatus: trust.pipeda_status ?? 'started',
+      ccpaStatus: trust.ccpa_status ?? 'started',
       // Overview
       overviewTitle: trust.overviewTitle ?? null,
       overviewContent: trust.overviewContent ?? defaultOverviewContent,
