@@ -128,7 +128,9 @@ export class TrustPortalService {
         | 'soc2type2_status'
         | 'pci_dss_status'
         | 'nen7510_status'
-        | 'iso9001_status';
+        | 'iso9001_status'
+        | 'pipeda_status'
+        | 'ccpa_status';
       enabledField:
         | 'iso27001'
         | 'iso42001'
@@ -139,7 +141,9 @@ export class TrustPortalService {
         | 'soc2type2'
         | 'pci_dss'
         | 'nen7510'
-        | 'iso9001';
+        | 'iso9001'
+        | 'pipeda'
+        | 'ccpa';
       slug: string;
     }
   > = {
@@ -192,6 +196,16 @@ export class TrustPortalService {
       statusField: 'soc3_status',
       enabledField: 'soc3',
       slug: 'soc3',
+    },
+    [TrustFramework.pipeda]: {
+      statusField: 'pipeda_status',
+      enabledField: 'pipeda',
+      slug: 'pipeda',
+    },
+    [TrustFramework.ccpa]: {
+      statusField: 'ccpa_status',
+      enabledField: 'ccpa',
+      slug: 'ccpa',
     },
   };
 
