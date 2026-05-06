@@ -34,6 +34,14 @@ const TERMINAL_FAILURE_STATUSES = new Set([
   'TIMED_OUT',
 ]);
 
+/**
+ * Cap (in px) for both the markdown preview and the auto-growing textarea.
+ * Past this height, the body scrolls internally so the Treatment plan column
+ * stays roughly aligned with the Strategy and Linked Work columns instead
+ * of pushing the whole row downward when AI emits a long plan.
+ */
+const TEXTAREA_MAX_PX = 480;
+
 function regenStatusCopy(status: string | undefined): { headline: string; sub: string } {
   if (!status || status === 'WAITING_FOR_DEPLOY') {
     return {
@@ -102,14 +110,17 @@ export function DescriptionEditor({
     if (value.trim().length === 0) setMode('edit');
   }, [value, mode, saving]);
 
-  // Auto-grow the textarea to fit content. Run on draft change AND on mode
-  // change (so switching from preview to edit sizes correctly on first paint).
+  // Auto-grow the textarea to fit content, but cap at TEXTAREA_MAX_PX so a
+  // long draft doesn't stretch the Treatment plan column past the Strategy
+  // / Linked Work columns. Internal scroll kicks in past the cap.
   useLayoutEffect(() => {
     if (mode !== 'edit') return;
     const el = textareaRef.current;
     if (!el) return;
     el.style.height = 'auto';
-    el.style.height = `${Math.max(el.scrollHeight, 200)}px`;
+    const next = Math.max(Math.min(el.scrollHeight, TEXTAREA_MAX_PX), 200);
+    el.style.height = `${next}px`;
+    el.style.overflowY = el.scrollHeight > TEXTAREA_MAX_PX ? 'auto' : 'hidden';
   }, [draft, mode]);
 
   const isDirty = draft.trim() !== (value ?? '').trim();
@@ -139,7 +150,10 @@ export function DescriptionEditor({
   return (
     <div className="flex flex-col">
       {mode === 'preview' && hasValue ? (
-        <div className="mt-4 border-t border-border pt-4">
+        <div
+          className="mt-4 overflow-y-auto border-t border-border pt-4"
+          style={{ maxHeight: TEXTAREA_MAX_PX }}
+        >
           <MarkdownPreview content={value} />
         </div>
       ) : (
