@@ -624,8 +624,8 @@ export const RisksTable = ({
                       {getSortIcon('title')}
                     </button>
                   </TableHead>
-                  <TableHead>INHERENT</TableHead>
                   <TableHead>SEVERITY</TableHead>
+                  <TableHead>INHERENT</TableHead>
                   <TableHead>RISK SCORE</TableHead>
                   <TableHead>STATUS</TableHead>
                   <TableHead>OWNER</TableHead>
@@ -671,10 +671,10 @@ export const RisksTable = ({
                         return (
                           <>
                             <TableCell>
-                              <RiskScoreBadge score={inherentScore} />
+                              <Text>{LEVEL_LABEL[level]}</Text>
                             </TableCell>
                             <TableCell>
-                              <Text>{LEVEL_LABEL[level]}</Text>
+                              <RiskScoreBadge score={inherentScore} />
                             </TableCell>
                             <TableCell>
                               <RiskScoreBadge score={score} />
