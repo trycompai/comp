@@ -4,349 +4,1699 @@
     "name": "Secure Data Transfer",
     "description": "Protect Information in Transit",
     "createdAt": "2025-06-04 16:09:44.637",
-    "updatedAt": "2025-06-04 19:41:05.066"
+    "updatedAt": "2025-06-04 19:41:05.066",
+    "documentTypes": []
   },
   {
     "id": "frk_ct_684071e280c4e0f777b957f7",
     "name": "Data Privacy",
     "description": "Protect Privacy and Personal Data (PII)",
     "createdAt": "2025-06-04 16:18:42.339",
-    "updatedAt": "2025-06-04 19:41:05.908"
+    "updatedAt": "2025-06-04 19:41:05.908",
+    "documentTypes": []
   },
   {
     "id": "frk_ct_684073617d0706858cceb8c7",
     "name": "Asset Return",
     "description": "Ensure Return of Assets Upon Termination",
     "createdAt": "2025-06-04 16:25:04.708",
-    "updatedAt": "2025-06-04 19:41:06.360"
+    "updatedAt": "2025-06-04 19:41:06.360",
+    "documentTypes": []
   },
   {
     "id": "frk_ct_68407429371f33886d8ab80d",
     "name": "Encryption Key Management",
     "description": "Implement Cryptographic Key Lifecycle Management",
     "createdAt": "2025-06-04 16:28:25.083",
-    "updatedAt": "2025-06-04 19:41:06.998"
+    "updatedAt": "2025-06-04 19:41:06.998",
+    "documentTypes": []
   },
   {
     "id": "frk_ct_6840705b6dcee0506dabacfb",
     "name": "Regulatory Compliance",
     "description": "Identify and Comply with Legal and Contractual Requirements",
     "createdAt": "2025-06-04 16:12:11.272",
-    "updatedAt": "2025-06-04 19:41:05.205"
+    "updatedAt": "2025-06-04 19:41:05.205",
+    "documentTypes": []
   },
   {
     "id": "frk_ct_6840738800f98fa3c0f3a3ae",
     "name": "Configuration & Patch Management",
     "description": "Harden baselines; patch swiftly",
     "createdAt": "2025-06-04 16:25:43.882",
-    "updatedAt": "2025-06-04 19:41:06.507"
+    "updatedAt": "2025-06-04 19:41:06.507",
+    "documentTypes": []
   },
   {
     "id": "frk_ct_684072e06f4a49ee669076cc",
     "name": "Endpoint Protection",
     "description": "Protect Systems Against Malware",
     "createdAt": "2025-06-04 16:22:56.279",
-    "updatedAt": "2025-06-09 02:50:51.955"
+    "updatedAt": "2025-06-09 02:50:51.955",
+    "documentTypes": []
   },
   {
     "id": "frk_ct_684070831cc83c4ab4c2c4d8",
     "name": "Security Logging",
     "description": "Enable Logging of Security Events",
     "createdAt": "2025-06-04 16:12:50.757",
-    "updatedAt": "2025-06-04 19:41:05.344"
+    "updatedAt": "2025-06-04 19:41:05.344",
+    "documentTypes": []
   },
   {
     "id": "frk_ct_6840731ae0b857152b35ca8f",
     "name": "Remote-Work Security",
     "description": "Implement Secure Remote Working Practices",
     "createdAt": "2025-06-04 16:23:54.000",
-    "updatedAt": "2025-06-04 19:41:06.238"
+    "updatedAt": "2025-06-04 19:41:06.238",
+    "documentTypes": []
   },
   {
     "id": "frk_ct_684073ba24475a83ba048022",
     "name": "Segregation of duties",
     "description": "Implement Segregation of Duties",
     "createdAt": "2025-06-04 16:26:33.778",
-    "updatedAt": "2025-06-04 19:41:06.631"
+    "updatedAt": "2025-06-04 19:41:06.631",
+    "documentTypes": []
   },
   {
     "id": "frk_ct_684073d541bfb8b8b777e529",
     "name": "Threat intelligence",
     "description": "Implement a Threat Intelligence Program",
     "createdAt": "2025-06-04 16:27:01.369",
-    "updatedAt": "2025-06-04 19:41:06.752"
+    "updatedAt": "2025-06-04 19:41:06.752",
+    "documentTypes": []
   },
   {
     "id": "frk_ct_68407c9513000617776104c7",
     "name": "Acceptable Use",
     "description": "Establish an Acceptable Use Policy for Information and Assets",
     "createdAt": "2025-06-04 17:04:20.799",
-    "updatedAt": "2025-06-04 19:41:07.258"
-  },
-  {
-    "id": "frk_ct_6849ba93636ff0155eb89158",
-    "name": "Utility Tool monitoring",
-    "description": "Audits the execution of privileged program",
-    "createdAt": "2025-06-11 17:19:15.284",
-    "updatedAt": "2025-06-11 17:19:15.284"
-  },
-  {
-    "id": "frk_ct_683f4a410cf5bf6d40bf3583",
-    "name": "Access Rights",
-    "description": "Manage User Access Rights Lifecycle",
-    "createdAt": "2025-06-03 19:17:20.504",
-    "updatedAt": "2025-06-04 19:41:03.426"
+    "updatedAt": "2025-06-04 19:41:07.258",
+    "documentTypes": []
   },
   {
     "id": "frk_ct_683f4ae4acbd63d0e558a6f5",
     "name": "Credential Management",
     "description": "Protect Authentication Information",
     "createdAt": "2025-06-03 19:20:04.055",
-    "updatedAt": "2025-06-04 19:41:03.601"
+    "updatedAt": "2025-06-04 19:41:03.601",
+    "documentTypes": []
   },
   {
     "id": "frk_ct_683f4b7614d209f8b6ffd477",
     "name": "Resource Capacity Management",
     "description": "Perform Capacity Management for Resources",
     "createdAt": "2025-06-03 19:22:30.199",
-    "updatedAt": "2025-06-04 19:41:03.729"
+    "updatedAt": "2025-06-04 19:41:03.729",
+    "documentTypes": []
   },
   {
     "id": "frk_ct_683f4c30e2d3f1117fa58e13",
     "name": "Change management",
     "description": "Apply Change Management for Information Systems",
     "createdAt": "2025-06-03 19:25:36.373",
-    "updatedAt": "2025-06-04 19:41:03.850"
+    "updatedAt": "2025-06-04 19:41:03.850",
+    "documentTypes": []
   },
   {
     "id": "frk_ct_683f4c9db20e7cf4a303af1f",
     "name": "Compliance Register",
     "description": "Maintain compliance register exceptions",
     "createdAt": "2025-06-03 19:27:24.623",
-    "updatedAt": "2025-06-04 19:41:03.972"
-  },
-  {
-    "id": "frk_ct_683f4dd564057a97ae323c9f",
-    "name": "Disaster Recovery Planning",
-    "description": "Test DR; meet RTO/RPO",
-    "createdAt": "2025-06-03 19:32:37.325",
-    "updatedAt": "2025-06-04 19:41:04.410"
+    "updatedAt": "2025-06-04 19:41:03.972",
+    "documentTypes": []
   },
   {
     "id": "frk_ct_683f4ef6c6a5481a377be413",
     "name": "Standard Operating Procedures (SOPs)",
     "description": "Document Operational Procedures",
     "createdAt": "2025-06-03 19:37:26.001",
-    "updatedAt": "2025-06-04 19:41:04.534"
+    "updatedAt": "2025-06-04 19:41:04.534",
+    "documentTypes": []
   },
   {
     "id": "frk_ct_683f4f59dea367ca96145e14",
     "name": "Independent ISMS Review",
     "description": "Conduct Independent Review of the ISMS",
     "createdAt": "2025-06-03 19:39:04.628",
-    "updatedAt": "2025-06-04 19:41:04.669"
+    "updatedAt": "2025-06-04 19:41:04.669",
+    "documentTypes": []
   },
   {
     "id": "frk_ct_683f50556124040dc15d62cb",
     "name": "Continuity-Time Security",
     "description": "Maintain Security During Disruptions",
     "createdAt": "2025-06-03 19:43:16.530",
-    "updatedAt": "2025-06-04 19:41:04.806"
+    "updatedAt": "2025-06-04 19:41:04.806",
+    "documentTypes": []
   },
   {
     "id": "frk_ct_683f50aae46f5e4e096e6bb3",
     "name": "Secure SDLC Integration",
     "description": "Integrate Information Security into Project Management",
     "createdAt": "2025-06-03 19:44:41.732",
-    "updatedAt": "2025-06-04 19:41:04.941"
+    "updatedAt": "2025-06-04 19:41:04.941",
+    "documentTypes": []
   },
   {
     "id": "frk_ct_684070c1f0091d850df02e59",
     "name": "Mobile Security",
     "description": "Enforce MDM on mobile",
     "createdAt": "2025-06-04 16:13:52.979",
-    "updatedAt": "2025-06-04 19:41:05.484"
+    "updatedAt": "2025-06-04 19:41:05.484",
+    "documentTypes": []
   },
   {
     "id": "frk_ct_68407122565b1968676d93db",
     "name": "Physical Access Control",
     "description": "Control Physical Entry to Facilities",
     "createdAt": "2025-06-04 16:15:29.760",
-    "updatedAt": "2025-06-04 19:41:05.759"
+    "updatedAt": "2025-06-04 19:41:05.759",
+    "documentTypes": []
   },
   {
     "id": "frk_ct_68407406644c56d42eac3295",
     "name": "Endpoint Security",
     "description": "Secure User Endpoint Devices",
     "createdAt": "2025-06-04 16:27:49.808",
-    "updatedAt": "2025-06-04 19:41:06.874"
-  },
-  {
-    "id": "frk_ct_683f4d7360a876b972aba39a",
-    "name": "Vulnerability Management",
-    "description": "Manage both software and code vulnerabilities",
-    "createdAt": "2025-06-03 19:30:59.173",
-    "updatedAt": "2025-06-09 03:19:38.679"
-  },
-  {
-    "id": "frk_ct_683f3ecd42e62fde624c59c1",
-    "name": "Policy Compliance",
-    "description": "Ensure Compliance with Security Policies and Standards",
-    "createdAt": "2025-06-03 18:28:29.154",
-    "updatedAt": "2025-06-04 19:41:01.555"
+    "updatedAt": "2025-06-04 19:41:06.874",
+    "documentTypes": []
   },
   {
     "id": "frk_ct_683f4036b541126388e2989a",
     "name": "Security Governance Roles",
     "description": "Define Security Roles and Responsibilities",
     "createdAt": "2025-06-03 18:34:29.668",
-    "updatedAt": "2025-06-04 19:41:01.679"
-  },
-  {
-    "id": "frk_ct_683f41e775f4ca03d8f6bae2",
-    "name": "Management Security Accountability",
-    "description": "Ensure Management Addresses Security Responsibilities",
-    "createdAt": "2025-06-03 18:41:43.467",
-    "updatedAt": "2025-06-04 19:41:01.801"
-  },
-  {
-    "id": "frk_ct_683f42c71eea99f22f9df060",
-    "name": "Asset Inventory",
-    "description": "Maintain an Inventory of Information Assets",
-    "createdAt": "2025-06-03 18:45:27.396",
-    "updatedAt": "2025-06-04 19:41:01.922"
+    "updatedAt": "2025-06-04 19:41:01.679",
+    "documentTypes": []
   },
   {
     "id": "frk_ct_683f43a65de3b6044e63220f",
     "name": "Personnel Security",
     "description": "Screen onboard offboard securely",
     "createdAt": "2025-06-03 18:49:09.819",
-    "updatedAt": "2025-06-04 19:41:02.105"
+    "updatedAt": "2025-06-04 19:41:02.105",
+    "documentTypes": []
   },
   {
     "id": "frk_ct_683f4457b14856e700c8c25b",
     "name": "Disciplinary process",
     "description": "Establish a Disciplinary Process for Security Violations",
     "createdAt": "2025-06-03 18:52:06.698",
-    "updatedAt": "2025-06-04 19:41:02.231"
+    "updatedAt": "2025-06-04 19:41:02.231",
+    "documentTypes": []
   },
   {
     "id": "frk_ct_683f44c8074680be528353c1",
     "name": "Data Retention & Destruction",
     "description": "Follow retention; securely dispose",
     "createdAt": "2025-06-03 18:54:00.325",
-    "updatedAt": "2025-06-04 19:41:02.378"
+    "updatedAt": "2025-06-04 19:41:02.378",
+    "documentTypes": []
   },
   {
     "id": "frk_ct_683f45c5058c486f3fa5b7bc",
     "name": "Regulatory Liaison",
     "description": "Maintain Contact with Authorities",
     "createdAt": "2025-06-03 18:58:13.372",
-    "updatedAt": "2025-06-04 19:41:02.510"
+    "updatedAt": "2025-06-04 19:41:02.510",
+    "documentTypes": []
   },
   {
     "id": "frk_ct_683f464bec8bea67de7b9c31",
     "name": "Information Classification",
     "description": "Classify Information by Sensitivity",
     "createdAt": "2025-06-03 19:00:26.503",
-    "updatedAt": "2025-06-04 19:41:02.645"
+    "updatedAt": "2025-06-04 19:41:02.645",
+    "documentTypes": []
   },
   {
     "id": "frk_ct_683f46f3f181af3f93773c1d",
     "name": "Security Monitoring & Detection",
     "description": "Central SIEM with alerting",
     "createdAt": "2025-06-03 19:03:14.483",
-    "updatedAt": "2025-06-04 19:41:02.777"
+    "updatedAt": "2025-06-04 19:41:02.777",
+    "documentTypes": []
   },
   {
     "id": "frk_ct_683f47cc2faa426603d6bee8",
     "name": "Security Incident Management",
     "description": "Establish an Incident Management Policy and Procedures",
     "createdAt": "2025-06-03 19:06:52.138",
-    "updatedAt": "2025-06-04 19:41:03.035"
-  },
-  {
-    "id": "frk_ct_683f484fc7b5506ab97c26af",
-    "name": "Risk Management",
-    "description": "Maintain a Risk Management Program",
-    "createdAt": "2025-06-03 19:09:02.849",
-    "updatedAt": "2025-06-04 19:41:03.156"
+    "updatedAt": "2025-06-04 19:41:03.035",
+    "documentTypes": []
   },
   {
     "id": "frk_ct_683f48ee9534e1e0a088e922",
     "name": "Supplier Security",
     "description": "Ensure Security in Supplier Relationships",
     "createdAt": "2025-06-03 19:11:41.449",
-    "updatedAt": "2025-06-04 19:41:03.278"
+    "updatedAt": "2025-06-04 19:41:03.278",
+    "documentTypes": []
   },
   {
     "id": "frk_ct_6849c343d7fbe4e71446ce78",
     "name": "Data Masking",
     "description": "Hide sensitive fields",
     "createdAt": "2025-06-11 17:56:19.307",
-    "updatedAt": "2025-06-11 17:56:19.307"
-  },
-  {
-    "id": "frk_ct_68b59a16b172e5c360e57536",
-    "name": "GDPR",
-    "description": "GDPR Controls",
-    "createdAt": "2025-09-01 13:05:26.037",
-    "updatedAt": "2025-09-01 13:05:26.037"
+    "updatedAt": "2025-06-11 17:56:19.307",
+    "documentTypes": []
   },
   {
     "id": "frk_ct_68b59e50eeb9f92ce425327c",
     "name": "ISO",
     "description": "ISO Controls",
     "createdAt": "2025-09-01 13:23:28.289",
-    "updatedAt": "2025-09-01 13:23:28.289"
+    "updatedAt": "2025-09-01 13:23:28.289",
+    "documentTypes": []
   },
   {
     "id": "frk_ct_68c1eb1c5f317f452216e2d7",
     "name": "PCI",
     "description": "PCI Controls",
     "createdAt": "2025-09-10 21:18:19.912",
-    "updatedAt": "2025-09-10 21:18:19.912"
+    "updatedAt": "2025-09-10 21:18:19.912",
+    "documentTypes": []
   },
   {
     "id": "frk_ct_68cc25ac90e3fe79c1beb98d",
     "name": "ISO 42001",
     "description": "Additional ISO 42001 Controls",
     "createdAt": "2025-09-18 15:30:51.512",
-    "updatedAt": "2025-09-18 15:30:51.512"
+    "updatedAt": "2025-09-18 15:30:51.512",
+    "documentTypes": []
   },
   {
     "id": "frk_ct_68e1364141d03b5e6d70e728",
     "name": "NEN 7510",
     "description": "NEN 7510 Controls",
     "createdAt": "2025-10-04 14:59:12.925",
-    "updatedAt": "2025-10-04 14:59:12.925"
+    "updatedAt": "2025-10-04 14:59:12.925",
+    "documentTypes": []
   },
   {
     "id": "frk_ct_68e8079750107bcc63fc79d9",
     "name": "Encrypted Data at Rest",
     "description": "The organization encrypts all production databases containing customer data at rest",
     "createdAt": "2025-10-09 19:05:59.357",
-    "updatedAt": "2025-10-09 19:05:59.357"
+    "updatedAt": "2025-10-09 19:05:59.357",
+    "documentTypes": []
   },
   {
     "id": "frk_ct_68e80a11f225cb2253e31fa0",
     "name": "Organization Structure & Reporting Lines",
     "description": "Management establishes, with board oversight, structures, reporting lines, authorities, and responsibilities",
     "createdAt": "2025-10-09 19:16:33.433",
-    "updatedAt": "2025-10-09 19:16:33.433"
+    "updatedAt": "2025-10-09 19:16:33.433",
+    "documentTypes": []
   },
   {
-    "id": "frk_ct_684070f0b4f6c2036306e23c",
-    "name": "Network Security",
-    "description": "Enforce segmentation and firewalls",
-    "createdAt": "2025-06-04 16:14:40.321",
-    "updatedAt": "2025-11-19 11:44:13.157"
+    "id": "frk_ct_6849ba93636ff0155eb89158",
+    "name": "Utility Tool monitoring",
+    "description": "Audits the execution of privileged program",
+    "createdAt": "2025-06-11 17:19:15.284",
+    "updatedAt": "2026-04-20 15:33:55.351",
+    "documentTypes": [
+      "infrastructure_inventory"
+    ]
   },
   {
     "id": "frk_ct_691e53f4024ab9cc096bbc70",
     "name": "ISO 9001",
     "description": "ISO 9001 Controls",
     "createdAt": "2025-11-19 23:34:11.538",
-    "updatedAt": "2025-11-19 23:34:11.538"
+    "updatedAt": "2025-11-19 23:34:11.538",
+    "documentTypes": []
+  },
+  {
+    "id": "frk_ct_69becde6133891181f5fbfe1",
+    "name": "Fridge kept between 2-5",
+    "description": "Keep fridge between 2and 5degrees",
+    "createdAt": "2026-03-21 16:57:10.184",
+    "updatedAt": "2026-03-21 17:05:13.971",
+    "documentTypes": [
+      "board_meeting"
+    ]
+  },
+  {
+    "id": "frk_ct_69bed10053f2dfa2421b5e4e",
+    "name": "New Control",
+    "description": "Bla",
+    "createdAt": "2026-03-21 17:10:24.047",
+    "updatedAt": "2026-03-21 17:10:24.047",
+    "documentTypes": []
+  },
+  {
+    "id": "frk_ct_69dd33a6d12ae294a95e9ac1",
+    "name": "PCI DSS scope & cardholder data environment (CDE)",
+    "description": "Defines and maintains the PCI DSS scope, CDE boundary, and inventory of in-scope components; records periodic scope confirmation and significant-change reviews.",
+    "createdAt": "2026-04-13 18:19:18.314",
+    "updatedAt": "2026-04-13 18:19:18.314",
+    "documentTypes": []
+  },
+  {
+    "id": "frk_ct_69dd33a6c094ddd8a7268013",
+    "name": "PCI DSS program management",
+    "description": "Governs the overall PCI DSS compliance program: executive ownership, SP-specific duties, customer attestations, and coordination of PCI-driven reviews and testing cadences.",
+    "createdAt": "2026-04-13 18:19:18.460",
+    "updatedAt": "2026-04-13 18:19:18.460",
+    "documentTypes": []
+  },
+  {
+    "id": "frk_ct_683f4a410cf5bf6d40bf3583",
+    "name": "Access Rights",
+    "description": "Manage User Access Rights Lifecycle",
+    "createdAt": "2025-06-03 19:17:20.504",
+    "updatedAt": "2026-04-13 22:30:52.353",
+    "documentTypes": [
+      "access_request"
+    ]
+  },
+  {
+    "id": "frk_ct_684070f0b4f6c2036306e23c",
+    "name": "Network Security",
+    "description": "Enforce segmentation and firewalls",
+    "createdAt": "2025-06-04 16:14:40.321",
+    "updatedAt": "2026-04-20 15:33:55.130",
+    "documentTypes": [
+      "network_diagram"
+    ]
+  },
+  {
+    "id": "frk_ct_683f42c71eea99f22f9df060",
+    "name": "Asset Inventory",
+    "description": "Maintain an Inventory of Information Assets",
+    "createdAt": "2025-06-03 18:45:27.396",
+    "updatedAt": "2026-04-20 15:33:55.801",
+    "documentTypes": [
+      "infrastructure_inventory"
+    ]
+  },
+  {
+    "id": "frk_ct_683f4dd564057a97ae323c9f",
+    "name": "Disaster Recovery Planning",
+    "description": "Test DR; meet RTO/RPO",
+    "createdAt": "2025-06-03 19:32:37.325",
+    "updatedAt": "2026-04-20 17:55:13.005",
+    "documentTypes": [
+      "board_meeting",
+      "tabletop_exercise"
+    ]
+  },
+  {
+    "id": "frk_ct_683f41e775f4ca03d8f6bae2",
+    "name": "Management Security Accountability",
+    "description": "Ensure Management Addresses Security Responsibilities",
+    "createdAt": "2025-06-03 18:41:43.467",
+    "updatedAt": "2026-04-27 17:12:09.307",
+    "documentTypes": [
+      "rbac_matrix"
+    ]
+  },
+  {
+    "id": "frk_ct_683f3ecd42e62fde624c59c1",
+    "name": "Policy Compliance",
+    "description": "Ensure Compliance with Security Policies and Standards",
+    "createdAt": "2025-06-03 18:28:29.154",
+    "updatedAt": "2026-04-27 17:12:14.631",
+    "documentTypes": [
+      "rbac_matrix"
+    ]
+  },
+  {
+    "id": "frk_ct_683f484fc7b5506ab97c26af",
+    "name": "Risk Management",
+    "description": "Maintain a Risk Management Program",
+    "createdAt": "2025-06-03 19:09:02.849",
+    "updatedAt": "2026-04-27 17:12:22.641",
+    "documentTypes": [
+      "rbac_matrix"
+    ]
+  },
+  {
+    "id": "frk_ct_69dd33a73264cb77236367ba",
+    "name": "E-commerce & payment page integrity",
+    "description": "Protects online payment pages from unauthorized scripts and content changes: authorized script lists, integrity/subresource controls, and monitoring for skimming-related tampering.",
+    "createdAt": "2026-04-13 18:19:18.749",
+    "updatedAt": "2026-04-13 18:19:18.749",
+    "documentTypes": []
+  },
+  {
+    "id": "frk_ct_69dd3265dadac07cd88ae96c",
+    "name": "Payment terminals & POI",
+    "description": "Addresses card-present capture devices: inventory (make/model/serial/location), tamper checks, staff awareness, and substitution controls—not general building access alone.",
+    "createdAt": "2026-04-13 18:13:56.945",
+    "updatedAt": "2026-04-13 18:19:18.854",
+    "documentTypes": []
+  },
+  {
+    "id": "frk_ct_69dd33a74b6fd1d459c4af20",
+    "name": "ASV & PCI assessment interfaces",
+    "description": "Runs the PCI external scanning channel (ASV), tracks passing scans and disputes, and interfaces with assessors (e.g. QSA) separately from day-to-day internal vulnerability scanning.",
+    "createdAt": "2026-04-13 18:19:18.620",
+    "updatedAt": "2026-04-13 22:28:31.756",
+    "documentTypes": [
+      "penetration_test"
+    ]
+  },
+  {
+    "id": "frk_ct_69e639b8c95150ea34dc07bf",
+    "name": "Physical & Environmental Security",
+    "description": "Defines and maintains physical perimeters, entry controls, environmental threat protections, cabling security, and secure siting of equipment.",
+    "createdAt": "2026-04-20 14:35:36.406",
+    "updatedAt": "2026-04-20 14:35:36.406",
+    "documentTypes": []
+  },
+  {
+    "id": "frk_ct_69e639b9bf66b5a6ffb17d27",
+    "name": "Supplier & Third-Party Security",
+    "description": "Manages supplier due diligence, contract clauses, ongoing monitoring, and supply-chain risk for ICT services.",
+    "createdAt": "2026-04-20 14:35:36.585",
+    "updatedAt": "2026-04-20 14:35:36.585",
+    "documentTypes": []
+  },
+  {
+    "id": "frk_ct_69e639b9d5ced482c12ae932",
+    "name": "Business Continuity & ICT Readiness",
+    "description": "Extends DR to include BIA, continuity strategy, tabletop/real exercises, and ICT readiness commitments per service tier.",
+    "createdAt": "2026-04-20 14:35:36.850",
+    "updatedAt": "2026-04-20 14:35:36.850",
+    "documentTypes": []
+  },
+  {
+    "id": "frk_ct_69e639b9148c96a37c8936fc",
+    "name": "Legal, Regulatory & IP Compliance",
+    "description": "Maintains an obligations register for applicable laws, regulations, contracts, and IP; tracks assurance for PII handling.",
+    "createdAt": "2026-04-20 14:35:37.106",
+    "updatedAt": "2026-04-20 15:31:42.642",
+    "documentTypes": [
+      "board_meeting",
+      "meeting"
+    ]
+  },
+  {
+    "id": "frk_ct_69e639b90a3bf8c1443cbf5b",
+    "name": "Risk Management",
+    "description": "Formal risk identification, assessment, treatment, and monitoring process, including risk register and treatment plans.",
+    "createdAt": "2026-04-20 14:35:36.757",
+    "updatedAt": "2026-04-20 15:33:55.473",
+    "documentTypes": [
+      "tabletop_exercise"
+    ]
+  },
+  {
+    "id": "frk_ct_69e639b96ad6c5e729676acb",
+    "name": "Internal Audit & Management Review",
+    "description": "Plans and executes internal ISMS audits, tracks findings, and facilitates periodic management review of ISMS effectiveness.",
+    "createdAt": "2026-04-20 14:35:36.934",
+    "updatedAt": "2026-04-20 15:33:55.598",
+    "documentTypes": [
+      "tabletop_exercise",
+      "infrastructure_inventory",
+      "rbac_matrix",
+      "access_request"
+    ]
+  },
+  {
+    "id": "frk_ct_683f4d7360a876b972aba39a",
+    "name": "Vulnerability Management",
+    "description": "Manage both software and code vulnerabilities",
+    "createdAt": "2025-06-03 19:30:59.173",
+    "updatedAt": "2026-04-20 15:33:55.918",
+    "documentTypes": [
+      "penetration_test"
+    ]
+  },
+  {
+    "id": "frk_ct_69e65ef9c20933590d85cc31",
+    "name": "Physical & Environmental Security",
+    "description": "Defines and maintains physical perimeters, entry controls, environmental threat protections, cabling security, and secure siting of equipment.",
+    "createdAt": "2026-04-20 17:14:33.358",
+    "updatedAt": "2026-04-20 17:14:33.358",
+    "documentTypes": []
+  },
+  {
+    "id": "frk_ct_69e669af7fd9ef27754dc041",
+    "name": "Encrypted Data at Rest",
+    "description": "The organization encrypts all production databases containing customer data at rest",
+    "createdAt": "2026-04-20 18:00:14.801",
+    "updatedAt": "2026-04-20 18:00:14.801",
+    "documentTypes": []
+  },
+  {
+    "id": "frk_ct_69e6766bd8ca18f572d4c34f",
+    "name": "Scope & Governance",
+    "description": "Defines the scope and boundaries of the Information Security Management System (ISMS), including internal and external context, interested parties, and the organizational roles, responsibilities, and authorities that lead information security. Establishes top-management commitment and the governance structure that keeps the ISMS aligned with the business.",
+    "createdAt": "2026-04-20 18:54:35.207",
+    "updatedAt": "2026-04-20 18:54:35.207",
+    "documentTypes": []
+  },
+  {
+    "id": "frk_ct_69e6766b7c6c7a214eea9c3c",
+    "name": "Statement of Applicability (SoA)",
+    "description": "Produces and maintains the ISO 27001 Statement of Applicability: the authoritative list of every Annex A control showing whether it is included or excluded from the ISMS, the justification for each decision, and the current implementation status. Updated whenever risk treatment decisions change.",
+    "createdAt": "2026-04-20 18:54:35.277",
+    "updatedAt": "2026-04-20 18:54:35.277",
+    "documentTypes": []
+  },
+  {
+    "id": "frk_ct_69e6766b4fd2b466bf7686cf",
+    "name": "Performance Monitoring & Measurement",
+    "description": "Measures how well the ISMS is achieving its intended outcomes by defining security metrics and KPIs (e.g. control coverage, incident MTTD/MTTR, training completion, audit findings aging), collecting results on a defined cadence, and reporting them to management. Evaluates compliance with legal, regulatory, and contractual requirements over time.",
+    "createdAt": "2026-04-20 18:54:35.339",
+    "updatedAt": "2026-04-20 18:54:35.339",
+    "documentTypes": []
+  },
+  {
+    "id": "frk_ct_69e6766bd483954a1f0b8445",
+    "name": "Continual Improvement & Corrective Action",
+    "description": "Captures nonconformities identified through audits, incidents, management reviews, or day-to-day operations, performs root-cause analysis, and drives corrective and preventive actions to completion. Feeds lessons learned back into policies, controls, and the risk register so the ISMS improves over time.",
+    "createdAt": "2026-04-20 18:54:35.391",
+    "updatedAt": "2026-04-20 18:54:35.391",
+    "documentTypes": []
+  },
+  {
+    "id": "frk_ct_69e676cf185023edccc55755",
+    "name": "Scope & Governance",
+    "description": "Defines the scope and boundaries of the Information Security Management System (ISMS), including internal and external context, interested parties, and the organizational roles, responsibilities, and authorities that lead information security. Establishes top-management commitment and the governance structure that keeps the ISMS aligned with the business.",
+    "createdAt": "2026-04-20 18:56:15.151",
+    "updatedAt": "2026-04-20 18:56:15.151",
+    "documentTypes": []
+  },
+  {
+    "id": "frk_ct_69e6789971bc8d38d8df1c7c",
+    "name": " Accountability and governance",
+    "description": "",
+    "createdAt": "2026-04-20 19:03:53.126",
+    "updatedAt": "2026-04-20 19:03:53.126",
+    "documentTypes": []
+  },
+  {
+    "id": "frk_ct_69e678bab215222879333e90",
+    "name": " Accountability and governance",
+    "description": "",
+    "createdAt": "2026-04-20 19:04:25.931",
+    "updatedAt": "2026-04-20 19:04:25.931",
+    "documentTypes": []
+  },
+  {
+    "id": "frk_ct_69e678c48b22e4ca14c99684",
+    "name": " Accountability and governance",
+    "description": " Accountability and governance",
+    "createdAt": "2026-04-20 19:04:36.248",
+    "updatedAt": "2026-04-20 19:04:36.248",
+    "documentTypes": []
+  },
+  {
+    "id": "frk_ct_69e69e7b48867208ff473273",
+    "name": " Privacy rights",
+    "description": "",
+    "createdAt": "2026-04-20 21:45:30.896",
+    "updatedAt": "2026-04-20 21:45:30.896",
+    "documentTypes": []
+  },
+  {
+    "id": "frk_ct_69e914db8cd2039367ccbf0f",
+    "name": "ASV Scanning",
+    "description": "Engage a PCI SSC Approved Scanning Vendor (ASV) to perform external vulnerability scans at least quarterly and after any significant change, and remediate findings to meet ASV passing criteria.",
+    "createdAt": "2026-04-22 18:35:07.366",
+    "updatedAt": "2026-04-22 18:35:07.366",
+    "documentTypes": []
+  },
+  {
+    "id": "frk_ct_69e918e7f403f696c2577de1",
+    "name": "Lawful Basis Register",
+    "description": "Document and maintain a register of the lawful bases (consent, contract, legal obligation, vital interests, public task, legitimate interests) relied on for each processing activity, including the assessment supporting the chosen basis.",
+    "createdAt": "2026-04-22 18:52:22.734",
+    "updatedAt": "2026-04-22 18:52:22.734",
+    "documentTypes": []
+  },
+  {
+    "id": "frk_ct_69e918e7f7739946f5034799",
+    "name": "Privacy Notice",
+    "description": "Publish a clear, concise, and accessible privacy notice that describes processing activities, lawful bases, data subject rights, recipients, retention, international transfers, and contact details for the controller and DPO. Review and update on material changes.",
+    "createdAt": "2026-04-22 18:52:23.184",
+    "updatedAt": "2026-04-22 18:52:23.184",
+    "documentTypes": []
+  },
+  {
+    "id": "frk_ct_69e918e805776785f8f80a14",
+    "name": "Privacy by Design and by Default",
+    "description": "Embed data protection principles into the design of systems and processes. Require privacy review at product inception and at every change that affects personal data processing, and default all settings to the most privacy-protective option.",
+    "createdAt": "2026-04-22 18:52:23.661",
+    "updatedAt": "2026-04-22 18:52:23.661",
+    "documentTypes": []
+  },
+  {
+    "id": "frk_ct_69e639b958a20954c4afa186",
+    "name": "Human Resources Security",
+    "description": "Owns pre-employment screening, confidentiality agreements, awareness training curriculum, and disciplinary handling for security violations.",
+    "createdAt": "2026-04-20 14:35:36.677",
+    "updatedAt": "2026-04-30 21:36:55.261",
+    "documentTypes": [
+      "employee_performance_evaluation"
+    ]
+  },
+  {
+    "id": "frk_ct_69e918e8cc289b978f31a12a",
+    "name": "Data Minimization, Encryption, and Pseudonymization",
+    "description": "Limit personal data collected to what is necessary for the processing purpose. Encrypt personal data in transit and at rest, and pseudonymize or anonymize personal data wherever feasible.",
+    "createdAt": "2026-04-22 18:52:24.037",
+    "updatedAt": "2026-04-22 18:52:24.037",
+    "documentTypes": []
+  },
+  {
+    "id": "frk_ct_69e918e94e68c0fb15ee98d0",
+    "name": "Personal Data Breach Response Procedure",
+    "description": "Maintain and test an incident response procedure that detects, assesses, and documents personal data breaches, notifies the relevant supervisory authority within 72 hours, and notifies affected data subjects when the breach is likely to result in high risk to their rights and freedoms.",
+    "createdAt": "2026-04-22 18:52:25.287",
+    "updatedAt": "2026-04-22 18:52:25.287",
+    "documentTypes": []
+  },
+  {
+    "id": "frk_ct_69e918e8c57e2f6756c995ca",
+    "name": "Information Security Policy and Awareness Training",
+    "description": "Maintain an internal information security policy covering access control, acceptable use, and personal data handling. Deliver data protection awareness training to personnel at onboarding and at least annually.",
+    "createdAt": "2026-04-22 18:52:24.472",
+    "updatedAt": "2026-04-22 18:52:24.472",
+    "documentTypes": []
+  },
+  {
+    "id": "frk_ct_69e918ea7bd6df3b3cdd2ddc",
+    "name": "GDPR Accountability Roles and Representatives",
+    "description": "Designate an owner accountable for GDPR compliance. Where required, appoint a Data Protection Officer and, for controllers or processors established outside the EU, appoint an EU representative. Maintain documented responsibilities and contact details.",
+    "createdAt": "2026-04-22 18:52:25.760",
+    "updatedAt": "2026-04-22 18:52:25.760",
+    "documentTypes": []
+  },
+  {
+    "id": "frk_ct_69e918eaa930d07ea41dd0d0",
+    "name": "Data Processing Agreements with Third Parties",
+    "description": "Execute a written Data Processing Agreement with every processor that handles personal data on behalf of the organization, including the subject matter, duration, purpose, type of personal data, obligations of the processor, sub-processor rules, and data return or deletion at end of service.",
+    "createdAt": "2026-04-22 18:52:26.128",
+    "updatedAt": "2026-04-22 18:52:26.128",
+    "documentTypes": []
+  },
+  {
+    "id": "frk_ct_69e918eb724c553d2e5749ea",
+    "name": "Data Subject Rights Request Workflow",
+    "description": "Provide a documented, accessible workflow for data subjects to exercise their rights of access, rectification, erasure, restriction, portability, and objection. Verify identity, respond within one month (extendable by two months where justified), and log each request and its outcome.",
+    "createdAt": "2026-04-22 18:52:26.576",
+    "updatedAt": "2026-04-22 18:52:26.576",
+    "documentTypes": []
+  },
+  {
+    "id": "frk_ct_69e918eb8f6e80605d3fa3e5",
+    "name": "Automated Decision-Making Safeguards",
+    "description": "Identify processing activities involving solely automated decision-making (including profiling) with legal or similarly significant effects. Provide data subjects with meaningful information about the logic, the right to human intervention, to express their point of view, and to contest the decision.",
+    "createdAt": "2026-04-22 18:52:26.922",
+    "updatedAt": "2026-04-22 18:52:26.922",
+    "documentTypes": []
+  },
+  {
+    "id": "frk_ct_69ea8dac2ff1cd0bfe0c8614",
+    "name": "AI Organizational Context",
+    "description": "Determine and maintain a record of external and internal issues relevant to the organization's purpose that affect its ability to achieve the intended outcomes of the AI management system (AIMS), including the role of the organization (e.g. AI provider, developer, deployer, user, subject).",
+    "createdAt": "2026-04-23 21:22:52.179",
+    "updatedAt": "2026-04-23 21:22:52.179",
+    "documentTypes": []
+  },
+  {
+    "id": "frk_ct_69ea8dad9910710084d184a2",
+    "name": "AI Interested Parties",
+    "description": "Identify interested parties relevant to the AIMS, their needs and expectations, and determine which of those requirements will be addressed through the AI management system.",
+    "createdAt": "2026-04-23 21:22:53.084",
+    "updatedAt": "2026-04-23 21:22:53.084",
+    "documentTypes": []
+  },
+  {
+    "id": "frk_ct_69ea8daea335821ba4148123",
+    "name": "AIMS Scope Definition",
+    "description": "Define and document the boundaries and applicability of the AI management system, considering external/internal issues, interested-party requirements, organizational activities, and the role of the organization in the AI lifecycle.",
+    "createdAt": "2026-04-23 21:22:53.937",
+    "updatedAt": "2026-04-23 21:22:53.937",
+    "documentTypes": []
+  },
+  {
+    "id": "frk_ct_69ea8daf133ebd28ca732b9d",
+    "name": "AI Management System Establishment",
+    "description": "Establish, implement, maintain and continually improve an AI management system, including the processes needed and their interactions, in accordance with ISO/IEC 42001.",
+    "createdAt": "2026-04-23 21:22:54.821",
+    "updatedAt": "2026-04-23 21:22:54.821",
+    "documentTypes": []
+  },
+  {
+    "id": "frk_ct_69ea8db0b7f88f1ce0079240",
+    "name": "AI Leadership Commitment",
+    "description": "Top management demonstrates leadership and commitment to the AIMS by ensuring AI policy and objectives are established, AIMS requirements are integrated into business processes, resources are available, and the effectiveness of the AIMS is communicated.",
+    "createdAt": "2026-04-23 21:22:55.746",
+    "updatedAt": "2026-04-23 21:22:55.746",
+    "documentTypes": []
+  },
+  {
+    "id": "frk_ct_69ea8db16a12eecb3f3a5ecb",
+    "name": "AI Policy",
+    "description": "Establish, approve, communicate, and make available a documented AI policy that is appropriate to the organization's purpose, provides a framework for AI objectives, and includes commitments to satisfy applicable requirements and continually improve the AIMS.",
+    "createdAt": "2026-04-23 21:22:56.581",
+    "updatedAt": "2026-04-23 21:22:56.581",
+    "documentTypes": []
+  },
+  {
+    "id": "frk_ct_69ea8db2c7ed1af765c5981d",
+    "name": "AI Policy Alignment with Other Organizational Policies",
+    "description": "Ensure the AI policy is aligned with and complements related organizational policies (e.g. information security, privacy, quality, risk management, ethics) and that conflicts are identified and resolved.",
+    "createdAt": "2026-04-23 21:22:57.841",
+    "updatedAt": "2026-04-23 21:22:57.841",
+    "documentTypes": []
+  },
+  {
+    "id": "frk_ct_69ea8db3571415b8485b6976",
+    "name": "AI Policy Review",
+    "description": "Review the AI policy at planned intervals and when significant changes occur to ensure its continuing suitability, adequacy and effectiveness, and update it as required.",
+    "createdAt": "2026-04-23 21:22:58.691",
+    "updatedAt": "2026-04-23 21:22:58.691",
+    "documentTypes": []
+  },
+  {
+    "id": "frk_ct_69ea8db4a22bb4f0e4c649e1",
+    "name": "AI Organizational Roles, Responsibilities and Authorities",
+    "description": "Assign, document and communicate responsibilities and authorities for roles relevant to the AIMS, ensuring accountability for AI policy conformance, AIMS performance reporting, and AI system outcomes.",
+    "createdAt": "2026-04-23 21:22:59.530",
+    "updatedAt": "2026-04-23 21:22:59.530",
+    "documentTypes": []
+  },
+  {
+    "id": "frk_ct_69ea8db5182a7a6a4ad28ce1",
+    "name": "AI Concern Reporting",
+    "description": "Establish and operate a mechanism enabling personnel and external parties to report concerns about the organization's AI systems (including ethical, legal, safety and societal concerns) without fear of reprisal, with defined triage and response procedures.",
+    "createdAt": "2026-04-23 21:23:00.996",
+    "updatedAt": "2026-04-23 21:23:00.996",
+    "documentTypes": []
+  },
+  {
+    "id": "frk_ct_69ea8db62ab22968f85f85f6",
+    "name": "AI Risk and Opportunity Actions",
+    "description": "Determine risks and opportunities that need to be addressed to give assurance the AIMS can achieve its intended outcomes, prevent undesired effects, and drive improvement; plan actions to address them and integrate them into AIMS processes.",
+    "createdAt": "2026-04-23 21:23:01.768",
+    "updatedAt": "2026-04-23 21:23:01.768",
+    "documentTypes": []
+  },
+  {
+    "id": "frk_ct_69ea8db77c8dd4b36c9ac007",
+    "name": "AI Risk Assessment",
+    "description": "Establish and maintain an AI risk assessment process (criteria, identification, analysis, evaluation) specific to AI systems, and retain documented information of its results. Perform AI risk assessments at planned intervals and when significant changes occur.",
+    "createdAt": "2026-04-23 21:23:02.585",
+    "updatedAt": "2026-04-23 21:23:02.585",
+    "documentTypes": []
+  },
+  {
+    "id": "frk_ct_69ea8db865093703fdf71fc7",
+    "name": "AI Risk Treatment",
+    "description": "Define and implement an AI risk treatment process to select treatment options, determine controls, produce a Statement of Applicability, and formulate an AI risk treatment plan. Implement the treatment plan and retain documented information of the results.",
+    "createdAt": "2026-04-23 21:23:03.753",
+    "updatedAt": "2026-04-23 21:23:03.753",
+    "documentTypes": []
+  },
+  {
+    "id": "frk_ct_69ea8db92daf193f6aba0348",
+    "name": "AI System Impact Assessment Process",
+    "description": "Establish and maintain a documented process to assess the potential consequences for individuals, groups and society of the development, provision or use of AI systems, covering intended and reasonably foreseeable misuse scenarios.",
+    "createdAt": "2026-04-23 21:23:05.149",
+    "updatedAt": "2026-04-23 21:23:05.149",
+    "documentTypes": []
+  },
+  {
+    "id": "frk_ct_69ea8dbbf19cd6ba156e97bd",
+    "name": "AI System Impact Assessment Documentation",
+    "description": "Document the results of each AI system impact assessment and retain the records in accordance with the documented information requirements of the AIMS; make results available to relevant interested parties as appropriate.",
+    "createdAt": "2026-04-23 21:23:07.233",
+    "updatedAt": "2026-04-23 21:23:07.233",
+    "documentTypes": []
+  },
+  {
+    "id": "frk_ct_69ea8dbccf28e8a000ba1934",
+    "name": "Assessing AI System Impact on Individuals and Groups",
+    "description": "Assess potential impacts of AI systems on individuals and groups of individuals, including fairness, discrimination, human rights, health, safety and wellbeing, and incorporate results into design, deployment and operational decisions.",
+    "createdAt": "2026-04-23 21:23:08.072",
+    "updatedAt": "2026-04-23 21:23:08.072",
+    "documentTypes": []
+  },
+  {
+    "id": "frk_ct_69ea8dd6097d1766ac51e294",
+    "name": "AI Data Provenance",
+    "description": "Record and maintain the provenance of data used in AI systems (source, transformations, lineage, handling history) to support reproducibility, accountability and impact assessment.",
+    "createdAt": "2026-04-23 21:23:34.319",
+    "updatedAt": "2026-04-23 21:23:34.319",
+    "documentTypes": []
+  },
+  {
+    "id": "frk_ct_69ea8dbdbd2ce5e539a326fa",
+    "name": "Assessing Societal Impacts of AI Systems",
+    "description": "Assess potential societal impacts of AI systems (including economic, environmental, cultural and democratic impacts) and consider mitigations in the design, deployment and operation of the system.",
+    "createdAt": "2026-04-23 21:23:08.850",
+    "updatedAt": "2026-04-23 21:23:08.850",
+    "documentTypes": []
+  },
+  {
+    "id": "frk_ct_69ea8dbe99f14797e50f9685",
+    "name": "AI Objectives and Planning",
+    "description": "Establish measurable AI objectives at relevant functions and levels, consistent with the AI policy. Plan how they will be achieved: what will be done, what resources, who is responsible, when completed, and how results evaluated.",
+    "createdAt": "2026-04-23 21:23:09.905",
+    "updatedAt": "2026-04-23 21:23:09.905",
+    "documentTypes": []
+  },
+  {
+    "id": "frk_ct_69ea8dbfb341d9b1021c8897",
+    "name": "AI Change Planning",
+    "description": "Plan changes to the AIMS in a controlled manner, considering purpose, potential consequences, integrity, resources and allocation of responsibilities, before changes are implemented.",
+    "createdAt": "2026-04-23 21:23:10.790",
+    "updatedAt": "2026-04-23 21:23:10.790",
+    "documentTypes": []
+  },
+  {
+    "id": "frk_ct_69ea8dc048654718cfb1d12c",
+    "name": "AI Resources",
+    "description": "Determine and provide the resources needed for the establishment, implementation, maintenance and continual improvement of the AIMS, including people, infrastructure, data, computing, tooling and budget.",
+    "createdAt": "2026-04-23 21:23:11.621",
+    "updatedAt": "2026-04-23 21:23:11.621",
+    "documentTypes": []
+  },
+  {
+    "id": "frk_ct_69ea8dc1f55bd5e338716f16",
+    "name": "AI Resource Documentation",
+    "description": "Document the resources used for AI systems (data, tooling, system/computing resources, human resources) including their intended use, owner, sensitivity and lifecycle, and maintain the documentation up to date.",
+    "createdAt": "2026-04-23 21:23:12.671",
+    "updatedAt": "2026-04-23 21:23:12.671",
+    "documentTypes": []
+  },
+  {
+    "id": "frk_ct_69ea8dc2e0fd4e97481baafd",
+    "name": "AI Data Resources",
+    "description": "Identify, inventory and manage data resources used for AI systems (training, validation, testing, operational inputs), including ownership, classification, access, retention and intended use.",
+    "createdAt": "2026-04-23 21:23:13.659",
+    "updatedAt": "2026-04-23 21:23:13.659",
+    "documentTypes": []
+  },
+  {
+    "id": "frk_ct_69ea8dc3a37b3f833dc7d6f3",
+    "name": "AI Tooling Resources",
+    "description": "Identify and manage tooling resources used across the AI lifecycle (frameworks, libraries, model registries, MLOps platforms), including versioning, approved-use policy and security review.",
+    "createdAt": "2026-04-23 21:23:14.591",
+    "updatedAt": "2026-04-23 21:23:14.591",
+    "documentTypes": []
+  },
+  {
+    "id": "frk_ct_69ea8dc4c401188497d417c2",
+    "name": "AI System and Computing Resources",
+    "description": "Identify and manage system and computing resources supporting AI systems (compute, storage, networking, accelerators), including capacity planning, environmental isolation and secure configuration.",
+    "createdAt": "2026-04-23 21:23:15.623",
+    "updatedAt": "2026-04-23 21:23:15.623",
+    "documentTypes": []
+  },
+  {
+    "id": "frk_ct_69ea8dc5682f9f3146944252",
+    "name": "AI Human Resources",
+    "description": "Document the human resources and competencies needed to develop, deploy, operate, maintain and oversee AI systems, including role profiles, training expectations and human oversight responsibilities.",
+    "createdAt": "2026-04-23 21:23:16.571",
+    "updatedAt": "2026-04-23 21:23:16.571",
+    "documentTypes": []
+  },
+  {
+    "id": "frk_ct_69ea8dc6f10b53075c3beacb",
+    "name": "AI Competence",
+    "description": "Determine competence required for AI-related roles, ensure personnel are competent on the basis of appropriate education, training or experience, take actions to close competence gaps, and retain evidence of competence.",
+    "createdAt": "2026-04-23 21:23:17.543",
+    "updatedAt": "2026-04-23 21:23:17.543",
+    "documentTypes": []
+  },
+  {
+    "id": "frk_ct_69ea8dc667172a41022fcf27",
+    "name": "AI Awareness",
+    "description": "Ensure persons doing work under the organization's control are aware of the AI policy, their contribution to AIMS effectiveness, implications of non-conformance, and the potential impacts of AI systems they develop, deploy or use.",
+    "createdAt": "2026-04-23 21:23:18.443",
+    "updatedAt": "2026-04-23 21:23:18.443",
+    "documentTypes": []
+  },
+  {
+    "id": "frk_ct_69ea8dc718a407d992cda795",
+    "name": "AI Communication",
+    "description": "Determine internal and external communications relevant to the AIMS, including what, when, with whom, how and by whom communications take place, covering AI system behavior, incidents, and stakeholder information.",
+    "createdAt": "2026-04-23 21:23:19.450",
+    "updatedAt": "2026-04-23 21:23:19.450",
+    "documentTypes": []
+  },
+  {
+    "id": "frk_ct_69ea8dc8ec4ced8e76b114c0",
+    "name": "AIMS Documented Information",
+    "description": "Establish and control the documented information required by ISO/IEC 42001 and determined by the organization as necessary for AIMS effectiveness, including creation, update, identification, review, approval, access and retention.",
+    "createdAt": "2026-04-23 21:23:20.391",
+    "updatedAt": "2026-04-23 21:23:20.391",
+    "documentTypes": []
+  },
+  {
+    "id": "frk_ct_69ea8dcaa9b51a2b1e5f2abd",
+    "name": "AI Operational Planning and Control",
+    "description": "Plan, implement and control the processes needed to meet AIMS requirements and to implement the actions determined in Clause 6, including criteria, documented information and control of changes and outsourced processes.",
+    "createdAt": "2026-04-23 21:23:22.151",
+    "updatedAt": "2026-04-23 21:23:22.151",
+    "documentTypes": []
+  },
+  {
+    "id": "frk_ct_69ea8dcb210958cb72f499f2",
+    "name": "Responsible AI Development Objectives",
+    "description": "Establish objectives for the responsible development of AI systems (e.g. fairness, reliability, safety, security, privacy, transparency, explainability, accountability, environmental impact) and ensure development activities are directed to meet them.",
+    "createdAt": "2026-04-23 21:23:23.066",
+    "updatedAt": "2026-04-23 21:23:23.066",
+    "documentTypes": []
+  },
+  {
+    "id": "frk_ct_69ea8dccd7c01c6d2503448b",
+    "name": "Trustworthy AI Design and Development Processes",
+    "description": "Define and apply processes for the trustworthy design and development of AI systems that translate the organization's responsible-development objectives into concrete design, engineering and review activities.",
+    "createdAt": "2026-04-23 21:23:24.060",
+    "updatedAt": "2026-04-23 21:23:24.060",
+    "documentTypes": []
+  },
+  {
+    "id": "frk_ct_69ea8dcd4cffcf9dd949ca02",
+    "name": "AI System Requirements and Specification",
+    "description": "Define, document and approve requirements and specifications for AI systems, including intended purpose, performance, safety, security, privacy, fairness, transparency, human oversight and applicable regulatory requirements.",
+    "createdAt": "2026-04-23 21:23:24.936",
+    "updatedAt": "2026-04-23 21:23:24.936",
+    "documentTypes": []
+  },
+  {
+    "id": "frk_ct_69ea8dcef8ff3c2ed55ea14a",
+    "name": "AI System Design and Development Documentation",
+    "description": "Document the design and development of AI systems (data, architecture, training procedures, parameters, evaluation, known limitations) sufficient to enable assessment, reproduction and ongoing oversight.",
+    "createdAt": "2026-04-23 21:23:25.908",
+    "updatedAt": "2026-04-23 21:23:25.908",
+    "documentTypes": []
+  },
+  {
+    "id": "frk_ct_69ea8dcfcba021703a55bf97",
+    "name": "AI System Verification and Validation",
+    "description": "Define and apply verification and validation measures for AI systems (functional testing, performance, robustness, fairness, safety, security, privacy) and criteria for acceptance before deployment and after significant changes.",
+    "createdAt": "2026-04-23 21:23:26.814",
+    "updatedAt": "2026-04-23 21:23:26.814",
+    "documentTypes": []
+  },
+  {
+    "id": "frk_ct_69ea8dd0de2f746bb95acd4b",
+    "name": "AI System Deployment",
+    "description": "Control the deployment of AI systems, including release criteria, staged rollout, approvals, rollback procedures, and readiness of operational and monitoring controls before go-live.",
+    "createdAt": "2026-04-23 21:23:27.765",
+    "updatedAt": "2026-04-23 21:23:27.765",
+    "documentTypes": []
+  },
+  {
+    "id": "frk_ct_69ea8dd148f84ea6656bce7d",
+    "name": "AI System Operation and Monitoring",
+    "description": "Operate and monitor AI systems in production for performance, drift, reliability, safety, security and ethical outcomes; define metrics, thresholds, alerting and response procedures.",
+    "createdAt": "2026-04-23 21:23:28.747",
+    "updatedAt": "2026-04-23 21:23:28.747",
+    "documentTypes": []
+  },
+  {
+    "id": "frk_ct_69ea8dd28d9b23fd806840e7",
+    "name": "AI System Technical Documentation",
+    "description": "Produce and maintain technical documentation for each AI system (intended use, capabilities, limitations, training/evaluation data, risk information) appropriate to support interested parties and regulators.",
+    "createdAt": "2026-04-23 21:23:29.776",
+    "updatedAt": "2026-04-23 21:23:29.776",
+    "documentTypes": []
+  },
+  {
+    "id": "frk_ct_69ea8dd38d7945cd54758b49",
+    "name": "AI System Event Logging",
+    "description": "Record event logs generated by AI systems (inputs, outputs, decisions, user interactions, system events) with sufficient integrity, retention and access control to support monitoring, incident response and accountability.",
+    "createdAt": "2026-04-23 21:23:30.669",
+    "updatedAt": "2026-04-23 21:23:30.669",
+    "documentTypes": []
+  },
+  {
+    "id": "frk_ct_69ea8dd44d3b368f85df728c",
+    "name": "Data for AI Development and Enhancement",
+    "description": "Define requirements and controls for data used to develop and enhance AI systems, including suitability for purpose, representativeness, access, versioning and change management.",
+    "createdAt": "2026-04-23 21:23:31.574",
+    "updatedAt": "2026-04-23 21:23:31.574",
+    "documentTypes": []
+  },
+  {
+    "id": "frk_ct_69ea8dd5a750b30e2eb69d18",
+    "name": "AI Data Acquisition",
+    "description": "Define and apply controls for acquiring data used in AI systems, including lawful basis, contractual rights, licensing, ethical sourcing, consent where required, and documentation of acquisition criteria.",
+    "createdAt": "2026-04-23 21:23:32.528",
+    "updatedAt": "2026-04-23 21:23:32.528",
+    "documentTypes": []
+  },
+  {
+    "id": "frk_ct_69ea8dd54053dfd453b9dc4a",
+    "name": "AI Data Quality",
+    "description": "Define and maintain data-quality requirements for AI systems (accuracy, completeness, consistency, timeliness, relevance, bias), and perform periodic data-quality assessments with remediation.",
+    "createdAt": "2026-04-23 21:23:33.454",
+    "updatedAt": "2026-04-23 21:23:33.454",
+    "documentTypes": []
+  },
+  {
+    "id": "frk_ct_69ea8dd7f551ad7a56706b46",
+    "name": "AI Data Preparation",
+    "description": "Document and control data preparation activities (cleaning, labeling, annotation, transformation, augmentation, splitting) including rationale, tooling, reviewers and acceptance criteria.",
+    "createdAt": "2026-04-23 21:23:35.182",
+    "updatedAt": "2026-04-23 21:23:35.182",
+    "documentTypes": []
+  },
+  {
+    "id": "frk_ct_69ea8dd8aa91ceac379fa2c3",
+    "name": "AI System Documentation and Information for Users",
+    "description": "Provide users of AI systems with the information needed to use the system appropriately, including intended purpose, capabilities, limitations, data requirements, human-oversight responsibilities and known risks.",
+    "createdAt": "2026-04-23 21:23:36.161",
+    "updatedAt": "2026-04-23 21:23:36.161",
+    "documentTypes": []
+  },
+  {
+    "id": "frk_ct_69ea8dd9462f30b929260abf",
+    "name": "AI External Reporting",
+    "description": "Define and operate processes for external reporting relating to AI systems (regulators, customers, the public) including triggering conditions, content, approval and distribution channels.",
+    "createdAt": "2026-04-23 21:23:36.996",
+    "updatedAt": "2026-04-23 21:23:36.996",
+    "documentTypes": []
+  },
+  {
+    "id": "frk_ct_69ea8dda97d0010af0cf826d",
+    "name": "AI Incident Communication",
+    "description": "Define and operate a process for communicating AI system incidents to affected interested parties (internal stakeholders, users, subjects, suppliers, authorities) in a timely and appropriate manner.",
+    "createdAt": "2026-04-23 21:23:37.843",
+    "updatedAt": "2026-04-23 21:23:37.843",
+    "documentTypes": []
+  },
+  {
+    "id": "frk_ct_69ea8ddbb737f1f09bbcd82e",
+    "name": "Information for Interested Parties",
+    "description": "Determine and provide relevant information about AI systems to interested parties (including data subjects and affected communities) commensurate with their role and the potential impact of the system.",
+    "createdAt": "2026-04-23 21:23:38.808",
+    "updatedAt": "2026-04-23 21:23:38.808",
+    "documentTypes": []
+  },
+  {
+    "id": "frk_ct_69ea8ddce361e7f7eb0fc2b9",
+    "name": "Responsible AI Use Processes",
+    "description": "Establish processes for the responsible use of AI systems within the organization, including acceptable-use guidance, human-oversight requirements, escalation paths and periodic review.",
+    "createdAt": "2026-04-23 21:23:39.820",
+    "updatedAt": "2026-04-23 21:23:39.820",
+    "documentTypes": []
+  },
+  {
+    "id": "frk_ct_69ea8dddda00d3522c538085",
+    "name": "Responsible AI Use Objectives",
+    "description": "Define and communicate objectives for the responsible use of AI systems (e.g. accountability, transparency, human oversight, harm prevention) and measure progress against them.",
+    "createdAt": "2026-04-23 21:23:40.793",
+    "updatedAt": "2026-04-23 21:23:40.793",
+    "documentTypes": []
+  },
+  {
+    "id": "frk_ct_69ea8dde7453dbed221162e8",
+    "name": "Intended Use of AI System",
+    "description": "Determine, document and communicate the intended use of each AI system and the conditions of such use; take measures to prevent and respond to reasonably foreseeable misuse.",
+    "createdAt": "2026-04-23 21:23:41.657",
+    "updatedAt": "2026-04-23 21:23:41.657",
+    "documentTypes": []
+  },
+  {
+    "id": "frk_ct_69ea8ddf8ba2e517ab4a366d",
+    "name": "AI Third-Party Responsibility Allocation",
+    "description": "Identify and document roles and responsibilities among the organization, suppliers, partners and customers across the AI lifecycle, including obligations relating to impact assessment, monitoring and incident handling.",
+    "createdAt": "2026-04-23 21:23:42.517",
+    "updatedAt": "2026-04-23 21:23:42.517",
+    "documentTypes": []
+  },
+  {
+    "id": "frk_ct_69ea8ddf2226651c7382d81c",
+    "name": "AI Suppliers",
+    "description": "Define and apply criteria and controls for AI-related suppliers (model, data, tooling, service providers), including due diligence, contractual obligations, monitoring and offboarding.",
+    "createdAt": "2026-04-23 21:23:43.415",
+    "updatedAt": "2026-04-23 21:23:43.415",
+    "documentTypes": []
+  },
+  {
+    "id": "frk_ct_69ea8de02be9da8bf00ad0aa",
+    "name": "AI Customers",
+    "description": "Provide customers with the information and mechanisms needed for the responsible use of AI systems, including intended use, limitations, required human oversight, and channels for feedback and incident reporting.",
+    "createdAt": "2026-04-23 21:23:44.268",
+    "updatedAt": "2026-04-23 21:23:44.268",
+    "documentTypes": []
+  },
+  {
+    "id": "frk_ct_69ea8de1bd41309fdbe08e20",
+    "name": "AI Performance Monitoring, Measurement, Analysis and Evaluation",
+    "description": "Determine what needs monitoring and measurement for the AIMS and for individual AI systems, methods, when performed, when analyzed/evaluated, and retain evidence of the results.",
+    "createdAt": "2026-04-23 21:23:45.072",
+    "updatedAt": "2026-04-23 21:23:45.072",
+    "documentTypes": []
+  },
+  {
+    "id": "frk_ct_69ea8de2d97d1f09cc61b896",
+    "name": "AI Internal Audit",
+    "description": "Plan, establish, implement and maintain an internal audit program for the AIMS, including frequency, methods, responsibilities, criteria and scope; conduct audits, report results and retain evidence.",
+    "createdAt": "2026-04-23 21:23:45.909",
+    "updatedAt": "2026-04-23 21:23:45.909",
+    "documentTypes": []
+  },
+  {
+    "id": "frk_ct_69ea8de302274112e7ccc264",
+    "name": "AI Management Review",
+    "description": "Top management reviews the AIMS at planned intervals, considering the required inputs (status of actions, changes, performance, risks, opportunities, improvement), and produces outputs on decisions and improvements.",
+    "createdAt": "2026-04-23 21:23:47.180",
+    "updatedAt": "2026-04-23 21:23:47.180",
+    "documentTypes": []
+  },
+  {
+    "id": "frk_ct_69ea8de5cc73e611573e6db4",
+    "name": "AI Continual Improvement",
+    "description": "Continually improve the suitability, adequacy and effectiveness of the AIMS, including the AI policy, objectives, risk treatments and controls, based on audit results, monitoring, review and lessons learned.",
+    "createdAt": "2026-04-23 21:23:48.839",
+    "updatedAt": "2026-04-23 21:23:48.839",
+    "documentTypes": []
+  },
+  {
+    "id": "frk_ct_69ea8de6018b6b80d862c906",
+    "name": "AI Nonconformity and Corrective Action",
+    "description": "When a nonconformity occurs (including from an AI incident), react, evaluate the need for action to eliminate the cause, implement corrective actions, review effectiveness and update the AIMS as needed.",
+    "createdAt": "2026-04-23 21:23:49.838",
+    "updatedAt": "2026-04-23 21:23:49.838",
+    "documentTypes": []
+  },
+  {
+    "id": "frk_ct_69e918e9be6da6eba7d0ea4e",
+    "name": "Data Protection Impact Assessment Process",
+    "description": "Maintain a documented DPIA methodology with criteria for when an assessment is required (e.g., high-risk processing, new technologies, systematic monitoring). Retain DPIA records and consult the supervisory authority when residual risk remains high.",
+    "createdAt": "2026-04-22 18:52:24.847",
+    "updatedAt": "2026-04-23 23:20:37.875",
+    "documentTypes": [
+      "risk_committee_meeting",
+      "tabletop_exercise"
+    ]
+  },
+  {
+    "id": "frk_ct_69e918e6d72a45b4f933a112",
+    "name": "Data Inventory and Mapping",
+    "description": "Maintain a documented inventory of personal data processed by the organization, including data categories, sources, purposes, legal basis, recipients, retention periods, and who has access to each data set. Review at least annually and on material changes to processing activities.",
+    "createdAt": "2026-04-22 18:52:22.361",
+    "updatedAt": "2026-04-23 23:22:07.864",
+    "documentTypes": [
+      "access_request",
+      "rbac_matrix"
+    ]
+  },
+  {
+    "id": "frk_ct_69eb876ea13506b36fd63a3e",
+    "name": "HIPAA Security Program Governance",
+    "description": "Establish and maintain the organization's HIPAA security program, including general security standards, security official designation, policy documentation, and retention requirements.",
+    "createdAt": "2026-04-24 15:08:29.644",
+    "updatedAt": "2026-04-24 15:08:29.644",
+    "documentTypes": []
+  },
+  {
+    "id": "frk_ct_69eb876ec7f4fc346ff10b12",
+    "name": "Risk Analysis & Management",
+    "description": "Conduct risk analysis, implement risk management measures sufficient to reduce risks to a reasonable level, and periodically evaluate security controls.",
+    "createdAt": "2026-04-24 15:08:30.167",
+    "updatedAt": "2026-04-24 15:08:30.167",
+    "documentTypes": []
+  },
+  {
+    "id": "frk_ct_69eb876f6362393759ecd351",
+    "name": "Workforce Security & Sanctions",
+    "description": "Authorize, supervise, and manage workforce access to ePHI including clearance procedures, termination, and sanctions for non-compliance.",
+    "createdAt": "2026-04-24 15:08:30.533",
+    "updatedAt": "2026-04-24 15:08:30.533",
+    "documentTypes": []
+  },
+  {
+    "id": "frk_ct_69eb876f3270ed0b11233ece",
+    "name": "Security Awareness & Training",
+    "description": "Implement a security awareness and training program including periodic security reminders, protection from malicious software, login monitoring, and password management.",
+    "createdAt": "2026-04-24 15:08:31.066",
+    "updatedAt": "2026-04-24 15:08:31.066",
+    "documentTypes": []
+  },
+  {
+    "id": "frk_ct_69eb87703649e5234a56d529",
+    "name": "Business Associate Management",
+    "description": "Establish and maintain written agreements (BAAs) with business associates and subcontractors that create, receive, maintain, or transmit ePHI, ensuring satisfactory assurances of compliance.",
+    "createdAt": "2026-04-24 15:08:31.949",
+    "updatedAt": "2026-04-24 15:08:31.949",
+    "documentTypes": []
+  },
+  {
+    "id": "frk_ct_69eb877091d96bcaeae40219",
+    "name": "Physical Facility Security",
+    "description": "Implement policies and procedures to limit physical access to electronic information systems and the facilities in which they are housed, including contingency operations, facility security plans, access controls, and maintenance records.",
+    "createdAt": "2026-04-24 15:08:32.455",
+    "updatedAt": "2026-04-24 15:08:32.455",
+    "documentTypes": []
+  },
+  {
+    "id": "frk_ct_69eb87717ae82d509fb927ed",
+    "name": "Device & Media Controls",
+    "description": "Implement policies and procedures governing the receipt and removal of hardware and electronic media that contain ePHI into and out of a facility, including disposal, re-use, accountability, and data backup.",
+    "createdAt": "2026-04-24 15:08:32.904",
+    "updatedAt": "2026-04-24 15:08:32.904",
+    "documentTypes": []
+  },
+  {
+    "id": "frk_ct_69eb87701093fde54e1169dc",
+    "name": "Contingency Plan Operations",
+    "description": "Establish and test procedures for responding to emergencies or failures that damage systems containing ePHI, including emergency mode operation, testing, and criticality analysis.",
+    "createdAt": "2026-04-24 15:08:31.504",
+    "updatedAt": "2026-04-24 15:18:01.227",
+    "documentTypes": [
+      "tabletop_exercise"
+    ]
+  },
+  {
+    "id": "frk_ct_69efd5a32e52c113f97254db",
+    "name": "CCPA-Compliant Privacy Policy",
+    "description": "Maintain and publish a privacy policy that discloses categories of personal information collected, sources, business or commercial purposes, categories of recipients, consumer rights under CCPA/CPRA, the methods to exercise those rights, and contact information for privacy inquiries. Review and update at least every 12 months.",
+    "createdAt": "2026-04-27 21:31:15.380",
+    "updatedAt": "2026-04-27 21:31:15.380",
+    "documentTypes": []
+  },
+  {
+    "id": "frk_ct_69efd5aac8f24094878ff701",
+    "name": "Right to Opt-Out of Sale or Sharing",
+    "description": "Establish a process to honor consumer opt-out requests for the sale or sharing of personal information, including support for the Global Privacy Control (GPC) browser signal.",
+    "createdAt": "2026-04-27 21:31:22.134",
+    "updatedAt": "2026-04-27 21:31:22.134",
+    "documentTypes": []
+  },
+  {
+    "id": "frk_ct_69efd5ad9dcc82739178f525",
+    "name": "Right to Non-Discrimination",
+    "description": "Prohibit discrimination against consumers who exercise their CCPA/CPRA rights, including denial of goods/services, charging different prices, or providing a different level of quality, except where the difference is reasonably related to the value provided by the consumer's data.",
+    "createdAt": "2026-04-27 21:31:24.810",
+    "updatedAt": "2026-04-27 21:31:24.810",
+    "documentTypes": []
+  },
+  {
+    "id": "frk_ct_69efd5a87004249e7b6e62af",
+    "name": "Right to Delete Process",
+    "description": "Establish a process to receive, verify, and fulfill consumer requests to delete personal information, including communicating deletion requests to service providers and contractors. Document any statutory exceptions relied on for retention.",
+    "createdAt": "2026-04-27 21:31:19.952",
+    "updatedAt": "2026-04-27 21:57:22.639",
+    "documentTypes": []
+  },
+  {
+    "id": "frk_ct_69efd5a6e66d4c6c92fdd3df",
+    "name": "Right to Know Process",
+    "description": "Establish a process for receiving and responding to consumer requests for the categories and specific pieces of personal information collected, sources, business purposes, and third parties with whom information is shared. Respond within 45 days, with one 45-day extension as permitted.",
+    "createdAt": "2026-04-27 21:31:17.813",
+    "updatedAt": "2026-04-27 21:57:21.470",
+    "documentTypes": []
+  },
+  {
+    "id": "frk_ct_69efd5b1e6f19c87845f5939",
+    "name": "Right to Correct Process",
+    "description": "Establish a process for consumers to request correction of inaccurate personal information, verifying the request and using commercially reasonable efforts to correct the data and notify service providers as required by the CPRA.",
+    "createdAt": "2026-04-27 21:31:28.990",
+    "updatedAt": "2026-04-27 21:31:28.990",
+    "documentTypes": []
+  },
+  {
+    "id": "frk_ct_69efd5b3cdfebf7ee46a5cf7",
+    "name": "Right to Limit Use of Sensitive Personal Information",
+    "description": "Provide consumers a clear method (e.g., \"Limit the Use of My Sensitive Personal Information\" link) to restrict the use and disclosure of sensitive personal information to purposes permitted by the CPRA.",
+    "createdAt": "2026-04-27 21:31:30.657",
+    "updatedAt": "2026-04-27 21:31:30.657",
+    "documentTypes": []
+  },
+  {
+    "id": "frk_ct_69efd5c84ccf6f3f5bbe29bd",
+    "name": "CCPA Privacy Training Program",
+    "description": "Provide annual training to all employees handling personal information or consumer rights requests on CCPA/CPRA requirements, internal procedures for processing requests, and how to direct consumers to exercise their rights.",
+    "createdAt": "2026-04-27 21:31:51.784",
+    "updatedAt": "2026-04-27 21:31:51.784",
+    "documentTypes": []
+  },
+  {
+    "id": "frk_ct_69efd5cb8d9092bd71665722",
+    "name": "Service Provider and Contractor Agreements",
+    "description": "Maintain written contracts with all service providers, contractors, and third parties processing personal information that include CCPA/CPRA-required terms: limited business purpose, prohibition on selling/sharing, cooperation with consumer rights requests, and confidentiality obligations.",
+    "createdAt": "2026-04-27 21:31:55.110",
+    "updatedAt": "2026-04-27 21:31:55.110",
+    "documentTypes": []
+  },
+  {
+    "id": "frk_ct_69efd5cd34220c6db57b2710",
+    "name": "Consumer Request Records Retention",
+    "description": "Maintain records of all consumer requests received under the CCPA/CPRA and the business's responses for at least 24 months, including the date of receipt, nature of the request, manner in which it was responded to, and the date of response.",
+    "createdAt": "2026-04-27 21:31:56.814",
+    "updatedAt": "2026-04-27 21:31:56.814",
+    "documentTypes": []
+  },
+  {
+    "id": "frk_ct_69efd5ce50b1ede13c3848f2",
+    "name": "\"Do Not Sell or Share My Personal Information\" Link",
+    "description": "Provide a clear and conspicuous \"Do Not Sell or Share My Personal Information\" link on the homepage and any page collecting personal information that allows consumers to opt out of the sale or sharing of their personal information without requiring account creation.",
+    "createdAt": "2026-04-27 21:31:58.305",
+    "updatedAt": "2026-04-27 21:31:58.305",
+    "documentTypes": []
+  },
+  {
+    "id": "frk_ct_69efd5d1c0499ab2c136b759",
+    "name": "Minor Consent Management",
+    "description": "Before selling or sharing personal information of consumers known to be under 16, obtain affirmative opt-in consent. For consumers under 13, obtain verifiable parental consent in compliance with COPPA and CCPA/CPRA.",
+    "createdAt": "2026-04-27 21:32:00.557",
+    "updatedAt": "2026-04-27 21:32:00.557",
+    "documentTypes": []
+  },
+  {
+    "id": "frk_ct_69efd5e12d61c6019d213f60",
+    "name": "Notice at Collection",
+    "description": "Provide a CCPA-compliant Notice at Collection at or before the point of collection, listing the categories of personal information and sensitive personal information collected, the purposes of use, retention periods, and whether the information is sold or shared.",
+    "createdAt": "2026-04-27 21:32:17.049",
+    "updatedAt": "2026-04-27 21:32:17.049",
+    "documentTypes": []
+  },
+  {
+    "id": "frk_ct_69efd5e71ad52c5ab2ec069e",
+    "name": "Notice of Financial Incentive",
+    "description": "If the business offers a financial incentive or price/service difference in exchange for personal information, publish a Notice of Financial Incentive that explains the material terms, the method to opt in and withdraw, and a good-faith estimate of the value of the consumer's data.",
+    "createdAt": "2026-04-27 21:32:22.978",
+    "updatedAt": "2026-04-27 21:32:22.978",
+    "documentTypes": []
+  },
+  {
+    "id": "frk_ct_69efd5ee3eb484fc081cd20a",
+    "name": "Prominent Privacy Policy Display",
+    "description": "Display a clear, conspicuous link to the privacy policy on the website homepage footer and within mobile applications, ensuring it is accessible from every page that collects personal information.",
+    "createdAt": "2026-04-27 21:32:29.896",
+    "updatedAt": "2026-04-27 21:32:29.896",
+    "documentTypes": []
+  },
+  {
+    "id": "frk_ct_69efd5e906d5418ee6b5dc6a",
+    "name": "Data Breach Notification Process",
+    "description": "Maintain a documented breach response and notification process that meets California's data breach notification requirements (Cal. Civ. Code § 1798.82) for unauthorized acquisition of personal information, including timely consumer notification and any required Attorney General notification.",
+    "createdAt": "2026-04-27 21:32:24.934",
+    "updatedAt": "2026-04-27 21:49:53.331",
+    "documentTypes": [
+      "tabletop_exercise"
+    ]
+  },
+  {
+    "id": "frk_ct_69efd5d2b0758b1e1c1b6d87",
+    "name": "Periodic CCPA Compliance Audit",
+    "description": "Conduct documented audits of CCPA/CPRA compliance at least annually, covering disclosures, request handling, training, vendor contracts, and security controls. Track regulatory changes and update compliance measures accordingly.",
+    "createdAt": "2026-04-27 21:32:02.371",
+    "updatedAt": "2026-04-27 21:49:57.931",
+    "documentTypes": [
+      "risk_committee_meeting",
+      "meeting"
+    ]
+  },
+  {
+    "id": "frk_ct_69efd5c9acbf83b0a500050e",
+    "name": "Reasonable Security Safeguards for Personal Information",
+    "description": "Implement and maintain reasonable technical and organizational security safeguards (e.g., access controls, encryption in transit and at rest, logging, vulnerability management) appropriate to the nature of the personal information processed, in order to protect against unauthorized access, destruction, use, modification, or disclosure.",
+    "createdAt": "2026-04-27 21:31:53.365",
+    "updatedAt": "2026-04-27 21:49:55.673",
+    "documentTypes": [
+      "penetration_test",
+      "rbac_matrix"
+    ]
+  },
+  {
+    "id": "frk_ct_69efd5c63e9c6fc1f8bec055",
+    "name": "Consumer Identity Verification Procedure",
+    "description": "Implement reasonable, risk-based identity verification procedures for consumer rights requests, matching the level of verification to the sensitivity of the data involved. Prevent fraudulent or unauthorized access to personal information.",
+    "createdAt": "2026-04-27 21:31:49.977",
+    "updatedAt": "2026-04-27 21:57:25.018",
+    "documentTypes": []
+  },
+  {
+    "id": "frk_ct_69efd5a163fc3dcd87372ccc",
+    "name": "Personal Information Inventory and Data Flow Mapping",
+    "description": "Maintain an up-to-date inventory of all categories of personal information the business collects, stores, processes, sells, or shares. Classify data by sensitivity, identify sources and recipients, and map data flows across systems and third parties.",
+    "createdAt": "2026-04-27 21:31:13.217",
+    "updatedAt": "2026-04-27 21:49:59.459",
+    "documentTypes": [
+      "infrastructure_inventory"
+    ]
+  },
+  {
+    "id": "frk_ct_69f3d976c53fd192b48e6236",
+    "name": "Privacy Officer Designation",
+    "description": "Formally designate one or more individuals accountable for the organization's PIPEDA compliance, document the role and responsibilities, and publish the privacy officer's name and contact details so they can be made known on request.",
+    "createdAt": "2026-04-30 22:36:38.301",
+    "updatedAt": "2026-04-30 22:36:38.301",
+    "documentTypes": []
+  },
+  {
+    "id": "frk_ct_69f3d9793720eec4d4945150",
+    "name": "Third-Party Data Processing Agreements",
+    "description": "Use written contracts or other binding means to ensure third parties processing personal information on the organization's behalf provide a comparable level of privacy protection. Verify implementation through due diligence and periodic review.",
+    "createdAt": "2026-04-30 22:36:41.204",
+    "updatedAt": "2026-04-30 22:36:41.204",
+    "documentTypes": []
+  },
+  {
+    "id": "frk_ct_69efd5e395082fabf04e53b7",
+    "name": "Authorized Agent Process",
+    "description": "Establish a process to accept, verify, and respond to consumer rights requests submitted by an authorized agent on the consumer's behalf, including written authorization or power-of-attorney verification as permitted by the CCPA/CPRA.",
+    "createdAt": "2026-04-27 21:32:18.953",
+    "updatedAt": "2026-04-27 21:57:23.968",
+    "documentTypes": []
+  },
+  {
+    "id": "frk_ct_69f3d9781dacd8da2864fd17",
+    "name": "Privacy Awareness and Training Program",
+    "description": "Deliver mandatory privacy training to all staff who handle personal information, covering the organization's privacy policies, the 10 Fair Information Principles, and individual responsibilities. Track completion and refresh annually.",
+    "createdAt": "2026-04-30 22:36:40.156",
+    "updatedAt": "2026-04-30 22:36:40.156",
+    "documentTypes": []
+  },
+  {
+    "id": "frk_ct_69f3d97a7b80d8564339ffc5",
+    "name": "Documentation of Collection Purposes",
+    "description": "Maintain a written record of every purpose for which personal information is collected, including the specific data elements involved and the legal/business basis. Update the record whenever purposes change or are added.",
+    "createdAt": "2026-04-30 22:36:42.181",
+    "updatedAt": "2026-04-30 23:49:15.788",
+    "documentTypes": [
+      "infrastructure_inventory"
+    ]
+  },
+  {
+    "id": "frk_ct_69f3d97b66301a97f6b8e4a3",
+    "name": "Notification of Purposes at Collection",
+    "description": "Communicate the purposes for collecting personal information to individuals at or before the time of collection, in plain language, through standardized written notices and trained verbal scripts. Re-notify before any new use or disclosure.",
+    "createdAt": "2026-04-30 22:36:43.064",
+    "updatedAt": "2026-04-30 22:36:43.064",
+    "documentTypes": []
+  },
+  {
+    "id": "frk_ct_69f3d97c03fd8213c05dbbde",
+    "name": "Consent Management Procedure",
+    "description": "Define and operate a procedure for obtaining and recording knowledge and consent for the collection, use, and disclosure of personal information. Match the form of consent (express vs. implied) to the sensitivity of the information and the reasonable expectations of the individual.",
+    "createdAt": "2026-04-30 22:36:44.103",
+    "updatedAt": "2026-04-30 22:36:44.103",
+    "documentTypes": []
+  },
+  {
+    "id": "frk_ct_69f3d97d7c0f6c1d629e8fbf",
+    "name": "Consent Withdrawal Mechanism",
+    "description": "Provide individuals with a clear, accessible way to withdraw consent at any time, subject to legal or contractual restrictions, and inform them of the consequences. Honor withdrawal requests within a defined timeframe and update downstream systems accordingly.",
+    "createdAt": "2026-04-30 22:36:45.325",
+    "updatedAt": "2026-04-30 22:36:45.325",
+    "documentTypes": []
+  },
+  {
+    "id": "frk_ct_69f3d97fab711de81e99e786",
+    "name": "Express Consent for Sensitive Information",
+    "description": "Require express, opt-in consent before collecting, using, or disclosing sensitive personal information (e.g. medical, financial, biometric, genetic, racial/ethnic origin, political opinions, religious beliefs, sex life or sexual orientation).",
+    "createdAt": "2026-04-30 22:36:46.705",
+    "updatedAt": "2026-04-30 22:36:46.705",
+    "documentTypes": []
+  },
+  {
+    "id": "frk_ct_69f3d9808d78f354f8f804b4",
+    "name": "Data Minimization Standard",
+    "description": "Restrict the type and amount of personal information collected to what is strictly necessary for the identified purposes. Document mandatory vs. optional fields on every collection point and review collection forms periodically to remove unnecessary fields.",
+    "createdAt": "2026-04-30 22:36:47.690",
+    "updatedAt": "2026-04-30 22:36:47.690",
+    "documentTypes": []
+  },
+  {
+    "id": "frk_ct_69f3d981cefe4efa0efe0847",
+    "name": "Fair and Lawful Collection Procedure",
+    "description": "Collect personal information only by fair and lawful means, never through deception about purposes or consent. Apply heightened controls to high-risk identifiers (e.g. Social Insurance Number) so they are collected only where legally required.",
+    "createdAt": "2026-04-30 22:36:48.716",
+    "updatedAt": "2026-04-30 22:36:48.716",
+    "documentTypes": []
+  },
+  {
+    "id": "frk_ct_69f3d98163541c15c34554c0",
+    "name": "Use and Disclosure Limitation",
+    "description": "Use and disclose personal information only for the purposes for which it was collected, except with fresh consent or as required by law. Document any new use or disclosure together with its legal basis or consent record before processing begins.",
+    "createdAt": "2026-04-30 22:36:49.496",
+    "updatedAt": "2026-04-30 22:36:49.496",
+    "documentTypes": []
+  },
+  {
+    "id": "frk_ct_69f3d982f21bf2e86c1ef98d",
+    "name": "Data Retention Schedule",
+    "description": "Maintain a documented retention schedule with minimum and maximum retention periods for each category of personal information, aligned to the original collection purpose. Retain information used in decisions about an individual long enough for them to access it.",
+    "createdAt": "2026-04-30 22:36:50.318",
+    "updatedAt": "2026-04-30 22:36:50.318",
+    "documentTypes": []
+  },
+  {
+    "id": "frk_ct_69f3d983dce2e00263034481",
+    "name": "Secure Data Disposal and Anonymization",
+    "description": "Destroy, erase, or irreversibly anonymize personal information once it is no longer needed, using methods that prevent unauthorized recovery. Maintain disposal records and apply equivalent controls to information held by contractors.",
+    "createdAt": "2026-04-30 22:36:51.145",
+    "updatedAt": "2026-04-30 22:36:51.145",
+    "documentTypes": []
+  },
+  {
+    "id": "frk_ct_69f3d9846258471679ba5a28",
+    "name": "Data Accuracy Policy",
+    "description": "Establish a policy that defines accuracy, completeness, and currency requirements for each category of personal information based on its use, including the source of the information, the dates of collection and update, and the procedure for individuals to challenge accuracy.",
+    "createdAt": "2026-04-30 22:36:52.016",
+    "updatedAt": "2026-04-30 22:36:52.016",
+    "documentTypes": []
+  },
+  {
+    "id": "frk_ct_69f3d9854a029af0a24299a3",
+    "name": "Periodic Accuracy Review and Audit",
+    "description": "Conduct periodic reviews or audits of personal information used on an ongoing basis to confirm it remains accurate, complete, and up-to-date for its identified purposes, and propagate amendments to third parties that received the original data.",
+    "createdAt": "2026-04-30 22:36:52.923",
+    "updatedAt": "2026-04-30 22:36:52.923",
+    "documentTypes": []
+  },
+  {
+    "id": "frk_ct_69f3d9864551468e007fc4d8",
+    "name": "Information Security Policy",
+    "description": "Maintain an information security policy that defines security objectives, roles, and minimum control requirements for personal information across all formats and locations, with safeguards calibrated to the sensitivity of the data.",
+    "createdAt": "2026-04-30 22:36:53.909",
+    "updatedAt": "2026-04-30 22:36:53.909",
+    "documentTypes": []
+  },
+  {
+    "id": "frk_ct_69f3d987482f9da8d882e592",
+    "name": "Physical Safeguards",
+    "description": "Apply physical security measures to areas where personal information is stored or processed, including locked cabinets, restricted-access offices, secured premises, alarms, and clean-desk practices for paper records.",
+    "createdAt": "2026-04-30 22:36:54.736",
+    "updatedAt": "2026-04-30 22:36:54.736",
+    "documentTypes": []
+  },
+  {
+    "id": "frk_ct_69f3d98a95c7623e660bf33d",
+    "name": "Public Privacy Policy Publication",
+    "description": "Publish a privacy policy that is readily available and written in plain language, covering the privacy officer's contact details, how to access personal information, what categories of information are held and their general use, and any disclosures to related organizations.",
+    "createdAt": "2026-04-30 22:36:58.165",
+    "updatedAt": "2026-04-30 22:36:58.165",
+    "documentTypes": []
+  },
+  {
+    "id": "frk_ct_69f3d98b12951c79a1a1cf36",
+    "name": "Privacy Information Materials",
+    "description": "Develop and distribute supplementary privacy materials (brochures, web notices, in-product disclosures) so that individuals who do not use one specific channel can still obtain information about the organization's policies and practices, including any tracking technologies used online.",
+    "createdAt": "2026-04-30 22:36:59.041",
+    "updatedAt": "2026-04-30 22:36:59.041",
+    "documentTypes": []
+  },
+  {
+    "id": "frk_ct_69f3d98c52d9000ac36cc791",
+    "name": "Individual Access Request Procedure",
+    "description": "Operate a documented procedure for receiving written access requests, helping individuals prepare them, retrieving the requested information, and responding within 30 days at minimal or no cost. Provide an account of how the information has been or will be used and the third parties to which it has been disclosed.",
+    "createdAt": "2026-04-30 22:36:59.904",
+    "updatedAt": "2026-04-30 22:36:59.904",
+    "documentTypes": []
+  },
+  {
+    "id": "frk_ct_69f3d98d61c5a3ef65a23e20",
+    "name": "Identity Verification for Access Requests",
+    "description": "Verify the identity of individuals submitting access requests using a method proportionate to the sensitivity of the data, requesting only the minimum information necessary to authenticate the requester.",
+    "createdAt": "2026-04-30 22:37:00.849",
+    "updatedAt": "2026-04-30 22:37:00.849",
+    "documentTypes": []
+  },
+  {
+    "id": "frk_ct_69f3d98e0758e358b1f71b49",
+    "name": "Information Amendment and Refusal Procedure",
+    "description": "Allow individuals to challenge the accuracy and completeness of their personal information; amend records when the challenge is substantiated and propagate the amendment to third parties. When refusing access, respond in writing with reasons, applicable PIPEDA exceptions, and recourse — and retain the information long enough for the individual to exhaust recourse.",
+    "createdAt": "2026-04-30 22:37:01.777",
+    "updatedAt": "2026-04-30 22:37:01.777",
+    "documentTypes": []
+  },
+  {
+    "id": "frk_ct_69f3d98f897fe2984e8163e5",
+    "name": "Privacy Complaint Procedure",
+    "description": "Provide an easily accessible, simple-to-use procedure for individuals to challenge the organization's compliance with PIPEDA. Publicize how to complain, acknowledge complaints promptly, and inform complainants of avenues of recourse including the Office of the Privacy Commissioner of Canada.",
+    "createdAt": "2026-04-30 22:37:02.629",
+    "updatedAt": "2026-04-30 22:37:02.629",
+    "documentTypes": []
+  },
+  {
+    "id": "frk_ct_69f3d98fd53148ecfa29efa0",
+    "name": "Complaint Investigation and Remediation",
+    "description": "Investigate every privacy complaint without delay, assigned to a competent and impartial reviewer. Where the complaint is justified, take corrective action — including amending policies, practices, or affected records — notify the complainant of the outcome, and record findings to drive systemic improvements.",
+    "createdAt": "2026-04-30 22:37:03.483",
+    "updatedAt": "2026-04-30 22:37:03.483",
+    "documentTypes": []
+  },
+  {
+    "id": "frk_ct_69f3d977f853eaee5ff05fe7",
+    "name": "Privacy Policies and Procedures Framework",
+    "description": "Maintain a documented privacy management framework that addresses each of the 10 Fair Information Principles, defines roles for privacy governance, and is reviewed and updated on a regular cadence.",
+    "createdAt": "2026-04-30 22:36:39.241",
+    "updatedAt": "2026-04-30 23:49:15.194",
+    "documentTypes": [
+      "risk_committee_meeting",
+      "meeting"
+    ]
+  },
+  {
+    "id": "frk_ct_69f3d988421e37ecdc514fc0",
+    "name": "Technical Safeguards",
+    "description": "Implement technical safeguards proportionate to data sensitivity — including identification, authentication, role-based access controls, encryption at rest and in transit, secure transmission channels, firewalls, audit logging, and timely patching.",
+    "createdAt": "2026-04-30 22:36:55.517",
+    "updatedAt": "2026-04-30 23:49:18.673",
+    "documentTypes": [
+      "rbac_matrix",
+      "penetration_test",
+      "network_diagram",
+      "infrastructure_inventory"
+    ]
+  },
+  {
+    "id": "frk_ct_69f3d9891d140c7d3b7d542c",
+    "name": "Information Security Breach Response",
+    "description": "Maintain a breach response procedure covering detection, containment, root-cause investigation, individual notification (where required), reporting to the Office of the Privacy Commissioner of Canada, and post-incident remediation.",
+    "createdAt": "2026-04-30 22:36:57.260",
+    "updatedAt": "2026-04-30 23:49:20.790",
+    "documentTypes": [
+      "tabletop_exercise"
+    ]
+  },
+  {
+    "id": "frk_ct_69f897d2abcbb2cff15807ac",
+    "name": "Data Encryption",
+    "description": "Implement data encryption both at rest and in transit for all PHI",
+    "createdAt": "2026-05-04 12:57:53.896",
+    "updatedAt": "2026-05-04 12:57:53.896",
+    "documentTypes": []
+  },
+  {
+    "id": "frk_ct_69f3d98847a47dc8f9eacae4",
+    "name": "Administrative Safeguards",
+    "description": "Apply administrative safeguards including need-to-know access authorization, security clearances proportionate to sensitivity, confidentiality agreements, ongoing employee awareness, monitoring and audits, and formal procedures for telework and working outside the office.",
+    "createdAt": "2026-04-30 22:36:56.336",
+    "updatedAt": "2026-04-30 23:49:20.160",
+    "documentTypes": [
+      "employee_performance_evaluation",
+      "rbac_matrix"
+    ]
   }
 ]
