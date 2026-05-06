@@ -614,7 +614,7 @@ export function VendorsTable({
                     onClick={() => handleSort('residualRisk')}
                     className="flex items-center hover:text-foreground"
                   >
-                    RESIDUAL RISK
+                    CURRENT RISK
                     {getSortIcon('residualRisk')}
                   </button>
                 </TableHead>

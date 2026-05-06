@@ -626,7 +626,7 @@ export const RisksTable = ({
                   </TableHead>
                   <TableHead>SEVERITY</TableHead>
                   <TableHead>INHERENT</TableHead>
-                  <TableHead>RESIDUAL</TableHead>
+                  <TableHead>CURRENT</TableHead>
                   <TableHead>STATUS</TableHead>
                   <TableHead>OWNER</TableHead>
                   <TableHead>
@@ -662,9 +662,14 @@ export const RisksTable = ({
                         // Three score columns paint the before-vs-now picture:
                         //   SEVERITY = current treatment-aware level (text).
                         //   INHERENT = raw score before treatment, fixed.
-                        //   RESIDUAL = current treatment-aware score (chip),
-                        //              interpolated by linked-task completion.
-                        // SEVERITY is plain text and RESIDUAL carries the
+                        //   CURRENT  = treatment-aware score interpolated by
+                        //              linked-task completion. Named "Current"
+                        //              (not "Residual") because the canonical
+                        //              residual is the *target* score at 100%
+                        //              completion — what's shown here moves
+                        //              with progress and matches the hero's
+                        //              "Currently X/10" subline.
+                        // SEVERITY is plain text and CURRENT carries the
                         // colored chip so we don't double-paint the band.
                         const inherentScore = getRiskScore(risk.likelihood, risk.impact).score;
                         const score = currentSeverityScore(risk);
