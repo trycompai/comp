@@ -50,20 +50,14 @@ export function ScoreExplainer() {
             residual equals inherent. No reduction; rationale is documented
             on the plan.
           </li>
-          <li>
-            <span className="font-medium text-foreground">Avoid</span> —
-            the activity that produces the risk is discontinued, so once
-            execution is in place the residual pins to the floor (likelihood
-            and impact both at their lowest).
-          </li>
         </ul>
       </Section>
 
       <Section title="3 · Coverage gate">
-        Strategies that require operational evidence (Mitigate, Transfer,
-        Avoid) only project a target reduction when at least one task is
-        linked to the risk. Without linked work, the target collapses back
-        to inherent — the strategy alone isn't audit evidence. Accept is
+        Strategies that require operational evidence (Mitigate, Transfer)
+        only project a target reduction when at least one task is linked
+        to the risk. Without linked work, the target collapses back to
+        inherent — the strategy alone isn't audit evidence. Accept is
         unaffected (its target is inherent by definition).
       </Section>
 
