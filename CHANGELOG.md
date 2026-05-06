@@ -1,3 +1,24 @@
+# [3.44.0](https://github.com/trycompai/comp/compare/v3.43.1...v3.44.0) (2026-05-06)
+
+
+### Bug Fixes
+
+* **api:** correct the total number of active members from overview scores ([ed9561f](https://github.com/trycompai/comp/commit/ed9561f95ec846930eb2b7ac410380413242880e))
+* **api:** make submission endpoints accessible as an employee ([3c96a1d](https://github.com/trycompai/comp/commit/3c96a1d4b767be0a14c0b8b453c67821642426b6))
+* **billing:** surface wallet credits to pentest + bg-check UIs ([05d87d4](https://github.com/trycompai/comp/commit/05d87d4fa2fd359009f7a7e0c35365e2d482e125))
+* **treatment-plan:** cap linked-work lists and treatment plan body height ([8a1c46f](https://github.com/trycompai/comp/commit/8a1c46f0496285e2d49a0a82abc26667c236942c)), closes [#36](https://github.com/trycompai/comp/issues/36) [#37](https://github.com/trycompai/comp/issues/37)
+* **treatment-plan:** cap linked-work lists and treatment plan body height ([46d7e83](https://github.com/trycompai/comp/commit/46d7e83e83447a3e33a79d53eefd94a3186efe5f)), closes [#36](https://github.com/trycompai/comp/issues/36) [#37](https://github.com/trycompai/comp/issues/37)
+* **upgrade:** keep self-hosted check on the page to avoid OSS regression ([e42e6ef](https://github.com/trycompai/comp/commit/e42e6ef8661db6dc65a7bf57c12e52dd817f9c64))
+
+
+### Features
+
+* **db:** ship CA bundle with @trycompai/db, clean up debug routes ([#2767](https://github.com/trycompai/comp/issues/2767)) ([84da90c](https://github.com/trycompai/comp/commit/84da90c0bcb67de45a375133462e08c27bede4c5)), closes [#2761](https://github.com/trycompai/comp/issues/2761) [#2762](https://github.com/trycompai/comp/issues/2762) [#2763](https://github.com/trycompai/comp/issues/2763)
+* **integration-platform:** remove code-based jumpcloud, route via DIP ([2ab5b78](https://github.com/trycompai/comp/commit/2ab5b7822ed21fa069a0c22ed3ff1a9093e33d53))
+* **risks:** treatment plan as first-class + vendor AI widening + matrix polish ([1a97746](https://github.com/trycompai/comp/commit/1a97746fb239117fbb384f5c7f199141e09b4ee6)), closes [hi#confidence](https://github.com/hi/issues/confidence) [#2671](https://github.com/trycompai/comp/issues/2671) [#2](https://github.com/trycompai/comp/issues/2) [#3](https://github.com/trycompai/comp/issues/3) [#9](https://github.com/trycompai/comp/issues/9) [#4](https://github.com/trycompai/comp/issues/4) [#5](https://github.com/trycompai/comp/issues/5) [#7](https://github.com/trycompai/comp/issues/7) [#26](https://github.com/trycompai/comp/issues/26) [#6](https://github.com/trycompai/comp/issues/6) [#1](https://github.com/trycompai/comp/issues/1) [#10](https://github.com/trycompai/comp/issues/10) [#36](https://github.com/trycompai/comp/issues/36) [#35](https://github.com/trycompai/comp/issues/35) [#39](https://github.com/trycompai/comp/issues/39) [#37](https://github.com/trycompai/comp/issues/37) [#32](https://github.com/trycompai/comp/issues/32) [#33](https://github.com/trycompai/comp/issues/33) [#34](https://github.com/trycompai/comp/issues/34) [#17](https://github.com/trycompai/comp/issues/17) [#18](https://github.com/trycompai/comp/issues/18) [#19](https://github.com/trycompai/comp/issues/19) [#20](https://github.com/trycompai/comp/issues/20) [#21](https://github.com/trycompai/comp/issues/21) [#22](https://github.com/trycompai/comp/issues/22) [#30](https://github.com/trycompai/comp/issues/30) [#31](https://github.com/trycompai/comp/issues/31) [#29](https://github.com/trycompai/comp/issues/29) [#23](https://github.com/trycompai/comp/issues/23) [#40](https://github.com/trycompai/comp/issues/40) [#28](https://github.com/trycompai/comp/issues/28) [#27](https://github.com/trycompai/comp/issues/27) [#38](https://github.com/trycompai/comp/issues/38) [#24](https://github.com/trycompai/comp/issues/24) [#2671](https://github.com/trycompai/comp/issues/2671)
+* **vendors:** refine inherent risk score after research lands posture data ([#2760](https://github.com/trycompai/comp/issues/2760)) ([e999c72](https://github.com/trycompai/comp/commit/e999c724d0e4600a88d3f2b708bd28b561439a33))
+* verified-TLS to RDS from every runtime ([#2761](https://github.com/trycompai/comp/issues/2761)) ([2bde7ad](https://github.com/trycompai/comp/commit/2bde7ad305c707f2ab14885a1db1914803121b3e))
+
 ## [3.43.1](https://github.com/trycompai/comp/compare/v3.43.0...v3.43.1) (2026-05-05)
 
 
