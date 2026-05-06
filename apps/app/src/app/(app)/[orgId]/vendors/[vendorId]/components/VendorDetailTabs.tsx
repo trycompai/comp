@@ -36,6 +36,7 @@ import {
 } from '@trycompai/design-system';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
+import { useQueryState } from 'nuqs';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 
@@ -76,7 +77,6 @@ export function VendorDetailTabs({
   isViewingTask,
 }: VendorDetailTabsProps) {
   const searchParams = useSearchParams();
-  const defaultTab = searchParams.get('tab') || 'overview';
   const taskItemId = searchParams.get('taskItemId');
 
   const { vendor: swrVendor, mutate: refreshVendor } = useVendor(vendorId);
@@ -107,7 +107,14 @@ export function VendorDetailTabs({
   } | null>(null);
   const [isAssessmentLoading, setIsAssessmentLoading] = useState(false);
   const [isRegenerating, setIsRegenerating] = useState(false);
-  const [activeTab, setActiveTab] = useState(defaultTab);
+  // URL-backed tab state — bookmarks the active tab in `?tab=...` so a
+  // refresh keeps the same view. Conditional rendering below mounts only
+  // the active panel, sidestepping base-ui's transition window where the
+  // outgoing panel stays at full opacity during the incoming fade-in
+  // (visible "both panels stacked" flash on tab switch).
+  const [activeTab, setActiveTab] = useQueryState('tab', {
+    defaultValue: 'overview',
+  });
 
   const { data: taskItemsData, mutate: refreshTaskItems } = useTaskItems(
     vendorId, 'vendor', 1, 50, 'createdAt', 'desc', {},
@@ -338,7 +345,7 @@ export function VendorDetailTabs({
       toast.success('Assessment regeneration triggered.');
       if (result.runId && result.publicAccessToken) {
         setIsRegenerating(true);
-        setActiveTab('risk-assessment');
+        void setActiveTab('risk-assessment');
         handleAssessmentTriggered(result.runId, result.publicAccessToken);
       }
       refreshVendor();
@@ -472,7 +479,7 @@ export function VendorDetailTabs({
       {isViewingTask ? (
         <TaskItems entityId={vendorId} entityType="vendor" />
       ) : (
-        <Tabs value={activeTab} onValueChange={setActiveTab}>
+        <Tabs value={activeTab} onValueChange={(next) => void setActiveTab(String(next))}>
           <Stack gap="lg">
             <TabsList variant="underline">
               <TabsTrigger value="overview">Overview</TabsTrigger>
@@ -485,10 +492,13 @@ export function VendorDetailTabs({
               <TabsTrigger value="settings">Settings</TabsTrigger>
             </TabsList>
 
-            <TabsContent value="overview">
-              <SecondaryFields vendor={resolvedVendor} assignees={assignees} onUpdate={refreshVendor} />
-            </TabsContent>
+            {activeTab === 'overview' && (
+              <TabsContent value="overview">
+                <SecondaryFields vendor={resolvedVendor} assignees={assignees} onUpdate={refreshVendor} />
+              </TabsContent>
+            )}
 
+            {activeTab === 'treatment-plan' && (
             <TabsContent value="treatment-plan">
               <TreatmentPlanTab
                 orgId={orgId}
@@ -525,14 +535,18 @@ export function VendorDetailTabs({
                 onRegenSettled={handleRegenSettled}
               />
             </TabsContent>
+            )}
 
+            {activeTab === 'risk-matrix' && (
             <TabsContent value="risk-matrix">
               <Stack gap="lg">
                 <VendorInherentRiskChart vendor={resolvedVendor} />
                 <VendorResidualRiskChart vendor={resolvedVendor} />
               </Stack>
             </TabsContent>
+            )}
 
+            {activeTab === 'risk-assessment' && (
             <TabsContent value="risk-assessment">
               <Stack gap="md">
                 <AnimatePresence mode="wait">
@@ -580,19 +594,27 @@ export function VendorDetailTabs({
                 </AnimatePresence>
               </Stack>
             </TabsContent>
+            )}
 
-            <TabsContent value="tasks">
-              <TaskItems entityId={vendorId} entityType="vendor" />
-            </TabsContent>
+            {activeTab === 'tasks' && (
+              <TabsContent value="tasks">
+                <TaskItems entityId={vendorId} entityType="vendor" />
+              </TabsContent>
+            )}
 
-            <TabsContent value="comments">
-              <Comments entityId={vendorId} entityType={CommentEntityType.vendor} organizationId={orgId} />
-            </TabsContent>
+            {activeTab === 'comments' && (
+              <TabsContent value="comments">
+                <Comments entityId={vendorId} entityType={CommentEntityType.vendor} organizationId={orgId} />
+              </TabsContent>
+            )}
 
-            <TabsContent value="activity">
-              <VendorActivitySection vendorId={vendorId} taskItemIds={taskItemsData?.data?.data?.map((t) => t.id) || []} />
-            </TabsContent>
+            {activeTab === 'activity' && (
+              <TabsContent value="activity">
+                <VendorActivitySection vendorId={vendorId} taskItemIds={taskItemsData?.data?.data?.map((t) => t.id) || []} />
+              </TabsContent>
+            )}
 
+            {activeTab === 'settings' && (
             <TabsContent value="settings">
               <Stack gap="lg">
                 {canUpdate && (
@@ -616,6 +638,7 @@ export function VendorDetailTabs({
                 )}
               </Stack>
             </TabsContent>
+            )}
           </Stack>
         </Tabs>
       )}

@@ -10,7 +10,9 @@ import {
   type SuggestedTask,
 } from './AutoLinkSuggestions.types';
 
-const PAGE_SIZE = 10;
+// Match the LinkedWork list pagination so the selection UI feels consistent
+// with the post-apply view (also 4 per page).
+const PAGE_SIZE = 4;
 
 function Pagination({
   page,
@@ -192,6 +194,11 @@ export function ControlsSection({
       <div className="mt-2">
         {visible.map((c) => {
           const isDerived = isControlDerived(c, checkedTaskIds);
+          // Show "code · name" when the framework provides a code
+          // (e.g. "1.2.7 · Credential Management"); fall back to just
+          // the name when code is empty so we don't render a leading
+          // "· " orphan separator.
+          const heading = c.code ? `${c.code} · ${c.name}` : c.name;
           return (
             <div
               key={c.id}
@@ -200,11 +207,8 @@ export function ControlsSection({
                 !isDerived && 'opacity-55',
               )}
             >
-              <span className="mt-0.5 inline-block h-4 w-4 shrink-0" aria-hidden="true" />
               <div className="min-w-0 flex-1">
-                <div className="text-[13px] leading-[1.4]">
-                  {c.code} · {c.name}
-                </div>
+                <div className="text-[13px] leading-[1.4]">{heading}</div>
                 <div className="mt-0.5 text-[11px] leading-[1.4] text-muted-foreground">
                   {c.framework}
                 </div>

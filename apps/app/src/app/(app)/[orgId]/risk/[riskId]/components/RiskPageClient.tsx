@@ -24,7 +24,7 @@ import {
   Text,
 } from '@trycompai/design-system';
 import Link from 'next/link';
-import { useSearchParams } from 'next/navigation';
+import { useQueryState } from 'nuqs';
 import { useCallback, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 
@@ -71,8 +71,16 @@ export function RiskPageClient({
     discardRiskAutoLinkRun,
   } = useRiskActions();
   const { hasPermission } = usePermissions();
-  const searchParams = useSearchParams();
-  const defaultTab = searchParams.get('tab') || 'overview';
+  // URL-backed tab state — bookmarks the active tab in `?tab=...` so a
+  // refresh keeps the same view. Control the value so we can conditionally
+  // render only the active panel below: base-ui's Tabs.Panel keeps the
+  // outgoing panel mounted at full opacity for the duration of the
+  // incoming panel's `fade-in-0 duration-200` animation, which produces
+  // a visible "both panels stacked" flash. Mounting only the active panel
+  // sidesteps the transition window entirely.
+  const [activeTab, setActiveTab] = useQueryState('tab', {
+    defaultValue: 'overview',
+  });
   const isViewingTask = Boolean(taskItemId);
   const canUpdate = hasPermission('risk', 'update');
   const canUpdateTask = hasPermission('task', 'update');
@@ -307,7 +315,7 @@ export function RiskPageClient({
       {isViewingTask ? (
         <TaskItems entityId={riskId} entityType="risk"  />
       ) : (
-        <Tabs defaultValue={defaultTab}>
+        <Tabs value={activeTab} onValueChange={(next) => void setActiveTab(String(next))}>
           <Stack gap="lg">
             <TabsList variant="underline">
               <TabsTrigger value="overview">Overview</TabsTrigger>
@@ -319,77 +327,91 @@ export function RiskPageClient({
               <TabsTrigger value="settings">Settings</TabsTrigger>
             </TabsList>
 
-            <TabsContent value="overview">
-              <RiskOverview risk={risk} assignees={assignees} />
-            </TabsContent>
+            {activeTab === 'overview' && (
+              <TabsContent value="overview">
+                <RiskOverview risk={risk} assignees={assignees} />
+              </TabsContent>
+            )}
 
-            <TabsContent value="treatment-plan">
-              <TreatmentPlanTab
-                orgId={orgId}
-                entity={{
-                  id: risk.id,
-                  inherentLikelihood: risk.likelihood,
-                  inherentImpact: risk.impact,
-                  residualLikelihood: risk.residualLikelihood,
-                  residualImpact: risk.residualImpact,
-                  treatmentStrategy: risk.treatmentStrategy,
-                  treatmentStrategyDescription: risk.treatmentStrategyDescription,
-                  strategyDescriptions:
-                    (swrRisk as { strategyDescriptions?: unknown } | undefined)
-                      ?.strategyDescriptions as
-                      | Partial<Record<RiskTreatmentType, string>>
-                      | null
-                      | undefined ?? null,
-                  // Fall through to the server-rendered initial risk so the
-                  // Linked Work column doesn't blink empty between SSR and
-                  // the first SWR resolution. (Cubic finding #28.)
-                  tasks:
-                    swrRisk?.tasks ??
-                    (initialRisk as unknown as { tasks?: RiskLinkedTask[] })
-                      .tasks ??
-                    [],
-                }}
-                canUpdate={canUpdate}
-                onUpdateStrategy={handleUpdateStrategy}
-                onUpdateDescription={handleUpdateDescription}
-                onRegenerate={handleRegenerateMitigation}
-                regenerating={isRegenerating}
-                onSuggest={handleSuggest}
-                onApply={handleApply}
-                // Gate the unlink affordance behind risk:update so the trash
-                // button doesn't render for read-only users. The Next API
-                // route enforces the same check server-side as defense in
-                // depth. (Cubic finding on PR #2671.)
-                onUnlinkTask={canUpdate ? handleUnlinkTask : undefined}
-                onResumeAutoLink={handleResumeAutoLink}
-                onDiscardAutoLinkRun={handleDiscardAutoLinkRun}
-                regenRun={regenRun}
-                onRegenSettled={handleRegenSettled}
-              />
-            </TabsContent>
+            {activeTab === 'treatment-plan' && (
+              <TabsContent value="treatment-plan">
+                <TreatmentPlanTab
+                  orgId={orgId}
+                  entity={{
+                    id: risk.id,
+                    inherentLikelihood: risk.likelihood,
+                    inherentImpact: risk.impact,
+                    residualLikelihood: risk.residualLikelihood,
+                    residualImpact: risk.residualImpact,
+                    treatmentStrategy: risk.treatmentStrategy,
+                    treatmentStrategyDescription: risk.treatmentStrategyDescription,
+                    strategyDescriptions:
+                      (swrRisk as { strategyDescriptions?: unknown } | undefined)
+                        ?.strategyDescriptions as
+                        | Partial<Record<RiskTreatmentType, string>>
+                        | null
+                        | undefined ?? null,
+                    // Fall through to the server-rendered initial risk so the
+                    // Linked Work column doesn't blink empty between SSR and
+                    // the first SWR resolution. (Cubic finding #28.)
+                    tasks:
+                      swrRisk?.tasks ??
+                      (initialRisk as unknown as { tasks?: RiskLinkedTask[] })
+                        .tasks ??
+                      [],
+                  }}
+                  canUpdate={canUpdate}
+                  onUpdateStrategy={handleUpdateStrategy}
+                  onUpdateDescription={handleUpdateDescription}
+                  onRegenerate={handleRegenerateMitigation}
+                  regenerating={isRegenerating}
+                  onSuggest={handleSuggest}
+                  onApply={handleApply}
+                  // Gate the unlink affordance behind risk:update so the trash
+                  // button doesn't render for read-only users. The Next API
+                  // route enforces the same check server-side as defense in
+                  // depth. (Cubic finding on PR #2671.)
+                  onUnlinkTask={canUpdate ? handleUnlinkTask : undefined}
+                  onResumeAutoLink={handleResumeAutoLink}
+                  onDiscardAutoLinkRun={handleDiscardAutoLinkRun}
+                  regenRun={regenRun}
+                  onRegenSettled={handleRegenSettled}
+                />
+              </TabsContent>
+            )}
 
-            <TabsContent value="risk-matrix">
-              <Stack gap="lg">
-                <InherentRiskChart risk={risk} />
-                <ResidualRiskChart risk={risk} />
-              </Stack>
-            </TabsContent>
+            {activeTab === 'risk-matrix' && (
+              <TabsContent value="risk-matrix">
+                <Stack gap="lg">
+                  <InherentRiskChart risk={risk} />
+                  <ResidualRiskChart risk={risk} />
+                </Stack>
+              </TabsContent>
+            )}
 
-            <TabsContent value="tasks">
-              <TaskItems entityId={riskId} entityType="risk"  />
-            </TabsContent>
+            {activeTab === 'tasks' && (
+              <TabsContent value="tasks">
+                <TaskItems entityId={riskId} entityType="risk" />
+              </TabsContent>
+            )}
 
-            <TabsContent value="comments">
-              <Comments entityId={riskId} entityType={CommentEntityType.risk} organizationId={orgId} />
-            </TabsContent>
+            {activeTab === 'comments' && (
+              <TabsContent value="comments">
+                <Comments entityId={riskId} entityType={CommentEntityType.risk} organizationId={orgId} />
+              </TabsContent>
+            )}
 
-            <TabsContent value="activity">
-              <RiskActivitySection riskId={riskId} taskItemIds={taskItemsData?.data?.data?.map((t) => t.id) || []} />
-            </TabsContent>
+            {activeTab === 'activity' && (
+              <TabsContent value="activity">
+                <RiskActivitySection riskId={riskId} taskItemIds={taskItemsData?.data?.data?.map((t) => t.id) || []} />
+              </TabsContent>
+            )}
 
-            <TabsContent value="settings">
-              <Text size="sm" variant="muted">No settings yet.</Text>
-            </TabsContent>
+            {activeTab === 'settings' && (
+              <TabsContent value="settings">
+                <Text size="sm" variant="muted">No settings yet.</Text>
+              </TabsContent>
+            )}
           </Stack>
         </Tabs>
       )}

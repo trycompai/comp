@@ -13,7 +13,7 @@
  */
 export function ScoreExplainer() {
   return (
-    <div className="flex flex-col gap-3 text-[13px] leading-[1.55] text-foreground">
+    <div className="flex max-h-[70vh] flex-col gap-3 overflow-y-auto pr-1 text-[13px] leading-[1.55] text-foreground">
       <div className="text-sm font-medium">How this score is calculated</div>
 
       <Section title="1 · Inherent score (1–10)">
@@ -50,20 +50,14 @@ export function ScoreExplainer() {
             residual equals inherent. No reduction; rationale is documented
             on the plan.
           </li>
-          <li>
-            <span className="font-medium text-foreground">Avoid</span> —
-            the activity that produces the risk is discontinued, so once
-            execution is in place the residual pins to the floor (likelihood
-            and impact both at their lowest).
-          </li>
         </ul>
       </Section>
 
       <Section title="3 · Coverage gate">
-        Strategies that require operational evidence (Mitigate, Transfer,
-        Avoid) only project a target reduction when at least one task is
-        linked to the risk. Without linked work, the target collapses back
-        to inherent — the strategy alone isn't audit evidence. Accept is
+        Strategies that require operational evidence (Mitigate, Transfer)
+        only project a target reduction when at least one task is linked
+        to the risk. Without linked work, the target collapses back to
+        inherent — the strategy alone isn't audit evidence. Accept is
         unaffected (its target is inherent by definition).
       </Section>
 
