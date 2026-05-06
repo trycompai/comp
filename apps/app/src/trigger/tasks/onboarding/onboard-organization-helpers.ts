@@ -1165,7 +1165,11 @@ export async function createRisksFromData(
     metadata.set(`risk_temp_${index}_status`, 'processing');
   });
 
-  // Create all risks concurrently
+  // Create all risks concurrently. Strategy is intentionally NOT taken
+  // from the LLM extraction — we always start with mitigate (the
+  // workhorse strategy + schema default) so the AI mitigation plan that
+  // runs immediately after lands in the correct slot. The user can
+  // switch to accept / transfer / avoid manually if needed.
   const createPromises = riskData.map((risk) =>
     db.risk.create({
       data: {
@@ -1175,8 +1179,6 @@ export async function createRisksFromData(
         department: risk.department,
         likelihood: risk.risk_residual_probability,
         impact: risk.risk_residual_impact,
-        treatmentStrategy: risk.risk_treatment_strategy,
-        treatmentStrategyDescription: risk.risk_treatment_strategy_description,
         organizationId,
       },
     }),
@@ -1226,6 +1228,9 @@ async function createRisksFromDataWithBaseline(
         },
       });
     } else if (risk.riskData) {
+      // Same rationale as createRisksFromData — strategy is fixed to
+      // mitigate (schema default) so the AI plan generated right after
+      // lands in the correct slot.
       return db.risk.create({
         data: {
           title: risk.riskData.risk_name,
@@ -1234,8 +1239,6 @@ async function createRisksFromDataWithBaseline(
           department: risk.riskData.department,
           likelihood: risk.riskData.risk_residual_probability,
           impact: risk.riskData.risk_residual_impact,
-          treatmentStrategy: risk.riskData.risk_treatment_strategy,
-          treatmentStrategyDescription: risk.riskData.risk_treatment_strategy_description,
           organizationId,
         },
       });
