@@ -1,3 +1,10 @@
+## [3.44.2](https://github.com/trycompai/comp/compare/v3.44.1...v3.44.2) (2026-05-06)
+
+
+### Bug Fixes
+
+* **db:** drop inlined RDS CA bundle, use Node default trust store ([#2775](https://github.com/trycompai/comp/issues/2775)) ([cd5046c](https://github.com/trycompai/comp/commit/cd5046cec797afc2026c5a9b006d067f8c430e41)), closes [#2772](https://github.com/trycompai/comp/issues/2772)
+
 ## [3.44.1](https://github.com/trycompai/comp/compare/v3.44.0...v3.44.1) (2026-05-06)
 
 
