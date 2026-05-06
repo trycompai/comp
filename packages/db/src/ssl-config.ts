@@ -1,8 +1,6 @@
-import { RDS_CA_BUNDLE } from './rds-ca-bundle';
-
 export type SslConfig =
   | undefined
-  | { ca: string; checkServerIdentity: () => undefined }
+  | { checkServerIdentity: () => undefined }
   | { rejectUnauthorized: false };
 
 const LOCAL_HOSTNAMES = new Set(['localhost', '127.0.0.1', '::1']);
@@ -25,9 +23,15 @@ export function resolveSslConfig(
 ): SslConfig {
   if (isLocalhostUrl(databaseUrl)) return undefined;
   if (env.PRISMA_ALLOW_INSECURE_TLS === '1') return { rejectUnauthorized: false };
-  // Verified TLS using the inlined AWS RDS CA bundle. Skip the hostname check
-  // because connections may traverse an AWS NLB whose hostname isn't in the
-  // RDS Proxy cert's SAN list. The chain check still rejects forged or
-  // wrong-CA certs.
-  return { ca: RDS_CA_BUNDLE, checkServerIdentity: () => undefined };
+  // Verified TLS via Node's default trust store, which includes Amazon Root
+  // CA 1 — where AWS RDS Proxy chains terminate. Hostname check is skipped
+  // because connections traverse an AWS NLB whose hostname isn't in the RDS
+  // Proxy cert's SAN list; the chain check still rejects forged or wrong-CA
+  // certs.
+  //
+  // Previously this returned `{ ca: RDS_CA_BUNDLE, ... }` — but `ssl.ca`
+  // *replaces* Node's trust store rather than augmenting it, and the bundle
+  // only contains regional RDS CAs (not Amazon Root CA 1), so RDS Proxy
+  // chain validation failed at runtime (P1011 / TlsConnectionError).
+  return { checkServerIdentity: () => undefined };
 }
