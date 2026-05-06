@@ -13,7 +13,7 @@
  */
 export function ScoreExplainer() {
   return (
-    <div className="flex flex-col gap-3 text-[13px] leading-[1.55] text-foreground">
+    <div className="flex max-h-[70vh] flex-col gap-3 overflow-y-auto pr-1 text-[13px] leading-[1.55] text-foreground">
       <div className="text-sm font-medium">How this score is calculated</div>
 
       <Section title="1 · Inherent score (1–10)">

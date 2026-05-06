@@ -10,7 +10,9 @@ import {
   type SuggestedTask,
 } from './AutoLinkSuggestions.types';
 
-const PAGE_SIZE = 10;
+// Match the LinkedWork list pagination so the selection UI feels consistent
+// with the post-apply view (also 4 per page).
+const PAGE_SIZE = 4;
 
 function Pagination({
   page,

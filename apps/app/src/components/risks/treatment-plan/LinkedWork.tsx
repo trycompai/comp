@@ -189,7 +189,7 @@ export function LinkedWork({ orgId, tasks, onUnlinkTask }: LinkedWorkProps) {
           </p>
         ) : (
           <>
-            <ul className="flex flex-col">
+            <ul className="flex list-none flex-col pl-0">
               {visibleTasks.map((t, i) => {
                 const taskDone = isTaskDone(t.status);
                 const isUnlinking = unlinking === t.id;
@@ -258,7 +258,7 @@ export function LinkedWork({ orgId, tasks, onUnlinkTask }: LinkedWorkProps) {
           </p>
         ) : (
           <>
-            <ul className="flex flex-col">
+            <ul className="flex list-none flex-col pl-0">
               {visibleControls.map((c, i) => (
                 <li
                   key={c.id}

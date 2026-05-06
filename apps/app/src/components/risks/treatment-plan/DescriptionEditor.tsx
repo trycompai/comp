@@ -110,6 +110,22 @@ export function DescriptionEditor({
     if (value.trim().length === 0) setMode('edit');
   }, [value, mode, saving]);
 
+  // Regenerate-with-AI bypasses the in-edit guard above. When a regen run
+  // terminates (`regenRun` flips from set → null), the user explicitly
+  // asked to overwrite whatever they had — keeping the stale draft and
+  // requiring a refresh to see the new prose was confusing. Force a
+  // preview reset so the new value lands immediately.
+  const prevRegenRunRef = useRef(regenRun);
+  useEffect(() => {
+    const wasRunning = prevRegenRunRef.current !== null && prevRegenRunRef.current !== undefined;
+    const isRunning = regenRun !== null && regenRun !== undefined;
+    prevRegenRunRef.current = regenRun;
+    if (wasRunning && !isRunning) {
+      setDraft(value);
+      if (value.trim().length > 0) setMode('preview');
+    }
+  }, [regenRun, value]);
+
   // Auto-grow the textarea to fit content, but cap at TEXTAREA_MAX_PX so a
   // long draft doesn't stretch the Treatment plan column past the Strategy
   // / Linked Work columns. Internal scroll kicks in past the cap.
