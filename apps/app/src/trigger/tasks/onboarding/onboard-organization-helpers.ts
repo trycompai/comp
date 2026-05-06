@@ -1,6 +1,5 @@
 import { openai } from '@ai-sdk/openai';
 import {
-  CommentEntityType,
   Departments,
   FrameworkEditorFramework,
   Impact,
@@ -14,11 +13,22 @@ import {
 } from '@db';
 import { db } from '@db/server';
 import { logger, metadata, tasks } from '@trigger.dev/sdk';
-import { generateObject, generateText, jsonSchema } from 'ai';
+import { generateObject, jsonSchema } from 'ai';
 import axios from 'axios';
+import { z } from 'zod';
 import type { researchVendor } from '../scrape/research';
+import {
+  applyMitigationPlanFields,
+  mirrorActiveDescriptionIntoMap,
+} from '@/lib/strategy-descriptions';
+import { buildCitationsHeading } from './build-citations-heading';
 import { RISK_MITIGATION_PROMPT } from './prompts/risk-mitigation';
-import { VENDOR_RISK_ASSESSMENT_PROMPT } from './prompts/vendor-risk-assessment';
+import {
+  citationSuffix,
+  GAP_HINT_BY_RISK_CATEGORY,
+  selectMitigationCitations,
+  type MitigationCitation,
+} from './select-mitigation-citations';
 import { updatePolicy } from './update-policy';
 
 type VendorForRiskAssessmentTrigger = {
@@ -82,7 +92,9 @@ const BASELINE_RISKS: Array<{
       'Intentional misrepresentation or deception by an internal actor (employee, contractor) or by the organization as a whole, for the purpose of achieving an unauthorized or improper gain.',
     category: RiskCategory.governance,
     department: Departments.gov,
-    status: RiskStatus.closed,
+    // Pending (not closed) so the user reviews + signs off before the risk
+    // shows up as resolved — same rule we apply after AI mitigation.
+    status: RiskStatus.pending,
   },
 ];
 
@@ -119,6 +131,234 @@ export async function ensureBaselineRisks(organizationId: string): Promise<Risk[
 
   return created;
 }
+
+type GroundingTask = { title: string; status: string };
+type GroundingControl = { code: string; name: string; framework: string };
+
+/**
+ * Loads tasks + deduped controls linked to a risk for use as grounding context
+ * in the mitigation-plan prompt. Returns null if the risk doesn't exist.
+ */
+async function loadRiskGroundingContext(
+  riskId: string,
+  organizationId: string,
+): Promise<{
+  linkedTasks: GroundingTask[];
+  linkedControls: GroundingControl[];
+} | null> {
+  // Order tasks by createdAt then id, and the controls inside each task
+  // the same way, so the citation selection (which preserves input order
+  // for determinism) produces identical output across re-runs. Without
+  // these `orderBy` clauses Prisma returns relation rows in undefined
+  // order — see Cubic finding #40 on PR #2671.
+  const risk = await db.risk.findFirst({
+    where: { id: riskId, organizationId },
+    include: {
+      tasks: {
+        orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
+        select: {
+          id: true,
+          title: true,
+          status: true,
+          controls: {
+            orderBy: [{ name: 'asc' }, { id: 'asc' }],
+            select: {
+              id: true,
+              name: true,
+              requirementsMapped: {
+                orderBy: [{ id: 'asc' }],
+                select: {
+                  frameworkInstance: {
+                    select: { framework: { select: { name: true } } },
+                  },
+                  requirement: { select: { identifier: true } },
+                  customRequirement: { select: { identifier: true } },
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+  });
+
+  if (!risk) return null;
+
+  const linkedTasks: GroundingTask[] = risk.tasks.map((t) => ({
+    title: t.title,
+    status: t.status,
+  }));
+
+  const seen = new Set<string>();
+  const linkedControls: GroundingControl[] = [];
+  for (const t of risk.tasks) {
+    for (const c of t.controls) {
+      const mapping = c.requirementsMapped[0];
+      const code =
+        mapping?.requirement?.identifier ?? mapping?.customRequirement?.identifier ?? c.id;
+      const framework = mapping?.frameworkInstance?.framework?.name ?? 'Custom';
+      const key = `${code}|${c.name}`;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      linkedControls.push({ code, name: c.name, framework });
+    }
+  }
+
+  return { linkedTasks, linkedControls };
+}
+
+function vendorCompliancePostureBlock(vendor: {
+  status: string;
+  complianceBadges: unknown;
+}): string {
+  if (vendor.status !== 'assessed') {
+    return `Assessment status: ${vendor.status} (no verified compliance signal yet).`;
+  }
+  if (!Array.isArray(vendor.complianceBadges) || vendor.complianceBadges.length === 0) {
+    return 'No verified compliance certifications.';
+  }
+  const lines = (vendor.complianceBadges as Array<{ type: string; verified?: boolean }>).map(
+    (b) => `- ${b.type}${b.verified ? ' (verified)' : ' (claimed)'}`,
+  );
+  return `Compliance posture:\n${lines.join('\n')}`;
+}
+
+/**
+ * Loads tasks, deduped controls, and a compliance posture block for a vendor.
+ * Returns null if the vendor doesn't exist.
+ */
+async function loadVendorGroundingContext(
+  vendorId: string,
+  organizationId: string,
+): Promise<{
+  linkedTasks: GroundingTask[];
+  linkedControls: GroundingControl[];
+  compliancePosture: string;
+} | null> {
+  // Same orderBy as the risk loader — see Cubic finding #40.
+  const vendor = await db.vendor.findFirst({
+    where: { id: vendorId, organizationId },
+    include: {
+      tasks: {
+        orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
+        select: {
+          id: true,
+          title: true,
+          status: true,
+          controls: {
+            orderBy: [{ name: 'asc' }, { id: 'asc' }],
+            select: {
+              id: true,
+              name: true,
+              requirementsMapped: {
+                orderBy: [{ id: 'asc' }],
+                select: {
+                  frameworkInstance: {
+                    select: { framework: { select: { name: true } } },
+                  },
+                  requirement: { select: { identifier: true } },
+                  customRequirement: { select: { identifier: true } },
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+  });
+  if (!vendor) return null;
+
+  const linkedTasks: GroundingTask[] = vendor.tasks.map((t) => ({
+    title: t.title,
+    status: t.status,
+  }));
+
+  const seen = new Set<string>();
+  const linkedControls: GroundingControl[] = [];
+  for (const t of vendor.tasks) {
+    for (const c of t.controls) {
+      const mapping = c.requirementsMapped[0];
+      const code =
+        mapping?.requirement?.identifier ?? mapping?.customRequirement?.identifier ?? c.id;
+      const framework = mapping?.frameworkInstance?.framework?.name ?? 'Custom';
+      const key = `${code}|${c.name}`;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      linkedControls.push({ code, name: c.name, framework });
+    }
+  }
+
+  return {
+    linkedTasks,
+    linkedControls,
+    compliancePosture: vendorCompliancePostureBlock({
+      status: vendor.status,
+      complianceBadges: vendor.complianceBadges,
+    }),
+  };
+}
+
+/**
+ * Builds the citations block of the user prompt — a numbered list the LLM
+ * uses as a 1:1 mapping between sentences[i] and citations[i].
+ */
+function formatCitationsBlock(citations: MitigationCitation[]): string {
+  return citations
+    .map((c, i) => {
+      const idx = i + 1;
+      switch (c.kind) {
+        case 'control':
+          return `${idx}. CONTROL — code: ${c.code}, name: ${c.name}`;
+        case 'task':
+          return `${idx}. TASK — name: ${c.name}, status: ${c.status}`;
+        case 'policy':
+          return `${idx}. POLICY — name: ${c.name}`;
+        case 'gap':
+          return `${idx}. GAP — recommend adding ${c.controlTypeHint} control`;
+      }
+    })
+    .join('\n');
+}
+
+const sentencesSchema = z.object({
+  sentences: z.array(z.string().min(8).max(200)).length(5),
+});
+
+/**
+ * Combines deterministic citations with LLM-generated sentences into the
+ * final treatment-plan body that gets persisted to
+ * `treatmentStrategyDescription`.
+ *
+ * The intro line is built from the actual citations so it can never lie
+ * about counts/kinds — e.g. "through 3 controls, 1 task, and 1 recommended
+ * gap" reflects exactly what's in the bullets below.
+ */
+function combineSentencesWithCitations({
+  treatmentStrategy,
+  sentences,
+  citations,
+  linkedTotals,
+}: {
+  treatmentStrategy: string;
+  sentences: string[];
+  citations: MitigationCitation[];
+  /**
+   * Full linked-work totals for the entity. The heading reports these so
+   * the prose matches the Linked Work column, even when the bullets are a
+   * curated subset (max 3 controls + 2 tasks).
+   */
+  linkedTotals: { controls: number; tasks: number };
+}): string {
+  const bullets = sentences.map(
+    (sentence, i) => `- ${sentence.trim()}${citationSuffix(citations[i])}`,
+  );
+  return [
+    `Treatment plan (${treatmentStrategy})`,
+    buildCitationsHeading({ citations, linkedTotals }),
+    ...bullets,
+  ].join('\n');
+}
+
 
 /**
  * Revalidates the organization path for cache busting
@@ -293,8 +533,38 @@ export async function extractVendorsFromContext(
       required: ['vendors'],
       additionalProperties: false,
     }),
-    system:
-      'Extract vendor names from the following questions and answers. Return their name (grammar-correct), website, description, category, inherent probability, inherent impact, residual probability, and residual impact. IMPORTANT: For vendor_name, always use the parent company name, not the product name (e.g. "Anthropic" not "Claude", "OpenAI" not "ChatGPT"). Set original_name to the name as it appeared in the user input.',
+    system: [
+      'Extract vendor names from the following questions and answers. Return their name (grammar-correct), website, description, category, inherent probability, inherent impact, residual probability, and residual impact.',
+      'IMPORTANT: For vendor_name, always use the parent company name, not the product name (e.g. "Anthropic" not "Claude", "OpenAI" not "ChatGPT"). Set original_name to the name as it appeared in the user input.',
+      '',
+      'INHERENT RISK SCORING — read carefully and apply consistently.',
+      '',
+      'You are estimating inherent risk from the user\'s onboarding answers ONLY. You do not have access to the vendor\'s public security posture (certifications, breach history, etc.) — a separate research step fills that in later. Score conservatively from the SIGNALS in the user\'s answers, not from your own knowledge of the vendor.',
+      '',
+      'Default both probability and impact to MIDDLE (possible × moderate → ~5/10) unless a signal in the user\'s answers tells you otherwise. Only deviate when the answers explicitly point to a higher or lower band.',
+      '',
+      'Signals that LOWER inherent_probability:',
+      '- The user describes the vendor as a managed service they trust for similar infra elsewhere',
+      '- The user says they\'ve completed their own due diligence (SOC 2 review, security questionnaire) on this vendor',
+      '- The vendor is mentioned only as a passive utility (e.g. analytics for marketing pages, no customer data)',
+      'Signals that RAISE inherent_probability:',
+      '- The user describes ongoing concerns or past incidents with the vendor',
+      '- The vendor handles a category the user explicitly flags as risky',
+      '- The vendor is described as a small/early-stage provider OR self-hosted by the user',
+      '',
+      'Signals that LOWER inherent_impact:',
+      '- The vendor is used in a non-production / preview / sandbox capacity only',
+      '- The user describes the vendor as handling no customer data, no PII, no auth',
+      '- There is a documented fallback / alternative the user can swap to',
+      'Signals that RAISE inherent_impact:',
+      '- The vendor is described as production infrastructure (cloud, database, identity, payments)',
+      '- The vendor processes PHI, payments, source code, auth secrets, or PII at scale',
+      '- The user says they cannot easily replace the vendor',
+      '',
+      'When the user simply NAMES the vendor with no further context, you have NO signal — return (possible, moderate). Do not infer risk from the vendor\'s name or your prior knowledge of the company; the research step will refine the score later with actual posture data.',
+      '',
+      'residual_probability / residual_impact: default to the same level as inherent. Only LOWER residual when the user\'s answers describe their OWN compensating controls (their own MFA enforcement, network segmentation, data encryption at rest, etc.) — NOT the vendor\'s controls.',
+    ].join('\n'),
     prompt: questionsAndAnswers.map((q) => `${q.question}\n${q.answer}`).join('\n'),
   });
 
@@ -355,7 +625,12 @@ export async function extractVendorsFromContext(
 }
 
 /**
- * Creates a risk mitigation comment for a vendor
+ * Creates a risk mitigation comment for a vendor.
+ *
+ * The 5 citations are picked deterministically by `selectMitigationCitations`
+ * (controls → tasks → policies → gap fillers). The LLM only produces 5 prose
+ * sentences via `generateObject`; the (Control/Task/Policy/gap) suffixes are
+ * appended programmatically so they cannot be hallucinated.
  */
 export async function createVendorRiskComment(
   vendor: any,
@@ -363,35 +638,72 @@ export async function createVendorRiskComment(
   organizationId: string,
   authorId: string,
 ): Promise<void> {
-  const policiesContext =
-    policies.length > 0
-      ? policies
-          .map((p) => `- ${p.name}: ${p.description || 'No description available'}`)
-          .join('\n')
-      : 'No specific policies available - use standard security policy guidance.';
+  const grounding = await loadVendorGroundingContext(vendor.id, organizationId);
 
-  const riskMitigationComment = await generateText({
-    model: openai('gpt-5-mini'),
-    system: VENDOR_RISK_ASSESSMENT_PROMPT,
-    prompt: `Vendor: ${vendor.name} (${vendor.category}) - ${vendor.description}. Website: ${vendor.website}.
-
-Available Organization Policies:
-${policiesContext}
-
-Please perform a comprehensive vendor risk assessment for this vendor using the available policies listed above as context for your recommendations.`,
+  const citations = selectMitigationCitations({
+    linkedControls: grounding?.linkedControls.map((c) => ({ code: c.code, name: c.name })) ?? [],
+    linkedTasks: grounding?.linkedTasks.map((t) => ({ name: t.title, status: t.status })) ?? [],
+    policies: policies.map((p) => ({ name: p.name })),
+    // Vendors don't have a RiskCategory; their plan always centers on
+    // third-party / vendor-management style mitigations.
+    gapHint: 'third-party',
   });
 
-  await db.comment.create({
-    data: {
-      content: riskMitigationComment.text,
-      entityId: vendor.id,
-      entityType: CommentEntityType.vendor,
-      authorId,
-      organizationId,
+  const compliancePostureBlock =
+    grounding?.compliancePosture ?? `Assessment status: ${vendor.status ?? 'unknown'}.`;
+
+  const userPrompt = `Vendor: ${vendor.name} (${vendor.category})
+Description: ${vendor.description ?? 'unspecified'}
+Website: ${vendor.website ?? 'unspecified'}
+Status: ${vendor.status ?? 'unknown'}
+
+Vendor Compliance Posture:
+${compliancePostureBlock}
+
+Citations (write one sentence per item, in order):
+${formatCitationsBlock(citations)}`;
+
+  const result = await generateObject({
+    model: openai('gpt-5-mini'),
+    system: RISK_MITIGATION_PROMPT,
+    prompt: userPrompt,
+    schema: sentencesSchema,
+  });
+
+  // See createRiskMitigationComment — pin the prose label to 'mitigate'
+  // since the saved strategy is forced to mitigate by
+  // `applyMitigationPlanFields` below.
+  const finalText = combineSentencesWithCitations({
+    treatmentStrategy: 'mitigate',
+    sentences: result.object.sentences,
+    citations,
+    linkedTotals: {
+      controls: grounding?.linkedControls.length ?? 0,
+      tasks: grounding?.linkedTasks.length ?? 0,
     },
   });
 
-  logger.info(`Created risk mitigation comment for vendor: ${vendor.id} (${vendor.name})`);
+  // The AI generated a mitigation plan — force the strategy to mitigate
+  // so the plan lands in the correct slot, even if the vendor was
+  // previously on Accept / Transfer / Avoid (e.g. older rows created
+  // before the schema default flipped to mitigate). Any prior non-
+  // mitigate text is preserved under its own slot.
+  await db.vendor.update({
+    where: { id: vendor.id, organizationId },
+    data: applyMitigationPlanFields({
+      plan: finalText,
+      currentStrategy:
+        typeof vendor.treatmentStrategy === 'string'
+          ? vendor.treatmentStrategy
+          : 'mitigate',
+      currentDescription: vendor.treatmentStrategyDescription ?? null,
+      currentMap: vendor.strategyDescriptions,
+    }),
+  });
+
+  logger.info(
+    `Wrote AI-generated treatmentStrategyDescription for vendor: ${vendor.id} (${vendor.name})`,
+  );
 }
 
 /**
@@ -642,8 +954,16 @@ export async function triggerVendorResearch(vendors: any[]): Promise<void> {
     }
 
     try {
+      // `scoreContext` chains the research run into score-vendor-risk
+      // when GlobalVendors finishes saving, so the per-org Vendor row
+      // gets a posture-grounded score instead of the conservative
+      // (possible × moderate) default the extraction pass set.
       const handle = await tasks.trigger<typeof researchVendor>('research-vendor', {
         website,
+        scoreContext:
+          vendor.id && vendor.organizationId
+            ? { vendorId: vendor.id, organizationId: vendor.organizationId }
+            : undefined,
       });
       logger.info(`Triggered research for vendor ${vendor.name} with handle ${handle.id}`);
     } catch (error) {
@@ -672,7 +992,12 @@ export async function createVendorRiskComments(
 }
 
 /**
- * Creates a risk mitigation comment for a risk
+ * Creates a risk mitigation comment for a risk.
+ *
+ * The 5 citations are picked deterministically by `selectMitigationCitations`
+ * (controls → tasks → policies → gap fillers). The LLM only produces 5 prose
+ * sentences via `generateObject`; the (Control/Task/Policy/gap) suffixes are
+ * appended programmatically so they cannot be hallucinated.
  */
 export async function createRiskMitigationComment(
   risk: Risk,
@@ -680,30 +1005,64 @@ export async function createRiskMitigationComment(
   organizationId: string,
   authorId: string,
 ): Promise<void> {
-  const policiesContext =
-    policies.length > 0
-      ? policies
-          .map((p) => `- ${p.name}: ${p.description || 'No description available'}`)
-          .join('\n')
-      : 'No specific policies available - use standard security policy guidance.';
+  const grounding = await loadRiskGroundingContext(risk.id, organizationId);
 
-  const mitigation = await generateText({
-    model: openai('gpt-5-mini'),
-    system: RISK_MITIGATION_PROMPT,
-    prompt: `Risk: ${risk.title} (${risk.category} / ${risk.department})\n\nDescription:\n${risk.description}\n\nTreatment Strategy:\n${risk.treatmentStrategy}: ${risk.treatmentStrategyDescription || 'N/A'}\n\nResidual Assessment: Likelihood ${risk.likelihood}, Impact ${risk.impact}\n\nAvailable Organization Policies:\n${policiesContext}\n\nWrite a pragmatic mitigation plan with concrete steps the team can implement in the next 30-90 days.`,
+  const citations = selectMitigationCitations({
+    linkedControls: grounding?.linkedControls.map((c) => ({ code: c.code, name: c.name })) ?? [],
+    linkedTasks: grounding?.linkedTasks.map((t) => ({ name: t.title, status: t.status })) ?? [],
+    policies: policies.map((p) => ({ name: p.name })),
+    gapHint: GAP_HINT_BY_RISK_CATEGORY[risk.category] ?? 'general',
   });
 
-  await db.comment.create({
-    data: {
-      content: mitigation.text,
-      entityId: risk.id,
-      entityType: CommentEntityType.risk,
-      authorId,
-      organizationId,
+  // The AI mitigation generator always produces a *mitigation* plan, and
+  // `applyMitigationPlanFields` below forces the saved strategy to
+  // 'mitigate'. Pin the prompt + prose label to 'mitigate' too so the
+  // generated text isn't labeled with the row's previous strategy
+  // (e.g. "Treatment plan (accept)" stored under strategy=mitigate).
+  const PLAN_STRATEGY = 'mitigate';
+  const userPrompt = `Risk: ${risk.title}
+Description: ${risk.description}
+Category: ${risk.category}
+Department: ${risk.department ?? 'unspecified'}
+Residual: likelihood=${risk.residualLikelihood}, impact=${risk.residualImpact}
+Treatment strategy: ${PLAN_STRATEGY}
+
+Citations (write one sentence per item, in order):
+${formatCitationsBlock(citations)}`;
+
+  const result = await generateObject({
+    model: openai('gpt-5-mini'),
+    system: RISK_MITIGATION_PROMPT,
+    prompt: userPrompt,
+    schema: sentencesSchema,
+  });
+
+  const finalText = combineSentencesWithCitations({
+    treatmentStrategy: PLAN_STRATEGY,
+    sentences: result.object.sentences,
+    citations,
+    linkedTotals: {
+      controls: grounding?.linkedControls.length ?? 0,
+      tasks: grounding?.linkedTasks.length ?? 0,
     },
   });
 
-  logger.info(`Created risk mitigation comment for risk: ${risk.id} (${risk.title})`);
+  // See createVendorRiskMitigationComment — the AI plan is a mitigation
+  // plan, so force strategy=mitigate and preserve any prior non-mitigate
+  // description under its own slot.
+  await db.risk.update({
+    where: { id: risk.id, organizationId },
+    data: applyMitigationPlanFields({
+      plan: finalText,
+      currentStrategy: risk.treatmentStrategy,
+      currentDescription: risk.treatmentStrategyDescription,
+      currentMap: risk.strategyDescriptions,
+    }),
+  });
+
+  logger.info(
+    `Wrote AI-generated treatmentStrategyDescription for risk: ${risk.id} (${risk.title})`,
+  );
 }
 
 /**
@@ -820,7 +1179,11 @@ export async function createRisksFromData(
     metadata.set(`risk_temp_${index}_status`, 'processing');
   });
 
-  // Create all risks concurrently
+  // Create all risks concurrently. Strategy is intentionally NOT taken
+  // from the LLM extraction — we always start with mitigate (the
+  // workhorse strategy + schema default) so the AI mitigation plan that
+  // runs immediately after lands in the correct slot. The user can
+  // switch to accept / transfer / avoid manually if needed.
   const createPromises = riskData.map((risk) =>
     db.risk.create({
       data: {
@@ -830,8 +1193,6 @@ export async function createRisksFromData(
         department: risk.department,
         likelihood: risk.risk_residual_probability,
         impact: risk.risk_residual_impact,
-        treatmentStrategy: risk.risk_treatment_strategy,
-        treatmentStrategyDescription: risk.risk_treatment_strategy_description,
         organizationId,
       },
     }),
@@ -881,6 +1242,9 @@ async function createRisksFromDataWithBaseline(
         },
       });
     } else if (risk.riskData) {
+      // Same rationale as createRisksFromData — strategy is fixed to
+      // mitigate (schema default) so the AI plan generated right after
+      // lands in the correct slot.
       return db.risk.create({
         data: {
           title: risk.riskData.risk_name,
@@ -889,8 +1253,6 @@ async function createRisksFromDataWithBaseline(
           department: risk.riskData.department,
           likelihood: risk.riskData.risk_residual_probability,
           impact: risk.riskData.risk_residual_impact,
-          treatmentStrategy: risk.riskData.risk_treatment_strategy,
-          treatmentStrategyDescription: risk.riskData.risk_treatment_strategy_description,
           organizationId,
         },
       });

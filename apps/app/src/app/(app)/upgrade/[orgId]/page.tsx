@@ -1,6 +1,6 @@
-import { extractDomain, isDomainActiveStripeCustomer, isPublicEmailDomain } from '@/lib/stripe';
-import { auth } from '@/utils/auth';
 import { env } from '@/env.mjs';
+import { serverApi } from '@/lib/api-server';
+import { auth } from '@/utils/auth';
 import { db } from '@db/server';
 import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
@@ -11,6 +11,12 @@ interface PageProps {
   params: Promise<{
     orgId: string;
   }>;
+}
+
+interface AutoApproveResponse {
+  hasAccess: boolean;
+  autoApproved: boolean;
+  reason: string;
 }
 
 export default async function UpgradePage({ params }: PageProps) {
@@ -44,7 +50,9 @@ export default async function UpgradePage({ params }: PageProps) {
     redirect('/');
   }
 
-  // Sync activeOrganizationId only after membership is verified
+  // Sync activeOrganizationId only after membership is verified.
+  // Required so the API's HybridAuthGuard resolves the right org from session
+  // when we call /v1/organization-access/auto-approve below.
   const currentActiveOrgId = authSession.session.activeOrganizationId;
   if (!currentActiveOrgId || currentActiveOrgId !== orgId) {
     try {
@@ -61,44 +69,32 @@ export default async function UpgradePage({ params }: PageProps) {
 
   let hasAccess = member.organization.hasAccess;
 
-  // Auto-approve based on user's email domain or self-hosted instance
   if (!hasAccess) {
-    // Auto-approve for self-hosted/OSS instances
-    const isSelfHosted = env.NEXT_PUBLIC_SELF_HOSTED === 'true';
-
-    if (isSelfHosted) {
+    // Self-hosted instances auto-approve every org. The flag is a Next.js
+    // build-time env var (NEXT_PUBLIC_SELF_HOSTED) that the OSS Docker
+    // deployment sets on the app container only — the API container does NOT
+    // have this env, so the check stays on the page. The DB write here is the
+    // single exception to "all mutations through the API" — it's gated on a
+    // build-time deploy flag, not user input.
+    if (env.NEXT_PUBLIC_SELF_HOSTED === 'true') {
       await db.organization.update({
         where: { id: orgId },
         data: { hasAccess: true },
       });
       hasAccess = true;
     } else {
-      const userEmail = authSession.user.email;
-      const userEmailDomain = extractDomain(userEmail ?? '');
-      const orgWebsiteDomain = extractDomain(member.organization.website ?? '');
+      // Stripe-domain auto-approval (and the @trycomp.ai shortcut) live in the
+      // API so STRIPE_SECRET_KEY only has to exist on the API and the
+      // hasAccess flip is RBAC-checked + audit-logged. Soft-fail so a transient
+      // API error never blocks the booking step from rendering.
+      const response = await serverApi.post<AutoApproveResponse>(
+        '/v1/organization-access/auto-approve',
+      );
 
-      if (userEmailDomain) {
-        // Auto-approve for trycomp.ai emails (internal team)
-        const isTrycompEmail = userEmailDomain === 'trycomp.ai';
-
-        const canAutoApproveViaDomain =
-          !isTrycompEmail &&
-          Boolean(orgWebsiteDomain) &&
-          userEmailDomain === orgWebsiteDomain &&
-          !isPublicEmailDomain(userEmailDomain);
-
-        // Check Stripe for other domains
-        const isStripeCustomer = canAutoApproveViaDomain
-          ? await isDomainActiveStripeCustomer(userEmailDomain)
-          : false;
-
-        if (isTrycompEmail || isStripeCustomer) {
-          await db.organization.update({
-            where: { id: orgId },
-            data: { hasAccess: true },
-          });
-          hasAccess = true;
-        }
+      if (response.data?.hasAccess) {
+        hasAccess = true;
+      } else if (response.error) {
+        console.error('[UpgradePage] auto-approve API error:', response.error);
       }
     }
   }
