@@ -1,11 +1,28 @@
 import { PrismaClient } from '../src/generated/prisma/client';
 import { PrismaPg } from '@prisma/adapter-pg';
+import { type PeerCertificate, rootCertificates } from 'node:tls';
 
 import { RDS_CA_BUNDLE } from './rds-ca-bundle';
 
 const globalForPrisma = global as unknown as { prisma?: PrismaClient };
 
 const LOCAL_HOSTNAMES = new Set(['localhost', '127.0.0.1', '::1']);
+
+const COMBINED_CA = [RDS_CA_BUNDLE, ...rootCertificates];
+
+const isRdsHostname = (n: string): boolean =>
+  n.endsWith('.rds.amazonaws.com') || n.endsWith('.rds.amazonaws.com.cn');
+
+function rdsServerIdentity(_host: string, cert: PeerCertificate): Error | undefined {
+  const sans = (cert.subjectaltname ?? '')
+    .split(',')
+    .map((s) => s.trim().replace(/^DNS:/, ''));
+  const cn = (cert.subject as { CN?: string } | undefined)?.CN ?? '';
+  if (isRdsHostname(cn) || sans.some(isRdsHostname)) return undefined;
+  return new Error(
+    `TLS hostname check: cert is not for an AWS RDS endpoint (CN=${cn}, SANs=${sans.join(',')})`,
+  );
+}
 
 function stripSslMode(connectionString: string): string {
   const url = new URL(connectionString);
@@ -30,14 +47,17 @@ function createPrismaClient(): PrismaClient {
 
   let ssl:
     | undefined
-    | { ca: string; checkServerIdentity: () => undefined }
+    | {
+        ca: string[];
+        checkServerIdentity: (host: string, cert: PeerCertificate) => Error | undefined;
+      }
     | { rejectUnauthorized: false };
   if (isLocalhost) {
     ssl = undefined;
   } else if (allowInsecure) {
     ssl = { rejectUnauthorized: false };
   } else {
-    ssl = { ca: RDS_CA_BUNDLE, checkServerIdentity: () => undefined };
+    ssl = { ca: COMBINED_CA, checkServerIdentity: rdsServerIdentity };
   }
 
   const url = ssl !== undefined ? stripSslMode(rawUrl) : rawUrl;
