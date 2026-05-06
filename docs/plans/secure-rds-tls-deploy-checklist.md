@@ -1,45 +1,32 @@
 # Secure RDS TLS — Deploy Checklist
 
-After merging the secure-rds-tls PR, the following env vars must be set per environment.
-
 ## Vercel (apps/app and apps/portal)
 
-Set on each Vercel project, all environments (Production + Preview + Development):
+**No env var or `outputFileTracingIncludes` config required.** The AWS RDS CA
+bundle is inlined as a TypeScript constant (`RDS_CA_BUNDLE`) and passed
+directly to the Postgres adapter via `ssl.ca`. This works under both Webpack
+and Turbopack since it's just a string the bundler always emits.
 
-```
-NODE_EXTRA_CA_CERTS=/var/task/packages/db/certs/rds-global-bundle.pem
-```
+Background: `outputFileTracingIncludes` is silently no-op'd under Turbopack
+(`next/dist/build/index.js` line ~1537 gates `collectBuildTraces` on
+`bundler !== Bundler.Turbopack`). All current Vercel deployments use Turbopack
+(metadata `bundler: "turbopack"`), which is why the file-based approach from
+PR #2761 failed in production for app-router page routes.
 
-Verified on staging (apps/app): `process.cwd()` is `/var/task/apps/app`, the cert is traced
-into the deploy at `/var/task/packages/db/certs/rds-global-bundle.pem` (165408 bytes), and
-`/api/health` succeeds end-to-end. The cert is bundled via `outputFileTracingIncludes` in
-each app's `next.config.ts`.
-
-## Downstream consumers (comp-private/apps/enterprise-api, etc.)
-
-The CA bundle now ships with the published `@trycompai/db` package (added to the `files` array
-in this PR). After the next `@trycompai/db` publish, downstream consumers can ship the cert with
-their own Vercel/Docker/Trigger.dev builds without committing a copy.
-
-For Vercel-deployed apps that install `@trycompai/db` from npm:
-
-1. Bump the dependency to the version that includes `certs/`.
-2. Add `outputFileTracingIncludes` to `next.config.{ts,mjs}`:
-   ```ts
-   outputFileTracingIncludes: {
-     '/**/*': ['./node_modules/@trycompai/db/certs/rds-global-bundle.pem'],
-   },
-   ```
-3. Set the Vercel env var:
-   ```
-   NODE_EXTRA_CA_CERTS=/var/task/node_modules/@trycompai/db/certs/rds-global-bundle.pem
-   ```
-4. Apply the same strict-TLS Prisma client logic (or import a shared helper from `@trycompai/db`).
+If `NODE_EXTRA_CA_CERTS` is still set as a shared/team Vercel env var,
+**unset it** — when the path doesn't exist on the function, Node logs a
+`Warning: Ignoring extra certs from … load failed: error:80000002:system
+library` for every cold start.
 
 ## Trigger.dev (api and app projects, staging + prod)
 
-After deploying with the `caBundleExtension` (already wired in `trigger.config.ts`), remove the
-legacy opt-in that bypasses TLS verification:
+The `caBundleExtension` and `NODE_EXTRA_CA_CERTS` setup in `trigger.config.ts`
+remain as-is — Trigger.dev images bake the cert into
+`/app/certs/rds-global-bundle.pem`. The shared `@trycompai/db` client falls
+through to verified TLS via the inline bundle either way.
+
+If `PRISMA_ALLOW_INSECURE_TLS` is still set as a leftover from earlier
+debugging, remove it:
 
 ```bash
 bunx trigger.dev@4.4.3 envvars remove PRISMA_ALLOW_INSECURE_TLS --env staging
@@ -48,5 +35,26 @@ bunx trigger.dev@4.4.3 envvars remove PRISMA_ALLOW_INSECURE_TLS --env prod
 
 ## API Docker (apps/api)
 
-No action — `apps/api/Dockerfile.multistage` already installs the RDS CA bundle and sets
-`NODE_EXTRA_CA_CERTS` at the system level.
+No action — `apps/api/Dockerfile.multistage` already installs the RDS CA bundle
+and sets `NODE_EXTRA_CA_CERTS` at the system level. `apps/api/prisma/client.ts`
+still consults the env var, which is the correct path for that runtime.
+
+## Downstream consumers (comp-private/apps/enterprise-api, etc.)
+
+After bumping `@trycompai/db` to a version that includes the inline bundle,
+consumers that import `resolveSslConfig` from `@trycompai/db/ssl-config`
+automatically get verified TLS via the inline bundle — no env var required.
+They can drop their own `NODE_EXTRA_CA_CERTS` and `outputFileTracingIncludes`
+on the new version.
+
+## Regenerating the inlined CA bundle
+
+When AWS rotates the RDS CA, replace the PEM and regenerate:
+
+```bash
+# overwrite packages/db/certs/rds-global-bundle.pem with the new bundle
+node packages/db/scripts/generate-ca-bundle-ts.mjs
+```
+
+This rewrites the inlined `rds-ca-bundle.ts` in `packages/db/src` and in each
+app's `prisma/` directory.
