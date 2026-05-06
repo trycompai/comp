@@ -1,0 +1,112 @@
+# Self-host overlay for Comp AI on a single Docker host.
+# Adds: postgres-with-TLS (cert in ./pg-tls/), redis, serverless-redis-http (Upstash-compatible),
+#        and the api service (which is missing from the upstream root compose).
+#
+# Usage:
+#   docker compose -f docker-compose.yml -f selfhost/docker-compose.selfhost.yml up -d
+#
+# Required env vars in shell (or via .env at the directory you run compose from):
+#   PG_PASSWORD       — random 32+ chars
+#   SRH_TOKEN         — random 32+ chars (shared secret between app/portal/api and srh)
+#   BETTER_AUTH_URL   — http://<your-host>:3000  (build arg used by upstream root compose)
+#   BETTER_AUTH_URL_PORTAL — http://<your-host>:3002
+
+services:
+  db:
+    image: postgres:15-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: comp
+      POSTGRES_PASSWORD: ${PG_PASSWORD}
+      POSTGRES_DB: comp
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      # Provide your own self-signed cert (see SELFHOST.md §4) and chown to uid 70 on the host.
+      - ./selfhost/pg-tls/server.crt:/etc/pg-tls/server.crt:ro
+      - ./selfhost/pg-tls/server.key:/etc/pg-tls/server.key:ro
+    command: >
+      postgres -c ssl=on
+               -c ssl_cert_file=/etc/pg-tls/server.crt
+               -c ssl_key_file=/etc/pg-tls/server.key
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U comp -d comp"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  srh:
+    image: hiett/serverless-redis-http:latest
+    restart: unless-stopped
+    environment:
+      SRH_MODE: env
+      SRH_TOKEN: ${SRH_TOKEN}
+      SRH_CONNECTION_STRING: redis://redis:6379
+    depends_on:
+      redis:
+        condition: service_healthy
+
+  # The api service is NOT in the upstream root compose. Add it here.
+  api:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile.multistage
+      target: production
+    ports:
+      - "3333:3333"
+    env_file:
+      - apps/api/.env
+    user: root
+    # Runtime patches (see selfhost/api-patch.sh):
+    # - Stub MACED pentest module (no public maced.ai key)
+    # - Replace Prisma clients with explicit pg.Pool (works with self-signed Postgres TLS)
+    # - Stub email sender (Resend optional — magic links logged to stdout if unset)
+    # - Loosen helmet so app:3000 can call api:3333 cross-origin
+    entrypoint: ["/bin/sh", "/host-patch/api-patch.sh"]
+    volumes:
+      - ./selfhost/api-patch.sh:/host-patch/api-patch.sh:ro
+    depends_on:
+      db:
+        condition: service_healthy
+      srh:
+        condition: service_started
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3333/v1/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  # Wire the upstream services to wait on db + srh.
+  migrator:
+    depends_on:
+      db:
+        condition: service_healthy
+  seeder:
+    depends_on:
+      db:
+        condition: service_healthy
+  app:
+    depends_on:
+      db:
+        condition: service_healthy
+      srh:
+        condition: service_started
+  portal:
+    depends_on:
+      db:
+        condition: service_healthy
+      srh:
+        condition: service_started
+
+volumes:
+  pgdata:

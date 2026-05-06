@@ -17,6 +17,13 @@ COPY packages/integrations/package.json ./packages/integrations/
 COPY packages/utils/package.json ./packages/utils/
 COPY packages/tsconfig/package.json ./packages/tsconfig/
 COPY packages/analytics/package.json ./packages/analytics/
+COPY packages/auth/package.json ./packages/auth/
+COPY packages/billing/package.json ./packages/billing/
+COPY packages/company/package.json ./packages/company/
+COPY packages/db/package.json ./packages/db/
+COPY packages/device-agent/package.json ./packages/device-agent/
+COPY packages/docs/package.json ./packages/docs/
+COPY packages/framework-editor-cli/package.json ./packages/framework-editor-cli/
 
 # Copy app package.json files
 COPY apps/app/package.json ./apps/app/
@@ -89,6 +96,42 @@ ENV NEXT_PUBLIC_BETTER_AUTH_URL=$NEXT_PUBLIC_BETTER_AUTH_URL \
     NODE_OPTIONS=--max_old_space_size=6144
 
 # Build the app
+
+# --- ADDED: build workspace packages so apps can resolve their dist/ ---
+RUN set -e; \
+    for pkg in db analytics auth billing company email integration-platform kv ui; do \
+      if [ -f packages/$pkg/package.json ] && grep -q '"build"' packages/$pkg/package.json; then \
+        echo ">>> building @trycompai/$pkg"; \
+        (cd packages/$pkg && bun run build); \
+      fi; \
+    done
+# --- END ADDED ---
+# Build-time placeholders (overridden at runtime by env_file)
+ENV APP_AWS_REGION=ap-south-1 \
+    APP_AWS_BUCKET_NAME=placeholder \
+    APP_AWS_ORG_ASSETS_BUCKET=placeholder \
+    APP_AWS_QUESTIONNAIRE_UPLOAD_BUCKET=placeholder \
+    APP_AWS_KNOWLEDGE_BASE_BUCKET=placeholder \
+    APP_AWS_ACCESS_KEY_ID=AKIAFAKE0000000FAKE0 \
+    APP_AWS_SECRET_ACCESS_KEY=FAKEsecretFAKEsecretFAKEsecretFAKEsecret \
+    DATABASE_URL=postgresql://comp:comp@localhost:5432/comp?sslmode=disable \
+    AUTH_SECRET=build-time-placeholder \
+    SECRET_KEY=build-time-placeholder \
+    BETTER_AUTH_SECRET=build-time-placeholder \
+    INTERNAL_API_TOKEN=build-time-placeholder \
+    REVALIDATION_SECRET=build-time-placeholder \
+    AUTH_TRUSTED_ORIGINS=http://localhost:3000 \
+    TRUST_APP_URL=http://localhost:3000 \
+    RESEND_API_KEY=build-time-placeholder \
+    RESEND_DOMAIN=example.com \
+    RESEND_FROM_DEFAULT=noreply@example.com \
+    RESEND_FROM_MARKETING=noreply@example.com \
+    RESEND_FROM_SYSTEM=noreply@example.com \
+    TRIGGER_SECRET_KEY=build-time-placeholder \
+    TRIGGER_API_KEY=build-time-placeholder \
+    BETTER_AUTH_URL=http://localhost:3000 \
+    NEXT_PUBLIC_SELF_HOSTED=true
+RUN cd apps/app && bun run db:getschema
 RUN cd apps/app && SKIP_ENV_VALIDATION=true bun run build:docker
 
 # =============================================================================
@@ -132,6 +175,42 @@ ENV NEXT_PUBLIC_BETTER_AUTH_URL=$NEXT_PUBLIC_BETTER_AUTH_URL \
     NODE_OPTIONS=--max_old_space_size=6144
 
 # Build the portal
+
+# --- ADDED: build workspace packages so apps can resolve their dist/ ---
+RUN set -e; \
+    for pkg in db analytics auth billing company email integration-platform kv ui; do \
+      if [ -f packages/$pkg/package.json ] && grep -q '"build"' packages/$pkg/package.json; then \
+        echo ">>> building @trycompai/$pkg"; \
+        (cd packages/$pkg && bun run build); \
+      fi; \
+    done
+# --- END ADDED ---
+# Build-time placeholders (overridden at runtime by env_file)
+ENV APP_AWS_REGION=ap-south-1 \
+    APP_AWS_BUCKET_NAME=placeholder \
+    APP_AWS_ORG_ASSETS_BUCKET=placeholder \
+    APP_AWS_QUESTIONNAIRE_UPLOAD_BUCKET=placeholder \
+    APP_AWS_KNOWLEDGE_BASE_BUCKET=placeholder \
+    APP_AWS_ACCESS_KEY_ID=AKIAFAKE0000000FAKE0 \
+    APP_AWS_SECRET_ACCESS_KEY=FAKEsecretFAKEsecretFAKEsecretFAKEsecret \
+    DATABASE_URL=postgresql://comp:comp@localhost:5432/comp?sslmode=disable \
+    AUTH_SECRET=build-time-placeholder \
+    SECRET_KEY=build-time-placeholder \
+    BETTER_AUTH_SECRET=build-time-placeholder \
+    INTERNAL_API_TOKEN=build-time-placeholder \
+    REVALIDATION_SECRET=build-time-placeholder \
+    AUTH_TRUSTED_ORIGINS=http://localhost:3000 \
+    TRUST_APP_URL=http://localhost:3000 \
+    RESEND_API_KEY=build-time-placeholder \
+    RESEND_DOMAIN=example.com \
+    RESEND_FROM_DEFAULT=noreply@example.com \
+    RESEND_FROM_MARKETING=noreply@example.com \
+    RESEND_FROM_SYSTEM=noreply@example.com \
+    TRIGGER_SECRET_KEY=build-time-placeholder \
+    TRIGGER_API_KEY=build-time-placeholder \
+    BETTER_AUTH_URL=http://localhost:3000 \
+    NEXT_PUBLIC_SELF_HOSTED=true
+RUN cd apps/portal && bun run db:getschema
 RUN cd apps/portal && SKIP_ENV_VALIDATION=true bun run build:docker
 
 # =============================================================================

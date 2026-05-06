@@ -99,3 +99,7 @@ scripts/sync-release-branch.sh
 .superpowers/*
 .claude/worktrees/
 .worktrees/
+
+# selfhost — operator-supplied at deploy time, never committed
+selfhost/pg-tls/server.crt
+selfhost/pg-tls/server.key
