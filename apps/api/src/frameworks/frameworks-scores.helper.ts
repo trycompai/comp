@@ -20,7 +20,11 @@ export async function getOverviewScores(organizationId: string) {
       }),
       db.task.findMany({ where: { organizationId, archivedAt: null } }),
       db.member.findMany({
-        where: { organizationId, deactivated: false },
+        where: {
+          organizationId,
+          deactivated: false,
+          isActive: true,
+        },
         include: { user: true },
       }),
       db.onboarding.findUnique({
