@@ -866,6 +866,22 @@
         ]
       }
     },
+    "/v1/organization-access/auto-approve": {
+      "post": {
+        "description": "Grants hasAccess on the active organization if the requesting user is an internal trycomp.ai user, the deployment is self-hosted, or the user email domain matches the organization website domain and is an active Stripe customer.",
+        "operationId": "OrganizationAccessController_autoApprove_v1",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "summary": "Auto-approve organization access via domain or self-hosted check",
+        "tags": [
+          "Organization"
+        ]
+      }
+    },
     "/v1/people/invite": {
       "post": {
         "operationId": "PeopleController_inviteMembers_v1",
