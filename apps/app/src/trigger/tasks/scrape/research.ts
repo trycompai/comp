@@ -1,7 +1,8 @@
 import { researchJobCore } from '@/trigger/lib/research';
 import { db } from '@db/server';
-import { schemaTask } from '@trigger.dev/sdk';
+import { logger, schemaTask, tasks } from '@trigger.dev/sdk';
 import { z } from 'zod';
+import type { scoreVendorRisk } from './score-vendor-risk';
 
 const firecrawlDataSchema = z.object({
   company_name: z.string().optional().nullable(),
@@ -37,9 +38,37 @@ export const researchVendor = schemaTask({
   id: 'research-vendor',
   schema: z.object({
     website: z.string().url(),
+    /**
+     * Optional: when set, this task triggers `score-vendor-risk` once the
+     * GlobalVendors row is saved (or already exists), so the per-org
+     * Vendor row gets a refined inherent/residual score grounded in the
+     * researched posture data instead of the conservative default that
+     * the onboarding extraction pass set.
+     */
+    scoreContext: z
+      .object({
+        vendorId: z.string(),
+        organizationId: z.string(),
+      })
+      .optional(),
   }),
   maxDuration: 1000 * 60 * 10, // 10 minutes total task duration
   run: async (payload, { ctx }) => {
+    const queueScoring = async () => {
+      if (!payload.scoreContext) return;
+      try {
+        await tasks.trigger<typeof scoreVendorRisk>('score-vendor-risk', {
+          vendorId: payload.scoreContext.vendorId,
+          organizationId: payload.scoreContext.organizationId,
+        });
+      } catch (err) {
+        logger.error('[research-vendor] failed to enqueue score-vendor-risk', {
+          err,
+          ...payload.scoreContext,
+        });
+      }
+    };
+
     // Check if vendor already exists
     const existingVendor = await db.globalVendors.findFirst({
       where: {
@@ -56,13 +85,17 @@ export const researchVendor = schemaTask({
     });
 
     if (existingVendor) {
+      // Even when GlobalVendors is already populated, the per-org Vendor
+      // row hasn't been scored against that data yet — chain into scoring
+      // so the customer doesn't get stuck with the extraction default.
+      await queueScoring();
       return {
         message: 'Vendor already exists in database',
         existingVendor,
       };
     }
 
-    return researchJobCore({
+    const result = await researchJobCore({
       website: payload.website,
       prompt: "You're a cyber security researcher, researching a vendor.",
       schema: {
@@ -125,5 +158,12 @@ export const researchVendor = schemaTask({
         });
       },
     });
+
+    // Now that GlobalVendors is fresh, kick off scoring for the per-org
+    // Vendor row. Fire-and-forget — the scoring task is idempotent and
+    // failures shouldn't fail the research run.
+    await queueScoring();
+
+    return result;
   },
 });
