@@ -1,8 +1,6 @@
 import { PrismaClient } from '../src/generated/prisma/client';
 import { PrismaPg } from '@prisma/adapter-pg';
 
-import { RDS_CA_BUNDLE } from './rds-ca-bundle';
-
 const globalForPrisma = global as unknown as { prisma?: PrismaClient };
 
 const LOCAL_HOSTNAMES = new Set(['localhost', '127.0.0.1', '::1']);
@@ -28,17 +26,15 @@ function createPrismaClient(): PrismaClient {
   const isLocalhost = isLocalhostUrl(rawUrl);
   const allowInsecure = process.env.PRISMA_ALLOW_INSECURE_TLS === '1';
 
-  let ssl:
-    | undefined
-    | { ca: string; checkServerIdentity: () => undefined }
-    | { rejectUnauthorized: false };
-  if (isLocalhost) {
-    ssl = undefined;
-  } else if (allowInsecure) {
-    ssl = { rejectUnauthorized: false };
-  } else {
-    ssl = { ca: RDS_CA_BUNDLE, checkServerIdentity: () => undefined };
-  }
+  // See apps/app/prisma/client.ts for the rationale on dropping `ssl.ca`
+  // (replaces rather than augments the trust store; broke RDS Proxy
+  // chain validation).
+  const ssl: undefined | { checkServerIdentity: () => undefined } | { rejectUnauthorized: false } =
+    isLocalhost
+      ? undefined
+      : allowInsecure
+        ? { rejectUnauthorized: false }
+        : { checkServerIdentity: () => undefined };
 
   const url = ssl !== undefined ? stripSslMode(rawUrl) : rawUrl;
   const adapter = new PrismaPg({ connectionString: url, ssl });

@@ -1,7 +1,7 @@
 {
     "name": "@trycompai/db",
     "description": "Database package with Prisma client and schema for Comp AI",
-    "version": "2.2.0",
+    "version": "2.3.0",
     "dependencies": {
         "@prisma/adapter-pg": "7.6.0",
         "@prisma/client": "7.6.0",
@@ -36,7 +36,6 @@
     },
     "files": [
         "dist",
-        "certs",
         "README.md",
         "INTEGRATION_GUIDE.md"
     ],
