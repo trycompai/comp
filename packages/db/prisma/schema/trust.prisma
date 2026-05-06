@@ -78,6 +78,8 @@ enum TrustFramework {
   pci_dss
   nen_7510
   iso_9001
+  pipeda
+  ccpa
 }
 
 model TrustResource {
