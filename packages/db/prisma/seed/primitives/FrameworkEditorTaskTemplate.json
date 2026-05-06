@@ -22,11 +22,11 @@
   {
     "id": "frk_tt_68406951bd282273ebe286cc",
     "name": "Employee Verification",
-    "description": "Maintain a list of reference checks you made for every new hire. Verify the identity of every new hire.\n\nFor ISO 27001: Ensure you are also storing the NDA, candidate evaluation form and access creation request with its approval evidence\n\nFor PCI: For employees with potential access to the CDE, document background verification checks (e.g., reference check, prior employment) before granting access to CHD systems.\n",
+    "description": "Maintain a list of reference checks you made for every new hire. Verify the identity of every new hire.\n\nFor ISO 27001: Ensure you are also storing the NDA, candidate evaluation form and access creation request with its approval evidence\n\nFor PCI: For employees with potential access to the CDE, document background verification checks (e.g., reference check, prior employment) before granting access to CHD systems.\n\nBackground checks can be ran within the Comp AI Plaform, in the People Tab. Select the User => Background Check\n",
     "frequency": "yearly",
     "department": "hr",
     "createdAt": "2025-06-04 15:42:08.603",
-    "updatedAt": "2025-09-10 21:06:07.350",
+    "updatedAt": "2026-04-30 23:56:40.630",
     "automationStatus": "AUTOMATED"
   },
   {
@@ -80,13 +80,13 @@
     "automationStatus": "AUTOMATED"
   },
   {
-    "id": "frk_tt_68b59e7a29bec89c57014868",
-    "name": "Statement of Applicability",
-    "description": "The Statement of Applicability identifies relevant ISO 27001 Annex A controls, explains their inclusion or exclusion, and shows their implementation status within the ISMS.\n\nReview the Statement of Applicability in the Questionnaire Tab in the Comp AI app",
+    "id": "frk_tt_68406d64f09f13271c14dd01",
+    "name": "Code Changes",
+    "description": "Enable branch protection on your main branch to prevent direct pushes and enforce pull requests. Ensure regression testing is done.\n\nUpload a screenshot of these settings, demonstrating the disallowed direct push and required pull request.\n\nFor ISO 27001: Show change approval with peer review, change testing evidence, rollback plan and impact assessment.\n\nFor ISO 42001: Extend change management to include AI-specific changes to models, training data, and algorithms. Document review/approval for impacts on risk, ethics, and compliance.\n\nFor PCI: Demonstrate documented change control for CHD application or infrastructure code changes, including approval, testing, rollback plan, and segregation of duties.",
     "frequency": "yearly",
-    "department": "admin",
-    "createdAt": "2025-09-01 13:24:09.841",
-    "updatedAt": "2025-12-02 18:46:36.579",
+    "department": "gov",
+    "createdAt": "2025-06-04 15:59:31.795",
+    "updatedAt": "2025-09-18 16:14:21.813",
     "automationStatus": "AUTOMATED"
   },
   {
@@ -96,18 +96,8 @@
     "frequency": "yearly",
     "department": "it",
     "createdAt": "2025-07-07 04:46:43.319",
-    "updatedAt": "2025-09-10 21:12:35.061",
-    "automationStatus": "AUTOMATED"
-  },
-  {
-    "id": "frk_tt_68406d64f09f13271c14dd01",
-    "name": "Code Changes",
-    "description": "Enable branch protection on your main branch to prevent direct pushes and enforce pull requests. Ensure regression testing is done.\n\nUpload a screenshot of these settings, demonstrating the disallowed direct push and required pull request.\n\nFor ISO 27001: Show change approval with peer review, change testing evidence, rollback plan and impact assessment.\n\nFor ISO 42001: Extend change management to include AI-specific changes to models, training data, and algorithms. Document review/approval for impacts on risk, ethics, and compliance.\n\nFor PCI: Demonstrate documented change control for CHD application or infrastructure code changes, including approval, testing, rollback plan, and segregation of duties.",
-    "frequency": "yearly",
-    "department": "gov",
-    "createdAt": "2025-06-04 15:59:31.795",
-    "updatedAt": "2025-09-18 16:14:21.813",
-    "automationStatus": "AUTOMATED"
+    "updatedAt": "2026-03-18 18:43:35.242",
+    "automationStatus": "MANUAL"
   },
   {
     "id": "frk_tt_68406903839203801ac8041a",
@@ -120,6 +110,16 @@
     "automationStatus": "AUTOMATED"
   },
   {
+    "id": "frk_tt_68406eedf0f0ddd220ea19c2",
+    "name": "Sanitized Inputs",
+    "description": "Implement input validation and sanitization using libraries such as Zod, Pydantic, or equivalent. \n\n",
+    "frequency": "yearly",
+    "department": "it",
+    "createdAt": "2025-06-04 16:06:05.042",
+    "updatedAt": "2026-04-28 15:41:08.190",
+    "automationStatus": "AUTOMATED"
+  },
+  {
     "id": "frk_tt_68406d2e86acc048d1774ea6",
     "name": "App Availability",
     "description": "Make sure your website or app doesn't slow down or crash because too many people are using it, or if there's a problem. \n\nUpload a screenshot showing you have DDoS protection enabled / auto-scale turned on.\n\nShow evidence of firewall configuration on production databases\n",
@@ -127,16 +127,6 @@
     "department": "it",
     "createdAt": "2025-06-04 15:58:37.662",
     "updatedAt": "2025-10-06 20:24:37.179",
-    "automationStatus": "AUTOMATED"
-  },
-  {
-    "id": "frk_tt_68406eedf0f0ddd220ea19c2",
-    "name": "Sanitized Inputs",
-    "description": "Implement input validation and sanitization using libraries such as Zod, Pydantic, or equivalent. \n\nEnable a static code analysis tool such as CodeQL (or its equivalent) to automatically detect security vulnerabilities and insecure coding patterns.\n\nUpload a screenshot showing both measures in use or being enforced.",
-    "frequency": "yearly",
-    "department": "it",
-    "createdAt": "2025-06-04 16:06:05.042",
-    "updatedAt": "2025-10-14 19:27:06.034",
     "automationStatus": "AUTOMATED"
   },
   {
@@ -460,16 +450,6 @@
     "automationStatus": "AUTOMATED"
   },
   {
-    "id": "frk_tt_68e80545a8b432bc59eb8037",
-    "name": "Incident Response Tabletop Exercise",
-    "description": "Conduct a periodic tabletop exercise to test the effectiveness of your incident response plan. Simulate a security incident to ensure all team members understand their roles, communication channels, and procedures during a real event.\n\nUpload evidence of the most recent exercise, including the agenda or scenario, a list of attendees with their roles, and session notes. You must also include an after-action report that lists findings, improvement actions, assigned owners, and due dates.\n\nTemplate available here: https://docs.google.com/document/d/1HwJPsGEO9rX3H0w-Nzy5AbYWh68kCsjg/edit?usp=drive_link&ouid=105483817633840137498&rtpof=true&sd=true",
-    "frequency": "yearly",
-    "department": "itsm",
-    "createdAt": "2025-10-09 18:56:04.980",
-    "updatedAt": "2026-01-14 21:31:39.063",
-    "automationStatus": "MANUAL"
-  },
-  {
     "id": "frk_tt_68e805457c2dcc784e72e3cc",
     "name": "Access Review Log",
     "description": "Perform periodic reviews of user access to key systems to ensure compliance with the principle of least privilege. You must verify that all user access is current, necessary, and authorized, revoking any permissions that are no longer required.\n\nUpload the access review log as evidence. Ensure it documents the review dates, reviewers, users and roles checked, actions taken (e.g., removals or changes), any issues identified, and management sign-off.\n\nTemplate available here: https://docs.google.com/spreadsheets/d/1_iPQD7-tED6WpEYh2AJqL_eN1SUcfrcH/edit?usp=drive_link&ouid=105483817633840137498&rtpof=true&sd=true",
@@ -550,6 +530,16 @@
     "automationStatus": "MANUAL"
   },
   {
+    "id": "frk_tt_69033a6bfeb4759be36257bc",
+    "name": "Infrastructure Inventory",
+    "description": "Maintain an up-to-date inventory of all infrastructure assets, including cloud accounts, compute resources, databases, storage, and networks. SOC 2 requires that you identify and track all assets in your environment to ensure they are protected and ownership is assigned.\n\nUpload an export or screenshot from your cloud provider (e.g., AWS, GCP, Azure) or CMDB listing these assets. Ensure the evidence clearly shows asset names, tags, owners, and a last-updated date.\n\nTemplate here: https://docs.google.com/spreadsheets/d/170csMBWNcmKIkyC6TE0H3lqwv3C1e5dc/edit?usp=drive_link&ouid=105483817633840137498&rtpof=true&sd=true",
+    "frequency": "yearly",
+    "department": "itsm",
+    "createdAt": "2025-10-30 10:14:03.155",
+    "updatedAt": "2026-02-06 21:39:59.516",
+    "automationStatus": "MANUAL"
+  },
+  {
     "id": "frk_tt_68e52b269db179c434734766",
     "name": "Backup Restoration Test",
     "description": "Perform regular tests of your backup restoration process to ensure data availability and integrity. You must verify that backed-up data can be successfully recovered and is usable in the event of data loss or corruption.\n\nProvide evidence of a recent restoration test. You may either share a link to a short screen recording showing the end-to-end restore and data verification, or complete and upload the restoration test report using the template below.\n\nTemplate link: https://docs.google.com/document/d/1uY8OmlNrUu-tXqlEg0Qi3CrNCV2ubvkP/edit?usp=drive_link&ouid=105483817633840137498&rtpof=true&sd=trueusp=drive_link&ouid=105483817633840137498&rtpof=true&sd=true\n",
@@ -567,16 +557,6 @@
     "department": "hr",
     "createdAt": "2025-10-07 15:00:54.563",
     "updatedAt": "2025-11-19 11:20:23.305",
-    "automationStatus": "AUTOMATED"
-  },
-  {
-    "id": "frk_tt_69033a6bfeb4759be36257bc",
-    "name": "Infrastructure Inventory",
-    "description": "Maintain an up-to-date inventory of all infrastructure assets, including cloud accounts, compute resources, databases, storage, and networks. SOC 2 requires that you identify and track all assets in your environment to ensure they are protected and ownership is assigned.\n\nUpload an export or screenshot from your cloud provider (e.g., AWS, GCP, Azure) or CMDB listing these assets. Ensure the evidence clearly shows asset names, tags, owners, and a last-updated date.\n\nTemplate here: https://docs.google.com/spreadsheets/d/170csMBWNcmKIkyC6TE0H3lqwv3C1e5dc/edit?usp=drive_link&ouid=105483817633840137498&rtpof=true&sd=true",
-    "frequency": "yearly",
-    "department": "itsm",
-    "createdAt": "2025-10-30 10:14:03.155",
-    "updatedAt": "2025-11-19 11:20:22.122",
     "automationStatus": "AUTOMATED"
   },
   {
@@ -680,6 +660,16 @@
     "automationStatus": "AUTOMATED"
   },
   {
+    "id": "frk_tt_69ea915f44950702d9f7733c",
+    "name": "AIMS Manual",
+    "description": "Establish, implement and maintain the AI management system, including the processes required and their interactions, in accordance with ISO/IEC 42001.\n\nUpload the AIMS Manual (or equivalent master document) as evidence.\n\nAcceptance criteria: describes AIMS processes, process interactions (inputs/outputs), responsibilities, resources, and references to supporting policies/procedures. Must include version, owner, approver and approval date.",
+    "frequency": "yearly",
+    "department": "gov",
+    "createdAt": "2026-04-23 21:38:39.284",
+    "updatedAt": "2026-04-23 21:38:39.658",
+    "automationStatus": "MANUAL"
+  },
+  {
     "id": "frk_tt_691e6d9cd5bf039fdc6d364f",
     "name": "Internal Audit Reports & Schedule",
     "description": "Provide the internal audit program (schedule) and the results of audits conducted to ensure QMS conformity. Audits should cover key functions like engineering, operations, and compliance.",
@@ -692,7 +682,7 @@
   {
     "id": "frk_tt_6840796f77d8a0dff53f947a",
     "name": "Secure Devices",
-    "description": "Ensure all devices meet the following security requirements:\n\n• Full disk encryption enabled (BitLocker for Windows, FileVault for macOS)\n\n• Screen lock enabled after 15 minutes of inactivity\n\n• Minimum password length of 8+ characters\n\n• Automatic installation of security updates\n\n• Anti-virus enabled (Windows Defender on Windows or macOS XProtect)\n\nYou may verify compliance by uploading screenshots for each device or by installing the Comp AI device agent.\n\nIf you already use a third-party MDM provider (e.g., Jamf, Intune, Kandji, etc.), it is recommended that you do not install the Comp AI device agent, as running multiple device management agents may cause conflicts. In these cases, please upload screenshots instead.\n\nThe Comp AI device agent can be downloaded from: portal.trycomp.ai",
+    "description": "Ensure all devices meet the following security requirements:\n\n• Full disk encryption enabled (BitLocker for Windows, FileVault for macOS)\n\n• Screen lock enabled after 5 minutes of inactivity on macOS and 15 minutes on Windows\n\n• Minimum password length of 8+ characters\n\n• Automatic installation of security updates\n\n• Anti-virus enabled (Windows Defender on Windows or macOS XProtect)\n\nYou may verify compliance by uploading screenshots for each device or by installing the Comp AI device agent.\n\nIf you already use a third-party MDM provider (e.g., Jamf, Intune, Kandji, etc.), it is recommended that you do not install the Comp AI device agent, as running multiple device management agents may cause conflicts. In these cases, please upload screenshots instead.\n\nThe Comp AI device agent can be downloaded from: portal.trycomp.ai",
     "frequency": "yearly",
     "department": "itsm",
     "createdAt": "2025-06-04 16:50:54.671",
@@ -730,13 +720,763 @@
     "automationStatus": "MANUAL"
   },
   {
+    "id": "frk_tt_69ea9161097ef7eb142b70ff",
+    "name": "AI Leadership Commitment Record",
+    "description": "Top management demonstrates leadership and commitment to the AIMS by approving the AI policy and objectives, ensuring resources are available, and communicating the importance of effective AIMS.\n\nUpload evidence of leadership commitment (signed AI policy, board/exec meeting minutes, or a dated management statement).\n\nAcceptance criteria: attendees/signatories, date, explicit approval of AI policy and objectives, resource decisions, and references to AIMS performance discussions.",
+    "frequency": "yearly",
+    "department": "gov",
+    "createdAt": "2026-04-23 21:38:40.588",
+    "updatedAt": "2026-04-23 21:38:40.769",
+    "automationStatus": "MANUAL"
+  },
+  {
+    "id": "frk_tt_69ea916227fbbb6a722126b6",
+    "name": "AI Policy Alignment Review",
+    "description": "Review the AI policy for alignment with other organizational policies (information security, privacy, quality, risk, ethics, HR) and resolve any conflicts.\n\nUpload the AI Policy Alignment Review record as evidence.\n\nAcceptance criteria: policies reviewed, conflicts identified, resolution actions, reviewer, date, sign-off, and the resulting changes to AI policy or the related policies.",
+    "frequency": "yearly",
+    "department": "gov",
+    "createdAt": "2026-04-23 21:38:41.643",
+    "updatedAt": "2026-04-23 21:38:41.846",
+    "automationStatus": "MANUAL"
+  },
+  {
+    "id": "frk_tt_69ea9167679a59212c7db16f",
+    "name": "AI Tooling Inventory",
+    "description": "Maintain an inventory of tooling used across the AI lifecycle (frameworks, libraries, model registries, MLOps platforms, evaluation tools) including versions and approval status.\n\nUpload the AI Tooling Inventory as evidence.\n\nAcceptance criteria: tool name, version, purpose, owner, license, approved-for-use status, security review date, and associated AI systems.",
+    "frequency": "yearly",
+    "department": "it",
+    "createdAt": "2026-04-23 21:38:47.164",
+    "updatedAt": "2026-04-23 21:38:47.402",
+    "automationStatus": "MANUAL"
+  },
+  {
+    "id": "frk_tt_69efd9f81f073e643fb5a19d",
+    "name": "Quarterly Privacy Notice Display Review",
+    "description": "Verify each quarter that the Notice at Collection, privacy policy link, \"Do Not Sell or Share\" link, \"Limit the Use of My Sensitive Personal Information\" link, and any Notice of Financial Incentive remain visible, accurate, and accessible across all properties.",
+    "frequency": "quarterly",
+    "department": "gov",
+    "createdAt": "2026-04-27 21:49:43.915",
+    "updatedAt": "2026-04-27 21:49:43.915",
+    "automationStatus": "AUTOMATED"
+  },
+  {
+    "id": "frk_tt_698cacc0f06de04786d097ca",
+    "name": "Security Awareness Training",
+    "description": "Upload evidence showing that all employees and contractors complete annual security awareness training. ",
+    "frequency": "yearly",
+    "department": "hr",
+    "createdAt": "2026-02-11 16:22:24.072",
+    "updatedAt": "2026-02-12 17:22:47.428",
+    "automationStatus": "AUTOMATED"
+  },
+  {
+    "id": "frk_tt_69dd3fb7c4f015f0b5851eb0",
+    "name": "POI register & tamper inspection set",
+    "description": "Current POI register (make, model, serial, site) plus a sample set of completed periodic tamper/inspection checklists with dates and inspector.",
+    "frequency": "quarterly",
+    "department": "it",
+    "createdAt": "2026-04-13 19:10:47.221",
+    "updatedAt": "2026-04-13 19:12:10.867",
+    "automationStatus": "MANUAL"
+  },
+  {
     "id": "frk_tt_6901e041bb02b41fa3b7dca9",
     "name": "Office Access & Door Monitoring",
     "description": "Office Access & Door Monitoring\n\nManage and monitor physical access to your office space to prevent unauthorized entry. You must maintain an accurate record of who holds access credentials (keys, badges, or codes), ensure that access is immediately revoked for terminated employees, and review access activity periodically.\n\nUpload evidence corresponding to your specific office setup from the options below:\n\nIf you use a smart lock or alarm system:\n\nAccess List: An export or table showing names, roles, code/badge IDs, and issue dates.\n\nRevocation Proof: A screenshot showing a leaver's code being disabled (including the timestamp).\n\nMonthly Review: A door access report accompanied by a one-line review note (e.g., \"No issues found\" or \"1 denied attempt at 22:14, Ticket #123\").\n\nIf you use physical keys only:\n\nKey Register: A log showing Key ID, holder name, and date issued/returned.\n\nRevocation Proof: A key return form or photo of the returned key. If the key was lost, provide a note regarding the loss and a receipt for rekeying the lock.\n\nMonthly Log: A manual log of open/close times, including who opened/locked and any issues noted.\n\nIf you use a coworking space with a staffed reception:\n\nInternal Access List: A list of who holds the specific key or code to your private office/room.\n\nRevocation Proof: Evidence that the private room key/code was collected or changed for leavers.\n\nMonthly Check: A short note confirming the status (e.g., \"Reception manages front door; our internal room key activity had no issues in Sept.\").\nUpload an email or official note from your building contact (e.g., landlord, building manager, or coworking operator) confirming these details. The evidence must include:\n\nOpening hours\n\nEntry methods (e.g., key, badge, code, or staffed reception)\n\nVisitor processes (e.g., sign-in requirements, escorting policies)\n\nEmergency information (e.g., fire exits, alarms)\n\nNote: For serviced offices with a staffed reception, a short email from the operator confirming these points is sufficient.",
     "frequency": "yearly",
     "department": "admin",
     "createdAt": "2025-10-29 09:37:04.804",
-    "updatedAt": "2026-01-14 21:33:59.041",
+    "updatedAt": "2026-03-02 20:35:23.610",
     "automationStatus": "MANUAL"
+  },
+  {
+    "id": "frk_tt_69dd3f8f62639b078e7cc061",
+    "name": "Executive PCI accountability assignment",
+    "description": "Executive charter or board/management record formally assigning PCI DSS accountability (e.g. to CISO or named executive) and the compliance program.",
+    "frequency": "quarterly",
+    "department": "admin",
+    "createdAt": "2026-04-13 19:10:07.078",
+    "updatedAt": "2026-04-13 19:10:22.925",
+    "automationStatus": "MANUAL"
+  },
+  {
+    "id": "frk_tt_69dd400bdc718337e0354ff7",
+    "name": "Passing ASV quarterly scan evidence",
+    "description": "Most recent passing quarterly ASV report for all in-scope external IPs/FQDNs, with ASV attestations and scan completion dates visible.",
+    "frequency": "quarterly",
+    "department": "it",
+    "createdAt": "2026-04-13 19:12:10.715",
+    "updatedAt": "2026-04-13 19:12:10.715",
+    "automationStatus": "MANUAL"
+  },
+  {
+    "id": "frk_tt_69dd3fe1317ecf573a463bbb",
+    "name": "Payment page script approval & live integrity config",
+    "description": "Authorized third-party script inventory for the payment checkout page, tied to change tickets or approvals, plus exported CSP / SRI configuration from the live payment environment.",
+    "frequency": "quarterly",
+    "department": "it",
+    "createdAt": "2026-04-13 19:11:28.561",
+    "updatedAt": "2026-04-13 19:12:11.036",
+    "automationStatus": "MANUAL"
+  },
+  {
+    "id": "frk_tt_69dd3f6094fc732d635210ae",
+    "name": "Scope confirmation & CDE inventory pack",
+    "description": "Signed annual (or bi-annual SP) scope confirmation with attached CDE network/data-flow diagrams and in-scope system list (owner, function, location).",
+    "frequency": "yearly",
+    "department": "admin",
+    "createdAt": "2026-04-13 19:09:20.365",
+    "updatedAt": "2026-04-13 21:18:49.624",
+    "automationStatus": "MANUAL"
+  },
+  {
+    "id": "frk_tt_69e928283390c5483dccbcde",
+    "name": "Maintain Records of Processing Activities (RoPA)",
+    "description": "Maintain and review the organization's Article 30 Records of Processing Activities. For each processing activity, document the purpose, categories of data subjects and personal data, recipients, international transfers, retention periods, and applicable security measures. Review at least annually and whenever processing activities materially change. Identify and document who has access to each dataset.",
+    "frequency": "yearly",
+    "department": "admin",
+    "createdAt": "2026-04-22 19:57:27.749",
+    "updatedAt": "2026-04-22 19:57:27.749",
+    "automationStatus": "AUTOMATED"
+  },
+  {
+    "id": "frk_tt_69e92829b6aa752b0dfba9a8",
+    "name": "Data Protection Awareness Training",
+    "description": "Deliver data protection and privacy awareness training to all personnel at onboarding and at least annually thereafter. Training must cover lawful processing, data subject rights, incident reporting, and the internal security policy. Track completion and retain evidence (sign-off, quiz results, or LMS completion reports).",
+    "frequency": "yearly",
+    "department": "hr",
+    "createdAt": "2026-04-22 19:57:28.639",
+    "updatedAt": "2026-04-22 19:57:28.639",
+    "automationStatus": "AUTOMATED"
+  },
+  {
+    "id": "frk_tt_69e92829ac42d6ca48bc6cd9",
+    "name": "DPIA Trigger Review and Execution",
+    "description": "Review planned and current processing activities against DPIA trigger criteria (e.g., large-scale processing of special categories, systematic monitoring, new technologies, automated decision-making with significant effects). For each triggered activity, complete a DPIA, document residual risks, implement mitigations, and consult the supervisory authority where residual risk remains high. Retain DPIA records.",
+    "frequency": "yearly",
+    "department": "admin",
+    "createdAt": "2026-04-22 19:57:29.078",
+    "updatedAt": "2026-04-22 19:57:29.078",
+    "automationStatus": "AUTOMATED"
+  },
+  {
+    "id": "frk_tt_69e92829e97f5a494f13d67b",
+    "name": "Data Subject Rights Request Handling",
+    "description": "Review the Data Subject Access Request (DSAR) log covering the rights of access, rectification, erasure, restriction, portability, and objection. For each request, verify that identity was confirmed, the response was provided within one month (or a justified two-month extension was communicated), and the outcome was documented. Identify any SLA breaches or systemic issues and remediate.",
+    "frequency": "quarterly",
+    "department": "admin",
+    "createdAt": "2026-04-22 19:57:29.435",
+    "updatedAt": "2026-04-22 19:57:29.435",
+    "automationStatus": "AUTOMATED"
+  },
+  {
+    "id": "frk_tt_69e92cc75996378b01b27ec9",
+    "name": "Cookie Consent and Tracking Review",
+    "description": "Inventory all cookies, SDKs, pixels, and trackers used across the organization's public websites and apps. Confirm a consent banner presents non-essential cookies as opt-in with the default off, loads no non-essential trackers before consent, and offers a way to reject as easily as to accept. Confirm a cookie policy discloses the name, purpose, duration, and third-party recipient for each cookie category. Verify consent records are stored with timestamp and scope, and that consent withdrawal is as easy as granting. Reconcile the banner's declared cookie list against what is actually set in production, and remediate drift.",
+    "frequency": "yearly",
+    "department": "admin",
+    "createdAt": "2026-04-22 20:17:11.002",
+    "updatedAt": "2026-04-22 20:17:11.002",
+    "automationStatus": "AUTOMATED"
+  },
+  {
+    "id": "frk_tt_69ea915ebae9e6858fa4fa07",
+    "name": "AIMS Scope Statement",
+    "description": "Define and document the boundaries and applicability of the AI management system. Consider external/internal issues, interested-party requirements, organizational activities, and your role across the AI lifecycle (provider, developer, deployer, user).\n\nUpload the approved AIMS Scope Statement document as evidence.\n\nAcceptance criteria: included (in/out of scope), excluded items with justification, organizational role(s), covered AI systems, owner, approver, approval date, and review cadence.",
+    "frequency": "yearly",
+    "department": "gov",
+    "createdAt": "2026-04-23 21:38:38.208",
+    "updatedAt": "2026-04-23 21:38:38.496",
+    "automationStatus": "MANUAL"
+  },
+  {
+    "id": "frk_tt_69e92828297806545638eed7",
+    "name": "Review Data Retention, Minimization, and Encryption",
+    "description": "Review personal data holdings to confirm collection is limited to what is necessary for the stated purpose, retention periods are enforced, and data past its retention limit is deleted or anonymized. Verify personal data is encrypted in transit and at rest, and pseudonymized or anonymized wherever feasible. \n\nDocument the review and any remediation performed.",
+    "frequency": "yearly",
+    "department": "it",
+    "createdAt": "2026-04-22 19:57:28.176",
+    "updatedAt": "2026-04-30 23:56:41.573",
+    "automationStatus": "AUTOMATED"
+  },
+  {
+    "id": "frk_tt_69ea9163eb166db383bb2140",
+    "name": "AI Policy Review",
+    "description": "Review the AI policy at planned intervals and when significant changes occur to confirm continuing suitability, adequacy and effectiveness.\n\nUpload the AI Policy Review record (with updated policy if changed) as evidence.\n\nAcceptance criteria: review date, reviewers, inputs considered (incidents, audits, regulatory changes, impact assessments), outcome (no change / amended / reissued), new version number, and approver.",
+    "frequency": "yearly",
+    "department": "gov",
+    "createdAt": "2026-04-23 21:38:42.710",
+    "updatedAt": "2026-04-23 21:38:42.902",
+    "automationStatus": "MANUAL"
+  },
+  {
+    "id": "frk_tt_69ea9164c6574221a69e1107",
+    "name": "AI Risk and Opportunity Register",
+    "description": "Maintain a register of risks and opportunities relevant to the AIMS (not individual-system AI risks, which are handled separately) and the planned actions to address them.\n\nUpload the AI Risk and Opportunity Register as evidence.\n\nAcceptance criteria: each entry includes description, likelihood/impact rating, owner, planned action, due date, status, and linkage into AIMS processes.",
+    "frequency": "yearly",
+    "department": "gov",
+    "createdAt": "2026-04-23 21:38:43.710",
+    "updatedAt": "2026-04-23 21:38:43.875",
+    "automationStatus": "MANUAL"
+  },
+  {
+    "id": "frk_tt_69ea9165056eb451ccc79c0f",
+    "name": "AI Societal Impact Assessment",
+    "description": "Assess potential societal impacts of each in-scope AI system (economic, environmental, cultural, democratic) and identify mitigations.\n\nUpload the AI Societal Impact Assessment record(s) as evidence.\n\nAcceptance criteria: AI system name, impact categories considered, affected groups/communities, severity and likelihood, mitigations, residual risk, assessor and approver, date, and next review.",
+    "frequency": "yearly",
+    "department": "gov",
+    "createdAt": "2026-04-23 21:38:44.710",
+    "updatedAt": "2026-04-23 21:38:44.882",
+    "automationStatus": "MANUAL"
+  },
+  {
+    "id": "frk_tt_69ea9166fd0793a689981939",
+    "name": "AI Data Resource Register",
+    "description": "Maintain an inventory of data resources used by AI systems (training, validation, testing, operational inputs) with ownership, classification, access, retention and intended use.\n\nUpload the AI Data Resource Register as evidence.\n\nAcceptance criteria: dataset name, source, sensitivity, owner, lawful basis, retention, access controls, associated AI system(s), and last-updated date.",
+    "frequency": "yearly",
+    "department": "it",
+    "createdAt": "2026-04-23 21:38:45.752",
+    "updatedAt": "2026-04-23 21:38:45.920",
+    "automationStatus": "MANUAL"
+  },
+  {
+    "id": "frk_tt_69ea91684c77e2310a928a7a",
+    "name": "AI Awareness Program",
+    "description": "Ensure personnel whose work affects AI systems are aware of the AI policy, their contribution to AIMS effectiveness, implications of non-conformance, and potential impacts of the AI systems they develop, deploy or use.\n\nUpload evidence of AI awareness activities (training completion report, attendance list, or acknowledged communication).\n\nAcceptance criteria: audience, content summary, delivery method, completion rate, date, and owner. Include the awareness materials themselves (deck, doc, or link).",
+    "frequency": "yearly",
+    "department": "hr",
+    "createdAt": "2026-04-23 21:38:48.218",
+    "updatedAt": "2026-04-23 21:38:48.444",
+    "automationStatus": "MANUAL"
+  },
+  {
+    "id": "frk_tt_69ea916984bd6ff9ec7fd09b",
+    "name": "AI Competence Record",
+    "description": "Determine competencies required for AI-related roles, assess personnel against them, and close gaps through training/experience/recruitment.\n\nUpload the AI Competence Record (role-to-competence matrix plus evidence of training/assessment).\n\nAcceptance criteria: role, required competencies, person, current level, gap, actions taken, completion dates, and reviewer.",
+    "frequency": "yearly",
+    "department": "hr",
+    "createdAt": "2026-04-23 21:38:49.260",
+    "updatedAt": "2026-04-23 21:38:49.499",
+    "automationStatus": "MANUAL"
+  },
+  {
+    "id": "frk_tt_69ea916a881ab0d59e67c930",
+    "name": "AIMS Documented Information Index",
+    "description": "Maintain a control index of AIMS documented information (policies, procedures, records) with identification, classification, access, retention and disposal rules.\n\nUpload the AIMS Documented Information Index as evidence.\n\nAcceptance criteria: document name, owner, current version, storage location, access/distribution controls, retention period, review date, and change-history reference.",
+    "frequency": "yearly",
+    "department": "gov",
+    "createdAt": "2026-04-23 21:38:50.299",
+    "updatedAt": "2026-04-23 21:38:50.544",
+    "automationStatus": "MANUAL"
+  },
+  {
+    "id": "frk_tt_69ea916b05b146a8a544c406",
+    "name": "Responsible AI Development Objectives",
+    "description": "Define and approve objectives for the responsible development of AI systems (fairness, reliability, safety, security, privacy, transparency, explainability, accountability, environmental impact) and direct development activities to meet them.\n\nUpload the Responsible AI Development Objectives document as evidence.\n\nAcceptance criteria: objectives with measurable targets, rationale, owner, approver, approval date, and how each objective flows into design/engineering activities.",
+    "frequency": "yearly",
+    "department": "gov",
+    "createdAt": "2026-04-23 21:38:51.337",
+    "updatedAt": "2026-04-23 21:38:51.582",
+    "automationStatus": "MANUAL"
+  },
+  {
+    "id": "frk_tt_69ea916c7b0b9487da3dbe78",
+    "name": "AI System Requirements and Specification",
+    "description": "For each in-scope AI system, produce and approve a requirements-and-specification document covering intended purpose, performance, safety, security, privacy, fairness, transparency, human oversight and applicable regulatory requirements.\n\nUpload the AI System Requirements & Specification document(s) as evidence.\n\nAcceptance criteria: AI system name, intended purpose and users, functional/non-functional requirements, acceptance criteria, regulatory references, author, reviewer, approver, and date.",
+    "frequency": "yearly",
+    "department": "it",
+    "createdAt": "2026-04-23 21:38:52.408",
+    "updatedAt": "2026-04-23 21:38:52.638",
+    "automationStatus": "MANUAL"
+  },
+  {
+    "id": "frk_tt_69ea916e273fdb8732d89fc6",
+    "name": "AI Design and Development Documentation",
+    "description": "For each in-scope AI system, document the design and development (data used, architecture, training procedure, key parameters, evaluation approach, known limitations) sufficient to enable assessment, reproduction and oversight.\n\nUpload the AI Design & Development documentation as evidence (design doc, model architecture, training config, evaluation results).\n\nAcceptance criteria: AI system name, design choices with rationale, data used, training/evaluation results, known limitations, author, reviewer, approval date.",
+    "frequency": "yearly",
+    "department": "it",
+    "createdAt": "2026-04-23 21:38:53.583",
+    "updatedAt": "2026-04-23 21:38:53.752",
+    "automationStatus": "MANUAL"
+  },
+  {
+    "id": "frk_tt_69ea916f42193436fb7b55de",
+    "name": "AI Verification & Validation Report",
+    "description": "Perform and document verification & validation for each in-scope AI system: functional testing, performance, robustness, fairness, safety, security and privacy checks, against defined acceptance criteria, before deployment and after significant changes.\n\nUpload the AI V&V Report(s) as evidence.\n\nAcceptance criteria: AI system name, test scope, methods, datasets, metrics vs. targets (including fairness/robustness), defects found and dispositions, acceptance decision, tester, approver, date.",
+    "frequency": "quarterly",
+    "department": "it",
+    "createdAt": "2026-04-23 21:38:54.622",
+    "updatedAt": "2026-04-23 21:38:54.798",
+    "automationStatus": "MANUAL"
+  },
+  {
+    "id": "frk_tt_69ea917069457debb719152e",
+    "name": "AI System Operation & Monitoring Plan",
+    "description": "Operate and monitor each in-scope AI system in production for performance, drift, reliability, safety, security and ethical outcomes. Define metrics, thresholds, alerting and response procedures.\n\nUpload the AI System Operation & Monitoring Plan and the latest monitoring report as evidence.\n\nAcceptance criteria: AI system name, metrics, thresholds and alert rules, responsible team, review cadence, latest results, drift/incident findings, and corrective actions taken.",
+    "frequency": "quarterly",
+    "department": "it",
+    "createdAt": "2026-04-23 21:38:55.736",
+    "updatedAt": "2026-04-23 21:38:55.948",
+    "automationStatus": "MANUAL"
+  },
+  {
+    "id": "frk_tt_69ea917139f2541637597cc4",
+    "name": "AI System Technical Documentation (Model Card)",
+    "description": "For each in-scope AI system, maintain technical documentation (model card or equivalent) describing intended use, capabilities, limitations, training/evaluation data summary, performance characteristics and risk information, sufficient to support interested parties and regulators.\n\nUpload the AI System Technical Documentation / Model Card(s) as evidence.\n\nAcceptance criteria: AI system name, intended use/users, capabilities, limitations, training & evaluation data summary, performance by relevant subgroups, ethical considerations, owner, version, last-updated date.",
+    "frequency": "yearly",
+    "department": "it",
+    "createdAt": "2026-04-23 21:38:56.777",
+    "updatedAt": "2026-04-23 21:38:56.957",
+    "automationStatus": "MANUAL"
+  },
+  {
+    "id": "frk_tt_69ea91725a27f56747512056",
+    "name": "AI System Event Logging Configuration",
+    "description": "Record event logs generated by AI systems (inputs, outputs, decisions, user interactions, system events) with sufficient integrity, retention and access control to support monitoring, incident response and accountability.\n\nUpload evidence of the AI event-logging configuration (config screenshots, log schema, retention policy) and a sample log extract.\n\nAcceptance criteria: AI system name, log categories captured, integrity/retention settings, access controls, sample log entries, reviewer, date.",
+    "frequency": "yearly",
+    "department": "it",
+    "createdAt": "2026-04-23 21:38:57.871",
+    "updatedAt": "2026-04-23 21:38:58.036",
+    "automationStatus": "MANUAL"
+  },
+  {
+    "id": "frk_tt_69ea9173e73c9a96895468c8",
+    "name": "AI Data Acquisition Record",
+    "description": "For each dataset acquired for AI use, document the lawful basis, contractual rights, licensing, ethical sourcing, consent where required, and acquisition criteria.\n\nUpload the AI Data Acquisition Record(s) as evidence (with source agreements/licenses where applicable).\n\nAcceptance criteria: dataset name, source, lawful basis, license/contract reference, consent where required, acquisition date, reviewer, approver.",
+    "frequency": "yearly",
+    "department": "it",
+    "createdAt": "2026-04-23 21:38:58.928",
+    "updatedAt": "2026-04-23 21:38:59.100",
+    "automationStatus": "MANUAL"
+  },
+  {
+    "id": "frk_tt_69ea9174fe7e40c0405cd057",
+    "name": "AI Data Quality Assessment",
+    "description": "Assess the quality of each dataset used by AI systems against defined requirements (accuracy, completeness, consistency, timeliness, relevance, bias). Record results and remediate issues.\n\nUpload the AI Data Quality Assessment report as evidence.\n\nAcceptance criteria: dataset name, metrics and thresholds, results, bias/representativeness findings, remediation actions, owner, assessment date.",
+    "frequency": "quarterly",
+    "department": "it",
+    "createdAt": "2026-04-23 21:38:59.911",
+    "updatedAt": "2026-04-23 21:39:00.105",
+    "automationStatus": "MANUAL"
+  },
+  {
+    "id": "frk_tt_69ea9175640d0bbbddde05a7",
+    "name": "AI Data Provenance Record",
+    "description": "Record and maintain the provenance of each dataset used by AI systems (source, transformations, lineage, handling history) to support reproducibility, accountability and impact assessment.\n\nUpload the AI Data Provenance Record(s) as evidence.\n\nAcceptance criteria: dataset name, origin, transformations applied (with tools and operators), lineage to upstream sources, hashes/version identifiers, owner, last-updated date.",
+    "frequency": "yearly",
+    "department": "it",
+    "createdAt": "2026-04-23 21:39:00.917",
+    "updatedAt": "2026-04-23 21:39:01.079",
+    "automationStatus": "MANUAL"
+  },
+  {
+    "id": "frk_tt_69ea91761c04c37d4f867908",
+    "name": "AI Data Preparation Record",
+    "description": "Document data preparation activities (cleaning, labeling, annotation, transformation, augmentation, splitting) including rationale, tooling, reviewers and acceptance criteria.\n\nUpload the AI Data Preparation Record(s) as evidence.\n\nAcceptance criteria: dataset name, preparation steps, tools/scripts used (with versions), labeling/annotation procedure and reviewers, acceptance criteria and results, approver, date.",
+    "frequency": "yearly",
+    "department": "it",
+    "createdAt": "2026-04-23 21:39:01.859",
+    "updatedAt": "2026-04-23 21:39:02.118",
+    "automationStatus": "MANUAL"
+  },
+  {
+    "id": "frk_tt_69ea91773112b091b458de8d",
+    "name": "Intended Use Statement",
+    "description": "For each in-scope AI system, determine, document and communicate the intended use and the conditions of that use. Identify reasonably foreseeable misuse and put measures in place to prevent and respond to it.\n\nUpload the Intended Use Statement(s) as evidence.\n\nAcceptance criteria: AI system name, intended users, intended use and conditions, out-of-scope/prohibited uses, foreseeable misuse scenarios with mitigations, owner, approval date.",
+    "frequency": "yearly",
+    "department": "gov",
+    "createdAt": "2026-04-23 21:39:03.004",
+    "updatedAt": "2026-04-23 21:39:03.203",
+    "automationStatus": "MANUAL"
+  },
+  {
+    "id": "frk_tt_69ea9178aaa6c6a7058c0fcf",
+    "name": "Responsible AI Use Procedure",
+    "description": "Establish an organization-wide procedure for the responsible use of AI systems, including acceptable-use guidance, human-oversight requirements, escalation paths and periodic review.\n\nUpload the Responsible AI Use Procedure as evidence.\n\nAcceptance criteria: acceptable/prohibited uses, human-oversight responsibilities, escalation and reporting channels, review cadence, owner, approver, approval date.",
+    "frequency": "yearly",
+    "department": "gov",
+    "createdAt": "2026-04-23 21:39:04.078",
+    "updatedAt": "2026-04-23 21:39:04.285",
+    "automationStatus": "MANUAL"
+  },
+  {
+    "id": "frk_tt_69ea917abdbda1fa183386d2",
+    "name": "AI Third-Party Responsibility Matrix",
+    "description": "Identify and document the allocation of AI-related responsibilities across the organization, suppliers, partners and customers across the AI lifecycle.\n\nUpload the AI Third-Party Responsibility Matrix as evidence.\n\nAcceptance criteria: lifecycle stage, responsibility (RACI), internal owner, external counterpart, contractual reference, approval date, and review cadence.",
+    "frequency": "yearly",
+    "department": "gov",
+    "createdAt": "2026-04-23 21:39:06.218",
+    "updatedAt": "2026-04-23 21:39:06.393",
+    "automationStatus": "MANUAL"
+  },
+  {
+    "id": "frk_tt_69ea91794c21fc8f347cdddd",
+    "name": "Responsible AI Use Objectives",
+    "description": "Define and communicate objectives for the responsible use of AI systems (accountability, transparency, human oversight, harm prevention) and measure progress against them.\n\nUpload the Responsible AI Use Objectives record and latest measurement results as evidence.\n\nAcceptance criteria: objectives with measurable targets, measurement method, current results, gaps, actions, owner, approval date.",
+    "frequency": "yearly",
+    "department": "gov",
+    "createdAt": "2026-04-23 21:39:05.184",
+    "updatedAt": "2026-04-23 21:39:05.346",
+    "automationStatus": "MANUAL"
+  },
+  {
+    "id": "frk_tt_69ea917b78c7fc9f3c659a90",
+    "name": "AI Supplier Register",
+    "description": "Maintain a register of AI-related suppliers (model, data, tooling, services), with due diligence, contractual obligations, monitoring and offboarding expectations.\n\nUpload the AI Supplier Register as evidence.\n\nAcceptance criteria: supplier name, service provided, risk rating, due-diligence evidence, contract reference (with AI-specific clauses), monitoring cadence, status, owner.",
+    "frequency": "yearly",
+    "department": "gov",
+    "createdAt": "2026-04-23 21:39:07.329",
+    "updatedAt": "2026-04-23 21:39:07.508",
+    "automationStatus": "MANUAL"
+  },
+  {
+    "id": "frk_tt_69ea917c23d26cfe23eb8fca",
+    "name": "AI Management Review Minutes",
+    "description": "Top management reviews the AIMS at planned intervals covering required inputs (status of actions, changes, performance, risks, opportunities, improvement) and producing decisions on improvement.\n\nUpload the AI Management Review Minutes as evidence.\n\nAcceptance criteria: date, attendees, inputs covered (Clause 9.3.2 items), decisions and actions (with owners and due dates), next-review date, approver.",
+    "frequency": "yearly",
+    "department": "gov",
+    "createdAt": "2026-04-23 21:39:08.439",
+    "updatedAt": "2026-04-23 21:39:08.621",
+    "automationStatus": "MANUAL"
+  },
+  {
+    "id": "frk_tt_69eb875d089573be3295269e",
+    "name": "Sanction Policy",
+    "description": "Apply and document appropriate sanctions against workforce members who fail to comply with security policies and procedures. Maintain evidence of sanctions applied.",
+    "frequency": "yearly",
+    "department": "hr",
+    "createdAt": "2026-04-24 15:08:13.443",
+    "updatedAt": "2026-04-24 15:08:13.443",
+    "automationStatus": "AUTOMATED"
+  },
+  {
+    "id": "frk_tt_69eb875e9567b702dbb7f05e",
+    "name": "Security Officer Assignment",
+    "description": "Designate a HIPAA Security Official responsible for developing and implementing required security policies and procedures. Maintain written designation and scope of responsibilities.",
+    "frequency": "yearly",
+    "department": "gov",
+    "createdAt": "2026-04-24 15:08:13.804",
+    "updatedAt": "2026-04-24 15:16:54.860",
+    "automationStatus": "MANUAL"
+  },
+  {
+    "id": "frk_tt_69efd9de89f2f4d93e527127",
+    "name": "Annual CCPA Compliance Audit",
+    "description": "Conduct a documented annual audit of CCPA/CPRA compliance covering disclosures, request handling, training, vendor contracts, and security controls. Track regulatory changes and update measures.",
+    "frequency": "yearly",
+    "department": "gov",
+    "createdAt": "2026-04-27 21:49:18.377",
+    "updatedAt": "2026-04-27 21:49:18.377",
+    "automationStatus": "AUTOMATED"
+  },
+  {
+    "id": "frk_tt_69eb87606cb315ebeb98ea49",
+    "name": "Policy Documentation & Retention",
+    "description": "Retain HIPAA policies, procedures, and related documentation for at least 6 years from date of creation or last effective date. Make documentation available to those responsible for implementing procedures.\n\nThis is satisfied by maintaining polices in the Policies tab, ensure these are up to date, and reviewed and adjusted as needed or yearly",
+    "frequency": "yearly",
+    "department": "gov",
+    "createdAt": "2026-04-24 15:08:15.914",
+    "updatedAt": "2026-04-30 19:20:56.477",
+    "automationStatus": "MANUAL"
+  },
+  {
+    "id": "frk_tt_69eb875ffe511e3ce5298e21",
+    "name": "Media Sanitization & Disposal Log",
+    "description": "Maintain a log documenting the disposal, re-use, and movement of hardware and electronic media containing ePHI, including sanitization method and accountability.",
+    "frequency": "quarterly",
+    "department": "it",
+    "createdAt": "2026-04-24 15:08:15.067",
+    "updatedAt": "2026-04-27 14:53:07.153",
+    "automationStatus": "MANUAL"
+  },
+  {
+    "id": "frk_tt_69eb875e71616f3b8a9fadde",
+    "name": "Business Associate Agreement Registry",
+    "description": "Maintain a registry of all Business Associates handling ePHI with signed Business Associate Agreements (BAAs). Review agreements at least annually and upon contract changes.\n\nMaintain Business Associate Agreements in the Vendor section by creating a new task for each applicable vendor, and uploading the signed BAA for that vendor in the comments of that task",
+    "frequency": "yearly",
+    "department": "gov",
+    "createdAt": "2026-04-24 15:08:14.253",
+    "updatedAt": "2026-04-27 15:06:56.645",
+    "automationStatus": "MANUAL"
+  },
+  {
+    "id": "frk_tt_69efd9e081684a02f1207ee0",
+    "name": "Annual Privacy Policy Review and Update",
+    "description": "Review the public-facing privacy policy at least annually (or upon material change in processing). Ensure all CCPA/CPRA-required disclosures are accurate and the policy is prominently linked from every page collecting personal information.",
+    "frequency": "yearly",
+    "department": "gov",
+    "createdAt": "2026-04-27 21:49:20.246",
+    "updatedAt": "2026-04-27 21:49:20.246",
+    "automationStatus": "AUTOMATED"
+  },
+  {
+    "id": "frk_tt_69efd9e2f40bdd1dd45c057e",
+    "name": "Annual CCPA Privacy Training",
+    "description": "Deliver annual CCPA/CPRA privacy training to all employees handling personal information or consumer rights requests. Track completion and retain records.",
+    "frequency": "yearly",
+    "department": "hr",
+    "createdAt": "2026-04-27 21:49:22.106",
+    "updatedAt": "2026-04-27 21:49:22.106",
+    "automationStatus": "AUTOMATED"
+  },
+  {
+    "id": "frk_tt_69efd9e45e6f00c44f622173",
+    "name": "Quarterly DSAR Volume and Response Time Review",
+    "description": "Review the volume, types, and response times of consumer rights requests (Know, Delete, Correct, Opt-Out, Limit) each quarter. Identify trends, SLA breaches, or operational improvements.",
+    "frequency": "quarterly",
+    "department": "gov",
+    "createdAt": "2026-04-27 21:49:24.270",
+    "updatedAt": "2026-04-27 21:49:24.270",
+    "automationStatus": "AUTOMATED"
+  },
+  {
+    "id": "frk_tt_69efd9e7f46963f71debd961",
+    "name": "Annual Data Inventory and Data Flow Refresh",
+    "description": "Re-validate the personal information inventory and data flow maps at least annually, capturing new systems, vendors, data categories, and processing purposes.",
+    "frequency": "yearly",
+    "department": "gov",
+    "createdAt": "2026-04-27 21:49:27.424",
+    "updatedAt": "2026-04-27 21:49:27.424",
+    "automationStatus": "AUTOMATED"
+  },
+  {
+    "id": "frk_tt_69efd9ed795877621cdbd56d",
+    "name": "Annual Service Provider and Contractor Contract Review",
+    "description": "Review all service provider, contractor, and third-party agreements that involve personal information at least annually. Confirm CCPA/CPRA-required terms (limited purpose, no sale/share, cooperation with consumer rights, confidentiality).",
+    "frequency": "yearly",
+    "department": "gov",
+    "createdAt": "2026-04-27 21:49:32.926",
+    "updatedAt": "2026-04-27 21:49:32.926",
+    "automationStatus": "AUTOMATED"
+  },
+  {
+    "id": "frk_tt_69efd9ef3ff6e8fed0fc0028",
+    "name": "Verify Global Privacy Control (GPC) Signal Honoring",
+    "description": "Test that the website honors the Global Privacy Control browser signal as a valid opt-out of sale/sharing for all sites and applications subject to the CCPA/CPRA.",
+    "frequency": "quarterly",
+    "department": "it",
+    "createdAt": "2026-04-27 21:49:34.636",
+    "updatedAt": "2026-04-27 21:49:34.636",
+    "automationStatus": "AUTOMATED"
+  },
+  {
+    "id": "frk_tt_69efd9f0124f63db79cb50b0",
+    "name": "Annual Incident Response Tabletop Exercise",
+    "description": "Run an annual tabletop exercise covering a personal information breach scenario. Validate detection, escalation, consumer notification, and Attorney General notification timelines under California Civil Code § 1798.82.",
+    "frequency": "yearly",
+    "department": "it",
+    "createdAt": "2026-04-27 21:49:36.353",
+    "updatedAt": "2026-04-27 21:49:36.353",
+    "automationStatus": "AUTOMATED"
+  },
+  {
+    "id": "frk_tt_69eb875d77ef6407785a500f",
+    "name": "Risk Analysis & Treatment Plan",
+    "description": "Conduct and document an accurate and thorough risk analysis of potential risks and vulnerabilities to the confidentiality, integrity, and availability of ePHI. Document risk treatment decisions and implementation.\n\nThis is handled in the Risk tab in the app. Ensure we have logged and assessed HIPAA related risks, and we can mark this as complete",
+    "frequency": "yearly",
+    "department": "gov",
+    "createdAt": "2026-04-24 15:08:12.975",
+    "updatedAt": "2026-04-30 16:45:36.071",
+    "automationStatus": "AUTOMATED"
+  },
+  {
+    "id": "frk_tt_69eb876033531483191663a1",
+    "name": "Workforce Authorization & Supervision",
+    "description": "Authorize workforce access to ePHI and supervise workforce members whose roles require access. Maintain records of authorization decisions and supervision activities.\n\nThis can be satisfied by use of the RBAX Document in the Documents tab",
+    "frequency": "quarterly",
+    "department": "hr",
+    "createdAt": "2026-04-24 15:08:16.319",
+    "updatedAt": "2026-04-30 17:12:49.144",
+    "automationStatus": "MANUAL"
+  },
+  {
+    "id": "frk_tt_69eb8761ff2b2d874ae2a4da",
+    "name": "Login Monitoring & Password Management",
+    "description": "Monitor login attempts and discrepancies, and enforce password management procedures including creation, change, and safeguarding of credentials.\n\nInstall the Comp AI device agent on portal.trycomp.ai, or provide manual evidence of device settings. https://www.trycomp.ai/docs/device-agent#manual-evidence-collection\n\n",
+    "frequency": "monthly",
+    "department": "it",
+    "createdAt": "2026-04-24 15:08:16.690",
+    "updatedAt": "2026-04-30 19:13:58.750",
+    "automationStatus": "AUTOMATED"
+  },
+  {
+    "id": "frk_tt_69efd9f2322df1e829df8087",
+    "name": "Annual Identity Verification Procedure Review",
+    "description": "Review the consumer identity verification procedure annually. Ensure verification rigor matches the sensitivity of the data and the type of request, and that fraud controls remain effective.",
+    "frequency": "yearly",
+    "department": "gov",
+    "createdAt": "2026-04-27 21:49:37.837",
+    "updatedAt": "2026-04-30 23:56:39.959",
+    "automationStatus": "MANUAL"
+  },
+  {
+    "id": "frk_tt_69efdbcee1d3e72ee6873ed1",
+    "name": "Document Consumer Rights Request Fulfillment",
+    "description": "For each consumer rights request received (Right to Know, Right to Delete, authorized-agent submission, etc.), capture and retain a record of: requester identity and verification method/result, request type and scope, authorized-agent verification (if applicable), business response, fulfillment or denial reason, and dates of receipt and response. Records must be retained for at least 24 months and serve as the primary evidence for CCPA/CPRA consumer rights handling.",
+    "frequency": "monthly",
+    "department": "gov",
+    "createdAt": "2026-04-27 21:57:34.432",
+    "updatedAt": "2026-04-27 21:57:34.432",
+    "automationStatus": "AUTOMATED"
+  },
+  {
+    "id": "frk_tt_69f0d514d103c34ca40ad332",
+    "name": "Static Code Scanning  ",
+    "description": "Enable a static code analysis tool such as CodeQL (or its equivalent) to automatically detect security vulnerabilities and insecure coding patterns.",
+    "frequency": "quarterly",
+    "department": "none",
+    "createdAt": "2026-04-28 15:41:07.897",
+    "updatedAt": "2026-04-28 15:41:07.897",
+    "automationStatus": "AUTOMATED"
+  },
+  {
+    "id": "frk_tt_69f10edce3013d5b6e0ab7c9",
+    "name": "Updated tasl",
+    "description": "test",
+    "frequency": "monthly",
+    "department": "none",
+    "createdAt": "2026-04-28 19:47:40.321",
+    "updatedAt": "2026-04-28 19:47:40.321",
+    "automationStatus": "AUTOMATED"
+  },
+  {
+    "id": "frk_tt_69f10edc75a040a97dd41d0a",
+    "name": "Updated tasl",
+    "description": "test",
+    "frequency": "monthly",
+    "department": "none",
+    "createdAt": "2026-04-28 19:47:40.398",
+    "updatedAt": "2026-04-28 19:47:40.398",
+    "automationStatus": "AUTOMATED"
+  },
+  {
+    "id": "frk_tt_69eb8760d56cb8d18c53df13",
+    "name": "Contingency Plan Testing & Revision",
+    "description": "Periodically test contingency plans (data backup, disaster recovery, emergency mode operations) and document results. Revise plans based on test findings and operational changes.\n\nWhat to upload: test report (date, scenarios tested e.g. ransomware/region outage, participants, RTO/RPO results, gaps found, plan revisions). HIPAA cites §164.308(a)(7).",
+    "frequency": "yearly",
+    "department": "it",
+    "createdAt": "2026-04-24 15:08:15.544",
+    "updatedAt": "2026-04-30 17:13:41.699",
+    "automationStatus": "MANUAL"
+  },
+  {
+    "id": "frk_tt_69eb875fa49f13b4b81e9f3b",
+    "name": "Facility Security Plan",
+    "description": "Document and maintain a facility security plan that safeguards facilities and the equipment therein from unauthorized physical access, tampering, and theft.\n\nList required sections (access control, contingency ops, maintenance records, device/media controls), upload the signed plan + photos of safeguards (locks, cameras, server room)\n\nIf team is fully remote, or no physical PHI stored on site, you can mark this as not relevant. ",
+    "frequency": "yearly",
+    "department": "admin",
+    "createdAt": "2026-04-24 15:08:14.631",
+    "updatedAt": "2026-04-30 17:14:57.750",
+    "automationStatus": "MANUAL"
+  },
+  {
+    "id": "frk_tt_69f3ac66d4f449b6c8c503c4",
+    "name": "test",
+    "description": "test",
+    "frequency": "monthly",
+    "department": "none",
+    "createdAt": "2026-04-30 19:24:21.757",
+    "updatedAt": "2026-04-30 19:24:21.757",
+    "automationStatus": "AUTOMATED"
+  },
+  {
+    "id": "frk_tt_69f3ea6497e3c0fbd6726ea5",
+    "name": "Quarterly PIPEDA Privacy Notice Display Review",
+    "description": "Verify each quarter that the PIPEDA privacy notice (or a meaningful link to it) is displayed at every collection point — web forms, account creation flows, mobile apps, in-person collection materials, and contracts — and that the Privacy Officer's contact details and complaint channel remain visible and accurate. Record any gaps and remediation timelines.",
+    "frequency": "quarterly",
+    "department": "gov",
+    "createdAt": "2026-04-30 23:48:52.431",
+    "updatedAt": "2026-04-30 23:48:52.431",
+    "automationStatus": "AUTOMATED"
+  },
+  {
+    "id": "frk_tt_69f3ea65dd312f6d70654ac4",
+    "name": "Review International Personal Information Transfers (PIPEDA Accountability)",
+    "description": "Review every transfer of personal information outside Canada at least annually. For each transfer, document the destination country, the recipient, the purpose, the categories of personal information involved, and the safeguards applied (contractual commitments, encryption, access controls). Confirm the organization's PIPEDA accountability is preserved regardless of where processing occurs, and update the privacy notice and Personal Information Register where the transfer landscape changes.",
+    "frequency": "yearly",
+    "department": "admin",
+    "createdAt": "2026-04-30 23:48:53.271",
+    "updatedAt": "2026-04-30 23:48:53.271",
+    "automationStatus": "AUTOMATED"
+  },
+  {
+    "id": "frk_tt_69f3ea63df40dfc906558bb5",
+    "name": "Appoint or Review Privacy Officer (PIPEDA)",
+    "description": "Formally designate one or more individuals accountable for the organization's compliance with PIPEDA. Document the Privacy Officer's name, contact details, role description, and authority. Confirm the designation is published so it can be made known on request. Review at least annually or whenever the role changes, and retain the appointment letter or governance record as evidence.",
+    "frequency": "yearly",
+    "department": "admin",
+    "createdAt": "2026-04-30 23:48:50.894",
+    "updatedAt": "2026-04-30 23:56:40.469",
+    "automationStatus": "MANUAL"
+  },
+  {
+    "id": "frk_tt_69f3ea66b653b0af244cf869",
+    "name": "PIPEDA Access Request Log Review",
+    "description": "Review the PIPEDA access request log each quarter. \n\nFor each request, verify: identity verification used a method proportionate to the sensitivity of the data, the response was delivered within 30 days (or an extension of up to 30 additional days was communicated in writing), an account of use and disclosure was provided, third-party recipients were identified as specifically as possible, and any refusal cited the specific PIPEDA Section 9 exception in writing along with the right to complain to the OPC. \n\nIdentify SLA breaches or systemic issues and remediate.",
+    "frequency": "quarterly",
+    "department": "gov",
+    "createdAt": "2026-04-30 23:48:54.272",
+    "updatedAt": "2026-04-30 23:56:41.029",
+    "automationStatus": "MANUAL"
+  },
+  {
+    "id": "frk_tt_69f3ea65d5b1a04e9c7e0a91",
+    "name": "PIPEDA Consent Records Audit",
+    "description": "Sample consent records each quarter to validate timestamp, method (express vs. implied), the version of the privacy notice presented, and the scope of consent. \n\nFor sensitive personal information (health, financial, biometric, genetic, racial/ethnic origin, political opinions, religious beliefs, sex life or sexual orientation), confirm express opt-in consent is on file. Review the consent withdrawal log to confirm withdrawals are propagated across all systems within five business days, and that consequences were communicated to the individual. \n\nRecord sampling results and any remediation.",
+    "frequency": "quarterly",
+    "department": "gov",
+    "createdAt": "2026-04-30 23:48:52.859",
+    "updatedAt": "2026-04-30 23:56:41.189",
+    "automationStatus": "MANUAL"
+  },
+  {
+    "id": "frk_tt_69f3ea640e0ea50dd2ed8efd",
+    "name": "Annual PIPEDA Privacy Notice Review",
+    "description": "Review the public-facing PIPEDA privacy notice at least annually, or within 30 days of any material change to collection, use, disclosure, or retention practices. Confirm the notice describes: the Privacy Officer's identity and contact details, categories of personal information collected, purposes, recipients, cross-border transfers, retention periods, individual rights under PIPEDA, and procedures for access requests and complaints. Retain dated versions and evidence of publication.",
+    "frequency": "yearly",
+    "department": "gov",
+    "createdAt": "2026-04-30 23:48:51.920",
+    "updatedAt": "2026-04-30 23:56:40.125",
+    "automationStatus": "MANUAL"
+  },
+  {
+    "id": "frk_tt_69f3ea660239b769839c49d4",
+    "name": "Periodic Personal Information Accuracy Audit",
+    "description": "Conduct a documented accuracy review at least annually for high-impact personal information categories (e.g. customer profiles used for billing, employee records used for compensation). \n\nValidate that records are accurate, complete, and current to the level required for their use. Where automated synchronization exists, document the cadence. \n\nFor any inaccuracies found, amend the record, communicate the amendment to third parties that received the original information within 30 days, and capture metrics on median time from challenge to amendment.",
+    "frequency": "yearly",
+    "department": "gov",
+    "createdAt": "2026-04-30 23:48:53.785",
+    "updatedAt": "2026-04-30 23:56:40.871",
+    "automationStatus": "AUTOMATED"
+  },
+  {
+    "id": "frk_tt_69f3ea67f1bbe13880b55fa4",
+    "name": "Annual Information Amendment & Refusal Procedure Review",
+    "description": "Review the procedure for amending personal information following a substantiated challenge, and for documenting refusals. Confirm: amendments are applied without undue delay, downstream third parties that received the original information are notified within 30 days of amendment, refusals to amend are recorded as a note on the record, and refused amendments are accompanied by clear notice of the individual's recourse — including the right to file a complaint with the OPC. Sample recent amendment and refusal cases to validate compliance.",
+    "frequency": "yearly",
+    "department": "gov",
+    "createdAt": "2026-04-30 23:48:54.766",
+    "updatedAt": "2026-04-30 23:48:54.766",
+    "automationStatus": "AUTOMATED"
+  },
+  {
+    "id": "frk_tt_69f3ea63c50892f7c9354dbb",
+    "name": "Annual Service Provider & Processor Contract Review (PIPEDA)",
+    "description": "Review every service provider, processor, and contractor agreement that involves personal information at least annually. \n\nConfirm contracts include: limitation of processing to documented purposes, return or secure destruction of personal information on termination, breach notification obligations, sub-processor disclosure, support for the organization's 30-day access-request fulfilment, and a comparable level of privacy protection per Principle 1 (Accountability). \n\nRecord any non-conforming agreements and remediation. \n\nThis can be satisfied in the Vendor section, by creating new tasks for each vendor.",
+    "frequency": "yearly",
+    "department": "gov",
+    "createdAt": "2026-04-30 23:48:51.414",
+    "updatedAt": "2026-04-30 23:56:40.316",
+    "automationStatus": "MANUAL"
+  },
+  {
+    "id": "frk_tt_69f3ea67845abbb56763649f",
+    "name": "PIPEDA Privacy Complaint Register & Investigation Review",
+    "description": "Review the PIPEDA privacy complaint register and open investigations each quarter. Confirm every complaint was acknowledged within five business days, was assigned to a competent and impartial reviewer, and is being investigated without undue delay. For each completed investigation, document findings, root causes, corrective action taken, and the outcome communicated to the complainant in writing. Where the complaint was not upheld, confirm the complainant was informed of the right to file a complaint with the Office of the Privacy Commissioner of Canada (OPC) and provided the OPC's contact details. Where the complaint was upheld, confirm corrective action — policy amendment, record correction, retraining, or termination of non-compliant processing — was completed and tracked to closure. Track median time to acknowledge, investigate, and resolve. Identify systemic issues across multiple complaints and feed findings into the annual review of privacy policies and controls.",
+    "frequency": "quarterly",
+    "department": "gov",
+    "createdAt": "2026-04-30 23:48:55.224",
+    "updatedAt": "2026-05-01 00:11:09.620",
+    "automationStatus": "AUTOMATED"
   }
 ]

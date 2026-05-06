@@ -126,13 +126,6 @@ export function TreatmentPlanTab({
   const isMitigate = strategy === RiskTreatmentType.mitigate;
   const hasPlan = description.trim().length > 0;
   const hasLinkedWork = entity.tasks.length > 0;
-  // Heuristic: tasks were auto-linked during onboarding but the AI plan
-  // hasn't filled in yet → mitigation is in flight (or just queued). Show
-  // a generating placeholder so the user knows the system is working
-  // rather than seeing an unexplained empty editor. Polling refreshes the
-  // entity; when description fills in, this condition naturally fails.
-  const isAutoMitigationInFlight =
-    isMitigate && hasLinkedWork && !hasPlan && !regenRun && !regenerating;
 
   // While Mitigate has no linked work, render only the kick-off CTA panel —
   // the user picks "Draft plan & suggest links" / "Suggest tasks & controls"
@@ -147,12 +140,12 @@ export function TreatmentPlanTab({
   const kickoffVariant: 'kickoff' | 'kickoff-with-plan' = hasPlan
     ? 'kickoff-with-plan'
     : 'kickoff';
-  // Linked Work is part of the audit trail regardless of strategy — Accept,
-  // Transfer, and Avoid all benefit from showing what evidence is connected
-  // to the risk (per ENG-221). The kickoff CTA above stays Mitigate-only
-  // because AI suggestion is a Mitigate-shaped flow; for other strategies
-  // users link manually via the Tasks UI.
-  const showLinkedWorkColumn = hasLinkedWork;
+  // Linked Work renders only for Mitigate. Accept "lives with the risk",
+  // Transfer ships impact via insurance/contractual instruments, and Avoid
+  // discontinues the activity — none of those are operational mitigations
+  // backed by tasks/controls, so showing the column adds noise and a misread
+  // ("there's still work to do here").
+  const showLinkedWorkColumn = isMitigate && hasLinkedWork;
 
   // For non-Mitigate strategies the "plan" is just rationale.
   const planTitle = isMitigate ? 'Treatment plan' : 'Rationale';
@@ -209,11 +202,6 @@ export function TreatmentPlanTab({
               onResume={onResumeAutoLink}
               onDiscardRun={onDiscardAutoLinkRun}
             />
-          ) : isAutoMitigationInFlight ? (
-            <>
-              <ColumnHeader number="02" title={planTitle} subtitle={planSubtitle} />
-              <AutoMitigationPlaceholder />
-            </>
           ) : (
             <>
               <ColumnHeader number="02" title={planTitle} subtitle={planSubtitle} />
@@ -255,30 +243,6 @@ export function TreatmentPlanTab({
             )}
           </div>
         )}
-      </div>
-    </div>
-  );
-}
-
-function AutoMitigationPlaceholder() {
-  return (
-    <div
-      className="mt-4 flex items-start gap-2 rounded-md border border-border bg-primary/[0.04] px-3 py-2.5"
-      role="status"
-      aria-live="polite"
-    >
-      <span
-        className="mt-0.5 inline-block h-3.5 w-3.5 shrink-0 animate-spin rounded-full border-2 border-border border-t-primary"
-        aria-hidden="true"
-      />
-      <div className="min-w-0">
-        <div className="text-[13px] text-foreground">
-          AI is preparing your treatment plan…
-        </div>
-        <div className="mt-0.5 text-[11px] leading-[1.5] text-muted-foreground">
-          Linked tasks were just attached during onboarding; the plan should appear in a moment.
-          You can keep navigating — we'll refresh this view automatically.
-        </div>
       </div>
     </div>
   );

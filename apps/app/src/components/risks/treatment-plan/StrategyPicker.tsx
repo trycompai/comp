@@ -18,12 +18,12 @@ interface StrategyOption {
   Icon: CarbonIconType;
 }
 
-// All four ISO/NIST risk treatment strategies are first-class options.
-// Order: Mitigate (the workhorse + default), Accept, Transfer, Avoid.
-// Per ENG-221, Avoid must be selectable from the start — not gated behind
-// "only show if already chosen" — so users can pick it as a deliberate
-// strategy (e.g. discontinuing a high-risk feature).
-const STRATEGY_OPTIONS: StrategyOption[] = [
+// Mitigate first (default + the workhorse). Accept and Transfer follow.
+// Avoid is intentionally not offered as a new selection — too rarely used in
+// SaaS GRC programs to be worth the cognitive load. Existing risks already
+// set to `avoid` still render the option (see `LEGACY_AVOID_OPTION` below)
+// so users aren't surprised by missing state.
+const PRIMARY_OPTIONS: StrategyOption[] = [
   {
     value: RiskTreatmentType.mitigate,
     label: 'Mitigate',
@@ -42,13 +42,14 @@ const STRATEGY_OPTIONS: StrategyOption[] = [
     blurb: 'Shift the impact (e.g. cyber insurance, contractual indemnity).',
     Icon: ArrowsHorizontal,
   },
-  {
-    value: RiskTreatmentType.avoid,
-    label: 'Avoid',
-    blurb: 'Eliminate the activity that causes the risk. Residual pins to the minimum once mitigation is in place.',
-    Icon: CloseOutline,
-  },
 ];
+
+const LEGACY_AVOID_OPTION: StrategyOption = {
+  value: RiskTreatmentType.avoid,
+  label: 'Avoid',
+  blurb: 'Eliminate the activity that causes the risk. Residual pins to the minimum.',
+  Icon: CloseOutline,
+};
 
 interface StrategyPickerProps {
   value: RiskTreatmentType;
@@ -57,7 +58,10 @@ interface StrategyPickerProps {
 }
 
 export function StrategyPicker({ value, onChange, disabled }: StrategyPickerProps) {
-  const options = STRATEGY_OPTIONS;
+  const options =
+    value === RiskTreatmentType.avoid
+      ? [...PRIMARY_OPTIONS, LEGACY_AVOID_OPTION]
+      : PRIMARY_OPTIONS;
 
   return (
     <div

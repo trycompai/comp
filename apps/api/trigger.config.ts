@@ -1,4 +1,5 @@
 import { defineConfig } from '@trigger.dev/sdk';
+import { caBundleExtension } from './caBundleExtension';
 import { prismaExtension } from './customPrismaExtension';
 import { emailExtension } from './emailExtension';
 import { integrationPlatformExtension } from './integrationPlatformExtension';
@@ -10,6 +11,7 @@ export default defineConfig({
   maxDuration: 300, // 5 minutes
   build: {
     extensions: [
+      caBundleExtension(),
       prismaExtension({
         version: '7.6.0',
         dbPackageVersion: '^2.0.0',
