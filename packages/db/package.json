@@ -36,6 +36,7 @@
     },
     "files": [
         "dist",
+        "certs",
         "README.md",
         "INTEGRATION_GUIDE.md"
     ],
