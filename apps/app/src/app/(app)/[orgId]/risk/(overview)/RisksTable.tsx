@@ -625,8 +625,8 @@ export const RisksTable = ({
                     </button>
                   </TableHead>
                   <TableHead>SEVERITY</TableHead>
-                  <TableHead>INHERENT</TableHead>
-                  <TableHead>CURRENT</TableHead>
+                  <TableHead>INHERENT RISK</TableHead>
+                  <TableHead>CURRENT RISK</TableHead>
                   <TableHead>STATUS</TableHead>
                   <TableHead>OWNER</TableHead>
                   <TableHead>
