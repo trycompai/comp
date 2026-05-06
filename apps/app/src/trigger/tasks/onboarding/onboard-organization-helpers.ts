@@ -670,11 +670,11 @@ ${formatCitationsBlock(citations)}`;
     schema: sentencesSchema,
   });
 
-  const treatmentStrategy =
-    typeof vendor.treatmentStrategy === 'string' ? vendor.treatmentStrategy : 'mitigate';
-
+  // See createRiskMitigationComment — pin the prose label to 'mitigate'
+  // since the saved strategy is forced to mitigate by
+  // `applyMitigationPlanFields` below.
   const finalText = combineSentencesWithCitations({
-    treatmentStrategy,
+    treatmentStrategy: 'mitigate',
     sentences: result.object.sentences,
     citations,
     linkedTotals: {
@@ -1006,12 +1006,18 @@ export async function createRiskMitigationComment(
     gapHint: GAP_HINT_BY_RISK_CATEGORY[risk.category] ?? 'general',
   });
 
+  // The AI mitigation generator always produces a *mitigation* plan, and
+  // `applyMitigationPlanFields` below forces the saved strategy to
+  // 'mitigate'. Pin the prompt + prose label to 'mitigate' too so the
+  // generated text isn't labeled with the row's previous strategy
+  // (e.g. "Treatment plan (accept)" stored under strategy=mitigate).
+  const PLAN_STRATEGY = 'mitigate';
   const userPrompt = `Risk: ${risk.title}
 Description: ${risk.description}
 Category: ${risk.category}
 Department: ${risk.department ?? 'unspecified'}
 Residual: likelihood=${risk.residualLikelihood}, impact=${risk.residualImpact}
-Treatment strategy: ${risk.treatmentStrategy}
+Treatment strategy: ${PLAN_STRATEGY}
 
 Citations (write one sentence per item, in order):
 ${formatCitationsBlock(citations)}`;
@@ -1024,7 +1030,7 @@ ${formatCitationsBlock(citations)}`;
   });
 
   const finalText = combineSentencesWithCitations({
-    treatmentStrategy: risk.treatmentStrategy,
+    treatmentStrategy: PLAN_STRATEGY,
     sentences: result.object.sentences,
     citations,
     linkedTotals: {
