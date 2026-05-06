@@ -76,6 +76,9 @@ const config: NextConfig = {
     webpackMemoryOptimizations: true,
   },
   outputFileTracingRoot: workspaceRoot,
+  outputFileTracingIncludes: {
+    '/**/*': ['../../packages/db/certs/rds-global-bundle.pem'],
+  },
 
   // Reduce memory usage during production build
   productionBrowserSourceMaps: false,
