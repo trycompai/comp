@@ -624,6 +624,7 @@ export const RisksTable = ({
                       {getSortIcon('title')}
                     </button>
                   </TableHead>
+                  <TableHead>INHERENT</TableHead>
                   <TableHead>SEVERITY</TableHead>
                   <TableHead>RISK SCORE</TableHead>
                   <TableHead>STATUS</TableHead>
@@ -658,15 +659,20 @@ export const RisksTable = ({
                         </HStack>
                       </TableCell>
                       {(() => {
-                        // Both columns describe the *current* treatment-aware
-                        // state. SEVERITY shows the qualitative level as
-                        // plain text (no chip — the colored chip is on RISK
-                        // SCORE, so a single visual signal carries the band
-                        // and the second column adds the precise number).
+                        // Three score columns paint the before-vs-now picture:
+                        //   INHERENT  = the raw score before treatment, fixed.
+                        //   SEVERITY  = current treatment-aware level (text).
+                        //   RISK SCORE = current treatment-aware score (chip).
+                        // SEVERITY is plain text and RISK SCORE carries the
+                        // colored chip so we don't double-paint the band.
+                        const inherentScore = getRiskScore(risk.likelihood, risk.impact).score;
                         const score = currentSeverityScore(risk);
                         const level = getRiskLevelFromScore(score);
                         return (
                           <>
+                            <TableCell>
+                              <RiskScoreBadge score={inherentScore} />
+                            </TableCell>
                             <TableCell>
                               <Text>{LEVEL_LABEL[level]}</Text>
                             </TableCell>
