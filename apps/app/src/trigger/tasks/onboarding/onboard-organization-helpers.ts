@@ -954,8 +954,16 @@ export async function triggerVendorResearch(vendors: any[]): Promise<void> {
     }
 
     try {
+      // `scoreContext` chains the research run into score-vendor-risk
+      // when GlobalVendors finishes saving, so the per-org Vendor row
+      // gets a posture-grounded score instead of the conservative
+      // (possible × moderate) default the extraction pass set.
       const handle = await tasks.trigger<typeof researchVendor>('research-vendor', {
         website,
+        scoreContext:
+          vendor.id && vendor.organizationId
+            ? { vendorId: vendor.id, organizationId: vendor.organizationId }
+            : undefined,
       });
       logger.info(`Triggered research for vendor ${vendor.name} with handle ${handle.id}`);
     } catch (error) {
