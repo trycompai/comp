@@ -34,6 +34,14 @@ export interface BackgroundCheckBillingStatus {
     currentPeriodEnd: string | null;
     cancelAtPeriodEnd: boolean;
   }>;
+  // Aggregated wallet credit balance per product. The API guarantees
+  // one entry per product key; an absent product means zero balance.
+  // Optional on the client so older payloads (and existing test
+  // fixtures) keep typechecking.
+  creditBalances?: Array<{
+    productKey: 'pentest' | 'background_check';
+    balance: number;
+  }>;
   invoices?: BillingInvoice[];
 }
 

@@ -1,83 +1,119 @@
 [
   {
-    "id": "fnd_t_evidence_issue_01",
+    "id": "fnd_t_69cd108ab21a08f93e582cba",
     "category": "evidence_issue",
-    "title": "Missing organization context",
-    "content": "The uploaded evidence does not clearly show the Organization Name or URL. Please provide a screenshot showing the context.",
-    "order": 1,
-    "createdAt": "2025-01-26 00:00:00.000",
-    "updatedAt": "2025-01-26 00:00:00.000"
-  },
-  {
-    "id": "fnd_t_evidence_issue_02",
-    "category": "evidence_issue",
-    "title": "Evidence outside audit window",
-    "content": "The evidence date falls outside the currently active audit observation window. Please ensure evidence is relevant to the current period.",
-    "order": 2,
-    "createdAt": "2025-01-26 00:00:00.000",
-    "updatedAt": "2025-01-26 00:00:00.000"
-  },
-  {
-    "id": "fnd_t_evidence_issue_03",
-    "category": "evidence_issue",
-    "title": "Unreadable or corrupted file",
-    "content": "The auditor could not open or read the file due to low resolution or corruption. Please re-upload a clear copy.",
-    "order": 3,
-    "createdAt": "2025-01-26 00:00:00.000",
-    "updatedAt": "2025-01-26 00:00:00.000"
-  },
-  {
-    "id": "fnd_t_further_evidence_01",
-    "category": "further_evidence",
-    "title": "Statement of intent - need proof of operation",
-    "content": "The attached document(s) is a statement of intent. This control requires Evidence of Operation (proof of action). Please upload specific logs, screenshots, system configs, or tickets that demonstrate this policy is currently being enforced.",
-    "order": 1,
-    "createdAt": "2025-01-26 00:00:00.000",
-    "updatedAt": "2025-01-26 00:00:00.000"
-  },
-  {
-    "id": "fnd_t_further_evidence_02",
-    "category": "further_evidence",
-    "title": "No evidence attached",
-    "content": "This task was marked as 'Done', but no file was attached. For an external audit, every completed task requires proof of execution. Please upload the specific evidence (screenshot, PDF, or export) and re-submit.",
-    "order": 2,
-    "createdAt": "2025-01-26 00:00:00.000",
-    "updatedAt": "2025-01-26 00:00:00.000"
-  },
-  {
-    "id": "fnd_t_task_specific_01",
-    "category": "task_specific",
-    "title": "Pull Request samples required",
+    "title": "Pull Requests Samples",
     "content": "Please upload a sample of recently merged Pull Requests (5 examples). The evidence must clearly show: 1. The Author, 2. The Approver (must be different from the author), and 3. The Build/Test Status checks.",
+    "order": 0,
+    "createdAt": "2026-04-01 12:33:13.504",
+    "updatedAt": "2026-04-01 12:33:13.504"
+  },
+  {
+    "id": "fnd_t_69d4f4c983e48b8f30dd2287",
+    "category": "evidence_issue",
+    "title": "Missing evidence – general",
+    "content": "The evidence provided does not currently demonstrate that this control requirement has been met. Please provide documentation, screenshots, records, or reports that show the control is implemented and operating.",
+    "order": 0,
+    "createdAt": "2026-04-07 12:12:56.833",
+    "updatedAt": "2026-04-07 12:12:56.833"
+  },
+  {
+    "id": "fnd_t_69d4f4dab76e1864fa09c55a",
+    "category": "evidence_issue",
+    "title": "Evidence referenced but not included",
+    "content": "The submission references supporting documentation, but the referenced evidence is not included. Please upload the referenced materials for review.",
+    "order": 0,
+    "createdAt": "2026-04-07 12:13:14.348",
+    "updatedAt": "2026-04-07 12:13:14.348"
+  },
+  {
+    "id": "fnd_t_69d4f512d67eb0ae06f32d58",
+    "category": "evidence_issue",
+    "title": "Insufficient detail",
+    "content": "The current evidence does not provide enough detail to confirm the control design or operation. Please provide additional supporting information, such as expanded screenshots, system settings, further logs, or procedure details.",
+    "order": 0,
+    "createdAt": "2026-04-07 12:14:10.343",
+    "updatedAt": "2026-04-07 12:14:10.343"
+  },
+  {
+    "id": "fnd_t_69d4fb57f1f2214c213701fd",
+    "category": "evidence_issue",
+    "title": "Further evidence samples required",
+    "content": "The evidence provided is not currently sufficient to complete testing for this requirement. Please provide further evidence samples covering 5 samples or 10% of the organization’s headcount, whichever is greater. The samples should be representative of the relevant population for the period under review and include sufficient supporting documentation to allow assessment of control operation.",
+    "order": 0,
+    "createdAt": "2026-04-07 12:40:55.039",
+    "updatedAt": "2026-04-07 12:40:55.039"
+  },
+  {
+    "id": "fnd_t_69d4fb8390ce6bd186c87492",
+    "category": "evidence_issue",
+    "title": "One or more devices are failing",
+    "content": "The evidence provided indicates that one or more devices are currently in a failing or non-compliant state. Please review the affected devices and provide updated evidence.",
+    "order": 0,
+    "createdAt": "2026-04-07 12:41:38.763",
+    "updatedAt": "2026-04-07 12:41:38.763"
+  },
+  {
+    "id": "fnd_t_69d4fbae4fb6a512f01c618d",
+    "category": "evidence_issue",
+    "title": "One or more employees show incomplete training",
+    "content": "The evidence provided indicates that one or more employees have not completed the required training in full. ",
+    "order": 0,
+    "createdAt": "2026-04-07 12:42:21.501",
+    "updatedAt": "2026-04-07 12:42:21.501"
+  },
+  {
+    "id": "fnd_t_69d4fc1c1113cd6a2cac9f49",
+    "category": "evidence_issue",
+    "title": "Evidence unclear or illegible",
+    "content": "The submitted evidence is unclear and cannot be reliably assessed. Please provide a clearer version of the document or screenshot.",
+    "order": 0,
+    "createdAt": "2026-04-07 12:44:12.123",
+    "updatedAt": "2026-04-07 12:44:12.123"
+  },
+  {
+    "id": "fnd_t_69d4fc31b0b632da4020f804",
+    "category": "evidence_issue",
+    "title": "Evidence not current",
+    "content": "The evidence provided appears outdated and does not demonstrate current operation of the control. Please provide more recent evidence for the applicable review period.",
+    "order": 0,
+    "createdAt": "2026-04-07 12:44:32.547",
+    "updatedAt": "2026-04-07 12:44:32.547"
+  },
+  {
+    "id": "fnd_t_69d4fd25ff4d03074ecaa0ee",
+    "category": "evidence_issue",
+    "title": "Backup restoration evidence required",
+    "content": "Backup restoration evidence is incomplete. A report has been provided, but supporting evidence such as a recording or screenshots of the restore test is also required.",
+    "order": 0,
+    "createdAt": "2026-04-07 12:48:36.879",
+    "updatedAt": "2026-04-07 12:48:36.879"
+  },
+  {
+    "id": "fnd_t_69df9438c85454008e652d2b",
+    "category": "evidence_issue",
+    "title": "Logging evidence missing",
+    "content": "The evidence provided does not currently demonstrate logging for the relevant systems or activities. Please provide supporting evidence such as configuration screenshots, sample log output, or other records showing that logging is enabled and available for review.",
+    "order": 0,
+    "createdAt": "2026-04-15 13:35:51.809",
+    "updatedAt": "2026-04-15 13:35:51.809"
+  },
+  {
+    "id": "fnd_t_69df94702fc4ed39f0d07bf2",
+    "category": "evidence_issue",
+    "title": "No evidence provided",
+    "content": "No evidence has been provided for this requirement. Please upload supporting evidence for review.",
     "order": 1,
-    "createdAt": "2025-01-26 00:00:00.000",
-    "updatedAt": "2025-01-26 00:00:00.000"
+    "createdAt": "2026-04-15 13:36:48.345",
+    "updatedAt": "2026-04-15 13:37:02.287"
   },
   {
-    "id": "fnd_t_task_specific_02",
-    "category": "task_specific",
-    "title": "Alert screenshot required",
-    "content": "Please upload a screenshot of an actual triggered alert (e.g., a notification from PagerDuty, Slack, or Email). The evidence must clearly show: 1. The Alert Name, 2. The Timestamp, and 3. The Severity Level.",
-    "order": 2,
-    "createdAt": "2025-01-26 00:00:00.000",
-    "updatedAt": "2025-01-26 00:00:00.000"
-  },
-  {
-    "id": "fnd_t_task_specific_03",
-    "category": "task_specific",
-    "title": "System logs sample required",
-    "content": "Please provide a sample of System or Infrastructure Logs (e.g., AWS CloudWatch, Google Cloud Logging, Datadog). The sample must clearly show headers including: Timestamp, Event/Error Message, and Source/User.",
-    "order": 3,
-    "createdAt": "2025-01-26 00:00:00.000",
-    "updatedAt": "2025-01-26 00:00:00.000"
-  },
-  {
-    "id": "fnd_t_na_incorrect_01",
-    "category": "na_incorrect",
-    "title": "Control required for compliance",
-    "content": "This control is required for SOC 2 compliance, regardless of company size. However, the evidence can be scaled down to fit your stage. Please see the guidance documentation for acceptable lightweight evidence.",
-    "order": 1,
-    "createdAt": "2025-01-26 00:00:00.000",
-    "updatedAt": "2025-01-26 00:00:00.000"
+    "id": "fnd_t_69df940c52b31c4abed9a9e0",
+    "category": "evidence_issue",
+    "title": "Alerts evidence missing",
+    "content": "The submission does not clearly demonstrate how security or operational alerts are generated, triaged, and resolved. Please provide monitoring workflow documentation or alert records.",
+    "order": 0,
+    "createdAt": "2026-04-15 13:35:07.725",
+    "updatedAt": "2026-04-15 13:37:46.984"
   }
 ]

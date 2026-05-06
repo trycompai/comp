@@ -27,24 +27,6 @@
     "visible": false
   },
   {
-    "id": "frk_683f3102f9ae801df35d47b4",
-    "name": "Test",
-    "description": "Test",
-    "version": "1.0.0",
-    "createdAt": "2025-06-03 17:29:37.982",
-    "updatedAt": "2025-06-03 17:30:09.651",
-    "visible": false
-  },
-  {
-    "id": "frk_683f31582b71fc8d9253ad89",
-    "name": "Test2",
-    "description": "Test2",
-    "version": "1.0.0",
-    "createdAt": "2025-06-03 17:31:04.290",
-    "updatedAt": "2025-06-03 17:31:07.399",
-    "visible": false
-  },
-  {
     "id": "frk_681ebae2f29f0ab08eb802ec",
     "name": "SOC 2",
     "description": "SOC 2",
@@ -52,15 +34,6 @@
     "createdAt": "2025-05-14 19:20:44.920",
     "updatedAt": "2025-06-04 19:22:37.620",
     "visible": false
-  },
-  {
-    "id": "frk_683f377429b8408d1c85f9bd",
-    "name": "SOC 2",
-    "description": "SOC 2 Type I & II",
-    "version": "1",
-    "createdAt": "2025-06-03 17:57:07.496",
-    "updatedAt": "2025-06-04 21:53:53.548",
-    "visible": true
   },
   {
     "id": "frk_681ecc34e85064efdbb76993",
@@ -87,6 +60,24 @@
     "version": "1.0.0",
     "createdAt": "2025-05-14 19:20:44.920",
     "updatedAt": "2025-09-01 16:51:38.334",
+    "visible": true
+  },
+  {
+    "id": "frk_69d7e513446cc6e0376edf60",
+    "name": "SOC 2 Type 1",
+    "description": "SOC 2 Type 1 - Verify your security controls for a point-in-time",
+    "version": "1.0.0",
+    "createdAt": "2026-04-09 17:42:42.625",
+    "updatedAt": "2026-04-09 17:42:42.625",
+    "visible": false
+  },
+  {
+    "id": "frk_683f377429b8408d1c85f9bd",
+    "name": "SOC 2",
+    "description": "SOC 2 Type I & II",
+    "version": "1",
+    "createdAt": "2025-06-03 17:57:07.496",
+    "updatedAt": "2026-04-09 20:08:16.014",
     "visible": true
   },
   {
@@ -126,6 +117,15 @@
     "visible": false
   },
   {
+    "id": "frk_69dcfb280b550e7ee231f312",
+    "name": "PCI DSS Level 1",
+    "description": "Level 1 On-Site Assessment (ROC)",
+    "version": "1.0.0",
+    "createdAt": "2026-04-13 14:18:15.949",
+    "updatedAt": "2026-04-13 21:12:52.530",
+    "visible": true
+  },
+  {
     "id": "frk_68e135d0212b3b6cd39ceb94",
     "name": "NEN 7510",
     "description": "Dutch information security standard for the healthcare",
@@ -133,6 +133,33 @@
     "createdAt": "2025-10-04 14:57:19.666",
     "updatedAt": "2025-10-07 20:22:47.176",
     "visible": true
+  },
+  {
+    "id": "frk_69efd433584ba436ae00d413",
+    "name": "CCPA",
+    "description": "California Consumer Privacy Act",
+    "version": "1.0.0",
+    "createdAt": "2026-04-27 21:25:07.381",
+    "updatedAt": "2026-04-28 14:21:21.191",
+    "visible": true
+  },
+  {
+    "id": "frk_69e9187a649152cdc715f1ad",
+    "name": "GDPR (Test)",
+    "description": "Test framework derived from the gdpr.eu checklist. Not for production compliance use.",
+    "version": "1.0.0",
+    "createdAt": "2026-04-22 18:50:33.852",
+    "updatedAt": "2026-04-22 20:20:30.197",
+    "visible": false
+  },
+  {
+    "id": "frk_69eb9ca15a99e0ad3107b033",
+    "name": "Cloud Cybersecurity Controls",
+    "description": "National Cybersecurity Authority ",
+    "version": "1.0.0",
+    "createdAt": "2026-04-24 16:38:57.256",
+    "updatedAt": "2026-04-24 16:39:18.628",
+    "visible": false
   },
   {
     "id": "frk_6924c5bf34ae90945076508e",
@@ -151,5 +178,32 @@
     "createdAt": "2025-11-19 20:30:44.681",
     "updatedAt": "2025-11-24 21:22:25.364",
     "visible": true
+  },
+  {
+    "id": "frk_69bd4011a22723c759ca8e46",
+    "name": "PCI Level 1",
+    "description": "PCI Level 1 On-Site Assessment ",
+    "version": "1.0.0",
+    "createdAt": "2026-03-20 12:39:44.973",
+    "updatedAt": "2026-03-20 12:39:44.973",
+    "visible": false
+  },
+  {
+    "id": "frk_69bd93a9a68c82ba0998008d",
+    "name": "SOC 2 v2",
+    "description": "March 2026",
+    "version": "1.0.0",
+    "createdAt": "2026-03-20 18:36:24.991",
+    "updatedAt": "2026-03-20 18:36:24.991",
+    "visible": false
+  },
+  {
+    "id": "frk_69f3d7821751ec330608f200",
+    "name": "PIPEDA",
+    "description": "Personal Information Protection and Electronic Documents Act ",
+    "version": "1.0.0",
+    "createdAt": "2026-04-30 22:28:17.577",
+    "updatedAt": "2026-05-01 00:14:14.759",
+    "visible": false
   }
 ]

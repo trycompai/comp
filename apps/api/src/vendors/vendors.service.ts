@@ -11,6 +11,7 @@ import { tasks } from '@trigger.dev/sdk';
 import { Prisma } from '@db';
 import type { TriggerVendorRiskAssessmentVendorDto } from './dto/trigger-vendor-risk-assessment.dto';
 import { resolveTaskCreatorAndAssignee } from '../trigger/vendor/vendor-risk-assessment/assignee';
+import { resolveStrategyDescriptionUpdate } from '../risks/strategy-descriptions';
 
 const normalizeWebsite = (
   website: string | null | undefined,
@@ -106,6 +107,11 @@ export class VendorsService {
               },
             },
           },
+          // Linked task statuses are needed by the vendors table to compute
+          // the current (interpolated) severity score so the residual badge
+          // reflects treatment progress, not just the static residual
+          // probability/impact. Mirrors the risks service.
+          tasks: { select: { id: true, status: true } },
         },
       });
 
@@ -140,6 +146,14 @@ export class VendorsService {
                   image: true,
                 },
               },
+            },
+          },
+          tasks: {
+            select: {
+              id: true,
+              title: true,
+              status: true,
+              controls: { select: { id: true, name: true } },
             },
           },
         },
@@ -626,9 +640,16 @@ export class VendorsService {
         );
       }
 
+      // Keep per-strategy descriptions independent across treatment
+      // strategies — see `apps/api/src/risks/strategy-descriptions.ts`.
+      const resolvedStrategyFields = resolveStrategyDescriptionUpdate(
+        existing,
+        updateVendorDto,
+      );
+
       const updatedVendor = await db.vendor.update({
         where: { id },
-        data: updateVendorDto,
+        data: { ...updateVendorDto, ...resolvedStrategyFields },
       });
 
       this.logger.log(`Updated vendor: ${updatedVendor.name} (${id})`);

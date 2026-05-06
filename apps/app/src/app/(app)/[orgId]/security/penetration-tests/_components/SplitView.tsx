@@ -6,13 +6,16 @@ import type {
   PentestIssue,
   PentestRun,
 } from '@/lib/security/penetration-tests-client';
-import { getBillingSkuProductKey } from '@trycompai/billing';
 import { cn } from '@trycompai/design-system/cn';
 import { ArrowLeft } from '@trycompai/design-system/icons';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { toast } from 'sonner';
 import useSWR from 'swr';
+import {
+  getPentestAllowance,
+  type PentestBillingStatusInput,
+} from './pentest-allowance';
 import {
   useCreatePenetrationTest,
   usePenetrationTest,
@@ -26,15 +29,6 @@ import { EmptyState } from './EmptyState';
 import { OverviewPane } from './OverviewPane';
 import { RunList } from './RunList';
 import './pentest-tokens.css';
-
-interface BillingStatus {
-  subscriptions?: Array<{
-    skuKey: string;
-    status: string;
-    includedQuantity: number;
-    usedQuantity: number;
-  }>;
-}
 
 interface SplitViewProps {
   orgId: string;
@@ -61,28 +55,20 @@ export function SplitView({ orgId, selectedRunId, mode = 'default' }: SplitViewP
   const { issues } = usePenetrationTestIssues(orgId, selectedRunId ?? '', selectedRun?.status);
   const { events } = usePenetrationTestEvents(orgId, selectedRunId ?? '', selectedRun?.status);
   const { createReport, isCreating } = useCreatePenetrationTest(orgId);
-  const { data: billingStatus } = useSWR<BillingStatus>(
+  const { data: billingStatus } = useSWR<PentestBillingStatusInput>(
     orgId ? (['/v1/billing/status', orgId] as const) : null,
     async ([endpoint, organizationId]: readonly [string, string]) => {
-      const response = await api.get<BillingStatus>(endpoint, organizationId);
+      const response = await api.get<PentestBillingStatusInput>(
+        endpoint,
+        organizationId,
+      );
       if (response.status < 200 || response.status >= 300) {
         throw new Error(response.error ?? 'Failed to load billing status');
       }
       return response.data ?? {};
     },
   );
-  const pentestSubscription = (billingStatus?.subscriptions ?? []).find(
-    (subscription) =>
-      getBillingSkuProductKey(subscription.skuKey) === 'pentest' &&
-      (subscription.status === 'active' || subscription.status === 'trialing'),
-  );
-  const subscriptionBalance = pentestSubscription
-    ? Math.max(pentestSubscription.includedQuantity - pentestSubscription.usedQuantity, 0)
-    : null;
-  // Keep `balance` undefined while billing is loading so the page does not
-  // flash a blocked state before subscription allowance is known.
-  const balance = subscriptionBalance ?? (billingStatus === undefined ? undefined : 0);
-  const planRequired = subscriptionBalance === null && billingStatus !== undefined;
+  const { balance, planRequired } = getPentestAllowance(billingStatus);
   const quotaLabel = 'Plan';
 
   const showEmptyState =

@@ -48,7 +48,9 @@ Only return a certification when the page explicitly names a framework as curren
 - links.privacy_policy_url, links.terms_of_service_url, links.security_page_url, links.soc2_report_url — return only when confirmed; otherwise empty.
 - certifications — may be an empty array. Do NOT pad it.
 - security_assessment — one paragraph summarising what you observed. If the trust portal was SPA-only and you could not read content, say so explicitly ("Trust portal at <url> appears to be a JavaScript SPA; deep-scrape will extract content").
-- risk_level — your best estimate among critical/high/medium/low/very_low based on what you found.
+- likelihood — probability of a security incident originating from or involving this vendor. Score INDEPENDENTLY of impact based on adversary motivation, exposure surface, and the kind of data handled. Choose exactly one of: very_unlikely, unlikely, possible, likely, very_likely.
+- impact — blast radius if this vendor is compromised. Score INDEPENDENTLY of likelihood based on regulatory exposure, customer-data sensitivity, and operational criticality. Choose exactly one of: insignificant, minor, moderate, major, severe.
+- rationale — two to four sentences justifying BOTH scores. Name the data handled and the adversary motivation. Do not merge the two dimensions into a single "risk" verdict.
 
 Focus on ${vendorWebsite} and its trust/security/compliance paths. Only cite URLs on ${vendorDomain}, its subdomains, or a recognised third-party portal hosting this vendor's trust page.`;
 }

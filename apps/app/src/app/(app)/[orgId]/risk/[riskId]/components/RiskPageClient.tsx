@@ -5,16 +5,16 @@ import { RecentAuditLogs } from '@/components/RecentAuditLogs';
 import { InherentRiskChart } from '@/components/risks/charts/InherentRiskChart';
 import { ResidualRiskChart } from '@/components/risks/charts/ResidualRiskChart';
 import { RiskOverview } from '@/components/risks/risk-overview';
+import { TreatmentPlanTab } from '@/components/risks/treatment-plan/TreatmentPlanTab';
 import { TaskItems } from '@/components/task-items/TaskItems';
 import { useAuditLogs } from '@/hooks/use-audit-logs';
-import { useRisk, useRiskActions, type RiskResponse } from '@/hooks/use-risks';
+import { useRisk, useRiskActions, type RiskLinkedTask, type RiskResponse } from '@/hooks/use-risks';
 import { useTaskItems, useTaskItemActions } from '@/hooks/use-task-items';
 import { usePermissions } from '@/hooks/use-permissions';
 import { CommentEntityType } from '@db';
-import type { Member, Risk, User } from '@db';
+import type { Member, Risk, RiskTreatmentType, User } from '@db';
 import {
   Breadcrumb,
-  Button,
   HStack,
   Stack,
   Tabs,
@@ -24,8 +24,8 @@ import {
   Text,
 } from '@trycompai/design-system';
 import Link from 'next/link';
-import { useSearchParams } from 'next/navigation';
-import { useMemo, useState } from 'react';
+import { useQueryState } from 'nuqs';
+import { useCallback, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 
 type RiskWithAssignee = Risk & {
@@ -62,10 +62,25 @@ export function RiskPageClient({
   taskItemId,
 }: RiskPageClientProps) {
   const { risk: swrRisk, mutate: mutateRisk } = useRisk(riskId);
-  const { updateRisk, regenerateMitigation } = useRiskActions();
+  const {
+    updateRisk,
+    regenerateMitigation,
+    suggestRiskLinks,
+    applyRiskLinks,
+    fetchActiveRiskAutoLinkRun,
+    discardRiskAutoLinkRun,
+  } = useRiskActions();
   const { hasPermission } = usePermissions();
-  const searchParams = useSearchParams();
-  const defaultTab = searchParams.get('tab') || 'overview';
+  // URL-backed tab state — bookmarks the active tab in `?tab=...` so a
+  // refresh keeps the same view. Control the value so we can conditionally
+  // render only the active panel below: base-ui's Tabs.Panel keeps the
+  // outgoing panel mounted at full opacity for the duration of the
+  // incoming panel's `fade-in-0 duration-200` animation, which produces
+  // a visible "both panels stacked" flash. Mounting only the active panel
+  // sidesteps the transition window entirely.
+  const [activeTab, setActiveTab] = useQueryState('tab', {
+    defaultValue: 'overview',
+  });
   const isViewingTask = Boolean(taskItemId);
   const canUpdate = hasPermission('risk', 'update');
   const canUpdateTask = hasPermission('task', 'update');
@@ -82,6 +97,10 @@ export function RiskPageClient({
   const [isEditingDescription, setIsEditingDescription] = useState(false);
   const [descriptionValue, setDescriptionValue] = useState('');
   const [isRegenerating, setIsRegenerating] = useState(false);
+  const [regenRun, setRegenRun] = useState<{
+    runId: string;
+    publicAccessToken: string;
+  } | null>(null);
 
   const risk = useMemo(() => {
     if (swrRisk) return normalizeRisk(swrRisk);
@@ -141,19 +160,79 @@ export function RiskPageClient({
     }
   };
 
+  const handleUpdateStrategy = async (strategy: RiskTreatmentType) => {
+    await updateRisk(riskId, { treatmentStrategy: strategy });
+    mutateRisk();
+  };
+
+  const handleUpdateDescription = async (description: string) => {
+    await updateRisk(riskId, { treatmentStrategyDescription: description });
+    mutateRisk();
+  };
+
   const handleRegenerateMitigation = async () => {
     setIsRegenerating(true);
-    toast.info('Regenerating risk mitigation...');
     try {
-      await regenerateMitigation(riskId);
-      toast.success('Regeneration triggered. This may take a moment.');
-      mutateRisk();
+      const handle = await regenerateMitigation(riskId);
+      // Hand control to the realtime subscription in DescriptionEditor.
+      // It calls back via onRegenSettled when the run terminates, at which
+      // point we clear isRegenerating + refetch the risk for the new prose.
+      setRegenRun(handle);
     } catch {
       toast.error('Failed to trigger mitigation regeneration');
-    } finally {
       setIsRegenerating(false);
     }
   };
+
+  const handleRegenSettled = useCallback(
+    (result: { success: boolean; reason?: string }) => {
+      setRegenRun(null);
+      setIsRegenerating(false);
+      if (result.success) {
+        toast.success('Treatment plan regenerated.');
+        void mutateRisk();
+      } else {
+        toast.error(result.reason ?? 'Failed to regenerate the treatment plan.');
+      }
+    },
+    [mutateRisk],
+  );
+
+  const handleSuggest = async () => {
+    return suggestRiskLinks(riskId);
+  };
+
+  const handleApply = async (params: { taskIds: string[]; replace: boolean }) => {
+    await applyRiskLinks(riskId, params);
+    await mutateRisk();
+  };
+
+  const handleUnlinkTask = async (taskId: string) => {
+    try {
+      const res = await fetch(`/api/risks/${riskId}/tasks/${taskId}`, {
+        method: 'DELETE',
+        credentials: 'include',
+      });
+      if (!res.ok) throw new Error('unlink failed');
+      await mutateRisk();
+    } catch {
+      toast.error('Failed to unlink task');
+    }
+  };
+
+  // Memoize so AutoLinkSuggestions' resume effect (which depends on the
+  // callback identity) doesn't re-fire on every parent re-render.
+  const handleResumeAutoLink = useCallback(
+    () => fetchActiveRiskAutoLinkRun(riskId),
+    [fetchActiveRiskAutoLinkRun, riskId],
+  );
+
+  const handleDiscardAutoLinkRun = useCallback(
+    async () => {
+      await discardRiskAutoLinkRun(riskId);
+    },
+    [discardRiskAutoLinkRun, riskId],
+  );
 
   return (
     <>
@@ -236,10 +315,11 @@ export function RiskPageClient({
       {isViewingTask ? (
         <TaskItems entityId={riskId} entityType="risk"  />
       ) : (
-        <Tabs defaultValue={defaultTab}>
+        <Tabs value={activeTab} onValueChange={(next) => void setActiveTab(String(next))}>
           <Stack gap="lg">
             <TabsList variant="underline">
               <TabsTrigger value="overview">Overview</TabsTrigger>
+              <TabsTrigger value="treatment-plan">Treatment Plan</TabsTrigger>
               <TabsTrigger value="risk-matrix">Risk Matrix</TabsTrigger>
               <TabsTrigger value="tasks">Tasks</TabsTrigger>
               <TabsTrigger value="comments">Comments</TabsTrigger>
@@ -247,52 +327,91 @@ export function RiskPageClient({
               <TabsTrigger value="settings">Settings</TabsTrigger>
             </TabsList>
 
-            <TabsContent value="overview">
-              <RiskOverview risk={risk} assignees={assignees} />
-            </TabsContent>
+            {activeTab === 'overview' && (
+              <TabsContent value="overview">
+                <RiskOverview risk={risk} assignees={assignees} />
+              </TabsContent>
+            )}
 
-            <TabsContent value="risk-matrix">
-              <Stack gap="lg">
-                <InherentRiskChart risk={risk} />
-                <ResidualRiskChart risk={risk} />
-              </Stack>
-            </TabsContent>
+            {activeTab === 'treatment-plan' && (
+              <TabsContent value="treatment-plan">
+                <TreatmentPlanTab
+                  orgId={orgId}
+                  entity={{
+                    id: risk.id,
+                    inherentLikelihood: risk.likelihood,
+                    inherentImpact: risk.impact,
+                    residualLikelihood: risk.residualLikelihood,
+                    residualImpact: risk.residualImpact,
+                    treatmentStrategy: risk.treatmentStrategy,
+                    treatmentStrategyDescription: risk.treatmentStrategyDescription,
+                    strategyDescriptions:
+                      (swrRisk as { strategyDescriptions?: unknown } | undefined)
+                        ?.strategyDescriptions as
+                        | Partial<Record<RiskTreatmentType, string>>
+                        | null
+                        | undefined ?? null,
+                    // Fall through to the server-rendered initial risk so the
+                    // Linked Work column doesn't blink empty between SSR and
+                    // the first SWR resolution. (Cubic finding #28.)
+                    tasks:
+                      swrRisk?.tasks ??
+                      (initialRisk as unknown as { tasks?: RiskLinkedTask[] })
+                        .tasks ??
+                      [],
+                  }}
+                  canUpdate={canUpdate}
+                  onUpdateStrategy={handleUpdateStrategy}
+                  onUpdateDescription={handleUpdateDescription}
+                  onRegenerate={handleRegenerateMitigation}
+                  regenerating={isRegenerating}
+                  onSuggest={handleSuggest}
+                  onApply={handleApply}
+                  // Gate the unlink affordance behind risk:update so the trash
+                  // button doesn't render for read-only users. The Next API
+                  // route enforces the same check server-side as defense in
+                  // depth. (Cubic finding on PR #2671.)
+                  onUnlinkTask={canUpdate ? handleUnlinkTask : undefined}
+                  onResumeAutoLink={handleResumeAutoLink}
+                  onDiscardAutoLinkRun={handleDiscardAutoLinkRun}
+                  regenRun={regenRun}
+                  onRegenSettled={handleRegenSettled}
+                />
+              </TabsContent>
+            )}
 
-            <TabsContent value="tasks">
-              <TaskItems entityId={riskId} entityType="risk"  />
-            </TabsContent>
+            {activeTab === 'risk-matrix' && (
+              <TabsContent value="risk-matrix">
+                <Stack gap="lg">
+                  <InherentRiskChart risk={risk} />
+                  <ResidualRiskChart risk={risk} />
+                </Stack>
+              </TabsContent>
+            )}
 
-            <TabsContent value="comments">
-              <Comments entityId={riskId} entityType={CommentEntityType.risk} organizationId={orgId} />
-            </TabsContent>
+            {activeTab === 'tasks' && (
+              <TabsContent value="tasks">
+                <TaskItems entityId={riskId} entityType="risk" />
+              </TabsContent>
+            )}
 
-            <TabsContent value="activity">
-              <RiskActivitySection riskId={riskId} taskItemIds={taskItemsData?.data?.data?.map((t) => t.id) || []} />
-            </TabsContent>
+            {activeTab === 'comments' && (
+              <TabsContent value="comments">
+                <Comments entityId={riskId} entityType={CommentEntityType.risk} organizationId={orgId} />
+              </TabsContent>
+            )}
 
-            <TabsContent value="settings">
-              <Stack gap="lg">
-                {canUpdate && (
-                  <HStack justify="between" align="center">
-                    <Stack gap="none">
-                      <Text size="sm" weight="medium">Regenerate Risk Mitigation</Text>
-                      <Text size="xs" variant="muted">
-                        Generate a fresh mitigation comment for this risk using AI
-                      </Text>
-                    </Stack>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={handleRegenerateMitigation}
-                      disabled={isRegenerating}
-                      loading={isRegenerating}
-                    >
-                      {isRegenerating ? 'Regenerating...' : 'Regenerate'}
-                    </Button>
-                  </HStack>
-                )}
-              </Stack>
-            </TabsContent>
+            {activeTab === 'activity' && (
+              <TabsContent value="activity">
+                <RiskActivitySection riskId={riskId} taskItemIds={taskItemsData?.data?.data?.map((t) => t.id) || []} />
+              </TabsContent>
+            )}
+
+            {activeTab === 'settings' && (
+              <TabsContent value="settings">
+                <Text size="sm" variant="muted">No settings yet.</Text>
+              </TabsContent>
+            )}
           </Stack>
         </Tabs>
       )}

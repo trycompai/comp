@@ -17,7 +17,8 @@ import { VendorResearchBadges, VendorResearchLinks } from './VendorResearchSecti
 import { VendorResearchFeed } from './VendorResearchFeed';
 import { VendorInherentRiskChart } from './VendorInherentRiskChart';
 import { VendorResidualRiskChart } from './VendorResidualRiskChart';
-import type { Member, User, Vendor } from '@db';
+import { TreatmentPlanTab } from '@/components/risks/treatment-plan/TreatmentPlanTab';
+import type { Member, RiskTreatmentType, User, Vendor } from '@db';
 import { CommentEntityType } from '@db';
 import type { Prisma } from '@db';
 import { useRealtimeRun } from '@trigger.dev/react-hooks';
@@ -35,6 +36,7 @@ import {
 } from '@trycompai/design-system';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
+import { useQueryState } from 'nuqs';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 
@@ -75,11 +77,18 @@ export function VendorDetailTabs({
   isViewingTask,
 }: VendorDetailTabsProps) {
   const searchParams = useSearchParams();
-  const defaultTab = searchParams.get('tab') || 'overview';
   const taskItemId = searchParams.get('taskItemId');
 
   const { vendor: swrVendor, mutate: refreshVendor } = useVendor(vendorId);
-  const { updateVendor, triggerAssessment, regenerateMitigation } = useVendorActions();
+  const {
+    updateVendor,
+    triggerAssessment,
+    regenerateMitigation,
+    suggestVendorLinks,
+    applyVendorLinks,
+    fetchActiveVendorAutoLinkRun,
+    discardVendorAutoLinkRun,
+  } = useVendorActions();
   const { hasPermission } = usePermissions();
   const canUpdate = hasPermission('vendor', 'update');
   const canUpdateTask = hasPermission('task', 'update');
@@ -92,9 +101,20 @@ export function VendorDetailTabs({
   const [isEditingDescription, setIsEditingDescription] = useState(false);
   const [descriptionValue, setDescriptionValue] = useState('');
   const [isMitigationLoading, setIsMitigationLoading] = useState(false);
+  const [regenRun, setRegenRun] = useState<{
+    runId: string;
+    publicAccessToken: string;
+  } | null>(null);
   const [isAssessmentLoading, setIsAssessmentLoading] = useState(false);
   const [isRegenerating, setIsRegenerating] = useState(false);
-  const [activeTab, setActiveTab] = useState(defaultTab);
+  // URL-backed tab state — bookmarks the active tab in `?tab=...` so a
+  // refresh keeps the same view. Conditional rendering below mounts only
+  // the active panel, sidestepping base-ui's transition window where the
+  // outgoing panel stays at full opacity during the incoming fade-in
+  // (visible "both panels stacked" flash on tab switch).
+  const [activeTab, setActiveTab] = useQueryState('tab', {
+    defaultValue: 'overview',
+  });
 
   const { data: taskItemsData, mutate: refreshTaskItems } = useTaskItems(
     vendorId, 'vendor', 1, 50, 'createdAt', 'desc', {},
@@ -248,16 +268,73 @@ export function VendorDetailTabs({
 
   const handleRegenerateMitigation = async () => {
     setIsMitigationLoading(true);
-    toast.info('Regenerating vendor risk mitigation...');
     try {
-      await regenerateMitigation(vendorId);
-      toast.success('Mitigation regeneration triggered.');
-      refreshVendor();
+      const handle = await regenerateMitigation(vendorId);
+      setRegenRun(handle);
     } catch {
       toast.error('Failed to trigger mitigation regeneration');
-    } finally {
       setIsMitigationLoading(false);
     }
+  };
+
+  const handleRegenSettled = useCallback(
+    (result: { success: boolean; reason?: string }) => {
+      setRegenRun(null);
+      setIsMitigationLoading(false);
+      if (result.success) {
+        toast.success('Treatment plan regenerated.');
+        void refreshVendor();
+      } else {
+        toast.error(result.reason ?? 'Failed to regenerate the treatment plan.');
+      }
+    },
+    [refreshVendor],
+  );
+
+  const handleUpdateStrategy = async (strategy: RiskTreatmentType) => {
+    await updateVendor(vendorId, { treatmentStrategy: strategy });
+    refreshVendor();
+  };
+
+  const handleSuggest = async () => {
+    return suggestVendorLinks(vendorId);
+  };
+
+  const handleApply = async (params: { taskIds: string[]; replace: boolean }) => {
+    await applyVendorLinks(vendorId, params);
+    await refreshVendor();
+  };
+
+  const handleUnlinkTask = async (taskId: string) => {
+    try {
+      const res = await fetch(`/api/vendors/${vendorId}/tasks/${taskId}`, {
+        method: 'DELETE',
+        credentials: 'include',
+      });
+      if (!res.ok) throw new Error('unlink failed');
+      await refreshVendor();
+    } catch {
+      toast.error('Failed to unlink task');
+    }
+  };
+
+  // Memoize so AutoLinkSuggestions' resume effect (which depends on the
+  // callback identity) doesn't re-fire on every parent re-render.
+  const handleResumeAutoLink = useCallback(
+    () => fetchActiveVendorAutoLinkRun(vendorId),
+    [fetchActiveVendorAutoLinkRun, vendorId],
+  );
+
+  const handleDiscardAutoLinkRun = useCallback(
+    async () => {
+      await discardVendorAutoLinkRun(vendorId);
+    },
+    [discardVendorAutoLinkRun, vendorId],
+  );
+
+  const handleUpdateDescription = async (description: string) => {
+    await updateVendor(vendorId, { treatmentStrategyDescription: description });
+    refreshVendor();
   };
 
   const handleRegenerateAssessment = async () => {
@@ -268,7 +345,7 @@ export function VendorDetailTabs({
       toast.success('Assessment regeneration triggered.');
       if (result.runId && result.publicAccessToken) {
         setIsRegenerating(true);
-        setActiveTab('risk-assessment');
+        void setActiveTab('risk-assessment');
         handleAssessmentTriggered(result.runId, result.publicAccessToken);
       }
       refreshVendor();
@@ -402,10 +479,11 @@ export function VendorDetailTabs({
       {isViewingTask ? (
         <TaskItems entityId={vendorId} entityType="vendor" />
       ) : (
-        <Tabs value={activeTab} onValueChange={setActiveTab}>
+        <Tabs value={activeTab} onValueChange={(next) => void setActiveTab(String(next))}>
           <Stack gap="lg">
             <TabsList variant="underline">
               <TabsTrigger value="overview">Overview</TabsTrigger>
+              <TabsTrigger value="treatment-plan">Treatment Plan</TabsTrigger>
               <TabsTrigger value="risk-matrix">Risk Matrix</TabsTrigger>
               <TabsTrigger value="risk-assessment">Risk Assessment</TabsTrigger>
               <TabsTrigger value="tasks">Tasks</TabsTrigger>
@@ -414,17 +492,61 @@ export function VendorDetailTabs({
               <TabsTrigger value="settings">Settings</TabsTrigger>
             </TabsList>
 
-            <TabsContent value="overview">
-              <SecondaryFields vendor={resolvedVendor} assignees={assignees} onUpdate={refreshVendor} />
-            </TabsContent>
+            {activeTab === 'overview' && (
+              <TabsContent value="overview">
+                <SecondaryFields vendor={resolvedVendor} assignees={assignees} onUpdate={refreshVendor} />
+              </TabsContent>
+            )}
 
+            {activeTab === 'treatment-plan' && (
+            <TabsContent value="treatment-plan">
+              <TreatmentPlanTab
+                orgId={orgId}
+                entity={{
+                  id: resolvedVendor.id,
+                  inherentLikelihood: resolvedVendor.inherentProbability,
+                  inherentImpact: resolvedVendor.inherentImpact,
+                  residualLikelihood: resolvedVendor.residualProbability,
+                  residualImpact: resolvedVendor.residualImpact,
+                  treatmentStrategy: resolvedVendor.treatmentStrategy,
+                  treatmentStrategyDescription: resolvedVendor.treatmentStrategyDescription,
+                  strategyDescriptions:
+                    (resolvedVendor as { strategyDescriptions?: unknown })
+                      .strategyDescriptions as
+                      | Partial<Record<RiskTreatmentType, string>>
+                      | null
+                      | undefined ?? null,
+                  tasks: swrVendor?.tasks ?? [],
+                }}
+                canUpdate={canUpdate}
+                onUpdateStrategy={handleUpdateStrategy}
+                onUpdateDescription={handleUpdateDescription}
+                onRegenerate={handleRegenerateMitigation}
+                regenerating={isMitigationLoading}
+                onSuggest={handleSuggest}
+                onApply={handleApply}
+                // Gate the unlink affordance behind vendor:update so it
+                // doesn't render for read-only users. The Next API route
+                // also enforces this check server-side.
+                onUnlinkTask={canUpdate ? handleUnlinkTask : undefined}
+                onResumeAutoLink={handleResumeAutoLink}
+                onDiscardAutoLinkRun={handleDiscardAutoLinkRun}
+                regenRun={regenRun}
+                onRegenSettled={handleRegenSettled}
+              />
+            </TabsContent>
+            )}
+
+            {activeTab === 'risk-matrix' && (
             <TabsContent value="risk-matrix">
               <Stack gap="lg">
                 <VendorInherentRiskChart vendor={resolvedVendor} />
                 <VendorResidualRiskChart vendor={resolvedVendor} />
               </Stack>
             </TabsContent>
+            )}
 
+            {activeTab === 'risk-assessment' && (
             <TabsContent value="risk-assessment">
               <Stack gap="md">
                 <AnimatePresence mode="wait">
@@ -472,64 +594,51 @@ export function VendorDetailTabs({
                 </AnimatePresence>
               </Stack>
             </TabsContent>
+            )}
 
-            <TabsContent value="tasks">
-              <TaskItems entityId={vendorId} entityType="vendor" />
-            </TabsContent>
+            {activeTab === 'tasks' && (
+              <TabsContent value="tasks">
+                <TaskItems entityId={vendorId} entityType="vendor" />
+              </TabsContent>
+            )}
 
-            <TabsContent value="comments">
-              <Comments entityId={vendorId} entityType={CommentEntityType.vendor} organizationId={orgId} />
-            </TabsContent>
+            {activeTab === 'comments' && (
+              <TabsContent value="comments">
+                <Comments entityId={vendorId} entityType={CommentEntityType.vendor} organizationId={orgId} />
+              </TabsContent>
+            )}
 
-            <TabsContent value="activity">
-              <VendorActivitySection vendorId={vendorId} taskItemIds={taskItemsData?.data?.data?.map((t) => t.id) || []} />
-            </TabsContent>
+            {activeTab === 'activity' && (
+              <TabsContent value="activity">
+                <VendorActivitySection vendorId={vendorId} taskItemIds={taskItemsData?.data?.data?.map((t) => t.id) || []} />
+              </TabsContent>
+            )}
 
+            {activeTab === 'settings' && (
             <TabsContent value="settings">
               <Stack gap="lg">
                 {canUpdate && (
-                  <>
-                    <HStack justify="between" align="center">
-                      <Stack gap="none">
-                        <Text size="sm" weight="medium">Regenerate Risk Assessment</Text>
-                        <Text size="xs" variant="muted">
-                          Generate or regenerate the AI risk assessment for this vendor
-                        </Text>
-                      </Stack>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={handleRegenerateAssessment}
-                        disabled={isAssessmentLoading}
-                        loading={isAssessmentLoading}
-                      >
-                        Regenerate Assessment
-                      </Button>
-                    </HStack>
-
-                    <div className="border-t" />
-
-                    <HStack justify="between" align="center">
-                      <Stack gap="none">
-                        <Text size="sm" weight="medium">Regenerate Mitigation</Text>
-                        <Text size="xs" variant="muted">
-                          Generate a fresh risk mitigation comment for this vendor
-                        </Text>
-                      </Stack>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={handleRegenerateMitigation}
-                        disabled={isMitigationLoading}
-                        loading={isMitigationLoading}
-                      >
-                        Regenerate Mitigation
-                      </Button>
-                    </HStack>
-                  </>
+                  <HStack justify="between" align="center">
+                    <Stack gap="none">
+                      <Text size="sm" weight="medium">Regenerate Risk Assessment</Text>
+                      <Text size="xs" variant="muted">
+                        Generate or regenerate the AI risk assessment for this vendor
+                      </Text>
+                    </Stack>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleRegenerateAssessment}
+                      disabled={isAssessmentLoading}
+                      loading={isAssessmentLoading}
+                    >
+                      Regenerate Assessment
+                    </Button>
+                  </HStack>
                 )}
               </Stack>
             </TabsContent>
+            )}
           </Stack>
         </Tabs>
       )}

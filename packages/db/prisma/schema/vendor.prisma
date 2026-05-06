@@ -8,6 +8,12 @@ model Vendor {
   inherentImpact      Impact         @default(insignificant)
   residualProbability Likelihood     @default(very_unlikely)
   residualImpact      Impact         @default(insignificant)
+  // See Risk.treatmentStrategy — default mitigate so AI plans land in
+  // the right slot.
+  treatmentStrategy            RiskTreatmentType @default(mitigate)
+  treatmentStrategyDescription String?
+  // See `Risk.strategyDescriptions`.
+  strategyDescriptions         Json?
   website             String?
   isSubProcessor      Boolean        @default(false)
 
@@ -16,6 +22,14 @@ model Vendor {
   showOnTrustPortal Boolean @default(false)
   trustPortalOrder  Int?
   complianceBadges  Json? // Array of { type: 'soc2' | 'iso27001' | etc, verified: boolean }
+
+  // Active auto-link suggestion run (trigger.dev). Same semantics as
+  // Risk.autoLinkRunId — lets the UI resume an in-flight scan on reload.
+  autoLinkRunId        String?
+  autoLinkRunStartedAt DateTime?
+
+  // See Task.embeddingHash — skip-if-unchanged guard for re-embedding.
+  embeddingHash String?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

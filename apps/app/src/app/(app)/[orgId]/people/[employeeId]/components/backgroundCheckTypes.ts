@@ -43,6 +43,13 @@ export interface BackgroundCheckBillingStatus {
     currentPeriodEnd: string | null;
     cancelAtPeriodEnd: boolean;
   }>;
+  // Wallet credits per product. Optional because older API responses
+  // and existing test fixtures don't set it; treated as zero balance
+  // when absent.
+  creditBalances?: Array<{
+    productKey: 'pentest' | 'background_check';
+    balance: number;
+  }>;
 }
 
 export function isCompletedBackgroundCheck(status: BackgroundCheckStatus): boolean {

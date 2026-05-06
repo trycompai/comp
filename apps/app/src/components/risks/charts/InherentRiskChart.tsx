@@ -19,6 +19,7 @@ export function InherentRiskChart({ risk }: InherentRiskChartProps) {
     <RiskMatrixChart
       title={'Inherent Risk'}
       description={'Initial risk level before any controls are applied'}
+      titleInfo="Inherent risk = the raw risk before any controls or mitigations. Used as the starting point for residual computation."
       riskId={risk.id}
       activeLikelihood={risk.likelihood}
       activeImpact={risk.impact}

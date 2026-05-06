@@ -54,11 +54,31 @@ export function getBackgroundChecksRemaining({
 }: {
   billingStatus: BackgroundCheckBillingStatus | undefined;
 }): number | null {
-  const subscription = (billingStatus?.subscriptions ?? []).find(
+  if (!billingStatus) return null;
+  const subscription = (billingStatus.subscriptions ?? []).find(
     (item) =>
       getBillingSkuProductKey(item.skuKey) === 'background_check' &&
       (item.status === 'active' || item.status === 'trialing'),
   );
-  if (!subscription) return null;
-  return Math.max(subscription.includedQuantity - subscription.usedQuantity, 0);
+  // Wallet credits granted by platform admins. The backend's
+  // `BillingEntitlementsService.tryConsumeIncludedUsageForProduct`
+  // falls back to this wallet when no active subscription exists or
+  // the subscription's included usage is exhausted, so we mirror that
+  // logic here — otherwise the wizard paywalls users whose admin-
+  // granted credits would actually be consumed by the create call.
+  const walletBalance =
+    (billingStatus.creditBalances ?? []).find(
+      (entry) => entry.productKey === 'background_check',
+    )?.balance ?? 0;
+  if (!subscription) {
+    // Returning `null` keeps the existing "no allowance — go pick a
+    // plan" wizard path. We only have a positive allowance if there
+    // are wallet credits to consume.
+    return walletBalance > 0 ? walletBalance : null;
+  }
+  const subscriptionRemaining = Math.max(
+    subscription.includedQuantity - subscription.usedQuantity,
+    0,
+  );
+  return subscriptionRemaining + walletBalance;
 }

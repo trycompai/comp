@@ -197,10 +197,17 @@ describe('PermissionGuard', () => {
 
       const result = await guard.canActivate(context);
       expect(result).toBe(true);
+      // The body MUST include `permission: undefined` explicitly — zod 4 in
+      // better-auth's hasPermission schema requires both discriminated-union
+      // keys to be present, and treats omitted-vs-undefined as different.
+      // Without the explicit undefined, every cookie-authenticated request
+      // 403s with "Unable to verify permissions". Pin this in the test so
+      // a future refactor that drops the field gets caught.
       expect(mockHasPermission).toHaveBeenCalledWith({
         headers: expect.any(Headers),
         body: {
           permissions: { control: ['delete'] },
+          permission: undefined,
         },
       });
     });

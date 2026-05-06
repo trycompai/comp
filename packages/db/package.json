@@ -1,7 +1,7 @@
 {
     "name": "@trycompai/db",
     "description": "Database package with Prisma client and schema for Comp AI",
-    "version": "2.0.3",
+    "version": "2.1.1",
     "dependencies": {
         "@prisma/adapter-pg": "7.6.0",
         "@prisma/client": "7.6.0",
@@ -21,9 +21,14 @@
             "default": "./dist/index.js"
         },
         "./postinstall": {
-            "import": "./dist/postinstall.js",
             "types": "./src/postinstall.ts",
+            "import": "./dist/postinstall.js",
             "default": "./dist/postinstall.js"
+        },
+        "./ssl-config": {
+            "types": "./dist/ssl-config.d.ts",
+            "import": "./dist/ssl-config.js",
+            "default": "./dist/ssl-config.js"
         }
     },
     "bin": {
@@ -31,6 +36,7 @@
     },
     "files": [
         "dist",
+        "certs",
         "README.md",
         "INTEGRATION_GUIDE.md"
     ],

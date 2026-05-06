@@ -43,6 +43,12 @@ model Task {
   // Sync-driven archive — see Control.archivedAt.
   archivedAt DateTime?
 
+  // Skip-if-unchanged guard for the auto-linkage embedding pipeline. Holds
+  // a hash of (text + model + dims + department) — when re-running linkage
+  // we skip OpenAI embed + Upstash upsert for any task whose hash matches.
+  // Null means "never embedded" so the next linkage run will embed.
+  embeddingHash String?
+
   @@index([organizationId, archivedAt])
 }
 

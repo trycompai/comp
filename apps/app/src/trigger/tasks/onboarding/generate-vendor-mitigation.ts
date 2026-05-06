@@ -23,7 +23,7 @@ export const generateVendorMitigation = task({
   run: async (payload: {
     organizationId: string;
     vendorId: string;
-    authorId: string;
+    authorId?: string;
     policies: PolicyContext[];
   }) => {
     const { organizationId, vendorId, authorId, policies } = payload;
@@ -43,21 +43,26 @@ export const generateVendorMitigation = task({
     const metadataHandle = metadata.root ?? metadata.parent ?? metadata;
     metadataHandle.set(`vendor_${vendorId}_status`, 'processing');
 
-    await createVendorRiskComment(vendor, policies, organizationId, authorId);
+    await createVendorRiskComment(vendor, policies, organizationId, authorId ?? '');
 
-    // Mark vendor as assessed and assign to author (unless they're a platform admin,
-    // since platform admins are hidden from the assignee UI and would block future updates)
-    const author = await db.member.findFirst({
-      where: { id: authorId, organizationId },
-      include: { user: { select: { role: true } } },
-    });
-    const assigneeId = author?.user.role === 'admin' ? null : authorId;
+    // Mark vendor as assessed. Only reassign if we have an author;
+    // platform admins are hidden from the assignee UI, so skip them too.
+    let assigneeUpdate: { assigneeId: string | null } | Record<string, never> = {};
+    if (authorId) {
+      const author = await db.member.findFirst({
+        where: { id: authorId, organizationId },
+        include: { user: { select: { role: true } } },
+      });
+      assigneeUpdate = {
+        assigneeId: author?.user.role === 'admin' ? null : authorId,
+      };
+    }
 
     await db.vendor.update({
       where: { id: vendor.id, organizationId },
       data: {
         status: VendorStatus.assessed,
-        assigneeId,
+        ...assigneeUpdate,
       },
     });
 
@@ -105,9 +110,8 @@ export const generateVendorMitigationsForOrg = task({
 
     if (!author) {
       logger.warn(
-        `No onboarding author found for org ${organizationId}; skipping vendor mitigations`,
+        `No onboarding author found for org ${organizationId}; treatment descriptions will generate but vendors will not be reassigned`,
       );
-      return;
     }
 
     const policies = policyRows.map((p) => ({ name: p.name, description: p.description }));
@@ -117,7 +121,7 @@ export const generateVendorMitigationsForOrg = task({
         payload: {
           organizationId,
           vendorId: v.id,
-          authorId: author.id,
+          authorId: author?.id,
           policies,
         },
         concurrencyKey: `${organizationId}:${v.id}`,
