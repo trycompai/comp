@@ -11,7 +11,11 @@ model Risk {
   residualLikelihood           Likelihood        @default(very_unlikely)
   residualImpact               Impact            @default(insignificant)
   treatmentStrategyDescription String?
-  treatmentStrategy            RiskTreatmentType @default(accept)
+  // Mitigate is the workhorse — the AI mitigation generator writes a
+  // mitigation plan for every new risk, and the plan is stored under
+  // the active strategy. Defaulting to anything other than mitigate
+  // would put the AI plan under the wrong slot.
+  treatmentStrategy            RiskTreatmentType @default(mitigate)
   // Per-strategy text store. When the user switches strategies, the current
   // `treatmentStrategyDescription` is moved into this map under the OLD
   // strategy key, and the NEW strategy's saved value is loaded back into the
