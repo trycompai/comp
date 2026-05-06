@@ -26,7 +26,7 @@
             "default": "./dist/postinstall.js"
         },
         "./ssl-config": {
-            "types": "./src/ssl-config.ts",
+            "types": "./dist/ssl-config.d.ts",
             "import": "./dist/ssl-config.js",
             "default": "./dist/ssl-config.js"
         }
