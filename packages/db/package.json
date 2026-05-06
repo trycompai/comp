@@ -12,8 +12,7 @@
         "@types/node": "^24.2.0",
         "prisma": "7.6.0",
         "ts-node": "^10.9.2",
-        "typescript": "^5.9.2",
-        "vitest": "^4.1.5"
+        "typescript": "^5.9.2"
     },
     "exports": {
         ".": {

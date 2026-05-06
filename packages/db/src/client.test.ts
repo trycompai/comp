@@ -1,43 +1,51 @@
-import { describe, expect, it, beforeEach, afterEach, vi } from 'vitest';
+import { describe, it, expect } from 'bun:test';
+import { resolveSslConfig } from './ssl-config';
 
-const ORIGINAL_ENV = { ...process.env };
-
-beforeEach(() => {
-  vi.resetModules();
-  process.env = { ...ORIGINAL_ENV };
-  delete process.env.NODE_EXTRA_CA_CERTS;
-  delete process.env.PRISMA_ALLOW_INSECURE_TLS;
-});
-
-afterEach(() => {
-  process.env = { ...ORIGINAL_ENV };
-});
-
-describe('Prisma client TLS gating', () => {
-  it('throws on remote URL with no opt-in', async () => {
-    process.env.DATABASE_URL = 'postgresql://u:p@db.prod.example.com:5432/x';
-    await expect(import('./client')).rejects.toThrow(/Refusing to connect/);
+describe('resolveSslConfig', () => {
+  it('returns undefined for localhost', () => {
+    expect(resolveSslConfig('postgresql://u:p@localhost:5432/x', {})).toBeUndefined();
   });
 
-  it('does not throw on localhost URL', async () => {
-    process.env.DATABASE_URL = 'postgresql://u:p@localhost:5432/x';
-    await expect(import('./client')).resolves.toBeDefined();
+  it('returns undefined for 127.0.0.1', () => {
+    expect(resolveSslConfig('postgresql://u:p@127.0.0.1:5432/x', {})).toBeUndefined();
   });
 
-  it('does not throw on 127.0.0.1', async () => {
-    process.env.DATABASE_URL = 'postgresql://u:p@127.0.0.1:5432/x';
-    await expect(import('./client')).resolves.toBeDefined();
+  it('returns undefined for ::1', () => {
+    expect(resolveSslConfig('postgresql://u:p@[::1]:5432/x', {})).toBeUndefined();
   });
 
-  it('does not throw on remote URL with PRISMA_ALLOW_INSECURE_TLS=1', async () => {
-    process.env.DATABASE_URL = 'postgresql://u:p@db.prod.example.com:5432/x';
-    process.env.PRISMA_ALLOW_INSECURE_TLS = '1';
-    await expect(import('./client')).resolves.toBeDefined();
+  it('returns true (verified) when NODE_EXTRA_CA_CERTS is set', () => {
+    expect(
+      resolveSslConfig('postgresql://u:p@db.prod.example.com:5432/x', {
+        NODE_EXTRA_CA_CERTS: '/etc/ssl/certs/ca-certificates.crt',
+      }),
+    ).toBe(true);
   });
 
-  it('does not throw on remote URL with NODE_EXTRA_CA_CERTS set', async () => {
-    process.env.DATABASE_URL = 'postgresql://u:p@db.prod.example.com:5432/x';
-    process.env.NODE_EXTRA_CA_CERTS = '/etc/ssl/certs/ca-certificates.crt';
-    await expect(import('./client')).resolves.toBeDefined();
+  it('returns rejectUnauthorized:false when PRISMA_ALLOW_INSECURE_TLS=1', () => {
+    expect(
+      resolveSslConfig('postgresql://u:p@db.prod.example.com:5432/x', {
+        PRISMA_ALLOW_INSECURE_TLS: '1',
+      }),
+    ).toEqual({ rejectUnauthorized: false });
+  });
+
+  it('throws on remote URL with neither env var set', () => {
+    expect(() => resolveSslConfig('postgresql://u:p@db.prod.example.com:5432/x', {})).toThrow(
+      /Refusing to connect/,
+    );
+  });
+
+  it('treats malformed URLs as remote (defensive)', () => {
+    expect(() => resolveSslConfig('not-a-valid-url', {})).toThrow(/Refusing to connect/);
+  });
+
+  it('prefers verified TLS over insecure opt-in when both are set', () => {
+    expect(
+      resolveSslConfig('postgresql://u:p@db.prod.example.com:5432/x', {
+        NODE_EXTRA_CA_CERTS: '/etc/ssl/certs/ca-certificates.crt',
+        PRISMA_ALLOW_INSECURE_TLS: '1',
+      }),
+    ).toBe(true);
   });
 });
