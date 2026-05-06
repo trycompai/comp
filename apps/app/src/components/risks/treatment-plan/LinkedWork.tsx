@@ -109,7 +109,10 @@ export function LinkedWork({ orgId, tasks, onUnlinkTask }: LinkedWorkProps) {
             No tasks linked. Link tasks from the Tasks tab to track mitigation progress.
           </p>
         ) : (
-          <ul className="flex flex-col">
+          // Cap the height so a long linked-task list doesn't stretch the
+          // Linked Work column past the Strategy / Treatment plan columns.
+          // Internal scroll keeps the visible list compact.
+          <ul className="flex max-h-80 flex-col overflow-y-auto pr-1">
             {tasks.map((t, i) => {
               const taskDone = isTaskDone(t.status);
               const isUnlinking = unlinking === t.id;
@@ -170,7 +173,8 @@ export function LinkedWork({ orgId, tasks, onUnlinkTask }: LinkedWorkProps) {
             No controls linked (derived from tasks).
           </p>
         ) : (
-          <ul className="flex flex-col">
+          // Same height cap as the Tasks list above.
+          <ul className="flex max-h-80 flex-col overflow-y-auto pr-1">
             {controls.map((c, i) => (
               <li
                 key={c.id}
