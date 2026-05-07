@@ -23,6 +23,10 @@ type RequirementDef = {
   description: string;
   frameworkId: string | null;
   customFrameworkId: string | null;
+  // Discriminator that survives the per-instance custom case (where both
+  // frameworkId and customFrameworkId are null on the def). Used by callers
+  // to decide which RequirementMap FK column to filter on.
+  kind: 'platform' | 'custom';
 };
 
 @Injectable()
@@ -43,6 +47,7 @@ export class FrameworksService {
   }
 
   private async loadRequirementDefinitions(fi: {
+    id?: string;
     frameworkId: string | null;
     customFrameworkId: string | null;
     currentVersionId?: string | null;
@@ -59,9 +64,30 @@ export class FrameworksService {
         description: r.description,
         frameworkId: null,
         customFrameworkId: r.customFrameworkId,
+        kind: 'custom',
       }));
     }
     if (fi.frameworkId) {
+      // Per-instance custom requirements (org tacked an extra requirement
+      // onto a platform framework). Always merged in alongside the platform
+      // requirements, regardless of whether we read from the pinned version
+      // manifest or the editor table fallback.
+      const customRows = fi.id
+        ? await db.customRequirement.findMany({
+            where: { frameworkInstanceId: fi.id },
+            orderBy: { name: 'asc' },
+          })
+        : [];
+      const customDefs: RequirementDef[] = customRows.map((r) => ({
+        id: r.id,
+        name: r.name,
+        identifier: r.identifier,
+        description: r.description,
+        frameworkId: null,
+        customFrameworkId: null,
+        kind: 'custom',
+      }));
+
       // Prefer the pinned version's manifest so customers see exactly what
       // they're synced to — NOT the live template state which may have
       // additions not yet synced.
@@ -72,16 +98,20 @@ export class FrameworksService {
         });
         if (version) {
           const manifest = version.manifest as unknown as FrameworkManifest;
-          return [...manifest.requirements]
-            .sort((a, b) => a.name.localeCompare(b.name))
-            .map((r) => ({
+          const platformDefs: RequirementDef[] = [...manifest.requirements].map(
+            (r) => ({
               id: r.id,
               name: r.name,
               identifier: r.identifier,
               description: r.description ?? '',
               frameworkId: fi.frameworkId,
               customFrameworkId: null,
-            }));
+              kind: 'platform',
+            }),
+          );
+          return [...platformDefs, ...customDefs].sort((a, b) =>
+            a.name.localeCompare(b.name),
+          );
         }
       }
       // Fallback: instances with no pinned version (shouldn't happen post-backfill).
@@ -89,14 +119,18 @@ export class FrameworksService {
         where: { frameworkId: fi.frameworkId },
         orderBy: { name: 'asc' },
       });
-      return rows.map((r) => ({
+      const platformDefs: RequirementDef[] = rows.map((r) => ({
         id: r.id,
         name: r.name,
         identifier: r.identifier,
         description: r.description,
         frameworkId: r.frameworkId,
         customFrameworkId: null,
+        kind: 'platform',
       }));
+      return [...platformDefs, ...customDefs].sort((a, b) =>
+        a.name.localeCompare(b.name),
+      );
     }
     return [];
   }
@@ -340,24 +374,25 @@ export class FrameworksService {
   ) {
     const fi = await db.frameworkInstance.findUnique({
       where: { id: frameworkInstanceId, organizationId },
-      select: { customFrameworkId: true },
+      select: { id: true, customFrameworkId: true },
     });
     if (!fi) {
       throw new NotFoundException('Framework instance not found');
     }
-    if (!fi.customFrameworkId) {
-      throw new BadRequestException(
-        'Cannot add custom requirements to a platform framework',
-      );
-    }
 
+    // For an FI backed by a CustomFramework, the requirement attaches to the
+    // framework so it travels with any future instances. For a platform FI
+    // (e.g. ISO 27001) there's no per-org framework to hang it off, so it
+    // attaches to the instance directly. The DB CHECK enforces exactly one.
     return db.customRequirement.create({
       data: {
         name: input.name,
         identifier: input.identifier,
         description: input.description,
-        customFrameworkId: fi.customFrameworkId,
         organizationId,
+        ...(fi.customFrameworkId
+          ? { customFrameworkId: fi.customFrameworkId }
+          : { frameworkInstanceId: fi.id }),
       },
     });
   }
@@ -369,15 +404,10 @@ export class FrameworksService {
   ) {
     const fi = await db.frameworkInstance.findUnique({
       where: { id: frameworkInstanceId, organizationId },
-      select: { customFrameworkId: true },
+      select: { id: true, customFrameworkId: true },
     });
     if (!fi) {
       throw new NotFoundException('Framework instance not found');
-    }
-    if (!fi.customFrameworkId) {
-      throw new BadRequestException(
-        'Cannot link requirements into a platform framework',
-      );
     }
 
     // Sources may come from either the platform editor table or this org's
@@ -397,9 +427,13 @@ export class FrameworksService {
       throw new BadRequestException('No valid requirements to link');
     }
 
+    // Identifier dedupe is parent-scoped: a custom-framework instance dedupes
+    // against the framework, a platform instance dedupes against the instance.
     const existing = await db.customRequirement.findMany({
       where: {
-        customFrameworkId: fi.customFrameworkId,
+        ...(fi.customFrameworkId
+          ? { customFrameworkId: fi.customFrameworkId }
+          : { frameworkInstanceId: fi.id }),
         identifier: { in: sources.map((r) => r.identifier) },
       },
       select: { identifier: true },
@@ -412,13 +446,17 @@ export class FrameworksService {
       return { count: 0, requirements: [] };
     }
 
+    const parentFields = fi.customFrameworkId
+      ? { customFrameworkId: fi.customFrameworkId }
+      : { frameworkInstanceId: fi.id };
+
     const created = await db.customRequirement.createManyAndReturn({
       data: toCreate.map((r) => ({
         name: r.name,
         identifier: r.identifier,
         description: r.description,
-        customFrameworkId: fi.customFrameworkId!,
         organizationId,
+        ...parentFields,
       })),
     });
 
@@ -439,17 +477,25 @@ export class FrameworksService {
       throw new NotFoundException('Framework instance not found');
     }
 
+    // The requirement may be:
+    //   - a CustomRequirement on this FI's CustomFramework, or
+    //   - a CustomRequirement attached directly to this FI (per-instance), or
+    //   - a platform FrameworkEditorRequirement on this FI's framework.
     let requirementKind: 'platform' | 'custom';
-    if (fi.customFrameworkId) {
-      const req = await db.customRequirement.findFirst({
-        where: {
-          id: requirementKey,
-          customFrameworkId: fi.customFrameworkId,
-          organizationId,
-        },
-        select: { id: true },
-      });
-      if (!req) throw new NotFoundException('Requirement not found');
+    const customReq = await db.customRequirement.findFirst({
+      where: {
+        id: requirementKey,
+        organizationId,
+        OR: [
+          ...(fi.customFrameworkId
+            ? [{ customFrameworkId: fi.customFrameworkId }]
+            : []),
+          { frameworkInstanceId: fi.id },
+        ],
+      },
+      select: { id: true },
+    });
+    if (customReq) {
       requirementKind = 'custom';
     } else if (fi.frameworkId) {
       const req = await db.frameworkEditorRequirement.findFirst({
@@ -570,7 +616,7 @@ export class FrameworksService {
         where: {
           frameworkInstanceId,
           archivedAt: null,
-          ...(fi.customFrameworkId
+          ...(requirement.kind === 'custom'
             ? { customRequirementId: requirementKey }
             : { requirementId: requirementKey }),
         },
@@ -651,6 +697,68 @@ export class FrameworksService {
     });
 
     return { success: true };
+  }
+
+  async getAllUpdateStatuses(organizationId: string) {
+    const instances = await db.frameworkInstance.findMany({
+      where: { organizationId, frameworkId: { not: null } },
+      include: {
+        currentVersion: { select: { id: true, version: true } },
+        framework: { select: { id: true, name: true } },
+      },
+    });
+
+    if (instances.length === 0) return [];
+
+    const frameworkIds = [
+      ...new Set(instances.map((i) => i.frameworkId).filter(Boolean)),
+    ] as string[];
+
+    const latestVersions = await Promise.all(
+      frameworkIds.map((fid) =>
+        db.frameworkVersion.findFirst({
+          where: { frameworkId: fid },
+          orderBy: { publishedAt: 'desc' },
+          select: {
+            id: true,
+            version: true,
+            publishedAt: true,
+            releaseNotes: true,
+            frameworkId: true,
+          },
+        }),
+      ),
+    );
+
+    const latestByFramework = new Map(
+      latestVersions
+        .filter(Boolean)
+        .map((v) => [v!.frameworkId, v!]),
+    );
+
+    return instances
+      .map((instance) => {
+        const latest = latestByFramework.get(instance.frameworkId!) ?? null;
+        const updateAvailable =
+          latest !== null && latest.id !== instance.currentVersion?.id;
+        if (!updateAvailable) return null;
+
+        return {
+          frameworkInstanceId: instance.id,
+          frameworkName: instance.framework?.name ?? null,
+          currentVersion: instance.currentVersion,
+          latestVersion: latest
+            ? {
+                id: latest.id,
+                version: latest.version,
+                publishedAt: latest.publishedAt,
+                releaseNotes: latest.releaseNotes,
+              }
+            : null,
+          updateAvailable,
+        };
+      })
+      .filter(Boolean);
   }
 
   async getUpdateStatus(params: {

@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { apiClient } from '@/lib/api-client';
 import { mutate } from 'swr';
+import { FRAMEWORK_UPDATE_STATUSES_KEY } from './use-framework-update-statuses';
 
 interface RollbackResult {
   rollbackOperationId: string;
@@ -24,6 +25,7 @@ export function useFrameworkRollback(frameworkInstanceId: string) {
         mutate(`/v1/frameworks/${frameworkInstanceId}/update-preview`),
         mutate(`/v1/frameworks/${frameworkInstanceId}/sync-history`),
         mutate(`/v1/frameworks/${frameworkInstanceId}`),
+        mutate(FRAMEWORK_UPDATE_STATUSES_KEY),
       ]);
       return res.data?.data as RollbackResult;
     } finally {
