@@ -1,3 +1,23 @@
+# [3.45.0](https://github.com/trycompai/comp/compare/v3.44.2...v3.45.0) (2026-05-07)
+
+
+### Bug Fixes
+
+* address cubic review findings on onboarding PR ([#2783](https://github.com/trycompai/comp/issues/2783)) ([bd43e8a](https://github.com/trycompai/comp/commit/bd43e8a6857ce659d387a091c29ee1001f6fb293))
+* **onboarding:** handle zero-item steps in tracker ([#2785](https://github.com/trycompai/comp/issues/2785)) ([a196339](https://github.com/trycompai/comp/commit/a1963398fc55ee6ea01e86765975a1e2fc699a2c))
+* revert page-level hooks to useRealtimeRun to fix missing auth context ([#2780](https://github.com/trycompai/comp/issues/2780)) ([5a406f9](https://github.com/trycompai/comp/commit/5a406f93bf36ddb21ccbe62749b13c5f64129111))
+
+
+### Features
+
+* **frameworks:** remove is-framework-versioning-enabled feature flag ([#2781](https://github.com/trycompai/comp/issues/2781)) ([016f379](https://github.com/trycompai/comp/commit/016f37906e13f6c46e8b0924b609ed78eb2aba3b))
+
+
+### Performance Improvements
+
+* **build:** skip TS in next build, reduce sentry upload, add CI typecheck ([#2782](https://github.com/trycompai/comp/issues/2782)) ([26e1667](https://github.com/trycompai/comp/commit/26e1667c49823be6e0d5849fad79568cd8e77c8e))
+* **onboarding:** optimize onboarding pipeline from ~5min to ~2min ([b14db0b](https://github.com/trycompai/comp/commit/b14db0ba8cb0ea71c1c14520792ed7764214fcf8))
+
 ## [3.44.2](https://github.com/trycompai/comp/compare/v3.44.1...v3.44.2) (2026-05-06)
 
 
