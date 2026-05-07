@@ -525,6 +525,9 @@ export const OnboardingTracker = ({ onboarding }: { onboarding: Onboarding }) =>
             {/* Step progress - scrollable */}
             <div className="flex flex-col gap-2.5 flex-1 overflow-y-auto min-h-0 pr-1">
               {ONBOARDING_STEPS.map((step) => {
+                if (step.key === 'vendorMitigations' && !stepStatus.vendors) return null;
+                if (step.key === 'riskMitigations' && !stepStatus.risk) return null;
+
                 const isCurrent = currentStep?.key === step.key;
                 const isCompleted = stepStatus[step.key as keyof typeof stepStatus] === true;
 
@@ -666,15 +669,18 @@ export const OnboardingTracker = ({ onboarding }: { onboarding: Onboarding }) =>
                 }
 
                 // Simple step row (creation, linkage)
-                const count = step.key === 'vendors' ? uniqueVendorsCounts.total
+                const total = step.key === 'vendors' ? uniqueVendorsCounts.total
                   : step.key === 'risk' ? stepStatus.risksTotal
                   : null;
+                const created = step.key === 'vendors' && stepStatus.vendors ? uniqueVendorsCounts.total
+                  : step.key === 'risk' && stepStatus.risk ? stepStatus.risksTotal
+                  : 0;
                 return (
                   <div key={step.key} className="flex items-center gap-2">
                     {stepIcon}
                     <span className={`${stepTextClass} flex-1`}>{step.label}</span>
-                    {count !== null && count > 0 && (
-                      <span className="text-muted-foreground text-sm">{count}</span>
+                    {total !== null && total > 0 && (
+                      <span className="text-muted-foreground text-sm">{created}/{total}</span>
                     )}
                   </div>
                 );
