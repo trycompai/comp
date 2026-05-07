@@ -149,7 +149,7 @@ export function processContentArray(
       if (!isTrue) {
         skipDepth++;
       } else if (!hasOnlyMarker) {
-        const stripped = stripMarkerText(node, /\{\{#if\s+\w+\}\}/g);
+        const stripped = stripMarkerText(node, /\{\{#if\s+\w+\}\}/);
         const processed = processNode(stripped, vars, flags);
         if (processed) result.push(processed);
       }
@@ -160,7 +160,7 @@ export function processContentArray(
       if (skipDepth > 0) {
         skipDepth--;
       } else if (!hasOnlyMarker) {
-        const stripped = stripMarkerText(node, /\{\{\/if\}\}/g);
+        const stripped = stripMarkerText(node, /\{\{\/if\}\}/);
         const processed = processNode(stripped, vars, flags);
         if (processed) result.push(processed);
       }
