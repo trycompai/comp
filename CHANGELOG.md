@@ -1,3 +1,51 @@
+## [3.45.1](https://github.com/trycompai/comp/compare/v3.45.0...v3.45.1) (2026-05-07)
+
+
+### Bug Fixes
+
+* **onboarding:** prevent mitigation steps flashing complete ([#2786](https://github.com/trycompai/comp/issues/2786)) ([35e901a](https://github.com/trycompai/comp/commit/35e901a7df524d95136528a8fb976adfa0d748f5))
+* **onboarding:** tracker N/N format + reranker timeout ([#2788](https://github.com/trycompai/comp/issues/2788)) ([a60e4c5](https://github.com/trycompai/comp/commit/a60e4c537a4a524dd3bc3810f4d657d1a3bd99b2))
+
+# [3.45.0](https://github.com/trycompai/comp/compare/v3.44.2...v3.45.0) (2026-05-07)
+
+
+### Bug Fixes
+
+* address cubic review findings on onboarding PR ([#2783](https://github.com/trycompai/comp/issues/2783)) ([bd43e8a](https://github.com/trycompai/comp/commit/bd43e8a6857ce659d387a091c29ee1001f6fb293))
+* **onboarding:** handle zero-item steps in tracker ([#2785](https://github.com/trycompai/comp/issues/2785)) ([a196339](https://github.com/trycompai/comp/commit/a1963398fc55ee6ea01e86765975a1e2fc699a2c))
+* revert page-level hooks to useRealtimeRun to fix missing auth context ([#2780](https://github.com/trycompai/comp/issues/2780)) ([5a406f9](https://github.com/trycompai/comp/commit/5a406f93bf36ddb21ccbe62749b13c5f64129111))
+
+
+### Features
+
+* **frameworks:** remove is-framework-versioning-enabled feature flag ([#2781](https://github.com/trycompai/comp/issues/2781)) ([016f379](https://github.com/trycompai/comp/commit/016f37906e13f6c46e8b0924b609ed78eb2aba3b))
+
+
+### Performance Improvements
+
+* **build:** skip TS in next build, reduce sentry upload, add CI typecheck ([#2782](https://github.com/trycompai/comp/issues/2782)) ([26e1667](https://github.com/trycompai/comp/commit/26e1667c49823be6e0d5849fad79568cd8e77c8e))
+* **onboarding:** optimize onboarding pipeline from ~5min to ~2min ([b14db0b](https://github.com/trycompai/comp/commit/b14db0ba8cb0ea71c1c14520792ed7764214fcf8))
+
+## [3.44.2](https://github.com/trycompai/comp/compare/v3.44.1...v3.44.2) (2026-05-06)
+
+
+### Bug Fixes
+
+* **db:** drop inlined RDS CA bundle, use Node default trust store ([#2775](https://github.com/trycompai/comp/issues/2775)) ([cd5046c](https://github.com/trycompai/comp/commit/cd5046cec797afc2026c5a9b006d067f8c430e41)), closes [#2772](https://github.com/trycompai/comp/issues/2772)
+
+## [3.44.1](https://github.com/trycompai/comp/compare/v3.44.0...v3.44.1) (2026-05-06)
+
+
+### Bug Fixes
+
+* **db:** inline RDS CA bundle to bypass Turbopack ignoring outputFileTracingIncludes ([2694ece](https://github.com/trycompai/comp/commit/2694eced5a23e666b463f654c3cd22363b9c9bed))
+
+
+### Performance Improvements
+
+* **app:** pin Vercel SSR functions to iad1 ([ae20aaa](https://github.com/trycompai/comp/commit/ae20aaac161cd1766fac6aeacb6ee55fc717d74b))
+* **portal:** pin Vercel SSR functions to iad1 ([1a06cec](https://github.com/trycompai/comp/commit/1a06cec285864ec7d1a34535e9eec5e99c96122f))
+
 # [3.44.0](https://github.com/trycompai/comp/compare/v3.43.1...v3.44.0) (2026-05-06)
 
 

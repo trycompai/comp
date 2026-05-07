@@ -1,5 +1,5 @@
 import { VendorStatus, db } from '@db/server';
-import { logger, metadata, queue, tags, task } from '@trigger.dev/sdk';
+import { logger, metadata, queue, tags, task, tasks } from '@trigger.dev/sdk';
 import axios from 'axios';
 import {
   createVendorRiskComment,
@@ -116,7 +116,8 @@ export const generateVendorMitigationsForOrg = task({
 
     const policies = policyRows.map((p) => ({ name: p.name, description: p.description }));
 
-    await generateVendorMitigation.batchTrigger(
+    const batchResult = await tasks.batchTriggerAndWait<typeof generateVendorMitigation>(
+      'generate-vendor-mitigation',
       vendors.map((v) => ({
         payload: {
           organizationId,
@@ -124,9 +125,15 @@ export const generateVendorMitigationsForOrg = task({
           authorId: author?.id,
           policies,
         },
-        concurrencyKey: `${organizationId}:${v.id}`,
+        options: { concurrencyKey: `${organizationId}:${v.id}` },
       })),
     );
+    const failures = batchResult.runs.filter((r) => !r.ok);
+    if (failures.length > 0) {
+      logger.error(`${failures.length} vendor mitigation(s) failed`, {
+        failedRunIds: failures.map((r) => r.id),
+      });
+    }
 
     // Revalidate the parent vendors route after batch triggering
     try {

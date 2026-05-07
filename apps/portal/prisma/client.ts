@@ -24,28 +24,17 @@ function isLocalhostUrl(connectionString: string): boolean {
 function createPrismaClient(): PrismaClient {
   const rawUrl = process.env.DATABASE_URL!;
   const isLocalhost = isLocalhostUrl(rawUrl);
-  const hasCABundle = !!process.env.NODE_EXTRA_CA_CERTS;
   const allowInsecure = process.env.PRISMA_ALLOW_INSECURE_TLS === '1';
 
-  let ssl:
-    | undefined
-    | { checkServerIdentity: () => undefined }
-    | { rejectUnauthorized: false };
-  if (isLocalhost) {
-    ssl = undefined;
-  } else if (hasCABundle) {
-    // Verified TLS: rely on Node's TLS context (NODE_EXTRA_CA_CERTS adds the AWS
-    // RDS CA to the trust store). Skip hostname check because connections may
-    // traverse an AWS NLB whose hostname isn't in the RDS Proxy cert's SAN list.
-    // The chain check still rejects forged or wrong-CA certs.
-    ssl = { checkServerIdentity: () => undefined };
-  } else if (allowInsecure) {
-    ssl = { rejectUnauthorized: false };
-  } else {
-    throw new Error(
-      'Refusing to connect to a non-local Postgres without TLS verification. Set NODE_EXTRA_CA_CERTS to a CA bundle, or set PRISMA_ALLOW_INSECURE_TLS=1 if you intentionally want unverified TLS.',
-    );
-  }
+  // See apps/app/prisma/client.ts for the rationale on dropping `ssl.ca`
+  // (replaces rather than augments the trust store; broke RDS Proxy
+  // chain validation).
+  const ssl: undefined | { checkServerIdentity: () => undefined } | { rejectUnauthorized: false } =
+    isLocalhost
+      ? undefined
+      : allowInsecure
+        ? { rejectUnauthorized: false }
+        : { checkServerIdentity: () => undefined };
 
   const url = ssl !== undefined ? stripSslMode(rawUrl) : rawUrl;
   const adapter = new PrismaPg({ connectionString: url, ssl });
@@ -57,10 +46,6 @@ function createPrismaClient(): PrismaClient {
   });
 }
 
-// Lazy initialization. Importing this module does NOT construct a Prisma client
-// — that only happens on first property access on `db`. Critical so that
-// Next.js `next build` (which imports every route handler to analyze it) does
-// not trigger the strict TLS check at build time when no actual queries run.
 function getClient(): PrismaClient {
   if (!globalForPrisma.prisma) {
     globalForPrisma.prisma = createPrismaClient();
