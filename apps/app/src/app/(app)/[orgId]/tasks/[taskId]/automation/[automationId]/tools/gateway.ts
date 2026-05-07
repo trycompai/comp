@@ -1,6 +1,6 @@
 import { createGatewayProvider } from '@ai-sdk/gateway';
 import type { OpenAIResponsesProviderOptions } from '@ai-sdk/openai';
-import type { LanguageModelV2 } from '@ai-sdk/provider';
+import type { LanguageModelV3 } from '@ai-sdk/provider';
 import type { JSONValue } from 'ai';
 
 export async function getAvailableModels() {
@@ -10,7 +10,7 @@ export async function getAvailableModels() {
 }
 
 export interface ModelOptions {
-  model: LanguageModelV2;
+  model: LanguageModelV3;
   providerOptions?: Record<string, Record<string, JSONValue>>;
   headers?: Record<string, string>;
 }
