@@ -1321,6 +1321,7 @@ export async function triggerPolicyUpdates(
           contextHub: questionsAndAnswers.map((c) => `${c.question}\n${c.answer}`).join('\n'),
           frameworks,
         },
+        options: { concurrencyKey: organizationId },
       })),
     );
   }
