@@ -666,10 +666,16 @@ export const OnboardingTracker = ({ onboarding }: { onboarding: Onboarding }) =>
                 }
 
                 // Simple step row (creation, linkage)
+                const count = step.key === 'vendors' ? uniqueVendorsCounts.total
+                  : step.key === 'risk' ? stepStatus.risksTotal
+                  : null;
                 return (
                   <div key={step.key} className="flex items-center gap-2">
                     {stepIcon}
-                    <span className={stepTextClass}>{step.label}</span>
+                    <span className={`${stepTextClass} flex-1`}>{step.label}</span>
+                    {count !== null && count > 0 && (
+                      <span className="text-muted-foreground text-sm">{count}</span>
+                    )}
                   </div>
                 );
               })}
