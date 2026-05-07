@@ -935,29 +935,27 @@ async function triggerVendorRiskAssessmentsViaApi(params: {
  * Triggers research tasks for created vendors
  */
 export async function triggerVendorResearch(vendors: any[]): Promise<void> {
-  for (const vendor of vendors) {
+  const researchable = vendors.filter((vendor) => {
     const website = (vendor.website ?? '').toString().trim();
     if (!website) {
       logger.info(`Skipping research for vendor ${vendor.name} (no website)`);
-      continue;
+      return false;
     }
-
-    // Ensure it's a valid absolute URL; don't let one bad vendor break the whole onboarding.
     try {
       // eslint-disable-next-line no-new
       new URL(website);
+      return true;
     } catch {
       logger.warn(`Skipping research for vendor ${vendor.name} (invalid website URL)`, {
         website,
       });
-      continue;
+      return false;
     }
+  });
 
-    try {
-      // `scoreContext` chains the research run into score-vendor-risk
-      // when GlobalVendors finishes saving, so the per-org Vendor row
-      // gets a posture-grounded score instead of the conservative
-      // (possible × moderate) default the extraction pass set.
+  const results = await Promise.allSettled(
+    researchable.map(async (vendor) => {
+      const website = (vendor.website ?? '').toString().trim();
       const handle = await tasks.trigger<typeof researchVendor>('research-vendor', {
         website,
         scoreContext:
@@ -966,12 +964,16 @@ export async function triggerVendorResearch(vendors: any[]): Promise<void> {
             : undefined,
       });
       logger.info(`Triggered research for vendor ${vendor.name} with handle ${handle.id}`);
-    } catch (error) {
+    }),
+  );
+
+  for (const [i, result] of results.entries()) {
+    if (result.status === 'rejected') {
+      const vendor = researchable[i];
       logger.error('Failed to trigger vendor research task', {
         vendorId: vendor.id,
         vendorName: vendor.name,
-        website,
-        error: error instanceof Error ? error.message : String(error),
+        error: result.reason instanceof Error ? result.reason.message : String(result.reason),
       });
     }
   }
@@ -1310,7 +1312,7 @@ export async function triggerPolicyUpdates(
       metadata.set(`policy_${policy.id}_status`, 'queued');
     });
 
-    await updatePolicy.batchTriggerAndWait(
+    await updatePolicy.batchTrigger(
       policies.map((policy) => ({
         payload: {
           organizationId,

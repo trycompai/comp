@@ -61,11 +61,18 @@ export const onboardOrganization = task({
         metadata.set('policiesInfo', []);
       }
 
-      const frameworkInstances = await db.frameworkInstance.findMany({
-        where: {
-          organizationId: payload.organizationId,
-        },
-      });
+      const [frameworkInstances, owner] = await Promise.all([
+        db.frameworkInstance.findMany({
+          where: { organizationId: payload.organizationId },
+        }),
+        db.member.findFirst({
+          where: {
+            organizationId: payload.organizationId,
+            role: { contains: 'owner' },
+            deactivated: false,
+          },
+        }),
+      ]);
 
       const frameworks = await db.frameworkEditorFramework.findMany({
         where: {
@@ -77,107 +84,81 @@ export const onboardOrganization = task({
         },
       });
 
-      // Get owner
-      const owner = await db.member.findFirst({
-        where: {
-          organizationId: payload.organizationId,
-          role: {
-            contains: 'owner',
-          },
-          deactivated: false,
-        },
-      });
-
       if (!owner) {
         logger.error(`Owner not found for organization ${payload.organizationId}`);
         throw new Error(`Owner not found for organization ${payload.organizationId}`);
       }
 
-      // Update owner to also be an employee
-      await db.member.update({
-        where: {
-          id: owner.id,
-        },
-        data: {
-          role: 'owner,employee',
-        },
-      });
+      await Promise.all([
+        db.member.update({
+          where: { id: owner.id },
+          data: { role: 'owner,employee' },
+        }),
+        db.task.updateMany({
+          where: { organizationId: payload.organizationId },
+          data: { assigneeId: owner.id, frequency: 'quarterly' },
+        }),
+      ]);
 
-      // Assign owner to all tasks
-      await db.task.updateMany({
-        where: {
-          organizationId: payload.organizationId,
-        },
-        data: {
-          assigneeId: owner.id,
-        },
-      });
+      // Extract vendors + risks in parallel (both are independent LLM calls)
+      metadata.set('currentStep', 'Researching Vendors and Risks...');
 
-      // Update tasks to be quarterly
-      await db.task.updateMany({
-        where: {
-          organizationId: payload.organizationId,
-        },
-        data: {
-          frequency: 'quarterly',
-        },
-      });
+      const [vendors, risks] = await Promise.all([
+        (async () => {
+          const vendorData = await extractVendorsFromContext(questionsAndAnswers);
+          if (vendorData.length > 0) {
+            metadata.set('vendorsTotal', vendorData.length);
+            metadata.set('vendorsCompleted', 0);
+            metadata.set('vendorsRemaining', vendorData.length);
+            metadata.set(
+              'vendorsInfo',
+              vendorData.map((v, index) => ({ id: `temp_${index}`, name: v.vendor_name })),
+            );
+            vendorData.forEach((_, index) => {
+              metadata.set(`vendor_temp_${index}_status`, 'pending');
+            });
+          }
+          const created = await createVendors(
+            questionsAndAnswers,
+            payload.organizationId,
+            vendorData,
+          );
+          if (created.length > 0) {
+            metadata.set(
+              'vendorsInfo',
+              created.map((v) => ({ id: v.id, name: v.name })),
+            );
+            created.forEach((vendor) => {
+              metadata.set(`vendor_${vendor.id}_status`, 'assessing');
+            });
+          }
+          metadata.set('vendors', true);
+          return created;
+        })(),
+        (async () => {
+          const created = await createRisks(
+            questionsAndAnswers,
+            payload.organizationId,
+            organization.name,
+          );
+          if (created.length > 0) {
+            created.forEach((risk) => {
+              metadata.set(`risk_${risk.id}_status`, 'assessing');
+            });
+          }
+          metadata.set('risk', true);
+          return created;
+        })(),
+      ]);
 
-      // Extract vendors first so we can show them immediately
-      const vendorData = await extractVendorsFromContext(questionsAndAnswers);
-
-      // Track vendors immediately as "pending" before creation
-      if (vendorData.length > 0) {
-        metadata.set('vendorsTotal', vendorData.length);
-        metadata.set('vendorsCompleted', 0);
-        metadata.set('vendorsRemaining', vendorData.length);
-        // Use temporary IDs based on index until we have real IDs
-        metadata.set(
-          'vendorsInfo',
-          vendorData.map((v, index) => ({ id: `temp_${index}`, name: v.vendor_name })),
-        );
-        // Mark all as pending initially
-        vendorData.forEach((_, index) => {
-          metadata.set(`vendor_temp_${index}_status`, 'pending');
-        });
-      }
-
-      // Create vendors (pass extracted data to avoid re-extraction)
-      // Tracking is handled inside createVendors -> createVendorsFromData
-      const vendors = await createVendors(questionsAndAnswers, payload.organizationId, vendorData);
-
-      // Update tracking with real vendor IDs (tracking during creation uses temp IDs)
-      if (vendors.length > 0) {
-        metadata.set(
-          'vendorsInfo',
-          vendors.map((v) => ({ id: v.id, name: v.name })),
-        );
-        // Mark all created vendors as "assessing" since they need mitigation
-        vendors.forEach((vendor) => {
-          metadata.set(`vendor_${vendor.id}_status`, 'assessing');
-        });
-      }
-
-      // Mark vendors step as complete in metadata (real-time)
-      metadata.set('vendors', true);
-      metadata.set('currentStep', 'Creating Risks...');
-
-      // Create risks (tracking is handled inside createRisks)
-      const risks = await createRisks(
-        questionsAndAnswers,
-        payload.organizationId,
-        organization.name,
-      );
-
-      // Mark all created risks as "assessing" since they need mitigation
-      if (risks.length > 0) {
-        risks.forEach((risk) => {
-          metadata.set(`risk_${risk.id}_status`, 'assessing');
-        });
-      }
-
-      // Mark risks step as complete in metadata (real-time)
-      metadata.set('risk', true);
+      // Start policy fan-out first — policies depend on framework + Q&A
+      // context only, NOT on linkage. Fire-and-forget so the main task can
+      // proceed to linkage + mitigations while policies drain in parallel.
+      // Per-policy progress is tracked via child metadata (policy_${id}_status).
+      const policyCount = policyList.length;
+      metadata.set('currentStep', `Tailoring Policies... (0/${policyCount})`);
+      await updateOrganizationPolicies(payload.organizationId, questionsAndAnswers, frameworks);
+      metadata.set('policies', true);
 
       // Auto-link risks + vendors to existing tasks BEFORE mitigation generation
       // runs, so the AI prompt for both risks AND vendors sees the linked
@@ -198,10 +179,6 @@ export const onboardOrganization = task({
         });
       }
 
-      // Get policy count for the step message
-      const policyCount = policyList.length;
-      metadata.set('currentStep', `Tailoring Policies... (0/${policyCount})`);
-
       // Fan-out vendor + risk mitigations now that linkage has populated the
       // grounding context for both kinds of entities. Done in parallel —
       // each fan-out task itself batchTriggers per-entity children.
@@ -216,11 +193,6 @@ export const onboardOrganization = task({
         ),
       ]);
 
-      // Update policies with progress tracking
-      await updateOrganizationPolicies(payload.organizationId, questionsAndAnswers, frameworks);
-
-      // Mark policies step as complete in metadata (real-time)
-      metadata.set('policies', true);
       metadata.set('currentStep', 'Finalizing...');
 
       // Mark onboarding as completed in metadata
