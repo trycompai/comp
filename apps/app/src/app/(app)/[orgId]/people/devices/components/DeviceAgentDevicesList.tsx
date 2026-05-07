@@ -34,12 +34,15 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@tryco
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { useMemo, useState } from 'react';
+import { toast } from 'sonner';
+import { useSWRConfig } from 'swr';
 import type { DeviceWithChecks } from '../types';
 import {
   buildDevicesCsv,
   devicesCsvFilename,
   downloadDevicesCsv,
 } from '../lib/devices-csv';
+import { useDevices } from '../hooks/useDevices';
 import { DeviceDetails } from './DeviceDetails';
 import { RemoveDeviceAlert } from '../../all/components/RemoveDeviceAlert';
 
@@ -176,6 +179,8 @@ export const DeviceAgentDevicesList = ({
   isCurrentUserOwner,
 }: DeviceAgentDevicesListProps) => {
   const { orgId } = useParams<{ orgId: string }>();
+  const { removeDeviceAgent } = useDevices();
+  const { mutate } = useSWRConfig();
   const [selectedDevice, setSelectedDevice] = useState<DeviceWithChecks | null>(null);
   const [actionDevice, setActionDevice] = useState<DeviceWithChecks | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
@@ -209,9 +214,24 @@ export const DeviceAgentDevicesList = ({
   }
 
   async function handleRemoveDevice() {
+    if (!actionDevice) return;
     setIsRemovingDevice(true);
     try {
-      // API integration will be added in a follow-up change.
+      await removeDeviceAgent(actionDevice.id);
+      await mutate(
+        ['people-agent-devices', orgId],
+        (currentDevices: DeviceWithChecks[] | undefined) =>
+          Array.isArray(currentDevices)
+            ? currentDevices.filter((device) => device.id !== actionDevice.id)
+            : currentDevices,
+        false,
+      );
+      toast.success('Device removed successfully');
+      if (selectedDevice?.id === actionDevice.id) {
+        setSelectedDevice(null);
+      }
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Failed to remove device');
     } finally {
       setIsRemovingDevice(false);
       setIsRemoveDeviceAlertOpen(false);
