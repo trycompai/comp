@@ -1,4 +1,4 @@
-import { openai } from '@ai-sdk/openai';
+import { createGatewayProvider } from '@ai-sdk/gateway';
 import { db, FrameworkEditorFramework, FrameworkEditorPolicyTemplate, type Policy } from '@db/server';
 import type { JSONContent } from '@tiptap/react';
 import { logger } from '@trigger.dev/sdk';
@@ -7,6 +7,11 @@ import { z } from 'zod';
 import { generatePrompt } from '../../lib/prompts';
 
 // Sanitization utilities
+const gateway = createGatewayProvider({
+  baseURL: process.env.AI_GATEWAY_BASE_URL,
+});
+const POLICY_MODEL = 'google/gemini-3-flash' as const;
+
 const PLACEHOLDER_REGEX = /<<\s*TO\s*REVIEW\s*>>/gi;
 
 function extractText(node: Record<string, unknown>): string {
@@ -194,7 +199,7 @@ export async function reconcileFormatWithTemplate(
 ): Promise<{ type: 'document'; content: Record<string, unknown>[] }> {
   try {
     const { object } = await generateObject({
-      model: openai('gpt-5-mini'),
+      model: gateway(POLICY_MODEL),
       output: 'no-schema',
       system: `You are an expert policy editor.
 Given an ORIGINAL policy TipTap JSON and a DRAFT TipTap JSON, produce a FINAL TipTap JSON that:
@@ -232,7 +237,7 @@ export async function aiCheckFormatWithTemplate(
 ): Promise<{ isConforming: boolean; reasons: string[] }> {
   try {
     const { object } = await generateObject({
-      model: openai('gpt-5-mini'),
+      model: gateway(POLICY_MODEL),
       system: `You are validating policy layout.
 Compare ORIGINAL vs DRAFT (TipTap JSON). Determine if DRAFT conforms to ORIGINAL format:
 - Same top-level section titles present and in the same order
@@ -457,7 +462,7 @@ export async function generatePolicyContent(prompt: string): Promise<{
 }> {
   try {
     const { object } = await generateObject({
-      model: openai('gpt-5-mini'),
+      model: gateway(POLICY_MODEL),
       output: 'no-schema',
       system: `You are an expert at writing security policies. Generate content directly as TipTap JSON format.
 
