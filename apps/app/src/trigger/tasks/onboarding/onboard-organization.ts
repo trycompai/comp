@@ -100,8 +100,10 @@ export const onboardOrganization = task({
         }),
       ]);
 
-      // Extract vendors + risks in parallel (both are independent LLM calls)
-      metadata.set('currentStep', 'Researching Vendors and Risks...');
+      // Extract vendors + risks in parallel (both are independent LLM calls).
+      // Each branch sets its own currentStep so the tracker highlights
+      // whichever phase is still running.
+      metadata.set('currentStep', 'Researching Vendors...');
 
       const [vendors, risks] = await Promise.all([
         (async () => {
@@ -133,9 +135,11 @@ export const onboardOrganization = task({
             });
           }
           metadata.set('vendors', true);
+          metadata.set('currentStep', 'Creating Risks...');
           return created;
         })(),
         (async () => {
+          metadata.set('currentStep', 'Creating Risks...');
           const created = await createRisks(
             questionsAndAnswers,
             payload.organizationId,
@@ -158,7 +162,6 @@ export const onboardOrganization = task({
       const policyCount = policyList.length;
       metadata.set('currentStep', `Tailoring Policies... (0/${policyCount})`);
       await updateOrganizationPolicies(payload.organizationId, questionsAndAnswers, frameworks);
-      metadata.set('policies', true);
 
       // Auto-link risks + vendors to existing tasks BEFORE mitigation generation
       // runs, so the AI prompt for both risks AND vendors sees the linked

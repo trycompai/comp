@@ -95,12 +95,30 @@ export const OnboardingTracker = ({ onboarding }: { onboarding: Onboarding }) =>
     }
   }, [dismissKey]);
 
-  // Auto-minimize when completed
+  // Auto-minimize when completed AND all background work is done.
+  // The main task completes before policies/mitigations finish (they
+  // run as fire-and-forget children), so also check the counters.
   useEffect(() => {
-    if (run?.status === 'COMPLETED' && !isMinimized) {
+    if (run?.status !== 'COMPLETED' || isMinimized) return;
+    const meta = run?.metadata as Record<string, unknown> | undefined;
+    if (!meta) return;
+
+    const policiesTotal = (meta.policiesTotal as number) || 0;
+    const policiesCompleted = (meta.policiesCompleted as number) || 0;
+    const policiesDone = policiesTotal === 0 || policiesCompleted >= policiesTotal;
+
+    const vendorsTotal = (meta.vendorsTotal as number) || 0;
+    const vendorsCompleted = (meta.vendorsCompleted as number) || 0;
+    const vendorsDone = vendorsTotal === 0 || vendorsCompleted >= vendorsTotal;
+
+    const risksTotal = (meta.risksTotal as number) || 0;
+    const risksCompleted = (meta.risksCompleted as number) || 0;
+    const risksDone = risksTotal === 0 || risksCompleted >= risksTotal;
+
+    if (policiesDone && vendorsDone && risksDone) {
       setIsMinimized(true);
     }
-  }, [run?.status, isMinimized]);
+  }, [run?.status, run?.metadata, isMinimized]);
 
   // Extract step completion from metadata (real-time updates)
   const stepStatus = useMemo(() => {
@@ -432,6 +450,21 @@ export const OnboardingTracker = ({ onboarding }: { onboarding: Onboarding }) =>
     }
 
     const friendlyStatus = getFriendlyStatusName(run.status);
+
+    // When the main task is COMPLETED but child tasks (policies, mitigations)
+    // are still running, show the progress view instead of "Setup Complete".
+    const hasBackgroundWork = (() => {
+      if (run.status !== 'COMPLETED') return false;
+      const meta = run.metadata as Record<string, unknown> | undefined;
+      if (!meta) return false;
+      const pt = (meta.policiesTotal as number) || 0;
+      const pc = (meta.policiesCompleted as number) || 0;
+      const vt = (meta.vendorsTotal as number) || 0;
+      const vc = (meta.vendorsCompleted as number) || 0;
+      const rt = (meta.risksTotal as number) || 0;
+      const rc = (meta.risksCompleted as number) || 0;
+      return (pt > 0 && pc < pt) || (vt > 0 && vc < vt) || (rt > 0 && rc < rt);
+    })();
 
     switch (run.status) {
       case 'WAITING':
@@ -868,6 +901,91 @@ export const OnboardingTracker = ({ onboarding }: { onboarding: Onboarding }) =>
           </div>
         );
       case 'COMPLETED':
+        if (hasBackgroundWork) {
+          return (
+            <div className="flex flex-col gap-4 h-full overflow-hidden">
+              {/* Header — task completed but policies/mitigations still running */}
+              <div className="flex items-start justify-between gap-3 shrink-0">
+                <div className="flex items-center gap-3 flex-1 min-w-0">
+                  <Settings className="h-5 w-5 shrink-0 text-primary" />
+                  <p className="text-base font-medium text-foreground">
+                    Setting up your organization
+                  </p>
+                </div>
+                <div className="flex items-center gap-2 shrink-0">
+                  <button
+                    onClick={() => setIsMinimized(true)}
+                    className="text-muted-foreground hover:text-foreground transition-colors"
+                    aria-label="Minimize"
+                  >
+                    <ChevronsDown className="h-5 w-5" />
+                  </button>
+                  <button
+                    onClick={handleDismiss}
+                    className="text-muted-foreground hover:text-foreground transition-colors"
+                    aria-label="Close"
+                  >
+                    <X className="h-5 w-5" />
+                  </button>
+                </div>
+              </div>
+
+              {/* Reuse the same step progress list from the EXECUTING case */}
+              <div className="flex flex-col gap-2.5 flex-1 overflow-y-auto min-h-0 pr-1">
+                {ONBOARDING_STEPS.map((step) => {
+                  const isVendorsStep = step.key === 'vendors';
+                  const isRisksStep = step.key === 'risk';
+                  const isPoliciesStep = step.key === 'policies';
+
+                  const vendorsComplete =
+                    uniqueVendorsCounts.total > 0 &&
+                    uniqueVendorsCounts.completed >= uniqueVendorsCounts.total;
+                  const risksComplete =
+                    stepStatus.risksTotal > 0 && stepStatus.risksCompleted >= stepStatus.risksTotal;
+                  const policiesComplete =
+                    stepStatus.policiesTotal > 0 &&
+                    stepStatus.policiesCompleted >= stepStatus.policiesTotal;
+
+                  const isDone =
+                    (isVendorsStep && vendorsComplete) ||
+                    (isRisksStep && risksComplete) ||
+                    (isPoliciesStep && policiesComplete);
+
+                  const isProcessing =
+                    (isVendorsStep && !vendorsComplete && stepStatus.vendorsTotal > 0) ||
+                    (isRisksStep && !risksComplete && stepStatus.risksTotal > 0) ||
+                    (isPoliciesStep && !policiesComplete && stepStatus.policiesTotal > 0);
+
+                  const count = isPoliciesStep
+                    ? `${stepStatus.policiesCompleted}/${stepStatus.policiesTotal}`
+                    : isRisksStep
+                      ? `${stepStatus.risksCompleted}/${stepStatus.risksTotal}`
+                      : `${uniqueVendorsCounts.completed}/${uniqueVendorsCounts.total}`;
+
+                  return (
+                    <div key={step.key} className="flex items-center gap-2">
+                      {isDone ? (
+                        <CheckCircle2 className="text-primary h-5 w-5 shrink-0" />
+                      ) : isProcessing ? (
+                        <Loader2 className="h-5 w-5 shrink-0 text-primary" style={{ animation: 'spin 1s linear infinite', animationDelay: `${-(Date.now() % 1000)}ms` }} />
+                      ) : (
+                        <div className="h-5 w-5 shrink-0 rounded-full border-2 border-muted" />
+                      )}
+                      <span
+                        className={`text-sm flex-1 ${isDone ? 'text-primary' : isProcessing ? 'text-primary font-medium' : 'text-muted-foreground'}`}
+                      >
+                        {step.label}
+                      </span>
+                      {(stepStatus.policiesTotal > 0 || stepStatus.risksTotal > 0 || uniqueVendorsCounts.total > 0) && (
+                        <span className="text-muted-foreground text-sm">{count}</span>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          );
+        }
         return (
           <div className="flex flex-col gap-4 h-full overflow-hidden">
             {/* Header */}
