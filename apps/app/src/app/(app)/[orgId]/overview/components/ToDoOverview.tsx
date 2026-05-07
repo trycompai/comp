@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@trycompai/ui/card';
 import { ScrollArea } from '@trycompai/ui/scroll-area';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@trycompai/ui/tabs';
 import { Policy, Task } from '@db';
-import { useRealtimeRun } from '@trigger.dev/react-hooks';
+import { useRun } from '@trigger.dev/react-hooks';
 import {
   ArrowRight,
   CheckCircle2,
@@ -49,8 +49,8 @@ export function ToDoOverview({
   const [isConfirmDialogOpen, setIsConfirmDialogOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
-  const { run: onboardingRun } = useRealtimeRun(onboardingTriggerJobId || '', {
-    enabled: !!onboardingTriggerJobId,
+  const { run: onboardingRun } = useRun(onboardingTriggerJobId || '', {
+    refreshInterval: 1000,
   });
 
   const IN_PROGRESS_STATUSES = [

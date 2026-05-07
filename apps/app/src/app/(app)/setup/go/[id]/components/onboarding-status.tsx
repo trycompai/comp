@@ -16,8 +16,13 @@ export function OnboardingStatus({ runId }: { runId: string }) {
   useEffect(() => {
     if (run?.status === 'COMPLETED') {
       router.replace('/');
+      return;
     }
-  }, [run?.status, router]);
+    const meta = run?.metadata as Record<string, unknown> | undefined;
+    if (meta?.readyForDashboard === true) {
+      router.replace('/');
+    }
+  }, [run?.status, run?.metadata, router]);
 
   return (
     <div className="flex flex-col items-center justify-center">

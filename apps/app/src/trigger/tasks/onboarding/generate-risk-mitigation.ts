@@ -1,5 +1,5 @@
 import { RiskStatus, db } from '@db/server';
-import { logger, metadata, queue, tags, task } from '@trigger.dev/sdk';
+import { logger, metadata, queue, tags, task, tasks } from '@trigger.dev/sdk';
 import axios from 'axios';
 import {
   createRiskMitigationComment,
@@ -114,7 +114,8 @@ export const generateRiskMitigationsForOrg = task({
 
     const policies = policyRows.map((p) => ({ name: p.name, description: p.description }));
 
-    await generateRiskMitigation.batchTrigger(
+    await tasks.batchTriggerAndWait<typeof generateRiskMitigation>(
+      'generate-risk-mitigation',
       risks.map((r) => ({
         payload: {
           organizationId,
@@ -122,7 +123,7 @@ export const generateRiskMitigationsForOrg = task({
           authorId: author?.id,
           policies,
         },
-        concurrencyKey: `${organizationId}:${r.id}`,
+        options: { concurrencyKey: `${organizationId}:${r.id}` },
       })),
     );
 

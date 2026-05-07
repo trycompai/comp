@@ -1,6 +1,6 @@
 'use client';
 
-import { useRealtimeRun } from '@trigger.dev/react-hooks';
+import { useRun } from '@trigger.dev/react-hooks';
 import { Download, Loader2 } from 'lucide-react';
 import * as React from 'react';
 import { toast } from 'sonner';
@@ -31,8 +31,8 @@ export function PoliciesTable({ promises, onboardingRunId }: PoliciesTableProps)
   const orgId = params.orgId as string;
 
   const shouldSubscribeToRun = Boolean(onboardingRunId);
-  const { run } = useRealtimeRun(shouldSubscribeToRun ? onboardingRunId! : '', {
-    enabled: shouldSubscribeToRun,
+  const { run } = useRun(shouldSubscribeToRun ? onboardingRunId! : '', {
+    refreshInterval: 1000,
   });
 
   const policyStatuses = React.useMemo<PolicyStatusMap>(() => {
