@@ -23,18 +23,33 @@ model CustomRequirement {
   description String
   identifier  String
 
-  organizationId    String
-  organization      Organization    @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  customFrameworkId String
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  // A custom requirement hangs off either a CustomFramework (the org authored
+  // a whole new framework) or a single FrameworkInstance (the org tacked an
+  // extra requirement onto a platform framework like ISO 27001). Exactly one
+  // of these is set — enforced by a DB CHECK constraint.
+  customFrameworkId String?
   // Composite FK onto (id, organizationId) so tenant consistency with the
   // referenced CustomFramework is enforced at the DB level.
-  customFramework   CustomFramework @relation(fields: [customFrameworkId, organizationId], references: [id, organizationId], onDelete: Cascade)
+  customFramework   CustomFramework? @relation(fields: [customFrameworkId, organizationId], references: [id, organizationId], onDelete: Cascade)
+
+  frameworkInstanceId String?
+  // Composite FK onto (id, organizationId) so a per-instance custom requirement
+  // can only point at an FI in its own org.
+  frameworkInstance   FrameworkInstance? @relation(fields: [frameworkInstanceId, organizationId], references: [id, organizationId], onDelete: Cascade)
 
   requirementMaps RequirementMap[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @default(now()) @updatedAt
 
+  // Identifier uniqueness scoped to whichever parent is set. Postgres treats
+  // NULLs as distinct in unique indexes, so the inactive parent column doesn't
+  // collide across rows.
   @@unique([customFrameworkId, identifier])
+  @@unique([frameworkInstanceId, identifier])
   @@index([organizationId])
+  @@index([frameworkInstanceId])
 }

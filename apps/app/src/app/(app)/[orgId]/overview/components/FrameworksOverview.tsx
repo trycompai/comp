@@ -62,8 +62,17 @@ export function mapFrameworkToBadge(framework: FrameworkInstanceWithControls) {
   if (frameworkName === 'ISO 9001') {
     return '/badges/iso9001.svg';
   }
+
   if (frameworkName === 'SOC 2 Type 1') {
     return '/badges/soc2.svg';
+  }
+
+  if (frameworkName === 'CCPA') {
+    return '/badges/ccpa.svg';
+  }
+
+  if (frameworkName === 'PIPEDA') {
+    return '/badges/pipeda.svg';
   }
 
   return null;

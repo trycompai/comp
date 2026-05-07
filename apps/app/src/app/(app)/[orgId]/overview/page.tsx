@@ -1,6 +1,7 @@
 import { serverApi } from '@/lib/api-server';
 import type { FrameworkEditorFramework, Policy, Task } from '@db';
 import { PageHeader, PageLayout } from '@trycompai/design-system';
+import { FrameworkUpdatesBanner } from './components/FrameworkUpdatesBanner';
 import { Overview } from './components/Overview';
 import { OverviewTabs } from './components/OverviewTabs';
 import type { FrameworkInstanceWithControls } from '@/lib/types/framework';
@@ -52,8 +53,10 @@ export default async function OverviewPage({ params }: { params: Promise<{ orgId
   }));
 
   return (
-    <PageLayout header={<PageHeader title="Overview" tabs={<OverviewTabs />} />}>
-      <Overview
+    <>
+      <FrameworkUpdatesBanner />
+      <PageLayout header={<PageHeader title="Overview" tabs={<OverviewTabs />} />}>
+        <Overview
         frameworksWithControls={frameworksWithControls}
         frameworksWithCompliance={frameworksWithCompliance}
         allFrameworks={allFrameworks}
@@ -82,6 +85,7 @@ export default async function OverviewPage({ params }: { params: Promise<{ orgId
         currentMember={scores?.currentMember ?? null}
         onboardingTriggerJobId={scores?.onboardingTriggerJobId ?? null}
       />
-    </PageLayout>
+      </PageLayout>
+    </>
   );
 }

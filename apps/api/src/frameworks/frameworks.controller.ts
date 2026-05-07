@@ -85,6 +85,15 @@ export class FrameworksController {
     return this.frameworksService.getScores(organizationId, authContext.userId);
   }
 
+  @Get('update-statuses')
+  @RequirePermission('framework', 'read')
+  @ApiOperation({ summary: 'Get update statuses for all framework instances' })
+  async getAllUpdateStatuses(@OrganizationId() organizationId: string) {
+    const data =
+      await this.frameworksService.getAllUpdateStatuses(organizationId);
+    return { data, count: data.length };
+  }
+
   @Get(':id')
   @RequirePermission('framework', 'read')
   @ApiOperation({ summary: 'Get a single framework instance with full detail' })
