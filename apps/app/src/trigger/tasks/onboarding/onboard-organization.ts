@@ -151,6 +151,13 @@ export const onboardOrganization = task({
             payload.organizationId,
             organization.name,
           );
+          metadata.set('risksTotal', created.length);
+          metadata.set('risksCompleted', 0);
+          metadata.set('risksRemaining', created.length);
+          metadata.set(
+            'risksInfo',
+            created.map((r) => ({ id: r.id, name: r.description?.slice(0, 80) ?? r.id })),
+          );
           if (created.length > 0) {
             created.forEach((risk) => {
               metadata.set(`risk_${risk.id}_status`, 'assessing');
