@@ -37,11 +37,13 @@ const questionExtractionSchema = jsonSchema<{
             description: 'The answer/response if provided, null if empty',
           },
         },
-        required: ['question'],
+        required: ['question', 'answer'],
+        additionalProperties: false,
       },
     },
   },
   required: ['questions'],
+  additionalProperties: false,
 });
 
 export interface ContentExtractionLogger {
