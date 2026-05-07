@@ -108,7 +108,7 @@ export const onboardOrganization = task({
       await updateOrganizationPolicies(payload.organizationId, questionsAndAnswers, frameworks);
 
       // Extract vendors + risks in parallel (both are independent LLM calls).
-      metadata.set('currentStep', 'Researching Vendors...');
+      metadata.set('currentStep', 'Creating Vendors...');
 
       const [vendors, risks] = await Promise.all([
         (async () => {
@@ -165,7 +165,7 @@ export const onboardOrganization = task({
       // tasks/controls and produces grounded plans. Fan-out for both happens
       // after this gate. Fails-soft: a timeout/error degrades to today's
       // behavior. (ENG-221 + Cubic findings #7 / #26.)
-      metadata.set('currentStep', 'Linking risks to tasks...');
+      metadata.set('currentStep', 'Linking to Controls...');
       try {
         await tasks.triggerAndWait<typeof linkRisksAndVendorsToWork>(
           'link-risks-and-vendors-to-work',
@@ -182,6 +182,7 @@ export const onboardOrganization = task({
       // Fan-out vendor + risk mitigations now that linkage has populated the
       // grounding context for both kinds of entities. Done in parallel —
       // each fan-out task itself batchTriggers per-entity children.
+      metadata.set('currentStep', 'Assessing Vendors...');
       await Promise.all([
         tasks.trigger<typeof generateVendorMitigationsForOrg>(
           'generate-vendor-mitigations-for-org',
