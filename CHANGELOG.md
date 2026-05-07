@@ -1,3 +1,10 @@
+## [3.46.1](https://github.com/trycompai/comp/compare/v3.46.0...v3.46.1) (2026-05-07)
+
+
+### Bug Fixes
+
+* **questionnaire:** extract compliance statements as questions ([c74e2a1](https://github.com/trycompai/comp/commit/c74e2a15ca3039710762e82effd471188b556623))
+
 # [3.46.0](https://github.com/trycompai/comp/compare/v3.45.1...v3.46.0) (2026-05-07)
 
 
