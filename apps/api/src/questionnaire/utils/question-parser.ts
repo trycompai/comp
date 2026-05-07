@@ -311,7 +311,7 @@ export function looksLikeQuestionLine(line: string): boolean {
   // Vendor questionnaires often consist entirely of these — each is a row
   // the respondent must address.
   const compliancePrefix =
-    /^(?:the\s+organization|the\s+company|the\s+vendor|the\s+supplier|we\s+|our\s+(?:organization|company|team)|i\s+|the\s+respondent)\b/i;
+    /^(?:the\s+organization|the\s+company|the\s+vendor|the\s+supplier|the\s+respondent|our\s+(?:organization|company|team))\b/i;
 
   return (
     hasQuestionMark ||
