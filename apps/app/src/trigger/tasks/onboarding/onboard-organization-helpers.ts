@@ -1312,7 +1312,8 @@ export async function triggerPolicyUpdates(
       metadata.set(`policy_${policy.id}_status`, 'queued');
     });
 
-    await updatePolicy.batchTrigger(
+    await tasks.batchTrigger<typeof updatePolicy>(
+      'update-policy',
       policies.map((policy) => ({
         payload: {
           organizationId,
@@ -1320,7 +1321,6 @@ export async function triggerPolicyUpdates(
           contextHub: questionsAndAnswers.map((c) => `${c.question}\n${c.answer}`).join('\n'),
           frameworks,
         },
-        concurrencyKey: organizationId,
       })),
     );
   }
