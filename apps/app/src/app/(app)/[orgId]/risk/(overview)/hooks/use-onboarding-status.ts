@@ -1,6 +1,6 @@
 'use client';
 
-import { useRun } from '@trigger.dev/react-hooks';
+import { useRealtimeRun } from '@trigger.dev/react-hooks';
 import { useMemo } from 'react';
 
 export type OnboardingItemStatus = 'pending' | 'processing' | 'created' | 'assessing' | 'completed';
@@ -15,8 +15,8 @@ export function useOnboardingStatus(
   itemType: 'risks' | 'vendors',
 ) {
   const shouldSubscribe = Boolean(onboardingRunId);
-  const { run } = useRun(shouldSubscribe ? onboardingRunId! : '', {
-    refreshInterval: 1000,
+  const { run } = useRealtimeRun(shouldSubscribe ? onboardingRunId! : '', {
+    enabled: shouldSubscribe,
   });
 
   const itemStatuses = useMemo<Record<string, OnboardingItemStatus>>(() => {
