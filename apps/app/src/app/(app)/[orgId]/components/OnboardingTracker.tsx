@@ -466,7 +466,7 @@ export const OnboardingTracker = ({ onboarding }: { onboarding: Onboarding }) =>
       return (pt > 0 && pc < pt) || (vt > 0 && vc < vt) || (rt > 0 && rc < rt);
     })();
 
-    switch (run.status) {
+    switch (hasBackgroundWork ? 'EXECUTING' : run.status) {
       case 'WAITING':
       case 'QUEUED':
       case 'EXECUTING':
@@ -901,91 +901,6 @@ export const OnboardingTracker = ({ onboarding }: { onboarding: Onboarding }) =>
           </div>
         );
       case 'COMPLETED':
-        if (hasBackgroundWork) {
-          return (
-            <div className="flex flex-col gap-4 h-full overflow-hidden">
-              {/* Header — task completed but policies/mitigations still running */}
-              <div className="flex items-start justify-between gap-3 shrink-0">
-                <div className="flex items-center gap-3 flex-1 min-w-0">
-                  <Settings className="h-5 w-5 shrink-0 text-primary" />
-                  <p className="text-base font-medium text-foreground">
-                    Setting up your organization
-                  </p>
-                </div>
-                <div className="flex items-center gap-2 shrink-0">
-                  <button
-                    onClick={() => setIsMinimized(true)}
-                    className="text-muted-foreground hover:text-foreground transition-colors"
-                    aria-label="Minimize"
-                  >
-                    <ChevronsDown className="h-5 w-5" />
-                  </button>
-                  <button
-                    onClick={handleDismiss}
-                    className="text-muted-foreground hover:text-foreground transition-colors"
-                    aria-label="Close"
-                  >
-                    <X className="h-5 w-5" />
-                  </button>
-                </div>
-              </div>
-
-              {/* Reuse the same step progress list from the EXECUTING case */}
-              <div className="flex flex-col gap-2.5 flex-1 overflow-y-auto min-h-0 pr-1">
-                {ONBOARDING_STEPS.map((step) => {
-                  const isVendorsStep = step.key === 'vendors';
-                  const isRisksStep = step.key === 'risk';
-                  const isPoliciesStep = step.key === 'policies';
-
-                  const vendorsComplete =
-                    uniqueVendorsCounts.total > 0 &&
-                    uniqueVendorsCounts.completed >= uniqueVendorsCounts.total;
-                  const risksComplete =
-                    stepStatus.risksTotal > 0 && stepStatus.risksCompleted >= stepStatus.risksTotal;
-                  const policiesComplete =
-                    stepStatus.policiesTotal > 0 &&
-                    stepStatus.policiesCompleted >= stepStatus.policiesTotal;
-
-                  const isDone =
-                    (isVendorsStep && vendorsComplete) ||
-                    (isRisksStep && risksComplete) ||
-                    (isPoliciesStep && policiesComplete);
-
-                  const isProcessing =
-                    (isVendorsStep && !vendorsComplete && stepStatus.vendorsTotal > 0) ||
-                    (isRisksStep && !risksComplete && stepStatus.risksTotal > 0) ||
-                    (isPoliciesStep && !policiesComplete && stepStatus.policiesTotal > 0);
-
-                  const count = isPoliciesStep
-                    ? `${stepStatus.policiesCompleted}/${stepStatus.policiesTotal}`
-                    : isRisksStep
-                      ? `${stepStatus.risksCompleted}/${stepStatus.risksTotal}`
-                      : `${uniqueVendorsCounts.completed}/${uniqueVendorsCounts.total}`;
-
-                  return (
-                    <div key={step.key} className="flex items-center gap-2">
-                      {isDone ? (
-                        <CheckCircle2 className="text-primary h-5 w-5 shrink-0" />
-                      ) : isProcessing ? (
-                        <Loader2 className="h-5 w-5 shrink-0 text-primary" style={{ animation: 'spin 1s linear infinite', animationDelay: `${-(Date.now() % 1000)}ms` }} />
-                      ) : (
-                        <div className="h-5 w-5 shrink-0 rounded-full border-2 border-muted" />
-                      )}
-                      <span
-                        className={`text-sm flex-1 ${isDone ? 'text-primary' : isProcessing ? 'text-primary font-medium' : 'text-muted-foreground'}`}
-                      >
-                        {step.label}
-                      </span>
-                      {(stepStatus.policiesTotal > 0 || stepStatus.risksTotal > 0 || uniqueVendorsCounts.total > 0) && (
-                        <span className="text-muted-foreground text-sm">{count}</span>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          );
-        }
         return (
           <div className="flex flex-col gap-4 h-full overflow-hidden">
             {/* Header */}
