@@ -1,3 +1,16 @@
+# [3.46.0](https://github.com/trycompai/comp/compare/v3.45.1...v3.46.0) (2026-05-07)
+
+
+### Bug Fixes
+
+* **questionnaire:** add additionalProperties false for OpenAI strict mode ([#2792](https://github.com/trycompai/comp/issues/2792)) ([ea226b0](https://github.com/trycompai/comp/commit/ea226b04ffb39b31888ec7fe48cb8e79ef5a8fe8))
+
+
+### Features
+
+* allow adding custom requirements to existing frameworks ([6b96503](https://github.com/trycompai/comp/commit/6b96503dd84671496f72e477ff0d28ba0fdd4ce5))
+* **frameworks:** add framework updates banner to overview page ([#2790](https://github.com/trycompai/comp/issues/2790)) ([47bd6d8](https://github.com/trycompai/comp/commit/47bd6d88bfca8beb4658520db2ee955f46d75b74))
+
 ## [3.45.1](https://github.com/trycompai/comp/compare/v3.45.0...v3.45.1) (2026-05-07)
 
 
