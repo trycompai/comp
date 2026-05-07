@@ -1,362 +1,85 @@
-import { openai } from '@ai-sdk/openai';
+import { createGatewayProvider } from '@ai-sdk/gateway';
 import { db, FrameworkEditorFramework, FrameworkEditorPolicyTemplate, type Policy } from '@db/server';
 import type { JSONContent } from '@tiptap/react';
 import { logger } from '@trigger.dev/sdk';
-import { generateObject, NoObjectGeneratedError } from 'ai';
+import { generateObject } from 'ai';
 import { z } from 'zod';
-import { generatePrompt } from '../../lib/prompts';
+import { processTemplate } from './process-policy-template';
 
-// Sanitization utilities
-const PLACEHOLDER_REGEX = /<<\s*TO\s*REVIEW\s*>>/gi;
+const gateway = createGatewayProvider({
+  baseURL: process.env.AI_GATEWAY_BASE_URL,
+});
 
-function extractText(node: Record<string, unknown>): string {
-  const text = node && typeof node['text'] === 'string' ? (node['text'] as string) : '';
-  const content = Array.isArray((node as any)?.content)
-    ? ((node as any).content as Record<string, unknown>[])
-    : null;
-  if (content && content.length > 0) {
-    return content.map(extractText).join('');
-  }
-  return text || '';
-}
+const CUE_LINE_PATTERN =
+  /^(State that|Clarify that|Add a |Include a |Specify |List |Note that|Require that|Describe |Define )/;
 
-function sanitizeNodePlaceholders(node: Record<string, unknown>): Record<string, unknown> {
-  const cloned: Record<string, unknown> = { ...node };
-  if (typeof cloned['text'] === 'string') {
-    const replaced = (cloned['text'] as string)
-      .replace(PLACEHOLDER_REGEX, '')
-      .replace(/\s{2,}/g, ' ')
-      .trim();
-    cloned['text'] = replaced;
-  }
-  const content = Array.isArray((cloned as any).content)
-    ? ((cloned as any).content as Record<string, unknown>[])
-    : null;
-  if (content) {
-    (cloned as any).content = content.map(sanitizeNodePlaceholders);
-  }
-  return cloned;
-}
+type JsonNode = Record<string, unknown>;
 
-function shouldRemoveAuditorArtifactsHeading(headingText: string): boolean {
-  const lower = headingText.trim().toLowerCase();
-  // Match variations: artefacts/artifacts and with/without "evidence"
-  return lower.includes('auditor') && (lower.includes('artefact') || lower.includes('artifact'));
-}
-
-function removeAuditorArtifactsSection(
-  content: Record<string, unknown>[],
-): Record<string, unknown>[] {
-  const result: Record<string, unknown>[] = [];
-  let i = 0;
-  while (i < content.length) {
-    const node = content[i] as Record<string, unknown>;
-    const nodeType = typeof node['type'] === 'string' ? (node['type'] as string) : '';
-    if (nodeType === 'heading') {
-      const headingText = extractText(node);
-      if (shouldRemoveAuditorArtifactsHeading(headingText)) {
-        // Skip this heading and subsequent nodes until next heading or end
-        i += 1;
-        while (i < content.length) {
-          const nextNode = content[i] as Record<string, unknown>;
-          const nextType = typeof nextNode['type'] === 'string' ? (nextNode['type'] as string) : '';
-          if (nextType === 'heading') break;
-          i += 1;
-        }
-        continue;
-      }
+/**
+ * Finds text nodes containing instruction cue lines (e.g. "State that...",
+ * "Define..."). Returns an array of { path, text } entries where path is
+ * the index chain to reach the text node in the content tree.
+ */
+function findCueLines(
+  nodes: JsonNode[],
+  path: number[] = [],
+): Array<{ path: number[]; text: string }> {
+  const results: Array<{ path: number[]; text: string }> = [];
+  for (let i = 0; i < nodes.length; i++) {
+    const node = nodes[i];
+    if (node.type === 'text' && typeof node.text === 'string' && CUE_LINE_PATTERN.test(node.text)) {
+      results.push({ path: [...path, i], text: node.text });
     }
-    result.push(sanitizeNodePlaceholders(node));
-    i += 1;
-  }
-  return result;
-}
-
-function sanitizeDocument(document: { type: 'document'; content: Record<string, unknown>[] }) {
-  const content = Array.isArray(document.content) ? document.content : [];
-  const withoutAuditorArtifacts = removeAuditorArtifactsSection(content);
-  return {
-    type: 'document' as const,
-    content: withoutAuditorArtifacts,
-  };
-}
-
-/**
- * Extract text from a heading node
- */
-function extractHeadingText(node: Record<string, unknown>): string {
-  const type = typeof node['type'] === 'string' ? (node['type'] as string) : '';
-  if (type !== 'heading') return '';
-  return extractText(node).trim();
-}
-
-/**
- * Get allowed top-level heading titles from the original/template content
- * We consider headings with level 1 or 2 as top-level anchors for section boundaries.
- */
-function getAllowedTopLevelHeadings(originalContent: Record<string, unknown>[]): string[] {
-  const allowed: string[] = [];
-  for (const node of originalContent) {
-    const type = typeof node['type'] === 'string' ? (node['type'] as string) : '';
-    if (type === 'heading') {
-      const level = (node as any)?.attrs?.level;
-      if (typeof level === 'number' && level >= 1 && level <= 2) {
-        const text = extractHeadingText(node);
-        if (text) allowed.push(text.toLowerCase());
-      }
+    if (Array.isArray(node.content)) {
+      results.push(...findCueLines(node.content as JsonNode[], [...path, i]));
     }
   }
-  return allowed;
+  return results;
+}
+
+function setTextAtPath(nodes: JsonNode[], path: number[], newText: string): void {
+  let current: JsonNode[] = nodes;
+  for (let i = 0; i < path.length - 1; i++) {
+    const node = current[path[i]];
+    current = node.content as JsonNode[];
+  }
+  const target = current[path[path.length - 1]];
+  target.text = newText;
 }
 
 /**
- * Remove sections that should not exist (Table of Contents, Mapping sections) and
- * drop any new top-level sections not present in the original/template headings.
+ * Rewrites instruction cue lines into direct policy language using a
+ * targeted LLM call. Only fires when cue lines are detected — most
+ * policies skip this entirely.
  */
-function alignToTemplateStructure(
-  updated: { type: 'document'; content: Record<string, unknown>[] },
-  originalContent: Record<string, unknown>[],
-): { type: 'document'; content: Record<string, unknown>[] } {
-  const allowedTopHeadings = getAllowedTopLevelHeadings(originalContent);
-  if (allowedTopHeadings.length === 0) {
-    // Nothing to enforce; return as-is
-    return updated;
-  }
+async function refineCueLines(
+  content: JsonNode[],
+  policyName: string,
+): Promise<JsonNode[]> {
+  const cueLines = findCueLines(content);
+  if (cueLines.length === 0) return content;
 
-  const isForbiddenHeading = (headingText: string): boolean => {
-    const lower = headingText.toLowerCase();
-    if (lower.includes('table of contents')) return true;
-    if (lower.includes('mapping') && lower.includes('soc')) return true; // e.g., SOC 2 mappings
-    return false;
-  };
-
-  const result: Record<string, unknown>[] = [];
-  let i = 0;
-  const content = Array.isArray(updated.content) ? updated.content : [];
-
-  while (i < content.length) {
-    const node = content[i] as Record<string, unknown>;
-    const nodeType = typeof node['type'] === 'string' ? (node['type'] as string) : '';
-
-    if (nodeType === 'heading') {
-      const level = (node as any)?.attrs?.level;
-      const headingText = extractHeadingText(node);
-
-      // Skip forbidden sections entirely
-      if (isForbiddenHeading(headingText)) {
-        i += 1;
-        while (i < content.length) {
-          const nextNode = content[i] as Record<string, unknown>;
-          const nextType = typeof nextNode['type'] === 'string' ? (nextNode['type'] as string) : '';
-          if (nextType === 'heading') break;
-          i += 1;
-        }
-        continue;
-      }
-
-      // Enforce allowed top-level headings
-      if (typeof level === 'number' && level >= 1 && level <= 2) {
-        const normalized = headingText.toLowerCase();
-        if (!allowedTopHeadings.includes(normalized)) {
-          // Drop this new top-level section and its content until next heading
-          i += 1;
-          while (i < content.length) {
-            const nextNode = content[i] as Record<string, unknown>;
-            const nextType =
-              typeof nextNode['type'] === 'string' ? (nextNode['type'] as string) : '';
-            if (nextType === 'heading') break;
-            i += 1;
-          }
-          continue;
-        }
-      }
-    }
-
-    // Keep node (with placeholder sanitization already applied earlier)
-    result.push(node);
-    i += 1;
-  }
-
-  return { type: 'document', content: result };
-}
-
-/**
- * AI reconciliation step: ensure the draft keeps the same top-level section structure
- * as the original template while using the new content where headings match.
- * - Preserve the order and heading levels from the original.
- * - For each top-level heading in the original, use the draft section content if present
- *   (matched by heading text, case-insensitive); otherwise keep the original section content.
- * - Do not introduce new top-level sections, TOC, or mapping sections.
- */
-export async function reconcileFormatWithTemplate(
-  originalContent: Record<string, unknown>[],
-  draft: { type: 'document'; content: Record<string, unknown>[] },
-): Promise<{ type: 'document'; content: Record<string, unknown>[] }> {
   try {
     const { object } = await generateObject({
-      model: openai('gpt-5-mini'),
-      output: 'no-schema',
-      system: `You are an expert policy editor.
-Given an ORIGINAL policy TipTap JSON and a DRAFT TipTap JSON, produce a FINAL TipTap JSON that:
-- Preserves the ORIGINAL top-level section structure (order and presence of titles) and visual presentation of titles.
-- VISUAL CONSISTENCY: For each ORIGINAL top-level title, match its visual style in the FINAL exactly:
-  - If the ORIGINAL uses a heading, keep the same heading level in the FINAL.
-  - If the ORIGINAL uses a bold paragraph as the title, use a bold paragraph for that title in the FINAL (single text node with a bold mark).
-  - After each title, ensure at least one paragraph node exists (may be empty if content is not provided).
-- CONTENT SELECTION: For each ORIGINAL title, prefer the DRAFT's corresponding section content when the title text matches (case-insensitive). If no matching DRAFT section exists, keep the ORIGINAL section content.
-- COMPLETENESS: Include every ORIGINAL top-level title exactly once and in the same order as the ORIGINAL. Do not omit any original section, even if the DRAFT lacks content for it (in that case, keep the ORIGINAL section or include an empty paragraph placeholder under the title).
-- PROHIBITIONS: Do not add new top-level sections. Do not include a Table of Contents. Do not add framework mapping sections unless they already exist in the ORIGINAL.
-- OUTPUT FORMAT: Valid TipTap JSON with root {"type":"document","content":[...]}.`,
-      prompt: `ORIGINAL (TipTap JSON):\n${JSON.stringify({ type: 'document', content: originalContent })}\n\nDRAFT (TipTap JSON):\n${JSON.stringify(draft)}\n\nReturn ONLY the FINAL TipTap JSON document with type "document" and a "content" array.
-Follow the structure rules above strictly.`,
-    });
-    const parsed = object as { type?: string; content?: unknown };
-    if (parsed?.type !== 'document' || !Array.isArray(parsed?.content)) {
-      throw new Error('AI response did not match expected TipTap document structure');
-    }
-    return { type: 'document' as const, content: parsed.content as Record<string, unknown>[] };
-  } catch (error) {
-    logger.error('AI reconcile format step failed; falling back to deterministic alignment', {
-      error: error instanceof Error ? error.message : String(error),
-    });
-    return draft;
-  }
-}
-
-/**
- * AI format checker: returns whether DRAFT conforms to ORIGINAL's format
- */
-export async function aiCheckFormatWithTemplate(
-  originalContent: Record<string, unknown>[],
-  draft: { type: 'document'; content: Record<string, unknown>[] },
-): Promise<{ isConforming: boolean; reasons: string[] }> {
-  try {
-    const { object } = await generateObject({
-      model: openai('gpt-5-mini'),
-      system: `You are validating policy layout.
-Compare ORIGINAL vs DRAFT (TipTap JSON). Determine if DRAFT conforms to ORIGINAL format:
-- Same top-level section titles present and in the same order
-- Title visual style matches (heading level vs bold paragraph)
-- No new top-level sections added; no Table of Contents; no framework mapping sections if not in ORIGINAL
-- After every title there is at least one paragraph node
-Return JSON { isConforming: boolean, reasons: string[] }.
-`,
-      prompt: `ORIGINAL:\n${JSON.stringify({ type: 'document', content: originalContent })}\n\nDRAFT:\n${JSON.stringify(draft)}\n\nRespond only with the JSON object.`,
+      model: gateway('anthropic/claude-sonnet-4.6'),
+      system: `You rewrite policy template instructions into direct, professional policy language. Each input is an instruction (e.g. "State that...", "Define..."). Return the equivalent text as it should appear in a published security policy — authoritative, concise, no instructional phrasing.`,
+      prompt: `Policy: "${policyName}"\n\nRewrite each instruction:\n${cueLines.map((c, i) => `${i + 1}. ${c.text}`).join('\n')}`,
       schema: z.object({
-        isConforming: z.boolean(),
-        reasons: z.array(z.string()).default([]),
+        rewrites: z.array(z.string()).length(cueLines.length),
       }),
     });
-    return object;
-  } catch (error) {
-    logger.error('AI format check failed, defaulting to not conforming', {
-      error: error instanceof Error ? error.message : String(error),
+
+    for (let i = 0; i < cueLines.length; i++) {
+      setTextAtPath(content, cueLines[i].path, object.rewrites[i]);
+    }
+  } catch (err) {
+    logger.warn('Cue line refinement failed; keeping original text', {
+      policyName,
+      error: err instanceof Error ? err.message : String(err),
     });
-    return { isConforming: false, reasons: ['checker_failed'] };
-  }
-}
-
-/**
- * VISUAL LAYOUT ENFORCEMENT
- * Make the draft visually match the template with respect to section title presentation:
- * - If the template uses a heading (level 1/2) for a title, ensure the draft uses the same heading level for that title
- * - If the template uses a bold paragraph as a title, ensure the draft does the same (single text node, bold mark)
- * - After each title, ensure at least one paragraph node exists
- */
-function isBoldParagraphTitle(node: Record<string, unknown>): boolean {
-  if ((node as any)?.type !== 'paragraph') return false;
-  const content = Array.isArray((node as any)?.content) ? ((node as any).content as any[]) : [];
-  if (content.length !== 1) return false;
-  const t = content[0];
-  if (!t || t.type !== 'text' || typeof t.text !== 'string') return false;
-  const marks = Array.isArray(t.marks) ? (t.marks as any[]) : [];
-  return marks.some((m) => m?.type === 'bold');
-}
-
-function toBoldTitleParagraph(text: string): Record<string, unknown> {
-  return {
-    type: 'paragraph',
-    content: [
-      {
-        type: 'text',
-        text,
-        marks: [{ type: 'bold' }],
-      },
-    ],
-  } as Record<string, unknown>;
-}
-
-type TitlePattern = { kind: 'heading'; level: number } | { kind: 'boldParagraph' };
-
-function getTitlePatternMap(original: Record<string, unknown>[]): Map<string, TitlePattern> {
-  const map = new Map<string, TitlePattern>();
-  for (const node of original) {
-    const type = (node as any)?.type as string;
-    if (type === 'heading') {
-      const level = (node as any)?.attrs?.level;
-      const text = extractHeadingText(node);
-      if (text && typeof level === 'number') {
-        map.set(text.trim().toLowerCase(), { kind: 'heading', level });
-      }
-    } else if (isBoldParagraphTitle(node)) {
-      const text = extractText(node);
-      if (text) {
-        map.set(text.trim().toLowerCase(), { kind: 'boldParagraph' });
-      }
-    }
-  }
-  return map;
-}
-
-export function enforceVisualLayoutWithTemplate(
-  original: Record<string, unknown>[],
-  draft: { type: 'document'; content: Record<string, unknown>[] },
-): { type: 'document'; content: Record<string, unknown>[] } {
-  const content = Array.isArray(draft.content) ? draft.content : [];
-  const patternMap = getTitlePatternMap(original);
-  if (patternMap.size === 0) return draft;
-
-  const out: Record<string, unknown>[] = [];
-
-  for (let i = 0; i < content.length; i += 1) {
-    const node = content[i] as Record<string, unknown>;
-    const type = (node as any)?.type as string;
-    let pushed = false;
-
-    if (type === 'heading' || isBoldParagraphTitle(node)) {
-      const titleText = (type === 'heading' ? extractHeadingText(node) : extractText(node)).trim();
-      const key = titleText.toLowerCase();
-      const pattern = titleText ? patternMap.get(key) : undefined;
-
-      if (pattern) {
-        if (pattern.kind === 'heading') {
-          out.push({
-            type: 'heading',
-            attrs: { level: pattern.level },
-            content: [{ type: 'text', text: titleText }],
-          });
-          pushed = true;
-        } else if (pattern.kind === 'boldParagraph') {
-          out.push(toBoldTitleParagraph(titleText));
-          pushed = true;
-        }
-
-        if (pushed) {
-          // Ensure at least one paragraph follows a title
-          const next = content[i + 1] as Record<string, unknown> | undefined;
-          const nextType = (next as any)?.type as string | undefined;
-          if (!next || nextType === 'heading') {
-            out.push({ type: 'paragraph', content: [] });
-          }
-          continue;
-        }
-      }
-    }
-
-    out.push(node);
   }
 
-  return { type: 'document', content: out };
+  return content;
 }
 
 // Types
@@ -428,80 +151,6 @@ export async function fetchOrganizationAndPolicy(
   }
 
   return { organization, policy, policyTemplate };
-}
-
-/**
- * Generates the prompt for policy content generation
- */
-export async function generatePolicyPrompt(
-  policyTemplate: FrameworkEditorPolicyTemplate,
-  contextHub: string,
-  organization: OrganizationData,
-  frameworks: FrameworkEditorFramework[],
-): Promise<string> {
-  return generatePrompt({
-    contextHub,
-    policyTemplate,
-    companyName: organization.name ?? 'Company',
-    companyWebsite: organization.website ?? 'https://company.com',
-    frameworks,
-  });
-}
-
-/**
- * Generates policy content using AI with TipTap JSON schema
- */
-export async function generatePolicyContent(prompt: string): Promise<{
-  type: 'document';
-  content: Record<string, unknown>[];
-}> {
-  try {
-    const { object } = await generateObject({
-      model: openai('gpt-5-mini'),
-      output: 'no-schema',
-      system: `You are an expert at writing security policies. Generate content directly as TipTap JSON format.
-
-TipTap JSON structure:
-- Root: {"type": "document", "content": [array of nodes]}
-- Paragraphs: {"type": "paragraph", "content": [text nodes]}
-- Headings: {"type": "heading", "attrs": {"level": 1-6}, "content": [text nodes]}
-- Lists: {"type": "orderedList"/"bulletList", "content": [listItem nodes]}
-- List items: {"type": "listItem", "content": [paragraph nodes]}
-- Text: {"type": "text", "text": "content", "marks": [formatting]}
-- Bold: {"type": "bold"} in marks array
-- Italic: {"type": "italic"} in marks array
-
-IMPORTANT: Follow ALL formatting instructions in the prompt, implementing them as proper TipTap JSON structures.
-Return a JSON object with exactly this shape: {"type": "document", "content": [array of TipTap nodes]}`,
-      prompt: `Generate a SOC 2 compliant security policy as a complete TipTap JSON document.
-
-INSTRUCTIONS TO IMPLEMENT IN TIPTAP JSON:
-${prompt.replace(/\\n/g, '\n')}
-
-Return the complete TipTap document following ALL the above requirements using proper TipTap JSON structure.`,
-    });
-
-    const parsed = object as { type?: string; content?: unknown };
-    if (parsed?.type !== 'document' || !Array.isArray(parsed?.content)) {
-      throw new Error('AI response did not match expected TipTap document structure');
-    }
-
-    return { type: 'document' as const, content: parsed.content as Record<string, unknown>[] };
-  } catch (aiError) {
-    logger.error(`Error generating AI content: ${aiError}`);
-
-    if (NoObjectGeneratedError.isInstance(aiError)) {
-      logger.error(
-        `NoObjectGeneratedError: ${JSON.stringify({
-          cause: aiError.cause,
-          text: aiError.text,
-          response: aiError.response,
-          usage: aiError.usage,
-        })}`,
-      );
-    }
-    throw aiError;
-  }
 }
 
 /**
@@ -610,19 +259,21 @@ export async function updatePolicyInDatabase(
 export async function processPolicyUpdate(params: UpdatePolicyParams): Promise<PolicyUpdateResult> {
   const { organizationId, policyId, contextHub, frameworks, memberId } = params;
 
-  // Fetch organization and policy data
   const { organization, policyTemplate } = await fetchOrganizationAndPolicy(
     organizationId,
     policyId,
   );
 
-  // Generate prompt for AI
-  const prompt = await generatePolicyPrompt(policyTemplate, contextHub, organization, frameworks);
+  const processedContent = processTemplate({
+    content: policyTemplate.content,
+    companyName: organization.name ?? 'Company',
+    contextHub,
+    frameworks,
+  });
 
-  // Generate new policy content
-  const updatedContent = await generatePolicyContent(prompt);
+  const refinedContent = await refineCueLines(processedContent, policyTemplate.name);
+  const updatedContent = { type: 'document' as const, content: refinedContent };
 
-  // Update policy in database with versioning support
   await updatePolicyInDatabase(policyId, updatedContent.content, memberId);
 
   return {

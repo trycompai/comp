@@ -127,7 +127,7 @@ Important:
       const result = streamText({
         model: openai('gpt-5'),
         system: systemPrompt,
-        messages: convertToModelMessages(messages),
+        messages: await convertToModelMessages(messages),
         tools,
         stopWhen: stepCountIs(5),
       });
