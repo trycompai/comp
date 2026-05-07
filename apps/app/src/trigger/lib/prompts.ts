@@ -1,6 +1,24 @@
 import { FrameworkEditorFramework, FrameworkEditorPolicyTemplate } from '@db';
 import { logger } from '@trigger.dev/sdk';
 
+const FRAMEWORK_MATCHERS: Array<{ flag: string; test: (name: string) => boolean }> = [
+  { flag: 'soc2', test: (n) => /soc\s*2/i.test(n) || n.includes('soc') },
+  { flag: 'hipaa', test: (n) => n.includes('hipaa') },
+  { flag: 'pipeda', test: (n) => n.includes('pipeda') },
+  { flag: 'gdpr', test: (n) => n.includes('gdpr') },
+  { flag: 'iso27001', test: (n) => /iso\s*27001/i.test(n) },
+  { flag: 'pci', test: (n) => /pci/i.test(n) },
+  { flag: 'nist', test: (n) => /nist/i.test(n) },
+  { flag: 'ccpa', test: (n) => n.includes('ccpa') },
+];
+
+function buildFrameworkFlags(frameworks: FrameworkEditorFramework[]): string {
+  return FRAMEWORK_MATCHERS.map(({ flag, test }) => {
+    const active = frameworks.some((f) => test(f.name.toLowerCase()));
+    return `     - ${flag} is ${active ? 'true' : 'false'}`;
+  }).join('\n');
+}
+
 export const generatePrompt = ({
   policyTemplate,
   contextHub,
@@ -29,10 +47,7 @@ export const generatePrompt = ({
     frameworks.length > 0
       ? frameworks.map((f) => `${f.name} v${f.version}`).join(', ')
       : 'None explicitly selected';
-  const hasHIPAA = frameworks.some((f) => f.name.toLowerCase().includes('hipaa'));
-  const hasSOC2 = frameworks.some(
-    (f) => /soc\s*2/i.test(f.name) || f.name.toLowerCase().includes('soc'),
-  );
+  const frameworkFlags = buildFrameworkFlags(frameworks);
 
   return `
 Company: ${companyName} (${companyWebsite})
@@ -67,10 +82,9 @@ Required rules (keep this simple):
    - Do NOT copy instruction cue lines (e.g., "Add a HIPAA checklist...", "State that...", "Clarify that..."). Convert such cues into real policy language, and then remove the cue line entirely. If a cue precedes bullet points, keep the bullets but delete the cue line.
 
 3) Handlebars-style conditionals
-   - The template may contain conditional blocks using {{#if var}}...{{/if}} syntax (e.g., {{#if soc2}}, {{#if hipaa}}).
+   - The template may contain conditional blocks using {{#if var}}...{{/if}} syntax (e.g., {{#if soc2}}, {{#if hipaa}}, {{#if pipeda}}).
    - Evaluate these using the selected frameworks:
-     - soc2 is ${hasSOC2 ? 'true' : 'false'}
-     - hipaa is ${hasHIPAA ? 'true' : 'false'}
+${frameworkFlags}
    - If the condition is true: keep only the inner content and remove the {{#if}}/{{/if}} markers.
    - If the condition is false: remove the entire block including its content.
    - For any other unknown {{#if X}} variables: assume false and remove the block.
