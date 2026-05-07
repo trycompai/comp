@@ -100,9 +100,14 @@ export const onboardOrganization = task({
         }),
       ]);
 
+      // Policies only need frameworks + Q&A — start them immediately so they
+      // drain while vendors/risks/linkage run. Fire-and-forget; per-policy
+      // progress tracked via child metadata (policy_${id}_status).
+      const policyCount = policyList.length;
+      metadata.set('currentStep', `Tailoring Policies... (0/${policyCount})`);
+      await updateOrganizationPolicies(payload.organizationId, questionsAndAnswers, frameworks);
+
       // Extract vendors + risks in parallel (both are independent LLM calls).
-      // Each branch sets its own currentStep so the tracker highlights
-      // whichever phase is still running.
       metadata.set('currentStep', 'Researching Vendors...');
 
       const [vendors, risks] = await Promise.all([
@@ -154,14 +159,6 @@ export const onboardOrganization = task({
           return created;
         })(),
       ]);
-
-      // Start policy fan-out first — policies depend on framework + Q&A
-      // context only, NOT on linkage. Fire-and-forget so the main task can
-      // proceed to linkage + mitigations while policies drain in parallel.
-      // Per-policy progress is tracked via child metadata (policy_${id}_status).
-      const policyCount = policyList.length;
-      metadata.set('currentStep', `Tailoring Policies... (0/${policyCount})`);
-      await updateOrganizationPolicies(payload.organizationId, questionsAndAnswers, frameworks);
 
       // Auto-link risks + vendors to existing tasks BEFORE mitigation generation
       // runs, so the AI prompt for both risks AND vendors sees the linked

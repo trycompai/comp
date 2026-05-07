@@ -1,4 +1,4 @@
-import { openai } from '@ai-sdk/openai';
+import { createGatewayProvider } from '@ai-sdk/gateway';
 import {
   Departments,
   FrameworkEditorFramework,
@@ -14,6 +14,11 @@ import {
 import { db } from '@db/server';
 import { logger, metadata, tasks } from '@trigger.dev/sdk';
 import { generateObject, jsonSchema } from 'ai';
+
+const gateway = createGatewayProvider({
+  baseURL: process.env.AI_GATEWAY_BASE_URL,
+});
+const ONBOARDING_MODEL = 'google/gemini-3-flash' as const;
 import axios from 'axios';
 import { z } from 'zod';
 import type { researchVendor } from '../scrape/research';
@@ -496,7 +501,7 @@ export async function extractVendorsFromContext(
   const customVendorNameSet = new Set(customVendors.map((v) => v.name.toLowerCase()));
 
   const { object } = await generateObject({
-    model: openai('gpt-4.1-mini'),
+    model: gateway(ONBOARDING_MODEL),
     schema: jsonSchema({
       type: 'object',
       properties: {
@@ -664,7 +669,7 @@ Citations (write one sentence per item, in order):
 ${formatCitationsBlock(citations)}`;
 
   const result = await generateObject({
-    model: openai('gpt-5-mini'),
+    model: gateway(ONBOARDING_MODEL),
     system: RISK_MITIGATION_PROMPT,
     prompt: userPrompt,
     schema: sentencesSchema,
@@ -1033,7 +1038,7 @@ Citations (write one sentence per item, in order):
 ${formatCitationsBlock(citations)}`;
 
   const result = await generateObject({
-    model: openai('gpt-5-mini'),
+    model: gateway(ONBOARDING_MODEL),
     system: RISK_MITIGATION_PROMPT,
     prompt: userPrompt,
     schema: sentencesSchema,
@@ -1105,7 +1110,7 @@ export async function extractRisksFromContext(
   existingRisks: { title: string }[],
 ): Promise<RiskData[]> {
   const { object } = await generateObject({
-    model: openai('gpt-4.1-mini'),
+    model: gateway(ONBOARDING_MODEL),
     schema: jsonSchema({
       type: 'object',
       properties: {
@@ -1366,17 +1371,14 @@ export async function createVendors(
     triggeredCount: vendorsForRiskAssessment.length,
   });
 
-  // TODO: Un-comment this when UI part is ready
-  await triggerVendorRiskAssessmentsViaApi({
+  // Fire-and-forget: risk assessments + research are side effects that
+  // don't need to block the main onboarding flow.
+  void triggerVendorRiskAssessmentsViaApi({
     organizationId,
     vendors: vendorsForRiskAssessment,
-    // Onboarding should NOT force expensive research if GlobalVendors already has data.
-    // If data is missing, the API/Trigger pipeline will still do research.
     withResearch: false,
   });
-
-  // Trigger background research for each vendor (best-effort)
-  await triggerVendorResearch(createdVendors);
+  void triggerVendorResearch(createdVendors);
 
   return createdVendors;
 }
