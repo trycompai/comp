@@ -106,6 +106,7 @@ export const onboardOrganization = task({
       const policyCount = policyList.length;
       metadata.set('currentStep', `Tailoring Policies... (0/${policyCount})`);
       await updateOrganizationPolicies(payload.organizationId, questionsAndAnswers, frameworks);
+      metadata.set('policies', true);
 
       // Extract vendors + risks in parallel (both are independent LLM calls).
       metadata.set('currentStep', 'Creating Vendors...');
