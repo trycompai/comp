@@ -222,6 +222,7 @@ export class DevicesController {
   }
 
   @Delete(':id')
+  @RequirePermission('member', 'delete')
   @HttpCode(204)
   @ApiOperation({
     summary: 'Delete device',
