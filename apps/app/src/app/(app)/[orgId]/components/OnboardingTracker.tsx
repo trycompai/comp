@@ -197,10 +197,10 @@ export const OnboardingTracker = ({ onboarding }: { onboarding: Onboarding }) =>
     return {
       vendors: meta.vendors === true,
       risk: meta.risk === true,
-      policies: pTotal === 0 || pCompleted >= pTotal,
+      policies: pTotal > 0 && pCompleted >= pTotal,
       linkage: meta.linkage === true,
-      vendorMitigations: vTotal === 0 || vCompleted >= vTotal,
-      riskMitigations: rTotal === 0 || rCompleted >= rTotal,
+      vendorMitigations: vTotal > 0 && vCompleted >= vTotal,
+      riskMitigations: rTotal > 0 && rCompleted >= rTotal,
       currentStep: (meta.currentStep as string) || null,
       vendorsTotal: (meta.vendorsTotal as number) || 0,
       vendorsCompleted: (meta.vendorsCompleted as number) || 0,
