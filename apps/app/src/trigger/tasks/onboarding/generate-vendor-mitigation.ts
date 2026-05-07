@@ -1,5 +1,5 @@
 import { VendorStatus, db } from '@db/server';
-import { logger, metadata, queue, tags, task } from '@trigger.dev/sdk';
+import { logger, metadata, queue, tags, task, tasks } from '@trigger.dev/sdk';
 import axios from 'axios';
 import {
   createVendorRiskComment,
@@ -116,7 +116,8 @@ export const generateVendorMitigationsForOrg = task({
 
     const policies = policyRows.map((p) => ({ name: p.name, description: p.description }));
 
-    await generateVendorMitigation.batchTrigger(
+    await tasks.batchTrigger<typeof generateVendorMitigation>(
+      'generate-vendor-mitigation',
       vendors.map((v) => ({
         payload: {
           organizationId,
@@ -124,7 +125,7 @@ export const generateVendorMitigationsForOrg = task({
           authorId: author?.id,
           policies,
         },
-        concurrencyKey: `${organizationId}:${v.id}`,
+        options: { concurrencyKey: `${organizationId}:${v.id}` },
       })),
     );
 
