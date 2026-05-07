@@ -114,7 +114,7 @@ export const generateRiskMitigationsForOrg = task({
 
     const policies = policyRows.map((p) => ({ name: p.name, description: p.description }));
 
-    await tasks.batchTriggerAndWait<typeof generateRiskMitigation>(
+    const batchResult = await tasks.batchTriggerAndWait<typeof generateRiskMitigation>(
       'generate-risk-mitigation',
       risks.map((r) => ({
         payload: {
@@ -126,6 +126,12 @@ export const generateRiskMitigationsForOrg = task({
         options: { concurrencyKey: `${organizationId}:${r.id}` },
       })),
     );
+    const failures = batchResult.runs.filter((r) => !r.ok);
+    if (failures.length > 0) {
+      logger.error(`${failures.length} risk mitigation(s) failed`, {
+        failedRunIds: failures.map((r) => r.id),
+      });
+    }
 
     // Revalidate the parent risk routes after batch triggering
     try {

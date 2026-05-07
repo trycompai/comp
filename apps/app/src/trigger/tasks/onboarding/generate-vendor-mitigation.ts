@@ -116,7 +116,7 @@ export const generateVendorMitigationsForOrg = task({
 
     const policies = policyRows.map((p) => ({ name: p.name, description: p.description }));
 
-    await tasks.batchTriggerAndWait<typeof generateVendorMitigation>(
+    const batchResult = await tasks.batchTriggerAndWait<typeof generateVendorMitigation>(
       'generate-vendor-mitigation',
       vendors.map((v) => ({
         payload: {
@@ -128,6 +128,12 @@ export const generateVendorMitigationsForOrg = task({
         options: { concurrencyKey: `${organizationId}:${v.id}` },
       })),
     );
+    const failures = batchResult.runs.filter((r) => !r.ok);
+    if (failures.length > 0) {
+      logger.error(`${failures.length} vendor mitigation(s) failed`, {
+        failedRunIds: failures.map((r) => r.id),
+      });
+    }
 
     // Revalidate the parent vendors route after batch triggering
     try {

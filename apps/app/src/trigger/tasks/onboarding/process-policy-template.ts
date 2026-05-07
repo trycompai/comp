@@ -73,6 +73,19 @@ function processInlineConditionals(text: string, flags: Record<string, boolean>)
   );
 }
 
+function stripMarkerText(node: JsonNode, marker: RegExp): JsonNode {
+  if (typeof node.text === 'string') {
+    return { ...node, text: node.text.replace(marker, '') };
+  }
+  if (Array.isArray(node.content)) {
+    return {
+      ...node,
+      content: (node.content as JsonNode[]).map((child) => stripMarkerText(child, marker)),
+    };
+  }
+  return node;
+}
+
 function processTextNode(node: JsonNode, vars: Record<string, string>, flags: Record<string, boolean>): JsonNode | null {
   if (typeof node.text !== 'string') return node;
 
@@ -136,7 +149,8 @@ export function processContentArray(
       if (!isTrue) {
         skipDepth++;
       } else if (!hasOnlyMarker) {
-        const processed = processNode(node, vars, flags);
+        const stripped = stripMarkerText(node, /\{\{#if\s+\w+\}\}/g);
+        const processed = processNode(stripped, vars, flags);
         if (processed) result.push(processed);
       }
       continue;
@@ -146,7 +160,8 @@ export function processContentArray(
       if (skipDepth > 0) {
         skipDepth--;
       } else if (!hasOnlyMarker) {
-        const processed = processNode(node, vars, flags);
+        const stripped = stripMarkerText(node, /\{\{\/if\}\}/g);
+        const processed = processNode(stripped, vars, flags);
         if (processed) result.push(processed);
       }
       continue;
