@@ -1,4 +1,9 @@
-import { Injectable, NotFoundException, Logger } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  Logger,
+  ForbiddenException,
+} from '@nestjs/common';
 import { db } from '@db';
 import { getDeviceComplianceStatus } from '@trycompai/utils/devices';
 import { FleetService } from '../lib/fleet.service';
@@ -172,6 +177,66 @@ export class DevicesService {
         error,
       );
       throw new Error(`Failed to retrieve member: ${error.message}`);
+    }
+  }
+
+  async removeDeviceById({
+    organizationId,
+    deviceId,
+    userId,
+  }: {
+    organizationId: string;
+    deviceId: string;
+    userId?: string;
+  }): Promise<void> {
+    const organization = await db.organization.findUnique({
+      where: { id: organizationId },
+      select: { id: true },
+    });
+
+    if (!organization) {
+      throw new NotFoundException(
+        `Organization with ID ${organizationId} not found`,
+      );
+    }
+
+    if (!userId) {
+      throw new ForbiddenException('Only organization owners can remove devices');
+    }
+
+    const member = await db.member.findFirst({
+      where: {
+        userId,
+        organizationId,
+        deactivated: false,
+      },
+      select: { role: true },
+    });
+
+    if (!member) {
+      throw new ForbiddenException('User is not a member of this organization');
+    }
+
+    const memberRoles = member.role
+      .split(',')
+      .map((role) => role.trim().toLowerCase());
+    const isOwner = memberRoles.includes('owner');
+
+    if (!isOwner) {
+      throw new ForbiddenException('Only organization owners can remove devices');
+    }
+
+    const deleteResult = await db.device.deleteMany({
+      where: {
+        id: deviceId,
+        organizationId,
+      },
+    });
+
+    if (deleteResult.count === 0) {
+      throw new NotFoundException(
+        `Device with ID ${deviceId} not found in organization ${organizationId}`,
+      );
     }
   }
 

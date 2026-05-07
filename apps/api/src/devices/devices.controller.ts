@@ -1,4 +1,4 @@
-import { Controller, Get, Param, UseGuards } from '@nestjs/common';
+import { Controller, Delete, Get, HttpCode, Param, UseGuards } from '@nestjs/common';
 import {
   ApiOperation,
   ApiParam,
@@ -219,5 +219,41 @@ export class DevicesController {
           },
         }),
     };
+  }
+
+  @Delete(':id')
+  @HttpCode(204)
+  @ApiOperation({
+    summary: 'Delete device',
+    description:
+      'Deletes a single device in the authenticated organization. Only organization owners can delete devices.',
+  })
+  @ApiParam({
+    name: 'id',
+    description: 'Device ID to delete',
+    example: 'dev_abc123def456',
+  })
+  @ApiResponse({
+    status: 204,
+    description: 'Device deleted successfully',
+  })
+  @ApiResponse({
+    status: 403,
+    description: 'Forbidden - only organization owners can delete devices',
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Organization or device not found',
+  })
+  async deleteDevice(
+    @Param('id') id: string,
+    @OrganizationId() organizationId: string,
+    @AuthContext() authContext: AuthContextType,
+  ): Promise<void> {
+    await this.devicesService.removeDeviceById({
+      organizationId,
+      deviceId: id,
+      userId: authContext.userId,
+    });
   }
 }
