@@ -113,6 +113,7 @@ export async function rerankSuggestions({
     system: SYSTEM_PROMPT,
     prompt: userPrompt,
     schema: rerankSchema,
+    abortSignal: AbortSignal.timeout(30_000),
   });
 
   const scoreMap = new Map(

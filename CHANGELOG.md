@@ -1,3 +1,11 @@
+## [3.45.1](https://github.com/trycompai/comp/compare/v3.45.0...v3.45.1) (2026-05-07)
+
+
+### Bug Fixes
+
+* **onboarding:** prevent mitigation steps flashing complete ([#2786](https://github.com/trycompai/comp/issues/2786)) ([35e901a](https://github.com/trycompai/comp/commit/35e901a7df524d95136528a8fb976adfa0d748f5))
+* **onboarding:** tracker N/N format + reranker timeout ([#2788](https://github.com/trycompai/comp/issues/2788)) ([a60e4c5](https://github.com/trycompai/comp/commit/a60e4c537a4a524dd3bc3810f4d657d1a3bd99b2))
+
 # [3.45.0](https://github.com/trycompai/comp/compare/v3.44.2...v3.45.0) (2026-05-07)
 
 
