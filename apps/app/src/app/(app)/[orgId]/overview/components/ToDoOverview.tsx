@@ -5,7 +5,6 @@ import { Card, CardContent, CardHeader, CardTitle } from '@trycompai/ui/card';
 import { ScrollArea } from '@trycompai/ui/scroll-area';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@trycompai/ui/tabs';
 import { Policy, Task } from '@db';
-import { useRun } from '@trigger.dev/react-hooks';
 import {
   ArrowRight,
   CheckCircle2,
@@ -49,25 +48,7 @@ export function ToDoOverview({
   const [isConfirmDialogOpen, setIsConfirmDialogOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
-  const { run: onboardingRun } = useRun(onboardingTriggerJobId || '', {
-    refreshInterval: 1000,
-  });
-
-  const IN_PROGRESS_STATUSES = [
-    'QUEUED',
-    'EXECUTING',
-    'WAITING_FOR_DEPLOY',
-    'REATTEMPTING',
-    'FROZEN',
-    'DELAYED',
-    'WAITING',
-    'PENDING_VERSION',
-    'DEQUEUED',
-  ];
-
-  const isOnboardingInProgress = onboardingRun
-    ? IN_PROGRESS_STATUSES.includes(onboardingRun.status)
-    : false;
+  const isOnboardingInProgress = !!onboardingTriggerJobId;
 
   const formatStatus = (status: string) => {
     return status.replace('_', ' ').replace(/\b\w/g, (l) => l.toUpperCase());
