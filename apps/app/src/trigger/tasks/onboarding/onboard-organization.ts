@@ -188,20 +188,21 @@ export const onboardOrganization = task({
         data: { triggerJobCompleted: true },
       });
 
-      // Fan-out vendor + risk mitigations now that linkage has populated the
-      // grounding context for both kinds of entities. triggerAndWait keeps
-      // this task alive so metadata.root stays writable for child tasks.
+      // Fan-out vendor + risk mitigations. triggerAndWait keeps this task
+      // alive so metadata.root stays writable for child tasks. Sequential
+      // because Trigger.dev doesn't support parallel waits, but both
+      // fan-outs use batchTriggerAndWait internally so their children
+      // run with full queue concurrency.
       metadata.set('currentStep', 'Assessing Vendors...');
-      await Promise.all([
-        tasks.triggerAndWait<typeof generateVendorMitigationsForOrg>(
-          'generate-vendor-mitigations-for-org',
-          { organizationId: payload.organizationId },
-        ),
-        tasks.triggerAndWait<typeof generateRiskMitigationsForOrg>(
-          'generate-risk-mitigations-for-org',
-          { organizationId: payload.organizationId },
-        ),
-      ]);
+      await tasks.triggerAndWait<typeof generateVendorMitigationsForOrg>(
+        'generate-vendor-mitigations-for-org',
+        { organizationId: payload.organizationId },
+      );
+      metadata.set('currentStep', 'Assessing Risks...');
+      await tasks.triggerAndWait<typeof generateRiskMitigationsForOrg>(
+        'generate-risk-mitigations-for-org',
+        { organizationId: payload.organizationId },
+      );
 
       metadata.set('currentStep', 'Finalizing...');
       metadata.set('completed', true);

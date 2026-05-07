@@ -116,7 +116,7 @@ export const generateVendorMitigationsForOrg = task({
 
     const policies = policyRows.map((p) => ({ name: p.name, description: p.description }));
 
-    await tasks.batchTrigger<typeof generateVendorMitigation>(
+    await tasks.batchTriggerAndWait<typeof generateVendorMitigation>(
       'generate-vendor-mitigation',
       vendors.map((v) => ({
         payload: {

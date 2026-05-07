@@ -114,7 +114,7 @@ export const generateRiskMitigationsForOrg = task({
 
     const policies = policyRows.map((p) => ({ name: p.name, description: p.description }));
 
-    await tasks.batchTrigger<typeof generateRiskMitigation>(
+    await tasks.batchTriggerAndWait<typeof generateRiskMitigation>(
       'generate-risk-mitigation',
       risks.map((r) => ({
         payload: {
