@@ -1,6 +1,6 @@
 'use client';
 
-import { useRun } from '@trigger.dev/react-hooks';
+import { useRealtimeRun } from '@trigger.dev/react-hooks';
 import { useMemo } from 'react';
 import type { PolicyTailoringStatus } from '../../all/components/policy-tailoring-context';
 
@@ -20,8 +20,8 @@ export function usePolicyOnboardingStatus(
   onboardingRunId: string | null | undefined,
 ) {
   const shouldSubscribe = Boolean(onboardingRunId);
-  const { run } = useRun(shouldSubscribe ? onboardingRunId! : '', {
-    refreshInterval: 1000,
+  const { run } = useRealtimeRun(shouldSubscribe ? onboardingRunId! : '', {
+    enabled: shouldSubscribe,
   });
 
   const itemStatuses = useMemo<Record<string, PolicyTailoringStatus>>(() => {
