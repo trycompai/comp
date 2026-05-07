@@ -29,7 +29,7 @@ export async function getOverviewScores(organizationId: string) {
       }),
       db.onboarding.findUnique({
         where: { organizationId },
-        select: { triggerJobId: true },
+        select: { triggerJobId: true, triggerJobCompleted: true },
       }),
       db.organization.findUnique({
         where: { id: organizationId },
@@ -90,7 +90,7 @@ export async function getOverviewScores(organizationId: string) {
       incompleteTasks,
     },
     people,
-    onboardingTriggerJobId: onboarding?.triggerJobId ?? null,
+    onboardingTriggerJobId: onboarding?.triggerJobCompleted ? null : (onboarding?.triggerJobId ?? null),
     documents: await computeDocumentsScore(organizationId),
     findings: await getOrganizationFindings(organizationId),
   };

@@ -1,5 +1,5 @@
 import { RiskStatus, db } from '@db/server';
-import { logger, metadata, queue, tags, task } from '@trigger.dev/sdk';
+import { logger, metadata, queue, tags, task, tasks } from '@trigger.dev/sdk';
 import axios from 'axios';
 import {
   createRiskMitigationComment,
@@ -114,7 +114,8 @@ export const generateRiskMitigationsForOrg = task({
 
     const policies = policyRows.map((p) => ({ name: p.name, description: p.description }));
 
-    await generateRiskMitigation.batchTrigger(
+    const batchResult = await tasks.batchTriggerAndWait<typeof generateRiskMitigation>(
+      'generate-risk-mitigation',
       risks.map((r) => ({
         payload: {
           organizationId,
@@ -122,9 +123,15 @@ export const generateRiskMitigationsForOrg = task({
           authorId: author?.id,
           policies,
         },
-        concurrencyKey: `${organizationId}:${r.id}`,
+        options: { concurrencyKey: `${organizationId}:${r.id}` },
       })),
     );
+    const failures = batchResult.runs.filter((r) => !r.ok);
+    if (failures.length > 0) {
+      logger.error(`${failures.length} risk mitigation(s) failed`, {
+        failedRunIds: failures.map((r) => r.id),
+      });
+    }
 
     // Revalidate the parent risk routes after batch triggering
     try {

@@ -2,21 +2,7 @@ import { logger, metadata, queue, schemaTask } from '@trigger.dev/sdk';
 import { z } from 'zod';
 import { processPolicyUpdate } from './update-policies-helpers';
 
-if (!process.env.OPENAI_API_KEY) {
-  throw new Error('OPENAI_API_KEY is not set');
-}
-
-// v4: define queue ahead of time.
-// concurrencyLimit is intentionally low so a 30+ policy onboarding fan-out
-// can't hog all of dev's 25-slot env budget. Each policy update takes ~20-40s
-// (LLM call + DB writes), while risk + vendor mitigations take ~8-12s. With
-// no cap the slower policies fill every slot first and the user-visible
-// mitigation tasks sit queued for minutes. Capping at 5 leaves ≥20 slots
-// for the faster, latency-sensitive mitigation fan-out to finish quickly,
-// then policies drain through. Total wall time is ~the same, but the user
-// sees their treatment plans populate immediately instead of waiting for
-// every policy to finish first.
-export const updatePolicyQueue = queue({ name: 'update-policy', concurrencyLimit: 5 });
+export const updatePolicyQueue = queue({ name: 'update-policy', concurrencyLimit: 15 });
 
 export const updatePolicy = schemaTask({
   id: 'update-policy',

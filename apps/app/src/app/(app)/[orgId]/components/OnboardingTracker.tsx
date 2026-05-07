@@ -3,7 +3,7 @@
 import { Button } from '@trycompai/ui/button';
 import { Card, CardContent } from '@trycompai/ui/card';
 import type { Onboarding } from '@db';
-import { useRealtimeRun } from '@trigger.dev/react-hooks';
+import { useRun } from '@trigger.dev/react-hooks';
 import { AnimatePresence, motion } from 'framer-motion';
 import {
   AlertTriangle,
@@ -26,9 +26,12 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
 
 const ONBOARDING_STEPS = [
-  { key: 'vendors', label: 'Researching Vendors', order: 1 },
-  { key: 'risk', label: 'Creating Risks', order: 2 },
-  { key: 'policies', label: 'Tailoring Policies', order: 3 },
+  { key: 'policies', label: 'Tailoring Policies', order: 1 },
+  { key: 'vendors', label: 'Creating Vendors', order: 2 },
+  { key: 'risk', label: 'Creating Risks', order: 3 },
+  { key: 'linkage', label: 'Linking to Controls', order: 4 },
+  { key: 'vendorMitigations', label: 'Assessing Vendors', order: 5 },
+  { key: 'riskMitigations', label: 'Assessing Risks', order: 6 },
 ] as const;
 
 const IN_PROGRESS_STATUSES = [
@@ -60,11 +63,13 @@ export const OnboardingTracker = ({ onboarding }: { onboarding: Onboarding }) =>
   const [isPoliciesExpanded, setIsPoliciesExpanded] = useState(false);
   const [isVendorsExpanded, setIsVendorsExpanded] = useState(false);
   const [isRisksExpanded, setIsRisksExpanded] = useState(false);
+  const spinnerStyle = useMemo(() => ({
+    animation: 'spin 1s linear infinite',
+    animationDelay: `${-(Date.now() % 1000)}ms`,
+  }), []);
 
-  // useRealtimeRun will automatically get the token from TriggerProvider context
-  // This gives us real-time updates including metadata changes
-  const { run, error } = useRealtimeRun(triggerJobId || '', {
-    enabled: !!triggerJobId,
+  const { run, error } = useRun(triggerJobId || '', {
+    refreshInterval: 1000,
   });
 
   const dismissKey = triggerJobId ? `onboarding-tracker-dismissed:${triggerJobId}` : null;
@@ -95,12 +100,30 @@ export const OnboardingTracker = ({ onboarding }: { onboarding: Onboarding }) =>
     }
   }, [dismissKey]);
 
-  // Auto-minimize when completed
+  // Auto-minimize when completed AND all background work is done.
+  // The main task completes before policies/mitigations finish (they
+  // run as fire-and-forget children), so also check the counters.
   useEffect(() => {
-    if (run?.status === 'COMPLETED' && !isMinimized) {
+    if (run?.status !== 'COMPLETED' || isMinimized) return;
+    const meta = run?.metadata as Record<string, unknown> | undefined;
+    if (!meta) return;
+
+    const policiesTotal = (meta.policiesTotal as number) || 0;
+    const policiesCompleted = (meta.policiesCompleted as number) || 0;
+    const policiesDone = policiesTotal === 0 || policiesCompleted >= policiesTotal;
+
+    const vendorsTotal = (meta.vendorsTotal as number) || 0;
+    const vendorsCompleted = (meta.vendorsCompleted as number) || 0;
+    const vendorsDone = vendorsTotal === 0 || vendorsCompleted >= vendorsTotal;
+
+    const risksTotal = (meta.risksTotal as number) || 0;
+    const risksCompleted = (meta.risksCompleted as number) || 0;
+    const risksDone = risksTotal === 0 || risksCompleted >= risksTotal;
+
+    if (policiesDone && vendorsDone && risksDone) {
       setIsMinimized(true);
     }
-  }, [run?.status, isMinimized]);
+  }, [run?.status, run?.metadata, isMinimized]);
 
   // Extract step completion from metadata (real-time updates)
   const stepStatus = useMemo(() => {
@@ -109,6 +132,9 @@ export const OnboardingTracker = ({ onboarding }: { onboarding: Onboarding }) =>
         vendors: false,
         risk: false,
         policies: false,
+        linkage: false,
+        vendorMitigations: false,
+        riskMitigations: false,
         currentStep: null,
         vendorsTotal: 0,
         vendorsCompleted: 0,
@@ -161,10 +187,20 @@ export const OnboardingTracker = ({ onboarding }: { onboarding: Onboarding }) =>
         (meta[statusKey] as 'queued' | 'pending' | 'processing' | 'completed') || 'queued';
     });
 
+    const vTotal = (meta.vendorsTotal as number) || 0;
+    const vCompleted = (meta.vendorsCompleted as number) || 0;
+    const rTotal = (meta.risksTotal as number) || 0;
+    const rCompleted = (meta.risksCompleted as number) || 0;
+    const pTotal = (meta.policiesTotal as number) || 0;
+    const pCompleted = (meta.policiesCompleted as number) || 0;
+
     return {
       vendors: meta.vendors === true,
       risk: meta.risk === true,
-      policies: meta.policies === true,
+      policies: pTotal === 0 || pCompleted >= pTotal,
+      linkage: meta.linkage === true,
+      vendorMitigations: vTotal === 0 || vCompleted >= vTotal,
+      riskMitigations: rTotal === 0 || rCompleted >= rTotal,
       currentStep: (meta.currentStep as string) || null,
       vendorsTotal: (meta.vendorsTotal as number) || 0,
       vendorsCompleted: (meta.vendorsCompleted as number) || 0,
@@ -201,12 +237,11 @@ export const OnboardingTracker = ({ onboarding }: { onboarding: Onboarding }) =>
 
     const stepKey = currentStep.key;
 
-    // Expand current step if it has items to show
-    if (stepKey === 'vendors' && stepStatus.vendorsTotal > 0) {
+    if (stepKey === 'vendorMitigations' && stepStatus.vendorsTotal > 0) {
       setIsVendorsExpanded(true);
       setIsRisksExpanded(false);
       setIsPoliciesExpanded(false);
-    } else if (stepKey === 'risk' && stepStatus.risksTotal > 0) {
+    } else if (stepKey === 'riskMitigations' && stepStatus.risksTotal > 0) {
       setIsVendorsExpanded(false);
       setIsRisksExpanded(true);
       setIsPoliciesExpanded(false);
@@ -214,6 +249,10 @@ export const OnboardingTracker = ({ onboarding }: { onboarding: Onboarding }) =>
       setIsVendorsExpanded(false);
       setIsRisksExpanded(false);
       setIsPoliciesExpanded(true);
+    } else {
+      setIsVendorsExpanded(false);
+      setIsRisksExpanded(false);
+      setIsPoliciesExpanded(false);
     }
   }, [currentStep?.key, stepStatus.vendorsTotal, stepStatus.risksTotal, stepStatus.policiesTotal]);
 
@@ -395,7 +434,7 @@ export const OnboardingTracker = ({ onboarding }: { onboarding: Onboarding }) =>
     if (!run && !error) {
       return (
         <div className="flex items-center gap-3">
-          <Loader2 className="h-5 w-5 shrink-0 text-primary" style={{ animation: 'spin 1s linear infinite', animationDelay: `${-(Date.now() % 1000)}ms` }} />
+          <Loader2 className="h-5 w-5 shrink-0 text-primary" style={spinnerStyle} />
           <div className="flex-1 min-w-0">
             <p className="text-base font-medium text-foreground">Initializing...</p>
             <p className="text-muted-foreground text-sm mt-1">Checking onboarding status</p>
@@ -433,7 +472,22 @@ export const OnboardingTracker = ({ onboarding }: { onboarding: Onboarding }) =>
 
     const friendlyStatus = getFriendlyStatusName(run.status);
 
-    switch (run.status) {
+    // When the main task is COMPLETED but child tasks (policies, mitigations)
+    // are still running, show the progress view instead of "Setup Complete".
+    const hasBackgroundWork = (() => {
+      if (run.status !== 'COMPLETED') return false;
+      const meta = run.metadata as Record<string, unknown> | undefined;
+      if (!meta) return false;
+      const pt = (meta.policiesTotal as number) || 0;
+      const pc = (meta.policiesCompleted as number) || 0;
+      const vt = (meta.vendorsTotal as number) || 0;
+      const vc = (meta.vendorsCompleted as number) || 0;
+      const rt = (meta.risksTotal as number) || 0;
+      const rc = (meta.risksCompleted as number) || 0;
+      return (pt > 0 && pc < pt) || (vt > 0 && vc < vt) || (rt > 0 && rc < rt);
+    })();
+
+    switch (hasBackgroundWork ? 'EXECUTING' : run.status) {
       case 'WAITING':
       case 'QUEUED':
       case 'EXECUTING':
@@ -472,151 +526,56 @@ export const OnboardingTracker = ({ onboarding }: { onboarding: Onboarding }) =>
             <div className="flex flex-col gap-2.5 flex-1 overflow-y-auto min-h-0 pr-1">
               {ONBOARDING_STEPS.map((step) => {
                 const isCurrent = currentStep?.key === step.key;
-                const isVendorsStep = step.key === 'vendors';
-                const isRisksStep = step.key === 'risk';
-                const isPoliciesStep = step.key === 'policies';
+                const isCompleted = stepStatus[step.key as keyof typeof stepStatus] === true;
 
-                // Determine completion based on unique counts, not raw metadata totals
-                const vendorsCompleted =
-                  uniqueVendorsCounts.total > 0 &&
-                  uniqueVendorsCounts.completed >= uniqueVendorsCounts.total;
-                const risksCompleted =
-                  stepStatus.risksTotal > 0 && stepStatus.risksCompleted >= stepStatus.risksTotal;
-                const policiesCompleted =
-                  stepStatus.policiesTotal > 0 &&
-                  stepStatus.policiesCompleted >= stepStatus.policiesTotal;
-
-                const isCompleted =
-                  (isVendorsStep && vendorsCompleted) ||
-                  (isRisksStep && risksCompleted) ||
-                  (isPoliciesStep && policiesCompleted);
-
-                // Check if any items are actively being processed (not just queued)
-                const vendorsProcessing = Object.values(stepStatus.vendorsStatus || {}).some(
-                  (status) => status === 'processing' || status === 'assessing',
-                );
-                const risksProcessing = Object.values(stepStatus.risksStatus || {}).some(
-                  (status) => status === 'processing' || status === 'assessing',
-                );
-                const policiesProcessing = Object.values(stepStatus.policiesStatus || {}).some(
-                  (status) => status === 'processing',
+                const isProcessing = !isCompleted && (
+                  (step.key === 'policies' && Object.values(stepStatus.policiesStatus).some((s) => s === 'processing')) ||
+                  (step.key === 'vendorMitigations' && Object.values(stepStatus.vendorsStatus).some((s) => s === 'processing' || s === 'assessing')) ||
+                  (step.key === 'riskMitigations' && Object.values(stepStatus.risksStatus).some((s) => s === 'processing' || s === 'assessing'))
                 );
 
-                // Show spinner if actively processing, even if not the current step
-                const isActivelyProcessing =
-                  (isVendorsStep && vendorsProcessing) ||
-                  (isRisksStep && risksProcessing) ||
-                  (isPoliciesStep && policiesProcessing);
+                const stepIcon = isCompleted ? (
+                  <CheckCircle2 className="text-primary h-5 w-5 shrink-0" />
+                ) : isCurrent || isProcessing ? (
+                  <Loader2 className="h-5 w-5 shrink-0 text-primary" style={spinnerStyle} />
+                ) : (
+                  <div className="h-5 w-5 shrink-0 rounded-full border-2 border-muted" />
+                );
 
-                const vendorsQueued =
-                  stepStatus.vendorsCompleted < stepStatus.vendorsTotal &&
-                  stepStatus.vendorsTotal > 0 &&
-                  !vendorsProcessing;
-                const risksQueued =
-                  stepStatus.risksCompleted < stepStatus.risksTotal &&
-                  stepStatus.risksTotal > 0 &&
-                  !risksProcessing;
-                const policiesQueued =
-                  stepStatus.policiesCompleted < stepStatus.policiesTotal &&
-                  stepStatus.policiesTotal > 0 &&
-                  !policiesProcessing;
+                const stepTextClass = `text-sm ${
+                  isCompleted ? 'text-primary' : isCurrent || isProcessing ? 'text-primary font-medium' : 'text-muted-foreground'
+                }`;
 
-                // Vendors step with expandable dropdown
-                if (isVendorsStep && stepStatus.vendorsTotal > 0) {
+                // Expandable step with per-entity items
+                if (step.key === 'vendorMitigations' && stepStatus.vendorsTotal > 0) {
                   return (
                     <div key={step.key} className="flex flex-col gap-2">
-                      <button
-                        onClick={() => setIsVendorsExpanded(!isVendorsExpanded)}
-                        className="flex items-center gap-2 w-full text-left"
-                      >
-                        {isCompleted ? (
-                          <CheckCircle2 className="text-primary h-5 w-5 shrink-0" />
-                        ) : isCurrent || isActivelyProcessing ? (
-                          <Loader2 className="h-5 w-5 shrink-0 text-primary" style={{ animation: 'spin 1s linear infinite', animationDelay: `${-(Date.now() % 1000)}ms` }} />
-                        ) : vendorsQueued ? (
-                          <Clock3 className="h-5 w-5 shrink-0 text-muted-foreground" />
-                        ) : (
-                          <div className="h-5 w-5 shrink-0 rounded-full border-2 border-muted" />
-                        )}
+                      <button onClick={() => setIsVendorsExpanded(!isVendorsExpanded)} className="flex items-center gap-2 w-full text-left">
+                        {stepIcon}
                         <div className="flex flex-1 items-center justify-between gap-2 min-w-0">
-                          <span
-                            className={`text-sm ${
-                              isCompleted
-                                ? 'text-primary'
-                                : isCurrent
-                                  ? 'text-primary font-medium'
-                                  : 'text-muted-foreground'
-                            }`}
-                          >
-                            {step.label}
-                          </span>
+                          <span className={stepTextClass}>{step.label}</span>
                           <div className="flex items-center gap-2 shrink-0">
-                            <span className="text-muted-foreground text-sm">
-                              {uniqueVendorsCounts.completed}/{uniqueVendorsCounts.total}
-                            </span>
-                            {isVendorsExpanded ? (
-                              <ChevronUp className="h-4 w-4 text-muted-foreground" />
-                            ) : (
-                              <ChevronDown className="h-4 w-4 text-muted-foreground" />
-                            )}
+                            <span className="text-muted-foreground text-sm">{uniqueVendorsCounts.completed}/{uniqueVendorsCounts.total}</span>
+                            {isVendorsExpanded ? <ChevronUp className="h-4 w-4 text-muted-foreground" /> : <ChevronDown className="h-4 w-4 text-muted-foreground" />}
                           </div>
                         </div>
                       </button>
-
-                      {/* Expanded vendor list */}
                       {isVendorsExpanded && uniqueVendorsInfo.length > 0 && (
-                        <motion.div
-                          initial={{ opacity: 0, height: 0 }}
-                          animate={{ opacity: 1, height: 'auto' }}
-                          exit={{ opacity: 0, height: 0 }}
-                          transition={{ duration: 0.2 }}
-                          className="overflow-hidden"
-                        >
+                        <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} transition={{ duration: 0.2 }} className="overflow-hidden">
                           <div className="flex flex-col gap-1.5 pl-7">
                             {uniqueVendorsInfo.map((vendor) => {
-                              const vendorStatus = stepStatus.vendorsStatus[vendor.id] || 'pending';
-                              const isVendorCompleted = vendorStatus === 'completed';
-                              const isVendorProcessing = vendorStatus === 'processing';
-                              const isVendorQueued = vendorStatus === 'pending';
-
+                              const status = stepStatus.vendorsStatus[vendor.id] || 'pending';
+                              const done = status === 'completed';
+                              const active = status === 'processing' || status === 'assessing';
                               const content = (
                                 <>
-                                  {isVendorCompleted ? (
-                                    <CheckCircle2 className="text-primary h-4 w-4 shrink-0 pointer-events-none" />
-                                  ) : isVendorProcessing ? (
-                                    <Loader2 className="h-4 w-4 shrink-0 text-primary pointer-events-none" style={{ animation: 'spin 1s linear infinite', animationDelay: `${-(Date.now() % 1000)}ms` }} />
-                                  ) : isVendorQueued ? (
-                                    <Clock3 className="h-4 w-4 shrink-0 text-muted-foreground pointer-events-none" />
-                                  ) : (
-                                    <div className="h-4 w-4 shrink-0 rounded-full border-2 border-muted pointer-events-none" />
-                                  )}
-                                  <span
-                                    className={`text-sm truncate pointer-events-none ${
-                                      isVendorCompleted
-                                        ? 'text-primary'
-                                        : isVendorProcessing
-                                          ? 'text-primary'
-                                          : 'text-muted-foreground'
-                                    }`}
-                                  >
-                                    {vendor.name}
-                                  </span>
+                                  {done ? <CheckCircle2 className="text-primary h-4 w-4 shrink-0 pointer-events-none" /> : active ? <Loader2 className="h-4 w-4 shrink-0 text-primary pointer-events-none" style={spinnerStyle} /> : <Clock3 className="h-4 w-4 shrink-0 text-muted-foreground pointer-events-none" />}
+                                  <span className={`text-sm truncate pointer-events-none ${done || active ? 'text-primary' : 'text-muted-foreground'}`}>{vendor.name}</span>
                                 </>
                               );
-
                               return (
                                 <div key={vendor.id} className="flex items-center gap-2">
-                                  {isVendorCompleted && orgId ? (
-                                    <Link
-                                      href={`/${orgId}/vendors/${vendor.id}`}
-                                      className="flex items-center gap-2 flex-1 min-w-0 hover:underline transition-all cursor-pointer"
-                                      style={{ cursor: 'pointer' }}
-                                    >
-                                      {content}
-                                    </Link>
-                                  ) : (
-                                    content
-                                  )}
+                                  {done && orgId ? <Link href={`/${orgId}/vendors/${vendor.id}?tab=treatment-plan`} className="flex items-center gap-2 flex-1 min-w-0 hover:underline transition-all cursor-pointer">{content}</Link> : content}
                                 </div>
                               );
                             })}
@@ -627,99 +586,35 @@ export const OnboardingTracker = ({ onboarding }: { onboarding: Onboarding }) =>
                   );
                 }
 
-                // Risks step with expandable dropdown
-                if (isRisksStep && stepStatus.risksTotal > 0) {
+                if (step.key === 'riskMitigations' && stepStatus.risksTotal > 0) {
                   return (
                     <div key={step.key} className="flex flex-col gap-2">
-                      <button
-                        onClick={() => setIsRisksExpanded(!isRisksExpanded)}
-                        className="flex items-center gap-2 w-full text-left"
-                      >
-                        {isCompleted ? (
-                          <CheckCircle2 className="text-primary h-5 w-5 shrink-0" />
-                        ) : isCurrent || isActivelyProcessing ? (
-                          <Loader2 className="h-5 w-5 shrink-0 text-primary" style={{ animation: 'spin 1s linear infinite', animationDelay: `${-(Date.now() % 1000)}ms` }} />
-                        ) : risksQueued ? (
-                          <Clock3 className="h-5 w-5 shrink-0 text-muted-foreground" />
-                        ) : (
-                          <div className="h-5 w-5 shrink-0 rounded-full border-2 border-muted" />
-                        )}
+                      <button onClick={() => setIsRisksExpanded(!isRisksExpanded)} className="flex items-center gap-2 w-full text-left">
+                        {stepIcon}
                         <div className="flex flex-1 items-center justify-between gap-2 min-w-0">
-                          <span
-                            className={`text-sm ${
-                              isCompleted
-                                ? 'text-primary'
-                                : isCurrent
-                                  ? 'text-primary font-medium'
-                                  : 'text-muted-foreground'
-                            }`}
-                          >
-                            {step.label}
-                          </span>
+                          <span className={stepTextClass}>{step.label}</span>
                           <div className="flex items-center gap-2 shrink-0">
-                            <span className="text-muted-foreground text-sm">
-                              {stepStatus.risksCompleted}/{stepStatus.risksTotal}
-                            </span>
-                            {isRisksExpanded ? (
-                              <ChevronUp className="h-4 w-4 text-muted-foreground" />
-                            ) : (
-                              <ChevronDown className="h-4 w-4 text-muted-foreground" />
-                            )}
+                            <span className="text-muted-foreground text-sm">{stepStatus.risksCompleted}/{stepStatus.risksTotal}</span>
+                            {isRisksExpanded ? <ChevronUp className="h-4 w-4 text-muted-foreground" /> : <ChevronDown className="h-4 w-4 text-muted-foreground" />}
                           </div>
                         </div>
                       </button>
-
-                      {/* Expanded risk list */}
                       {isRisksExpanded && stepStatus.risksInfo.length > 0 && (
-                        <motion.div
-                          initial={{ opacity: 0, height: 0 }}
-                          animate={{ opacity: 1, height: 'auto' }}
-                          exit={{ opacity: 0, height: 0 }}
-                          transition={{ duration: 0.2 }}
-                          className="overflow-hidden"
-                        >
+                        <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} transition={{ duration: 0.2 }} className="overflow-hidden">
                           <div className="flex flex-col gap-1.5 pl-7">
                             {stepStatus.risksInfo.map((risk) => {
-                              const riskStatus = stepStatus.risksStatus[risk.id] || 'pending';
-                              const isRiskCompleted = riskStatus === 'completed';
-                              const isRiskProcessing = riskStatus === 'processing';
-
+                              const status = stepStatus.risksStatus[risk.id] || 'pending';
+                              const done = status === 'completed';
+                              const active = status === 'processing' || status === 'assessing';
                               const content = (
                                 <>
-                                  {isRiskCompleted ? (
-                                    <CheckCircle2 className="text-primary h-4 w-4 shrink-0 pointer-events-none" />
-                                  ) : isRiskProcessing ? (
-                                    <Loader2 className="h-4 w-4 shrink-0 text-primary pointer-events-none" style={{ animation: 'spin 1s linear infinite', animationDelay: `${-(Date.now() % 1000)}ms` }} />
-                                  ) : (
-                                    <div className="h-4 w-4 shrink-0 rounded-full border-2 border-muted pointer-events-none" />
-                                  )}
-                                  <span
-                                    className={`text-sm truncate pointer-events-none ${
-                                      isRiskCompleted
-                                        ? 'text-primary'
-                                        : isRiskProcessing
-                                          ? 'text-primary'
-                                          : 'text-muted-foreground'
-                                    }`}
-                                  >
-                                    {risk.name}
-                                  </span>
+                                  {done ? <CheckCircle2 className="text-primary h-4 w-4 shrink-0 pointer-events-none" /> : active ? <Loader2 className="h-4 w-4 shrink-0 text-primary pointer-events-none" style={spinnerStyle} /> : <div className="h-4 w-4 shrink-0 rounded-full border-2 border-muted pointer-events-none" />}
+                                  <span className={`text-sm truncate pointer-events-none ${done || active ? 'text-primary' : 'text-muted-foreground'}`}>{risk.name}</span>
                                 </>
                               );
-
                               return (
                                 <div key={risk.id} className="flex items-center gap-2">
-                                  {isRiskCompleted && orgId ? (
-                                    <Link
-                                      href={`/${orgId}/risk/${risk.id}`}
-                                      className="flex items-center gap-2 flex-1 min-w-0 hover:underline transition-all cursor-pointer"
-                                      style={{ cursor: 'pointer' }}
-                                    >
-                                      {content}
-                                    </Link>
-                                  ) : (
-                                    content
-                                  )}
+                                  {done && orgId ? <Link href={`/${orgId}/risk/${risk.id}?tab=treatment-plan`} className="flex items-center gap-2 flex-1 min-w-0 hover:underline transition-all cursor-pointer">{content}</Link> : content}
                                 </div>
                               );
                             })}
@@ -730,104 +625,36 @@ export const OnboardingTracker = ({ onboarding }: { onboarding: Onboarding }) =>
                   );
                 }
 
-                if (isPoliciesStep && stepStatus.policiesTotal > 0) {
-                  // Policies step with expandable dropdown
+                if (step.key === 'policies' && stepStatus.policiesTotal > 0) {
                   return (
                     <div key={step.key} className="flex flex-col gap-2">
-                      <button
-                        onClick={() => setIsPoliciesExpanded(!isPoliciesExpanded)}
-                        className="flex items-center gap-2 w-full text-left"
-                      >
-                        {isCompleted ? (
-                          <CheckCircle2 className="text-primary h-5 w-5 shrink-0" />
-                        ) : isCurrent || isActivelyProcessing ? (
-                          <Loader2 className="h-5 w-5 shrink-0 text-primary" style={{ animation: 'spin 1s linear infinite', animationDelay: `${-(Date.now() % 1000)}ms` }} />
-                        ) : policiesQueued ? (
-                          <Clock3 className="h-5 w-5 shrink-0 text-muted-foreground" />
-                        ) : (
-                          <div className="h-5 w-5 shrink-0 rounded-full border-2 border-muted" />
-                        )}
+                      <button onClick={() => setIsPoliciesExpanded(!isPoliciesExpanded)} className="flex items-center gap-2 w-full text-left">
+                        {stepIcon}
                         <div className="flex flex-1 items-center justify-between gap-2 min-w-0">
-                          <span
-                            className={`text-sm ${
-                              isCompleted
-                                ? 'text-primary'
-                                : isCurrent
-                                  ? 'text-primary font-medium'
-                                  : 'text-muted-foreground'
-                            }`}
-                          >
-                            {step.label}
-                          </span>
+                          <span className={stepTextClass}>{step.label}</span>
                           <div className="flex items-center gap-2 shrink-0">
-                            <span className="text-muted-foreground text-sm">
-                              {stepStatus.policiesCompleted}/{stepStatus.policiesTotal}
-                            </span>
-                            {!isCompleted &&
-                              (isPoliciesExpanded ? (
-                                <ChevronUp className="h-4 w-4 text-muted-foreground" />
-                              ) : (
-                                <ChevronDown className="h-4 w-4 text-muted-foreground" />
-                              ))}
+                            <span className="text-muted-foreground text-sm">{stepStatus.policiesCompleted}/{stepStatus.policiesTotal}</span>
+                            {!isCompleted && (isPoliciesExpanded ? <ChevronUp className="h-4 w-4 text-muted-foreground" /> : <ChevronDown className="h-4 w-4 text-muted-foreground" />)}
                           </div>
                         </div>
                       </button>
-
-                      {/* Expanded policy list */}
                       {isPoliciesExpanded && stepStatus.policiesInfo.length > 0 && (
-                        <motion.div
-                          initial={{ opacity: 0, height: 0 }}
-                          animate={{ opacity: 1, height: 'auto' }}
-                          exit={{ opacity: 0, height: 0 }}
-                          transition={{ duration: 0.2 }}
-                          className="overflow-hidden"
-                        >
+                        <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} transition={{ duration: 0.2 }} className="overflow-hidden">
                           <div className="flex flex-col gap-1.5 pl-7">
                             {stepStatus.policiesInfo.map((policy) => {
-                              const policyStatus = stepStatus.policiesStatus[policy.id] || 'queued';
-                              const isPolicyCompleted = policyStatus === 'completed';
-                              const isPolicyProcessing = policyStatus === 'processing';
-                              const isPolicyQueued =
-                                policyStatus === 'queued' || policyStatus === 'pending';
-
+                              const status = stepStatus.policiesStatus[policy.id] || 'queued';
+                              const done = status === 'completed';
+                              const processing = status === 'processing';
+                              const queued = status === 'queued' || status === 'pending';
                               const content = (
                                 <>
-                                  {isPolicyCompleted ? (
-                                    <CheckCircle2 className="text-primary h-4 w-4 shrink-0 pointer-events-none" />
-                                  ) : isPolicyProcessing ? (
-                                    <Loader2 className="h-4 w-4 shrink-0 text-primary pointer-events-none" style={{ animation: 'spin 1s linear infinite', animationDelay: `${-(Date.now() % 1000)}ms` }} />
-                                  ) : isPolicyQueued ? (
-                                    <Clock3 className="h-4 w-4 shrink-0 text-muted-foreground pointer-events-none" />
-                                  ) : (
-                                    <div className="h-4 w-4 shrink-0 rounded-full border-2 border-muted pointer-events-none" />
-                                  )}
-                                  <span
-                                    className={`text-sm truncate pointer-events-none ${
-                                      isPolicyCompleted
-                                        ? 'text-primary'
-                                        : isPolicyProcessing
-                                          ? 'text-primary'
-                                          : 'text-muted-foreground'
-                                    }`}
-                                  >
-                                    {policy.name}
-                                  </span>
+                                  {done ? <CheckCircle2 className="text-primary h-4 w-4 shrink-0 pointer-events-none" /> : processing ? <Loader2 className="h-4 w-4 shrink-0 text-primary pointer-events-none" style={spinnerStyle} /> : queued ? <Clock3 className="h-4 w-4 shrink-0 text-muted-foreground pointer-events-none" /> : <div className="h-4 w-4 shrink-0 rounded-full border-2 border-muted pointer-events-none" />}
+                                  <span className={`text-sm truncate pointer-events-none ${done || processing ? 'text-primary' : 'text-muted-foreground'}`}>{policy.name}</span>
                                 </>
                               );
-
                               return (
                                 <div key={policy.id} className="flex items-center gap-2">
-                                  {isPolicyCompleted && orgId ? (
-                                    <Link
-                                      href={`/${orgId}/policies/${policy.id}`}
-                                      className="flex items-center gap-2 flex-1 min-w-0 hover:underline transition-all cursor-pointer"
-                                      style={{ cursor: 'pointer' }}
-                                    >
-                                      {content}
-                                    </Link>
-                                  ) : (
-                                    content
-                                  )}
+                                  {done && orgId ? <Link href={`/${orgId}/policies/${policy.id}`} className="flex items-center gap-2 flex-1 min-w-0 hover:underline transition-all cursor-pointer">{content}</Link> : content}
                                 </div>
                               );
                             })}
@@ -838,29 +665,17 @@ export const OnboardingTracker = ({ onboarding }: { onboarding: Onboarding }) =>
                   );
                 }
 
-                // Regular step
+                // Simple step row (creation, linkage)
+                const count = step.key === 'vendors' ? uniqueVendorsCounts.total
+                  : step.key === 'risk' ? stepStatus.risksTotal
+                  : null;
                 return (
                   <div key={step.key} className="flex items-center gap-2">
-                    {isCompleted ? (
-                      <CheckCircle2 className="text-primary h-5 w-5 shrink-0" />
-                    ) : isCurrent ? (
-                      <Loader2 className="h-5 w-5 shrink-0 text-primary" style={{ animation: 'spin 1s linear infinite', animationDelay: `${-(Date.now() % 1000)}ms` }} />
-                    ) : policiesQueued ? (
-                      <Clock3 className="h-5 w-5 shrink-0 text-muted-foreground" />
-                    ) : (
-                      <div className="h-5 w-5 shrink-0 rounded-full border-2 border-muted" />
+                    {stepIcon}
+                    <span className={`${stepTextClass} flex-1`}>{step.label}</span>
+                    {count !== null && count > 0 && (
+                      <span className="text-muted-foreground text-sm">{count}</span>
                     )}
-                    <span
-                      className={`text-sm ${
-                        isCompleted
-                          ? 'text-primary'
-                          : isCurrent
-                            ? 'text-primary font-medium'
-                            : 'text-muted-foreground'
-                      }`}
-                    >
-                      {step.label}
-                    </span>
                   </div>
                 );
               })}
