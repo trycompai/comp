@@ -575,7 +575,7 @@ export const OnboardingTracker = ({ onboarding }: { onboarding: Onboarding }) =>
                               );
                               return (
                                 <div key={vendor.id} className="flex items-center gap-2">
-                                  {done && orgId ? <Link href={`/${orgId}/vendors/${vendor.id}`} className="flex items-center gap-2 flex-1 min-w-0 hover:underline transition-all cursor-pointer">{content}</Link> : content}
+                                  {done && orgId ? <Link href={`/${orgId}/vendors/${vendor.id}?tab=treatment-plan`} className="flex items-center gap-2 flex-1 min-w-0 hover:underline transition-all cursor-pointer">{content}</Link> : content}
                                 </div>
                               );
                             })}
@@ -614,7 +614,7 @@ export const OnboardingTracker = ({ onboarding }: { onboarding: Onboarding }) =>
                               );
                               return (
                                 <div key={risk.id} className="flex items-center gap-2">
-                                  {done && orgId ? <Link href={`/${orgId}/risk/${risk.id}`} className="flex items-center gap-2 flex-1 min-w-0 hover:underline transition-all cursor-pointer">{content}</Link> : content}
+                                  {done && orgId ? <Link href={`/${orgId}/risk/${risk.id}?tab=treatment-plan`} className="flex items-center gap-2 flex-1 min-w-0 hover:underline transition-all cursor-pointer">{content}</Link> : content}
                                 </div>
                               );
                             })}
