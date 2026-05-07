@@ -179,31 +179,32 @@ export const onboardOrganization = task({
         });
       }
 
+      // Redirect the user to the dashboard now — policies, vendors, and
+      // risks are created. The task stays alive so child metadata writes
+      // (mitigation progress) keep landing on the root run.
+      metadata.set('readyForDashboard', true);
+      await db.onboarding.update({
+        where: { organizationId: payload.organizationId },
+        data: { triggerJobCompleted: true },
+      });
+
       // Fan-out vendor + risk mitigations now that linkage has populated the
-      // grounding context for both kinds of entities. Done in parallel —
-      // each fan-out task itself batchTriggers per-entity children.
+      // grounding context for both kinds of entities. triggerAndWait keeps
+      // this task alive so metadata.root stays writable for child tasks.
       metadata.set('currentStep', 'Assessing Vendors...');
       await Promise.all([
-        tasks.trigger<typeof generateVendorMitigationsForOrg>(
+        tasks.triggerAndWait<typeof generateVendorMitigationsForOrg>(
           'generate-vendor-mitigations-for-org',
           { organizationId: payload.organizationId },
         ),
-        tasks.trigger<typeof generateRiskMitigationsForOrg>(
+        tasks.triggerAndWait<typeof generateRiskMitigationsForOrg>(
           'generate-risk-mitigations-for-org',
           { organizationId: payload.organizationId },
         ),
       ]);
 
       metadata.set('currentStep', 'Finalizing...');
-
-      // Mark onboarding as completed in metadata
       metadata.set('completed', true);
-
-      // Mark onboarding as completed in database
-      await db.onboarding.update({
-        where: { organizationId: payload.organizationId },
-        data: { triggerJobCompleted: true },
-      });
 
       logger.info(`Created ${vendors.length} vendors`);
       logger.info(`Onboarding completed for organization ${payload.organizationId}`);
