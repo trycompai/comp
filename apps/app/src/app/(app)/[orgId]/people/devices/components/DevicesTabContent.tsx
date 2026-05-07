@@ -66,7 +66,10 @@ export function DevicesTabContent({ isCurrentUserOwner }: DevicesTabContentProps
       />
 
       {agentDevices.length > 0 && (
-        <DeviceAgentDevicesList devices={agentDevices} />
+        <DeviceAgentDevicesList
+          devices={agentDevices}
+          isCurrentUserOwner={isCurrentUserOwner}
+        />
       )}
 
       {isFleetLoading ? (

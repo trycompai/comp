@@ -71,6 +71,19 @@ export function usePeopleActions() {
     [api],
   );
 
+  const removeDeviceAgent = useCallback(
+    async (deviceId: string) => {
+      const response = await api.delete<{
+        success?: boolean;
+      }>(`/v1/devices/${deviceId}`);
+      if (response.error) {
+        throw new Error(response.error);
+      }
+      return response.data;
+    },
+    [api],
+  );
+
   const reactivateMember = useCallback(
     async (memberId: string) => {
       const response = await api.patch<PeopleResponseDto>(
@@ -88,6 +101,7 @@ export function usePeopleActions() {
     unlinkDevice,
     removeMember,
     removeHostFromFleet,
+    removeDeviceAgent,
     reactivateMember,
   };
 }
