@@ -699,6 +699,68 @@ export class FrameworksService {
     return { success: true };
   }
 
+  async getAllUpdateStatuses(organizationId: string) {
+    const instances = await db.frameworkInstance.findMany({
+      where: { organizationId, frameworkId: { not: null } },
+      include: {
+        currentVersion: { select: { id: true, version: true } },
+        framework: { select: { id: true, name: true } },
+      },
+    });
+
+    if (instances.length === 0) return [];
+
+    const frameworkIds = [
+      ...new Set(instances.map((i) => i.frameworkId).filter(Boolean)),
+    ] as string[];
+
+    const latestVersions = await Promise.all(
+      frameworkIds.map((fid) =>
+        db.frameworkVersion.findFirst({
+          where: { frameworkId: fid },
+          orderBy: { publishedAt: 'desc' },
+          select: {
+            id: true,
+            version: true,
+            publishedAt: true,
+            releaseNotes: true,
+            frameworkId: true,
+          },
+        }),
+      ),
+    );
+
+    const latestByFramework = new Map(
+      latestVersions
+        .filter(Boolean)
+        .map((v) => [v!.frameworkId, v!]),
+    );
+
+    return instances
+      .map((instance) => {
+        const latest = latestByFramework.get(instance.frameworkId!) ?? null;
+        const updateAvailable =
+          latest !== null && latest.id !== instance.currentVersion?.id;
+        if (!updateAvailable) return null;
+
+        return {
+          frameworkInstanceId: instance.id,
+          frameworkName: instance.framework?.name ?? null,
+          currentVersion: instance.currentVersion,
+          latestVersion: latest
+            ? {
+                id: latest.id,
+                version: latest.version,
+                publishedAt: latest.publishedAt,
+                releaseNotes: latest.releaseNotes,
+              }
+            : null,
+          updateAvailable,
+        };
+      })
+      .filter(Boolean);
+  }
+
   async getUpdateStatus(params: {
     organizationId: string;
     frameworkInstanceId: string;
