@@ -7,6 +7,12 @@ import { usePermissions } from '@/hooks/use-permissions';
 import { useVendors, useVendorActions, type Vendor } from '@/hooks/use-vendors';
 import { getRiskScore } from '@/lib/risk-score';
 import {
+  interpolatedResidualScore,
+  previewResidual,
+  suggestedResidual,
+} from '@/lib/suggested-residual';
+import type { TaskStatus } from '@db';
+import {
   AlertDialog,
   AlertDialogAction,
   AlertDialogCancel,
@@ -53,6 +59,40 @@ export type VendorRow = Vendor & {
   isPending?: boolean;
   isAssessing?: boolean;
 };
+
+/**
+ * Mirrors `currentSeverityScore` in the risks table — projects the vendor's
+ * inherent + treatment-strategy + linked-task completion into the same
+ * interpolated 1–10 score the Treatment Plan hero shows. Falls back to
+ * inherent when there's no linked work or strategy doesn't reduce.
+ */
+function currentVendorSeverityScore(vendor: {
+  inherentProbability: VendorRow['inherentProbability'];
+  inherentImpact: VendorRow['inherentImpact'];
+  treatmentStrategy: VendorRow['treatmentStrategy'];
+  tasks?: Array<{ status: TaskStatus }>;
+}): number {
+  const inherent = getRiskScore(vendor.inherentProbability, vendor.inherentImpact);
+  const tasks = vendor.tasks ?? [];
+  const target = previewResidual({
+    inherentLikelihood: vendor.inherentProbability,
+    inherentImpact: vendor.inherentImpact,
+    strategy: vendor.treatmentStrategy,
+    hasLinkedWork: tasks.length > 0,
+  });
+  const targetScore = getRiskScore(target.likelihood, target.impact).score;
+  const completion = suggestedResidual({
+    likelihood: vendor.inherentProbability,
+    impact: vendor.inherentImpact,
+    strategy: vendor.treatmentStrategy,
+    tasks,
+  }).completion;
+  return interpolatedResidualScore({
+    inherentScore: inherent.score,
+    targetScore,
+    completion,
+  });
+}
 
 type AssigneeMember = {
   id: string;
@@ -349,8 +389,11 @@ export function VendorsTable({
         const aAssessed = a.status === 'assessed';
         const bAssessed = b.status === 'assessed';
         if (aAssessed !== bAssessed) return aAssessed ? -1 : 1;
-        const aScore = getRiskScore(a.residualProbability, a.residualImpact).raw;
-        const bScore = getRiskScore(b.residualProbability, b.residualImpact).raw;
+        // Sort by the SAME interpolated score the badge renders so the
+        // sort order matches what the user sees (treatment-progress
+        // aware), not the static residual fields.
+        const aScore = currentVendorSeverityScore(a);
+        const bScore = currentVendorSeverityScore(b);
         const comparison = aScore - bScore;
         return sort.desc ? -comparison : comparison;
       }
@@ -571,7 +614,7 @@ export function VendorsTable({
                     onClick={() => handleSort('residualRisk')}
                     className="flex items-center hover:text-foreground"
                   >
-                    RESIDUAL RISK
+                    CURRENT RISK
                     {getSortIcon('residualRisk')}
                   </button>
                 </TableHead>
@@ -610,10 +653,12 @@ export function VendorsTable({
                       {vendor.status === 'not_assessed' ? (
                         <Text variant="muted" size="sm">—</Text>
                       ) : (
-                        <RiskScoreBadge
-                          likelihood={vendor.residualProbability}
-                          impact={vendor.residualImpact}
-                        />
+                        // Show the current (interpolated) score that
+                        // reflects how far the linked tasks have driven
+                        // the residual down — same logic the risks table
+                        // uses. Static residualProbability / Impact alone
+                        // can't reflect mid-treatment progress.
+                        <RiskScoreBadge score={currentVendorSeverityScore(vendor)} />
                       )}
                     </TableCell>
                     <TableCell>

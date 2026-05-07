@@ -109,19 +109,10 @@ const AUTONOMOUS_FINAL_TOP_K = 8;
 const AUTONOMOUS_MIN_RERANK_SCORE = 5;
 const AUTONOMOUS_MIN_LINKS_FLOOR = 3;
 
-// How many risks/vendors to match concurrently in the bulk onboarding path.
-// Each iteration makes 1 vector query (Upstash) + 1 OpenAI rerank call + 1
-// Prisma update — typical wall-clock per iteration is 3–10 seconds (the
-// rerank LLM call dominates). With 32 in-flight at once a 20-entity
-// onboarding finishes in roughly one batch, well within gpt-5-mini /
-// Upstash rate limits.
-//
-// NOTE: this is in-process concurrency on a single trigger.dev task. The
-// natural next step (true fan-out per entity using `task.batchTrigger`)
-// would unlock trigger.dev's queue-level concurrency (50), but requires
-// passing the embedded-task metadata to children rather than rebuilding
-// taskById per child. Filed as a follow-up.
-const MATCH_CONCURRENCY = 32;
+// Risk and vendor matching run in parallel, so this limit applies to
+// EACH side independently. Keep it at 16 so both sides combined stay
+// under ~32 concurrent LLM rerank calls.
+const MATCH_CONCURRENCY = 16;
 
 async function mapWithConcurrency<T, R>(
   items: T[],
@@ -604,14 +595,22 @@ export async function runLinkage({
 
   let suggestions: RunLinkageOutput['suggestions'];
 
-  // Risk matching — fan out with bounded concurrency. Each iteration is one
-  // vector query + (rerank | DB update). Order doesn't matter here; we sum
-  // riskLinks at the end and emit `current` based on completion count.
+  // Emit initial matching phases before the parallel fan-out so the UI shows
+  // both phases starting at once.
   if (risks.length > 0) {
     onPhase?.({ name: 'matching-risks', current: 0, total: risks.length });
   }
+  if (vendors.length > 0) {
+    onPhase?.({ name: 'matching-vendors', current: 0, total: vendors.length });
+  }
+
+  // Risk + vendor matching run in parallel — they write to separate DB
+  // tables (Risk.tasks vs Vendor.tasks) and the shared taskById is read-only.
   let completedRisks = 0;
-  const riskOutcomes = await mapWithConcurrency(risks, MATCH_CONCURRENCY, async (risk) => {
+  let completedVendors = 0;
+
+  const [riskOutcomes, vendorOutcomes] = await Promise.all([
+    mapWithConcurrency(risks, MATCH_CONCURRENCY, async (risk) => {
     const similar = await findSimilarTasks({
       organizationId,
       queryText: riskQueryText(risk),
@@ -687,23 +686,8 @@ export async function runLinkage({
     completedRisks += 1;
     onPhase?.({ name: 'matching-risks', current: completedRisks, total: risks.length });
     return { count, perEntitySuggestions };
-  });
-  const riskLinks = riskOutcomes.reduce((sum, r) => sum + r.count, 0);
-  // suggestionsOnly endpoints always pass a single riskId, so at most one
-  // outcome carries suggestions — pick the first non-null.
-  for (const r of riskOutcomes) {
-    if (r.perEntitySuggestions) {
-      suggestions = r.perEntitySuggestions;
-      break;
-    }
-  }
-
-  // Vendor matching — same pattern.
-  if (vendors.length > 0) {
-    onPhase?.({ name: 'matching-vendors', current: 0, total: vendors.length });
-  }
-  let completedVendors = 0;
-  const vendorOutcomes = await mapWithConcurrency(vendors, MATCH_CONCURRENCY, async (vendor) => {
+    }),
+    mapWithConcurrency(vendors, MATCH_CONCURRENCY, async (vendor) => {
     const similar = await findSimilarTasks({
       organizationId,
       queryText: vendorQueryText(vendor),
@@ -751,8 +735,17 @@ export async function runLinkage({
     completedVendors += 1;
     onPhase?.({ name: 'matching-vendors', current: completedVendors, total: vendors.length });
     return { count, perEntitySuggestions };
-  });
+  }),
+  ]);
+
+  const riskLinks = riskOutcomes.reduce((sum, r) => sum + r.count, 0);
   const vendorLinks = vendorOutcomes.reduce((sum, v) => sum + v.count, 0);
+  for (const r of riskOutcomes) {
+    if (r.perEntitySuggestions) {
+      suggestions = r.perEntitySuggestions;
+      break;
+    }
+  }
   if (!suggestions) {
     for (const v of vendorOutcomes) {
       if (v.perEntitySuggestions) {

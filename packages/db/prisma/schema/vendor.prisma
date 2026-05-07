@@ -8,7 +8,9 @@ model Vendor {
   inherentImpact      Impact         @default(insignificant)
   residualProbability Likelihood     @default(very_unlikely)
   residualImpact      Impact         @default(insignificant)
-  treatmentStrategy            RiskTreatmentType @default(accept)
+  // See Risk.treatmentStrategy — default mitigate so AI plans land in
+  // the right slot.
+  treatmentStrategy            RiskTreatmentType @default(mitigate)
   treatmentStrategyDescription String?
   // See `Risk.strategyDescriptions`.
   strategyDescriptions         Json?

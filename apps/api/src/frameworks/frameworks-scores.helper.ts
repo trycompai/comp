@@ -20,12 +20,16 @@ export async function getOverviewScores(organizationId: string) {
       }),
       db.task.findMany({ where: { organizationId, archivedAt: null } }),
       db.member.findMany({
-        where: { organizationId, deactivated: false },
+        where: {
+          organizationId,
+          deactivated: false,
+          isActive: true,
+        },
         include: { user: true },
       }),
       db.onboarding.findUnique({
         where: { organizationId },
-        select: { triggerJobId: true },
+        select: { triggerJobId: true, triggerJobCompleted: true },
       }),
       db.organization.findUnique({
         where: { id: organizationId },
@@ -86,7 +90,7 @@ export async function getOverviewScores(organizationId: string) {
       incompleteTasks,
     },
     people,
-    onboardingTriggerJobId: onboarding?.triggerJobId ?? null,
+    onboardingTriggerJobId: onboarding?.triggerJobCompleted ? null : (onboarding?.triggerJobId ?? null),
     documents: await computeDocumentsScore(organizationId),
     findings: await getOrganizationFindings(organizationId),
   };

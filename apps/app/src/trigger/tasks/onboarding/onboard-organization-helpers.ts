@@ -1,4 +1,4 @@
-import { openai } from '@ai-sdk/openai';
+import { createGatewayProvider } from '@ai-sdk/gateway';
 import {
   Departments,
   FrameworkEditorFramework,
@@ -14,10 +14,18 @@ import {
 import { db } from '@db/server';
 import { logger, metadata, tasks } from '@trigger.dev/sdk';
 import { generateObject, jsonSchema } from 'ai';
+
+const gateway = createGatewayProvider({
+  baseURL: process.env.AI_GATEWAY_BASE_URL,
+});
+const ONBOARDING_MODEL = 'google/gemini-3-flash' as const;
 import axios from 'axios';
 import { z } from 'zod';
 import type { researchVendor } from '../scrape/research';
-import { mirrorActiveDescriptionIntoMap } from '@/lib/strategy-descriptions';
+import {
+  applyMitigationPlanFields,
+  mirrorActiveDescriptionIntoMap,
+} from '@/lib/strategy-descriptions';
 import { buildCitationsHeading } from './build-citations-heading';
 import { RISK_MITIGATION_PROMPT } from './prompts/risk-mitigation';
 import {
@@ -493,7 +501,7 @@ export async function extractVendorsFromContext(
   const customVendorNameSet = new Set(customVendors.map((v) => v.name.toLowerCase()));
 
   const { object } = await generateObject({
-    model: openai('gpt-4.1-mini'),
+    model: gateway(ONBOARDING_MODEL),
     schema: jsonSchema({
       type: 'object',
       properties: {
@@ -661,17 +669,17 @@ Citations (write one sentence per item, in order):
 ${formatCitationsBlock(citations)}`;
 
   const result = await generateObject({
-    model: openai('gpt-5-mini'),
+    model: gateway(ONBOARDING_MODEL),
     system: RISK_MITIGATION_PROMPT,
     prompt: userPrompt,
     schema: sentencesSchema,
   });
 
-  const treatmentStrategy =
-    typeof vendor.treatmentStrategy === 'string' ? vendor.treatmentStrategy : 'mitigate';
-
+  // See createRiskMitigationComment — pin the prose label to 'mitigate'
+  // since the saved strategy is forced to mitigate by
+  // `applyMitigationPlanFields` below.
   const finalText = combineSentencesWithCitations({
-    treatmentStrategy,
+    treatmentStrategy: 'mitigate',
     sentences: result.object.sentences,
     citations,
     linkedTotals: {
@@ -680,20 +688,22 @@ ${formatCitationsBlock(citations)}`;
     },
   });
 
-  // Mirror the new text into the per-strategy map so switching strategies
-  // doesn't lose this draft.
-  const vendorActiveStrategy =
-    typeof vendor.treatmentStrategy === 'string' ? vendor.treatmentStrategy : 'mitigate';
+  // The AI generated a mitigation plan — force the strategy to mitigate
+  // so the plan lands in the correct slot, even if the vendor was
+  // previously on Accept / Transfer / Avoid (e.g. older rows created
+  // before the schema default flipped to mitigate). Any prior non-
+  // mitigate text is preserved under its own slot.
   await db.vendor.update({
     where: { id: vendor.id, organizationId },
-    data: {
-      treatmentStrategyDescription: finalText,
-      strategyDescriptions: mirrorActiveDescriptionIntoMap({
-        strategy: vendorActiveStrategy,
-        description: finalText,
-        current: vendor.strategyDescriptions,
-      }),
-    },
+    data: applyMitigationPlanFields({
+      plan: finalText,
+      currentStrategy:
+        typeof vendor.treatmentStrategy === 'string'
+          ? vendor.treatmentStrategy
+          : 'mitigate',
+      currentDescription: vendor.treatmentStrategyDescription ?? null,
+      currentMap: vendor.strategyDescriptions,
+    }),
   });
 
   logger.info(
@@ -930,35 +940,45 @@ async function triggerVendorRiskAssessmentsViaApi(params: {
  * Triggers research tasks for created vendors
  */
 export async function triggerVendorResearch(vendors: any[]): Promise<void> {
-  for (const vendor of vendors) {
+  const researchable = vendors.filter((vendor) => {
     const website = (vendor.website ?? '').toString().trim();
     if (!website) {
       logger.info(`Skipping research for vendor ${vendor.name} (no website)`);
-      continue;
+      return false;
     }
-
-    // Ensure it's a valid absolute URL; don't let one bad vendor break the whole onboarding.
     try {
       // eslint-disable-next-line no-new
       new URL(website);
+      return true;
     } catch {
       logger.warn(`Skipping research for vendor ${vendor.name} (invalid website URL)`, {
         website,
       });
-      continue;
+      return false;
     }
+  });
 
-    try {
+  const results = await Promise.allSettled(
+    researchable.map(async (vendor) => {
+      const website = (vendor.website ?? '').toString().trim();
       const handle = await tasks.trigger<typeof researchVendor>('research-vendor', {
         website,
+        scoreContext:
+          vendor.id && vendor.organizationId
+            ? { vendorId: vendor.id, organizationId: vendor.organizationId }
+            : undefined,
       });
       logger.info(`Triggered research for vendor ${vendor.name} with handle ${handle.id}`);
-    } catch (error) {
+    }),
+  );
+
+  for (const [i, result] of results.entries()) {
+    if (result.status === 'rejected') {
+      const vendor = researchable[i];
       logger.error('Failed to trigger vendor research task', {
         vendorId: vendor.id,
         vendorName: vendor.name,
-        website,
-        error: error instanceof Error ? error.message : String(error),
+        error: result.reason instanceof Error ? result.reason.message : String(result.reason),
       });
     }
   }
@@ -1001,25 +1021,31 @@ export async function createRiskMitigationComment(
     gapHint: GAP_HINT_BY_RISK_CATEGORY[risk.category] ?? 'general',
   });
 
+  // The AI mitigation generator always produces a *mitigation* plan, and
+  // `applyMitigationPlanFields` below forces the saved strategy to
+  // 'mitigate'. Pin the prompt + prose label to 'mitigate' too so the
+  // generated text isn't labeled with the row's previous strategy
+  // (e.g. "Treatment plan (accept)" stored under strategy=mitigate).
+  const PLAN_STRATEGY = 'mitigate';
   const userPrompt = `Risk: ${risk.title}
 Description: ${risk.description}
 Category: ${risk.category}
 Department: ${risk.department ?? 'unspecified'}
 Residual: likelihood=${risk.residualLikelihood}, impact=${risk.residualImpact}
-Treatment strategy: ${risk.treatmentStrategy}
+Treatment strategy: ${PLAN_STRATEGY}
 
 Citations (write one sentence per item, in order):
 ${formatCitationsBlock(citations)}`;
 
   const result = await generateObject({
-    model: openai('gpt-5-mini'),
+    model: gateway(ONBOARDING_MODEL),
     system: RISK_MITIGATION_PROMPT,
     prompt: userPrompt,
     schema: sentencesSchema,
   });
 
   const finalText = combineSentencesWithCitations({
-    treatmentStrategy: risk.treatmentStrategy,
+    treatmentStrategy: PLAN_STRATEGY,
     sentences: result.object.sentences,
     citations,
     linkedTotals: {
@@ -1028,16 +1054,17 @@ ${formatCitationsBlock(citations)}`;
     },
   });
 
+  // See createVendorRiskMitigationComment — the AI plan is a mitigation
+  // plan, so force strategy=mitigate and preserve any prior non-mitigate
+  // description under its own slot.
   await db.risk.update({
     where: { id: risk.id, organizationId },
-    data: {
-      treatmentStrategyDescription: finalText,
-      strategyDescriptions: mirrorActiveDescriptionIntoMap({
-        strategy: risk.treatmentStrategy,
-        description: finalText,
-        current: risk.strategyDescriptions,
-      }),
-    },
+    data: applyMitigationPlanFields({
+      plan: finalText,
+      currentStrategy: risk.treatmentStrategy,
+      currentDescription: risk.treatmentStrategyDescription,
+      currentMap: risk.strategyDescriptions,
+    }),
   });
 
   logger.info(
@@ -1083,7 +1110,7 @@ export async function extractRisksFromContext(
   existingRisks: { title: string }[],
 ): Promise<RiskData[]> {
   const { object } = await generateObject({
-    model: openai('gpt-4.1-mini'),
+    model: gateway(ONBOARDING_MODEL),
     schema: jsonSchema({
       type: 'object',
       properties: {
@@ -1159,7 +1186,11 @@ export async function createRisksFromData(
     metadata.set(`risk_temp_${index}_status`, 'processing');
   });
 
-  // Create all risks concurrently
+  // Create all risks concurrently. Strategy is intentionally NOT taken
+  // from the LLM extraction — we always start with mitigate (the
+  // workhorse strategy + schema default) so the AI mitigation plan that
+  // runs immediately after lands in the correct slot. The user can
+  // switch to accept / transfer / avoid manually if needed.
   const createPromises = riskData.map((risk) =>
     db.risk.create({
       data: {
@@ -1169,8 +1200,6 @@ export async function createRisksFromData(
         department: risk.department,
         likelihood: risk.risk_residual_probability,
         impact: risk.risk_residual_impact,
-        treatmentStrategy: risk.risk_treatment_strategy,
-        treatmentStrategyDescription: risk.risk_treatment_strategy_description,
         organizationId,
       },
     }),
@@ -1220,6 +1249,9 @@ async function createRisksFromDataWithBaseline(
         },
       });
     } else if (risk.riskData) {
+      // Same rationale as createRisksFromData — strategy is fixed to
+      // mitigate (schema default) so the AI plan generated right after
+      // lands in the correct slot.
       return db.risk.create({
         data: {
           title: risk.riskData.risk_name,
@@ -1228,8 +1260,6 @@ async function createRisksFromDataWithBaseline(
           department: risk.riskData.department,
           likelihood: risk.riskData.risk_residual_probability,
           impact: risk.riskData.risk_residual_impact,
-          treatmentStrategy: risk.riskData.risk_treatment_strategy,
-          treatmentStrategyDescription: risk.riskData.risk_treatment_strategy_description,
           organizationId,
         },
       });
@@ -1287,7 +1317,8 @@ export async function triggerPolicyUpdates(
       metadata.set(`policy_${policy.id}_status`, 'queued');
     });
 
-    await updatePolicy.batchTriggerAndWait(
+    await tasks.batchTrigger<typeof updatePolicy>(
+      'update-policy',
       policies.map((policy) => ({
         payload: {
           organizationId,
@@ -1295,7 +1326,7 @@ export async function triggerPolicyUpdates(
           contextHub: questionsAndAnswers.map((c) => `${c.question}\n${c.answer}`).join('\n'),
           frameworks,
         },
-        concurrencyKey: organizationId,
+        options: { concurrencyKey: organizationId },
       })),
     );
   }
@@ -1340,17 +1371,14 @@ export async function createVendors(
     triggeredCount: vendorsForRiskAssessment.length,
   });
 
-  // TODO: Un-comment this when UI part is ready
-  await triggerVendorRiskAssessmentsViaApi({
+  // Fire-and-forget: risk assessments + research are side effects that
+  // don't need to block the main onboarding flow.
+  void triggerVendorRiskAssessmentsViaApi({
     organizationId,
     vendors: vendorsForRiskAssessment,
-    // Onboarding should NOT force expensive research if GlobalVendors already has data.
-    // If data is missing, the API/Trigger pipeline will still do research.
     withResearch: false,
   });
-
-  // Trigger background research for each vendor (best-effort)
-  await triggerVendorResearch(createdVendors);
+  void triggerVendorResearch(createdVendors);
 
   return createdVendors;
 }

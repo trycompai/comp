@@ -6,17 +6,15 @@ import type { FrameworkUpdateStatus } from '@/types/framework-versioning';
 
 interface UseFrameworkUpdateStatusOptions {
   fallbackData?: FrameworkUpdateStatus;
-  enabled?: boolean;
 }
 
 export function useFrameworkUpdateStatus(
   frameworkInstanceId: string,
   options?: UseFrameworkUpdateStatusOptions,
 ) {
-  const key =
-    frameworkInstanceId && options?.enabled !== false
-      ? `/v1/frameworks/${frameworkInstanceId}/update-status`
-      : null;
+  const key = frameworkInstanceId
+    ? `/v1/frameworks/${frameworkInstanceId}/update-status`
+    : null;
 
   return useSWR<FrameworkUpdateStatus>(
     key,
@@ -30,10 +28,9 @@ export function useFrameworkUpdateStatus(
       // Always revalidate on mount, even when fallbackData is provided.
       // fallbackData is only a fast first paint — without this, SWR treats
       // the server-rendered snapshot as authoritative forever and skips the
-      // client fetch, so users don't see newly-available upgrades after the
-      // feature flag is flipped, after a sync on a sibling framework, or
-      // whenever the Next.js router cache serves a stale RSC. Short of
-      // signing out and back in.
+      // client fetch, so users don't see newly-available upgrades after a
+      // sync on a sibling framework or whenever the Next.js router cache
+      // serves a stale RSC.
       revalidateOnMount: true,
       revalidateOnFocus: true,
     },

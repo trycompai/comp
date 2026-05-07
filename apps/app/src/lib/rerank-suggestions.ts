@@ -1,4 +1,4 @@
-import { openai } from '@ai-sdk/openai';
+import { createGatewayProvider } from '@ai-sdk/gateway';
 import { generateObject, jsonSchema } from 'ai';
 
 /**
@@ -39,7 +39,11 @@ export interface RerankedCandidate {
   rerankScore: number;
 }
 
-const RERANK_MODEL = 'gpt-5-mini';
+const gateway = createGatewayProvider({
+  baseURL: process.env.AI_GATEWAY_BASE_URL,
+});
+
+const RERANK_MODEL = 'google/gemini-3.1-flash-lite-preview' as const;
 
 const SYSTEM_PROMPT = `You are a GRC analyst evaluating which compliance tasks would meaningfully reduce a specific risk or vendor exposure.
 
@@ -105,7 +109,7 @@ export async function rerankSuggestions({
     .join('\n');
 
   const result = await generateObject({
-    model: openai(RERANK_MODEL),
+    model: gateway(RERANK_MODEL),
     system: SYSTEM_PROMPT,
     prompt: userPrompt,
     schema: rerankSchema,
