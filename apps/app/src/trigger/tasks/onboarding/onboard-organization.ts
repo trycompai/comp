@@ -27,7 +27,7 @@ export const onboardOrganization = task({
     await tags.add([`org:${payload.organizationId}`]);
 
     // Initialize metadata for real-time tracking
-    metadata.set('currentStep', 'Researching Vendors...');
+    metadata.set('currentStep', 'Tailoring Policies...');
     metadata.set('vendors', false);
     metadata.set('risk', false);
     metadata.set('policies', false);

@@ -566,11 +566,11 @@ export const OnboardingTracker = ({ onboarding }: { onboarding: Onboarding }) =>
                             {uniqueVendorsInfo.map((vendor) => {
                               const status = stepStatus.vendorsStatus[vendor.id] || 'pending';
                               const done = status === 'completed';
-                              const processing = status === 'processing';
+                              const active = status === 'processing' || status === 'assessing';
                               const content = (
                                 <>
-                                  {done ? <CheckCircle2 className="text-primary h-4 w-4 shrink-0 pointer-events-none" /> : processing ? <Loader2 className="h-4 w-4 shrink-0 text-primary pointer-events-none" style={spinnerStyle} /> : <Clock3 className="h-4 w-4 shrink-0 text-muted-foreground pointer-events-none" />}
-                                  <span className={`text-sm truncate pointer-events-none ${done || processing ? 'text-primary' : 'text-muted-foreground'}`}>{vendor.name}</span>
+                                  {done ? <CheckCircle2 className="text-primary h-4 w-4 shrink-0 pointer-events-none" /> : active ? <Loader2 className="h-4 w-4 shrink-0 text-primary pointer-events-none" style={spinnerStyle} /> : <Clock3 className="h-4 w-4 shrink-0 text-muted-foreground pointer-events-none" />}
+                                  <span className={`text-sm truncate pointer-events-none ${done || active ? 'text-primary' : 'text-muted-foreground'}`}>{vendor.name}</span>
                                 </>
                               );
                               return (
@@ -605,11 +605,11 @@ export const OnboardingTracker = ({ onboarding }: { onboarding: Onboarding }) =>
                             {stepStatus.risksInfo.map((risk) => {
                               const status = stepStatus.risksStatus[risk.id] || 'pending';
                               const done = status === 'completed';
-                              const processing = status === 'processing';
+                              const active = status === 'processing' || status === 'assessing';
                               const content = (
                                 <>
-                                  {done ? <CheckCircle2 className="text-primary h-4 w-4 shrink-0 pointer-events-none" /> : processing ? <Loader2 className="h-4 w-4 shrink-0 text-primary pointer-events-none" style={spinnerStyle} /> : <div className="h-4 w-4 shrink-0 rounded-full border-2 border-muted pointer-events-none" />}
-                                  <span className={`text-sm truncate pointer-events-none ${done || processing ? 'text-primary' : 'text-muted-foreground'}`}>{risk.name}</span>
+                                  {done ? <CheckCircle2 className="text-primary h-4 w-4 shrink-0 pointer-events-none" /> : active ? <Loader2 className="h-4 w-4 shrink-0 text-primary pointer-events-none" style={spinnerStyle} /> : <div className="h-4 w-4 shrink-0 rounded-full border-2 border-muted pointer-events-none" />}
+                                  <span className={`text-sm truncate pointer-events-none ${done || active ? 'text-primary' : 'text-muted-foreground'}`}>{risk.name}</span>
                                 </>
                               );
                               return (
