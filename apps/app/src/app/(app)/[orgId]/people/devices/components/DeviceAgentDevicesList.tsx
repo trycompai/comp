@@ -36,13 +36,13 @@ import { useParams } from 'next/navigation';
 import { useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import { useSWRConfig } from 'swr';
+import { usePeopleActions } from '@/hooks/use-people-api';
 import type { DeviceWithChecks } from '../types';
 import {
   buildDevicesCsv,
   devicesCsvFilename,
   downloadDevicesCsv,
 } from '../lib/devices-csv';
-import { useDevices } from '../hooks/useDevices';
 import { DeviceDetails } from './DeviceDetails';
 import { RemoveDeviceAlert } from '../../all/components/RemoveDeviceAlert';
 
@@ -179,7 +179,7 @@ export const DeviceAgentDevicesList = ({
   isCurrentUserOwner,
 }: DeviceAgentDevicesListProps) => {
   const { orgId } = useParams<{ orgId: string }>();
-  const { removeDeviceAgent } = useDevices();
+  const { removeDeviceAgent } = usePeopleActions();
   const { mutate } = useSWRConfig();
   const [selectedDevice, setSelectedDevice] = useState<DeviceWithChecks | null>(null);
   const [actionDevice, setActionDevice] = useState<DeviceWithChecks | null>(null);

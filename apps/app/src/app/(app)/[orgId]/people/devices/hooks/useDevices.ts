@@ -15,8 +15,7 @@ interface UseDevicesOptions {
 }
 
 export function useDevices({ initialData }: UseDevicesOptions = {}) {
-  const { removeHostFromFleet, removeDeviceAgent: removeDeviceAgentApi } =
-    usePeopleActions();
+  const { removeHostFromFleet } = usePeopleActions();
 
   const { data, error, isLoading, mutate } = useSWR<Host[]>(
     'people-devices',
@@ -43,20 +42,11 @@ export function useDevices({ initialData }: UseDevicesOptions = {}) {
     [removeHostFromFleet, mutate],
   );
 
-  const removeDeviceAgent = useCallback(
-    async (deviceId: string) => {
-      await removeDeviceAgentApi(deviceId);
-      await mutate();
-    },
-    [removeDeviceAgentApi, mutate],
-  );
-
   return {
     devices: Array.isArray(data) ? data : [],
     isLoading,
     error,
     removeDevice,
-    removeDeviceAgent,
     mutate,
   };
 }
