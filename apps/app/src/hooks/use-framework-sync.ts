@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { apiClient } from '@/lib/api-client';
 import { mutate } from 'swr';
+import { FRAMEWORK_UPDATE_STATUSES_KEY } from './use-framework-update-statuses';
 
 interface SyncResult {
   syncOperationId: string;
@@ -30,6 +31,7 @@ export function useFrameworkSync(frameworkInstanceId: string) {
         mutate(`/v1/frameworks/${frameworkInstanceId}/update-status`),
         mutate(`/v1/frameworks/${frameworkInstanceId}/sync-history`),
         mutate(`/v1/frameworks/${frameworkInstanceId}`),
+        mutate(FRAMEWORK_UPDATE_STATUSES_KEY),
       ]);
       return res.data?.data as SyncResult;
     } finally {
