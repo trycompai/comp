@@ -525,6 +525,9 @@ export const OnboardingTracker = ({ onboarding }: { onboarding: Onboarding }) =>
             {/* Step progress - scrollable */}
             <div className="flex flex-col gap-2.5 flex-1 overflow-y-auto min-h-0 pr-1">
               {ONBOARDING_STEPS.map((step) => {
+                if (step.key === 'vendorMitigations' && !stepStatus.vendors) return null;
+                if (step.key === 'riskMitigations' && !stepStatus.risk) return null;
+
                 const isCurrent = currentStep?.key === step.key;
                 const isCompleted = stepStatus[step.key as keyof typeof stepStatus] === true;
 
