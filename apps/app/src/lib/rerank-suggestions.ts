@@ -43,7 +43,7 @@ const gateway = createGatewayProvider({
   baseURL: process.env.AI_GATEWAY_BASE_URL,
 });
 
-const RERANK_MODEL = 'google/gemini-3-flash' as const;
+const RERANK_MODEL = 'google/gemini-3.1-flash-lite-preview' as const;
 
 const SYSTEM_PROMPT = `You are a GRC analyst evaluating which compliance tasks would meaningfully reduce a specific risk or vendor exposure.
 
