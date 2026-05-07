@@ -48,6 +48,8 @@ const FRAMEWORK_BADGES: Record<string, string> = {
   'NEN 7510': '/badges/nen7510.svg',
   'ISO 9001': '/badges/iso9001.svg',
   'SOC 2 Type 1': '/badges/soc2.svg',
+  'CCPA': '/badges/ccpa.svg',
+  'PIPEDA': '/badges/pipeda.svg',
 };
 
 function getFrameworkBadge(name: string): string | null {
