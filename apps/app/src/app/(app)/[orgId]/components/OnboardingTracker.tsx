@@ -3,7 +3,7 @@
 import { Button } from '@trycompai/ui/button';
 import { Card, CardContent } from '@trycompai/ui/card';
 import type { Onboarding } from '@db';
-import { useRealtimeRun } from '@trigger.dev/react-hooks';
+import { useRun } from '@trigger.dev/react-hooks';
 import { AnimatePresence, motion } from 'framer-motion';
 import {
   AlertTriangle,
@@ -65,10 +65,8 @@ export const OnboardingTracker = ({ onboarding }: { onboarding: Onboarding }) =>
     animationDelay: `${-(Date.now() % 1000)}ms`,
   }), []);
 
-  // useRealtimeRun will automatically get the token from TriggerProvider context
-  // This gives us real-time updates including metadata changes
-  const { run, error } = useRealtimeRun(triggerJobId || '', {
-    enabled: !!triggerJobId,
+  const { run, error } = useRun(triggerJobId || '', {
+    refreshInterval: 1000,
   });
 
   const dismissKey = triggerJobId ? `onboarding-tracker-dismissed:${triggerJobId}` : null;
