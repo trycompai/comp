@@ -53,7 +53,6 @@ export function FrameworkDetailContent({
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const { hasPermission, permissions } = usePermissions();
-  const versioningEnabled = useFeatureFlag('is-framework-versioning-enabled');
   const complianceTimelineEnabled = useFeatureFlag('is-timeline-enabled');
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
@@ -82,7 +81,7 @@ export function FrameworkDetailContent({
   const validTabsList: string[] = [];
   if (complianceTimelineEnabled) validTabsList.push('progress');
   validTabsList.push('requirements');
-  if (versioningEnabled) validTabsList.push('history');
+  validTabsList.push('history');
   const validTabs = new Set(validTabsList);
   const activeTab = tabParam && validTabs.has(tabParam) ? tabParam : DEFAULT_TAB;
 
@@ -158,7 +157,7 @@ export function FrameworkDetailContent({
                 <TabsTrigger value="requirements">
                   Requirements <TabBadge>{requirementsCount}</TabBadge>
                 </TabsTrigger>
-                {versioningEnabled && <TabsTrigger value="history">History</TabsTrigger>}
+                <TabsTrigger value="history">History</TabsTrigger>
               </TabsList>
             }
           >
@@ -197,14 +196,12 @@ export function FrameworkDetailContent({
           />
         </TabsContent>
 
-        {versioningEnabled && (
-          <TabsContent value="history">
-            <SyncHistorySection
-              frameworkInstanceId={frameworkInstanceId}
-              permissions={permissions}
-            />
-          </TabsContent>
-        )}
+        <TabsContent value="history">
+          <SyncHistorySection
+            frameworkInstanceId={frameworkInstanceId}
+            permissions={permissions}
+          />
+        </TabsContent>
       </PageLayout>
 
       <FrameworkDeleteDialog
