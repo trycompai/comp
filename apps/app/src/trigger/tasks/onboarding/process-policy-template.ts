@@ -79,7 +79,6 @@ function processTextNode(node: JsonNode, vars: Record<string, string>, flags: Re
   let text = node.text;
   text = processInlineConditionals(text, flags);
   text = replacePlaceholdersInText(text, vars);
-  text = text.trim();
 
   if (!text) return null;
   return { ...node, text };
@@ -128,6 +127,10 @@ export function processContentArray(
     }
 
     if (openMatch) {
+      if (skipDepth > 0) {
+        skipDepth++;
+        continue;
+      }
       const flag = openMatch[1];
       const isTrue = flags[flag] ?? false;
       if (!isTrue) {

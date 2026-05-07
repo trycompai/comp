@@ -109,19 +109,10 @@ const AUTONOMOUS_FINAL_TOP_K = 8;
 const AUTONOMOUS_MIN_RERANK_SCORE = 5;
 const AUTONOMOUS_MIN_LINKS_FLOOR = 3;
 
-// How many risks/vendors to match concurrently in the bulk onboarding path.
-// Each iteration makes 1 vector query (Upstash) + 1 OpenAI rerank call + 1
-// Prisma update — typical wall-clock per iteration is 3–10 seconds (the
-// rerank LLM call dominates). With 32 in-flight at once a 20-entity
-// onboarding finishes in roughly one batch, well within gpt-5-mini /
-// Upstash rate limits.
-//
-// NOTE: this is in-process concurrency on a single trigger.dev task. The
-// natural next step (true fan-out per entity using `task.batchTrigger`)
-// would unlock trigger.dev's queue-level concurrency (50), but requires
-// passing the embedded-task metadata to children rather than rebuilding
-// taskById per child. Filed as a follow-up.
-const MATCH_CONCURRENCY = 32;
+// Risk and vendor matching run in parallel, so this limit applies to
+// EACH side independently. Keep it at 16 so both sides combined stay
+// under ~32 concurrent LLM rerank calls.
+const MATCH_CONCURRENCY = 16;
 
 async function mapWithConcurrency<T, R>(
   items: T[],
