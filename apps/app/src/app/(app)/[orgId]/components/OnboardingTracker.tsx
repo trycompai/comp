@@ -197,10 +197,10 @@ export const OnboardingTracker = ({ onboarding }: { onboarding: Onboarding }) =>
     return {
       vendors: meta.vendors === true,
       risk: meta.risk === true,
-      policies: pTotal > 0 && pCompleted >= pTotal,
+      policies: pTotal === 0 || pCompleted >= pTotal,
       linkage: meta.linkage === true,
-      vendorMitigations: vTotal > 0 && vCompleted >= vTotal,
-      riskMitigations: rTotal > 0 && rCompleted >= rTotal,
+      vendorMitigations: vTotal === 0 || vCompleted >= vTotal,
+      riskMitigations: rTotal === 0 || rCompleted >= rTotal,
       currentStep: (meta.currentStep as string) || null,
       vendorsTotal: (meta.vendorsTotal as number) || 0,
       vendorsCompleted: (meta.vendorsCompleted as number) || 0,
@@ -666,15 +666,18 @@ export const OnboardingTracker = ({ onboarding }: { onboarding: Onboarding }) =>
                 }
 
                 // Simple step row (creation, linkage)
-                const count = step.key === 'vendors' ? uniqueVendorsCounts.total
+                const total = step.key === 'vendors' ? uniqueVendorsCounts.total
                   : step.key === 'risk' ? stepStatus.risksTotal
                   : null;
+                const created = step.key === 'vendors' && stepStatus.vendors ? uniqueVendorsCounts.total
+                  : step.key === 'risk' && stepStatus.risk ? stepStatus.risksTotal
+                  : 0;
                 return (
                   <div key={step.key} className="flex items-center gap-2">
                     {stepIcon}
                     <span className={`${stepTextClass} flex-1`}>{step.label}</span>
-                    {count !== null && count > 0 && (
-                      <span className="text-muted-foreground text-sm">{count}</span>
+                    {total !== null && total > 0 && (
+                      <span className="text-muted-foreground text-sm">{created}/{total}</span>
                     )}
                   </div>
                 );
