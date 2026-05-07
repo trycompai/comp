@@ -181,12 +181,13 @@ function buildParsingPrompt(
   totalChunks: number,
 ): string {
   const instructions = `Instructions:
-- Extract all question → answer pairs from this questionnaire data
-- IMPORTANT: Look for the actual question TEXT (full sentences), NOT just question IDs like "SQ14.3"
-- The question text is the cell containing a full sentence (often ending with "?" or starting with What/How/Do/Is/Are/Does/Can/Will/Should)
-- Match each question to its corresponding Response/Answer value from the same row
-- If the Response/Answer is empty, set answer to null
-- Skip section headers and metadata rows`;
+- Extract every item the respondent must address from this questionnaire data, paired with its answer.
+- Items include: interrogative questions (ending in "?" or starting with What/How/Do/Is/Are/etc.), form fields ("1.1 Vendor Name"), AND compliance/requirement statements ("The organization must X", "The organization has X", "We have X"). All are valid items.
+- IMPORTANT: Extract the FULL item text, not just IDs like "SQ14.3". Find the column with the actual sentences.
+- Match each item to its corresponding Response/Answer/Comment from the same row.
+- If the Response/Answer is empty or missing, set answer to null.
+- Skip pure section headers (e.g., "Information Security Program") and metadata (Company Name, Date).
+- If the document is a single-column checklist of statements, treat each row as one item with answer = null.`;
 
   if (totalChunks > 1) {
     return `${instructions}
@@ -304,6 +305,12 @@ export function looksLikeQuestionLine(line: string): boolean {
   const hasSelectionNote =
     /\((?:single|multiple)\s+selection|allows?\s+other|required\)/i.test(line);
 
+  // Compliance-statement style: "The organization X", "We have X", "Our company X"
+  // Vendor questionnaires often consist entirely of these — each is a row
+  // the respondent must address.
+  const compliancePrefix =
+    /^(?:the\s+organization|the\s+company|the\s+vendor|the\s+supplier|we\s+|our\s+(?:organization|company|team)|i\s+|the\s+respondent)\b/i;
+
   return (
     hasQuestionMark ||
     questionLabel.test(line) ||
@@ -312,7 +319,8 @@ export function looksLikeQuestionLine(line: string): boolean {
     numberedQuestionWithInterrogative.test(line) ||
     formStyleNumberedField.test(line) ||
     hasRequiredMarker ||
-    hasSelectionNote
+    hasSelectionNote ||
+    compliancePrefix.test(line)
   );
 }
 
