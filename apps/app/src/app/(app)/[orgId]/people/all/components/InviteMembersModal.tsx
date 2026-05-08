@@ -122,7 +122,7 @@ export function InviteMembersModal({
           roles: DEFAULT_ROLES,
         },
       ],
-      sendPortalEmail: false,
+      sendPortalEmail: true,
       csvFile: undefined,
     },
     mode: 'onChange',

@@ -45,16 +45,6 @@ export class PeopleInviteService {
 
     const results: InviteResult[] = [];
 
-    const hasPublishedPolicies = await db.policy.findFirst({
-      where: {
-        organizationId,
-        status: 'published',
-        isArchived: false,
-        archivedAt: null,
-      },
-      select: { id: true },
-    });
-
     for (const invite of invites) {
       try {
         // Auditors can only invite auditors
@@ -81,8 +71,7 @@ export class PeopleInviteService {
         const isStrictlyEmployee = isEmployee && !isPrivileged;
 
         const shouldSendPortalEmail =
-          (invite.sendPortalEmail || !!hasPublishedPolicies) &&
-          isStrictlyEmployee;
+          !!invite.sendPortalEmail && isStrictlyEmployee;
 
         if (isStrictlyEmployee) {
           const result = await this.addEmployeeWithoutInvite(
@@ -370,6 +359,19 @@ export class PeopleInviteService {
 
     if (!member) {
       throw new BadRequestException('Member not found.');
+    }
+
+    const roles = member.role.split(',').map((r) => r.trim());
+    const isPrivileged = roles.some((role) =>
+      ['admin', 'owner', 'auditor'].includes(role),
+    );
+    const isEmployee = roles.some((role) =>
+      ['employee', 'contractor'].includes(role),
+    );
+    if (!isEmployee || isPrivileged) {
+      throw new BadRequestException(
+        'Portal invites can only be sent to employee or contractor members.',
+      );
     }
 
     const email = member.user.email;
