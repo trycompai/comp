@@ -14,8 +14,12 @@ vi.mock('./policy-acknowledgment-digest-helpers', async (importOriginal) => {
   };
 });
 
+vi.mock('@react-email/render', () => ({
+  render: vi.fn().mockResolvedValue('<html>mock</html>'),
+}));
+
 vi.mock('../../lib/send-email-via-api', () => ({
-  sendEmailViaApi: vi.fn(),
+  sendBatchEmailViaApi: vi.fn(),
 }));
 
 vi.mock('@trycompai/email/lib/check-unsubscribe', () => ({
@@ -31,7 +35,7 @@ vi.mock('@trigger.dev/sdk', () => ({
 
 import { db } from '@db/server';
 import { filterDigestMembersByCompliance } from './policy-acknowledgment-digest-helpers';
-import { sendEmailViaApi } from '../../lib/send-email-via-api';
+import { sendBatchEmailViaApi } from '../../lib/send-email-via-api';
 import { getUnsubscribedEmails } from '@trycompai/email/lib/check-unsubscribe';
 import { policyAcknowledgmentDigest } from './policy-acknowledgment-digest';
 
@@ -40,7 +44,7 @@ const mockDb = db as unknown as {
 };
 const mockFindMany = mockDb.organization.findMany;
 const mockFilterDigestMembersByCompliance = vi.mocked(filterDigestMembersByCompliance);
-const mockSendEmailViaApi = vi.mocked(sendEmailViaApi);
+const mockSendBatchEmailViaApi = vi.mocked(sendBatchEmailViaApi);
 const mockGetUnsubscribedEmails = vi.mocked(getUnsubscribedEmails);
 
 // The mock replaces schedules.task with a passthrough that returns the config
@@ -60,7 +64,7 @@ describe('policyAcknowledgmentDigest', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockFilterDigestMembersByCompliance.mockImplementation(async (_db, members) => members);
-    mockSendEmailViaApi.mockResolvedValue({ taskId: 'run_fake' });
+    mockSendBatchEmailViaApi.mockResolvedValue({ taskId: 'run_fake' });
     mockGetUnsubscribedEmails.mockResolvedValue(new Set<string>());
   });
 
@@ -104,11 +108,12 @@ describe('policyAcknowledgmentDigest', () => {
       timestamp: new Date(),
     } as never);
 
-    expect(mockSendEmailViaApi).toHaveBeenCalledTimes(1);
-    const call = mockSendEmailViaApi.mock.calls[0][0];
-    expect(call.to).toBe('alice@example.com');
-    expect(call.subject).toBe('You have 1 policy to review at Acme');
+    expect(mockSendBatchEmailViaApi).toHaveBeenCalledTimes(1);
+    const call = mockSendBatchEmailViaApi.mock.calls[0][0];
     expect(call.organizationId).toBe('org_1');
+    expect(call.emails).toHaveLength(1);
+    expect(call.emails[0].to).toBe('alice@example.com');
+    expect(call.emails[0].subject).toBe('You have 1 policy to review at Acme');
     expect(result).toMatchObject({
       success: true,
       emailsSent: 1,
@@ -149,7 +154,7 @@ describe('policyAcknowledgmentDigest', () => {
       timestamp: new Date(),
     } as never);
 
-    expect(mockSendEmailViaApi).not.toHaveBeenCalled();
+    expect(mockSendBatchEmailViaApi).not.toHaveBeenCalled();
     expect(result).toMatchObject({ success: true, emailsSent: 0 });
   });
 
@@ -187,7 +192,7 @@ describe('policyAcknowledgmentDigest', () => {
       timestamp: new Date(),
     } as never);
 
-    expect(mockSendEmailViaApi).not.toHaveBeenCalled();
+    expect(mockSendBatchEmailViaApi).not.toHaveBeenCalled();
     expect(result).toMatchObject({ success: true, emailsSent: 0 });
   });
 
@@ -236,8 +241,8 @@ describe('policyAcknowledgmentDigest', () => {
 
     await taskUnderTest.run({ timestamp: new Date() } as never);
 
-    expect(mockSendEmailViaApi).toHaveBeenCalledTimes(1);
-    expect(mockSendEmailViaApi.mock.calls[0][0].subject).toBe(
+    expect(mockSendBatchEmailViaApi).toHaveBeenCalledTimes(1);
+    expect(mockSendBatchEmailViaApi.mock.calls[0][0].emails[0].subject).toBe(
       'You have 3 policies to review at Acme',
     );
   });
@@ -280,19 +285,18 @@ describe('policyAcknowledgmentDigest', () => {
         ],
       },
     ]);
-    mockSendEmailViaApi
-      .mockRejectedValueOnce(new Error('Resend 500'))
-      .mockResolvedValueOnce({ taskId: 'run_ok' });
+    mockSendBatchEmailViaApi.mockRejectedValueOnce(new Error('Resend 500'));
 
     const result = await taskUnderTest.run({
       timestamp: new Date(),
     } as never);
 
-    expect(mockSendEmailViaApi).toHaveBeenCalledTimes(2);
+    expect(mockSendBatchEmailViaApi).toHaveBeenCalledTimes(1);
+    expect(mockSendBatchEmailViaApi.mock.calls[0][0].emails).toHaveLength(2);
     expect(result).toMatchObject({
       success: true,
-      emailsSent: 1,
-      emailsFailed: 1,
+      emailsSent: 0,
+      emailsFailed: 2,
     });
   });
 
@@ -330,7 +334,7 @@ describe('policyAcknowledgmentDigest', () => {
 
     const result = await taskUnderTest.run({ timestamp: new Date() } as never);
 
-    expect(mockSendEmailViaApi).not.toHaveBeenCalled();
+    expect(mockSendBatchEmailViaApi).not.toHaveBeenCalled();
     expect(result).toMatchObject({
       success: true,
       emailsSent: 0,
@@ -401,17 +405,16 @@ describe('policyAcknowledgmentDigest', () => {
 
     const result = await taskUnderTest.run({ timestamp: new Date() } as never);
 
-    expect(mockSendEmailViaApi).toHaveBeenCalledTimes(1);
-    const call = mockSendEmailViaApi.mock.calls[0][0] as {
-      to: string;
-      subject: string;
+    expect(mockSendBatchEmailViaApi).toHaveBeenCalledTimes(1);
+    const call = mockSendBatchEmailViaApi.mock.calls[0][0] as {
+      emails: Array<{ to: string; subject: string }>;
       organizationId: string;
     };
-    expect(call.to).toBe('alice@example.com');
-    expect(call.subject).toBe(
+    expect(call.emails).toHaveLength(1);
+    expect(call.emails[0].to).toBe('alice@example.com');
+    expect(call.emails[0].subject).toBe(
       'You have 3 policies to review across 2 organizations',
     );
-    // x-organization-id falls back to the first org the user had policies in.
     expect(call.organizationId).toBe('org_1');
     expect(result).toMatchObject({
       success: true,
@@ -484,13 +487,12 @@ describe('policyAcknowledgmentDigest', () => {
 
     const result = await taskUnderTest.run({ timestamp: new Date() } as never);
 
-    expect(mockSendEmailViaApi).toHaveBeenCalledTimes(1);
-    const call = mockSendEmailViaApi.mock.calls[0][0] as {
-      to: string;
-      subject: string;
+    expect(mockSendBatchEmailViaApi).toHaveBeenCalledTimes(1);
+    const call = mockSendBatchEmailViaApi.mock.calls[0][0] as {
+      emails: Array<{ to: string; subject: string }>;
       organizationId: string;
     };
-    expect(call.subject).toBe(
+    expect(call.emails[0].subject).toBe(
       'You have 2 policies to review across 2 organizations',
     );
     expect(call.organizationId).toBe('org_1');
@@ -565,12 +567,12 @@ describe('policyAcknowledgmentDigest', () => {
 
     const result = await taskUnderTest.run({ timestamp: new Date() } as never);
 
-    expect(mockSendEmailViaApi).toHaveBeenCalledTimes(1);
-    const call = mockSendEmailViaApi.mock.calls[0][0] as {
-      subject: string;
+    expect(mockSendBatchEmailViaApi).toHaveBeenCalledTimes(1);
+    const call = mockSendBatchEmailViaApi.mock.calls[0][0] as {
+      emails: Array<{ subject: string }>;
       organizationId: string;
     };
-    expect(call.subject).toBe('You have 1 policy to review at Beta');
+    expect(call.emails[0].subject).toBe('You have 1 policy to review at Beta');
     expect(call.organizationId).toBe('org_2');
     expect(result).toMatchObject({
       success: true,
@@ -640,7 +642,7 @@ describe('policyAcknowledgmentDigest', () => {
 
     const result = await taskUnderTest.run({ timestamp: new Date() } as never);
 
-    expect(mockSendEmailViaApi).not.toHaveBeenCalled();
+    expect(mockSendBatchEmailViaApi).not.toHaveBeenCalled();
     expect(result).toMatchObject({
       success: true,
       recipients: 0,
@@ -682,12 +684,11 @@ describe('policyAcknowledgmentDigest', () => {
 
     const result = await taskUnderTest.run({ timestamp: new Date() } as never);
 
-    expect(mockSendEmailViaApi).not.toHaveBeenCalled();
+    expect(mockSendBatchEmailViaApi).not.toHaveBeenCalled();
     expect(result).toMatchObject({ success: true, emailsSent: 0 });
   });
 
-  it('sends emails in batches of up to 25', async () => {
-    // Create 60 members in one org, all with pending policies, all subscribed.
+  it('sends all emails for an org in a single batch call', async () => {
     const members = Array.from({ length: 60 }, (_, i) => ({
       id: `mem_${i}`,
       department: 'it',
@@ -716,12 +717,13 @@ describe('policyAcknowledgmentDigest', () => {
       },
     ]);
 
-    // All subscribed
     mockGetUnsubscribedEmails.mockResolvedValueOnce(new Set<string>());
 
     const result = await taskUnderTest.run({ timestamp: new Date() } as never);
 
-    expect(mockSendEmailViaApi).toHaveBeenCalledTimes(60);
+    expect(mockSendBatchEmailViaApi).toHaveBeenCalledTimes(1);
+    expect(mockSendBatchEmailViaApi.mock.calls[0][0].emails).toHaveLength(60);
+    expect(mockSendBatchEmailViaApi.mock.calls[0][0].organizationId).toBe('org_big');
     expect(result).toMatchObject({ success: true, emailsSent: 60 });
   });
 
