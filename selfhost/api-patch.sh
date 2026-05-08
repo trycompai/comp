@@ -2,6 +2,12 @@
 # Run inside the api container to patch missing-env throws and DB SSL behavior
 set -e
 
+# Upgrade hardcoded Claude model references to claude-opus-4-7 (highest available)
+for f in $(grep -rlE "claude-(sonnet|opus)-4-[0-9]" /app/dist 2>/dev/null); do
+  sed -i 's|claude-sonnet-4-6|claude-opus-4-7|g; s|claude-opus-4-6|claude-opus-4-7|g; s|claude-opus-4-5|claude-opus-4-7|g; s|claude-sonnet-4-5|claude-opus-4-7|g' "$f"
+done
+echo "[patched] Anthropic model references upgraded to claude-opus-4-7"
+
 # Defang the MACED pentest startup throw
 sed -i "s|throw new Error('MACED_API_KEY is required to start the pentest module');|console.warn('[patched] MACED_API_KEY missing — pentest module disabled'); this.macedClient = null; return;|" \
   /app/dist/src/security-penetration-tests/security-penetration-tests.service.js
