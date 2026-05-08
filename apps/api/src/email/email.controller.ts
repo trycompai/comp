@@ -11,7 +11,9 @@ import { HybridAuthGuard } from '../auth/hybrid-auth.guard';
 import { PermissionGuard } from '../auth/permission.guard';
 import { RequirePermission } from '../auth/require-permission.decorator';
 import { SendEmailDto } from './dto/send-email.dto';
+import { SendBatchEmailDto } from './dto/send-batch-email.dto';
 import type { sendEmailTask } from '../trigger/email/send-email';
+import type { sendBatchEmailTask } from '../trigger/email/send-batch-email';
 
 @ApiExcludeController()
 @ApiTags('Internal - Email')
@@ -40,6 +42,33 @@ export class EmailController {
       scheduledAt: dto.scheduledAt,
       attachments: dto.attachments,
     });
+
+    return { success: true, taskId: handle.id };
+  }
+
+  @Post('send-batch')
+  @HttpCode(200)
+  @RequirePermission('email', 'send')
+  @ApiOperation({
+    summary: 'Send a batch of emails via the centralized Trigger task (internal)',
+  })
+  @ApiResponse({ status: 200, description: 'Batch email task triggered' })
+  async sendBatchEmail(@Body() dto: SendBatchEmailDto) {
+    const fromAddress =
+      process.env.RESEND_FROM_SYSTEM ?? process.env.RESEND_FROM_DEFAULT;
+
+    const emails = dto.emails.map((email) => ({
+      to: email.to,
+      subject: email.subject,
+      html: email.html,
+      from: email.from ?? fromAddress,
+      cc: email.cc,
+    }));
+
+    const handle = await tasks.trigger<typeof sendBatchEmailTask>(
+      'send-batch-email',
+      { emails },
+    );
 
     return { success: true, taskId: handle.id };
   }
