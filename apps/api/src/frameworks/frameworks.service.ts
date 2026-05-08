@@ -671,7 +671,7 @@ export class FrameworksService {
       .map((c) => `${c.question}\n${c.answer}`)
       .join('\n');
 
-    await Promise.allSettled(
+    const triggerResults = await Promise.allSettled(
       policyIds.map((policyId) =>
         tasks.trigger<typeof updatePolicy>('update-policy', {
           organizationId,
@@ -682,6 +682,14 @@ export class FrameworksService {
         }),
       ),
     );
+
+    const failedTrigger = triggerResults.find(
+      (result): result is PromiseRejectedResult => result.status === 'rejected',
+    );
+    if (failedTrigger) {
+      this.logger.error('Failed to trigger policy update', failedTrigger.reason);
+      throw new Error('Failed to trigger policy update');
+    }
   }
 
   async findRequirement(
