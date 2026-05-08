@@ -47,6 +47,8 @@ export default async function TrustPage({
     pci_dss: 'pcidssFileName',
     nen_7510: 'nen7510FileName',
     iso_9001: 'iso9001FileName',
+    pipeda: 'pipedaFileName',
+    ccpa: 'ccpaFileName',
   };
 
   const certificateFiles: Record<string, string | null> = {
@@ -60,6 +62,8 @@ export default async function TrustPage({
     pcidssFileName: null,
     nen7510FileName: null,
     iso9001FileName: null,
+    pipedaFileName: null,
+    ccpaFileName: null,
   };
 
   for (const resource of certificateResources) {
@@ -110,6 +114,8 @@ export default async function TrustPage({
         pcidss={settings?.pcidss ?? false}
         nen7510={settings?.nen7510 ?? false}
         iso9001={settings?.iso9001 ?? false}
+        pipeda={settings?.pipeda ?? false}
+        ccpa={settings?.ccpa ?? false}
         soc2type1Status={settings?.soc2type1Status ?? 'started'}
         soc2type2Status={settings?.soc2type2Status ?? 'started'}
         soc3Status={settings?.soc3Status ?? 'started'}
@@ -120,6 +126,8 @@ export default async function TrustPage({
         pcidssStatus={settings?.pcidssStatus ?? 'started'}
         nen7510Status={settings?.nen7510Status ?? 'started'}
         iso9001Status={settings?.iso9001Status ?? 'started'}
+        pipedaStatus={settings?.pipedaStatus ?? 'started'}
+        ccpaStatus={settings?.ccpaStatus ?? 'started'}
         faqs={settings?.faqs ?? null}
         iso27001FileName={certificateFiles.iso27001FileName}
         iso42001FileName={certificateFiles.iso42001FileName}
@@ -131,6 +139,8 @@ export default async function TrustPage({
         pcidssFileName={certificateFiles.pcidssFileName}
         nen7510FileName={certificateFiles.nen7510FileName}
         iso9001FileName={certificateFiles.iso9001FileName}
+        pipedaFileName={certificateFiles.pipedaFileName}
+        ccpaFileName={certificateFiles.ccpaFileName}
         additionalDocuments={documents.map((doc: any) => ({
           id: doc.id,
           name: doc.name,

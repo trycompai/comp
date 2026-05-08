@@ -5778,6 +5778,44 @@
         ]
       }
     },
+    "/v1/devices/{id}": {
+      "delete": {
+        "description": "Deletes a single device in the authenticated organization. Only organization owners can delete devices.",
+        "operationId": "DevicesController_deleteDevice_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "description": "Device ID to delete",
+            "schema": {
+              "example": "dev_abc123def456",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Device deleted successfully"
+          },
+          "403": {
+            "description": "Forbidden - only organization owners can delete devices"
+          },
+          "404": {
+            "description": "Organization or device not found"
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Delete device",
+        "tags": [
+          "Devices"
+        ]
+      }
+    },
     "/v1/policies": {
       "get": {
         "description": "Returns all policies for the authenticated organization. Supports both API key authentication (X-API-Key header) and session authentication (Bearer token or cookies).",
@@ -8458,6 +8496,11 @@
                     "format": "date-time",
                     "example": "2025-01-01T00:00:00.000Z",
                     "description": "Optional review date to set on all tasks"
+                  },
+                  "notRelevantJustification": {
+                    "type": "string",
+                    "example": "This control is out of scope for our SOC 2 audit.",
+                    "description": "Required justification when marking evidence tasks as not_relevant"
                   }
                 },
                 "required": [
@@ -8933,6 +8976,11 @@
                     "type": "string",
                     "format": "date-time",
                     "example": "2025-01-01T00:00:00.000Z"
+                  },
+                  "notRelevantJustification": {
+                    "type": "string",
+                    "example": "This control is out of scope for our SOC 2 audit.",
+                    "description": "Required justification when marking evidence tasks as not_relevant"
                   }
                 }
               }
@@ -12186,7 +12234,9 @@
                 "soc3",
                 "pci_dss",
                 "nen_7510",
-                "iso_9001"
+                "iso_9001",
+                "pipeda",
+                "ccpa"
               ],
               "type": "string"
             }
@@ -19785,6 +19835,26 @@
         ]
       }
     },
+    "/v1/frameworks/update-statuses": {
+      "get": {
+        "operationId": "FrameworksController_getAllUpdateStatuses_v1",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get update statuses for all framework instances",
+        "tags": [
+          "Frameworks"
+        ]
+      }
+    },
     "/v1/frameworks/{id}": {
       "get": {
         "operationId": "FrameworksController_findOne_v1",
@@ -24334,7 +24404,9 @@
               "soc3",
               "pci_dss",
               "nen_7510",
-              "iso_9001"
+              "iso_9001",
+              "pipeda",
+              "ccpa"
             ],
             "example": "iso_27001"
           },
@@ -24376,7 +24448,9 @@
               "soc3",
               "pci_dss",
               "nen_7510",
-              "iso_9001"
+              "iso_9001",
+              "pipeda",
+              "ccpa"
             ]
           },
           "fileName": {
@@ -24419,7 +24493,9 @@
               "soc3",
               "pci_dss",
               "nen_7510",
-              "iso_9001"
+              "iso_9001",
+              "pipeda",
+              "ccpa"
             ],
             "example": "iso_27001"
           }

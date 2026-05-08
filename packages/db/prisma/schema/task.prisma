@@ -40,6 +40,10 @@ model Task {
   approvedAt     DateTime?
   previousStatus TaskStatus?
 
+  // Justification provided when marking the task as not_relevant.
+  // Cleared when the task moves back to another status.
+  notRelevantJustification String?
+
   // Sync-driven archive — see Control.archivedAt.
   archivedAt DateTime?
 

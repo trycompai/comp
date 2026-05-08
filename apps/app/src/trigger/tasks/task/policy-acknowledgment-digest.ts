@@ -8,7 +8,8 @@ import {
 } from '@trycompai/email';
 import { getUnsubscribedEmails } from '@trycompai/email/lib/check-unsubscribe';
 
-import { sendEmailViaApi } from '../../lib/send-email-via-api';
+import { render } from '@react-email/render';
+import { sendBatchEmailViaApi } from '../../lib/send-email-via-api';
 import {
   computePendingPolicies,
   filterDigestMembersByCompliance,
@@ -22,22 +23,9 @@ const getPortalBase = () =>
     '',
   );
 
-const EMAIL_BATCH_SIZE = 25;
 // Skip orgs that look abandoned — same threshold weekly-task-reminder uses so
 // we don't keep hitting dead addresses and burning domain reputation.
 const ORG_INACTIVITY_DAYS = 90;
-
-async function sendInBatches<T>(
-  sends: Array<() => Promise<T>>,
-): Promise<PromiseSettledResult<T>[]> {
-  const results: PromiseSettledResult<T>[] = [];
-  for (let i = 0; i < sends.length; i += EMAIL_BATCH_SIZE) {
-    const chunk = sends.slice(i, i + EMAIL_BATCH_SIZE);
-    const chunkResults = await Promise.allSettled(chunk.map((fn) => fn()));
-    results.push(...chunkResults);
-  }
-  return results;
-}
 
 interface RollupEntry {
   email: string;
@@ -51,7 +39,7 @@ interface RollupEntry {
 export const policyAcknowledgmentDigest = schedules.task({
   id: 'policy-acknowledgment-digest',
   machine: 'large-1x',
-  cron: '0 14 * * *', // Once daily at 14:00 UTC
+  cron: '0 14 * * 2', // Weekly on Tuesdays at 14:00 UTC
   maxDuration: 1000 * 60 * 15, // 15 minutes
   run: async () => {
     const inactivityCutoff = new Date();
@@ -197,8 +185,14 @@ export const policyAcknowledgmentDigest = schedules.task({
       }
     }
 
-    // Build one send per user.
-    const sends: Array<() => Promise<unknown>> = [];
+    // Render all emails and group by primaryOrgId for batch sending.
+    let emailsSent = 0;
+    let emailsFailed = 0;
+    const emailsByOrg = new Map<
+      string,
+      Array<{ to: string; subject: string; html: string }>
+    >();
+
     for (const entry of rollup.values()) {
       const subject = computePolicyAcknowledgmentDigestSubject(entry.orgs);
       const emailElement = PolicyAcknowledgmentDigestEmail({
@@ -208,26 +202,33 @@ export const policyAcknowledgmentDigest = schedules.task({
       });
       if (!emailElement) continue;
 
-      sends.push(() =>
-        sendEmailViaApi({
-          to: entry.email,
-          subject,
-          organizationId: entry.primaryOrgId,
-          react: emailElement,
-        }),
-      );
+      let html: string;
+      try {
+        html = await render(emailElement);
+      } catch (error) {
+        logger.warn('Failed to render digest email, skipping recipient', {
+          email: entry.email,
+          error: error instanceof Error ? error.message : String(error),
+        });
+        emailsFailed += 1;
+        continue;
+      }
+
+      const orgEmails = emailsByOrg.get(entry.primaryOrgId) ?? [];
+      orgEmails.push({ to: entry.email, subject, html });
+      emailsByOrg.set(entry.primaryOrgId, orgEmails);
     }
 
-    const results = await sendInBatches(sends);
-    let emailsSent = 0;
-    let emailsFailed = 0;
-    for (const r of results) {
-      if (r.status === 'fulfilled') emailsSent += 1;
-      else {
-        emailsFailed += 1;
-        logger.warn('Digest email failed', {
-          error:
-            r.reason instanceof Error ? r.reason.message : String(r.reason),
+    for (const [orgId, emails] of emailsByOrg) {
+      try {
+        await sendBatchEmailViaApi({ emails, organizationId: orgId });
+        emailsSent += emails.length;
+      } catch (error) {
+        emailsFailed += emails.length;
+        logger.warn('Batch email request failed', {
+          orgId,
+          count: emails.length,
+          error: error instanceof Error ? error.message : String(error),
         });
       }
     }
