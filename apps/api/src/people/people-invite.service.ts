@@ -72,15 +72,19 @@ export class PeopleInviteService {
         }
 
         const email = invite.email.toLowerCase();
-        const hasEmployeeRoleAndNoAdmin =
-          !invite.roles.includes('admin') &&
-          (invite.roles.includes('employee') ||
-            invite.roles.includes('contractor'));
+        const isPrivileged = invite.roles.some((role) =>
+          ['admin', 'owner', 'auditor'].includes(role),
+        );
+        const isEmployee = invite.roles.some((role) =>
+          ['employee', 'contractor'].includes(role),
+        );
+        const isStrictlyEmployee = isEmployee && !isPrivileged;
 
         const shouldSendPortalEmail =
-          invite.sendPortalEmail || !!hasPublishedPolicies;
+          (invite.sendPortalEmail || !!hasPublishedPolicies) &&
+          isStrictlyEmployee;
 
-        if (hasEmployeeRoleAndNoAdmin) {
+        if (isStrictlyEmployee) {
           const result = await this.addEmployeeWithoutInvite(
             email,
             invite.roles,
