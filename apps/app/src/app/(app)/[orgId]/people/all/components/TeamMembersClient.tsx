@@ -84,7 +84,7 @@ export function TeamMembersClient({
   const [page, setPage] = useState(1);
   const [perPage, setPerPage] = useState(25);
 
-  const { unlinkDevice, removeMember, reactivateMember } = usePeopleActions();
+  const { unlinkDevice, removeMember, reactivateMember, resendPortalInvite } = usePeopleActions();
   const api = useApi();
 
   // Fetch custom roles for the role combobox
@@ -282,6 +282,7 @@ export function TeamMembersClient({
               <SelectItem value="admin">Admin</SelectItem>
               <SelectItem value="auditor">Auditor</SelectItem>
               <SelectItem value="employee">Employee</SelectItem>
+              <SelectItem value="contractor">Contractor</SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -475,6 +476,7 @@ export function TeamMembersClient({
                   onRemoveDevice={handleRemoveDevice}
                   onUpdateRole={handleUpdateRole}
                   onReactivate={handleReactivateMember}
+                  onResendPortalInvite={resendPortalInvite}
                   canEdit={canManageMembers}
                   isCurrentUserOwner={isCurrentUserOwner}
                   customRoles={customRoles}

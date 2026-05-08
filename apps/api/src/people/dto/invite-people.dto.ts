@@ -6,6 +6,8 @@ import {
   IsString,
   ValidateNested,
   ArrayMinSize,
+  IsBoolean,
+  IsOptional,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 
@@ -20,6 +22,11 @@ export class InviteItemDto {
   @IsString({ each: true })
   @ArrayMinSize(1)
   roles: string[];
+
+  @ApiProperty({ example: false, required: false })
+  @IsBoolean()
+  @IsOptional()
+  sendPortalEmail?: boolean;
 }
 
 export class InvitePeopleDto {
