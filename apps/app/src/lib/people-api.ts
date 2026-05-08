@@ -60,3 +60,11 @@ export function removeMemberViaApi({
 }): Promise<ApiResponse<DeleteMemberApiResponse>> {
   return serverApi.delete<DeleteMemberApiResponse>(`/v1/people/${memberId}`);
 }
+
+export function resendPortalInviteViaApi({
+  memberId,
+}: {
+  memberId: string;
+}): Promise<ApiResponse<{ success: boolean }>> {
+  return serverApi.post<{ success: boolean }>(`/v1/people/${memberId}/resend-portal-invite`);
+}
