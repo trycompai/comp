@@ -1,5 +1,6 @@
 import {
   IsString,
+  IsEmail,
   IsOptional,
   IsArray,
   ValidateNested,
@@ -10,7 +11,7 @@ import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 class BatchEmailItemDto {
   @ApiProperty({ description: 'Recipient email address' })
-  @IsString()
+  @IsEmail()
   to: string;
 
   @ApiProperty({ description: 'Email subject line' })

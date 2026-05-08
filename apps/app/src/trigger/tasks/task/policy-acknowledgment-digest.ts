@@ -186,6 +186,8 @@ export const policyAcknowledgmentDigest = schedules.task({
     }
 
     // Render all emails and group by primaryOrgId for batch sending.
+    let emailsSent = 0;
+    let emailsFailed = 0;
     const emailsByOrg = new Map<
       string,
       Array<{ to: string; subject: string; html: string }>
@@ -200,14 +202,22 @@ export const policyAcknowledgmentDigest = schedules.task({
       });
       if (!emailElement) continue;
 
-      const html = await render(emailElement);
+      let html: string;
+      try {
+        html = await render(emailElement);
+      } catch (error) {
+        logger.warn('Failed to render digest email, skipping recipient', {
+          email: entry.email,
+          error: error instanceof Error ? error.message : String(error),
+        });
+        emailsFailed += 1;
+        continue;
+      }
+
       const orgEmails = emailsByOrg.get(entry.primaryOrgId) ?? [];
       orgEmails.push({ to: entry.email, subject, html });
       emailsByOrg.set(entry.primaryOrgId, orgEmails);
     }
-
-    let emailsSent = 0;
-    let emailsFailed = 0;
 
     for (const [orgId, emails] of emailsByOrg) {
       try {

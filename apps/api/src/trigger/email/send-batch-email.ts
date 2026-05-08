@@ -35,6 +35,11 @@ export const sendBatchEmailTask = schemaTask({
 
     const fromDefault =
       process.env.RESEND_FROM_SYSTEM ?? process.env.RESEND_FROM_DEFAULT;
+
+    if (!fromDefault) {
+      throw new Error('Missing FROM address in environment variables');
+    }
+
     const toTest = process.env.RESEND_TO_TEST;
     const apiBaseUrl =
       process.env.NEXT_PUBLIC_API_URL || 'https://api.trycomp.ai';
@@ -50,7 +55,7 @@ export const sendBatchEmailTask = schemaTask({
         const oneClickUrl = `${apiBaseUrl}/v1/email/unsubscribe?email=${encodeURIComponent(email.to)}&token=${encodeURIComponent(token)}`;
 
         return {
-          from: email.from ?? fromDefault ?? '',
+          from: email.from ?? fromDefault,
           to: toTest ?? email.to,
           cc: email.cc,
           subject: email.subject,
@@ -87,7 +92,6 @@ export const sendBatchEmailTask = schemaTask({
             to: chunk[err.index]?.to,
           });
           totalFailed += 1;
-          totalSent -= 1;
         }
       }
 
