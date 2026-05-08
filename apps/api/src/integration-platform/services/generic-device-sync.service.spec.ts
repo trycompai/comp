@@ -75,6 +75,7 @@ describe('GenericDeviceSyncService', () => {
             organizationId: ORG_ID,
             deactivated: false,
           }),
+          select: { id: true },
         }),
       );
 
@@ -206,6 +207,28 @@ describe('GenericDeviceSyncService', () => {
         where: { id: { in: ['dev_old'] } },
       });
       expect(result.removed).toBe(1);
+    });
+
+    it('should NOT delete existing devices when all sync devices were skipped', async () => {
+      mockMemberFindFirst.mockResolvedValue(null);
+      mockDeviceFindMany.mockResolvedValue([
+        {
+          id: 'dev_existing',
+          serialNumber: 'EXISTING',
+          externalDeviceId: null,
+          integrationConnectionId: CONN_ID,
+        },
+      ]);
+
+      const result = await service.processDevices({
+        organizationId: ORG_ID,
+        connectionId: CONN_ID,
+        devices: [baseDevice()],
+      });
+
+      expect(result.skipped).toBe(1);
+      expect(result.removed).toBe(0);
+      expect(mockDeviceDeleteMany).not.toHaveBeenCalled();
     });
 
     it('does NOT delete devices that are still in the sync result', async () => {

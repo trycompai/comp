@@ -1,4 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import { db } from '@db';
 import type { SyncDevice } from '@trycompai/integration-platform';
 
@@ -91,7 +92,7 @@ export class GenericDeviceSyncService {
             deactivated: false,
             user: { email: normalizedEmail },
           },
-          include: { user: true },
+          select: { id: true },
         });
 
         if (!member) {
@@ -131,42 +132,64 @@ export class GenericDeviceSyncService {
           });
         }
 
+        const updateData = {
+          name: device.name,
+          hostname: device.hostname ?? device.name,
+          platform: device.platform,
+          osVersion: device.osVersion ?? 'Unknown',
+          hardwareModel: device.hardwareModel,
+          lastCheckIn: new Date(),
+          source: 'integration' as const,
+          integrationConnectionId: connectionId,
+          externalDeviceId: device.externalId,
+        };
+
         if (existingDevice) {
           await db.device.update({
             where: { id: existingDevice.id },
-            data: {
-              name: device.name,
-              hostname: device.hostname ?? device.name,
-              platform: device.platform,
-              osVersion: device.osVersion ?? 'Unknown',
-              hardwareModel: device.hardwareModel,
-              lastCheckIn: new Date(),
-              source: 'integration',
-              integrationConnectionId: connectionId,
-              externalDeviceId: device.externalId,
-            },
+            data: updateData,
           });
           result.updated++;
           result.details.push({ identifier, status: 'updated' });
         } else {
-          await db.device.create({
-            data: {
-              name: device.name,
-              hostname: device.hostname ?? device.name,
-              platform: device.platform,
-              serialNumber: device.serialNumber,
-              osVersion: device.osVersion ?? 'Unknown',
-              hardwareModel: device.hardwareModel,
-              memberId: member.id,
-              organizationId,
-              lastCheckIn: new Date(),
-              source: 'integration',
-              integrationConnectionId: connectionId,
-              externalDeviceId: device.externalId,
-            },
-          });
-          result.imported++;
-          result.details.push({ identifier, status: 'imported' });
+          try {
+            await db.device.create({
+              data: {
+                ...updateData,
+                serialNumber: device.serialNumber,
+                memberId: member.id,
+                organizationId,
+              },
+            });
+            result.imported++;
+            result.details.push({ identifier, status: 'imported' });
+          } catch (createError) {
+            if (
+              createError instanceof Prisma.PrismaClientKnownRequestError &&
+              createError.code === 'P2002'
+            ) {
+              this.logger.warn(
+                `[DeviceSync] Unique constraint hit for ${identifier} — falling back to update`,
+              );
+              const conflicting = await db.device.findFirst({
+                where: {
+                  serialNumber: device.serialNumber,
+                  organizationId,
+                },
+                select: { id: true },
+              });
+              if (conflicting) {
+                await db.device.update({
+                  where: { id: conflicting.id },
+                  data: updateData,
+                });
+                result.updated++;
+                result.details.push({ identifier, status: 'updated' });
+              }
+            } else {
+              throw createError;
+            }
+          }
         }
       } catch (error) {
         this.logger.error(
@@ -188,52 +211,68 @@ export class GenericDeviceSyncService {
     // ==================================================================
     // Phase 2: Remove disappeared devices
     // ==================================================================
-    const existingIntegrationDevices = await db.device.findMany({
-      where: {
-        organizationId,
-        integrationConnectionId: connectionId,
-        source: 'integration',
-      },
-      select: {
-        id: true,
-        serialNumber: true,
-        externalDeviceId: true,
-      },
-    });
 
-    const syncedSerials = new Set(
-      syncedIdentifiers
-        .map((s) => s.serialNumber)
-        .filter((v): v is string => Boolean(v)),
-    );
-    const syncedExternalIds = new Set(
-      syncedIdentifiers
-        .map((s) => s.externalId)
-        .filter((v): v is string => Boolean(v)),
-    );
-
-    const toRemove = existingIntegrationDevices.filter((d) => {
-      const matchedBySerial =
-        d.serialNumber && syncedSerials.has(d.serialNumber);
-      const matchedByExternal =
-        d.externalDeviceId && syncedExternalIds.has(d.externalDeviceId);
-      return !matchedBySerial && !matchedByExternal;
-    });
-
-    if (toRemove.length > 0) {
-      const idsToDelete = toRemove.map((d) => d.id);
-      await db.device.deleteMany({
-        where: { id: { in: idsToDelete } },
+    // Only run removal if we actually processed at least one device successfully
+    if (syncedIdentifiers.length === 0) {
+      this.logger.log(
+        '[DeviceSync] No devices successfully processed — skipping Phase 2 removal',
+      );
+    } else {
+      const existingIntegrationDevices = await db.device.findMany({
+        where: {
+          organizationId,
+          integrationConnectionId: connectionId,
+          source: 'integration',
+        },
+        select: {
+          id: true,
+          serialNumber: true,
+          externalDeviceId: true,
+        },
       });
-      result.removed = toRemove.length;
 
-      for (const device of toRemove) {
-        result.details.push({
-          identifier:
-            device.serialNumber ?? device.externalDeviceId ?? device.id,
-          status: 'removed',
-          reason: `Device no longer reported by ${providerName}`,
-        });
+      const syncedSerials = new Set(
+        syncedIdentifiers
+          .map((s) => s.serialNumber)
+          .filter((v): v is string => Boolean(v)),
+      );
+      const syncedExternalIds = new Set(
+        syncedIdentifiers
+          .map((s) => s.externalId)
+          .filter((v): v is string => Boolean(v)),
+      );
+
+      const toRemove = existingIntegrationDevices.filter((d) => {
+        const matchedBySerial =
+          d.serialNumber && syncedSerials.has(d.serialNumber);
+        const matchedByExternal =
+          d.externalDeviceId && syncedExternalIds.has(d.externalDeviceId);
+        return !matchedBySerial && !matchedByExternal;
+      });
+
+      if (toRemove.length > 0) {
+        const idsToDelete = toRemove.map((d) => d.id);
+
+        try {
+          await db.device.deleteMany({
+            where: { id: { in: idsToDelete } },
+          });
+          result.removed = toRemove.length;
+
+          for (const device of toRemove) {
+            result.details.push({
+              identifier:
+                device.serialNumber ?? device.externalDeviceId ?? device.id,
+              status: 'removed',
+              reason: `Device no longer reported by ${providerName}`,
+            });
+          }
+        } catch (deleteError) {
+          this.logger.error(
+            `[DeviceSync] Failed to delete ${idsToDelete.length} devices: ${deleteError}`,
+          );
+          result.errors += idsToDelete.length;
+        }
       }
     }
 
