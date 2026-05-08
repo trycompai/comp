@@ -8,6 +8,10 @@ import { db } from '@db';
 import { triggerEmail } from '../email/trigger-email';
 import { InviteEmail } from '../email/templates/invite-member';
 import { InvitePortalEmail } from '@trycompai/email';
+import {
+  BUILT_IN_ROLE_OBLIGATIONS,
+  RESTRICTED_ROLES,
+} from '@trycompai/auth';
 import type { InviteItemDto } from './dto/invite-people.dto';
 import { checkAutoCompletePhases } from '../frameworks/frameworks-timeline.helper';
 import { TimelinesService } from '../timelines/timelines.service';
@@ -62,16 +66,16 @@ export class PeopleInviteService {
         }
 
         const email = invite.email.toLowerCase();
-        const isPrivileged = invite.roles.some((role) =>
-          ['admin', 'owner', 'auditor'].includes(role),
-        );
-        const isEmployee = invite.roles.some((role) =>
-          ['employee', 'contractor'].includes(role),
-        );
-        const isStrictlyEmployee = isEmployee && !isPrivileged;
+        const restrictedRoles: readonly string[] = RESTRICTED_ROLES;
+        const isStrictlyEmployee =
+          invite.roles.every((role) => restrictedRoles.includes(role));
 
+        const hasCompliance = await this.rolesHaveComplianceObligation(
+          invite.roles,
+          organizationId,
+        );
         const shouldSendPortalEmail =
-          !!invite.sendPortalEmail && isStrictlyEmployee;
+          !!invite.sendPortalEmail && hasCompliance;
 
         if (isStrictlyEmployee) {
           const result = await this.addEmployeeWithoutInvite(
@@ -362,15 +366,13 @@ export class PeopleInviteService {
     }
 
     const roles = member.role.split(',').map((r) => r.trim());
-    const isPrivileged = roles.some((role) =>
-      ['admin', 'owner', 'auditor'].includes(role),
+    const hasCompliance = await this.rolesHaveComplianceObligation(
+      roles,
+      organizationId,
     );
-    const isEmployee = roles.some((role) =>
-      ['employee', 'contractor'].includes(role),
-    );
-    if (!isEmployee || isPrivileged) {
+    if (!hasCompliance) {
       throw new BadRequestException(
-        'Portal invites can only be sent to employee or contractor members.',
+        'Portal invites can only be sent to members with compliance obligations.',
       );
     }
 
@@ -412,6 +414,34 @@ export class PeopleInviteService {
         videoId,
       })),
       skipDuplicates: true,
+    });
+  }
+
+  private async rolesHaveComplianceObligation(
+    roles: string[],
+    organizationId: string,
+  ): Promise<boolean> {
+    for (const role of roles) {
+      if (BUILT_IN_ROLE_OBLIGATIONS[role]?.compliance) return true;
+    }
+
+    const customRoleNames = roles.filter((r) => !BUILT_IN_ROLE_OBLIGATIONS[r]);
+    if (customRoleNames.length === 0) return false;
+
+    const customRoles = await db.organizationRole.findMany({
+      where: {
+        organizationId,
+        name: { in: customRoleNames },
+      },
+      select: { obligations: true },
+    });
+
+    return customRoles.some((role) => {
+      const obligations =
+        typeof role.obligations === 'string'
+          ? JSON.parse(role.obligations)
+          : role.obligations || {};
+      return !!obligations.compliance;
     });
   }
 
