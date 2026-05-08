@@ -265,6 +265,12 @@ export class TasksController {
           example: '2025-01-01T00:00:00.000Z',
           description: 'Optional review date to set on all tasks',
         },
+        notRelevantJustification: {
+          type: 'string',
+          example: 'This control is out of scope for our SOC 2 audit.',
+          description:
+            'Required justification when marking evidence tasks as not_relevant',
+        },
       },
       required: ['taskIds', 'status'],
     },
@@ -291,9 +297,10 @@ export class TasksController {
       taskIds: string[];
       status: TaskStatus;
       reviewDate?: string;
+      notRelevantJustification?: string;
     },
   ): Promise<{ updatedCount: number }> {
-    const { taskIds, status, reviewDate } = body;
+    const { taskIds, status, reviewDate, notRelevantJustification } = body;
 
     if (!Array.isArray(taskIds) || taskIds.length === 0) {
       throw new BadRequestException('taskIds must be a non-empty array');
@@ -326,6 +333,7 @@ export class TasksController {
       status,
       parsedReviewDate,
       userId,
+      notRelevantJustification,
     );
   }
 
@@ -811,6 +819,12 @@ export class TasksController {
           format: 'date-time',
           example: '2025-01-01T00:00:00.000Z',
         },
+        notRelevantJustification: {
+          type: 'string',
+          example: 'This control is out of scope for our SOC 2 audit.',
+          description:
+            'Required justification when marking evidence tasks as not_relevant',
+        },
       },
     },
   })
@@ -846,6 +860,7 @@ export class TasksController {
       integrationScheduleFrequency?: string;
       department?: string;
       reviewDate?: string;
+      notRelevantJustification?: string;
     },
   ): Promise<TaskResponseDto> {
     const userId = await this.resolveTaskMutationUserId(
@@ -884,6 +899,7 @@ export class TasksController {
           | undefined,
         department: body.department,
         reviewDate: parsedReviewDate,
+        notRelevantJustification: body.notRelevantJustification,
       },
       userId,
     );
