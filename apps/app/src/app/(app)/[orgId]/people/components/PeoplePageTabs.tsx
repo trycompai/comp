@@ -10,8 +10,9 @@ import {
   TabsTrigger,
 } from '@trycompai/design-system';
 import { Add } from '@trycompai/design-system/icons';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import type { ReactNode } from 'react';
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 import { InviteMembersModal } from '../all/components/InviteMembersModal';
 
 interface PeoplePageTabsProps {
@@ -19,12 +20,60 @@ interface PeoplePageTabsProps {
   employeeTasksContent: ReactNode | null;
   devicesContent: ReactNode;
   orgChartContent: ReactNode;
+  findingsContent?: ReactNode | null;
   roleMappingContent: ReactNode | null;
   showRoleMapping: boolean;
   showEmployeeTasks: boolean;
+  settingsContent: ReactNode | null;
+  showSettings: boolean;
   canInviteUsers: boolean;
   canManageMembers: boolean;
   organizationId: string;
+}
+
+/** ?tab= value → Radix tab value */
+function tabParamToInternal(
+  tabParam: string | null,
+  showEmployeeTasks: boolean,
+  showRoleMapping: boolean,
+  showSettings: boolean,
+): string {
+  if (!tabParam || tabParam === 'people') {
+    return 'people';
+  }
+  if (tabParam === 'tasks') {
+    return showEmployeeTasks ? 'employee-tasks' : 'people';
+  }
+  if (tabParam === 'devices') {
+    return 'devices';
+  }
+  if (tabParam === 'chart') {
+    return 'org-chart';
+  }
+  if (tabParam === 'role-mapping') {
+    return showRoleMapping ? 'role-mapping' : 'people';
+  }
+  if (tabParam === 'settings') {
+    return showSettings ? 'settings' : 'people';
+  }
+  return 'people';
+}
+
+/** Radix tab value → ?tab= query param */
+function internalValueToTabParam(value: string): string {
+  switch (value) {
+    case 'employee-tasks':
+      return 'tasks';
+    case 'org-chart':
+      return 'chart';
+    case 'people':
+    case 'devices':
+    case 'role-mapping':
+    case 'settings':
+      return value;
+    default:
+      return 'people';
+  }
 }
 
 export function PeoplePageTabs({
@@ -32,17 +81,45 @@ export function PeoplePageTabs({
   employeeTasksContent,
   devicesContent,
   orgChartContent,
+  findingsContent,
   roleMappingContent,
   showRoleMapping,
   showEmployeeTasks,
+  settingsContent,
+  showSettings,
   canInviteUsers,
   canManageMembers,
   organizationId,
 }: PeoplePageTabsProps) {
+  const pathname = usePathname();
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
 
+  const activeTab = tabParamToInternal(
+    searchParams.get('tab'),
+    showEmployeeTasks,
+    showRoleMapping,
+    showSettings,
+  );
+
+  const handleTabChange = useCallback(
+    (value: string) => {
+      const params = new URLSearchParams(searchParams.toString());
+      const tabParam = internalValueToTabParam(value);
+      if (tabParam === 'people') {
+        params.delete('tab');
+      } else {
+        params.set('tab', tabParam);
+      }
+      const query = params.toString();
+      router.replace(query ? `${pathname}?${query}` : pathname, { scroll: false });
+    },
+    [pathname, router, searchParams],
+  );
+
   return (
-    <Tabs defaultValue="people">
+    <Tabs value={activeTab} onValueChange={handleTabChange}>
       <PageLayout
         header={
           <PageHeader
@@ -54,6 +131,7 @@ export function PeoplePageTabs({
                 <TabsTrigger value="devices">Devices</TabsTrigger>
                 <TabsTrigger value="org-chart">Chart</TabsTrigger>
                 {showRoleMapping && <TabsTrigger value="role-mapping">Role Mapping</TabsTrigger>}
+                {showSettings && <TabsTrigger value="settings">Settings</TabsTrigger>}
               </TabsList>
             }
             actions={
@@ -76,6 +154,9 @@ export function PeoplePageTabs({
         <TabsContent value="org-chart">{orgChartContent}</TabsContent>
         {showRoleMapping && (
           <TabsContent value="role-mapping">{roleMappingContent}</TabsContent>
+        )}
+        {showSettings && (
+          <TabsContent value="settings">{settingsContent}</TabsContent>
         )}
       </PageLayout>
 

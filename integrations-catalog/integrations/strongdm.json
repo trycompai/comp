@@ -1,0 +1,37 @@
+{
+  "slug": "strongdm",
+  "name": "StrongDM",
+  "description": "Infrastructure access management platform. Monitor user provisioning and access via SCIM API.",
+  "category": "Security",
+  "docsUrl": "https://docs.strongdm.com/references/scim",
+  "baseUrl": "https://app.strongdm.com",
+  "authConfig": {
+    "type": "api_key",
+    "config": {
+      "setupInstructions": "1. Log in to StrongDM Admin UI\n2. Go to Settings > User Management > Provisioning\n3. Select the 'Generic' provider option\n4. Click 'Activate' to generate a bearer token\n5. Copy the generated token and paste it below"
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "strongdm_app_availability",
+      "name": "App Availability",
+      "description": "Verifies StrongDM SCIM API is accessible by listing users.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "strongdm_employee_access",
+      "name": "Employee Access",
+      "description": "Lists StrongDM users provisioned via SCIM to verify access management.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

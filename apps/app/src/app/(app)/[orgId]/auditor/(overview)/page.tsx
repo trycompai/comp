@@ -1,10 +1,11 @@
-import PageWithBreadcrumb from '@/components/pages/PageWithBreadcrumb';
 import { serverApi } from '@/lib/api-server';
 import { parseRolesString } from '@/lib/permissions';
+import { PageHeader, PageLayout } from '@trycompai/design-system';
 import { Role } from '@db';
 import type { Metadata } from 'next';
-import { notFound, redirect } from 'next/navigation';
+import { redirect } from 'next/navigation';
 import { AuditorView } from './components/AuditorView';
+import { ExportEvidenceButton } from './components/ExportEvidenceButton';
 
 interface PeopleMember {
   userId: string;
@@ -53,7 +54,7 @@ export default async function AuditorPage({
 }: {
   params: Promise<{ orgId: string }>;
 }) {
-  const { orgId: organizationId } = await params;
+  await params;
 
   const [membersRes, orgRes, contextRes] = await Promise.all([
     serverApi.get<PeopleApiResponse>('/v1/people'),
@@ -74,10 +75,10 @@ export default async function AuditorPage({
     redirect('/auth/unauthorized');
   }
 
-  const roles = parseRolesString(currentMember.role);
-  if (!roles.includes(Role.auditor)) {
-    notFound();
-  }
+  // CS-189: auditor/layout.tsx already calls requireRoutePermission('auditor',
+  // orgId) which enforces audit:read. The prior literal-role check
+  // (roles.includes(Role.auditor)) was redundant AND wrong — it would 404 for
+  // owners/admins/custom roles that legitimately have audit:read.
 
   const organizationName = orgRes.data?.name ?? 'Organization';
   const logoUrl = orgRes.data?.logoUrl ?? null;
@@ -121,25 +122,22 @@ export default async function AuditorPage({
   }
 
   return (
-    <PageWithBreadcrumb
-      breadcrumbs={[
-        {
-          label: 'Auditor View',
-          href: `/${organizationId}/auditor`,
-          current: true,
-        },
-      ]}
+    <PageLayout
+      header={
+        <PageHeader
+          title={organizationName}
+          actions={<ExportEvidenceButton organizationName={organizationName} />}
+        />
+      }
     >
       <AuditorView
         initialContent={initialContent}
-        organizationName={organizationName}
         logoUrl={logoUrl}
-        employeeCount={
-          initialContent['How many employees do you have?'] || null
-        }
+        organizationName={organizationName}
+        employeeCount={initialContent['How many employees do you have?'] || null}
         cSuite={cSuiteData}
         reportSignatory={signatoryData}
       />
-    </PageWithBreadcrumb>
+    </PageLayout>
   );
 }

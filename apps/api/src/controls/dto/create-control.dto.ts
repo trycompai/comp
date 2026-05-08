@@ -1,17 +1,33 @@
+import { EvidenceFormType } from '@db';
 import { ApiProperty } from '@nestjs/swagger';
 import {
   IsString,
   IsOptional,
   IsArray,
   IsNotEmpty,
+  IsEnum,
   ValidateNested,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 
 class RequirementMappingDto {
-  @ApiProperty({ description: 'Requirement ID' })
+  @ApiProperty({
+    description:
+      'Platform requirement ID (exactly one of requirementId / customRequirementId must be set)',
+    required: false,
+  })
+  @IsOptional()
   @IsString()
-  requirementId: string;
+  requirementId?: string;
+
+  @ApiProperty({
+    description:
+      'Org-custom requirement ID (exactly one of requirementId / customRequirementId must be set)',
+    required: false,
+  })
+  @IsOptional()
+  @IsString()
+  customRequirementId?: string;
 
   @ApiProperty({ description: 'Framework instance ID' })
   @IsString()
@@ -60,4 +76,15 @@ export class CreateControlDto {
   @ValidateNested({ each: true })
   @Type(() => RequirementMappingDto)
   requirementMappings?: RequirementMappingDto[];
+
+  @ApiProperty({
+    description: 'Evidence form types to require on this control',
+    required: false,
+    enum: EvidenceFormType,
+    isArray: true,
+  })
+  @IsOptional()
+  @IsArray()
+  @IsEnum(EvidenceFormType, { each: true })
+  documentTypes?: EvidenceFormType[];
 }

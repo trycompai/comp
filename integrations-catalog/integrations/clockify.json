@@ -1,0 +1,37 @@
+{
+  "slug": "clockify",
+  "name": "Clockify",
+  "description": "Time tracking platform. Monitor workspace access.",
+  "category": "Productivity",
+  "docsUrl": "https://clockify.me/developers-api",
+  "baseUrl": "https://api.clockify.me",
+  "authConfig": {
+    "type": "api_key",
+    "config": {
+      "setupInstructions": "1. Log in to Clockify at https://clockify.me\n2. Click your profile icon (top right) and select Profile Settings\n3. Scroll down to API section\n4. Click Generate to create an API key\n5. Copy and paste it below"
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "clockify_app_availability",
+      "name": "Clockify App Availability",
+      "description": "Checks Clockify app availability.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "clockify_employee_access",
+      "name": "Clockify Employee Access",
+      "description": "Checks Clockify employee access.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

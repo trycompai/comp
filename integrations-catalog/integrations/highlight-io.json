@@ -1,0 +1,35 @@
+{
+  "slug": "highlight-io",
+  "name": "Highlight",
+  "description": "Full-stack observability platform with session replay and error monitoring.",
+  "category": "Monitoring",
+  "docsUrl": "https://www.highlight.io/docs",
+  "baseUrl": "https://pri.highlight.io",
+  "authConfig": {
+    "type": "api_key",
+    "config": {}
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "highlight_io_app_availability",
+      "name": "Highlight App Availability",
+      "description": "Checks that the Highlight API is accessible.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "highlight_io_employee_access",
+      "name": "Highlight Employee Access",
+      "description": "Verifies employee access to Highlight via API.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

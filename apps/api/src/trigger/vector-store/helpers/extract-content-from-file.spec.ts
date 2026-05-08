@@ -127,9 +127,9 @@ describe('extractContentFromFile - Excel handling', () => {
   it('should throw on corrupt Excel data', async () => {
     const badData = Buffer.from('not an excel file').toString('base64');
 
-    await expect(
-      extractContentFromFile(badData, XLSX_MIME),
-    ).rejects.toThrow('Failed to parse Excel file');
+    await expect(extractContentFromFile(badData, XLSX_MIME)).rejects.toThrow(
+      'Failed to parse Excel file',
+    );
   });
 });
 
@@ -251,8 +251,8 @@ describe('extractContentFromFile - image extraction', () => {
 
     const base64 = Buffer.from('fake-image-data').toString('base64');
 
-    await expect(
-      extractContentFromFile(base64, 'image/png'),
-    ).rejects.toThrow('Failed to extract image content: Vision API error');
+    await expect(extractContentFromFile(base64, 'image/png')).rejects.toThrow(
+      'Failed to extract image content: Vision API error',
+    );
   });
 });

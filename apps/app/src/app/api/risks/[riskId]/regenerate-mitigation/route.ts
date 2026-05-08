@@ -1,8 +1,8 @@
 import { generateRiskMitigation } from '@/trigger/tasks/onboarding/generate-risk-mitigation';
 import type { PolicyContext } from '@/trigger/tasks/onboarding/onboard-organization-helpers';
 import { serverApi } from '@/lib/api-server';
-import { auth } from '@/utils/auth';
-import { tasks } from '@trigger.dev/sdk';
+import { requireApiPermission } from '@/lib/permissions.server';
+import { auth as triggerAuth, tasks } from '@trigger.dev/sdk';
 import { NextRequest, NextResponse } from 'next/server';
 
 interface PeopleApiResponse {
@@ -27,13 +27,9 @@ export async function POST(
   { params }: { params: Promise<{ riskId: string }> },
 ) {
   try {
-    const session = await auth.api.getSession({
-      headers: req.headers,
-    });
-
-    if (!session?.session?.activeOrganizationId) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+    const ctx = await requireApiPermission(req, 'risk', 'update');
+    if (ctx instanceof NextResponse) return ctx;
+    const { organizationId } = ctx;
 
     const { riskId } = await params;
     if (!riskId) {
@@ -42,8 +38,6 @@ export async function POST(
         { status: 400 },
       );
     }
-
-    const organizationId = session.session.activeOrganizationId;
 
     const [peopleResult, policiesResult] = await Promise.all([
       serverApi.get<PeopleApiResponse>('/v1/people'),
@@ -71,7 +65,7 @@ export async function POST(
       description: policy.description,
     }));
 
-    await tasks.trigger<typeof generateRiskMitigation>(
+    const handle = await tasks.trigger<typeof generateRiskMitigation>(
       'generate-risk-mitigation',
       {
         organizationId,
@@ -81,17 +75,27 @@ export async function POST(
       },
     );
 
-    return NextResponse.json({ success: true });
+    // The run is now in flight server-side. Mint a 15-min public token so
+    // the UI can subscribe via useRealtimeRun. If the mint fails, do NOT
+    // throw — that would let a client retry start a duplicate run. Return
+    // the runId with a null token; the UI's `/active` endpoint can mint a
+    // fresh token on the next render. (Cubic finding #29 on PR #2671.)
+    let publicAccessToken: string | null = null;
+    try {
+      publicAccessToken = await triggerAuth.createPublicToken({
+        scopes: { read: { runs: [handle.id] } },
+        expirationTime: '15m',
+      });
+    } catch (mintErr) {
+      console.error(
+        '[regenerate-mitigation] run triggered but token mint failed; client must resume via /active',
+        { runId: handle.id, mintErr },
+      );
+    }
+
+    return NextResponse.json({ runId: handle.id, publicAccessToken });
   } catch (error) {
     console.error('Error regenerating risk mitigation:', error);
-    return NextResponse.json(
-      {
-        error:
-          error instanceof Error
-            ? error.message
-            : 'Failed to regenerate mitigation',
-      },
-      { status: 500 },
-    );
+    return NextResponse.json({ error: 'Failed to regenerate mitigation' }, { status: 500 });
   }
 }

@@ -1,0 +1,35 @@
+{
+  "slug": "bugsnag",
+  "name": "Bugsnag",
+  "description": "Monitor Bugsnag error tracking and team access for incident management compliance",
+  "category": "Monitoring",
+  "docsUrl": "https://bugsnagapiv2.docs.apiary.io/",
+  "baseUrl": "https://api.bugsnag.com/",
+  "authConfig": {
+    "type": "api_key",
+    "config": {}
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "bugsnag_app_availability",
+      "name": "App Availability",
+      "description": "Verifies Bugsnag has projects configured for error monitoring",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "bugsnag_incident_response",
+      "name": "Incident Response",
+      "description": "Verifies Bugsnag has team members configured for incident response",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

@@ -6,9 +6,18 @@ import type { Invitation, Member, User } from '@db';
 import { db } from '@db/server';
 import { getEmployeeSyncConnections } from '../data/queries';
 import { TeamMembersClient } from './TeamMembersClient';
+import type { BackgroundCheckStatus } from '../../[employeeId]/components/backgroundCheckTypes';
+
+export type { BackgroundCheckStatus };
 
 export interface MemberWithUser extends Member {
   user: User;
+  backgroundCheckRequests?: BackgroundCheckSummary[];
+}
+
+export interface BackgroundCheckSummary {
+  id: string;
+  status: BackgroundCheckStatus;
 }
 
 export interface TeamMembersData {
@@ -24,16 +33,22 @@ export interface TaskCompletion {
   hipaa?: { completed: number; total: number };
 }
 
+export type DeviceStatus = 'compliant' | 'non-compliant' | 'not-installed';
+
 export interface TeamMembersProps {
   canManageMembers: boolean;
   canInviteUsers: boolean;
-  isAuditor: boolean;
   isCurrentUserOwner: boolean;
   organizationId: string;
 }
 
 export async function TeamMembers(props: TeamMembersProps) {
-  const { canManageMembers, canInviteUsers, isAuditor, isCurrentUserOwner, organizationId } = props;
+  const {
+    canManageMembers,
+    canInviteUsers,
+    isCurrentUserOwner,
+    organizationId,
+  } = props;
 
   if (!organizationId) {
     return null;
@@ -63,32 +78,25 @@ export async function TeamMembers(props: TeamMembersProps) {
   const taskCompletionMap: Record<string, TaskCompletion> = {};
 
   const employeeMembers = await filterComplianceMembers(members, organizationId);
+  const complianceMemberIds = employeeMembers.map((m) => m.id);
 
-  // Build a set of member IDs that have device-agent devices
-  const memberIds = members.map((m) => m.id);
-  const devicesForMembers = await db.device.findMany({
-    where: {
-      organizationId,
-      memberId: { in: memberIds },
-    },
-    select: { memberId: true },
-  });
-  const memberIdsWithDeviceAgent = [
-    ...new Set(devicesForMembers.map((d) => d.memberId)),
-  ];
+  const [orgFlags, hipaaInstance] = await Promise.all([
+    db.organization.findUnique({
+      where: { id: organizationId },
+      select: {
+        securityTrainingStepEnabled: true,
+        backgroundCheckStepEnabled: true,
+      },
+    }),
+    db.frameworkInstance.findFirst({
+      where: { organizationId, framework: { name: 'HIPAA' } },
+      select: { id: true },
+    }),
+  ]);
+  const backgroundCheckStepEnabled = orgFlags?.backgroundCheckStepEnabled === true;
+  const hasHipaaFramework = !!hipaaInstance;
 
   if (employeeMembers.length > 0) {
-    const [org, hipaaInstance] = await Promise.all([
-      db.organization.findUnique({
-        where: { id: organizationId },
-        select: { securityTrainingStepEnabled: true },
-      }),
-      db.frameworkInstance.findFirst({
-        where: { organizationId, framework: { name: 'HIPAA' } },
-        select: { id: true },
-      }),
-    ]);
-    const hasHipaaFramework = !!hipaaInstance;
 
     const policies = await db.policy.findMany({
       where: {
@@ -100,21 +108,21 @@ export async function TeamMembers(props: TeamMembersProps) {
     });
 
     const employeeIds = employeeMembers.map((m) => m.id);
-    const trainingCompletions = org?.securityTrainingStepEnabled
+    const trainingCompletions = orgFlags?.securityTrainingStepEnabled
       ? await db.employeeTrainingVideoCompletion.findMany({
           where: { memberId: { in: employeeIds } },
         })
       : [];
 
     const totalPolicies = policies.length;
-    const totalTrainingVideos = org?.securityTrainingStepEnabled ? trainingVideosData.length : 0;
+    const totalTrainingVideos = orgFlags?.securityTrainingStepEnabled ? trainingVideosData.length : 0;
     const totalHipaaTraining = hasHipaaFramework ? 1 : 0;
     const totalTasks = totalPolicies + totalTrainingVideos + totalHipaaTraining;
 
     for (const employee of employeeMembers) {
       const policiesCompleted = policies.filter((p) => p.signedBy.includes(employee.id)).length;
 
-      const trainingsCompleted = org?.securityTrainingStepEnabled
+      const trainingsCompleted = orgFlags?.securityTrainingStepEnabled
         ? trainingCompletions.filter(
             (tc) =>
               tc.memberId === employee.id &&
@@ -152,11 +160,11 @@ export async function TeamMembers(props: TeamMembersProps) {
       organizationId={organizationId}
       canManageMembers={canManageMembers}
       canInviteUsers={canInviteUsers}
-      isAuditor={isAuditor}
       isCurrentUserOwner={isCurrentUserOwner}
       employeeSyncData={employeeSyncData}
       taskCompletionMap={taskCompletionMap}
-      memberIdsWithDeviceAgent={memberIdsWithDeviceAgent}
+      complianceMemberIds={complianceMemberIds}
+      backgroundCheckStepEnabled={backgroundCheckStepEnabled}
     />
   );
 }

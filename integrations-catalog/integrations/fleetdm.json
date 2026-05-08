@@ -1,0 +1,58 @@
+{
+  "slug": "fleetdm",
+  "name": "FleetDM",
+  "description": "Open-source device management platform for monitoring and securing endpoints",
+  "category": "Security",
+  "docsUrl": "https://fleetdm.com/docs/rest-api/rest-api",
+  "baseUrl": "https://fleet.example.com",
+  "authConfig": {
+    "type": "custom",
+    "config": {
+      "setupInstructions": "1. Log in to your Fleet dashboard\n2. Go to My account (click your avatar)\n3. Click 'Get API token'\n4. Copy the token\n5. Enter your Fleet server URL and token below",
+      "credentialFields": [
+        {
+          "label": "Fleet Server URL",
+          "type": "text",
+          "required": true,
+          "helpText": "The URL of your Fleet server (e.g. https://fleet.yourcompany.com)"
+        },
+        {
+          "label": "API Token",
+          "type": "password",
+          "required": true,
+          "helpText": "Your Fleet API token. Get it from My account > Get API token in the Fleet UI."
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "device_list",
+      "name": "Device List",
+      "description": "List all enrolled hosts and devices in Fleet",
+      "defaultSeverity": "low",
+      "enabled": true
+    },
+    {
+      "slug": "secure_devices",
+      "name": "Secure Devices",
+      "description": "Check host compliance status and policy adherence",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "monitoring_alerting",
+      "name": "Monitoring & Alerting",
+      "description": "Verify Fleet policies are configured and active",
+      "defaultSeverity": "high",
+      "enabled": true
+    }
+  ],
+  "checkCount": 3,
+  "isActive": true
+}

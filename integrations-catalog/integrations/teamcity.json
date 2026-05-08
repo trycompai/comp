@@ -1,0 +1,58 @@
+{
+  "slug": "teamcity",
+  "name": "TeamCity",
+  "description": "Monitor JetBrains TeamCity CI/CD server for user access, role-based permissions, and build activity",
+  "category": "Development",
+  "docsUrl": "https://www.jetbrains.com/help/teamcity/rest/teamcity-rest-api-documentation.html",
+  "baseUrl": "https://teamcity.example.com",
+  "authConfig": {
+    "type": "custom",
+    "config": {
+      "setupInstructions": "1. Log in to your TeamCity server as an administrator\n2. Click your username (top-right) > Profile\n3. Go to Access Tokens\n4. Click Create access token\n5. Give it a name and set the permissions (admin recommended for full visibility)\n6. Copy the generated token\n7. Enter your TeamCity server URL and token below",
+      "credentialFields": [
+        {
+          "label": "TeamCity Server URL",
+          "type": "text",
+          "required": true,
+          "helpText": "Your TeamCity server URL (e.g., https://teamcity.example.com). Do not include a trailing slash."
+        },
+        {
+          "label": "Access Token",
+          "type": "password",
+          "required": true,
+          "helpText": "Generate in TeamCity: My Settings & Tools > Access Tokens. The token user should have admin-level permissions to list users and builds."
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "employee_access",
+      "name": "Employee Access",
+      "description": "Lists all TeamCity users and verifies each has roles assigned, providing evidence of who has access to the CI/CD server",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "role_based_access",
+      "name": "Role-based Access Controls",
+      "description": "Verifies TeamCity users have scoped role assignments following least-privilege principles, flagging system administrators for review",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "code_changes",
+      "name": "Code Changes",
+      "description": "Verifies TeamCity build configurations are actively running builds, providing evidence of continuous integration and code change tracking",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 3,
+  "isActive": true
+}

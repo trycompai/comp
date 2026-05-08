@@ -1,0 +1,38 @@
+{
+  "slug": "kustomer",
+  "name": "Kustomer",
+  "description": "Kustomer CRM platform for customer service teams",
+  "category": "Communication",
+  "docsUrl": "https://developer.kustomer.com/",
+  "baseUrl": "https://api.kustomerapp.com/v1",
+  "authConfig": {
+    "type": "custom",
+    "config": {
+      "setupInstructions": "1. Log in to Kustomer\n2. Go to Settings > Security > API Keys\n3. Create a new API key with read permissions\n4. Copy the key and paste it below",
+      "credentialFields": [
+        {
+          "label": "API Key",
+          "type": "password",
+          "required": true,
+          "helpText": "Kustomer → Settings → API Keys"
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "kustomer_employee_access",
+      "name": "Employee Access",
+      "description": "Lists Kustomer users to verify support agent access",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 1,
+  "isActive": true
+}

@@ -1,5 +1,22 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { Departments } from '@db';
+import { BackgroundCheckStatus, Departments } from '@db';
+
+export class BackgroundCheckSummaryDto {
+  @ApiProperty({
+    description: 'Background check request ID',
+    example: 'bcr_abc123def456',
+  })
+  id: string;
+
+  @ApiProperty({
+    description: 'Background check status',
+    enum: BackgroundCheckStatus,
+    example: BackgroundCheckStatus.invited,
+  })
+  status: BackgroundCheckStatus;
+
+  requesterNotes?: string | null;
+}
 
 export class UserResponseDto {
   @ApiProperty({
@@ -53,7 +70,8 @@ export class UserResponseDto {
   lastLogin: Date | null;
 
   @ApiProperty({
-    description: 'Platform role of the user (managed by Better Auth admin plugin)',
+    description:
+      'Platform role of the user (managed by Better Auth admin plugin)',
     example: 'user',
     nullable: true,
   })
@@ -129,4 +147,11 @@ export class PeopleResponseDto {
     type: UserResponseDto,
   })
   user: UserResponseDto;
+
+  @ApiProperty({
+    description: 'Background check requests for this member',
+    type: [BackgroundCheckSummaryDto],
+    required: false,
+  })
+  backgroundCheckRequests?: BackgroundCheckSummaryDto[];
 }

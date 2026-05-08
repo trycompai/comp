@@ -100,13 +100,6 @@ export function PendingInvitationRow({
           </div>
         </TableCell>
 
-        {/* AGENT */}
-        <TableCell>
-          <Text size="sm" variant="muted">
-            —
-          </Text>
-        </TableCell>
-
         {/* TASKS */}
         <TableCell>
           <Text size="sm" variant="muted">

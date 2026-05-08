@@ -18,6 +18,7 @@ export function VendorInherentRiskChart({ vendor }: InherentRiskChartProps) {
     <RiskMatrixChart
       title={'Inherent Risk'}
       description={'Select the inherent risk level for this vendor'}
+      titleInfo="Inherent risk = the raw risk before any controls or mitigations. Used as the starting point for residual computation."
       riskId={vendor.id}
       activeLikelihood={vendor.inherentProbability}
       activeImpact={vendor.inherentImpact}

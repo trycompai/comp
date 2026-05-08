@@ -1,0 +1,65 @@
+{
+  "slug": "snipe-it",
+  "name": "Snipe-IT",
+  "description": "Open-source IT asset management platform. Verifies hardware asset inventory, user access, and software license tracking in Snipe-IT.",
+  "category": "Infrastructure",
+  "docsUrl": "https://snipe-it.readme.io/reference",
+  "baseUrl": "https://placeholder.snipeitapp.com",
+  "authConfig": {
+    "type": "custom",
+    "config": {
+      "setupInstructions": "1. Log in to your Snipe-IT instance as an admin\n2. Go to Admin > User Management\n3. Select your user account\n4. Click 'Manage API Keys'\n5. Create a new personal access token\n6. Copy the token and enter it below along with your instance URL",
+      "credentialFields": [
+        {
+          "label": "Snipe-IT Instance URL",
+          "type": "text",
+          "required": true,
+          "helpText": "Your Snipe-IT instance URL, e.g. https://assets.yourcompany.com"
+        },
+        {
+          "label": "API Token",
+          "type": "password",
+          "required": true,
+          "helpText": "Go to your Snipe-IT instance > Admin > User Management > select your user > Manage API Keys > Create New Token"
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "snipeit_app_availability",
+      "name": "Snipe-IT App Availability",
+      "description": "Verifies that the Snipe-IT instance is accessible and the API token is valid by retrieving instance status.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "snipeit_asset_inventory",
+      "name": "Snipe-IT Asset Inventory",
+      "description": "Reviews the hardware asset inventory in Snipe-IT, verifying that assets are tracked and properly categorized.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "snipeit_employee_access",
+      "name": "Snipe-IT Employee Access",
+      "description": "Reviews user accounts in Snipe-IT to verify employee access control and user management.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "snipeit_license_tracking",
+      "name": "Snipe-IT License Tracking",
+      "description": "Reviews software license tracking in Snipe-IT to verify license compliance and utilization.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 4,
+  "isActive": true
+}

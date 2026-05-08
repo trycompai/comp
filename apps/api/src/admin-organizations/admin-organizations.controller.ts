@@ -13,20 +13,28 @@ import {
   UsePipes,
   ValidationPipe,
 } from '@nestjs/common';
-import { ApiOperation, ApiQuery, ApiTags } from '@nestjs/swagger';
+import { ApiExcludeController, ApiOperation, ApiQuery, ApiTags } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
 import { PlatformAdminGuard } from '../auth/platform-admin.guard';
 import { AdminOrganizationsService } from './admin-organizations.service';
+import { PurgeOrganizationService } from './purge-organization.service';
 import { AdminAuditLogInterceptor } from './admin-audit-log.interceptor';
+import { SkipAdminAuditLog } from './skip-admin-audit-log.decorator';
 import { InviteMemberDto } from './dto/invite-member.dto';
+import { UpdateAdminOrganizationDto } from './dto/update-admin-organization.dto';
+import { PurgeOrganizationDto } from './dto/purge-organization.dto';
 
+@ApiExcludeController()
 @ApiTags('Admin - Organizations')
 @Controller({ path: 'admin/organizations', version: '1' })
 @UseGuards(PlatformAdminGuard)
 @UseInterceptors(AdminAuditLogInterceptor)
 @Throttle({ default: { ttl: 60000, limit: 30 } })
 export class AdminOrganizationsController {
-  constructor(private readonly service: AdminOrganizationsService) {}
+  constructor(
+    private readonly service: AdminOrganizationsService,
+    private readonly purgeService: PurgeOrganizationService,
+  ) {}
 
   @Get()
   @ApiOperation({ summary: 'List all organizations (platform admin)' })
@@ -42,24 +50,72 @@ export class AdminOrganizationsController {
     });
   }
 
+  @Get('activity')
+  @ApiOperation({
+    summary:
+      'Organization activity report - shows last session per org (platform admin)',
+  })
+  @ApiQuery({
+    name: 'inactiveDays',
+    required: false,
+    description: 'Filter orgs with no session in N days (default: 90)',
+  })
+  @ApiQuery({
+    name: 'hasAccess',
+    required: false,
+    description: 'Filter by hasAccess (true/false)',
+  })
+  @ApiQuery({
+    name: 'onboarded',
+    required: false,
+    description: 'Filter by onboardingCompleted (true/false)',
+  })
+  @ApiQuery({ name: 'page', required: false })
+  @ApiQuery({ name: 'limit', required: false })
+  async activity(
+    @Query('inactiveDays') inactiveDays?: string,
+    @Query('hasAccess') hasAccess?: string,
+    @Query('onboarded') onboarded?: string,
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+  ) {
+    return this.service.getOrgActivity({
+      inactiveDays: Math.max(
+        0,
+        Number.isFinite(parseInt(inactiveDays ?? '90', 10))
+          ? parseInt(inactiveDays ?? '90', 10)
+          : 90,
+      ),
+      hasAccess:
+        hasAccess === 'true' ? true : hasAccess === 'false' ? false : undefined,
+      onboarded:
+        onboarded === 'true' ? true : onboarded === 'false' ? false : undefined,
+      page: Math.max(1, parseInt(page || '1', 10) || 1),
+      limit: Math.min(100, Math.max(1, parseInt(limit || '50', 10) || 50)),
+    });
+  }
+
   @Get(':id')
   @ApiOperation({ summary: 'Get organization details (platform admin)' })
   async get(@Param('id') id: string) {
     return this.service.getOrganization(id);
   }
 
-  @Patch(':id/activate')
-  @ApiOperation({ summary: 'Activate organization access (platform admin)' })
-  @Throttle({ default: { ttl: 60000, limit: 5 } })
-  async activate(@Param('id') id: string) {
-    return this.service.setAccess(id, true);
-  }
-
-  @Patch(':id/deactivate')
-  @ApiOperation({ summary: 'Deactivate organization access (platform admin)' })
-  @Throttle({ default: { ttl: 60000, limit: 5 } })
-  async deactivate(@Param('id') id: string) {
-    return this.service.setAccess(id, false);
+  @Patch(':id')
+  @ApiOperation({ summary: 'Update organization fields (platform admin)' })
+  @Throttle({ default: { ttl: 60000, limit: 10 } })
+  @UsePipes(
+    new ValidationPipe({
+      whitelist: true,
+      forbidNonWhitelisted: true,
+      transform: true,
+    }),
+  )
+  async update(
+    @Param('id') id: string,
+    @Body() body: UpdateAdminOrganizationDto,
+  ) {
+    return this.service.updateOrganization(id, body);
   }
 
   @Post(':id/invite')
@@ -86,9 +142,19 @@ export class AdminOrganizationsController {
   }
 
   @Get(':id/audit-logs')
-  @ApiOperation({ summary: 'Get audit logs for an organization (platform admin)' })
-  @ApiQuery({ name: 'entityType', required: false, description: 'Filter by entity type (e.g. policy, task)' })
-  @ApiQuery({ name: 'take', required: false, description: 'Number of logs to return (max 100, default 100)' })
+  @ApiOperation({
+    summary: 'Get audit logs for an organization (platform admin)',
+  })
+  @ApiQuery({
+    name: 'entityType',
+    required: false,
+    description: 'Filter by entity type (e.g. policy, task)',
+  })
+  @ApiQuery({
+    name: 'take',
+    required: false,
+    description: 'Number of logs to return (max 100, default 100)',
+  })
   async getAuditLogs(
     @Param('id') id: string,
     @Query('entityType') entityType?: string,
@@ -101,6 +167,32 @@ export class AdminOrganizationsController {
   @ApiOperation({ summary: 'List pending invitations (platform admin)' })
   async listInvitations(@Param('id') id: string) {
     return this.service.listInvitations(id);
+  }
+
+  @Delete(':id')
+  @SkipAdminAuditLog()
+  @ApiOperation({
+    summary:
+      'Permanently delete organization and all associated data (platform admin)',
+  })
+  @Throttle({ default: { ttl: 60000, limit: 2 } })
+  @UsePipes(
+    new ValidationPipe({
+      whitelist: true,
+      forbidNonWhitelisted: true,
+      transform: true,
+    }),
+  )
+  async purge(
+    @Param('id') id: string,
+    @Req() req: { userId: string },
+    @Body() body: PurgeOrganizationDto,
+  ) {
+    return this.purgeService.purgeOrganization({
+      organizationId: id,
+      confirm: body.confirm,
+      adminUserId: req.userId,
+    });
   }
 
   @Delete(':id/invitations/:invId')

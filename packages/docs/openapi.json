@@ -1,76 +1,6 @@
 {
   "openapi": "3.0.0",
   "paths": {
-    "/v1/auth/me": {
-      "get": {
-        "operationId": "AuthController_getMe_v1",
-        "parameters": [],
-        "responses": {
-          "200": {
-            "description": ""
-          }
-        },
-        "security": [
-          {
-            "apikey": []
-          }
-        ],
-        "summary": "Get current user info, organizations, and pending invitations",
-        "tags": [
-          "Auth"
-        ]
-      }
-    },
-    "/v1/auth/invitations": {
-      "get": {
-        "operationId": "AuthController_listInvitations_v1",
-        "parameters": [],
-        "responses": {
-          "200": {
-            "description": ""
-          }
-        },
-        "security": [
-          {
-            "apikey": []
-          }
-        ],
-        "summary": "List pending invitations for the organization",
-        "tags": [
-          "Auth"
-        ]
-      }
-    },
-    "/v1/auth/invitations/{id}": {
-      "delete": {
-        "operationId": "AuthController_deleteInvitation_v1",
-        "parameters": [
-          {
-            "name": "id",
-            "required": true,
-            "in": "path",
-            "description": "Invitation ID",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": ""
-          }
-        },
-        "security": [
-          {
-            "apikey": []
-          }
-        ],
-        "summary": "Revoke a pending invitation",
-        "tags": [
-          "Auth"
-        ]
-      }
-    },
     "/v1/organization": {
       "get": {
         "description": "Returns detailed information about the authenticated organization. Supports both API key authentication (X-API-Key header) and session authentication (Bearer token or cookies).",
@@ -515,6 +445,7 @@
             "apikey": []
           }
         ],
+        "summary": "Get organization onboarding status",
         "tags": [
           "Organization"
         ]
@@ -554,7 +485,7 @@
         },
         "responses": {
           "default": {
-            "description": "Ownership transferred successfully",
+            "description": "Not found - Organization or member not found\n\nForbidden - Only organization owner can transfer ownership\n\nUnauthorized - Invalid or missing authentication\n\nBad request - Invalid input\n\nOwnership transferred successfully",
             "content": {
               "application/json": {
                 "schema": {
@@ -930,6 +861,22 @@
           }
         ],
         "summary": "Revoke an API key",
+        "tags": [
+          "Organization"
+        ]
+      }
+    },
+    "/v1/organization-access/auto-approve": {
+      "post": {
+        "description": "Grants hasAccess on the active organization if the requesting user is an internal trycomp.ai user, the deployment is self-hosted, or the user email domain matches the organization website domain and is an active Stripe customer.",
+        "operationId": "OrganizationAccessController_autoApprove_v1",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "summary": "Auto-approve organization access via domain or self-hosted check",
         "tags": [
           "Organization"
         ]
@@ -2258,6 +2205,92 @@
         "summary": "Update current user email notification preferences",
         "tags": [
           "People"
+        ]
+      }
+    },
+    "/v1/timelines": {
+      "get": {
+        "operationId": "TimelinesController_findAll_v1",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "List timelines for the organization",
+        "tags": [
+          "Timelines"
+        ]
+      }
+    },
+    "/v1/timelines/{id}": {
+      "get": {
+        "operationId": "TimelinesController_findOne_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get a single timeline instance with phases",
+        "tags": [
+          "Timelines"
+        ]
+      }
+    },
+    "/v1/timelines/{id}/phases/{phaseId}/ready": {
+      "post": {
+        "operationId": "TimelinesController_markReadyForReview_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "phaseId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Mark a phase as ready for review",
+        "tags": [
+          "Timelines"
         ]
       }
     },
@@ -4712,66 +4745,6 @@
         ]
       }
     },
-    "/v1/internal/vendors/risk-assessment/trigger-batch": {
-      "post": {
-        "operationId": "InternalVendorAutomationController_triggerVendorRiskAssessmentBatch_v1",
-        "parameters": [],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/TriggerVendorRiskAssessmentBatchDto"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Tasks triggered"
-          }
-        },
-        "security": [
-          {
-            "apikey": []
-          }
-        ],
-        "summary": "Trigger vendor risk assessment tasks for a batch of vendors (internal)",
-        "tags": [
-          "Internal - Vendors"
-        ]
-      }
-    },
-    "/v1/internal/vendors/risk-assessment/trigger-single": {
-      "post": {
-        "operationId": "InternalVendorAutomationController_triggerSingleVendorRiskAssessment_v1",
-        "parameters": [],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/TriggerSingleVendorRiskAssessmentDto"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Task triggered with run info for real-time tracking"
-          }
-        },
-        "security": [
-          {
-            "apikey": []
-          }
-        ],
-        "summary": "Trigger vendor risk assessment for a single vendor and return run info (internal)",
-        "tags": [
-          "Internal - Vendors"
-        ]
-      }
-    },
     "/v1/context": {
       "get": {
         "description": "Returns all context entries for the authenticated organization. Supports both API key authentication (X-API-Key header) and session authentication (Bearer token or cookies).",
@@ -5805,6 +5778,44 @@
         ]
       }
     },
+    "/v1/devices/{id}": {
+      "delete": {
+        "description": "Deletes a single device in the authenticated organization. Only organization owners can delete devices.",
+        "operationId": "DevicesController_deleteDevice_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "description": "Device ID to delete",
+            "schema": {
+              "example": "dev_abc123def456",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Device deleted successfully"
+          },
+          "403": {
+            "description": "Forbidden - only organization owners can delete devices"
+          },
+          "404": {
+            "description": "Organization or device not found"
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Delete device",
+        "tags": [
+          "Devices"
+        ]
+      }
+    },
     "/v1/policies": {
       "get": {
         "description": "Returns all policies for the authenticated organization. Supports both API key authentication (X-API-Key header) and session authentication (Bearer token or cookies).",
@@ -6183,6 +6194,46 @@
           }
         ],
         "summary": "Map controls to a policy",
+        "tags": [
+          "Policies"
+        ]
+      }
+    },
+    "/v1/policies/{id}/evidence-tasks": {
+      "get": {
+        "operationId": "PoliciesController_getPolicyEvidenceTasks_v1",
+        "parameters": [
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "description": "Organization ID (required for session auth, optional for API key auth)",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "description": "Policy ID",
+            "schema": {
+              "example": "pol_abc123def456",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Get tasks that serve as evidence for a policy, grouped by control",
         "tags": [
           "Policies"
         ]
@@ -7914,6 +7965,7 @@
             "description": ""
           }
         },
+        "summary": "Exchange an auth code for device credentials",
         "tags": [
           "Device Agent"
         ]
@@ -7937,6 +7989,7 @@
             "description": ""
           }
         },
+        "summary": "Download a device-agent update",
         "tags": [
           "Device Agent"
         ]
@@ -7958,6 +8011,7 @@
             "description": ""
           }
         },
+        "summary": "Check a device-agent update's metadata",
         "tags": [
           "Device Agent"
         ]
@@ -7982,6 +8036,7 @@
             "description": ""
           }
         },
+        "summary": "Create a device-agent auth code",
         "tags": [
           "Device Agent"
         ]
@@ -7996,6 +8051,7 @@
             "description": ""
           }
         },
+        "summary": "List organizations for the current device",
         "tags": [
           "Device Agent"
         ]
@@ -8020,6 +8076,7 @@
             "description": ""
           }
         },
+        "summary": "Register a device agent",
         "tags": [
           "Device Agent"
         ]
@@ -8044,6 +8101,7 @@
             "description": ""
           }
         },
+        "summary": "Submit a device check-in",
         "tags": [
           "Device Agent"
         ]
@@ -8075,6 +8133,7 @@
             "description": ""
           }
         },
+        "summary": "Get device-agent status",
         "tags": [
           "Device Agent"
         ]
@@ -8087,7 +8146,7 @@
         "parameters": [],
         "responses": {
           "default": {
-            "description": "macOS agent DMG file download",
+            "description": "Internal server error\n\nmacOS agent file not found in S3\n\nUnauthorized - Invalid or missing authentication\n\nmacOS agent DMG file download",
             "content": {
               "application/x-apple-diskimage": {
                 "schema": {
@@ -8133,7 +8192,7 @@
         "parameters": [],
         "responses": {
           "default": {
-            "description": "Windows agent ZIP file download containing MSI installer and setup scripts",
+            "description": "Internal server error\n\nWindows agent file not found in S3\n\nUnauthorized - Invalid or missing authentication\n\nWindows agent ZIP file download containing MSI installer and setup scripts",
             "content": {
               "application/zip": {
                 "schema": {
@@ -8167,6 +8226,30 @@
           }
         ],
         "summary": "Download Windows Device Agent ZIP",
+        "tags": [
+          "Device Agent"
+        ]
+      }
+    },
+    "/v1/device-agent/sessions/{deviceId}": {
+      "delete": {
+        "operationId": "DeviceAgentController_revokeAgentAccess_v1",
+        "parameters": [
+          {
+            "name": "deviceId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": ""
+          }
+        },
+        "summary": "Revoke a device agent session",
         "tags": [
           "Device Agent"
         ]
@@ -8413,6 +8496,11 @@
                     "format": "date-time",
                     "example": "2025-01-01T00:00:00.000Z",
                     "description": "Optional review date to set on all tasks"
+                  },
+                  "notRelevantJustification": {
+                    "type": "string",
+                    "example": "This control is out of scope for our SOC 2 audit.",
+                    "description": "Required justification when marking evidence tasks as not_relevant"
                   }
                 },
                 "required": [
@@ -8859,6 +8947,18 @@
                     ],
                     "example": "monthly"
                   },
+                  "integrationScheduleFrequency": {
+                    "type": "string",
+                    "enum": [
+                      "daily",
+                      "weekly",
+                      "monthly",
+                      "quarterly",
+                      "yearly"
+                    ],
+                    "example": "daily",
+                    "description": "Cadence for running the integration check attached to this task"
+                  },
                   "department": {
                     "type": "string",
                     "enum": [
@@ -8876,6 +8976,11 @@
                     "type": "string",
                     "format": "date-time",
                     "example": "2025-01-01T00:00:00.000Z"
+                  },
+                  "notRelevantJustification": {
+                    "type": "string",
+                    "example": "This control is out of scope for our SOC 2 audit.",
+                    "description": "Required justification when marking evidence tasks as not_relevant"
                   }
                 }
               }
@@ -8956,6 +9061,37 @@
           }
         ],
         "summary": "Delete a task",
+        "tags": [
+          "Tasks"
+        ]
+      }
+    },
+    "/v1/tasks/{taskId}/policies": {
+      "get": {
+        "operationId": "TasksController_getTaskPolicies_v1",
+        "parameters": [
+          {
+            "name": "taskId",
+            "required": true,
+            "in": "path",
+            "description": "Unique task identifier",
+            "schema": {
+              "example": "tsk_abc123def456",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Get policies that reference a task via shared controls",
         "tags": [
           "Tasks"
         ]
@@ -11890,6 +12026,44 @@
         ]
       }
     },
+    "/v1/trust-access/access/{token}/policies/{policyId}/download": {
+      "get": {
+        "description": "Generate watermarked PDF for a specific published policy and return a signed download URL",
+        "operationId": "TrustAccessController_downloadPolicy_v1",
+        "parameters": [
+          {
+            "name": "token",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "policyId",
+            "required": true,
+            "in": "path",
+            "description": "Policy ID",
+            "schema": {
+              "example": "pol_abc123",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Signed URL for watermarked PDF returned"
+          },
+          "404": {
+            "description": "Policy not found"
+          }
+        },
+        "summary": "Download single policy as watermarked PDF",
+        "tags": [
+          "Trust Access"
+        ]
+      }
+    },
     "/v1/trust-access/access/{token}/policies/download-all-zip": {
       "get": {
         "description": "Generate ZIP archive containing individual watermarked PDFs for each policy",
@@ -12057,9 +12231,12 @@
                 "hipaa",
                 "soc2_type1",
                 "soc2_type2",
+                "soc3",
                 "pci_dss",
                 "nen_7510",
-                "iso_9001"
+                "iso_9001",
+                "pipeda",
+                "ccpa"
               ],
               "type": "string"
             }
@@ -12293,22 +12470,14 @@
             "description": ""
           }
         },
+        "summary": "List control templates",
         "tags": [
           "Framework Editor Control Templates"
         ]
       },
       "post": {
         "operationId": "ControlTemplateController_create_v1",
-        "parameters": [
-          {
-            "name": "frameworkId",
-            "required": true,
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
+        "parameters": [],
         "requestBody": {
           "required": true,
           "content": {
@@ -12324,6 +12493,7 @@
             "description": ""
           }
         },
+        "summary": "Create a control template",
         "tags": [
           "Framework Editor Control Templates"
         ]
@@ -12347,6 +12517,7 @@
             "description": ""
           }
         },
+        "summary": "Get a control template by ID",
         "tags": [
           "Framework Editor Control Templates"
         ]
@@ -12378,6 +12549,7 @@
             "description": ""
           }
         },
+        "summary": "Update a control template",
         "tags": [
           "Framework Editor Control Templates"
         ]
@@ -12399,6 +12571,7 @@
             "description": ""
           }
         },
+        "summary": "Delete a control template",
         "tags": [
           "Framework Editor Control Templates"
         ]
@@ -12430,6 +12603,7 @@
             "description": ""
           }
         },
+        "summary": "Link a requirement to a control template",
         "tags": [
           "Framework Editor Control Templates"
         ]
@@ -12459,6 +12633,7 @@
             "description": ""
           }
         },
+        "summary": "Unlink a requirement from a control template",
         "tags": [
           "Framework Editor Control Templates"
         ]
@@ -12490,6 +12665,7 @@
             "description": ""
           }
         },
+        "summary": "Link a policy template to a control template",
         "tags": [
           "Framework Editor Control Templates"
         ]
@@ -12519,6 +12695,7 @@
             "description": ""
           }
         },
+        "summary": "Unlink a policy template from a control template",
         "tags": [
           "Framework Editor Control Templates"
         ]
@@ -12550,6 +12727,7 @@
             "description": ""
           }
         },
+        "summary": "Link a task template to a control template",
         "tags": [
           "Framework Editor Control Templates"
         ]
@@ -12579,6 +12757,7 @@
             "description": ""
           }
         },
+        "summary": "Unlink a task template from a control template",
         "tags": [
           "Framework Editor Control Templates"
         ]
@@ -12610,6 +12789,7 @@
             "description": ""
           }
         },
+        "summary": "List frameworks",
         "tags": [
           "Framework Editor Frameworks"
         ]
@@ -12632,6 +12812,7 @@
             "description": ""
           }
         },
+        "summary": "Create a framework",
         "tags": [
           "Framework Editor Frameworks"
         ]
@@ -12655,6 +12836,7 @@
             "description": ""
           }
         },
+        "summary": "Get a framework by ID",
         "tags": [
           "Framework Editor Frameworks"
         ]
@@ -12686,6 +12868,7 @@
             "description": ""
           }
         },
+        "summary": "Update a framework",
         "tags": [
           "Framework Editor Frameworks"
         ]
@@ -12707,6 +12890,7 @@
             "description": ""
           }
         },
+        "summary": "Delete a framework",
         "tags": [
           "Framework Editor Frameworks"
         ]
@@ -12731,6 +12915,7 @@
             "description": ""
           }
         },
+        "summary": "Import a framework definition",
         "tags": [
           "Framework Editor Frameworks"
         ]
@@ -12754,6 +12939,7 @@
             "description": ""
           }
         },
+        "summary": "Export a framework definition",
         "tags": [
           "Framework Editor Frameworks"
         ]
@@ -12777,6 +12963,7 @@
             "description": ""
           }
         },
+        "summary": "List controls for a framework",
         "tags": [
           "Framework Editor Frameworks"
         ]
@@ -12800,6 +12987,7 @@
             "description": ""
           }
         },
+        "summary": "List policy templates for a framework",
         "tags": [
           "Framework Editor Frameworks"
         ]
@@ -12823,6 +13011,7 @@
             "description": ""
           }
         },
+        "summary": "List task templates for a framework",
         "tags": [
           "Framework Editor Frameworks"
         ]
@@ -12846,6 +13035,7 @@
             "description": ""
           }
         },
+        "summary": "List documents for a framework",
         "tags": [
           "Framework Editor Frameworks"
         ]
@@ -12877,6 +13067,7 @@
             "description": ""
           }
         },
+        "summary": "Link a control to a framework",
         "tags": [
           "Framework Editor Frameworks"
         ]
@@ -12908,6 +13099,7 @@
             "description": ""
           }
         },
+        "summary": "Link a task template to a framework",
         "tags": [
           "Framework Editor Frameworks"
         ]
@@ -12939,6 +13131,7 @@
             "description": ""
           }
         },
+        "summary": "Link a policy template to a framework",
         "tags": [
           "Framework Editor Frameworks"
         ]
@@ -12978,22 +13171,14 @@
             "description": ""
           }
         },
+        "summary": "List policy templates",
         "tags": [
           "Framework Editor Policy Templates"
         ]
       },
       "post": {
         "operationId": "PolicyTemplateController_create_v1",
-        "parameters": [
-          {
-            "name": "frameworkId",
-            "required": true,
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
+        "parameters": [],
         "requestBody": {
           "required": true,
           "content": {
@@ -13009,6 +13194,7 @@
             "description": ""
           }
         },
+        "summary": "Create a policy template",
         "tags": [
           "Framework Editor Policy Templates"
         ]
@@ -13032,6 +13218,7 @@
             "description": ""
           }
         },
+        "summary": "Get a policy template by ID",
         "tags": [
           "Framework Editor Policy Templates"
         ]
@@ -13063,6 +13250,7 @@
             "description": ""
           }
         },
+        "summary": "Update a policy template",
         "tags": [
           "Framework Editor Policy Templates"
         ]
@@ -13084,6 +13272,7 @@
             "description": ""
           }
         },
+        "summary": "Delete a policy template",
         "tags": [
           "Framework Editor Policy Templates"
         ]
@@ -13117,6 +13306,7 @@
             "description": ""
           }
         },
+        "summary": "Update policy template content",
         "tags": [
           "Framework Editor Policy Templates"
         ]
@@ -13148,6 +13338,7 @@
             "description": ""
           }
         },
+        "summary": "List requirements",
         "tags": [
           "Framework Editor Requirements"
         ]
@@ -13170,6 +13361,7 @@
             "description": ""
           }
         },
+        "summary": "Create a requirement",
         "tags": [
           "Framework Editor Requirements"
         ]
@@ -13203,6 +13395,7 @@
             "description": ""
           }
         },
+        "summary": "Update a requirement",
         "tags": [
           "Framework Editor Requirements"
         ]
@@ -13224,6 +13417,7 @@
             "description": ""
           }
         },
+        "summary": "Delete a requirement",
         "tags": [
           "Framework Editor Requirements"
         ]
@@ -13233,16 +13427,7 @@
       "post": {
         "description": "Create a new framework editor task template",
         "operationId": "TaskTemplateController_createTaskTemplate_v1",
-        "parameters": [
-          {
-            "name": "frameworkId",
-            "required": true,
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
+        "parameters": [],
         "requestBody": {
           "required": true,
           "description": "Create a new framework editor task template",
@@ -13779,16 +13964,58 @@
     },
     "/v1/findings": {
       "get": {
-        "description": "Retrieve all findings for a specific task",
-        "operationId": "FindingsController_getFindingsByTask_v1",
+        "operationId": "FindingsController_listFindings_v1",
         "parameters": [
+          {
+            "name": "status",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "enum": [
+                "open",
+                "ready_for_review",
+                "needs_revision",
+                "closed"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "name": "severity",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "enum": [
+                "low",
+                "medium",
+                "high",
+                "critical"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "name": "area",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "enum": [
+                "people",
+                "documents",
+                "compliance",
+                "risks",
+                "vendors",
+                "policies",
+                "other"
+              ],
+              "type": "string"
+            }
+          },
           {
             "name": "taskId",
             "required": false,
             "in": "query",
-            "description": "Task ID to get findings for",
             "schema": {
-              "example": "tsk_abc123",
               "type": "string"
             }
           },
@@ -13796,9 +14023,7 @@
             "name": "evidenceSubmissionId",
             "required": false,
             "in": "query",
-            "description": "Evidence submission ID to get findings for",
             "schema": {
-              "example": "evs_abc123",
               "type": "string"
             }
           },
@@ -13806,7 +14031,6 @@
             "name": "evidenceFormType",
             "required": false,
             "in": "query",
-            "description": "Evidence form type to get findings for",
             "schema": {
               "enum": [
                 "board-meeting",
@@ -13824,17 +14048,51 @@
               ],
               "type": "string"
             }
+          },
+          {
+            "name": "policyId",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "vendorId",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "riskId",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "memberId",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "deviceId",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
           }
         ],
         "responses": {
           "200": {
-            "description": "List of findings"
-          },
-          "401": {
-            "description": "Unauthorized"
-          },
-          "404": {
-            "description": "Target not found"
+            "description": ""
           }
         },
         "security": [
@@ -13842,18 +14100,16 @@
             "apikey": []
           }
         ],
-        "summary": "Get findings for a task",
+        "summary": "List findings for organization (optionally filtered)",
         "tags": [
           "Findings"
         ]
       },
       "post": {
-        "description": "Create a new finding for a task (Auditor or Platform Admin only)",
         "operationId": "FindingsController_createFinding_v1",
         "parameters": [],
         "requestBody": {
           "required": true,
-          "description": "Finding data",
           "content": {
             "application/json": {
               "schema": {
@@ -13864,16 +14120,7 @@
         },
         "responses": {
           "201": {
-            "description": "The created finding"
-          },
-          "401": {
-            "description": "Unauthorized"
-          },
-          "403": {
-            "description": "Forbidden - Auditor or Platform Admin required"
-          },
-          "404": {
-            "description": "Task not found"
+            "description": ""
           }
         },
         "security": [
@@ -13881,7 +14128,7 @@
             "apikey": []
           }
         ],
-        "summary": "Create a finding",
+        "summary": "Create a finding (auditor or platform admin only)",
         "tags": [
           "Findings"
         ]
@@ -13889,14 +14136,12 @@
     },
     "/v1/findings/organization": {
       "get": {
-        "description": "Retrieve all findings for the organization",
         "operationId": "FindingsController_getOrganizationFindings_v1",
         "parameters": [
           {
             "name": "status",
             "required": false,
             "in": "query",
-            "description": "Filter by status",
             "schema": {
               "enum": [
                 "open",
@@ -13910,13 +14155,7 @@
         ],
         "responses": {
           "200": {
-            "description": "List of all findings for the organization"
-          },
-          "400": {
-            "description": "Invalid status value"
-          },
-          "401": {
-            "description": "Unauthorized"
+            "description": ""
           }
         },
         "security": [
@@ -13924,7 +14163,7 @@
             "apikey": []
           }
         ],
-        "summary": "Get all findings for organization",
+        "summary": "List all findings for the organization",
         "tags": [
           "Findings"
         ]
@@ -13932,7 +14171,6 @@
     },
     "/v1/findings/{id}": {
       "get": {
-        "description": "Retrieve a specific finding by its ID",
         "operationId": "FindingsController_getFindingById_v1",
         "parameters": [
           {
@@ -13941,20 +14179,13 @@
             "in": "path",
             "description": "Finding ID",
             "schema": {
-              "example": "fnd_abc123",
               "type": "string"
             }
           }
         ],
         "responses": {
           "200": {
-            "description": "The finding"
-          },
-          "401": {
-            "description": "Unauthorized"
-          },
-          "404": {
-            "description": "Finding not found"
+            "description": ""
           }
         },
         "security": [
@@ -13968,7 +14199,6 @@
         ]
       },
       "patch": {
-        "description": "Update a finding. Status transition rules apply based on user role.",
         "operationId": "FindingsController_updateFinding_v1",
         "parameters": [
           {
@@ -13977,14 +14207,12 @@
             "in": "path",
             "description": "Finding ID",
             "schema": {
-              "example": "fnd_abc123",
               "type": "string"
             }
           }
         ],
         "requestBody": {
           "required": true,
-          "description": "Finding update data",
           "content": {
             "application/json": {
               "schema": {
@@ -13995,16 +14223,7 @@
         },
         "responses": {
           "200": {
-            "description": "The updated finding"
-          },
-          "401": {
-            "description": "Unauthorized"
-          },
-          "403": {
-            "description": "Forbidden - Insufficient permissions for status transition"
-          },
-          "404": {
-            "description": "Finding not found"
+            "description": ""
           }
         },
         "security": [
@@ -14012,13 +14231,12 @@
             "apikey": []
           }
         ],
-        "summary": "Update a finding",
+        "summary": "Update a finding (status transition rules apply)",
         "tags": [
           "Findings"
         ]
       },
       "delete": {
-        "description": "Delete a finding (Auditor or Platform Admin only)",
         "operationId": "FindingsController_deleteFinding_v1",
         "parameters": [
           {
@@ -14027,23 +14245,13 @@
             "in": "path",
             "description": "Finding ID",
             "schema": {
-              "example": "fnd_abc123",
               "type": "string"
             }
           }
         ],
         "responses": {
           "200": {
-            "description": "Finding deleted successfully"
-          },
-          "401": {
-            "description": "Unauthorized"
-          },
-          "403": {
-            "description": "Forbidden - Auditor or Platform Admin required"
-          },
-          "404": {
-            "description": "Finding not found"
+            "description": ""
           }
         },
         "security": [
@@ -14051,7 +14259,7 @@
             "apikey": []
           }
         ],
-        "summary": "Delete a finding",
+        "summary": "Delete a finding (auditor or platform admin only)",
         "tags": [
           "Findings"
         ]
@@ -14059,7 +14267,6 @@
     },
     "/v1/findings/{id}/history": {
       "get": {
-        "description": "Retrieve the activity history for a specific finding",
         "operationId": "FindingsController_getFindingHistory_v1",
         "parameters": [
           {
@@ -14068,20 +14275,13 @@
             "in": "path",
             "description": "Finding ID",
             "schema": {
-              "example": "fnd_abc123",
               "type": "string"
             }
           }
         ],
         "responses": {
           "200": {
-            "description": "List of audit log entries for the finding"
-          },
-          "401": {
-            "description": "Unauthorized"
-          },
-          "404": {
-            "description": "Finding not found"
+            "description": ""
           }
         },
         "security": [
@@ -14089,7 +14289,7 @@
             "apikey": []
           }
         ],
-        "summary": "Get finding history",
+        "summary": "Get activity history for a finding",
         "tags": [
           "Findings"
         ]
@@ -14109,6 +14309,7 @@
             "apikey": []
           }
         ],
+        "summary": "List questionnaires",
         "tags": [
           "Questionnaire"
         ]
@@ -14137,6 +14338,7 @@
             "apikey": []
           }
         ],
+        "summary": "Get a questionnaire by ID",
         "tags": [
           "Questionnaire"
         ]
@@ -14163,6 +14365,7 @@
             "apikey": []
           }
         ],
+        "summary": "Delete a questionnaire",
         "tags": [
           "Questionnaire"
         ]
@@ -14199,6 +14402,7 @@
             "apikey": []
           }
         ],
+        "summary": "Parse an uploaded questionnaire file",
         "tags": [
           "Questionnaire"
         ]
@@ -14265,6 +14469,7 @@
             "apikey": []
           }
         ],
+        "summary": "Answer a single questionnaire question",
         "tags": [
           "Questionnaire"
         ]
@@ -14310,6 +14515,7 @@
             "apikey": []
           }
         ],
+        "summary": "Save a questionnaire answer",
         "tags": [
           "Questionnaire"
         ]
@@ -14355,6 +14561,7 @@
             "apikey": []
           }
         ],
+        "summary": "Delete a questionnaire answer",
         "tags": [
           "Questionnaire"
         ]
@@ -14384,6 +14591,7 @@
             "apikey": []
           }
         ],
+        "summary": "Export a questionnaire",
         "tags": [
           "Questionnaire"
         ]
@@ -14428,6 +14636,7 @@
             "apikey": []
           }
         ],
+        "summary": "Upload and parse a questionnaire file",
         "tags": [
           "Questionnaire"
         ]
@@ -14496,6 +14705,7 @@
             "apikey": []
           }
         ],
+        "summary": "Upload a questionnaire file and parse its questions",
         "tags": [
           "Questionnaire"
         ]
@@ -14559,6 +14769,7 @@
             "apikey": []
           }
         ],
+        "summary": "Upload a questionnaire file and auto-answer with export",
         "tags": [
           "Questionnaire"
         ]
@@ -14618,6 +14829,7 @@
             "apikey": []
           }
         ],
+        "summary": "Upload and auto-answer a questionnaire via trust portal token",
         "tags": [
           "Questionnaire"
         ]
@@ -14647,6 +14859,7 @@
             "apikey": []
           }
         ],
+        "summary": "Export questionnaire answers",
         "tags": [
           "Questionnaire"
         ]
@@ -14701,6 +14914,7 @@
             "apikey": []
           }
         ],
+        "summary": "Upload a questionnaire file and export auto-generated answers",
         "tags": [
           "Questionnaire"
         ]
@@ -14730,6 +14944,7 @@
             "apikey": []
           }
         ],
+        "summary": "Auto-answer a questionnaire",
         "tags": [
           "Questionnaire"
         ]
@@ -15271,6 +15486,36 @@
         ]
       }
     },
+    "/v1/soa/export": {
+      "post": {
+        "operationId": "SOAController_exportDocument_v1",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ExportSOADocumentDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Export SOA document to PDF"
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Export a SOA document",
+        "tags": [
+          "SOA"
+        ]
+      }
+    },
     "/v1/integrations/oauth/availability": {
       "get": {
         "operationId": "OAuthController_checkAvailability_v1",
@@ -15294,6 +15539,7 @@
             "apikey": []
           }
         ],
+        "summary": "Check OAuth provider availability",
         "tags": [
           "Integrations"
         ]
@@ -15313,6 +15559,7 @@
             "apikey": []
           }
         ],
+        "summary": "Start an OAuth authorization flow",
         "tags": [
           "Integrations"
         ]
@@ -15332,6 +15579,7 @@
             "apikey": []
           }
         ],
+        "summary": "Handle OAuth provider callback",
         "tags": [
           "Integrations"
         ]
@@ -15351,6 +15599,7 @@
             "apikey": []
           }
         ],
+        "summary": "List configured OAuth apps",
         "tags": [
           "Integrations"
         ]
@@ -15368,6 +15617,7 @@
             "apikey": []
           }
         ],
+        "summary": "Create an OAuth app configuration",
         "tags": [
           "Integrations"
         ]
@@ -15396,6 +15646,7 @@
             "apikey": []
           }
         ],
+        "summary": "Get OAuth app setup details",
         "tags": [
           "Integrations"
         ]
@@ -15424,6 +15675,7 @@
             "apikey": []
           }
         ],
+        "summary": "Delete an OAuth app configuration",
         "tags": [
           "Integrations"
         ]
@@ -15452,6 +15704,7 @@
             "apikey": []
           }
         ],
+        "summary": "List available integration providers",
         "tags": [
           "Integrations"
         ]
@@ -15480,6 +15733,7 @@
             "apikey": []
           }
         ],
+        "summary": "Get an integration provider by slug",
         "tags": [
           "Integrations"
         ]
@@ -15499,6 +15753,7 @@
             "apikey": []
           }
         ],
+        "summary": "List integration connections",
         "tags": [
           "Integrations"
         ]
@@ -15516,6 +15771,7 @@
             "apikey": []
           }
         ],
+        "summary": "Create an integration connection",
         "tags": [
           "Integrations"
         ]
@@ -15544,6 +15800,7 @@
             "apikey": []
           }
         ],
+        "summary": "Get an integration connection by ID",
         "tags": [
           "Integrations"
         ]
@@ -15570,6 +15827,7 @@
             "apikey": []
           }
         ],
+        "summary": "Delete an integration connection",
         "tags": [
           "Integrations"
         ]
@@ -15596,6 +15854,7 @@
             "apikey": []
           }
         ],
+        "summary": "Update an integration connection",
         "tags": [
           "Integrations"
         ]
@@ -15624,6 +15883,7 @@
             "apikey": []
           }
         ],
+        "summary": "Test an integration connection",
         "tags": [
           "Integrations"
         ]
@@ -15652,6 +15912,7 @@
             "apikey": []
           }
         ],
+        "summary": "Pause an integration connection",
         "tags": [
           "Integrations"
         ]
@@ -15680,6 +15941,7 @@
             "apikey": []
           }
         ],
+        "summary": "Resume an integration connection",
         "tags": [
           "Integrations"
         ]
@@ -15708,6 +15970,7 @@
             "apikey": []
           }
         ],
+        "summary": "Disconnect an integration",
         "tags": [
           "Integrations"
         ]
@@ -15736,6 +15999,63 @@
             "apikey": []
           }
         ],
+        "summary": "Ensure valid credentials for a connection",
+        "tags": [
+          "Integrations"
+        ]
+      }
+    },
+    "/v1/integrations/connections/{id}/services": {
+      "put": {
+        "operationId": "ConnectionsController_updateConnectionServices_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Set services enabled on a connection",
+        "tags": [
+          "Integrations"
+        ]
+      },
+      "get": {
+        "operationId": "ServicesController_getConnectionServices_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "List services enabled on a connection",
         "tags": [
           "Integrations"
         ]
@@ -15764,374 +16084,9 @@
             "apikey": []
           }
         ],
+        "summary": "Update integration credentials",
         "tags": [
           "Integrations"
-        ]
-      }
-    },
-    "/v1/admin/integrations": {
-      "get": {
-        "operationId": "AdminIntegrationsController_listIntegrations_v1",
-        "parameters": [],
-        "responses": {
-          "200": {
-            "description": ""
-          }
-        },
-        "tags": [
-          "AdminIntegrations"
-        ]
-      }
-    },
-    "/v1/admin/integrations/{providerSlug}": {
-      "get": {
-        "operationId": "AdminIntegrationsController_getIntegration_v1",
-        "parameters": [
-          {
-            "name": "providerSlug",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": ""
-          }
-        },
-        "tags": [
-          "AdminIntegrations"
-        ]
-      }
-    },
-    "/v1/admin/integrations/credentials": {
-      "post": {
-        "operationId": "AdminIntegrationsController_savePlatformCredentials_v1",
-        "parameters": [],
-        "responses": {
-          "201": {
-            "description": ""
-          }
-        },
-        "tags": [
-          "AdminIntegrations"
-        ]
-      }
-    },
-    "/v1/admin/integrations/credentials/{providerSlug}": {
-      "delete": {
-        "operationId": "AdminIntegrationsController_deletePlatformCredentials_v1",
-        "parameters": [
-          {
-            "name": "providerSlug",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": ""
-          }
-        },
-        "tags": [
-          "AdminIntegrations"
-        ]
-      }
-    },
-    "/v1/internal/dynamic-integrations": {
-      "put": {
-        "operationId": "DynamicIntegrationsController_upsert_v1",
-        "parameters": [],
-        "responses": {
-          "200": {
-            "description": ""
-          }
-        },
-        "tags": [
-          "DynamicIntegrations"
-        ]
-      },
-      "post": {
-        "operationId": "DynamicIntegrationsController_create_v1",
-        "parameters": [],
-        "responses": {
-          "201": {
-            "description": ""
-          }
-        },
-        "tags": [
-          "DynamicIntegrations"
-        ]
-      },
-      "get": {
-        "operationId": "DynamicIntegrationsController_list_v1",
-        "parameters": [],
-        "responses": {
-          "200": {
-            "description": ""
-          }
-        },
-        "tags": [
-          "DynamicIntegrations"
-        ]
-      }
-    },
-    "/v1/internal/dynamic-integrations/{id}": {
-      "get": {
-        "operationId": "DynamicIntegrationsController_getById_v1",
-        "parameters": [
-          {
-            "name": "id",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": ""
-          }
-        },
-        "tags": [
-          "DynamicIntegrations"
-        ]
-      },
-      "patch": {
-        "operationId": "DynamicIntegrationsController_update_v1",
-        "parameters": [
-          {
-            "name": "id",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": ""
-          }
-        },
-        "tags": [
-          "DynamicIntegrations"
-        ]
-      },
-      "delete": {
-        "operationId": "DynamicIntegrationsController_remove_v1",
-        "parameters": [
-          {
-            "name": "id",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": ""
-          }
-        },
-        "tags": [
-          "DynamicIntegrations"
-        ]
-      }
-    },
-    "/v1/internal/dynamic-integrations/{id}/checks": {
-      "post": {
-        "operationId": "DynamicIntegrationsController_addCheck_v1",
-        "parameters": [
-          {
-            "name": "id",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "201": {
-            "description": ""
-          }
-        },
-        "tags": [
-          "DynamicIntegrations"
-        ]
-      }
-    },
-    "/v1/internal/dynamic-integrations/{id}/checks/{checkId}": {
-      "patch": {
-        "operationId": "DynamicIntegrationsController_updateCheck_v1",
-        "parameters": [
-          {
-            "name": "id",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "checkId",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": ""
-          }
-        },
-        "tags": [
-          "DynamicIntegrations"
-        ]
-      },
-      "delete": {
-        "operationId": "DynamicIntegrationsController_removeCheck_v1",
-        "parameters": [
-          {
-            "name": "id",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "checkId",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": ""
-          }
-        },
-        "tags": [
-          "DynamicIntegrations"
-        ]
-      }
-    },
-    "/v1/internal/dynamic-integrations/{id}/activate": {
-      "post": {
-        "operationId": "DynamicIntegrationsController_activate_v1",
-        "parameters": [
-          {
-            "name": "id",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "201": {
-            "description": ""
-          }
-        },
-        "tags": [
-          "DynamicIntegrations"
-        ]
-      }
-    },
-    "/v1/internal/dynamic-integrations/{id}/deactivate": {
-      "post": {
-        "operationId": "DynamicIntegrationsController_deactivate_v1",
-        "parameters": [
-          {
-            "name": "id",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "201": {
-            "description": ""
-          }
-        },
-        "tags": [
-          "DynamicIntegrations"
-        ]
-      }
-    },
-    "/v1/internal/dynamic-integrations/validate": {
-      "post": {
-        "operationId": "DynamicIntegrationsController_validate_v1",
-        "parameters": [],
-        "responses": {
-          "201": {
-            "description": ""
-          }
-        },
-        "tags": [
-          "DynamicIntegrations"
-        ]
-      }
-    },
-    "/v1/internal/dynamic-integrations/{id}/check-runs": {
-      "get": {
-        "operationId": "DynamicIntegrationsController_getCheckRuns_v1",
-        "parameters": [
-          {
-            "name": "id",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": ""
-          }
-        },
-        "tags": [
-          "DynamicIntegrations"
-        ]
-      }
-    },
-    "/v1/internal/dynamic-integrations/check-runs/{runId}": {
-      "get": {
-        "operationId": "DynamicIntegrationsController_getCheckRunById_v1",
-        "parameters": [
-          {
-            "name": "runId",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": ""
-          }
-        },
-        "tags": [
-          "DynamicIntegrations"
         ]
       }
     },
@@ -16158,6 +16113,7 @@
             "apikey": []
           }
         ],
+        "summary": "List check definitions for a provider",
         "tags": [
           "Integrations"
         ]
@@ -16186,6 +16142,7 @@
             "apikey": []
           }
         ],
+        "summary": "List checks for a connection",
         "tags": [
           "Integrations"
         ]
@@ -16214,6 +16171,7 @@
             "apikey": []
           }
         ],
+        "summary": "Run all checks for a connection",
         "tags": [
           "Integrations"
         ]
@@ -16250,6 +16208,7 @@
             "apikey": []
           }
         ],
+        "summary": "Run a single check on a connection",
         "tags": [
           "Integrations"
         ]
@@ -16278,6 +16237,7 @@
             "apikey": []
           }
         ],
+        "summary": "List variable definitions for a provider",
         "tags": [
           "Integrations"
         ]
@@ -16306,6 +16266,7 @@
             "apikey": []
           }
         ],
+        "summary": "List connection variables",
         "tags": [
           "Integrations"
         ]
@@ -16332,6 +16293,7 @@
             "apikey": []
           }
         ],
+        "summary": "Update connection variables",
         "tags": [
           "Integrations"
         ]
@@ -16368,6 +16330,7 @@
             "apikey": []
           }
         ],
+        "summary": "Get options for a connection variable",
         "tags": [
           "Integrations"
         ]
@@ -16396,6 +16359,7 @@
             "apikey": []
           }
         ],
+        "summary": "List checks for a task template",
         "tags": [
           "Integrations"
         ]
@@ -16424,6 +16388,7 @@
             "apikey": []
           }
         ],
+        "summary": "List checks attached to a task",
         "tags": [
           "Integrations"
         ]
@@ -16452,6 +16417,65 @@
             "apikey": []
           }
         ],
+        "summary": "Run a check for a task",
+        "tags": [
+          "Integrations"
+        ]
+      }
+    },
+    "/v1/integrations/tasks/{taskId}/checks/disconnect": {
+      "post": {
+        "operationId": "TaskIntegrationsController_disconnectCheckFromTask_v1",
+        "parameters": [
+          {
+            "name": "taskId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Disconnect checks from a task",
+        "tags": [
+          "Integrations"
+        ]
+      }
+    },
+    "/v1/integrations/tasks/{taskId}/checks/reconnect": {
+      "post": {
+        "operationId": "TaskIntegrationsController_reconnectCheckToTask_v1",
+        "parameters": [
+          {
+            "name": "taskId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Reconnect checks to a task",
         "tags": [
           "Integrations"
         ]
@@ -16488,6 +16512,7 @@
             "apikey": []
           }
         ],
+        "summary": "List check runs for a task",
         "tags": [
           "Integrations"
         ]
@@ -16519,6 +16544,7 @@
             "description": ""
           }
         },
+        "summary": "Receive a provider webhook event",
         "tags": [
           "Webhook"
         ]
@@ -16547,6 +16573,7 @@
             "apikey": []
           }
         ],
+        "summary": "Sync Google Workspace employees",
         "tags": [
           "Integrations"
         ]
@@ -16566,6 +16593,7 @@
             "apikey": []
           }
         ],
+        "summary": "Get Google Workspace sync status",
         "tags": [
           "Integrations"
         ]
@@ -16594,6 +16622,7 @@
             "apikey": []
           }
         ],
+        "summary": "Sync Rippling employees",
         "tags": [
           "Integrations"
         ]
@@ -16613,6 +16642,7 @@
             "apikey": []
           }
         ],
+        "summary": "Get Rippling sync status",
         "tags": [
           "Integrations"
         ]
@@ -16641,6 +16671,7 @@
             "apikey": []
           }
         ],
+        "summary": "Sync JumpCloud employees",
         "tags": [
           "Integrations"
         ]
@@ -16660,6 +16691,7 @@
             "apikey": []
           }
         ],
+        "summary": "Get JumpCloud sync status",
         "tags": [
           "Integrations"
         ]
@@ -16679,6 +16711,7 @@
             "apikey": []
           }
         ],
+        "summary": "Get the currently configured employee sync provider",
         "tags": [
           "Integrations"
         ]
@@ -16696,6 +16729,7 @@
             "apikey": []
           }
         ],
+        "summary": "Set the employee sync provider",
         "tags": [
           "Integrations"
         ]
@@ -16715,6 +16749,7 @@
             "apikey": []
           }
         ],
+        "summary": "List employee sync providers available to the org",
         "tags": [
           "Integrations"
         ]
@@ -16751,8 +16786,33 @@
             "apikey": []
           }
         ],
+        "summary": "Sync employees for a dynamic provider",
         "tags": [
           "Integrations"
+        ]
+      }
+    },
+    "/v1/cloud-security/activity": {
+      "get": {
+        "operationId": "CloudSecurityController_getActivity_v1",
+        "parameters": [
+          {
+            "name": "connectionId",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "summary": "List recent cloud security activity",
+        "tags": [
+          "CloudSecurity"
         ]
       }
     },
@@ -16765,6 +16825,7 @@
             "description": ""
           }
         },
+        "summary": "List supported cloud providers",
         "tags": [
           "CloudSecurity"
         ]
@@ -16779,6 +16840,7 @@
             "description": ""
           }
         },
+        "summary": "List cloud security findings",
         "tags": [
           "CloudSecurity"
         ]
@@ -16802,6 +16864,175 @@
             "description": ""
           }
         },
+        "summary": "Trigger a security scan for a connection",
+        "tags": [
+          "CloudSecurity"
+        ]
+      }
+    },
+    "/v1/cloud-security/detect-services/{connectionId}": {
+      "post": {
+        "operationId": "CloudSecurityController_detectServices_v1",
+        "parameters": [
+          {
+            "name": "connectionId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "summary": "Detect available cloud services for a connection",
+        "tags": [
+          "CloudSecurity"
+        ]
+      }
+    },
+    "/v1/cloud-security/detect-gcp-org/{connectionId}": {
+      "post": {
+        "operationId": "CloudSecurityController_detectGcpOrg_v1",
+        "parameters": [
+          {
+            "name": "connectionId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "summary": "Detect the GCP organization for a connection",
+        "tags": [
+          "CloudSecurity"
+        ]
+      }
+    },
+    "/v1/cloud-security/select-gcp-projects/{connectionId}": {
+      "post": {
+        "operationId": "CloudSecurityController_selectGcpProjects_v1",
+        "parameters": [
+          {
+            "name": "connectionId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "summary": "Select GCP projects for a connection",
+        "tags": [
+          "CloudSecurity"
+        ]
+      }
+    },
+    "/v1/cloud-security/setup-gcp/{connectionId}": {
+      "post": {
+        "operationId": "CloudSecurityController_setupGcp_v1",
+        "parameters": [
+          {
+            "name": "connectionId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "summary": "Set up GCP for a connection",
+        "tags": [
+          "CloudSecurity"
+        ]
+      }
+    },
+    "/v1/cloud-security/setup-gcp/{connectionId}/resolve-step": {
+      "post": {
+        "operationId": "CloudSecurityController_resolveGcpSetupStep_v1",
+        "parameters": [
+          {
+            "name": "connectionId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "summary": "Resolve a GCP setup step",
+        "tags": [
+          "CloudSecurity"
+        ]
+      }
+    },
+    "/v1/cloud-security/setup-azure/{connectionId}": {
+      "post": {
+        "operationId": "CloudSecurityController_setupAzure_v1",
+        "parameters": [
+          {
+            "name": "connectionId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "summary": "Set up Azure for a connection",
+        "tags": [
+          "CloudSecurity"
+        ]
+      }
+    },
+    "/v1/cloud-security/validate-azure/{connectionId}": {
+      "post": {
+        "operationId": "CloudSecurityController_validateAzure_v1",
+        "parameters": [
+          {
+            "name": "connectionId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "summary": "Validate Azure credentials for a connection",
         "tags": [
           "CloudSecurity"
         ]
@@ -16825,6 +17056,7 @@
             "description": ""
           }
         },
+        "summary": "Trigger a cloud security run for a connection",
         "tags": [
           "CloudSecurity"
         ]
@@ -16856,6 +17088,7 @@
             "description": ""
           }
         },
+        "summary": "Get a cloud security scan run by ID",
         "tags": [
           "CloudSecurity"
         ]
@@ -16870,6 +17103,7 @@
             "description": ""
           }
         },
+        "summary": "Create a legacy cloud integration",
         "tags": [
           "CloudSecurity"
         ]
@@ -16884,6 +17118,7 @@
             "description": ""
           }
         },
+        "summary": "Validate legacy AWS credentials",
         "tags": [
           "CloudSecurity"
         ]
@@ -16907,8 +17142,206 @@
             "description": ""
           }
         },
+        "summary": "Delete a legacy cloud integration",
         "tags": [
           "CloudSecurity"
+        ]
+      }
+    },
+    "/v1/cloud-security/remediation/capabilities": {
+      "get": {
+        "operationId": "RemediationController_getCapabilities_v1",
+        "parameters": [
+          {
+            "name": "connectionId",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "summary": "List remediation capabilities",
+        "tags": [
+          "Remediation"
+        ]
+      }
+    },
+    "/v1/cloud-security/remediation/preview": {
+      "post": {
+        "operationId": "RemediationController_preview_v1",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "summary": "Preview a remediation",
+        "tags": [
+          "Remediation"
+        ]
+      }
+    },
+    "/v1/cloud-security/remediation/execute": {
+      "post": {
+        "operationId": "RemediationController_execute_v1",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "summary": "Execute a remediation",
+        "tags": [
+          "Remediation"
+        ]
+      }
+    },
+    "/v1/cloud-security/remediation/{actionId}/rollback": {
+      "post": {
+        "operationId": "RemediationController_rollback_v1",
+        "parameters": [
+          {
+            "name": "actionId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "summary": "Roll back a remediation action",
+        "tags": [
+          "Remediation"
+        ]
+      }
+    },
+    "/v1/cloud-security/remediation/actions": {
+      "get": {
+        "operationId": "RemediationController_getActions_v1",
+        "parameters": [
+          {
+            "name": "connectionId",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "summary": "List remediation actions",
+        "tags": [
+          "Remediation"
+        ]
+      }
+    },
+    "/v1/cloud-security/remediation/batch/active": {
+      "get": {
+        "operationId": "RemediationController_getActiveBatch_v1",
+        "parameters": [
+          {
+            "name": "connectionId",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "summary": "Get the active remediation batch",
+        "tags": [
+          "Remediation"
+        ]
+      }
+    },
+    "/v1/cloud-security/remediation/batch": {
+      "post": {
+        "operationId": "RemediationController_createBatch_v1",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "summary": "Create a remediation batch",
+        "tags": [
+          "Remediation"
+        ]
+      }
+    },
+    "/v1/cloud-security/remediation/batch/{batchId}": {
+      "patch": {
+        "operationId": "RemediationController_updateBatch_v1",
+        "parameters": [
+          {
+            "name": "batchId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "summary": "Update a remediation batch",
+        "tags": [
+          "Remediation"
+        ]
+      }
+    },
+    "/v1/cloud-security/remediation/batch/{batchId}/skip/{findingId}": {
+      "post": {
+        "operationId": "RemediationController_skipFinding_v1",
+        "parameters": [
+          {
+            "name": "batchId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "findingId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "summary": "Skip a finding in a remediation batch",
+        "tags": [
+          "Remediation"
         ]
       }
     },
@@ -17455,6 +17888,48 @@
           }
         ],
         "summary": "Get a specific run by ID",
+        "tags": [
+          "Browserbase"
+        ]
+      }
+    },
+    "/v1/browserbase/runs/{runId}/screenshot": {
+      "get": {
+        "description": "Issues a 302 redirect to a newly signed S3 URL so that \"Open full size\" links never serve an expired URL. Pass ?download=true to force an attachment download.",
+        "operationId": "BrowserbaseController_redirectToScreenshot_v1",
+        "parameters": [
+          {
+            "name": "runId",
+            "required": true,
+            "in": "path",
+            "description": "Run ID",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "download",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "302": {
+            "description": "Redirect to signed S3 URL"
+          },
+          "404": {
+            "description": "Run or screenshot not found"
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Redirect to a freshly signed screenshot URL",
         "tags": [
           "Browserbase"
         ]
@@ -18765,6 +19240,76 @@
         ]
       }
     },
+    "/v1/evidence-forms/settings": {
+      "get": {
+        "description": "Returns organization-scoped relevance settings for evidence forms",
+        "operationId": "EvidenceFormsController_getFormSettings_v1",
+        "parameters": [
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "description": "Organization ID (required for session auth, optional for API key auth)",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Get document relevance settings",
+        "tags": [
+          "Evidence Forms"
+        ]
+      }
+    },
+    "/v1/evidence-forms/{formType}/settings": {
+      "patch": {
+        "description": "Marks an evidence form as relevant or not relevant for the active organization",
+        "operationId": "EvidenceFormsController_updateFormSetting_v1",
+        "parameters": [
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "description": "Organization ID (required for session auth, optional for API key auth)",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "formType",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Update document relevance setting",
+        "tags": [
+          "Evidence Forms"
+        ]
+      }
+    },
     "/v1/evidence-forms/my-submissions": {
       "get": {
         "description": "Returns all evidence form submissions by the authenticated user for the active organization",
@@ -19290,6 +19835,26 @@
         ]
       }
     },
+    "/v1/frameworks/update-statuses": {
+      "get": {
+        "operationId": "FrameworksController_getAllUpdateStatuses_v1",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get update statuses for all framework instances",
+        "tags": [
+          "Frameworks"
+        ]
+      }
+    },
     "/v1/frameworks/{id}": {
       "get": {
         "operationId": "FrameworksController_findOne_v1",
@@ -19378,6 +19943,326 @@
           }
         ],
         "summary": "Get a specific requirement with related controls",
+        "tags": [
+          "Frameworks"
+        ]
+      }
+    },
+    "/v1/frameworks/custom": {
+      "post": {
+        "operationId": "FrameworksController_createCustom_v1",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateCustomFrameworkDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Create a custom framework for this organization",
+        "tags": [
+          "Frameworks"
+        ]
+      }
+    },
+    "/v1/frameworks/{id}/requirements": {
+      "post": {
+        "operationId": "FrameworksController_createRequirement_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateCustomRequirementDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Add a custom requirement to a framework instance",
+        "tags": [
+          "Frameworks"
+        ]
+      }
+    },
+    "/v1/frameworks/{id}/requirements/link": {
+      "post": {
+        "operationId": "FrameworksController_linkRequirements_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LinkRequirementsDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Link (clone) existing requirements from another framework into this one",
+        "tags": [
+          "Frameworks"
+        ]
+      }
+    },
+    "/v1/frameworks/{id}/requirements/{requirementKey}/controls/link": {
+      "post": {
+        "operationId": "FrameworksController_linkControls_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "requirementKey",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LinkControlsDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Link existing org controls to a requirement",
+        "tags": [
+          "Frameworks"
+        ]
+      }
+    },
+    "/v1/frameworks/{id}/update-status": {
+      "get": {
+        "operationId": "FrameworksController_getUpdateStatus_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get the update status for a framework instance",
+        "tags": [
+          "Frameworks"
+        ]
+      }
+    },
+    "/v1/frameworks/{id}/update-preview": {
+      "get": {
+        "operationId": "FrameworksController_getUpdatePreview_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Preview changes from updating a framework instance",
+        "tags": [
+          "Frameworks"
+        ]
+      }
+    },
+    "/v1/frameworks/{id}/sync": {
+      "post": {
+        "operationId": "FrameworksController_syncFramework_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SyncFrameworkDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Sync a framework instance to a target version",
+        "tags": [
+          "Frameworks"
+        ]
+      }
+    },
+    "/v1/frameworks/{id}/rollback": {
+      "post": {
+        "operationId": "FrameworksController_rollbackFramework_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RollbackFrameworkDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Roll back a framework sync operation",
+        "tags": [
+          "Frameworks"
+        ]
+      }
+    },
+    "/v1/frameworks/{id}/sync-history": {
+      "get": {
+        "operationId": "FrameworksController_getSyncHistory_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get sync history for a framework instance",
         "tags": [
           "Frameworks"
         ]
@@ -19608,33 +20493,228 @@
         ]
       }
     },
-    "/v1/internal/email/send": {
+    "/v1/controls/{id}/policies/link": {
       "post": {
-        "operationId": "EmailController_sendEmail_v1",
-        "parameters": [],
+        "operationId": "ControlsController_linkPolicies_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "requestBody": {
           "required": true,
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/SendEmailDto"
+                "$ref": "#/components/schemas/LinkPoliciesDto"
               }
             }
           }
         },
         "responses": {
-          "200": {
-            "description": "Email task triggered"
+          "201": {
+            "description": ""
           }
         },
         "security": [
           {
-            "apikey": []
+            "bearer": []
           }
         ],
-        "summary": "Send an email via the centralized Trigger task (internal)",
+        "summary": "Link existing policies to a control",
         "tags": [
-          "Internal - Email"
+          "Controls"
+        ]
+      }
+    },
+    "/v1/controls/{id}/tasks/link": {
+      "post": {
+        "operationId": "ControlsController_linkTasks_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LinkTasksDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Link existing tasks to a control",
+        "tags": [
+          "Controls"
+        ]
+      }
+    },
+    "/v1/controls/{id}/requirements/link": {
+      "post": {
+        "operationId": "ControlsController_linkRequirements_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LinkRequirementsToControlDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Link existing requirements to a control",
+        "tags": [
+          "Controls"
+        ]
+      }
+    },
+    "/v1/controls/{id}/document-types/link": {
+      "post": {
+        "operationId": "ControlsController_linkDocumentTypes_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LinkDocumentTypesDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Link required document types to a control",
+        "tags": [
+          "Controls"
+        ]
+      }
+    },
+    "/v1/controls/{id}/document-types/{formType}": {
+      "delete": {
+        "operationId": "ControlsController_unlinkDocumentType_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "formType",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Remove a required document type from a control",
+        "tags": [
+          "Controls"
+        ]
+      }
+    },
+    "/v1/email/unsubscribe": {
+      "post": {
+        "operationId": "UnsubscribeController_unsubscribe_v1",
+        "parameters": [
+          {
+            "name": "email",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "token",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "summary": "One-click unsubscribe (RFC 8058)",
+        "tags": [
+          "Email - Unsubscribe"
         ]
       }
     },
@@ -19865,37 +20945,6 @@
         ]
       }
     },
-    "/v1/security-penetration-tests/github/repos": {
-      "get": {
-        "description": "Returns GitHub repositories accessible with the connected GitHub integration.",
-        "operationId": "SecurityPenetrationTestsController_listGithubRepos_v1",
-        "parameters": [
-          {
-            "name": "X-Organization-Id",
-            "in": "header",
-            "description": "Organization ID (required for session auth, optional for API key auth)",
-            "required": false,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Repository list returned"
-          }
-        },
-        "security": [
-          {
-            "apikey": []
-          }
-        ],
-        "summary": "List accessible GitHub repositories",
-        "tags": [
-          "Security Penetration Tests"
-        ]
-      }
-    },
     "/v1/security-penetration-tests/{id}": {
       "get": {
         "description": "Returns a penetration test run with progress metadata.",
@@ -19977,6 +21026,84 @@
         ]
       }
     },
+    "/v1/security-penetration-tests/{id}/issues": {
+      "get": {
+        "description": "Returns the structured findings discovered during the run. Grows over time during a live scan as agents discover more issues.",
+        "operationId": "SecurityPenetrationTestsController_getIssues_v1",
+        "parameters": [
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "description": "Organization ID (required for session auth, optional for API key auth)",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Issues returned"
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Get penetration test issues",
+        "tags": [
+          "Security Penetration Tests"
+        ]
+      }
+    },
+    "/v1/security-penetration-tests/{id}/events": {
+      "get": {
+        "description": "Returns the real-time agent activity log emitted during a run (tool calls, observations, etc.). Noisy — meant for activity feeds and debugging.",
+        "operationId": "SecurityPenetrationTestsController_getEvents_v1",
+        "parameters": [
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "description": "Organization ID (required for session auth, optional for API key auth)",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Events returned"
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Get penetration test agent events",
+        "tags": [
+          "Security Penetration Tests"
+        ]
+      }
+    },
     "/v1/security-penetration-tests/{id}/report": {
       "get": {
         "description": "Returns the markdown report output for a completed run.",
@@ -20018,7 +21145,7 @@
     },
     "/v1/security-penetration-tests/{id}/pdf": {
       "get": {
-        "description": "Returns the PDF version of a completed report.",
+        "description": "Returns the PDF version of a completed report. Streams the binary PDF via Maced SDK.",
         "operationId": "SecurityPenetrationTestsController_getPdf_v1",
         "parameters": [
           {
@@ -20057,7 +21184,7 @@
     },
     "/v1/security-penetration-tests/webhook": {
       "post": {
-        "description": "Receives callback payloads from the penetration test provider when a run is updated. Per-run webhook token validation is enforced when handshake state exists.",
+        "description": "Receives signed JSON events from Maced. Signature is verified against MACED_WEBHOOK_SIGNING_SECRET using the SDK's verifyMacedWebhook helper.",
         "operationId": "SecurityPenetrationTestsController_handleWebhook_v1",
         "parameters": [
           {
@@ -20070,26 +21197,10 @@
             }
           },
           {
-            "name": "webhookToken",
-            "required": false,
-            "in": "query",
-            "description": "Per-job webhook token used for handshake validation when callbacks are sent to Comp.",
-            "schema": {}
-          },
-          {
-            "name": "X-Webhook-Token",
+            "name": "X-Maced-Signature",
             "in": "header",
-            "description": "Optional webhook token header. Query param webhookToken is also accepted.",
-            "required": false,
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "X-Webhook-Id",
-            "in": "header",
-            "description": "Optional provider event identifier used for idempotency detection.",
-            "required": false,
+            "description": "HMAC signature header set by Maced (format: t=...,v1=...)",
+            "required": true,
             "schema": {
               "type": "string"
             }
@@ -20101,6 +21212,9 @@
           },
           "400": {
             "description": "Invalid webhook payload"
+          },
+          "403": {
+            "description": "Invalid webhook signature"
           }
         },
         "security": [
@@ -20114,293 +21228,235 @@
         ]
       }
     },
-    "/v1/pentest-billing/status": {
+    "/v1/pentest-credits/status": {
       "get": {
-        "operationId": "PentestBillingController_getStatus_v1",
-        "parameters": [],
+        "description": "Current spendable balance plus lifetime granted/consumed totals.",
+        "operationId": "PentestCreditsController_getStatus_v1",
+        "parameters": [
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "description": "Organization ID (required for session auth, optional for API key auth)",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
-            "description": "Subscription status returned"
+            "description": "Credits status"
           }
         },
-        "summary": "Get pentest subscription status",
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Get pentest credit status",
         "tags": [
-          "Pentest Billing"
+          "Pentest Credits"
         ]
       }
     },
-    "/v1/pentest-billing/subscribe": {
-      "post": {
-        "operationId": "PentestBillingController_subscribe_v1",
+    "/v1/billing/status": {
+      "get": {
+        "operationId": "BillingController_getStatus_v1",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Get organization billing status",
+        "tags": [
+          "Billing"
+        ]
+      }
+    },
+    "/v1/billing/preferences": {
+      "put": {
+        "operationId": "BillingController_updatePreferences_v1",
         "parameters": [],
         "requestBody": {
           "required": true,
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/SubscribeDto"
+                "$ref": "#/components/schemas/BillingPreferencesDto"
               }
             }
           }
         },
         "responses": {
           "200": {
-            "description": "Checkout URL returned"
+            "description": ""
           }
         },
-        "summary": "Create a Stripe checkout session for pentest subscription",
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Update organization billing preferences",
         "tags": [
-          "Pentest Billing"
+          "Billing"
         ]
       }
     },
-    "/v1/pentest-billing/handle-success": {
+    "/v1/billing/setup-session": {
       "post": {
-        "operationId": "PentestBillingController_handleSuccess_v1",
+        "operationId": "BillingController_setupSession_v1",
         "parameters": [],
         "requestBody": {
           "required": true,
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/HandleSuccessDto"
+                "$ref": "#/components/schemas/BillingSetupSessionDto"
               }
             }
           }
         },
         "responses": {
           "200": {
-            "description": "Subscription activated"
+            "description": ""
           }
         },
-        "summary": "Handle Stripe checkout success callback",
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Create a Stripe setup session",
         "tags": [
-          "Pentest Billing"
+          "Billing"
         ]
       }
     },
-    "/v1/pentest-billing/portal": {
+    "/v1/billing/setup-success": {
       "post": {
-        "operationId": "PentestBillingController_portal_v1",
+        "operationId": "BillingController_setupSuccess_v1",
         "parameters": [],
         "requestBody": {
           "required": true,
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/PortalDto"
+                "$ref": "#/components/schemas/BillingSetupSuccessDto"
               }
             }
           }
         },
         "responses": {
           "200": {
-            "description": "Portal URL returned"
+            "description": ""
           }
         },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Persist a successful Stripe setup session",
+        "tags": [
+          "Billing"
+        ]
+      }
+    },
+    "/v1/billing/portal": {
+      "post": {
+        "operationId": "BillingController_portal_v1",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BillingPortalDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
         "summary": "Create a Stripe billing portal session",
         "tags": [
-          "Pentest Billing"
+          "Billing"
         ]
       }
     },
-    "/v1/pentest-billing/charge": {
+    "/v1/billing/subscription-session": {
       "post": {
-        "operationId": "PentestBillingController_charge_v1",
+        "operationId": "BillingController_subscriptionSession_v1",
         "parameters": [],
         "requestBody": {
           "required": true,
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/ChargeDto"
+                "$ref": "#/components/schemas/BillingSubscriptionCheckoutDto"
               }
             }
           }
         },
         "responses": {
           "200": {
-            "description": "Charge result returned"
-          }
-        },
-        "summary": "Check and charge overage for a pentest run",
-        "tags": [
-          "Pentest Billing"
-        ]
-      }
-    },
-    "/v1/admin/organizations": {
-      "get": {
-        "operationId": "AdminOrganizationsController_list_v1",
-        "parameters": [
-          {
-            "name": "search",
-            "required": true,
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "page",
-            "required": true,
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "limit",
-            "required": true,
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
             "description": ""
           }
         },
-        "summary": "List all organizations (platform admin)",
-        "tags": [
-          "Admin - Organizations"
-        ]
-      }
-    },
-    "/v1/admin/organizations/{id}": {
-      "get": {
-        "operationId": "AdminOrganizationsController_get_v1",
-        "parameters": [
+        "security": [
           {
-            "name": "id",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
+            "apikey": []
           }
         ],
-        "responses": {
-          "200": {
-            "description": ""
-          }
-        },
-        "summary": "Get organization details (platform admin)",
+        "summary": "Create a Stripe subscription Checkout session",
         "tags": [
-          "Admin - Organizations"
+          "Billing"
         ]
       }
     },
-    "/v1/admin/organizations/{id}/activate": {
-      "patch": {
-        "operationId": "AdminOrganizationsController_activate_v1",
-        "parameters": [
-          {
-            "name": "id",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": ""
-          }
-        },
-        "summary": "Activate organization access (platform admin)",
-        "tags": [
-          "Admin - Organizations"
-        ]
-      }
-    },
-    "/v1/admin/organizations/{id}/deactivate": {
-      "patch": {
-        "operationId": "AdminOrganizationsController_deactivate_v1",
-        "parameters": [
-          {
-            "name": "id",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": ""
-          }
-        },
-        "summary": "Deactivate organization access (platform admin)",
-        "tags": [
-          "Admin - Organizations"
-        ]
-      }
-    },
-    "/v1/admin/organizations/{id}/invite": {
+    "/v1/billing/webhook": {
       "post": {
-        "operationId": "AdminOrganizationsController_inviteMember_v1",
-        "parameters": [
-          {
-            "name": "id",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/InviteMemberDto"
-              }
-            }
-          }
-        },
+        "operationId": "BillingController_webhook_v1",
+        "parameters": [],
         "responses": {
-          "201": {
+          "200": {
             "description": ""
           }
         },
-        "summary": "Invite member to organization (platform admin)",
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Receive Stripe billing webhook events",
         "tags": [
-          "Admin - Organizations"
+          "Billing"
         ]
       }
     },
-    "/v1/admin/organizations/{id}/audit-logs": {
+    "/v1/background-checks/{id}": {
       "get": {
-        "operationId": "AdminOrganizationsController_getAuditLogs_v1",
+        "operationId": "BackgroundChecksController_getById_v1",
         "parameters": [
           {
             "name": "id",
             "required": true,
             "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "entityType",
-            "required": false,
-            "in": "query",
-            "description": "Filter by entity type (e.g. policy, task)",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "take",
-            "required": false,
-            "in": "query",
-            "description": "Number of logs to return (max 100, default 100)",
             "schema": {
               "type": "string"
             }
@@ -20411,15 +21467,40 @@
             "description": ""
           }
         },
-        "summary": "Get audit logs for an organization (platform admin)",
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Get a background check by local or Identity ID",
         "tags": [
-          "Admin - Organizations"
+          "Background Checks"
         ]
       }
     },
-    "/v1/admin/organizations/{id}/invitations": {
+    "/v1/background-checks/webhook": {
+      "post": {
+        "operationId": "BackgroundChecksController_handleWebhook_v1",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Receive Identity background check webhook events",
+        "tags": [
+          "Background Checks"
+        ]
+      }
+    },
+    "/v1/people/{id}/background-check": {
       "get": {
-        "operationId": "AdminOrganizationsController_listInvitations_v1",
+        "operationId": "PeopleBackgroundChecksController_getForMember_v1",
         "parameters": [
           {
             "name": "id",
@@ -20435,80 +21516,21 @@
             "description": ""
           }
         },
-        "summary": "List pending invitations (platform admin)",
-        "tags": [
-          "Admin - Organizations"
-        ]
-      }
-    },
-    "/v1/admin/organizations/{id}/invitations/{invId}": {
-      "delete": {
-        "operationId": "AdminOrganizationsController_revokeInvitation_v1",
-        "parameters": [
+        "security": [
           {
-            "name": "id",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "invId",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
+            "apikey": []
           }
         ],
-        "responses": {
-          "200": {
-            "description": ""
-          }
-        },
-        "summary": "Revoke invitation (platform admin)",
+        "summary": "Get member background check request",
         "tags": [
-          "Admin - Organizations"
-        ]
-      }
-    },
-    "/v1/admin/organizations/{orgId}/findings": {
-      "get": {
-        "operationId": "AdminFindingsController_list_v1",
-        "parameters": [
-          {
-            "name": "orgId",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "status",
-            "required": true,
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": ""
-          }
-        },
-        "summary": "List all findings for an organization (admin)",
-        "tags": [
-          "Admin - Findings"
+          "Background Checks"
         ]
       },
       "post": {
-        "operationId": "AdminFindingsController_create_v1",
+        "operationId": "PeopleBackgroundChecksController_requestForMember_v1",
         "parameters": [
           {
-            "name": "orgId",
+            "name": "id",
             "required": true,
             "in": "path",
             "schema": {
@@ -20521,49 +21543,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/CreateFindingDto"
-              }
-            }
-          }
-        },
-        "responses": {
-          "201": {
-            "description": ""
-          }
-        },
-        "summary": "Create a finding for an organization (admin)",
-        "tags": [
-          "Admin - Findings"
-        ]
-      }
-    },
-    "/v1/admin/organizations/{orgId}/findings/{findingId}": {
-      "patch": {
-        "operationId": "AdminFindingsController_update_v1",
-        "parameters": [
-          {
-            "name": "orgId",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "findingId",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/UpdateFindingDto"
+                "$ref": "#/components/schemas/RequestBackgroundCheckDto"
               }
             }
           }
@@ -20573,18 +21553,23 @@
             "description": ""
           }
         },
-        "summary": "Update a finding for an organization (admin)",
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Request a background check for a member",
         "tags": [
-          "Admin - Findings"
+          "Background Checks"
         ]
       }
     },
-    "/v1/admin/organizations/{orgId}/policies": {
+    "/v1/people/{id}/background-check/custom-attachments": {
       "get": {
-        "operationId": "AdminPoliciesController_list_v1",
+        "operationId": "PeopleBackgroundChecksController_getCustomAttachmentsForMember_v1",
         "parameters": [
           {
-            "name": "orgId",
+            "name": "id",
             "required": true,
             "in": "path",
             "schema": {
@@ -20597,16 +21582,23 @@
             "description": ""
           }
         },
-        "summary": "List all policies for an organization (admin)",
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Get custom background check attachments for a member",
         "tags": [
-          "Admin - Policies"
+          "Background Checks"
         ]
-      },
+      }
+    },
+    "/v1/people/{id}/background-check/custom": {
       "post": {
-        "operationId": "AdminPoliciesController_create_v1",
+        "operationId": "PeopleBackgroundChecksController_attachCustomForMember_v1",
         "parameters": [
           {
-            "name": "orgId",
+            "name": "id",
             "required": true,
             "in": "path",
             "schema": {
@@ -20619,433 +21611,117 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/CreateAdminPolicyDto"
+                "$ref": "#/components/schemas/AttachCustomBackgroundCheckDto"
               }
             }
           }
         },
         "responses": {
-          "201": {
-            "description": ""
-          }
-        },
-        "summary": "Create a policy for an organization (admin)",
-        "tags": [
-          "Admin - Policies"
-        ]
-      }
-    },
-    "/v1/admin/organizations/{orgId}/policies/{policyId}": {
-      "patch": {
-        "operationId": "AdminPoliciesController_update_v1",
-        "parameters": [
-          {
-            "name": "orgId",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "policyId",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
           "200": {
             "description": ""
           }
         },
-        "summary": "Update a policy for an organization (admin)",
-        "tags": [
-          "Admin - Policies"
-        ]
-      }
-    },
-    "/v1/admin/organizations/{orgId}/policies/{policyId}/regenerate": {
-      "post": {
-        "operationId": "AdminPoliciesController_regenerate_v1",
-        "parameters": [
+        "security": [
           {
-            "name": "orgId",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "policyId",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
+            "apikey": []
           }
         ],
-        "responses": {
-          "201": {
-            "description": ""
-          }
-        },
-        "summary": "Regenerate policy content using AI (admin)",
+        "summary": "Attach a custom background check for a member",
         "tags": [
-          "Admin - Policies"
+          "Background Checks"
         ]
       }
     },
-    "/v1/admin/organizations/{orgId}/tasks": {
+    "/v1/background-check-billing/status": {
       "get": {
-        "operationId": "AdminTasksController_list_v1",
-        "parameters": [
-          {
-            "name": "orgId",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
+        "operationId": "BackgroundCheckBillingController_getStatus_v1",
+        "parameters": [],
         "responses": {
           "200": {
             "description": ""
           }
         },
-        "summary": "List all tasks for an organization (admin)",
-        "tags": [
-          "Admin - Tasks"
-        ]
-      },
-      "post": {
-        "operationId": "AdminTasksController_create_v1",
-        "parameters": [
+        "security": [
           {
-            "name": "orgId",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
+            "apikey": []
           }
         ],
+        "summary": "Get background check billing status",
+        "tags": [
+          "Background Check Billing"
+        ]
+      }
+    },
+    "/v1/background-check-billing/setup-session": {
+      "post": {
+        "operationId": "BackgroundCheckBillingController_setupSession_v1",
+        "parameters": [],
         "requestBody": {
           "required": true,
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/CreateAdminTaskDto"
+                "$ref": "#/components/schemas/BackgroundCheckSetupSessionDto"
               }
             }
           }
         },
         "responses": {
-          "201": {
-            "description": ""
-          }
-        },
-        "summary": "Create a task for an organization (admin)",
-        "tags": [
-          "Admin - Tasks"
-        ]
-      }
-    },
-    "/v1/admin/organizations/{orgId}/tasks/{taskId}/details": {
-      "get": {
-        "operationId": "AdminTasksController_getDetails_v1",
-        "parameters": [
-          {
-            "name": "orgId",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "taskId",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
           "200": {
             "description": ""
           }
         },
-        "summary": "Get task details with comments, attachments, and evidence (admin)",
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Create a Stripe setup session for background checks",
         "tags": [
-          "Admin - Tasks"
+          "Background Check Billing"
         ]
       }
     },
-    "/v1/admin/organizations/{orgId}/tasks/{taskId}": {
-      "patch": {
-        "operationId": "AdminTasksController_update_v1",
-        "parameters": [
-          {
-            "name": "orgId",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "taskId",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": ""
-          }
-        },
-        "summary": "Update a task for an organization (admin)",
-        "tags": [
-          "Admin - Tasks"
-        ]
-      }
-    },
-    "/v1/admin/organizations/{orgId}/vendors": {
-      "get": {
-        "operationId": "AdminVendorsController_list_v1",
-        "parameters": [
-          {
-            "name": "orgId",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": ""
-          }
-        },
-        "summary": "List all vendors for an organization (admin)",
-        "tags": [
-          "Admin - Vendors"
-        ]
-      },
+    "/v1/background-check-billing/setup-success": {
       "post": {
-        "operationId": "AdminVendorsController_create_v1",
-        "parameters": [
-          {
-            "name": "orgId",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
+        "operationId": "BackgroundCheckBillingController_setupSuccess_v1",
+        "parameters": [],
         "requestBody": {
           "required": true,
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/CreateAdminVendorDto"
+                "$ref": "#/components/schemas/BackgroundCheckSetupSuccessDto"
               }
             }
           }
         },
         "responses": {
-          "201": {
-            "description": ""
-          }
-        },
-        "summary": "Create a vendor for an organization (admin)",
-        "tags": [
-          "Admin - Vendors"
-        ]
-      }
-    },
-    "/v1/admin/organizations/{orgId}/vendors/{vendorId}": {
-      "patch": {
-        "operationId": "AdminVendorsController_update_v1",
-        "parameters": [
-          {
-            "name": "orgId",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "vendorId",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
           "200": {
             "description": ""
           }
         },
-        "summary": "Update a vendor for an organization (admin)",
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Handle successful background check billing setup",
         "tags": [
-          "Admin - Vendors"
+          "Background Check Billing"
         ]
       }
     },
-    "/v1/admin/organizations/{orgId}/vendors/{vendorId}/trigger-assessment": {
+    "/v1/background-check-billing/portal": {
       "post": {
-        "operationId": "AdminVendorsController_triggerAssessment_v1",
-        "parameters": [
-          {
-            "name": "orgId",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "vendorId",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "201": {
-            "description": ""
-          }
-        },
-        "summary": "Trigger vendor risk assessment (admin)",
-        "tags": [
-          "Admin - Vendors"
-        ]
-      }
-    },
-    "/v1/admin/organizations/{orgId}/context": {
-      "get": {
-        "operationId": "AdminContextController_list_v1",
-        "parameters": [
-          {
-            "name": "orgId",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "search",
-            "required": true,
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "page",
-            "required": true,
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "perPage",
-            "required": true,
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": ""
-          }
-        },
-        "summary": "List context entries for an organization (admin)",
-        "tags": [
-          "Admin - Context"
-        ]
-      },
-      "post": {
-        "operationId": "AdminContextController_create_v1",
-        "parameters": [
-          {
-            "name": "orgId",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
+        "operationId": "BackgroundCheckBillingController_portal_v1",
+        "parameters": [],
         "requestBody": {
           "required": true,
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/CreateContextDto"
-              }
-            }
-          }
-        },
-        "responses": {
-          "201": {
-            "description": ""
-          }
-        },
-        "summary": "Create a context entry for an organization (admin)",
-        "tags": [
-          "Admin - Context"
-        ]
-      }
-    },
-    "/v1/admin/organizations/{orgId}/context/{contextId}": {
-      "patch": {
-        "operationId": "AdminContextController_update_v1",
-        "parameters": [
-          {
-            "name": "orgId",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "contextId",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/UpdateContextDto"
+                "$ref": "#/components/schemas/BackgroundCheckBillingPortalDto"
               }
             }
           }
@@ -21055,89 +21731,14 @@
             "description": ""
           }
         },
-        "summary": "Update a context entry for an organization (admin)",
-        "tags": [
-          "Admin - Context"
-        ]
-      }
-    },
-    "/v1/admin/organizations/{orgId}/evidence-forms": {
-      "get": {
-        "operationId": "AdminEvidenceController_listFormStatuses_v1",
-        "parameters": [
+        "security": [
           {
-            "name": "orgId",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
+            "apikey": []
           }
         ],
-        "responses": {
-          "200": {
-            "description": ""
-          }
-        },
-        "summary": "List evidence form statuses for an organization (admin)",
+        "summary": "Create a Stripe billing portal session",
         "tags": [
-          "Admin - Evidence"
-        ]
-      }
-    },
-    "/v1/admin/organizations/{orgId}/evidence-forms/{formType}": {
-      "get": {
-        "operationId": "AdminEvidenceController_getFormWithSubmissions_v1",
-        "parameters": [
-          {
-            "name": "orgId",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "formType",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "search",
-            "required": true,
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "limit",
-            "required": true,
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "offset",
-            "required": true,
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": ""
-          }
-        },
-        "summary": "Get evidence form with submissions (admin)",
-        "tags": [
-          "Admin - Evidence"
+          "Background Check Billing"
         ]
       }
     }
@@ -21153,10 +21754,6 @@
     {
       "url": "http://localhost:3333",
       "description": "Local API Server"
-    },
-    {
-      "url": "https://api.trycomp.ai",
-      "description": "API Server"
     }
   ],
   "components": {
@@ -21235,6 +21832,34 @@
           "role"
         ]
       },
+      "BackgroundCheckSummaryDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Background check request ID",
+            "example": "bcr_abc123def456"
+          },
+          "status": {
+            "type": "string",
+            "description": "Background check status",
+            "enum": [
+              "invited",
+              "in_progress",
+              "in_review",
+              "completed",
+              "completed_with_flags",
+              "failed",
+              "cancelled"
+            ],
+            "example": "invited"
+          }
+        },
+        "required": [
+          "id",
+          "status"
+        ]
+      },
       "PeopleResponseDto": {
         "type": "object",
         "properties": {
@@ -21307,6 +21932,13 @@
                 "$ref": "#/components/schemas/UserResponseDto"
               }
             ]
+          },
+          "backgroundCheckRequests": {
+            "description": "Background check requests for this member",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BackgroundCheckSummaryDto"
+            }
           }
         },
         "required": [
@@ -21493,6 +22125,11 @@
             "type": "string",
             "description": "Member join date (createdAt override)",
             "example": "2024-01-15T00:00:00.000Z"
+          },
+          "backgroundCheckExempt": {
+            "type": "boolean",
+            "description": "When true, this member is exempt from the org-level background check requirement and will count as complete in people scores.",
+            "example": false
           }
         }
       },
@@ -22018,6 +22655,23 @@
               "severe"
             ]
           },
+          "treatmentStrategy": {
+            "type": "string",
+            "description": "Risk treatment strategy",
+            "enum": [
+              "accept",
+              "avoid",
+              "mitigate",
+              "transfer"
+            ],
+            "default": "accept",
+            "example": "mitigate"
+          },
+          "treatmentStrategyDescription": {
+            "type": "object",
+            "description": "Description of the treatment strategy",
+            "example": "We isolated the vendor to a dedicated VPC."
+          },
           "website": {
             "type": "string",
             "description": "Vendor website URL"
@@ -22031,89 +22685,6 @@
             "description": "Assignee member ID"
           }
         }
-      },
-      "TriggerVendorRiskAssessmentVendorDto": {
-        "type": "object",
-        "properties": {
-          "vendorId": {
-            "type": "string",
-            "description": "Vendor ID",
-            "example": "vnd_abc123"
-          },
-          "vendorName": {
-            "type": "string",
-            "description": "Vendor name",
-            "example": "CloudTech Solutions"
-          },
-          "vendorWebsite": {
-            "type": "object",
-            "description": "Vendor website (optional)",
-            "example": "https://cloudtechsolutions.com"
-          }
-        },
-        "required": [
-          "vendorId",
-          "vendorName"
-        ]
-      },
-      "TriggerVendorRiskAssessmentBatchDto": {
-        "type": "object",
-        "properties": {
-          "organizationId": {
-            "type": "string",
-            "description": "Organization ID (deprecated — use auth context)",
-            "example": "org_abc123"
-          },
-          "withResearch": {
-            "type": "boolean",
-            "description": "If false, skips Firecrawl research (cheaper). Defaults to true.",
-            "default": true
-          },
-          "vendors": {
-            "description": "Vendors to trigger risk assessment for",
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/TriggerVendorRiskAssessmentVendorDto"
-            }
-          }
-        },
-        "required": [
-          "vendors"
-        ]
-      },
-      "TriggerSingleVendorRiskAssessmentDto": {
-        "type": "object",
-        "properties": {
-          "organizationId": {
-            "type": "string",
-            "description": "Organization ID (deprecated — use auth context)",
-            "example": "org_abc123"
-          },
-          "vendorId": {
-            "type": "string",
-            "description": "Vendor ID",
-            "example": "vnd_abc123"
-          },
-          "vendorName": {
-            "type": "string",
-            "description": "Vendor name",
-            "example": "CloudTech Solutions"
-          },
-          "vendorWebsite": {
-            "type": "string",
-            "description": "Vendor website",
-            "example": "https://cloudtechsolutions.com"
-          },
-          "createdByUserId": {
-            "type": "object",
-            "description": "User ID who triggered the assessment (optional)"
-          }
-        },
-        "required": [
-          "vendorId",
-          "vendorName",
-          "vendorWebsite"
-        ]
       },
       "CreateContextDto": {
         "type": "object",
@@ -23420,6 +23991,23 @@
             "description": "Task template ID",
             "example": "frk_tt_68406e353df3bc002994acef",
             "nullable": true
+          },
+          "integrationScheduleFrequency": {
+            "type": "string",
+            "description": "Cadence for running the integration check attached to this task",
+            "enum": [
+              "daily",
+              "weekly",
+              "monthly",
+              "quarterly",
+              "yearly"
+            ],
+            "example": "daily"
+          },
+          "integrationLastRunAt": {
+            "type": "object",
+            "description": "Last successful integration check run timestamp",
+            "nullable": true
           }
         },
         "required": [
@@ -23427,7 +24015,8 @@
           "title",
           "status",
           "createdAt",
-          "updatedAt"
+          "updatedAt",
+          "integrationScheduleFrequency"
         ]
       },
       "AttachmentResponseDto": {
@@ -23531,6 +24120,17 @@
           "evaluationCriteria": {
             "type": "string",
             "description": "Evaluation criteria for the automation"
+          },
+          "scheduleFrequency": {
+            "type": "string",
+            "enum": [
+              "daily",
+              "weekly",
+              "monthly",
+              "quarterly",
+              "yearly"
+            ],
+            "description": "Automation schedule cadence"
           }
         }
       },
@@ -23770,7 +24370,12 @@
           "cnameTarget": {
             "type": "string",
             "description": "The recommended CNAME target for this domain from Vercel",
-            "example": "cname.vercel-dns.com"
+            "example": "3a69a5bb27875189.vercel-dns-016.com"
+          },
+          "misconfigured": {
+            "type": "object",
+            "description": "Whether Vercel's /v6/domains/{d}/config call reports the domain as misconfigured. Null when Vercel could not be reached.",
+            "nullable": true
           }
         },
         "required": [
@@ -23796,9 +24401,12 @@
               "hipaa",
               "soc2_type1",
               "soc2_type2",
+              "soc3",
               "pci_dss",
               "nen_7510",
-              "iso_9001"
+              "iso_9001",
+              "pipeda",
+              "ccpa"
             ],
             "example": "iso_27001"
           },
@@ -23837,9 +24445,12 @@
               "hipaa",
               "soc2_type1",
               "soc2_type2",
+              "soc3",
               "pci_dss",
               "nen_7510",
-              "iso_9001"
+              "iso_9001",
+              "pipeda",
+              "ccpa"
             ]
           },
           "fileName": {
@@ -23879,9 +24490,12 @@
               "hipaa",
               "soc2_type1",
               "soc2_type2",
+              "soc3",
               "pci_dss",
               "nen_7510",
-              "iso_9001"
+              "iso_9001",
+              "pipeda",
+              "ccpa"
             ],
             "example": "iso_27001"
           }
@@ -24559,18 +25173,15 @@
         "properties": {
           "taskId": {
             "type": "string",
-            "description": "Task ID this finding is associated with",
-            "example": "tsk_abc123"
+            "description": "Task ID"
           },
           "evidenceSubmissionId": {
             "type": "string",
-            "description": "Evidence submission ID this finding is associated with",
-            "example": "evs_abc123"
+            "description": "Evidence submission ID"
           },
           "evidenceFormType": {
             "type": "string",
-            "description": "Evidence form type this finding is associated with (e.g., access-request, whistleblower-report)",
-            "example": "access-request",
+            "description": "Evidence form type",
             "enum": [
               "board-meeting",
               "it-leadership-meeting",
@@ -24586,6 +25197,39 @@
               "tabletop-exercise"
             ]
           },
+          "policyId": {
+            "type": "string",
+            "description": "Policy ID"
+          },
+          "vendorId": {
+            "type": "string",
+            "description": "Vendor ID"
+          },
+          "riskId": {
+            "type": "string",
+            "description": "Risk ID"
+          },
+          "memberId": {
+            "type": "string",
+            "description": "Member ID (person this finding targets)"
+          },
+          "deviceId": {
+            "type": "string",
+            "description": "Device ID"
+          },
+          "area": {
+            "type": "string",
+            "description": "Broad area when the finding is not tied to a specific item",
+            "enum": [
+              "people",
+              "documents",
+              "compliance",
+              "risks",
+              "vendors",
+              "policies",
+              "other"
+            ]
+          },
           "type": {
             "type": "string",
             "description": "Type of finding (SOC 2 or ISO 27001)",
@@ -24595,15 +25239,24 @@
             ],
             "default": "soc2"
           },
+          "severity": {
+            "type": "string",
+            "description": "Severity",
+            "enum": [
+              "low",
+              "medium",
+              "high",
+              "critical"
+            ],
+            "default": "medium"
+          },
           "templateId": {
             "type": "string",
-            "description": "Finding template ID (optional)",
-            "example": "fnd_t_abc123"
+            "description": "Finding template ID"
           },
           "content": {
             "type": "string",
             "description": "Finding content/message",
-            "example": "The uploaded evidence does not clearly show the Organization Name or URL.",
             "maxLength": 5000
           }
         },
@@ -24627,22 +25280,30 @@
           },
           "type": {
             "type": "string",
-            "description": "Type of finding (SOC 2 or ISO 27001)",
+            "description": "Finding type",
             "enum": [
               "soc2",
               "iso27001"
             ]
           },
+          "severity": {
+            "type": "string",
+            "description": "Severity",
+            "enum": [
+              "low",
+              "medium",
+              "high",
+              "critical"
+            ]
+          },
           "content": {
             "type": "string",
             "description": "Finding content/message",
-            "example": "The uploaded evidence does not clearly show the Organization Name or URL.",
             "maxLength": 5000
           },
           "revisionNote": {
             "type": "object",
-            "description": "Auditor note when requesting revision (only for needs_revision status)",
-            "example": "Please provide clearer screenshots showing the timestamp.",
+            "description": "Auditor note when requesting revision",
             "maxLength": 2000,
             "nullable": true
           }
@@ -24725,6 +25386,10 @@
         "properties": {}
       },
       "SubmitSOAForApprovalDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "ExportSOADocumentDto": {
         "type": "object",
         "properties": {}
       },
@@ -24853,9 +25518,20 @@
             "type": "string",
             "description": "Natural language instruction for navigation"
           },
-          "schedule": {
+          "evaluationCriteria": {
             "type": "string",
-            "description": "Cron schedule expression"
+            "description": "Optional natural-language criteria used to evaluate the automation result. When set, the run gets a pass/fail verdict."
+          },
+          "scheduleFrequency": {
+            "type": "string",
+            "enum": [
+              "daily",
+              "weekly",
+              "monthly",
+              "quarterly",
+              "yearly"
+            ],
+            "description": "Automation schedule cadence"
           }
         },
         "required": [
@@ -24888,9 +25564,6 @@
           },
           "isEnabled": {
             "type": "boolean"
-          },
-          "schedule": {
-            "type": "string"
           },
           "createdAt": {
             "format": "date-time",
@@ -24931,13 +25604,24 @@
             "type": "string",
             "description": "Natural language instruction"
           },
-          "schedule": {
+          "evaluationCriteria": {
             "type": "string",
-            "description": "Cron schedule expression"
+            "description": "Optional natural-language criteria used to evaluate the automation result. Pass an empty string to clear."
           },
           "isEnabled": {
             "type": "boolean",
             "description": "Whether automation is enabled"
+          },
+          "scheduleFrequency": {
+            "type": "string",
+            "enum": [
+              "daily",
+              "weekly",
+              "monthly",
+              "quarterly",
+              "yearly"
+            ],
+            "description": "Automation schedule cadence"
           }
         }
       },
@@ -25111,6 +25795,7 @@
           "assignee": {
             "description": "Assignee information",
             "nullable": true,
+            "type": "object",
             "allOf": [
               {
                 "$ref": "#/components/schemas/TaskItemAssigneeDto"
@@ -25128,6 +25813,7 @@
           "updatedBy": {
             "description": "Last updater information",
             "nullable": true,
+            "type": "object",
             "allOf": [
               {
                 "$ref": "#/components/schemas/TaskItemUpdaterDto"
@@ -25560,12 +26246,101 @@
           "frameworkIds"
         ]
       },
+      "CreateCustomFrameworkDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Framework name",
+            "example": "Internal Controls"
+          },
+          "description": {
+            "type": "string",
+            "description": "Framework description"
+          },
+          "version": {
+            "type": "string",
+            "description": "Version",
+            "example": "1.0"
+          }
+        },
+        "required": [
+          "name",
+          "description"
+        ]
+      },
+      "CreateCustomRequirementDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Requirement name",
+            "example": "Access Review"
+          },
+          "identifier": {
+            "type": "string",
+            "description": "Identifier",
+            "example": "10.3"
+          },
+          "description": {
+            "type": "string",
+            "description": "Description"
+          }
+        },
+        "required": [
+          "name",
+          "identifier",
+          "description"
+        ]
+      },
+      "LinkRequirementsDto": {
+        "type": "object",
+        "properties": {
+          "requirementIds": {
+            "description": "IDs of existing FrameworkEditorRequirement rows to clone into this framework",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "requirementIds"
+        ]
+      },
+      "LinkControlsDto": {
+        "type": "object",
+        "properties": {
+          "controlIds": {
+            "description": "Existing org Control IDs to map to the requirement on this framework instance",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "controlIds"
+        ]
+      },
+      "SyncFrameworkDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "RollbackFrameworkDto": {
+        "type": "object",
+        "properties": {}
+      },
       "RequirementMappingDto": {
         "type": "object",
         "properties": {
           "requirementId": {
             "type": "string",
-            "description": "Requirement ID"
+            "description": "Platform requirement ID (exactly one of requirementId / customRequirementId must be set)"
+          },
+          "customRequirementId": {
+            "type": "string",
+            "description": "Org-custom requirement ID (exactly one of requirementId / customRequirementId must be set)"
           },
           "frameworkInstanceId": {
             "type": "string",
@@ -25573,7 +26348,6 @@
           }
         },
         "required": [
-          "requirementId",
           "frameworkInstanceId"
         ]
       },
@@ -25610,6 +26384,27 @@
             "items": {
               "$ref": "#/components/schemas/RequirementMappingDto"
             }
+          },
+          "documentTypes": {
+            "type": "array",
+            "description": "Evidence form types to require on this control",
+            "items": {
+              "type": "string",
+              "enum": [
+                "board_meeting",
+                "it_leadership_meeting",
+                "risk_committee_meeting",
+                "meeting",
+                "access_request",
+                "whistleblower_report",
+                "penetration_test",
+                "rbac_matrix",
+                "infrastructure_inventory",
+                "employee_performance_evaluation",
+                "network_diagram",
+                "tabletop_exercise"
+              ]
+            }
           }
         },
         "required": [
@@ -25617,39 +26412,11 @@
           "description"
         ]
       },
-      "SendEmailDto": {
+      "LinkPoliciesDto": {
         "type": "object",
         "properties": {
-          "to": {
-            "type": "string",
-            "description": "Recipient email address"
-          },
-          "subject": {
-            "type": "string",
-            "description": "Email subject line"
-          },
-          "html": {
-            "type": "string",
-            "description": "Pre-rendered HTML content"
-          },
-          "from": {
-            "type": "string",
-            "description": "Explicit FROM address override"
-          },
-          "system": {
-            "type": "boolean",
-            "description": "Use system sender address (RESEND_FROM_SYSTEM)"
-          },
-          "cc": {
-            "type": "object",
-            "description": "CC recipients"
-          },
-          "scheduledAt": {
-            "type": "string",
-            "description": "Schedule email for later delivery"
-          },
-          "attachments": {
-            "description": "File attachments",
+          "policyIds": {
+            "description": "Policy IDs to link to the control",
             "type": "array",
             "items": {
               "type": "string"
@@ -25657,9 +26424,86 @@
           }
         },
         "required": [
-          "to",
-          "subject",
-          "html"
+          "policyIds"
+        ]
+      },
+      "LinkTasksDto": {
+        "type": "object",
+        "properties": {
+          "taskIds": {
+            "description": "Task IDs to link to the control",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "taskIds"
+        ]
+      },
+      "LinkRequirementMappingDto": {
+        "type": "object",
+        "properties": {
+          "requirementId": {
+            "type": "string",
+            "description": "Platform requirement ID"
+          },
+          "customRequirementId": {
+            "type": "string",
+            "description": "Org-custom requirement ID"
+          },
+          "frameworkInstanceId": {
+            "type": "string",
+            "description": "Framework instance ID"
+          }
+        },
+        "required": [
+          "frameworkInstanceId"
+        ]
+      },
+      "LinkRequirementsToControlDto": {
+        "type": "object",
+        "properties": {
+          "requirements": {
+            "description": "Requirement + framework instance pairs to link",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/LinkRequirementMappingDto"
+            }
+          }
+        },
+        "required": [
+          "requirements"
+        ]
+      },
+      "LinkDocumentTypesDto": {
+        "type": "object",
+        "properties": {
+          "formTypes": {
+            "type": "array",
+            "description": "Evidence form types to require for this control",
+            "items": {
+              "type": "string",
+              "enum": [
+                "board_meeting",
+                "it_leadership_meeting",
+                "risk_committee_meeting",
+                "meeting",
+                "access_request",
+                "whistleblower_report",
+                "penetration_test",
+                "rbac_matrix",
+                "infrastructure_inventory",
+                "employee_performance_evaluation",
+                "network_diagram",
+                "tabletop_exercise"
+              ]
+            }
+          }
+        },
+        "required": [
+          "formTypes"
         ]
       },
       "CreatePenetrationTestDto": {
@@ -25675,22 +26519,10 @@
             "description": "Repository URL containing the target application code",
             "example": "https://github.com/org/repo"
           },
-          "githubToken": {
-            "type": "string",
-            "description": "GitHub token used for cloning private repositories"
-          },
-          "configYaml": {
-            "type": "string",
-            "description": "Optional YAML configuration for the pentest run"
-          },
           "pipelineTesting": {
             "type": "boolean",
             "description": "Whether to enable pipeline testing mode",
             "default": false
-          },
-          "workspace": {
-            "type": "string",
-            "description": "Workspace identifier used by the pentest engine"
           },
           "webhookUrl": {
             "type": "string",
@@ -25700,206 +26532,123 @@
             "type": "boolean",
             "description": "Whether to run the pentest in simulation mode",
             "default": false
+          },
+          "scanDepth": {
+            "type": "string",
+            "description": "Scan depth profile to run",
+            "enum": [
+              "quick",
+              "standard",
+              "deep"
+            ]
+          },
+          "evidenceLevel": {
+            "type": "string",
+            "description": "Evidence validation level for findings",
+            "enum": [
+              "report_only",
+              "safe_proof",
+              "impact_proof"
+            ]
+          },
+          "checks": {
+            "type": "array",
+            "description": "Maced check IDs to include in the scan",
+            "items": {
+              "type": "string",
+              "enum": [
+                "discovery",
+                "secrets_info_disclosure",
+                "technology_config",
+                "xss",
+                "injection",
+                "authentication",
+                "authorization",
+                "idor_bola",
+                "ssrf_xxe",
+                "csrf",
+                "race_conditions",
+                "business_logic"
+              ]
+            }
           }
         },
         "required": [
           "targetUrl"
         ]
       },
-      "SubscribeDto": {
+      "BillingPreferencesDto": {
         "type": "object",
         "properties": {}
       },
-      "HandleSuccessDto": {
+      "BillingSetupSessionDto": {
         "type": "object",
         "properties": {}
       },
-      "PortalDto": {
+      "BillingSetupSuccessDto": {
         "type": "object",
         "properties": {}
       },
-      "ChargeDto": {
+      "BillingPortalDto": {
         "type": "object",
         "properties": {}
       },
-      "InviteMemberDto": {
+      "BillingSubscriptionCheckoutDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "RequestBackgroundCheckDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "AttachCustomBackgroundCheckDto": {
         "type": "object",
         "properties": {
-          "email": {
+          "fileName": {
             "type": "string",
-            "description": "Email address of the user to invite",
-            "example": "user@example.com"
+            "description": "Name of the file",
+            "example": "document.pdf",
+            "maxLength": 255
           },
-          "role": {
+          "fileType": {
             "type": "string",
-            "description": "Role to assign to the invited member",
-            "enum": [
-              "admin",
-              "auditor",
-              "employee",
-              "contractor"
-            ],
-            "example": "admin"
-          }
-        },
-        "required": [
-          "email",
-          "role"
-        ]
-      },
-      "CreateAdminPolicyDto": {
-        "type": "object",
-        "properties": {
-          "name": {
+            "description": "MIME type of the file",
+            "example": "application/pdf"
+          },
+          "fileData": {
             "type": "string",
-            "description": "Name of the policy",
-            "example": "Data Privacy Policy"
+            "description": "Base64 encoded file data",
+            "example": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8/5+hHgAHggJ/PchI7wAAAABJRU5ErkJggg=="
           },
           "description": {
             "type": "string",
-            "description": "Description of the policy",
-            "example": "Outlines data handling procedures"
+            "description": "Description of the attachment",
+            "example": "Meeting notes from Q4 planning session",
+            "maxLength": 500
           },
-          "status": {
+          "userId": {
             "type": "string",
-            "description": "Status of the policy",
-            "enum": [
-              "draft",
-              "published",
-              "needs_review"
-            ],
-            "example": "draft"
-          },
-          "frequency": {
-            "type": "string",
-            "description": "Review frequency",
-            "enum": [
-              "monthly",
-              "quarterly",
-              "yearly"
-            ],
-            "example": "yearly"
-          },
-          "department": {
-            "type": "string",
-            "description": "Department this policy applies to",
-            "enum": [
-              "none",
-              "admin",
-              "gov",
-              "hr",
-              "it",
-              "itsm",
-              "qms"
-            ],
-            "example": "it"
+            "description": "User ID of the user uploading the attachment (required for API key auth, ignored for JWT auth)",
+            "example": "usr_abc123def456"
           }
         },
         "required": [
-          "name"
+          "fileName",
+          "fileType",
+          "fileData"
         ]
       },
-      "CreateAdminTaskDto": {
+      "BackgroundCheckSetupSessionDto": {
         "type": "object",
-        "properties": {
-          "title": {
-            "type": "string",
-            "description": "Title of the task",
-            "example": "Review access controls"
-          },
-          "description": {
-            "type": "string",
-            "description": "Description of the task",
-            "example": "Review and update access control policies quarterly"
-          },
-          "status": {
-            "type": "string",
-            "description": "Task status",
-            "enum": [
-              "todo",
-              "in_progress",
-              "in_review",
-              "done",
-              "not_relevant",
-              "failed"
-            ]
-          },
-          "frequency": {
-            "type": "string",
-            "description": "Task frequency",
-            "enum": [
-              "daily",
-              "weekly",
-              "monthly",
-              "quarterly",
-              "yearly"
-            ]
-          },
-          "department": {
-            "type": "string",
-            "description": "Department",
-            "enum": [
-              "none",
-              "admin",
-              "gov",
-              "hr",
-              "it",
-              "itsm",
-              "qms"
-            ]
-          }
-        },
-        "required": [
-          "title",
-          "description"
-        ]
+        "properties": {}
       },
-      "CreateAdminVendorDto": {
+      "BackgroundCheckSetupSuccessDto": {
         "type": "object",
-        "properties": {
-          "name": {
-            "type": "string",
-            "description": "Vendor name",
-            "example": "CloudTech Solutions"
-          },
-          "description": {
-            "type": "string",
-            "description": "Description of the vendor and services",
-            "example": "Cloud infrastructure provider for compute and storage"
-          },
-          "category": {
-            "type": "string",
-            "description": "Vendor category",
-            "enum": [
-              "cloud",
-              "infrastructure",
-              "software_as_a_service",
-              "finance",
-              "marketing",
-              "sales",
-              "hr",
-              "other"
-            ]
-          },
-          "status": {
-            "type": "string",
-            "description": "Assessment status",
-            "enum": [
-              "not_assessed",
-              "in_progress",
-              "assessed"
-            ]
-          },
-          "website": {
-            "type": "string",
-            "description": "Vendor website URL",
-            "example": "https://example.com"
-          }
-        },
-        "required": [
-          "name",
-          "description"
-        ]
+        "properties": {}
+      },
+      "BackgroundCheckBillingPortalDto": {
+        "type": "object",
+        "properties": {}
       }
     }
   }

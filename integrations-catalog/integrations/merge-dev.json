@@ -1,0 +1,45 @@
+{
+  "slug": "merge-dev",
+  "name": "Merge",
+  "description": "Merge unified API platform for HRIS, ATS, CRM, and accounting integrations",
+  "category": "HR & People",
+  "docsUrl": "https://docs.merge.dev",
+  "baseUrl": "https://api.merge.dev",
+  "authConfig": {
+    "type": "custom",
+    "config": {
+      "setupInstructions": "1. Log in to Merge\n2. Go to Settings → API Keys\n3. Copy your production API key\n4. Paste it below",
+      "credentialFields": [
+        {
+          "label": "API Key",
+          "type": "password",
+          "required": true,
+          "helpText": "Merge → Settings → API Keys"
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "merge_dev_employee_access",
+      "name": "Employee Access",
+      "description": "Lists employees via Merge HRIS API to verify unified HR data access",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "merge_dev_app_availability",
+      "name": "App Availability",
+      "description": "Verifies Merge API platform is accessible",
+      "defaultSeverity": "low",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

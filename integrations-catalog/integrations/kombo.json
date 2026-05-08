@@ -1,0 +1,51 @@
+{
+  "slug": "kombo",
+  "name": "Kombo",
+  "description": "Kombo unified HRIS and ATS API for seamless HR integrations in Europe",
+  "category": "HR & People",
+  "docsUrl": "https://docs.kombo.dev",
+  "baseUrl": "https://api.kombo.dev",
+  "authConfig": {
+    "type": "custom",
+    "config": {
+      "setupInstructions": "1. Log in to the Kombo Dashboard at https://app.kombo.dev\n2. Go to Secrets page and create or copy your API Key\n3. Go to Integrations, click the HRIS integration you want to monitor\n4. Copy the Integration ID from the details page\n5. Enter both values below",
+      "credentialFields": [
+        {
+          "label": "API Key",
+          "type": "password",
+          "required": true,
+          "helpText": "Kombo Dashboard -> Secrets page -> Create API Key"
+        },
+        {
+          "label": "Integration ID",
+          "type": "text",
+          "required": true,
+          "helpText": "Found in Kombo Dashboard -> Integrations -> click on the integration -> copy the ID"
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "kombo_app_availability",
+      "name": "App Availability",
+      "description": "Verifies Kombo HR integration platform is accessible",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "kombo_employee_access",
+      "name": "Employee Access",
+      "description": "Lists employees via Kombo HRIS API to verify HR data access",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

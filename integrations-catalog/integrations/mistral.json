@@ -1,0 +1,35 @@
+{
+  "slug": "mistral",
+  "name": "Mistral AI",
+  "description": "European AI company building open and commercial LLMs. Monitor API access.",
+  "category": "Cloud",
+  "docsUrl": "https://docs.mistral.ai/api/",
+  "baseUrl": "https://api.mistral.ai",
+  "authConfig": {
+    "type": "api_key",
+    "config": {}
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "mistral_app_availability",
+      "name": "Mistral AI App Availability",
+      "description": "Checks that the Mistral AI API is accessible with the provided credentials.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "mistral_employee_access",
+      "name": "Mistral AI Employee Access",
+      "description": "Verifies employee access to Mistral AI via API.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

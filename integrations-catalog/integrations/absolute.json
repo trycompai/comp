@@ -1,0 +1,57 @@
+{
+  "slug": "absolute",
+  "name": "Absolute",
+  "description": "Endpoint security and persistence platform. Monitor device inventory, applications, and security compliance.",
+  "category": "Security",
+  "docsUrl": "https://api.absolute.com/api-doc/doc.html",
+  "baseUrl": "https://api.absolute.com",
+  "authConfig": {
+    "type": "custom",
+    "config": {
+      "setupInstructions": "1. Log in to the Absolute console\n2. Go to Settings > API Token Management\n3. Create a new API token\n4. Copy the Token ID and Secret Key (secret is shown only once)\n5. Determine your API Base URL based on your region:\n   - US Commercial: https://api.absolute.com\n   - US Federal: https://api.us.absolute.com\n   - EU: https://api.eu.absolute.com\n6. Enter all values below",
+      "credentialFields": [
+        {
+          "label": "Token ID",
+          "type": "text",
+          "required": true,
+          "helpText": "API Token ID from the Absolute Console. Go to Settings > API Token Management to create one."
+        },
+        {
+          "label": "Secret Key",
+          "type": "password",
+          "required": true,
+          "helpText": "The Secret Key paired with your Token ID. Shown only once at creation."
+        },
+        {
+          "label": "API Base URL",
+          "type": "text",
+          "required": true,
+          "helpText": "Your Absolute API base URL. US: https://api.absolute.com, US Federal: https://api.us.absolute.com, EU: https://api.eu.absolute.com"
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "device_inventory",
+      "name": "Device Inventory",
+      "description": "Monitor enrolled endpoint devices and their security status",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "application_inventory",
+      "name": "Application Inventory",
+      "description": "Monitor installed applications across managed devices",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

@@ -8,10 +8,10 @@ const SAFE_METHODS = new Set(['GET', 'HEAD', 'OPTIONS']);
  * These are called by external services that don't send browser Origin headers.
  */
 const EXEMPT_PATH_PREFIXES = [
-  '/api/auth',         // better-auth handles its own CSRF
-  '/v1/health',        // health check
-  '/api/docs',         // swagger
-  '/v1/trust-access',  // public trust portal endpoints (no auth, no cookies)
+  '/api/auth', // better-auth handles its own CSRF
+  '/v1/health', // health check
+  '/api/docs', // swagger
+  '/v1/trust-access', // public trust portal endpoints (no auth, no cookies)
 ];
 
 /**
@@ -45,7 +45,7 @@ export function originCheckMiddleware(
     return next();
   }
 
-  const origin = req.headers['origin'] as string | undefined;
+  const origin = req.headers['origin'];
 
   // No Origin header = not a browser request (API key, service token, curl, etc.)
   // These are authenticated via HybridAuthGuard, not cookies, so no CSRF risk.

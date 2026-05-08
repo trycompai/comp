@@ -196,9 +196,9 @@ describe('Department Visibility Utilities', () => {
       };
 
       it('should return true when member department is in visible list', () => {
-        expect(
-          canViewPolicy(itAndHrPolicy, Departments.it, ['employee']),
-        ).toBe(true);
+        expect(canViewPolicy(itAndHrPolicy, Departments.it, ['employee'])).toBe(
+          true,
+        );
         expect(
           canViewPolicy(itAndHrPolicy, Departments.hr, ['contractor']),
         ).toBe(true);
@@ -233,9 +233,9 @@ describe('Department Visibility Utilities', () => {
           visibility: 'UNKNOWN' as PolicyVisibility,
           visibleToDepartments: [],
         };
-        expect(
-          canViewPolicy(unknownPolicy, Departments.it, ['employee']),
-        ).toBe(false);
+        expect(canViewPolicy(unknownPolicy, Departments.it, ['employee'])).toBe(
+          false,
+        );
       });
 
       it('should handle empty visibleToDepartments array', () => {

@@ -1,0 +1,53 @@
+{
+  "slug": "microsoft-sentinel",
+  "name": "Microsoft Sentinel",
+  "description": "Monitor analytics rules, incidents, and data connectors in Microsoft Sentinel (Azure's cloud-native SIEM/SOAR) to ensure threat detection and incident response are properly configured",
+  "category": "Monitoring",
+  "docsUrl": "https://learn.microsoft.com/en-us/rest/api/securityinsights/",
+  "baseUrl": "https://management.azure.com",
+  "authConfig": {
+    "type": "oauth2",
+    "config": {
+      "setupInstructions": "1. Register an app in Microsoft Entra ID (Azure Portal > App registrations)\n2. Under API permissions, add Azure Service Management > user_impersonation (delegated)\n3. Grant admin consent for the tenant\n4. Add a redirect URI matching your CompAI instance\n5. Note: The user authorizing must have at least Reader access to the Sentinel workspace",
+      "createAppUrl": "https://portal.azure.com/#view/Microsoft_AAD_RegisteredApps/ApplicationsListBlade",
+      "scopes": [
+        "https://management.azure.com/user_impersonation",
+        "offline_access",
+        "openid",
+        "profile"
+      ],
+      "clientAuthMethod": "body",
+      "supportsRefreshToken": true
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "sentinel_analytics_rules",
+      "name": "Analytics Rules Configuration",
+      "description": "Verifies that Microsoft Sentinel has analytics rules configured and enabled to detect threats and generate alerts",
+      "defaultSeverity": "high",
+      "enabled": true
+    },
+    {
+      "slug": "sentinel_incident_response",
+      "name": "Incident Tracking and Response",
+      "description": "Checks that security incidents in Microsoft Sentinel are being tracked, assigned to analysts, and resolved in a timely manner",
+      "defaultSeverity": "high",
+      "enabled": true
+    },
+    {
+      "slug": "sentinel_data_connectors",
+      "name": "Data Connector Status",
+      "description": "Verifies that Microsoft Sentinel data connectors are configured and actively ingesting security data from your environment",
+      "defaultSeverity": "high",
+      "enabled": true
+    }
+  ],
+  "checkCount": 3,
+  "isActive": true
+}

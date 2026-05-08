@@ -1,0 +1,45 @@
+{
+  "slug": "trigger-dev",
+  "name": "Trigger.dev",
+  "description": "Trigger.dev open-source background jobs and workflow automation platform",
+  "category": "Development",
+  "docsUrl": "https://trigger.dev/docs",
+  "baseUrl": "https://api.trigger.dev",
+  "authConfig": {
+    "type": "custom",
+    "config": {
+      "setupInstructions": "1. Log in to Trigger.dev\n2. For cross-project visibility: go to your profile settings and generate a Personal Access Token (tr_pat_...)\n3. For single-environment monitoring: go to Settings > API keys and copy the Secret Key for the environment you want to monitor (typically Production, tr_prod_...)\n4. Paste it below",
+      "credentialFields": [
+        {
+          "label": "Secret Key or Personal Access Token",
+          "type": "password",
+          "required": true,
+          "helpText": "Use a Personal Access Token (tr_pat_...) to see all projects across your org, or a Secret Key (tr_dev_.../tr_prod_...) to monitor a single environment. Found in Settings > API keys (Secret Key) or your profile settings (PAT)."
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "trigger_dev_app_availability",
+      "name": "App Availability",
+      "description": "Verifies Trigger.dev platform is accessible",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "trigger_dev_employee_access",
+      "name": "Employee Access",
+      "description": "Lists Trigger.dev projects to verify developer access",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

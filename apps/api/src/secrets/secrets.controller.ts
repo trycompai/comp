@@ -8,7 +8,13 @@ import {
   Put,
   UseGuards,
 } from '@nestjs/common';
-import { ApiBody, ApiOperation, ApiParam, ApiSecurity, ApiTags } from '@nestjs/swagger';
+import {
+  ApiBody,
+  ApiOperation,
+  ApiParam,
+  ApiSecurity,
+  ApiTags,
+} from '@nestjs/swagger';
 import { AuthContext, OrganizationId } from '../auth/auth-context.decorator';
 import { HybridAuthGuard } from '../auth/hybrid-auth.guard';
 import { PermissionGuard } from '../auth/permission.guard';
@@ -24,7 +30,7 @@ export class SecretsController {
   constructor(private readonly secretsService: SecretsService) {}
 
   @Get()
-  @RequirePermission('organization', 'read')
+  @RequirePermission('secret', 'read')
   @ApiOperation({ summary: 'List all secrets (metadata only, no values)' })
   async listSecrets(
     @OrganizationId() organizationId: string,
@@ -47,7 +53,7 @@ export class SecretsController {
   }
 
   @Get(':id')
-  @RequirePermission('organization', 'read')
+  @RequirePermission('secret', 'read')
   @ApiOperation({ summary: 'Get a secret with decrypted value' })
   @ApiParam({ name: 'id', description: 'Secret ID' })
   async getSecret(
@@ -71,7 +77,7 @@ export class SecretsController {
   }
 
   @Post()
-  @RequirePermission('organization', 'update')
+  @RequirePermission('secret', 'create')
   @ApiOperation({ summary: 'Create a new secret' })
   @ApiBody({
     schema: {
@@ -86,7 +92,13 @@ export class SecretsController {
     },
   })
   async createSecret(
-    @Body() body: { name: string; value: string; description?: string; category?: string },
+    @Body()
+    body: {
+      name: string;
+      value: string;
+      description?: string;
+      category?: string;
+    },
     @OrganizationId() organizationId: string,
     @AuthContext() authContext: AuthContextType,
   ) {
@@ -106,7 +118,7 @@ export class SecretsController {
   }
 
   @Put(':id')
-  @RequirePermission('organization', 'update')
+  @RequirePermission('secret', 'update')
   @ApiOperation({ summary: 'Update a secret' })
   @ApiParam({ name: 'id', description: 'Secret ID' })
   async updateSecret(
@@ -141,7 +153,7 @@ export class SecretsController {
   }
 
   @Delete(':id')
-  @RequirePermission('organization', 'update')
+  @RequirePermission('secret', 'delete')
   @ApiOperation({ summary: 'Delete a secret' })
   @ApiParam({ name: 'id', description: 'Secret ID' })
   async deleteSecret(

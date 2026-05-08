@@ -1,0 +1,35 @@
+{
+  "slug": "square",
+  "name": "Square",
+  "description": "Payment processing and business tools. Monitor merchant access and employee accounts.",
+  "category": "Productivity",
+  "docsUrl": "https://developer.squareup.com/reference/square",
+  "baseUrl": "https://connect.squareup.com",
+  "authConfig": {
+    "type": "api_key",
+    "config": {}
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "square_app_availability",
+      "name": "Square App Availability",
+      "description": "Checks that the Square API is accessible.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "square_employee_access",
+      "name": "Square Employee Access",
+      "description": "Verifies employee access to Square via API.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

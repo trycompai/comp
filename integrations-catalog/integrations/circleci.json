@@ -1,0 +1,45 @@
+{
+  "slug": "circleci",
+  "name": "CircleCI",
+  "description": "Monitor CircleCI pipelines and contexts for CI/CD code changes and secrets management compliance",
+  "category": "Development",
+  "docsUrl": "https://circleci.com/docs/api/v2/",
+  "baseUrl": "https://circleci.com/",
+  "authConfig": {
+    "type": "custom",
+    "config": {
+      "setupInstructions": "1. Log in to CircleCI\n2. Go to User Settings > Personal API Tokens\n3. Click 'Create New Token'\n4. Copy and paste the token below",
+      "credentialFields": [
+        {
+          "label": "API Token",
+          "type": "password",
+          "required": true,
+          "helpText": "Create a Personal API Token in CircleCI > User Settings > Personal API Tokens"
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "pipelines",
+      "name": "Code Changes",
+      "description": "Lists CircleCI pipelines to verify code changes are tracked",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "contexts",
+      "name": "Secure Secrets",
+      "description": "Verifies that CircleCI contexts are configured for secure secrets management",
+      "defaultSeverity": "high",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

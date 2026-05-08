@@ -15,7 +15,9 @@ export class InviteMemberDto {
     example: 'user@example.com',
   })
   @IsEmail({}, { message: 'A valid email address is required' })
-  @Transform(({ value }) => (typeof value === 'string' ? value.toLowerCase().trim() : value))
+  @Transform(({ value }) =>
+    typeof value === 'string' ? value.toLowerCase().trim() : value,
+  )
   email: string;
 
   @ApiProperty({

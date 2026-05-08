@@ -42,8 +42,12 @@ import { ResidualRiskChart } from './ResidualRiskChart';
 
 const mockRisk: any = {
   id: 'risk-1',
+  likelihood: 'possible',
+  impact: 'moderate',
   residualLikelihood: 'unlikely',
   residualImpact: 'minor',
+  treatmentStrategy: 'accept',
+  tasks: [],
 };
 
 describe('ResidualRiskChart permission gating', () => {
@@ -86,7 +90,7 @@ describe('ResidualRiskChart permission gating', () => {
 
     expect(capturedProps.title).toBe('Residual Risk');
     expect(capturedProps.description).toBe(
-      'Remaining risk level after controls are applied',
+      'Risk level after the treatment plan is applied. The dashed cell is the suggestion computed from your strategy and linked task completion.',
     );
     expect(capturedProps.riskId).toBe('risk-1');
     expect(capturedProps.activeLikelihood).toBe('unlikely');

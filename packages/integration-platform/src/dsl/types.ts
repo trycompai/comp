@@ -324,6 +324,15 @@ export const DynamicIntegrationDefinitionSchema = z.object({
   capabilities: z.array(z.enum(['checks', 'webhook', 'sync'])).default(['checks']),
   supportsMultipleConnections: z.boolean().optional(),
   syncDefinition: SyncDefinitionSchema.optional(),
+  services: z.array(
+    z.object({
+      id: z.string(),
+      name: z.string(),
+      description: z.string(),
+      enabledByDefault: z.boolean().optional(),
+      implemented: z.boolean().optional(),
+    }),
+  ).optional(),
   checks: z.array(
     z.object({
       checkSlug: z.string().regex(/^[a-z0-9_]+$/, 'Check slug must be lowercase alphanumeric with underscores'),
@@ -331,6 +340,7 @@ export const DynamicIntegrationDefinitionSchema = z.object({
       description: z.string().min(1),
       taskMapping: z.string().optional(),
       defaultSeverity: z.enum(['info', 'low', 'medium', 'high', 'critical']).optional(),
+      service: z.string().optional(),
       definition: CheckDefinitionSchema,
       variables: z.array(VariableSchema)
         .optional(),

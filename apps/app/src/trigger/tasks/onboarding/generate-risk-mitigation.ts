@@ -1,5 +1,5 @@
 import { RiskStatus, db } from '@db/server';
-import { logger, metadata, queue, tags, task } from '@trigger.dev/sdk';
+import { logger, metadata, queue, tags, task, tasks } from '@trigger.dev/sdk';
 import axios from 'axios';
 import {
   createRiskMitigationComment,
@@ -20,7 +20,7 @@ export const generateRiskMitigation = task({
   run: async (payload: {
     organizationId: string;
     riskId: string;
-    authorId: string;
+    authorId?: string;
     policies: PolicyContext[];
   }) => {
     const { organizationId, riskId, authorId, policies } = payload;
@@ -40,14 +40,17 @@ export const generateRiskMitigation = task({
     const metadataHandle = metadata.root ?? metadata.parent ?? metadata;
     metadataHandle.set(`risk_${riskId}_status`, 'processing');
 
-    await createRiskMitigationComment(risk, policies, organizationId, authorId);
+    await createRiskMitigationComment(risk, policies, organizationId, authorId ?? '');
 
-    // Mark risk as closed and assign to owner/admin
+    // Mark risk as PENDING (not closed) — the AI drafted a plan but the
+    // user still needs to review it. Closing on the user's behalf would
+    // skip review and feel automated-away. Reassign to owner/admin only
+    // if we have one.
     await db.risk.update({
       where: { id: risk.id, organizationId },
       data: {
-        status: RiskStatus.closed,
-        assigneeId: authorId,
+        status: RiskStatus.pending,
+        ...(authorId ? { assigneeId: authorId } : {}),
       },
     });
 
@@ -105,24 +108,30 @@ export const generateRiskMitigationsForOrg = task({
 
     if (!author) {
       logger.warn(
-        `No onboarding author found for org ${organizationId}; skipping risk mitigations`,
+        `No onboarding author found for org ${organizationId}; treatment descriptions will generate but risks will not be reassigned`,
       );
-      return;
     }
 
     const policies = policyRows.map((p) => ({ name: p.name, description: p.description }));
 
-    await generateRiskMitigation.batchTrigger(
+    const batchResult = await tasks.batchTriggerAndWait<typeof generateRiskMitigation>(
+      'generate-risk-mitigation',
       risks.map((r) => ({
         payload: {
           organizationId,
           riskId: r.id,
-          authorId: author.id,
+          authorId: author?.id,
           policies,
         },
-        concurrencyKey: `${organizationId}:${r.id}`,
+        options: { concurrencyKey: `${organizationId}:${r.id}` },
       })),
     );
+    const failures = batchResult.runs.filter((r) => !r.ok);
+    if (failures.length > 0) {
+      logger.error(`${failures.length} risk mitigation(s) failed`, {
+        failedRunIds: failures.map((r) => r.id),
+      });
+    }
 
     // Revalidate the parent risk routes after batch triggering
     try {

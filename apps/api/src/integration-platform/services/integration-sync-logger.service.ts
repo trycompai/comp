@@ -36,14 +36,15 @@ export class IntegrationSyncLoggerService {
       },
     });
 
-    this.logger.log(
-      `Sync log started: ${log.id} (${provider}/${eventType})`,
-    );
+    this.logger.log(`Sync log started: ${log.id} (${provider}/${eventType})`);
 
     return log.id;
   }
 
-  async completeLog(id: string, result: Record<string, unknown>): Promise<void> {
+  async completeLog(
+    id: string,
+    result: Record<string, unknown>,
+  ): Promise<void> {
     const log = await db.integrationSyncLog.findUnique({ where: { id } });
     if (!log) {
       this.logger.warn(`Sync log not found: ${id}`);

@@ -3,9 +3,12 @@ import {
   DeleteObjectCommand,
   GetObjectCommand,
 } from '@aws-sdk/client-s3';
-import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { randomBytes } from 'crypto';
-import { s3Client, APP_AWS_KNOWLEDGE_BASE_BUCKET } from '@/app/s3';
+import {
+  s3Client,
+  APP_AWS_KNOWLEDGE_BASE_BUCKET,
+  getSignedUrl,
+} from '@/app/s3';
 import {
   MAX_FILE_SIZE_BYTES,
   SIGNED_URL_EXPIRATION_SECONDS,

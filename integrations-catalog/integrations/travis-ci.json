@@ -1,0 +1,45 @@
+{
+  "slug": "travis-ci",
+  "name": "Travis CI",
+  "description": "Monitor Travis CI pipelines for automated build and deployment compliance",
+  "category": "Development",
+  "docsUrl": "https://developer.travis-ci.com/",
+  "baseUrl": "https://api.travis-ci.com/",
+  "authConfig": {
+    "type": "custom",
+    "config": {
+      "setupInstructions": "1. Log in to Travis CI at https://app.travis-ci.com\n2. Click your profile icon → Settings\n3. Copy your API Token\n4. Enter it below",
+      "credentialFields": [
+        {
+          "label": "API Token",
+          "type": "password",
+          "required": true,
+          "helpText": "Found in Travis CI → Profile → API Token"
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "travisci_code_changes",
+      "name": "Code Changes",
+      "description": "Verifies Travis CI organizations are configured for automated build pipelines",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "travisci_separation",
+      "name": "Separation of Environments",
+      "description": "Verifies Travis CI pipelines manage deployments across environments",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

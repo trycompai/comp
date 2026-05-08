@@ -76,9 +76,9 @@ describe('PermissionGuard', () => {
       jest.useFakeTimers();
       jest.setSystemTime(new Date('2026-04-19T23:59:59Z'));
 
-      jest.spyOn(reflector, 'getAllAndOverride').mockReturnValue([
-        { resource: 'control', actions: ['delete'] },
-      ]);
+      jest
+        .spyOn(reflector, 'getAllAndOverride')
+        .mockReturnValue([{ resource: 'control', actions: ['delete'] }]);
 
       const context = createMockExecutionContext({
         isApiKey: true,
@@ -97,9 +97,9 @@ describe('PermissionGuard', () => {
       jest.useFakeTimers();
       jest.setSystemTime(new Date('2026-04-20T00:00:00Z'));
 
-      jest.spyOn(reflector, 'getAllAndOverride').mockReturnValue([
-        { resource: 'control', actions: ['read'] },
-      ]);
+      jest
+        .spyOn(reflector, 'getAllAndOverride')
+        .mockReturnValue([{ resource: 'control', actions: ['read'] }]);
 
       const context = createMockExecutionContext({
         isApiKey: true,
@@ -119,9 +119,9 @@ describe('PermissionGuard', () => {
       jest.useFakeTimers();
       jest.setSystemTime(new Date('2026-05-01T00:00:00Z'));
 
-      jest.spyOn(reflector, 'getAllAndOverride').mockReturnValue([
-        { resource: 'control', actions: ['read'] },
-      ]);
+      jest
+        .spyOn(reflector, 'getAllAndOverride')
+        .mockReturnValue([{ resource: 'control', actions: ['read'] }]);
 
       const context = createMockExecutionContext({
         isApiKey: true,
@@ -138,9 +138,9 @@ describe('PermissionGuard', () => {
     });
 
     it('should allow access for API keys with matching scopes', async () => {
-      jest.spyOn(reflector, 'getAllAndOverride').mockReturnValue([
-        { resource: 'control', actions: ['read'] },
-      ]);
+      jest
+        .spyOn(reflector, 'getAllAndOverride')
+        .mockReturnValue([{ resource: 'control', actions: ['read'] }]);
 
       const context = createMockExecutionContext({
         isApiKey: true,
@@ -154,9 +154,9 @@ describe('PermissionGuard', () => {
     });
 
     it('should deny access for API keys with non-matching scopes', async () => {
-      jest.spyOn(reflector, 'getAllAndOverride').mockReturnValue([
-        { resource: 'control', actions: ['read'] },
-      ]);
+      jest
+        .spyOn(reflector, 'getAllAndOverride')
+        .mockReturnValue([{ resource: 'control', actions: ['read'] }]);
 
       const context = createMockExecutionContext({
         isApiKey: true,
@@ -171,9 +171,9 @@ describe('PermissionGuard', () => {
     });
 
     it('should deny access when no authorization or cookie header present', async () => {
-      jest.spyOn(reflector, 'getAllAndOverride').mockReturnValue([
-        { resource: 'control', actions: ['delete'] },
-      ]);
+      jest
+        .spyOn(reflector, 'getAllAndOverride')
+        .mockReturnValue([{ resource: 'control', actions: ['delete'] }]);
 
       const context = createMockExecutionContext({
         headers: {},
@@ -185,9 +185,9 @@ describe('PermissionGuard', () => {
     });
 
     it('should allow access when SDK returns success', async () => {
-      jest.spyOn(reflector, 'getAllAndOverride').mockReturnValue([
-        { resource: 'control', actions: ['delete'] },
-      ]);
+      jest
+        .spyOn(reflector, 'getAllAndOverride')
+        .mockReturnValue([{ resource: 'control', actions: ['delete'] }]);
 
       mockHasPermission.mockResolvedValue({ success: true, error: null });
 
@@ -197,18 +197,25 @@ describe('PermissionGuard', () => {
 
       const result = await guard.canActivate(context);
       expect(result).toBe(true);
+      // The body MUST include `permission: undefined` explicitly — zod 4 in
+      // better-auth's hasPermission schema requires both discriminated-union
+      // keys to be present, and treats omitted-vs-undefined as different.
+      // Without the explicit undefined, every cookie-authenticated request
+      // 403s with "Unable to verify permissions". Pin this in the test so
+      // a future refactor that drops the field gets caught.
       expect(mockHasPermission).toHaveBeenCalledWith({
         headers: expect.any(Headers),
         body: {
           permissions: { control: ['delete'] },
+          permission: undefined,
         },
       });
     });
 
     it('should deny access when SDK returns failure', async () => {
-      jest.spyOn(reflector, 'getAllAndOverride').mockReturnValue([
-        { resource: 'control', actions: ['delete'] },
-      ]);
+      jest
+        .spyOn(reflector, 'getAllAndOverride')
+        .mockReturnValue([{ resource: 'control', actions: ['delete'] }]);
 
       mockHasPermission.mockResolvedValue({
         success: false,
@@ -225,9 +232,9 @@ describe('PermissionGuard', () => {
     });
 
     it('should deny access when SDK throws', async () => {
-      jest.spyOn(reflector, 'getAllAndOverride').mockReturnValue([
-        { resource: 'control', actions: ['delete'] },
-      ]);
+      jest
+        .spyOn(reflector, 'getAllAndOverride')
+        .mockReturnValue([{ resource: 'control', actions: ['delete'] }]);
 
       mockHasPermission.mockRejectedValue(new Error('SDK error'));
 

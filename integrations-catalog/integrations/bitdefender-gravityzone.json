@@ -1,0 +1,72 @@
+{
+  "slug": "bitdefender-gravityzone",
+  "name": "Bitdefender GravityZone",
+  "description": "Monitor endpoint security, device inventory, and compliance policies in Bitdefender GravityZone",
+  "category": "Security",
+  "docsUrl": "https://www.bitdefender.com/business/support/en/77209-125277-public-api.html",
+  "baseUrl": "https://{{credentials.region}}/api/v1.0/jsonrpc/",
+  "authConfig": {
+    "type": "custom",
+    "config": {
+      "setupInstructions": "1. Log into your Bitdefender GravityZone Control Center\n2. Click your username (top-right) and select My Account\n3. Go to the API keys section and click Add\n4. Select the APIs you need (Network, Policies, General, Quarantine) and click Generate\n5. Copy the API key and paste it here\n6. Select your region (Global or EU)",
+      "credentialFields": [
+        {
+          "label": "API Key",
+          "type": "password",
+          "required": true,
+          "helpText": "Your Bitdefender GravityZone API key from MyAccount > API keys in the Control Center"
+        },
+        {
+          "label": "Region",
+          "type": "select",
+          "required": true,
+          "helpText": "Select your GravityZone region"
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "network_endpoints",
+      "name": "Secure Devices",
+      "description": "Verifies managed endpoints are protected and not infected",
+      "defaultSeverity": "high",
+      "enabled": true
+    },
+    {
+      "slug": "device_inventory",
+      "name": "Device List",
+      "description": "Lists managed and unmanaged devices in the network inventory",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "security_policies",
+      "name": "Publish Policies",
+      "description": "Verifies security policies are configured in GravityZone",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "quarantine_management",
+      "name": "Monitoring & Alerting",
+      "description": "Monitors quarantined threats for recent security incidents",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "license_status",
+      "name": "Infrastructure Inventory",
+      "description": "Checks GravityZone license validity and slot usage",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 5,
+  "isActive": true
+}

@@ -1,0 +1,39 @@
+{
+  "slug": "clickhouse",
+  "name": "ClickHouse Cloud",
+  "description": "Cloud-native analytical database. Monitor organizations and service deployments.",
+  "category": "Cloud",
+  "docsUrl": "https://clickhouse.com/docs/en/cloud/manage/api/api-overview",
+  "baseUrl": "https://api.clickhouse.cloud",
+  "authConfig": {
+    "type": "basic",
+    "config": {
+      "setupInstructions": "1. Log in to ClickHouse Cloud console at https://console.clickhouse.cloud\n2. Go to API Keys in the left menu\n3. Click New API Key\n4. Set a name, choose Admin or Developer permissions, and set expiration\n5. Copy the Key ID and Key Secret (shown only once)\n6. Enter them below",
+      "usernameField": "key_id",
+      "passwordField": "key_secret"
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "clickhouse_app_availability",
+      "name": "ClickHouse Cloud App Availability",
+      "description": "Checks that the ClickHouse Cloud API is accessible.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "clickhouse_employee_access",
+      "name": "ClickHouse Cloud Employee Access",
+      "description": "Verifies employee access to ClickHouse Cloud via API.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

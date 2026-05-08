@@ -432,6 +432,36 @@ export class TrustAccessController {
     return this.trustAccessService.downloadAllPoliciesByAccessToken(token);
   }
 
+  @Get('access/:token/policies/:policyId/download')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Download single policy as watermarked PDF',
+    description:
+      'Generate watermarked PDF for a specific published policy and return a signed download URL',
+  })
+  @ApiParam({
+    name: 'policyId',
+    description: 'Policy ID',
+    example: 'pol_abc123',
+  })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Signed URL for watermarked PDF returned',
+  })
+  @ApiResponse({
+    status: HttpStatus.NOT_FOUND,
+    description: 'Policy not found',
+  })
+  async downloadPolicy(
+    @Param('token') token: string,
+    @Param('policyId') policyId: string,
+  ) {
+    return this.trustAccessService.downloadPolicyByAccessToken(
+      token,
+      policyId,
+    );
+  }
+
   @Get('access/:token/policies/download-all-zip')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({

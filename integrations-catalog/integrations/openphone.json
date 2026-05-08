@@ -1,0 +1,37 @@
+{
+  "slug": "openphone",
+  "name": "OpenPhone",
+  "description": "Business phone system. Monitor communication access.",
+  "category": "Communication",
+  "docsUrl": "https://www.openphone.com/docs/api",
+  "baseUrl": "https://api.openphone.com",
+  "authConfig": {
+    "type": "api_key",
+    "config": {
+      "setupInstructions": "1. Log in to OpenPhone at https://app.openphone.com\n2. Go to Settings > API tab (requires admin privileges)\n3. Click 'Generate API key' and provide a label\n4. Copy the API key and paste it below"
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "openphone_app_availability",
+      "name": "OpenPhone App Availability",
+      "description": "Checks OpenPhone app availability.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "openphone_employee_access",
+      "name": "OpenPhone Employee Access",
+      "description": "Checks OpenPhone employee access.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

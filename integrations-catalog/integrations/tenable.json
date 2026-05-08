@@ -1,0 +1,51 @@
+{
+  "slug": "tenable",
+  "name": "Tenable.io",
+  "description": "Monitor Tenable.io vulnerability scans and asset inventory for security compliance",
+  "category": "Security",
+  "docsUrl": "https://developer.tenable.com/reference",
+  "baseUrl": "https://cloud.tenable.com/",
+  "authConfig": {
+    "type": "custom",
+    "config": {
+      "setupInstructions": "1. Log in to Tenable.io\n2. Go to Settings > My Account > API Keys\n3. Generate a new API key pair\n4. Copy both the Access Key and Secret Key and paste them below",
+      "credentialFields": [
+        {
+          "label": "Access Key",
+          "type": "password",
+          "required": true,
+          "helpText": "Found in Tenable.io > Settings > My Account > API Keys"
+        },
+        {
+          "label": "Secret Key",
+          "type": "password",
+          "required": true,
+          "helpText": "Found in Tenable.io > Settings > My Account > API Keys"
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "vulnerability_scans",
+      "name": "Secure Code",
+      "description": "Verifies that Tenable.io vulnerability scans are configured",
+      "defaultSeverity": "high",
+      "enabled": true
+    },
+    {
+      "slug": "asset_inventory",
+      "name": "Secure Devices",
+      "description": "Verifies that device assets are tracked in Tenable.io",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

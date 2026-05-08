@@ -1,4 +1,5 @@
 import { render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   setMockPermissions,
@@ -18,6 +19,12 @@ vi.mock('@/hooks/use-permissions', () => ({
 // Mock CreatePolicySheet — renders nothing
 vi.mock('@/components/sheets/create-policy-sheet', () => ({
   CreatePolicySheet: () => <div data-testid="create-policy-sheet" />,
+}));
+
+// Mock PolicyDownloadSheet — only renders when open
+vi.mock('./PolicyDownloadSheet', () => ({
+  PolicyDownloadSheet: ({ open }: { open: boolean }) =>
+    open ? <div data-testid="policy-download-sheet" /> : null,
 }));
 
 // Mock api client
@@ -71,6 +78,15 @@ describe('PolicyPageActions', () => {
       expect(
         screen.getByRole('button', { name: /download all/i }),
       ).toBeInTheDocument();
+    });
+
+    it('opens the download sheet when Download All is clicked', async () => {
+      const user = userEvent.setup();
+      render(<PolicyPageActions policies={basePolicies} />);
+
+      await user.click(screen.getByRole('button', { name: /download all/i }));
+
+      expect(screen.getByTestId('policy-download-sheet')).toBeInTheDocument();
     });
   });
 

@@ -99,7 +99,14 @@ describe('ControlsController', () => {
     it('should parse sortDesc as false when not "true"', async () => {
       mockService.findAll.mockResolvedValue({ data: [], count: 0 });
 
-      await controller.findAll('org_1', undefined, undefined, undefined, undefined, 'false');
+      await controller.findAll(
+        'org_1',
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        'false',
+      );
 
       expect(service.findAll).toHaveBeenCalledWith('org_1', {
         page: 1,
@@ -147,8 +154,15 @@ describe('ControlsController', () => {
 
   describe('create', () => {
     it('should call service.create with organizationId and dto', async () => {
-      const dto: CreateControlDto = { name: 'New Control', description: 'A test control' };
-      const mockCreated = { id: 'ctrl_new', name: 'New Control', description: 'A test control' };
+      const dto: CreateControlDto = {
+        name: 'New Control',
+        description: 'A test control',
+      };
+      const mockCreated = {
+        id: 'ctrl_new',
+        name: 'New Control',
+        description: 'A test control',
+      };
       mockService.create.mockResolvedValue(mockCreated);
 
       const result = await controller.create('org_1', dto);

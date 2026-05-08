@@ -1,0 +1,58 @@
+{
+  "slug": "verkada",
+  "name": "Verkada",
+  "description": "Monitor Verkada cloud-managed physical security platform for camera device inventory, firmware compliance, and alert configuration",
+  "category": "Security",
+  "docsUrl": "https://apidocs.verkada.com/reference/quick-start-guide",
+  "baseUrl": "https://api.verkada.com",
+  "authConfig": {
+    "type": "custom",
+    "config": {
+      "setupInstructions": "1. Sign in to Verkada Command at https://command.verkada.com\n2. Go to Organization Settings > API Keys (Organization Admin required)\n3. Click '+ New API Key' and name it (e.g. 'CompAI Integration')\n4. Select Read-Only permissions for Camera, Access Control, and Sensors\n5. Set an expiration date and click 'Generate Key'\n6. Copy the API Key immediately - it is only shown once\n7. Enter the API Key and your region's API Base URL below\n\nRegion URLs:\n- US (default): https://api.verkada.com\n- Europe: https://api.eu.verkada.com\n- Australia: https://api.au.verkada.com\n- GovCloud: https://api.verkadagov.com",
+      "credentialFields": [
+        {
+          "label": "API Key",
+          "type": "password",
+          "required": true,
+          "helpText": "Found in Verkada Command > Organization Settings > API Keys. Requires Organization Admin permissions."
+        },
+        {
+          "label": "API Base URL",
+          "type": "text",
+          "required": true,
+          "helpText": "US: https://api.verkada.com | EU: https://api.eu.verkada.com | AU: https://api.au.verkada.com | GovCloud: https://api.verkadagov.com"
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "verkada_device_list",
+      "name": "Device List",
+      "description": "Lists all cameras and devices in the Verkada organization and verifies they are online",
+      "defaultSeverity": "high",
+      "enabled": true
+    },
+    {
+      "slug": "verkada_secure_devices",
+      "name": "Secure Devices",
+      "description": "Checks that all Verkada camera firmware is up to date",
+      "defaultSeverity": "high",
+      "enabled": true
+    },
+    {
+      "slug": "verkada_monitoring_alerting",
+      "name": "Monitoring and Alerting",
+      "description": "Verifies that Verkada camera alerts and notifications are being generated, indicating active monitoring",
+      "defaultSeverity": "high",
+      "enabled": true
+    }
+  ],
+  "checkCount": 3,
+  "isActive": true
+}

@@ -14,6 +14,7 @@ import { awsConfig } from './config/aws.config';
 import { betterAuthConfig } from './config/better-auth.config';
 import { HealthModule } from './health/health.module';
 import { OrganizationModule } from './organization/organization.module';
+import { OrganizationAccessModule } from './organization-access/organization-access.module';
 import { PoliciesModule } from './policies/policies.module';
 import { RisksModule } from './risks/risks.module';
 import { TasksModule } from './tasks/tasks.module';
@@ -41,6 +42,7 @@ import { OrgChartModule } from './org-chart/org-chart.module';
 import { TrainingModule } from './training/training.module';
 import { EvidenceFormsModule } from './evidence-forms/evidence-forms.module';
 import { FrameworksModule } from './frameworks/frameworks.module';
+import { FrameworkVersionsModule } from './framework-editor-versions/framework-versions.module';
 import { AuditModule } from './audit/audit.module';
 import { ControlsModule } from './controls/controls.module';
 import { RolesModule } from './roles/roles.module';
@@ -49,6 +51,10 @@ import { SecretsModule } from './secrets/secrets.module';
 import { SecurityPenetrationTestsModule } from './security-penetration-tests/security-penetration-tests.module';
 import { StripeModule } from './stripe/stripe.module';
 import { AdminOrganizationsModule } from './admin-organizations/admin-organizations.module';
+import { AdminFeatureFlagsModule } from './admin-feature-flags/admin-feature-flags.module';
+import { TimelinesModule } from './timelines/timelines.module';
+import { BackgroundChecksModule } from './background-checks/background-checks.module';
+import { BillingModule } from './billing/billing.module';
 
 @Module({
   imports: [
@@ -69,6 +75,7 @@ import { AdminOrganizationsModule } from './admin-organizations/admin-organizati
     ]),
     AuthModule,
     OrganizationModule,
+    OrganizationAccessModule,
     PeopleModule,
     RisksModule,
     VendorsModule,
@@ -102,6 +109,7 @@ import { AdminOrganizationsModule } from './admin-organizations/admin-organizati
     OrgChartModule,
     EvidenceFormsModule,
     FrameworksModule,
+    FrameworkVersionsModule,
     RolesModule,
     AuditModule,
     ControlsModule,
@@ -109,7 +117,11 @@ import { AdminOrganizationsModule } from './admin-organizations/admin-organizati
     SecretsModule,
     SecurityPenetrationTestsModule,
     StripeModule,
+    BillingModule,
+    BackgroundChecksModule,
     AdminOrganizationsModule,
+    AdminFeatureFlagsModule,
+    TimelinesModule,
   ],
   controllers: [AppController],
   providers: [

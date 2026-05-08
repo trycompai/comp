@@ -1,0 +1,58 @@
+{
+  "slug": "sonarqube-server",
+  "name": "SonarQube Server",
+  "description": "Monitor SonarQube Server (on-prem/self-hosted) for code vulnerabilities, security hotspots, and code quality across all projects.",
+  "category": "Development",
+  "docsUrl": "https://docs.sonarsource.com/sonarqube-server/extension-guide/web-api",
+  "baseUrl": "https://sonarqube.example.com",
+  "authConfig": {
+    "type": "custom",
+    "config": {
+      "setupInstructions": "1. Log in to your SonarQube Server instance\n2. Go to My Account > Security\n3. Generate a new User token\n4. Enter your server URL and token below",
+      "credentialFields": [
+        {
+          "label": "SonarQube Server URL",
+          "type": "text",
+          "required": true,
+          "helpText": "Your SonarQube Server base URL (e.g. https://sonar.yourcompany.com)"
+        },
+        {
+          "label": "User Token",
+          "type": "password",
+          "required": true,
+          "helpText": "Generate in SonarQube > My Account > Security > Generate Tokens"
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "sonarqube_server_vulnerabilities",
+      "name": "Secure Code",
+      "description": "Checks for critical and blocker vulnerabilities across all projects in SonarQube Server",
+      "defaultSeverity": "high",
+      "enabled": true
+    },
+    {
+      "slug": "sonarqube_server_security_hotspots",
+      "name": "Sanitized Inputs",
+      "description": "Checks for unreviewed security hotspots across all projects in SonarQube Server",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "sonarqube_server_code_changes",
+      "name": "Code Changes",
+      "description": "Verifies that SonarQube Server projects have recent analysis activity, indicating code is being scanned regularly.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 3,
+  "isActive": true
+}

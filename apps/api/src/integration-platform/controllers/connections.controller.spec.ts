@@ -504,10 +504,7 @@ describe('ConnectionsController', () => {
         api_key: 'test-key',
       });
 
-      const result = await controller.ensureValidCredentials(
-        'conn_1',
-        'org_1',
-      );
+      const result = await controller.ensureValidCredentials('conn_1', 'org_1');
 
       expect(result.success).toBe(true);
       expect(result.credentials).toEqual({ api_key: 'test-key' });

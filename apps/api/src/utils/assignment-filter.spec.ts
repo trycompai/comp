@@ -104,8 +104,12 @@ describe('Assignment Filter Utilities', () => {
     });
 
     it('should return empty filter for API key auth regardless of roles/memberId', () => {
-      expect(buildTaskAssignmentFilter(null, null, { isApiKey: true })).toEqual({});
-      expect(buildTaskAssignmentFilter(undefined, [], { isApiKey: true })).toEqual({});
+      expect(buildTaskAssignmentFilter(null, null, { isApiKey: true })).toEqual(
+        {},
+      );
+      expect(
+        buildTaskAssignmentFilter(undefined, [], { isApiKey: true }),
+      ).toEqual({});
     });
   });
 
@@ -200,8 +204,12 @@ describe('Assignment Filter Utilities', () => {
     });
 
     it('should return true for API key auth regardless of assignment or memberId', () => {
-      expect(hasTaskAccess(unassignedTask, null, null, { isApiKey: true })).toBe(true);
-      expect(hasTaskAccess(noAssigneeTask, undefined, [], { isApiKey: true })).toBe(true);
+      expect(
+        hasTaskAccess(unassignedTask, null, null, { isApiKey: true }),
+      ).toBe(true);
+      expect(
+        hasTaskAccess(noAssigneeTask, undefined, [], { isApiKey: true }),
+      ).toBe(true);
     });
   });
 
@@ -225,7 +233,9 @@ describe('Assignment Filter Utilities', () => {
     });
 
     it('should return true for API key auth regardless of assignment or memberId', () => {
-      expect(hasRiskAccess(unassignedRisk, null, null, { isApiKey: true })).toBe(true);
+      expect(
+        hasRiskAccess(unassignedRisk, null, null, { isApiKey: true }),
+      ).toBe(true);
     });
   });
 
@@ -261,9 +271,9 @@ describe('Assignment Filter Utilities', () => {
     });
 
     it('should return false for restricted role when control has no tasks', () => {
-      expect(
-        hasControlAccess(controlWithNoTasks, memberId, ['employee']),
-      ).toBe(false);
+      expect(hasControlAccess(controlWithNoTasks, memberId, ['employee'])).toBe(
+        false,
+      );
     });
 
     it('should return false for restricted role with no memberId', () => {

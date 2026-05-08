@@ -47,8 +47,16 @@ export class DomainStatusResponseDto {
 
   @ApiProperty({
     description: 'The recommended CNAME target for this domain from Vercel',
-    example: 'cname.vercel-dns.com',
+    example: '3a69a5bb27875189.vercel-dns-016.com',
     required: false,
   })
   cnameTarget?: string;
+
+  @ApiProperty({
+    description:
+      "Whether Vercel's /v6/domains/{d}/config call reports the domain as misconfigured. Null when Vercel could not be reached.",
+    required: false,
+    nullable: true,
+  })
+  misconfigured?: boolean | null;
 }

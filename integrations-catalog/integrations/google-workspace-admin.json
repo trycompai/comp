@@ -1,0 +1,43 @@
+{
+  "slug": "google-workspace-admin",
+  "name": "Google Workspace",
+  "description": "Monitor Google Workspace user access, organizational units, and admin activity for compliance",
+  "category": "Productivity",
+  "docsUrl": "https://developers.google.com/admin-sdk/directory/v1/guides/manage-users",
+  "baseUrl": "https://admin.googleapis.com/",
+  "authConfig": {
+    "type": "oauth2",
+    "config": {
+      "setupInstructions": "1. Create or use existing OAuth app in Google Cloud Console > APIs & Services > Credentials\n2. Enable Admin SDK Directory API and Reports API\n3. Add redirect URI: https://api.trycomp.ai/v1/integrations/oauth/callback\n4. Copy Client ID and Secret to Comp AI admin panel\n5. Must be authorized by a Google Workspace super admin account",
+      "scopes": [
+        "https://www.googleapis.com/auth/admin.directory.user.readonly",
+        "https://www.googleapis.com/auth/admin.directory.orgunit.readonly"
+      ],
+      "clientAuthMethod": "body",
+      "supportsRefreshToken": true
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "gws_employee_access",
+      "name": "Employee Access",
+      "description": "Reviews Google Workspace users, their account status, and 2FA enrollment",
+      "defaultSeverity": "high",
+      "enabled": true
+    },
+    {
+      "slug": "gws_org_units",
+      "name": "Separation of Environments",
+      "description": "Verifies that Google Workspace organizational units are configured to separate teams and environments",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": false
+}

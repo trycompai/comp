@@ -52,8 +52,20 @@ describe('content-extractor: extractContentFromFile', () => {
 
   it('should extract content from multiple sheets', async () => {
     const buffer = await createTestExcelBuffer([
-      { name: 'General', rows: [['Info', 'Details'], ['Name', 'Acme Corp']] },
-      { name: 'Security', rows: [['Control', 'Status'], ['MFA', 'Enabled']] },
+      {
+        name: 'General',
+        rows: [
+          ['Info', 'Details'],
+          ['Name', 'Acme Corp'],
+        ],
+      },
+      {
+        name: 'Security',
+        rows: [
+          ['Control', 'Status'],
+          ['MFA', 'Enabled'],
+        ],
+      },
     ]);
 
     const base64 = buffer.toString('base64');

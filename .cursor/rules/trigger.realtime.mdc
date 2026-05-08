@@ -119,7 +119,7 @@ for await (const part of runs.subscribeToRun(runId).withStreams<STREAMS>()) {
 ### Installation
 
 ```bash
-npm add @trigger.dev/react-hooks
+bun add @trigger.dev/react-hooks
 ```
 
 ### Triggering Tasks

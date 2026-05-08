@@ -1,10 +1,9 @@
 import '@trycompai/design-system/globals.css';
 
-import { LinkedInInsight } from '@/components/tracking/LinkedInInsight';
 import { env } from '@/env.mjs';
 import { auth } from '@/utils/auth';
-import { cn } from '@trycompai/ui/cn';
 import { Analytics as DubAnalytics } from '@dub/analytics/react';
+import { cn } from '@trycompai/ui/cn';
 import { Analytics as VercelAnalytics } from '@vercel/analytics/next';
 import { GeistMono } from 'geist/font/mono';
 import type { Metadata } from 'next';
@@ -95,19 +94,9 @@ export default async function Layout({ children }: { children: React.ReactNode }
           />
         )}
       </head>
-      <body
-        className={cn(
-          `${GeistMono.variable} ${font.variable}`,
-          'antialiased',
-        )}
-      >
-        {env.NEXT_PUBLIC_LINKEDIN_PARTNER_ID && (
-          <LinkedInInsight partnerId={env.NEXT_PUBLIC_LINKEDIN_PARTNER_ID} />
-        )}
+      <body className={cn(`${GeistMono.variable} ${font.variable}`, 'antialiased')}>
         <NuqsAdapter>
-          <Providers session={session}>
-            {children}
-          </Providers>
+          <Providers session={session}>{children}</Providers>
         </NuqsAdapter>
         <Toaster richColors />
         <VercelAnalytics />

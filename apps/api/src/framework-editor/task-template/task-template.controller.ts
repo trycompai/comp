@@ -47,11 +47,8 @@ export class TaskTemplateController {
       transform: true,
     }),
   )
-  async createTaskTemplate(
-    @Body() dto: CreateTaskTemplateDto,
-    @Query('frameworkId') frameworkId?: string,
-  ) {
-    return this.taskTemplateService.create(dto, frameworkId);
+  async createTaskTemplate(@Body() dto: CreateTaskTemplateDto) {
+    return this.taskTemplateService.create(dto);
   }
 
   @Get()
@@ -59,9 +56,7 @@ export class TaskTemplateController {
   @ApiResponse(GET_ALL_TASK_TEMPLATES_RESPONSES[200])
   @ApiResponse(GET_ALL_TASK_TEMPLATES_RESPONSES[401])
   @ApiResponse(GET_ALL_TASK_TEMPLATES_RESPONSES[500])
-  async getAllTaskTemplates(
-    @Query('frameworkId') frameworkId?: string,
-  ) {
+  async getAllTaskTemplates(@Query('frameworkId') frameworkId?: string) {
     return await this.taskTemplateService.findAll(frameworkId);
   }
 

@@ -1,0 +1,63 @@
+{
+  "slug": "cortex-xdr",
+  "name": "Cortex XDR",
+  "description": "Monitor endpoints, incidents, and alerts in Palo Alto Cortex XDR for endpoint detection and response",
+  "category": "Security",
+  "docsUrl": "https://docs-cortex.paloaltonetworks.com/r/Cortex-XDR-REST-API",
+  "baseUrl": "https://api-placeholder.xdr.us.paloaltonetworks.com",
+  "authConfig": {
+    "type": "custom",
+    "config": {
+      "credentialFields": [
+        {
+          "label": "API FQDN",
+          "type": "text",
+          "required": true,
+          "helpText": "Your Cortex XDR API FQDN, e.g. api-YOURNAME.xdr.us.paloaltonetworks.com (no https:// prefix). Found in Settings > Configurations > Integrations > API Keys > View Examples."
+        },
+        {
+          "label": "API Key ID",
+          "type": "text",
+          "required": true,
+          "helpText": "The numeric ID of your API key. Found in Settings > Configurations > Integrations > API Keys."
+        },
+        {
+          "label": "API Key",
+          "type": "password",
+          "required": true,
+          "helpText": "The API key value. Use a Standard security level key. Advanced keys require additional HMAC signing."
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "endpoint_security",
+      "name": "Secure Devices",
+      "description": "Retrieves all endpoints managed by Cortex XDR and verifies their protection status",
+      "defaultSeverity": "high",
+      "enabled": true
+    },
+    {
+      "slug": "alerts_monitoring",
+      "name": "Monitoring & Alerting",
+      "description": "Monitors Cortex XDR for active alerts and verifies alerting is functional",
+      "defaultSeverity": "high",
+      "enabled": true
+    },
+    {
+      "slug": "incident_response",
+      "name": "Incident Response",
+      "description": "Reviews incident response status in Cortex XDR to verify incidents are being managed and resolved",
+      "defaultSeverity": "high",
+      "enabled": true
+    }
+  ],
+  "checkCount": 3,
+  "isActive": true
+}

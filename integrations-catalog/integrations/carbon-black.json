@@ -1,0 +1,57 @@
+{
+  "slug": "carbon-black",
+  "name": "Carbon Black",
+  "description": "Monitor VMware Carbon Black endpoint protection and device security compliance",
+  "category": "Security",
+  "docsUrl": "https://developer.carbonblack.com/reference/carbon-black-cloud/",
+  "baseUrl": "https://defense.conferdeploy.net/",
+  "authConfig": {
+    "type": "custom",
+    "config": {
+      "setupInstructions": "1. Log in to Carbon Black Cloud console\n2. Go to Settings > API Access\n3. Create a Custom Access Level with Device read permissions\n4. Create an API Key with that access level\n5. Copy the API Secret Key and API ID (format: SECRET/ID)\n6. Copy your Org Key from the same page\n7. Enter your API URL, Org Key, and API Token below",
+      "credentialFields": [
+        {
+          "label": "API URL",
+          "type": "text",
+          "required": true,
+          "helpText": "Your Carbon Black Cloud API URL (e.g. https://defense.conferdeploy.net). Found in Settings > API Access."
+        },
+        {
+          "label": "Org Key",
+          "type": "text",
+          "required": true,
+          "helpText": "Your Carbon Black Cloud org key (found in Settings > API Access > API Keys)"
+        },
+        {
+          "label": "API Token",
+          "type": "password",
+          "required": true,
+          "helpText": "Your API Secret Key / API ID combined (format: SECRET_KEY/API_ID)"
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "cb_secure_devices",
+      "name": "Secure Devices",
+      "description": "Verifies Carbon Black endpoints are registered and protected",
+      "defaultSeverity": "high",
+      "enabled": true
+    },
+    {
+      "slug": "cb_device_list",
+      "name": "Device List",
+      "description": "Lists all endpoints managed by Carbon Black for device inventory",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

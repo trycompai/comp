@@ -22,6 +22,8 @@ model FrameworkEditorFramework {
   frameworkInstances FrameworkInstance[]
   soaConfigurations  SOAFrameworkConfiguration[] // Multiple SOA config versions per framework
   soaDocuments       SOADocument[] // SOA documents from organizations
+  timelineTemplates  TimelineTemplate[]
+  versions           FrameworkVersion[]
 
   // Dates
   createdAt DateTime @default(now())
@@ -67,8 +69,8 @@ model FrameworkEditorTaskTemplate {
   id               String               @id @default(dbgenerated("generate_prefixed_cuid('frk_tt'::text)"))
   name             String
   description      String
-  frequency        Frequency            // Using the enum from shared.prisma
-  department       Departments          // Using the enum from shared.prisma
+  frequency        Frequency // Using the enum from shared.prisma
+  department       Departments // Using the enum from shared.prisma
   automationStatus TaskAutomationStatus @default(AUTOMATED)
 
   controlTemplates FrameworkEditorControlTemplate[]

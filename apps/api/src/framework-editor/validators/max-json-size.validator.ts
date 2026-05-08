@@ -28,7 +28,10 @@ export class MaxJsonSizeConstraint implements ValidatorConstraintInterface {
   }
 }
 
-export function MaxJsonSize(maxBytes?: number, validationOptions?: ValidationOptions) {
+export function MaxJsonSize(
+  maxBytes?: number,
+  validationOptions?: ValidationOptions,
+) {
   return function (object: object, propertyName: string) {
     registerDecorator({
       target: object.constructor,

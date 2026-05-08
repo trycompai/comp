@@ -1,0 +1,50 @@
+{
+  "slug": "github-copilot",
+  "name": "GitHub Copilot",
+  "description": "Monitor GitHub Copilot seat assignments, usage activity, and policy configuration for compliance",
+  "category": "Development",
+  "docsUrl": "https://docs.github.com/en/rest/copilot",
+  "baseUrl": "https://api.github.com/",
+  "authConfig": {
+    "type": "oauth2",
+    "config": {
+      "setupInstructions": "1. Go to GitHub > Settings > Developer settings > OAuth Apps > New OAuth App\n2. Set Redirect URI to: https://api.trycomp.ai/v1/integrations/oauth/callback\n3. Request scopes: read:org, manage_billing:copilot\n4. Copy Client ID and Secret to Comp AI admin panel\n5. After connecting, enter your GitHub organization name",
+      "scopes": [
+        "read:org",
+        "manage_billing:copilot"
+      ],
+      "clientAuthMethod": "body",
+      "supportsRefreshToken": false
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "copilot_seat_access",
+      "name": "Employee Access",
+      "description": "Reviews GitHub Copilot seat assignments and identifies users with inactive licenses",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "copilot_policy",
+      "name": "Separation of Environments",
+      "description": "Verifies that GitHub Copilot policies are configured to control access by team and environment",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "copilot_access_review",
+      "name": "Access Review Log",
+      "description": "Reviews all GitHub Copilot seat assignments for access review compliance",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 3,
+  "isActive": true
+}

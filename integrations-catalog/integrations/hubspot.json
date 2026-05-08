@@ -1,0 +1,45 @@
+{
+  "slug": "hubspot",
+  "name": "HubSpot",
+  "description": "Monitor HubSpot user access and contact owners for CRM compliance and access management",
+  "category": "Productivity",
+  "docsUrl": "https://developers.hubspot.com/docs/api/overview",
+  "baseUrl": "https://api.hubapi.com/",
+  "authConfig": {
+    "type": "custom",
+    "config": {
+      "setupInstructions": "1. Log in to HubSpot\n2. Go to Settings > Integrations > Private Apps\n3. Create a new private app\n4. Add scopes: settings.users.read, crm.objects.owners.read\n5. Copy and paste the access token below",
+      "credentialFields": [
+        {
+          "label": "Private App Token",
+          "type": "password",
+          "required": true,
+          "helpText": "Create a Private App in HubSpot > Settings > Integrations > Private Apps"
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "user_access",
+      "name": "Employee Access",
+      "description": "Reviews HubSpot users to verify employee access management",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "contact_owners",
+      "name": "Contact Information",
+      "description": "Lists HubSpot CRM contact owners for contact information compliance",
+      "defaultSeverity": "low",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

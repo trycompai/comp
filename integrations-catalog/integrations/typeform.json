@@ -1,0 +1,45 @@
+{
+  "slug": "typeform",
+  "name": "Typeform",
+  "description": "Monitor Typeform survey forms for data collection compliance and access management",
+  "category": "Productivity",
+  "docsUrl": "https://www.typeform.com/developers/create/",
+  "baseUrl": "https://api.typeform.com/",
+  "authConfig": {
+    "type": "api_key",
+    "config": {
+      "setupInstructions": "1. Log in to Typeform at https://admin.typeform.com\n2. Go to your Profile → Developer apps\n3. Create a Personal Access Token\n4. Copy and enter it below",
+      "credentialFields": [
+        {
+          "label": "Personal Access Token",
+          "type": "password",
+          "required": true,
+          "helpText": "Found in Typeform Profile → Personal Tokens"
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "typeform_employee_access",
+      "name": "Employee Access",
+      "description": "Reviews Typeform workspace members and their form access",
+      "defaultSeverity": "low",
+      "enabled": true
+    },
+    {
+      "slug": "typeform_data_masking",
+      "name": "Data Masking",
+      "description": "Verifies Typeform forms are not collecting excessive sensitive data",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

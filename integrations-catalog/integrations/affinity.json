@@ -1,0 +1,45 @@
+{
+  "slug": "affinity",
+  "name": "Affinity",
+  "description": "Monitor Affinity relationship intelligence CRM for team access and deal data compliance",
+  "category": "Productivity",
+  "docsUrl": "https://api-docs.affinity.co/",
+  "baseUrl": "https://api.affinity.co/",
+  "authConfig": {
+    "type": "custom",
+    "config": {
+      "setupInstructions": "1. Log in to Affinity at https://affinity.co\n2. Go to Settings > API\n3. Copy your API Key\n4. Paste it below",
+      "credentialFields": [
+        {
+          "label": "API Key",
+          "type": "password",
+          "required": true,
+          "helpText": "Found in Affinity Settings > API"
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "affinity_employee_access",
+      "name": "Employee Access",
+      "description": "Reviews Affinity CRM users with access to relationship and deal data",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "affinity_app_availability",
+      "name": "App Availability",
+      "description": "Verifies Affinity CRM platform is operational",
+      "defaultSeverity": "low",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

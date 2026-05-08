@@ -30,10 +30,7 @@ describe('filterDescriptionByFrameworks', () => {
   it('keeps all framework paragraphs when all are active', () => {
     const desc =
       'Base task.\n\nFor ISO 27001: ISO requirement.\n\nFor HIPAA: HIPAA requirement.';
-    const result = filterDescriptionByFrameworks(desc, [
-      'ISO 27001',
-      'HIPAA',
-    ]);
+    const result = filterDescriptionByFrameworks(desc, ['ISO 27001', 'HIPAA']);
     expect(result).toContain('For ISO 27001');
     expect(result).toContain('For HIPAA');
     expect(result).toContain('Base task.');

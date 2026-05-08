@@ -61,10 +61,7 @@ describe('AuditLogController', () => {
       const mockLogs = [{ id: 'log_1' }, { id: 'log_2' }];
       mockFindMany.mockResolvedValue(mockLogs);
 
-      const result = await controller.getAuditLogs(
-        'org_1',
-        mockAuthContext,
-      );
+      const result = await controller.getAuditLogs('org_1', mockAuthContext);
 
       expect(result).toEqual({
         data: mockLogs,
@@ -75,7 +72,13 @@ describe('AuditLogController', () => {
         where: { organizationId: 'org_1' },
         include: {
           user: {
-            select: { id: true, name: true, email: true, image: true, role: true },
+            select: {
+              id: true,
+              name: true,
+              email: true,
+              image: true,
+              role: true,
+            },
           },
           member: true,
           organization: true,
@@ -88,11 +91,7 @@ describe('AuditLogController', () => {
     it('should filter by single entityType', async () => {
       mockFindMany.mockResolvedValue([]);
 
-      await controller.getAuditLogs(
-        'org_1',
-        mockAuthContext,
-        'policy',
-      );
+      await controller.getAuditLogs('org_1', mockAuthContext, 'policy');
 
       expect(mockFindMany).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -104,11 +103,7 @@ describe('AuditLogController', () => {
     it('should filter by multiple comma-separated entityTypes', async () => {
       mockFindMany.mockResolvedValue([]);
 
-      await controller.getAuditLogs(
-        'org_1',
-        mockAuthContext,
-        'risk,task',
-      );
+      await controller.getAuditLogs('org_1', mockAuthContext, 'risk,task');
 
       expect(mockFindMany).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -244,10 +239,7 @@ describe('AuditLogController', () => {
         userRoles: null,
       };
 
-      const result = await controller.getAuditLogs(
-        'org_1',
-        authContextNoUser,
-      );
+      const result = await controller.getAuditLogs('org_1', authContextNoUser);
 
       expect(result).toEqual({
         data: [],

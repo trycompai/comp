@@ -1,0 +1,35 @@
+{
+  "slug": "wrike",
+  "name": "Wrike",
+  "description": "Monitor Wrike users and project spaces for project management compliance",
+  "category": "Productivity",
+  "docsUrl": "https://developers.wrike.com/api/v4/",
+  "baseUrl": "https://www.wrike.com/",
+  "authConfig": {
+    "type": "api_key",
+    "config": {}
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "wrike_employee_access",
+      "name": "Employee Access",
+      "description": "Reviews Wrike contacts and team members",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "wrike_separation_of_envs",
+      "name": "Separation of Environments",
+      "description": "Verifies Wrike spaces are organized for project separation",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

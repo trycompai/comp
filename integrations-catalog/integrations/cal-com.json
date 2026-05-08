@@ -1,0 +1,45 @@
+{
+  "slug": "cal-com",
+  "name": "Cal.com",
+  "description": "Monitor Cal.com scheduling infrastructure for team access and availability compliance",
+  "category": "Productivity",
+  "docsUrl": "https://cal.com/docs/enterprise-features/api/api-reference",
+  "baseUrl": "https://api.cal.com/",
+  "authConfig": {
+    "type": "api_key",
+    "config": {
+      "setupInstructions": "1. Log in to Cal.com at https://cal.com\n2. Go to Settings → Developer → API Keys\n3. Create a new API key\n4. Copy and enter it below",
+      "credentialFields": [
+        {
+          "label": "API Key",
+          "type": "password",
+          "required": true,
+          "helpText": "Found in Cal.com Settings → Developer → API Keys"
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "calcom_employee_access",
+      "name": "Employee Access",
+      "description": "Reviews Cal.com team members and their scheduling access",
+      "defaultSeverity": "low",
+      "enabled": true
+    },
+    {
+      "slug": "calcom_app_availability",
+      "name": "App Availability",
+      "description": "Verifies Cal.com scheduling service is active and accessible",
+      "defaultSeverity": "low",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

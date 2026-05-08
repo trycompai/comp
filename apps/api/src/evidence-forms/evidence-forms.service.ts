@@ -8,6 +8,7 @@ import {
 import {
   BadRequestException,
   Injectable,
+  Logger,
   NotFoundException,
   UnauthorizedException,
 } from '@nestjs/common';
@@ -20,6 +21,8 @@ import {
   type EvidenceFormFieldDefinition,
   type EvidenceFormType,
 } from './evidence-forms.definitions';
+import { checkAutoCompletePhases } from '../frameworks/frameworks-timeline.helper';
+import { TimelinesService } from '../timelines/timelines.service';
 
 const listQuerySchema = z.object({
   search: z.string().trim().optional(),
@@ -43,6 +46,10 @@ const uploadSubmissionBodySchema = z.object({
 const reviewSchema = z.object({
   action: z.enum(['approved', 'rejected']),
   reason: z.string().trim().optional(),
+});
+
+const formSettingSchema = z.object({
+  isNotRelevant: z.boolean(),
 });
 
 const EVIDENCE_FORM_REVIEWER_ROLES = ['owner', 'admin', 'auditor'] as const;
@@ -128,7 +135,12 @@ function normalizeSubmissionFormType<
 
 @Injectable()
 export class EvidenceFormsService {
-  constructor(private readonly attachmentsService: AttachmentsService) {}
+  private readonly logger = new Logger(EvidenceFormsService.name);
+
+  constructor(
+    private readonly attachmentsService: AttachmentsService,
+    private readonly timelinesService: TimelinesService,
+  ) {}
 
   private requireJwtUser(authContext: AuthContext): string {
     if (authContext.isApiKey || authContext.authType === 'api-key') {
@@ -163,7 +175,9 @@ export class EvidenceFormsService {
   private requireEvidenceDeleteAccess(authContext: AuthContext): string {
     const userId = this.requireJwtUser(authContext);
     const roles = authContext.userRoles ?? [];
-    const canDelete = EVIDENCE_FORM_DELETE_ROLES.some((role) => roles.includes(role));
+    const canDelete = EVIDENCE_FORM_DELETE_ROLES.some((role) =>
+      roles.includes(role),
+    );
 
     if (!canDelete) {
       throw new UnauthorizedException(
@@ -214,10 +228,9 @@ export class EvidenceFormsService {
         typeof (value as Record<string, unknown>).fileKey === 'string'
       ) {
         const fileObj = value as Record<string, unknown>;
-        const freshUrl =
-          await this.attachmentsService.getPresignedDownloadUrl(
-            fileObj.fileKey as string,
-          );
+        const freshUrl = await this.attachmentsService.getPresignedDownloadUrl(
+          fileObj.fileKey as string,
+        );
         refreshed[key] = { ...fileObj, downloadUrl: freshUrl };
       }
     }
@@ -230,24 +243,106 @@ export class EvidenceFormsService {
   }
 
   async getFormStatuses(organizationId: string) {
-    const results = await db.evidenceSubmission.groupBy({
-      by: ['formType'],
-      where: { organizationId },
-      _max: { submittedAt: true },
-    });
+    const [results, settings] = await Promise.all([
+      db.evidenceSubmission.groupBy({
+        by: ['formType'],
+        where: { organizationId },
+        _max: { submittedAt: true },
+      }),
+      db.evidenceFormSetting.findMany({
+        where: { organizationId },
+        select: { formType: true, isNotRelevant: true },
+      }),
+    ]);
 
-    const statuses: Record<string, { lastSubmittedAt: string | null }> = {};
+    const notRelevantFormTypes = new Set(
+      settings
+        .filter((setting) => setting.isNotRelevant)
+        .map((setting) => setting.formType),
+    );
+
+    const statuses: Record<
+      string,
+      { lastSubmittedAt: string | null; isNotRelevant: boolean }
+    > = {};
 
     for (const form of evidenceFormDefinitionList) {
       const match = results.find(
         (r) => r.formType === toDbEvidenceFormType(form.type),
       );
+      const dbFormType = toDbEvidenceFormType(form.type);
       statuses[form.type] = {
         lastSubmittedAt: match?._max.submittedAt?.toISOString() ?? null,
+        isNotRelevant: notRelevantFormTypes.has(dbFormType),
       };
     }
 
     return statuses;
+  }
+
+  async getFormSettings(organizationId: string) {
+    const settings = await db.evidenceFormSetting.findMany({
+      where: { organizationId },
+      select: { formType: true, isNotRelevant: true, updatedAt: true },
+    });
+
+    const settingsByFormType = new Map(
+      settings.map((setting) => [setting.formType, setting]),
+    );
+
+    return evidenceFormDefinitionList.map((form) => {
+      const setting = settingsByFormType.get(toDbEvidenceFormType(form.type));
+      return {
+        formType: form.type,
+        isNotRelevant: setting?.isNotRelevant ?? false,
+        updatedAt: setting?.updatedAt?.toISOString() ?? null,
+      };
+    });
+  }
+
+  async updateFormSetting(params: {
+    organizationId: string;
+    formType: string;
+    payload: unknown;
+  }) {
+    const parsedType = evidenceFormTypeSchema.safeParse(params.formType);
+    if (!parsedType.success) {
+      throw new BadRequestException('Unsupported form type');
+    }
+
+    const parsedPayload = formSettingSchema.safeParse(params.payload);
+    if (!parsedPayload.success) {
+      throw new BadRequestException(parsedPayload.error.flatten());
+    }
+
+    const dbFormType = toDbEvidenceFormType(parsedType.data);
+    const setting = await db.evidenceFormSetting.upsert({
+      where: {
+        organizationId_formType: {
+          organizationId: params.organizationId,
+          formType: dbFormType,
+        },
+      },
+      create: {
+        organizationId: params.organizationId,
+        formType: dbFormType,
+        isNotRelevant: parsedPayload.data.isNotRelevant,
+      },
+      update: {
+        isNotRelevant: parsedPayload.data.isNotRelevant,
+      },
+      select: {
+        formType: true,
+        isNotRelevant: true,
+        updatedAt: true,
+      },
+    });
+
+    return {
+      formType: toExternalEvidenceFormType(setting.formType),
+      isNotRelevant: setting.isNotRelevant,
+      updatedAt: setting.updatedAt.toISOString(),
+    };
   }
 
   async getFormWithSubmissions(params: {
@@ -406,6 +501,14 @@ export class EvidenceFormsService {
       where: { id: params.submissionId },
     });
 
+    // Check timeline auto-completion after evidence deletion
+    checkAutoCompletePhases({
+      organizationId: params.organizationId,
+      timelinesService: this.timelinesService,
+    }).catch((err) => {
+      this.logger.warn('timeline auto-complete check failed', err);
+    });
+
     return { success: true, id: params.submissionId };
   }
 
@@ -463,7 +566,7 @@ export class EvidenceFormsService {
       throw new BadRequestException(message);
     }
 
-    return await db.evidenceSubmission
+    const submission = await db.evidenceSubmission
       .create({
         data: {
           organizationId: params.organizationId,
@@ -482,6 +585,16 @@ export class EvidenceFormsService {
         },
       })
       .then(normalizeSubmissionFormType);
+
+    // Check timeline auto-completion after evidence submission
+    checkAutoCompletePhases({
+      organizationId: params.organizationId,
+      timelinesService: this.timelinesService,
+    }).catch((err) => {
+      this.logger.warn('timeline auto-complete check failed', err);
+    });
+
+    return submission;
   }
 
   async uploadFile(params: {
@@ -575,7 +688,7 @@ export class EvidenceFormsService {
     const downloadUrl =
       await this.attachmentsService.getPresignedDownloadUrl(fileKey);
 
-    return await db.evidenceSubmission
+    const submission = await db.evidenceSubmission
       .create({
         data: {
           organizationId: params.organizationId,
@@ -601,6 +714,16 @@ export class EvidenceFormsService {
         },
       })
       .then(normalizeSubmissionFormType);
+
+    // Check timeline auto-completion after evidence upload submission
+    checkAutoCompletePhases({
+      organizationId: params.organizationId,
+      timelinesService: this.timelinesService,
+    }).catch((err) => {
+      this.logger.warn('timeline auto-complete check failed', err);
+    });
+
+    return submission;
   }
 
   async exportCsv(params: {

@@ -10,8 +10,20 @@ import { AttachmentsService } from '../attachments/attachments.service';
 
 jest.mock('@db', () => ({
   ...jest.requireActual('@prisma/client'),
-  db: {},
-  Prisma: { PrismaClientKnownRequestError: class PrismaClientKnownRequestError extends Error { code: string; constructor(message: string, { code }: { code: string }) { super(message); this.code = code; } } },
+  db: {
+    task: {
+      findFirst: jest.fn(),
+    },
+  },
+  Prisma: {
+    PrismaClientKnownRequestError: class PrismaClientKnownRequestError extends Error {
+      code: string;
+      constructor(message: string, { code }: { code: string }) {
+        super(message);
+        this.code = code;
+      }
+    },
+  },
 }));
 
 jest.mock('../auth/auth.server', () => ({
@@ -265,9 +277,7 @@ describe('TasksController', () => {
         status: TaskStatus.done,
       });
 
-      expect(mockTasksService.getApiKeyActorUserId).toHaveBeenCalledWith(
-        orgId,
-      );
+      expect(mockTasksService.getApiKeyActorUserId).toHaveBeenCalledWith(orgId);
       expect(mockTasksService.updateTasksStatus).toHaveBeenCalledWith(
         orgId,
         ['tsk_1'],
@@ -506,6 +516,151 @@ describe('TasksController', () => {
     });
   });
 
+  // ==================== GET TASK POLICIES ====================
+
+  describe('getTaskPolicies', () => {
+    it('returns policies grouped by control, excluding archived only (drafts included)', async () => {
+      const { db } = require('@db');
+      db.task.findFirst.mockResolvedValue({
+        id: 'tsk_1',
+        assigneeId: 'mem_other',
+        controls: [
+          {
+            id: 'ctl_1',
+            name: 'Access Controls',
+            policies: [
+              {
+                id: 'pol_1',
+                name: 'Authentication Policy',
+                status: 'published',
+                frequency: 'yearly',
+                department: 'it',
+              },
+              {
+                id: 'pol_2',
+                name: 'Acceptable Use',
+                status: 'draft',
+                frequency: 'yearly',
+                department: 'it',
+              },
+            ],
+          },
+        ],
+      });
+
+      const result = await controller.getTaskPolicies(
+        orgId,
+        'tsk_1',
+        authContext,
+      );
+
+      expect(db.task.findFirst).toHaveBeenCalledWith({
+        where: { id: 'tsk_1', organizationId: orgId, archivedAt: null },
+        select: expect.objectContaining({
+          id: true,
+          assigneeId: true,
+          controls: expect.objectContaining({
+            where: { archivedAt: null, organizationId: orgId },
+            select: expect.objectContaining({
+              policies: expect.objectContaining({
+                where: {
+                  archivedAt: null,
+                  organizationId: orgId,
+                },
+              }),
+            }),
+          }),
+        }),
+      });
+      // Assert the policies where clause does NOT filter by status.
+      const callArgs = db.task.findFirst.mock.calls[0][0];
+      expect(callArgs.select.controls.select.policies.where).not.toHaveProperty(
+        'status',
+      );
+      expect(result.data).toEqual([
+        {
+          control: { id: 'ctl_1', name: 'Access Controls' },
+          policies: [
+            {
+              id: 'pol_1',
+              name: 'Authentication Policy',
+              status: 'published',
+              frequency: 'yearly',
+              department: 'it',
+            },
+            {
+              id: 'pol_2',
+              name: 'Acceptable Use',
+              status: 'draft',
+              frequency: 'yearly',
+              department: 'it',
+            },
+          ],
+        },
+      ]);
+      expect(result.count).toBe(2);
+    });
+
+    it('throws NotFoundException when task is not in caller org', async () => {
+      const { db } = require('@db');
+      db.task.findFirst.mockResolvedValue(null);
+
+      await expect(
+        controller.getTaskPolicies(orgId, 'tsk_404', authContext),
+      ).rejects.toThrow('Task not found');
+    });
+
+    it('throws ForbiddenException for employee who is not the assignee', async () => {
+      const { db } = require('@db');
+      db.task.findFirst.mockResolvedValue({
+        id: 'tsk_1',
+        assigneeId: 'mem_other',
+        controls: [],
+      });
+
+      const employeeAuth: AuthContext = {
+        ...authContext,
+        userRoles: ['employee'],
+        memberId: 'mem_123',
+      };
+
+      await expect(
+        controller.getTaskPolicies(orgId, 'tsk_1', employeeAuth),
+      ).rejects.toThrow(ForbiddenException);
+    });
+
+    it('allows employee who is the assignee to read policies', async () => {
+      const { db } = require('@db');
+      db.task.findFirst.mockResolvedValue({
+        id: 'tsk_1',
+        assigneeId: 'mem_123',
+        controls: [
+          {
+            id: 'ctl_1',
+            name: 'Access Controls',
+            policies: [],
+          },
+        ],
+      });
+
+      const employeeAuth: AuthContext = {
+        ...authContext,
+        userRoles: ['employee'],
+        memberId: 'mem_123',
+      };
+
+      const result = await controller.getTaskPolicies(
+        orgId,
+        'tsk_1',
+        employeeAuth,
+      );
+
+      expect(result.data).toEqual([
+        { control: { id: 'ctl_1', name: 'Access Controls' }, policies: [] },
+      ]);
+    });
+  });
+
   // ==================== GET TASK ACTIVITY ====================
 
   describe('getTaskActivity', () => {
@@ -623,9 +778,7 @@ describe('TasksController', () => {
         title: 'Updated',
       });
 
-      expect(mockTasksService.getApiKeyActorUserId).toHaveBeenCalledWith(
-        orgId,
-      );
+      expect(mockTasksService.getApiKeyActorUserId).toHaveBeenCalledWith(orgId);
     });
   });
 
@@ -845,7 +998,9 @@ describe('TasksController', () => {
         userId: 'usr_dto',
       };
       mockTasksService.verifyTaskAccess.mockResolvedValue(undefined);
-      mockAttachmentsService.uploadAttachment.mockResolvedValue({ id: 'att_1' });
+      mockAttachmentsService.uploadAttachment.mockResolvedValue({
+        id: 'att_1',
+      });
 
       await controller.uploadTaskAttachment(
         apiKeyAuth,

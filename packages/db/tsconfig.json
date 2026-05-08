@@ -19,5 +19,11 @@
     "declarationMap": true
   },
   "include": ["src"],
-  "exclude": ["node_modules", "dist", "src/generated", "src/**/*.test.ts"]
+  "exclude": [
+    "node_modules",
+    "dist",
+    "src/generated",
+    "src/**/*.test.ts",
+    "src/**/*.spec.ts"
+  ]
 }

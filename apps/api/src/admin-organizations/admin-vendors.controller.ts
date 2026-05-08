@@ -12,7 +12,7 @@ import {
   ValidationPipe,
   BadRequestException,
 } from '@nestjs/common';
-import { ApiOperation, ApiTags } from '@nestjs/swagger';
+import { ApiExcludeController, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
 import { VendorCategory, VendorStatus } from '@db';
 import { PlatformAdminGuard } from '../auth/platform-admin.guard';
@@ -26,6 +26,7 @@ interface UpdateVendorBody {
   category?: string;
 }
 
+@ApiExcludeController()
 @ApiTags('Admin - Vendors')
 @Controller({ path: 'admin/organizations', version: '1' })
 @UseGuards(PlatformAdminGuard)
@@ -67,9 +68,7 @@ export class AdminVendorsController {
     const updateData: Record<string, unknown> = {};
 
     if (body.status !== undefined) {
-      if (
-        !Object.values(VendorStatus).includes(body.status as VendorStatus)
-      ) {
+      if (!Object.values(VendorStatus).includes(body.status as VendorStatus)) {
         throw new BadRequestException(
           `Invalid status. Must be one of: ${Object.values(VendorStatus).join(', ')}`,
         );
@@ -79,9 +78,7 @@ export class AdminVendorsController {
 
     if (body.category !== undefined) {
       if (
-        !Object.values(VendorCategory).includes(
-          body.category as VendorCategory,
-        )
+        !Object.values(VendorCategory).includes(body.category as VendorCategory)
       ) {
         throw new BadRequestException(
           `Invalid category. Must be one of: ${Object.values(VendorCategory).join(', ')}`,

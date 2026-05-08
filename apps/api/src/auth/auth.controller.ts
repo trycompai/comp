@@ -8,7 +8,7 @@ import {
   Param,
   UseGuards,
 } from '@nestjs/common';
-import { ApiOperation, ApiParam, ApiSecurity, ApiTags } from '@nestjs/swagger';
+import { ApiExcludeController, ApiOperation, ApiParam, ApiSecurity, ApiTags } from '@nestjs/swagger';
 import { db } from '@db';
 import { OrganizationId } from './auth-context.decorator';
 import { PermissionGuard } from './permission.guard';
@@ -18,6 +18,7 @@ import { HybridAuthGuard } from './hybrid-auth.guard';
 import { SkipOrgCheck } from './skip-org-check.decorator';
 import type { AuthContext as AuthContextType } from './types';
 
+@ApiExcludeController()
 @ApiTags('Auth')
 @Controller({ path: 'auth', version: '1' })
 @UseGuards(HybridAuthGuard)
@@ -25,7 +26,9 @@ import type { AuthContext as AuthContextType } from './types';
 export class AuthController {
   @Get('me')
   @SkipOrgCheck()
-  @ApiOperation({ summary: 'Get current user info, organizations, and pending invitations' })
+  @ApiOperation({
+    summary: 'Get current user info, organizations, and pending invitations',
+  })
   async getMe(@AuthContext() authContext: AuthContextType) {
     const userId = authContext.userId;
     if (!userId) {

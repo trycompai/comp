@@ -1,0 +1,45 @@
+{
+  "slug": "hibob",
+  "name": "HiBob",
+  "description": "Monitor HiBob employee records and job descriptions for HR compliance and employee data completeness",
+  "category": "HR & People",
+  "docsUrl": "https://apidocs.hibob.com/reference",
+  "baseUrl": "https://api.hibob.com/",
+  "authConfig": {
+    "type": "custom",
+    "config": {
+      "setupInstructions": "1. Log in to HiBob Admin\n2. Go to Settings > Integrations > Service Users\n3. Create a new service user with People read permissions\n4. Copy and paste the generated token below",
+      "credentialFields": [
+        {
+          "label": "Service User Token",
+          "type": "password",
+          "required": true,
+          "helpText": "Create a Service User in HiBob > Settings > Integrations > Service Users"
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "employee_access",
+      "name": "Employee Access",
+      "description": "Reviews HiBob employee records for access management",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "employee_descriptions",
+      "name": "Employee Descriptions",
+      "description": "Verifies that HiBob employees have job titles set for employee descriptions",
+      "defaultSeverity": "low",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

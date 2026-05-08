@@ -14,18 +14,24 @@ import type { UpdatePeopleDto } from './dto/update-people.dto';
 import type { BulkCreatePeopleDto } from './dto/bulk-create-people.dto';
 import { MemberValidator } from './utils/member-validator';
 import { MemberQueries } from './utils/member-queries';
+import { authorizeRoleChange } from './utils/role-authorization';
 import {
   collectAssignedItems,
   clearAssignments,
   removeMemberFromOrgChart,
   notifyOwnerOfUnassignedItems,
 } from './utils/member-deactivation';
+import { checkAutoCompletePhases } from '../frameworks/frameworks-timeline.helper';
+import { TimelinesService } from '../timelines/timelines.service';
 
 @Injectable()
 export class PeopleService {
   private readonly logger = new Logger(PeopleService.name);
 
-  constructor(private readonly fleetService: FleetService) {}
+  constructor(
+    private readonly fleetService: FleetService,
+    private readonly timelinesService: TimelinesService,
+  ) {}
 
   async findAllByOrganization(
     organizationId: string,
@@ -66,7 +72,10 @@ export class PeopleService {
     // Collect all unique role names across members
     const allRoleNames = new Set<string>();
     for (const member of members) {
-      const roles = member.role.split(',').map((r) => r.trim()).filter(Boolean);
+      const roles = member.role
+        .split(',')
+        .map((r) => r.trim())
+        .filter(Boolean);
       for (const role of roles) {
         allRoleNames.add(role);
       }
@@ -92,16 +101,20 @@ export class PeopleService {
         where: { organizationId, name: { in: customRoleNames } },
       });
       for (const role of customRoles) {
-        const perms = typeof role.permissions === 'string'
-          ? JSON.parse(role.permissions) as Record<string, string[]>
-          : role.permissions as Record<string, string[]>;
+        const perms =
+          typeof role.permissions === 'string'
+            ? (JSON.parse(role.permissions) as Record<string, string[]>)
+            : (role.permissions as Record<string, string[]>);
         permissionMap.set(role.name, perms);
       }
     }
 
     // Filter members whose combined permissions include the required permission
     return members.filter((member) => {
-      const roles = member.role.split(',').map((r) => r.trim()).filter(Boolean);
+      const roles = member.role
+        .split(',')
+        .map((r) => r.trim())
+        .filter(Boolean);
       for (const role of roles) {
         const perms = permissionMap.get(role);
         if (perms && perms[resource]?.includes('read')) {
@@ -163,6 +176,15 @@ export class PeopleService {
       this.logger.log(
         `Created member: ${member.user.name} (${member.id}) for organization ${organizationId}`,
       );
+
+      // Check timeline auto-completion after member creation (people metrics may change)
+      checkAutoCompletePhases({
+        organizationId,
+        timelinesService: this.timelinesService,
+      }).catch((err) => {
+      this.logger.warn('timeline auto-complete check failed', err);
+    });
+
       return member;
     } catch (error) {
       if (
@@ -244,6 +266,16 @@ export class PeopleService {
         `Bulk create completed for organization ${organizationId}: ${summary.successful}/${summary.total} successful`,
       );
 
+      // Check timeline auto-completion after bulk member creation
+      if (created.length > 0) {
+        checkAutoCompletePhases({
+          organizationId,
+          timelinesService: this.timelinesService,
+        }).catch((err) => {
+      this.logger.warn('timeline auto-complete check failed', err);
+    });
+      }
+
       return { created, errors, summary };
     } catch (error) {
       if (error instanceof NotFoundException) {
@@ -261,6 +293,7 @@ export class PeopleService {
     memberId: string,
     organizationId: string,
     updateData: UpdatePeopleDto,
+    callerUserId?: string,
   ): Promise<PeopleResponseDto> {
     try {
       await MemberValidator.validateOrganization(organizationId);
@@ -268,6 +301,20 @@ export class PeopleService {
         memberId,
         organizationId,
       );
+
+      if (updateData.role !== undefined) {
+        if (!callerUserId) {
+          throw new ForbiddenException(
+            'Role changes require an authenticated session caller',
+          );
+        }
+        await authorizeRoleChange({
+          callerUserId,
+          organizationId,
+          targetMember: existingMember,
+          newRole: updateData.role,
+        });
+      }
 
       // If userId is being updated, validate the new user
       if (updateData.userId && updateData.userId !== existingMember.userId) {
@@ -292,7 +339,8 @@ export class PeopleService {
     } catch (error) {
       if (
         error instanceof NotFoundException ||
-        error instanceof BadRequestException
+        error instanceof BadRequestException ||
+        error instanceof ForbiddenException
       ) {
         throw error;
       }
@@ -373,6 +421,14 @@ export class PeopleService {
       `Deactivated member: ${member.user.name} (${memberId}) from organization ${organizationId}`,
     );
 
+    // Check timeline auto-completion after member deactivation (people metrics may change)
+    checkAutoCompletePhases({
+      organizationId,
+      timelinesService: this.timelinesService,
+    }).catch((err) => {
+      this.logger.warn('timeline auto-complete check failed', err);
+    });
+
     return {
       success: true,
       deletedMember: {
@@ -407,11 +463,21 @@ export class PeopleService {
       );
     }
 
-    return db.member.update({
+    const reactivatedMember = await db.member.update({
       where: { id: memberId, organizationId },
       data: { deactivated: false, isActive: true },
       select: MemberQueries.MEMBER_SELECT,
     });
+
+    // Check timeline auto-completion after member reactivation (people metrics may change)
+    checkAutoCompletePhases({
+      organizationId,
+      timelinesService: this.timelinesService,
+    }).catch((err) => {
+      this.logger.warn('timeline auto-complete check failed', err);
+    });
+
+    return reactivatedMember;
   }
 
   async unlinkDevice(
@@ -476,7 +542,10 @@ export class PeopleService {
         );
       }
 
-      const updatedMember = await MemberQueries.unlinkDevice(memberId, organizationId);
+      const updatedMember = await MemberQueries.unlinkDevice(
+        memberId,
+        organizationId,
+      );
 
       this.logger.log(
         `Unlinked device for member: ${updatedMember.user.name} (${memberId})`,

@@ -1,9 +1,8 @@
 'use client';
 
-import { Finding, FrameworkEditorFramework, Policy, Task } from '@db';
+import { FrameworkEditorFramework, Policy, Task } from '@db';
 import type { FrameworkInstanceWithControls } from '@/lib/types/framework';
 import { ComplianceOverview } from './ComplianceOverview';
-import { FindingsOverview } from './FindingsOverview';
 import { FrameworksOverview } from './FrameworksOverview';
 import { ToDoOverview } from './ToDoOverview';
 import { FrameworkInstanceWithComplianceScore } from './types';
@@ -33,17 +32,6 @@ export interface DocumentsScore {
   outstandingDocuments: number;
 }
 
-export interface FindingWithTarget extends Finding {
-  task: {
-    id: string;
-    title: string;
-  } | null;
-  evidenceSubmission: {
-    id: string;
-    formType: string;
-  } | null;
-}
-
 export interface OverviewProps {
   frameworksWithControls: FrameworkInstanceWithControls[];
   frameworksWithCompliance: FrameworkInstanceWithComplianceScore[];
@@ -55,7 +43,6 @@ export interface OverviewProps {
   peopleScore: PeopleScore;
   currentMember: { id: string; role: string } | null;
   onboardingTriggerJobId: string | null;
-  findings: FindingWithTarget[];
 }
 
 export const Overview = ({
@@ -69,7 +56,6 @@ export const Overview = ({
   peopleScore,
   currentMember,
   onboardingTriggerJobId,
-  findings,
 }: OverviewProps) => {
   const overallComplianceScore = calculateOverallComplianceScore({
     publishedPolicies: publishedPoliciesScore.publishedPolicies,
@@ -83,7 +69,7 @@ export const Overview = ({
   });
 
   return (
-    <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+    <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
       <ComplianceOverview
         organizationId={organizationId}
         overallComplianceScore={overallComplianceScore}
@@ -117,7 +103,6 @@ export const Overview = ({
         currentMember={currentMember}
         onboardingTriggerJobId={onboardingTriggerJobId}
       />
-      <FindingsOverview findings={findings} organizationId={organizationId} />
     </div>
   );
 };

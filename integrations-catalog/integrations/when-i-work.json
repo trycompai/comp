@@ -1,0 +1,46 @@
+{
+  "slug": "when-i-work",
+  "name": "When I Work",
+  "description": "Employee scheduling and time clock platform.",
+  "category": "HR & People",
+  "docsUrl": "https://apidocs.wheniwork.com/",
+  "baseUrl": "https://api.wheniwork.com",
+  "authConfig": {
+    "type": "custom",
+    "config": {
+      "setupInstructions": "1. Log in to When I Work\n2. Go to Settings → API\n3. Generate or copy your API token\n4. Paste it below",
+      "credentialFields": [
+        {
+          "label": "API Token",
+          "type": "password",
+          "required": true,
+          "helpText": "Found in When I Work → Settings → API Token. Contact support if not visible."
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks",
+    "sync"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": true,
+  "checks": [
+    {
+      "slug": "when_i_work_app_availability",
+      "name": "When I Work App Availability",
+      "description": "Verifies When I Work API is accessible.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "when_i_work_employee_access",
+      "name": "When I Work Employee Access",
+      "description": "Verifies employee access.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

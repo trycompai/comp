@@ -1,0 +1,45 @@
+{
+  "slug": "logdna",
+  "name": "Mezmo (LogDNA)",
+  "description": "Log management and observability platform.",
+  "category": "Monitoring",
+  "docsUrl": "https://docs.mezmo.com/reference",
+  "baseUrl": "https://api.mezmo.com",
+  "authConfig": {
+    "type": "custom",
+    "config": {
+      "setupInstructions": "1. Log in to Mezmo (formerly LogDNA)\n2. Go to Settings > Organization > API Keys\n3. Copy a Service Key (not an Ingestion Key)\n4. Paste it below",
+      "credentialFields": [
+        {
+          "label": "Service Key",
+          "type": "password",
+          "required": true,
+          "helpText": "Found in Mezmo (LogDNA) Settings > Organization > API Keys. Copy a Service Key."
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "logdna_app_availability",
+      "name": "Mezmo (LogDNA) App Availability",
+      "description": "Checks Mezmo (LogDNA) app availability.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "logdna_employee_access",
+      "name": "Mezmo (LogDNA) Employee Access",
+      "description": "Checks Mezmo (LogDNA) employee access.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

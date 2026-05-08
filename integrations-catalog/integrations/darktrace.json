@@ -1,0 +1,63 @@
+{
+  "slug": "darktrace",
+  "name": "Darktrace",
+  "description": "Monitor Darktrace AI-powered cybersecurity platform for model breaches, network devices, and AI Analyst incidents",
+  "category": "Security",
+  "docsUrl": "https://customerportal.darktrace.com/product-guides/main/api-tokens",
+  "baseUrl": "https://darktrace.example.com",
+  "authConfig": {
+    "type": "custom",
+    "config": {
+      "credentialFields": [
+        {
+          "label": "Darktrace Appliance URL",
+          "type": "text",
+          "required": true,
+          "helpText": "Full URL of your Darktrace appliance (e.g., https://darktrace.yourcompany.com)"
+        },
+        {
+          "label": "Public API Token",
+          "type": "text",
+          "required": true,
+          "helpText": "Threat Visualizer > System Config > Settings > API Token > New"
+        },
+        {
+          "label": "Private API Token",
+          "type": "password",
+          "required": true,
+          "helpText": "Generated with the Public Token. Record securely — displayed only once."
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "model_breaches",
+      "name": "Monitoring & Alerting",
+      "description": "Lists Darktrace model breaches from the past 7 days to verify active security monitoring and alerting coverage",
+      "defaultSeverity": "high",
+      "enabled": true
+    },
+    {
+      "slug": "monitored_devices",
+      "name": "Infrastructure Inventory",
+      "description": "Lists devices monitored by Darktrace to verify network infrastructure inventory and visibility",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "ai_analyst_incidents",
+      "name": "Incident Response",
+      "description": "Checks Darktrace AI Analyst for critical incidents in the last 30 days to verify incident response coverage",
+      "defaultSeverity": "high",
+      "enabled": true
+    }
+  ],
+  "checkCount": 3,
+  "isActive": true
+}

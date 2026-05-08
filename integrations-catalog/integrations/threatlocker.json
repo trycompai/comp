@@ -1,0 +1,79 @@
+{
+  "slug": "threatlocker",
+  "name": "ThreatLocker",
+  "description": "ThreatLocker is a Zero Trust Endpoint Security platform providing application whitelisting, ringfencing, storage control, elevation control, and network access management.",
+  "category": "Security",
+  "docsUrl": "https://threatlocker.kb.help/api-documentation/",
+  "baseUrl": null,
+  "authConfig": {
+    "type": "custom",
+    "config": {
+      "setupInstructions": "1. Log in to the ThreatLocker Portal.\n2. Find your instance identifier: click the Help button (top right) and note the letter in parentheses next to 'ThreatLocker Access' (e.g., 'E').\n3. Generate an API Key: navigate to Users > API Keys, create a new key with at least 'View' permissions for Computers, Policies, Approvals, System Audit, and User Roles.\n4. Enter the instance identifier and API key in the fields above.",
+      "credentialFields": [
+        {
+          "label": "Portal Instance",
+          "type": "text",
+          "required": true,
+          "helpText": "Your ThreatLocker portal instance identifier (e.g., 'e', 'a', 'b'). Find it in the ThreatLocker Portal under Help > ThreatLocker Access, shown in parentheses."
+        },
+        {
+          "label": "API Key",
+          "type": "password",
+          "required": true,
+          "helpText": "Your ThreatLocker API Key. Generate one in the ThreatLocker Portal under Users > API Keys."
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "threatlocker_endpoint_protection",
+      "name": "Endpoint Protection Status",
+      "description": "Verifies that ThreatLocker-managed endpoints are operating in Secure mode with application control actively enforcing policies, not in Learning or Monitor-Only modes.",
+      "defaultSeverity": "high",
+      "enabled": true
+    },
+    {
+      "slug": "threatlocker_application_control",
+      "name": "Application Control Policies",
+      "description": "Verifies that application control (allowlisting) policies are configured and actively enforcing software restrictions across the organization.",
+      "defaultSeverity": "high",
+      "enabled": true
+    },
+    {
+      "slug": "threatlocker_approval_requests",
+      "name": "Approval Request Management",
+      "description": "Monitors pending approval requests to ensure blocked application requests are being reviewed and addressed in a timely manner.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "threatlocker_system_audit",
+      "name": "System Audit Logging",
+      "description": "Verifies that system audit logging is active and capturing administrative actions for compliance and security monitoring.",
+      "defaultSeverity": "high",
+      "enabled": true
+    },
+    {
+      "slug": "threatlocker_admin_roles",
+      "name": "Admin Access Control",
+      "description": "Verifies that administrative roles are configured in ThreatLocker, supporting role-based access control for portal management.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "threatlocker_login_security",
+      "name": "Portal Login Security",
+      "description": "Monitors portal login attempts to detect denied access attempts and ensure administrative access is secure.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 6,
+  "isActive": true
+}

@@ -1,6 +1,7 @@
 'use client';
 
 import { apiClient } from '@/lib/api-client';
+import type { TaskFrequency } from '@db';
 import { useCallback, useState } from 'react';
 import { toast } from 'sonner';
 import type { BrowserAutomation } from './types';
@@ -13,6 +14,8 @@ interface AutomationConfigInput {
   name: string;
   targetUrl: string;
   instruction: string;
+  evaluationCriteria?: string;
+  scheduleFrequency?: TaskFrequency;
 }
 
 export function useBrowserAutomations({ taskId }: UseBrowserAutomationsOptions) {
@@ -87,6 +90,37 @@ export function useBrowserAutomations({ taskId }: UseBrowserAutomationsOptions) 
     [fetchAutomations],
   );
 
+  const deleteAutomation = useCallback(
+    async (automationId: string) => {
+      try {
+        const res = await apiClient.delete(`/v1/browserbase/automations/${automationId}`);
+        if (res.error) throw new Error(res.error);
+        toast.success('Browser automation deleted');
+        await fetchAutomations();
+      } catch (err) {
+        toast.error(err instanceof Error ? err.message : 'Failed to delete automation');
+      }
+    },
+    [fetchAutomations],
+  );
+
+  const toggleAutomation = useCallback(
+    async (automationId: string, isEnabled: boolean) => {
+      try {
+        const res = await apiClient.patch<BrowserAutomation>(
+          `/v1/browserbase/automations/${automationId}`,
+          { isEnabled },
+        );
+        if (res.error) throw new Error(res.error);
+        toast.success(isEnabled ? 'Automation enabled' : 'Automation disabled');
+        await fetchAutomations();
+      } catch (err) {
+        toast.error(err instanceof Error ? err.message : 'Failed to update automation');
+      }
+    },
+    [fetchAutomations],
+  );
+
   return {
     automations,
     isLoading,
@@ -94,5 +128,7 @@ export function useBrowserAutomations({ taskId }: UseBrowserAutomationsOptions) 
     fetchAutomations,
     createAutomation,
     updateAutomation,
+    deleteAutomation,
+    toggleAutomation,
   };
 }

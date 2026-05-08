@@ -46,7 +46,7 @@ The agent runs four compliance checks every hour:
 1. **Disk Encryption** -- FileVault (macOS), BitLocker (Windows), LUKS (Linux)
 2. **Antivirus** -- XProtect (macOS), Windows Defender (Windows), ClamAV/AppArmor/SELinux (Linux)
 3. **Password Policy** -- Minimum 8-character password enforced at OS level
-4. **Screen Lock** -- Automatic screen lock within 5 minutes of inactivity
+4. **Screen Lock** -- Automatic screen lock within 15 minutes of inactivity
 
 A device is **compliant** when all four checks pass.
 

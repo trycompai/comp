@@ -8,6 +8,7 @@
     "tailwind-merge"
   ],
   "dependencies": {
+    "@floating-ui/dom": "^1.6.0",
     "@radix-ui/react-accordion": "1.2.12",
     "@radix-ui/react-alert-dialog": "1.1.15",
     "@radix-ui/react-avatar": "1.1.10",
@@ -36,7 +37,6 @@
     "@radix-ui/react-tooltip": "1.2.8",
     "@radix-ui/react-use-controllable-state": "^1.2.2",
     "@radix-ui/react-use-is-hydrated": "^0.1.0",
-    "@floating-ui/dom": "^1.6.0",
     "@tailwindcss/typography": "^0.5.16",
     "@tiptap/extension-bold": "3.22.1",
     "@tiptap/extension-code-block-lowlight": "3.22.1",
@@ -54,7 +54,7 @@
     "@tiptap/suggestion": "3.22.1",
     "@uidotdev/usehooks": "^2.4.1",
     "@xyflow/react": "^12.9.3",
-    "ai": "^5.0.101",
+    "ai": "^6.0.175",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "cmdk": "^1.1.1",

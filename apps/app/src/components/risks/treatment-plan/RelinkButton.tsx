@@ -1,0 +1,198 @@
+'use client';
+
+import type { linkRisksAndVendorsToWork } from '@/trigger/tasks/onboarding/link-risks-and-vendors-to-work';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+  Stack,
+  Text,
+} from '@trycompai/design-system';
+import { MagicWandFilled } from '@trycompai/design-system/icons';
+import { useRealtimeRun } from '@trigger.dev/react-hooks';
+import { useEffect, useState } from 'react';
+import { toast } from 'sonner';
+
+interface RelinkButtonProps {
+  disabled?: boolean;
+  /** Triggers the relink and returns realtime handle. */
+  onRelink: () => Promise<{ runId: string; publicAccessToken: string }>;
+  /** Called after the run completes with non-zero links — typically chains regen. */
+  onAfterLink?: () => Promise<void>;
+}
+
+type RunState =
+  | { kind: 'idle' }
+  | { kind: 'running'; runId: string; publicAccessToken: string };
+
+// Duplicated from AutoLinkButton (~50 lines) — small enough to keep inline.
+const PHASE_LABEL: Record<string, string> = {
+  starting: 'Starting…',
+  'embedding-tasks': 'Embedding tasks',
+  'embedding-risks': 'Embedding risks',
+  'embedding-vendors': 'Embedding vendors',
+  'waiting-for-index': 'Waiting for the index',
+  'matching-risks': 'Matching tasks to risks',
+  'matching-vendors': 'Matching tasks to vendors',
+  done: 'Finishing up…',
+};
+
+export function RelinkButton({ disabled, onRelink, onAfterLink }: RelinkButtonProps) {
+  const [state, setState] = useState<RunState>({ kind: 'idle' });
+  const [submitting, setSubmitting] = useState(false);
+
+  const handleConfirm = async () => {
+    setSubmitting(true);
+    try {
+      const { runId, publicAccessToken } = await onRelink();
+      setState({ kind: 'running', runId, publicAccessToken });
+    } catch {
+      toast.error('Re-assess failed. Try again.');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  if (state.kind === 'running') {
+    return (
+      <RunProgress
+        runId={state.runId}
+        accessToken={state.publicAccessToken}
+        onComplete={async (linked) => {
+          if (linked === 0) {
+            toast.info('No matching tasks found after re-assess.');
+          } else {
+            toast.success(
+              `Re-assessed and linked ${linked} task${linked === 1 ? '' : 's'} · refreshing treatment plan`,
+            );
+            if (onAfterLink) {
+              try {
+                await onAfterLink();
+              } catch {
+                // outer handler surfaces errors; we just reset state.
+              }
+            }
+          }
+          setState({ kind: 'idle' });
+        }}
+        onFailed={() => {
+          toast.error('Re-assess failed. Try again.');
+          setState({ kind: 'idle' });
+        }}
+      />
+    );
+  }
+
+  return (
+    <AlertDialog>
+      <AlertDialogTrigger
+        disabled={disabled || submitting}
+        render={
+          <button
+            type="button"
+            title="Re-assess all linked tasks and controls with AI"
+            className="inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[11px] text-muted-foreground transition-colors hover:bg-primary/[0.08] hover:text-primary disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
+          >
+            <MagicWandFilled size={11} aria-hidden="true" />
+            <span>Re-assess</span>
+          </button>
+        }
+      />
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>Re-assess linked tasks?</AlertDialogTitle>
+          <AlertDialogDescription>
+            This removes every currently linked task and re-runs the matching to find
+            the most relevant tasks. Any manual unlinks you've made will be reverted.
+            The treatment plan will refresh after.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel>Cancel</AlertDialogCancel>
+          <AlertDialogAction onClick={handleConfirm}>Yes, re-assess</AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+  );
+}
+
+interface RunProgressProps {
+  runId: string;
+  accessToken: string;
+  onComplete: (linked: number) => void;
+  onFailed: () => void;
+}
+
+function RunProgress({ runId, accessToken, onComplete, onFailed }: RunProgressProps) {
+  const { run } = useRealtimeRun<typeof linkRisksAndVendorsToWork>(runId, {
+    accessToken,
+    enabled: true,
+  });
+
+  const meta = (run?.metadata ?? {}) as Record<string, unknown>;
+  const phase = typeof meta.phase === 'string' ? meta.phase : 'starting';
+  const current = typeof meta.current === 'number' ? meta.current : null;
+  const total = typeof meta.total === 'number' ? meta.total : null;
+
+  const status = run?.status;
+  // Pull link counts from the typed `run.output` (canonical result of the
+  // task) instead of metadata. Metadata is mirror-only progress state and
+  // can lag behind the status transition by a tick — reading from output
+  // here avoids the stale-closure race Cubic flagged (#6 on PR #2671).
+  const riskLinks = typeof run?.output?.riskLinks === 'number' ? run.output.riskLinks : 0;
+  const vendorLinks = typeof run?.output?.vendorLinks === 'number' ? run.output.vendorLinks : 0;
+  useEffect(() => {
+    if (!status) return;
+    if (status === 'COMPLETED') {
+      onComplete(riskLinks + vendorLinks);
+      return;
+    }
+    if (
+      status === 'FAILED' ||
+      status === 'CANCELED' ||
+      status === 'CRASHED' ||
+      status === 'SYSTEM_FAILURE' ||
+      status === 'EXPIRED' ||
+      status === 'TIMED_OUT'
+    ) {
+      onFailed();
+    }
+  }, [status, riskLinks, vendorLinks, onComplete, onFailed]);
+
+  const showProgress = phase !== 'done' && phase in PHASE_LABEL;
+  const label = showProgress ? PHASE_LABEL[phase] : PHASE_LABEL.starting;
+  const countSuffix =
+    current !== null && total !== null && total > 0 && phase !== 'starting' && phase !== 'done'
+      ? ` (${current}/${total})`
+      : '';
+
+  return (
+    <div
+      className="rounded-md border border-border bg-muted/30 p-3"
+      role="status"
+      aria-live="polite"
+    >
+      <Stack gap="xs">
+        <div className="flex items-center gap-2">
+          <span
+            className="inline-block h-2 w-2 animate-pulse rounded-full bg-primary"
+            aria-hidden="true"
+          />
+          <Text size="xs" weight="medium">
+            Re-assessing tasks
+          </Text>
+        </div>
+        <Text size="xs" variant="muted">
+          {label}
+          {countSuffix}
+        </Text>
+      </Stack>
+    </div>
+  );
+}

@@ -13,6 +13,12 @@ vi.mock('@/lib/api-client', () => ({
   },
 }));
 
+vi.mock('@/app/(app)/[orgId]/overview/components/CreateFindingSheet', () => ({
+  CreateFindingSheet: ({ open }: { open: boolean }) => (
+    <div data-testid="create-sheet" data-open={open} />
+  ),
+}));
+
 import { FindingsTab } from './FindingsTab';
 
 const makeFindings = () => [
@@ -20,7 +26,9 @@ const makeFindings = () => [
     id: 'fnd_1',
     type: 'soc2',
     status: 'open',
+    severity: 'high',
     content: 'Missing evidence screenshot',
+    area: null,
     createdAt: '2026-01-01T00:00:00Z',
     createdBy: { user: { name: 'Admin User', email: 'admin@test.com' } },
     task: { id: 'tsk_1', title: 'Upload SOC2 Report' },
@@ -31,7 +39,9 @@ const makeFindings = () => [
     id: 'fnd_2',
     type: 'soc2',
     status: 'closed',
+    severity: 'medium',
     content: 'Org chart not up to date',
+    area: null,
     createdAt: '2026-01-02T00:00:00Z',
     createdByAdmin: { name: 'Platform Admin', email: 'padmin@test.com' },
     evidenceFormType: 'access-request',

@@ -10,7 +10,7 @@ import {
   Logger,
   UseGuards,
 } from '@nestjs/common';
-import { ApiTags, ApiSecurity } from '@nestjs/swagger';
+import { ApiTags, ApiSecurity, ApiOperation } from '@nestjs/swagger';
 import { HybridAuthGuard } from '../../auth/hybrid-auth.guard';
 import { PermissionGuard } from '../../auth/permission.guard';
 import { RequirePermission } from '../../auth/require-permission.decorator';
@@ -20,14 +20,15 @@ import {
   getManifest,
   runAllChecks,
   type CheckRunResult,
-  type OAuthConfig,
 } from '@trycompai/integration-platform';
 import { ConnectionRepository } from '../repositories/connection.repository';
 import { ProviderRepository } from '../repositories/provider.repository';
 import { CheckRunRepository } from '../repositories/check-run.repository';
 import { CredentialVaultService } from '../services/credential-vault.service';
 import { OAuthCredentialsService } from '../services/oauth-credentials.service';
+import { TaskIntegrationChecksService } from '../services/task-integration-checks.service';
 import { getStringValue, toStringCredentials } from '../utils/credential-utils';
+import { isCheckDisabledForTask } from '../utils/disabled-task-checks';
 import { db } from '@db';
 import type { Prisma } from '@db';
 
@@ -39,6 +40,8 @@ interface TaskIntegrationCheck {
   checkName: string;
   checkDescription: string;
   isConnected: boolean;
+  /** True when the check has been manually disconnected from this task. */
+  isDisabledForTask: boolean;
   needsConfiguration: boolean;
   connectionId?: string;
   connectionStatus?: string;
@@ -56,6 +59,11 @@ interface RunCheckForTaskDto {
   checkId: string;
 }
 
+interface ToggleCheckForTaskDto {
+  connectionId: string;
+  checkId: string;
+}
+
 @Controller({ path: 'integrations/tasks', version: '1' })
 @ApiTags('Integrations')
 @UseGuards(HybridAuthGuard, PermissionGuard)
@@ -69,18 +77,23 @@ export class TaskIntegrationsController {
     private readonly checkRunRepository: CheckRunRepository,
     private readonly credentialVaultService: CredentialVaultService,
     private readonly oauthCredentialsService: OAuthCredentialsService,
+    private readonly taskIntegrationChecksService: TaskIntegrationChecksService,
   ) {}
 
   /**
-   * Get all integration checks that can auto-complete a specific task template
+   * Get all integration checks that can auto-complete a specific task template.
+   * When a specific `taskId` is also provided, per-task disable state is
+   * resolved from the matching connection's metadata so the UI can show
+   * which checks have been manually disconnected from that task.
    */
   @Get('template/:templateId/checks')
+  @ApiOperation({ summary: 'List checks for a task template' })
   @RequirePermission('integration', 'read')
   async getChecksForTaskTemplate(
     @Param('templateId') templateId: string,
     @OrganizationId() organizationId: string,
+    taskIdForDisableState?: string,
   ): Promise<{ checks: TaskIntegrationCheck[] }> {
-
     const manifests = getActiveManifests();
     const checks: TaskIntegrationCheck[] = [];
 
@@ -136,6 +149,15 @@ export class TaskIntegrationsController {
             oauthConfigured = availability.available;
           }
 
+          const isDisabledForTask =
+            !!taskIdForDisableState &&
+            !!connection &&
+            isCheckDisabledForTask(
+              connection.metadata,
+              taskIdForDisableState,
+              check.id,
+            );
+
           checks.push({
             integrationId: manifest.id,
             integrationName: manifest.name,
@@ -144,6 +166,7 @@ export class TaskIntegrationsController {
             checkName: check.name,
             checkDescription: check.description,
             isConnected: !!connection && connection.status === 'active',
+            isDisabledForTask,
             needsConfiguration,
             connectionId: connection?.id,
             connectionStatus: connection?.status,
@@ -161,6 +184,7 @@ export class TaskIntegrationsController {
    * Get integration checks for a specific task (by task ID)
    */
   @Get(':taskId/checks')
+  @ApiOperation({ summary: 'List checks attached to a task' })
   @RequirePermission('integration', 'read')
   async getChecksForTask(
     @Param('taskId') taskId: string,
@@ -169,7 +193,6 @@ export class TaskIntegrationsController {
     checks: TaskIntegrationCheck[];
     task: { id: string; title: string; templateId: string | null };
   }> {
-
     // Get the task to find its template ID
     const task = await db.task.findUnique({
       where: { id: taskId, organizationId },
@@ -187,10 +210,11 @@ export class TaskIntegrationsController {
       };
     }
 
-    // Get checks for this template
+    // Get checks for this template, annotated with per-task disable state
     const { checks } = await this.getChecksForTaskTemplate(
       task.taskTemplateId,
       organizationId,
+      task.id,
     );
 
     return {
@@ -203,6 +227,7 @@ export class TaskIntegrationsController {
    * Run a specific check for a task and store results
    */
   @Post(':taskId/run-check')
+  @ApiOperation({ summary: 'Run a check for a task' })
   @RequirePermission('integration', 'update')
   async runCheckForTask(
     @Param('taskId') taskId: string,
@@ -215,7 +240,6 @@ export class TaskIntegrationsController {
     checkRunId?: string;
     taskStatus?: string | null;
   }> {
-
     const { connectionId, checkId } = body;
 
     // Verify task exists
@@ -236,6 +260,14 @@ export class TaskIntegrationsController {
     if (connection.status !== 'active') {
       throw new HttpException(
         'Connection is not active',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    // Reject runs for checks that have been disconnected from this task.
+    if (isCheckDisabledForTask(connection.metadata, taskId, checkId)) {
+      throw new HttpException(
+        'This check is disconnected from the task. Reconnect it before running.',
         HttpStatus.BAD_REQUEST,
       );
     }
@@ -494,15 +526,59 @@ export class TaskIntegrationsController {
   }
 
   /**
+   * Disconnect a single integration check from a specific task.
+   * Does not affect the connection itself or any other task that uses the
+   * same check. Scheduled runs, manual runs, and the task detail UI will all
+   * skip this (task, check) pair until it is reconnected.
+   */
+  @Post(':taskId/checks/disconnect')
+  @ApiOperation({ summary: 'Disconnect checks from a task' })
+  @RequirePermission('integration', 'update')
+  async disconnectCheckFromTask(
+    @Param('taskId') taskId: string,
+    @OrganizationId() organizationId: string,
+    @Body() body: ToggleCheckForTaskDto,
+  ): Promise<{ success: true; disabled: true }> {
+    await this.taskIntegrationChecksService.disconnectCheckFromTask({
+      taskId,
+      connectionId: body.connectionId,
+      checkId: body.checkId,
+      organizationId,
+    });
+    return { success: true, disabled: true };
+  }
+
+  /**
+   * Re-enable a previously disconnected integration check for a specific
+   * task. Inverse of the disconnect endpoint.
+   */
+  @Post(':taskId/checks/reconnect')
+  @ApiOperation({ summary: 'Reconnect checks to a task' })
+  @RequirePermission('integration', 'update')
+  async reconnectCheckToTask(
+    @Param('taskId') taskId: string,
+    @OrganizationId() organizationId: string,
+    @Body() body: ToggleCheckForTaskDto,
+  ): Promise<{ success: true; disabled: false }> {
+    await this.taskIntegrationChecksService.reconnectCheckToTask({
+      taskId,
+      connectionId: body.connectionId,
+      checkId: body.checkId,
+      organizationId,
+    });
+    return { success: true, disabled: false };
+  }
+
+  /**
    * Get check run history for a task
    */
   @Get(':taskId/runs')
+  @ApiOperation({ summary: 'List check runs for a task' })
   @RequirePermission('integration', 'read')
   async getTaskCheckRuns(
     @Param('taskId') taskId: string,
     @Query('limit') limit?: string,
   ) {
-
     const runs = await this.checkRunRepository.findByTask(
       taskId,
       limit ? parseInt(limit, 10) : 10,

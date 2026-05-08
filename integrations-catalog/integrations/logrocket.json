@@ -1,0 +1,45 @@
+{
+  "slug": "logrocket",
+  "name": "LogRocket",
+  "description": "Monitor LogRocket session replay platform for access and data privacy compliance",
+  "category": "Monitoring",
+  "docsUrl": "https://docs.logrocket.com/reference/api-overview",
+  "baseUrl": "https://api.logrocket.com/",
+  "authConfig": {
+    "type": "api_key",
+    "config": {
+      "setupInstructions": "1. Log in to LogRocket at https://app.logrocket.com\n2. Go to Settings → API Tokens\n3. Generate a new token\n4. Enter it below",
+      "credentialFields": [
+        {
+          "label": "API Token",
+          "type": "password",
+          "required": true,
+          "helpText": "Found in LogRocket Settings → API Tokens"
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "logrocket_employee_access",
+      "name": "Employee Access",
+      "description": "Reviews LogRocket organization members with access to session recordings",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "logrocket_monitoring",
+      "name": "Monitoring & Alerting",
+      "description": "Verifies LogRocket is capturing sessions and monitoring application performance",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

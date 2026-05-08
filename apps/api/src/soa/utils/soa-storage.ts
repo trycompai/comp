@@ -131,6 +131,7 @@ export async function updateDocumentAfterAutoFill(
       completedAt: answeredCount === totalQuestions ? new Date() : null,
       approverId: null,
       approvedAt: null,
+      declinedAt: null,
     },
   });
 }
@@ -174,6 +175,7 @@ export async function updateDocumentAnsweredCount(
       // Clear approval when answers are edited
       approverId: null,
       approvedAt: null,
+      declinedAt: null,
     },
   });
 }

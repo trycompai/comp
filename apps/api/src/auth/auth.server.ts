@@ -427,7 +427,7 @@ export const auth = betterAuth({
           }),
         });
       },
-      ac: ac as AccessControl,
+      ac: ac,
       roles: allRoles,
       // Enable dynamic access control for custom roles
       // This allows organizations to create custom roles at runtime

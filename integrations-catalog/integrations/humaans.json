@@ -1,0 +1,38 @@
+{
+  "slug": "humaans",
+  "name": "Humaans",
+  "description": "Humaans HR platform for managing employee records and org data",
+  "category": "HR & People",
+  "docsUrl": "https://app.humaans.io/api-docs",
+  "baseUrl": "https://app.humaans.io/api",
+  "authConfig": {
+    "type": "custom",
+    "config": {
+      "setupInstructions": "1. Log in to Humaans\n2. Go to Settings → API Tokens\n3. Create a new API token\n4. Copy the token and paste it below",
+      "credentialFields": [
+        {
+          "label": "API Token",
+          "type": "password",
+          "required": true,
+          "helpText": "Generate an API token in Humaans → Settings → API Tokens"
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "humaans_employee_access",
+      "name": "Employee Access",
+      "description": "Lists Humaans employees to verify HR records are up to date",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 1,
+  "isActive": true
+}

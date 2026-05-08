@@ -145,14 +145,6 @@ vi.mock('./BrowserAutomations', () => ({
   BrowserAutomations: () => <div data-testid="browser-automations" />,
 }));
 
-vi.mock('./findings/FindingHistoryPanel', () => ({
-  FindingHistoryPanel: () => <div data-testid="finding-history-panel" />,
-}));
-
-vi.mock('./findings/FindingsList', () => ({
-  FindingsList: () => <div data-testid="findings-list" />,
-}));
-
 vi.mock('./TaskAutomations', () => ({
   TaskAutomations: () => <div data-testid="task-automations" />,
 }));

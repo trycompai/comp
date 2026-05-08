@@ -1,8 +1,4 @@
-import { getFeatureFlags } from '@/app/posthog';
 import { requireRoutePermission } from '@/lib/permissions.server';
-import { auth } from '@/utils/auth';
-import { headers } from 'next/headers';
-import { notFound } from 'next/navigation';
 
 export default async function SecurityLayout({
   children,
@@ -13,24 +9,13 @@ export default async function SecurityLayout({
 }) {
   const { orgId } = await params;
 
+  // Access is gated solely by the `pentest:read` permission
+  // (via `requireRoutePermission`), which already redirects
+  // unauthenticated/unauthorized users. The previous
+  // `is-security-enabled` PostHog flag was kept from a staged-rollout
+  // era and added a second 404 path that broke local dev whenever
+  // PostHog couldn't return the flag.
   await requireRoutePermission('penetration-tests', orgId);
-
-  const session = await auth.api.getSession({
-    headers: await headers(),
-  });
-
-  if (!session?.user?.id) {
-    return notFound();
-  }
-
-  const flags = await getFeatureFlags(session.user.id);
-  const isSecurityEnabled =
-    flags['is-security-enabled'] === true ||
-    flags['is-security-enabled'] === 'true';
-
-  if (!isSecurityEnabled) {
-    return notFound();
-  }
 
   return <>{children}</>;
 }

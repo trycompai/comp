@@ -1,0 +1,43 @@
+{
+  "slug": "expensify",
+  "name": "Expensify",
+  "description": "Monitor employee access and policy membership in Expensify expense management",
+  "category": "Productivity",
+  "docsUrl": "https://integrations.expensify.com/Integration-Server/doc/",
+  "baseUrl": "https://integrations.expensify.com",
+  "authConfig": {
+    "type": "custom",
+    "config": {
+      "credentialFields": [
+        {
+          "label": "Partner User ID",
+          "type": "text",
+          "required": true,
+          "helpText": "Your Expensify partnerUserID. Found at https://www.expensify.com/tools/integrations/"
+        },
+        {
+          "label": "Partner User Secret",
+          "type": "password",
+          "required": true,
+          "helpText": "Your Expensify partnerUserSecret. Found at https://www.expensify.com/tools/integrations/"
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "employee_access",
+      "name": "Employee Access",
+      "description": "Retrieves Expensify policy list and verifies active employee access to expense management policies",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 1,
+  "isActive": true
+}

@@ -43,9 +43,12 @@ export default async function TrustPage({
     hipaa: 'hipaaFileName',
     soc2_type1: 'soc2type1FileName',
     soc2_type2: 'soc2type2FileName',
+    soc3: 'soc3FileName',
     pci_dss: 'pcidssFileName',
     nen_7510: 'nen7510FileName',
     iso_9001: 'iso9001FileName',
+    pipeda: 'pipedaFileName',
+    ccpa: 'ccpaFileName',
   };
 
   const certificateFiles: Record<string, string | null> = {
@@ -55,9 +58,12 @@ export default async function TrustPage({
     hipaaFileName: null,
     soc2type1FileName: null,
     soc2type2FileName: null,
+    soc3FileName: null,
     pcidssFileName: null,
     nen7510FileName: null,
     iso9001FileName: null,
+    pipedaFileName: null,
+    ccpaFileName: null,
   };
 
   for (const resource of certificateResources) {
@@ -100,6 +106,7 @@ export default async function TrustPage({
         primaryColor={settings?.primaryColor ?? null}
         soc2type1={settings?.soc2type1 ?? false}
         soc2type2={settings?.soc2type2 ?? false}
+        soc3={settings?.soc3 ?? false}
         iso27001={settings?.iso27001 ?? false}
         iso42001={settings?.iso42001 ?? false}
         gdpr={settings?.gdpr ?? false}
@@ -107,8 +114,11 @@ export default async function TrustPage({
         pcidss={settings?.pcidss ?? false}
         nen7510={settings?.nen7510 ?? false}
         iso9001={settings?.iso9001 ?? false}
+        pipeda={settings?.pipeda ?? false}
+        ccpa={settings?.ccpa ?? false}
         soc2type1Status={settings?.soc2type1Status ?? 'started'}
         soc2type2Status={settings?.soc2type2Status ?? 'started'}
+        soc3Status={settings?.soc3Status ?? 'started'}
         iso27001Status={settings?.iso27001Status ?? 'started'}
         iso42001Status={settings?.iso42001Status ?? 'started'}
         gdprStatus={settings?.gdprStatus ?? 'started'}
@@ -116,6 +126,8 @@ export default async function TrustPage({
         pcidssStatus={settings?.pcidssStatus ?? 'started'}
         nen7510Status={settings?.nen7510Status ?? 'started'}
         iso9001Status={settings?.iso9001Status ?? 'started'}
+        pipedaStatus={settings?.pipedaStatus ?? 'started'}
+        ccpaStatus={settings?.ccpaStatus ?? 'started'}
         faqs={settings?.faqs ?? null}
         iso27001FileName={certificateFiles.iso27001FileName}
         iso42001FileName={certificateFiles.iso42001FileName}
@@ -123,9 +135,12 @@ export default async function TrustPage({
         hipaaFileName={certificateFiles.hipaaFileName}
         soc2type1FileName={certificateFiles.soc2type1FileName}
         soc2type2FileName={certificateFiles.soc2type2FileName}
+        soc3FileName={certificateFiles.soc3FileName}
         pcidssFileName={certificateFiles.pcidssFileName}
         nen7510FileName={certificateFiles.nen7510FileName}
         iso9001FileName={certificateFiles.iso9001FileName}
+        pipedaFileName={certificateFiles.pipedaFileName}
+        ccpaFileName={certificateFiles.ccpaFileName}
         additionalDocuments={documents.map((doc: any) => ({
           id: doc.id,
           name: doc.name,

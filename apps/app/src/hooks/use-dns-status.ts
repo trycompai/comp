@@ -8,6 +8,8 @@ interface DnsCheckResponse {
   isCnameVerified?: boolean;
   isTxtVerified?: boolean;
   isVercelTxtVerified?: boolean;
+  vercelMisconfigured?: boolean | null;
+  recommendedCNAME?: string | null;
   error?: string;
 }
 
@@ -39,6 +41,8 @@ export function useDnsStatus({
     isCnameVerified: !!data?.isCnameVerified,
     isTxtVerified: !!data?.isTxtVerified,
     isVercelTxtVerified: !!data?.isVercelTxtVerified,
+    vercelMisconfigured: data?.vercelMisconfigured ?? null,
+    recommendedCNAME: data?.recommendedCNAME ?? null,
     isLoading,
     mutate,
   };
