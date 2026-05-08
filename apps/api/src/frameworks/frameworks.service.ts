@@ -5,6 +5,8 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { db, type EvidenceFormType } from '@db';
+
+import { tasks } from '@trigger.dev/sdk';
 import {
   getOverviewScores,
   getCurrentMember,
@@ -15,6 +17,7 @@ import { createTimelinesForFrameworks } from './frameworks-timeline.helper';
 import { TimelinesService } from '../timelines/timelines.service';
 import type { FrameworkManifest } from './framework-versioning/manifest.types';
 import { buildUpdatePreview } from './framework-versioning/framework-update-preview';
+import type { updatePolicy } from '../trigger/policies/update-policy';
 
 type RequirementDef = {
   id: string;
@@ -543,7 +546,11 @@ export class FrameworksService {
     return { ...scores, currentMember };
   }
 
-  async addFrameworks(organizationId: string, frameworkIds: string[]) {
+  async addFrameworks(
+    organizationId: string,
+    frameworkIds: string[],
+    memberId?: string,
+  ) {
     const result = await db.$transaction(async (tx) => {
       const frameworks = await tx.frameworkEditorFramework.findMany({
         where: { id: { in: frameworkIds }, visible: true },
@@ -558,14 +565,19 @@ export class FrameworksService {
 
       const finalIds = frameworks.map((f) => f.id);
 
-      await upsertOrgFrameworkStructure({
+      const upsertResult = await upsertOrgFrameworkStructure({
         organizationId,
         targetFrameworkEditorIds: finalIds,
         frameworkEditorFrameworks: frameworks,
         tx,
       });
 
-      return { success: true, frameworksAdded: finalIds.length, finalIds };
+      return {
+        success: true,
+        frameworksAdded: finalIds.length,
+        finalIds,
+        createdPolicyIds: upsertResult.createdPolicyIds,
+      };
     });
 
     // Auto-create timeline instances from templates for newly added
@@ -584,7 +596,92 @@ export class FrameworksService {
       );
     });
 
+    // Regenerate only newly created policies so placeholder replacement runs
+    // without touching customer-edited existing policies.
+    if (result.createdPolicyIds.length > 0) {
+      this.enqueuePolicyGenerationForNewPolicies({
+        organizationId,
+        policyIds: result.createdPolicyIds,
+        memberId,
+      }).catch((err) => {
+        this.logger.warn(
+          'enqueuePolicyGenerationForNewPolicies failed after framework add',
+          err,
+        );
+      });
+    }
+
     return { success: result.success, frameworksAdded: result.frameworksAdded };
+  }
+
+  private async enqueuePolicyGenerationForNewPolicies({
+    organizationId,
+    policyIds,
+    memberId,
+  }: {
+    organizationId: string;
+    policyIds: string[];
+    memberId?: string;
+  }) {
+    const [instances, contextEntries] = await Promise.all([
+      db.frameworkInstance.findMany({
+        where: { organizationId },
+        include: { framework: true, customFramework: true },
+      }),
+      db.context.findMany({
+        where: { organizationId },
+        orderBy: { createdAt: 'asc' },
+      }),
+    ]);
+
+    const normalized = instances.map((fi) => {
+      if (fi.framework) {
+        return {
+          id: fi.framework.id,
+          name: fi.framework.name,
+          version: fi.framework.version,
+          description: fi.framework.description,
+          visible: fi.framework.visible,
+          createdAt: fi.framework.createdAt,
+          updatedAt: fi.framework.updatedAt,
+        };
+      }
+      if (fi.customFramework) {
+        return {
+          id: fi.customFramework.id,
+          name: fi.customFramework.name,
+          version: fi.customFramework.version,
+          description: fi.customFramework.description,
+          visible: true,
+          createdAt: fi.customFramework.createdAt,
+          updatedAt: fi.customFramework.updatedAt,
+        };
+      }
+      return null;
+    });
+    const uniqueFrameworks = Array.from(
+      new Map(
+        normalized
+          .filter((f): f is NonNullable<typeof f> => f !== null)
+          .map((f) => [f.id, f]),
+      ).values(),
+    );
+
+    const contextHub = contextEntries
+      .map((c) => `${c.question}\n${c.answer}`)
+      .join('\n');
+
+    await Promise.allSettled(
+      policyIds.map((policyId) =>
+        tasks.trigger<typeof updatePolicy>('update-policy', {
+          organizationId,
+          policyId,
+          contextHub,
+          frameworks: uniqueFrameworks,
+          memberId,
+        }),
+      ),
+    );
   }
 
   async findRequirement(
