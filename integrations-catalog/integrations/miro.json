@@ -1,0 +1,37 @@
+{
+  "slug": "miro",
+  "name": "Miro",
+  "description": "Monitor Miro team members and board organization for collaboration compliance",
+  "category": "Productivity",
+  "docsUrl": "https://developers.miro.com/docs/rest-api-reference",
+  "baseUrl": "https://api.miro.com/",
+  "authConfig": {
+    "type": "api_key",
+    "config": {
+      "setupInstructions": "1. Log in to Miro at https://miro.com\n2. Go to your Profile Settings > Your apps (or https://miro.com/app/settings/user-profile/apps)\n3. Create a new app or use an existing one\n4. Under 'OAuth scopes', enable: boards:read, team:read\n5. Install the app to your team\n6. Copy the access token\n7. Paste it below"
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "miro_employee_access",
+      "name": "Employee Access",
+      "description": "Reviews Miro team members and their access roles",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "miro_separation_of_envs",
+      "name": "Separation of Environments",
+      "description": "Verifies Miro boards are organized for team separation",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

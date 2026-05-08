@@ -11,7 +11,7 @@ import {
   ValidationPipe,
   BadRequestException,
 } from '@nestjs/common';
-import { ApiOperation, ApiTags } from '@nestjs/swagger';
+import { ApiExcludeController, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
 import { db } from '@db';
 import {
@@ -32,6 +32,7 @@ interface UpdatePolicyBody {
   frequency?: string | null;
 }
 
+@ApiExcludeController()
 @ApiTags('Admin - Policies')
 @Controller({ path: 'admin/organizations', version: '1' })
 @UseGuards(PlatformAdminGuard)
@@ -79,9 +80,7 @@ export class AdminPoliciesController {
     const updateData: Record<string, unknown> = {};
 
     if (body.status !== undefined) {
-      if (
-        !Object.values(PolicyStatus).includes(body.status as PolicyStatus)
-      ) {
+      if (!Object.values(PolicyStatus).includes(body.status as PolicyStatus)) {
         throw new BadRequestException(
           `Invalid status. Must be one of: ${Object.values(PolicyStatus).join(', ')}`,
         );
@@ -131,22 +130,41 @@ export class AdminPoliciesController {
   ) {
     const instances = await db.frameworkInstance.findMany({
       where: { organizationId: orgId },
-      include: { framework: true },
+      include: { framework: true, customFramework: true },
     });
 
+    const normalized = instances.map((fi) => {
+      if (fi.framework) {
+        return {
+          id: fi.framework.id,
+          name: fi.framework.name,
+          version: fi.framework.version,
+          description: fi.framework.description,
+          visible: fi.framework.visible,
+          createdAt: fi.framework.createdAt,
+          updatedAt: fi.framework.updatedAt,
+        };
+      }
+      if (fi.customFramework) {
+        return {
+          id: fi.customFramework.id,
+          name: fi.customFramework.name,
+          version: fi.customFramework.version,
+          description: fi.customFramework.description,
+          visible: true,
+          createdAt: fi.customFramework.createdAt,
+          updatedAt: fi.customFramework.updatedAt,
+        };
+      }
+      return null;
+    });
     const uniqueFrameworks = Array.from(
       new Map(
-        instances.map((fi) => [fi.framework.id, fi.framework]),
+        normalized
+          .filter((f): f is NonNullable<typeof f> => f !== null)
+          .map((f) => [f.id, f]),
       ).values(),
-    ).map((f) => ({
-      id: f.id,
-      name: f.name,
-      version: f.version,
-      description: f.description,
-      visible: f.visible,
-      createdAt: f.createdAt,
-      updatedAt: f.updatedAt,
-    }));
+    );
 
     const contextEntries = await db.context.findMany({
       where: { organizationId: orgId },

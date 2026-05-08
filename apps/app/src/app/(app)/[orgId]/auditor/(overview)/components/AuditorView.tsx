@@ -1,22 +1,6 @@
-'use client';
-
-import { downloadAllEvidenceZip } from '@/lib/evidence-download';
-import {
-  Button,
-  Popover,
-  PopoverContent,
-  PopoverDescription,
-  PopoverHeader,
-  PopoverTitle,
-  PopoverTrigger,
-  Switch,
-} from '@trycompai/design-system';
-import { ArrowDown } from '@trycompai/design-system/icons';
+import { Section, Stack } from '@trycompai/design-system';
 import { Download } from 'lucide-react';
 import Image from 'next/image';
-import { useParams } from 'next/navigation';
-import { useState } from 'react';
-import { toast } from 'sonner';
 
 interface AuditorViewProps {
   initialContent: Record<string, string>;
@@ -35,84 +19,34 @@ export function AuditorView({
   cSuite,
   reportSignatory,
 }: AuditorViewProps) {
-  const params = useParams();
-  const orgId = params.orgId as string;
-  const [isDownloading, setIsDownloading] = useState(false);
-  const [includeJson, setIncludeJson] = useState(false);
-  const [isPopoverOpen, setIsPopoverOpen] = useState(false);
-
-  const handleDownloadAllEvidence = async () => {
-    setIsDownloading(true);
-    try {
-      await downloadAllEvidenceZip({
-        organizationName,
-        includeJson,
-      });
-      toast.success('Evidence package downloaded successfully');
-      setIsPopoverOpen(false);
-    } catch (err) {
-      toast.error('Failed to download evidence. Please try again.');
-      console.error('Evidence download error:', err);
-    } finally {
-      setIsDownloading(false);
-    }
-  };
-
   return (
-    <div className="flex flex-col gap-10">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          {logoUrl && (
-            <a
-              href={logoUrl}
-              download={`${organizationName.replace(/[^a-zA-Z0-9]/g, '_')}_logo`}
-              className="group relative h-14 w-14 shrink-0 overflow-hidden rounded-lg border bg-background transition-all hover:shadow-md"
-              title="Download logo"
-            >
-              <Image src={logoUrl} alt={`${organizationName} logo`} fill className="object-contain" />
-              <div className="absolute inset-0 flex items-center justify-center bg-black/50 opacity-0 transition-opacity group-hover:opacity-100">
-                <Download className="h-4 w-4 text-white" />
-              </div>
-            </a>
-          )}
-          <div>
-            <h1 className="text-foreground text-xl font-semibold tracking-tight">
-              {organizationName}
-            </h1>
-            <p className="text-muted-foreground text-sm">Company Overview</p>
-          </div>
-        </div>
-
-        {/* Download All Evidence Button */}
-        <Popover open={isPopoverOpen} onOpenChange={setIsPopoverOpen}>
-          <PopoverTrigger style={{ cursor: 'pointer' }}>
-            <Button variant="outline">Export All Evidence</Button>
-          </PopoverTrigger>
-          <PopoverContent align="end" side="bottom" sideOffset={8}>
-            <PopoverHeader>
-              <PopoverTitle>Export Options</PopoverTitle>
-              <PopoverDescription>Download all task evidence as ZIP</PopoverDescription>
-            </PopoverHeader>
-            <div className="flex items-center justify-between gap-3 py-1">
-              <span className="text-sm">Include raw JSON files</span>
-              <Switch checked={includeJson} onCheckedChange={(checked) => setIncludeJson(checked)} />
-            </div>
-            <Button
-              iconLeft={<ArrowDown />}
-              onClick={handleDownloadAllEvidence}
-              disabled={isDownloading}
-              width="full"
-            >
-              {isDownloading ? 'Preparing…' : 'Export'}
-            </Button>
-          </PopoverContent>
-        </Popover>
-      </div>
-
-      {/* Company Information */}
+    <Stack gap="xl">
       <Section title="Company Information">
-        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+          {logoUrl && (
+            <InfoCell
+              label="Logo"
+              className="lg:border-r lg:border-border lg:pr-6"
+              value={
+                <a
+                  href={logoUrl}
+                  download={`${organizationName.replace(/[^a-zA-Z0-9]/g, '_')}_logo`}
+                  className="group relative block h-14 w-14 overflow-hidden rounded-lg border bg-background transition-all hover:shadow-md"
+                  title="Download logo"
+                >
+                  <Image
+                    src={logoUrl}
+                    alt={`${organizationName} logo`}
+                    fill
+                    className="object-contain"
+                  />
+                  <div className="absolute inset-0 flex items-center justify-center bg-black/50 opacity-0 transition-opacity group-hover:opacity-100">
+                    <Download className="h-4 w-4 text-white" />
+                  </div>
+                </a>
+              }
+            />
+          )}
           <InfoCell
             label="Employees"
             value={employeeCount || '—'}
@@ -126,13 +60,9 @@ export function AuditorView({
                 <div>
                   <div className="flex items-baseline gap-2">
                     <span className="font-medium">{reportSignatory.fullName}</span>
-                    <span className="text-muted-foreground text-xs">
-                      {reportSignatory.jobTitle}
-                    </span>
+                    <span className="text-muted-foreground text-xs">{reportSignatory.jobTitle}</span>
                   </div>
-                  <div className="text-muted-foreground text-xs mt-0.5">
-                    {reportSignatory.email}
-                  </div>
+                  <div className="text-muted-foreground text-xs mt-0.5">{reportSignatory.email}</div>
                 </div>
               ) : (
                 '—'
@@ -141,7 +71,6 @@ export function AuditorView({
           />
           <InfoCell
             label="Executive Team"
-            className="sm:col-span-2 lg:col-span-1"
             value={
               cSuite.length > 0 ? (
                 <div className="space-y-1">
@@ -160,9 +89,8 @@ export function AuditorView({
         </div>
       </Section>
 
-      {/* Business Overview */}
       <Section title="Business Overview">
-        <div className="space-y-6">
+        <Stack gap="lg">
           <ContentRow
             title="Company Background & Overview of Operations"
             content={initialContent['Company Background & Overview of Operations']}
@@ -172,15 +100,13 @@ export function AuditorView({
             content={initialContent['Types of Services Provided']}
           />
           <ContentRow title="Mission & Vision" content={initialContent['Mission & Vision']} />
-        </div>
+        </Stack>
       </Section>
 
-      {/* System Architecture */}
       <Section title="System Architecture">
         <ContentRow title="System Description" content={initialContent['System Description']} />
       </Section>
 
-      {/* Third Party Dependencies */}
       <Section title="Third Party Dependencies">
         <div className="grid gap-6 lg:grid-cols-2">
           <ContentRow title="Critical Vendors" content={initialContent['Critical Vendors']} />
@@ -190,20 +116,7 @@ export function AuditorView({
           />
         </div>
       </Section>
-    </div>
-  );
-}
-
-function Section({ title, children }: { title: string; children: React.ReactNode }) {
-  return (
-    <div className="space-y-4">
-      <div className="flex items-center gap-3 border-b border-border pb-2">
-        <h2 className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-          {title}
-        </h2>
-      </div>
-      {children}
-    </div>
+    </Stack>
   );
 }
 
@@ -217,7 +130,7 @@ function InfoCell({
   className?: string;
 }) {
   return (
-    <div className={className || ''}>
+    <div className={className}>
       <div className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground mb-1.5">
         {label}
       </div>
@@ -233,9 +146,7 @@ function ContentRow({ title, content }: { title: string; content?: string }) {
     <div className="space-y-1.5">
       <h3 className="text-sm font-medium text-foreground">{title}</h3>
       {hasContent ? (
-        <p className="text-sm leading-relaxed text-muted-foreground whitespace-pre-wrap">
-          {content}
-        </p>
+        <p className="text-sm leading-relaxed text-muted-foreground whitespace-pre-wrap">{content}</p>
       ) : (
         <p className="text-xs text-muted-foreground/50">Not yet available</p>
       )}

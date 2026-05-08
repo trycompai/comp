@@ -12,6 +12,7 @@ import {
 } from '@nestjs/common';
 import { Request } from 'express';
 import { createHmac, timingSafeEqual } from 'crypto';
+import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { getManifest } from '@trycompai/integration-platform';
 import type { WebhookConfig } from '@trycompai/integration-platform';
 import { ConnectionRepository } from '../repositories/connection.repository';
@@ -60,12 +61,14 @@ function getEventType(headers: Record<string, string>): string {
 }
 
 @Controller({ path: 'integrations/webhooks', version: '1' })
+@ApiTags('Webhook')
 export class WebhookController {
   private readonly logger = new Logger(WebhookController.name);
 
   constructor(private readonly connectionRepository: ConnectionRepository) {}
 
   @Post(':providerSlug/:connectionId')
+  @ApiOperation({ summary: 'Receive a provider webhook event' })
   async handleWebhook(
     @Param('providerSlug') providerSlug: string,
     @Param('connectionId') connectionId: string,

@@ -199,7 +199,11 @@ async function syncProvider(params: SyncProviderParams): Promise<SyncResult> {
 
     default:
       // Try generic dynamic sync endpoint for non-built-in providers
-      return syncDynamicProvider({ providerSlug, connectionId, organizationId });
+      return syncDynamicProvider({
+        providerSlug,
+        connectionId,
+        organizationId,
+      });
   }
 }
 

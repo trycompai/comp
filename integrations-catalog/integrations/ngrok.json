@@ -1,0 +1,37 @@
+{
+  "slug": "ngrok",
+  "name": "ngrok",
+  "description": "Ingress platform for exposing local services. Monitor tunnels and access.",
+  "category": "Infrastructure",
+  "docsUrl": "https://ngrok.com/docs/api/",
+  "baseUrl": "https://api.ngrok.com",
+  "authConfig": {
+    "type": "api_key",
+    "config": {
+      "setupInstructions": "1. Log in to the ngrok Dashboard at https://dashboard.ngrok.com\n2. Navigate to API section at https://dashboard.ngrok.com/api\n3. Click \"Add API Key\" to generate a new API key\n4. Copy the key and paste it below\n\nNote: The API key is shown only once at creation. Store it securely."
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "ngrok_app_availability",
+      "name": "ngrok App Availability",
+      "description": "Checks that the ngrok API is accessible with the provided credentials.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "ngrok_employee_access",
+      "name": "ngrok Employee Access",
+      "description": "Verifies employee access to ngrok via API.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

@@ -32,6 +32,11 @@ export async function GET(request: Request) {
                         name: true,
                       },
                     },
+                    customFramework: {
+                      select: {
+                        name: true,
+                      },
+                    },
                   },
                 },
               },
@@ -60,7 +65,9 @@ export async function GET(request: Request) {
       frameworks: [
         ...new Set(
           user.members.flatMap((membership) =>
-            membership.organization.frameworkInstances.map((fi) => fi.framework.name),
+            membership.organization.frameworkInstances
+              .map((fi) => fi.framework?.name ?? fi.customFramework?.name)
+              .filter((name): name is string => Boolean(name)),
           ),
         ),
       ],

@@ -1,0 +1,45 @@
+{
+  "slug": "sonarcloud",
+  "name": "SonarCloud",
+  "description": "Monitor SonarCloud for critical vulnerabilities and security hotspots in code for security compliance",
+  "category": "Security",
+  "docsUrl": "https://sonarcloud.io/web_api",
+  "baseUrl": "https://sonarcloud.io/",
+  "authConfig": {
+    "type": "custom",
+    "config": {
+      "setupInstructions": "1. Log in to SonarCloud\n2. Go to My Account > Security\n3. Generate a new token\n4. Base64-encode 'your_token:' (token followed by a colon)\n5. Paste the encoded string below",
+      "credentialFields": [
+        {
+          "label": "Base64 Encoded Token",
+          "type": "password",
+          "required": true,
+          "helpText": "Base64-encode 'your_token:' (with trailing colon). Create a token in SonarCloud > My Account > Security"
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "vulnerabilities",
+      "name": "Secure Code",
+      "description": "Checks for critical and blocker vulnerabilities in SonarCloud",
+      "defaultSeverity": "high",
+      "enabled": true
+    },
+    {
+      "slug": "security_hotspots",
+      "name": "Sanitized Inputs",
+      "description": "Checks for unreviewed security hotspots in SonarCloud",
+      "defaultSeverity": "high",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

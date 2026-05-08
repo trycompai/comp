@@ -87,7 +87,14 @@ export function PoliciesTable({ policies, orgId }: PoliciesTableProps) {
                   }
                 }}
               >
-                <TableCell>{policy.name}</TableCell>
+                <TableCell>
+                  <span
+                    className="block max-w-[420px] truncate text-sm"
+                    title={policy.name}
+                  >
+                    {policy.name}
+                  </span>
+                </TableCell>
                 <TableCell>{new Date(policy.createdAt).toLocaleDateString()}</TableCell>
                 <TableCell>
                   <StatusIndicator status={policy.status} />

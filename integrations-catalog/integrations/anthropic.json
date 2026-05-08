@@ -1,0 +1,44 @@
+{
+  "slug": "anthropic",
+  "name": "Anthropic",
+  "description": "AI safety company building Claude. Monitor API access and usage.",
+  "category": "Cloud",
+  "docsUrl": "https://docs.anthropic.com/en/api/",
+  "baseUrl": "https://api.anthropic.com",
+  "authConfig": {
+    "type": "custom",
+    "config": {
+      "setupInstructions": "1. Go to console.anthropic.com and sign in\n2. Navigate to Settings > Admin API Keys (requires Organization Admin role)\n3. Create a new Admin API key\n4. Copy the key and enter it above\n5. Note: Admin API keys are required for organization-level checks. Regular API keys only work for model access checks.",
+      "credentialFields": [
+        {
+          "label": "API Key",
+          "type": "password",
+          "required": true
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "anthropic_app_availability",
+      "name": "Anthropic App Availability",
+      "description": "Checks that the Anthropic API is accessible with the provided credentials.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "anthropic_employee_access",
+      "name": "Anthropic Employee Access",
+      "description": "Review Anthropic organization access by listing API keys, pending invitations, and workspaces",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

@@ -6,6 +6,7 @@ import {
   IsEnum,
   IsUrl,
   IsBoolean,
+  MaxLength,
 } from 'class-validator';
 import { Transform } from 'class-transformer';
 import {
@@ -13,6 +14,7 @@ import {
   VendorStatus,
   Likelihood,
   Impact,
+  RiskTreatmentType,
 } from '@db';
 
 /**
@@ -46,7 +48,10 @@ export class UpdateVendorDto {
   @IsEnum(VendorStatus)
   status?: VendorStatus;
 
-  @ApiPropertyOptional({ description: 'Inherent probability', enum: Likelihood })
+  @ApiPropertyOptional({
+    description: 'Inherent probability',
+    enum: Likelihood,
+  })
   @IsOptional()
   @IsEnum(Likelihood)
   inherentProbability?: Likelihood;
@@ -56,7 +61,10 @@ export class UpdateVendorDto {
   @IsEnum(Impact)
   inherentImpact?: Impact;
 
-  @ApiPropertyOptional({ description: 'Residual probability', enum: Likelihood })
+  @ApiPropertyOptional({
+    description: 'Residual probability',
+    enum: Likelihood,
+  })
   @IsOptional()
   @IsEnum(Likelihood)
   residualProbability?: Likelihood;
@@ -65,6 +73,25 @@ export class UpdateVendorDto {
   @IsOptional()
   @IsEnum(Impact)
   residualImpact?: Impact;
+
+  @ApiPropertyOptional({
+    description: 'Risk treatment strategy',
+    enum: RiskTreatmentType,
+    default: RiskTreatmentType.accept,
+    example: RiskTreatmentType.mitigate,
+  })
+  @IsOptional()
+  @IsEnum(RiskTreatmentType)
+  treatmentStrategy?: RiskTreatmentType;
+
+  @ApiPropertyOptional({
+    description: 'Description of the treatment strategy',
+    example: 'We isolated the vendor to a dedicated VPC.',
+  })
+  @IsOptional()
+  @IsString()
+  @MaxLength(20_000)
+  treatmentStrategyDescription?: string | null;
 
   @ApiPropertyOptional({ description: 'Vendor website URL' })
   @IsOptional()

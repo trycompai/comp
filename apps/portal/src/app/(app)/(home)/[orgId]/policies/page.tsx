@@ -13,6 +13,7 @@ import { Document } from '@trycompai/design-system/icons';
 import { headers } from 'next/headers';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
+import { sortPoliciesByName } from '../components/policy/sort-policies-by-name';
 
 export default async function SignedPoliciesPage({
   params,
@@ -41,22 +42,23 @@ export default async function SignedPoliciesPage({
     redirect('/');
   }
 
-  const policies = await db.policy.findMany({
-    where: {
-      organizationId: orgId,
-      status: 'published',
-      isRequiredToSign: true,
-      isArchived: false,
-      signedBy: { has: member.id },
-    },
-    orderBy: { name: 'asc' },
-    select: {
-      id: true,
-      name: true,
-      description: true,
-      updatedAt: true,
-    },
-  });
+  const policies = sortPoliciesByName(
+    await db.policy.findMany({
+      where: {
+        organizationId: orgId,
+        status: 'published',
+        isRequiredToSign: true,
+        isArchived: false,
+        signedBy: { has: member.id },
+      },
+      select: {
+        id: true,
+        name: true,
+        description: true,
+        updatedAt: true,
+      },
+    }),
+  );
 
   return (
     <PageLayout>

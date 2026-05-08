@@ -10,7 +10,15 @@ import { CommentsService } from './comments.service';
 jest.mock('@db', () => ({
   ...jest.requireActual('@prisma/client'),
   db: {},
-  Prisma: { PrismaClientKnownRequestError: class PrismaClientKnownRequestError extends Error { code: string; constructor(message: string, { code }: { code: string }) { super(message); this.code = code; } } },
+  Prisma: {
+    PrismaClientKnownRequestError: class PrismaClientKnownRequestError extends Error {
+      code: string;
+      constructor(message: string, { code }: { code: string }) {
+        super(message);
+        this.code = code;
+      }
+    },
+  },
 }));
 
 jest.mock('../auth/auth.server', () => ({
@@ -77,7 +85,11 @@ describe('CommentsController', () => {
       const comments = [{ id: 'cmt_1', content: 'Hello' }];
       mockCommentsService.getComments.mockResolvedValue(comments);
 
-      const result = await controller.getComments('org_123', 'tsk_1', 'task' as never);
+      const result = await controller.getComments(
+        'org_123',
+        'tsk_1',
+        'task' as never,
+      );
 
       expect(commentsService.getComments).toHaveBeenCalledWith(
         'org_123',
@@ -163,7 +175,10 @@ describe('CommentsController', () => {
 
   describe('updateComment', () => {
     it('should call commentsService.updateComment with correct parameters for session auth', async () => {
-      const dto = { content: 'Updated content', contextUrl: 'https://example.com' };
+      const dto = {
+        content: 'Updated content',
+        contextUrl: 'https://example.com',
+      };
       const updated = { id: 'cmt_1', content: 'Updated content' };
       mockCommentsService.updateComment.mockResolvedValue(updated);
 

@@ -1,0 +1,35 @@
+{
+  "slug": "speakeasy",
+  "name": "Speakeasy",
+  "description": "API developer experience platform. Monitor API access and workspace.",
+  "category": "Development",
+  "docsUrl": "https://docs.speakeasyapi.dev/",
+  "baseUrl": "https://api.speakeasyapi.dev",
+  "authConfig": {
+    "type": "api_key",
+    "config": {}
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "speakeasy_app_availability",
+      "name": "Speakeasy App Availability",
+      "description": "Checks Speakeasy app availability.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "speakeasy_employee_access",
+      "name": "Speakeasy Employee Access",
+      "description": "Checks Speakeasy employee access.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

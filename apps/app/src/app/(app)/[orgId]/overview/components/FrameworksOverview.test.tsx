@@ -28,6 +28,10 @@ vi.mock('@trycompai/ui/scroll-area', () => ({
   ),
 }));
 
+vi.mock('next/navigation', () => ({
+  useParams: () => ({ orgId: 'org_123' }),
+}));
+
 vi.mock('next/image', () => ({
   default: (props: Record<string, unknown>) => (
     // eslint-disable-next-line @next/next/no-img-element
@@ -65,5 +69,55 @@ describe('FrameworksOverview permission gating', () => {
     setMockPermissions({});
     render(<FrameworksOverview {...baseProps} />);
     expect(screen.queryByRole('button', { name: /add framework/i })).not.toBeInTheDocument();
+  });
+
+  it('renders PCI DSS badge for PCI DSS Level 1 framework instances', () => {
+    setMockPermissions({});
+
+    render(
+      <FrameworksOverview
+        {...baseProps}
+        overallComplianceScore={0}
+        frameworksWithControls={[
+          {
+            id: 'fi_pci_level_1',
+            controls: [],
+            framework: {
+              id: 'fw_pci_level_1',
+              name: 'PCI DSS Level 1',
+              description: 'Payment Card Industry Data Security Standard Level 1',
+            },
+          } as any,
+        ]}
+      />,
+    );
+
+    const badge = screen.getByAltText('PCI DSS Level 1');
+    expect(badge).toHaveAttribute('src', '/badges/pci-dss.svg');
+  });
+
+  it('renders PCI DSS badge for PCI DSS framework name variants', () => {
+    setMockPermissions({});
+
+    render(
+      <FrameworksOverview
+        {...baseProps}
+        overallComplianceScore={0}
+        frameworksWithControls={[
+          {
+            id: 'fi_pci_variant',
+            controls: [],
+            framework: {
+              id: 'fw_pci_variant',
+              name: 'PCI DSS v4.0 Level 1',
+              description: 'PCI DSS framework variant',
+            },
+          } as any,
+        ]}
+      />,
+    );
+
+    const badge = screen.getByAltText('PCI DSS v4.0 Level 1');
+    expect(badge).toHaveAttribute('src', '/badges/pci-dss.svg');
   });
 });

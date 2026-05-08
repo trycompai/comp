@@ -12,7 +12,7 @@ You write unit tests for React components that use `usePermissions` for RBAC gat
 - **Libraries**: `@testing-library/react` + `@testing-library/jest-dom`
 - **Setup**: `apps/app/src/test-utils/setup.ts`
 - **Permission mocks**: `apps/app/src/test-utils/mocks/permissions.ts`
-- **Run**: `cd apps/app && npx vitest run path/to/test`
+- **Run**: `cd apps/app && bunx vitest run path/to/test`
 
 ## Process
 
@@ -84,4 +84,4 @@ describe('ComponentUnderTest', () => {
 - Mock all external hooks (`useSWR`, `useRouter`, `apiClient`, etc.)
 - Use `screen.queryBy*` for elements that should NOT exist (returns null instead of throwing)
 - Use `screen.getBy*` for elements that MUST exist
-- Run the test after writing to verify it passes: `cd apps/app && npx vitest run path/to/file.test.tsx`
+- Run the test after writing to verify it passes: `cd apps/app && bunx vitest run path/to/file.test.tsx`

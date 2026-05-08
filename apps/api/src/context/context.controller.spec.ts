@@ -178,7 +178,11 @@ describe('ContextController', () => {
   describe('updateContext', () => {
     it('should call contextService.updateById with id, organizationId, and dto', async () => {
       const dto = { answer: 'Updated answer' };
-      const updated = { id: 'ctx_1', question: 'What is SOC2?', answer: 'Updated answer' };
+      const updated = {
+        id: 'ctx_1',
+        question: 'What is SOC2?',
+        answer: 'Updated answer',
+      };
       mockContextService.updateById.mockResolvedValue(updated);
 
       const result = await controller.updateContext(

@@ -1,0 +1,39 @@
+{
+  "slug": "hellosign",
+  "name": "Dropbox Sign",
+  "description": "Electronic signature platform. Monitor account access and signature workflows.",
+  "category": "Productivity",
+  "docsUrl": "https://developers.hellosign.com/",
+  "baseUrl": "https://api.hellosign.com",
+  "authConfig": {
+    "type": "basic",
+    "config": {
+      "setupInstructions": "1. Log in to Dropbox Sign\n2. Go to Settings > Integrations > API\n3. Copy your API key and paste it below as the username (leave password blank)\n\nNote: This integration uses the hellosign slug. A separate 'dropbox-sign' integration also exists.",
+      "usernameField": "api_key",
+      "passwordField": "password"
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "hellosign_app_availability",
+      "name": "Dropbox Sign App Availability",
+      "description": "Checks Dropbox Sign app availability.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "hellosign_employee_access",
+      "name": "Dropbox Sign Employee Access",
+      "description": "Checks Dropbox Sign employee access.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

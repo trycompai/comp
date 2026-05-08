@@ -81,10 +81,16 @@ describe('RolesController', () => {
 
       mockRolesService.createRole.mockResolvedValue(expectedRole);
 
-      const result = await controller.createRole('org_123', mockAuthContext, dto);
+      const result = await controller.createRole(
+        'org_123',
+        mockAuthContext,
+        dto,
+      );
 
       expect(result).toEqual(expectedRole);
-      expect(rolesService.createRole).toHaveBeenCalledWith('org_123', dto, ['owner']);
+      expect(rolesService.createRole).toHaveBeenCalledWith('org_123', dto, [
+        'owner',
+      ]);
     });
 
     it('should pass multiple roles to service', async () => {
@@ -121,7 +127,9 @@ describe('RolesController', () => {
 
       await controller.createRole('org_123', noRoleContext, dto);
 
-      expect(rolesService.createRole).toHaveBeenCalledWith('org_123', dto, ['employee']);
+      expect(rolesService.createRole).toHaveBeenCalledWith('org_123', dto, [
+        'employee',
+      ]);
     });
   });
 
@@ -200,23 +208,31 @@ describe('RolesController', () => {
 
       await controller.updateRole('org_123', multiRoleContext, 'rol_123', dto);
 
-      expect(rolesService.updateRole).toHaveBeenCalledWith('org_123', 'rol_123', dto, [
-        'owner',
-        'admin',
-      ]);
+      expect(rolesService.updateRole).toHaveBeenCalledWith(
+        'org_123',
+        'rol_123',
+        dto,
+        ['owner', 'admin'],
+      );
     });
   });
 
   describe('deleteRole', () => {
     it('should delete a role', async () => {
-      const expectedResult = { success: true, message: "Role 'custom-role' deleted" };
+      const expectedResult = {
+        success: true,
+        message: "Role 'custom-role' deleted",
+      };
 
       mockRolesService.deleteRole.mockResolvedValue(expectedResult);
 
       const result = await controller.deleteRole('org_123', 'rol_123');
 
       expect(result).toEqual(expectedResult);
-      expect(rolesService.deleteRole).toHaveBeenCalledWith('org_123', 'rol_123');
+      expect(rolesService.deleteRole).toHaveBeenCalledWith(
+        'org_123',
+        'rol_123',
+      );
     });
   });
 });

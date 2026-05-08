@@ -1,0 +1,35 @@
+{
+  "slug": "asana",
+  "name": "Asana",
+  "description": "Monitor Asana workspace members and project organization for compliance",
+  "category": "Productivity",
+  "docsUrl": "https://developers.asana.com/docs",
+  "baseUrl": "https://app.asana.com/",
+  "authConfig": {
+    "type": "api_key",
+    "config": {}
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "asana_employee_access",
+      "name": "Employee Access",
+      "description": "Reviews Asana workspace members and verifies active user access",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "asana_separation_of_envs",
+      "name": "Separation of Environments",
+      "description": "Verifies that Asana projects are organized showing environment separation",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

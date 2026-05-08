@@ -1,0 +1,45 @@
+{
+  "slug": "pleo",
+  "name": "Pleo",
+  "description": "Monitor Pleo expense management for company spending controls and access compliance",
+  "category": "Productivity",
+  "docsUrl": "https://docs.pleo.io/",
+  "baseUrl": "https://external.pleo.io/",
+  "authConfig": {
+    "type": "api_key",
+    "config": {
+      "setupInstructions": "1. Log in to Pleo at https://app.pleo.io\n2. Go to Settings → Integrations → API\n3. Generate an API token\n4. Enter it below",
+      "credentialFields": [
+        {
+          "label": "API Token",
+          "type": "password",
+          "required": true,
+          "helpText": "Found in Pleo Settings → Integrations → API"
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "pleo_employee_access",
+      "name": "Employee Access",
+      "description": "Reviews Pleo company members and their expense management access",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "pleo_secure_secrets",
+      "name": "Secure Secrets",
+      "description": "Verifies Pleo spending controls and expense policies are configured",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

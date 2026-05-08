@@ -12,6 +12,7 @@ import {
   UseInterceptors,
   Req,
 } from '@nestjs/common';
+import { ApiExcludeController } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
 import { OAuthCredentialsService } from '../services/oauth-credentials.service';
 import { PlatformCredentialRepository } from '../repositories/platform-credential.repository';
@@ -27,6 +28,7 @@ interface SavePlatformCredentialDto {
   customSettings?: Record<string, unknown>;
 }
 
+@ApiExcludeController()
 @Controller({ path: 'admin/integrations', version: '1' })
 @UseGuards(PlatformAdminGuard)
 @UseInterceptors(PlatformAuditLogInterceptor)
@@ -72,8 +74,11 @@ export class AdminIntegrationsController {
         encryptedClientId: credential?.encryptedClientId,
         encryptedClientSecret: credential?.encryptedClientSecret,
         existingCustomSettings:
-          (credential as { customSettings?: Record<string, unknown> } | undefined)
-            ?.customSettings || undefined,
+          (
+            credential as
+              | { customSettings?: Record<string, unknown> }
+              | undefined
+          )?.customSettings || undefined,
         ...(manifest.auth.type === 'oauth2' && {
           setupInstructions: manifest.auth.config.setupInstructions,
           createAppUrl: manifest.auth.config.createAppUrl,

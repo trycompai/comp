@@ -17,34 +17,33 @@ vi.mock('@/hooks/use-permissions', () => ({
 }));
 
 // Mock integration platform hooks
-const mockStartOAuth = vi.fn();
+const {
+  mockStartOAuth,
+  mockUseIntegrationProviders,
+  mockUseIntegrationConnections,
+  mockUseVendors,
+} = vi.hoisted(() => ({
+  mockStartOAuth: vi.fn(),
+  mockUseIntegrationProviders: vi.fn(),
+  mockUseIntegrationConnections: vi.fn(),
+  mockUseVendors: vi.fn(),
+}));
+
+const { mockRouterPush, mockUseSearchParams } = vi.hoisted(() => ({
+  mockRouterPush: vi.fn(),
+  mockUseSearchParams: vi.fn(() => new URLSearchParams()),
+}));
+
 vi.mock('@/hooks/use-integration-platform', () => ({
-  useIntegrationProviders: () => ({
-    providers: [
-      {
-        id: 'github',
-        name: 'GitHub',
-        description: 'Code hosting',
-        category: 'Development',
-        logoUrl: '/github.png',
-        authType: 'oauth2',
-        oauthConfigured: true,
-        isActive: true,
-        requiredVariables: [],
-        mappedTasks: [],
-        supportsMultipleConnections: false,
-      },
-    ],
-    isLoading: false,
-  }),
-  useIntegrationConnections: () => ({
-    connections: [],
-    isLoading: false,
-    refresh: vi.fn(),
-  }),
+  useIntegrationProviders: mockUseIntegrationProviders,
+  useIntegrationConnections: mockUseIntegrationConnections,
   useIntegrationMutations: () => ({
     startOAuth: mockStartOAuth,
   }),
+}));
+
+vi.mock('@/hooks/use-vendors', () => ({
+  useVendors: mockUseVendors,
 }));
 
 // Mock integrations data
@@ -92,8 +91,8 @@ vi.mock('next/link', () => ({
 // Mock next/navigation
 vi.mock('next/navigation', () => ({
   useParams: () => ({ orgId: 'org-1' }),
-  useRouter: () => ({ push: vi.fn() }),
-  useSearchParams: () => new URLSearchParams(),
+  useRouter: () => ({ push: mockRouterPush }),
+  useSearchParams: mockUseSearchParams,
 }));
 
 // Mock @trycompai/ui components
@@ -159,6 +158,39 @@ const defaultProps = {
 describe('PlatformIntegrations', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockUseSearchParams.mockReturnValue(new URLSearchParams() as any);
+    mockUseIntegrationProviders.mockReturnValue({
+      providers: [
+        {
+          id: 'github',
+          name: 'GitHub',
+          description: 'Code hosting',
+          category: 'Development',
+          logoUrl: '/github.png',
+          authType: 'oauth2',
+          oauthConfigured: true,
+          isActive: true,
+          requiredVariables: [],
+          mappedTasks: [],
+          supportsMultipleConnections: false,
+        },
+      ],
+      isLoading: false,
+    });
+    mockUseIntegrationConnections.mockReturnValue({
+      connections: [],
+      isLoading: false,
+      refresh: vi.fn(),
+    });
+    mockUseVendors.mockReturnValue({
+      data: {
+        data: {
+          data: [],
+          count: 0,
+        },
+        status: 200,
+      },
+    });
   });
 
   describe('Permission gating', () => {
@@ -202,6 +234,53 @@ describe('PlatformIntegrations', () => {
       // The card itself and provider name should still be visible
       expect(screen.getByText('GitHub')).toBeInTheDocument();
       expect(screen.getByTestId('search-input')).toBeInTheDocument();
+    });
+
+    it('treats provider as connected when an active connection exists alongside older disconnected rows', () => {
+      setMockPermissions(ADMIN_PERMISSIONS);
+      mockUseIntegrationProviders.mockReturnValue({
+        providers: [
+          {
+            id: 'gcp',
+            name: 'Google Cloud Platform',
+            description: 'Cloud security',
+            category: 'Cloud',
+            logoUrl: '/gcp.png',
+            authType: 'oauth2',
+            oauthConfigured: true,
+            isActive: true,
+            requiredVariables: [],
+            mappedTasks: [],
+            supportsMultipleConnections: true,
+          },
+        ],
+        isLoading: false,
+      });
+      mockUseIntegrationConnections.mockReturnValue({
+        connections: [
+          // Newest row returned first by API
+          {
+            id: 'conn-new-active',
+            providerSlug: 'gcp',
+            status: 'active',
+            variables: {},
+            createdAt: '2026-04-14T00:00:00.000Z',
+          },
+          {
+            id: 'conn-old-disconnected',
+            providerSlug: 'gcp',
+            status: 'disconnected',
+            variables: {},
+            createdAt: '2026-04-01T00:00:00.000Z',
+          },
+        ] as any,
+        isLoading: false,
+        refresh: vi.fn(),
+      });
+
+      render(<PlatformIntegrations {...defaultProps} />);
+
+      expect(screen.queryByText('Connect')).not.toBeInTheDocument();
     });
   });
 
@@ -248,10 +327,7 @@ describe('PlatformIntegrations', () => {
       });
 
       // Mock useSearchParams to simulate OAuth callback
-      const { useSearchParams: mockUseSearchParams } = vi.mocked(
-        await import('next/navigation'),
-      );
-      vi.mocked(mockUseSearchParams).mockReturnValue(
+      mockUseSearchParams.mockReturnValue(
         new URLSearchParams('success=true&provider=google-workspace') as any,
       );
 
@@ -312,10 +388,7 @@ describe('PlatformIntegrations', () => {
         refresh: vi.fn(),
       });
 
-      const { useSearchParams: mockUseSearchParams } = vi.mocked(
-        await import('next/navigation'),
-      );
-      vi.mocked(mockUseSearchParams).mockReturnValue(
+      mockUseSearchParams.mockReturnValue(
         new URLSearchParams('success=true&provider=github') as any,
       );
 
@@ -327,6 +400,79 @@ describe('PlatformIntegrations', () => {
         'GitHub connected successfully!',
       );
       expect(toast.info).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('Vendor-prioritized ordering', () => {
+    it('shows integrations from vendor list before non-vendor integrations', () => {
+      mockUseIntegrationProviders.mockReturnValue({
+        providers: [
+          {
+            id: 'github',
+            name: 'GitHub',
+            description: 'Code hosting',
+            category: 'Development',
+            logoUrl: '/github.png',
+            authType: 'oauth2',
+            oauthConfigured: true,
+            isActive: true,
+            requiredVariables: [],
+            mappedTasks: [],
+            supportsMultipleConnections: false,
+          },
+          {
+            id: 'slack',
+            name: 'Slack',
+            description: 'Team communication',
+            category: 'Communication',
+            logoUrl: '/slack.png',
+            authType: 'api_key',
+            isActive: true,
+            requiredVariables: [],
+            mappedTasks: [],
+            supportsMultipleConnections: false,
+          },
+        ],
+        isLoading: false,
+      });
+      mockUseIntegrationConnections.mockReturnValue({
+        connections: [
+          {
+            id: 'conn-1',
+            providerSlug: 'github',
+            status: 'active',
+            variables: {},
+          },
+        ],
+        isLoading: false,
+        refresh: vi.fn(),
+      });
+      mockUseVendors.mockReturnValue({
+        data: {
+          data: {
+            data: [
+              {
+                id: 'vnd-1',
+                name: 'Slack',
+              },
+            ],
+            count: 1,
+          },
+          status: 200,
+        },
+      });
+
+      setMockPermissions(ADMIN_PERMISSIONS);
+
+      render(<PlatformIntegrations {...defaultProps} />);
+
+      const integrationTitles = screen
+        .getAllByRole('heading', { level: 3 })
+        .map((heading) => heading.textContent?.trim())
+        .filter(Boolean);
+
+      expect(integrationTitles[0]).toBe('Slack');
+      expect(integrationTitles[1]).toBe('GitHub');
     });
   });
 });

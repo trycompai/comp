@@ -292,6 +292,7 @@ export const runBrowserAutomation = task({
         runId: result.runId,
         error: result.error,
         needsReauth: result.needsReauth,
+        evaluationStatus: result.evaluationStatus,
       });
 
       // Mark task as failed if auth issue
@@ -323,6 +324,23 @@ export const runBrowserAutomation = task({
           );
         }
       }
+    }
+
+    // Record a successful run on the automation so the orchestrator's
+    // schedule filter (`isDueToday`) can skip it on the next tick. "Executed"
+    // here means the automation actually ran — including runs whose evaluation
+    // legitimately returned `fail`. We skip the write when the automation
+    // genuinely couldn't execute (e.g. `needsReauth` / missing browser context
+    // / other transient infra errors) so the next orchestrator tick retries
+    // instead of waiting a full schedule period.
+    const executed =
+      result.success === true || result.evaluationStatus === 'fail';
+
+    if (executed) {
+      await db.browserAutomation.update({
+        where: { id: automationId },
+        data: { lastRunAt: new Date() },
+      });
     }
 
     return {

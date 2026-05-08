@@ -1,0 +1,51 @@
+{
+  "slug": "cato-networks",
+  "name": "Cato Networks",
+  "description": "SASE platform providing SD-WAN and security services through a global cloud network",
+  "category": "Security",
+  "docsUrl": "https://api.catonetworks.com/documentation/",
+  "baseUrl": "https://api.catonetworks.com",
+  "authConfig": {
+    "type": "custom",
+    "config": {
+      "setupInstructions": "1. Log in to the Cato Management Application\n2. Go to Administration > API Keys\n3. Generate a new API key with read permissions\n4. Copy your Account ID from Administration > Account Info\n5. Enter both values below",
+      "credentialFields": [
+        {
+          "label": "API Key",
+          "type": "password",
+          "required": true,
+          "helpText": "Your Cato Networks API key from the Cato Management Application"
+        },
+        {
+          "label": "Account ID",
+          "type": "text",
+          "required": true,
+          "helpText": "Your Cato Networks Account ID (found in Administration > Account Info)"
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "production_firewall",
+      "name": "Production Firewall",
+      "description": "Verify firewall policies and rules are properly configured for production environments",
+      "defaultSeverity": "high",
+      "enabled": true
+    },
+    {
+      "slug": "monitoring_alerting",
+      "name": "Monitoring & Alerting",
+      "description": "Verify security events monitoring and alerting configurations are in place",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

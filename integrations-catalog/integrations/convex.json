@@ -1,0 +1,58 @@
+{
+  "slug": "convex",
+  "name": "Convex",
+  "description": "Monitor Convex projects, deployments, deploy keys, and team access for compliance",
+  "category": "Cloud",
+  "docsUrl": "https://docs.convex.dev/management-api",
+  "baseUrl": "https://api.convex.dev/v1/",
+  "authConfig": {
+    "type": "custom",
+    "config": {
+      "setupInstructions": "1. Go to https://dashboard.convex.dev/team/settings/access-tokens\n2. Copy your Team ID (numeric)\n3. Create or copy an Access Token\n4. Enter both values above",
+      "credentialFields": [
+        {
+          "label": "Team Access Token",
+          "type": "password",
+          "required": true,
+          "helpText": "Get from Convex Dashboard > Team Settings > Access Tokens"
+        },
+        {
+          "label": "Team ID",
+          "type": "text",
+          "required": true,
+          "helpText": "Numeric team ID, found in Team Settings alongside your access token"
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "employee_access",
+      "name": "Employee Access",
+      "description": "Lists all Convex projects and their deployments to verify access and deployment inventory",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "infrastructure_inventory",
+      "name": "Infrastructure Inventory",
+      "description": "Lists all deployments across projects with type, status, and configuration details",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "deploy_key_management",
+      "name": "Role-based Access Controls",
+      "description": "Audits deploy keys across all deployments to verify key management and access control",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 3,
+  "isActive": true
+}

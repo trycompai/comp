@@ -1,0 +1,51 @@
+{
+  "slug": "testrail",
+  "name": "TestRail",
+  "description": "Monitor TestRail test management for QA coverage and code quality compliance",
+  "category": "Development",
+  "docsUrl": "https://support.testrail.com/hc/en-us/articles/7077418013844-Introduction",
+  "baseUrl": "https://yourdomain.testrail.io/",
+  "authConfig": {
+    "type": "custom",
+    "config": {
+      "setupInstructions": "1. Log in to TestRail\n2. Go to your Profile → API Keys and generate a key\n3. Base64 encode 'your_email:api_key'\n4. Enter your TestRail URL and encoded credentials below",
+      "credentialFields": [
+        {
+          "label": "TestRail URL",
+          "type": "text",
+          "required": true,
+          "helpText": "Your TestRail instance URL (e.g. https://mycompany.testrail.io)"
+        },
+        {
+          "label": "Encoded Credentials",
+          "type": "password",
+          "required": true,
+          "helpText": "Base64 encode 'email:api_key'. Enable API key in TestRail: Profile → API Keys. Command: echo -n 'user@email.com:api_key' | base64"
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "testrail_code_changes",
+      "name": "Code Changes",
+      "description": "Verifies TestRail test projects and suites are configured to track code changes",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "testrail_secure_code",
+      "name": "Secure Code",
+      "description": "Verifies TestRail test runs are being executed to validate code quality",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

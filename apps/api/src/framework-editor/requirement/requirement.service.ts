@@ -33,9 +33,7 @@ export class RequirementService {
       where: { id: dto.frameworkId },
     });
     if (!framework) {
-      throw new NotFoundException(
-        `Framework ${dto.frameworkId} not found`,
-      );
+      throw new NotFoundException(`Framework ${dto.frameworkId} not found`);
     }
 
     const req = await db.frameworkEditorRequirement.create({

@@ -1,0 +1,43 @@
+{
+  "slug": "paycor",
+  "name": "Paycor",
+  "description": "Monitor employee access, role-based controls, and sync employee data from Paycor HR & Payroll",
+  "category": "HR & People",
+  "docsUrl": "https://developers.paycor.com/",
+  "baseUrl": "https://apis.paycor.com/",
+  "authConfig": {
+    "type": "oauth2",
+    "config": {
+      "scopes": [
+        "openid",
+        "offline_access"
+      ],
+      "clientAuthMethod": "body",
+      "supportsRefreshToken": true
+    }
+  },
+  "capabilities": [
+    "checks",
+    "sync"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": true,
+  "checks": [
+    {
+      "slug": "employee_access",
+      "name": "Employee Access",
+      "description": "Lists all employees in the Paycor legal entity and verifies their employment status",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "role_based_access",
+      "name": "Role-based Access Controls",
+      "description": "Reviews employee types and department assignments to verify role-based access controls are in place",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

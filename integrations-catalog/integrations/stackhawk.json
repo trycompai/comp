@@ -1,0 +1,38 @@
+{
+  "slug": "stackhawk",
+  "name": "StackHawk",
+  "description": "StackHawk DAST application security testing platform",
+  "category": "Security",
+  "docsUrl": "https://docs.stackhawk.com/",
+  "baseUrl": "https://api.stackhawk.com/api/v1",
+  "authConfig": {
+    "type": "custom",
+    "config": {
+      "setupInstructions": "1. Log in to StackHawk\n2. Go to Settings → API Keys\n3. Generate a new API key\n4. Paste it below",
+      "credentialFields": [
+        {
+          "label": "API Key",
+          "type": "password",
+          "required": true,
+          "helpText": "StackHawk → Settings → API Keys → Generate key"
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "stackhawk_code_security",
+      "name": "Code Changes",
+      "description": "Verifies StackHawk has applications configured for security scanning",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 1,
+  "isActive": true
+}

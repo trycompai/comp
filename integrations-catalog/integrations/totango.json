@@ -1,0 +1,45 @@
+{
+  "slug": "totango",
+  "name": "Totango",
+  "description": "Monitor Totango customer success platform for account health and team access compliance",
+  "category": "Productivity",
+  "docsUrl": "https://support.totango.com/hc/en-us/articles/204163305",
+  "baseUrl": "https://app.totango.com/",
+  "authConfig": {
+    "type": "custom",
+    "config": {
+      "setupInstructions": "1. Log in to Totango at https://app.totango.com\n2. Go to Settings → Integrations\n3. Copy your Service ID (App Token)\n4. Enter it below",
+      "credentialFields": [
+        {
+          "label": "Service ID (App Token)",
+          "type": "password",
+          "required": true,
+          "helpText": "Found in Totango Settings → Integrations → Service ID (also called App Token)"
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "totango_employee_access",
+      "name": "Employee Access",
+      "description": "Reviews Totango users with access to customer success data",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "totango_app_availability",
+      "name": "App Availability",
+      "description": "Verifies Totango customer success platform is active",
+      "defaultSeverity": "low",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

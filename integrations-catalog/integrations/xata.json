@@ -1,0 +1,45 @@
+{
+  "slug": "xata",
+  "name": "Xata",
+  "description": "Monitor Xata serverless database workspaces for infrastructure and access compliance",
+  "category": "Cloud",
+  "docsUrl": "https://xata.io/docs/rest-api",
+  "baseUrl": "https://api.xata.io/",
+  "authConfig": {
+    "type": "api_key",
+    "config": {
+      "setupInstructions": "1. Log in to Xata at https://app.xata.io\n2. Go to Account Settings → Personal API keys\n3. Generate a new API key\n4. Copy and enter it below",
+      "credentialFields": [
+        {
+          "label": "API Key",
+          "type": "password",
+          "required": true,
+          "helpText": "Found in Xata Account Settings → Personal API keys"
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "xata_infrastructure",
+      "name": "Infrastructure Inventory",
+      "description": "Lists Xata workspaces for serverless database infrastructure inventory",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "xata_employee_access",
+      "name": "Employee Access",
+      "description": "Reviews Xata workspace members and their database access permissions",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

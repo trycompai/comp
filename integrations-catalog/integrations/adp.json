@@ -1,0 +1,59 @@
+{
+  "slug": "adp",
+  "name": "ADP",
+  "description": "Human resource information system (HRIS). Monitor employee records, hiring compliance, and workforce data.",
+  "category": "HR & People",
+  "docsUrl": "https://developers.adp.com/",
+  "baseUrl": "https://api.adp.com",
+  "authConfig": {
+    "type": "custom",
+    "config": {
+      "setupInstructions": "1. Log in to ADP Workforce Now as an admin\n2. Go to Setup → Developers → Data Connector Credentials\n3. Create new credentials (or use existing app credentials)\n4. Copy the Client ID and Client Secret\n5. Paste both values below\n\nNote: If your organization requires an SSL certificate for API access, contact your ADP admin to configure the credentials without certificate requirement, or use the ADP Marketplace Data Connector setup.",
+      "credentialFields": [
+        {
+          "label": "Client ID",
+          "type": "text",
+          "required": true,
+          "helpText": "From your ADP app registration or Data Connector credentials."
+        },
+        {
+          "label": "Client Secret",
+          "type": "password",
+          "required": true,
+          "helpText": "From your ADP app registration or Data Connector credentials."
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks",
+    "sync"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": true,
+  "checks": [
+    {
+      "slug": "adp_app_availability",
+      "name": "ADP App Availability",
+      "description": "Verifies ADP API is accessible.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "adp_employee_access",
+      "name": "ADP Employee Access",
+      "description": "Verifies employee records are accessible.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "adp_hiring_compliance",
+      "name": "ADP Hiring Compliance",
+      "description": "Verifies active workers exist with valid employment status.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 3,
+  "isActive": true
+}

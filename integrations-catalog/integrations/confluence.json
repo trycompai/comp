@@ -1,0 +1,59 @@
+{
+  "slug": "confluence",
+  "name": "Confluence",
+  "description": "Monitor Confluence spaces and user access for documentation and policy publishing compliance",
+  "category": "Productivity",
+  "docsUrl": "https://developer.atlassian.com/cloud/confluence/rest/v1/",
+  "baseUrl": "https://atlassian.net/",
+  "authConfig": {
+    "type": "custom",
+    "config": {
+      "setupInstructions": "1. Log in to your Atlassian account at id.atlassian.com\n2. Go to Security > API tokens (id.atlassian.com/manage-profile/security/api-tokens)\n3. Click 'Create API token', give it a name, and copy the token\n4. Enter the fields above:\n   - Site Domain: your Atlassian site (e.g. yourcompany.atlassian.net)\n   - Email: the email of the account that created the token\n   - API Token: the token you just copied\n   - Group Name (optional): leave empty for the default 'confluence-users' group, or enter your custom group name\n5. Tip: We recommend using an Atlassian service account rather than a personal account. Create one at admin.atlassian.com > Directory > Users",
+      "credentialFields": [
+        {
+          "label": "Atlassian Site Domain",
+          "type": "text",
+          "required": true
+        },
+        {
+          "label": "Email",
+          "type": "text",
+          "required": true
+        },
+        {
+          "label": "API Token",
+          "type": "password",
+          "required": true
+        },
+        {
+          "label": "Confluence Group Name",
+          "type": "text",
+          "required": false
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "spaces",
+      "name": "Publish Policies",
+      "description": "Verifies Confluence spaces exist for policy publishing",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "members",
+      "name": "Employee Access",
+      "description": "Reviews Confluence group members for employee access management",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

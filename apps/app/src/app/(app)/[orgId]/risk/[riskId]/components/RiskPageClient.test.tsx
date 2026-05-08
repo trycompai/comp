@@ -40,11 +40,48 @@ vi.mock('@/hooks/use-risks', () => ({
   useRisk: () => ({
     risk: mockRisk,
   }),
+  useRiskActions: () => ({
+    updateRisk: vi.fn(),
+    regenerateMitigation: vi.fn().mockResolvedValue({
+      runId: 'run_test',
+      publicAccessToken: 'tok_test',
+    }),
+    suggestRiskLinks: vi.fn(),
+    applyRiskLinks: vi.fn(),
+    fetchActiveRiskAutoLinkRun: vi.fn().mockResolvedValue(null),
+    discardRiskAutoLinkRun: vi.fn(),
+  }),
 }));
 
 // Mock @db
 vi.mock('@db', () => ({
   CommentEntityType: { risk: 'risk' },
+  Likelihood: {
+    very_unlikely: 'very_unlikely',
+    unlikely: 'unlikely',
+    possible: 'possible',
+    likely: 'likely',
+    very_likely: 'very_likely',
+  },
+  Impact: {
+    insignificant: 'insignificant',
+    minor: 'minor',
+    moderate: 'moderate',
+    major: 'major',
+    severe: 'severe',
+  },
+  RiskTreatmentType: {
+    accept: 'accept',
+    avoid: 'avoid',
+    mitigate: 'mitigate',
+    transfer: 'transfer',
+  },
+  TaskStatus: {
+    todo: 'todo',
+    in_progress: 'in_progress',
+    done: 'done',
+    not_relevant: 'not_relevant',
+  },
 }));
 
 // Mock design system

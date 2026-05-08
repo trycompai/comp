@@ -1,0 +1,44 @@
+{
+  "slug": "namely",
+  "name": "Namely",
+  "description": "Namely HR, payroll, and benefits platform",
+  "category": "HR & People",
+  "docsUrl": "https://developers.namely.com/",
+  "baseUrl": "https://{{credentials.subdomain}}.namely.com/api/v1",
+  "authConfig": {
+    "type": "custom",
+    "config": {
+      "setupInstructions": "1. Log in to Namely\n2. Go to Settings → API Keys\n3. Create an API access token with read permissions\n4. Enter your subdomain and paste the token below",
+      "credentialFields": [
+        {
+          "label": "Company Subdomain",
+          "type": "text",
+          "required": true,
+          "helpText": "Your Namely subdomain (e.g. if your URL is acme.namely.com, enter: acme)"
+        },
+        {
+          "label": "Access Token",
+          "type": "password",
+          "required": true,
+          "helpText": "Generate an OAuth access token in Namely → Settings → API Keys"
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "namely_employee_access",
+      "name": "Employee Access",
+      "description": "Lists Namely profiles to verify employee records and access",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 1,
+  "isActive": true
+}

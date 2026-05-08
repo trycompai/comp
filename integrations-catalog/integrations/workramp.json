@@ -1,0 +1,38 @@
+{
+  "slug": "workramp",
+  "name": "WorkRamp",
+  "description": "WorkRamp learning management system for employee training",
+  "category": "HR & People",
+  "docsUrl": "https://help.workramp.com/en/articles/6559080",
+  "baseUrl": "https://app.workramp.com/api/v1",
+  "authConfig": {
+    "type": "custom",
+    "config": {
+      "setupInstructions": "1. Log in to WorkRamp as admin\n2. Go to Admin Settings → Integrations\n3. Copy your API key\n4. Paste it below",
+      "credentialFields": [
+        {
+          "label": "API Key",
+          "type": "password",
+          "required": true,
+          "helpText": "WorkRamp → Admin Settings → Integrations → API Key"
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "workramp_employee_access",
+      "name": "Employee Access",
+      "description": "Lists WorkRamp users to verify training platform access is managed",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 1,
+  "isActive": true
+}

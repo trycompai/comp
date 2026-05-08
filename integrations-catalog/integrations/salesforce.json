@@ -1,0 +1,44 @@
+{
+  "slug": "salesforce",
+  "name": "Salesforce",
+  "description": "Monitor Salesforce user access and contact data management for CRM compliance",
+  "category": "Productivity",
+  "docsUrl": "https://developer.salesforce.com/docs/apis",
+  "baseUrl": "https://login.salesforce.com/",
+  "authConfig": {
+    "type": "oauth2",
+    "config": {
+      "setupInstructions": "1. Go to Salesforce > Setup > App Manager > New Connected App\n2. Enable OAuth Settings\n3. Set callback URL to: https://api.trycomp.ai/v1/integrations/oauth/callback\n4. Add scopes: Access (api), ID (id), Offline (offline_access)\n5. Copy Consumer Key (Client ID) and Secret\n6. After connecting, enter your Salesforce instance URL (e.g. https://yourorg.my.salesforce.com)",
+      "scopes": [
+        "id",
+        "api",
+        "offline_access"
+      ],
+      "clientAuthMethod": "body",
+      "supportsRefreshToken": true
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "salesforce_employee_access",
+      "name": "Employee Access",
+      "description": "Reviews Salesforce users and verifies only active users have access",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "salesforce_contact_information",
+      "name": "Contact Information",
+      "description": "Verifies Salesforce contact records are maintained",
+      "defaultSeverity": "low",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

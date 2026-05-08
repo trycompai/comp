@@ -1,0 +1,38 @@
+{
+  "slug": "navan",
+  "name": "Navan",
+  "description": "Navan (formerly TripActions) travel and expense management platform",
+  "category": "HR & People",
+  "docsUrl": "https://developer.navan.com/",
+  "baseUrl": "https://app.navan.com/api/v1",
+  "authConfig": {
+    "type": "custom",
+    "config": {
+      "setupInstructions": "1. Log in to Navan\n2. Go to Settings → Integrations → API Tokens\n3. Create a new API token with read access\n4. Copy the token and paste it below",
+      "credentialFields": [
+        {
+          "label": "API Token",
+          "type": "password",
+          "required": true,
+          "helpText": "Generate an API token in Navan → Settings → Integrations → API Tokens"
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "navan_employee_access",
+      "name": "Employee Access",
+      "description": "Lists Navan users to verify travel and expense access is properly managed",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 1,
+  "isActive": true
+}

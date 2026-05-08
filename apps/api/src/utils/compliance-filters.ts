@@ -46,7 +46,10 @@ export async function filterComplianceMembers<T extends MemberWithRole>(
   const allCustomRoleNames = new Set<string>();
   const builtInRoleNames = new Set<string>(Object.keys(allRoles));
   const memberRoles = members.map((member) => {
-    const roleNames = member.role.split(',').map((r) => r.trim()).filter(Boolean);
+    const roleNames = member.role
+      .split(',')
+      .map((r) => r.trim())
+      .filter(Boolean);
     const customNames = roleNames.filter((n) => !builtInRoleNames.has(n));
     for (const name of customNames) allCustomRoleNames.add(name);
     return { member, roleNames };
@@ -61,9 +64,10 @@ export async function filterComplianceMembers<T extends MemberWithRole>(
     });
     customObligationMap = Object.fromEntries(
       customRoles.map((r) => {
-        const obligations = typeof r.obligations === 'string'
-          ? JSON.parse(r.obligations)
-          : (r.obligations || {});
+        const obligations =
+          typeof r.obligations === 'string'
+            ? JSON.parse(r.obligations)
+            : r.obligations || {};
         return [r.name, obligations as RoleObligations];
       }),
     );

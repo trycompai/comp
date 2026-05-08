@@ -2,12 +2,20 @@ import { getFeatureFlags } from '@/app/posthog';
 import { APP_AWS_ORG_ASSETS_BUCKET, s3Client } from '@/app/s3';
 import { TriggerTokenProvider } from '@/components/trigger-token-provider';
 import { serverApi } from '@/lib/api-server';
-import { canAccessApp, parseRolesString } from '@/lib/permissions';
-import { resolveUserPermissions } from '@/lib/permissions.server';
+import {
+  canAccessApp,
+  canAccessAuditorView,
+  parseRolesString,
+} from '@/lib/permissions';
+import {
+  resolveCustomRolePermissions,
+  resolveUserPermissions,
+} from '@/lib/permissions.server';
 import type { OrganizationFromMe } from '@/types';
 import { auth } from '@/utils/auth';
 import { GetObjectCommand } from '@aws-sdk/client-s3';
-import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
+import { getSignedUrl } from '@/lib/s3-presigner';
+import { OrganizationIdentifier } from '@trycompai/analytics';
 import { db, Role } from '@db/server';
 import dynamic from 'next/dynamic';
 import { cookies, headers } from 'next/headers';
@@ -135,26 +143,41 @@ export default async function Layout({
     );
   }
 
-  // Check feature flags for menu items
+  // Check feature flags for menu items. Security (penetration tests) is
+  // always enabled now — the nav rail entry is gated solely by the
+  // `pentest:read` permission downstream, matching `security/layout.tsx`.
   let isQuestionnaireEnabled = false;
   let isTrustNdaEnabled = false;
   let isWebAutomationsEnabled = false;
-  let isSecurityEnabled = false;
+  const isSecurityEnabled = true;
   if (session?.user?.id) {
-    const flags = await getFeatureFlags(session.user.id);
+    const flags = await getFeatureFlags(session.user.id, {
+      groups: { organization: organization.id },
+    });
     isQuestionnaireEnabled = flags['ai-vendor-questionnaire'] === true;
     isTrustNdaEnabled =
       flags['is-trust-nda-enabled'] === true || flags['is-trust-nda-enabled'] === 'true';
     isWebAutomationsEnabled =
       flags['is-web-automations-enabled'] === true ||
       flags['is-web-automations-enabled'] === 'true';
-    isSecurityEnabled =
-      flags['is-security-enabled'] === true || flags['is-security-enabled'] === 'true';
   }
 
   // Check auditor role
   const hasAuditorRole = roles.includes(Role.auditor);
   const isOnlyAuditor = hasAuditorRole && roles.length === 1;
+
+  // CS-189: the Auditor View tab follows a stricter rule than bare
+  // audit:read — built-in `auditor` role OR a custom role with explicit
+  // audit:read. Resolve the custom-role permissions once so we don't
+  // second-guess the owner/admin's implicit all-permissions in the UI.
+  const customRolePermissions = await resolveCustomRolePermissions(
+    member.role,
+    requestedOrgId,
+  );
+  const auditorViewVisible = canAccessAuditorView(
+    member.role,
+    customRolePermissions,
+  );
 
   // User data for navbar
   const user = {
@@ -168,6 +191,7 @@ export default async function Layout({
       triggerJobId={onboarding?.triggerJobId || undefined}
       initialToken={publicAccessToken || undefined}
     >
+      <OrganizationIdentifier orgId={organization.id} orgName={organization.name} />
       <AppShellWrapper
         organization={organization}
         organizations={organizations}
@@ -180,6 +204,7 @@ export default async function Layout({
         isSecurityEnabled={isSecurityEnabled}
         hasAuditorRole={hasAuditorRole}
         isOnlyAuditor={isOnlyAuditor}
+        canAccessAuditorView={auditorViewVisible}
         permissions={permissions}
         user={user}
         isAdmin={isUserAdmin}

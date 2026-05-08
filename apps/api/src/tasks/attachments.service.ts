@@ -4,7 +4,7 @@ import {
   PutObjectCommand,
   S3Client,
 } from '@aws-sdk/client-s3';
-import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
+import { getSignedUrl, s3Client } from '@/app/s3';
 import { AttachmentEntityType, AttachmentType } from '@db';
 import {
   BadRequestException,
@@ -15,7 +15,6 @@ import { db } from '@db';
 import { randomBytes } from 'crypto';
 import { AttachmentResponseDto } from './dto/task-responses.dto';
 import { UploadAttachmentDto } from './dto/upload-attachment.dto';
-import { s3Client } from '@/app/s3';
 import { validateFileContent } from '../utils/file-type-validation';
 
 @Injectable()

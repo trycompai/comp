@@ -1,0 +1,35 @@
+{
+  "slug": "segment",
+  "name": "Segment",
+  "description": "Monitor Segment data sources and workspace configuration for data compliance",
+  "category": "Cloud",
+  "docsUrl": "https://api.segmentapis.com/docs/",
+  "baseUrl": "https://api.segmentapis.com/",
+  "authConfig": {
+    "type": "api_key",
+    "config": {}
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "segment_infrastructure_inventory",
+      "name": "Infrastructure Inventory",
+      "description": "Lists Segment data sources for infrastructure and data flow inventory",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "segment_app_availability",
+      "name": "App Availability",
+      "description": "Verifies Segment platform is operational",
+      "defaultSeverity": "low",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

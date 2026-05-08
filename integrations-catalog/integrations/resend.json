@@ -1,0 +1,45 @@
+{
+  "slug": "resend",
+  "name": "Resend",
+  "description": "Monitor Resend email infrastructure for domain authentication and TLS compliance",
+  "category": "Communication",
+  "docsUrl": "https://resend.com/docs/api-reference/introduction",
+  "baseUrl": "https://api.resend.com/",
+  "authConfig": {
+    "type": "api_key",
+    "config": {
+      "setupInstructions": "1. Log in to Resend at https://resend.com\n2. Go to API Keys\n3. Create a new API key\n4. Copy and enter it below",
+      "credentialFields": [
+        {
+          "label": "API Key",
+          "type": "password",
+          "required": true,
+          "helpText": "Found in Resend Dashboard → API Keys"
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "resend_app_availability",
+      "name": "App Availability",
+      "description": "Verifies Resend platform is operational",
+      "defaultSeverity": "low",
+      "enabled": true
+    },
+    {
+      "slug": "resend_employee_access",
+      "name": "Employee Access",
+      "description": "Reviews Resend API keys for proper access management",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

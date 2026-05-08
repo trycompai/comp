@@ -1,13 +1,14 @@
-import { PageHeader, PageLayout } from '@trycompai/design-system';
 import { CompanyOverviewCards } from './components/CompanyOverviewCards';
+import { DocumentSettings } from './components/DocumentSettings';
+import { DocumentsPageTabs } from './components/DocumentsPageTabs';
 
 export default async function CompanyPage({ params }: { params: Promise<{ orgId: string }> }) {
   const { orgId } = await params;
 
   return (
-    <PageLayout>
-      <PageHeader title="Documents" />
-      <CompanyOverviewCards organizationId={orgId} />
-    </PageLayout>
+    <DocumentsPageTabs
+      overviewContent={<CompanyOverviewCards organizationId={orgId} />}
+      settingsContent={<DocumentSettings organizationId={orgId} />}
+    />
   );
 }

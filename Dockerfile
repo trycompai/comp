@@ -63,9 +63,13 @@ COPY apps/app ./apps/app
 # Bring in node_modules for build and prisma prebuild
 COPY --from=deps /app/node_modules ./node_modules
 
-# Pre-combine schemas for app build
-RUN cd packages/db && node scripts/combine-schemas.js
-RUN cp packages/db/dist/schema.prisma apps/app/prisma/schema.prisma
+# Pre-combine schemas and generate the Prisma client into
+# node_modules/@prisma/client. The deps stage ran `bun install` with
+# `--ignore-scripts` so packages/db's postinstall was skipped; we run
+# it explicitly here so `next build` can resolve the generated runtime
+# + types when it imports @prisma/client.
+RUN cd packages/db && node scripts/combine-schemas.js \
+                   && node scripts/generate-prisma-client-js.js
 
 # Ensure Next build has required public env at build-time
 ARG NEXT_PUBLIC_BETTER_AUTH_URL
@@ -73,20 +77,12 @@ ARG NEXT_PUBLIC_PORTAL_URL
 ARG NEXT_PUBLIC_POSTHOG_KEY
 ARG NEXT_PUBLIC_POSTHOG_HOST
 ARG NEXT_PUBLIC_IS_DUB_ENABLED
-ARG NEXT_PUBLIC_GTM_ID
-ARG NEXT_PUBLIC_LINKEDIN_PARTNER_ID
-ARG NEXT_PUBLIC_LINKEDIN_CONVERSION_ID
-ARG NEXT_PUBLIC_GOOGLE_ADS_CONVERSION_LABEL
 ARG NEXT_PUBLIC_API_URL
 ENV NEXT_PUBLIC_BETTER_AUTH_URL=$NEXT_PUBLIC_BETTER_AUTH_URL \
     NEXT_PUBLIC_PORTAL_URL=$NEXT_PUBLIC_PORTAL_URL \
     NEXT_PUBLIC_POSTHOG_KEY=$NEXT_PUBLIC_POSTHOG_KEY \
     NEXT_PUBLIC_POSTHOG_HOST=$NEXT_PUBLIC_POSTHOG_HOST \
     NEXT_PUBLIC_IS_DUB_ENABLED=$NEXT_PUBLIC_IS_DUB_ENABLED \
-    NEXT_PUBLIC_GTM_ID=$NEXT_PUBLIC_GTM_ID \
-    NEXT_PUBLIC_LINKEDIN_PARTNER_ID=$NEXT_PUBLIC_LINKEDIN_PARTNER_ID \
-    NEXT_PUBLIC_LINKEDIN_CONVERSION_ID=$NEXT_PUBLIC_LINKEDIN_CONVERSION_ID \
-    NEXT_PUBLIC_GOOGLE_ADS_CONVERSION_LABEL=$NEXT_PUBLIC_GOOGLE_ADS_CONVERSION_LABEL \
     NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL \
     NEXT_TELEMETRY_DISABLED=1 NODE_ENV=production \
     NEXT_OUTPUT_STANDALONE=true \

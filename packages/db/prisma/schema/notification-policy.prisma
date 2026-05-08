@@ -1,8 +1,8 @@
 model RoleNotificationSetting {
-  id                   String       @id @default(dbgenerated("generate_prefixed_cuid('rns'::text)"))
-  organizationId       String
-  organization         Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  role                 String // "owner", "admin", "auditor", "employee", "contractor", or custom role name
+  id             String       @id @default(dbgenerated("generate_prefixed_cuid('rns'::text)"))
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  role           String // "owner", "admin", "auditor", "employee", "contractor", or custom role name
 
   policyNotifications  Boolean @default(true)
   taskReminders        Boolean @default(true)

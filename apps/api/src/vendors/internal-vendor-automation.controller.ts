@@ -1,5 +1,11 @@
 import { Body, Controller, HttpCode, Post, UseGuards } from '@nestjs/common';
-import { ApiOperation, ApiResponse, ApiSecurity, ApiTags } from '@nestjs/swagger';
+import {
+  ApiExcludeController,
+  ApiOperation,
+  ApiResponse,
+  ApiSecurity,
+  ApiTags,
+} from '@nestjs/swagger';
 import { HybridAuthGuard } from '../auth/hybrid-auth.guard';
 import { PermissionGuard } from '../auth/permission.guard';
 import { RequirePermission } from '../auth/require-permission.decorator';
@@ -10,6 +16,7 @@ import {
   TriggerSingleVendorRiskAssessmentDto,
 } from './dto/trigger-vendor-risk-assessment.dto';
 
+@ApiExcludeController()
 @ApiTags('Internal - Vendors')
 @Controller({ path: 'internal/vendors', version: '1' })
 @UseGuards(HybridAuthGuard, PermissionGuard)

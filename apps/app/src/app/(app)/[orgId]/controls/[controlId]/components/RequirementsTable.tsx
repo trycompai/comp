@@ -74,6 +74,7 @@ export function RequirementsTable({ requirements, orgId }: RequirementsTableProp
       <Table variant="bordered">
         <TableHeader>
           <TableRow>
+            <TableHead>Identifier</TableHead>
             <TableHead>Name</TableHead>
             <TableHead>Description</TableHead>
           </TableRow>
@@ -81,39 +82,53 @@ export function RequirementsTable({ requirements, orgId }: RequirementsTableProp
         <TableBody>
           {filteredRequirements.length === 0 ? (
             <TableRow>
-              <TableCell colSpan={2}>
+              <TableCell colSpan={3}>
                 <Text size="sm" variant="muted">
                   No requirements found.
                 </Text>
               </TableCell>
             </TableRow>
           ) : (
-            filteredRequirements.map((requirement) => (
-              <TableRow
-                key={requirement.id}
-                role="button"
-                tabIndex={0}
-                style={{ cursor: 'pointer' }}
-                onClick={() => handleRowClick(requirement)}
-                onKeyDown={(event) => {
-                  if (event.key === 'Enter' || event.key === ' ') {
-                    event.preventDefault();
-                    handleRowClick(requirement);
-                  }
-                }}
-              >
-                <TableCell>
-                  <span className="line-clamp-2 h-10 max-w-[600px] truncate text-wrap">
-                    {requirement.requirement.name}
-                  </span>
-                </TableCell>
-                <TableCell>
-                  <span className="line-clamp-2 h-10 max-w-[600px] truncate text-wrap">
-                    {requirement.requirement.description}
-                  </span>
-                </TableCell>
-              </TableRow>
-            ))
+            filteredRequirements.map((requirement) => {
+              const identifier = requirement.requirement.identifier?.trim();
+              const name = requirement.requirement.name;
+              const description = requirement.requirement.description;
+              return (
+                <TableRow
+                  key={requirement.id}
+                  role="button"
+                  tabIndex={0}
+                  style={{ cursor: 'pointer' }}
+                  onClick={() => handleRowClick(requirement)}
+                  onKeyDown={(event) => {
+                    if (event.key === 'Enter' || event.key === ' ') {
+                      event.preventDefault();
+                      handleRowClick(requirement);
+                    }
+                  }}
+                >
+                  <TableCell>
+                    <span className="text-sm">{identifier || '—'}</span>
+                  </TableCell>
+                  <TableCell>
+                    <span
+                      className="block max-w-[280px] truncate text-sm"
+                      title={name}
+                    >
+                      {name}
+                    </span>
+                  </TableCell>
+                  <TableCell>
+                    <span
+                      className="block max-w-[420px] truncate text-sm"
+                      title={description}
+                    >
+                      {description}
+                    </span>
+                  </TableCell>
+                </TableRow>
+              );
+            })
           )}
         </TableBody>
       </Table>

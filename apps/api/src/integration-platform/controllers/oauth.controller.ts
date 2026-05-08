@@ -4,19 +4,22 @@ import {
   Post,
   Query,
   Body,
+  Req,
   Res,
   HttpException,
   HttpStatus,
   Logger,
   UseGuards,
 } from '@nestjs/common';
-import { ApiTags, ApiSecurity } from '@nestjs/swagger';
-import type { Response } from 'express';
+import { ApiTags, ApiSecurity, ApiOperation } from '@nestjs/swagger';
+import type { Request, Response } from 'express';
 import { randomBytes, createHash } from 'crypto';
+import { auth } from '../../auth/auth.server';
 import { HybridAuthGuard } from '../../auth/hybrid-auth.guard';
 import { PermissionGuard } from '../../auth/permission.guard';
+import { SessionOnlyGuard } from '../../auth/session-only.guard';
 import { RequirePermission } from '../../auth/require-permission.decorator';
-import { OrganizationId } from '../../auth/auth-context.decorator';
+import { OrganizationId, UserId } from '../../auth/auth-context.decorator';
 import { OAuthStateRepository } from '../repositories/oauth-state.repository';
 import { ProviderRepository } from '../repositories/provider.repository';
 import { ConnectionRepository } from '../repositories/connection.repository';
@@ -28,7 +31,6 @@ import { getManifest, type OAuthConfig } from '@trycompai/integration-platform';
 
 interface StartOAuthDto {
   providerSlug: string;
-  userId: string;
   redirectUrl?: string;
 }
 
@@ -59,6 +61,7 @@ export class OAuthController {
    * Check if OAuth credentials are available for a provider
    */
   @Get('availability')
+  @ApiOperation({ summary: 'Check OAuth provider availability' })
   @UseGuards(HybridAuthGuard, PermissionGuard)
   @RequirePermission('integration', 'read')
   async checkAvailability(
@@ -82,13 +85,19 @@ export class OAuthController {
    * Start OAuth flow - returns authorization URL
    */
   @Post('start')
-  @UseGuards(HybridAuthGuard, PermissionGuard)
+  @ApiOperation({ summary: 'Start an OAuth authorization flow' })
+  // SessionOnlyGuard rejects API-key and service-token callers with a 403
+  // before @UserId() is evaluated. The OAuth callback also requires a real
+  // session (see checkSessionMatchesState), so non-session auth could never
+  // complete the flow anyway.
+  @UseGuards(HybridAuthGuard, SessionOnlyGuard, PermissionGuard)
   @RequirePermission('integration', 'create')
   async startOAuth(
     @OrganizationId() organizationId: string,
+    @UserId() userId: string,
     @Body() body: StartOAuthDto,
   ): Promise<{ authorizationUrl: string }> {
-    const { providerSlug, userId, redirectUrl } = body;
+    const { providerSlug, redirectUrl } = body;
 
     // Get manifest and OAuth config
     const manifest = getManifest(providerSlug);
@@ -210,11 +219,21 @@ export class OAuthController {
   }
 
   /**
-   * OAuth callback - exchanges code for tokens
+   * OAuth callback - exchanges code for tokens.
+   *
+   * Note: this endpoint is intentionally not protected by HybridAuthGuard so
+   * that external OAuth providers can redirect the user's browser back to it.
+   * Defense-in-depth session validation is performed manually below: after the
+   * server-side `state` token is validated, we additionally require that the
+   * caller's session matches the user/org that initiated the flow. If the
+   * session is missing or mismatched, the flow is rejected — the user must
+   * restart it from the originating browser/session.
    */
   @Get('callback')
+  @ApiOperation({ summary: 'Handle OAuth provider callback' })
   async oauthCallback(
     @Query() query: OAuthCallbackQuery,
+    @Req() req: Request,
     @Res() res: Response,
   ): Promise<void> {
     const { code, state, error, error_description } = query;
@@ -257,6 +276,28 @@ export class OAuthController {
         {
           error: 'expired_state',
           error_description: 'OAuth state has expired',
+        },
+        oauthState.organizationId,
+      );
+      res.redirect(errorUrl);
+      return;
+    }
+
+    // Defense-in-depth: ensure the same browser session that started the flow
+    // is the one completing it. The `state` token alone provides CSRF
+    // protection, but a session match guards against state-token leakage and
+    // ensures the completing user still has an active session for the org.
+    const sessionMismatch = await this.checkSessionMatchesState(req, oauthState);
+    if (sessionMismatch) {
+      await this.oauthStateRepository.delete(state);
+      this.logger.warn(
+        `OAuth callback session mismatch (${sessionMismatch.reason}) for state belonging to user ${oauthState.userId}, org ${oauthState.organizationId}`,
+      );
+      const errorUrl = this.buildRedirectUrl(
+        oauthState.redirectUrl,
+        {
+          error: 'session_mismatch',
+          error_description: sessionMismatch.message,
         },
         oauthState.organizationId,
       );
@@ -315,6 +356,23 @@ export class OAuthController {
 
       // Store tokens and mark connection as active
       await this.credentialVaultService.storeOAuthTokens(connection.id, tokens);
+
+      // Mark cloud OAuth reconnect completion so reconnect banners clear after successful OAuth.
+      if (manifest.category === 'Cloud') {
+        const metadata =
+          connection.metadata &&
+          typeof connection.metadata === 'object' &&
+          !Array.isArray(connection.metadata)
+            ? (connection.metadata as Record<string, unknown>)
+            : {};
+        connection = await this.connectionRepository.update(connection.id, {
+          metadata: {
+            ...metadata,
+            reconnectedAt: new Date().toISOString(),
+          },
+        });
+      }
+
       await this.connectionService.activateConnection(connection.id);
 
       // Provider-specific post-OAuth actions
@@ -347,6 +405,10 @@ export class OAuthController {
           );
         });
 
+      // GCP: skip automatic service detection and scan after OAuth.
+      // The user must first select projects on the integrations page.
+      // Service detection and scanning run after project selection.
+
       // Redirect to success URL
       const successUrl = this.buildRedirectUrl(
         oauthState.redirectUrl,
@@ -374,6 +436,70 @@ export class OAuthController {
       );
       res.redirect(errorUrl);
     }
+  }
+
+  /**
+   * Verify that the caller's better-auth session matches the user (and active
+   * org, when present) recorded on the OAuthState. Returns a reason on
+   * mismatch, or `null` if the session is OK to continue. We intentionally
+   * resolve the session manually (rather than via HybridAuthGuard) so we can
+   * return a friendly redirect with `error=session_mismatch` instead of a 401.
+   */
+  private async checkSessionMatchesState(
+    req: Request,
+    oauthState: { userId: string; organizationId: string },
+  ): Promise<{ reason: string; message: string } | null> {
+    const headers = new Headers();
+    const authHeader = req.headers['authorization'];
+    if (typeof authHeader === 'string' && authHeader) {
+      headers.set('authorization', authHeader);
+    }
+    const cookieHeader = req.headers['cookie'];
+    if (typeof cookieHeader === 'string' && cookieHeader) {
+      headers.set('cookie', cookieHeader);
+    }
+
+    if (!authHeader && !cookieHeader) {
+      return {
+        reason: 'no_session',
+        message:
+          'No active session. Please sign in and restart the integration flow.',
+      };
+    }
+
+    const session = await auth.api.getSession({ headers });
+    const sessionUserId = session?.user?.id;
+    if (!sessionUserId) {
+      return {
+        reason: 'no_session',
+        message:
+          'No active session. Please sign in and restart the integration flow.',
+      };
+    }
+
+    if (sessionUserId !== oauthState.userId) {
+      return {
+        reason: 'user_mismatch',
+        message:
+          'OAuth flow can only be completed by the user who initiated it.',
+      };
+    }
+
+    const sessionData = session.session as Record<string, unknown> | undefined;
+    const activeOrgRaw = sessionData?.activeOrganizationId;
+    const activeOrganizationId =
+      typeof activeOrgRaw === 'string' ? activeOrgRaw : undefined;
+    if (
+      activeOrganizationId &&
+      activeOrganizationId !== oauthState.organizationId
+    ) {
+      return {
+        reason: 'organization_mismatch',
+        message: 'OAuth flow organization does not match the active session.',
+      };
+    }
+
+    return null;
   }
 
   private async exchangeCodeForTokens(
@@ -510,4 +636,5 @@ export class OAuthController {
     }
     return url.toString();
   }
+
 }

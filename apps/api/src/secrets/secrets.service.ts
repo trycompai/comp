@@ -38,9 +38,7 @@ export class SecretsService {
       throw new NotFoundException('Secret not found');
     }
 
-    const decryptedValue = decrypt(
-      JSON.parse(secret.value) as EncryptedData,
-    );
+    const decryptedValue = decrypt(JSON.parse(secret.value) as EncryptedData);
 
     return { ...secret, value: decryptedValue };
   }

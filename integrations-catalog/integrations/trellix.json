@@ -1,0 +1,63 @@
+{
+  "slug": "trellix",
+  "name": "Trellix",
+  "description": "Monitor Trellix ePO Cloud managed endpoints, security events, and device inventory",
+  "category": "Security",
+  "docsUrl": "https://developer.manage.trellix.com/mvision/apis/home",
+  "baseUrl": "https://api.manage.trellix.com",
+  "authConfig": {
+    "type": "custom",
+    "config": {
+      "credentialFields": [
+        {
+          "label": "Client ID",
+          "type": "text",
+          "required": true,
+          "helpText": "Go to Trellix Developer Portal > Self Service > API Access Management. Request API access and copy the Client ID."
+        },
+        {
+          "label": "Client Secret",
+          "type": "password",
+          "required": true,
+          "helpText": "Generated when requesting API access in the Trellix Developer Portal. Copy Client Secret immediately — it is only shown once."
+        },
+        {
+          "label": "API Key",
+          "type": "password",
+          "required": true,
+          "helpText": "Found in Trellix Developer Portal > Self Service > API Access Management section."
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "secure_devices",
+      "name": "Secure Devices",
+      "description": "Verifies that all Trellix ePO-managed endpoints are in a managed state with active agents",
+      "defaultSeverity": "high",
+      "enabled": true
+    },
+    {
+      "slug": "monitoring_alerting",
+      "name": "Monitoring & Alerting",
+      "description": "Reviews recent Trellix ePO security events and threat detections to verify active monitoring",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "device_list",
+      "name": "Device List",
+      "description": "Provides a complete inventory of all Trellix ePO-managed devices with agent status and version information",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 3,
+  "isActive": true
+}

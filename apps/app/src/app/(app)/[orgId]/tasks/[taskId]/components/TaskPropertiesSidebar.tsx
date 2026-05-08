@@ -22,12 +22,16 @@ import {
   Text,
 } from '@trycompai/design-system';
 import { Calendar } from 'lucide-react';
+import { useState } from 'react';
+import { NotRelevantJustificationDialog } from '../../components/NotRelevantJustificationDialog';
 import { useTask } from '../hooks/use-task';
 import { taskStatuses, taskFrequencies, taskDepartments } from './constants';
 
 interface TaskPropertiesSidebarProps {
   handleUpdateTask: (
-    data: Partial<Pick<Task, 'status' | 'assigneeId' | 'approverId' | 'frequency' | 'department' | 'reviewDate'>>,
+    data: Partial<Pick<Task, 'status' | 'assigneeId' | 'approverId' | 'frequency' | 'department' | 'reviewDate'>> & {
+      notRelevantJustification?: string;
+    },
   ) => void;
   evidenceApprovalEnabled?: boolean;
   onRequestApproval?: () => void;
@@ -43,6 +47,7 @@ export function TaskPropertiesSidebar({
   const { members } = useOrganizationMembers();
   const { hasPermission } = usePermissions();
   const canUpdate = hasPermission('task', 'update');
+  const [justificationDialogOpen, setJustificationDialogOpen] = useState(false);
 
   if (isLoading || !task) return null;
 
@@ -55,10 +60,23 @@ export function TaskPropertiesSidebar({
       onRequestApproval();
       return;
     }
+    if (selectedStatus === 'not_relevant') {
+      setJustificationDialogOpen(true);
+      return;
+    }
     handleUpdateTask({ status: selectedStatus as TaskStatus });
   };
 
+  const handleNotRelevantConfirm = (justification: string) => {
+    handleUpdateTask({
+      status: 'not_relevant' as TaskStatus,
+      notRelevantJustification: justification,
+    });
+    setJustificationDialogOpen(false);
+  };
+
   return (
+  <>
     <Section title="Evidence Settings">
       <Stack gap="md">
         <Grid cols={{ base: '1', md: '2' }} gap="4">
@@ -170,5 +188,12 @@ export function TaskPropertiesSidebar({
         </Grid>
       </Stack>
     </Section>
+
+    <NotRelevantJustificationDialog
+      open={justificationDialogOpen}
+      onOpenChange={setJustificationDialogOpen}
+      onConfirm={handleNotRelevantConfirm}
+    />
+  </>
   );
 }

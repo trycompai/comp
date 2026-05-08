@@ -1,0 +1,76 @@
+{
+  "slug": "zscaler-zia",
+  "name": "Zscaler Internet Access",
+  "description": "Cloud security platform providing secure internet access, URL filtering, firewall policies, and DLP. Monitor user access, firewall rules, admin roles, and data loss prevention policies.",
+  "category": "Security",
+  "docsUrl": "https://help.zscaler.com/zia/getting-started-zia-api",
+  "baseUrl": "https://zsapi.zscaler.net",
+  "authConfig": {
+    "type": "custom",
+    "config": {
+      "credentialFields": [
+        {
+          "label": "ZIA Cloud Name",
+          "type": "text",
+          "required": true,
+          "helpText": "Your Zscaler cloud name. Valid values: zscaler, zscalerone, zscalertwo, zscalerthree, zscloud, zscalerbeta. Found in your ZIA admin portal URL (e.g., admin.zscalerone.net means cloud name is 'zscalerone')."
+        },
+        {
+          "label": "Admin Username",
+          "type": "text",
+          "required": true,
+          "helpText": "ZIA administrator username (email format)."
+        },
+        {
+          "label": "Admin Password",
+          "type": "password",
+          "required": true,
+          "helpText": "ZIA administrator password."
+        },
+        {
+          "label": "API Key",
+          "type": "password",
+          "required": true,
+          "helpText": "ZIA Cloud Service API key. Found in ZIA Admin Portal > Administration > Cloud Service API Security > Cloud Service API Key."
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "zia_employee_access",
+      "name": "Employee Access",
+      "description": "Lists all ZIA managed users to verify employee access configuration and review active user accounts.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "zia_firewall_rules",
+      "name": "Production Firewall",
+      "description": "Reviews ZIA firewall filtering rules and URL filtering policies to verify security controls are properly configured.",
+      "defaultSeverity": "high",
+      "enabled": true
+    },
+    {
+      "slug": "zia_admin_roles",
+      "name": "Role-based Access Controls",
+      "description": "Reviews ZIA admin users and their assigned roles to ensure proper role-based access control is configured.",
+      "defaultSeverity": "high",
+      "enabled": true
+    },
+    {
+      "slug": "zia_dlp_policies",
+      "name": "Secure Secrets",
+      "description": "Reviews ZIA DLP dictionaries and web DLP rules to verify data loss prevention policies are configured to protect sensitive data.",
+      "defaultSeverity": "high",
+      "enabled": true
+    }
+  ],
+  "checkCount": 4,
+  "isActive": true
+}

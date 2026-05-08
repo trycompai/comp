@@ -23,19 +23,28 @@ describe('UpdateVendorDto', () => {
       isSubProcessor: false,
       assigneeId: 'mem_abc123',
     });
-    const errors = await validate(dto, { whitelist: true, forbidNonWhitelisted: true });
+    const errors = await validate(dto, {
+      whitelist: true,
+      forbidNonWhitelisted: true,
+    });
     expect(errors).toHaveLength(0);
   });
 
   it('should accept a minimal update (single field)', async () => {
     const dto = toDto({ website: 'https://www.acronis.com' });
-    const errors = await validate(dto, { whitelist: true, forbidNonWhitelisted: true });
+    const errors = await validate(dto, {
+      whitelist: true,
+      forbidNonWhitelisted: true,
+    });
     expect(errors).toHaveLength(0);
   });
 
   it('should accept an empty body (no fields to update)', async () => {
     const dto = toDto({});
-    const errors = await validate(dto, { whitelist: true, forbidNonWhitelisted: true });
+    const errors = await validate(dto, {
+      whitelist: true,
+      forbidNonWhitelisted: true,
+    });
     expect(errors).toHaveLength(0);
   });
 
@@ -49,13 +58,19 @@ describe('UpdateVendorDto', () => {
       website: 'https://www.acronis.com',
       isSubProcessor: false,
     });
-    const errors = await validate(dto, { whitelist: true, forbidNonWhitelisted: true });
+    const errors = await validate(dto, {
+      whitelist: true,
+      forbidNonWhitelisted: true,
+    });
     expect(errors).toHaveLength(0);
   });
 
   it('should still reject empty name', async () => {
     const dto = toDto({ name: '' });
-    const errors = await validate(dto, { whitelist: true, forbidNonWhitelisted: true });
+    const errors = await validate(dto, {
+      whitelist: true,
+      forbidNonWhitelisted: true,
+    });
     expect(errors.length).toBeGreaterThan(0);
     expect(errors[0].property).toBe('name');
   });
@@ -63,27 +78,39 @@ describe('UpdateVendorDto', () => {
   // ── assigneeId: null (unassigned vendor) ──────────────────────────
   it('should accept assigneeId: null', async () => {
     const dto = toDto({ assigneeId: null });
-    const errors = await validate(dto, { whitelist: true, forbidNonWhitelisted: true });
+    const errors = await validate(dto, {
+      whitelist: true,
+      forbidNonWhitelisted: true,
+    });
     expect(errors).toHaveLength(0);
   });
 
   // ── website handling ──────────────────────────────────────────────
   it('should transform empty website to undefined (skip validation)', async () => {
     const dto = toDto({ website: '' });
-    const errors = await validate(dto, { whitelist: true, forbidNonWhitelisted: true });
+    const errors = await validate(dto, {
+      whitelist: true,
+      forbidNonWhitelisted: true,
+    });
     expect(errors).toHaveLength(0);
     expect(dto.website).toBeUndefined();
   });
 
   it('should accept a valid website URL', async () => {
     const dto = toDto({ website: 'https://www.cloudflare.com' });
-    const errors = await validate(dto, { whitelist: true, forbidNonWhitelisted: true });
+    const errors = await validate(dto, {
+      whitelist: true,
+      forbidNonWhitelisted: true,
+    });
     expect(errors).toHaveLength(0);
   });
 
   it('should reject an invalid website URL', async () => {
     const dto = toDto({ website: 'not-a-url' });
-    const errors = await validate(dto, { whitelist: true, forbidNonWhitelisted: true });
+    const errors = await validate(dto, {
+      whitelist: true,
+      forbidNonWhitelisted: true,
+    });
     expect(errors.length).toBeGreaterThan(0);
     expect(errors[0].property).toBe('website');
   });
@@ -91,22 +118,81 @@ describe('UpdateVendorDto', () => {
   // ── enum validation ───────────────────────────────────────────────
   it('should reject invalid category enum', async () => {
     const dto = toDto({ category: 'invalid_category' });
-    const errors = await validate(dto, { whitelist: true, forbidNonWhitelisted: true });
+    const errors = await validate(dto, {
+      whitelist: true,
+      forbidNonWhitelisted: true,
+    });
     expect(errors.length).toBeGreaterThan(0);
     expect(errors[0].property).toBe('category');
   });
 
   it('should reject invalid status enum', async () => {
     const dto = toDto({ status: 'invalid_status' });
-    const errors = await validate(dto, { whitelist: true, forbidNonWhitelisted: true });
+    const errors = await validate(dto, {
+      whitelist: true,
+      forbidNonWhitelisted: true,
+    });
     expect(errors.length).toBeGreaterThan(0);
     expect(errors[0].property).toBe('status');
+  });
+
+  // ── treatment strategy fields (ENG-221) ───────────────────────────
+  it('should accept valid treatmentStrategy enum values', async () => {
+    for (const strategy of ['accept', 'avoid', 'mitigate', 'transfer']) {
+      const dto = toDto({ treatmentStrategy: strategy });
+      const errors = await validate(dto, {
+        whitelist: true,
+        forbidNonWhitelisted: true,
+      });
+      expect(errors).toHaveLength(0);
+    }
+  });
+
+  it('should reject invalid treatmentStrategy enum value', async () => {
+    const dto = toDto({ treatmentStrategy: 'ignore' });
+    const errors = await validate(dto, {
+      whitelist: true,
+      forbidNonWhitelisted: true,
+    });
+    expect(errors.length).toBeGreaterThan(0);
+    expect(errors[0].property).toBe('treatmentStrategy');
+  });
+
+  it('should accept treatmentStrategyDescription as a string', async () => {
+    const dto = toDto({
+      treatmentStrategy: 'mitigate',
+      treatmentStrategyDescription:
+        'We isolated the vendor to a dedicated VPC.',
+    });
+    const errors = await validate(dto, {
+      whitelist: true,
+      forbidNonWhitelisted: true,
+    });
+    expect(errors).toHaveLength(0);
+    expect(dto.treatmentStrategyDescription).toBe(
+      'We isolated the vendor to a dedicated VPC.',
+    );
+  });
+
+  it('should reject treatmentStrategyDescription longer than 20,000 chars', async () => {
+    const dto = toDto({
+      treatmentStrategyDescription: 'x'.repeat(20_001),
+    });
+    const errors = await validate(dto, {
+      whitelist: true,
+      forbidNonWhitelisted: true,
+    });
+    expect(errors.length).toBeGreaterThan(0);
+    expect(errors[0].property).toBe('treatmentStrategyDescription');
   });
 
   // ── forbidNonWhitelisted ──────────────────────────────────────────
   it('should reject unknown properties', async () => {
     const dto = toDto({ name: 'Acronis', unknownField: 'value' });
-    const errors = await validate(dto, { whitelist: true, forbidNonWhitelisted: true });
+    const errors = await validate(dto, {
+      whitelist: true,
+      forbidNonWhitelisted: true,
+    });
     expect(errors.length).toBeGreaterThan(0);
     expect(errors.some((e) => e.property === 'unknownField')).toBe(true);
   });

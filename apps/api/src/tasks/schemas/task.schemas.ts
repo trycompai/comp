@@ -30,6 +30,7 @@ export const CreateTaskSchema = z.object({
   description: z.string().min(1, 'Description is required'),
   status: TaskStatusSchema.optional().default('todo'),
   frequency: TaskFrequencySchema.optional(),
+  integrationScheduleFrequency: TaskFrequencySchema.optional(),
   department: DepartmentsSchema.optional().default('none'),
   order: z.number().int().min(0).optional().default(0),
   assigneeId: z.string().optional(),

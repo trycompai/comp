@@ -9,6 +9,7 @@ import {
   GetObjectCommand,
   HeadObjectCommand,
 } from '@aws-sdk/client-s3';
+import { getSignedUrl } from '@/app/s3';
 import { Readable } from 'stream';
 
 const S3_ENV = process.env.DEVICE_AGENT_S3_ENV || 'production';
@@ -31,6 +32,20 @@ const CONTENT_TYPES: Record<string, string> = {
   '.AppImage': 'application/octet-stream',
   '.dmg': 'application/x-apple-diskimage',
 };
+
+/**
+ * Binaries are presigned + redirected so the client downloads directly from
+ * S3, bypassing proxy/function timeouts. Manifests are tiny enough to stream.
+ */
+const REDIRECT_EXTENSIONS = new Set([
+  '.zip',
+  '.exe',
+  '.blockmap',
+  '.AppImage',
+  '.dmg',
+]);
+
+const PRESIGNED_URL_TTL_SECONDS = 60 * 60; // 1 hour
 
 function getExtension(filename: string): string {
   if (filename.endsWith('.AppImage')) return '.AppImage';
@@ -171,13 +186,18 @@ export class DeviceAgentService {
     filename,
   }: {
     filename: string;
-  }): Promise<{ stream: Readable; contentType: string; contentLength?: number }> {
+  }): Promise<UpdateFileResult> {
     if (!isValidFilename(filename)) {
       throw new NotFoundException('Not found');
     }
 
     const key = `${S3_UPDATES_PREFIX}/${filename}`;
     const ext = getExtension(filename);
+
+    if (REDIRECT_EXTENSIONS.has(ext)) {
+      return { kind: 'redirect', url: await this.signUpdateUrl(key, 'GET') };
+    }
+
     const contentType = CONTENT_TYPES[ext] || 'application/octet-stream';
 
     try {
@@ -192,6 +212,7 @@ export class DeviceAgentService {
       }
 
       return {
+        kind: 'stream',
         stream: s3Response.Body as Readable,
         contentType,
         contentLength:
@@ -214,13 +235,20 @@ export class DeviceAgentService {
     filename,
   }: {
     filename: string;
-  }): Promise<{ contentType: string; contentLength?: number }> {
+  }): Promise<HeadUpdateFileResult> {
     if (!isValidFilename(filename)) {
       throw new NotFoundException('Not found');
     }
 
     const key = `${S3_UPDATES_PREFIX}/${filename}`;
     const ext = getExtension(filename);
+
+    if (REDIRECT_EXTENSIONS.has(ext)) {
+      // S3 signs each HTTP method separately — a GET-signed URL is rejected
+      // for HEAD with SignatureDoesNotMatch.
+      return { kind: 'redirect', url: await this.signUpdateUrl(key, 'HEAD') };
+    }
+
     const contentType = CONTENT_TYPES[ext] || 'application/octet-stream';
 
     try {
@@ -231,6 +259,7 @@ export class DeviceAgentService {
       const s3Response = await this.s3Client.send(command);
 
       return {
+        kind: 'stream',
         contentType,
         contentLength:
           typeof s3Response.ContentLength === 'number'
@@ -241,4 +270,36 @@ export class DeviceAgentService {
       throw new NotFoundException('Not found');
     }
   }
+
+  private async signUpdateUrl(
+    key: string,
+    method: 'GET' | 'HEAD',
+  ): Promise<string> {
+    const command =
+      method === 'HEAD'
+        ? new HeadObjectCommand({
+            Bucket: this.fleetBucketName,
+            Key: key,
+          })
+        : new GetObjectCommand({
+            Bucket: this.fleetBucketName,
+            Key: key,
+          });
+    return getSignedUrl(this.s3Client, command, {
+      expiresIn: PRESIGNED_URL_TTL_SECONDS,
+    });
+  }
 }
+
+export type UpdateFileResult =
+  | {
+      kind: 'stream';
+      stream: Readable;
+      contentType: string;
+      contentLength?: number;
+    }
+  | { kind: 'redirect'; url: string };
+
+export type HeadUpdateFileResult =
+  | { kind: 'stream'; contentType: string; contentLength?: number }
+  | { kind: 'redirect'; url: string };

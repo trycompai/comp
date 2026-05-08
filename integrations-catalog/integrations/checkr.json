@@ -1,0 +1,45 @@
+{
+  "slug": "checkr",
+  "name": "Checkr",
+  "description": "Monitor Checkr background check candidates for HR verification compliance",
+  "category": "HR & People",
+  "docsUrl": "https://docs.checkr.com/reference",
+  "baseUrl": "https://api.checkr.com/",
+  "authConfig": {
+    "type": "custom",
+    "config": {
+      "setupInstructions": "1. Log in to Checkr at https://dashboard.checkr.com\n2. Go to Developer Settings -> API Keys\n3. Copy your API key\n4. Enter it below",
+      "credentialFields": [
+        {
+          "label": "API Key",
+          "type": "password",
+          "required": true,
+          "helpText": "Found in Checkr Dashboard -> Developer Settings -> API Keys"
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "checkr_employee_verification",
+      "name": "Employee Verification",
+      "description": "Verifies Checkr is being used for background check screening",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "checkr_employee_descriptions",
+      "name": "Employee Descriptions",
+      "description": "Verifies Checkr screening packages are configured for role-based checks",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

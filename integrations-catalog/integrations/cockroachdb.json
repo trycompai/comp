@@ -1,0 +1,45 @@
+{
+  "slug": "cockroachdb",
+  "name": "CockroachDB",
+  "description": "Monitor CockroachDB Cloud clusters for database infrastructure inventory and backup compliance",
+  "category": "Cloud",
+  "docsUrl": "https://www.cockroachlabs.com/docs/api/cloud/v1",
+  "baseUrl": "https://cockroachlabs.cloud/",
+  "authConfig": {
+    "type": "api_key",
+    "config": {
+      "setupInstructions": "1. Log in to CockroachDB Cloud at https://cockroachlabs.cloud\n2. Go to Organization Settings → API Access\n3. Create a new API key\n4. Copy and enter it below",
+      "credentialFields": [
+        {
+          "label": "API Key",
+          "type": "password",
+          "required": true,
+          "helpText": "Found in CockroachDB Cloud → Organization Settings → API Access"
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "cockroachdb_infrastructure",
+      "name": "Infrastructure Inventory",
+      "description": "Lists CockroachDB Cloud clusters for database infrastructure inventory",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "cockroachdb_backup",
+      "name": "Backup Logs",
+      "description": "Verifies CockroachDB Cloud clusters have backup configured",
+      "defaultSeverity": "high",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

@@ -17,7 +17,11 @@ export interface FleetPolicyResult {
 
 function buildPoliciesWithResults(
   host: Record<string, unknown>,
-  results: { fleetPolicyId: number; fleetPolicyResponse: string | null; attachments: unknown }[],
+  results: {
+    fleetPolicyId: number;
+    fleetPolicyResponse: string | null;
+    attachments: unknown;
+  }[],
 ) {
   const platform = (host.platform as string)?.toLowerCase();
   const osVersion = (host.os_version as string)?.toLowerCase();
@@ -27,13 +31,23 @@ function buildPoliciesWithResults(
     platform === 'osx' ||
     osVersion?.includes('mac');
 
-  const hostPolicies = (host.policies || []) as { id: number; name: string; response: string }[];
+  const hostPolicies = (host.policies || []) as {
+    id: number;
+    name: string;
+    response: string;
+  }[];
   const mdm = host.mdm as { connected_to_fleet?: boolean } | undefined;
 
   const allPolicies = [
     ...hostPolicies,
     ...(isMacOS && mdm
-      ? [{ id: MDM_POLICY_ID, name: 'MDM Enabled', response: mdm.connected_to_fleet ? 'pass' : 'fail' }]
+      ? [
+          {
+            id: MDM_POLICY_ID,
+            name: 'MDM Enabled',
+            response: mdm.connected_to_fleet ? 'pass' : 'fail',
+          },
+        ]
       : []),
   ];
 
@@ -42,7 +56,8 @@ function buildPoliciesWithResults(
     return {
       ...policy,
       response:
-        policy.response === 'pass' || policyResult?.fleetPolicyResponse === 'pass'
+        policy.response === 'pass' ||
+        policyResult?.fleetPolicyResponse === 'pass'
           ? 'pass'
           : 'fail',
       attachments: policyResult?.attachments || [],
@@ -62,7 +77,8 @@ export async function getFleetComplianceForMember(
   }
 
   try {
-    const labelHostsData = await fleetService.getHostsByLabel(memberFleetLabelId);
+    const labelHostsData =
+      await fleetService.getHostsByLabel(memberFleetLabelId);
     const firstHost = labelHostsData?.hosts?.[0];
 
     if (!firstHost) {
@@ -117,7 +133,9 @@ export async function getAllEmployeeDevices(
     const labelResponses = await Promise.all(
       membersWithLabels.map(async (employee) => {
         try {
-          const data = await fleetService.getHostsByLabel(employee.fleetDmLabelId!);
+          const data = await fleetService.getHostsByLabel(
+            employee.fleetDmLabelId!,
+          );
           return {
             userId: employee.userId,
             userName: employee.user?.name,
@@ -125,7 +143,12 @@ export async function getAllEmployeeDevices(
             hosts: data?.hosts || [],
           };
         } catch {
-          return { userId: employee.userId, userName: employee.user?.name, memberId: employee.id, hosts: [] };
+          return {
+            userId: employee.userId,
+            userName: employee.user?.name,
+            memberId: employee.id,
+            hosts: [],
+          };
         }
       }),
     );

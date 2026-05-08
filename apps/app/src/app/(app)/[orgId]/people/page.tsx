@@ -1,40 +1,35 @@
-import { filterComplianceMembers } from '@/lib/compliance';
+import { hasPermission } from '@/lib/permissions';
+import { resolveUserPermissions } from '@/lib/permissions.server';
 import { auth } from '@/utils/auth';
-import { s3Client, BUCKET_NAME } from '@/app/s3';
-import { GetObjectCommand } from '@aws-sdk/client-s3';
-import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { db } from '@db/server';
 import type { Metadata } from 'next';
 import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
+import { Suspense } from 'react';
 import { TeamMembers } from './all/components/TeamMembers';
-import { getEmployeeSyncConnections } from './all/data/queries';
+import { TeamMembersSkeleton } from './all/components/TeamMembersSkeleton';
 import { PeoplePageTabs } from './components/PeoplePageTabs';
 import { EmployeesOverview } from './dashboard/components/EmployeesOverview';
-import { DeviceComplianceChart } from './devices/components/DeviceComplianceChart';
-import { DeviceAgentDevicesList } from './devices/components/DeviceAgentDevicesList';
-import { EmployeeDevicesList } from './devices/components/EmployeeDevicesList';
-import { getEmployeeDevicesFromDB, getFleetHosts } from './devices/data';
-import type { DeviceWithChecks } from './devices/types';
-import type { Host } from './devices/types';
-import { OrgChartContent } from './org-chart/components/OrgChartContent';
+import { DevicesTabContent } from './devices/components/DevicesTabContent';
+import { OrgChartTabContent } from './org-chart/components/OrgChartTabContent';
+import { PeopleSettings } from './settings/components/PeopleSettings';
 
 export default async function PeoplePage({ params }: { params: Promise<{ orgId: string }> }) {
   const { orgId } = await params;
 
-  const session = await auth.api.getSession({
-    headers: await headers(),
-  });
-
+  const session = await auth.api.getSession({ headers: await headers() });
   if (!session?.session.activeOrganizationId) {
     return redirect('/');
   }
 
+  // Only the caller's own Member row is needed to decide tab visibility /
+  // permissions. The heavier org-wide queries (full membership list,
+  // compliance-role filtering) used to live here too, but they blocked the
+  // page shell on every tab switch. They've been moved into <TeamMembers>
+  // (which is Suspense-wrapped), so switching to Chart / Devices / Org-chart
+  // no longer waits on compliance bookkeeping.
   const currentUserMember = await db.member.findFirst({
-    where: {
-      organizationId: orgId,
-      userId: session.user.id,
-    },
+    where: { organizationId: orgId, userId: session.user.id },
   });
   const currentUserRoles = currentUserMember?.role?.split(',').map((r) => r.trim()) ?? [];
   const canManageMembers = currentUserRoles.some((role) => ['owner', 'admin'].includes(role));
@@ -42,152 +37,52 @@ export default async function PeoplePage({ params }: { params: Promise<{ orgId: 
   const canInviteUsers = canManageMembers || isAuditor;
   const isCurrentUserOwner = currentUserRoles.includes('owner');
 
-  // Fetch members with user info (used for both employee check and org chart)
-  const membersWithUsers = await db.member.findMany({
-    where: {
-      organizationId: orgId,
-      deactivated: false,
-      isActive: true,
-    },
-    include: {
-      user: {
-        select: {
-          name: true,
-          email: true,
-          role: true,
-        },
-      },
-    },
-  });
+  const userPermissions = await resolveUserPermissions(
+    currentUserMember?.role ?? null,
+    orgId,
+  );
+  const canManageOrgSettings = hasPermission(
+    userPermissions,
+    'organization',
+    'update',
+  );
 
-  // Check if there are members with compliance obligations
-  const employees = await filterComplianceMembers(membersWithUsers, orgId);
-
-  const showEmployeeTasks = employees.length > 0;
-
-  // Fetch org chart data directly via Prisma
-  const orgChart = await db.organizationChart.findUnique({
-    where: { organizationId: orgId },
-  });
-
-  // Generate a signed URL for uploaded images
-  let orgChartData = null;
-  if (orgChart) {
-    let signedImageUrl: string | null = null;
-    if (
-      orgChart.type === 'uploaded' &&
-      orgChart.uploadedImageUrl &&
-      s3Client &&
-      BUCKET_NAME
-    ) {
-      try {
-        const cmd = new GetObjectCommand({
-          Bucket: BUCKET_NAME,
-          Key: orgChart.uploadedImageUrl,
-        });
-        signedImageUrl = await getSignedUrl(s3Client, cmd, { expiresIn: 900 });
-      } catch {
-        // Signed URL generation failed; image won't render
-      }
-    }
-
-    // Sanitize nodes/edges from JSON to ensure valid React Flow structures
-    const rawNodes = Array.isArray(orgChart.nodes) ? orgChart.nodes : [];
-    const rawEdges = Array.isArray(orgChart.edges) ? orgChart.edges : [];
-
-    const sanitizedNodes = (rawNodes as Record<string, unknown>[])
-      .filter((n) => n && typeof n === 'object' && n.id)
-      .map((n) => ({
-        ...n,
-        position: n.position && typeof (n.position as Record<string, unknown>).x === 'number'
-          ? n.position
-          : { x: 0, y: 0 },
-      }));
-
-    const sanitizedEdges = (rawEdges as Record<string, unknown>[])
-      .filter((e) => e && typeof e === 'object' && e.source && e.target)
-      .map((e, i) => ({
-        ...e,
-        id: e.id || `edge-${e.source}-${e.target}-${i}`,
-      }));
-
-    orgChartData = {
-      ...orgChart,
-      nodes: sanitizedNodes,
-      edges: sanitizedEdges,
-      updatedAt: orgChart.updatedAt.toISOString(),
-      signedImageUrl,
-    };
-  }
-
-  // Fetch devices from both sources independently — one failing shouldn't break the other
-  let agentDevices: DeviceWithChecks[] = [];
-  let fleetDevices: Host[] = [];
-
-  const [agentResult, fleetResult, employeeSyncData] = await Promise.allSettled([
-    getEmployeeDevicesFromDB(),
-    getFleetHosts(),
-    getEmployeeSyncConnections(orgId),
-  ]);
-
-  if (agentResult.status === 'fulfilled') {
-    agentDevices = agentResult.value;
-  } else {
-    console.error('Error fetching device agent devices:', agentResult.reason);
-  }
-
-  if (fleetResult.status === 'fulfilled') {
-    fleetDevices = fleetResult.value || [];
-  } else {
-    console.error('Error fetching Fleet devices:', fleetResult.reason);
-  }
-
-  const syncConnections = employeeSyncData.status === 'fulfilled'
-    ? employeeSyncData.value
+  const organization = canManageOrgSettings
+    ? await db.organization.findUnique({
+        where: { id: orgId },
+        select: { backgroundCheckStepEnabled: true },
+      })
     : null;
-
-  // Filter out Fleet hosts for members who already have device-agent devices
-  // Device agent takes priority over Fleet
-  const memberIdsWithAgent = new Set(
-    agentDevices.map((d) => d.memberId).filter(Boolean),
-  );
-  const filteredFleetDevices = fleetDevices.filter(
-    (host) => !host.member_id || !memberIdsWithAgent.has(host.member_id),
-  );
 
   return (
     <PeoplePageTabs
       peopleContent={
-        <TeamMembers
-          canManageMembers={canManageMembers}
-          canInviteUsers={canInviteUsers}
-          isAuditor={isAuditor}
-          isCurrentUserOwner={isCurrentUserOwner}
-          organizationId={orgId}
-        />
+        <Suspense fallback={<TeamMembersSkeleton />}>
+          <TeamMembers
+            canManageMembers={canManageMembers}
+            canInviteUsers={canInviteUsers}
+            isCurrentUserOwner={isCurrentUserOwner}
+            organizationId={orgId}
+          />
+        </Suspense>
       }
-      employeeTasksContent={showEmployeeTasks ? <EmployeesOverview /> : null}
-      devicesContent={
-        <div className="space-y-6">
-          {/* Device Agent devices (new system) */}
-          {agentDevices.length > 0 && (
-            <DeviceAgentDevicesList devices={agentDevices} />
-          )}
-
-          {/* Fleet devices (legacy) — shown exactly as main branch */}
-          <DeviceComplianceChart devices={filteredFleetDevices} />
-          <EmployeeDevicesList devices={filteredFleetDevices} isCurrentUserOwner={isCurrentUserOwner} />
-        </div>
-      }
-      orgChartContent={
-        <OrgChartContent
-          chartData={orgChartData as any}
-          members={membersWithUsers}
-        />
-      }
+      employeeTasksContent={<EmployeesOverview />}
+      devicesContent={<DevicesTabContent isCurrentUserOwner={isCurrentUserOwner} />}
+      orgChartContent={<OrgChartTabContent organizationId={orgId} />}
+      findingsContent={null}
       showRoleMapping={false}
       roleMappingContent={null}
-      showEmployeeTasks={showEmployeeTasks}
+      showSettings={canManageOrgSettings && organization !== null}
+      settingsContent={
+        canManageOrgSettings && organization ? (
+          <PeopleSettings
+            backgroundCheckStepEnabled={
+              organization.backgroundCheckStepEnabled === true
+            }
+          />
+        ) : null
+      }
+      showEmployeeTasks
       canInviteUsers={canInviteUsers}
       canManageMembers={canManageMembers}
       organizationId={orgId}

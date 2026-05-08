@@ -1,0 +1,63 @@
+{
+  "slug": "beyond-trust",
+  "name": "BeyondTrust",
+  "description": "Monitor privileged access management, managed accounts, user groups, and managed systems in BeyondTrust Password Safe",
+  "category": "Security",
+  "docsUrl": "https://docs.beyondtrust.com/bips/v24.3/docs/api",
+  "baseUrl": "https://beyondtrust.placeholder.com",
+  "authConfig": {
+    "type": "custom",
+    "config": {
+      "credentialFields": [
+        {
+          "label": "BeyondTrust API Base URL",
+          "type": "text",
+          "required": true,
+          "helpText": "Full API base URL including path, e.g. https://your-server/BeyondTrust/api/public/v3"
+        },
+        {
+          "label": "API Key",
+          "type": "password",
+          "required": true,
+          "helpText": "API Key from BeyondTrust API Registration (Configuration > General > API Registrations)"
+        },
+        {
+          "label": "RunAs User",
+          "type": "text",
+          "required": true,
+          "helpText": "BeyondTrust RunAs user for API authentication (e.g. domain\\username or local user)"
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "employee_access",
+      "name": "Employee Access",
+      "description": "Lists all managed accounts in BeyondTrust Password Safe to verify privileged account inventory and access controls",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "role_based_access",
+      "name": "Role-based Access Controls",
+      "description": "Lists user groups and roles in BeyondTrust to verify role-based access control configuration for privileged access",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "secure_secrets",
+      "name": "Secure Secrets",
+      "description": "Lists managed systems and vaults in BeyondTrust Password Safe to verify secure credential management across infrastructure",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 3,
+  "isActive": true
+}

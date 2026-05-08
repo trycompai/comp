@@ -1,0 +1,39 @@
+{
+  "slug": "env0",
+  "name": "env0",
+  "description": "Infrastructure automation platform. Monitor environments and deployments.",
+  "category": "Infrastructure",
+  "docsUrl": "https://docs.env0.com/reference/authentication",
+  "baseUrl": "https://api.env0.com",
+  "authConfig": {
+    "type": "basic",
+    "config": {
+      "setupInstructions": "1. Log in to env0 at https://app.env0.com\n2. Go to Organization Settings > API Keys\n3. Click + Add API Key\n4. Give it a name and select Admin role (minimum)\n5. Copy the API Key ID and API Key Secret\n6. Paste them into the fields below",
+      "usernameField": "api_key_id",
+      "passwordField": "api_key_secret"
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "env0_app_availability",
+      "name": "env0 App Availability",
+      "description": "Checks env0 app availability.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "env0_employee_access",
+      "name": "env0 Employee Access",
+      "description": "Checks env0 employee access.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

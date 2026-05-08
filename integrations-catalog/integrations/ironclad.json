@@ -1,0 +1,45 @@
+{
+  "slug": "ironclad",
+  "name": "Ironclad",
+  "description": "Monitor Ironclad contract lifecycle management platform for document access and legal compliance",
+  "category": "Productivity",
+  "docsUrl": "https://developer.ironcladapp.com/docs",
+  "baseUrl": "https://ironcladapp.com/",
+  "authConfig": {
+    "type": "api_key",
+    "config": {
+      "setupInstructions": "1. Log in to Ironclad at https://ironcladapp.com\n2. Go to Company Settings → API Tokens\n3. Create a new API token with read access\n4. Enter it below",
+      "credentialFields": [
+        {
+          "label": "API Token",
+          "type": "password",
+          "required": true,
+          "helpText": "Found in Ironclad Company Settings → API Tokens"
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "ironclad_employee_access",
+      "name": "Employee Access",
+      "description": "Reviews Ironclad users with access to contract management workflows",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "ironclad_app_availability",
+      "name": "App Availability",
+      "description": "Verifies Ironclad contract management platform is operational",
+      "defaultSeverity": "low",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

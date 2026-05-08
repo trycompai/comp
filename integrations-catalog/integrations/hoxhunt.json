@@ -1,0 +1,58 @@
+{
+  "slug": "hoxhunt",
+  "name": "Hoxhunt",
+  "description": "Hoxhunt phishing simulation and security awareness training platform for measuring and improving employee security behavior",
+  "category": "Security",
+  "docsUrl": "https://support.hoxhunt.com/hc/en-us/categories/16473071192732-Technical-corner",
+  "baseUrl": null,
+  "authConfig": {
+    "type": "custom",
+    "config": {
+      "setupInstructions": "1. Log in to your Hoxhunt admin dashboard\\n2. Go to Settings > API or contact your Hoxhunt account manager to request an API token\\n3. Copy your API token and enter it above\\n4. More info: https://support.hoxhunt.com/hc/en-us/categories/16473071192732-Technical-corner",
+      "credentialFields": [
+        {
+          "label": "API Token",
+          "type": "password",
+          "required": true
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "hoxhunt_users_enrolled",
+      "name": "Employee Access",
+      "description": "Verify users are enrolled in Hoxhunt security awareness training",
+      "defaultSeverity": "info",
+      "enabled": true
+    },
+    {
+      "slug": "hoxhunt_incidents",
+      "name": "Incident Response",
+      "description": "Monitor phishing incidents reported through Hoxhunt",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "hoxhunt_threats",
+      "name": "Monitoring & Alerting",
+      "description": "Monitor real phishing threats reported and analyzed by Hoxhunt",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "hoxhunt_training_active",
+      "name": "Employee Verification",
+      "description": "Verify Hoxhunt security awareness training platform is active and employees are being trained on phishing, social engineering, and credential protection",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 4,
+  "isActive": true
+}

@@ -1,0 +1,45 @@
+{
+  "slug": "baremetrics",
+  "name": "Baremetrics",
+  "description": "Monitor Baremetrics subscription analytics for revenue metrics and access compliance",
+  "category": "Productivity",
+  "docsUrl": "https://developers.baremetrics.com/reference/introduction",
+  "baseUrl": "https://api.baremetrics.com/",
+  "authConfig": {
+    "type": "api_key",
+    "config": {
+      "setupInstructions": "1. Log in to Baremetrics at https://app.baremetrics.com\n2. Go to Settings → API\n3. Copy your API key\n4. Enter it below",
+      "credentialFields": [
+        {
+          "label": "API Key",
+          "type": "password",
+          "required": true,
+          "helpText": "Found in Baremetrics Settings → API"
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "baremetrics_app_availability",
+      "name": "App Availability",
+      "description": "Verifies Baremetrics data sources are connected and syncing revenue data",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "baremetrics_employee_access",
+      "name": "Employee Access",
+      "description": "Reviews Baremetrics account members with access to revenue data",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

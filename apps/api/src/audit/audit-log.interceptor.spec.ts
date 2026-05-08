@@ -101,7 +101,9 @@ describe('AuditLogInterceptor', () => {
     } as unknown as ExecutionContext;
   };
 
-  const createMockCallHandler = (response: unknown = { id: 'new_123' }): CallHandler => ({
+  const createMockCallHandler = (
+    response: unknown = { id: 'new_123' },
+  ): CallHandler => ({
     handle: () => of(response),
   });
 
@@ -441,7 +443,10 @@ describe('AuditLogInterceptor', () => {
       url: '/v1/risks',
       params: {},
     });
-    const handler = createMockCallHandler({ id: 'risk_789', name: 'Test Risk' });
+    const handler = createMockCallHandler({
+      id: 'risk_789',
+      name: 'Test Risk',
+    });
 
     interceptor.intercept(context, handler).subscribe({
       next: () => {
@@ -646,7 +651,8 @@ describe('AuditLogInterceptor', () => {
       url: '/v1/comments',
       params: {},
       body: {
-        content: '{"type":"doc","content":[{"type":"text","text":"This looks good!"}]}',
+        content:
+          '{"type":"doc","content":[{"type":"text","text":"This looks good!"}]}',
         entityId: 'pol_abc',
         entityType: 'policy',
       },
@@ -706,7 +712,10 @@ describe('AuditLogInterceptor', () => {
             data: expect.objectContaining({
               data: expect.objectContaining({
                 changes: {
-                  assignee: { previous: 'Alice Smith (mem_old)', current: 'Bob Jones (mem_new)' },
+                  assignee: {
+                    previous: 'Alice Smith (mem_old)',
+                    current: 'Bob Jones (mem_new)',
+                  },
                 },
               }),
             }),
@@ -749,7 +758,10 @@ describe('AuditLogInterceptor', () => {
             data: expect.objectContaining({
               data: expect.objectContaining({
                 changes: {
-                  assignee: { previous: 'Unassigned', current: 'Bob Jones (mem_new)' },
+                  assignee: {
+                    previous: 'Unassigned',
+                    current: 'Bob Jones (mem_new)',
+                  },
                 },
               }),
             }),
@@ -808,9 +820,7 @@ describe('AuditLogInterceptor', () => {
 
     // Existing controls on the policy
     mockPolicyFindUnique.mockResolvedValue({
-      controls: [
-        { id: 'ctrl_1', name: 'Access Control' },
-      ],
+      controls: [{ id: 'ctrl_1', name: 'Access Control' }],
     });
 
     // Resolve control names
@@ -916,9 +926,7 @@ describe('AuditLogInterceptor', () => {
 
     // Only one control exists
     mockPolicyFindUnique.mockResolvedValue({
-      controls: [
-        { id: 'ctrl_1', name: 'Access Control' },
-      ],
+      controls: [{ id: 'ctrl_1', name: 'Access Control' }],
     });
 
     mockControlFindMany.mockResolvedValue([
@@ -1132,9 +1140,13 @@ describe('AuditLogInterceptor', () => {
       method: 'PATCH',
       url: '/v1/policies/pol_123/versions/ver_abc',
       params: { id: 'pol_123' },
-      body: { content: [{ type: 'doc', content: [{ type: 'text', text: 'Hello' }] }] },
+      body: {
+        content: [{ type: 'doc', content: [{ type: 'text', text: 'Hello' }] }],
+      },
     });
-    const handler = createMockCallHandler({ data: { versionId: 'ver_abc', version: 3 } });
+    const handler = createMockCallHandler({
+      data: { versionId: 'ver_abc', version: 3 },
+    });
 
     interceptor.intercept(context, handler).subscribe({
       next: () => {
@@ -1237,7 +1249,9 @@ describe('AuditLogInterceptor', () => {
       url: '/v1/policies/pol_123/pdf/signed-url?versionId=ver_456',
       params: { id: 'pol_123' },
     });
-    const handler = createMockCallHandler({ url: 'https://s3.example.com/policy.pdf' });
+    const handler = createMockCallHandler({
+      url: 'https://s3.example.com/policy.pdf',
+    });
 
     interceptor.intercept(context, handler).subscribe({
       next: () => {

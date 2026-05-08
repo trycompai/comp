@@ -57,9 +57,10 @@ describe('AttachmentsController', () => {
         'att_abc123',
       );
 
-      expect(
-        attachmentsService.getAttachmentDownloadUrl,
-      ).toHaveBeenCalledWith('org_123', 'att_abc123');
+      expect(attachmentsService.getAttachmentDownloadUrl).toHaveBeenCalledWith(
+        'org_123',
+        'att_abc123',
+      );
       expect(result).toEqual(downloadResult);
     });
 

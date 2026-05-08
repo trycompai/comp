@@ -1,0 +1,45 @@
+{
+  "slug": "knock",
+  "name": "Knock",
+  "description": "Monitor Knock notification infrastructure for workflow access and data handling compliance",
+  "category": "Communication",
+  "docsUrl": "https://docs.knock.app/reference",
+  "baseUrl": "https://api.knock.app/",
+  "authConfig": {
+    "type": "api_key",
+    "config": {
+      "setupInstructions": "1. Log in to Knock at https://dashboard.knock.app\n2. Go to Settings → API Keys\n3. Copy your Secret API Key (sk_...)\n4. Enter it below",
+      "credentialFields": [
+        {
+          "label": "Secret API Key",
+          "type": "password",
+          "required": true,
+          "helpText": "Found in Knock Settings → API Keys. Use the Secret Key (sk_...)"
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "knock_employee_access",
+      "name": "Employee Access",
+      "description": "Reviews Knock notification platform users and their access levels",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "knock_app_availability",
+      "name": "App Availability",
+      "description": "Verifies Knock notification infrastructure is operational",
+      "defaultSeverity": "low",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

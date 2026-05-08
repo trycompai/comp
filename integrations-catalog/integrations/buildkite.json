@@ -1,0 +1,45 @@
+{
+  "slug": "buildkite",
+  "name": "Buildkite",
+  "description": "Monitor Buildkite CI/CD pipelines for code change automation and deployment compliance",
+  "category": "Development",
+  "docsUrl": "https://buildkite.com/docs/apis/rest-api",
+  "baseUrl": "https://api.buildkite.com/",
+  "authConfig": {
+    "type": "api_key",
+    "config": {
+      "setupInstructions": "1. Log in to Buildkite at https://buildkite.com\n2. Go to Personal Settings → API Access Tokens\n3. Create a token with read_organizations and read_pipelines scopes\n4. Copy and enter it below",
+      "credentialFields": [
+        {
+          "label": "API Access Token",
+          "type": "password",
+          "required": true,
+          "helpText": "Found in Buildkite → Personal Settings → API Access Tokens"
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "buildkite_code_changes",
+      "name": "Code Changes",
+      "description": "Verifies Buildkite pipelines are configured for automated code change validation",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "buildkite_separation",
+      "name": "Separation of Environments",
+      "description": "Verifies Buildkite pipelines separate staging and production deployments",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

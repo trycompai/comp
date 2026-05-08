@@ -1,0 +1,58 @@
+{
+  "slug": "n8n",
+  "name": "n8n",
+  "description": "Monitor n8n workflow automation platform for user access, instance availability, and workflow inventory",
+  "category": "Productivity",
+  "docsUrl": "https://docs.n8n.io/api/",
+  "baseUrl": null,
+  "authConfig": {
+    "type": "custom",
+    "config": {
+      "setupInstructions": "1. Log in to your n8n instance\n2. Go to Settings > n8n API\n3. Click 'Create an API key'\n4. Choose a label and set an expiration time\n5. Copy the API key\n6. Enter your n8n instance URL (e.g. https://yourinstance.app.n8n.cloud) and the API key below",
+      "credentialFields": [
+        {
+          "label": "n8n Instance URL",
+          "type": "text",
+          "required": true,
+          "helpText": "Your n8n instance URL (e.g. https://yourinstance.app.n8n.cloud or https://n8n.yourcompany.com). No trailing slash."
+        },
+        {
+          "label": "API Key",
+          "type": "password",
+          "required": true,
+          "helpText": "Go to Settings > n8n API > Create an API key. Copy the key."
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "n8n_employee_access",
+      "name": "Employee Access",
+      "description": "Lists all n8n users with their roles to verify access control",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "n8n_app_availability",
+      "name": "App Availability",
+      "description": "Verifies the n8n instance is accessible and responding to API requests",
+      "defaultSeverity": "high",
+      "enabled": true
+    },
+    {
+      "slug": "n8n_workflow_inventory",
+      "name": "Workflow Inventory",
+      "description": "Lists all workflows with their active status for automation governance",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 3,
+  "isActive": true
+}

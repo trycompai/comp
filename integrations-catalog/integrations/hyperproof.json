@@ -1,0 +1,50 @@
+{
+  "slug": "hyperproof",
+  "name": "Hyperproof",
+  "description": "Compliance operations platform. Monitor compliance programs and evidence collection.",
+  "category": "Security",
+  "docsUrl": "https://developer.hyperproof.app/",
+  "baseUrl": "https://api.hyperproof.app",
+  "authConfig": {
+    "type": "custom",
+    "config": {
+      "credentialFields": [
+        {
+          "label": "Client ID",
+          "type": "text",
+          "required": true,
+          "helpText": "OAuth2 Client ID from Hyperproof API settings"
+        },
+        {
+          "label": "Client Secret",
+          "type": "password",
+          "required": true,
+          "helpText": "OAuth2 Client Secret from Hyperproof API settings"
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "hyperproof_app_availability",
+      "name": "Hyperproof App Availability",
+      "description": "Checks that the Hyperproof API is accessible with the provided OAuth2 credentials.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "hyperproof_employee_access",
+      "name": "Hyperproof Employee Access",
+      "description": "Verifies user access to Hyperproof platform.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

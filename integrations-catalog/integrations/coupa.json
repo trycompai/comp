@@ -1,0 +1,58 @@
+{
+  "slug": "coupa",
+  "name": "Coupa",
+  "description": "Monitor Coupa procurement and spend management platform for user access and role-based access controls",
+  "category": "Productivity",
+  "docsUrl": "https://compass.coupa.com/en-us/products/product-documentation/integration-technical-documentation/the-coupa-core-api",
+  "baseUrl": "https://placeholder.coupahost.com",
+  "authConfig": {
+    "type": "custom",
+    "config": {
+      "setupInstructions": "1. Log in to Coupa as an admin\n2. Go to Setup > OAuth2/OpenID Connect Clients\n3. Click Create with Grant Type: Client Credentials\n4. Select scopes: core.user.read\n5. Save and copy the Client ID and Secret\n6. Enter your instance URL (e.g. https://yourcompany.coupahost.com)",
+      "credentialFields": [
+        {
+          "label": "Instance URL",
+          "type": "text",
+          "required": true,
+          "helpText": "Your Coupa instance URL, e.g. https://yourcompany.coupahost.com"
+        },
+        {
+          "label": "Client ID (OIDC)",
+          "type": "text",
+          "required": true,
+          "helpText": "From Setup > OAuth2/OpenID Connect Clients in your Coupa instance"
+        },
+        {
+          "label": "Client Secret (OIDC)",
+          "type": "password",
+          "required": true,
+          "helpText": "The secret generated when you created the OIDC client in Coupa"
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks",
+    "sync"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": true,
+  "checks": [
+    {
+      "slug": "coupa_employee_access",
+      "name": "Employee Access",
+      "description": "Lists Coupa users to verify procurement platform access is properly managed",
+      "defaultSeverity": "high",
+      "enabled": true
+    },
+    {
+      "slug": "coupa_role_based_access",
+      "name": "Role-based Access Controls",
+      "description": "Verifies Coupa users have roles assigned for proper role-based access control",
+      "defaultSeverity": "high",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

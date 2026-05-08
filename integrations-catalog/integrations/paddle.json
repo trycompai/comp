@@ -1,0 +1,45 @@
+{
+  "slug": "paddle",
+  "name": "Paddle",
+  "description": "Monitor Paddle subscription and payment platform for billing access and merchant compliance",
+  "category": "Productivity",
+  "docsUrl": "https://developer.paddle.com/",
+  "baseUrl": "https://api.paddle.com/",
+  "authConfig": {
+    "type": "api_key",
+    "config": {
+      "setupInstructions": "1. Log in to Paddle at https://vendors.paddle.com\n2. Go to Developer Tools → Authentication → API Keys\n3. Generate a new API key\n4. Enter it below",
+      "credentialFields": [
+        {
+          "label": "API Key",
+          "type": "password",
+          "required": true,
+          "helpText": "Found in Paddle Developer Tools → Authentication → API Keys"
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "paddle_employee_access",
+      "name": "Employee Access",
+      "description": "Verifies Paddle merchant account is active and billing platform is secured",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "paddle_app_availability",
+      "name": "App Availability",
+      "description": "Verifies Paddle platform is operational",
+      "defaultSeverity": "low",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

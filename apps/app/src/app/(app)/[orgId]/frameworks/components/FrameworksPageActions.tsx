@@ -7,6 +7,7 @@ import type { FrameworkEditorFramework } from '@db';
 import { useState } from 'react';
 import { usePermissions } from '@/hooks/use-permissions';
 import { AddFrameworkModal } from '@/app/(app)/[orgId]/overview/components/AddFrameworkModal';
+import { CreateCustomFrameworkSheet } from './CreateCustomFrameworkSheet';
 
 interface FrameworksPageActionsProps {
   availableFrameworks: Pick<
@@ -24,7 +25,8 @@ export function FrameworksPageActions({ availableFrameworks }: FrameworksPageAct
   }
 
   return (
-    <>
+    <div className="flex items-center gap-2">
+      <CreateCustomFrameworkSheet />
       <Button
         size="sm"
         iconLeft={<Add size={16} />}
@@ -40,6 +42,6 @@ export function FrameworksPageActions({ availableFrameworks }: FrameworksPageAct
           />
         )}
       </Dialog>
-    </>
+    </div>
   );
 }

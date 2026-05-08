@@ -4,7 +4,6 @@ import { serverApi } from '@/lib/api-server';
 import { auth } from '@/utils/auth';
 import type {
   AuditLog,
-  Control,
   Member,
   Organization,
   Policy,
@@ -15,6 +14,7 @@ import { Breadcrumb, PageLayout } from '@trycompai/design-system';
 import type { Metadata } from 'next';
 import { headers } from 'next/headers';
 import Link from 'next/link';
+import type { MappedControl } from './components/PolicyControlMappings';
 import { PolicyHeaderActions } from './components/PolicyHeaderActions';
 import PolicyPage from './components/PolicyPage';
 import { PolicyStatusBadge } from './components/PolicyStatusBadge';
@@ -50,9 +50,10 @@ export default async function PolicyDetails({
     await Promise.all([
       serverApi.get<PolicyDetail>(`/v1/policies/${policyId}`),
       serverApi.get<{ data: (Member & { user: User })[] }>('/v1/people'),
-      serverApi.get<{ mappedControls: Control[]; allControls: Control[] }>(
-        `/v1/policies/${policyId}/controls`,
-      ),
+      serverApi.get<{
+        mappedControls: MappedControl[];
+        allControls: MappedControl[];
+      }>(`/v1/policies/${policyId}/controls`),
       serverApi.get<{ data: AuditLogWithRelations[] }>(
         `/v1/audit-logs?entityType=policy&entityId=${policyId}`,
       ),
@@ -78,7 +79,7 @@ export default async function PolicyDetails({
     ? activityRes.data.data
     : [];
   const versions = versionsRes.data?.data?.versions ?? [];
-  const isPendingApproval = !!policy?.approverId;
+  const isPendingApproval = !!policy?.approverId && !!policy?.pendingVersionId;
 
   // Check feature flag for AI policy editor
   const session = await auth.api.getSession({

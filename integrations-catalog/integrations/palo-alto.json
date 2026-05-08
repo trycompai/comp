@@ -1,0 +1,57 @@
+{
+  "slug": "palo-alto",
+  "name": "Palo Alto Networks SASE",
+  "description": "Secure access service edge platform. Monitor network security policies and access.",
+  "category": "Security",
+  "docsUrl": "https://pan.dev/sase/api/",
+  "baseUrl": "https://api.sase.paloaltonetworks.com",
+  "authConfig": {
+    "type": "custom",
+    "config": {
+      "setupInstructions": "1. Log in to Strata Cloud Manager (https://stratacloud.paloaltonetworks.com)\n2. Go to Settings - Identity & Access - Service Accounts\n3. Create a new Service Account and copy the Client ID and Client Secret\n4. Note your Tenant Service Group (TSG) ID from Multitenant Settings\n5. Assign appropriate roles to the service account\n6. Enter all values below",
+      "credentialFields": [
+        {
+          "label": "Client ID",
+          "type": "text",
+          "required": true,
+          "helpText": "Service Account Client ID from Strata Cloud Manager"
+        },
+        {
+          "label": "Client Secret",
+          "type": "password",
+          "required": true,
+          "helpText": "Service Account Client Secret from Strata Cloud Manager"
+        },
+        {
+          "label": "Tenant Service Group (TSG) ID",
+          "type": "text",
+          "required": true,
+          "helpText": "Your TSG ID from Strata Cloud Manager - Multitenant Settings"
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "palo_alto_app_availability",
+      "name": "Palo Alto SASE App Availability",
+      "description": "Verifies Palo Alto SASE API is accessible using OAuth2 client credentials.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "palo_alto_employee_access",
+      "name": "Palo Alto SASE Employee Access",
+      "description": "Verifies access to Palo Alto SASE management by listing service accounts.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

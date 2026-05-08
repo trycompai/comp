@@ -40,7 +40,7 @@ export function AddSecretDialog() {
   const [open, setOpen] = useState(false);
   const { createSecret } = useSecrets();
   const { hasPermission } = usePermissions();
-  const canManageSecrets = hasPermission('organization', 'update');
+  const canManageSecrets = hasPermission('secret', 'create');
 
   const {
     handleSubmit,

@@ -10,14 +10,11 @@ import {
   Logger,
   UseGuards,
 } from '@nestjs/common';
-import { ApiTags, ApiSecurity } from '@nestjs/swagger';
+import { ApiTags, ApiSecurity, ApiOperation } from '@nestjs/swagger';
 import { HybridAuthGuard } from '../../auth/hybrid-auth.guard';
 import { PermissionGuard } from '../../auth/permission.guard';
 import { RequirePermission } from '../../auth/require-permission.decorator';
-import {
-  OrganizationId,
-  AuthContext,
-} from '../../auth/auth-context.decorator';
+import { OrganizationId, AuthContext } from '../../auth/auth-context.decorator';
 import type { AuthContext as AuthContextType } from '../../auth/types';
 import { db } from '@db';
 import type { Prisma } from '@db';
@@ -84,6 +81,7 @@ export class SyncController {
    * Sync employees from Google Workspace
    */
   @Post('google-workspace/employees')
+  @ApiOperation({ summary: 'Sync Google Workspace employees' })
   @RequirePermission('integration', 'update')
   async syncGoogleWorkspaceEmployees(
     @OrganizationId() organizationId: string,
@@ -313,7 +311,9 @@ export class SyncController {
       activeUsers.map((u) => u.primaryEmail.toLowerCase()),
     );
     const allSuspendedEmails = new Set(
-      ouFilteredUsers.filter((u) => u.suspended).map((u) => u.primaryEmail.toLowerCase()),
+      ouFilteredUsers
+        .filter((u) => u.suspended)
+        .map((u) => u.primaryEmail.toLowerCase()),
     );
     const allActiveEmails = new Set(
       ouFilteredUsers
@@ -435,7 +435,11 @@ export class SyncController {
 
     const deactivationGwDomains =
       effectiveSyncFilterMode === 'include'
-        ? new Set(ouFilteredUsers.map((u) => u.primaryEmail.split('@')[1]?.toLowerCase()))
+        ? new Set(
+            ouFilteredUsers.map((u) =>
+              u.primaryEmail.split('@')[1]?.toLowerCase(),
+            ),
+          )
         : new Set(
             filteredUsers.map((u) =>
               u.primaryEmail.split('@')[1]?.toLowerCase(),
@@ -522,11 +526,9 @@ export class SyncController {
    * Check if Google Workspace is connected for an organization
    */
   @Post('google-workspace/status')
+  @ApiOperation({ summary: 'Get Google Workspace sync status' })
   @RequirePermission('integration', 'read')
-  async getGoogleWorkspaceStatus(
-    @OrganizationId() organizationId: string,
-  ) {
-
+  async getGoogleWorkspaceStatus(@OrganizationId() organizationId: string) {
     const connection = await this.connectionRepository.findBySlugAndOrg(
       'google-workspace',
       organizationId,
@@ -553,6 +555,7 @@ export class SyncController {
    * Sync employees from Rippling
    */
   @Post('rippling/employees')
+  @ApiOperation({ summary: 'Sync Rippling employees' })
   @RequirePermission('integration', 'update')
   async syncRipplingEmployees(
     @OrganizationId() organizationId: string,
@@ -923,9 +926,9 @@ export class SyncController {
    * Check if Rippling is connected for an organization
    */
   @Post('rippling/status')
+  @ApiOperation({ summary: 'Get Rippling sync status' })
   @RequirePermission('integration', 'read')
   async getRipplingStatus(@OrganizationId() organizationId: string) {
-
     const connection = await this.connectionRepository.findBySlugAndOrg(
       'rippling',
       organizationId,
@@ -952,6 +955,7 @@ export class SyncController {
    * Sync employees from JumpCloud
    */
   @Post('jumpcloud/employees')
+  @ApiOperation({ summary: 'Sync JumpCloud employees' })
   @RequirePermission('integration', 'update')
   async syncJumpCloudEmployees(
     @OrganizationId() organizationId: string,
@@ -1462,9 +1466,9 @@ export class SyncController {
    * Check if JumpCloud is connected for an organization
    */
   @Post('jumpcloud/status')
+  @ApiOperation({ summary: 'Get JumpCloud sync status' })
   @RequirePermission('integration', 'read')
   async getJumpCloudStatus(@OrganizationId() organizationId: string) {
-
     const connection = await this.connectionRepository.findBySlugAndOrg(
       'jumpcloud',
       organizationId,
@@ -1491,11 +1495,9 @@ export class SyncController {
    * Get the current employee sync provider for an organization
    */
   @Get('employee-sync-provider')
+  @ApiOperation({ summary: 'Get the currently configured employee sync provider' })
   @RequirePermission('integration', 'read')
-  async getEmployeeSyncProvider(
-    @OrganizationId() organizationId: string,
-  ) {
-
+  async getEmployeeSyncProvider(@OrganizationId() organizationId: string) {
     const org = await db.organization.findUnique({
       where: { id: organizationId },
       select: { employeeSyncProvider: true },
@@ -1523,12 +1525,12 @@ export class SyncController {
    * Set the employee sync provider for an organization
    */
   @Post('employee-sync-provider')
+  @ApiOperation({ summary: 'Set the employee sync provider' })
   @RequirePermission('integration', 'update')
   async setEmployeeSyncProvider(
     @OrganizationId() organizationId: string,
     @Body() body: { provider: string | null },
   ) {
-
     const { provider } = body;
 
     // Validate provider if set
@@ -1582,10 +1584,9 @@ export class SyncController {
    * Used by the frontend to render the provider selector dynamically.
    */
   @Get('available-providers')
+  @ApiOperation({ summary: 'List employee sync providers available to the org' })
   @RequirePermission('integration', 'read')
-  async getAvailableSyncProviders(
-    @OrganizationId() organizationId: string,
-  ) {
+  async getAvailableSyncProviders(@OrganizationId() organizationId: string) {
     const allManifests = registry.getActiveManifests();
     const syncProviders = allManifests.filter((m) =>
       m.capabilities?.includes('sync'),
@@ -1630,6 +1631,7 @@ export class SyncController {
    * This only matches for slugs that don't match the 4 built-in providers.
    */
   @Post('dynamic/:providerSlug/employees')
+  @ApiOperation({ summary: 'Sync employees for a dynamic provider' })
   @RequirePermission('integration', 'update')
   async syncDynamicProviderEmployees(
     @OrganizationId() organizationId: string,
@@ -1690,7 +1692,7 @@ export class SyncController {
 
     // Try to refresh OAuth token if applicable
     if (manifest.auth.type === 'oauth2' && credentials.refresh_token) {
-      const oauthConfig = manifest.auth.config as OAuthConfig;
+      const oauthConfig = manifest.auth.config;
       try {
         const oauthCredentials =
           await this.oauthCredentialsService.getCredentials(
@@ -1698,17 +1700,16 @@ export class SyncController {
             organizationId,
           );
         if (oauthCredentials) {
-          const newToken =
-            await this.credentialVaultService.refreshOAuthTokens(
-              connectionId,
-              {
-                tokenUrl: oauthConfig.tokenUrl,
-                refreshUrl: oauthConfig.refreshUrl,
-                clientId: oauthCredentials.clientId,
-                clientSecret: oauthCredentials.clientSecret,
-                clientAuthMethod: oauthConfig.clientAuthMethod,
-              },
-            );
+          const newToken = await this.credentialVaultService.refreshOAuthTokens(
+            connectionId,
+            {
+              tokenUrl: oauthConfig.tokenUrl,
+              refreshUrl: oauthConfig.refreshUrl,
+              clientId: oauthCredentials.clientId,
+              clientSecret: oauthCredentials.clientSecret,
+              clientAuthMethod: oauthConfig.clientAuthMethod,
+            },
+          );
           if (newToken) {
             credentials =
               await this.credentialVaultService.getDecryptedCredentials(
@@ -1740,12 +1741,11 @@ export class SyncController {
       manifest,
       accessToken: typeof accessToken === 'string' ? accessToken : undefined,
       credentials: (credentials ?? {}) as Record<string, string>,
-      variables:
-        ((connection.variables as Record<string, unknown>) ?? {}) as Record<string, string | boolean | number | string[]>,
+      variables: ((connection.variables as Record<string, unknown>) ??
+        {}) as Record<string, string | boolean | number | string[]>,
       connectionId,
       organizationId,
-      metadata:
-        (connection.metadata as Record<string, unknown>) ?? {},
+      metadata: (connection.metadata as Record<string, unknown>) ?? {},
       logger: {
         info: (msg, data) => this.logger.log(msg, data),
         warn: (msg, data) => this.logger.warn(msg, data),
@@ -1791,9 +1791,10 @@ export class SyncController {
         totalChecked: result.totalFound,
         passedCount: result.imported + result.reactivated,
         failedCount: result.errors,
-        logs: executionLogs.length > 0
-          ? (executionLogs as unknown as Prisma.InputJsonValue)
-          : undefined,
+        logs:
+          executionLogs.length > 0
+            ? (executionLogs as unknown as Prisma.InputJsonValue)
+            : undefined,
       });
 
       this.logger.log(
@@ -1813,7 +1814,8 @@ export class SyncController {
         timestamp: log.timestamp.toISOString(),
       }));
 
-      const errorMessage = error instanceof Error ? error.message : String(error);
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
       const errorStack = error instanceof Error ? error.stack : undefined;
 
       const startTime = syncRun.startedAt?.getTime() || Date.now();

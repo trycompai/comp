@@ -1,0 +1,65 @@
+{
+  "slug": "trend-micro-vision-one",
+  "name": "Trend Micro Vision One",
+  "description": "Trend Micro Vision One XDR endpoint security platform. Monitor security alerts, endpoints, audit logs, and compliance posture.",
+  "category": "Security",
+  "docsUrl": "https://automation.trendmicro.com/xdr/Guides/API-documentation/",
+  "baseUrl": "https://api.xdr.trendmicro.com",
+  "authConfig": {
+    "type": "custom",
+    "config": {
+      "setupInstructions": "1. Log in to your Trend Micro Vision One console.\n2. Go to Administration → API Keys.\n3. Click 'Add API Key' and configure:\n   - Name: CompAI Integration\n   - Role: Custom role with required permissions\n   - Permissions needed:\n     * Workbench: View, filter, and search\n     * Audit Logs: View, filter, and search, Export and Download\n     * Endpoint Inventory: View\n4. Copy the API token and select your region below.",
+      "credentialFields": [
+        {
+          "label": "API Token",
+          "type": "password",
+          "required": true,
+          "helpText": "API token from Vision One console (Administration → API Keys). Create with required permissions: Workbench (View, filter, and search), Audit Logs (View, filter, and search, Export and Download), Endpoint Inventory (View)."
+        },
+        {
+          "label": "Region",
+          "type": "select",
+          "required": true,
+          "helpText": "Select your Vision One region base URL"
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "connectivity",
+      "name": "API Connectivity Test",
+      "description": "Verify connection to Vision One API using EICAR test endpoint",
+      "defaultSeverity": "high",
+      "enabled": true
+    },
+    {
+      "slug": "security_alerts",
+      "name": "Security Alerts Monitoring",
+      "description": "Monitor active security alerts and workbench investigations",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "endpoint_inventory",
+      "name": "Endpoint Device Inventory",
+      "description": "Monitor managed endpoint devices and their protection status",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "audit_logs",
+      "name": "Administrative Audit Logs",
+      "description": "Monitor administrative activities and configuration changes",
+      "defaultSeverity": "low",
+      "enabled": true
+    }
+  ],
+  "checkCount": 4,
+  "isActive": true
+}

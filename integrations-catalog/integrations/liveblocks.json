@@ -1,0 +1,45 @@
+{
+  "slug": "liveblocks",
+  "name": "Liveblocks",
+  "description": "Monitor Liveblocks real-time collaboration infrastructure for room access and security compliance",
+  "category": "Development",
+  "docsUrl": "https://liveblocks.io/docs/api-reference/rest-api-endpoints",
+  "baseUrl": "https://api.liveblocks.io/",
+  "authConfig": {
+    "type": "api_key",
+    "config": {
+      "setupInstructions": "1. Log in to Liveblocks at https://liveblocks.io/dashboard\n2. Go to API Keys\n3. Copy your Secret Key (starts with sk_)\n4. Enter it below",
+      "credentialFields": [
+        {
+          "label": "Secret Key",
+          "type": "password",
+          "required": true,
+          "helpText": "Found in Liveblocks Dashboard → API Keys (Secret Key)"
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "liveblocks_employee_access",
+      "name": "Employee Access",
+      "description": "Reviews Liveblocks rooms to audit active collaboration sessions",
+      "defaultSeverity": "low",
+      "enabled": true
+    },
+    {
+      "slug": "liveblocks_infrastructure",
+      "name": "Infrastructure Inventory",
+      "description": "Verifies Liveblocks real-time collaboration infrastructure is active",
+      "defaultSeverity": "low",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

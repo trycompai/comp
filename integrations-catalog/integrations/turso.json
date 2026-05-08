@@ -1,0 +1,45 @@
+{
+  "slug": "turso",
+  "name": "Turso",
+  "description": "Monitor Turso edge SQLite databases for infrastructure inventory and access compliance",
+  "category": "Cloud",
+  "docsUrl": "https://docs.turso.tech/api-reference",
+  "baseUrl": "https://api.turso.tech/",
+  "authConfig": {
+    "type": "api_key",
+    "config": {
+      "setupInstructions": "1. Log in to Turso at https://turso.tech\n2. Go to Settings → API Tokens\n3. Create a new API token\n4. Copy and enter it below",
+      "credentialFields": [
+        {
+          "label": "API Token",
+          "type": "password",
+          "required": true,
+          "helpText": "Found in Turso Settings → API Tokens"
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "turso_infrastructure",
+      "name": "Infrastructure Inventory",
+      "description": "Lists Turso organizations and databases for edge database infrastructure inventory",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "turso_employee_access",
+      "name": "Employee Access",
+      "description": "Reviews Turso organization members and their database access",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

@@ -1,0 +1,45 @@
+{
+  "slug": "productboard",
+  "name": "Productboard",
+  "description": "Monitor Productboard product management for team access and feature prioritization compliance",
+  "category": "Productivity",
+  "docsUrl": "https://developer.productboard.com/",
+  "baseUrl": "https://api.productboard.com/",
+  "authConfig": {
+    "type": "api_key",
+    "config": {
+      "setupInstructions": "1. Log in to Productboard at https://app.productboard.com\n2. Go to Profile → Integrations → API Access\n3. Generate an API token\n4. Enter it below",
+      "credentialFields": [
+        {
+          "label": "API Token",
+          "type": "password",
+          "required": true,
+          "helpText": "Found in Productboard Profile → Integrations → API Access"
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "productboard_employee_access",
+      "name": "Employee Access",
+      "description": "Reviews Productboard features to confirm team members have appropriate access",
+      "defaultSeverity": "low",
+      "enabled": true
+    },
+    {
+      "slug": "productboard_app_availability",
+      "name": "App Availability",
+      "description": "Verifies Productboard is accessible and product management is active",
+      "defaultSeverity": "low",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

@@ -14,7 +14,28 @@ jest.mock('../auth/auth.server', () => ({
   auth: { api: {} },
 }));
 
-jest.mock('@db', () => ({ db: {} }));
+jest.mock('@db', () => ({
+  db: {},
+  AuditLogEntityType: {
+    organization: 'organization',
+    people: 'people',
+    control: 'control',
+    policy: 'policy',
+    task: 'task',
+    vendor: 'vendor',
+    risk: 'risk',
+    finding: 'finding',
+    framework: 'framework',
+    integration: 'integration',
+    trust: 'trust',
+  },
+  CommentEntityType: {
+    task: 'task',
+    vendor: 'vendor',
+    risk: 'risk',
+    policy: 'policy',
+  },
+}));
 
 describe('AdminOrganizationsController', () => {
   let controller: AdminOrganizationsController;
@@ -22,11 +43,14 @@ describe('AdminOrganizationsController', () => {
   const mockService = {
     listOrganizations: jest.fn(),
     getOrganization: jest.fn(),
-    setAccess: jest.fn(),
+    updateOrganization: jest.fn(),
     inviteMember: jest.fn(),
     listInvitations: jest.fn(),
     revokeInvitation: jest.fn(),
     getAuditLogs: jest.fn(),
+  };
+  const mockPurgeService = {
+    purgeOrganization: jest.fn(),
   };
 
   beforeEach(async () => {
@@ -34,6 +58,11 @@ describe('AdminOrganizationsController', () => {
       controllers: [AdminOrganizationsController],
       providers: [
         { provide: AdminOrganizationsService, useValue: mockService },
+        {
+          provide: require('./purge-organization.service')
+            .PurgeOrganizationService,
+          useValue: mockPurgeService,
+        },
       ],
     }).compile();
 
@@ -105,24 +134,54 @@ describe('AdminOrganizationsController', () => {
     });
   });
 
-  describe('activate', () => {
-    it('should call setAccess with true', async () => {
-      mockService.setAccess.mockResolvedValue({ success: true });
+  describe('update', () => {
+    it('PATCH with { hasAccess: true } calls service with (id, { hasAccess: true })', async () => {
+      mockService.updateOrganization.mockResolvedValue({ success: true });
 
-      const result = await controller.activate('org_1');
+      const result = await controller.update('org_1', { hasAccess: true });
 
-      expect(mockService.setAccess).toHaveBeenCalledWith('org_1', true);
+      expect(mockService.updateOrganization).toHaveBeenCalledWith('org_1', {
+        hasAccess: true,
+      });
       expect(result).toEqual({ success: true });
     });
-  });
 
-  describe('deactivate', () => {
-    it('should call setAccess with false', async () => {
-      mockService.setAccess.mockResolvedValue({ success: true });
+    it('PATCH with { hasAccess: false } calls service with (id, { hasAccess: false })', async () => {
+      mockService.updateOrganization.mockResolvedValue({ success: true });
 
-      const result = await controller.deactivate('org_1');
+      const result = await controller.update('org_1', { hasAccess: false });
 
-      expect(mockService.setAccess).toHaveBeenCalledWith('org_1', false);
+      expect(mockService.updateOrganization).toHaveBeenCalledWith('org_1', {
+        hasAccess: false,
+      });
+      expect(result).toEqual({ success: true });
+    });
+
+    it('PATCH with { backgroundCheckStepEnabled: false } calls service with correct body', async () => {
+      mockService.updateOrganization.mockResolvedValue({ success: true });
+
+      const result = await controller.update('org_1', {
+        backgroundCheckStepEnabled: false,
+      });
+
+      expect(mockService.updateOrganization).toHaveBeenCalledWith('org_1', {
+        backgroundCheckStepEnabled: false,
+      });
+      expect(result).toEqual({ success: true });
+    });
+
+    it('PATCH with multiple fields passes both through', async () => {
+      mockService.updateOrganization.mockResolvedValue({ success: true });
+
+      const result = await controller.update('org_1', {
+        hasAccess: true,
+        backgroundCheckStepEnabled: false,
+      });
+
+      expect(mockService.updateOrganization).toHaveBeenCalledWith('org_1', {
+        hasAccess: true,
+        backgroundCheckStepEnabled: false,
+      });
       expect(result).toEqual({ success: true });
     });
   });
@@ -157,6 +216,28 @@ describe('AdminOrganizationsController', () => {
 
       expect(mockService.listInvitations).toHaveBeenCalledWith('org_1');
       expect(result).toEqual(mockInvitations);
+    });
+  });
+
+  describe('purge', () => {
+    it('should call purge service with confirm, id, and acting user', async () => {
+      mockPurgeService.purgeOrganization.mockResolvedValue({
+        success: true,
+        organizationId: 'org_1',
+      });
+
+      const result = await controller.purge(
+        'org_1',
+        { userId: 'usr_admin' } as { userId: string },
+        { confirm: 'acme' },
+      );
+
+      expect(mockPurgeService.purgeOrganization).toHaveBeenCalledWith({
+        organizationId: 'org_1',
+        confirm: 'acme',
+        adminUserId: 'usr_admin',
+      });
+      expect(result).toEqual({ success: true, organizationId: 'org_1' });
     });
   });
 

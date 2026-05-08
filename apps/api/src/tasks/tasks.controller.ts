@@ -1,4 +1,4 @@
-import { AttachmentEntityType } from '@db';
+import { AttachmentEntityType, db } from '@db';
 import {
   BadRequestException,
   Body,
@@ -6,6 +6,7 @@ import {
   Delete,
   ForbiddenException,
   Get,
+  NotFoundException,
   Param,
   Patch,
   Post,
@@ -28,7 +29,7 @@ import { UploadAttachmentDto } from '../attachments/upload-attachment.dto';
 import { AuthContext, OrganizationId } from '../auth/auth-context.decorator';
 import { HybridAuthGuard } from '../auth/hybrid-auth.guard';
 import { PermissionGuard } from '../auth/permission.guard';
-import { RequirePermission } from '../auth/require-permission.decorator';
+import { RequirePermission, RequirePermissions } from '../auth/require-permission.decorator';
 import type { AuthContext as AuthContextType } from '../auth/types';
 import {
   buildTaskAssignmentFilter,
@@ -111,7 +112,11 @@ export class TasksController {
       },
     },
   })
-  @ApiQuery({ name: 'includeRelations', required: false, description: 'Include controls and automations with runs' })
+  @ApiQuery({
+    name: 'includeRelations',
+    required: false,
+    description: 'Include controls and automations with runs',
+  })
   async getTasks(
     @OrganizationId() organizationId: string,
     @AuthContext() authContext: AuthContextType,
@@ -134,12 +139,15 @@ export class TasksController {
   @RequirePermission('task', 'read')
   @ApiOperation({
     summary: 'Get task templates',
-    description: 'Retrieve all available task templates, optionally filtered by framework.',
+    description:
+      'Retrieve all available task templates, optionally filtered by framework.',
   })
-  @ApiQuery({ name: 'frameworkId', required: false, description: 'Filter templates by framework ID' })
-  async getTaskTemplates(
-    @Query('frameworkId') frameworkId?: string,
-  ) {
+  @ApiQuery({
+    name: 'frameworkId',
+    required: false,
+    description: 'Filter templates by framework ID',
+  })
+  async getTaskTemplates(@Query('frameworkId') frameworkId?: string) {
     return await this.tasksService.getTaskTemplates(frameworkId);
   }
 
@@ -257,6 +265,12 @@ export class TasksController {
           example: '2025-01-01T00:00:00.000Z',
           description: 'Optional review date to set on all tasks',
         },
+        notRelevantJustification: {
+          type: 'string',
+          example: 'This control is out of scope for our SOC 2 audit.',
+          description:
+            'Required justification when marking evidence tasks as not_relevant',
+        },
       },
       required: ['taskIds', 'status'],
     },
@@ -283,9 +297,10 @@ export class TasksController {
       taskIds: string[];
       status: TaskStatus;
       reviewDate?: string;
+      notRelevantJustification?: string;
     },
   ): Promise<{ updatedCount: number }> {
-    const { taskIds, status, reviewDate } = body;
+    const { taskIds, status, reviewDate, notRelevantJustification } = body;
 
     if (!Array.isArray(taskIds) || taskIds.length === 0) {
       throw new BadRequestException('taskIds must be a non-empty array');
@@ -318,6 +333,7 @@ export class TasksController {
       status,
       parsedReviewDate,
       userId,
+      notRelevantJustification,
     );
   }
 
@@ -421,7 +437,8 @@ export class TasksController {
   @ApiResponse({ status: 400, description: 'Invalid request body' })
   async reorderTasks(
     @OrganizationId() organizationId: string,
-    @Body() body: { updates: { id: string; order: number; status: TaskStatus }[] },
+    @Body()
+    body: { updates: { id: string; order: number; status: TaskStatus }[] },
   ): Promise<{ success: boolean }> {
     if (!Array.isArray(body.updates) || body.updates.length === 0) {
       throw new BadRequestException('updates must be a non-empty array');
@@ -605,14 +622,102 @@ export class TasksController {
 
     // Check assignment access for restricted roles
     // The task object from service includes assigneeId even though DTO doesn't declare it
-    const taskWithAssignee = task as TaskResponseDto & { assigneeId: string | null };
+    const taskWithAssignee = task as TaskResponseDto & {
+      assigneeId: string | null;
+    };
     if (
-      !hasTaskAccess(taskWithAssignee, authContext.memberId, authContext.userRoles, { isApiKey: authContext.isApiKey })
+      !hasTaskAccess(
+        taskWithAssignee,
+        authContext.memberId,
+        authContext.userRoles,
+        { isApiKey: authContext.isApiKey },
+      )
     ) {
       throw new ForbiddenException('You do not have access to this task');
     }
 
     return task;
+  }
+
+  @Get(':taskId/policies')
+  @UseGuards(PermissionGuard)
+  @RequirePermissions([
+    { resource: 'task', actions: ['read'] },
+    { resource: 'policy', actions: ['read'] },
+  ])
+  @ApiOperation({
+    summary: 'Get policies that reference a task via shared controls',
+  })
+  @ApiParam({
+    name: 'taskId',
+    description: 'Unique task identifier',
+    example: 'tsk_abc123def456',
+  })
+  async getTaskPolicies(
+    @OrganizationId() organizationId: string,
+    @Param('taskId') taskId: string,
+    @AuthContext() authContext: AuthContextType,
+  ) {
+    const task = await db.task.findFirst({
+      where: { id: taskId, organizationId, archivedAt: null },
+      select: {
+        id: true,
+        assigneeId: true,
+        controls: {
+          where: { archivedAt: null, organizationId },
+          select: {
+            id: true,
+            name: true,
+            policies: {
+              where: { archivedAt: null, organizationId },
+              select: {
+                id: true,
+                name: true,
+                status: true,
+                frequency: true,
+                department: true,
+              },
+              orderBy: { name: 'asc' },
+            },
+          },
+          orderBy: { name: 'asc' },
+        },
+      },
+    });
+
+    if (!task) {
+      throw new NotFoundException('Task not found');
+    }
+
+    if (
+      !hasTaskAccess(task, authContext.memberId, authContext.userRoles, {
+        isApiKey: authContext.isApiKey,
+      })
+    ) {
+      throw new ForbiddenException('You do not have access to this task');
+    }
+
+    const data = task.controls.map((control) => ({
+      control: { id: control.id, name: control.name },
+      policies: control.policies,
+    }));
+
+    const uniquePolicyIds = new Set<string>();
+    for (const group of data) {
+      for (const policy of group.policies) uniquePolicyIds.add(policy.id);
+    }
+
+    return {
+      data,
+      count: uniquePolicyIds.size,
+      authType: authContext.authType,
+      ...(authContext.userId && {
+        authenticatedUser: {
+          id: authContext.userId,
+          email: authContext.userEmail,
+        },
+      }),
+    };
   }
 
   @Get(':taskId/activity')
@@ -697,6 +802,13 @@ export class TasksController {
           enum: ['daily', 'weekly', 'monthly', 'quarterly', 'yearly'],
           example: 'monthly',
         },
+        integrationScheduleFrequency: {
+          type: 'string',
+          enum: ['daily', 'weekly', 'monthly', 'quarterly', 'yearly'],
+          example: 'daily',
+          description:
+            'Cadence for running the integration check attached to this task',
+        },
         department: {
           type: 'string',
           enum: ['none', 'admin', 'gov', 'hr', 'it', 'itsm', 'qms'],
@@ -706,6 +818,12 @@ export class TasksController {
           type: 'string',
           format: 'date-time',
           example: '2025-01-01T00:00:00.000Z',
+        },
+        notRelevantJustification: {
+          type: 'string',
+          example: 'This control is out of scope for our SOC 2 audit.',
+          description:
+            'Required justification when marking evidence tasks as not_relevant',
         },
       },
     },
@@ -739,8 +857,10 @@ export class TasksController {
       assigneeId?: string | null;
       approverId?: string | null;
       frequency?: string;
+      integrationScheduleFrequency?: string;
       department?: string;
       reviewDate?: string;
+      notRelevantJustification?: string;
     },
   ): Promise<TaskResponseDto> {
     const userId = await this.resolveTaskMutationUserId(
@@ -774,8 +894,12 @@ export class TasksController {
         assigneeId: body.assigneeId,
         approverId: body.approverId,
         frequency: body.frequency as TaskFrequency | undefined,
+        integrationScheduleFrequency: body.integrationScheduleFrequency as
+          | TaskFrequency
+          | undefined,
         department: body.department,
         reviewDate: parsedReviewDate,
+        notRelevantJustification: body.notRelevantJustification,
       },
       userId,
     );

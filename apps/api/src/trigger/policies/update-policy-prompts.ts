@@ -1,4 +1,7 @@
-import type { FrameworkEditorFramework, FrameworkEditorPolicyTemplate } from '@db';
+import type {
+  FrameworkEditorFramework,
+  FrameworkEditorPolicyTemplate,
+} from '@db';
 import { logger } from '@trigger.dev/sdk';
 
 export const generatePrompt = ({
@@ -18,7 +21,9 @@ export const generatePrompt = ({
   logger.info(`Company Name: ${companyName}`);
   logger.info(`Company Website: ${companyWebsite}`);
   logger.info(`Context: ${contextHub}`);
-  logger.info(`Existing Policy Content: ${JSON.stringify(policyTemplate.content)}`);
+  logger.info(
+    `Existing Policy Content: ${JSON.stringify(policyTemplate.content)}`,
+  );
   logger.info(
     `Frameworks: ${JSON.stringify(
       frameworks.map((f) => ({ id: f.id, name: f.name, version: f.version })),
@@ -29,7 +34,9 @@ export const generatePrompt = ({
     frameworks.length > 0
       ? frameworks.map((f) => `${f.name} v${f.version}`).join(', ')
       : 'None explicitly selected';
-  const hasHIPAA = frameworks.some((f) => f.name.toLowerCase().includes('hipaa'));
+  const hasHIPAA = frameworks.some((f) =>
+    f.name.toLowerCase().includes('hipaa'),
+  );
   const hasSOC2 = frameworks.some(
     (f) => /soc\s*2/i.test(f.name) || f.name.toLowerCase().includes('soc'),
   );

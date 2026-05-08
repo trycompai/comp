@@ -239,4 +239,81 @@ describe('VendorsTable', () => {
     expect(screen.getByText('Acme Corp')).toBeInTheDocument();
     expect(screen.getByText('Cloud')).toBeInTheDocument();
   });
+
+  it('renders the INHERENT RISK column with a numeric score for assessed vendors', () => {
+    setMockPermissions({});
+
+    render(
+      <VendorsTable
+        vendors={mockVendors}
+        assignees={mockAssignees}
+        orgId="org-1"
+      />,
+    );
+
+    // Column header
+    expect(screen.getByText('INHERENT RISK')).toBeInTheDocument();
+    // Acme Corp (possible × moderate) → raw 9 → score 4/10
+    expect(screen.getByText('4/10')).toBeInTheDocument();
+  });
+
+  it('renders the RESIDUAL RISK column immediately after INHERENT RISK', () => {
+    setMockPermissions({});
+
+    render(
+      <VendorsTable
+        vendors={mockVendors}
+        assignees={mockAssignees}
+        orgId="org-1"
+      />,
+    );
+
+    expect(screen.getByText('RESIDUAL RISK')).toBeInTheDocument();
+
+    const headers = screen
+      .getAllByRole('columnheader')
+      .map((h) => (h.textContent || '').toUpperCase());
+    const inherentIdx = headers.findIndex((h) => h.includes('INHERENT RISK'));
+    const residualIdx = headers.findIndex((h) => h.includes('RESIDUAL RISK'));
+    expect(inherentIdx).toBeGreaterThanOrEqual(0);
+    expect(residualIdx).toBe(inherentIdx + 1);
+  });
+
+  it('renders a residual score badge for assessed vendors', () => {
+    setMockPermissions({});
+
+    render(
+      <VendorsTable
+        vendors={mockVendors}
+        assignees={mockAssignees}
+        orgId="org-1"
+      />,
+    );
+
+    // Acme Corp residual (unlikely × minor) → raw 4 → score 2/10
+    expect(screen.getByText('2/10')).toBeInTheDocument();
+  });
+
+  it('shows an em-dash for vendors that have not been assessed', () => {
+    setMockPermissions({});
+
+    const notAssessedVendor = {
+      ...mockVendors[0],
+      id: 'vendor-2',
+      name: 'Pending Inc',
+      status: 'not_assessed',
+    };
+
+    render(
+      <VendorsTable
+        vendors={[notAssessedVendor]}
+        assignees={mockAssignees}
+        orgId="org-1"
+      />,
+    );
+
+    // One em-dash per risk column (inherent + residual) for not_assessed vendors.
+    expect(screen.getAllByText('—').length).toBe(2);
+    expect(screen.queryByText('1/10')).not.toBeInTheDocument();
+  });
 });

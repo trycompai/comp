@@ -1,0 +1,45 @@
+{
+  "slug": "stytch",
+  "name": "Stytch",
+  "description": "Monitor Stytch authentication platform for user management and passwordless auth compliance",
+  "category": "Identity & Access",
+  "docsUrl": "https://stytch.com/docs/api",
+  "baseUrl": "https://api.stytch.com/",
+  "authConfig": {
+    "type": "custom",
+    "config": {
+      "setupInstructions": "1. Log in to Stytch at https://stytch.com/dashboard/api-keys\n2. Copy your Project ID and Secret (use Live keys for production)\n3. Base64 encode 'project_id:secret'\n4. Enter the encoded value below",
+      "credentialFields": [
+        {
+          "label": "Encoded Credentials",
+          "type": "password",
+          "required": true,
+          "helpText": "Base64 encode 'project_id:secret'. Found in Stytch Dashboard → API Keys. Command: echo -n 'project-live-xxxxx:secret-live-xxxxx' | base64"
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "stytch_employee_access",
+      "name": "Employee Access",
+      "description": "Reviews Stytch authenticated users to audit authentication platform access",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "stytch_mfa",
+      "name": "2FA",
+      "description": "Verifies Stytch MFA methods are configured for enhanced authentication security",
+      "defaultSeverity": "high",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

@@ -14,6 +14,7 @@ import { useParams, useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { toast } from 'sonner';
 import { Button, HStack, Section, Stack, Text } from '@trycompai/design-system';
+import { ScheduleSummary } from '@/components/schedule-summary';
 import { useTaskAutomations } from '../hooks/use-task-automations';
 
 type AutomationWithLatestRun = EvidenceAutomation & {
@@ -89,6 +90,10 @@ export const TaskAutomations = ({ automations, isManualTask = false }: TaskAutom
                     ? `Last ran ${lastRan} • v${latestVersionRun.version}`
                     : 'No published runs yet'}
                 </Text>
+                <ScheduleSummary
+                  scheduleFrequency={automation.scheduleFrequency}
+                  lastRunAt={automation.lastRunAt}
+                />
               </Stack>
 
               {latestVersionRun && (

@@ -1,0 +1,45 @@
+{
+  "slug": "hetzner",
+  "name": "Hetzner Cloud",
+  "description": "Monitor Hetzner Cloud servers and firewall configuration for EU infrastructure compliance",
+  "category": "Cloud",
+  "docsUrl": "https://docs.hetzner.cloud/",
+  "baseUrl": "https://api.hetzner.cloud/",
+  "authConfig": {
+    "type": "api_key",
+    "config": {
+      "setupInstructions": "1. Log in to Hetzner Cloud Console at https://console.hetzner.cloud\n2. Go to your Project → Security → API Tokens\n3. Generate a Read-only token\n4. Copy and enter it below",
+      "credentialFields": [
+        {
+          "label": "API Token",
+          "type": "password",
+          "required": true,
+          "helpText": "Found in Hetzner Cloud Console → Project → Security → API Tokens. Use Read-only access."
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "hetzner_infrastructure",
+      "name": "Infrastructure Inventory",
+      "description": "Lists all Hetzner Cloud servers for infrastructure inventory",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "hetzner_production_firewall",
+      "name": "Production Firewall",
+      "description": "Verifies Hetzner Cloud firewall rules are configured for network security",
+      "defaultSeverity": "high",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

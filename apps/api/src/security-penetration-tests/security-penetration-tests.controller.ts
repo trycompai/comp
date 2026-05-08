@@ -33,21 +33,19 @@ import { SecurityPenetrationTestsService } from './security-penetration-tests.se
 @ApiSecurity('apikey')
 @ApiHeader({
   name: 'X-Organization-Id',
-  description: 'Organization ID (required for session auth, optional for API key auth)',
+  description:
+    'Organization ID (required for session auth, optional for API key auth)',
   required: false,
 })
 @UseGuards(HybridAuthGuard, PermissionGuard)
 export class SecurityPenetrationTestsController {
-  constructor(
-    private readonly service: SecurityPenetrationTestsService,
-  ) {}
+  constructor(private readonly service: SecurityPenetrationTestsService) {}
 
   @Get()
   @RequirePermission('pentest', 'read')
   @ApiOperation({
     summary: 'List penetration test runs',
-    description:
-      'Returns all penetration tests created for the organization.',
+    description: 'Returns all penetration tests created for the organization.',
   })
   @ApiResponse({
     status: 200,
@@ -78,21 +76,6 @@ export class SecurityPenetrationTestsController {
     @Body() body: CreatePenetrationTestDto,
   ) {
     return this.service.createReport(organizationId, body);
-  }
-
-  @Get('github/repos')
-  @RequirePermission('pentest', 'read')
-  @ApiOperation({
-    summary: 'List accessible GitHub repositories',
-    description:
-      'Returns GitHub repositories accessible with the connected GitHub integration.',
-  })
-  @ApiResponse({
-    status: 200,
-    description: 'Repository list returned',
-  })
-  async listGithubRepos(@OrganizationId() organizationId: string) {
-    return this.service.listGithubRepos(organizationId);
   }
 
   @Get(':id')
@@ -126,8 +109,41 @@ export class SecurityPenetrationTestsController {
     status: 200,
     description: 'Progress returned',
   })
-  async getProgress(@OrganizationId() organizationId: string, @Param('id') id: string) {
+  async getProgress(
+    @OrganizationId() organizationId: string,
+    @Param('id') id: string,
+  ) {
     return this.service.getReportProgress(organizationId, id);
+  }
+
+  @Get(':id/issues')
+  @RequirePermission('pentest', 'read')
+  @ApiOperation({
+    summary: 'Get penetration test issues',
+    description:
+      'Returns the structured findings discovered during the run. Grows over time during a live scan as agents discover more issues.',
+  })
+  @ApiResponse({ status: 200, description: 'Issues returned' })
+  async getIssues(
+    @OrganizationId() organizationId: string,
+    @Param('id') id: string,
+  ) {
+    return this.service.getReportIssues(organizationId, id);
+  }
+
+  @Get(':id/events')
+  @RequirePermission('pentest', 'read')
+  @ApiOperation({
+    summary: 'Get penetration test agent events',
+    description:
+      'Returns the real-time agent activity log emitted during a run (tool calls, observations, etc.). Noisy — meant for activity feeds and debugging.',
+  })
+  @ApiResponse({ status: 200, description: 'Events returned' })
+  async getEvents(
+    @OrganizationId() organizationId: string,
+    @Param('id') id: string,
+  ) {
+    return this.service.getReportEvents(organizationId, id);
   }
 
   @Get(':id/report')
@@ -159,12 +175,10 @@ export class SecurityPenetrationTestsController {
   @RequirePermission('pentest', 'read')
   @ApiOperation({
     summary: 'Get penetration test PDF',
-    description: 'Returns the PDF version of a completed report.',
+    description:
+      'Returns the PDF version of a completed report. Streams the binary PDF via Maced SDK.',
   })
-  @ApiResponse({
-    status: 200,
-    description: 'PDF report artifact',
-  })
+  @ApiResponse({ status: 200, description: 'PDF report artifact' })
   async getPdf(
     @OrganizationId() organizationId: string,
     @Param('id') id: string,
@@ -188,63 +202,27 @@ export class SecurityPenetrationTestsController {
   @ApiOperation({
     summary: 'Receive penetration test webhook events',
     description:
-      'Receives callback payloads from the penetration test provider when a run is updated. Per-run webhook token validation is enforced when handshake state exists.',
+      'Receives signed JSON events from Maced. Signature is verified against MACED_WEBHOOK_SIGNING_SECRET using the SDK\'s verifyMacedWebhook helper.',
   })
   @ApiHeader({
-    name: 'X-Webhook-Id',
-    description:
-      'Optional provider event identifier used for idempotency detection.',
-    required: false,
+    name: 'X-Maced-Signature',
+    description: 'HMAC signature header set by Maced (format: t=...,v1=...)',
+    required: true,
   })
-  @ApiHeader({
-    name: 'X-Webhook-Token',
-    description:
-      'Optional webhook token header. Query param webhookToken is also accepted.',
-    required: false,
-  })
-  @ApiQuery({
-    name: 'webhookToken',
-    required: false,
-    description:
-      'Per-job webhook token used for handshake validation when callbacks are sent to Comp.',
-  })
-  @ApiResponse({
-    status: 200,
-    description: 'Webhook handled',
-  })
-  @ApiResponse({
-    status: 400,
-    description: 'Invalid webhook payload',
-  })
+  @ApiResponse({ status: 200, description: 'Webhook handled' })
+  @ApiResponse({ status: 400, description: 'Invalid webhook payload' })
+  @ApiResponse({ status: 403, description: 'Invalid webhook signature' })
   @HttpCode(200)
-  async handleWebhook(
-    @Req() request: Request,
-    @Body() body: Record<string, unknown>,
-  ) {
-    const webhookToken =
-      this.extractStringFromQuery(request, 'webhookToken') ??
-      this.extractStringFromHeader(request, 'x-webhook-token');
-    const eventId =
-      this.extractStringFromHeader(request, 'x-webhook-id') ??
-      this.extractStringFromHeader(request, 'x-request-id');
+  async handleWebhook(@Req() request: Request) {
+    const signatureHeader = this.extractStringFromHeader(
+      request,
+      'x-maced-signature',
+    );
 
-    return this.service.handleWebhook(body, {
-      webhookToken,
-      eventId,
+    return this.service.handleWebhook({
+      rawBody: request.rawBody,
+      signatureHeader,
     });
-  }
-
-  private extractStringFromQuery(request: Request, key: string): string | undefined {
-    const queryValue = request.query[key];
-    if (Array.isArray(queryValue)) {
-      return this.extractStringFromQueryValue(queryValue[0]);
-    }
-
-    return this.extractStringFromQueryValue(queryValue);
-  }
-
-  private extractStringFromQueryValue(value: unknown): string | undefined {
-    return typeof value === 'string' ? value : undefined;
   }
 
   private extractStringFromHeader(

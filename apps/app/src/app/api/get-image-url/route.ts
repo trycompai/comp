@@ -1,7 +1,7 @@
 import { auth } from '@/utils/auth';
 import { APP_AWS_ORG_ASSETS_BUCKET, s3Client } from '@/app/s3';
 import { GetObjectCommand } from '@aws-sdk/client-s3';
-import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
+import { getSignedUrl } from '@/lib/s3-presigner';
 import { db } from '@db/server';
 import { NextRequest, NextResponse } from 'next/server';
 

@@ -35,10 +35,9 @@ import { CreatePolicySchema, type CreatePolicySchemaType } from '../schemas';
 interface CreatePolicyDialogProps {
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
-  frameworkId?: string;
 }
 
-export function CreatePolicyDialog({ isOpen, onOpenChange, frameworkId }: CreatePolicyDialogProps) {
+export function CreatePolicyDialog({ isOpen, onOpenChange }: CreatePolicyDialogProps) {
   const [isPending, startTransition] = useTransition();
   const router = useRouter();
 
@@ -56,8 +55,11 @@ export function CreatePolicyDialog({ isOpen, onOpenChange, frameworkId }: Create
   const onSubmit = (values: CreatePolicySchemaType) => {
     startTransition(async () => {
       try {
-        const queryParam = frameworkId ? `?frameworkId=${frameworkId}` : '';
-        const result = await apiClient<{ id: string }>(`/policy-template${queryParam}`, {
+        // Don't pass frameworkId — new policy templates are created unlinked.
+        // CX explicitly attaches them to specific controls afterward via the
+        // dedicated link endpoints. Auto-linking to every control in the
+        // framework forced manual cleanup after every create.
+        const result = await apiClient<{ id: string }>(`/policy-template`, {
           method: 'POST',
           body: JSON.stringify({
             name: values.name,

@@ -88,6 +88,7 @@ packages/*/dist
 
 # Generated Prisma Client
 **/src/db/generated/
+packages/db/prisma/src/generated/
 
 # Release script
 scripts/sync-release-branch.sh
@@ -96,3 +97,5 @@ scripts/sync-release-branch.sh
 .claude/audit-findings.md
 
 .superpowers/*
+.claude/worktrees/
+.worktrees/

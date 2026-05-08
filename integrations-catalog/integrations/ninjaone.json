@@ -1,0 +1,63 @@
+{
+  "slug": "ninjaone",
+  "name": "NinjaOne (NinjaRMM)",
+  "description": "Monitor and manage endpoint devices, security patches, antivirus status, and alerts from your NinjaOne RMM platform",
+  "category": "Security",
+  "docsUrl": "https://app.ninjarmm.com/apidocs-beta/",
+  "baseUrl": "https://app.ninjarmm.com/api/v2",
+  "authConfig": {
+    "type": "custom",
+    "config": {
+      "credentialFields": [
+        {
+          "label": "Client ID",
+          "type": "text",
+          "required": true,
+          "helpText": "OAuth2 Client ID from NinjaOne Administration > Apps"
+        },
+        {
+          "label": "Client Secret",
+          "type": "password",
+          "required": true,
+          "helpText": "OAuth2 Client Secret from NinjaOne Administration > Apps"
+        },
+        {
+          "label": "Region",
+          "type": "text",
+          "required": true,
+          "helpText": "Global: app.ninjarmm.com | Europe: eu.ninjarmm.com | Oceania: oc.ninjarmm.com"
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "device_security_status",
+      "name": "Device Security Status",
+      "description": "Verify that all managed devices have up-to-date antivirus and are properly secured",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "active_security_alerts",
+      "name": "Active Security Alerts",
+      "description": "Monitor for active security alerts and critical system conditions requiring immediate attention",
+      "defaultSeverity": "high",
+      "enabled": true
+    },
+    {
+      "slug": "patch_management_status",
+      "name": "Patch Management Status",
+      "description": "Ensure all devices are up-to-date with critical security patches and operating system updates",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 3,
+  "isActive": true
+}

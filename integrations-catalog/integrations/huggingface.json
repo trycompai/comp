@@ -1,0 +1,35 @@
+{
+  "slug": "huggingface",
+  "name": "Hugging Face",
+  "description": "ML platform for models, datasets, and inference. Monitor access and usage.",
+  "category": "Cloud",
+  "docsUrl": "https://huggingface.co/docs/hub/api",
+  "baseUrl": "https://huggingface.co",
+  "authConfig": {
+    "type": "api_key",
+    "config": {}
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "huggingface_app_availability",
+      "name": "Hugging Face App Availability",
+      "description": "Checks that the Hugging Face API is accessible with the provided credentials.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "huggingface_employee_access",
+      "name": "Hugging Face Employee Access",
+      "description": "Verifies employee access to Hugging Face via API.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

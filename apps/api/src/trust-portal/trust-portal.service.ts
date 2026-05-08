@@ -11,7 +11,6 @@ import {
   GetObjectCommand,
   PutObjectCommand,
 } from '@aws-sdk/client-s3';
-import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { db } from '@db';
 import {
   DomainStatusResponseDto,
@@ -25,7 +24,11 @@ import {
   UploadComplianceResourceDto,
 } from './dto/compliance-resource.dto';
 import * as dns from 'node:dns';
-import { APP_AWS_ORG_ASSETS_BUCKET, s3Client } from '../app/s3';
+import {
+  decideDomainVerification,
+  deriveDnsVerified,
+} from './domain-verification';
+import { APP_AWS_ORG_ASSETS_BUCKET, s3Client, getSignedUrl } from '../app/s3';
 import {
   DeleteTrustDocumentDto,
   TrustDocumentResponseDto,
@@ -101,7 +104,8 @@ export class TrustPortalService {
     if (!resp.ok) {
       const errorBody = await resp.json().catch(() => ({}));
       const err = new Error(
-        errorBody?.error?.message || `Vercel API ${method} ${path} failed (${resp.status})`,
+        errorBody?.error?.message ||
+          `Vercel API ${method} ${path} failed (${resp.status})`,
       ) as Error & { status: number; responseData: unknown };
       err.status = resp.status;
       err.responseData = errorBody;
@@ -119,21 +123,27 @@ export class TrustPortalService {
         | 'iso42001_status'
         | 'gdpr_status'
         | 'hipaa_status'
+        | 'soc3_status'
         | 'soc2type1_status'
         | 'soc2type2_status'
         | 'pci_dss_status'
         | 'nen7510_status'
-        | 'iso9001_status';
+        | 'iso9001_status'
+        | 'pipeda_status'
+        | 'ccpa_status';
       enabledField:
         | 'iso27001'
         | 'iso42001'
         | 'gdpr'
         | 'hipaa'
+        | 'soc3'
         | 'soc2type1'
         | 'soc2type2'
         | 'pci_dss'
         | 'nen7510'
-        | 'iso9001';
+        | 'iso9001'
+        | 'pipeda'
+        | 'ccpa';
       slug: string;
     }
   > = {
@@ -182,6 +192,21 @@ export class TrustPortalService {
       enabledField: 'iso9001',
       slug: 'iso_9001',
     },
+    [TrustFramework.soc3]: {
+      statusField: 'soc3_status',
+      enabledField: 'soc3',
+      slug: 'soc3',
+    },
+    [TrustFramework.pipeda]: {
+      statusField: 'pipeda_status',
+      enabledField: 'pipeda',
+      slug: 'pipeda',
+    },
+    [TrustFramework.ccpa]: {
+      statusField: 'ccpa_status',
+      enabledField: 'ccpa',
+      slug: 'ccpa',
+    },
   };
 
   async getDomainStatus(
@@ -210,7 +235,7 @@ export class TrustPortalService {
 
       // Get domain information including verification status
       // Vercel API endpoint: GET /v9/projects/{projectId}/domains/{domain}
-      const teamId = process.env.VERCEL_TEAM_ID!;
+      const teamId = process.env.VERCEL_TEAM_ID;
       const [domainResponse, configResponse] = await Promise.all([
         this.vercelFetch<VercelDomainResponse>({
           method: 'GET',
@@ -248,11 +273,18 @@ export class TrustPortalService {
         recommendedCNAMEs?.find((c) => c.rank === 1)?.value ||
         recommendedCNAMEs?.[0]?.value;
 
+      // Null when config fetch failed (silent catch returns null above) — the UI
+      // uses this to distinguish "Vercel says misconfigured" from "we don't know".
+      const misconfigured: boolean | null = configInfo
+        ? configInfo.misconfigured === true
+        : null;
+
       return {
         domain: domainInfo.name,
         verified: domainInfo.verified ?? false,
         verification,
         cnameTarget,
+        misconfigured,
       };
     } catch (error) {
       this.logger.error(
@@ -598,8 +630,10 @@ export class TrustPortalService {
 
     // Map framework boolean fields (frontend sends camelCase, DB uses snake_case)
     const boolFieldMap: Record<string, string> = {
+      soc2: 'soc2',
       soc2type1: 'soc2type1',
       soc2type2: 'soc2type2',
+      soc3: 'soc3',
       iso27001: 'iso27001',
       iso42001: 'iso42001',
       gdpr: 'gdpr',
@@ -608,12 +642,15 @@ export class TrustPortalService {
       pci_dss: 'pci_dss',
       nen7510: 'nen7510',
       iso9001: 'iso9001',
+      pipeda: 'pipeda',
+      ccpa: 'ccpa',
     };
 
     // Map framework status fields (frontend sends camelCase like "iso27001Status", DB uses "iso27001_status")
     const statusFieldMap: Record<string, string> = {
       soc2type1Status: 'soc2type1_status',
       soc2type2Status: 'soc2type2_status',
+      soc3Status: 'soc3_status',
       iso27001Status: 'iso27001_status',
       iso42001Status: 'iso42001_status',
       gdprStatus: 'gdpr_status',
@@ -621,9 +658,12 @@ export class TrustPortalService {
       pcidssStatus: 'pci_dss_status',
       nen7510Status: 'nen7510_status',
       iso9001Status: 'iso9001_status',
+      pipedaStatus: 'pipeda_status',
+      ccpaStatus: 'ccpa_status',
       // Also support snake_case input (from other callers)
       soc2type1_status: 'soc2type1_status',
       soc2type2_status: 'soc2type2_status',
+      soc3_status: 'soc3_status',
       iso27001_status: 'iso27001_status',
       iso42001_status: 'iso42001_status',
       gdpr_status: 'gdpr_status',
@@ -631,6 +671,8 @@ export class TrustPortalService {
       pci_dss_status: 'pci_dss_status',
       nen7510_status: 'nen7510_status',
       iso9001_status: 'iso9001_status',
+      pipeda_status: 'pipeda_status',
+      ccpa_status: 'ccpa_status',
     };
 
     for (const [inputKey, dbField] of Object.entries(boolFieldMap)) {
@@ -770,9 +812,7 @@ export class TrustPortalService {
       });
 
       const domainVerified =
-        currentTrust?.domain === domain
-          ? currentTrust.domainVerified
-          : false;
+        currentTrust?.domain === domain ? currentTrust.domainVerified : false;
 
       // Remove old domain from Vercel if switching to a different one
       if (currentTrust?.domain && currentTrust.domain !== domain) {
@@ -825,8 +865,7 @@ export class TrustPortalService {
 
         const statusData = statusResp.data;
         const isVercelDomain = statusData.verified === false;
-        const vercelVerification =
-          statusData.verification?.[0]?.value || null;
+        const vercelVerification = statusData.verification?.[0]?.value || null;
 
         await db.trust.upsert({
           where: { organizationId },
@@ -862,8 +901,7 @@ export class TrustPortalService {
 
       const addData = addResp.data;
       const isVercelDomain = addData.verified === false;
-      const vercelVerification =
-        addData.verification?.[0]?.value || null;
+      const vercelVerification = addData.verification?.[0]?.value || null;
 
       await db.trust.upsert({
         where: { organizationId },
@@ -888,7 +926,17 @@ export class TrustPortalService {
       };
     } catch (error) {
       // Handle Vercel 409 conflict — domain already exists on the project
-      const vercelError = error as Error & { status?: number; responseData?: { error?: { code?: string; projectId?: string; message?: string; domain?: VercelDomainResponse } } };
+      const vercelError = error as Error & {
+        status?: number;
+        responseData?: {
+          error?: {
+            code?: string;
+            projectId?: string;
+            message?: string;
+            domain?: VercelDomainResponse;
+          };
+        };
+      };
       if (vercelError.status === 409) {
         const errorData = vercelError.responseData?.error;
 
@@ -942,7 +990,9 @@ export class TrustPortalService {
 
       // Extract meaningful error message
       const errorMessage =
-        error instanceof Error ? error.message : 'Failed to update custom domain';
+        error instanceof Error
+          ? error.message
+          : 'Failed to update custom domain';
 
       this.logger.error(`Custom domain error for ${domain}:`, error);
       throw new BadRequestException(errorMessage);
@@ -950,7 +1000,8 @@ export class TrustPortalService {
   }
 
   /** Validate domain to prevent path injection in API URLs */
-  private static readonly VALID_DOMAIN_PATTERN = /^(?:[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?\.)+[a-zA-Z]{2,}$/;
+  private static readonly VALID_DOMAIN_PATTERN =
+    /^(?:[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?\.)+[a-zA-Z]{2,}$/;
 
   private validateDomain(domain: string): void {
     if (!TrustPortalService.VALID_DOMAIN_PATTERN.test(domain)) {
@@ -1002,20 +1053,43 @@ export class TrustPortalService {
     // potentially stale DB values (tokens change if domain was re-added).
     let liveIsVercelDomain = false;
     let liveVercelVerification: string | null = null;
+    let vercelMisconfigured: boolean | null = null;
+    let recommendedCNAME: string | null = null;
+    const hasVercelConfig =
+      !!process.env.TRUST_PORTAL_PROJECT_ID && !!process.env.VERCEL_TEAM_ID;
 
-    if (process.env.TRUST_PORTAL_PROJECT_ID && process.env.VERCEL_TEAM_ID) {
-      try {
-        const vercelStatusResp = await this.vercelFetch<VercelDomainResponse>({
+    if (hasVercelConfig) {
+      const teamId = process.env.VERCEL_TEAM_ID!;
+      const projectId = process.env.TRUST_PORTAL_PROJECT_ID!;
+
+      const [statusResult, configResult] = await Promise.all([
+        this.vercelFetch<VercelDomainResponse>({
           method: 'GET',
-          path: `/v9/projects/${process.env.TRUST_PORTAL_PROJECT_ID}/domains/${TrustPortalService.safeDomainPath(domain)}`,
-          params: { teamId: process.env.VERCEL_TEAM_ID },
-        });
-        const vercelData = vercelStatusResp.data;
-        liveIsVercelDomain = vercelData.verified === false;
-        liveVercelVerification =
-          vercelData.verification?.[0]?.value || null;
+          path: `/v9/projects/${projectId}/domains/${TrustPortalService.safeDomainPath(domain)}`,
+          params: { teamId },
+        }).catch((error: unknown) => {
+          this.logger.warn(
+            `Failed to fetch live Vercel status for ${domain}: ${error instanceof Error ? error.message : error}`,
+          );
+          return null;
+        }),
+        this.vercelFetch<VercelDomainConfigResponse>({
+          method: 'GET',
+          path: `/v6/domains/${TrustPortalService.safeDomainPath(domain)}/config`,
+          params: { teamId },
+        }).catch((error: unknown) => {
+          this.logger.warn(
+            `Failed to fetch Vercel domain config for ${domain}: ${error instanceof Error ? error.message : error}`,
+          );
+          return null;
+        }),
+      ]);
 
-        // Sync DB with live Vercel state
+      if (statusResult) {
+        const vercelData = statusResult.data;
+        liveIsVercelDomain = vercelData.verified === false;
+        liveVercelVerification = vercelData.verification?.[0]?.value || null;
+
         await db.trust.update({
           where: { organizationId },
           data: {
@@ -1023,16 +1097,22 @@ export class TrustPortalService {
             vercelVerification: liveVercelVerification,
           },
         });
-      } catch (error) {
-        this.logger.warn(
-          `Failed to fetch live Vercel status for ${domain}, falling back to DB: ${error}`,
-        );
-        const trustRecord = await db.trust.findUnique({
+      } else {
+        const fallbackRecord = await db.trust.findUnique({
           where: { organizationId, domain },
           select: { isVercelDomain: true, vercelVerification: true },
         });
-        liveIsVercelDomain = trustRecord?.isVercelDomain === true;
-        liveVercelVerification = trustRecord?.vercelVerification ?? null;
+        liveIsVercelDomain = fallbackRecord?.isVercelDomain === true;
+        liveVercelVerification = fallbackRecord?.vercelVerification ?? null;
+      }
+
+      if (configResult) {
+        vercelMisconfigured = configResult.data.misconfigured === true;
+        recommendedCNAME =
+          configResult.data.recommendedCNAME?.find((c) => c.rank === 1)
+            ?.value ||
+          configResult.data.recommendedCNAME?.[0]?.value ||
+          null;
       }
     }
 
@@ -1044,96 +1124,88 @@ export class TrustPortalService {
       expected != null &&
       records.some((segments) => segments.some((s) => s === expected));
 
-    // Check CNAME — Node DNS resolve returns string[] of CNAME targets
-    let isCnameVerified = cnameRecords.some((address) =>
+    // Regex check is only a fallback for when Vercel's config call fails —
+    // Vercel is the source of truth for whether the CNAME is correct.
+    let dnsRegexMatches = cnameRecords.some((address) =>
       TrustPortalService.VERCEL_DNS_CNAME_PATTERN.test(address),
     );
-    if (!isCnameVerified) {
+    if (!dnsRegexMatches) {
       const fallback = cnameRecords.find((address) =>
         TrustPortalService.VERCEL_DNS_FALLBACK_PATTERN.test(address),
       );
       if (fallback) {
         this.logger.warn(`CNAME matched fallback pattern: ${fallback}`);
-        isCnameVerified = true;
+        dnsRegexMatches = true;
       }
     }
 
-    // Check TXT
-    const isTxtVerified = txtRecordMatches(txtRecords, expectedTxtValue);
+    const isCnameVerified = deriveDnsVerified({
+      dnsRegexMatches,
+      vercelMisconfigured,
+    });
 
-    // Check Vercel TXT
+    const isTxtVerified = txtRecordMatches(txtRecords, expectedTxtValue);
     const isVercelTxtVerified = txtRecordMatches(
       vercelTxtRecords,
       expectedVercelTxtValue,
     );
-
     const requiresVercelTxt = liveIsVercelDomain;
-    const isVerified =
-      isCnameVerified &&
-      isTxtVerified &&
-      (!requiresVercelTxt || isVercelTxtVerified);
 
-    if (!isVerified) {
-      return {
-        success: false,
-        isCnameVerified,
-        isTxtVerified,
-        isVercelTxtVerified,
-        error:
-          'Some DNS records are not configured correctly. Please check the records marked as unverified above and try again.',
-      };
-    }
-
-    // Trigger Vercel to re-verify the domain so it provisions SSL and starts serving.
-    let vercelVerified = false;
-    if (process.env.TRUST_PORTAL_PROJECT_ID && process.env.VERCEL_TEAM_ID) {
+    // Trigger Vercel re-verification up front so we can factor the result into
+    // the final verdict rather than optimistically trusting our own DNS regex.
+    let vercelVerifiedAfterTrigger: boolean | null = null;
+    if (hasVercelConfig) {
       try {
         const verifyResp = await this.vercelFetch<{ verified: boolean }>({
           method: 'POST',
           path: `/v9/projects/${process.env.TRUST_PORTAL_PROJECT_ID}/domains/${TrustPortalService.safeDomainPath(domain)}/verify`,
-          params: { teamId: process.env.VERCEL_TEAM_ID },
+          params: { teamId: process.env.VERCEL_TEAM_ID! },
           body: {},
         });
-        vercelVerified = verifyResp.data?.verified === true;
+        vercelVerifiedAfterTrigger = verifyResp.data?.verified === true;
       } catch (error) {
         this.logger.warn(
-          `Failed to trigger Vercel domain verification for ${domain}: ${error}`,
+          `Failed to trigger Vercel domain verification for ${domain}: ${error instanceof Error ? error.message : error}`,
         );
       }
     }
 
-    // For cross-account domains (liveIsVercelDomain=true), Vercel must confirm
-    // the _vercel TXT record before the domain will serve traffic.
-    // For same-account domains, DNS verification is sufficient — Vercel will
-    // pick up the CNAME on its own, so don't block on the verify response.
-    const domainFullyVerified = requiresVercelTxt
-      ? vercelVerified
-      : true;
-
-    await db.trust.update({
-      where: { organizationId },
-      data: {
-        domainVerified: domainFullyVerified,
-        ...(domainFullyVerified ? { status: 'published' as const } : {}),
-      },
-    });
-
-    if (!domainFullyVerified) {
-      return {
-        success: false,
-        isCnameVerified,
-        isTxtVerified,
-        isVercelTxtVerified,
-        error:
-          'DNS records verified but Vercel has not yet confirmed domain ownership. Please ensure the _vercel TXT record is correctly configured and try again.',
-      };
-    }
-
-    return {
-      success: true,
+    const verdict = decideDomainVerification({
       isCnameVerified,
       isTxtVerified,
       isVercelTxtVerified,
+      requiresVercelTxt,
+      vercelAvailable: hasVercelConfig,
+      vercelMisconfigured,
+      vercelVerifiedAfterTrigger,
+    });
+
+    // Only write `domainVerified` when we have a confident answer. A transient
+    // Vercel outage that returns `success=false` should NOT de-verify a
+    // previously working custom domain.
+    if (verdict.success) {
+      await db.trust.update({
+        where: { organizationId },
+        data: {
+          domainVerified: true,
+          status: 'published' as const,
+        },
+      });
+    } else if (!verdict.transient) {
+      await db.trust.update({
+        where: { organizationId },
+        data: { domainVerified: false },
+      });
+    }
+
+    return {
+      success: verdict.success,
+      isCnameVerified,
+      isTxtVerified,
+      isVercelTxtVerified,
+      vercelMisconfigured,
+      recommendedCNAME,
+      ...(verdict.error ? { error: verdict.error } : {}),
     };
   }
 
@@ -1473,6 +1545,7 @@ export class TrustPortalService {
       // Framework flags
       soc2type1: trust.soc2type1 ?? false,
       soc2type2: trust.soc2type2 || trust.soc2 || false,
+      soc3: trust.soc3 ?? false,
       iso27001: trust.iso27001 ?? false,
       iso42001: trust.iso42001 ?? false,
       gdpr: trust.gdpr ?? false,
@@ -1480,12 +1553,15 @@ export class TrustPortalService {
       pcidss: trust.pci_dss ?? false,
       nen7510: trust.nen7510 ?? false,
       iso9001: trust.iso9001 ?? false,
+      pipeda: trust.pipeda ?? false,
+      ccpa: trust.ccpa ?? false,
       // Framework statuses
       soc2type1Status: trust.soc2type1_status ?? 'started',
       soc2type2Status:
         !trust.soc2type2 && trust.soc2
-          ? trust.soc2_status ?? 'started'
-          : trust.soc2type2_status ?? 'started',
+          ? (trust.soc2_status ?? 'started')
+          : (trust.soc2type2_status ?? 'started'),
+      soc3Status: trust.soc3_status ?? 'started',
       iso27001Status: trust.iso27001_status ?? 'started',
       iso42001Status: trust.iso42001_status ?? 'started',
       gdprStatus: trust.gdpr_status ?? 'started',
@@ -1493,6 +1569,8 @@ export class TrustPortalService {
       pcidssStatus: trust.pci_dss_status ?? 'started',
       nen7510Status: trust.nen7510_status ?? 'started',
       iso9001Status: trust.iso9001_status ?? 'started',
+      pipedaStatus: trust.pipeda_status ?? 'started',
+      ccpaStatus: trust.ccpa_status ?? 'started',
       // Overview
       overviewTitle: trust.overviewTitle ?? null,
       overviewContent: trust.overviewContent ?? defaultOverviewContent,
@@ -1626,9 +1704,9 @@ export class TrustPortalService {
               globalVendor.riskAssessmentData,
             );
             if (extractedBadges && extractedBadges.length > 0) {
-              const currentBadges = vendor.complianceBadges as
-                | Array<{ type: string }>
-                | null;
+              const currentBadges = vendor.complianceBadges as Array<{
+                type: string;
+              }> | null;
               const currentTypes = new Set(
                 currentBadges?.map((b) => b.type) ?? [],
               );

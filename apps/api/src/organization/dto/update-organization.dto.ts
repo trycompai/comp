@@ -10,4 +10,5 @@ export interface UpdateOrganizationDto {
   isFleetSetupCompleted?: boolean;
   primaryColor?: string;
   advancedModeEnabled?: boolean;
+  backgroundCheckStepEnabled?: boolean;
 }

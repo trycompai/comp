@@ -1,0 +1,64 @@
+{
+  "slug": "kaseya-vsa",
+  "name": "Kaseya VSA",
+  "description": "Monitor Kaseya VSA managed agents and endpoint compliance for RMM",
+  "category": "Security",
+  "docsUrl": "https://help.vsa10.kaseya.com/help/Content/2-Administration/configuration/api.htm",
+  "baseUrl": null,
+  "authConfig": {
+    "type": "custom",
+    "config": {
+      "setupInstructions": "1. Log in to your Kaseya VSA instance\n2. Go to Configuration > API Access > Third-Party Tokens\n3. Click Create Token\n4. Set appropriate permissions (read access to Assets and System)\n5. Optionally whitelist CompAI's IP: 54.159.77.69\n6. Copy the Token ID and Token Secret\n7. Enter your VSA URL, Token ID, and Token Secret above",
+      "credentialFields": [
+        {
+          "label": "VSA Server URL",
+          "type": "text",
+          "required": true,
+          "helpText": "Your Kaseya VSA server URL (e.g., https://yourcompany.vsax.net)"
+        },
+        {
+          "label": "API Token ID",
+          "type": "text",
+          "required": true,
+          "helpText": "The Token ID from VSA > Configuration > API Access > Third-Party Tokens"
+        },
+        {
+          "label": "API Token Secret",
+          "type": "password",
+          "required": true,
+          "helpText": "The Token Secret generated when creating the third-party token"
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "device_list",
+      "name": "Device List",
+      "description": "Lists all managed agents enrolled in Kaseya VSA",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "secure_devices",
+      "name": "Secure Devices",
+      "description": "Checks agent online status and patch compliance across managed devices",
+      "defaultSeverity": "high",
+      "enabled": true
+    },
+    {
+      "slug": "monitoring_alerting",
+      "name": "Monitoring & Alerting",
+      "description": "Verifies monitoring policies and alert configurations in Kaseya VSA",
+      "defaultSeverity": "high",
+      "enabled": true
+    }
+  ],
+  "checkCount": 3,
+  "isActive": true
+}

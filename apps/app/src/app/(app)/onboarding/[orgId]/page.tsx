@@ -109,12 +109,23 @@ export default async function OnboardingPage({ params }: OnboardingPageProps) {
     });
   }
 
+  // Check if user has other completed orgs (for cancel button)
+  const otherOrgCount = await db.member.count({
+    where: {
+      userId: session.user.id,
+      organizationId: { not: orgId },
+      deactivated: false,
+      organization: { onboardingCompleted: true, hasAccess: true },
+    },
+  });
+
   // We'll use a modified version that starts at step 3
   return (
     <PostPaymentOnboarding
       organization={organization}
       initialData={initialData}
       userEmail={session.user.email}
+      hasOtherOrgs={otherOrgCount > 0}
     />
   );
 }

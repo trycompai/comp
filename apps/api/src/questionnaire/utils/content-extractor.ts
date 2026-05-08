@@ -37,11 +37,13 @@ const questionExtractionSchema = jsonSchema<{
             description: 'The answer/response if provided, null if empty',
           },
         },
-        required: ['question'],
+        required: ['question', 'answer'],
+        additionalProperties: false,
       },
     },
   },
   required: ['questions'],
+  additionalProperties: false,
 });
 
 export interface ContentExtractionLogger {
@@ -722,9 +724,11 @@ async function extractFromExcelStandard(
     worksheet.eachRow((row) => {
       const cells = row.values as unknown[];
       jsonData.push(
-        cells.slice(1).map((cell) =>
-          cell !== null && cell !== undefined ? String(cell).trim() : '',
-        ),
+        cells
+          .slice(1)
+          .map((cell) =>
+            cell !== null && cell !== undefined ? String(cell).trim() : '',
+          ),
       );
     });
 

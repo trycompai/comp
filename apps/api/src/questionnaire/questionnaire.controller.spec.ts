@@ -218,10 +218,7 @@ describe('QuestionnaireController', () => {
         error: undefined,
       });
 
-      const result = await controller.answerSingleQuestion(
-        dto as any,
-        'org_1',
-      );
+      const result = await controller.answerSingleQuestion(dto as any, 'org_1');
 
       expect(result.success).toBe(true);
       expect(result.data.answer).toBe('Our policy covers...');
