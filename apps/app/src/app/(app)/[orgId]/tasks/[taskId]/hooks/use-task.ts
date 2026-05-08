@@ -18,6 +18,7 @@ interface UpdateTaskPayload {
   title?: string;
   description?: string;
   integrationScheduleFrequency?: TaskFrequency;
+  notRelevantJustification?: string;
 }
 
 interface UseTaskReturn {

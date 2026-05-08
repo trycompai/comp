@@ -372,6 +372,7 @@ export class TasksService {
     status: TaskStatus,
     reviewDate: Date | undefined,
     changedByUserId: string,
+    notRelevantJustification?: string,
   ): Promise<{ updatedCount: number }> {
     try {
       // Enforce approval workflow: exclude tasks that can't be bulk-updated
@@ -387,11 +388,17 @@ export class TasksService {
         where.approverId = null;
       }
 
+      const justificationData =
+        status === TaskStatus.not_relevant
+          ? { notRelevantJustification: notRelevantJustification ?? null }
+          : { notRelevantJustification: null };
+
       const result = await db.task.updateMany({
         where,
         data: {
           status,
           updatedAt: new Date(),
+          ...justificationData,
           ...(reviewDate !== undefined ? { reviewDate } : {}),
         },
       });
@@ -561,6 +568,7 @@ export class TasksService {
       integrationScheduleFrequency?: TaskFrequency;
       department?: string;
       reviewDate?: Date | null;
+      notRelevantJustification?: string;
     },
     changedByUserId: string,
   ): Promise<TaskResponseDto> {
@@ -596,6 +604,7 @@ export class TasksService {
         integrationScheduleFrequency?: TaskFrequency;
         department?: string;
         reviewDate?: Date | null;
+        notRelevantJustification?: string | null;
       } = {};
 
       if (updateData.title !== undefined) {
@@ -626,6 +635,13 @@ export class TasksService {
           );
         }
         dataToUpdate.status = updateData.status;
+
+        if (updateData.status === TaskStatus.not_relevant) {
+          dataToUpdate.notRelevantJustification =
+            updateData.notRelevantJustification ?? null;
+        } else {
+          dataToUpdate.notRelevantJustification = null;
+        }
       }
       if (updateData.assigneeId !== undefined) {
         if (updateData.assigneeId !== null) {
@@ -712,6 +728,11 @@ export class TasksService {
               field: 'status',
               oldValue: existingTask.status,
               newValue: updateData.status,
+              ...(updateData.status === TaskStatus.not_relevant &&
+                updateData.notRelevantJustification && {
+                  notRelevantJustification:
+                    updateData.notRelevantJustification,
+                }),
             },
           },
         });
