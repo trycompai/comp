@@ -170,11 +170,11 @@ export class PeopleInviteService {
     let isNewMember = false;
 
     if (existingMember) {
-      if (existingMember.deactivated) {
+      if (existingMember.deactivated || !existingMember.isActive) {
         const roleString = [...roles].sort().join(',');
         member = await db.member.update({
           where: { id: existingMember.id },
-          data: { deactivated: false, role: roleString },
+          data: { deactivated: false, isActive: true, role: roleString },
         });
       } else {
         member = existingMember;

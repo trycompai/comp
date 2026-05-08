@@ -282,6 +282,7 @@ export function TeamMembersClient({
               <SelectItem value="admin">Admin</SelectItem>
               <SelectItem value="auditor">Auditor</SelectItem>
               <SelectItem value="employee">Employee</SelectItem>
+              <SelectItem value="contractor">Contractor</SelectItem>
             </SelectContent>
           </Select>
         </div>
