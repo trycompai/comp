@@ -51,7 +51,7 @@ interface RollupEntry {
 export const policyAcknowledgmentDigest = schedules.task({
   id: 'policy-acknowledgment-digest',
   machine: 'large-1x',
-  cron: '0 14 * * *', // Once daily at 14:00 UTC
+  cron: '0 14 * * 1', // Weekly on Mondays at 14:00 UTC
   maxDuration: 1000 * 60 * 15, // 15 minutes
   run: async () => {
     const inactivityCutoff = new Date();
