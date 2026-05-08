@@ -36,6 +36,10 @@ model DynamicIntegration {
   /// When present and capabilities includes 'sync', enables employee sync
   syncDefinition Json?
 
+  /// Declarative device sync definition (JSON — DSL steps that produce device list)
+  /// When present and capabilities includes 'device_sync', enables device sync
+  deviceSyncDefinition Json?
+
   /// Services metadata (JSON array of { id, name, description, enabledByDefault?, implemented? })
   services Json?
 

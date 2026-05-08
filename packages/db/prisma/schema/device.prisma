@@ -29,15 +29,26 @@ model Device {
 
   findings Finding[]
 
+  source                    DeviceSource @default(agent)
+  integrationConnectionId   String?
+  externalDeviceId          String?
+
   @@unique([serialNumber, organizationId])
   @@index([memberId])
   @@index([organizationId])
   @@index([isCompliant])
   @@index([agentSessionId])
+  @@index([integrationConnectionId])
 }
 
 enum DevicePlatform {
   macos
   windows
   linux
+}
+
+enum DeviceSource {
+  agent
+  fleet
+  integration
 }
