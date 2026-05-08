@@ -144,6 +144,7 @@ export async function upsertOrgFrameworkStructure({
   }
 
   // Upsert policy instances
+  const createdPolicyIds: string[] = [];
   const existingPolicies = await tx.policy.findMany({
     where: {
       organizationId,
@@ -182,6 +183,7 @@ export async function upsertOrgFrameworkStructure({
     });
 
     if (newPolicies.length > 0) {
+      createdPolicyIds.push(...newPolicies.map((p) => p.id));
       await tx.policyVersion.createMany({
         data: newPolicies.map((p) => ({
           policyId: p.id,
@@ -360,5 +362,6 @@ export async function upsertOrgFrameworkStructure({
     controlTemplates,
     policyTemplates,
     taskTemplates,
+    createdPolicyIds,
   };
 }
