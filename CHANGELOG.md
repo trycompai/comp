@@ -1,3 +1,17 @@
+# [3.47.0](https://github.com/trycompai/comp/compare/v3.46.1...v3.47.0) (2026-05-08)
+
+
+### Bug Fixes
+
+* **db:** update screenlock seed data to 15 minutes for all platforms ([#2797](https://github.com/trycompai/comp/issues/2797)) ([d044c09](https://github.com/trycompai/comp/commit/d044c092fd771c5ab2393405983d23a8b285a7f4))
+
+
+### Features
+
+* add pipeda and ccpa frameworks ([1b62b52](https://github.com/trycompai/comp/commit/1b62b52df3577e1793d5d3770405583ae0d27195))
+* **app:** add 'Remove Device' menu on Devices tab ([863a467](https://github.com/trycompai/comp/commit/863a4673a2ec044f0eceebc7147c695b186d9520))
+* **tasks:** add justification when marking evidence tasks as not relevant ([#2798](https://github.com/trycompai/comp/issues/2798)) ([2876232](https://github.com/trycompai/comp/commit/2876232b7685f7a2cb5b66fad6cbd8e97ba1b883))
+
 ## [3.46.1](https://github.com/trycompai/comp/compare/v3.46.0...v3.46.1) (2026-05-07)
 
 
