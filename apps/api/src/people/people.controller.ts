@@ -450,6 +450,20 @@ export class PeopleController {
     };
   }
 
+  @Post(':id/resend-portal-invite')
+  @RequirePermission('member', 'update')
+  @ApiOperation({ summary: 'Resend portal invite email to a member' })
+  @ApiParam(PEOPLE_PARAMS.memberId)
+  async resendPortalInvite(
+    @Param('id') memberId: string,
+    @OrganizationId() organizationId: string,
+  ) {
+    return this.peopleInviteService.resendPortalInvite({
+      organizationId,
+      memberId,
+    });
+  }
+
   @Delete(':id')
   @RequirePermission('member', 'delete')
   @ApiOperation(PEOPLE_OPERATIONS.deleteMember)
