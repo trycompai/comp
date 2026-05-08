@@ -1,0 +1,45 @@
+{
+  "slug": "koyeb",
+  "name": "Koyeb",
+  "description": "Serverless cloud platform for deploying apps globally. Monitor infrastructure.",
+  "category": "Infrastructure",
+  "docsUrl": "https://www.koyeb.com/docs/api",
+  "baseUrl": "https://app.koyeb.com",
+  "authConfig": {
+    "type": "api_key",
+    "config": {
+      "setupInstructions": "1. Log in to Koyeb at https://app.koyeb.com\n2. Go to Account Settings -> API\n3. Create a new API token\n4. Copy and enter it below",
+      "credentialFields": [
+        {
+          "label": "API Token",
+          "type": "password",
+          "required": true,
+          "helpText": "Found in Koyeb Control Panel -> Account Settings -> API"
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "koyeb_app_availability",
+      "name": "Koyeb App Availability",
+      "description": "Checks that the Koyeb API is accessible with the provided credentials.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "koyeb_employee_access",
+      "name": "Koyeb Employee Access",
+      "description": "Verifies employee access to Koyeb via API.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

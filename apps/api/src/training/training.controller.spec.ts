@@ -30,9 +30,7 @@ describe('TrainingController', () => {
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       controllers: [TrainingController],
-      providers: [
-        { provide: TrainingService, useValue: mockTrainingService },
-      ],
+      providers: [{ provide: TrainingService, useValue: mockTrainingService }],
     })
       .overrideGuard(HybridAuthGuard)
       .useValue(mockGuard)
@@ -181,9 +179,7 @@ describe('TrainingController', () => {
         PERMISSIONS_KEY,
         controller.getCompletions,
       );
-      expect(permissions).toEqual([
-        { resource: 'portal', actions: ['read'] },
-      ]);
+      expect(permissions).toEqual([{ resource: 'portal', actions: ['read'] }]);
     });
 
     it('markVideoComplete should require portal:update', () => {

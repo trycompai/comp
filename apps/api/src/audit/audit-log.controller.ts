@@ -15,10 +15,26 @@ export class AuditLogController {
   @Get()
   @RequirePermission('app', 'read')
   @ApiOperation({ summary: 'Get audit logs filtered by entity type and ID' })
-  @ApiQuery({ name: 'entityType', required: false, description: 'Filter by entity type (e.g. policy, task, control)' })
-  @ApiQuery({ name: 'entityId', required: false, description: 'Filter by entity ID' })
-  @ApiQuery({ name: 'pathContains', required: false, description: 'Filter by path substring (e.g. automation ID)' })
-  @ApiQuery({ name: 'take', required: false, description: 'Number of logs to return (max 100, default 50)' })
+  @ApiQuery({
+    name: 'entityType',
+    required: false,
+    description: 'Filter by entity type (e.g. policy, task, control)',
+  })
+  @ApiQuery({
+    name: 'entityId',
+    required: false,
+    description: 'Filter by entity ID',
+  })
+  @ApiQuery({
+    name: 'pathContains',
+    required: false,
+    description: 'Filter by path substring (e.g. automation ID)',
+  })
+  @ApiQuery({
+    name: 'take',
+    required: false,
+    description: 'Number of logs to return (max 100, default 50)',
+  })
   async getAuditLogs(
     @OrganizationId() organizationId: string,
     @AuthContext() authContext: AuthContextType,
@@ -31,12 +47,18 @@ export class AuditLogController {
     const where: Record<string, unknown> = { organizationId };
     if (entityType) {
       // Support comma-separated entity types (e.g. "risk,task")
-      const types = entityType.split(',').map((t) => t.trim()).filter(Boolean);
+      const types = entityType
+        .split(',')
+        .map((t) => t.trim())
+        .filter(Boolean);
       where.entityType = types.length === 1 ? types[0] : { in: types };
     }
     if (entityId) {
       // Support comma-separated entity IDs
-      const ids = entityId.split(',').map((id) => id.trim()).filter(Boolean);
+      const ids = entityId
+        .split(',')
+        .map((id) => id.trim())
+        .filter(Boolean);
       where.entityId = ids.length === 1 ? ids[0] : { in: ids };
     }
     if (pathContains) {
@@ -54,7 +76,13 @@ export class AuditLogController {
       where,
       include: {
         user: {
-          select: { id: true, name: true, email: true, image: true, role: true },
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            image: true,
+            role: true,
+          },
         },
         member: true,
         organization: true,

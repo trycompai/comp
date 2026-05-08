@@ -47,6 +47,10 @@ export const statement = {
   training: ['read', 'update'],
   // Portal self-service
   portal: ['read', 'update'],
+  // Secrets manager — encrypted credentials surfaced to AI automations.
+  // Read returns DECRYPTED plaintext, so this resource is intentionally
+  // separate from `organization` to keep read-only auditors out.
+  secret: ['create', 'read', 'update', 'delete'],
 } as const;
 
 export const ac: AccessControl = createAccessControl(statement);
@@ -71,7 +75,8 @@ export const owner = ac.newRole({
   task: ['create', 'read', 'update', 'delete'],
   framework: ['create', 'read', 'update', 'delete'],
   audit: ['create', 'read', 'update'],
-  finding: ['create', 'read', 'update', 'delete'],
+  // Findings are raised by auditors only; owners/admins can view & transition status via update
+  finding: ['read', 'update'],
   questionnaire: ['create', 'read', 'update', 'delete'],
   integration: ['create', 'read', 'update', 'delete'],
   apiKey: ['create', 'read', 'delete'],
@@ -84,6 +89,8 @@ export const owner = ac.newRole({
   training: ['read', 'update'],
   // Portal self-service
   portal: ['read', 'update'],
+  // Secrets manager — owner can fully manage decrypted credentials
+  secret: ['create', 'read', 'update', 'delete'],
 });
 
 /**
@@ -106,7 +113,8 @@ export const admin = ac.newRole({
   task: ['create', 'read', 'update', 'delete'],
   framework: ['create', 'read', 'update', 'delete'],
   audit: ['create', 'read', 'update'],
-  finding: ['create', 'read', 'update', 'delete'],
+  // Findings are raised by auditors only; owners/admins can view & transition status via update
+  finding: ['read', 'update'],
   questionnaire: ['create', 'read', 'update', 'delete'],
   integration: ['create', 'read', 'update', 'delete'],
   apiKey: ['create', 'read', 'delete'],
@@ -119,6 +127,8 @@ export const admin = ac.newRole({
   training: ['read', 'update'],
   // Portal self-service
   portal: ['read', 'update'],
+  // Secrets manager — admin can fully manage decrypted credentials
+  secret: ['create', 'read', 'update', 'delete'],
 });
 
 /**
@@ -138,7 +148,7 @@ export const auditor = ac.newRole({
   task: ['read'],
   framework: ['read'],
   audit: ['read'],
-  finding: ['create', 'read', 'update'], // Can create/update findings
+  finding: ['create', 'read', 'update', 'delete'], // Auditors raise and retract findings
   questionnaire: ['read'],
   integration: ['read'],
   // App access

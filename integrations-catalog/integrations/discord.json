@@ -1,0 +1,51 @@
+{
+  "slug": "discord",
+  "name": "Discord",
+  "description": "Monitor Discord server for team membership and communication access compliance",
+  "category": "Communication",
+  "docsUrl": "https://discord.com/developers/docs/intro",
+  "baseUrl": "https://discord.com/api/",
+  "authConfig": {
+    "type": "custom",
+    "config": {
+      "setupInstructions": "1. Go to https://discord.com/developers/applications and create a new application\n2. Go to Bot section, click Reset Token, and copy the token\n3. Under Privileged Gateway Intents, enable Server Members Intent\n4. Go to OAuth2 > URL Generator, check \"bot\" scope, then check \"View Channels\" permission\n5. Copy the generated URL, open it in your browser, and select your server\n6. Enable Developer Mode in Discord (User Settings > Advanced), right-click your server name, Copy Server ID\n7. Enter the bot token and server ID below",
+      "credentialFields": [
+        {
+          "label": "Bot Token",
+          "type": "password",
+          "required": true,
+          "helpText": "Found in Discord Developer Portal > Your App > Bot > Token"
+        },
+        {
+          "label": "Server (Guild) ID",
+          "type": "text",
+          "required": true,
+          "helpText": "Right-click your Discord server name > Copy Server ID (enable Developer Mode first)"
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "discord_employee_access",
+      "name": "Employee Access",
+      "description": "Reviews Discord server members with access to team communication channels",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "discord_app_availability",
+      "name": "App Availability",
+      "description": "Verifies Discord server is accessible",
+      "defaultSeverity": "low",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

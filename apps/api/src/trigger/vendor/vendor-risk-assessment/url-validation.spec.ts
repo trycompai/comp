@@ -17,15 +17,15 @@ describe('isUrlFromVendorDomain', () => {
   });
 
   it('accepts www subdomain', () => {
-    expect(
-      isUrlFromVendorDomain('https://www.wix.com/terms', 'wix.com'),
-    ).toBe(true);
+    expect(isUrlFromVendorDomain('https://www.wix.com/terms', 'wix.com')).toBe(
+      true,
+    );
   });
 
   it('accepts other subdomains', () => {
-    expect(
-      isUrlFromVendorDomain('https://trust.wix.com', 'wix.com'),
-    ).toBe(true);
+    expect(isUrlFromVendorDomain('https://trust.wix.com', 'wix.com')).toBe(
+      true,
+    );
     expect(
       isUrlFromVendorDomain('https://security.wix.com/page', 'wix.com'),
     ).toBe(true);
@@ -35,25 +35,25 @@ describe('isUrlFromVendorDomain', () => {
     expect(isUrlFromVendorDomain('https://x.com/privacy', 'wix.com')).toBe(
       false,
     );
-    expect(
-      isUrlFromVendorDomain('https://twitter.com/wix', 'wix.com'),
-    ).toBe(false);
+    expect(isUrlFromVendorDomain('https://twitter.com/wix', 'wix.com')).toBe(
+      false,
+    );
   });
 
   it('rejects domains that end with vendor domain but are different', () => {
     // "notwix.com" ends with "wix.com" as a string, but is a different domain
-    expect(
-      isUrlFromVendorDomain('https://notwix.com/privacy', 'wix.com'),
-    ).toBe(false);
+    expect(isUrlFromVendorDomain('https://notwix.com/privacy', 'wix.com')).toBe(
+      false,
+    );
   });
 
   it('is case-insensitive', () => {
     expect(
       isUrlFromVendorDomain('https://WWW.WIX.COM/privacy', 'wix.com'),
     ).toBe(true);
-    expect(
-      isUrlFromVendorDomain('https://wix.com/privacy', 'WIX.COM'),
-    ).toBe(true);
+    expect(isUrlFromVendorDomain('https://wix.com/privacy', 'WIX.COM')).toBe(
+      true,
+    );
   });
 
   it('returns false for invalid URLs', () => {
@@ -84,7 +84,9 @@ describe('extractVendorDomain', () => {
   it('extracts root domain from subdomain websites', () => {
     expect(extractVendorDomain('https://app.slack.com')).toBe('slack.com');
     expect(extractVendorDomain('https://trust.wix.com')).toBe('wix.com');
-    expect(extractVendorDomain('https://dashboard.stripe.com')).toBe('stripe.com');
+    expect(extractVendorDomain('https://dashboard.stripe.com')).toBe(
+      'stripe.com',
+    );
   });
 
   it('extracts root domain from multi-level subdomains', () => {
@@ -92,16 +94,20 @@ describe('extractVendorDomain', () => {
   });
 
   it('handles two-part TLDs correctly', () => {
-    expect(extractVendorDomain('https://app.example.co.uk')).toBe('example.co.uk');
-    expect(extractVendorDomain('https://www.example.com.au')).toBe('example.com.au');
+    expect(extractVendorDomain('https://app.example.co.uk')).toBe(
+      'example.co.uk',
+    );
+    expect(extractVendorDomain('https://www.example.com.au')).toBe(
+      'example.com.au',
+    );
   });
 });
 
 describe('validateVendorUrl', () => {
   it('returns normalized URL for valid vendor URLs', () => {
-    expect(validateVendorUrl('https://wix.com/privacy', 'wix.com', 'privacy')).toBe(
-      'https://wix.com/privacy',
-    );
+    expect(
+      validateVendorUrl('https://wix.com/privacy', 'wix.com', 'privacy'),
+    ).toBe('https://wix.com/privacy');
   });
 
   it('accepts URLs from any domain (domain filtering removed — trusts AI agent)', () => {
@@ -123,9 +129,9 @@ describe('validateVendorUrl', () => {
   });
 
   it('accepts subdomain URLs', () => {
-    expect(
-      validateVendorUrl('https://trust.wix.com', 'wix.com', 'trust'),
-    ).toBe('https://trust.wix.com/');
+    expect(validateVendorUrl('https://trust.wix.com', 'wix.com', 'trust')).toBe(
+      'https://trust.wix.com/',
+    );
   });
 
   it('accepts parent domain URLs when vendor website is a subdomain', () => {

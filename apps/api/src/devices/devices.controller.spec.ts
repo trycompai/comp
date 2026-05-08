@@ -8,7 +8,15 @@ import type { AuthContext as AuthContextType } from '../auth/types';
 jest.mock('@db', () => ({
   ...jest.requireActual('@prisma/client'),
   db: {},
-  Prisma: { PrismaClientKnownRequestError: class PrismaClientKnownRequestError extends Error { code: string; constructor(message: string, { code }: { code: string }) { super(message); this.code = code; } } },
+  Prisma: {
+    PrismaClientKnownRequestError: class PrismaClientKnownRequestError extends Error {
+      code: string;
+      constructor(message: string, { code }: { code: string }) {
+        super(message);
+        this.code = code;
+      }
+    },
+  },
 }));
 
 jest.mock('../auth/auth.server', () => ({
@@ -30,6 +38,7 @@ describe('DevicesController', () => {
     findAllByOrganization: jest.fn(),
     findAllByMember: jest.fn(),
     getMemberById: jest.fn(),
+    removeDeviceById: jest.fn(),
   };
 
   const mockGuard = { canActivate: jest.fn().mockReturnValue(true) };
@@ -192,6 +201,30 @@ describe('DevicesController', () => {
       await expect(
         controller.getDevicesByMember('mem_1', 'org_1', mockAuthContext),
       ).rejects.toThrow('FleetDM unavailable');
+    });
+  });
+
+  describe('deleteDevice', () => {
+    it('should call service removeDeviceById with org, device, and user', async () => {
+      mockService.removeDeviceById.mockResolvedValue(undefined);
+
+      await controller.deleteDevice('dev_1', 'org_1', mockAuthContext);
+
+      expect(service.removeDeviceById).toHaveBeenCalledWith({
+        organizationId: 'org_1',
+        deviceId: 'dev_1',
+        userId: 'usr_1',
+      });
+    });
+
+    it('should propagate service errors', async () => {
+      mockService.removeDeviceById.mockRejectedValue(
+        new Error('Only organization owners can remove devices'),
+      );
+
+      await expect(
+        controller.deleteDevice('dev_1', 'org_1', mockAuthContext),
+      ).rejects.toThrow('Only organization owners can remove devices');
     });
   });
 });

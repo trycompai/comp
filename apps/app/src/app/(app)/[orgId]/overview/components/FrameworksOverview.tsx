@@ -24,36 +24,55 @@ export interface FrameworksOverviewProps {
 }
 
 export function mapFrameworkToBadge(framework: FrameworkInstanceWithControls) {
-  if (framework.framework.name === 'SOC 2') {
+  const frameworkName = (
+    framework.framework?.name ??
+    framework.customFramework?.name ??
+    ''
+  ).trim();
+  const normalizedName = frameworkName.toLowerCase();
+
+  if (frameworkName === 'SOC 2') {
     return '/badges/soc2.svg';
   }
 
-  if (framework.framework.name === 'ISO 27001') {
+  if (frameworkName === 'ISO 27001') {
     return '/badges/iso27001.svg';
   }
 
-  if (framework.framework.name === 'ISO 42001') {
+  if (frameworkName === 'ISO 42001') {
     return '/badges/iso42001.svg';
   }
 
-  if (framework.framework.name === 'HIPAA') {
+  if (frameworkName === 'HIPAA') {
     return '/badges/hipaa.svg';
   }
 
-  if (framework.framework.name === 'GDPR') {
+  if (frameworkName === 'GDPR') {
     return '/badges/gdpr.svg';
   }
 
-  if (framework.framework.name === 'PCI DSS') {
+  if (normalizedName.includes('pci dss')) {
     return '/badges/pci-dss.svg';
   }
 
-  if (framework.framework.name === 'NEN 7510') {
+  if (frameworkName === 'NEN 7510') {
     return '/badges/nen7510.svg';
   }
 
-  if (framework.framework.name === 'ISO 9001') {
+  if (frameworkName === 'ISO 9001') {
     return '/badges/iso9001.svg';
+  }
+
+  if (frameworkName === 'SOC 2 Type 1') {
+    return '/badges/soc2.svg';
+  }
+
+  if (frameworkName === 'CCPA') {
+    return '/badges/ccpa.svg';
+  }
+
+  if (frameworkName === 'PIPEDA') {
+    return '/badges/pipeda.svg';
   }
 
   return null;
@@ -75,7 +94,12 @@ export function FrameworksOverview({
   );
 
   const availableFrameworksToAdd = allFrameworks.filter(
-    (framework) => !frameworksWithControls.some((fc) => fc.framework.id === framework.id),
+    (framework) =>
+      !frameworksWithControls.some(
+        (fc) =>
+          fc.framework?.id === framework.id ||
+          fc.customFramework?.id === framework.id,
+      ),
   );
 
   return (
@@ -101,6 +125,14 @@ export function FrameworksOverview({
               {frameworksWithControls.map((framework, index) => {
                 const complianceScore = complianceMap.get(framework.id) ?? 0;
                 const badgeSrc = mapFrameworkToBadge(framework);
+                const displayName =
+                  framework.framework?.name ??
+                  framework.customFramework?.name ??
+                  '';
+                const displayDescription =
+                  framework.framework?.description ??
+                  framework.customFramework?.description ??
+                  '';
 
                 return (
                   <div key={framework.id}>
@@ -114,7 +146,7 @@ export function FrameworksOverview({
                             {badgeSrc ? (
                               <Image
                                 src={badgeSrc}
-                                alt={framework.framework.name}
+                                alt={displayName}
                                 width={32}
                                 height={32}
                                 className="rounded-full w-8 h-8"
@@ -123,16 +155,16 @@ export function FrameworksOverview({
                             ) : (
                               <div className="rounded-full w-8 h-8 bg-muted flex items-center justify-center">
                                 <span className="text-xs text-muted-foreground">
-                                  {framework.framework.name.charAt(0)}
+                                  {displayName.charAt(0)}
                                 </span>
                               </div>
                             )}
                           </div>
                           <div className="flex flex-col flex-1 min-w-0">
                             <span className="text-sm font-medium text-foreground flex flex-col">
-                              {framework.framework.name}
+                              {displayName}
                               <span className="text-xs text-muted-foreground font-normal">
-                                {framework.framework.description?.trim()}
+                                {displayDescription?.trim()}
                               </span>
                             </span>
 

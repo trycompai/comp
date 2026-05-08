@@ -67,7 +67,7 @@ interface ProviderFieldWithOptions extends ProviderFieldBase {
   options?: { value: string; label: string }[];
 }
 
-const PROVIDER_FIELDS: Record<'aws' | 'gcp' | 'azure', ProviderFieldWithOptions[]> = {
+const PROVIDER_FIELDS: Partial<Record<'aws' | 'gcp' | 'azure', ProviderFieldWithOptions[]>> = {
   aws: [
     {
       id: 'connectionName',
@@ -86,48 +86,6 @@ const PROVIDER_FIELDS: Record<'aws' | 'gcp' | 'azure', ProviderFieldWithOptions[
       label: 'Secret Access Key',
       placeholder: 'Enter your secret access key',
       helpText: 'Provided when creating the access key',
-      type: 'password',
-    },
-  ],
-  gcp: [
-    {
-      id: 'organization_id',
-      label: 'Organization ID',
-      placeholder: '123456789012',
-      helpText: 'Console → IAM & Admin → Settings',
-    },
-    {
-      id: 'service_account_key',
-      label: 'Service Account Key',
-      placeholder: 'Paste your JSON key here',
-      helpText: 'IAM & Admin → Service Accounts → Keys → Add Key',
-      type: 'textarea',
-    },
-  ],
-  azure: [
-    {
-      id: 'AZURE_SUBSCRIPTION_ID',
-      label: 'Subscription ID',
-      placeholder: '00000000-0000-0000-0000-000000000000',
-      helpText: 'Azure Portal → Subscriptions',
-    },
-    {
-      id: 'AZURE_TENANT_ID',
-      label: 'Tenant ID',
-      placeholder: '00000000-0000-0000-0000-000000000000',
-      helpText: 'Azure Active Directory → Overview',
-    },
-    {
-      id: 'AZURE_CLIENT_ID',
-      label: 'Client ID',
-      placeholder: '00000000-0000-0000-0000-000000000000',
-      helpText: 'App registrations → Overview',
-    },
-    {
-      id: 'AZURE_CLIENT_SECRET',
-      label: 'Client Secret',
-      placeholder: 'Enter your client secret',
-      helpText: 'App registrations → Certificates & secrets',
       type: 'password',
     },
   ],
@@ -154,7 +112,7 @@ export function EmptyState({
   const api = useApi();
   const { hasPermission } = usePermissions();
   const canCreate = hasPermission('integration', 'create');
-  const initialUsesDialog = initialProvider === 'aws' || initialProvider === 'azure';
+  const initialUsesDialog = initialProvider === 'aws' || initialProvider === 'gcp' || initialProvider === 'azure';
   const [step, setStep] = useState<Step>(
     initialProvider && !initialUsesDialog ? 'connect' : 'choose',
   );
@@ -162,8 +120,8 @@ export function EmptyState({
     initialProvider && !initialUsesDialog ? initialProvider : null,
   );
   const [showConnectDialog, setShowConnectDialog] = useState(initialUsesDialog);
-  const [connectDialogProvider, setConnectDialogProvider] = useState<'aws' | 'azure'>(
-    initialProvider === 'azure' ? 'azure' : 'aws',
+  const [connectDialogProvider, setConnectDialogProvider] = useState<'aws' | 'gcp' | 'azure'>(
+    initialProvider === 'azure' ? 'azure' : initialProvider === 'gcp' ? 'gcp' : 'aws',
   );
   const [credentials, setCredentials] = useState<Record<string, string | string[]>>({});
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -172,14 +130,14 @@ export function EmptyState({
   const [awsAccountId, setAwsAccountId] = useState<string>('');
 
   useEffect(() => {
-    if (initialProvider === 'aws' || initialProvider === 'azure') {
+    if (initialProvider === 'aws' || initialProvider === 'gcp' || initialProvider === 'azure') {
       setConnectDialogProvider(initialProvider);
       setShowConnectDialog(true);
     }
   }, [initialProvider]);
 
   const handleProviderSelect = (providerId: CloudProvider) => {
-    if (providerId === 'aws' || providerId === 'azure') {
+    if (providerId === 'aws' || providerId === 'gcp' || providerId === 'azure') {
       setConnectDialogProvider(providerId);
       setShowConnectDialog(true);
       return;
@@ -215,6 +173,7 @@ export function EmptyState({
   const validateFields = (): boolean => {
     if (!selectedProvider) return false;
     const fields = PROVIDER_FIELDS[selectedProvider];
+    if (!fields) return true; // OAuth providers (GCP/Azure) don't have credential fields
     const newErrors: Record<string, string> = {};
 
     fields.forEach((field) => {
@@ -450,12 +409,18 @@ export function EmptyState({
             onOpenChange={(open) => setShowConnectDialog(open)}
             integrationId={connectDialogProvider}
             integrationName={
-              connectDialogProvider === 'azure' ? 'Microsoft Azure' : 'Amazon Web Services'
+              connectDialogProvider === 'gcp'
+                ? 'Google Cloud Platform'
+                : connectDialogProvider === 'azure'
+                  ? 'Microsoft Azure'
+                  : 'Amazon Web Services'
             }
             integrationLogoUrl={
-              connectDialogProvider === 'azure'
-                ? 'https://img.logo.dev/azure.microsoft.com?token=pk_AZatYxV5QDSfWpRDaBxzRQ'
-                : 'https://img.logo.dev/aws.amazon.com?token=pk_AZatYxV5QDSfWpRDaBxzRQ'
+              connectDialogProvider === 'gcp'
+                ? 'https://img.logo.dev/cloud.google.com?token=pk_AZatYxV5QDSfWpRDaBxzRQ'
+                : connectDialogProvider === 'azure'
+                  ? 'https://img.logo.dev/azure.microsoft.com?token=pk_AZatYxV5QDSfWpRDaBxzRQ'
+                  : 'https://img.logo.dev/aws.amazon.com?token=pk_AZatYxV5QDSfWpRDaBxzRQ'
             }
             onConnected={() => {
               setShowConnectDialog(false);
@@ -503,7 +468,7 @@ export function EmptyState({
 
   // Step 2: Connect (Form)
   if (step === 'connect' && provider) {
-    const fields = PROVIDER_FIELDS[provider.id];
+    const fields = PROVIDER_FIELDS[provider.id as keyof typeof PROVIDER_FIELDS];
 
     return (
       <PageLayout padding="default">
@@ -547,7 +512,7 @@ export function EmptyState({
             </CardHeader>
 
             <CardContent className="space-y-5">
-              {fields.map((field) => {
+              {fields?.map((field) => {
                 const stringValue: string =
                   typeof credentials[field.id] === 'string'
                     ? (credentials[field.id] as string)

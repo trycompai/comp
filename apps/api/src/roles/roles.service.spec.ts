@@ -1,5 +1,9 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { BadRequestException, ForbiddenException, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ForbiddenException,
+  NotFoundException,
+} from '@nestjs/common';
 import { RolesService } from './roles.service';
 
 // Mock @trycompai/auth to avoid ESM import issues with better-auth in Jest
@@ -27,9 +31,15 @@ jest.mock('@trycompai/auth', () => {
   };
 
   const BUILT_IN_ROLE_PERMISSIONS: Record<string, Record<string, string[]>> = {
-    owner: { ...Object.fromEntries(Object.entries(statement).map(([k, v]) => [k, [...v]])) },
+    owner: {
+      ...Object.fromEntries(
+        Object.entries(statement).map(([k, v]) => [k, [...v]]),
+      ),
+    },
     admin: {
-      ...Object.fromEntries(Object.entries(statement).map(([k, v]) => [k, [...v]])),
+      ...Object.fromEntries(
+        Object.entries(statement).map(([k, v]) => [k, [...v]]),
+      ),
       organization: ['read', 'update'],
     },
     auditor: {
@@ -70,7 +80,12 @@ jest.mock('@trycompai/auth', () => {
     contractor: { compliance: true },
   };
 
-  return { statement, allRoles, BUILT_IN_ROLE_PERMISSIONS, BUILT_IN_ROLE_OBLIGATIONS };
+  return {
+    statement,
+    allRoles,
+    BUILT_IN_ROLE_PERMISSIONS,
+    BUILT_IN_ROLE_OBLIGATIONS,
+  };
 });
 
 // Mock the database
@@ -132,7 +147,9 @@ describe('RolesService', () => {
       (mockDb.organizationRole.count as jest.Mock).mockResolvedValue(0);
       (mockDb.organizationRole.create as jest.Mock).mockResolvedValue(mockRole);
 
-      const result = await service.createRole(organizationId, validDto, ['owner']);
+      const result = await service.createRole(organizationId, validDto, [
+        'owner',
+      ]);
 
       expect(result.permissions).toEqual(validDto.permissions);
       expect(mockDb.organizationRole.create).toHaveBeenCalledWith({
@@ -148,12 +165,12 @@ describe('RolesService', () => {
     it('should reject built-in role names', async () => {
       const dto = { name: 'owner', permissions: { control: ['read'] } };
 
-      await expect(service.createRole(organizationId, dto, ['owner'])).rejects.toThrow(
-        BadRequestException,
-      );
-      await expect(service.createRole(organizationId, dto, ['owner'])).rejects.toThrow(
-        'Cannot create role with reserved name: owner',
-      );
+      await expect(
+        service.createRole(organizationId, dto, ['owner']),
+      ).rejects.toThrow(BadRequestException);
+      await expect(
+        service.createRole(organizationId, dto, ['owner']),
+      ).rejects.toThrow('Cannot create role with reserved name: owner');
     });
 
     it('should reject invalid resource names', async () => {
@@ -162,12 +179,12 @@ describe('RolesService', () => {
         permissions: { invalidResource: ['read'] },
       };
 
-      await expect(service.createRole(organizationId, dto, ['owner'])).rejects.toThrow(
-        BadRequestException,
-      );
-      await expect(service.createRole(organizationId, dto, ['owner'])).rejects.toThrow(
-        'Invalid resource: invalidResource',
-      );
+      await expect(
+        service.createRole(organizationId, dto, ['owner']),
+      ).rejects.toThrow(BadRequestException);
+      await expect(
+        service.createRole(organizationId, dto, ['owner']),
+      ).rejects.toThrow('Invalid resource: invalidResource');
     });
 
     it('should reject invalid actions for valid resources', async () => {
@@ -176,10 +193,12 @@ describe('RolesService', () => {
         permissions: { control: ['read', 'invalidAction'] },
       };
 
-      await expect(service.createRole(organizationId, dto, ['owner'])).rejects.toThrow(
-        BadRequestException,
-      );
-      await expect(service.createRole(organizationId, dto, ['owner'])).rejects.toThrow(
+      await expect(
+        service.createRole(organizationId, dto, ['owner']),
+      ).rejects.toThrow(BadRequestException);
+      await expect(
+        service.createRole(organizationId, dto, ['owner']),
+      ).rejects.toThrow(
         "Invalid action 'invalidAction' for resource 'control'",
       );
     });
@@ -190,24 +209,24 @@ describe('RolesService', () => {
         name: validDto.name,
       });
 
-      await expect(service.createRole(organizationId, validDto, ['owner'])).rejects.toThrow(
-        BadRequestException,
-      );
-      await expect(service.createRole(organizationId, validDto, ['owner'])).rejects.toThrow(
-        `Role '${validDto.name}' already exists`,
-      );
+      await expect(
+        service.createRole(organizationId, validDto, ['owner']),
+      ).rejects.toThrow(BadRequestException);
+      await expect(
+        service.createRole(organizationId, validDto, ['owner']),
+      ).rejects.toThrow(`Role '${validDto.name}' already exists`);
     });
 
     it('should enforce maximum 20 roles per organization', async () => {
       (mockDb.organizationRole.findFirst as jest.Mock).mockResolvedValue(null);
       (mockDb.organizationRole.count as jest.Mock).mockResolvedValue(20);
 
-      await expect(service.createRole(organizationId, validDto, ['owner'])).rejects.toThrow(
-        BadRequestException,
-      );
-      await expect(service.createRole(organizationId, validDto, ['owner'])).rejects.toThrow(
-        'Maximum of 20 custom roles per organization',
-      );
+      await expect(
+        service.createRole(organizationId, validDto, ['owner']),
+      ).rejects.toThrow(BadRequestException);
+      await expect(
+        service.createRole(organizationId, validDto, ['owner']),
+      ).rejects.toThrow('Maximum of 20 custom roles per organization');
     });
 
     it('should prevent privilege escalation - cannot grant permissions you do not have', async () => {
@@ -219,9 +238,9 @@ describe('RolesService', () => {
         },
       };
 
-      await expect(service.createRole(organizationId, dto, ['employee'])).rejects.toThrow(
-        ForbiddenException,
-      );
+      await expect(
+        service.createRole(organizationId, dto, ['employee']),
+      ).rejects.toThrow(ForbiddenException);
     });
 
     it('should allow owners to grant organization:delete', async () => {
@@ -243,7 +262,9 @@ describe('RolesService', () => {
       });
 
       // Should not throw for owner
-      await expect(service.createRole(organizationId, dto, ['owner'])).resolves.toBeDefined();
+      await expect(
+        service.createRole(organizationId, dto, ['owner']),
+      ).resolves.toBeDefined();
     });
 
     it('should prevent non-owners from granting organization:delete', async () => {
@@ -255,10 +276,12 @@ describe('RolesService', () => {
       };
 
       // Admin doesn't have organization:delete permission, so privilege escalation check fails first
-      await expect(service.createRole(organizationId, dto, ['admin'])).rejects.toThrow(
-        ForbiddenException,
-      );
-      await expect(service.createRole(organizationId, dto, ['admin'])).rejects.toThrow(
+      await expect(
+        service.createRole(organizationId, dto, ['admin']),
+      ).rejects.toThrow(ForbiddenException);
+      await expect(
+        service.createRole(organizationId, dto, ['admin']),
+      ).rejects.toThrow(
         "Cannot grant 'organization:delete' permission - you don't have this permission",
       );
     });
@@ -305,7 +328,9 @@ describe('RolesService', () => {
         },
       ];
 
-      (mockDb.organizationRole.findMany as jest.Mock).mockResolvedValue(customRoles);
+      (mockDb.organizationRole.findMany as jest.Mock).mockResolvedValue(
+        customRoles,
+      );
 
       const result = await service.listRoles('org_123');
 
@@ -333,7 +358,9 @@ describe('RolesService', () => {
         updatedAt: new Date(),
       };
 
-      (mockDb.organizationRole.findFirst as jest.Mock).mockResolvedValue(mockRole);
+      (mockDb.organizationRole.findFirst as jest.Mock).mockResolvedValue(
+        mockRole,
+      );
 
       const result = await service.getRole('org_123', 'rol_123');
 
@@ -344,9 +371,9 @@ describe('RolesService', () => {
     it('should throw NotFoundException for non-existent role', async () => {
       (mockDb.organizationRole.findFirst as jest.Mock).mockResolvedValue(null);
 
-      await expect(service.getRole('org_123', 'rol_nonexistent')).rejects.toThrow(
-        NotFoundException,
-      );
+      await expect(
+        service.getRole('org_123', 'rol_nonexistent'),
+      ).rejects.toThrow(NotFoundException);
     });
   });
 
@@ -391,10 +418,14 @@ describe('RolesService', () => {
         obligations: '{}',
       };
 
-      (mockDb.organizationRole.findFirst as jest.Mock).mockResolvedValue(existingRole);
+      (mockDb.organizationRole.findFirst as jest.Mock).mockResolvedValue(
+        existingRole,
+      );
 
       await expect(
-        service.updateRole(organizationId, roleId, { name: 'admin' }, ['owner']),
+        service.updateRole(organizationId, roleId, { name: 'admin' }, [
+          'owner',
+        ]),
       ).rejects.toThrow(BadRequestException);
     });
 
@@ -402,7 +433,9 @@ describe('RolesService', () => {
       (mockDb.organizationRole.findFirst as jest.Mock).mockResolvedValue(null);
 
       await expect(
-        service.updateRole(organizationId, roleId, { name: 'new-name' }, ['owner']),
+        service.updateRole(organizationId, roleId, { name: 'new-name' }, [
+          'owner',
+        ]),
       ).rejects.toThrow(NotFoundException);
     });
 
@@ -414,7 +447,9 @@ describe('RolesService', () => {
         obligations: '{}',
       };
 
-      (mockDb.organizationRole.findFirst as jest.Mock).mockResolvedValue(existingRole);
+      (mockDb.organizationRole.findFirst as jest.Mock).mockResolvedValue(
+        existingRole,
+      );
 
       // Employee trying to add organization:delete to a role
       await expect(
@@ -440,9 +475,13 @@ describe('RolesService', () => {
         obligations: '{}',
       };
 
-      (mockDb.organizationRole.findFirst as jest.Mock).mockResolvedValue(existingRole);
+      (mockDb.organizationRole.findFirst as jest.Mock).mockResolvedValue(
+        existingRole,
+      );
       (mockDb.member.count as jest.Mock).mockResolvedValue(0);
-      (mockDb.organizationRole.delete as jest.Mock).mockResolvedValue(existingRole);
+      (mockDb.organizationRole.delete as jest.Mock).mockResolvedValue(
+        existingRole,
+      );
 
       const result = await service.deleteRole(organizationId, roleId);
 
@@ -460,7 +499,9 @@ describe('RolesService', () => {
         obligations: '{}',
       };
 
-      (mockDb.organizationRole.findFirst as jest.Mock).mockResolvedValue(existingRole);
+      (mockDb.organizationRole.findFirst as jest.Mock).mockResolvedValue(
+        existingRole,
+      );
       (mockDb.member.count as jest.Mock).mockResolvedValue(3);
 
       await expect(service.deleteRole(organizationId, roleId)).rejects.toThrow(
@@ -477,6 +518,199 @@ describe('RolesService', () => {
       await expect(service.deleteRole(organizationId, roleId)).rejects.toThrow(
         NotFoundException,
       );
+    });
+  });
+
+  describe('filterMembersWithPermission', () => {
+    const organizationId = 'org_1';
+
+    it('returns empty array when members list is empty', async () => {
+      const result = await service.filterMembersWithPermission(
+        organizationId,
+        [],
+        'task',
+        'update',
+      );
+      expect(result).toEqual([]);
+      expect(mockDb.organizationRole.findMany).not.toHaveBeenCalled();
+    });
+
+    it('keeps built-in roles that grant the permission (owner has task:update)', async () => {
+      const members = [
+        { id: 'm1', role: 'owner' },
+        { id: 'm2', role: 'admin' },
+      ];
+      const result = await service.filterMembersWithPermission(
+        organizationId,
+        members,
+        'task',
+        'update',
+      );
+      expect(result.map((m) => m.id).sort()).toEqual(['m1', 'm2']);
+    });
+
+    it('excludes built-in roles that lack the permission (employee has no task perms)', async () => {
+      const members = [
+        { id: 'm1', role: 'employee' },
+        { id: 'm2', role: 'contractor' },
+        { id: 'm3', role: 'owner' },
+      ];
+      const result = await service.filterMembersWithPermission(
+        organizationId,
+        members,
+        'task',
+        'update',
+      );
+      expect(result.map((m) => m.id)).toEqual(['m3']);
+    });
+
+    it('excludes auditor for task:update but keeps them for task:read', async () => {
+      const members = [{ id: 'm1', role: 'auditor' }];
+
+      const forUpdate = await service.filterMembersWithPermission(
+        organizationId,
+        members,
+        'task',
+        'update',
+      );
+      expect(forUpdate).toEqual([]);
+
+      const forRead = await service.filterMembersWithPermission(
+        organizationId,
+        members,
+        'task',
+        'read',
+      );
+      expect(forRead.map((m) => m.id)).toEqual(['m1']);
+    });
+
+    it('treats comma-separated roles as a union (employee,admin gets included)', async () => {
+      const members = [{ id: 'm1', role: 'employee,admin' }];
+      const result = await service.filterMembersWithPermission(
+        organizationId,
+        members,
+        'task',
+        'update',
+      );
+      expect(result.map((m) => m.id)).toEqual(['m1']);
+    });
+
+    it('includes a member whose custom role grants the permission', async () => {
+      (mockDb.organizationRole.findMany as jest.Mock).mockResolvedValue([
+        {
+          name: 'compliance-lead',
+          permissions: JSON.stringify({
+            task: ['read', 'update'],
+            app: ['read'],
+          }),
+        },
+      ]);
+      const members = [{ id: 'm1', role: 'compliance-lead' }];
+      const result = await service.filterMembersWithPermission(
+        organizationId,
+        members,
+        'task',
+        'update',
+      );
+      expect(result.map((m) => m.id)).toEqual(['m1']);
+      expect(mockDb.organizationRole.findMany).toHaveBeenCalledTimes(1);
+    });
+
+    it('excludes a member whose custom role lacks the permission', async () => {
+      (mockDb.organizationRole.findMany as jest.Mock).mockResolvedValue([
+        {
+          name: 'readonly',
+          permissions: JSON.stringify({ task: ['read'] }),
+        },
+      ]);
+      const members = [{ id: 'm1', role: 'readonly' }];
+      const result = await service.filterMembersWithPermission(
+        organizationId,
+        members,
+        'task',
+        'update',
+      );
+      expect(result).toEqual([]);
+    });
+
+    it('excludes members with null, empty, or unknown roles', async () => {
+      (mockDb.organizationRole.findMany as jest.Mock).mockResolvedValue([]);
+      const members = [
+        { id: 'm1', role: null },
+        { id: 'm2', role: '' },
+        { id: 'm3', role: 'nonexistent-role' },
+      ];
+      const result = await service.filterMembersWithPermission(
+        organizationId,
+        members,
+        'task',
+        'update',
+      );
+      expect(result).toEqual([]);
+    });
+
+    it('makes exactly one DB query regardless of member count', async () => {
+      (mockDb.organizationRole.findMany as jest.Mock).mockResolvedValue([
+        {
+          name: 'custom-a',
+          permissions: JSON.stringify({ task: ['update'] }),
+        },
+      ]);
+      const members = Array.from({ length: 25 }, (_, i) => ({
+        id: `m${i}`,
+        role: i % 2 === 0 ? 'custom-a' : 'employee',
+      }));
+      const result = await service.filterMembersWithPermission(
+        organizationId,
+        members,
+        'task',
+        'update',
+      );
+      expect(result.length).toBe(13); // 0,2,4,...,24 → 13 members
+      expect(mockDb.organizationRole.findMany).toHaveBeenCalledTimes(1);
+    });
+
+    it('skips the DB query when all roles are built-in', async () => {
+      const members = [
+        { id: 'm1', role: 'owner' },
+        { id: 'm2', role: 'admin,auditor' },
+        { id: 'm3', role: 'employee' },
+      ];
+      await service.filterMembersWithPermission(
+        organizationId,
+        members,
+        'app',
+        'read',
+      );
+      expect(mockDb.organizationRole.findMany).not.toHaveBeenCalled();
+    });
+
+    it('parses permissions that are already objects (not strings)', async () => {
+      (mockDb.organizationRole.findMany as jest.Mock).mockResolvedValue([
+        {
+          name: 'object-role',
+          permissions: { task: ['update'] },
+        },
+      ]);
+      const members = [{ id: 'm1', role: 'object-role' }];
+      const result = await service.filterMembersWithPermission(
+        organizationId,
+        members,
+        'task',
+        'update',
+      );
+      expect(result.map((m) => m.id)).toEqual(['m1']);
+    });
+
+    it('trims whitespace around comma-separated role names', async () => {
+      const members = [{ id: 'm1', role: 'employee ,  admin' }];
+      const result = await service.filterMembersWithPermission(
+        organizationId,
+        members,
+        'task',
+        'update',
+      );
+      expect(result.map((m) => m.id)).toEqual(['m1']);
     });
   });
 });

@@ -166,7 +166,9 @@ describe('isUserUnsubscribed', () => {
       });
 
       expect(await isUserUnsubscribed(db, email, 'taskReminders')).toBe(true);
-      expect(await isUserUnsubscribed(db, email, 'policyNotifications')).toBe(false);
+      expect(await isUserUnsubscribed(db, email, 'policyNotifications')).toBe(
+        false,
+      );
     });
   });
 
@@ -180,7 +182,12 @@ describe('isUserUnsubscribed', () => {
         roleSettings: [{ ...ALL_OFF }],
       });
 
-      const result = await isUserUnsubscribed(db, email, 'taskReminders', orgId);
+      const result = await isUserUnsubscribed(
+        db,
+        email,
+        'taskReminders',
+        orgId,
+      );
 
       expect(result).toBe(true);
     });
@@ -194,7 +201,12 @@ describe('isUserUnsubscribed', () => {
         ],
       });
 
-      const result = await isUserUnsubscribed(db, email, 'taskReminders', orgId);
+      const result = await isUserUnsubscribed(
+        db,
+        email,
+        'taskReminders',
+        orgId,
+      );
 
       expect(result).toBe(false);
     });
@@ -209,7 +221,12 @@ describe('isUserUnsubscribed', () => {
         roleSettings: [{ ...ALL_ON }], // role says ON
       });
 
-      const result = await isUserUnsubscribed(db, email, 'taskReminders', orgId);
+      const result = await isUserUnsubscribed(
+        db,
+        email,
+        'taskReminders',
+        orgId,
+      );
 
       expect(result).toBe(true); // existing opt-out is preserved
     });
@@ -224,7 +241,12 @@ describe('isUserUnsubscribed', () => {
         roleSettings: [{ ...ALL_ON }], // role says ON
       });
 
-      const result = await isUserUnsubscribed(db, email, 'taskReminders', orgId);
+      const result = await isUserUnsubscribed(
+        db,
+        email,
+        'taskReminders',
+        orgId,
+      );
 
       expect(result).toBe(false); // defaults to enabled
     });
@@ -239,7 +261,12 @@ describe('isUserUnsubscribed', () => {
         roleSettings: [{ ...ALL_ON }], // role says ON
       });
 
-      const result = await isUserUnsubscribed(db, email, 'taskReminders', orgId);
+      const result = await isUserUnsubscribed(
+        db,
+        email,
+        'taskReminders',
+        orgId,
+      );
 
       expect(result).toBe(true); // admin can opt out
     });
@@ -254,7 +281,12 @@ describe('isUserUnsubscribed', () => {
         roleSettings: [{ ...ALL_ON }],
       });
 
-      const result = await isUserUnsubscribed(db, email, 'weeklyTaskDigest', orgId);
+      const result = await isUserUnsubscribed(
+        db,
+        email,
+        'weeklyTaskDigest',
+        orgId,
+      );
 
       expect(result).toBe(true);
     });
@@ -269,7 +301,12 @@ describe('isUserUnsubscribed', () => {
         roleSettings: [], // no role settings configured
       });
 
-      const result = await isUserUnsubscribed(db, email, 'taskReminders', orgId);
+      const result = await isUserUnsubscribed(
+        db,
+        email,
+        'taskReminders',
+        orgId,
+      );
 
       expect(result).toBe(true); // falls through to personal pref
     });
@@ -284,7 +321,12 @@ describe('isUserUnsubscribed', () => {
         roleSettings: [],
       });
 
-      const result = await isUserUnsubscribed(db, email, 'taskReminders', orgId);
+      const result = await isUserUnsubscribed(
+        db,
+        email,
+        'taskReminders',
+        orgId,
+      );
 
       expect(result).toBe(true); // falls through to personal pref
     });
@@ -302,7 +344,12 @@ describe('isUserUnsubscribed', () => {
         ],
       });
 
-      const result = await isUserUnsubscribed(db, email, 'taskReminders', orgId);
+      const result = await isUserUnsubscribed(
+        db,
+        email,
+        'taskReminders',
+        orgId,
+      );
 
       expect(result).toBe(false); // employee role enables it, no personal opt-out
     });
@@ -317,7 +364,12 @@ describe('isUserUnsubscribed', () => {
         roleSettings: [{ ...ALL_ON }, { ...ALL_ON }],
       });
 
-      const result = await isUserUnsubscribed(db, email, 'taskReminders', orgId);
+      const result = await isUserUnsubscribed(
+        db,
+        email,
+        'taskReminders',
+        orgId,
+      );
 
       expect(result).toBe(true); // admin portion allows opt-out
     });
@@ -360,14 +412,26 @@ describe('isUserUnsubscribed', () => {
       });
 
       // ON by role
-      expect(await isUserUnsubscribed(db, email, 'policyNotifications', orgId)).toBe(false);
-      expect(await isUserUnsubscribed(db, email, 'taskAssignments', orgId)).toBe(false);
-      expect(await isUserUnsubscribed(db, email, 'weeklyTaskDigest', orgId)).toBe(false);
+      expect(
+        await isUserUnsubscribed(db, email, 'policyNotifications', orgId),
+      ).toBe(false);
+      expect(
+        await isUserUnsubscribed(db, email, 'taskAssignments', orgId),
+      ).toBe(false);
+      expect(
+        await isUserUnsubscribed(db, email, 'weeklyTaskDigest', orgId),
+      ).toBe(false);
 
       // OFF by role
-      expect(await isUserUnsubscribed(db, email, 'taskReminders', orgId)).toBe(true);
-      expect(await isUserUnsubscribed(db, email, 'taskMentions', orgId)).toBe(true);
-      expect(await isUserUnsubscribed(db, email, 'findingNotifications', orgId)).toBe(true);
+      expect(await isUserUnsubscribed(db, email, 'taskReminders', orgId)).toBe(
+        true,
+      );
+      expect(await isUserUnsubscribed(db, email, 'taskMentions', orgId)).toBe(
+        true,
+      );
+      expect(
+        await isUserUnsubscribed(db, email, 'findingNotifications', orgId),
+      ).toBe(true);
     });
   });
 
@@ -395,7 +459,12 @@ describe('isUserUnsubscribed', () => {
         },
       };
 
-      const result = await isUserUnsubscribed(db, email, 'taskReminders', orgId);
+      const result = await isUserUnsubscribed(
+        db,
+        email,
+        'taskReminders',
+        orgId,
+      );
 
       // Should fall through to personal preferences since db.member is missing
       expect(result).toBe(true);
@@ -405,7 +474,12 @@ describe('isUserUnsubscribed', () => {
       const db = createMockDb();
       db.member.findMany.mockRejectedValue(new Error('Query failed'));
 
-      const result = await isUserUnsubscribed(db, email, 'taskReminders', orgId);
+      const result = await isUserUnsubscribed(
+        db,
+        email,
+        'taskReminders',
+        orgId,
+      );
 
       expect(result).toBe(false);
     });

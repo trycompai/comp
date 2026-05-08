@@ -1,4 +1,9 @@
-import { Injectable, NotFoundException, ConflictException, Logger } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  ConflictException,
+  Logger,
+} from '@nestjs/common';
 import { db, Prisma } from '@db';
 import { CreatePolicyTemplateDto } from './dto/create-policy-template.dto';
 import { UpdatePolicyTemplateDto } from './dto/update-policy-template.dto';
@@ -43,16 +48,11 @@ export class PolicyTemplateService {
     return pt;
   }
 
-  async create(dto: CreatePolicyTemplateDto, frameworkId?: string) {
-    const controlIds = frameworkId
-      ? await db.frameworkEditorControlTemplate
-          .findMany({
-            where: { requirements: { some: { frameworkId } } },
-            select: { id: true },
-          })
-          .then((cts) => cts.map((ct) => ({ id: ct.id })))
-      : [];
-
+  // New primitives are created unlinked. CX explicitly attaches them to
+  // controls via the dedicated link endpoints — auto-linking to every
+  // control in a framework was wrong (CX rarely wants the new policy on
+  // every control) and forced manual cleanup after each create.
+  async create(dto: CreatePolicyTemplateDto) {
     const pt = await db.frameworkEditorPolicyTemplate.create({
       data: {
         name: dto.name,
@@ -60,9 +60,6 @@ export class PolicyTemplateService {
         frequency: dto.frequency,
         department: dto.department,
         content: {},
-        ...(controlIds.length > 0 && {
-          controlTemplates: { connect: controlIds },
-        }),
       },
     });
     this.logger.log(`Created policy template: ${pt.name} (${pt.id})`);

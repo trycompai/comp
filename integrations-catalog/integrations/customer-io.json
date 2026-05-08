@@ -1,0 +1,45 @@
+{
+  "slug": "customer-io",
+  "name": "Customer.io",
+  "description": "Monitor Customer.io marketing automation for user access and data handling compliance",
+  "category": "Communication",
+  "docsUrl": "https://customer.io/docs/api/app/",
+  "baseUrl": "https://api.customer.io/",
+  "authConfig": {
+    "type": "api_key",
+    "config": {
+      "setupInstructions": "1. Log in to Customer.io at https://fly.customer.io\n2. Go to Settings → Account Settings → API Credentials\n3. Create an App API key\n4. Copy and enter it below",
+      "credentialFields": [
+        {
+          "label": "App API Key",
+          "type": "password",
+          "required": true,
+          "helpText": "Found in Customer.io Settings → API Credentials. Use the App API key (not tracking API key)."
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "customerio_employee_access",
+      "name": "Employee Access",
+      "description": "Lists Customer.io workspace users and their roles",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "customerio_data_masking",
+      "name": "Data Masking",
+      "description": "Verifies Customer.io account data handling and suppression settings",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

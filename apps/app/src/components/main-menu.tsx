@@ -1,5 +1,6 @@
 'use client';
 
+import { usePermissions } from '@/hooks/use-permissions';
 import { Badge } from '@trycompai/ui/badge';
 import { Button } from '@trycompai/ui/button';
 import { cn } from '@trycompai/ui/cn';
@@ -54,7 +55,6 @@ export type Props = {
   onItemClick?: () => void;
   isQuestionnaireEnabled?: boolean;
   isTrustNdaEnabled?: boolean;
-  hasAuditorRole?: boolean;
   isOnlyAuditor?: boolean;
 };
 
@@ -65,12 +65,16 @@ export function MainMenu({
   onItemClick,
   isQuestionnaireEnabled = false,
   isTrustNdaEnabled = false,
-  hasAuditorRole = false,
   isOnlyAuditor = false,
 }: Props) {
   const pathname = usePathname();
   const [activeStyle, setActiveStyle] = useState({ top: '0px', height: '0px' });
   const itemRefs = useRef<(HTMLDivElement | null)[]>([]);
+  // CS-189: Auditor View visibility is scoped to the built-in `auditor`
+  // role or a custom org role that explicitly grants audit:read — NOT to
+  // owner/admin's implicit all-permissions. See `canAccessAuditorView` in
+  // lib/permissions.ts for the full rule.
+  const { canAccessAuditorView } = usePermissions();
 
   const items: MenuItem[] = [
     {
@@ -96,7 +100,7 @@ export function MainMenu({
       disabled: false,
       icon: ClipboardCheck,
       protected: false,
-      hidden: !hasAuditorRole,
+      hidden: !canAccessAuditorView,
     },
     {
       id: 'controls',

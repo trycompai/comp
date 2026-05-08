@@ -2,6 +2,8 @@ import { db } from '@db/server';
 import { logger, schedules } from '@trigger.dev/sdk';
 import { sendWeeklyTaskDigestEmailTask } from '../email/weekly-task-digest-email';
 
+const ORG_INACTIVITY_DAYS = 90;
+
 export const weeklyTaskReminder = schedules.task({
   id: 'weekly-task-reminder',
   cron: '0 9 * * 1', // Every Monday at 9:00 AM UTC
@@ -9,8 +11,28 @@ export const weeklyTaskReminder = schedules.task({
   run: async () => {
     logger.info('Starting weekly task reminder job');
 
-    // Get all organizations
+    const inactivityCutoff = new Date();
+    inactivityCutoff.setDate(inactivityCutoff.getDate() - ORG_INACTIVITY_DAYS);
+
+    // Only email orgs that are active: have access, completed onboarding,
+    // and at least one member logged in within the last 90 days
     const organizations = await db.organization.findMany({
+      where: {
+        hasAccess: true,
+        onboardingCompleted: true,
+        members: {
+          some: {
+            deactivated: false,
+            user: {
+              sessions: {
+                some: {
+                  updatedAt: { gte: inactivityCutoff },
+                },
+              },
+            },
+          },
+        },
+      },
       select: {
         id: true,
         name: true,
@@ -36,7 +58,7 @@ export const weeklyTaskReminder = schedules.task({
       },
     });
 
-    logger.info(`Found ${organizations.length} organizations to process`);
+    logger.info(`Found ${organizations.length} active organizations to process (skipped orgs with no sessions in ${ORG_INACTIVITY_DAYS} days)`);
 
     // Build email payloads for all members with TODO tasks
     const emailPayloads = [];

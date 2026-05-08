@@ -1,5 +1,6 @@
 'use client';
 
+import { RiskScoreBadge } from '@/components/risks/RiskScoreBadge';
 import { usePermissions } from '@/hooks/use-permissions';
 import {
   useRiskActions,
@@ -9,6 +10,13 @@ import {
   type RisksQueryParams,
 } from '@/hooks/use-risks';
 import { getSortingStateParser } from '@/lib/parsers';
+import { getRiskLevelFromScore, getRiskScore, LEVEL_LABEL } from '@/lib/risk-score';
+import {
+  interpolatedResidualScore,
+  previewResidual,
+  suggestedResidual,
+} from '@/lib/suggested-residual';
+import { TaskStatus } from '@db';
 import type { Member, User } from '@db';
 import { Risk as RiskType } from '@db';
 import {
@@ -34,6 +42,11 @@ import {
   InputGroup,
   InputGroupAddon,
   InputGroupInput,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
   Spinner,
   Stack,
   Table,
@@ -66,33 +79,47 @@ const ACTIVE_STATUSES: Array<'pending' | 'processing' | 'created' | 'assessing'>
   'assessing',
 ];
 
-function getSeverityBadge(likelihood: string, impact: string) {
-  // Calculate severity based on likelihood and impact
-  const likelihoodScore: Record<string, number> = {
-    very_unlikely: 1,
-    unlikely: 2,
-    possible: 3,
-    likely: 4,
-    very_likely: 5,
-  };
-  const impactScore: Record<string, number> = {
-    insignificant: 1,
-    minor: 2,
-    moderate: 3,
-    major: 4,
-    severe: 5,
-  };
-
-  const score = (likelihoodScore[likelihood] || 1) * (impactScore[impact] || 1);
-
-  if (score >= 15) {
-    return <Badge variant="destructive">High</Badge>;
-  }
-  if (score >= 8) {
-    return <Badge variant="secondary">Medium</Badge>;
-  }
-  return <Badge variant="outline">Low</Badge>;
+/**
+ * The risk's current severity score (1-10), interpolated by linked-task
+ * completion the same way the Treatment Plan hero does it. Returns the
+ * inherent score when there's no linked work or the strategy doesn't
+ * project a reduction. Falls back to inherent on malformed input.
+ */
+function currentSeverityScore(risk: {
+  likelihood: ApiRisk['likelihood'];
+  impact: ApiRisk['impact'];
+  treatmentStrategy: ApiRisk['treatmentStrategy'];
+  tasks?: Array<{ status: TaskStatus }>;
+}): number {
+  const inherent = getRiskScore(risk.likelihood, risk.impact);
+  const tasks = risk.tasks ?? [];
+  const target = previewResidual({
+    inherentLikelihood: risk.likelihood,
+    inherentImpact: risk.impact,
+    strategy: risk.treatmentStrategy,
+    hasLinkedWork: tasks.length > 0,
+  });
+  const targetScore = getRiskScore(target.likelihood, target.impact).score;
+  const completion = suggestedResidual({
+    likelihood: risk.likelihood,
+    impact: risk.impact,
+    strategy: risk.treatmentStrategy,
+    tasks,
+  }).completion;
+  return interpolatedResidualScore({
+    inherentScore: inherent.score,
+    targetScore,
+    completion,
+  });
 }
+
+
+const STATUS_LABEL: Record<string, string> = {
+  open: 'Open',
+  pending: 'Pending',
+  closed: 'Closed',
+  archived: 'Archived',
+};
 
 function getStatusBadge(status: string) {
   switch (status) {
@@ -146,24 +173,48 @@ export const RisksTable = ({
 
   // Read current search params from URL
   const [title, setTitle] = useQueryState('title', parseAsString.withDefault(''));
+  const [statusFilter, setStatusFilter] = useQueryState(
+    'status',
+    parseAsString.withDefault(''),
+  );
+  const [assigneeFilter, setAssigneeFilter] = useQueryState(
+    'assignee',
+    parseAsString.withDefault(''),
+  );
+  // Severity is computed from the current treatment-aware score, so it's
+  // filtered client-side after fetch (the API can't query a derived value).
+  const [severityFilter, setSeverityFilter] = useQueryState(
+    'severity',
+    parseAsString.withDefault(''),
+  );
   const [sort, setSort] = useQueryState(
     'sort',
     getSortingStateParser<RiskType>().withDefault([{ id: 'title', desc: false }]),
   );
 
-  // Build query params for the API
+  // Build query params for the API. Status and assignee are server-side;
+  // severity is computed from the current treatment-aware score (which the
+  // API can't query directly), so when severity is filtered we fetch
+  // the org's full risk set in one page and paginate after the filter.
+  // Without this, severity filtering would only see whatever happened to
+  // be on the current server page — causing wrong/missing results and an
+  // incorrect total count. (Cubic finding #27 on PR #2671.)
+  const FILTER_ALL_PAGE_SIZE = 1000;
+  const fetchAllForSeverity = Boolean(severityFilter);
   const queryParams = useMemo<RisksQueryParams>(() => {
     const currentSort = sort[0];
     return {
-      page,
-      perPage,
+      page: fetchAllForSeverity ? 1 : page,
+      perPage: fetchAllForSeverity ? FILTER_ALL_PAGE_SIZE : perPage,
       ...(title && { title }),
+      ...(statusFilter && { status: statusFilter }),
+      ...(assigneeFilter && { assigneeId: assigneeFilter }),
       ...(currentSort && {
         sort: currentSort.id,
         sortDirection: currentSort.desc ? 'desc' as const : 'asc' as const,
       }),
     };
-  }, [page, perPage, title, sort]);
+  }, [page, perPage, title, statusFilter, assigneeFilter, sort, fetchAllForSeverity]);
 
   // Use the useRisks hook with query params
   const { data: risksData, mutate: mutateRisks } = useRisks({
@@ -173,12 +224,34 @@ export const RisksTable = ({
     keepPreviousData: true,
   });
 
-  const risks = useMemo(() => {
+  // Full result set from the API — already narrowed by status/assignee/title.
+  const fullList = useMemo(() => {
     const apiData = risksData?.data?.data;
     return Array.isArray(apiData) ? apiData : initialRisks;
   }, [risksData, initialRisks]);
 
-  const pageCount = risksData?.data?.pageCount ?? initialPageCount;
+  // After server filtering, apply the (derived) severity filter and then
+  // re-paginate client-side so totals reflect the filtered result.
+  const filteredList = useMemo(() => {
+    if (!severityFilter) return fullList;
+    return fullList.filter((risk) => {
+      const score = currentSeverityScore(risk);
+      return getRiskLevelFromScore(score) === severityFilter;
+    });
+  }, [fullList, severityFilter]);
+
+  const risks = useMemo(() => {
+    if (!fetchAllForSeverity) return filteredList;
+    const start = (page - 1) * perPage;
+    return filteredList.slice(start, start + perPage);
+  }, [filteredList, fetchAllForSeverity, page, perPage]);
+
+  const pageCount = useMemo(() => {
+    if (fetchAllForSeverity) {
+      return Math.max(1, Math.ceil(filteredList.length / perPage));
+    }
+    return risksData?.data?.pageCount ?? initialPageCount;
+  }, [fetchAllForSeverity, filteredList.length, perPage, risksData, initialPageCount]);
 
   // Check if all risks are done assessing
   const allRisksDoneAssessing = useMemo(() => {
@@ -380,18 +453,107 @@ export const RisksTable = ({
   return (
     <RiskOnboardingProvider statuses={itemStatuses}>
       <Stack gap="4">
-        {/* Search Bar */}
-        <div className="w-full md:max-w-[300px]">
-          <InputGroup>
-            <InputGroupAddon>
-              <Search size={16} />
-            </InputGroupAddon>
-            <InputGroupInput
-              placeholder="Search risks..."
-              value={title}
-              onChange={(e) => setTitle(e.target.value || null)}
-            />
-          </InputGroup>
+        {/* Search + Filters. Severity is client-side (derived score),
+            Status and Owner are server-side via the risks API. Each
+            filter is URL-backed so links are shareable. */}
+        <div className="flex w-full flex-col gap-2 md:flex-row md:flex-wrap md:items-center">
+          <div className="w-full md:max-w-[300px]">
+            <InputGroup>
+              <InputGroupAddon>
+                <Search size={16} />
+              </InputGroupAddon>
+              <InputGroupInput
+                placeholder="Search risks..."
+                value={title}
+                onChange={(e) => setTitle(e.target.value || null)}
+              />
+            </InputGroup>
+          </div>
+          <div className="w-full md:w-[160px]">
+            <Select
+              value={severityFilter || 'all'}
+              onValueChange={(v) => setSeverityFilter(v === 'all' ? null : v)}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Severity">
+                  {(value: string) =>
+                    value && value !== 'all'
+                      ? LEVEL_LABEL[value as keyof typeof LEVEL_LABEL] ?? value
+                      : 'All severities'
+                  }
+                </SelectValue>
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All severities</SelectItem>
+                <SelectItem value="very-high">Very high</SelectItem>
+                <SelectItem value="high">High</SelectItem>
+                <SelectItem value="medium">Medium</SelectItem>
+                <SelectItem value="low">Low</SelectItem>
+                <SelectItem value="very-low">Very low</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="w-full md:w-[160px]">
+            <Select
+              value={statusFilter || 'all'}
+              onValueChange={(v) => setStatusFilter(v === 'all' ? null : v)}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Status">
+                  {(value: string) =>
+                    value && value !== 'all'
+                      ? STATUS_LABEL[value] ?? value
+                      : 'All statuses'
+                  }
+                </SelectValue>
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All statuses</SelectItem>
+                <SelectItem value="open">Open</SelectItem>
+                <SelectItem value="pending">Pending</SelectItem>
+                <SelectItem value="closed">Closed</SelectItem>
+                <SelectItem value="archived">Archived</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="w-full md:w-[200px]">
+            <Select
+              value={assigneeFilter || 'all'}
+              onValueChange={(v) => setAssigneeFilter(v === 'all' ? null : v)}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Owner">
+                  {(value: string) => {
+                    if (!value || value === 'all') return 'All owners';
+                    const a = assignees.find((m) => m.id === value);
+                    return a?.user?.name || a?.user?.email || 'Unknown';
+                  }}
+                </SelectValue>
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All owners</SelectItem>
+                {assignees.map((a) => (
+                  <SelectItem key={a.id} value={a.id}>
+                    {a.user?.name || a.user?.email || 'Unknown'}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          {(severityFilter || statusFilter || assigneeFilter || title) && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => {
+                void setTitle(null);
+                void setSeverityFilter(null);
+                void setStatusFilter(null);
+                void setAssigneeFilter(null);
+              }}
+            >
+              Clear filters
+            </Button>
+          )}
         </div>
 
         {/* Onboarding Progress Banner */}
@@ -463,6 +625,8 @@ export const RisksTable = ({
                     </button>
                   </TableHead>
                   <TableHead>SEVERITY</TableHead>
+                  <TableHead>INHERENT RISK</TableHead>
+                  <TableHead>CURRENT RISK</TableHead>
                   <TableHead>STATUS</TableHead>
                   <TableHead>OWNER</TableHead>
                   <TableHead>
@@ -494,7 +658,36 @@ export const RisksTable = ({
                           <Text>{risk.title}</Text>
                         </HStack>
                       </TableCell>
-                      <TableCell>{getSeverityBadge(risk.likelihood, risk.impact)}</TableCell>
+                      {(() => {
+                        // Three score columns paint the before-vs-now picture:
+                        //   SEVERITY = current treatment-aware level (text).
+                        //   INHERENT = raw score before treatment, fixed.
+                        //   CURRENT  = treatment-aware score interpolated by
+                        //              linked-task completion. Named "Current"
+                        //              (not "Residual") because the canonical
+                        //              residual is the *target* score at 100%
+                        //              completion — what's shown here moves
+                        //              with progress and matches the hero's
+                        //              "Currently X/10" subline.
+                        // SEVERITY is plain text and CURRENT carries the
+                        // colored chip so we don't double-paint the band.
+                        const inherentScore = getRiskScore(risk.likelihood, risk.impact).score;
+                        const score = currentSeverityScore(risk);
+                        const level = getRiskLevelFromScore(score);
+                        return (
+                          <>
+                            <TableCell>
+                              <Text>{LEVEL_LABEL[level]}</Text>
+                            </TableCell>
+                            <TableCell>
+                              <RiskScoreBadge score={inherentScore} />
+                            </TableCell>
+                            <TableCell>
+                              <RiskScoreBadge score={score} />
+                            </TableCell>
+                          </>
+                        );
+                      })()}
                       <TableCell>{getStatusBadge(risk.status)}</TableCell>
                       <TableCell>
                         <Text>{risk.assignee?.user?.name || 'Unassigned'}</Text>

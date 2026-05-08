@@ -3,7 +3,6 @@ import type { Policy } from '@db';
 import { PageHeader, PageLayout, Stack } from '@trycompai/design-system';
 import type { Metadata } from 'next';
 import { Suspense } from 'react';
-import { PolicyTailoringProvider } from '../all/components/policy-tailoring-context';
 import { PolicyFilters } from '../all/components/PolicyFilters';
 import { PolicyPageActions } from '../all/components/PolicyPageActions';
 import { PolicyChartsClient } from './components/PolicyChartsClient';
@@ -21,9 +20,18 @@ interface PoliciesPageProps {
 export default async function PoliciesPage({ params }: PoliciesPageProps) {
   const { orgId } = await params;
 
-  const policiesRes = await serverApi.get<{ data: PolicyWithAssignee[] }>(
-    '/v1/policies',
-  );
+  // ENG-108: fetch the active onboarding run id alongside policies so the
+  // client-side filters component can subscribe and surface "tailoring your
+  // policies…" status during first-run AI generation. Mirrors the pattern
+  // used by the risks and vendors pages.
+  const [policiesRes, onboardingRes] = await Promise.all([
+    serverApi.get<{ data: PolicyWithAssignee[] }>('/v1/policies'),
+    serverApi.get<{
+      triggerJobId: string | null;
+      triggerJobCompleted: boolean;
+    } | null>('/v1/organization/onboarding'),
+  ]);
+
   const policies = Array.isArray(policiesRes.data?.data)
     ? policiesRes.data.data
     : [];
@@ -49,9 +57,10 @@ export default async function PoliciesPage({ params }: PoliciesPageProps) {
         <Suspense fallback={<Loading />}>
           <PolicyChartsClient organizationId={orgId} initialData={initialOverview} />
         </Suspense>
-        <PolicyTailoringProvider statuses={{}}>
-          <PolicyFilters policies={policies} />
-        </PolicyTailoringProvider>
+        <PolicyFilters
+          policies={policies}
+          onboardingRunId={onboardingRes.data?.triggerJobId ?? null}
+        />
       </Stack>
     </PageLayout>
   );

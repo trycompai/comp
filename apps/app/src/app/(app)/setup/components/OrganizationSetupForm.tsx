@@ -5,7 +5,6 @@ import { LogoSpinner } from '@/components/logo-spinner';
 import { Form, FormControl, FormField, FormItem, FormMessage } from '@trycompai/ui/form';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
-import Balancer from 'react-wrap-balancer';
 import { useOnboardingForm } from '../hooks/useOnboardingForm';
 import { OnboardingFormActions } from './OnboardingFormActions';
 import { OnboardingStepInput } from './OnboardingStepInput';
@@ -13,12 +12,14 @@ interface OrganizationSetupFormProps {
   setupId?: string;
   initialData?: Record<string, any>;
   currentStep?: string;
+  hasOtherOrgs?: boolean;
 }
 
 export function OrganizationSetupForm({
   setupId,
   initialData,
   currentStep,
+  hasOtherOrgs = false,
 }: OrganizationSetupFormProps) {
   const [isLoadingFrameworks, setIsLoadingFrameworks] = useState(false);
   const router = useRouter();
@@ -99,13 +100,11 @@ export function OrganizationSetupForm({
         {/* Title */}
         <div className="mb-8">
           <AnimatedWrapper delay={800} animationKey={`title-${step.key}`}>
-            <h1 className="text-2xl md:text-4xl font-bold text-foreground mb-2">
-              <Balancer>{step.question}</Balancer>
-            </h1>
+            <h1 className="text-2xl md:text-4xl font-bold text-foreground mb-2">{step.question}</h1>
           </AnimatedWrapper>
           <AnimatedWrapper delay={1000} animationKey={`subtitle-${step.key}`}>
             <p className="text-md md:text-lg text-muted-foreground flex items-center flex-wrap">
-              <Balancer>Our AI will personalize the platform based on your answers.</Balancer>
+              Our AI will personalize the platform based on your answers.
             </p>
           </AnimatedWrapper>
         </div>
@@ -166,6 +165,7 @@ export function OrganizationSetupForm({
               isOnboarding={isOnboarding}
               isCurrentStepValid={isCurrentStepValid}
               onPrefillAll={handlePrefillAll}
+              hasOtherOrgs={hasOtherOrgs}
             />
           </div>
         </AnimatedWrapper>

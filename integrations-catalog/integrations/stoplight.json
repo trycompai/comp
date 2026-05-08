@@ -1,0 +1,45 @@
+{
+  "slug": "stoplight",
+  "name": "Stoplight",
+  "description": "Stoplight API design, documentation, and governance platform",
+  "category": "Development",
+  "docsUrl": "https://stoplight.io/api/v1",
+  "baseUrl": "https://stoplight.io",
+  "authConfig": {
+    "type": "custom",
+    "config": {
+      "setupInstructions": "1. Log in to Stoplight\n2. Go to Account → API Tokens\n3. Create a new token\n4. Paste it below",
+      "credentialFields": [
+        {
+          "label": "API Token",
+          "type": "password",
+          "required": true,
+          "helpText": "Stoplight → Account → API Tokens → Create Token"
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "stoplight_app_availability",
+      "name": "App Availability",
+      "description": "Verifies Stoplight API governance platform is accessible",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "stoplight_employee_access",
+      "name": "Employee Access",
+      "description": "Lists Stoplight projects to verify API governance access",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

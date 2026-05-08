@@ -1,6 +1,7 @@
 'use client';
 
 import type { Edge, Node } from '@xyflow/react';
+
 import { OrgChartEditor } from './OrgChartEditor';
 import { OrgChartEmptyState } from './OrgChartEmptyState';
 import { OrgChartImageView } from './OrgChartImageView';
@@ -21,16 +22,11 @@ interface OrgChartContentProps {
   members: OrgChartMember[];
 }
 
-export function OrgChartContent({
-  chartData,
-  members,
-}: OrgChartContentProps) {
-  // No chart exists yet - show empty state
+export function OrgChartContent({ chartData, members }: OrgChartContentProps) {
   if (!chartData) {
     return <OrgChartEmptyState members={members} />;
   }
 
-  // Uploaded image mode
   if (chartData.type === 'uploaded' && chartData.signedImageUrl) {
     return (
       <OrgChartImageView
@@ -40,7 +36,6 @@ export function OrgChartContent({
     );
   }
 
-  // Uploaded chart but image could not be loaded (e.g. S3 unavailable)
   if (chartData.type === 'uploaded') {
     return (
       <div className="flex h-[600px] items-center justify-center rounded-lg border border-border bg-background">
@@ -56,7 +51,6 @@ export function OrgChartContent({
     );
   }
 
-  // Interactive mode
   return (
     <OrgChartEditor
       initialNodes={chartData.nodes}

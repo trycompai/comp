@@ -1,0 +1,63 @@
+{
+  "slug": "datto-rmm",
+  "name": "Datto RMM",
+  "description": "Monitor Datto RMM device security, patch compliance, and alert management for managed endpoints",
+  "category": "Security",
+  "docsUrl": "https://rmm.datto.com/help/en/Content/2SETUP/APIv2.htm",
+  "baseUrl": "https://{{credentials.platform}}-api.centrastage.net/api",
+  "authConfig": {
+    "type": "custom",
+    "config": {
+      "credentialFields": [
+        {
+          "label": "API Key",
+          "type": "password",
+          "required": true,
+          "helpText": "Found in Datto RMM > Admin > API Management"
+        },
+        {
+          "label": "Secret Key",
+          "type": "password",
+          "required": true,
+          "helpText": "Found in Datto RMM > Admin > API Management"
+        },
+        {
+          "label": "Platform",
+          "type": "select",
+          "required": true,
+          "helpText": "Select your Datto RMM platform region"
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "device_list",
+      "name": "Device List",
+      "description": "Retrieve all managed devices from Datto RMM",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "secure_devices",
+      "name": "Secure Devices",
+      "description": "Check device security status and patch levels",
+      "defaultSeverity": "high",
+      "enabled": true
+    },
+    {
+      "slug": "monitoring_alerts",
+      "name": "Monitoring & Alerting",
+      "description": "Check open alerts and monitoring status",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 3,
+  "isActive": true
+}

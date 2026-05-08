@@ -1,0 +1,58 @@
+{
+  "slug": "paylocity",
+  "name": "Paylocity",
+  "description": "Cloud-based HRIS and payroll platform. Monitor employee records, hiring, and workforce compliance.",
+  "category": "HR & People",
+  "docsUrl": "https://developer.paylocity.com/",
+  "baseUrl": "https://api.paylocity.com",
+  "authConfig": {
+    "type": "custom",
+    "config": {
+      "setupInstructions": "1. Log in to Paylocity\n2. Go to Settings → WebLink API\n3. Copy Client ID, Client Secret, and Company ID\n4. Paste all values below",
+      "credentialFields": [
+        {
+          "label": "Client ID",
+          "type": "text",
+          "required": true,
+          "helpText": "From Paylocity WebLink API settings."
+        },
+        {
+          "label": "Client Secret",
+          "type": "password",
+          "required": true,
+          "helpText": "From Paylocity WebLink API settings."
+        },
+        {
+          "label": "Company ID",
+          "type": "text",
+          "required": true,
+          "helpText": "Numeric company ID without 'CS' prefix."
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks",
+    "sync"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": true,
+  "checks": [
+    {
+      "slug": "paylocity_app_availability",
+      "name": "Paylocity App Availability",
+      "description": "Verifies Paylocity API is accessible.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "paylocity_employee_access",
+      "name": "Paylocity Employee Access",
+      "description": "Verifies employee records are accessible.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

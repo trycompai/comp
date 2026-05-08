@@ -1,0 +1,84 @@
+{
+  "slug": "action1",
+  "name": "Action1",
+  "description": "Patch management and endpoint management platform. Monitor vulnerability status, patch compliance, and device inventory.",
+  "category": "Security",
+  "docsUrl": "https://www.action1.com/api-documentation/",
+  "baseUrl": "https://app.action1.com/api/3.0",
+  "authConfig": {
+    "type": "custom",
+    "config": {
+      "setupInstructions": "Setup steps:\n\n1. Log in to your Action1 Console\n   - North America: https://app.action1.com\n   - Europe: https://app.eu.action1.com\n   - Australia: https://app.au.action1.com\n\n2. Create API Credentials:\n   - Click the gear icon (Settings) in the top-right\n   - Go to API Credentials\n   - Click Add to create new credentials\n   - Important: the credential must have Administrator role\n   - Copy the Client ID and Client Secret (secret is only shown once)\n\n3. Find your Organization ID:\n   - After logging in, look at the URL in your browser\n   - Find the ?org= parameter (e.g., https://app.action1.com/console/dashboard?org=12345)\n   - The number after ?org= is your Organization ID\n\n4. Select your Region:\n   - us - North America\n   - eu - Europe\n   - au - Australia",
+      "credentialFields": [
+        {
+          "label": "Region",
+          "type": "text",
+          "required": true,
+          "helpText": "Enter your Action1 region: us (North America), eu (Europe), or au (Australia)."
+        },
+        {
+          "label": "API Client ID",
+          "type": "text",
+          "required": true,
+          "helpText": "From Action1 Console: Settings (gear icon) > API Credentials > Add. Copy the Client ID shown after creation."
+        },
+        {
+          "label": "API Client Secret",
+          "type": "password",
+          "required": true,
+          "helpText": "The Client Secret generated alongside the Client ID. This is only shown once at creation time."
+        },
+        {
+          "label": "Organization ID",
+          "type": "text",
+          "required": false,
+          "helpText": "Optional. Your Action1 Organization ID from the ?org= parameter in the URL (e.g., ?org=12345). Leave blank to auto-detect from your account."
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "action1_app_availability",
+      "name": "Action1 App Availability",
+      "description": "Verifies Action1 API is accessible.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "action1_asset_inventory",
+      "name": "Action1 Asset Inventory",
+      "description": "Lists all managed endpoints in your Action1 organization to verify endpoint inventory is actively tracked.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "action1_vulnerability_management",
+      "name": "Action1 Vulnerability Management",
+      "description": "Checks vulnerability scan data in Action1 to verify that vulnerability management is active and scanning endpoints.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "action1_patch_validation",
+      "name": "Action1 Patch Validation",
+      "description": "Checks for missing updates across managed endpoints to verify patch management is active.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "action1_device_configuration",
+      "name": "Action1 Device Configuration",
+      "description": "Checks that device configuration policies are defined and actively applied to managed endpoints.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 5,
+  "isActive": true
+}

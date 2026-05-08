@@ -1,0 +1,51 @@
+{
+  "slug": "axiom",
+  "name": "Axiom",
+  "description": "Monitor Axiom log analytics datasets and organization access for observability compliance",
+  "category": "Monitoring",
+  "docsUrl": "https://axiom.co/docs/restapi/overview",
+  "baseUrl": "https://api.axiom.co/",
+  "authConfig": {
+    "type": "custom",
+    "config": {
+      "setupInstructions": "1. Log in to Axiom at https://app.axiom.co\n2. Go to Settings > API Tokens\n3. Create a new API token with read access (or use a Personal Access Token)\n4. If using a PAT, also note your Organization ID from Settings > General\n5. Enter the values below",
+      "credentialFields": [
+        {
+          "label": "API Token",
+          "type": "password",
+          "required": true,
+          "helpText": "Found in Axiom > Settings > API Tokens. Works with both API tokens and Personal Access Tokens (PAT)."
+        },
+        {
+          "label": "Organization ID",
+          "type": "text",
+          "required": false,
+          "helpText": "Required only if using a Personal Access Token (PAT). Found in Settings > General."
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "axiom_monitoring",
+      "name": "Monitoring & Alerting",
+      "description": "Verifies Axiom datasets are configured for log ingestion and observability",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "axiom_utility_monitoring",
+      "name": "Utility Monitoring",
+      "description": "Verifies Axiom monitors are configured for alerting on log anomalies",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

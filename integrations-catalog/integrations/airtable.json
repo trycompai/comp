@@ -1,0 +1,35 @@
+{
+  "slug": "airtable",
+  "name": "Airtable",
+  "description": "Monitor Airtable bases and workspace configuration for data access compliance",
+  "category": "Productivity",
+  "docsUrl": "https://airtable.com/developers/web/api/introduction",
+  "baseUrl": "https://api.airtable.com/",
+  "authConfig": {
+    "type": "api_key",
+    "config": {}
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "airtable_employee_access",
+      "name": "Employee Access",
+      "description": "Reviews Airtable bases and verifies workspace is properly configured",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "airtable_access_review",
+      "name": "Access Review Log",
+      "description": "Reviews Airtable workspace configuration for access controls",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

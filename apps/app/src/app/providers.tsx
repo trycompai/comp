@@ -1,14 +1,12 @@
 'use client';
 
-import { env } from '@/env.mjs';
-import { AnalyticsProvider } from '@trycompai/analytics';
-import { Toaster } from '@trycompai/ui/sooner';
-import { GoogleTagManager } from '@next/third-parties/google';
 import {
   defaultShouldDehydrateQuery,
   QueryClient,
   QueryClientProvider,
 } from '@tanstack/react-query';
+import { AnalyticsProvider } from '@trycompai/analytics';
+import { Toaster } from '@trycompai/ui/sooner';
 import { Session, User } from 'better-auth';
 import { ThemeProvider } from 'next-themes';
 import type { ReactNode } from 'react';
@@ -72,15 +70,6 @@ export function Providers({ children, session }: ProviderProps) {
         disableTransitionOnChange
         scriptProps={{ 'data-cfasync': 'false' }}
       >
-        {env.NEXT_PUBLIC_GTM_ID && (
-          <GoogleTagManager
-            gtmId={env.NEXT_PUBLIC_GTM_ID}
-            dataLayer={{
-              user_id: session?.user?.id ?? '',
-              user_email: session?.user?.email ?? '',
-            }}
-          />
-        )}
         <AnalyticsProvider
           userId={session?.user?.id ?? undefined}
           userEmail={session?.user?.email ?? undefined}

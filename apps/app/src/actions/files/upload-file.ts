@@ -4,7 +4,7 @@ import { BUCKET_NAME, s3Client } from '@/app/s3';
 import { auth } from '@/utils/auth';
 import { logger } from '@/utils/logger';
 import { GetObjectCommand, PutObjectCommand } from '@aws-sdk/client-s3';
-import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
+import { getSignedUrl } from '@/lib/s3-presigner';
 import { AttachmentEntityType, AttachmentType, db } from '@db/server';
 import { revalidatePath } from 'next/cache';
 import { headers } from 'next/headers';

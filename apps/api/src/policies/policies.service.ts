@@ -8,6 +8,7 @@ import { db, Frequency, PolicyStatus, Prisma } from '@db';
 import { PDFDocument, rgb, StandardFonts } from 'pdf-lib';
 import { AttachmentsService } from '../attachments/attachments.service';
 import { PolicyPdfRendererService } from '../trust-portal/policy-pdf-renderer.service';
+import { filterComplianceMembers } from '../utils/compliance-filters';
 import type { CreatePolicyDto } from './dto/create-policy.dto';
 import type { UpdatePolicyDto } from './dto/update-policy.dto';
 import type {
@@ -16,6 +17,8 @@ import type {
   SubmitForApprovalDto,
   UpdateVersionContentDto,
 } from './dto/version.dto';
+import { checkAutoCompletePhases } from '../frameworks/frameworks-timeline.helper';
+import { TimelinesService } from '../timelines/timelines.service';
 
 function computeNextReviewDate(frequency: Frequency | null | undefined): Date {
   const now = new Date();
@@ -39,12 +42,13 @@ export class PoliciesService {
   constructor(
     private readonly attachmentsService: AttachmentsService,
     private readonly pdfRendererService: PolicyPdfRendererService,
+    private readonly timelinesService: TimelinesService,
   ) {}
 
   async findAll(organizationId: string) {
     try {
       const policies = await db.policy.findMany({
-        where: { organizationId },
+        where: { organizationId, isArchived: false, archivedAt: null },
         select: {
           id: true,
           name: true,
@@ -97,11 +101,7 @@ export class PoliciesService {
     }
   }
 
-  async publishAll(
-    organizationId: string,
-    userId?: string,
-    memberId?: string,
-  ) {
+  async publishAll(organizationId: string, userId?: string, memberId?: string) {
     const draftPolicies = await db.policy.findMany({
       where: { organizationId, status: 'draft', isArchived: false },
       select: { id: true, name: true, frequency: true },
@@ -121,12 +121,13 @@ export class PoliciesService {
             status: 'published',
             lastPublishedAt: now,
             reviewDate: computeNextReviewDate(p.frequency),
+            // Clear signatures — employees must re-acknowledge new content
+            signedBy: [],
           },
         }),
       ),
     );
 
-    // Create audit log entry for each published policy
     if (userId) {
       await db.auditLog.createMany({
         data: draftPolicies.map((p) => ({
@@ -147,23 +148,31 @@ export class PoliciesService {
       });
     }
 
-    // Fetch employee/contractor members for email notifications
-    const members = await db.member.findMany({
-      where: {
-        organizationId,
-        deactivated: false,
-        role: { in: ['employee', 'contractor'] },
-      },
+    const allMembers = await db.member.findMany({
+      where: { organizationId, deactivated: false },
       include: {
-        user: { select: { email: true, name: true } },
+        user: { select: { email: true, name: true, role: true } },
         organization: { select: { name: true, id: true } },
       },
+    });
+
+    const complianceMembers = await filterComplianceMembers(
+      allMembers,
+      organizationId,
+    );
+
+    // Check timeline auto-completion after bulk publish
+    checkAutoCompletePhases({
+      organizationId,
+      timelinesService: this.timelinesService,
+    }).catch((err) => {
+      this.logger.warn('timeline auto-complete check failed after publish-all', err);
     });
 
     return {
       success: true,
       publishedCount: draftPolicies.length,
-      members: members.map((m) => ({
+      members: complianceMembers.map((m) => ({
         email: m.user.email,
         userName: m.user.name || '',
         organizationName: m.organization.name || '',
@@ -243,7 +252,9 @@ export class PoliciesService {
           include: { user: { select: { role: true } } },
         });
         if (assignee?.user.role === 'admin') {
-          throw new BadRequestException('Cannot assign a platform admin as assignee');
+          throw new BadRequestException(
+            'Cannot assign a platform admin as assignee',
+          );
         }
       }
       const contentValue = createData.content as Prisma.InputJsonValue[];
@@ -304,6 +315,15 @@ export class PoliciesService {
       });
 
       this.logger.log(`Created policy: ${policy.name} (${policy.id})`);
+
+      // Check timeline auto-completion after policy creation
+      checkAutoCompletePhases({
+        organizationId,
+        timelinesService: this.timelinesService,
+      }).catch((err) => {
+        this.logger.warn('timeline auto-complete check failed', err);
+      });
+
       return policy;
     } catch (error) {
       this.logger.error(
@@ -322,11 +342,6 @@ export class PoliciesService {
     try {
       // Prepare update data with special handling for status changes
       const updatePayload: Record<string, unknown> = { ...updateData };
-
-      // If status is being changed to published, update lastPublishedAt
-      if (updateData.status === 'published') {
-        updatePayload.lastPublishedAt = new Date();
-      }
 
       // If isArchived is being set to true, update lastArchivedAt
       if (updateData.isArchived === true) {
@@ -360,6 +375,16 @@ export class PoliciesService {
           throw new BadRequestException(
             'Cannot update content of a published policy. Create a new version to make changes.',
           );
+        }
+
+        // Only clear signatures when actually transitioning to published.
+        // Re-sending the full object for an already-published policy must not wipe acknowledgments.
+        if (
+          updateData.status === 'published' &&
+          existingPolicy.status !== 'published'
+        ) {
+          updatePayload.lastPublishedAt = new Date();
+          updatePayload.signedBy = [];
         }
 
         const policy = await tx.policy.update({
@@ -401,6 +426,15 @@ export class PoliciesService {
       });
 
       this.logger.log(`Updated policy: ${updatedPolicy.name} (${id})`);
+
+      // Check timeline auto-completion after policy update (status may have changed)
+      checkAutoCompletePhases({
+        organizationId,
+        timelinesService: this.timelinesService,
+      }).catch((err) => {
+        this.logger.warn('timeline auto-complete check failed', err);
+      });
+
       return updatedPolicy;
     } catch (error) {
       if (error instanceof NotFoundException) {
@@ -471,6 +505,15 @@ export class PoliciesService {
       });
 
       this.logger.log(`Deleted policy: ${policy.name} (${id})`);
+
+      // Check timeline auto-completion after policy deletion
+      checkAutoCompletePhases({
+        organizationId,
+        timelinesService: this.timelinesService,
+      }).catch((err) => {
+        this.logger.warn('timeline auto-complete check failed', err);
+      });
+
       return { success: true, deletedPolicy: policy };
     } catch (error) {
       if (error instanceof NotFoundException) {
@@ -594,14 +637,10 @@ export class PoliciesService {
       sourceVersion = requestedVersion;
     }
 
-    const contentForVersion = sourceVersion
+    const contentForVersion = (sourceVersion
       ? (sourceVersion.content as Prisma.InputJsonValue[])
-      : (policy.content as Prisma.InputJsonValue[]);
+      : (policy.content as Prisma.InputJsonValue[])) ?? [];
     const sourcePdfUrl = sourceVersion?.pdfUrl ?? policy.pdfUrl;
-
-    if (!contentForVersion || contentForVersion.length === 0) {
-      throw new BadRequestException('No content to create version from');
-    }
 
     // S3 copy is done AFTER the transaction to prevent orphaned files on retry
     let createdVersion: { versionId: string; version: number } | null = null;
@@ -836,7 +875,7 @@ export class PoliciesService {
 
     for (let attempt = 1; attempt <= this.versionCreateRetries; attempt += 1) {
       try {
-        return await db.$transaction(async (tx) => {
+        const result = await db.$transaction(async (tx) => {
           const latestVersion = await tx.policyVersion.findFirst({
             where: { policyId },
             orderBy: { version: 'desc' },
@@ -879,6 +918,16 @@ export class PoliciesService {
             version: nextVersion,
           };
         });
+
+        // Check timeline auto-completion after publishing a version
+        checkAutoCompletePhases({
+          organizationId,
+          timelinesService: this.timelinesService,
+        }).catch((err) => {
+        this.logger.warn('timeline auto-complete check failed', err);
+      });
+
+        return result;
       } catch (error) {
         if (
           this.isUniqueConstraintError(error) &&
@@ -933,6 +982,14 @@ export class PoliciesService {
         signedBy: [],
       },
     });
+
+    // Check timeline auto-completion after setting active version
+    checkAutoCompletePhases({
+      organizationId,
+      timelinesService: this.timelinesService,
+    }).catch((err) => {
+        this.logger.warn('timeline auto-complete check failed', err);
+      });
 
     return {
       versionId: version.id,
@@ -1028,11 +1085,27 @@ export class PoliciesService {
     }
 
     if (!policy.pendingVersionId) {
+      if (policy.approverId) {
+        if (policy.approverId !== dto.approverId) {
+          throw new BadRequestException(
+            'Only the assigned approver can accept changes',
+          );
+        }
+        await db.policy.update({
+          where: { id: policyId },
+          data: { approverId: null },
+        });
+        throw new BadRequestException(
+          'This policy has no pending changes to approve. The stale approval request has been cleared — please ask the policy owner to re-submit if a new approval is needed.',
+        );
+      }
       throw new BadRequestException('No pending version to approve');
     }
 
     if (policy.approverId !== dto.approverId) {
-      throw new BadRequestException('Only the assigned approver can accept changes');
+      throw new BadRequestException(
+        'Only the assigned approver can accept changes',
+      );
     }
 
     const version = await db.policyVersion.findUnique({
@@ -1070,6 +1143,14 @@ export class PoliciesService {
       });
     });
 
+    // Check timeline auto-completion after accepting changes (policy published)
+    checkAutoCompletePhases({
+      organizationId,
+      timelinesService: this.timelinesService,
+    }).catch((err) => {
+        this.logger.warn('timeline auto-complete check failed', err);
+      });
+
     return { versionId: version.id, version: version.version };
   }
 
@@ -1087,11 +1168,22 @@ export class PoliciesService {
     }
 
     if (!policy.pendingVersionId) {
+      if (policy.approverId) {
+        await db.policy.update({
+          where: { id: policyId },
+          data: { approverId: null },
+        });
+        throw new BadRequestException(
+          'This policy has no pending changes to deny. The stale approval request has been cleared — please ask the policy owner to re-submit if a new approval is needed.',
+        );
+      }
       throw new BadRequestException('No pending version to deny');
     }
 
     if (policy.approverId !== dto.approverId) {
-      throw new BadRequestException('Only the assigned approver can deny changes');
+      throw new BadRequestException(
+        'Only the assigned approver can deny changes',
+      );
     }
 
     // Revert policy to previous state (draft if never published, published if it was)
@@ -1176,7 +1268,10 @@ export class PoliciesService {
   /**
    * Download all published policies as a single PDF bundle (no watermark)
    */
-  async downloadAllPoliciesPdf(organizationId: string) {
+  async downloadAllPoliciesPdf(
+    organizationId: string,
+    policyIds?: string[],
+  ) {
     // Get organization info
     const organization = await db.organization.findUnique({
       where: { id: organizationId },
@@ -1192,6 +1287,10 @@ export class PoliciesService {
       where: {
         organizationId,
         isArchived: false,
+        archivedAt: null,
+        ...(policyIds && policyIds.length > 0
+          ? { id: { in: policyIds } }
+          : {}),
       },
       select: {
         id: true,
@@ -1220,7 +1319,8 @@ export class PoliciesService {
       draft: 2,
     };
     policies.sort(
-      (a, b) => (statusPriority[a.status] ?? 3) - (statusPriority[b.status] ?? 3),
+      (a, b) =>
+        (statusPriority[a.status] ?? 3) - (statusPriority[b.status] ?? 3),
     );
 
     const mergedPdf = await PDFDocument.create();

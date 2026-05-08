@@ -53,6 +53,12 @@ Note: The user authorizing must be a Google Workspace admin.`,
 
   capabilities: ['checks', 'sync'],
 
+  services: [
+    { id: 'user-sync', name: 'User Sync', description: 'Sync users from Google Workspace as organization members', enabledByDefault: true, implemented: true },
+    { id: 'mfa-compliance', name: 'MFA Compliance', description: 'Monitor two-factor authentication enforcement', enabledByDefault: true, implemented: true },
+    { id: 'admin-audit', name: 'Admin Audit', description: 'Track admin console activity and permission changes', implemented: false },
+  ],
+
   variables: [targetOrgUnitsVariable, syncUserFilterModeVariable, syncExcludedEmailsVariable, syncIncludedEmailsVariable],
 
   checks: [twoFactorAuthCheck, employeeAccessCheck],

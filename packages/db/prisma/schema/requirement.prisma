@@ -1,8 +1,12 @@
 model RequirementMap {
   id String @id @default(dbgenerated("generate_prefixed_cuid('req'::text)"))
 
-  requirementId String
-  requirement   FrameworkEditorRequirement @relation(fields: [requirementId], references: [id], onDelete: Cascade)
+  // Exactly one of requirementId / customRequirementId is set (enforced by DB CHECK constraint).
+  requirementId String?
+  requirement   FrameworkEditorRequirement? @relation(fields: [requirementId], references: [id], onDelete: Cascade)
+
+  customRequirementId String?
+  customRequirement   CustomRequirement? @relation(fields: [customRequirementId], references: [id], onDelete: Cascade)
 
   controlId String
   control   Control @relation(fields: [controlId], references: [id], onDelete: Cascade)
@@ -10,6 +14,13 @@ model RequirementMap {
   frameworkInstanceId String
   frameworkInstance   FrameworkInstance @relation(fields: [frameworkInstanceId], references: [id], onDelete: Cascade)
 
+  // Sync-driven archive — edges are framework-scoped, so these always archive
+  // cleanly when the mapping disappears from the framework's latest version.
+  archivedAt DateTime?
+
   @@unique([controlId, frameworkInstanceId, requirementId])
+  @@unique([controlId, frameworkInstanceId, customRequirementId])
   @@index([requirementId, frameworkInstanceId])
+  @@index([customRequirementId, frameworkInstanceId])
+  @@index([frameworkInstanceId, archivedAt])
 }

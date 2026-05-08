@@ -1,0 +1,51 @@
+{
+  "slug": "upstash",
+  "name": "Upstash",
+  "description": "Monitor Upstash serverless Redis and Kafka databases for infrastructure compliance",
+  "category": "Cloud",
+  "docsUrl": "https://upstash.com/docs/devops/developer-api/overview",
+  "baseUrl": "https://api.upstash.com/",
+  "authConfig": {
+    "type": "custom",
+    "config": {
+      "setupInstructions": "1. Log in to Upstash at https://console.upstash.com\n2. Go to Account > Management API\n3. Click Create API Key\n4. Copy the API key and enter it below with your email",
+      "credentialFields": [
+        {
+          "label": "Email",
+          "type": "text",
+          "required": true,
+          "helpText": "Your Upstash account email address."
+        },
+        {
+          "label": "API Key",
+          "type": "password",
+          "required": true,
+          "helpText": "From Upstash Console > Account > Management API > Create API Key."
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "upstash_infrastructure",
+      "name": "Infrastructure Inventory",
+      "description": "Lists Upstash Redis databases for serverless cache infrastructure inventory",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "upstash_encryption",
+      "name": "Encryption at Rest",
+      "description": "Verifies Upstash databases have TLS enabled for data in transit",
+      "defaultSeverity": "high",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

@@ -2,7 +2,7 @@
 
 import { conciseFormDescriptions } from '@/app/(app)/[orgId]/documents/form-descriptions';
 import { useOrganizationFindings } from '@/hooks/use-findings-api';
-import { api } from '@/lib/api-client';
+import { apiClient } from '@/lib/api-client';
 import { FindingStatus } from '@db';
 import {
   Badge,
@@ -18,10 +18,24 @@ import Link from 'next/link';
 import { useMemo } from 'react';
 import useSWR from 'swr';
 import { evidenceFormDefinitionList, meetingSubTypeValues } from '../forms';
+import { SOAOverviewCard } from './SOAOverviewCard';
 
-type FormStatuses = Record<string, { lastSubmittedAt: string | null }>;
+type FormStatuses = Record<string, { lastSubmittedAt: string | null; isNotRelevant?: boolean }>;
+type FrameworkListResponse = {
+  data: Array<{
+    id: string;
+    frameworkId: string;
+    framework: {
+      id: string;
+      name: string;
+      description: string | null;
+      visible: boolean;
+    };
+  }>;
+};
 
 const SIX_MONTHS_MS = 6 * 30 * 24 * 60 * 60 * 1000;
+const ISO27001_NAMES = ['ISO 27001', 'iso27001', 'ISO27001'];
 
 const MEETING_SUB_TYPES = meetingSubTypeValues;
 const MEETING_ALL_TYPES = new Set<string>([...MEETING_SUB_TYPES, 'meeting']);
@@ -51,6 +65,19 @@ function StatusBadge({
         <Text size="xs" variant="muted">
           {form.fields.length} fields
         </Text>
+        {activeIssues > 0 && (
+          <span className="inline-flex items-center rounded-sm bg-red-100 px-1.5 py-1 text-[10px] font-semibold uppercase tracking-wider leading-none text-red-800 dark:bg-red-950/30 dark:text-red-400">
+            {activeIssues === 1 ? '1 Issue' : `${activeIssues} Issues`}
+          </span>
+        )}
+      </div>
+    );
+  }
+
+  if (statuses[form.type]?.isNotRelevant === true) {
+    return (
+      <div className="flex items-center gap-1.5">
+        <Badge variant="secondary">Not relevant</Badge>
         {activeIssues > 0 && (
           <span className="inline-flex items-center rounded-sm bg-red-100 px-1.5 py-1 text-[10px] font-semibold uppercase tracking-wider leading-none text-red-800 dark:bg-red-950/30 dark:text-red-400">
             {activeIssues === 1 ? '1 Issue' : `${activeIssues} Issues`}
@@ -97,7 +124,7 @@ export function CompanyOverviewCards({ organizationId }: { organizationId: strin
   const { data: statuses } = useSWR<FormStatuses>(
     swrKey,
     async ([endpoint, orgId]: readonly [string, string]) => {
-      const response = await api.get<FormStatuses>(endpoint);
+      const response = await apiClient.get<FormStatuses>(endpoint, orgId);
       if (response.error || !response.data) {
         throw new Error(response.error ?? 'Failed to load form statuses');
       }
@@ -106,6 +133,16 @@ export function CompanyOverviewCards({ organizationId }: { organizationId: strin
   );
 
   const { data: findingsResponse } = useOrganizationFindings();
+  const { data: frameworksResponse } = useSWR<FrameworkListResponse>(
+    ['/v1/frameworks', organizationId] as const,
+    async ([endpoint, orgId]: readonly [string, string]) => {
+      const response = await apiClient.get<FrameworkListResponse>(endpoint, orgId);
+      if (response.error || !response.data) {
+        throw new Error(response.error ?? 'Failed to load frameworks');
+      }
+      return response.data;
+    },
+  );
 
   const activeIssueCounts = useMemo(() => {
     const counts: Record<string, number> = {};
@@ -141,8 +178,24 @@ export function CompanyOverviewCards({ organizationId }: { organizationId: strin
     return map;
   }, [visibleForms]);
 
+  const iso27001Framework = useMemo(() => {
+    const frameworks = frameworksResponse?.data ?? [];
+    return frameworks.find(
+      (frameworkInstance) =>
+        !!frameworkInstance.framework?.name &&
+        ISO27001_NAMES.includes(frameworkInstance.framework.name),
+    );
+  }, [frameworksResponse]);
+  const iso27001FrameworkId = iso27001Framework?.frameworkId ?? null;
+
   return (
     <Stack gap="6">
+      {iso27001FrameworkId && (
+        <SOAOverviewCard
+          organizationId={organizationId}
+          iso27001FrameworkId={iso27001FrameworkId}
+        />
+      )}
       {Array.from(categories.entries()).map(([category, forms]) => (
         <div key={category} className="space-y-3">
           <div className="flex items-center gap-2">

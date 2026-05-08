@@ -1,4 +1,9 @@
-import { BadRequestException, Injectable, NotFoundException, Logger } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+  Logger,
+} from '@nestjs/common';
 import { db, TaskItemPriority, TaskItemStatus } from '@db';
 import { CreateVendorDto } from './dto/create-vendor.dto';
 import { UpdateVendorDto } from './dto/update-vendor.dto';
@@ -6,6 +11,7 @@ import { tasks } from '@trigger.dev/sdk';
 import { Prisma } from '@db';
 import type { TriggerVendorRiskAssessmentVendorDto } from './dto/trigger-vendor-risk-assessment.dto';
 import { resolveTaskCreatorAndAssignee } from '../trigger/vendor/vendor-risk-assessment/assignee';
+import { resolveStrategyDescriptionUpdate } from '../risks/strategy-descriptions';
 
 const normalizeWebsite = (
   website: string | null | undefined,
@@ -101,6 +107,11 @@ export class VendorsService {
               },
             },
           },
+          // Linked task statuses are needed by the vendors table to compute
+          // the current (interpolated) severity score so the residual badge
+          // reflects treatment progress, not just the static residual
+          // probability/impact. Mirrors the risks service.
+          tasks: { select: { id: true, status: true } },
         },
       });
 
@@ -135,6 +146,14 @@ export class VendorsService {
                   image: true,
                 },
               },
+            },
+          },
+          tasks: {
+            select: {
+              id: true,
+              title: true,
+              status: true,
+              controls: { select: { id: true, name: true } },
             },
           },
         },
@@ -198,13 +217,18 @@ export class VendorsService {
     }
   }
 
-  private async validateAssigneeNotPlatformAdmin(assigneeId: string, organizationId: string) {
+  private async validateAssigneeNotPlatformAdmin(
+    assigneeId: string,
+    organizationId: string,
+  ) {
     const member = await db.member.findFirst({
       where: { id: assigneeId, organizationId },
       include: { user: { select: { role: true } } },
     });
     if (member?.user.role === 'admin') {
-      throw new BadRequestException('Cannot assign a platform admin as assignee');
+      throw new BadRequestException(
+        'Cannot assign a platform admin as assignee',
+      );
     }
   }
 
@@ -215,7 +239,10 @@ export class VendorsService {
   ) {
     try {
       if (createVendorDto.assigneeId) {
-        await this.validateAssigneeNotPlatformAdmin(createVendorDto.assigneeId, organizationId);
+        await this.validateAssigneeNotPlatformAdmin(
+          createVendorDto.assigneeId,
+          organizationId,
+        );
       }
       const vendor = await db.vendor.create({
         data: {
@@ -607,12 +634,22 @@ export class VendorsService {
         updateVendorDto.assigneeId &&
         updateVendorDto.assigneeId !== existing.assigneeId
       ) {
-        await this.validateAssigneeNotPlatformAdmin(updateVendorDto.assigneeId, organizationId);
+        await this.validateAssigneeNotPlatformAdmin(
+          updateVendorDto.assigneeId,
+          organizationId,
+        );
       }
+
+      // Keep per-strategy descriptions independent across treatment
+      // strategies — see `apps/api/src/risks/strategy-descriptions.ts`.
+      const resolvedStrategyFields = resolveStrategyDescriptionUpdate(
+        existing,
+        updateVendorDto,
+      );
 
       const updatedVendor = await db.vendor.update({
         where: { id },
-        data: updateVendorDto,
+        data: { ...updateVendorDto, ...resolvedStrategyFields },
       });
 
       this.logger.log(`Updated vendor: ${updatedVendor.name} (${id})`);

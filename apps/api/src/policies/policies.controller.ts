@@ -37,7 +37,7 @@ import { AuditRead } from '../audit/skip-audit-log.decorator';
 import { AuthContext, OrganizationId } from '../auth/auth-context.decorator';
 import { HybridAuthGuard } from '../auth/hybrid-auth.guard';
 import { PermissionGuard } from '../auth/permission.guard';
-import { RequirePermission } from '../auth/require-permission.decorator';
+import { RequirePermission, RequirePermissions } from '../auth/require-permission.decorator';
 import type { AuthContext as AuthContextType } from '../auth/types';
 import { CreatePolicyDto } from './dto/create-policy.dto';
 import { UpdatePolicyDto } from './dto/update-policy.dto';
@@ -71,6 +71,22 @@ import {
   UPDATE_VERSION_CONTENT_RESPONSES,
 } from './schemas/version-responses';
 import { PolicyResponseDto } from './dto/policy-responses.dto';
+
+function parsePolicyIdsParam(
+  raw: string | string[] | undefined,
+): string[] | undefined {
+  if (!raw) return undefined;
+  const values = Array.isArray(raw) ? raw : [raw];
+  const ids = Array.from(
+    new Set(
+      values
+        .flatMap((value) => value.split(','))
+        .map((s) => s.trim())
+        .filter((s) => s.length > 0),
+    ),
+  );
+  return ids.length > 0 ? ids : undefined;
+}
 
 @ApiTags('Policies')
 @ApiExtraModels(PolicyResponseDto)
@@ -154,9 +170,14 @@ export class PoliciesController {
   async downloadAllPolicies(
     @OrganizationId() organizationId: string,
     @AuthContext() authContext: AuthContextType,
+    @Query('policyIds') policyIdsParam?: string | string[],
   ) {
-    const result =
-      await this.policiesService.downloadAllPoliciesPdf(organizationId);
+    const policyIds = parsePolicyIdsParam(policyIdsParam);
+
+    const result = await this.policiesService.downloadAllPoliciesPdf(
+      organizationId,
+      policyIds,
+    );
 
     return {
       ...result,
@@ -179,24 +200,144 @@ export class PoliciesController {
     @OrganizationId() organizationId: string,
     @AuthContext() authContext: AuthContextType,
   ) {
+    const controlSelect = {
+      id: true,
+      name: true,
+      description: true,
+      requirementsMapped: {
+        where: {
+          archivedAt: null,
+          frameworkInstance: { organizationId },
+        },
+        select: {
+          frameworkInstance: {
+            select: {
+              id: true,
+              framework: { select: { id: true, name: true } },
+              customFramework: { select: { id: true, name: true } },
+            },
+          },
+        },
+      },
+    } as const;
+
     const [policy, allControls] = await Promise.all([
       db.policy.findFirst({
-        where: { id, organizationId },
+        where: { id, organizationId, archivedAt: null },
         select: {
           id: true,
-          controls: { select: { id: true, name: true, description: true } },
+          controls: { where: { archivedAt: null }, select: controlSelect },
         },
       }),
       db.control.findMany({
-        where: { organizationId },
-        select: { id: true, name: true, description: true },
+        where: { organizationId, archivedAt: null },
+        select: controlSelect,
         orderBy: { name: 'asc' },
       }),
     ]);
 
+    type RawControl = {
+      id: string;
+      name: string;
+      description: string | null;
+      requirementsMapped: Array<{
+        frameworkInstance: {
+          id: string;
+          framework: { id: string; name: string } | null;
+          customFramework: { id: string; name: string } | null;
+        } | null;
+      }>;
+    };
+
+    const transform = (controls: RawControl[]) =>
+      controls.map((c) => {
+        const frameworks: Array<{ id: string; name: string }> = [];
+        const seen = new Set<string>();
+        for (const rm of c.requirementsMapped) {
+          const fi = rm.frameworkInstance;
+          if (!fi || seen.has(fi.id)) continue;
+          seen.add(fi.id);
+          const fw = fi.framework ?? fi.customFramework;
+          if (fw) frameworks.push({ id: fw.id, name: fw.name });
+        }
+        return {
+          id: c.id,
+          name: c.name,
+          description: c.description,
+          frameworks,
+        };
+      });
+
     return {
-      mappedControls: policy?.controls ?? [],
-      allControls,
+      mappedControls: transform(policy?.controls ?? []),
+      allControls: transform(allControls),
+      authType: authContext.authType,
+      ...(authContext.userId && {
+        authenticatedUser: {
+          id: authContext.userId,
+          email: authContext.userEmail,
+        },
+      }),
+    };
+  }
+
+  @Get(':id/evidence-tasks')
+  @RequirePermissions([
+    { resource: 'policy', actions: ['read'] },
+    { resource: 'task', actions: ['read'] },
+  ])
+  @ApiOperation({ summary: 'Get tasks that serve as evidence for a policy, grouped by control' })
+  @ApiParam(POLICY_PARAMS.policyId)
+  async getPolicyEvidenceTasks(
+    @Param('id') id: string,
+    @OrganizationId() organizationId: string,
+    @AuthContext() authContext: AuthContextType,
+  ) {
+    const policy = await db.policy.findFirst({
+      where: { id, organizationId, archivedAt: null },
+      select: {
+        id: true,
+        controls: {
+          where: { archivedAt: null, organizationId },
+          select: {
+            id: true,
+            name: true,
+            tasks: {
+              where: { archivedAt: null, organizationId },
+              select: {
+                id: true,
+                title: true,
+                status: true,
+                frequency: true,
+                department: true,
+                automationStatus: true,
+                assigneeId: true,
+              },
+              orderBy: { title: 'asc' },
+            },
+          },
+          orderBy: { name: 'asc' },
+        },
+      },
+    });
+
+    if (!policy) {
+      throw new NotFoundException('Policy not found');
+    }
+
+    const data = policy.controls.map((control) => ({
+      control: { id: control.id, name: control.name },
+      tasks: control.tasks,
+    }));
+
+    const uniqueTaskIds = new Set<string>();
+    for (const group of data) {
+      for (const task of group.tasks) uniqueTaskIds.add(task.id);
+    }
+
+    return {
+      data,
+      count: uniqueTaskIds.size,
       authType: authContext.authType,
       ...(authContext.userId && {
         authenticatedUser: {
@@ -225,26 +366,51 @@ export class PoliciesController {
 
     const instances = await db.frameworkInstance.findMany({
       where: { organizationId },
-      include: { framework: true },
+      include: { framework: true, customFramework: true },
     });
 
+    // Normalize platform + org-custom frameworks into a single shape so the AI
+    // context reflects every framework the org has enabled, not just platform.
+    const normalized = instances.map((fi) => {
+      if (fi.framework) {
+        return {
+          id: fi.framework.id,
+          name: fi.framework.name,
+          version: fi.framework.version,
+          description: fi.framework.description,
+          visible: fi.framework.visible,
+          createdAt: fi.framework.createdAt,
+          updatedAt: fi.framework.updatedAt,
+        };
+      }
+      if (fi.customFramework) {
+        return {
+          id: fi.customFramework.id,
+          name: fi.customFramework.name,
+          version: fi.customFramework.version,
+          description: fi.customFramework.description,
+          visible: true,
+          createdAt: fi.customFramework.createdAt,
+          updatedAt: fi.customFramework.updatedAt,
+        };
+      }
+      return null;
+    });
     const uniqueFrameworks = Array.from(
-      new Map(instances.map((fi) => [fi.framework.id, fi.framework])).values(),
-    ).map((f) => ({
-      id: f.id,
-      name: f.name,
-      version: f.version,
-      description: f.description,
-      visible: f.visible,
-      createdAt: f.createdAt,
-      updatedAt: f.updatedAt,
-    }));
+      new Map(
+        normalized
+          .filter((f): f is NonNullable<typeof f> => f !== null)
+          .map((f) => [f.id, f]),
+      ).values(),
+    );
 
     const contextEntries = await db.context.findMany({
       where: { organizationId },
       orderBy: { createdAt: 'asc' },
     });
-    const contextHub = contextEntries.map((c) => `${c.question}\n${c.answer}`).join('\n');
+    const contextHub = contextEntries
+      .map((c) => `${c.question}\n${c.answer}`)
+      .join('\n');
 
     const handle = await tasks.trigger<typeof updatePolicy>('update-policy', {
       organizationId,
@@ -286,8 +452,14 @@ export class PoliciesController {
     let pdfUrl: string | null = null;
 
     if (versionId) {
+      // Apply the same archive guard to the parent policy as the non-versioned
+      // path — otherwise an archived policy's PDF could still be fetched by
+      // passing a versionId, bypassing the user-archived/sync-archived filter.
       const version = await db.policyVersion.findFirst({
-        where: { id: versionId, policy: { id, organizationId } },
+        where: {
+          id: versionId,
+          policy: { id, organizationId, archivedAt: null, isArchived: false },
+        },
         select: { pdfUrl: true },
       });
       pdfUrl = version?.pdfUrl ?? null;
@@ -295,7 +467,7 @@ export class PoliciesController {
 
     if (!pdfUrl) {
       const policy = await db.policy.findFirst({
-        where: { id, organizationId },
+        where: { id, organizationId, archivedAt: null, isArchived: false },
         select: { pdfUrl: true },
       });
       pdfUrl = policy?.pdfUrl ?? null;
@@ -316,7 +488,7 @@ export class PoliciesController {
 
     // Generate signed URL
     const { S3Client, GetObjectCommand } = await import('@aws-sdk/client-s3');
-    const { getSignedUrl } = await import('@aws-sdk/s3-request-presigner');
+    const { getSignedUrl } = await import('../app/s3.js');
     const bucketName = process.env.APP_AWS_BUCKET_NAME;
 
     if (!bucketName) {
@@ -345,19 +517,33 @@ export class PoliciesController {
   @ApiParam(POLICY_PARAMS.policyId)
   async uploadPolicyPdf(
     @Param('id') id: string,
-    @Body() body: { versionId?: string; fileName: string; fileType: string; fileData: string },
+    @Body()
+    body: {
+      versionId?: string;
+      fileName: string;
+      fileType: string;
+      fileData: string;
+    },
     @OrganizationId() organizationId: string,
     @AuthContext() authContext: AuthContextType,
   ) {
-    const { S3Client, PutObjectCommand, DeleteObjectCommand } = await import('@aws-sdk/client-s3');
+    const { S3Client, PutObjectCommand, DeleteObjectCommand } =
+      await import('@aws-sdk/client-s3');
     const bucketName = process.env.APP_AWS_BUCKET_NAME;
-    if (!bucketName) throw new BadRequestException('File storage is not configured');
+    if (!bucketName)
+      throw new BadRequestException('File storage is not configured');
 
     const s3 = new S3Client({ region: process.env.AWS_REGION || 'us-east-1' });
 
     const policy = await db.policy.findFirst({
-      where: { id, organizationId },
-      select: { id: true, status: true, pdfUrl: true, currentVersionId: true, pendingVersionId: true },
+      where: { id, organizationId, archivedAt: null },
+      select: {
+        id: true,
+        status: true,
+        pdfUrl: true,
+        currentVersionId: true,
+        pendingVersionId: true,
+      },
     });
     if (!policy) throw new NotFoundException('Policy not found');
 
@@ -371,19 +557,39 @@ export class PoliciesController {
       });
       if (!version) throw new NotFoundException('Version not found');
       if (version.id === policy.currentVersionId && policy.status !== 'draft') {
-        throw new BadRequestException('Cannot upload PDF to the published version');
+        throw new BadRequestException(
+          'Cannot upload PDF to the published version',
+        );
       }
       if (version.id === policy.pendingVersionId) {
-        throw new BadRequestException('Cannot upload PDF to a version pending approval');
+        throw new BadRequestException(
+          'Cannot upload PDF to a version pending approval',
+        );
       }
 
       const s3Key = `${organizationId}/policies/${id}/v${version.version}-${Date.now()}-${sanitizedFileName}`;
-      await s3.send(new PutObjectCommand({ Bucket: bucketName, Key: s3Key, Body: fileBuffer, ContentType: body.fileType }));
+      await s3.send(
+        new PutObjectCommand({
+          Bucket: bucketName,
+          Key: s3Key,
+          Body: fileBuffer,
+          ContentType: body.fileType,
+        }),
+      );
       const oldPdfUrl = version.pdfUrl;
-      await db.policyVersion.update({ where: { id: body.versionId }, data: { pdfUrl: s3Key } });
+      await db.policyVersion.update({
+        where: { id: body.versionId },
+        data: { pdfUrl: s3Key },
+      });
 
       if (oldPdfUrl && oldPdfUrl !== s3Key) {
-        try { await s3.send(new DeleteObjectCommand({ Bucket: bucketName, Key: oldPdfUrl })); } catch { /* ignore */ }
+        try {
+          await s3.send(
+            new DeleteObjectCommand({ Bucket: bucketName, Key: oldPdfUrl }),
+          );
+        } catch {
+          /* ignore */
+        }
       }
 
       return { data: { s3Key }, authType: authContext.authType };
@@ -391,12 +597,28 @@ export class PoliciesController {
 
     // Legacy: upload to policy level
     const s3Key = `${organizationId}/policies/${id}/${Date.now()}-${sanitizedFileName}`;
-    await s3.send(new PutObjectCommand({ Bucket: bucketName, Key: s3Key, Body: fileBuffer, ContentType: body.fileType }));
+    await s3.send(
+      new PutObjectCommand({
+        Bucket: bucketName,
+        Key: s3Key,
+        Body: fileBuffer,
+        ContentType: body.fileType,
+      }),
+    );
     const oldPdfUrl = policy.pdfUrl;
-    await db.policy.update({ where: { id }, data: { pdfUrl: s3Key, displayFormat: 'PDF' } });
+    await db.policy.update({
+      where: { id },
+      data: { pdfUrl: s3Key, displayFormat: 'PDF' },
+    });
 
     if (oldPdfUrl && oldPdfUrl !== s3Key) {
-      try { await s3.send(new DeleteObjectCommand({ Bucket: bucketName, Key: oldPdfUrl })); } catch { /* ignore */ }
+      try {
+        await s3.send(
+          new DeleteObjectCommand({ Bucket: bucketName, Key: oldPdfUrl }),
+        );
+      } catch {
+        /* ignore */
+      }
     }
 
     return { data: { s3Key }, authType: authContext.authType };
@@ -413,9 +635,11 @@ export class PoliciesController {
     @AuthContext() authContext: AuthContextType,
     @Query('versionId') versionId?: string,
   ) {
-    const { S3Client, DeleteObjectCommand } = await import('@aws-sdk/client-s3');
+    const { S3Client, DeleteObjectCommand } =
+      await import('@aws-sdk/client-s3');
     const bucketName = process.env.APP_AWS_BUCKET_NAME;
-    if (!bucketName) throw new BadRequestException('File storage is not configured');
+    if (!bucketName)
+      throw new BadRequestException('File storage is not configured');
 
     const s3 = new S3Client({ region: process.env.AWS_REGION || 'us-east-1' });
 
@@ -426,17 +650,35 @@ export class PoliciesController {
       });
       if (!version) throw new NotFoundException('Version not found');
       if (version.pdfUrl) {
-        try { await s3.send(new DeleteObjectCommand({ Bucket: bucketName, Key: version.pdfUrl })); } catch { /* ignore */ }
-        await db.policyVersion.update({ where: { id: versionId }, data: { pdfUrl: null } });
+        try {
+          await s3.send(
+            new DeleteObjectCommand({
+              Bucket: bucketName,
+              Key: version.pdfUrl,
+            }),
+          );
+        } catch {
+          /* ignore */
+        }
+        await db.policyVersion.update({
+          where: { id: versionId },
+          data: { pdfUrl: null },
+        });
       }
     } else {
       const policy = await db.policy.findFirst({
-        where: { id, organizationId },
+        where: { id, organizationId, archivedAt: null },
         select: { id: true, pdfUrl: true },
       });
       if (!policy) throw new NotFoundException('Policy not found');
       if (policy.pdfUrl) {
-        try { await s3.send(new DeleteObjectCommand({ Bucket: bucketName, Key: policy.pdfUrl })); } catch { /* ignore */ }
+        try {
+          await s3.send(
+            new DeleteObjectCommand({ Bucket: bucketName, Key: policy.pdfUrl }),
+          );
+        } catch {
+          /* ignore */
+        }
         await db.policy.update({ where: { id }, data: { pdfUrl: null } });
       }
     }
@@ -445,7 +687,10 @@ export class PoliciesController {
       success: true,
       authType: authContext.authType,
       ...(authContext.userId && {
-        authenticatedUser: { id: authContext.userId, email: authContext.userEmail },
+        authenticatedUser: {
+          id: authContext.userId,
+          email: authContext.userEmail,
+        },
       }),
     };
   }
@@ -472,7 +717,7 @@ export class PoliciesController {
     }
     if (!pdfUrl) {
       const policy = await db.policy.findFirst({
-        where: { id, organizationId },
+        where: { id, organizationId, archivedAt: null },
         select: { pdfUrl: true },
       });
       pdfUrl = policy?.pdfUrl ?? null;
@@ -480,12 +725,16 @@ export class PoliciesController {
     if (!pdfUrl) return { url: null };
 
     const { S3Client, GetObjectCommand } = await import('@aws-sdk/client-s3');
-    const { getSignedUrl } = await import('@aws-sdk/s3-request-presigner');
+    const { getSignedUrl } = await import('../app/s3.js');
     const bucketName = process.env.APP_AWS_BUCKET_NAME;
     if (!bucketName) return { url: null };
 
     const s3 = new S3Client({ region: process.env.AWS_REGION || 'us-east-1' });
-    const url = await getSignedUrl(s3, new GetObjectCommand({ Bucket: bucketName, Key: pdfUrl }), { expiresIn: 900 });
+    const url = await getSignedUrl(
+      s3,
+      new GetObjectCommand({ Bucket: bucketName, Key: pdfUrl }),
+      { expiresIn: 900 },
+    );
 
     return { url };
   }
@@ -933,7 +1182,9 @@ export class PoliciesController {
 
   @Post(':id/accept-changes')
   @RequirePermission('policy', 'update')
-  @ApiOperation({ summary: 'Accept pending policy changes and publish the version' })
+  @ApiOperation({
+    summary: 'Accept pending policy changes and publish the version',
+  })
   @ApiParam(POLICY_PARAMS.policyId)
   async acceptPolicyChanges(
     @Param('id') id: string,
@@ -1068,9 +1319,9 @@ Keep responses helpful and focused on the policy editing task.`;
     ];
 
     const result = streamText({
-      model: openai('gpt-5.1'),
+      model: openai('gpt-5.5'),
       system: systemPrompt,
-      messages: convertToModelMessages(messages),
+      messages: await convertToModelMessages(messages),
     });
 
     return result.pipeTextStreamToResponse(res);

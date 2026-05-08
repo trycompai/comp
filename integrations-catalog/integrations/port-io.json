@@ -1,0 +1,57 @@
+{
+  "slug": "port-io",
+  "name": "Port",
+  "description": "Internal developer portal for service catalog and developer self-service.",
+  "category": "Development",
+  "docsUrl": "https://docs.port.io/api-reference/port-api",
+  "baseUrl": "https://api.getport.io",
+  "authConfig": {
+    "type": "custom",
+    "config": {
+      "setupInstructions": "1. Log in to Port at https://app.getport.io\n2. Click the ... button in the top right corner\n3. Click Credentials\n4. Copy the Client ID and Client Secret\n5. Enter your region: 'eu' (default) or 'us'\n6. Enter the values below",
+      "credentialFields": [
+        {
+          "label": "Client ID",
+          "type": "text",
+          "required": true,
+          "helpText": "Found in Port > click ... (top right) > Credentials"
+        },
+        {
+          "label": "Client Secret",
+          "type": "password",
+          "required": true,
+          "helpText": "Found in Port > click ... (top right) > Credentials"
+        },
+        {
+          "label": "Region",
+          "type": "text",
+          "required": false,
+          "helpText": "eu or us. Default: eu. US customers use api.us.port.io"
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "port_io_app_availability",
+      "name": "Port App Availability",
+      "description": "Checks that the Port API is accessible.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "port_io_employee_access",
+      "name": "Port Employee Access",
+      "description": "Lists Port organization users to verify access management.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

@@ -1,0 +1,44 @@
+{
+  "slug": "hightouch",
+  "name": "Hightouch",
+  "description": "Hightouch reverse ETL platform. Monitor sync health, data pipeline availability, and source/destination configuration.",
+  "category": "Development",
+  "docsUrl": "https://hightouch.com/docs/api-reference",
+  "baseUrl": "https://api.hightouch.com/",
+  "authConfig": {
+    "type": "api_key",
+    "config": {
+      "setupInstructions": "1. Log in to Hightouch at https://app.hightouch.com\n2. Go to Settings > API Keys\n3. Create a new API key\n4. Copy the key and enter it below"
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "hightouch_app_availability",
+      "name": "App Availability",
+      "description": "Verifies Hightouch syncs are active, not disabled, and completing successfully.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "hightouch_monitoring",
+      "name": "Monitoring & Alerting",
+      "description": "Verifies Hightouch syncs have recent successful runs, indicating active monitoring of data pipelines.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "hightouch_infrastructure",
+      "name": "Infrastructure Inventory",
+      "description": "Lists all Hightouch sources and destinations to provide a complete inventory of the data pipeline infrastructure.",
+      "defaultSeverity": "low",
+      "enabled": true
+    }
+  ],
+  "checkCount": 3,
+  "isActive": true
+}

@@ -12,22 +12,28 @@ model Device {
   organizationId String
   organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 
-  isCompliant           Boolean  @default(false)
-  diskEncryptionEnabled Boolean  @default(false)
-  antivirusEnabled      Boolean  @default(false)
-  passwordPolicySet     Boolean  @default(false)
-  screenLockEnabled     Boolean  @default(false)
+  agentSessionId String?
+  agentSession   Session? @relation("DeviceAgentSession", fields: [agentSessionId], references: [id], onDelete: SetNull)
+
+  isCompliant           Boolean @default(false)
+  diskEncryptionEnabled Boolean @default(false)
+  antivirusEnabled      Boolean @default(false)
+  passwordPolicySet     Boolean @default(false)
+  screenLockEnabled     Boolean @default(false)
   checkDetails          Json?
 
   lastCheckIn  DateTime?
   agentVersion String?
-  installedAt  DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  installedAt  DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  findings Finding[]
 
   @@unique([serialNumber, organizationId])
   @@index([memberId])
   @@index([organizationId])
   @@index([isCompliant])
+  @@index([agentSessionId])
 }
 
 enum DevicePlatform {

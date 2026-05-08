@@ -1,0 +1,47 @@
+{
+  "slug": "aircall",
+  "name": "Aircall",
+  "description": "Cloud-based phone system for business. Monitor user access, role-based controls, and sync employees from Aircall.",
+  "category": "Communication",
+  "docsUrl": "https://developer.aircall.io/api-references/",
+  "baseUrl": "https://api.aircall.io",
+  "authConfig": {
+    "type": "basic",
+    "config": {
+      "setupInstructions": "1. Log in to Aircall Dashboard at https://dashboard.aircall.io\n2. Go to Company Settings\n3. In the API Keys section, click 'Add a new API key'\n4. Copy the API ID and API Token\n5. Enter them below",
+      "usernameField": "api_id",
+      "passwordField": "api_token"
+    }
+  },
+  "capabilities": [
+    "checks",
+    "sync"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": true,
+  "checks": [
+    {
+      "slug": "aircall_employee_access",
+      "name": "Employee Access",
+      "description": "Lists all Aircall users with their email and availability status to verify employee access controls.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "aircall_role_based_access",
+      "name": "Role-based Access Controls",
+      "description": "Verifies Aircall user roles by retrieving individual user details to check admin vs agent role separation.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "aircall_monitoring",
+      "name": "Monitoring & Alerting",
+      "description": "Checks Aircall webhook configurations to verify monitoring and alerting is properly set up for call and user events.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 3,
+  "isActive": true
+}

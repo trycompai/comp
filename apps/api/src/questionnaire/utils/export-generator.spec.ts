@@ -104,7 +104,11 @@ describe('generatePDF', () => {
 
 describe('generateExportFile', () => {
   it('should generate XLSX export with correct metadata', async () => {
-    const result = await generateExportFile(sampleQAs, 'xlsx', 'vendor-test.pdf');
+    const result = await generateExportFile(
+      sampleQAs,
+      'xlsx',
+      'vendor-test.pdf',
+    );
 
     expect(result.mimeType).toBe(
       'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
@@ -114,7 +118,11 @@ describe('generateExportFile', () => {
   });
 
   it('should generate CSV export with correct metadata', async () => {
-    const result = await generateExportFile(sampleQAs, 'csv', 'vendor-test.xlsx');
+    const result = await generateExportFile(
+      sampleQAs,
+      'csv',
+      'vendor-test.xlsx',
+    );
 
     expect(result.mimeType).toBe('text/csv');
     expect(result.filename).toBe('vendor-test.csv');

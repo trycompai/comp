@@ -1,0 +1,35 @@
+{
+  "slug": "render",
+  "name": "Render",
+  "description": "Monitor Render services and environment groups for cloud infrastructure compliance",
+  "category": "Cloud",
+  "docsUrl": "https://api-docs.render.com/reference/introduction",
+  "baseUrl": "https://api.render.com/",
+  "authConfig": {
+    "type": "api_key",
+    "config": {}
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "render_app_availability",
+      "name": "App Availability",
+      "description": "Verifies Render services are running and not suspended",
+      "defaultSeverity": "high",
+      "enabled": true
+    },
+    {
+      "slug": "render_separation_of_envs",
+      "name": "Separation of Environments",
+      "description": "Verifies Render has environment groups configured for secret management",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

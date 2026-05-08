@@ -1,0 +1,45 @@
+{
+  "slug": "lucid",
+  "name": "Lucid",
+  "description": "Visual collaboration platform for diagrams and whiteboards.",
+  "category": "Productivity",
+  "docsUrl": "https://developer.lucid.co/",
+  "baseUrl": "https://api.lucid.co",
+  "authConfig": {
+    "type": "custom",
+    "config": {
+      "setupInstructions": "1. Log in to your Lucid account as an admin\n2. Go to developer.lucid.co\n3. Create an API key with AccountReadonly grant\n4. Copy the API key and paste it below",
+      "credentialFields": [
+        {
+          "label": "API Key",
+          "type": "password",
+          "required": true,
+          "helpText": "Create an API key in the Lucid Developer Portal at developer.lucid.co. Requires AccountReadonly grant."
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "lucid_app_availability",
+      "name": "Lucid App Availability",
+      "description": "Checks Lucid app availability.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "lucid_employee_access",
+      "name": "Lucid Employee Access",
+      "description": "Checks Lucid employee access.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

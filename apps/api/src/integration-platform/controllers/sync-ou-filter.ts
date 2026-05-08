@@ -6,9 +6,10 @@
  * @param targetOrgUnits - Array of OU paths to include (undefined/empty = all users)
  * @returns Filtered array of users
  */
-export function filterUsersByOrgUnits<
-  T extends { orgUnitPath?: string },
->(users: T[], targetOrgUnits: string[] | undefined): T[] {
+export function filterUsersByOrgUnits<T extends { orgUnitPath?: string }>(
+  users: T[],
+  targetOrgUnits: string[] | undefined,
+): T[] {
   if (!targetOrgUnits || targetOrgUnits.length === 0) {
     return users;
   }
@@ -16,8 +17,7 @@ export function filterUsersByOrgUnits<
   return users.filter((user) => {
     const userOu = user.orgUnitPath ?? '/';
     return targetOrgUnits.some(
-      (ou) =>
-        ou === '/' || userOu === ou || userOu.startsWith(`${ou}/`),
+      (ou) => ou === '/' || userOu === ou || userOu.startsWith(`${ou}/`),
     );
   });
 }

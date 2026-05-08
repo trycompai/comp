@@ -1,0 +1,52 @@
+{
+  "slug": "jumpcloud",
+  "name": "JumpCloud",
+  "description": "Monitor JumpCloud users, MFA enrollment, and managed systems for identity and device compliance",
+  "category": "Identity & Access",
+  "docsUrl": "https://docs.jumpcloud.com/api/",
+  "baseUrl": "https://console.jumpcloud.com/",
+  "authConfig": {
+    "type": "custom",
+    "config": {
+      "setupInstructions": "1. Log in to JumpCloud Admin Console\n2. Click your user icon > API Settings\n3. Copy your API key\n4. Paste it below",
+      "credentialFields": [
+        {
+          "label": "API Key",
+          "type": "password",
+          "required": true,
+          "helpText": "Found in JumpCloud Admin Console > API Settings"
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "user_access",
+      "name": "Employee Access",
+      "description": "Reviews JumpCloud users for employee access management",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "mfa_enrollment",
+      "name": "2FA",
+      "description": "Verifies that JumpCloud users have TOTP MFA enrolled",
+      "defaultSeverity": "high",
+      "enabled": true
+    },
+    {
+      "slug": "systems",
+      "name": "Secure Devices",
+      "description": "Lists JumpCloud managed systems for device compliance",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 3,
+  "isActive": true
+}

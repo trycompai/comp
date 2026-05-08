@@ -28,7 +28,12 @@ export default async function FrameworksPage({ params }: { params: Promise<{ org
   );
 
   const availableToAdd = allFrameworks.filter(
-    (framework) => !frameworksWithControls.some((fc) => fc.framework.id === framework.id),
+    (framework) =>
+      !frameworksWithControls.some(
+        (fc) =>
+          fc.framework?.id === framework.id ||
+          fc.customFramework?.id === framework.id,
+      ),
   );
 
   return (

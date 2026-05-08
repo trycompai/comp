@@ -12,7 +12,6 @@ export interface UnassignedItem {
 
 const logger = new Logger('MemberDeactivation');
 
-
 /**
  * Collect all items assigned to a member (tasks, policies, risks, vendors).
  */
@@ -44,9 +43,11 @@ export async function collectAssignedItems({
 
   const items: UnassignedItem[] = [];
   for (const t of tasks) items.push({ type: 'task', id: t.id, name: t.title });
-  for (const p of policies) items.push({ type: 'policy', id: p.id, name: p.name });
+  for (const p of policies)
+    items.push({ type: 'policy', id: p.id, name: p.name });
   for (const r of risks) items.push({ type: 'risk', id: r.id, name: r.title });
-  for (const v of vendors) items.push({ type: 'vendor', id: v.id, name: v.name });
+  for (const v of vendors)
+    items.push({ type: 'vendor', id: v.id, name: v.name });
   return items;
 }
 

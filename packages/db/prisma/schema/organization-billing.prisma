@@ -1,12 +1,140 @@
 model OrganizationBilling {
-  id               String   @id @default(dbgenerated("generate_prefixed_cuid('obil'::text)"))
-  organizationId   String   @unique @map("organization_id")
-  stripeCustomerId String   @map("stripe_customer_id")
-  createdAt        DateTime @default(now()) @map("created_at")
-  updatedAt        DateTime @updatedAt @map("updated_at")
+  id                     String    @id @default(dbgenerated("generate_prefixed_cuid('obil'::text)"))
+  organizationId         String    @unique @map("organization_id")
+  stripeCustomerId       String    @map("stripe_customer_id")
+  stripePaymentMethodId  String?   @map("stripe_payment_method_id")
+  paymentMethodUpdatedAt DateTime? @map("payment_method_updated_at")
+  createdAt              DateTime  @default(now()) @map("created_at")
+  updatedAt              DateTime  @updatedAt @map("updated_at")
 
-  organization        Organization        @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  pentestSubscription PentestSubscription?
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 
   @@map("organization_billing")
+}
+
+model OrganizationBillingSubscription {
+  id                       String    @id @default(dbgenerated("generate_prefixed_cuid('obs'::text)"))
+  organizationId           String    @map("organization_id")
+  skuKey                   String    @map("sku_key")
+  stripeSubscriptionId     String    @map("stripe_subscription_id")
+  stripeSubscriptionItemId String    @map("stripe_subscription_item_id")
+  stripePriceId            String    @map("stripe_price_id")
+  stripeStatus             String    @map("stripe_status")
+  currentPeriodStart       DateTime? @map("current_period_start")
+  currentPeriodEnd         DateTime? @map("current_period_end")
+  includedQuantity         Int       @map("included_quantity")
+  usedQuantity             Int       @default(0) @map("used_quantity")
+  cancelAtPeriodEnd        Boolean   @default(false) @map("cancel_at_period_end")
+  canceledAt               DateTime? @map("canceled_at")
+  createdAt                DateTime  @default(now()) @map("created_at")
+  updatedAt                DateTime  @updatedAt @map("updated_at")
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@unique([organizationId, skuKey])
+  @@unique([stripeSubscriptionId, stripeSubscriptionItemId], map: "org_billing_subs_stripe_sub_item_key")
+  @@index([organizationId])
+  @@index([stripeSubscriptionId])
+  @@index([skuKey])
+  @@map("organization_billing_subscriptions")
+}
+
+model BillingUsageEvent {
+  id                       String    @id @default(dbgenerated("generate_prefixed_cuid('bue'::text)"))
+  organizationId           String    @map("organization_id")
+  skuKey                   String    @map("sku_key")
+  eventType                String    @map("event_type")
+  quantity                 Int
+  sourceResourceId         String?   @map("source_resource_id")
+  idempotencyKey           String    @unique @map("idempotency_key")
+  stripeEventId            String?   @map("stripe_event_id")
+  stripeInvoiceId          String?   @map("stripe_invoice_id")
+  stripeSubscriptionItemId String?   @map("stripe_subscription_item_id")
+  periodStart              DateTime? @map("period_start")
+  periodEnd                DateTime? @map("period_end")
+  createdAt                DateTime  @default(now()) @map("created_at")
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId, skuKey])
+  @@index([stripeEventId])
+  @@index([stripeInvoiceId])
+  @@map("billing_usage_events")
+}
+
+model StripeWebhookEvent {
+  id            String   @id @default(dbgenerated("generate_prefixed_cuid('swe'::text)"))
+  stripeEventId String   @unique @map("stripe_event_id")
+  eventType     String   @map("event_type")
+  payload       Json
+  status        String   @default("processed")
+  error         String?
+  processedAt   DateTime @default(now()) @map("processed_at")
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  @@index([eventType])
+  @@index([status])
+  @@map("stripe_webhook_events")
+}
+
+model BillingAuditEvent {
+  id             String   @id @default(dbgenerated("generate_prefixed_cuid('bae'::text)"))
+  organizationId String   @map("organization_id")
+  eventType      String   @map("event_type")
+  skuKey         String?  @map("sku_key")
+  stripeEventId  String?  @map("stripe_event_id")
+  metadata       Json?
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+  @@index([stripeEventId])
+  @@index([skuKey])
+  @@map("billing_audit_events")
+}
+
+model BillingCreditBalance {
+  id             String   @id @default(dbgenerated("generate_prefixed_cuid('bcb'::text)"))
+  organizationId String   @map("organization_id")
+  productKey     String   @map("product_key")
+  skuKey         String?  @map("sku_key")
+  balance        Int      @default(0)
+  totalGranted   Int      @default(0) @map("total_granted")
+  totalConsumed  Int      @default(0) @map("total_consumed")
+  totalRefunded  Int      @default(0) @map("total_refunded")
+  lastSource     String   @default("manual") @map("last_source")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  organization Organization         @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  events       BillingCreditEvent[]
+
+  @@index([organizationId, productKey])
+  @@map("billing_credit_balances")
+}
+
+model BillingCreditEvent {
+  id                String   @id @default(dbgenerated("generate_prefixed_cuid('bce'::text)"))
+  organizationId    String   @map("organization_id")
+  balanceId         String   @map("balance_id")
+  productKey        String   @map("product_key")
+  skuKey            String?  @map("sku_key")
+  eventType         String   @map("event_type")
+  quantity          Int
+  source            String
+  note              String?
+  adminUserId       String?  @map("admin_user_id")
+  sourceResourceId  String?  @map("source_resource_id")
+  linkedEventId     String?  @map("linked_event_id")
+  idempotencyKey    String   @unique @map("idempotency_key")
+  createdAt         DateTime @default(now()) @map("created_at")
+
+  organization Organization         @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  balance      BillingCreditBalance @relation(fields: [balanceId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId, productKey])
+  @@index([sourceResourceId])
+  @@index([linkedEventId])
+  @@map("billing_credit_events")
 }

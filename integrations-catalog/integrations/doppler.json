@@ -1,0 +1,45 @@
+{
+  "slug": "doppler",
+  "name": "Doppler",
+  "description": "Monitor Doppler secrets management - verify project configurations and team member access for secrets hygiene compliance",
+  "category": "Cloud",
+  "docsUrl": "https://docs.doppler.com/reference/api",
+  "baseUrl": "https://api.doppler.com/",
+  "authConfig": {
+    "type": "custom",
+    "config": {
+      "setupInstructions": "Option 1 - Service Account Token (recommended, requires Team or Enterprise plan):\n1. In the Doppler dashboard, go to Team in the left navigation\n2. Select the Service Accounts tab\n3. Click the + button to create a new service account\n4. Assign a workplace role with read access\n5. Generate a token for the service account and copy it (starts with dp.sa.)\n\nOption 2 - Personal Token:\n1. In the Doppler dashboard, go to the Tokens page, then select Personal\n2. Generate a Personal Token and copy it (starts with dp.pt.)\n\nNote: Service Tokens (dp.st.*) will NOT work - they are project-scoped and cannot access workplace-level endpoints needed for compliance checks.",
+      "credentialFields": [
+        {
+          "label": "Doppler Token",
+          "type": "password",
+          "required": true,
+          "helpText": "A Personal Token (dp.pt.*) or Service Account Token (dp.sa.*) with workplace-level access. Service Tokens (dp.st.*) will NOT work."
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "doppler_secure_secrets",
+      "name": "Secure Secrets",
+      "description": "Verifies Doppler projects are configured for secrets management across environments",
+      "defaultSeverity": "high",
+      "enabled": true
+    },
+    {
+      "slug": "doppler_employee_access",
+      "name": "Employee Access",
+      "description": "Reviews Doppler workplace members and their access roles",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

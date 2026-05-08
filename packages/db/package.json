@@ -1,7 +1,7 @@
 {
     "name": "@trycompai/db",
     "description": "Database package with Prisma client and schema for Comp AI",
-    "version": "2.0.0",
+    "version": "2.3.0",
     "dependencies": {
         "@prisma/adapter-pg": "7.6.0",
         "@prisma/client": "7.6.0",
@@ -21,9 +21,14 @@
             "default": "./dist/index.js"
         },
         "./postinstall": {
-            "import": "./dist/postinstall.js",
             "types": "./src/postinstall.ts",
+            "import": "./dist/postinstall.js",
             "default": "./dist/postinstall.js"
+        },
+        "./ssl-config": {
+            "types": "./dist/ssl-config.d.ts",
+            "import": "./dist/ssl-config.js",
+            "default": "./dist/ssl-config.js"
         }
     },
     "bin": {
@@ -43,7 +48,8 @@
         "directory": "packages/db"
     },
     "scripts": {
-        "build": "rm -rf dist && node scripts/generate-prisma-client-js.js && tsc",
+        "backfill:framework-versions": "bun src/scripts/backfill-framework-versions.ts",
+        "build": "rm -rf dist && node scripts/generate-prisma-client-js.js && tsc && node scripts/build-dist-schema.js",
         "check-types": "tsc --noEmit",
         "db:generate": "node scripts/generate-prisma-client-js.js",
         "db:migrate": "prisma migrate dev",
@@ -55,6 +61,7 @@
         "docker:down": "docker compose down",
         "docker:up": "docker compose up -d",
         "lint": "prettier --check 'src/**/*.{ts,tsx,js,jsx,json}' 'prisma/**/*.prisma' && tsc --noEmit",
+        "postinstall": "node scripts/generate-prisma-client-js.js || true",
         "prepublishOnly": "bun run build"
     }
 }

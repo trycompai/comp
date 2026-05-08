@@ -112,6 +112,23 @@ export class HybridAuthGuard implements CanActivate {
     request.isPlatformAdmin = false;
     request.userRoles = null;
 
+    // Service tokens can pass x-user-id to act on behalf of a user
+    // Validate that the user exists and belongs to the organization
+    const actingUserId = request.headers['x-user-id'] as string;
+    if (actingUserId) {
+      const member = await db.member.findFirst({
+        where: { userId: actingUserId, organizationId },
+        select: { userId: true },
+      });
+      if (member) {
+        request.userId = actingUserId;
+      } else {
+        this.logger.warn(
+          `Service token x-user-id "${actingUserId}" not found in org ${organizationId}`,
+        );
+      }
+    }
+
     this.logger.log(
       `Service "${service.definition.name}" authenticated for org ${organizationId}`,
     );
@@ -201,6 +218,9 @@ export class HybridAuthGuard implements CanActivate {
       request.authType = 'session';
       request.isApiKey = false;
       request.isServiceToken = false;
+      request.sessionId = sessionData.id;
+      request.sessionDeviceAgent =
+        (sessionData as Record<string, unknown>).deviceAgent === true;
       // Resolve isPlatformAdmin from the User.role column (via better-auth session),
       // not from the member relation. This ensures the flag is set regardless of
       // org membership or skipOrgCheck.

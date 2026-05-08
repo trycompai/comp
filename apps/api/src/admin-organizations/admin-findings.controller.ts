@@ -13,7 +13,7 @@ import {
   ValidationPipe,
   BadRequestException,
 } from '@nestjs/common';
-import { ApiOperation, ApiTags } from '@nestjs/swagger';
+import { ApiExcludeController, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
 import { FindingStatus } from '@db';
 import { PlatformAdminGuard } from '../auth/platform-admin.guard';
@@ -23,6 +23,7 @@ import { UpdateFindingDto } from '../findings/dto/update-finding.dto';
 import { AdminAuditLogInterceptor } from './admin-audit-log.interceptor';
 import type { AdminRequest } from './platform-admin-auth-context';
 
+@ApiExcludeController()
 @ApiTags('Admin - Findings')
 @Controller({ path: 'admin/organizations', version: '1' })
 @UseGuards(PlatformAdminGuard)
@@ -33,10 +34,7 @@ export class AdminFindingsController {
 
   @Get(':orgId/findings')
   @ApiOperation({ summary: 'List all findings for an organization (admin)' })
-  async list(
-    @Param('orgId') orgId: string,
-    @Query('status') status?: string,
-  ) {
+  async list(@Param('orgId') orgId: string, @Query('status') status?: string) {
     let validatedStatus: FindingStatus | undefined;
     if (status) {
       if (!Object.values(FindingStatus).includes(status as FindingStatus)) {
@@ -47,7 +45,9 @@ export class AdminFindingsController {
       validatedStatus = status as FindingStatus;
     }
 
-    return this.findingsService.findByOrganizationId(orgId, validatedStatus);
+    return this.findingsService.listForOrganization(orgId, {
+      status: validatedStatus,
+    });
   }
 
   @Post(':orgId/findings')

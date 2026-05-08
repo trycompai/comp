@@ -3,7 +3,7 @@
 import { authActionClient } from '@/actions/safe-action';
 import { BUCKET_NAME, s3Client } from '@/app/s3';
 import { GetObjectCommand } from '@aws-sdk/client-s3';
-import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
+import { getSignedUrl } from '@/lib/s3-presigner';
 import { db } from '@db/server';
 import { z } from 'zod';
 

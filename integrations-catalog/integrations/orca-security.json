@@ -1,0 +1,51 @@
+{
+  "slug": "orca-security",
+  "name": "Orca Security",
+  "description": "Monitor Orca Security cloud security posture management for vulnerability and compliance findings",
+  "category": "Security",
+  "docsUrl": "https://docs.orcasecurity.io/reference/introduction",
+  "baseUrl": "https://app.us.orcasecurity.io/",
+  "authConfig": {
+    "type": "custom",
+    "config": {
+      "setupInstructions": "1. Log in to Orca Security\n2. Go to Settings > API Tokens\n3. Create a new token with read access\n4. Select your region:\n   - US: app.us.orcasecurity.io\n   - EU: app.eu.orcasecurity.io\n5. Enter the token and region host",
+      "credentialFields": [
+        {
+          "label": "API Token",
+          "type": "password",
+          "required": true,
+          "helpText": "Found in Orca Security Settings > API Tokens"
+        },
+        {
+          "label": "Region Host",
+          "type": "text",
+          "required": true,
+          "helpText": "US: app.us.orcasecurity.io, EU: app.eu.orcasecurity.io"
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "orca_monitoring",
+      "name": "Monitoring & Alerting",
+      "description": "Verifies Orca Security is actively scanning and checks for critical alerts",
+      "defaultSeverity": "high",
+      "enabled": true
+    },
+    {
+      "slug": "orca_asset_inventory",
+      "name": "Asset Inventory",
+      "description": "Verifies Orca Security has visibility into cloud assets",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

@@ -1,0 +1,65 @@
+{
+  "slug": "fusionauth",
+  "name": "FusionAuth",
+  "description": "Monitor FusionAuth identity platform for MFA configuration, user access management, role-based access controls, and audit logging.",
+  "category": "Identity & Access",
+  "docsUrl": "https://fusionauth.io/docs/apis/",
+  "baseUrl": "https://placeholder.fusionauth.io/",
+  "authConfig": {
+    "type": "custom",
+    "config": {
+      "credentialFields": [
+        {
+          "label": "API Key",
+          "type": "password",
+          "required": true,
+          "helpText": "FusionAuth API key with read access. Found in Settings > API Keys."
+        },
+        {
+          "label": "Instance URL",
+          "type": "text",
+          "required": true,
+          "helpText": "Your FusionAuth instance URL (e.g. https://your-app.fusionauth.io or https://auth.yourdomain.com). No trailing slash."
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks",
+    "sync"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": true,
+  "checks": [
+    {
+      "slug": "fusionauth_2fa",
+      "name": "2FA",
+      "description": "Verifies that multi-factor authentication methods are enabled at the tenant level in FusionAuth.",
+      "defaultSeverity": "high",
+      "enabled": true
+    },
+    {
+      "slug": "fusionauth_employee_access",
+      "name": "Employee Access",
+      "description": "Verifies that user accounts exist and are properly managed in FusionAuth, with active and inactive users tracked.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "fusionauth_rbac",
+      "name": "Role-based Access Controls",
+      "description": "Verifies that applications in FusionAuth have roles defined for role-based access control.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "fusionauth_access_review_log",
+      "name": "Access Review Log",
+      "description": "Verifies that audit logging is active in FusionAuth by checking for recent audit log entries.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 4,
+  "isActive": true
+}

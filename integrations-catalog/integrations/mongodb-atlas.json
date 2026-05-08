@@ -1,0 +1,77 @@
+{
+  "slug": "mongodb-atlas",
+  "name": "MongoDB Atlas",
+  "description": "Monitor MongoDB Atlas organization user access, team role assignments, infrastructure inventory, and encryption at rest configuration",
+  "category": "Cloud",
+  "docsUrl": "https://www.mongodb.com/docs/atlas/configure-api-access/",
+  "baseUrl": "https://cloud.mongodb.com/api/atlas/v2/",
+  "authConfig": {
+    "type": "custom",
+    "config": {
+      "credentialFields": [
+        {
+          "label": "Public API Key",
+          "type": "text",
+          "required": true,
+          "helpText": "Your MongoDB Atlas programmatic API public key. Create one at Organization > Access Manager > API Keys."
+        },
+        {
+          "label": "Private API Key",
+          "type": "password",
+          "required": true,
+          "helpText": "Your MongoDB Atlas programmatic API private key. Shown only once at creation time."
+        },
+        {
+          "label": "Organization ID",
+          "type": "text",
+          "required": true,
+          "helpText": "Your MongoDB Atlas Organization ID. Found at Organization Settings > General."
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "employee_access",
+      "name": "Employee Access",
+      "description": "Lists all users in the MongoDB Atlas organization with their roles and last authentication time",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "role_based_access",
+      "name": "Role-based Access Controls",
+      "description": "Lists all teams in the MongoDB Atlas organization with their members and role assignments",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "infrastructure_inventory",
+      "name": "Infrastructure Inventory",
+      "description": "Lists all projects and clusters in the MongoDB Atlas organization",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "encryption_at_rest",
+      "name": "Encryption at Rest",
+      "description": "Verifies encryption at rest configuration for each project in the MongoDB Atlas organization",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "mongodb_separation_of_environments",
+      "name": "Separation of Environments",
+      "description": "Verifies that MongoDB Atlas organization has separate projects for different environments (e.g., development, staging, production), ensuring proper environment segregation.",
+      "defaultSeverity": "high",
+      "enabled": true
+    }
+  ],
+  "checkCount": 5,
+  "isActive": true
+}

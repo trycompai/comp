@@ -1,0 +1,37 @@
+{
+  "slug": "scalefusion",
+  "name": "Scalefusion",
+  "description": "Unified endpoint management and MDM platform. Monitor managed devices and compliance.",
+  "category": "Security",
+  "docsUrl": "https://docs.scalefusion.com/",
+  "baseUrl": "https://api.scalefusion.com",
+  "authConfig": {
+    "type": "api_key",
+    "config": {
+      "setupInstructions": "1. Log in to Scalefusion Dashboard at https://app.scalefusion.com\n2. Go to Settings > API Integration\n3. Generate an API token\n4. Copy the API token and paste it below"
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "scalefusion_app_availability",
+      "name": "Scalefusion App Availability",
+      "description": "Verifies Scalefusion API is accessible.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "scalefusion_employee_access",
+      "name": "Scalefusion Device Access",
+      "description": "Verifies device management access.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

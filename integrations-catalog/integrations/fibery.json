@@ -1,0 +1,51 @@
+{
+  "slug": "fibery",
+  "name": "Fibery",
+  "description": "Fibery is a work management platform that combines project management, knowledge management, and collaboration tools in a connected workspace.",
+  "category": "Productivity",
+  "docsUrl": "https://the.fibery.io/@public/User_Guide/Guide/Fibery-API-Overview-279",
+  "baseUrl": "https://fibery.io/",
+  "authConfig": {
+    "type": "custom",
+    "config": {
+      "setupInstructions": "1. Log in to your Fibery workspace\n2. Go to Settings (gear icon) > API Tokens\n3. Click 'Create Token' and give it a name (e.g. 'CompAI')\n4. Copy the generated token\n5. Enter your workspace name (the subdomain from your Fibery URL) and the API token below",
+      "credentialFields": [
+        {
+          "label": "Workspace Name",
+          "type": "text",
+          "required": true,
+          "helpText": "Your Fibery workspace subdomain. For example, if your Fibery URL is https://mycompany.fibery.io, enter 'mycompany'"
+        },
+        {
+          "label": "API Token",
+          "type": "password",
+          "required": true,
+          "helpText": "Go to Fibery Settings > API Tokens > Create Token. Copy the generated token."
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "fibery_employee_access",
+      "name": "Employee Access",
+      "description": "Lists all users in the Fibery workspace to verify employee access is properly managed.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "fibery_role_based_access",
+      "name": "Role-based Access Controls",
+      "description": "Checks user roles and permissions in the Fibery workspace to verify role-based access controls are implemented.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

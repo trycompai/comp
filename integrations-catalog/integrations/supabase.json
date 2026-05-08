@@ -1,0 +1,93 @@
+{
+  "slug": "supabase",
+  "name": "Supabase",
+  "description": "Monitor Supabase projects for security configuration, MFA, secrets, edge functions, SSL enforcement, backups, and compliance advisories. Requires a Management API access token (not your project anon or service key). Generate at supabase.com/dashboard/account/tokens.",
+  "category": "Cloud",
+  "docsUrl": "https://supabase.com/docs/reference/api/introduction",
+  "baseUrl": "https://api.supabase.com/",
+  "authConfig": {
+    "type": "api_key",
+    "config": {
+      "setupInstructions": "1. Go to https://supabase.com/dashboard/account/tokens\n2. Click Generate New Token\n3. Give it a name (e.g. CompAI)\n4. Copy the token and paste it below\n\nImportant: Use a Management API access token, not your project anon or service key."
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "supabase_infrastructure",
+      "name": "Infrastructure Inventory",
+      "description": "Lists all Supabase projects and verifies they are in a healthy active state",
+      "defaultSeverity": "high",
+      "enabled": true
+    },
+    {
+      "slug": "supabase_tls",
+      "name": "TLS / HTTPS",
+      "description": "Verifies SSL is enforced on the Supabase database connection, requiring TLS for all client connections",
+      "defaultSeverity": "high",
+      "enabled": true
+    },
+    {
+      "slug": "supabase_mfa",
+      "name": "2FA",
+      "description": "Verifies multi-factor authentication (TOTP) is enabled for user enrollment and verification in Supabase Auth",
+      "defaultSeverity": "high",
+      "enabled": true
+    },
+    {
+      "slug": "supabase_auth_policy",
+      "name": "Role-based Access Controls",
+      "description": "Audits Supabase Auth configuration: JWT expiry, auto-confirm, password policy, and HaveIBeenPwned protection",
+      "defaultSeverity": "high",
+      "enabled": true
+    },
+    {
+      "slug": "supabase_edge_functions",
+      "name": "Separation of Environments",
+      "description": "Audits Edge Function security configuration — verifies JWT verification is enabled and all functions are in active state",
+      "defaultSeverity": "high",
+      "enabled": true
+    },
+    {
+      "slug": "supabase_secrets",
+      "name": "Secure Secrets",
+      "description": "Verifies Edge Function secrets are configured. Only secret names are surfaced — values are never stored or displayed.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "supabase_function_logs",
+      "name": "Monitoring & Alerting",
+      "description": "Verifies Edge Function execution logging is accessible and active via the Supabase Analytics API",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "supabase_backups",
+      "name": "Backup Logs",
+      "description": "Verifies database backups are configured and recent successful backups exist. Checks for Point-in-Time Recovery (PITR) enablement.",
+      "defaultSeverity": "high",
+      "enabled": true
+    },
+    {
+      "slug": "supabase_security_advisors",
+      "name": "Internal Security Audit",
+      "description": "Surfaces Supabase's built-in security advisor results — automated lint checks for RLS, leaked keys, network restrictions, SSL, and 28 other security rules",
+      "defaultSeverity": "high",
+      "enabled": true
+    },
+    {
+      "slug": "supabase_encryption",
+      "name": "Encryption at Rest",
+      "description": "Verifies that Supabase projects use encryption at rest (enabled by default on all Supabase databases)",
+      "defaultSeverity": "high",
+      "enabled": true
+    }
+  ],
+  "checkCount": 10,
+  "isActive": true
+}

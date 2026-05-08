@@ -1,0 +1,35 @@
+{
+  "slug": "shortcut",
+  "name": "Shortcut",
+  "description": "Monitor Shortcut team members and project organization for engineering workflow compliance",
+  "category": "Development",
+  "docsUrl": "https://developer.shortcut.com/api/rest/v3",
+  "baseUrl": "https://api.app.shortcut.com/",
+  "authConfig": {
+    "type": "api_key",
+    "config": {}
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "shortcut_employee_access",
+      "name": "Employee Access",
+      "description": "Reviews Shortcut workspace members and their roles",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "shortcut_separation_of_envs",
+      "name": "Separation of Environments",
+      "description": "Verifies Shortcut projects are organized for workflow separation",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

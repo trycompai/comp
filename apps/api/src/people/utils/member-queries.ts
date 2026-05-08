@@ -20,6 +20,7 @@ export class MemberQueries {
     jobTitle: true,
     isActive: true,
     deactivated: true,
+    backgroundCheckExempt: true,
     fleetDmLabelId: true,
     user: {
       select: {
@@ -33,6 +34,15 @@ export class MemberQueries {
         lastLogin: true,
         role: true,
       },
+    },
+    backgroundCheckRequests: {
+      select: {
+        id: true,
+        status: true,
+        requesterNotes: true,
+      },
+      take: 1,
+      orderBy: { createdAt: 'desc' },
     },
   } as const;
 
@@ -118,8 +128,7 @@ export class MemberQueries {
       updatePayload.fleetDmLabelId = null;
     }
 
-    const hasUserUpdates =
-      name !== undefined || email !== undefined;
+    const hasUserUpdates = name !== undefined || email !== undefined;
     const hasMemberUpdates = Object.keys(updatePayload).length > 0;
 
     // If we need to update both user and member, use a transaction

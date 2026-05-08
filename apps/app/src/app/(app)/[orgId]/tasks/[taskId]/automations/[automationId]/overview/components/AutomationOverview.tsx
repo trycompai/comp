@@ -3,7 +3,13 @@
 import { RecentAuditLogs } from '@/components/RecentAuditLogs';
 import { useAuditLogs } from '@/hooks/use-audit-logs';
 import { Button } from '@trycompai/ui/button';
-import type { EvidenceAutomation, EvidenceAutomationRun, EvidenceAutomationVersion, Task } from '@db';
+import type {
+  EvidenceAutomation,
+  EvidenceAutomationRun,
+  EvidenceAutomationVersion,
+  Task,
+  TaskFrequency,
+} from '@db';
 import {
   Breadcrumb,
   Button as DSButton,
@@ -28,6 +34,7 @@ import {
   toggleAutomationEnabled,
 } from '../../../../automation/[automationId]/actions/task-automation-actions';
 import { DeleteAutomationDialog } from '../../../../automation/[automationId]/components/AutomationSettingsDialogs';
+import { SchedulePicker } from '@/components/schedule-picker';
 import { useTaskAutomation } from '../../../../automation/[automationId]/hooks/use-task-automation';
 import { AutomationRunsCard } from '../../../../components/AutomationRunsCard';
 import { useAutomationRuns } from '../hooks/use-automation-runs';
@@ -57,6 +64,7 @@ export function AutomationOverview({
   }>();
 
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [isUpdatingSchedule, setIsUpdatingSchedule] = useState(false);
   const [isTogglingEnabled, setIsTogglingEnabled] = useState(false);
   const [isEditingName, setIsEditingName] = useState(false);
   const [nameValue, setNameValue] = useState('');
@@ -133,6 +141,19 @@ export function AutomationOverview({
       toast.error(error instanceof Error ? error.message : 'Failed to toggle automation');
     } finally {
       setIsTogglingEnabled(false);
+    }
+  };
+
+  const handleScheduleChange = async (value: TaskFrequency) => {
+    setIsUpdatingSchedule(true);
+    try {
+      await updateAutomation({ scheduleFrequency: value });
+      toast.success('Schedule updated');
+      await mutateAutomation();
+    } catch {
+      toast.error('Failed to update schedule');
+    } finally {
+      setIsUpdatingSchedule(false);
     }
   };
 
@@ -272,6 +293,8 @@ export function AutomationOverview({
       <MetricsSection
         initialVersions={initialVersions}
         initialRuns={runs}
+        scheduleFrequency={automation.scheduleFrequency ?? 'daily'}
+        lastRunAt={automation.lastRunAt ?? null}
       />
 
       <Tabs defaultValue="history">
@@ -374,6 +397,24 @@ export function AutomationOverview({
 
                 <HStack justify="between" align="center">
                   <Stack gap="none">
+                    <Text size="sm" weight="medium">Schedule</Text>
+                    <Text size="xs" variant="muted">
+                      How often this automation runs
+                    </Text>
+                  </Stack>
+                  <div className="w-40">
+                    <SchedulePicker
+                      value={automation.scheduleFrequency ?? 'daily'}
+                      onChange={handleScheduleChange}
+                      disabled={isUpdatingSchedule}
+                    />
+                  </div>
+                </HStack>
+
+                <div className="border-t" />
+
+                <HStack justify="between" align="center">
+                  <Stack gap="none">
                     <Text size="sm" weight="medium">Delete Automation</Text>
                     <Text size="xs" variant="muted">
                       Permanently delete this automation and all its versions
@@ -400,6 +441,7 @@ export function AutomationOverview({
         onOpenChange={setDeleteDialogOpen}
         onSuccess={mutateAutomation}
       />
+
     </PageLayout>
   );
 }

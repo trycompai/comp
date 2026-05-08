@@ -34,7 +34,9 @@ async function main() {
     const content = readFileSync(absolutePath, 'utf-8');
     rawJson = JSON.parse(content);
   } catch (error) {
-    console.error(`Failed to read/parse JSON file: ${error instanceof Error ? error.message : String(error)}`);
+    console.error(
+      `Failed to read/parse JSON file: ${error instanceof Error ? error.message : String(error)}`,
+    );
     process.exit(1);
   }
 
@@ -49,7 +51,9 @@ async function main() {
   }
 
   const def = validation.data!;
-  console.log(`Validated: ${def.name} (${def.slug}) with ${def.checks.length} checks`);
+  console.log(
+    `Validated: ${def.name} (${def.slug}) with ${def.checks.length} checks`,
+  );
 
   // Helper to convert to Prisma-compatible JSON
   const toJson = (val: unknown) => JSON.parse(JSON.stringify(val));
@@ -65,7 +69,9 @@ async function main() {
       logoUrl: def.logoUrl,
       docsUrl: def.docsUrl,
       baseUrl: def.baseUrl,
-      defaultHeaders: def.defaultHeaders ? toJson(def.defaultHeaders) : undefined,
+      defaultHeaders: def.defaultHeaders
+        ? toJson(def.defaultHeaders)
+        : undefined,
       authConfig: toJson(def.authConfig),
       capabilities: toJson(def.capabilities),
       supportsMultipleConnections: def.supportsMultipleConnections ?? false,
@@ -81,7 +87,9 @@ async function main() {
       logoUrl: def.logoUrl,
       docsUrl: def.docsUrl,
       baseUrl: def.baseUrl,
-      defaultHeaders: def.defaultHeaders ? toJson(def.defaultHeaders) : undefined,
+      defaultHeaders: def.defaultHeaders
+        ? toJson(def.defaultHeaders)
+        : undefined,
       authConfig: toJson(def.authConfig),
       capabilities: toJson(def.capabilities),
       supportsMultipleConnections: def.supportsMultipleConnections ?? false,
@@ -149,7 +157,9 @@ async function main() {
 
   console.log(`Upserted IntegrationProvider for ${def.slug}`);
   console.log(`\nDone! Integration "${def.name}" is now live.`);
-  console.log('The registry will pick it up on the next refresh (within 60 seconds) or on API restart.');
+  console.log(
+    'The registry will pick it up on the next refresh (within 60 seconds) or on API restart.',
+  );
 
   process.exit(0);
 }

@@ -92,9 +92,7 @@ describe('Built-in role permissions — regression', () => {
     });
 
     it('should have trust read/update', () => {
-      expect(perms.trust).toEqual(
-        expect.arrayContaining(['read', 'update']),
-      );
+      expect(perms.trust).toEqual(expect.arrayContaining(['read', 'update']));
     });
 
     it('should have pentest create/read/delete', () => {
@@ -110,9 +108,7 @@ describe('Built-in role permissions — regression', () => {
     });
 
     it('should have portal read/update', () => {
-      expect(perms.portal).toEqual(
-        expect.arrayContaining(['read', 'update']),
-      );
+      expect(perms.portal).toEqual(expect.arrayContaining(['read', 'update']));
     });
 
     it('should have organization read/update/delete', () => {
@@ -123,6 +119,12 @@ describe('Built-in role permissions — regression', () => {
 
     it('should have member CRUD', () => {
       expect(perms.member).toEqual(
+        expect.arrayContaining(['create', 'read', 'update', 'delete']),
+      );
+    });
+
+    it('should have secret CRUD', () => {
+      expect(perms.secret).toEqual(
         expect.arrayContaining(['create', 'read', 'update', 'delete']),
       );
     });
@@ -172,14 +174,18 @@ describe('Built-in role permissions — regression', () => {
     });
 
     it('should have portal read/update', () => {
-      expect(perms.portal).toEqual(
-        expect.arrayContaining(['read', 'update']),
-      );
+      expect(perms.portal).toEqual(expect.arrayContaining(['read', 'update']));
     });
 
     it('should have pentest create/read/delete', () => {
       expect(perms.pentest).toEqual(
         expect.arrayContaining(['create', 'read', 'delete']),
+      );
+    });
+
+    it('should have secret CRUD', () => {
+      expect(perms.secret).toEqual(
+        expect.arrayContaining(['create', 'read', 'update', 'delete']),
       );
     });
   });
@@ -238,6 +244,10 @@ describe('Built-in role permissions — regression', () => {
     it('should NOT have training permissions', () => {
       expect(perms.training).toBeUndefined();
     });
+
+    it('should NOT have secret permissions (auditors must never see decrypted credentials)', () => {
+      expect(perms.secret).toBeUndefined();
+    });
   });
 
   // ─── Employee ───────────────────────────────────────────────────────
@@ -253,9 +263,7 @@ describe('Built-in role permissions — regression', () => {
     });
 
     it('should have portal read/update', () => {
-      expect(perms.portal).toEqual(
-        expect.arrayContaining(['read', 'update']),
-      );
+      expect(perms.portal).toEqual(expect.arrayContaining(['read', 'update']));
     });
 
     it('should NOT have app access', () => {
@@ -277,6 +285,7 @@ describe('Built-in role permissions — regression', () => {
         'apiKey',
         'pentest',
         'training',
+        'secret',
       ]) {
         expect(perms[resource]).toBeUndefined();
       }

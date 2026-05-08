@@ -8,14 +8,12 @@ import {
   TabsContent,
   TabsList,
   TabsTrigger,
-  Text,
 } from '@trycompai/design-system';
 import { AdditionalDocumentsSection } from '../knowledge-base/additional-documents/components';
 import { KnowledgeBaseHeader } from '../knowledge-base/components/KnowledgeBaseHeader';
 import { ContextSection } from '../knowledge-base/context/components';
 import { ManualAnswersSection } from '../knowledge-base/manual-answers/components';
 import { PublishedPoliciesSection } from '../knowledge-base/published-policies/components';
-import { SOAFrameworkTable } from '../soa/components/SOAFrameworkTable';
 import { QuestionnaireOverview } from '../start_page/components';
 import type {
   ContextEntry,
@@ -25,31 +23,11 @@ import type {
   QuestionnaireListItem,
 } from './types';
 
-// Use type inference from SOAFrameworkTable props
-type SOAFrameworkTableProps = Parameters<typeof SOAFrameworkTable>[0];
-
-interface SOAData {
-  framework: SOAFrameworkTableProps['framework'];
-  configuration: SOAFrameworkTableProps['configuration'];
-  document: SOAFrameworkTableProps['document'];
-  isFullyRemote: boolean;
-  canApprove: boolean;
-  approver: SOAFrameworkTableProps['approver'];
-  isPendingApproval: boolean;
-  canCurrentUserApprove: boolean;
-  currentMemberId: string | null;
-  ownerAdminMembers: SOAFrameworkTableProps['ownerAdminMembers'];
-}
-
 interface QuestionnaireTabsProps {
   organizationId: string;
   // Questionnaires tab
   questionnaires: QuestionnaireListItem[];
   hasPublishedPolicies: boolean;
-  // SOA tab (conditional)
-  showSOATab: boolean;
-  soaData?: SOAData | null;
-  soaError?: string | null;
   // Knowledge Base tab
   policies: PublishedPolicy[];
   contextEntries: ContextEntry[];
@@ -61,9 +39,6 @@ export function QuestionnaireTabs({
   organizationId,
   questionnaires,
   hasPublishedPolicies,
-  showSOATab,
-  soaData,
-  soaError,
   policies,
   contextEntries,
   manualAnswers,
@@ -116,7 +91,6 @@ export function QuestionnaireTabs({
             tabs={
               <TabsList variant="underline">
                 <TabsTrigger value="questionnaires">Security Questionnaire</TabsTrigger>
-                {showSOATab && <TabsTrigger value="soa">Statement of Applicability</TabsTrigger>}
                 <TabsTrigger value="knowledge-base">Knowledge Base</TabsTrigger>
               </TabsList>
             }
@@ -127,72 +101,6 @@ export function QuestionnaireTabs({
         <TabsContent value="questionnaires">
           <QuestionnaireOverview questionnaires={questionnaires} />
         </TabsContent>
-
-        {/* SOA Tab (conditional) */}
-        {showSOATab && (
-          <TabsContent value="soa">
-            {soaError ? (
-              <div className="flex flex-col gap-8">
-                <div className="flex flex-col gap-2">
-                  <h2 className="text-lg font-semibold text-foreground lg:text-xl">
-                    Statement of Applicability
-                  </h2>
-                  <Text variant="muted" size="sm">
-                    Auto-complete Statement of Applicability for ISO 27001. Generate answers based
-                    on your organization's policies and documentation.
-                  </Text>
-                </div>
-                <div className="flex items-center justify-center rounded-lg border py-12">
-                  <Text variant="muted">{soaError}</Text>
-                </div>
-              </div>
-            ) : soaData ? (
-              <div className="flex flex-col gap-8">
-                <div className="flex flex-col gap-2">
-                  <h2 className="text-lg font-semibold text-foreground lg:text-xl">
-                    Statement of Applicability
-                  </h2>
-                  <Text variant="muted" size="sm">
-                    Auto-complete Statement of Applicability for ISO 27001. Generate answers based
-                    on your organization's policies and documentation.
-                  </Text>
-                </div>
-                <SOAFrameworkTable
-                  framework={soaData.framework}
-                  configuration={soaData.configuration}
-                  document={soaData.document}
-                  organizationId={organizationId}
-                  isFullyRemote={soaData.isFullyRemote}
-                  canApprove={soaData.canApprove}
-                  approver={soaData.approver as Parameters<typeof SOAFrameworkTable>[0]['approver']}
-                  isPendingApproval={soaData.isPendingApproval}
-                  canCurrentUserApprove={soaData.canCurrentUserApprove}
-                  currentMemberId={soaData.currentMemberId}
-                  ownerAdminMembers={
-                    soaData.ownerAdminMembers as Parameters<
-                      typeof SOAFrameworkTable
-                    >[0]['ownerAdminMembers']
-                  }
-                />
-              </div>
-            ) : (
-              <div className="flex flex-col gap-8">
-                <div className="flex flex-col gap-2">
-                  <h2 className="text-lg font-semibold text-foreground lg:text-xl">
-                    Statement of Applicability
-                  </h2>
-                  <Text variant="muted" size="sm">
-                    Auto-complete Statement of Applicability for ISO 27001. Generate answers based
-                    on your organization's policies and documentation.
-                  </Text>
-                </div>
-                <div className="flex items-center justify-center py-12">
-                  <div className="h-6 w-6 animate-spin rounded-full border-2 border-muted-foreground border-t-transparent" />
-                </div>
-              </div>
-            )}
-          </TabsContent>
-        )}
 
         {/* Knowledge Base Tab */}
         <TabsContent value="knowledge-base">

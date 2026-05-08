@@ -5,39 +5,51 @@ import {
   toExternalEvidenceFormType,
 } from '@trycompai/company';
 import { db } from '@db';
-import { filterComplianceMembers } from '../utils/compliance-filters';
+import { ISO27001_FRAMEWORK_NAMES } from '../soa/utils/constants';
+import { computePeopleScore } from './frameworks-people-score.helper';
 
 const SIX_MONTHS_MS = 6 * 30 * 24 * 60 * 60 * 1000;
 
-const GENERAL_TRAINING_IDS = ['sat-1', 'sat-2', 'sat-3', 'sat-4', 'sat-5'];
-const HIPAA_TRAINING_ID = 'hipaa-sat-1';
+export { computeFrameworkComplianceScore } from './frameworks-compliance-score.helper';
 
 export async function getOverviewScores(organizationId: string) {
-  const [allPolicies, allTasks, employees, onboarding, org, hipaaInstance] = await Promise.all([
-    db.policy.findMany({ where: { organizationId } }),
-    db.task.findMany({ where: { organizationId } }),
-    db.member.findMany({
-      where: { organizationId, deactivated: false },
-      include: { user: true },
-    }),
-    db.onboarding.findUnique({
-      where: { organizationId },
-      select: { triggerJobId: true },
-    }),
-    db.organization.findUnique({
-      where: { id: organizationId },
-      select: { securityTrainingStepEnabled: true },
-    }),
-    db.frameworkInstance.findFirst({
-      where: { organizationId, framework: { name: 'HIPAA' } },
-      select: { id: true },
-    }),
-  ]);
+  const [allPolicies, allTasks, employees, onboarding, org, hipaaInstance] =
+    await Promise.all([
+      db.policy.findMany({
+        where: { organizationId, isArchived: false, archivedAt: null },
+      }),
+      db.task.findMany({ where: { organizationId, archivedAt: null } }),
+      db.member.findMany({
+        where: {
+          organizationId,
+          deactivated: false,
+          isActive: true,
+        },
+        include: { user: true },
+      }),
+      db.onboarding.findUnique({
+        where: { organizationId },
+        select: { triggerJobId: true, triggerJobCompleted: true },
+      }),
+      db.organization.findUnique({
+        where: { id: organizationId },
+        select: {
+          securityTrainingStepEnabled: true,
+          deviceAgentStepEnabled: true,
+          backgroundCheckStepEnabled: true,
+        },
+      }),
+      db.frameworkInstance.findFirst({
+        where: { organizationId, framework: { name: 'HIPAA' } },
+        select: { id: true },
+      }),
+    ]);
 
   const securityTrainingStepEnabled = org?.securityTrainingStepEnabled === true;
+  const deviceAgentStepEnabled = org?.deviceAgentStepEnabled === true;
+  const backgroundCheckStepEnabled = org?.backgroundCheckStepEnabled === true;
   const hasHipaaFramework = !!hipaaInstance;
 
-  // Policy breakdown
   const publishedPolicies = allPolicies.filter((p) => p.status === 'published');
   const draftPolicies = allPolicies.filter((p) => p.status === 'draft');
   const policiesInReview = allPolicies.filter(
@@ -47,7 +59,6 @@ export async function getOverviewScores(organizationId: string) {
     (p) => p.status === 'draft' || p.status === 'needs_review',
   );
 
-  // Task breakdown
   const doneTasks = allTasks.filter(
     (t) => t.status === 'done' || t.status === 'not_relevant',
   );
@@ -55,48 +66,15 @@ export async function getOverviewScores(organizationId: string) {
     (t) => t.status === 'todo' || t.status === 'in_progress',
   );
 
-  // People score — filter to members with compliance:required permission
-  const activeEmployees = await filterComplianceMembers(employees, organizationId);
-
-  let completedMembers = 0;
-
-  if (activeEmployees.length > 0) {
-    const requiredPolicies = allPolicies.filter(
-      (p) =>
-        p.isRequiredToSign && p.status === 'published' && !p.isArchived,
-    );
-
-    const memberIds = activeEmployees.map((e) => e.id);
-    const needsCompletions = securityTrainingStepEnabled || hasHipaaFramework;
-
-    const trainingCompletions = needsCompletions
-      ? await db.employeeTrainingVideoCompletion.findMany({
-          where: { memberId: { in: memberIds } },
-        })
-      : [];
-
-    for (const emp of activeEmployees) {
-      const hasAcceptedAllPolicies =
-        requiredPolicies.length === 0 ||
-        requiredPolicies.every((p) => p.signedBy.includes(emp.id));
-
-      const completedVideoIds = trainingCompletions
-        .filter((c) => c.memberId === emp.id && c.completedAt !== null)
-        .map((c) => c.videoId);
-
-      const hasCompletedAllTraining = securityTrainingStepEnabled
-        ? GENERAL_TRAINING_IDS.every((vid) => completedVideoIds.includes(vid))
-        : true;
-
-      const hasCompletedHipaa = hasHipaaFramework
-        ? completedVideoIds.includes(HIPAA_TRAINING_ID)
-        : true;
-
-      if (hasAcceptedAllPolicies && hasCompletedAllTraining && hasCompletedHipaa) {
-        completedMembers++;
-      }
-    }
-  }
+  const people = await computePeopleScore({
+    organizationId,
+    allPolicies,
+    employees,
+    securityTrainingStepEnabled,
+    deviceAgentStepEnabled,
+    backgroundCheckStepEnabled,
+    hasHipaaFramework,
+  });
 
   return {
     policies: {
@@ -111,47 +89,109 @@ export async function getOverviewScores(organizationId: string) {
       done: doneTasks.length,
       incompleteTasks,
     },
-    people: {
-      total: activeEmployees.length,
-      completed: completedMembers,
-    },
-    onboardingTriggerJobId: onboarding?.triggerJobId ?? null,
+    people,
+    onboardingTriggerJobId: onboarding?.triggerJobCompleted ? null : (onboarding?.triggerJobId ?? null),
     documents: await computeDocumentsScore(organizationId),
     findings: await getOrganizationFindings(organizationId),
   };
 }
 
 async function computeDocumentsScore(organizationId: string) {
-  const groupedStatuses = await db.evidenceSubmission.groupBy({
-    by: ['formType'],
-    where: { organizationId },
-    _max: { submittedAt: true },
-  });
+  const [groupedStatuses, isoFrameworkInstances, settings] = await Promise.all([
+    db.evidenceSubmission.groupBy({
+      by: ['formType'],
+      where: { organizationId },
+      _max: { submittedAt: true },
+    }),
+    db.frameworkInstance.findMany({
+      where: {
+        organizationId,
+        framework: {
+          name: {
+            in: ISO27001_FRAMEWORK_NAMES,
+          },
+        },
+      },
+      select: { frameworkId: true },
+    }),
+    db.evidenceFormSetting.findMany({
+      where: { organizationId },
+      select: { formType: true, isNotRelevant: true },
+    }),
+  ]);
 
-  const statuses: Record<string, { lastSubmittedAt: string | null }> = {};
+  const notRelevantFormTypes = new Set(
+    settings
+      .filter((setting) => setting.isNotRelevant)
+      .map((setting) => setting.formType),
+  );
+  const statuses: Record<
+    string,
+    { lastSubmittedAt: string | null; isNotRelevant: boolean }
+  > = {};
   for (const form of evidenceFormDefinitionList) {
     const match = groupedStatuses.find(
       (entry) => entry.formType === toDbEvidenceFormType(form.type),
     );
     statuses[form.type] = {
       lastSubmittedAt: match?._max.submittedAt?.toISOString() ?? null,
+      isNotRelevant: notRelevantFormTypes.has(toDbEvidenceFormType(form.type)),
     };
   }
 
-  const includedForms = evidenceFormDefinitionList.filter((f) => !f.hidden && !f.optional);
-  const totalDocuments = includedForms.length;
-  const outstandingDocuments = includedForms.reduce((count, form) => {
+  const includedForms = evidenceFormDefinitionList.filter(
+    (f) => !f.hidden && !f.optional && !statuses[f.type]?.isNotRelevant,
+  );
+  const nonSOAOutstandingDocuments = includedForms.reduce((count, form) => {
     if (form.type === 'meeting') {
       const allMeetingsOutstanding = meetingSubTypeValues.every((subType) => {
         const lastSubmitted = statuses[subType]?.lastSubmittedAt;
-        return !lastSubmitted || Date.now() - new Date(lastSubmitted).getTime() > SIX_MONTHS_MS;
+        return (
+          !lastSubmitted ||
+          Date.now() - new Date(lastSubmitted).getTime() > SIX_MONTHS_MS
+        );
       });
       return allMeetingsOutstanding ? count + 1 : count;
     }
     const lastSubmitted = statuses[form.type]?.lastSubmittedAt;
-    const isOutstanding = !lastSubmitted || Date.now() - new Date(lastSubmitted).getTime() > SIX_MONTHS_MS;
+    const isOutstanding =
+      !lastSubmitted ||
+      Date.now() - new Date(lastSubmitted).getTime() > SIX_MONTHS_MS;
     return isOutstanding ? count + 1 : count;
   }, 0);
+
+  const isoFrameworkIds = isoFrameworkInstances
+    .map((instance) => instance.frameworkId)
+    .filter((id): id is string => !!id);
+  const hasSOADocumentRequirement = isoFrameworkIds.length > 0;
+
+  let soaCompleted = false;
+  if (hasSOADocumentRequirement) {
+    const latestSOADocument = await db.sOADocument.findFirst({
+      where: {
+        organizationId,
+        isLatest: true,
+        frameworkId: { in: isoFrameworkIds },
+      },
+      select: {
+        approvedAt: true,
+        status: true,
+      },
+      orderBy: {
+        updatedAt: 'desc',
+      },
+    });
+    soaCompleted =
+      latestSOADocument?.status === 'completed' &&
+      !!latestSOADocument.approvedAt;
+  }
+
+  const soaTotalDocuments = hasSOADocumentRequirement ? 1 : 0;
+  const soaOutstandingDocuments =
+    hasSOADocumentRequirement && !soaCompleted ? 1 : 0;
+  const totalDocuments = includedForms.length + soaTotalDocuments;
+  const outstandingDocuments =
+    nonSOAOutstandingDocuments + soaOutstandingDocuments;
 
   return {
     totalDocuments,
@@ -184,64 +224,10 @@ async function getOrganizationFindings(organizationId: string) {
   }));
 }
 
-export async function getCurrentMember(
-  organizationId: string,
-  userId: string,
-) {
+export async function getCurrentMember(organizationId: string, userId: string) {
   const member = await db.member.findFirst({
     where: { userId, organizationId, deactivated: false },
     select: { id: true, role: true },
   });
   return member;
-}
-
-interface FrameworkWithControlsForScoring {
-  controls: {
-    id: string;
-    policies: { id: string; status: string }[];
-  }[];
-}
-
-interface TaskWithControls {
-  id: string;
-  status: string;
-  controls: { id: string }[];
-}
-
-export function computeFrameworkComplianceScore(
-  framework: FrameworkWithControlsForScoring,
-  tasks: TaskWithControls[],
-): number {
-  const controls = framework.controls ?? [];
-
-  // Deduplicate policies by id across all controls
-  const uniquePoliciesMap = new Map<string, { id: string; status: string }>();
-  for (const c of controls) {
-    for (const p of c.policies || []) {
-      uniquePoliciesMap.set(p.id, p);
-    }
-  }
-  const uniquePolicies = Array.from(uniquePoliciesMap.values());
-
-  const totalPolicies = uniquePolicies.length;
-  const publishedPolicies = uniquePolicies.filter(
-    (p) => p.status === 'published',
-  ).length;
-  const policyRatio = totalPolicies > 0 ? publishedPolicies / totalPolicies : 0;
-
-  const controlIds = controls.map((c) => c.id);
-  const uniqueTaskMap = new Map<string, TaskWithControls>();
-  for (const t of tasks) {
-    if (t.controls.some((c) => controlIds.includes(c.id))) {
-      uniqueTaskMap.set(t.id, t);
-    }
-  }
-  const uniqueTasks = Array.from(uniqueTaskMap.values());
-  const totalTasks = uniqueTasks.length;
-  const doneTasks = uniqueTasks.filter(
-    (t) => t.status === 'done' || t.status === 'not_relevant',
-  ).length;
-  const taskRatio = totalTasks > 0 ? doneTasks / totalTasks : 1;
-
-  return Math.round(((policyRatio + taskRatio) / 2) * 100);
 }

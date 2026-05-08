@@ -1,0 +1,51 @@
+{
+  "slug": "buddy",
+  "name": "Buddy",
+  "description": "Monitor Buddy CI/CD pipelines for automated build, test, and deployment compliance",
+  "category": "Development",
+  "docsUrl": "https://buddy.works/docs/api/getting-started/overview",
+  "baseUrl": "https://api.buddy.works/",
+  "authConfig": {
+    "type": "custom",
+    "config": {
+      "setupInstructions": "1. Log in to Buddy at https://app.buddy.works (US) or https://eu.buddy.works (EU)\n2. Go to Profile > Personal Access Tokens\n3. Generate a new token with workspace and pipeline scopes\n4. Set the API Endpoint URL based on your region:\n   - US accounts: https://api.buddy.works\n   - EU accounts: https://api.eu.buddy.works\n   - Self-hosted: https://YOUR-IP/api\n5. Enter both values below",
+      "credentialFields": [
+        {
+          "label": "Personal Access Token",
+          "type": "password",
+          "required": true,
+          "helpText": "Found in Buddy Profile > Personal Access Tokens. Generate a token with workspace and pipeline scopes."
+        },
+        {
+          "label": "API Endpoint URL",
+          "type": "text",
+          "required": true,
+          "helpText": "Your Buddy API endpoint. US accounts: https://api.buddy.works, EU accounts: https://api.eu.buddy.works, Self-hosted: https://YOUR-IP/api"
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "buddy_code_changes",
+      "name": "Code Changes",
+      "description": "Verifies Buddy CI/CD pipelines are configured to automate code deployments",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "buddy_employee_access",
+      "name": "Employee Access",
+      "description": "Verifies Buddy account is active with authorized team members",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

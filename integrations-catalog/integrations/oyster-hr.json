@@ -1,0 +1,38 @@
+{
+  "slug": "oyster-hr",
+  "name": "Oyster HR",
+  "description": "Oyster global employment platform for remote teams",
+  "category": "HR & People",
+  "docsUrl": "https://docs.oysterhr.com/",
+  "baseUrl": "https://api.oysterhr.com/v1",
+  "authConfig": {
+    "type": "custom",
+    "config": {
+      "setupInstructions": "1. Log in to Oyster\n2. Go to Settings → Integrations\n3. Generate an API token\n4. Paste it below",
+      "credentialFields": [
+        {
+          "label": "API Token",
+          "type": "password",
+          "required": true,
+          "helpText": "Oyster → Settings → Integrations → API Token"
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "oyster_employee_access",
+      "name": "Employee Access",
+      "description": "Lists Oyster employees to verify global hiring compliance",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 1,
+  "isActive": true
+}

@@ -1,0 +1,45 @@
+{
+  "slug": "splunk",
+  "name": "Splunk",
+  "description": "Monitor Splunk saved searches and user accounts for monitoring and access review compliance",
+  "category": "Monitoring",
+  "docsUrl": "https://docs.splunk.com/Documentation/Splunk/latest/RESTREF/RESTprolog",
+  "baseUrl": "https://splunkcloud.com/",
+  "authConfig": {
+    "type": "custom",
+    "config": {
+      "setupInstructions": "1. Log in to Splunk\n2. Go to Settings > Tokens\n3. Enable token authentication if not enabled\n4. Click New Token and create a token with appropriate permissions\n5. Copy and paste the token below",
+      "credentialFields": [
+        {
+          "label": "Bearer Token",
+          "type": "password",
+          "required": true,
+          "helpText": "Create an authentication token in Splunk > Settings > Tokens"
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "saved_searches",
+      "name": "Monitoring & Alerting",
+      "description": "Verifies that Splunk saved searches are configured for monitoring and alerting",
+      "defaultSeverity": "high",
+      "enabled": true
+    },
+    {
+      "slug": "users",
+      "name": "Access Review Log",
+      "description": "Reviews Splunk users for access review log compliance",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

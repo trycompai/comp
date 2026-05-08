@@ -1,0 +1,35 @@
+{
+  "slug": "ramp",
+  "name": "Ramp",
+  "description": "Monitor Ramp user access and employee listing",
+  "category": "Productivity",
+  "docsUrl": "https://docs.ramp.com/developer-api",
+  "baseUrl": "https://api.ramp.com/",
+  "authConfig": {
+    "type": "oauth2",
+    "config": {
+      "setupInstructions": "1. Go to the Ramp Developer Portal (developer.ramp.com)\n2. Register a new application\n3. Set the redirect URI to: https://api.trycomp.ai/v1/integrations/oauth/callback\n4. Copy the Client ID and Client Secret\n5. Enter them in the CompAI admin panel\n6. Click Connect to authorize access to your Ramp account",
+      "scopes": [
+        "users:read"
+      ],
+      "clientAuthMethod": "body",
+      "supportsRefreshToken": true
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "ramp_employee_access",
+      "name": "Employee Access",
+      "description": "Lists all active Ramp users with their roles",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 1,
+  "isActive": true
+}

@@ -1,8 +1,5 @@
 'use client';
 
-import { ConnectIntegrationDialog } from '@/components/integrations/ConnectIntegrationDialog';
-import { ManageIntegrationDialog } from '@/components/integrations/ManageIntegrationDialog';
-import { usePermissions } from '@/hooks/use-permissions';
 import {
   ConnectionListItem,
   IntegrationProvider,
@@ -10,6 +7,8 @@ import {
   useIntegrationMutations,
   useIntegrationProviders,
 } from '@/hooks/use-integration-platform';
+import { usePermissions } from '@/hooks/use-permissions';
+import { useVendors } from '@/hooks/use-vendors';
 import { Badge } from '@trycompai/ui/badge';
 import { Button } from '@trycompai/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@trycompai/ui/card';
@@ -21,6 +20,7 @@ import {
   DialogTitle,
 } from '@trycompai/ui/dialog';
 import { Skeleton } from '@trycompai/ui/skeleton';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@trycompai/ui/tooltip';
 import {
   AlertCircle,
   AlertTriangle,
@@ -37,24 +37,11 @@ import Link from 'next/link';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
-import {
-  CATEGORIES,
-  INTEGRATIONS,
-  type Integration,
-  type IntegrationCategory,
-} from '../data/integrations';
+import { CATEGORIES, type Integration, type IntegrationCategory } from '../data/integrations';
 import { SearchInput } from './SearchInput';
 import { TaskCard, TaskCardSkeleton } from './TaskCard';
 
 const LOGO_TOKEN = 'pk_AZatYxV5QDSfWpRDaBxzRQ';
-
-// Providers that support employee sync via People > All
-const EMPLOYEE_SYNC_PROVIDERS = new Set([
-  'google-workspace',
-  'rippling',
-  'jumpcloud',
-  'ramp',
-]);
 
 // Check if a provider needs variable configuration based on manifest's required variables
 const providerNeedsConfiguration = (
@@ -65,6 +52,16 @@ const providerNeedsConfiguration = (
 
   const currentVars = variables || {};
   return requiredVariables.some((varId) => !currentVars[varId]);
+};
+
+const normalizeIntegrationName = (value: string): string => {
+  return value
+    .toLowerCase()
+    .replace(/\s*\([^)]*\)\s*$/, '')
+    .replace(/[_-]+/g, ' ')
+    .replace(/[^a-z0-9 ]+/g, '')
+    .replace(/\s+/g, ' ')
+    .trim();
 };
 
 interface RelevantTask {
@@ -84,35 +81,53 @@ interface PlatformIntegrationsProps {
   taskTemplates: Array<{ id: string; taskId: string; name: string; description: string }>;
 }
 
+const CONNECTION_STATUS_PRIORITY: Record<string, number> = {
+  active: 5,
+  pending: 4,
+  error: 3,
+  paused: 2,
+  disconnected: 1,
+};
+
+const getConnectionPriority = (connection: ConnectionListItem): number => {
+  return CONNECTION_STATUS_PRIORITY[connection.status] ?? 0;
+};
+
+const getConnectionCreatedAtMs = (connection: ConnectionListItem): number => {
+  const date = new Date(connection.createdAt);
+  return Number.isNaN(date.getTime()) ? 0 : date.getTime();
+};
+
+const shouldReplaceProviderConnection = (
+  current: ConnectionListItem | undefined,
+  candidate: ConnectionListItem,
+): boolean => {
+  if (!current) return true;
+
+  const currentPriority = getConnectionPriority(current);
+  const candidatePriority = getConnectionPriority(candidate);
+  if (candidatePriority !== currentPriority) {
+    return candidatePriority > currentPriority;
+  }
+
+  return getConnectionCreatedAtMs(candidate) > getConnectionCreatedAtMs(current);
+};
+
 export function PlatformIntegrations({ className, taskTemplates }: PlatformIntegrationsProps) {
   const { orgId } = useParams<{ orgId: string }>();
   const router = useRouter();
   const searchParams = useSearchParams();
   const { providers, isLoading: loadingProviders } = useIntegrationProviders(true);
-  const {
-    connections,
-    isLoading: loadingConnections,
-    refresh: refreshConnections,
-  } = useIntegrationConnections();
+  const { connections, isLoading: loadingConnections } = useIntegrationConnections();
   const { hasPermission } = usePermissions();
   const canCreate = hasPermission('integration', 'create');
   const { startOAuth } = useIntegrationMutations();
+  const { data: vendorsResponse } = useVendors();
 
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<IntegrationCategory | 'All'>('All');
   const [connectingProvider, setConnectingProvider] = useState<string | null>(null);
   const hasHandledOAuthRef = useRef(false);
-
-  // Management dialog state
-  const [manageDialogOpen, setManageDialogOpen] = useState(false);
-  const [selectedConnection, setSelectedConnection] = useState<ConnectionListItem | null>(null);
-  const [selectedProvider, setSelectedProvider] = useState<IntegrationProvider | null>(null);
-
-  // Connect dialog state (for non-OAuth)
-  const [connectDialogOpen, setConnectDialogOpen] = useState(false);
-  const [connectingProviderInfo, setConnectingProviderInfo] = useState<IntegrationProvider | null>(
-    null,
-  );
 
   // Custom integration dialog state
   const [selectedCustomIntegration, setSelectedCustomIntegration] = useState<Integration | null>(
@@ -126,7 +141,7 @@ export function PlatformIntegrations({ className, taskTemplates }: PlatformInteg
     if (provider.authType === 'oauth2') {
       setConnectingProvider(provider.id);
       try {
-        const redirectUrl = window.location.href;
+        const redirectUrl = `${window.location.origin}/${orgId}/integrations/${provider.id}?success=true`;
         const result = await startOAuth(provider.id, redirectUrl);
         if (result.authorizationUrl) {
           window.location.href = result.authorizationUrl;
@@ -141,52 +156,55 @@ export function PlatformIntegrations({ className, taskTemplates }: PlatformInteg
       return;
     }
 
-    // For non-OAuth (api_key, basic, custom), open the connect dialog
-    setConnectingProviderInfo(provider);
-    setConnectDialogOpen(true);
+    // For non-OAuth (api_key, basic, custom), navigate to detail page
+    router.push(`/${orgId}/integrations/${provider.id}`);
   };
 
-  const handleConnectDialogSuccess = () => {
-    // Prompt user to import employees for providers that support sync
-    if (connectingProviderInfo && EMPLOYEE_SYNC_PROVIDERS.has(connectingProviderInfo.id)) {
-      toast.info(`Import your ${connectingProviderInfo.name} users`, {
-        description:
-          'Go to People to import and sync your team members.',
-        duration: 15000,
-        action: {
-          label: 'Go to People',
-          onClick: () => router.push(`/${orgId}/people/all`),
-        },
-      });
-    }
-    refreshConnections();
-    setConnectDialogOpen(false);
-    setConnectingProviderInfo(null);
-  };
-
-  const handleOpenManageDialog = (
-    connection: ConnectionListItem,
-    provider: IntegrationProvider,
-  ) => {
-    setSelectedConnection(connection);
-    setSelectedProvider(provider);
-    setManageDialogOpen(true);
-  };
-
-  const handleCloseManageDialog = () => {
-    setManageDialogOpen(false);
-    setSelectedConnection(null);
-    setSelectedProvider(null);
+  const handleOpenProviderSettings = (provider: IntegrationProvider) => {
+    router.push(`/${orgId}/integrations/${provider.id}?settings=true`);
   };
 
   // Map connections by provider slug
-  const connectionsByProvider = useMemo(
-    () => new Map(connections?.map((c) => [c.providerSlug, c]) || []),
-    [connections],
-  );
+  const connectionsByProvider = useMemo(() => {
+    const map = new Map<string, ConnectionListItem>();
+    for (const connection of connections ?? []) {
+      const current = map.get(connection.providerSlug);
+      if (shouldReplaceProviderConnection(current, connection)) {
+        map.set(connection.providerSlug, connection);
+      }
+    }
+    return map;
+  }, [connections]);
 
-  // Merge and sort: platform first (warnings, then connected, then disconnected), then custom
+  const vendorNames = useMemo(() => {
+    const vendors = vendorsResponse?.data?.data;
+    if (!Array.isArray(vendors)) {
+      return new Set<string>();
+    }
+
+    return new Set(
+      vendors
+        .map((vendor) => normalizeIntegrationName(vendor.name))
+        .filter((name) => name.length > 0),
+    );
+  }, [vendorsResponse]);
+
+  // Merge/sort integrations, then prioritize entries matching vendors in the org's vendor list.
   const unifiedIntegrations = useMemo<UnifiedIntegration[]>(() => {
+    const platformSortTier = (item: UnifiedIntegration & { type: 'platform' }): 0 | 1 | 2 => {
+      const { provider, connection } = item;
+      const isComingSoon = provider.authType === 'oauth2' && provider.oauthConfigured === false;
+      if (isComingSoon) return 2;
+
+      const hasEstablishedConnection =
+        connection &&
+        connection.status !== 'disconnected' &&
+        ['active', 'pending', 'error', 'paused'].includes(connection.status);
+      if (hasEstablishedConnection) return 0;
+
+      return 1;
+    };
+
     const platformIntegrations: UnifiedIntegration[] = (providers?.filter((p) => p.isActive) || [])
       .map((provider) => ({
         type: 'platform' as const,
@@ -194,30 +212,58 @@ export function PlatformIntegrations({ className, taskTemplates }: PlatformInteg
         connection: connectionsByProvider.get(provider.id),
       }))
       .sort((a, b) => {
-        const aConnected = a.connection?.status === 'active';
-        const bConnected = b.connection?.status === 'active';
-        const aNeedsConfig = aConnected && a.connection?.variables === null;
-        const bNeedsConfig = bConnected && b.connection?.variables === null;
-
-        // Warnings first
-        if (aNeedsConfig && !bNeedsConfig) return -1;
-        if (!aNeedsConfig && bNeedsConfig) return 1;
-
-        // Then connected
-        if (aConnected && !bConnected) return -1;
-        if (!aConnected && bConnected) return 1;
-
-        // Then alphabetical
+        const tierA = platformSortTier(a);
+        const tierB = platformSortTier(b);
+        if (tierA !== tierB) return tierA - tierB;
         return a.provider.name.localeCompare(b.provider.name);
       });
 
-    const customIntegrations: UnifiedIntegration[] = INTEGRATIONS.map((integration) => ({
-      type: 'custom' as const,
-      integration,
-    }));
+    // AI Agent integrations are hidden — they are not real integrations
+    const allIntegrations = [...platformIntegrations];
+    if (vendorNames.size === 0) {
+      return allIntegrations;
+    }
 
-    return [...platformIntegrations, ...customIntegrations];
-  }, [providers, connectionsByProvider]);
+    const vendorListedIntegrations: UnifiedIntegration[] = [];
+    const otherIntegrations: UnifiedIntegration[] = [];
+
+    allIntegrations.forEach((integration) => {
+      const candidateNames =
+        integration.type === 'platform'
+          ? [integration.provider.name, integration.provider.id]
+          : [integration.integration.name, integration.integration.id];
+
+      const isVendorListed = candidateNames
+        .map((candidateName) => normalizeIntegrationName(candidateName))
+        .some((normalizedCandidateName) => vendorNames.has(normalizedCandidateName));
+
+      if (isVendorListed) {
+        vendorListedIntegrations.push(integration);
+      } else {
+        otherIntegrations.push(integration);
+      }
+    });
+
+    // Connected integrations always appear first, then vendor-listed, then others
+    const ESTABLISHED_STATUSES = new Set(['active', 'pending', 'error', 'paused']);
+    const sortByConnection = (list: UnifiedIntegration[]) =>
+      list.sort((a, b) => {
+        const aConnected =
+          a.type === 'platform' &&
+          a.connection?.status &&
+          ESTABLISHED_STATUSES.has(a.connection.status)
+            ? 0
+            : 1;
+        const bConnected =
+          b.type === 'platform' &&
+          b.connection?.status &&
+          ESTABLISHED_STATUSES.has(b.connection.status)
+            ? 0
+            : 1;
+        return aConnected - bConnected;
+      });
+    return sortByConnection([...vendorListedIntegrations, ...otherIntegrations]);
+  }, [providers, connectionsByProvider, vendorNames]);
 
   // Get all unique categories
   const allCategories = useMemo(() => {
@@ -260,60 +306,33 @@ export function PlatformIntegrations({ className, taskTemplates }: PlatformInteg
     return filtered;
   }, [unifiedIntegrations, searchQuery, selectedCategory]);
 
-  // Handle OAuth callback - auto-open config dialog for newly connected provider
+  // Handle legacy OAuth callbacks that still land on the integrations grid.
   useEffect(() => {
-    // Only handle once
     if (hasHandledOAuthRef.current) return;
 
     const success = searchParams.get('success');
     const providerSlug = searchParams.get('provider');
 
-    // Check if this is an OAuth callback
     if (success !== 'true' || !providerSlug) return;
 
-    // Wait for data to load
-    if (!connections || !providers || loadingConnections || loadingProviders) {
+    if (!providers || loadingProviders) {
       return;
     }
 
-    // Mark as handled
     hasHandledOAuthRef.current = true;
-
-    const connection = connections.find((c) => c.providerSlug === providerSlug);
     const provider = providers.find((p) => p.id === providerSlug);
 
-    if (connection && provider) {
+    if (provider) {
       toast.success(`${provider.name} connected successfully!`);
-
-      // Prompt user to import employees for providers that support sync
-      if (EMPLOYEE_SYNC_PROVIDERS.has(providerSlug)) {
-        toast.info(`Import your ${provider.name} users`, {
-          description:
-            'Go to People to import and sync your team members.',
-          duration: 15000,
-          action: {
-            label: 'Go to People',
-            onClick: () => router.push(`/${orgId}/people/all`),
-          },
-        });
-      }
-
-      // Set state first
-      setSelectedConnection(connection);
-      setSelectedProvider(provider);
-
-      // Open dialog after a tick to ensure state is updated
-      setTimeout(() => {
-        setManageDialogOpen(true);
-      }, 150);
+      router.replace(`/${orgId}/integrations/${providerSlug}?settings=true`);
+      return;
     }
 
-    // Clean up URL parameters
     const url = new URL(window.location.href);
     url.searchParams.delete('success');
     url.searchParams.delete('provider');
     window.history.replaceState({}, '', url.toString());
-  }, [searchParams, connections, providers, loadingConnections, loadingProviders]);
+  }, [searchParams, providers, loadingProviders, router, orgId]);
 
   // Create a map from templateId to taskId for quick lookup
   const templateToTaskMap = useMemo(
@@ -341,16 +360,25 @@ export function PlatformIntegrations({ className, taskTemplates }: PlatformInteg
         }),
       })
         .then((res) => res.json())
-        .then((data: { tasks: Array<{ taskTemplateId: string; taskName: string; reason: string; prompt: string }> }) => {
-          const aiTasks = Array.isArray(data.tasks) ? data.tasks : [];
-          const tasksWithIds = aiTasks
-            .map((task) => ({
-              ...task,
-              taskId: templateToTaskMap.get(task.taskTemplateId) || '',
-            }))
-            .filter((task) => task.taskId);
-          setRelevantTasks(tasksWithIds);
-        })
+        .then(
+          (data: {
+            tasks: Array<{
+              taskTemplateId: string;
+              taskName: string;
+              reason: string;
+              prompt: string;
+            }>;
+          }) => {
+            const aiTasks = Array.isArray(data.tasks) ? data.tasks : [];
+            const tasksWithIds = aiTasks
+              .map((task) => ({
+                ...task,
+                taskId: templateToTaskMap.get(task.taskTemplateId) || '',
+              }))
+              .filter((task) => task.taskId);
+            setRelevantTasks(tasksWithIds);
+          },
+        )
         .catch((error) => {
           console.error('Error fetching relevant tasks:', error);
           setRelevantTasks([]);
@@ -457,170 +485,263 @@ export function PlatformIntegrations({ className, taskTemplates }: PlatformInteg
                     connection?.variables as Record<string, unknown> | null,
                   );
 
+                const isComingSoon =
+                  provider.authType === 'oauth2' && provider.oauthConfigured === false;
+
+                /** Primary CTA is Connect / Set up — card still opens details on click; hide redundant “View details” row */
+                const showConnectOrSetup =
+                  canCreate && !needsConfiguration && !isConnected && !hasError && !isComingSoon;
+
                 return (
-                  <Card
+                  <div
                     key={`platform-${provider.id}`}
-                    className={`relative overflow-hidden transition-all flex flex-col ${
-                      needsConfiguration
-                        ? 'border-warning/30 bg-warning/5'
-                        : isConnected
-                          ? 'border-primary/30 bg-primary/5'
-                          : 'hover:border-primary/20 hover:shadow-sm'
-                    }`}
+                    className={
+                      isComingSoon
+                        ? undefined
+                        : 'group rounded-xl outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2 focus-visible:ring-offset-background'
+                    }
+                    role={isComingSoon ? undefined : 'button'}
+                    tabIndex={isComingSoon ? undefined : 0}
+                    aria-label={
+                      isComingSoon
+                        ? undefined
+                        : `Open ${provider.name} — connection details, services, and settings`
+                    }
+                    onClick={
+                      isComingSoon
+                        ? undefined
+                        : () => router.push(`/${orgId}/integrations/${provider.id}`)
+                    }
+                    onKeyDown={
+                      isComingSoon
+                        ? undefined
+                        : (e) => {
+                            if (e.key === 'Enter' || e.key === ' ') {
+                              e.preventDefault();
+                              router.push(`/${orgId}/integrations/${provider.id}`);
+                            }
+                          }
+                    }
                   >
-                    <CardHeader className="pb-3">
-                      <div className="flex items-start justify-between">
-                        <div className="flex items-center gap-3">
-                          <div className="w-12 h-12 rounded-xl bg-background border border-border flex items-center justify-center overflow-hidden">
-                            <Image
-                              src={provider.logoUrl}
-                              alt={`${provider.name} logo`}
-                              width={32}
-                              height={32}
-                              className="object-contain"
-                            />
-                          </div>
-                          <div>
-                            <CardTitle className="text-base font-semibold flex items-center gap-2">
-                              {provider.name}
-                              {isConnected && !needsConfiguration && (
-                                <CheckCircle2 className="h-4 w-4 text-primary" />
-                              )}
-                              {needsConfiguration && (
-                                <AlertTriangle className="h-4 w-4 text-warning" />
-                              )}
-                              {hasError && <AlertCircle className="h-4 w-4 text-destructive" />}
-                            </CardTitle>
-                            <div className="flex items-center gap-2 mt-0.5">
-                              <p className="text-xs text-muted-foreground">{provider.category}</p>
-                              <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
-                                Platform
-                              </Badge>
+                    <Card
+                      className={`relative overflow-hidden transition-all flex flex-col h-full ${isComingSoon ? 'opacity-75' : 'cursor-pointer'} ${
+                        needsConfiguration
+                          ? 'border-warning/30 bg-warning/5'
+                          : isConnected
+                            ? 'border-primary/30 bg-primary/5'
+                            : 'hover:border-primary/20 hover:shadow-sm'
+                      } ${!isComingSoon ? 'group-hover:border-primary/30 group-hover:shadow-md' : ''}`}
+                    >
+                      <CardHeader className="pb-3">
+                        <div className="flex items-start justify-between">
+                          <div className="flex items-center gap-3">
+                            <div className="w-12 h-12 rounded-xl bg-background border border-border flex items-center justify-center overflow-hidden">
+                              <Image
+                                src={provider.logoUrl}
+                                alt={`${provider.name} logo`}
+                                width={32}
+                                height={32}
+                                className="object-contain"
+                              />
+                            </div>
+                            <div>
+                              <CardTitle className="text-base font-semibold flex items-center gap-2">
+                                {provider.name}
+                                {isConnected && !needsConfiguration && (
+                                  <CheckCircle2 className="h-4 w-4 text-primary" />
+                                )}
+                                {needsConfiguration && (
+                                  <AlertTriangle className="h-4 w-4 text-warning" />
+                                )}
+                                {hasError && <AlertCircle className="h-4 w-4 text-destructive" />}
+                              </CardTitle>
+                              <div className="flex items-center gap-2 mt-0.5">
+                                <p className="text-xs text-muted-foreground">{provider.category}</p>
+                                <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
+                                  Platform
+                                </Badge>
+                              </div>
                             </div>
                           </div>
+                          {isConnected && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-8 w-8 p-0"
+                              onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                handleOpenProviderSettings(provider);
+                              }}
+                            >
+                              <Settings2 className="h-4 w-4" />
+                            </Button>
+                          )}
                         </div>
-                        {isConnected && (
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="h-8 w-8 p-0"
-                            onClick={() => handleOpenManageDialog(connection, provider)}
-                          >
-                            <Settings2 className="h-4 w-4" />
-                          </Button>
-                        )}
-                      </div>
-                    </CardHeader>
-                    <CardContent className="flex flex-col h-full">
-                      <div className="flex-1 space-y-4">
-                        <CardDescription className="text-sm leading-relaxed line-clamp-2">
-                          {provider.description}
-                        </CardDescription>
+                      </CardHeader>
+                      <CardContent className="flex flex-col h-full">
+                        <div className="flex-1 space-y-4">
+                          <CardDescription className="text-sm leading-relaxed line-clamp-2">
+                            {provider.description}
+                          </CardDescription>
 
-                        {provider.category === 'Cloud' && (
-                          <p className="text-xs text-muted-foreground italic">
-                            This integration is used exclusively for Cloud Security Tests.
-                          </p>
-                        )}
-
-                        {/* Mapped tasks */}
-                        {provider.mappedTasks && provider.mappedTasks.length > 0 && (
-                          <div className="flex flex-wrap gap-1.5">
-                            {provider.mappedTasks.slice(0, 3).map((task) => {
-                              const taskId = templateToTaskMap.get(task.id);
-                              return taskId ? (
-                                <Link
-                                  key={task.id}
-                                  href={`/${orgId}/tasks/${taskId}`}
-                                  onClick={(e) => e.stopPropagation()}
-                                >
+                          {/* Mapped tasks */}
+                          {provider.mappedTasks && provider.mappedTasks.length > 0 && (
+                            <div className="flex flex-wrap gap-1.5">
+                              {provider.mappedTasks.slice(0, 3).map((task) => {
+                                const taskId = templateToTaskMap.get(task.id);
+                                return taskId ? (
+                                  <Link
+                                    key={task.id}
+                                    href={`/${orgId}/tasks/${taskId}`}
+                                    onClick={(e) => e.stopPropagation()}
+                                  >
+                                    <Badge
+                                      variant="secondary"
+                                      className="text-[10px] px-1.5 py-0.5 font-normal cursor-pointer hover:bg-secondary/80 transition-colors"
+                                    >
+                                      {task.name}
+                                    </Badge>
+                                  </Link>
+                                ) : (
                                   <Badge
+                                    key={task.id}
                                     variant="secondary"
-                                    className="text-[10px] px-1.5 py-0.5 font-normal cursor-pointer hover:bg-secondary/80 transition-colors"
+                                    className="text-[10px] px-1.5 py-0.5 font-normal"
                                   >
                                     {task.name}
                                   </Badge>
-                                </Link>
-                              ) : (
-                                <Badge
-                                  key={task.id}
-                                  variant="secondary"
-                                  className="text-[10px] px-1.5 py-0.5 font-normal"
-                                >
-                                  {task.name}
-                                </Badge>
-                              );
-                            })}
-                            {provider.mappedTasks.length > 3 && (
-                              <Badge
-                                variant="outline"
-                                className="text-[10px] px-1.5 py-0.5 font-normal"
-                              >
-                                +{provider.mappedTasks.length - 3} more
-                              </Badge>
-                            )}
+                                );
+                              })}
+                              {provider.mappedTasks.length > 3 && (
+                                <TooltipProvider>
+                                  <Tooltip>
+                                    <TooltipTrigger asChild>
+                                      <Badge
+                                        variant="outline"
+                                        className="text-[10px] px-1.5 py-0.5 font-normal cursor-default"
+                                      >
+                                        +{provider.mappedTasks.length - 3} more
+                                      </Badge>
+                                    </TooltipTrigger>
+                                    <TooltipContent side="bottom" className="max-w-xs">
+                                      <div className="flex flex-wrap gap-1">
+                                        {provider.mappedTasks.slice(3).map((t) => {
+                                          const tid = templateToTaskMap.get(t.id);
+                                          return tid ? (
+                                            <Link
+                                              key={t.id}
+                                              href={`/${orgId}/tasks/${tid}`}
+                                              className="text-xs text-primary hover:underline"
+                                              onClick={(e) => e.stopPropagation()}
+                                            >
+                                              {t.name}
+                                            </Link>
+                                          ) : (
+                                            <span key={t.id} className="text-xs">
+                                              {t.name}
+                                            </span>
+                                          );
+                                        })}
+                                      </div>
+                                    </TooltipContent>
+                                  </Tooltip>
+                                </TooltipProvider>
+                              )}
+                            </div>
+                          )}
+                        </div>
+
+                        {!isComingSoon && !showConnectOrSetup && (
+                          <div className="mt-4 flex items-center justify-end gap-1.5 border-t border-border/50 pt-3 text-xs font-medium text-primary">
+                            <span>View details</span>
+                            <ArrowRight
+                              className="h-3.5 w-3.5 shrink-0 transition-transform group-hover:translate-x-0.5"
+                              aria-hidden
+                            />
                           </div>
                         )}
-                      </div>
 
-                      <div className="mt-auto pt-4">
-                        {needsConfiguration ? (
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            className="w-full"
-                            onClick={() => handleOpenManageDialog(connection, provider)}
-                          >
-                            Configure Variables
-                          </Button>
-                        ) : isConnected ? null : hasError ? (
-                          <div className="space-y-2 pt-2 border-t border-border/50">
-                            <p className="text-xs text-destructive line-clamp-1">
-                              {connection?.errorMessage || 'Connection error'}
-                            </p>
-                            {canCreate && (
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                className="w-full"
-                                onClick={() => handleConnect(provider)}
-                                disabled={isConnecting}
-                              >
-                                {isConnecting ? (
-                                  <>
-                                    <Loader2 className="h-3 w-3 mr-2 animate-spin" />
-                                    Reconnecting...
-                                  </>
-                                ) : (
-                                  'Reconnect'
-                                )}
-                              </Button>
-                            )}
-                          </div>
-                        ) : provider.authType === 'oauth2' && provider.oauthConfigured === false ? (
-                          <Button size="sm" variant="outline" className="w-full" disabled>
-                            Coming Soon
-                          </Button>
-                        ) : canCreate ? (
-                          <Button
-                            size="sm"
-                            className="w-full"
-                            onClick={() => handleConnect(provider)}
-                            disabled={isConnecting}
-                          >
-                            {isConnecting ? (
-                              <>
-                                <Loader2 className="h-3 w-3 mr-2 animate-spin" />
-                                Connecting...
-                              </>
-                            ) : (
-                              'Connect'
-                            )}
-                          </Button>
-                        ) : null}
-                      </div>
-                    </CardContent>
-                  </Card>
+                        <div className="mt-auto pt-4">
+                          {needsConfiguration ? (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="w-full"
+                              onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                handleOpenProviderSettings(provider);
+                              }}
+                            >
+                              Configure Variables
+                            </Button>
+                          ) : isConnected ? null : hasError ? (
+                            <div className="space-y-2 pt-2 border-t border-border/50">
+                              <p className="text-xs text-destructive line-clamp-1">
+                                {connection?.errorMessage || 'Connection error'}
+                              </p>
+                              {canCreate && (
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  className="w-full"
+                                  onClick={(e) => {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    handleConnect(provider);
+                                  }}
+                                  disabled={isConnecting}
+                                >
+                                  {isConnecting ? (
+                                    <>
+                                      <Loader2 className="h-3 w-3 mr-2 animate-spin" />
+                                      Reconnecting...
+                                    </>
+                                  ) : (
+                                    'Reconnect'
+                                  )}
+                                </Button>
+                              )}
+                            </div>
+                          ) : provider.authType === 'oauth2' &&
+                            provider.oauthConfigured === false ? (
+                            <Button size="sm" variant="outline" className="w-full" disabled>
+                              Coming Soon
+                            </Button>
+                          ) : canCreate ? (
+                            <Button
+                              size="sm"
+                              className="w-full"
+                              onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                handleConnect(provider);
+                              }}
+                              disabled={isConnecting}
+                            >
+                              {isConnecting ? (
+                                <>
+                                  <Loader2 className="h-3 w-3 mr-2 animate-spin" />
+                                  Connecting...
+                                </>
+                              ) : provider.authType === 'oauth2' ? (
+                                'Connect'
+                              ) : (
+                                'Set up'
+                              )}
+                            </Button>
+                          ) : null}
+                        </div>
+                      </CardContent>
+                      {!isComingSoon && (
+                        <div
+                          className="pointer-events-none absolute inset-0 rounded-xl bg-primary/5 opacity-0 transition-opacity group-hover:opacity-100"
+                          aria-hidden
+                        />
+                      )}
+                    </Card>
+                  </div>
                 );
               }
 
@@ -755,58 +876,6 @@ export function PlatformIntegrations({ className, taskTemplates }: PlatformInteg
           </div>
         )}
       </div>
-
-      {/* Manage Connection Dialog - Use ConnectIntegrationDialog for multi-connection providers */}
-      {selectedConnection &&
-        selectedProvider &&
-        (selectedProvider.supportsMultipleConnections ? (
-          <ConnectIntegrationDialog
-            open={manageDialogOpen}
-            onOpenChange={(open) => {
-              if (!open) {
-                handleCloseManageDialog();
-                refreshConnections();
-              } else {
-                setManageDialogOpen(open);
-              }
-            }}
-            integrationId={selectedProvider.id}
-            integrationName={selectedProvider.name}
-            integrationLogoUrl={selectedProvider.logoUrl}
-            onConnected={refreshConnections}
-          />
-        ) : (
-          <ManageIntegrationDialog
-            open={manageDialogOpen}
-            onOpenChange={(open) => {
-              if (!open) handleCloseManageDialog();
-              else setManageDialogOpen(open);
-            }}
-            connectionId={selectedConnection.id}
-            integrationId={selectedProvider.id}
-            integrationName={selectedProvider.name}
-            integrationLogoUrl={selectedProvider.logoUrl}
-            onDeleted={refreshConnections}
-            onSaved={refreshConnections}
-          />
-        ))}
-
-      {/* Connect Dialog (for non-OAuth integrations) */}
-      {connectingProviderInfo && (
-        <ConnectIntegrationDialog
-          open={connectDialogOpen}
-          onOpenChange={(open) => {
-            if (!open) {
-              setConnectDialogOpen(false);
-              setConnectingProviderInfo(null);
-            }
-          }}
-          integrationId={connectingProviderInfo.id}
-          integrationName={connectingProviderInfo.name}
-          integrationLogoUrl={connectingProviderInfo.logoUrl}
-          onConnected={handleConnectDialogSuccess}
-        />
-      )}
 
       {/* Custom Integration Detail Modal */}
       {selectedCustomIntegration && (

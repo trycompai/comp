@@ -4,6 +4,7 @@ import { evidenceFormDefinitionList } from '@trycompai/company';
 import { NoAccessMessage } from '../../components/NoAccessMessage';
 import type { FleetPolicy, Host } from '../types';
 import { EmployeeTasksList } from './EmployeeTasksList';
+import { sortPoliciesByName } from './policy/sort-policies-by-name';
 
 const portalForms = evidenceFormDefinitionList
   .filter((f) => f.portalAccessible)
@@ -31,23 +32,25 @@ export async function OrganizationDashboard({
   agentDevices,
 }: OrganizationDashboardProps) {
   // Fetch policies specific to the selected organization
-  const policies = await db.policy.findMany({
-    where: {
-      organizationId: organizationId,
-      isRequiredToSign: true,
-      status: 'published',
-    },
-    include: {
-      currentVersion: {
-        select: {
-          id: true,
-          content: true,
-          pdfUrl: true,
-          version: true,
+  const policies = sortPoliciesByName(
+    await db.policy.findMany({
+      where: {
+        organizationId: organizationId,
+        isRequiredToSign: true,
+        status: 'published',
+      },
+      include: {
+        currentVersion: {
+          select: {
+            id: true,
+            content: true,
+            pdfUrl: true,
+            version: true,
+          },
         },
       },
-    },
-  });
+    }),
+  );
 
   // Fetch training video completions specific to the member
   const trainingVideos = await db.employeeTrainingVideoCompletion.findMany({

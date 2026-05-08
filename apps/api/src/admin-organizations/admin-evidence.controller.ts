@@ -8,7 +8,7 @@ import {
   UseInterceptors,
   BadRequestException,
 } from '@nestjs/common';
-import { ApiOperation, ApiTags } from '@nestjs/swagger';
+import { ApiExcludeController, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
 import { PlatformAdminGuard } from '../auth/platform-admin.guard';
 import { EvidenceFormsService } from '../evidence-forms/evidence-forms.service';
@@ -18,18 +18,19 @@ import {
   buildPlatformAdminAuthContext,
 } from './platform-admin-auth-context';
 
+@ApiExcludeController()
 @ApiTags('Admin - Evidence')
 @Controller({ path: 'admin/organizations', version: '1' })
 @UseGuards(PlatformAdminGuard)
 @UseInterceptors(AdminAuditLogInterceptor)
 @Throttle({ default: { ttl: 60000, limit: 30 } })
 export class AdminEvidenceController {
-  constructor(
-    private readonly evidenceFormsService: EvidenceFormsService,
-  ) {}
+  constructor(private readonly evidenceFormsService: EvidenceFormsService) {}
 
   @Get(':orgId/evidence-forms')
-  @ApiOperation({ summary: 'List evidence form statuses for an organization (admin)' })
+  @ApiOperation({
+    summary: 'List evidence form statuses for an organization (admin)',
+  })
   async listFormStatuses(@Param('orgId') orgId: string) {
     return this.evidenceFormsService.getFormStatuses(orgId);
   }
@@ -53,8 +54,12 @@ export class AdminEvidenceController {
       authContext: buildPlatformAdminAuthContext(req.userId, orgId),
       formType,
       search,
-      limit: limit ? String(Math.min(200, Math.max(1, parseInt(limit, 10) || 1))) : undefined,
-      offset: offset ? String(Math.max(0, parseInt(offset, 10) || 0)) : undefined,
+      limit: limit
+        ? String(Math.min(200, Math.max(1, parseInt(limit, 10) || 1)))
+        : undefined,
+      offset: offset
+        ? String(Math.max(0, parseInt(offset, 10) || 0))
+        : undefined,
     });
   }
 }

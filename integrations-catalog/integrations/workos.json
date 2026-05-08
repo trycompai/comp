@@ -1,0 +1,35 @@
+{
+  "slug": "workos",
+  "name": "WorkOS",
+  "description": "Monitor WorkOS enterprise SSO users and organizations for identity compliance",
+  "category": "Identity & Access",
+  "docsUrl": "https://workos.com/docs/reference",
+  "baseUrl": "https://api.workos.com/",
+  "authConfig": {
+    "type": "api_key",
+    "config": {}
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "workos_employee_access",
+      "name": "Employee Access",
+      "description": "Reviews WorkOS users with SSO access",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "workos_access_review",
+      "name": "Access Review Log",
+      "description": "Reviews WorkOS organizations configured for SSO",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

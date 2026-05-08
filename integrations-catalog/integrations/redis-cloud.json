@@ -1,0 +1,51 @@
+{
+  "slug": "redis-cloud",
+  "name": "Redis Cloud",
+  "description": "Managed Redis database service. Monitor subscriptions and database instances.",
+  "category": "Cloud",
+  "docsUrl": "https://docs.redis.com/latest/rc/api/",
+  "baseUrl": "https://api.redislabs.com",
+  "authConfig": {
+    "type": "custom",
+    "config": {
+      "setupInstructions": "1. Log in to Redis Cloud at https://app.redislabs.com\n2. Go to Access Management → API Keys\n3. Copy your Account Key and Secret Key\n4. Paste both below",
+      "credentialFields": [
+        {
+          "label": "Account Key",
+          "type": "password",
+          "required": true,
+          "helpText": "Found in Redis Cloud console → Access Management → API Keys → Account Key"
+        },
+        {
+          "label": "User Secret Key",
+          "type": "password",
+          "required": true,
+          "helpText": "The secret key associated with your account key."
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "redis_cloud_app_availability",
+      "name": "Redis Cloud App Availability",
+      "description": "Checks that the Redis Cloud API is accessible.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "redis_cloud_employee_access",
+      "name": "Redis Cloud Employee Access",
+      "description": "Verifies employee access to Redis Cloud.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

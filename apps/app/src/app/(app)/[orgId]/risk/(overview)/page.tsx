@@ -69,9 +69,30 @@ export default async function RiskRegisterPage(props: {
   const risks = risksResult.data?.data ?? [];
   const pageCount = risksResult.data?.pageCount ?? 0;
 
-  // Transform people response to assignees format expected by CreateRiskSheet
+  // Transform people response to assignees format expected by CreateRiskSheet.
+  // Risk owners need write access to risks (risk:update) and the compliance
+  // app (app:read). The built-in roles that grant both are `owner` and
+  // `admin`; `auditor` is read-only (no update); `employee` and `contractor`
+  // are portal-only. Custom roles can grant any combination of permissions,
+  // so anyone with a non-built-in role is included — we can't resolve
+  // permissions client-side and customers control their own role design.
+  const PORTAL_ONLY_OR_READ_ROLES = new Set([
+    'auditor',
+    'employee',
+    'contractor',
+  ]);
+  const canOwnRisks = (roleField: string): boolean => {
+    const roles = roleField.split(',').map((r) => r.trim()).filter(Boolean);
+    if (roles.length === 0) return false;
+    return roles.some((r) => {
+      if (r === 'owner' || r === 'admin') return true;
+      if (PORTAL_ONLY_OR_READ_ROLES.has(r)) return false;
+      // Custom role — trust the org's role design.
+      return true;
+    });
+  };
   const assignees = (peopleResult.data?.data ?? [])
-    .filter((p) => !p.deactivated && !['employee', 'contractor'].includes(p.role))
+    .filter((p) => !p.deactivated && canOwnRisks(p.role))
     .map((p) => ({
       id: p.id,
       role: p.role,

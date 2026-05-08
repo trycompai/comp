@@ -1,0 +1,35 @@
+{
+  "slug": "sonarqube-cloud",
+  "name": "SonarCloud",
+  "description": "Cloud-based code quality and security analysis. Monitor project scans and code coverage.",
+  "category": "Development",
+  "docsUrl": "https://sonarcloud.io/web_api",
+  "baseUrl": "https://sonarcloud.io",
+  "authConfig": {
+    "type": "api_key",
+    "config": {}
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "sonarqube_cloud_app_availability",
+      "name": "SonarCloud App Availability",
+      "description": "Verifies SonarCloud API is accessible.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "sonarqube_cloud_code_quality",
+      "name": "SonarCloud Code Quality",
+      "description": "Verifies code quality scanning is active.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

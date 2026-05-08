@@ -28,9 +28,7 @@ describe('AdminEvidenceController', () => {
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       controllers: [AdminEvidenceController],
-      providers: [
-        { provide: EvidenceFormsService, useValue: mockService },
-      ],
+      providers: [{ provide: EvidenceFormsService, useValue: mockService }],
     }).compile();
 
     controller = module.get<AdminEvidenceController>(AdminEvidenceController);

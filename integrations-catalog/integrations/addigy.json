@@ -1,0 +1,51 @@
+{
+  "slug": "addigy",
+  "name": "Addigy",
+  "description": "Monitor managed Apple devices for security compliance and device management status",
+  "category": "Security",
+  "docsUrl": null,
+  "baseUrl": null,
+  "authConfig": {
+    "type": "custom",
+    "config": {
+      "setupInstructions": "1. Log in to Addigy at https://app.addigy.com\n2. Go to Account > Integrations > API v2\n3. Generate or copy your API Token\n4. Find your Parent Organization ID in Account > Organization\n5. Enter both values below",
+      "credentialFields": [
+        {
+          "label": "API Token",
+          "type": "password",
+          "required": true,
+          "helpText": "Your Addigy API v2 token from Account > Integrations > API v2"
+        },
+        {
+          "label": "Organization ID",
+          "type": "text",
+          "required": true,
+          "helpText": "Your Addigy Parent Organization ID"
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "device_list",
+      "name": "Device List",
+      "description": "Retrieve all managed devices in the organization",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "secure_devices",
+      "name": "Secure Devices",
+      "description": "Check device compliance and security configuration",
+      "defaultSeverity": "high",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

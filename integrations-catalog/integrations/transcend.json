@@ -1,0 +1,37 @@
+{
+  "slug": "transcend",
+  "name": "Transcend",
+  "description": "Data privacy infrastructure platform. Monitor data mapping and privacy compliance.",
+  "category": "Security",
+  "docsUrl": "https://docs.transcend.io/docs",
+  "baseUrl": "https://api.transcend.io",
+  "authConfig": {
+    "type": "api_key",
+    "config": {
+      "setupInstructions": "1. Log in to Transcend at https://app.transcend.io\n2. Go to Infrastructure > Developer Tools > API Keys\n3. Click Add API Key and assign required scopes\n4. Copy the API key and paste it below"
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "transcend_app_availability",
+      "name": "Transcend App Availability",
+      "description": "Checks that the Transcend API is accessible.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "transcend_employee_access",
+      "name": "Transcend Employee Access",
+      "description": "Verifies access to Transcend.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

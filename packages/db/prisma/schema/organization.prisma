@@ -1,20 +1,21 @@
 model Organization {
-  id                  String      @id @default(dbgenerated("generate_prefixed_cuid('org'::text)"))
-  name                String
-  slug                String      @unique @default(dbgenerated("generate_prefixed_cuid('slug'::text)"))
-  logo                String?
-  createdAt           DateTime    @default(now())
-  metadata            String?
-  onboarding          Onboarding?
-  website             String?
-  onboardingCompleted Boolean     @default(false)
-  hasAccess           Boolean     @default(false)
-  advancedModeEnabled             Boolean     @default(false)
-  evidenceApprovalEnabled         Boolean     @default(false)
-  deviceAgentStepEnabled          Boolean     @default(true)
-  securityTrainingStepEnabled     Boolean     @default(true)
-  whistleblowerReportEnabled      Boolean     @default(true)
-  accessRequestFormEnabled        Boolean     @default(true)
+  id                          String      @id @default(dbgenerated("generate_prefixed_cuid('org'::text)"))
+  name                        String
+  slug                        String      @unique @default(dbgenerated("generate_prefixed_cuid('slug'::text)"))
+  logo                        String?
+  createdAt                   DateTime    @default(now())
+  metadata                    String?
+  onboarding                  Onboarding?
+  website                     String?
+  onboardingCompleted         Boolean     @default(false)
+  hasAccess                   Boolean     @default(false)
+  advancedModeEnabled         Boolean     @default(false)
+  evidenceApprovalEnabled     Boolean     @default(false)
+  deviceAgentStepEnabled      Boolean     @default(true)
+  securityTrainingStepEnabled Boolean     @default(true)
+  backgroundCheckStepEnabled  Boolean     @default(true)
+  whistleblowerReportEnabled  Boolean     @default(true)
+  accessRequestFormEnabled    Boolean     @default(true)
 
   // FleetDM
   fleetDmLabelId        Int?
@@ -39,6 +40,7 @@ model Organization {
   comments                           Comment[]
   attachments                        Attachment[]
   evidenceSubmissions                EvidenceSubmission[]
+  evidenceFormSettings               EvidenceFormSetting[]
   trust                              Trust[]
   context                            Context[]
   secrets                            Secret[]
@@ -60,9 +62,16 @@ model Organization {
   integrationOAuthApps   IntegrationOAuthApp[]
   integrationSyncLogs    IntegrationSyncLog[]
 
-  // Pentest Subscription
-  pentestSubscription PentestSubscription?
-  billing             OrganizationBilling?
+  // Pentest credits — wallet of run-credits an org can spend.
+  // Source of credits (trial / future Stripe subscription / top-up)
+  // is metadata on the row; balance is unified.
+  pentestCredits       PentestCredits?
+  billing              OrganizationBilling?
+  billingSubscriptions OrganizationBillingSubscription[]
+  billingUsageEvents   BillingUsageEvent[]
+  billingAuditEvents   BillingAuditEvent[]
+  billingCreditBalances BillingCreditBalance[]
+  billingCreditEvents   BillingCreditEvent[]
 
   // Browser Automation
   browserbaseContext BrowserbaseContext?
@@ -74,12 +83,22 @@ model Organization {
   // Device Agent
   devices Device[]
 
+  // Background Checks
+  backgroundCheckRequests BackgroundCheckRequest[]
+
   // Org Chart
   organizationChart OrganizationChart?
 
   // RBAC
-  organizationRoles          OrganizationRole[]
-  roleNotificationSettings   RoleNotificationSetting[]
+  organizationRoles        OrganizationRole[]
+  roleNotificationSettings RoleNotificationSetting[]
+
+  // Timeline
+  timelineInstances TimelineInstance[]
+
+  // Custom frameworks / requirements authored by this org
+  customFrameworks   CustomFramework[]
+  customRequirements CustomRequirement[]
 
   @@index([slug])
 }

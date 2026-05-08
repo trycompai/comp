@@ -13,7 +13,20 @@ import { adminAuthRateLimiter } from './auth/admin-rate-limit.middleware';
 import { originCheckMiddleware } from './auth/origin-check.middleware';
 import { mkdirSync, writeFileSync, existsSync } from 'fs';
 
+declare module 'express-serve-static-core' {
+  interface Request {
+    rawBody?: Buffer;
+  }
+}
+
 let app: INestApplication | null = null;
+
+function describeServer(baseUrl: string): string {
+  if (baseUrl.includes('api.staging.trycomp.ai')) return 'Staging API Server';
+  if (baseUrl.includes('api.trycomp.ai')) return 'Production API Server';
+  if (baseUrl.startsWith('http://localhost')) return 'Local API Server';
+  return 'API Server';
+}
 
 async function bootstrap(): Promise<void> {
   // Disable body parser - required for better-auth NestJS integration
@@ -71,17 +84,48 @@ async function bootstrap(): Promise<void> {
   // request stream to properly read the body (including OAuth callbackURL).
   // Express-level middleware runs BEFORE NestJS module middleware, so without this
   // skip, express.json() would consume the stream before better-auth's handler.
-  const jsonParser = express.json({ limit: '150mb' });
-  const urlencodedParser = express.urlencoded({ limit: '150mb', extended: true });
-  app.use((req: express.Request, res: express.Response, next: express.NextFunction) => {
-    if (req.path.startsWith('/api/auth')) {
-      return next();
-    }
-    jsonParser(req, res, (err?: unknown) => {
-      if (err) return next(err);
-      urlencodedParser(req, res, next);
-    });
+  // Routes that need the exact request bytes for HMAC signature verification.
+  // Anything matched here gets `req.rawBody` populated; everything else uses
+  // the standard parser which discards the buffer to avoid keeping a 150MB
+  // copy of every JSON payload alive on the heap.
+  const RAW_BODY_PATHS = [
+    '/v1/security-penetration-tests/webhook',
+    '/security-penetration-tests/webhook',
+    '/v1/background-checks/webhook',
+    '/background-checks/webhook',
+    '/v1/billing/webhook',
+    '/billing/webhook',
+  ];
+  const needsRawBody = (req: express.Request): boolean =>
+    RAW_BODY_PATHS.some((p) => req.path.endsWith(p));
+
+  const jsonParserWithRaw = express.json({
+    limit: '150mb',
+    verify: (req, _res, buf) => {
+      (req as express.Request).rawBody = buf;
+    },
   });
+  const jsonParser = express.json({ limit: '150mb' });
+  const urlencodedParser = express.urlencoded({
+    limit: '150mb',
+    extended: true,
+  });
+  app.use(
+    (
+      req: express.Request,
+      res: express.Response,
+      next: express.NextFunction,
+    ) => {
+      if (req.path.startsWith('/api/auth')) {
+        return next();
+      }
+      const parser = needsRawBody(req) ? jsonParserWithRaw : jsonParser;
+      parser(req, res, (err?: unknown) => {
+        if (err) return next(err);
+        urlencodedParser(req, res, next);
+      });
+    },
+  );
 
   // STEP 4b: Enable global pipes and filters
   app.useGlobalPipes(
@@ -104,12 +148,14 @@ async function bootstrap(): Promise<void> {
   // Get server configuration from environment variables
   const port = process.env.PORT ?? 3333;
 
-  // Swagger/OpenAPI configuration
+  // Swagger/OpenAPI configuration — single server derived from BASE_URL
+  const baseUrl = process.env.BASE_URL ?? `http://localhost:${port}`;
+  const serverDescription = describeServer(baseUrl);
+
   const config = new DocumentBuilder()
     .setTitle('API Documentation')
     .setDescription('The API documentation for this application')
     .setVersion('1.0')
-    .addServer('http://localhost:3333', 'Local API Server')
     .addApiKey(
       {
         type: 'apiKey',
@@ -119,7 +165,7 @@ async function bootstrap(): Promise<void> {
       },
       'apikey',
     )
-    .addServer('https://api.trycomp.ai', 'API Server')
+    .addServer(baseUrl, serverDescription)
     .build();
   const document: OpenAPIObject = SwaggerModule.createDocument(app, config);
 

@@ -1,0 +1,37 @@
+{
+  "slug": "pipedream",
+  "name": "Pipedream",
+  "description": "Developer workflow automation platform. Monitor connected accounts and workflow access.",
+  "category": "Development",
+  "docsUrl": "https://pipedream.com/docs/api/rest/",
+  "baseUrl": "https://api.pipedream.com",
+  "authConfig": {
+    "type": "api_key",
+    "config": {
+      "setupInstructions": "1. Log in to Pipedream at https://pipedream.com\n2. Go to Settings -> Account -> API Key\n3. Copy your API key\n4. Paste it below\n\nAlternatively, create an OAuth client in Settings -> API for scoped access."
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "pipedream_app_availability",
+      "name": "Pipedream App Availability",
+      "description": "Checks that the Pipedream API is accessible.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "pipedream_employee_access",
+      "name": "Pipedream Employee Access",
+      "description": "Verifies employee access to Pipedream via API.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

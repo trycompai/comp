@@ -18,8 +18,7 @@ import { NdaPdfService } from './nda-pdf.service';
 import { AttachmentsService } from '../attachments/attachments.service';
 import { PolicyPdfRendererService } from './policy-pdf-renderer.service';
 import { GetObjectCommand, PutObjectCommand } from '@aws-sdk/client-s3';
-import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
-import { APP_AWS_ORG_ASSETS_BUCKET, s3Client } from '../app/s3';
+import { APP_AWS_ORG_ASSETS_BUCKET, s3Client, getSignedUrl } from '../app/s3';
 import { Prisma, TrustFramework } from '@db';
 import archiver from 'archiver';
 import { PassThrough, Readable } from 'stream';
@@ -282,15 +281,54 @@ export class TrustAccessService {
         },
       },
       include: {
-        accessRequest: true,
+        accessRequest: {
+          include: {
+            organization: true,
+          },
+        },
       },
     });
 
     if (existingGrant) {
+      // Reuse the reclaim flow: rotate the access token if needed and email a
+      // fresh portal link to the requester so they don't need a separate
+      // "Reclaim access" step.
+      let accessToken = existingGrant.accessToken;
+      let accessTokenExpiresAt = existingGrant.accessTokenExpiresAt;
+
+      if (
+        !accessToken ||
+        !accessTokenExpiresAt ||
+        accessTokenExpiresAt < new Date()
+      ) {
+        accessToken = this.generateToken(32);
+        accessTokenExpiresAt = new Date();
+        accessTokenExpiresAt.setHours(accessTokenExpiresAt.getHours() + 24);
+
+        await db.trustAccessGrant.update({
+          where: { id: existingGrant.id },
+          data: { accessToken, accessTokenExpiresAt },
+        });
+      }
+
+      const accessLink = await this.buildPortalAccessUrl({
+        organizationId: trust.organizationId,
+        organizationName: existingGrant.accessRequest.organization.name,
+        accessToken,
+      });
+
+      await this.emailService.sendAccessReclaimEmail({
+        toEmail: dto.email,
+        toName: existingGrant.accessRequest.name,
+        organizationName: existingGrant.accessRequest.organization.name,
+        accessLink,
+        expiresAt: existingGrant.expiresAt,
+      });
+
       return {
         id: existingGrant.id,
         status: 'already_approved',
-        message: 'You already have active access',
+        message: 'A fresh access link was sent to your email',
         grant: {
           expiresAt: existingGrant.expiresAt,
         },
@@ -987,10 +1025,15 @@ export class TrustAccessService {
       organizationId: nda.organizationId,
       organizationName: nda.accessRequest.organization.name,
     });
+    const branding = await this.getTrustBrandingByOrganizationId(
+      nda.organizationId,
+    );
 
     const baseResponse = {
       id: nda.id,
       organizationName: nda.accessRequest.organization.name,
+      friendlyUrl: branding.friendlyUrl,
+      faviconUrl: branding.faviconUrl,
       requesterName: nda.accessRequest.name,
       requesterEmail: nda.accessRequest.email,
       expiresAt: nda.signTokenExpiresAt,
@@ -1435,13 +1478,52 @@ export class TrustAccessService {
     const ndaPdfUrl = grant.ndaAgreement?.pdfSignedKey
       ? await this.ndaPdfService.getSignedUrl(grant.ndaAgreement.pdfSignedKey)
       : null;
+    const branding = await this.getTrustBrandingByOrganizationId(
+      grant.accessRequest.organizationId,
+    );
 
     return {
       organizationName: grant.accessRequest.organization.name,
+      friendlyUrl: branding.friendlyUrl,
+      faviconUrl: branding.faviconUrl,
       expiresAt: grant.expiresAt,
       subjectEmail: grant.subjectEmail,
       ndaPdfUrl,
     };
+  }
+
+  private async getTrustBrandingByOrganizationId(
+    organizationId: string,
+  ): Promise<{ friendlyUrl: string; faviconUrl: string | null }> {
+    const trust = await db.trust.findUnique({
+      where: { organizationId },
+      select: { friendlyUrl: true, favicon: true },
+    });
+
+    const friendlyUrl = trust?.friendlyUrl ?? organizationId;
+    const faviconUrl = trust?.favicon
+      ? await this.getFaviconSignedUrl(trust.favicon)
+      : null;
+
+    return { friendlyUrl, faviconUrl };
+  }
+
+  private async getFaviconSignedUrl(
+    faviconKey: string,
+  ): Promise<string | null> {
+    if (!s3Client || !APP_AWS_ORG_ASSETS_BUCKET) {
+      return null;
+    }
+
+    try {
+      const command = new GetObjectCommand({
+        Bucket: APP_AWS_ORG_ASSETS_BUCKET,
+        Key: faviconKey,
+      });
+      return await getSignedUrl(s3Client, command, { expiresIn: 86400 }); // 24 hours
+    } catch {
+      return null;
+    }
   }
 
   async validateAccessTokenAndGetOrganizationId(
@@ -1521,6 +1603,7 @@ export class TrustAccessService {
         organizationId: grant.accessRequest.organizationId,
         status: 'published',
         isArchived: false,
+        archivedAt: null,
       },
       select: {
         id: true,
@@ -1867,11 +1950,14 @@ export class TrustAccessService {
       | 'iso42001'
       | 'gdpr'
       | 'hipaa'
+      | 'soc3'
       | 'soc2type1'
       | 'soc2type2'
       | 'pci_dss'
       | 'nen7510'
       | 'iso9001'
+      | 'pipeda'
+      | 'ccpa'
     > = {
       [TrustFramework.iso_27001]: 'iso27001',
       [TrustFramework.iso_42001]: 'iso42001',
@@ -1879,9 +1965,12 @@ export class TrustAccessService {
       [TrustFramework.hipaa]: 'hipaa',
       [TrustFramework.soc2_type1]: 'soc2type1',
       [TrustFramework.soc2_type2]: 'soc2type2',
+      [TrustFramework.soc3]: 'soc3',
       [TrustFramework.pci_dss]: 'pci_dss',
       [TrustFramework.nen_7510]: 'nen7510',
       [TrustFramework.iso_9001]: 'iso9001',
+      [TrustFramework.pipeda]: 'pipeda',
+      [TrustFramework.ccpa]: 'ccpa',
     };
 
     const enabledField = frameworkFieldMap[framework];
@@ -1955,6 +2044,7 @@ export class TrustAccessService {
         organizationId: grant.accessRequest.organizationId,
         status: 'published',
         isArchived: false,
+        archivedAt: null,
       },
       select: {
         id: true,
@@ -2235,6 +2325,97 @@ export class TrustAccessService {
     return safeName || 'policy';
   }
 
+  async downloadPolicyByAccessToken(token: string, policyId: string) {
+    const grant = await this.validateAccessToken(token);
+
+    const policy = await db.policy.findFirst({
+      where: {
+        id: policyId,
+        organizationId: grant.accessRequest.organizationId,
+        status: 'published',
+        isArchived: false,
+        archivedAt: null,
+      },
+      select: {
+        id: true,
+        name: true,
+        content: true,
+        pdfUrl: true,
+        currentVersion: {
+          select: {
+            content: true,
+            pdfUrl: true,
+          },
+        },
+      },
+    });
+
+    if (!policy) {
+      throw new NotFoundException('Policy not found');
+    }
+
+    const effectiveContent = policy.currentVersion?.content ?? policy.content;
+    const effectivePdfUrl = policy.currentVersion?.pdfUrl ?? policy.pdfUrl;
+    const hasUploadedPdf = effectivePdfUrl && effectivePdfUrl.trim() !== '';
+
+    let policyPdfBuffer: Buffer;
+    if (hasUploadedPdf) {
+      try {
+        const rawBuffer =
+          await this.attachmentsService.getObjectBuffer(effectivePdfUrl);
+        policyPdfBuffer = Buffer.from(rawBuffer);
+      } catch (error) {
+        console.warn(
+          `Failed to fetch uploaded PDF for policy ${policy.id}, falling back to content rendering:`,
+          error,
+        );
+        policyPdfBuffer = this.pdfRendererService.renderPoliciesPdfBuffer(
+          [{ name: policy.name, content: effectiveContent }],
+          undefined,
+          grant.accessRequest.organization.primaryColor,
+        );
+      }
+    } else {
+      policyPdfBuffer = this.pdfRendererService.renderPoliciesPdfBuffer(
+        [{ name: policy.name, content: effectiveContent }],
+        undefined,
+        grant.accessRequest.organization.primaryColor,
+      );
+    }
+
+    const docId = `policy-${policy.id}-${Date.now()}`;
+    const watermarked = await this.ndaPdfService.watermarkExistingPdf(
+      policyPdfBuffer,
+      {
+        name: grant.accessRequest.name,
+        email: grant.subjectEmail,
+        docId,
+      },
+    );
+
+    const safeName = this.toSafeFilename(policy.name);
+    const fileName = `${safeName}.pdf`;
+    const key = await this.attachmentsService.uploadToS3(
+      watermarked,
+      `policy-${policy.id}-grant-${grant.id}-${Date.now()}.pdf`,
+      'application/pdf',
+      grant.accessRequest.organizationId,
+      'trust_policy_downloads',
+      `${grant.id}`,
+    );
+
+    const signedUrl =
+      await this.attachmentsService.getPresignedDownloadUrlWithFilename(
+        key,
+        fileName,
+      );
+
+    return {
+      signedUrl,
+      fileName,
+    };
+  }
+
   async downloadAllPoliciesAsZipByAccessToken(token: string) {
     const grant = await this.validateAccessToken(token);
 
@@ -2243,6 +2424,7 @@ export class TrustAccessService {
         organizationId: grant.accessRequest.organizationId,
         status: 'published',
         isArchived: false,
+        archivedAt: null,
       },
       select: {
         id: true,
@@ -2429,24 +2611,23 @@ export class TrustAccessService {
   }
 
   async getPublicFavicon(friendlyUrl: string): Promise<string | null> {
-    const trust = await db.trust.findUnique({
+    let trust = await db.trust.findUnique({
       where: { friendlyUrl },
       select: { favicon: true },
     });
 
-    if (!trust?.favicon || !s3Client || !APP_AWS_ORG_ASSETS_BUCKET) {
+    if (!trust) {
+      trust = await db.trust.findUnique({
+        where: { organizationId: friendlyUrl },
+        select: { favicon: true },
+      });
+    }
+
+    if (!trust?.favicon) {
       return null;
     }
 
-    try {
-      const command = new GetObjectCommand({
-        Bucket: APP_AWS_ORG_ASSETS_BUCKET,
-        Key: trust.favicon,
-      });
-      return await getSignedUrl(s3Client, command, { expiresIn: 86400 }); // 24 hours
-    } catch {
-      return null;
-    }
+    return this.getFaviconSignedUrl(trust.favicon);
   }
 
   async getPublicVendors(friendlyUrl: string) {
@@ -2549,6 +2730,8 @@ export class TrustAccessService {
     const CERT_MAP: Record<string, string> = {
       soc2: 'soc2',
       'soc 2': 'soc2',
+      soc3: 'soc3',
+      'soc 3': 'soc3',
       iso27001: 'iso27001',
       'iso 27001': 'iso27001',
       iso42001: 'iso42001',
@@ -2562,6 +2745,8 @@ export class TrustAccessService {
       'nen 7510': 'nen7510',
       iso9001: 'iso9001',
       'iso 9001': 'iso9001',
+      pipeda: 'pipeda',
+      ccpa: 'ccpa',
     };
 
     const badges: Array<{ type: string; verified: boolean }> = [];
@@ -2602,6 +2787,7 @@ export class TrustAccessService {
 
     const LABEL_MAP: Record<string, string> = {
       soc2: 'SOC 2',
+      soc3: 'SOC 3',
       iso27001: 'ISO 27001',
       iso42001: 'ISO 42001',
       iso9001: 'ISO 9001',
@@ -2609,6 +2795,7 @@ export class TrustAccessService {
       hipaa: 'HIPAA',
       pci_dss: 'PCI DSS',
       nen7510: 'NEN 7510',
+      pipeda: 'PIPEDA',
       ccpa: 'CCPA',
     };
 

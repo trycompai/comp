@@ -2,7 +2,10 @@ import { logger, metadata, queue, schemaTask, tags } from '@trigger.dev/sdk';
 import { z } from 'zod';
 import { processPolicyUpdate } from './update-policy-helpers';
 
-const updatePolicyQueue = queue({ name: 'update-policy', concurrencyLimit: 50 });
+const updatePolicyQueue = queue({
+  name: 'update-policy',
+  concurrencyLimit: 50,
+});
 
 export const updatePolicy = schemaTask({
   id: 'update-policy',
@@ -22,6 +25,7 @@ export const updatePolicy = schemaTask({
         version: z.string(),
         description: z.string(),
         visible: z.boolean(),
+        organizationId: z.string().nullable().default(null),
         createdAt: z.date(),
         updatedAt: z.date(),
       }),

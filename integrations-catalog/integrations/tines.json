@@ -1,0 +1,51 @@
+{
+  "slug": "tines",
+  "name": "Tines",
+  "description": "Monitor Tines security automation workflows for incident response and security operations compliance",
+  "category": "Security",
+  "docsUrl": "https://www.tines.com/api",
+  "baseUrl": "https://app.tines.com/",
+  "authConfig": {
+    "type": "custom",
+    "config": {
+      "setupInstructions": "1. Log in to Tines\n2. Go to Settings → API Tokens\n3. Generate a new API token\n4. Enter your tenant URL and token below",
+      "credentialFields": [
+        {
+          "label": "API Token",
+          "type": "password",
+          "required": true,
+          "helpText": "Found in Tines → Settings → API Tokens"
+        },
+        {
+          "label": "Tenant URL",
+          "type": "text",
+          "required": true,
+          "helpText": "Your Tines tenant URL (e.g. https://mycompany.tines.com or https://app.tines.com)"
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "tines_incident_response",
+      "name": "Incident Response",
+      "description": "Verifies Tines security automation stories are configured for incident response",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "tines_employee_access",
+      "name": "Employee Access",
+      "description": "Reviews Tines team members with access to security automation workflows",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

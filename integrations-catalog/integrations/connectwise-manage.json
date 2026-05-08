@@ -1,0 +1,69 @@
+{
+  "slug": "connectwise-manage",
+  "name": "ConnectWise Manage",
+  "description": "ConnectWise PSA for service management and ticketing",
+  "category": "Productivity",
+  "docsUrl": "https://developer.connectwise.com/Products/Manage/REST",
+  "baseUrl": "https://api-na.myconnectwise.net",
+  "authConfig": {
+    "type": "custom",
+    "config": {
+      "setupInstructions": "1. Go to your ConnectWise Manage instance\n2. Navigate to System > Members > API Members\n3. Create or select an API member\n4. Generate API keys (public + private)\n5. Get your Client ID from developer.connectwise.com\n6. Your Company ID is shown in the login screen",
+      "credentialFields": [
+        {
+          "label": "ConnectWise Site URL",
+          "type": "text",
+          "required": true,
+          "helpText": "Your ConnectWise Manage site URL (e.g., https://na.myconnectwise.net or https://api-na.myconnectwise.net)"
+        },
+        {
+          "label": "Company ID",
+          "type": "text",
+          "required": true,
+          "helpText": "Your ConnectWise company identifier"
+        },
+        {
+          "label": "Public Key",
+          "type": "text",
+          "required": true,
+          "helpText": "API member public key from ConnectWise"
+        },
+        {
+          "label": "Private Key",
+          "type": "password",
+          "required": true,
+          "helpText": "API member private key from ConnectWise"
+        },
+        {
+          "label": "Client ID",
+          "type": "text",
+          "required": true,
+          "helpText": "ConnectWise Developer Client ID (from developer.connectwise.com)"
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "incident_response",
+      "name": "Incident Response",
+      "description": "Verify service tickets and boards exist for incident tracking",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "employee_access",
+      "name": "Employee Access",
+      "description": "List members and users to verify access management",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

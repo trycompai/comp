@@ -1,0 +1,38 @@
+{
+  "slug": "zelt",
+  "name": "Zelt",
+  "description": "Zelt HR and workforce management platform",
+  "category": "HR & People",
+  "docsUrl": "https://zelt.app/",
+  "baseUrl": "https://api.zelt.app/v1",
+  "authConfig": {
+    "type": "custom",
+    "config": {
+      "setupInstructions": "1. Log in to Zelt\n2. Go to Settings → Integrations → API Tokens\n3. Create a new token\n4. Paste it below",
+      "credentialFields": [
+        {
+          "label": "API Token",
+          "type": "password",
+          "required": true,
+          "helpText": "Zelt → Settings → Integrations → API Tokens → Create"
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "zelt_employee_access",
+      "name": "Employee Access",
+      "description": "Lists Zelt employees to verify HR platform access",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 1,
+  "isActive": true
+}

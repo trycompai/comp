@@ -5,6 +5,7 @@ import type { FrameworkInstance } from '@db';
  * TaskList and TasksPageClient. Single source of truth to avoid type drift.
  */
 export type FrameworkInstanceForTasks = Pick<FrameworkInstance, 'id'> & {
-  framework: { id: string; name: string };
+  framework: { id: string; name: string } | null;
+  customFramework: { id: string; name: string } | null;
   requirementsMapped: { controlId: string }[];
 };

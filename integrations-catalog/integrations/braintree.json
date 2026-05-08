@@ -1,0 +1,70 @@
+{
+  "slug": "braintree",
+  "name": "Braintree",
+  "description": "PayPal's payment processing platform. Monitor merchant account status, API access, and subscription configuration.",
+  "category": "Cloud",
+  "docsUrl": "https://developer.paypal.com/braintree/docs/reference/overview",
+  "baseUrl": "https://api.braintreegateway.com",
+  "authConfig": {
+    "type": "custom",
+    "config": {
+      "setupInstructions": "1. Log in to the Braintree Control Panel at https://www.braintreegateway.com/login (production) or https://sandbox.braintreegateway.com/login (sandbox)\n2. Navigate to Settings > API Keys\n3. Copy your Merchant ID, Public Key, and Private Key\n4. Set the Environment to 'sandbox' or 'production' based on your account type\n5. Enter the credentials below",
+      "credentialFields": [
+        {
+          "label": "Merchant ID",
+          "type": "text",
+          "required": true,
+          "helpText": "Your Braintree Merchant ID, found in Settings > API Keys in the Braintree Control Panel"
+        },
+        {
+          "label": "Public Key",
+          "type": "text",
+          "required": true,
+          "helpText": "Your Braintree API public key, found in Settings > API Keys in the Braintree Control Panel"
+        },
+        {
+          "label": "Private Key",
+          "type": "password",
+          "required": true,
+          "helpText": "Your Braintree API private key, found in Settings > API Keys in the Braintree Control Panel"
+        },
+        {
+          "label": "Environment",
+          "type": "text",
+          "required": true,
+          "helpText": "Enter 'sandbox' for testing or 'production' for live accounts"
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "braintree_app_availability",
+      "name": "App Availability",
+      "description": "Verifies the Braintree gateway is accessible by generating a client token.",
+      "defaultSeverity": "high",
+      "enabled": true
+    },
+    {
+      "slug": "braintree_merchant_account_status",
+      "name": "Merchant Account Status",
+      "description": "Checks that merchant accounts are active and properly configured.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "braintree_subscription_plans",
+      "name": "Subscription Plans Configuration",
+      "description": "Monitors subscription plans to verify billing configuration is present and accessible.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 3,
+  "isActive": true
+}

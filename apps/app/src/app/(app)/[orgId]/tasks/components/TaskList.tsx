@@ -657,7 +657,11 @@ export function TaskList({
                             (fw) => fw.id === frameworkFilter,
                           );
                           if (!selectedFramework) return 'All frameworks';
-                          return selectedFramework.framework.name;
+                          return (
+                            selectedFramework.framework?.name ??
+                            selectedFramework.customFramework?.name ??
+                            'Framework'
+                          );
                         })()}
                       </SelectValue>
                     </SelectTrigger>
@@ -667,7 +671,11 @@ export function TaskList({
                       </SelectItem>
                       {frameworkInstances.map((fw) => (
                         <SelectItem key={fw.id} value={fw.id}>
-                          <span className="text-xs">{fw.framework.name}</span>
+                          <span className="text-xs">
+                            {fw.framework?.name ??
+                              fw.customFramework?.name ??
+                              'Framework'}
+                          </span>
                         </SelectItem>
                       ))}
                     </SelectContent>

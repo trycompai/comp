@@ -1,6 +1,7 @@
 'use client';
 
 import { SelectAssignee } from '@/components/SelectAssignee';
+import { Label, Textarea } from '@trycompai/design-system';
 import { Button } from '@trycompai/ui/button';
 import {
   Dialog,
@@ -10,7 +11,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@trycompai/ui/dialog';
-import { Label } from '@trycompai/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@trycompai/ui/select';
 import { Member, TaskStatus, User } from '@db';
 import { Loader2 } from 'lucide-react';
@@ -48,16 +48,19 @@ export function BulkTaskStatusChangeModal({
   const [status, setStatus] = useState<TaskStatus>(defaultStatus);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [approverId, setApproverId] = useState<string | null>(null);
+  const [justification, setJustification] = useState('');
   const selectedCount = selectedTaskIds.length;
   const isSingular = selectedCount === 1;
 
   // Whether we need approval for this status change
   const needsApproval = evidenceApprovalEnabled && status === TaskStatus.done;
+  const isNotRelevant = status === TaskStatus.not_relevant;
 
   useEffect(() => {
     if (open) {
       setStatus(defaultStatus);
       setApproverId(null);
+      setJustification('');
     }
   }, [defaultStatus, open]);
 
@@ -82,7 +85,12 @@ export function BulkTaskStatusChangeModal({
       } else {
         // Normal bulk status change using hook
         const reviewDate = status === TaskStatus.done ? new Date().toISOString() : undefined;
-        const { updatedCount } = await bulkUpdateStatus(selectedTaskIds, status, reviewDate);
+        const { updatedCount } = await bulkUpdateStatus(
+          selectedTaskIds,
+          status,
+          reviewDate,
+          isNotRelevant ? justification.trim() || undefined : undefined,
+        );
         toast.success(`Updated ${updatedCount} task${updatedCount === 1 ? '' : 's'}`);
       }
 
@@ -140,6 +148,22 @@ export function BulkTaskStatusChangeModal({
                 onAssigneeChange={setApproverId}
                 withTitle={false}
               />
+            </div>
+          )}
+
+          {isNotRelevant && (
+            <div className="space-y-2">
+              <Label htmlFor="bulk-justification">Justification</Label>
+              <Textarea
+                id="bulk-justification"
+                placeholder="e.g. This control is out of scope for our current compliance program..."
+                value={justification}
+                onChange={(e) => setJustification(e.target.value)}
+                rows={3}
+              />
+              <p className="text-xs text-muted-foreground">
+                Auditors may review this justification during an audit.
+              </p>
             </div>
           )}
         </div>

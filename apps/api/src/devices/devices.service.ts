@@ -1,5 +1,11 @@
-import { Injectable, NotFoundException, Logger } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  Logger,
+  ForbiddenException,
+} from '@nestjs/common';
 import { db } from '@db';
+import { getDeviceComplianceStatus } from '@trycompai/utils/devices';
 import { FleetService } from '../lib/fleet.service';
 import { DeviceResponseDto } from './dto/device-responses.dto';
 import type { MemberResponseDto } from './dto/member-responses.dto';
@@ -174,6 +180,66 @@ export class DevicesService {
     }
   }
 
+  async removeDeviceById({
+    organizationId,
+    deviceId,
+    userId,
+  }: {
+    organizationId: string;
+    deviceId: string;
+    userId?: string;
+  }): Promise<void> {
+    const organization = await db.organization.findUnique({
+      where: { id: organizationId },
+      select: { id: true },
+    });
+
+    if (!organization) {
+      throw new NotFoundException(
+        `Organization with ID ${organizationId} not found`,
+      );
+    }
+
+    if (!userId) {
+      throw new ForbiddenException('Only organization owners can remove devices');
+    }
+
+    const member = await db.member.findFirst({
+      where: {
+        userId,
+        organizationId,
+        deactivated: false,
+      },
+      select: { role: true },
+    });
+
+    if (!member) {
+      throw new ForbiddenException('User is not a member of this organization');
+    }
+
+    const memberRoles = member.role
+      .split(',')
+      .map((role) => role.trim().toLowerCase());
+    const isOwner = memberRoles.includes('owner');
+
+    if (!isOwner) {
+      throw new ForbiddenException('Only organization owners can remove devices');
+    }
+
+    const deleteResult = await db.device.deleteMany({
+      where: {
+        id: deviceId,
+        organizationId,
+      },
+    });
+
+    if (deleteResult.count === 0) {
+      throw new NotFoundException(
+        `Device with ID ${deviceId} not found in organization ${organizationId}`,
+      );
+    }
+  }
+
   // --- Private helpers ---
 
   private async getFleetDevicesForOrg(
@@ -331,7 +397,14 @@ export class DevicesService {
     dto.updated_at = device.updatedAt.toISOString();
     dto.display_name = device.name;
     dto.display_text = device.name;
-    dto.status = device.isCompliant ? 'compliant' : 'non-compliant';
+    const complianceStatus = getDeviceComplianceStatus({
+      isCompliant: device.isCompliant,
+      lastCheckIn: device.lastCheckIn,
+    });
+    // Keep the existing string shape ('compliant' | 'non-compliant' | 'stale') so
+    // downstream API consumers see a predictable value.
+    dto.status =
+      complianceStatus === 'non_compliant' ? 'non-compliant' : complianceStatus;
     dto.disk_encryption_enabled = device.diskEncryptionEnabled;
     dto.source = 'device_agent';
     // Default empty values for FleetDM-specific fields

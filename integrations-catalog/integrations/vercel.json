@@ -1,0 +1,35 @@
+{
+  "slug": "vercel",
+  "name": "Vercel",
+  "description": "Monitor Vercel deployments and project configuration for cloud compliance",
+  "category": "Cloud",
+  "docsUrl": "https://vercel.com/docs/rest-api",
+  "baseUrl": "https://api.vercel.com/",
+  "authConfig": {
+    "type": "api_key",
+    "config": {}
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "vercel_app_availability",
+      "name": "App Availability",
+      "description": "Verifies Vercel projects have active production deployments",
+      "defaultSeverity": "high",
+      "enabled": true
+    },
+    {
+      "slug": "vercel_separation_of_envs",
+      "name": "Separation of Environments",
+      "description": "Verifies Vercel projects have environment variables configured per environment",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

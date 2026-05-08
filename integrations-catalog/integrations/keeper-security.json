@@ -1,0 +1,70 @@
+{
+  "slug": "keeper-security",
+  "name": "Keeper Security",
+  "description": "Monitor Keeper Security enterprise vault users, teams, and access controls via SCIM API",
+  "category": "Security",
+  "docsUrl": "https://docs.keeper.io/en/enterprise-guide/user-and-team-provisioning/automated-provisioning-with-scim/using-scim-api-provisioning",
+  "baseUrl": "https://keepersecurity.com",
+  "authConfig": {
+    "type": "custom",
+    "config": {
+      "credentialFields": [
+        {
+          "label": "SCIM Provisioning Token",
+          "type": "password",
+          "required": true,
+          "helpText": "Generate from Keeper Admin Console > Admin > Node > Provisioning > Add Method > SCIM"
+        },
+        {
+          "label": "SCIM Node ID",
+          "type": "text",
+          "required": true,
+          "helpText": "Numeric Node ID shown on the SCIM setup page in Keeper Admin Console"
+        },
+        {
+          "label": "Data Center Region",
+          "type": "text",
+          "required": true,
+          "helpText": "US, EU, AU, JP, CA, or GOV (e.g. US for keepersecurity.com, EU for keepersecurity.eu)"
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "user_access",
+      "name": "Employee Access",
+      "description": "Reviews Keeper vault users provisioned via SCIM and verifies their active or locked status",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "mfa_enforcement",
+      "name": "2FA",
+      "description": "Verifies that Keeper enterprise SCIM provisioning is active, confirming centralized identity governance required for 2FA policy enforcement",
+      "defaultSeverity": "high",
+      "enabled": true
+    },
+    {
+      "slug": "rbac",
+      "name": "Role-based Access Controls",
+      "description": "Verifies that Keeper teams and roles are configured with assigned members for organized vault access control",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "secure_secrets",
+      "name": "Secure Secrets",
+      "description": "Verifies that Keeper vault users are assigned to teams for controlled, team-based access to shared secrets and folders",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 4,
+  "isActive": true
+}

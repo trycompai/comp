@@ -1,0 +1,36 @@
+{
+  "slug": "alexishr",
+  "name": "AlexisHR",
+  "description": "Modern HR platform. Monitor employee records and organizational data.",
+  "category": "HR & People",
+  "docsUrl": "https://docs.alexishr.com/",
+  "baseUrl": "https://api.alexishr.com",
+  "authConfig": {
+    "type": "api_key",
+    "config": {}
+  },
+  "capabilities": [
+    "checks",
+    "sync"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": true,
+  "checks": [
+    {
+      "slug": "alexishr_app_availability",
+      "name": "AlexisHR App Availability",
+      "description": "Verifies AlexisHR API is accessible.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "alexishr_employee_access",
+      "name": "AlexisHR Employee Access",
+      "description": "Verifies employee access.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

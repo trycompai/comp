@@ -1,5 +1,6 @@
 'use client';
 
+import { CancelOnboardingButton } from '@/app/(app)/onboarding/components/CancelOnboardingButton';
 import { Button } from '@trycompai/ui/button';
 import { Card } from '@trycompai/ui/card';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@trycompai/ui/tooltip';
@@ -11,10 +12,12 @@ export function BookingStep({
   company,
   orgId,
   hasAccess,
+  hasOtherOrgs = false,
 }: {
   company: string;
   orgId: string;
   hasAccess: boolean;
+  hasOtherOrgs?: boolean;
 }) {
   const [isCopied, setIsCopied] = useState(false);
 
@@ -79,6 +82,14 @@ export function BookingStep({
                 </TooltipContent>
               </Tooltip>
             </TooltipProvider>
+          </div>
+
+          {/* Cancel option */}
+          <div className="flex justify-center">
+            <CancelOnboardingButton
+              organizationId={orgId}
+              hasOtherOrgs={hasOtherOrgs}
+            />
           </div>
         </div>
       </Card>

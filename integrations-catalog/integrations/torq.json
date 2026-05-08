@@ -1,0 +1,45 @@
+{
+  "slug": "torq",
+  "name": "Torq",
+  "description": "Torq security hyperautomation platform",
+  "category": "Security",
+  "docsUrl": "https://docs.torq.io/docs/torq-api",
+  "baseUrl": "https://api.torq.io/public/v2alpha1",
+  "authConfig": {
+    "type": "custom",
+    "config": {
+      "setupInstructions": "1. Log in to Torq\n2. Settings → API Tokens\n3. Create a token with read access\n4. Paste it below",
+      "credentialFields": [
+        {
+          "label": "API Token",
+          "type": "password",
+          "required": true,
+          "helpText": "Torq → Settings → API Tokens"
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "torq_monitoring",
+      "name": "Monitoring & Alerting",
+      "description": "Verifies Torq security automation workflows are active",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "torq_employee_access",
+      "name": "Employee Access",
+      "description": "Lists Torq users",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

@@ -1,0 +1,51 @@
+{
+  "slug": "coolify",
+  "name": "Coolify",
+  "description": "Self-hosted PaaS for deploying applications. Monitor servers and service access.",
+  "category": "Infrastructure",
+  "docsUrl": "https://coolify.io/docs/api-reference",
+  "baseUrl": "https://app.coolify.io",
+  "authConfig": {
+    "type": "custom",
+    "config": {
+      "setupInstructions": "1. Log in to your Coolify instance\n2. Go to Settings > API\n3. Generate a new API token\n4. Enter your instance URL and the API token below",
+      "credentialFields": [
+        {
+          "label": "Coolify Instance URL",
+          "type": "text",
+          "required": true,
+          "helpText": "Your Coolify instance URL (e.g. https://coolify.example.com or https://app.coolify.io for Coolify Cloud)"
+        },
+        {
+          "label": "API Token",
+          "type": "password",
+          "required": true,
+          "helpText": "Go to your Coolify instance > Settings > API > Generate new token"
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "coolify_app_availability",
+      "name": "Coolify App Availability",
+      "description": "Checks that the Coolify API is accessible.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "coolify_employee_access",
+      "name": "Coolify Employee Access",
+      "description": "Verifies employee access to Coolify via API.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

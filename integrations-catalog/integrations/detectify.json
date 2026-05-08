@@ -1,0 +1,45 @@
+{
+  "slug": "detectify",
+  "name": "Detectify",
+  "description": "Monitor Detectify web application security scanner for vulnerability detection and DAST compliance",
+  "category": "Security",
+  "docsUrl": "https://developer.detectify.com/",
+  "baseUrl": "https://api.detectify.com/",
+  "authConfig": {
+    "type": "custom",
+    "config": {
+      "setupInstructions": "1. Log in to Detectify at https://detectify.com\n2. Go to Team Settings → API Keys\n3. Generate a new API key\n4. Enter it below",
+      "credentialFields": [
+        {
+          "label": "API Key",
+          "type": "password",
+          "required": true,
+          "helpText": "Found in Detectify Team Settings → API Keys"
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "detectify_monitoring",
+      "name": "Monitoring & Alerting",
+      "description": "Verifies Detectify web security scans are configured and running",
+      "defaultSeverity": "high",
+      "enabled": true
+    },
+    {
+      "slug": "detectify_employee_access",
+      "name": "Employee Access",
+      "description": "Reviews Detectify team members with access to web security scan results",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

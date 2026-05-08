@@ -20,6 +20,7 @@ import {
   ApiBody,
   ApiConsumes,
   ApiOkResponse,
+  ApiOperation,
   ApiProduces,
   ApiQuery,
   ApiSecurity,
@@ -29,10 +30,7 @@ import { HybridAuthGuard } from '../auth/hybrid-auth.guard';
 import { PermissionGuard } from '../auth/permission.guard';
 import { Public } from '../auth/public.decorator';
 import { RequirePermission } from '../auth/require-permission.decorator';
-import {
-  OrganizationId,
-  AuthContext,
-} from '../auth/auth-context.decorator';
+import { OrganizationId, AuthContext } from '../auth/auth-context.decorator';
 import { AuditRead } from '../audit/skip-audit-log.decorator';
 import type { AuthContext as AuthContextType } from '../auth/types';
 import { ParseQuestionnaireDto } from './dto/parse-questionnaire.dto';
@@ -76,6 +74,7 @@ export class QuestionnaireController {
 
   @Get()
   @RequirePermission('questionnaire', 'read')
+  @ApiOperation({ summary: 'List questionnaires' })
   @ApiOkResponse({ description: 'List of questionnaires' })
   async findAll(
     @OrganizationId() organizationId: string,
@@ -98,6 +97,7 @@ export class QuestionnaireController {
 
   @Get(':id')
   @RequirePermission('questionnaire', 'read')
+  @ApiOperation({ summary: 'Get a questionnaire by ID' })
   @ApiOkResponse({ description: 'Questionnaire details' })
   async findById(
     @Param('id') id: string,
@@ -126,6 +126,7 @@ export class QuestionnaireController {
 
   @Delete(':id')
   @RequirePermission('questionnaire', 'delete')
+  @ApiOperation({ summary: 'Delete a questionnaire' })
   @ApiOkResponse({ description: 'Questionnaire deleted' })
   async deleteById(
     @Param('id') id: string,
@@ -136,6 +137,7 @@ export class QuestionnaireController {
 
   @Post('parse')
   @RequirePermission('questionnaire', 'read')
+  @ApiOperation({ summary: 'Parse an uploaded questionnaire file' })
   @ApiConsumes('application/json')
   @ApiOkResponse({
     description: 'Parsed questionnaire content',
@@ -149,6 +151,7 @@ export class QuestionnaireController {
 
   @Post('answer-single')
   @RequirePermission('questionnaire', 'update')
+  @ApiOperation({ summary: 'Answer a single questionnaire question' })
   @ApiConsumes('application/json')
   @ApiOkResponse({
     description: 'Generated single answer result',
@@ -189,6 +192,7 @@ export class QuestionnaireController {
 
   @Post('save-answer')
   @RequirePermission('questionnaire', 'update')
+  @ApiOperation({ summary: 'Save a questionnaire answer' })
   @ApiConsumes('application/json')
   @ApiOkResponse({
     description: 'Save manual or generated answer',
@@ -210,6 +214,7 @@ export class QuestionnaireController {
 
   @Post('delete-answer')
   @RequirePermission('questionnaire', 'delete')
+  @ApiOperation({ summary: 'Delete a questionnaire answer' })
   @ApiConsumes('application/json')
   @ApiOkResponse({
     description: 'Delete questionnaire answer',
@@ -232,6 +237,7 @@ export class QuestionnaireController {
   @Post('export')
   @RequirePermission('questionnaire', 'read')
   @AuditRead()
+  @ApiOperation({ summary: 'Export a questionnaire' })
   @ApiConsumes('application/json')
   @ApiProduces(
     'application/pdf',
@@ -260,6 +266,7 @@ export class QuestionnaireController {
 
   @Post('upload-and-parse')
   @RequirePermission('questionnaire', 'create')
+  @ApiOperation({ summary: 'Upload and parse a questionnaire file' })
   @ApiConsumes('application/json')
   @ApiOkResponse({
     description:
@@ -282,6 +289,7 @@ export class QuestionnaireController {
 
   @Post('upload-and-parse/upload')
   @RequirePermission('questionnaire', 'create')
+  @ApiOperation({ summary: 'Upload a questionnaire file and parse its questions' })
   @UseInterceptors(FileInterceptor('file'))
   @ApiConsumes('multipart/form-data')
   @ApiBody({
@@ -344,6 +352,7 @@ export class QuestionnaireController {
 
   @Post('parse/upload')
   @RequirePermission('questionnaire', 'create')
+  @ApiOperation({ summary: 'Upload a questionnaire file and auto-answer with export' })
   @UseInterceptors(FileInterceptor('file'))
   @ApiConsumes('multipart/form-data')
   @ApiBody({
@@ -424,6 +433,7 @@ export class QuestionnaireController {
   @Post('parse/upload/token')
   @Public()
   @UseGuards() // Override class-level guards — this endpoint uses token-based auth
+  @ApiOperation({ summary: 'Upload and auto-answer a questionnaire via trust portal token' })
   @UseInterceptors(FileInterceptor('file'))
   @ApiConsumes('multipart/form-data')
   @ApiQuery({
@@ -503,6 +513,7 @@ export class QuestionnaireController {
   @Post('answers/export')
   @RequirePermission('questionnaire', 'read')
   @AuditRead()
+  @ApiOperation({ summary: 'Export questionnaire answers' })
   @ApiConsumes('application/json')
   @ApiProduces(
     'application/pdf',
@@ -532,6 +543,7 @@ export class QuestionnaireController {
 
   @Post('answers/export/upload')
   @RequirePermission('questionnaire', 'create')
+  @ApiOperation({ summary: 'Upload a questionnaire file and export auto-generated answers' })
   @UseInterceptors(FileInterceptor('file'))
   @ApiConsumes('multipart/form-data')
   @ApiBody({
@@ -598,6 +610,7 @@ export class QuestionnaireController {
 
   @Post('auto-answer')
   @RequirePermission('questionnaire', 'update')
+  @ApiOperation({ summary: 'Auto-answer a questionnaire' })
   @ApiConsumes('application/json')
   @ApiProduces('text/event-stream')
   async autoAnswer(

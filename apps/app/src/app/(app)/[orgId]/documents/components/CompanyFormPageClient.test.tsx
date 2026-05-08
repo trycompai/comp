@@ -74,14 +74,6 @@ vi.mock('@trycompai/design-system/icons', () => ({
   Search: () => <span data-testid="search-icon" />,
 }));
 
-// ─── Mock DocumentFindingsSection ────────────────────────────
-
-vi.mock('./DocumentFindingsSection', () => ({
-  DocumentFindingsSection: ({ formType }: { formType: string }) => (
-    <div data-testid="findings-section" data-form-type={formType} />
-  ),
-}));
-
 // ─── Mock submission-utils ───────────────────────────────────
 
 vi.mock('./submission-utils', () => ({
@@ -140,17 +132,6 @@ describe('CompanyFormPageClient', () => {
       );
 
       expect(screen.getByText('Export CSV')).toBeInTheDocument();
-    });
-
-    it('renders the DocumentFindingsSection', () => {
-      render(
-        <CompanyFormPageClient
-          organizationId="org-1"
-          formType="access-request"
-        />,
-      );
-
-      expect(screen.getByTestId('findings-section')).toBeInTheDocument();
     });
 
     it('checks evidence:create and evidence:read permissions', () => {

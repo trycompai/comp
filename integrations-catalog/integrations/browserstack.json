@@ -1,0 +1,39 @@
+{
+  "slug": "browserstack",
+  "name": "BrowserStack",
+  "description": "Monitor BrowserStack automated testing platform for test coverage and account compliance",
+  "category": "Development",
+  "docsUrl": "https://www.browserstack.com/docs/automate/api-reference/selenium/introduction",
+  "baseUrl": "https://api.browserstack.com/",
+  "authConfig": {
+    "type": "basic",
+    "config": {
+      "setupInstructions": "1. Log in to BrowserStack at https://browserstack.com\n2. Go to Account > Summary to find your Username and Access Key\n3. Enter your Username and Access Key below",
+      "usernameField": "username",
+      "passwordField": "access_key"
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "browserstack_code_changes",
+      "name": "Code Changes",
+      "description": "Verifies BrowserStack automated testing is configured for validating code changes",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "browserstack_secure_code",
+      "name": "Secure Code",
+      "description": "Verifies BrowserStack builds are running to validate code quality",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

@@ -1,0 +1,59 @@
+{
+  "slug": "charthop",
+  "name": "ChartHop",
+  "description": "Monitor ChartHop people operations platform for employee access, role-based access controls, and organizational structure compliance",
+  "category": "HR & People",
+  "docsUrl": "https://docs.charthop.com/developer-basics",
+  "baseUrl": "https://api.charthop.com",
+  "authConfig": {
+    "type": "custom",
+    "config": {
+      "setupInstructions": "1. Contact support@charthop.com with subject 'New App Request' to create an API App for your organization\n2. Specify required permission levels (at minimum VIEW access)\n3. After approval, ChartHop will provide an API Authorization Token\n4. Enter the token and your Organization ID below",
+      "credentialFields": [
+        {
+          "label": "API Token",
+          "type": "password",
+          "required": true,
+          "helpText": "ChartHop App API authorization token. Contact support@charthop.com to create an App for your organization."
+        },
+        {
+          "label": "Organization ID",
+          "type": "text",
+          "required": true,
+          "helpText": "Your ChartHop organization ID or slug (found in ChartHop URL or organization settings)"
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks",
+    "sync"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": true,
+  "checks": [
+    {
+      "slug": "charthop_employee_access",
+      "name": "Employee Access",
+      "description": "Reviews ChartHop users with access to the people operations platform, checking for active and inactive accounts",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "charthop_rbac",
+      "name": "Role-based Access Controls",
+      "description": "Reviews ChartHop roles and their associated policies to verify proper access control configuration",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "charthop_org_chart",
+      "name": "Organisation Chart",
+      "description": "Verifies that an organizational structure exists in ChartHop with active job positions",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 3,
+  "isActive": true
+}

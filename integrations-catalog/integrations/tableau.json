@@ -1,0 +1,63 @@
+{
+  "slug": "tableau",
+  "name": "Tableau",
+  "description": "Tableau Cloud / Tableau Server - business intelligence and analytics platform by Salesforce. Monitors user access, site roles, and platform availability.",
+  "category": "Productivity",
+  "docsUrl": "https://help.tableau.com/current/api/rest_api/en-us/REST/rest_api.htm",
+  "baseUrl": null,
+  "authConfig": {
+    "type": "custom",
+    "config": {
+      "setupInstructions": "Setup steps:\n\n1. Log in to your Tableau Cloud or Tableau Server site\n\n2. Create a Personal Access Token (PAT):\n   - Click your profile icon in the top-right corner\n   - Select 'Account Settings' (or 'My Account Settings')\n   - Scroll to 'Personal Access Tokens'\n   - Click 'Create a new token'\n   - Enter a token name and click 'Create'\n   - Important: Copy the token secret immediately - it is only shown once\n\n3. Find your Site URL:\n   - Tableau Cloud: The URL in your browser, including the pod name (e.g., https://10ax.online.tableau.com)\n   - Tableau Server: Your server address (e.g., https://tableau.yourcompany.com)\n\n4. Find your Site Name (Content URL):\n   - Look at your browser URL after logging in\n   - The site name appears after /#/site/ in the URL path\n   - Example: For https://10ax.online.tableau.com/#/site/MySite, enter 'MySite'\n   - For Tableau Server default site, leave this field empty\n\nNote: The PAT must belong to a user with Site Administrator or Server Administrator role to list all users.",
+      "credentialFields": [
+        {
+          "label": "Site URL",
+          "type": "text",
+          "required": true,
+          "helpText": "Your Tableau Cloud or Tableau Server URL (e.g., https://10ax.online.tableau.com or https://tableau.yourcompany.com). Include the pod name for Tableau Cloud."
+        },
+        {
+          "label": "Site Name (Content URL)",
+          "type": "text",
+          "required": true,
+          "helpText": "The content URL of your site. Found in your browser address bar after /#/site/. For example, if your URL is https://10ax.online.tableau.com/#/site/MySite, enter 'MySite'. For Tableau Server default site, leave empty."
+        },
+        {
+          "label": "Personal Access Token Name",
+          "type": "text",
+          "required": true,
+          "helpText": "The name of your Personal Access Token (PAT). Generate one from Account Settings in Tableau Cloud or Tableau Server."
+        },
+        {
+          "label": "Personal Access Token Secret",
+          "type": "password",
+          "required": true,
+          "helpText": "The secret value of your Personal Access Token. This is only shown once when you create the token - copy it immediately."
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "tableau_app_availability",
+      "name": "Tableau App Availability",
+      "description": "Verifies that the Tableau site is accessible by signing in with Personal Access Token credentials and querying site information.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "tableau_employee_access",
+      "name": "Tableau Employee Access",
+      "description": "Lists all site users and their site roles (Creator, Explorer, Viewer, Site Administrator, etc.) for access review and compliance monitoring.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

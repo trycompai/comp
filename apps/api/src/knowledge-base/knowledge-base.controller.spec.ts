@@ -61,9 +61,7 @@ describe('KnowledgeBaseController', () => {
 
   describe('listManualAnswers', () => {
     it('should return manual answers from service', async () => {
-      const mockAnswers = [
-        { id: 'ma1', question: 'Q1?', answer: 'A1' },
-      ];
+      const mockAnswers = [{ id: 'ma1', question: 'Q1?', answer: 'A1' }];
       mockService.listManualAnswers.mockResolvedValue(mockAnswers);
 
       const result = await controller.listManualAnswers('org_1');

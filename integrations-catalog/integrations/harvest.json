@@ -1,0 +1,51 @@
+{
+  "slug": "harvest",
+  "name": "Harvest",
+  "description": "Time tracking and invoicing platform.",
+  "category": "Productivity",
+  "docsUrl": "https://help.getharvest.com/api-v2/",
+  "baseUrl": "https://api.harvestapp.com",
+  "authConfig": {
+    "type": "custom",
+    "config": {
+      "setupInstructions": "1. Log in to Harvest\n2. Go to Settings → API & OAuth\n3. Create a Personal Access Token\n4. Copy the Account ID and token\n5. Paste both below",
+      "credentialFields": [
+        {
+          "label": "Account ID",
+          "type": "text",
+          "required": true,
+          "helpText": "Found in Harvest → Settings → API & OAuth → Account ID."
+        },
+        {
+          "label": "Personal Access Token",
+          "type": "password",
+          "required": true,
+          "helpText": "Found in Harvest → Settings → API & OAuth → Personal Access Tokens."
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "harvest_app_availability",
+      "name": "Harvest App Availability",
+      "description": "Checks Harvest app availability.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "harvest_employee_access",
+      "name": "Harvest Employee Access",
+      "description": "Checks Harvest employee access.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}
