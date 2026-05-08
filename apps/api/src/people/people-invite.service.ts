@@ -7,6 +7,7 @@ import {
 import { db } from '@db';
 import { triggerEmail } from '../email/trigger-email';
 import { InviteEmail } from '../email/templates/invite-member';
+import { InvitePortalEmail } from '@trycompai/email';
 import type { InviteItemDto } from './dto/invite-people.dto';
 import { checkAutoCompletePhases } from '../frameworks/frameworks-timeline.helper';
 import { TimelinesService } from '../timelines/timelines.service';
@@ -44,6 +45,16 @@ export class PeopleInviteService {
 
     const results: InviteResult[] = [];
 
+    const hasPublishedPolicies = await db.policy.findFirst({
+      where: {
+        organizationId,
+        status: 'published',
+        isArchived: false,
+        archivedAt: null,
+      },
+      select: { id: true },
+    });
+
     for (const invite of invites) {
       try {
         // Auditors can only invite auditors
@@ -61,16 +72,24 @@ export class PeopleInviteService {
         }
 
         const email = invite.email.toLowerCase();
-        const hasEmployeeRoleAndNoAdmin =
-          !invite.roles.includes('admin') &&
-          (invite.roles.includes('employee') ||
-            invite.roles.includes('contractor'));
+        const isPrivileged = invite.roles.some((role) =>
+          ['admin', 'owner', 'auditor'].includes(role),
+        );
+        const isEmployee = invite.roles.some((role) =>
+          ['employee', 'contractor'].includes(role),
+        );
+        const isStrictlyEmployee = isEmployee && !isPrivileged;
 
-        if (hasEmployeeRoleAndNoAdmin) {
+        const shouldSendPortalEmail =
+          (invite.sendPortalEmail || !!hasPublishedPolicies) &&
+          isStrictlyEmployee;
+
+        if (isStrictlyEmployee) {
           const result = await this.addEmployeeWithoutInvite(
             email,
             invite.roles,
             organizationId,
+            shouldSendPortalEmail,
           );
           results.push({
             email: invite.email,
@@ -83,6 +102,7 @@ export class PeopleInviteService {
             invite.roles,
             organizationId,
             callerUserId,
+            shouldSendPortalEmail,
           );
           results.push({ email: invite.email, success: true });
         }
@@ -117,6 +137,7 @@ export class PeopleInviteService {
     email: string,
     roles: string[],
     organizationId: string,
+    sendPortalEmail?: boolean,
   ): Promise<{ emailSent: boolean }> {
     const organization = await db.organization.findUnique({
       where: { id: organizationId },
@@ -177,12 +198,25 @@ export class PeopleInviteService {
     // Send invite email (non-fatal)
     let emailSent = true;
     try {
-      const inviteLink = this.buildPortalUrl(organizationId);
-      await triggerEmail({
-        to: email,
-        subject: `You've been invited to join ${organization.name} on Comp AI`,
-        react: InviteEmail({ organizationName: organization.name, inviteLink }),
-      });
+      if (sendPortalEmail) {
+        const inviteLink = this.buildPortalUrl(organizationId);
+        await triggerEmail({
+          to: email,
+          subject: `You've been invited to join ${organization.name} on Comp AI`,
+          react: InvitePortalEmail({
+            organizationName: organization.name,
+            inviteLink,
+            email,
+          }),
+        });
+      } else {
+        const inviteLink = this.buildPortalUrl(organizationId);
+        await triggerEmail({
+          to: email,
+          subject: `You've been invited to join ${organization.name} on Comp AI`,
+          react: InviteEmail({ organizationName: organization.name, inviteLink }),
+        });
+      }
     } catch (emailErr) {
       emailSent = false;
       this.logger.error(
@@ -199,6 +233,7 @@ export class PeopleInviteService {
     roles: string[],
     organizationId: string,
     currentUserId: string,
+    sendPortalEmail?: boolean,
   ): Promise<void> {
     const existingUser = await db.user.findFirst({
       where: { email: { equals: email, mode: 'insensitive' } },
@@ -225,6 +260,7 @@ export class PeopleInviteService {
           roles,
           organizationId,
           currentUserId,
+          sendPortalEmail,
         );
         return;
       }
@@ -252,12 +288,25 @@ export class PeopleInviteService {
       },
     });
 
-    const inviteLink = this.buildInviteLink(invitation.id);
-    await triggerEmail({
-      to: email,
-      subject: `You've been invited to join ${organization.name} on Comp AI`,
-      react: InviteEmail({ organizationName: organization.name, inviteLink }),
-    });
+    if (sendPortalEmail) {
+      const inviteLink = this.buildPortalUrl(organizationId);
+      await triggerEmail({
+        to: email,
+        subject: `You've been invited to join ${organization.name} on Comp AI`,
+        react: InvitePortalEmail({
+          organizationName: organization.name,
+          inviteLink,
+          email,
+        }),
+      });
+    } else {
+      const inviteLink = this.buildInviteLink(invitation.id);
+      await triggerEmail({
+        to: email,
+        subject: `You've been invited to join ${organization.name} on Comp AI`,
+        react: InviteEmail({ organizationName: organization.name, inviteLink }),
+      });
+    }
   }
 
   private async sendInvitationEmailToExistingMember(
@@ -265,6 +314,7 @@ export class PeopleInviteService {
     roles: string[],
     organizationId: string,
     inviterId: string,
+    sendPortalEmail?: boolean,
   ): Promise<void> {
     const organization = await db.organization.findUnique({
       where: { id: organizationId },
@@ -286,12 +336,56 @@ export class PeopleInviteService {
       },
     });
 
-    const inviteLink = this.buildInviteLink(invitation.id);
-    await triggerEmail({
-      to: email.toLowerCase(),
-      subject: `You've been invited to join ${organization.name} on Comp AI`,
-      react: InviteEmail({ organizationName: organization.name, inviteLink }),
+    if (sendPortalEmail) {
+      const inviteLink = this.buildPortalUrl(organizationId);
+      await triggerEmail({
+        to: email.toLowerCase(),
+        subject: `You've been invited to join ${organization.name} on Comp AI`,
+        react: InvitePortalEmail({
+          organizationName: organization.name,
+          inviteLink,
+          email: email.toLowerCase(),
+        }),
+      });
+    } else {
+      const inviteLink = this.buildInviteLink(invitation.id);
+      await triggerEmail({
+        to: email.toLowerCase(),
+        subject: `You've been invited to join ${organization.name} on Comp AI`,
+        react: InviteEmail({ organizationName: organization.name, inviteLink }),
+      });
+    }
+  }
+
+  async resendPortalInvite(params: {
+    organizationId: string;
+    memberId: string;
+  }): Promise<{ success: boolean }> {
+    const { organizationId, memberId } = params;
+
+    const member = await db.member.findFirst({
+      where: { id: memberId, organizationId },
+      include: { user: true, organization: { select: { name: true } } },
     });
+
+    if (!member) {
+      throw new BadRequestException('Member not found.');
+    }
+
+    const email = member.user.email;
+    const inviteLink = this.buildPortalUrl(organizationId);
+
+    await triggerEmail({
+      to: email,
+      subject: `Access your ${member.organization.name} Employee Portal on Comp AI`,
+      react: InvitePortalEmail({
+        organizationName: member.organization.name,
+        inviteLink,
+        email,
+      }),
+    });
+
+    return { success: true };
   }
 
   private async createTrainingVideoEntries(

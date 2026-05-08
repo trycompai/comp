@@ -30,6 +30,7 @@ import {
   FormMessage,
 } from '@trycompai/ui/form';
 import { Input } from '@trycompai/ui/input';
+import { Checkbox } from '@trycompai/ui/checkbox';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@trycompai/ui/tabs';
 import { MultiRoleCombobox } from './MultiRoleCombobox';
 
@@ -55,12 +56,14 @@ const createFormSchema = (allowedRoles: string[]) => {
     manualInvites: z
       .array(manualInviteSchema)
       .min(1, { message: 'Please add at least one invite.' }),
+    sendPortalEmail: z.boolean(),
     csvFile: z.any().optional(), // Optional here, validated by union
   });
 
   const csvModeSchema = z.object({
     mode: z.literal('csv'),
     manualInvites: z.array(manualInviteSchema).optional(), // Optional here
+    sendPortalEmail: z.boolean(),
     csvFile: z.any().refine((val) => val instanceof FileList && val.length === 1, {
       message: 'Please select a single CSV file.',
     }),
@@ -119,6 +122,7 @@ export function InviteMembersModal({
           roles: DEFAULT_ROLES,
         },
       ],
+      sendPortalEmail: false,
       csvFile: undefined,
     },
     mode: 'onChange',
@@ -161,6 +165,7 @@ export function InviteMembersModal({
         const invitePayload = values.manualInvites.map((invite) => ({
           email: invite.email.toLowerCase(),
           roles: invite.roles,
+          sendPortalEmail: values.sendPortalEmail,
         }));
 
         const { data, error } = await api.post<{
@@ -284,7 +289,7 @@ export function InviteMembersModal({
           }
 
           // Parse CSV rows into invite items, validating locally first
-          const csvInvites: Array<{ email: string; roles: string[] }> = [];
+          const csvInvites: Array<{ email: string; roles: string[]; sendPortalEmail: boolean }> = [];
           const clientErrors: { email: string; error: string }[] = [];
 
           for (const row of dataRows) {
@@ -320,7 +325,11 @@ export function InviteMembersModal({
               continue;
             }
 
-            csvInvites.push({ email: email.toLowerCase(), roles: validRoles });
+            csvInvites.push({
+              email: email.toLowerCase(),
+              roles: validRoles,
+              sendPortalEmail: values.sendPortalEmail,
+            });
           }
 
           if (clientErrors.length > 0) {
@@ -565,6 +574,24 @@ export function InviteMembersModal({
                 />
               </TabsContent>
             </Tabs>
+
+            <FormField
+              control={form.control}
+              name="sendPortalEmail"
+              render={({ field }) => (
+                <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
+                  <FormControl>
+                    <Checkbox checked={field.value} onCheckedChange={field.onChange} />
+                  </FormControl>
+                  <div className="space-y-1 leading-none">
+                    <FormLabel>Send portal invite email</FormLabel>
+                    <FormDescription>
+                      If enabled, users will receive a direct link to the Employee Portal.
+                    </FormDescription>
+                  </div>
+                </FormItem>
+              )}
+            />
 
             <DialogFooter className="flex-col-reverse gap-2 sm:flex-row sm:justify-end sm:gap-0 sm:space-x-2">
               <Button
