@@ -99,10 +99,24 @@ export class PeopleController {
     @OrganizationId() organizationId: string,
     @AuthContext() authContext: AuthContextType,
     @Query('includeDeactivated') includeDeactivated?: string,
+    @Query('onboardAfter') onboardAfter?: string,
+    @Query('onboardBefore') onboardBefore?: string,
+    @Query('offboardAfter') offboardAfter?: string,
+    @Query('offboardBefore') offboardBefore?: string,
   ) {
+    const filters = {
+      ...(onboardAfter ? { onboardAfter: new Date(onboardAfter) } : {}),
+      ...(onboardBefore ? { onboardBefore: new Date(onboardBefore) } : {}),
+      ...(offboardAfter ? { offboardAfter: new Date(offboardAfter) } : {}),
+      ...(offboardBefore ? { offboardBefore: new Date(offboardBefore) } : {}),
+    };
+
+    const hasFilters = Object.keys(filters).length > 0;
+
     const people = await this.peopleService.findAllByOrganization(
       organizationId,
       includeDeactivated === 'true',
+      hasFilters ? filters : undefined,
     );
 
     return {

@@ -36,12 +36,19 @@ export class PeopleService {
   async findAllByOrganization(
     organizationId: string,
     includeDeactivated?: boolean,
+    filters?: {
+      onboardAfter?: Date;
+      onboardBefore?: Date;
+      offboardAfter?: Date;
+      offboardBefore?: Date;
+    },
   ): Promise<PeopleResponseDto[]> {
     try {
       await MemberValidator.validateOrganization(organizationId);
       const members = await MemberQueries.findAllByOrganization(
         organizationId,
         includeDeactivated,
+        filters,
       );
 
       this.logger.log(
