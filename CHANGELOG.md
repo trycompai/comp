@@ -1,3 +1,16 @@
+# [3.48.0](https://github.com/trycompai/comp/compare/v3.47.0...v3.48.0) (2026-05-08)
+
+
+### Bug Fixes
+
+* **people:** default portal email checkbox to checked, respect user choice ([#2806](https://github.com/trycompai/comp/issues/2806)) ([c413a9a](https://github.com/trycompai/comp/commit/c413a9a2f7171f109786f1aa4dea3748530b0c1c))
+* **people:** restore isActive when re-inviting deactivated contractor ([#2801](https://github.com/trycompai/comp/issues/2801)) ([871d706](https://github.com/trycompai/comp/commit/871d70644fd0995ff33a7c8d483654dd0f6a5be0))
+
+
+### Features
+
+* **people:** add option to trigger employee portal emails ([#2800](https://github.com/trycompai/comp/issues/2800)) ([42d06db](https://github.com/trycompai/comp/commit/42d06db1c6c7a41c311cc89d923be2d81f335393))
+
 # [3.47.0](https://github.com/trycompai/comp/compare/v3.46.1...v3.47.0) (2026-05-08)
 
 
