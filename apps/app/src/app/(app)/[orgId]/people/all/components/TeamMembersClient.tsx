@@ -16,6 +16,7 @@ import {
   EmptyDescription,
   EmptyHeader,
   EmptyTitle,
+  Input,
   InputGroup,
   InputGroupAddon,
   InputGroupInput,
@@ -81,6 +82,10 @@ export function TeamMembersClient({
   const [searchQuery, setSearchQuery] = useState('');
   const [roleFilter, setRoleFilter] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
+  const [onboardAfter, setOnboardAfter] = useState<string>('');
+  const [onboardBefore, setOnboardBefore] = useState<string>('');
+  const [offboardAfter, setOffboardAfter] = useState<string>('');
+  const [offboardBefore, setOffboardBefore] = useState<string>('');
   const [page, setPage] = useState(1);
   const [perPage, setPerPage] = useState(25);
 
@@ -135,8 +140,29 @@ export function TeamMembersClient({
     statusFilter,
   });
 
-  const activeMembers = filteredItems.filter((item) => item.type === 'member');
-  const pendingInvites = filteredItems.filter((item) => item.type === 'invitation');
+  const dateFilteredItems = filteredItems.filter((item) => {
+    if (item.type !== 'member') return true;
+    const member = item as MemberWithUser;
+
+    if (onboardAfter || onboardBefore) {
+      if (!member.onboardDate) return false;
+      const onboard = new Date(member.onboardDate);
+      if (onboardAfter && onboard < new Date(onboardAfter)) return false;
+      if (onboardBefore && onboard > new Date(onboardBefore)) return false;
+    }
+
+    if (offboardAfter || offboardBefore) {
+      if (!member.offboardDate) return false;
+      const offboard = new Date(member.offboardDate);
+      if (offboardAfter && offboard < new Date(offboardAfter)) return false;
+      if (offboardBefore && offboard > new Date(offboardBefore)) return false;
+    }
+
+    return true;
+  });
+
+  const activeMembers = dateFilteredItems.filter((item) => item.type === 'member');
+  const pendingInvites = dateFilteredItems.filter((item) => item.type === 'invitation');
 
   // Combine all items for table display
   const allDisplayItems = [...activeMembers, ...pendingInvites];
@@ -286,6 +312,58 @@ export function TeamMembersClient({
             </SelectContent>
           </Select>
         </div>
+        {/* Onboard Date Filter */}
+        <div className="hidden items-center gap-1 sm:flex">
+          <div className="w-[140px]">
+            <Input
+              type="date"
+              placeholder="Onboard from"
+              value={onboardAfter}
+              onChange={(e) => {
+                setOnboardAfter(e.target.value);
+                setPage(1);
+              }}
+            />
+          </div>
+          <div className="w-[140px]">
+            <Input
+              type="date"
+              placeholder="Onboard to"
+              value={onboardBefore}
+              onChange={(e) => {
+                setOnboardBefore(e.target.value);
+                setPage(1);
+              }}
+            />
+          </div>
+        </div>
+
+        {/* Offboard Date Filter */}
+        <div className="hidden items-center gap-1 sm:flex">
+          <div className="w-[140px]">
+            <Input
+              type="date"
+              placeholder="Offboard from"
+              value={offboardAfter}
+              onChange={(e) => {
+                setOffboardAfter(e.target.value);
+                setPage(1);
+              }}
+            />
+          </div>
+          <div className="w-[140px]">
+            <Input
+              type="date"
+              placeholder="Offboard to"
+              value={offboardBefore}
+              onChange={(e) => {
+                setOffboardBefore(e.target.value);
+                setPage(1);
+              }}
+            />
+          </div>
+        </div>
+
         {hasAnyConnection && (
           <div className="flex items-center gap-2">
             <div className="w-[200px]">
