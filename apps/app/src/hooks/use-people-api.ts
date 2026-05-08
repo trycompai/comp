@@ -97,11 +97,25 @@ export function usePeopleActions() {
     [api],
   );
 
+  const resendPortalInvite = useCallback(
+    async (memberId: string) => {
+      const response = await api.post<{ success: boolean }>(
+        `/v1/people/${memberId}/resend-portal-invite`,
+      );
+      if (response.error) {
+        throw new Error(response.error);
+      }
+      return response.data!;
+    },
+    [api],
+  );
+
   return {
     unlinkDevice,
     removeMember,
     removeHostFromFleet,
     removeDeviceAgent,
     reactivateMember,
+    resendPortalInvite,
   };
 }
