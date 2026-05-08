@@ -65,6 +65,11 @@ export class DynamicIntegrationsController {
       ? SyncDefinitionSchema.parse(rawSyncDef)
       : undefined;
 
+    const rawDeviceSyncDef = body.deviceSyncDefinition;
+    const validatedDeviceSyncDef = rawDeviceSyncDef
+      ? SyncDefinitionSchema.parse(rawDeviceSyncDef)
+      : undefined;
+
     // Upsert the integration
     const integration = await this.dynamicIntegrationRepo.upsertBySlug({
       slug: def.slug,
@@ -81,6 +86,11 @@ export class DynamicIntegrationsController {
       syncDefinition: validatedSyncDef
         ? (JSON.parse(
             JSON.stringify(validatedSyncDef),
+          ) as Prisma.InputJsonValue)
+        : null,
+      deviceSyncDefinition: validatedDeviceSyncDef
+        ? (JSON.parse(
+            JSON.stringify(validatedDeviceSyncDef),
           ) as Prisma.InputJsonValue)
         : null,
       services: (def.services as unknown as Prisma.InputJsonValue) ?? undefined,
@@ -167,6 +177,12 @@ export class DynamicIntegrationsController {
     const validatedSyncDefCreate = rawSyncDefCreate
       ? SyncDefinitionSchema.parse(rawSyncDefCreate)
       : undefined;
+
+    const rawDeviceSyncDefCreate = body.deviceSyncDefinition;
+    const validatedDeviceSyncDefCreate = rawDeviceSyncDefCreate
+      ? SyncDefinitionSchema.parse(rawDeviceSyncDefCreate)
+      : undefined;
+
     const integration = await this.dynamicIntegrationRepo.create({
       slug: def.slug,
       name: def.name,
@@ -182,6 +198,11 @@ export class DynamicIntegrationsController {
       syncDefinition: validatedSyncDefCreate
         ? (JSON.parse(
             JSON.stringify(validatedSyncDefCreate),
+          ) as Prisma.InputJsonValue)
+        : undefined,
+      deviceSyncDefinition: validatedDeviceSyncDefCreate
+        ? (JSON.parse(
+            JSON.stringify(validatedDeviceSyncDefCreate),
           ) as Prisma.InputJsonValue)
         : undefined,
     });
