@@ -45,6 +45,16 @@ export class PeopleInviteService {
 
     const results: InviteResult[] = [];
 
+    const hasPublishedPolicies = await db.policy.findFirst({
+      where: {
+        organizationId,
+        status: 'published',
+        isArchived: false,
+        archivedAt: null,
+      },
+      select: { id: true },
+    });
+
     for (const invite of invites) {
       try {
         // Auditors can only invite auditors
@@ -67,12 +77,15 @@ export class PeopleInviteService {
           (invite.roles.includes('employee') ||
             invite.roles.includes('contractor'));
 
+        const shouldSendPortalEmail =
+          invite.sendPortalEmail || !!hasPublishedPolicies;
+
         if (hasEmployeeRoleAndNoAdmin) {
           const result = await this.addEmployeeWithoutInvite(
             email,
             invite.roles,
             organizationId,
-            invite.sendPortalEmail,
+            shouldSendPortalEmail,
           );
           results.push({
             email: invite.email,
@@ -85,7 +98,7 @@ export class PeopleInviteService {
             invite.roles,
             organizationId,
             callerUserId,
-            invite.sendPortalEmail,
+            shouldSendPortalEmail,
           );
           results.push({ email: invite.email, success: true });
         }
