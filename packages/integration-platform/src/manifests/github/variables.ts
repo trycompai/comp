@@ -151,3 +151,23 @@ export const recentPullRequestDaysVariable: CheckVariable = {
   helpText:
     'How many days back to look when determining whether pull requests are "recent". Confirm the right value with your security/compliance owner.',
 };
+
+/**
+ * Minimum severity of open Dependabot alerts that should cause the check to fail.
+ * Alerts below the threshold do not affect the pass/fail verdict.
+ */
+export const alertSeverityThresholdVariable: CheckVariable = {
+  id: 'alert_severity_threshold',
+  label: 'Fail on open alerts at severity',
+  type: 'select',
+  required: false,
+  default: 'high',
+  helpText:
+    'The check fails when the repository has open Dependabot alerts at or above this severity. Alerts below this level are informational only.',
+  options: [
+    { value: 'critical', label: 'Critical only' },
+    { value: 'high', label: 'High or above (recommended)' },
+    { value: 'medium', label: 'Medium or above' },
+    { value: 'low', label: 'Low (fail on any open alert)' },
+  ],
+};

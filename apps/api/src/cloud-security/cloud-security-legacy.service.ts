@@ -6,11 +6,7 @@ import {
 } from '@nestjs/common';
 import { db } from '@db';
 import { Prisma } from '@db';
-import {
-  createCipheriv,
-  randomBytes,
-  scryptSync,
-} from 'crypto';
+import { createCipheriv, randomBytes, scryptSync } from 'crypto';
 import { DescribeRegionsCommand, EC2Client } from '@aws-sdk/client-ec2';
 import { GetCallerIdentityCommand, STSClient } from '@aws-sdk/client-sts';
 
@@ -197,13 +193,10 @@ export class CloudSecurityLegacyService {
 
     let accountIdentity: string;
     try {
-      const identity = await stsClient.send(
-        new GetCallerIdentityCommand({}),
-      );
+      const identity = await stsClient.send(new GetCallerIdentityCommand({}));
       accountIdentity = identity.Account || '';
     } catch (error) {
-      const msg =
-        error instanceof Error ? error.message : 'Failed to validate';
+      const msg = error instanceof Error ? error.message : 'Failed to validate';
       throw new BadRequestException(`Invalid AWS credentials: ${msg}`);
     }
 

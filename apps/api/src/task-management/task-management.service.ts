@@ -271,7 +271,9 @@ export class TaskManagementService {
           include: { user: { select: { role: true } } },
         });
         if (assigneeMember?.user.role === 'admin') {
-          throw new BadRequestException('Cannot assign a platform admin as assignee');
+          throw new BadRequestException(
+            'Cannot assign a platform admin as assignee',
+          );
         }
       }
 
@@ -322,7 +324,6 @@ export class TaskManagementService {
           assigneeMemberId: createTaskItemDto.assigneeId,
           assignedByUserId: authContext.userId,
         });
-
       }
 
       // Notify mentioned users
@@ -486,7 +487,9 @@ export class TaskManagementService {
             include: { user: { select: { role: true } } },
           });
           if (assigneeMember?.user.role === 'admin') {
-            throw new BadRequestException('Cannot assign a platform admin as assignee');
+            throw new BadRequestException(
+              'Cannot assign a platform admin as assignee',
+            );
           }
         }
         updateData.assigneeId = updateTaskItemDto.assigneeId;
@@ -537,13 +540,11 @@ export class TaskManagementService {
             assigneeMemberId: taskItem.assigneeId,
             assignedByUserId: authContext.userId,
           });
-
         } else {
           // Assignee removed
           this.logger.log(
             `[ASSIGNEE DEBUG] Assignee removed from task ${taskItem.id}`,
           );
-
         }
       } else if (updateTaskItemDto.assigneeId !== undefined) {
         this.logger.log(

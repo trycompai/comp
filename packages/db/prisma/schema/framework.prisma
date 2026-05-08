@@ -3,12 +3,33 @@ model FrameworkInstance {
   id             String @id @default(dbgenerated("generate_prefixed_cuid('frm'::text)"))
   organizationId String
 
-  frameworkId String
-  framework   FrameworkEditorFramework @relation(fields: [frameworkId], references: [id], onDelete: Cascade)
+  // Exactly one of frameworkId / customFrameworkId is set (enforced by DB CHECK constraint).
+  frameworkId String?
+  framework   FrameworkEditorFramework? @relation(fields: [frameworkId], references: [id], onDelete: Cascade)
+
+  customFrameworkId String?
+  // Composite FK onto (id, organizationId) so an FI can only reference a
+  // CustomFramework in its own org. Enforced at the DB level.
+  customFramework   CustomFramework? @relation(fields: [customFrameworkId, organizationId], references: [id, organizationId], onDelete: Cascade)
+
+  currentVersionId String?
+  currentVersion   FrameworkVersion? @relation("FrameworkInstanceCurrentVersion", fields: [currentVersionId], references: [id], onDelete: Restrict)
 
   // Relationships
-  organization       Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  organization       Organization             @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   requirementsMapped RequirementMap[]
+  timelineInstances  TimelineInstance[]
+  syncOperations     FrameworkSyncOperation[]
+  // Per-instance custom requirements (used when an org tacks an extra requirement
+  // onto a platform framework instance). Custom requirements attached to a
+  // CustomFramework hang off CustomFramework.requirements instead.
+  customRequirements CustomRequirement[]
 
+  // (id, organizationId) is the composite-FK target for CustomRequirement.frameworkInstanceId
+  // so a per-instance custom requirement can only point at an FI in its own org.
+  @@unique([id, organizationId])
   @@unique([organizationId, frameworkId])
+  @@unique([organizationId, customFrameworkId])
+  @@index([customFrameworkId])
+  @@index([currentVersionId])
 }

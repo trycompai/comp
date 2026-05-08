@@ -1,0 +1,46 @@
+{
+  "slug": "proofpoint-tap",
+  "name": "Proofpoint TAP",
+  "description": "Proofpoint Targeted Attack Protection - monitor email threats, targeted attacks, and user click behavior for security compliance",
+  "category": "Security",
+  "docsUrl": "https://help.proofpoint.com/Threat_Insight_Dashboard/API_Documentation",
+  "baseUrl": "https://tap-api-v2.proofpoint.com",
+  "authConfig": {
+    "type": "basic",
+    "config": {
+      "setupInstructions": "1. Log in to Proofpoint TAP at https://threatinsight.proofpoint.com\n2. Go to Settings > Connected Applications\n3. Create a new Service Principal (or use an existing one)\n4. Copy the Service Principal (username) and Secret (password)\n5. Enter them below",
+      "usernameField": "service_principal",
+      "passwordField": "service_secret"
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "proofpoint_tap_monitoring",
+      "name": "Monitoring & Alerting",
+      "description": "Retrieves all threat events from the past 24 hours via the SIEM endpoint. Reports blocked vs delivered threats. Emits findings for any messages that were delivered despite being threats.",
+      "defaultSeverity": "high",
+      "enabled": true
+    },
+    {
+      "slug": "proofpoint_tap_security_awareness",
+      "name": "Security Awareness",
+      "description": "Retrieves the Very Attacked People (VAP) list from Proofpoint TAP. Reports on the most targeted users in the organization over a 30-day window.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "proofpoint_tap_incident_response",
+      "name": "Incident Response",
+      "description": "Retrieves the top clickers list from Proofpoint TAP. Identifies users who clicked on malicious URLs, enabling incident response and targeted remediation.",
+      "defaultSeverity": "high",
+      "enabled": true
+    }
+  ],
+  "checkCount": 3,
+  "isActive": true
+}

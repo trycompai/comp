@@ -53,7 +53,7 @@ export function EditSecretDialog({
 }: EditSecretDialogProps) {
   const { updateSecret } = useSecrets();
   const { hasPermission } = usePermissions();
-  const canManageSecrets = hasPermission('organization', 'update');
+  const canManageSecrets = hasPermission('secret', 'update');
   const {
     handleSubmit,
     control,

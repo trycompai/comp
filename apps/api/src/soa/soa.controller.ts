@@ -25,6 +25,7 @@ import { EnsureSOASetupDto } from './dto/ensure-soa-setup.dto';
 import { ApproveSOADocumentDto } from './dto/approve-soa-document.dto';
 import { DeclineSOADocumentDto } from './dto/decline-soa-document.dto';
 import { SubmitSOAForApprovalDto } from './dto/submit-soa-for-approval.dto';
+import { ExportSOADocumentDto } from './dto/export-soa-document.dto';
 import { syncOrganizationEmbeddings } from '@/vector-store/lib';
 import { OrganizationId } from '@/auth/auth-context.decorator';
 import { AuthContext } from '@/auth/auth-context.decorator';
@@ -394,5 +395,30 @@ export class SOAController {
     @OrganizationId() organizationId: string,
   ) {
     return this.soaService.submitForApproval(dto);
+  }
+
+  @Post('export')
+  @RequirePermission('audit', 'read')
+  @ApiOperation({ summary: 'Export a SOA document' })
+  @ApiConsumes('application/json')
+  @ApiProduces('application/pdf')
+  @ApiOkResponse({
+    description: 'Export SOA document to PDF',
+  })
+  async exportDocument(
+    @Body() dto: ExportSOADocumentDto,
+    @Res({ passthrough: true }) res: Response,
+    @OrganizationId() organizationId: string,
+  ): Promise<void> {
+    dto.organizationId = organizationId;
+    const result = await this.soaService.exportDocument(dto);
+
+    res.setHeader('Content-Type', result.mimeType);
+    res.setHeader(
+      'Content-Disposition',
+      `attachment; filename="${result.filename}"`,
+    );
+
+    res.send(result.fileBuffer);
   }
 }

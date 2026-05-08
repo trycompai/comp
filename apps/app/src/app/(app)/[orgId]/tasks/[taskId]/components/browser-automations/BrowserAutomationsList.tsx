@@ -33,6 +33,8 @@ interface BrowserAutomationsListProps {
   /** When undefined, the create button is hidden (e.g., for manual tasks) */
   onCreateClick?: () => void;
   onEditClick: (automation: BrowserAutomation) => void;
+  onDelete: (automationId: string) => void;
+  onToggleEnabled: (automationId: string, enabled: boolean) => void;
 }
 
 export function BrowserAutomationsList({
@@ -42,13 +44,16 @@ export function BrowserAutomationsList({
   onRun,
   onCreateClick,
   onEditClick,
+  onDelete,
+  onToggleEnabled,
 }: BrowserAutomationsListProps) {
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const { hasPermission } = usePermissions();
   const canCreateIntegration = hasPermission('integration', 'create');
   const canUpdateIntegration = hasPermission('integration', 'update');
 
-  const nextRun = automations.length > 0 ? getNextScheduledRun() : null;
+  const hasEnabledAutomations = automations.some((a) => a.isEnabled);
+  const nextRun = hasEnabledAutomations ? getNextScheduledRun() : null;
 
   return (
     <div className="rounded-lg border border-border bg-card overflow-hidden">
@@ -102,6 +107,8 @@ export function BrowserAutomationsList({
               }
               onRun={() => onRun(automation.id)}
               onEdit={() => onEditClick(automation)}
+              onDelete={() => onDelete(automation.id)}
+              onToggleEnabled={(enabled) => onToggleEnabled(automation.id, enabled)}
             />
           ))}
         </div>

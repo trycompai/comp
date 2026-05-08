@@ -1,16 +1,7 @@
 'use client';
 
-import { useState } from 'react';
 import { api } from '@/lib/api-client';
 import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
   Badge,
   Button,
   PageHeader,
@@ -21,16 +12,21 @@ import {
   TabsList,
   TabsTrigger,
 } from '@trycompai/design-system';
-import { Input } from '@trycompai/ui/input';
-import { Label } from '@trycompai/ui/label';
-import { OrganizationDetail } from './OrganizationDetail';
-import { MembersTab } from './MembersTab';
-import { FindingsTab } from './FindingsTab';
-import { TasksTab } from './TasksTab';
-import { VendorsTab } from './VendorsTab';
+import { useRouter } from 'next/navigation';
+import { useState } from 'react';
+import { toast } from 'sonner';
+import { AdminBillingTab } from './AdminBillingTab';
+import { AdminOrgDangerDialogs } from './AdminOrgDangerDialogs';
 import { ContextTab } from './ContextTab';
 import { EvidenceTab } from './EvidenceTab';
+import { FeatureFlagsTab } from './FeatureFlagsTab';
+import { FindingsTab } from './FindingsTab';
+import { MembersTab } from './MembersTab';
+import { OrganizationDetail } from './OrganizationDetail';
 import { PoliciesTab } from './PoliciesTab';
+import { TasksTab } from './TasksTab';
+import { TimelineTab } from './TimelineTab';
+import { VendorsTab } from './VendorsTab';
 
 interface OrgMember {
   id: string;
@@ -53,21 +49,20 @@ export interface AdminOrgDetail {
   hasAccess: boolean;
   onboardingCompleted: boolean;
   website: string | null;
+  backgroundCheckStepEnabled: boolean;
   members: OrgMember[];
 }
 
-export function AdminOrgTabs({
-  org,
-  currentOrgId,
-}: {
-  org: AdminOrgDetail;
-  currentOrgId: string;
-}) {
+export function AdminOrgTabs({ org, currentOrgId }: { org: AdminOrgDetail; currentOrgId: string }) {
+  const router = useRouter();
   const [activeTab, setActiveTab] = useState('overview');
   const [toggling, setToggling] = useState(false);
   const [hasAccess, setHasAccess] = useState(org.hasAccess);
   const [deactivateDialogOpen, setDeactivateDialogOpen] = useState(false);
   const [confirmValue, setConfirmValue] = useState('');
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [deleteConfirmValue, setDeleteConfirmValue] = useState('');
+  const [deleting, setDeleting] = useState(false);
 
   const handleToggleAccess = async () => {
     if (hasAccess) {
@@ -76,9 +71,7 @@ export function AdminOrgTabs({
       return;
     }
     setToggling(true);
-    const res = await api.patch(
-      `/v1/admin/organizations/${org.id}/activate`,
-    );
+    const res = await api.patch(`/v1/admin/organizations/${org.id}`, { hasAccess: true });
     if (!res.error) setHasAccess(true);
     setToggling(false);
   };
@@ -86,15 +79,33 @@ export function AdminOrgTabs({
   const handleConfirmDeactivate = async () => {
     setDeactivateDialogOpen(false);
     setToggling(true);
-    const res = await api.patch(
-      `/v1/admin/organizations/${org.id}/deactivate`,
-    );
+    const res = await api.patch(`/v1/admin/organizations/${org.id}`, { hasAccess: false });
     if (!res.error) setHasAccess(false);
     setToggling(false);
   };
 
+  const handleConfirmDelete = async () => {
+    setDeleting(true);
+    const res = await api.delete(`/v1/admin/organizations/${org.id}`, undefined, {
+      confirm: org.slug,
+    });
+    setDeleting(false);
+    if (res.error) {
+      toast.error(typeof res.error === 'string' ? res.error : 'Failed to delete organization');
+      return;
+    }
+    setDeleteDialogOpen(false);
+    toast.success(`Organization '${org.name}' permanently deleted`);
+    router.push(`/${currentOrgId}/admin/organizations`);
+  };
+
   return (
-    <Tabs value={activeTab} onValueChange={(v) => { if (v) setActiveTab(v); }}>
+    <Tabs
+      value={activeTab}
+      onValueChange={(v) => {
+        if (v) setActiveTab(v);
+      }}
+    >
       <PageLayout
         header={
           <PageHeader
@@ -119,6 +130,16 @@ export function AdminOrgTabs({
                 >
                   {hasAccess ? 'Deactivate' : 'Activate'}
                 </Button>
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  onClick={() => {
+                    setDeleteConfirmValue('');
+                    setDeleteDialogOpen(true);
+                  }}
+                >
+                  Delete Permanently
+                </Button>
               </div>
             }
             tabs={
@@ -131,6 +152,9 @@ export function AdminOrgTabs({
                 <TabsTrigger value="vendors">Vendors</TabsTrigger>
                 <TabsTrigger value="context">Context</TabsTrigger>
                 <TabsTrigger value="evidence">Evidence</TabsTrigger>
+                <TabsTrigger value="timeline">Timeline</TabsTrigger>
+                <TabsTrigger value="billing">Billing</TabsTrigger>
+                <TabsTrigger value="feature-flags">Feature Flags</TabsTrigger>
               </TabsList>
             }
           >
@@ -153,11 +177,7 @@ export function AdminOrgTabs({
           <OrganizationDetail org={org} currentOrgId={currentOrgId} hasAccess={hasAccess} />
         </TabsContent>
         <TabsContent value="members">
-          <MembersTab
-            orgId={org.id}
-            orgName={org.name}
-            members={org.members}
-          />
+          <MembersTab orgId={org.id} orgName={org.name} members={org.members} />
         </TabsContent>
         <TabsContent value="policies">
           <PoliciesTab orgId={org.id} />
@@ -177,49 +197,38 @@ export function AdminOrgTabs({
         <TabsContent value="evidence">
           <EvidenceTab orgId={org.id} />
         </TabsContent>
+        <TabsContent value="timeline">
+          <TimelineTab orgId={org.id} />
+        </TabsContent>
+        <TabsContent value="billing">
+          <AdminBillingTab orgId={org.id} currentOrgId={currentOrgId} />
+        </TabsContent>
+        <TabsContent value="feature-flags">
+          <FeatureFlagsTab orgId={org.id} />
+        </TabsContent>
       </PageLayout>
 
-      <AlertDialog
-        open={deactivateDialogOpen}
-        onOpenChange={(open) => {
+      <AdminOrgDangerDialogs
+        orgName={org.name}
+        orgSlug={org.slug}
+        deactivateOpen={deactivateDialogOpen}
+        deleteOpen={deleteDialogOpen}
+        confirmValue={confirmValue}
+        deleteConfirmValue={deleteConfirmValue}
+        deleting={deleting}
+        onDeactivateOpenChange={(open) => {
           setDeactivateDialogOpen(open);
           if (!open) setConfirmValue('');
         }}
-      >
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Deactivate organization</AlertDialogTitle>
-            <AlertDialogDescription>
-              This will immediately revoke access for all members of{' '}
-              <strong>{org.name}</strong>. They will not be able to log in or
-              use the platform until reactivated.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <div className="mt-2 flex flex-col gap-2">
-            <Label htmlFor="confirm-deactivate">
-              Type &apos;deactivate&apos; to confirm
-            </Label>
-            <Input
-              id="confirm-deactivate"
-              value={confirmValue}
-              onChange={(e) => setConfirmValue(e.target.value)}
-              placeholder="deactivate"
-            />
-          </div>
-          <AlertDialogFooter>
-            <AlertDialogCancel onClick={() => setConfirmValue('')}>
-              Cancel
-            </AlertDialogCancel>
-            <AlertDialogAction
-              variant="destructive"
-              onClick={handleConfirmDeactivate}
-              disabled={confirmValue !== 'deactivate'}
-            >
-              Deactivate
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+        onDeleteOpenChange={(open) => {
+          setDeleteDialogOpen(open);
+          if (!open) setDeleteConfirmValue('');
+        }}
+        onConfirmValueChange={setConfirmValue}
+        onDeleteConfirmValueChange={setDeleteConfirmValue}
+        onConfirmDeactivate={handleConfirmDeactivate}
+        onConfirmDelete={handleConfirmDelete}
+      />
     </Tabs>
   );
 }

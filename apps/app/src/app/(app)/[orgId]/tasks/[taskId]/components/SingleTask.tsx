@@ -2,6 +2,7 @@
 
 import { SelectAssignee } from '@/components/SelectAssignee';
 import { RecentAuditLogs } from '@/components/RecentAuditLogs';
+import { MarkdownRenderer } from '../automation/[automationId]/components/markdown-renderer/markdown-renderer';
 import { useAuditLogs } from '@/hooks/use-audit-logs';
 import { useOrganizationMembers } from '@/hooks/use-organization-members';
 import { downloadTaskEvidenceZip } from '@/lib/evidence-download';
@@ -23,6 +24,7 @@ import {
   type Control,
   type Member,
   type Task,
+  type TaskFrequency,
   type TaskStatus,
   type User,
 } from '@db';
@@ -37,6 +39,7 @@ import {
   TabsTrigger,
   Text,
 } from '@trycompai/design-system';
+import { SubtractAlt } from '@trycompai/design-system/icons';
 import { CheckCircle2, Clock, Download, RefreshCw, SendHorizontal, Trash2, XCircle } from 'lucide-react';
 import Link from 'next/link';
 import { useParams, useSearchParams } from 'next/navigation';
@@ -46,13 +49,12 @@ import { Comments } from '../../../../../../components/comments/Comments';
 import { useTask } from '../hooks/use-task';
 import { useTaskAutomations } from '../hooks/use-task-automations';
 import { BrowserAutomations } from './BrowserAutomations';
-import { FindingHistoryPanel } from './findings/FindingHistoryPanel';
-import { FindingsList } from './findings/FindingsList';
 import { TaskAutomations } from './TaskAutomations';
 import { TaskAutomationStatusBadge } from './TaskAutomationStatusBadge';
 import { TaskDeleteDialog } from './TaskDeleteDialog';
 import { TaskIntegrationChecks } from './TaskIntegrationChecks';
 import { TaskMainContent } from './TaskMainContent';
+import { TaskPolicies } from './TaskPolicies';
 import { TaskPropertiesSidebar } from './TaskPropertiesSidebar';
 
 type AutomationWithRuns = EvidenceAutomation & {
@@ -108,7 +110,6 @@ export function SingleTask({
 
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [isRegenerateConfirmOpen, setRegenerateConfirmOpen] = useState(false);
-  const [selectedFindingIdForHistory, setSelectedFindingIdForHistory] = useState<string | null>(null);
   const [requestApprovalDialogOpen, setRequestApprovalDialogOpen] = useState(false);
   const [selectedApproverId, setSelectedApproverId] = useState<string | null>(null);
   const [isEditingTitle, setIsEditingTitle] = useState(false);
@@ -122,6 +123,7 @@ export function SingleTask({
 
   const canUpdateTask = hasPermission('task', 'update');
   const canDeleteTask = hasPermission('task', 'delete');
+  const canReadPolicy = hasPermission('policy', 'read');
 
   const startEditingTitle = () => {
     if (!canUpdateTask) return;
@@ -165,16 +167,30 @@ export function SingleTask({
     }
   };
 
+  const handleUpdateIntegrationSchedule = async (value: TaskFrequency) => {
+    try {
+      await updateTask({ integrationScheduleFrequency: value });
+      toast.success('Schedule updated');
+      mutateActivity();
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Failed to update schedule');
+    }
+  };
+
   const handleUpdateTask = async (
-    updates: Partial<Pick<Task, 'status' | 'assigneeId' | 'approverId' | 'frequency' | 'department' | 'reviewDate'>>,
+    updates: Partial<Pick<Task, 'status' | 'assigneeId' | 'approverId' | 'frequency' | 'department' | 'reviewDate'>> & {
+      notRelevantJustification?: string;
+    },
   ) => {
     try {
       await updateTask({
         status: updates.status,
         assigneeId: updates.assigneeId,
+        approverId: updates.approverId,
         frequency: updates.frequency,
         department: updates.department,
         reviewDate: updates.reviewDate ? String(updates.reviewDate) : undefined,
+        notRelevantJustification: updates.notRelevantJustification,
       });
       toast.success('Task updated');
       mutateActivity();
@@ -288,17 +304,28 @@ export function SingleTask({
             autoFocus
           />
         ) : (
-          <Text
-            size="sm"
-            variant="muted"
-            as="p"
+          // CS-98: descriptions authored in the Framework Editor use markdown
+          // (bullets, bold, headings). Plain-text rendering with whiteSpace:
+          // pre-line preserved newlines but showed raw "**" and "- " syntax.
+          // Render through the shared MarkdownRenderer so the app matches
+          // what admins see in the editor preview.
+          <div
             onClick={startEditingDescription}
-            style={{ cursor: 'pointer', whiteSpace: 'pre-line' }}
+            className="text-sm text-muted-foreground cursor-pointer"
           >
-            {task.description || 'Add a description...'}
-          </Text>
+            {task.description ? (
+              <MarkdownRenderer content={task.description} />
+            ) : (
+              'Add a description...'
+            )}
+          </div>
         )}
       </Stack>
+
+      {/* Not Relevant Banner */}
+      {task.status === 'not_relevant' && task.notRelevantJustification && (
+        <NotRelevantBanner justification={task.notRelevantJustification} />
+      )}
 
       {/* Approval Banner */}
       {evidenceApprovalEnabled && isInReview && (
@@ -317,7 +344,7 @@ export function SingleTask({
           <TabsList variant="underline">
             <TabsTrigger value="overview">Overview</TabsTrigger>
             {task.automationStatus !== 'MANUAL' && <TabsTrigger value="automations">Automations</TabsTrigger>}
-            <TabsTrigger value="findings">Findings</TabsTrigger>
+            {canReadPolicy && <TabsTrigger value="mappings">Mappings</TabsTrigger>}
             <TabsTrigger value="comments">Comments</TabsTrigger>
             <TabsTrigger value="activity">Activity</TabsTrigger>
             <TabsTrigger value="settings">Settings</TabsTrigger>
@@ -334,12 +361,23 @@ export function SingleTask({
             </Stack>
           </TabsContent>
 
+          <TabsContent value="mappings">
+            <Stack gap="lg">
+              <TaskPolicies />
+            </Stack>
+          </TabsContent>
+
           <TabsContent value="automations">
             <Stack gap="lg">
               <TaskIntegrationChecks
                 taskId={task.id}
                 onTaskUpdated={() => mutateTask()}
                 isManualTask={task.automationStatus === 'MANUAL'}
+                scheduleFrequency={task.integrationScheduleFrequency ?? undefined}
+                lastRunAt={task.integrationLastRunAt ?? null}
+                onScheduleChange={
+                  canUpdateTask ? handleUpdateIntegrationSchedule : undefined
+                }
               />
               <TaskAutomations
                 automations={automations || []}
@@ -352,22 +390,6 @@ export function SingleTask({
                 />
               )}
             </Stack>
-          </TabsContent>
-
-          <TabsContent value="findings">
-            <FindingsList
-              taskId={task.id}
-              isAuditor={isAuditor}
-              isPlatformAdmin={isPlatformAdmin}
-              isAdminOrOwner={isAdminOrOwner}
-              onViewHistory={setSelectedFindingIdForHistory}
-            />
-            {selectedFindingIdForHistory && (
-              <FindingHistoryPanel
-                findingId={selectedFindingIdForHistory}
-                onClose={() => setSelectedFindingIdForHistory(null)}
-              />
-            )}
           </TabsContent>
 
           <TabsContent value="comments">
@@ -524,6 +546,20 @@ export function SingleTask({
 function TaskActivitySection({ taskId }: { taskId: string }) {
   const { logs } = useAuditLogs({ entityType: 'task', entityId: taskId });
   return <RecentAuditLogs logs={logs} />;
+}
+
+function NotRelevantBanner({ justification }: { justification: string }) {
+  return (
+    <div className="rounded-lg border border-l-4 border-border border-l-muted-foreground/50 bg-muted/30 p-4">
+      <HStack gap="sm" align="start">
+        <SubtractAlt size={20} className="text-muted-foreground mt-0.5 shrink-0" />
+        <Stack gap="xs">
+          <Text size="sm" weight="medium">Marked as Not Relevant</Text>
+          <Text size="sm" variant="muted">{justification}</Text>
+        </Stack>
+      </HStack>
+    </div>
+  );
 }
 
 function ApprovalBanner({

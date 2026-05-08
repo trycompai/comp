@@ -1,0 +1,72 @@
+{
+  "slug": "sophos-central",
+  "name": "Sophos Central",
+  "description": "Endpoint protection, EDR, and email security platform. Monitor endpoints, alerts, and security posture.",
+  "category": "Security",
+  "docsUrl": "https://developer.sophos.com",
+  "baseUrl": "https://api.central.sophos.com",
+  "authConfig": {
+    "type": "custom",
+    "config": {
+      "setupInstructions": "1. Sign in to Sophos Central at https://central.sophos.com\n2. Go to Settings (gear icon) → API Credentials Management\n3. Click 'Add Credential'\n4. Enter a name (e.g. 'CompAI Integration')\n5. For Role, select 'Service Principal ReadOnly'\n6. Click Add — copy the Client ID and Client Secret immediately\n7. Paste both values below\n\nNote: You must copy the Client Secret right away — it cannot be retrieved later.",
+      "credentialFields": [
+        {
+          "label": "Client ID",
+          "type": "text",
+          "required": true,
+          "helpText": "Found in Sophos Central → Settings → API Credentials Management. Create a credential with 'Service Principal ReadOnly' role."
+        },
+        {
+          "label": "Client Secret",
+          "type": "password",
+          "required": true,
+          "helpText": "Shown once when you create the API credential. Copy it immediately."
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "sophos_central_app_availability",
+      "name": "Sophos Central App Availability",
+      "description": "Verifies connectivity to Sophos Central API.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "sophos_central_endpoint_protection",
+      "name": "Sophos Central Endpoint Protection",
+      "description": "Verifies endpoint protection is deployed with no unhealthy devices.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "sophos_central_asset_inventory",
+      "name": "Sophos Central Asset Inventory",
+      "description": "Verifies device inventory is maintained via Sophos endpoint management.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "sophos_central_email_security",
+      "name": "Sophos Central Email Security",
+      "description": "Verifies email security policies are configured in Sophos Central.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "sophos_central_employee_access",
+      "name": "Sophos Central Employee Access",
+      "description": "Verifies access to Sophos Central endpoint inventory.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 5,
+  "isActive": true
+}

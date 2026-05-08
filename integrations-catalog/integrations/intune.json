@@ -1,0 +1,55 @@
+{
+  "slug": "intune",
+  "name": "Microsoft Intune",
+  "description": "Monitor device compliance, enrollment status, and compliance policy coverage across your Intune-managed device fleet",
+  "category": "Security",
+  "docsUrl": "https://learn.microsoft.com/en-us/graph/api/resources/intune-graph-overview",
+  "baseUrl": "https://graph.microsoft.com/v1.0/",
+  "authConfig": {
+    "type": "oauth2",
+    "config": {
+      "setupInstructions": "Register an app in Microsoft Entra ID (Azure Portal > App registrations). Under API permissions, add Microsoft Graph delegated permissions: DeviceManagementManagedDevices.Read.All, DeviceManagementConfiguration.Read.All, ServiceHealth.Read.All. Grant admin consent for the tenant. Requires an active Intune license.",
+      "createAppUrl": "https://portal.azure.com/#view/Microsoft_AAD_RegisteredApps/ApplicationsListBlade",
+      "scopes": [
+        "DeviceManagementManagedDevices.Read.All",
+        "DeviceManagementConfiguration.Read.All",
+        "ServiceHealth.Read.All",
+        "offline_access",
+        "openid",
+        "profile"
+      ],
+      "clientAuthMethod": "body",
+      "supportsRefreshToken": true
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "device_compliance",
+      "name": "Device Compliance Status",
+      "description": "Checks that all Intune-managed devices are in a compliant state based on assigned compliance policies",
+      "defaultSeverity": "high",
+      "enabled": true
+    },
+    {
+      "slug": "device_inventory",
+      "name": "Device Inventory",
+      "description": "Collects an inventory of all enrolled Intune-managed devices as compliance evidence",
+      "defaultSeverity": "info",
+      "enabled": true
+    },
+    {
+      "slug": "compliance_policies",
+      "name": "Compliance Policy Coverage",
+      "description": "Verifies that device compliance policies are defined in Intune to enforce security standards like encryption, passwords, and OS updates",
+      "defaultSeverity": "high",
+      "enabled": true
+    }
+  ],
+  "checkCount": 3,
+  "isActive": true
+}

@@ -37,7 +37,11 @@ export async function proxyToApi(
     headers['Cookie'] = cookie;
   }
 
-  const fetchOptions: RequestInit = { method, headers };
+  // 'manual' so 3xx redirects (e.g. presigned-S3 URLs from the API for
+  // device-agent updates) reach the client instead of being followed by
+  // the proxy — the client downloads directly from S3, dodging Vercel
+  // function timeouts on multi-MB binaries.
+  const fetchOptions: RequestInit = { method, headers, redirect: 'manual' };
 
   if (method === 'POST') {
     try {
@@ -48,6 +52,18 @@ export async function proxyToApi(
   }
 
   const response = await fetch(url, fetchOptions);
+
+  if (response.status >= 300 && response.status < 400) {
+    const location = response.headers.get('Location');
+    const redirectHeaders: Record<string, string> = {};
+    if (location) redirectHeaders['Location'] = location;
+    const cacheControl = response.headers.get('Cache-Control');
+    if (cacheControl) redirectHeaders['Cache-Control'] = cacheControl;
+    return new NextResponse(null, {
+      status: response.status,
+      headers: redirectHeaders,
+    });
+  }
 
   // Forward the response directly (preserves streaming for binary files)
   const responseHeaders: Record<string, string> = {};

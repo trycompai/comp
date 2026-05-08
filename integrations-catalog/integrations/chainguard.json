@@ -1,0 +1,45 @@
+{
+  "slug": "chainguard",
+  "name": "Chainguard",
+  "description": "Chainguard container security and software supply chain protection",
+  "category": "Security",
+  "docsUrl": "https://edu.chainguard.dev/chainguard/chainctl",
+  "baseUrl": "https://console-api.enforce.dev",
+  "authConfig": {
+    "type": "custom",
+    "config": {
+      "setupInstructions": "1. Install chainctl CLI\n2. Run: chainctl auth login\n3. Run: chainctl auth token to retrieve your API token\n4. Paste the token below",
+      "credentialFields": [
+        {
+          "label": "API Token",
+          "type": "password",
+          "required": true,
+          "helpText": "Run: chainctl auth token to get your API token"
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "chainguard_app_availability",
+      "name": "App Availability",
+      "description": "Verifies Chainguard platform is accessible",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "chainguard_employee_access",
+      "name": "Employee Access",
+      "description": "Lists Chainguard organization members",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

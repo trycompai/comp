@@ -1,0 +1,35 @@
+{
+  "slug": "pendo",
+  "name": "Pendo",
+  "description": "Monitor Pendo product analytics configuration for usage tracking compliance",
+  "category": "Monitoring",
+  "docsUrl": "https://engageapi.pendo.io/",
+  "baseUrl": "https://app.pendo.io/",
+  "authConfig": {
+    "type": "api_key",
+    "config": {}
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "pendo_app_availability",
+      "name": "App Availability",
+      "description": "Verifies Pendo is configured and tracking application usage",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "pendo_utility_monitoring",
+      "name": "Utility Monitoring",
+      "description": "Reviews Pendo pages being tracked for application coverage",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

@@ -332,7 +332,9 @@ export class TrustPortalController {
 
   @Post('settings/custom-domain')
   @RequirePermission('trust', 'update')
-  @ApiOperation({ summary: 'Add or update a custom domain for the trust portal' })
+  @ApiOperation({
+    summary: 'Add or update a custom domain for the trust portal',
+  })
   async addCustomDomain(
     @OrganizationId() organizationId: string,
     @Body() body: { domain: string },
@@ -353,10 +355,7 @@ export class TrustPortalController {
     if (!body.domain) {
       throw new BadRequestException('Domain is required');
     }
-    return this.trustPortalService.checkDnsRecords(
-      organizationId,
-      body.domain,
-    );
+    return this.trustPortalService.checkDnsRecords(organizationId, body.domain);
   }
 
   @Put('settings/faqs')
@@ -366,10 +365,7 @@ export class TrustPortalController {
     @OrganizationId() organizationId: string,
     @Body() body: { faqs: Array<{ question: string; answer: string }> },
   ) {
-    return this.trustPortalService.updateFaqs(
-      organizationId,
-      body.faqs ?? [],
-    );
+    return this.trustPortalService.updateFaqs(organizationId, body.faqs ?? []);
   }
 
   @Put('settings/allowed-domains')
@@ -557,7 +553,11 @@ export class TrustPortalController {
   @ApiOperation({
     summary: 'List vendors configured for trust portal',
   })
-  @ApiQuery({ name: 'all', required: false, description: 'When true, returns all org vendors with sync' })
+  @ApiQuery({
+    name: 'all',
+    required: false,
+    description: 'When true, returns all org vendors with sync',
+  })
   async listVendors(
     @OrganizationId() organizationId: string,
     @Query('all') all?: string,

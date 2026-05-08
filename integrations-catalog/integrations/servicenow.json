@@ -1,0 +1,57 @@
+{
+  "slug": "servicenow",
+  "name": "ServiceNow",
+  "description": "Monitor ServiceNow users and incident tickets for ITSM compliance",
+  "category": "Productivity",
+  "docsUrl": "https://developer.servicenow.com/dev.do#!/reference/api/utah/rest/",
+  "baseUrl": "https://yourinstance.service-now.com/",
+  "authConfig": {
+    "type": "custom",
+    "config": {
+      "setupInstructions": "1. Use a service account with REST API access in ServiceNow\n2. Enter your instance name (the part before .service-now.com)\n3. Enter the username and password for the service account",
+      "credentialFields": [
+        {
+          "label": "Instance Name",
+          "type": "text",
+          "required": true,
+          "helpText": "Your ServiceNow instance name (e.g., 'dev12345' from dev12345.service-now.com)"
+        },
+        {
+          "label": "Username",
+          "type": "text",
+          "required": true,
+          "helpText": "ServiceNow service account username with REST API access"
+        },
+        {
+          "label": "Password",
+          "type": "password",
+          "required": true,
+          "helpText": "ServiceNow service account password"
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "servicenow_employee_access",
+      "name": "Employee Access",
+      "description": "Reviews ServiceNow users with active system access",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "servicenow_incident_response",
+      "name": "Incident Response",
+      "description": "Verifies ServiceNow has an active incident management process",
+      "defaultSeverity": "high",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

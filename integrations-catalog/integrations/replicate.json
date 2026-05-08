@@ -1,0 +1,45 @@
+{
+  "slug": "replicate",
+  "name": "Replicate",
+  "description": "Replicate cloud platform for running and deploying AI models",
+  "category": "Development",
+  "docsUrl": "https://replicate.com/docs/reference/http",
+  "baseUrl": "https://api.replicate.com",
+  "authConfig": {
+    "type": "custom",
+    "config": {
+      "setupInstructions": "1. Log in to Replicate\n2. Go to Account Settings → API Tokens\n3. Create or copy your API token\n4. Paste it below",
+      "credentialFields": [
+        {
+          "label": "API Token",
+          "type": "password",
+          "required": true,
+          "helpText": "Replicate → Account Settings → API Tokens"
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "replicate_app_availability",
+      "name": "App Availability",
+      "description": "Verifies Replicate AI platform is accessible",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "replicate_employee_access",
+      "name": "Employee Access",
+      "description": "Lists Replicate deployments to verify AI access",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

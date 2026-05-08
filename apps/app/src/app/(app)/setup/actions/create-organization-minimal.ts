@@ -27,6 +27,8 @@ export const createOrganizationMinimal = authActionClientWithoutOrg
     },
   })
   .action(async ({ parsedInput, ctx }) => {
+    let createdOrgId: string | undefined;
+
     try {
       const session = await auth.api.getSession({
         headers: await headers(),
@@ -45,6 +47,67 @@ export const createOrganizationMinimal = authActionClientWithoutOrg
 
       // Check if self-hosted
       const isSelfHosted = env.NEXT_PUBLIC_SELF_HOSTED === 'true';
+
+      // Idempotency: if the user already has a recently created org with the
+      // same name that hasn't completed onboarding, reuse it instead of
+      // creating a duplicate (protects against retry/refresh during redirect).
+      const existingOrg = await db.organization.findFirst({
+        where: {
+          name: parsedInput.organizationName,
+          onboardingCompleted: false,
+          members: {
+            some: {
+              userId: session.user.id,
+              role: 'owner',
+            },
+          },
+        },
+        orderBy: { createdAt: 'desc' },
+      });
+
+      if (existingOrg) {
+        // Ensure post-creation steps are completed in case the original
+        // request failed partway through (after DB insert but before
+        // onboarding record or framework initialization).
+        const existingOnboarding = await db.onboarding.findUnique({
+          where: { organizationId: existingOrg.id },
+        });
+
+        if (!existingOnboarding) {
+          await db.onboarding.create({
+            data: {
+              organizationId: existingOrg.id,
+              triggerJobCompleted: false,
+            },
+          });
+        }
+
+        if (parsedInput.frameworkIds && parsedInput.frameworkIds.length > 0) {
+          const existingFrameworks = await db.frameworkInstance.findFirst({
+            where: { organizationId: existingOrg.id },
+          });
+
+          if (!existingFrameworks) {
+            await initializeOrganization({
+              frameworkIds: parsedInput.frameworkIds,
+              organizationId: existingOrg.id,
+            });
+          }
+        }
+
+        // Ensure this org is set as the active one
+        await auth.api.setActiveOrganization({
+          headers: await headers(),
+          body: {
+            organizationId: existingOrg.id,
+          },
+        });
+
+        return {
+          success: true,
+          organizationId: existingOrg.id,
+        };
+      }
 
       // Resolve framework IDs to display names (e.g. "SOC 2", "ISO 27001")
       const frameworks = await db.frameworkEditorFramework.findMany({
@@ -71,18 +134,28 @@ export const createOrganizationMinimal = authActionClientWithoutOrg
               role: 'owner',
             },
           },
-          // Only save the context for frameworkIds (we need this for later)
+          // Save framework context: display names for AI prompts + raw IDs for recovery
           context: {
-            create: {
-              question: 'Which compliance frameworks do you need?',
-              answer: frameworkNames || parsedInput.frameworkIds.join(', '),
-              tags: ['onboarding'],
+            createMany: {
+              data: [
+                {
+                  question: 'Which compliance frameworks do you need?',
+                  answer: frameworkNames || parsedInput.frameworkIds.join(', '),
+                  tags: ['onboarding'],
+                },
+                {
+                  question: 'frameworkIds',
+                  answer: JSON.stringify(parsedInput.frameworkIds),
+                  tags: ['onboarding'],
+                },
+              ],
             },
           },
         },
       });
 
       const orgId = newOrg.id;
+      createdOrgId = orgId;
 
       // Get the member that was created with the organization (the owner)
       const ownerMember = await db.member.findFirst({
@@ -113,22 +186,28 @@ export const createOrganizationMinimal = authActionClientWithoutOrg
         });
       }
 
-      // Set new org as active
+      // Set new org as active — after this point, the session references
+      // the org so we must NOT delete it on cleanup.
       await auth.api.setActiveOrganization({
         headers: await headers(),
         body: {
           organizationId: orgId,
         },
       });
+      createdOrgId = undefined; // Org is fully initialized, disable cleanup
 
-      // Revalidate paths
-      const headersList = await headers();
-      let path = headersList.get('x-pathname') || headersList.get('referer') || '';
-      path = path.replace(/\/[a-z]{2}\//, '/');
+      // Revalidate paths (non-critical, don't let failures kill the flow)
+      try {
+        const headersList = await headers();
+        let path = headersList.get('x-pathname') || headersList.get('referer') || '';
+        path = path.replace(/\/[a-z]{2}\//, '/');
 
-      revalidatePath(path);
-      revalidatePath('/');
-      revalidatePath('/setup');
+        revalidatePath(path);
+        revalidatePath('/');
+        revalidatePath('/setup');
+      } catch (revalidateError) {
+        console.error('Non-critical: failed to revalidate paths:', revalidateError);
+      }
 
       // NO JOB TRIGGERS - that happens after payment in complete-onboarding
 
@@ -138,6 +217,17 @@ export const createOrganizationMinimal = authActionClientWithoutOrg
       };
     } catch (error) {
       console.error('Error during minimal organization creation:', error);
+
+      // Clean up partially created org to prevent orphans on retry.
+      // Only runs if the org was created but setActiveOrganization hasn't
+      // succeeded yet (createdOrgId is cleared after activation).
+      if (createdOrgId) {
+        try {
+          await db.organization.delete({ where: { id: createdOrgId } });
+        } catch (cleanupError) {
+          console.error('Failed to clean up org after creation error:', cleanupError);
+        }
+      }
 
       if (error instanceof Error) {
         return {

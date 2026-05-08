@@ -7,14 +7,12 @@ import {
   Dialog,
   DialogContent,
   DialogDescription,
-  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from '@trycompai/ui/dialog';
 import {
   Button,
   Tabs,
-  TabsContent,
   TabsList,
   TabsTrigger,
   cn,
@@ -24,8 +22,8 @@ import { useState } from 'react';
 import { toast } from 'sonner';
 
 interface CloudProvider {
-  id: string; // Provider slug (aws, gcp, azure)
-  connectionId: string; // The actual connection ID
+  id: string;
+  connectionId: string;
   name: string;
   status: string;
   accountId?: string;
@@ -40,20 +38,12 @@ interface CloudSettingsModalProps {
   onUpdate: () => void;
 }
 
-/**
- * Get the appropriate text color class based on connection status
- */
 const getStatusColorClass = (status: string): string => {
   switch (status.toLowerCase()) {
     case 'active':
       return 'text-green-600 dark:text-green-400';
     case 'error':
       return 'text-red-600 dark:text-red-400';
-    case 'pending':
-      return 'text-amber-600 dark:text-amber-400';
-    case 'paused':
-    case 'disconnected':
-      return 'text-muted-foreground';
     default:
       return 'text-muted-foreground';
   }
@@ -68,24 +58,18 @@ export function CloudSettingsModal({
   const api = useApi();
   const { hasPermission } = usePermissions();
   const canDelete = hasPermission('integration', 'delete');
-  const [activeTab, setActiveTab] = useState<string>(connectedProviders[0]?.connectionId || 'aws');
+  const [activeProvider, setActiveProvider] = useState<string>(connectedProviders[0]?.connectionId || '');
   const [isDeleting, setIsDeleting] = useState(false);
   const { deleteConnection } = useIntegrationMutations();
 
+  const currentProvider = connectedProviders.find((p) => p.connectionId === activeProvider) ?? connectedProviders[0];
+
   const handleDisconnect = async (provider: CloudProvider) => {
-    if (
-      !confirm(
-        'Are you sure you want to disconnect this cloud provider? All scan results will be deleted.',
-      )
-    ) {
-      return;
-    }
+    if (!confirm('Are you sure? All scan results will be deleted.')) return;
 
     try {
       setIsDeleting(true);
-
       if (provider.isLegacy) {
-        // Legacy providers use the old Integration table
         const response = await api.delete(`/v1/cloud-security/legacy/${provider.connectionId}`);
         if (!response.error) {
           toast.success('Cloud provider disconnected');
@@ -96,8 +80,6 @@ export function CloudSettingsModal({
         }
         return;
       }
-
-      // New platform providers use the IntegrationConnection table
       const result = await deleteConnection(provider.connectionId);
       if (result.success) {
         toast.success('Cloud provider disconnected');
@@ -106,87 +88,106 @@ export function CloudSettingsModal({
       } else {
         toast.error(result.error || 'Failed to disconnect');
       }
-    } catch (error) {
-      console.error('Disconnect error:', error);
+    } catch {
       toast.error('An unexpected error occurred');
     } finally {
       setIsDeleting(false);
     }
   };
 
-  if (connectedProviders.length === 0) {
-    return null;
-  }
+  if (connectedProviders.length === 0) return null;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl">
+      <DialogContent className="max-w-2xl max-h-[85vh] overflow-hidden flex flex-col">
         <DialogHeader>
-          <DialogTitle>Manage Cloud Connections</DialogTitle>
+          <DialogTitle>Connection Settings</DialogTitle>
           <DialogDescription>
-            Manage your cloud provider connections. To update credentials, disconnect and reconnect.
+            Manage your cloud provider connections.
           </DialogDescription>
         </DialogHeader>
 
-        <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList variant="default">
-            {connectedProviders.map((provider) => (
-              <TabsTrigger key={provider.connectionId} value={provider.connectionId}>
-                {provider.name}
-              </TabsTrigger>
-            ))}
-          </TabsList>
+        {/* Provider selector (if multiple) */}
+        {connectedProviders.length > 1 && (
+          <Tabs value={activeProvider} onValueChange={setActiveProvider}>
+            <TabsList variant="default">
+              {connectedProviders.map((p) => (
+                <TabsTrigger key={p.connectionId} value={p.connectionId}>
+                  {p.name}
+                </TabsTrigger>
+              ))}
+            </TabsList>
+          </Tabs>
+        )}
 
-          {connectedProviders.map((provider) => (
-            <TabsContent
-              key={provider.connectionId}
-              value={provider.connectionId}
-            >
-            <div className="space-y-4">
-              <div className="bg-muted/50 rounded-lg border p-4">
-                <p className="text-muted-foreground text-sm">
-                  {provider.name} is connected. Credentials are securely stored and encrypted at
-                  rest.
-                </p>
-                {(provider.accountId || provider.regions?.length) && (
-                  <div className="mt-2 text-xs text-muted-foreground space-y-1">
-                    {provider.accountId && <p>Account: {provider.accountId}</p>}
-                    {provider.regions?.length && <p>Regions: {provider.regions.join(', ')}</p>}
-                  </div>
-                )}
-              </div>
-
-              <div className="rounded-lg border p-4 space-y-2">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium">Connection Status</span>
-                  <span className={cn('text-sm capitalize', getStatusColorClass(provider.status))}>
-                    {provider.status}
-                  </span>
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  To update credentials, disconnect this provider and reconnect with new IAM role
-                  settings.
-                </p>
-              </div>
-
-              <DialogFooter>
-                {canDelete && (
-                <Button
-                  variant="destructive"
-                  onClick={() => handleDisconnect(provider)}
-                  disabled={isDeleting}
-                  loading={isDeleting}
-                  iconLeft={!isDeleting ? <TrashCan size={16} /> : undefined}
-                >
-                  {isDeleting ? 'Disconnecting...' : 'Disconnect'}
-                </Button>
-                )}
-              </DialogFooter>
-            </div>
-            </TabsContent>
-          ))}
-        </Tabs>
+        {currentProvider && (
+          <ConnectionTab
+            provider={currentProvider}
+            canDelete={canDelete}
+            isDeleting={isDeleting}
+            onDisconnect={handleDisconnect}
+          />
+        )}
       </DialogContent>
     </Dialog>
+  );
+}
+
+// ─── Connection Tab ─────────────────────────────────────────────────────
+
+function ConnectionTab({
+  provider,
+  canDelete,
+  isDeleting,
+  onDisconnect,
+}: {
+  provider: CloudProvider;
+  canDelete: boolean;
+  isDeleting: boolean;
+  onDisconnect: (p: CloudProvider) => void;
+}) {
+  return (
+    <div className="space-y-4 pt-3">
+      <div className="rounded-lg border p-4 space-y-3">
+        <div className="flex items-center justify-between">
+          <span className="text-sm font-medium">Status</span>
+          <span className={cn('text-sm capitalize font-medium', getStatusColorClass(provider.status))}>
+            {provider.status}
+          </span>
+        </div>
+        {provider.accountId && (
+          <div className="flex items-center justify-between">
+            <span className="text-sm text-muted-foreground">Account</span>
+            <span className="text-sm font-mono">{provider.accountId}</span>
+          </div>
+        )}
+        {provider.regions && provider.regions.length > 0 && (
+          <div className="flex items-center justify-between">
+            <span className="text-sm text-muted-foreground">Regions</span>
+            <span className="text-sm">{provider.regions.length} region{provider.regions.length !== 1 ? 's' : ''}</span>
+          </div>
+        )}
+      </div>
+
+      <p className="text-xs text-muted-foreground">
+        {provider.id === 'aws'
+          ? 'To update credentials, disconnect and reconnect with new IAM role settings.'
+          : provider.id === 'gcp'
+            ? 'To update credentials, disconnect and reconnect with your Google account.'
+            : 'To update credentials, disconnect and reconnect with your Microsoft account.'}
+      </p>
+
+      {canDelete && (
+        <Button
+          variant="destructive"
+          onClick={() => onDisconnect(provider)}
+          disabled={isDeleting}
+          loading={isDeleting}
+          iconLeft={!isDeleting ? <TrashCan size={16} /> : undefined}
+        >
+          {isDeleting ? 'Disconnecting...' : 'Disconnect'}
+        </Button>
+      )}
+    </div>
   );
 }

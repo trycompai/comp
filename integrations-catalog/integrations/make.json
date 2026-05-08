@@ -1,0 +1,51 @@
+{
+  "slug": "make",
+  "name": "Make",
+  "description": "Monitor Make (formerly Integromat) automation workflows for access and environment separation compliance",
+  "category": "Productivity",
+  "docsUrl": "https://www.make.com/en/api-documentation",
+  "baseUrl": "https://eu1.make.com/",
+  "authConfig": {
+    "type": "custom",
+    "config": {
+      "setupInstructions": "1. Log in to Make at https://make.com\n2. Go to Profile → API\n3. Generate an API key\n4. Find your region in the URL (e.g. eu1.make.com)\n5. Enter both below",
+      "credentialFields": [
+        {
+          "label": "API Key",
+          "type": "password",
+          "required": true,
+          "helpText": "Found in Make → Profile → API → API key"
+        },
+        {
+          "label": "Region",
+          "type": "text",
+          "required": true,
+          "helpText": "Your Make region: eu1 (Europe), us1 (United States), or ap1 (Asia Pacific)"
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "make_employee_access",
+      "name": "Employee Access",
+      "description": "Reviews Make organization members and their automation access",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "make_separation",
+      "name": "Separation of Environments",
+      "description": "Verifies Make teams are configured for access separation across environments",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

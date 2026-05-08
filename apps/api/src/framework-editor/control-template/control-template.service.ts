@@ -1,4 +1,9 @@
-import { Injectable, NotFoundException, ConflictException, Logger } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  ConflictException,
+  Logger,
+} from '@nestjs/common';
 import { db, Prisma } from '@db';
 import type { EvidenceFormType } from '@db';
 import { CreateControlTemplateDto } from './dto/create-control-template.dto';
@@ -49,25 +54,13 @@ export class ControlTemplateService {
     return ct;
   }
 
-  async create(dto: CreateControlTemplateDto, frameworkId?: string) {
-    const requirementIds = frameworkId
-      ? await db.frameworkEditorRequirement
-          .findMany({
-            where: { frameworkId },
-            select: { id: true },
-          })
-          .then((reqs) => reqs.map((r) => ({ id: r.id })))
-      : [];
-
+  async create(dto: CreateControlTemplateDto) {
     const ct = await db.frameworkEditorControlTemplate.create({
       data: {
         name: dto.name,
         description: dto.description ?? '',
         ...(dto.documentTypes && {
           documentTypes: dto.documentTypes as EvidenceFormType[],
-        }),
-        ...(requirementIds.length > 0 && {
-          requirements: { connect: requirementIds },
         }),
       },
     });

@@ -69,8 +69,11 @@ export const taskSchedule = schedules.task({
             },
           },
         },
-        // Include App Automations (IntegrationCheckRun) - get all runs to group by checkId
+        // Include App Automations (IntegrationCheckRun) - get all runs to group by checkId.
+        // CS-166: exclude runs from disconnected connections — their historical
+        // "failed" state must not drive scheduled status changes.
         integrationCheckRuns: {
+          where: { connection: { status: { not: 'disconnected' } } },
           orderBy: { createdAt: 'desc' },
           select: {
             checkId: true,

@@ -80,10 +80,11 @@ export const ROUTE_PERMISSIONS: Record<string, Array<{ resource: string; action:
     { resource: 'apiKey', action: 'read' },
     { resource: 'member', action: 'read' },
     { resource: 'integration', action: 'read' },
+    { resource: 'secret', action: 'read' },
   ],
   'settings/context-hub': [{ resource: 'evidence', action: 'read' }],
   'settings/api-keys': [{ resource: 'apiKey', action: 'read' }],
-  'settings/secrets': [{ resource: 'organization', action: 'update' }],
+  'settings/secrets': [{ resource: 'secret', action: 'read' }],
   'settings/roles': [{ resource: 'member', action: 'read' }],
   'settings/notifications': [{ resource: 'organization', action: 'update' }],
   'settings/browser-connection': [{ resource: 'integration', action: 'read' }],
@@ -94,6 +95,31 @@ export function canAccessRoute(permissions: UserPermissions, routeSegment: strin
   const required = ROUTE_PERMISSIONS[routeSegment];
   if (!required) return true; // Unknown routes accessible by default
   return hasAnyPermission(permissions, required);
+}
+
+/**
+ * CS-189: Auditor View visibility rule (product decision).
+ *
+ * "Auditor View" is scoped to audit work — it should only appear for users
+ * whose role explicitly grants audit access, not for owners/admins whose
+ * implicit all-permissions include `audit:read`.
+ *
+ * Show the tab iff:
+ *  - user has the built-in `auditor` role, OR
+ *  - user has a custom org role that explicitly grants `audit:read`.
+ *
+ * Owners/admins who want this tab can opt in by adding the auditor role
+ * to their membership or by creating a custom role that includes
+ * `audit:read`. Multi-role users are handled because `auditor` can be
+ * one of several roles on a membership.
+ */
+export function canAccessAuditorView(
+  roleString: string | null | undefined,
+  customRolePermissions: UserPermissions,
+): boolean {
+  const roles = parseRolesString(roleString);
+  if (roles.includes('auditor')) return true;
+  return hasPermission(customRolePermissions, 'audit', 'read');
 }
 
 /**

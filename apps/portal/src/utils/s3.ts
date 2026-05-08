@@ -1,6 +1,18 @@
 import { SupportedOS } from '@/app/api/download-agent/types';
 import { GetObjectCommand, PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
-import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
+import { getSignedUrl as _getSignedUrl } from '@aws-sdk/s3-request-presigner';
+
+/**
+ * Re-export getSignedUrl with a type workaround for bun's duplicate @smithy/types.
+ * Bun on Vercel installs separate @smithy/types copies for @aws-sdk/client-s3
+ * and @aws-sdk/s3-request-presigner even when pinned to the same version.
+ * The runtime types are fully compatible — only the TypeScript class identity differs.
+ */
+export const getSignedUrl = _getSignedUrl as unknown as (
+  client: S3Client,
+  command: GetObjectCommand | PutObjectCommand,
+  options?: { expiresIn?: number },
+) => Promise<string>;
 
 const APP_AWS_REGION = process.env.APP_AWS_REGION;
 const APP_AWS_ACCESS_KEY_ID = process.env.APP_AWS_ACCESS_KEY_ID;

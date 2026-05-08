@@ -10,7 +10,7 @@ import { usePeopleActions } from '@/hooks/use-people-api';
 import { parseRolesString } from '@/lib/permissions';
 import { authClient } from '@/utils/auth-client';
 import useSWR from 'swr';
-import type { Invitation, Role } from '@db';
+import type { Invitation } from '@db';
 import {
   Empty,
   EmptyDescription,
@@ -31,12 +31,15 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-  Button,
 } from '@trycompai/design-system';
 import { InProgress, Search } from '@trycompai/design-system/icons';
 
 import { apiClient } from '@/lib/api-client';
+import { useMemo } from 'react';
+import { useAgentDevices } from '../../devices/hooks/useAgentDevices';
+import { useFleetHosts } from '../../devices/hooks/useFleetHosts';
 import { buildDisplayItems, filterDisplayItems } from './filter-members';
+import { computeDeviceStatusMap } from './compute-device-status-map';
 import { MemberRow } from './MemberRow';
 import { PendingInvitationRow } from './PendingInvitationRow';
 import type { MemberWithUser, TaskCompletion, TeamMembersData } from './TeamMembers';
@@ -49,24 +52,31 @@ interface TeamMembersClientProps {
   organizationId: string;
   canManageMembers: boolean;
   canInviteUsers: boolean;
-  isAuditor: boolean;
   isCurrentUserOwner: boolean;
   employeeSyncData: EmployeeSyncConnectionsData;
   taskCompletionMap: Record<string, TaskCompletion>;
-  memberIdsWithDeviceAgent: string[];
+  complianceMemberIds: string[];
+  backgroundCheckStepEnabled: boolean;
 }
 
 export function TeamMembersClient({
   data,
   organizationId,
   canManageMembers,
-  canInviteUsers,
-  isAuditor,
   isCurrentUserOwner,
   employeeSyncData,
   taskCompletionMap,
-  memberIdsWithDeviceAgent,
+  complianceMemberIds,
+  backgroundCheckStepEnabled,
 }: TeamMembersClientProps) {
+  const { agentDevices, isLoading: isAgentDevicesLoading } = useAgentDevices();
+  const { fleetHosts, isLoading: isFleetHostsLoading } = useFleetHosts();
+  const isDeviceStatusLoading = isAgentDevicesLoading || isFleetHostsLoading;
+
+  const deviceStatusMap = useMemo(
+    () => computeDeviceStatusMap({ agentDevices, fleetHosts, complianceMemberIds }),
+    [agentDevices, fleetHosts, complianceMemberIds],
+  );
   const router = useRouter();
   const [searchQuery, setSearchQuery] = useState('');
   const [roleFilter, setRoleFilter] = useState('');
@@ -451,7 +461,6 @@ export function TeamMembersClient({
               <TableHead>
                 <div className="w-[160px]">ROLE</div>
               </TableHead>
-              <TableHead>DEVICE</TableHead>
               <TableHead>TASKS</TableHead>
               <TableHead>ACTIONS</TableHead>
             </TableRow>
@@ -470,9 +479,12 @@ export function TeamMembersClient({
                   isCurrentUserOwner={isCurrentUserOwner}
                   customRoles={customRoles}
                   taskCompletion={taskCompletionMap[(item as MemberWithUser).id]}
-                  hasDeviceAgentDevice={memberIdsWithDeviceAgent.includes(
-                    (item as MemberWithUser).id,
-                  )}
+                  deviceStatus={deviceStatusMap[(item as MemberWithUser).id]}
+                  isDeviceStatusLoading={isDeviceStatusLoading}
+                  backgroundCheckStatus={
+                    (item as MemberWithUser).backgroundCheckRequests?.[0]?.status
+                  }
+                  backgroundCheckStepEnabled={backgroundCheckStepEnabled}
                 />
               ) : (
                 <PendingInvitationRow

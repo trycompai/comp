@@ -1,0 +1,38 @@
+{
+  "slug": "payhawk",
+  "name": "Payhawk",
+  "description": "Payhawk spend management platform for corporate cards and expenses",
+  "category": "HR & People",
+  "docsUrl": "https://developer.payhawk.com",
+  "baseUrl": "https://api.payhawk.com",
+  "authConfig": {
+    "type": "custom",
+    "config": {
+      "setupInstructions": "1. Log in to Payhawk\n2. Go to Settings → Integrations → API Keys\n3. Generate a new API key\n4. Paste it below",
+      "credentialFields": [
+        {
+          "label": "API Key",
+          "type": "password",
+          "required": true,
+          "helpText": "Payhawk → Settings → Integrations → API Keys"
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "payhawk_employee_access",
+      "name": "Employee Access",
+      "description": "Verifies Payhawk connection and confirms spend management access",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 1,
+  "isActive": true
+}

@@ -1,0 +1,35 @@
+{
+  "slug": "netlify",
+  "name": "Netlify",
+  "description": "Monitor Netlify site deployments and environment configuration for compliance",
+  "category": "Cloud",
+  "docsUrl": "https://open-api.netlify.com/",
+  "baseUrl": "https://api.netlify.com/",
+  "authConfig": {
+    "type": "api_key",
+    "config": {}
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "netlify_app_availability",
+      "name": "App Availability",
+      "description": "Verifies Netlify sites are published and live",
+      "defaultSeverity": "high",
+      "enabled": true
+    },
+    {
+      "slug": "netlify_separation_of_envs",
+      "name": "Separation of Environments",
+      "description": "Verifies Netlify sites have proper branch deploy configurations for environment separation",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

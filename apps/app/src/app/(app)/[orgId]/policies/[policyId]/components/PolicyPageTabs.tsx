@@ -1,6 +1,6 @@
 'use client';
 
-import type { Control, Member, Policy, PolicyVersion, User } from '@db';
+import type { Member, Policy, PolicyVersion, User } from '@db';
 import type { JSONContent } from '@tiptap/react';
 import { Stack, Tabs, TabsContent, TabsList, TabsTrigger } from '@trycompai/design-system';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
@@ -14,8 +14,12 @@ import { usePolicy } from '../hooks/usePolicy';
 import { usePolicyVersions } from '../hooks/usePolicyVersions';
 import { PolicyAlerts } from './PolicyAlerts';
 import { PolicyArchiveSheet } from './PolicyArchiveSheet';
-import { PolicyControlMappings } from './PolicyControlMappings';
+import {
+  PolicyControlMappings,
+  type MappedControl,
+} from './PolicyControlMappings';
 import { PolicyDeleteDialog } from './PolicyDeleteDialog';
+import { PolicyEvidenceTasks } from './PolicyEvidenceTasks';
 import { PolicyOverviewSheet } from './PolicyOverviewSheet';
 import { PolicySettingsCard } from './PolicySettingsCard';
 import { PolicyVersionsTab } from './PolicyVersionsTab';
@@ -55,8 +59,8 @@ function sanitizePolicyContent(raw: unknown): JSONContent[] {
 interface PolicyPageTabsProps {
   policy: (Policy & { approver: (Member & { user: User }) | null }) | null;
   assignees: (Member & { user: User })[];
-  mappedControls: Control[];
-  allControls: Control[];
+  mappedControls: MappedControl[];
+  allControls: MappedControl[];
   isPendingApproval: boolean;
   policyId: string;
   organizationId: string;
@@ -128,8 +132,12 @@ export function PolicyPageTabs({
     return JSON.stringify(draftContent) !== JSON.stringify(publishedContent);
   }, [policy]);
 
-  // Derive isPendingApproval from current policy data
-  const isPendingApproval = policy ? !!policy.approverId : initialIsPendingApproval;
+  // Derive isPendingApproval from current policy data — both fields must be set
+  // to treat the policy as pending. A stale approverId with no pendingVersionId
+  // is an inconsistent state that should not trigger approval UI.
+  const isPendingApproval = policy
+    ? !!policy.approverId && !!policy.pendingVersionId
+    : initialIsPendingApproval;
 
   const isDeleteDialogOpen = searchParams.get('delete-policy') === 'true';
   const tabFromUrl = searchParams.get('tab') || 'overview';
@@ -179,6 +187,7 @@ export function PolicyPageTabs({
           <TabsList variant="underline">
             <TabsTrigger value="overview">Overview</TabsTrigger>
             <TabsTrigger value="content">Content</TabsTrigger>
+            <TabsTrigger value="mappings">Mappings</TabsTrigger>
             <TabsTrigger value="versions">Versions</TabsTrigger>
             <TabsTrigger value="activity">Activity</TabsTrigger>
             <TabsTrigger value="comments">Comments</TabsTrigger>
@@ -192,12 +201,18 @@ export function PolicyPageTabs({
                 isPendingApproval={isPendingApproval}
                 onMutate={mutate}
               />
+            </Stack>
+          </TabsContent>
+
+          <TabsContent value="mappings">
+            <Stack gap="lg">
               <PolicyControlMappings
                 mappedControls={mappedControls}
                 allControls={allControls}
                 isPendingApproval={isPendingApproval}
                 onMutate={mutateAll}
               />
+              <PolicyEvidenceTasks />
             </Stack>
           </TabsContent>
 

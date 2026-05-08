@@ -1,0 +1,64 @@
+{
+  "slug": "ceridian-dayforce",
+  "name": "Ceridian Dayforce",
+  "description": "Monitor employee access, role assignments, and sync employee records from Ceridian Dayforce HCM",
+  "category": "HR & People",
+  "docsUrl": "https://developers.dayforce.com/Build/API-Explorer.aspx",
+  "baseUrl": "https://placeholder.dayforcehcm.com",
+  "authConfig": {
+    "type": "custom",
+    "config": {
+      "setupInstructions": "1. Contact your Dayforce admin for API access credentials\n2. You will need: your Dayforce host URL, client namespace, and a service account username/password\n3. The host is the domain from your Dayforce URL (e.g. usXXservices.dayforcehcm.com)\n4. The namespace is your company identifier in the API path",
+      "credentialFields": [
+        {
+          "label": "Dayforce Host",
+          "type": "text",
+          "required": true,
+          "helpText": "Your Dayforce instance hostname (e.g. usXXservices.dayforcehcm.com or your-company.dayforcehcm.com)"
+        },
+        {
+          "label": "Client Namespace",
+          "type": "text",
+          "required": true,
+          "helpText": "The company identifier used in API paths (provided by your Dayforce admin)"
+        },
+        {
+          "label": "API Username",
+          "type": "text",
+          "required": true,
+          "helpText": "Dayforce service account username for API access"
+        },
+        {
+          "label": "API Password",
+          "type": "password",
+          "required": true,
+          "helpText": "Dayforce service account password"
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks",
+    "sync"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": true,
+  "checks": [
+    {
+      "slug": "employee_access",
+      "name": "Employee Access",
+      "description": "Lists all employees from Dayforce and verifies their employment status is tracked",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "role_based_access_controls",
+      "name": "Role-based Access Controls",
+      "description": "Verifies that employees have defined roles assigned in Dayforce for proper access control",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

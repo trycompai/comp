@@ -45,8 +45,16 @@ export class ContextController {
   @Get()
   @RequirePermission('evidence', 'read')
   @ApiOperation(CONTEXT_OPERATIONS.getAllContext)
-  @ApiQuery({ name: 'search', required: false, description: 'Search by question text' })
-  @ApiQuery({ name: 'page', required: false, description: 'Page number (1-based)' })
+  @ApiQuery({
+    name: 'search',
+    required: false,
+    description: 'Search by question text',
+  })
+  @ApiQuery({
+    name: 'page',
+    required: false,
+    description: 'Page number (1-based)',
+  })
   @ApiQuery({ name: 'perPage', required: false, description: 'Items per page' })
   @ApiResponse(GET_ALL_CONTEXT_RESPONSES[200])
   @ApiResponse(GET_ALL_CONTEXT_RESPONSES[401])
@@ -61,7 +69,11 @@ export class ContextController {
   ) {
     const result = await this.contextService.findAllByOrganization(
       organizationId,
-      { search, page: page ? parseInt(page, 10) : undefined, perPage: perPage ? parseInt(perPage, 10) : undefined },
+      {
+        search,
+        page: page ? parseInt(page, 10) : undefined,
+        perPage: perPage ? parseInt(perPage, 10) : undefined,
+      },
     );
 
     return {

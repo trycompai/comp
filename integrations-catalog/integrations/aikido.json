@@ -1,0 +1,35 @@
+{
+  "slug": "aikido",
+  "name": "Aikido Security",
+  "description": "Application security platform for code scanning and vulnerability management.",
+  "category": "Security",
+  "docsUrl": "https://app.aikido.dev/api/public/v1/docs",
+  "baseUrl": "https://app.aikido.dev",
+  "authConfig": {
+    "type": "api_key",
+    "config": {}
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "aikido_app_availability",
+      "name": "Aikido Security App Availability",
+      "description": "Checks that the Aikido Security API is accessible.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "aikido_employee_access",
+      "name": "Aikido Security Employee Access",
+      "description": "Verifies employee access to Aikido Security via API.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

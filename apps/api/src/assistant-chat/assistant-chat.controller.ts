@@ -20,7 +20,12 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 import { openai } from '@ai-sdk/openai';
-import { streamText, convertToModelMessages, stepCountIs, type UIMessage } from 'ai';
+import {
+  streamText,
+  convertToModelMessages,
+  stepCountIs,
+  type UIMessage,
+} from 'ai';
 import type { Response, Request } from 'express';
 import { AuthContext } from '../auth/auth-context.decorator';
 import { HybridAuthGuard } from '../auth/hybrid-auth.guard';
@@ -79,7 +84,9 @@ export class AssistantChatController {
     // @Res() bypasses NestJS exception filters, so we must handle errors manually
     try {
       if (!process.env.OPENAI_API_KEY) {
-        res.status(HttpStatus.SERVICE_UNAVAILABLE).json({ message: 'AI service not configured' });
+        res
+          .status(HttpStatus.SERVICE_UNAVAILABLE)
+          .json({ message: 'AI service not configured' });
         return;
       }
 
@@ -120,7 +127,7 @@ Important:
       const result = streamText({
         model: openai('gpt-5'),
         system: systemPrompt,
-        messages: convertToModelMessages(messages),
+        messages: await convertToModelMessages(messages),
         tools,
         stopWhen: stepCountIs(5),
       });
@@ -155,8 +162,14 @@ Important:
     } catch (error) {
       this.logger.error('Completions endpoint error', error);
       if (!res.headersSent) {
-        const status = error instanceof HttpException ? error.getStatus() : HttpStatus.INTERNAL_SERVER_ERROR;
-        const message = error instanceof HttpException ? error.message : 'Internal server error';
+        const status =
+          error instanceof HttpException
+            ? error.getStatus()
+            : HttpStatus.INTERNAL_SERVER_ERROR;
+        const message =
+          error instanceof HttpException
+            ? error.message
+            : 'Internal server error';
         res.status(status).json({ message });
       } else {
         res.end();

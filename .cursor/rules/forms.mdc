@@ -50,7 +50,7 @@ function MyForm() {
 ## Zod Schema Patterns
 
 ```tsx
-const schema = z.object({
+const profileSchema = z.object({
   // Strings
   name: z.string().min(1, 'Required'),
   email: z.string().email(),
@@ -68,7 +68,7 @@ const schema = z.object({
 });
 
 // Cross-field validation
-const schema = z.object({
+const passwordSchema = z.object({
   password: z.string().min(8),
   confirmPassword: z.string(),
 }).refine(d => d.password === d.confirmPassword, {

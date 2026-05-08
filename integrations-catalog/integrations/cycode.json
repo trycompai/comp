@@ -1,0 +1,45 @@
+{
+  "slug": "cycode",
+  "name": "Cycode",
+  "description": "Cycode application security posture management and code security",
+  "category": "Security",
+  "docsUrl": "https://api.cycode.com/api/v1/docs",
+  "baseUrl": "https://api.cycode.com",
+  "authConfig": {
+    "type": "custom",
+    "config": {
+      "setupInstructions": "1. Log in to Cycode\n2. Go to Settings → API Tokens\n3. Generate a new API token\n4. Paste it below",
+      "credentialFields": [
+        {
+          "label": "API Token",
+          "type": "password",
+          "required": true,
+          "helpText": "Cycode → Settings → API Tokens → Generate Token"
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "cycode_app_availability",
+      "name": "App Availability",
+      "description": "Verifies Cycode security platform is accessible",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "cycode_code_changes",
+      "name": "Code Changes",
+      "description": "Verifies Cycode is actively scanning code repositories",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

@@ -19,11 +19,22 @@ export function FrameworkSelection({ value, onChange, onLoadingChange }: Framewo
   const onChangeRef = useRef(onChange);
   const valueRef = useRef(value);
 
-  const { data: frameworks = [], isLoading } = useSWR<Framework[]>(
+  const {
+    data: frameworks = [],
+    isLoading,
+    error,
+    mutate,
+  } = useSWR<Framework[]>(
     '/v1/frameworks/available',
     async (endpoint: string) => {
       const response = await api.get<{ data: Framework[] }>(endpoint);
-      return Array.isArray(response.data?.data) ? response.data.data : [];
+      if (response.error || !response.data) {
+        throw new Error(
+          response.error ||
+            `Failed to load frameworks (HTTP ${response.status})`,
+        );
+      }
+      return Array.isArray(response.data.data) ? response.data.data : [];
     },
   );
 
@@ -50,6 +61,25 @@ export function FrameworkSelection({ value, onChange, onLoadingChange }: Framewo
 
   if (isLoading) {
     return null;
+  }
+
+  if (error) {
+    const message =
+      error instanceof Error ? error.message : 'Something went wrong.';
+    return (
+      <div className="flex flex-col items-start gap-2">
+        <p className="text-sm text-destructive">
+          We couldn't load the compliance frameworks. {message}
+        </p>
+        <button
+          type="button"
+          onClick={() => mutate()}
+          className="text-sm underline hover:no-underline"
+        >
+          Try again
+        </button>
+      </div>
+    );
   }
 
   return (

@@ -1,0 +1,57 @@
+{
+  "slug": "sap-concur",
+  "name": "SAP Concur",
+  "description": "Monitor employee access and sync users from SAP Concur expense management platform",
+  "category": "Productivity",
+  "docsUrl": "https://developer.concur.com/api-reference/profile/v4.identity.html",
+  "baseUrl": "https://us2.api.concursolutions.com",
+  "authConfig": {
+    "type": "custom",
+    "config": {
+      "setupInstructions": "1. Sign in to SAP Concur at https://www.concursolutions.com\n2. Go to Administration > Company > Authentication Admin\n3. Click 'Manage Apps' to create or manage OAuth2 applications\n4. Create a new app with scopes: user.provision.read, identity.user.core.read, identity.user.enterprise.read\n5. Copy the Client ID and Client Secret\n6. Enter your datacenter prefix (found in your Concur URL, e.g. us2 for US, eu2 for EU, apj1 for Asia-Pacific)\n7. Optionally enter your Company UUID from Administration > Company > Company Profile\n8. Paste all values below",
+      "credentialFields": [
+        {
+          "label": "Datacenter",
+          "type": "text",
+          "required": true,
+          "helpText": "Your SAP Concur datacenter prefix. Common values: us2 (US), eu2 (EU), apj1 (Asia-Pacific), usg (Government). Found in your Concur URL or the geolocation field from your OAuth token response."
+        },
+        {
+          "label": "Client ID",
+          "type": "text",
+          "required": true,
+          "helpText": "Found in SAP Concur Administration > Company > Authentication Admin > Manage Apps. Create an OAuth2 app or use an existing Client ID."
+        },
+        {
+          "label": "Client Secret",
+          "type": "password",
+          "required": true,
+          "helpText": "The Client Secret from your registered OAuth2 application in SAP Concur."
+        },
+        {
+          "label": "Company UUID",
+          "type": "text",
+          "required": false,
+          "helpText": "Your SAP Concur company UUID. Found in Administration > Company > Company Profile, or from the companyId field in the SCIM user enterprise extension."
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks",
+    "sync"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": true,
+  "checks": [
+    {
+      "slug": "employee_access",
+      "name": "Employee Access",
+      "description": "Lists all SAP Concur users and verifies active account status for compliance evidence",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 1,
+  "isActive": true
+}

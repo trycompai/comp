@@ -3,14 +3,19 @@ import {
   ForbiddenException,
   Injectable,
   InternalServerErrorException,
+  Logger,
   NotFoundException,
 } from '@nestjs/common';
 import { filterDescriptionByFrameworks } from './description-framework-filter';
 import { db, TaskStatus, Prisma, TaskFrequency, Departments } from '@db';
 import { TaskResponseDto } from './dto/task-responses.dto';
 import { TaskNotifierService } from './task-notifier.service';
+import { checkAutoCompletePhases } from '../frameworks/frameworks-timeline.helper';
+import { TimelinesService } from '../timelines/timelines.service';
 
-function computeNextTaskReviewDate(frequency: TaskFrequency | null | undefined): Date {
+function computeNextTaskReviewDate(
+  frequency: TaskFrequency | null | undefined,
+): Date {
   const now = new Date();
   switch (frequency) {
     case TaskFrequency.daily:
@@ -30,7 +35,12 @@ function computeNextTaskReviewDate(frequency: TaskFrequency | null | undefined):
 
 @Injectable()
 export class TasksService {
-  constructor(private readonly taskNotifierService: TaskNotifierService) {}
+  private readonly logger = new Logger(TasksService.name);
+
+  constructor(
+    private readonly taskNotifierService: TaskNotifierService,
+    private readonly timelinesService: TimelinesService,
+  ) {}
 
   /**
    * Resolve a user actor for API-key authenticated requests.
@@ -73,9 +83,12 @@ export class TasksService {
       where: { organizationId },
       include: {
         framework: { select: { name: true } },
+        customFramework: { select: { name: true } },
       },
     });
-    return instances.map((fi) => fi.framework.name);
+    return instances
+      .map((fi) => fi.framework?.name ?? fi.customFramework?.name)
+      .filter((name): name is string => Boolean(name));
   }
 
   /**
@@ -93,6 +106,7 @@ export class TasksService {
         db.task.findMany({
           where: {
             organizationId,
+            archivedAt: null,
             ...assignmentFilter,
           },
           ...(options?.includeRelations && {
@@ -175,20 +189,18 @@ export class TasksService {
   /**
    * Get a single task by ID
    */
-  async getTask(
-    organizationId: string,
-    taskId: string,
-  ) {
+  async getTask(organizationId: string, taskId: string) {
     try {
       const [task, activeFrameworkNames] = await Promise.all([
         db.task.findFirst({
           where: {
             id: taskId,
             organizationId,
+            archivedAt: null,
           },
           include: {
             assignee: true,
-            controls: true,
+            controls: { where: { archivedAt: null } },
             approver: { include: { user: true } },
           },
         }),
@@ -226,6 +238,7 @@ export class TasksService {
       where: {
         id: taskId,
         organizationId,
+        archivedAt: null,
       },
     });
 
@@ -256,7 +269,13 @@ export class TasksService {
         where,
         include: {
           user: {
-            select: { id: true, name: true, email: true, image: true, role: true },
+            select: {
+              id: true,
+              name: true,
+              email: true,
+              image: true,
+              role: true,
+            },
           },
         },
         orderBy: { timestamp: 'desc' },
@@ -302,7 +321,7 @@ export class TasksService {
     const [controls, frameworkInstances, organization, member] =
       await Promise.all([
         db.control.findMany({
-          where: { organizationId },
+          where: { organizationId, archivedAt: null },
           select: { id: true, name: true },
           orderBy: { name: 'asc' },
         }),
@@ -310,6 +329,7 @@ export class TasksService {
           where: { organizationId },
           include: {
             framework: { select: { id: true, name: true } },
+            customFramework: { select: { id: true, name: true } },
             requirementsMapped: { select: { controlId: true } },
           },
         }),
@@ -352,6 +372,7 @@ export class TasksService {
     status: TaskStatus,
     reviewDate: Date | undefined,
     changedByUserId: string,
+    notRelevantJustification?: string,
   ): Promise<{ updatedCount: number }> {
     try {
       // Enforce approval workflow: exclude tasks that can't be bulk-updated
@@ -367,11 +388,17 @@ export class TasksService {
         where.approverId = null;
       }
 
+      const justificationData =
+        status === TaskStatus.not_relevant
+          ? { notRelevantJustification: notRelevantJustification ?? null }
+          : { notRelevantJustification: null };
+
       const result = await db.task.updateMany({
         where,
         data: {
           status,
           updatedAt: new Date(),
+          ...justificationData,
           ...(reviewDate !== undefined ? { reviewDate } : {}),
         },
       });
@@ -396,6 +423,17 @@ export class TasksService {
             error,
           );
         });
+
+      // Any task status change can shift AUTO_TASKS metric in either
+      // direction (done/not_relevant can complete a phase; back to
+      // todo/in_progress can regress one). checkAutoCompletePhases also
+      // kicks off regression reconciliation, so fire on every change.
+      checkAutoCompletePhases({
+        organizationId,
+        timelinesService: this.timelinesService,
+      }).catch((err) => {
+        this.logger.warn('timeline auto-complete check failed', err);
+      });
 
       return { updatedCount: result.count };
     } catch (error) {
@@ -423,7 +461,9 @@ export class TasksService {
           include: { user: { select: { role: true } } },
         });
         if (assigneeMember?.user.role === 'admin') {
-          throw new BadRequestException('Cannot assign a platform admin as assignee');
+          throw new BadRequestException(
+            'Cannot assign a platform admin as assignee',
+          );
         }
       }
 
@@ -494,6 +534,14 @@ export class TasksService {
         );
       }
 
+      // Check timeline auto-completion after bulk task deletion (total task count changed)
+      checkAutoCompletePhases({
+        organizationId,
+        timelinesService: this.timelinesService,
+      }).catch((err) => {
+        this.logger.warn('timeline auto-complete check failed', err);
+      });
+
       return { deletedCount: result.count };
     } catch (error) {
       console.error('Error deleting tasks:', error);
@@ -517,8 +565,10 @@ export class TasksService {
       assigneeId?: string | null;
       approverId?: string | null;
       frequency?: TaskFrequency;
+      integrationScheduleFrequency?: TaskFrequency;
       department?: string;
       reviewDate?: Date | null;
+      notRelevantJustification?: string;
     },
     changedByUserId: string,
   ): Promise<TaskResponseDto> {
@@ -528,6 +578,7 @@ export class TasksService {
         where: {
           id: taskId,
           organizationId,
+          archivedAt: null,
         },
         select: {
           id: true,
@@ -550,8 +601,10 @@ export class TasksService {
         assigneeId?: string | null;
         approverId?: string | null;
         frequency?: TaskFrequency;
+        integrationScheduleFrequency?: TaskFrequency;
         department?: string;
         reviewDate?: Date | null;
+        notRelevantJustification?: string | null;
       } = {};
 
       if (updateData.title !== undefined) {
@@ -562,7 +615,10 @@ export class TasksService {
       }
       if (updateData.status !== undefined) {
         // Prevent bypassing the approval workflow via direct status change
-        if (existingTask.status === 'in_review' && updateData.status !== 'in_review') {
+        if (
+          existingTask.status === 'in_review' &&
+          updateData.status !== 'in_review'
+        ) {
           throw new BadRequestException(
             'Cannot change status directly while task is in review. Use the approve or reject actions instead.',
           );
@@ -579,6 +635,13 @@ export class TasksService {
           );
         }
         dataToUpdate.status = updateData.status;
+
+        if (updateData.status === TaskStatus.not_relevant) {
+          dataToUpdate.notRelevantJustification =
+            updateData.notRelevantJustification ?? null;
+        } else {
+          dataToUpdate.notRelevantJustification = null;
+        }
       }
       if (updateData.assigneeId !== undefined) {
         if (updateData.assigneeId !== null) {
@@ -587,7 +650,9 @@ export class TasksService {
             include: { user: { select: { role: true } } },
           });
           if (assigneeMember?.user.role === 'admin') {
-            throw new BadRequestException('Cannot assign a platform admin as assignee');
+            throw new BadRequestException(
+              'Cannot assign a platform admin as assignee',
+            );
           }
         }
         dataToUpdate.assigneeId =
@@ -600,7 +665,13 @@ export class TasksService {
       if (updateData.frequency !== undefined) {
         dataToUpdate.frequency = updateData.frequency;
         // When frequency changes, recalculate the review date
-        dataToUpdate.reviewDate = computeNextTaskReviewDate(updateData.frequency);
+        dataToUpdate.reviewDate = computeNextTaskReviewDate(
+          updateData.frequency,
+        );
+      }
+      if (updateData.integrationScheduleFrequency !== undefined) {
+        dataToUpdate.integrationScheduleFrequency =
+          updateData.integrationScheduleFrequency;
       }
       if (updateData.department !== undefined) {
         dataToUpdate.department = updateData.department;
@@ -612,7 +683,7 @@ export class TasksService {
       // When status changes to done, set review date based on frequency
       if (updateData.status === TaskStatus.done && !updateData.reviewDate) {
         const task = await db.task.findFirst({
-          where: { id: taskId, organizationId },
+          where: { id: taskId, organizationId, archivedAt: null },
           select: { frequency: true },
         });
         dataToUpdate.reviewDate = computeNextTaskReviewDate(task?.frequency);
@@ -657,6 +728,11 @@ export class TasksService {
               field: 'status',
               oldValue: existingTask.status,
               newValue: updateData.status,
+              ...(updateData.status === TaskStatus.not_relevant &&
+                updateData.notRelevantJustification && {
+                  notRelevantJustification:
+                    updateData.notRelevantJustification,
+                }),
             },
           },
         });
@@ -673,6 +749,15 @@ export class TasksService {
           .catch((error) => {
             console.error('Failed to send status change notifications:', error);
           });
+
+        // Any status change can shift AUTO_TASKS metric in either direction,
+        // and checkAutoCompletePhases also triggers regression reconciliation.
+        checkAutoCompletePhases({
+          organizationId,
+          timelinesService: this.timelinesService,
+        }).catch((err) => {
+          this.logger.warn('timeline auto-complete check failed', err);
+        });
       }
 
       // Write audit logs and send notifications for assignee changes
@@ -803,6 +888,16 @@ export class TasksService {
         },
       });
 
+      // Task creation drops the AUTO_TASKS completion % (denominator up,
+      // numerator unchanged), so reconciliation can regress a COMPLETED
+      // phase back to IN_PROGRESS if we're now under 100%.
+      checkAutoCompletePhases({
+        organizationId,
+        timelinesService: this.timelinesService,
+      }).catch((err) => {
+        this.logger.warn('timeline auto-complete check failed', err);
+      });
+
       return {
         id: task.id,
         title: task.title,
@@ -811,6 +906,8 @@ export class TasksService {
         createdAt: task.createdAt,
         updatedAt: task.updatedAt,
         taskTemplateId: task.taskTemplateId,
+        integrationScheduleFrequency: task.integrationScheduleFrequency,
+        integrationLastRunAt: task.integrationLastRunAt,
       };
     } catch (error) {
       console.error('Error creating task:', error);
@@ -821,12 +918,9 @@ export class TasksService {
   /**
    * Regenerate task from its associated template
    */
-  async regenerateFromTemplate(
-    organizationId: string,
-    taskId: string,
-  ) {
+  async regenerateFromTemplate(organizationId: string, taskId: string) {
     const task = await db.task.findFirst({
-      where: { id: taskId, organizationId },
+      where: { id: taskId, organizationId, archivedAt: null },
       include: { taskTemplate: true },
     });
 
@@ -835,7 +929,9 @@ export class TasksService {
     }
 
     if (!task.taskTemplate) {
-      throw new BadRequestException('Task has no associated template to regenerate from');
+      throw new BadRequestException(
+        'Task has no associated template to regenerate from',
+      );
     }
 
     const updated = await db.task.update({
@@ -868,14 +964,12 @@ export class TasksService {
   /**
    * Delete a single task by ID
    */
-  async deleteTask(
-    organizationId: string,
-    taskId: string,
-  ): Promise<void> {
+  async deleteTask(organizationId: string, taskId: string): Promise<void> {
     const task = await db.task.findFirst({
       where: {
         id: taskId,
         organizationId,
+        archivedAt: null,
       },
     });
 
@@ -885,6 +979,14 @@ export class TasksService {
 
     await db.task.delete({
       where: { id: taskId },
+    });
+
+    // Check timeline auto-completion after task deletion (total task count changed)
+    checkAutoCompletePhases({
+      organizationId,
+      timelinesService: this.timelinesService,
+    }).catch((err) => {
+      this.logger.warn('timeline auto-complete check failed', err);
     });
   }
 
@@ -898,7 +1000,7 @@ export class TasksService {
     approverId: string,
   ): Promise<TaskResponseDto> {
     const task = await db.task.findFirst({
-      where: { id: taskId, organizationId },
+      where: { id: taskId, organizationId, archivedAt: null },
     });
 
     if (!task) {
@@ -924,7 +1026,9 @@ export class TasksService {
     }
 
     if (approver.user.role === 'admin') {
-      throw new BadRequestException('Cannot assign a platform admin as approver');
+      throw new BadRequestException(
+        'Cannot assign a platform admin as approver',
+      );
     }
 
     const currentMember = await db.member.findFirst({
@@ -1001,13 +1105,16 @@ export class TasksService {
     }
 
     if (approver.user.role === 'admin') {
-      throw new BadRequestException('Cannot assign a platform admin as approver');
+      throw new BadRequestException(
+        'Cannot assign a platform admin as approver',
+      );
     }
 
     const tasks = await db.task.findMany({
       where: {
         id: { in: taskIds },
         organizationId,
+        archivedAt: null,
         status: { notIn: ['in_review', 'done'] },
       },
     });
@@ -1078,7 +1185,7 @@ export class TasksService {
     userId: string,
   ): Promise<TaskResponseDto> {
     const task = await db.task.findFirst({
-      where: { id: taskId, organizationId },
+      where: { id: taskId, organizationId, archivedAt: null },
       include: {
         approver: { include: { user: true } },
         assignee: { include: { user: true } },
@@ -1146,6 +1253,14 @@ export class TasksService {
       return updated;
     });
 
+    // Check timeline auto-completion when task is approved (status changed to done)
+    checkAutoCompletePhases({
+      organizationId,
+      timelinesService: this.timelinesService,
+    }).catch((err) => {
+      this.logger.warn('timeline auto-complete check failed', err);
+    });
+
     return updatedTask;
   }
 
@@ -1158,7 +1273,7 @@ export class TasksService {
     userId: string,
   ): Promise<TaskResponseDto> {
     const task = await db.task.findFirst({
-      where: { id: taskId, organizationId },
+      where: { id: taskId, organizationId, archivedAt: null },
       include: {
         approver: { include: { user: true } },
         assignee: { include: { user: true } },

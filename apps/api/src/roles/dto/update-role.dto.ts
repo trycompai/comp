@@ -1,5 +1,12 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsObject, IsOptional, IsString, MaxLength, MinLength, Matches } from 'class-validator';
+import {
+  IsObject,
+  IsOptional,
+  IsString,
+  MaxLength,
+  MinLength,
+  Matches,
+} from 'class-validator';
 
 export class UpdateRoleDto {
   @ApiProperty({
@@ -14,12 +21,14 @@ export class UpdateRoleDto {
   @MinLength(2)
   @MaxLength(50)
   @Matches(/^[a-zA-Z][a-zA-Z0-9\s-]*$/, {
-    message: 'Role name must start with a letter and contain only letters, numbers, spaces, and hyphens',
+    message:
+      'Role name must start with a letter and contain only letters, numbers, spaces, and hyphens',
   })
   name?: string;
 
   @ApiProperty({
-    description: 'Updated permissions for the role. Keys are resource names, values are arrays of allowed actions.',
+    description:
+      'Updated permissions for the role. Keys are resource names, values are arrays of allowed actions.',
     example: {
       control: ['read', 'update', 'delete'],
       policy: ['read', 'update', 'delete'],

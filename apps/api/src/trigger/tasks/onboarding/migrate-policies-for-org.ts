@@ -108,7 +108,7 @@ export const migratePoliciesForOrg = schemaTask({
 
             return { migrated, skipped };
           },
-          { timeout: 30000 },
+          { timeout: 60000 },
         );
 
         totalMigrated += result.migrated;

@@ -1,0 +1,37 @@
+{
+  "slug": "together-ai",
+  "name": "Together AI",
+  "description": "AI inference and training platform. Monitor API access and usage.",
+  "category": "Cloud",
+  "docsUrl": "https://docs.together.ai/reference/",
+  "baseUrl": "https://api.together.ai",
+  "authConfig": {
+    "type": "api_key",
+    "config": {
+      "setupInstructions": "1. Log in to Together AI at https://api.together.ai\n2. Go to Settings > API Keys\n3. Click Create API Key and copy it\n4. Paste the API key below"
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "together_ai_app_availability",
+      "name": "Together AI App Availability",
+      "description": "Checks that the Together AI API is accessible with the provided credentials.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "together_ai_employee_access",
+      "name": "Together AI Employee Access",
+      "description": "Verifies employee access to Together AI via API.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

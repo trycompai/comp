@@ -35,10 +35,25 @@ export class PlatformAuditLogInterceptor implements NestInterceptor {
     return next.handle().pipe(
       tap({
         next: () => {
-          void this.persistAuditEntry(userId, action, method, request.url, providerSlug, false);
+          void this.persistAuditEntry(
+            userId,
+            action,
+            method,
+            request.url,
+            providerSlug,
+            false,
+          );
         },
         error: (err: Error) => {
-          void this.persistAuditEntry(userId, action, method, request.url, providerSlug, true, err.message);
+          void this.persistAuditEntry(
+            userId,
+            action,
+            method,
+            request.url,
+            providerSlug,
+            true,
+            err.message,
+          );
         },
       }),
     );

@@ -1,5 +1,6 @@
 import type {
   Control,
+  CustomFramework,
   FrameworkEditorFramework,
   FrameworkInstance,
   PolicyStatus,
@@ -7,7 +8,8 @@ import type {
 } from '@db';
 
 export type FrameworkInstanceWithControls = FrameworkInstance & {
-  framework: FrameworkEditorFramework;
+  framework: FrameworkEditorFramework | null;
+  customFramework: CustomFramework | null;
   controls: (Control & {
     policies: Array<{
       id: string;
@@ -17,6 +19,7 @@ export type FrameworkInstanceWithControls = FrameworkInstance & {
     requirementsMapped: RequirementMap[];
     controlDocumentTypes?: Array<{
       formType: string;
+      isNotRelevant?: boolean;
     }>;
   })[];
 };

@@ -1,0 +1,35 @@
+{
+  "slug": "coda",
+  "name": "Coda",
+  "description": "Monitor Coda docs and workspace configuration for documentation compliance",
+  "category": "Productivity",
+  "docsUrl": "https://coda.io/developers/apis/v1",
+  "baseUrl": "https://coda.io/",
+  "authConfig": {
+    "type": "api_key",
+    "config": {}
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "coda_access_review",
+      "name": "Access Review Log",
+      "description": "Verifies Coda workspace is accessible and docs are organized",
+      "defaultSeverity": "low",
+      "enabled": true
+    },
+    {
+      "slug": "coda_separation_of_envs",
+      "name": "Separation of Environments",
+      "description": "Reviews Coda docs structure for organized workspace separation",
+      "defaultSeverity": "low",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

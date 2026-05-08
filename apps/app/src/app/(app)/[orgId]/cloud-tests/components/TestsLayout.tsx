@@ -2,12 +2,16 @@
 
 import { ConnectIntegrationDialog } from '@/components/integrations/ConnectIntegrationDialog';
 import { useApi } from '@/hooks/use-api';
+import { useIntegrationMutations } from '@/hooks/use-integration-platform';
 import { usePermissions } from '@/hooks/use-permissions';
 import { ManageIntegrationDialog } from '@/components/integrations/ManageIntegrationDialog';
+import { CLOUD_RECONNECT_CUTOFF_LABEL, requiresCloudReconnect } from '@/lib/cloud-reconnect-policy';
 import { Button, PageHeader, PageHeaderDescription, PageLayout } from '@trycompai/design-system';
 import { Add, Settings } from '@trycompai/design-system/icons';
-import { useMemo, useState } from 'react';
+import { useSearchParams, useRouter } from 'next/navigation';
+import { useCallback, useMemo, useState } from 'react';
 import { toast } from 'sonner';
+import { mutate as globalMutate } from 'swr';
 import { isCloudProviderSlug } from '../constants';
 import type { Finding, Provider } from '../types';
 import { CloudSettingsModal } from './CloudSettingsModal';
@@ -49,10 +53,26 @@ export function TestsLayout({ initialFindings, initialProviders, orgId }: TestsL
   const canRunScan = hasPermission('integration', 'update');
   const canCreateIntegration = hasPermission('integration', 'create');
   const api = useApi();
+  const { deleteConnection } = useIntegrationMutations();
   const [showSettings, setShowSettings] = useState(false);
   const [viewingResults, setViewingResults] = useState(true);
   const [isScanning, setIsScanning] = useState(false);
-  const [activeProviderTab, setActiveProviderTab] = useState<string | null>(null);
+  const [isReconnecting, setIsReconnecting] = useState(false);
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const [activeProviderTab, setActiveProviderTabState] = useState<string | null>(
+    searchParams.get('provider'),
+  );
+  const setActiveProviderTab = useCallback((tab: string | null) => {
+    setActiveProviderTabState(tab);
+    const params = new URLSearchParams(searchParams.toString());
+    if (tab) {
+      params.set('provider', tab);
+    } else {
+      params.delete('provider');
+    }
+    router.replace(`?${params.toString()}`, { scroll: false });
+  }, [searchParams, router]);
   const [activeConnectionTabs, setActiveConnectionTabs] = useState<Record<string, string>>({});
   const [addConnectionProvider, setAddConnectionProvider] = useState<string | null>(null);
   const [configureDialogOpen, setConfigureDialogOpen] = useState(false);
@@ -86,6 +106,19 @@ export function TestsLayout({ initialFindings, initialProviders, orgId }: TestsL
   const isProvidersValidating = providersResponse.isValidating;
 
   const connectedProviders = providers;
+  const reconnectRequiredCount = useMemo(
+    () =>
+      connectedProviders.filter((provider) =>
+        requiresCloudReconnect({
+          providerId: provider.integrationId,
+          createdAt: provider.createdAt,
+          reconnectedAt: provider.reconnectedAt,
+          isLegacy: provider.isLegacy,
+          status: provider.status,
+        }),
+      ).length,
+    [connectedProviders],
+  );
 
   // Group connections by provider type (aws, gcp, azure)
   const providerGroups = useMemo(() => {
@@ -188,6 +221,37 @@ export function TestsLayout({ initialFindings, initialProviders, orgId }: TestsL
     setViewingResults(true);
   };
 
+  const handleReconnect = async (providerType: string) => {
+    const providerName = PROVIDER_NAME[providerType] || providerType.toUpperCase();
+    if (
+      !confirm(
+        `This will disconnect all your ${providerName} connections and redirect you to set up a fresh connection. Continue?`,
+      )
+    ) {
+      return;
+    }
+
+    setIsReconnecting(true);
+    try {
+      const connections = providerGroups[providerType] || [];
+      await Promise.all(
+        connections.map((connection) =>
+          connection.isLegacy
+            ? api.delete(`/v1/cloud-security/legacy/${connection.id}`)
+            : deleteConnection(connection.id),
+        ),
+      );
+      await Promise.all([mutateProviders(), mutateFindings()]);
+      // Clear integration connections cache so the target page doesn't flash stale data
+      await globalMutate(['integration-connections', orgId]);
+      router.push(`/${orgId}/integrations/${providerType}`);
+    } catch {
+      toast.error('Failed to disconnect connections. Please try again.');
+    } finally {
+      setIsReconnecting(false);
+    }
+  };
+
   if (connectedProviders.length === 0 || !viewingResults) {
     return (
       <EmptyState
@@ -254,6 +318,17 @@ export function TestsLayout({ initialFindings, initialProviders, orgId }: TestsL
         <PageHeaderDescription>{multiProviderDescription}</PageHeaderDescription>
       </PageHeader>
 
+      {reconnectRequiredCount > 0 && (
+        <div className="mb-4 rounded-lg border border-warning/30 bg-warning/10 px-4 py-3">
+          <p className="text-sm font-medium text-foreground">
+            Reconnect required for {reconnectRequiredCount} cloud connection{reconnectRequiredCount === 1 ? '' : 's'}
+          </p>
+          <p className="text-xs text-muted-foreground mt-0.5">
+            Connections created before {CLOUD_RECONNECT_CUTOFF_LABEL} should be re-added to keep scans and remediation fully reliable.
+          </p>
+        </div>
+      )}
+
       <ProviderTabs
         providerGroups={providerGroups}
         providerTypes={activeProviderTypes}
@@ -288,8 +363,20 @@ export function TestsLayout({ initialFindings, initialProviders, orgId }: TestsL
           setConfigureDialogOpen(true);
         }}
         needsConfiguration={needsVariableConfiguration}
+        requiresReconnect={(provider) =>
+          requiresCloudReconnect({
+            providerId: provider.integrationId,
+            createdAt: provider.createdAt,
+            reconnectedAt: provider.reconnectedAt,
+            isLegacy: provider.isLegacy,
+            status: provider.status,
+          })
+        }
         canRunScan={canRunScan}
         canAddConnection={canCreateIntegration}
+        isReconnecting={isReconnecting}
+        onReconnect={handleReconnect}
+        orgId={orgId}
       />
 
       {/* CloudSettingsModal for single-connection providers AND legacy connections */}
@@ -298,7 +385,6 @@ export function TestsLayout({ initialFindings, initialProviders, orgId }: TestsL
         open={showSettings}
         onOpenChange={setShowSettings}
         connectedProviders={connectedProviders
-          .filter((p) => !p.supportsMultipleConnections || p.isLegacy)
           .map((p) => ({
             id: p.integrationId,
             connectionId: p.id,

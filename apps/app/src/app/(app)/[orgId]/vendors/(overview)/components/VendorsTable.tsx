@@ -1,9 +1,17 @@
 'use client';
 
 import { OnboardingLoadingAnimation } from '@/components/onboarding-loading-animation';
+import { RiskScoreBadge } from '@/components/risks/RiskScoreBadge';
+import { VendorStatus } from '@/components/vendor-status';
 import { usePermissions } from '@/hooks/use-permissions';
 import { useVendors, useVendorActions, type Vendor } from '@/hooks/use-vendors';
-import { VendorStatus } from '@/components/vendor-status';
+import { getRiskScore } from '@/lib/risk-score';
+import {
+  interpolatedResidualScore,
+  previewResidual,
+  suggestedResidual,
+} from '@/lib/suggested-residual';
+import type { TaskStatus } from '@db';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -51,6 +59,40 @@ export type VendorRow = Vendor & {
   isPending?: boolean;
   isAssessing?: boolean;
 };
+
+/**
+ * Mirrors `currentSeverityScore` in the risks table — projects the vendor's
+ * inherent + treatment-strategy + linked-task completion into the same
+ * interpolated 1–10 score the Treatment Plan hero shows. Falls back to
+ * inherent when there's no linked work or strategy doesn't reduce.
+ */
+function currentVendorSeverityScore(vendor: {
+  inherentProbability: VendorRow['inherentProbability'];
+  inherentImpact: VendorRow['inherentImpact'];
+  treatmentStrategy: VendorRow['treatmentStrategy'];
+  tasks?: Array<{ status: TaskStatus }>;
+}): number {
+  const inherent = getRiskScore(vendor.inherentProbability, vendor.inherentImpact);
+  const tasks = vendor.tasks ?? [];
+  const target = previewResidual({
+    inherentLikelihood: vendor.inherentProbability,
+    inherentImpact: vendor.inherentImpact,
+    strategy: vendor.treatmentStrategy,
+    hasLinkedWork: tasks.length > 0,
+  });
+  const targetScore = getRiskScore(target.likelihood, target.impact).score;
+  const completion = suggestedResidual({
+    likelihood: vendor.inherentProbability,
+    impact: vendor.inherentImpact,
+    strategy: vendor.treatmentStrategy,
+    tasks,
+  }).completion;
+  return interpolatedResidualScore({
+    inherentScore: inherent.score,
+    targetScore,
+    completion,
+  });
+}
 
 type AssigneeMember = {
   id: string;
@@ -168,7 +210,10 @@ export function VendorsTable({
 
   // Local state for search, sorting, and pagination
   const [searchQuery, setSearchQuery] = useState('');
-  const [sort, setSort] = useState<{ id: 'name' | 'updatedAt'; desc: boolean }>({
+  const [sort, setSort] = useState<{
+    id: 'name' | 'updatedAt' | 'inherentRisk' | 'residualRisk';
+    desc: boolean;
+  }>({
     id: 'name',
     desc: false,
   });
@@ -259,6 +304,8 @@ export function VendorsTable({
         inherentImpact: 'insignificant' as const,
         residualProbability: 'very_unlikely' as const,
         residualImpact: 'insignificant' as const,
+        treatmentStrategy: 'accept' as const,
+        treatmentStrategyDescription: null,
         website: null,
         isSubProcessor: false,
         logoUrl: null,
@@ -285,6 +332,8 @@ export function VendorsTable({
         inherentImpact: 'insignificant' as const,
         residualProbability: 'very_unlikely' as const,
         residualImpact: 'insignificant' as const,
+        treatmentStrategy: 'accept' as const,
+        treatmentStrategyDescription: null,
         website: null,
         isSubProcessor: false,
         logoUrl: null,
@@ -319,15 +368,36 @@ export function VendorsTable({
 
     // Sort
     result.sort((a, b) => {
-      const aValue = sort.id === 'name' ? a.name : a.updatedAt;
-      const bValue = sort.id === 'name' ? b.name : b.updatedAt;
-
       if (sort.id === 'name') {
-        const comparison = (aValue as string).localeCompare(bValue as string);
+        const comparison = a.name.localeCompare(b.name);
         return sort.desc ? -comparison : comparison;
       }
-      const comparison =
-        new Date(aValue as string).getTime() - new Date(bValue as string).getTime();
+      if (sort.id === 'inherentRisk') {
+        const aScore = getRiskScore(a.inherentProbability, a.inherentImpact).raw;
+        const bScore = getRiskScore(b.inherentProbability, b.inherentImpact).raw;
+        const comparison = aScore - bScore;
+        return sort.desc ? -comparison : comparison;
+      }
+      if (sort.id === 'residualRisk') {
+        // Unassessed vendors carry default residual values (very_unlikely
+        // × insignificant = 1). Without this branch they'd cluster at the
+        // bottom (or top, when desc) of the residual sort even though we
+        // render them as `—` and they have no real residual yet. Force
+        // them to the end of the list regardless of sort direction so
+        // assessed vendors are always grouped together. (Cubic finding
+        // on PR #2671.)
+        const aAssessed = a.status === 'assessed';
+        const bAssessed = b.status === 'assessed';
+        if (aAssessed !== bAssessed) return aAssessed ? -1 : 1;
+        // Sort by the SAME interpolated score the badge renders so the
+        // sort order matches what the user sees (treatment-progress
+        // aware), not the static residual fields.
+        const aScore = currentVendorSeverityScore(a);
+        const bScore = currentVendorSeverityScore(b);
+        const comparison = aScore - bScore;
+        return sort.desc ? -comparison : comparison;
+      }
+      const comparison = new Date(a.updatedAt).getTime() - new Date(b.updatedAt).getTime();
       return sort.desc ? -comparison : comparison;
     });
 
@@ -385,7 +455,7 @@ export function VendorsTable({
     router.push(`/${orgId}/vendors/${vendorId}`);
   };
 
-  const handleSort = (columnId: 'name' | 'updatedAt') => {
+  const handleSort = (columnId: 'name' | 'updatedAt' | 'inherentRisk' | 'residualRisk') => {
     if (sort.id === columnId) {
       setSort({ id: columnId, desc: !sort.desc });
     } else {
@@ -393,7 +463,7 @@ export function VendorsTable({
     }
   };
 
-  const getSortIcon = (columnId: 'name' | 'updatedAt') => {
+  const getSortIcon = (columnId: 'name' | 'updatedAt' | 'inherentRisk' | 'residualRisk') => {
     if (sort.id !== columnId) {
       return <ArrowUpDown className="ml-1 h-3 w-3 text-muted-foreground" />;
     }
@@ -528,6 +598,26 @@ export function VendorsTable({
                   </button>
                 </TableHead>
                 <TableHead>STATUS</TableHead>
+                <TableHead>
+                  <button
+                    type="button"
+                    onClick={() => handleSort('inherentRisk')}
+                    className="flex items-center hover:text-foreground"
+                  >
+                    INHERENT RISK
+                    {getSortIcon('inherentRisk')}
+                  </button>
+                </TableHead>
+                <TableHead>
+                  <button
+                    type="button"
+                    onClick={() => handleSort('residualRisk')}
+                    className="flex items-center hover:text-foreground"
+                  >
+                    CURRENT RISK
+                    {getSortIcon('residualRisk')}
+                  </button>
+                </TableHead>
                 <TableHead>CATEGORY</TableHead>
                 <TableHead>OWNER</TableHead>
                 {hasPermission('vendor', 'delete') && <TableHead>ACTIONS</TableHead>}
@@ -548,6 +638,28 @@ export function VendorsTable({
                     </TableCell>
                     <TableCell>
                       <VendorStatusCell vendor={vendor} />
+                    </TableCell>
+                    <TableCell>
+                      {vendor.status === 'not_assessed' ? (
+                        <Text variant="muted" size="sm">—</Text>
+                      ) : (
+                        <RiskScoreBadge
+                          likelihood={vendor.inherentProbability}
+                          impact={vendor.inherentImpact}
+                        />
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      {vendor.status === 'not_assessed' ? (
+                        <Text variant="muted" size="sm">—</Text>
+                      ) : (
+                        // Show the current (interpolated) score that
+                        // reflects how far the linked tasks have driven
+                        // the residual down — same logic the risks table
+                        // uses. Static residualProbability / Impact alone
+                        // can't reflect mid-treatment progress.
+                        <RiskScoreBadge score={currentVendorSeverityScore(vendor)} />
+                      )}
                     </TableCell>
                     <TableCell>
                       <Badge variant="secondary">

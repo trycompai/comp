@@ -1,0 +1,45 @@
+{
+  "slug": "baseten",
+  "name": "Baseten",
+  "description": "Baseten ML model deployment and inference infrastructure platform",
+  "category": "Development",
+  "docsUrl": "https://docs.baseten.co",
+  "baseUrl": "https://api.baseten.co",
+  "authConfig": {
+    "type": "custom",
+    "config": {
+      "setupInstructions": "1. Log in to Baseten\n2. Go to Settings → API Keys\n3. Create a new API key\n4. Paste it below",
+      "credentialFields": [
+        {
+          "label": "API Key",
+          "type": "password",
+          "required": true,
+          "helpText": "Baseten → Settings → API Keys → Create API Key"
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "baseten_app_availability",
+      "name": "App Availability",
+      "description": "Verifies Baseten ML platform is accessible",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "baseten_employee_access",
+      "name": "Employee Access",
+      "description": "Lists Baseten models to verify ML infrastructure access",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

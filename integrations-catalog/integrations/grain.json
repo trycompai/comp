@@ -1,0 +1,51 @@
+{
+  "slug": "grain",
+  "name": "Grain",
+  "description": "Grain meeting recording and intelligence platform integration for monitoring meeting recordings, team access, and compliance",
+  "category": "Productivity",
+  "docsUrl": "https://developers.grain.com/",
+  "baseUrl": "https://api.grain.com",
+  "authConfig": {
+    "type": "custom",
+    "config": {
+      "setupInstructions": "1. Log in to Grain at grain.com\n2. Go to Settings > Integrations > API tab\n3. Generate a Workspace Access Token (requires admin access)\n4. Copy the token and enter it above\n5. More details: https://developers.grain.com/",
+      "credentialFields": [
+        {
+          "label": "Workspace Access Token",
+          "type": "password",
+          "required": true
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "grain_recordings",
+      "name": "App Availability",
+      "description": "Verify Grain is active and meeting recordings are being captured",
+      "defaultSeverity": "info",
+      "enabled": true
+    },
+    {
+      "slug": "grain_user_access",
+      "name": "Employee Access",
+      "description": "Verify user access and team membership in Grain workspace",
+      "defaultSeverity": "info",
+      "enabled": true
+    },
+    {
+      "slug": "grain_webhooks",
+      "name": "Monitoring & Alerting",
+      "description": "Verify webhook integrations are configured for meeting event notifications",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 3,
+  "isActive": true
+}

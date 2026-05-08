@@ -18,4 +18,3 @@ exports.db = void 0;
 __exportStar(require("@prisma/client"), exports);
 var client_1 = require("./client");
 Object.defineProperty(exports, "db", { enumerable: true, get: function () { return client_1.db; } });
-//# sourceMappingURL=index.js.map

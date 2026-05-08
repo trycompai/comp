@@ -250,7 +250,9 @@ export class AutomationsController {
 
   @Post(':automationId/versions')
   @RequirePermission('task', 'update')
-  @ApiOperation({ summary: 'Create a published version record for an automation' })
+  @ApiOperation({
+    summary: 'Create a published version record for an automation',
+  })
   @ApiParam({ name: 'taskId', description: 'Task ID' })
   @ApiParam({ name: 'automationId', description: 'Automation ID' })
   async createVersion(

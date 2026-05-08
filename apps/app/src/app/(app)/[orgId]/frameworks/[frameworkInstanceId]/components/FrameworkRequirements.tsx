@@ -17,30 +17,27 @@ import {
 } from '@trycompai/design-system';
 import { Search } from '@trycompai/design-system/icons';
 import { useParams, useRouter } from 'next/navigation';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+
+const PAGE_SIZE_OPTIONS = [10, 25, 50, 100];
 import type { FrameworkInstanceWithControls } from '@/lib/types/framework';
-import { getControlStatus } from '@/lib/control-compliance';
+import {
+  type EvidenceSubmissionInfo,
+  type RequirementArtifactCounts,
+  getControlProgressPercent,
+  getControlStatus,
+  getRequirementArtifactCounts,
+  getRequirementCompliancePercent,
+  getRequirementStatus,
+} from '@/lib/control-compliance';
+import type { StatusType } from '@/components/status-indicator';
 
 interface RequirementItem extends FrameworkEditorRequirement {
   mappedControlsCount: number;
   satisfiedControlsCount: number;
   compliancePercent: number;
-}
-
-function getRequirementStatus(
-  satisfiedCount: number,
-  totalCount: number,
-): { label: string; variant: 'default' | 'secondary' | 'destructive' } {
-  if (totalCount === 0) return { label: 'No Controls', variant: 'secondary' };
-  if (satisfiedCount === totalCount) return { label: 'Satisfied', variant: 'default' };
-  if (satisfiedCount > 0) return { label: 'In Progress', variant: 'secondary' };
-  return { label: 'Not Started', variant: 'destructive' };
-}
-
-interface EvidenceSubmissionInfo {
-  id: string;
-  formType: string;
-  createdAt: Date | string;
+  controlStatuses: StatusType[];
+  artifactCounts: RequirementArtifactCounts;
 }
 
 export function FrameworkRequirements({
@@ -60,6 +57,8 @@ export function FrameworkRequirements({
     frameworkInstanceId: string;
   }>();
   const [searchTerm, setSearchTerm] = useState('');
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
 
   const items = useMemo(() => {
     return requirementDefinitions.map((def) => {
@@ -68,26 +67,43 @@ export function FrameworkRequirements({
           control.requirementsMapped?.some((reqMap) => reqMap.requirementId === def.id) ?? false,
       );
 
-      const satisfiedControlsCount = mappedControls.filter(
-        (control) => getControlStatus(
+      const controlStatuses = mappedControls.map((control) =>
+        getControlStatus(
           control.policies,
           tasks ?? [],
           control.id,
           control.controlDocumentTypes,
           evidenceSubmissions,
-        ) === 'completed',
+        ),
+      );
+      const satisfiedControlsCount = controlStatuses.filter(
+        (status) => status === 'completed',
       ).length;
 
-      const compliancePercent =
-        mappedControls.length > 0
-          ? Math.round((satisfiedControlsCount / mappedControls.length) * 100)
-          : 0;
+      const controlProgressPercents = mappedControls.map((control) =>
+        getControlProgressPercent(
+          control.policies,
+          tasks ?? [],
+          control.id,
+          control.controlDocumentTypes,
+          evidenceSubmissions,
+        ),
+      );
+      const compliancePercent = getRequirementCompliancePercent(controlProgressPercents);
+
+      const artifactCounts = getRequirementArtifactCounts(
+        mappedControls,
+        tasks ?? [],
+        evidenceSubmissions,
+      );
 
       return {
         ...def,
         mappedControlsCount: mappedControls.length,
         satisfiedControlsCount,
         compliancePercent,
+        controlStatuses,
+        artifactCounts,
       };
     });
   }, [requirementDefinitions, frameworkInstanceWithControls.controls, tasks, evidenceSubmissions]);
@@ -98,23 +114,29 @@ export function FrameworkRequirements({
     return items.filter(
       (item) =>
         item.name.toLowerCase().includes(lowerSearch) ||
+        item.identifier?.toLowerCase().includes(lowerSearch) ||
         item.description?.toLowerCase().includes(lowerSearch),
     );
   }, [items, searchTerm]);
+
+  const pageCount = Math.max(1, Math.ceil(filteredItems.length / pageSize));
+  const paginatedItems = useMemo(
+    () => filteredItems.slice((page - 1) * pageSize, page * pageSize),
+    [filteredItems, page, pageSize],
+  );
+
+  // Snap back to page 1 when filtering or page-size changes shrink the result set.
+  useEffect(() => {
+    if (page > pageCount) setPage(1);
+  }, [page, pageCount]);
 
   const handleRowClick = (requirementId: string) => {
     router.push(`/${orgId}/frameworks/${frameworkInstanceId}/requirements/${requirementId}`);
   };
 
-  if (!items?.length) {
-    return null;
-  }
-
   return (
     <div className="space-y-4">
-      <Heading level="2">
-        Requirements ({filteredItems.length})
-      </Heading>
+      <Heading level="2">Requirements ({filteredItems.length})</Heading>
       <div className="w-full max-w-sm">
         <InputGroup>
           <InputGroupAddon>
@@ -127,28 +149,46 @@ export function FrameworkRequirements({
           />
         </InputGroup>
       </div>
-      <Table variant="bordered">
+      <Table
+        variant="bordered"
+        pagination={{
+          page,
+          pageCount,
+          onPageChange: setPage,
+          pageSize,
+          pageSizeOptions: PAGE_SIZE_OPTIONS,
+          onPageSizeChange: (size) => {
+            setPageSize(size);
+            setPage(1);
+          },
+        }}
+      >
         <TableHeader>
           <TableRow>
+            <TableHead>Identifier</TableHead>
             <TableHead>Name</TableHead>
             <TableHead>Description</TableHead>
-            <TableHead>Controls</TableHead>
             <TableHead>Compliance</TableHead>
             <TableHead>Status</TableHead>
+            <TableHead>Controls</TableHead>
+            <TableHead>Policies</TableHead>
+            <TableHead>Tasks</TableHead>
+            <TableHead>Documents</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
-          {filteredItems.length === 0 ? (
+          {paginatedItems.length === 0 ? (
             <TableRow>
-              <TableCell colSpan={5}>
+              <TableCell colSpan={9}>
                 <Text size="sm" variant="muted">
                   No requirements found.
                 </Text>
               </TableCell>
             </TableRow>
           ) : (
-            filteredItems.map((item) => {
-              const status = getRequirementStatus(item.satisfiedControlsCount, item.mappedControlsCount);
+            paginatedItems.map((item) => {
+              const status = getRequirementStatus(item.controlStatuses);
+              const identifier = item.identifier?.trim();
 
               return (
                 <TableRow
@@ -165,21 +205,23 @@ export function FrameworkRequirements({
                   style={{ cursor: 'pointer' }}
                 >
                   <TableCell>
-                    <span className="line-clamp-2">{item.name}</span>
+                    <span className="text-sm">{identifier || '—'}</span>
                   </TableCell>
                   <TableCell>
-                    <div className="line-clamp-2">
-                      <Text size="sm" variant="muted">
-                        {item.description}
-                      </Text>
-                    </div>
+                    <span
+                      className="block max-w-[280px] truncate text-sm"
+                      title={item.name}
+                    >
+                      {item.name}
+                    </span>
                   </TableCell>
                   <TableCell>
-                    <div className="tabular-nums">
-                      <Text size="sm" variant="muted">
-                        {item.satisfiedControlsCount}/{item.mappedControlsCount}
-                      </Text>
-                    </div>
+                    <span
+                      className="block max-w-[240px] truncate text-sm"
+                      title={item.description || ''}
+                    >
+                      {item.description || '—'}
+                    </span>
                   </TableCell>
                   <TableCell>
                     <div className="flex items-center gap-2 min-w-[100px]">
@@ -198,6 +240,34 @@ export function FrameworkRequirements({
                   </TableCell>
                   <TableCell>
                     <Badge variant={status.variant}>{status.label}</Badge>
+                  </TableCell>
+                  <TableCell>
+                    <div className="tabular-nums">
+                      <Text size="sm" variant="muted">
+                        {item.satisfiedControlsCount}/{item.mappedControlsCount}
+                      </Text>
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <div className="tabular-nums">
+                      <Text size="sm" variant="muted">
+                        {item.artifactCounts.policies.completed}/{item.artifactCounts.policies.total}
+                      </Text>
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <div className="tabular-nums">
+                      <Text size="sm" variant="muted">
+                        {item.artifactCounts.tasks.completed}/{item.artifactCounts.tasks.total}
+                      </Text>
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <div className="tabular-nums">
+                      <Text size="sm" variant="muted">
+                        {item.artifactCounts.documents.completed}/{item.artifactCounts.documents.total}
+                      </Text>
+                    </div>
                   </TableCell>
                 </TableRow>
               );

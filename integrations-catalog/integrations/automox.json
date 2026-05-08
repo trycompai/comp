@@ -1,0 +1,35 @@
+{
+  "slug": "automox",
+  "name": "Automox",
+  "description": "Cloud-native endpoint management and patch automation. Monitor patch compliance and device status.",
+  "category": "Security",
+  "docsUrl": "https://developer.automox.com/",
+  "baseUrl": "https://console.automox.com",
+  "authConfig": {
+    "type": "api_key",
+    "config": {}
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "automox_app_availability",
+      "name": "Automox App Availability",
+      "description": "Checks that the Automox API is accessible.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "automox_employee_access",
+      "name": "Automox Employee Access",
+      "description": "Verifies access to Automox.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

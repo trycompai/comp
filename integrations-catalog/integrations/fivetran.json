@@ -1,0 +1,39 @@
+{
+  "slug": "fivetran",
+  "name": "Fivetran",
+  "description": "Monitor Fivetran data pipeline connectors and user access for data integration compliance",
+  "category": "Cloud",
+  "docsUrl": "https://fivetran.com/docs/rest-api",
+  "baseUrl": "https://api.fivetran.com",
+  "authConfig": {
+    "type": "basic",
+    "config": {
+      "setupInstructions": "1. Log in to Fivetran Dashboard\n2. Click your username in the top right\n3. Click API Key\n4. Generate an API key (or generate a new one)\n5. Note down both the API Key and API Secret\n6. Enter them below",
+      "usernameField": "api_key",
+      "passwordField": "api_secret"
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "fivetran_employee_access",
+      "name": "Employee Access",
+      "description": "Reviews Fivetran account users and their access roles",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "fivetran_app_availability",
+      "name": "App Availability",
+      "description": "Verifies Fivetran platform is operational",
+      "defaultSeverity": "low",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

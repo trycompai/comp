@@ -1,0 +1,57 @@
+{
+  "slug": "looker",
+  "name": "Looker",
+  "description": "Monitor Looker (Google Cloud) business intelligence platform for user access and role assignments. Verify instance availability and employee access controls.",
+  "category": "Productivity",
+  "docsUrl": "https://cloud.google.com/looker/docs/reference/looker-api/latest",
+  "baseUrl": "https://looker.com",
+  "authConfig": {
+    "type": "custom",
+    "config": {
+      "setupInstructions": "Setup steps:\n\n1. Log in to your Looker instance as an Admin\n2. Go to Admin > Users\n3. Select the user account to use for API access (or create a dedicated service account)\n4. Click Edit > API Keys > New API Key\n5. Copy the Client ID and Client Secret\n6. Enter your Looker instance URL (e.g., https://mycompany.looker.com)\n\nNote: The API user needs the 'Admin' role or at minimum 'see_users' and 'see_roles' permissions to list users and roles.",
+      "credentialFields": [
+        {
+          "label": "Looker Instance URL",
+          "type": "text",
+          "required": true,
+          "helpText": "Your Looker instance URL (e.g., https://mycompany.looker.com or https://mycompany.cloud.looker.com). Do not include a trailing slash."
+        },
+        {
+          "label": "API Client ID",
+          "type": "text",
+          "required": true,
+          "helpText": "The client_id from your Looker API3 credentials. Create API keys in Admin > Users > Edit User > API Keys."
+        },
+        {
+          "label": "API Client Secret",
+          "type": "password",
+          "required": true,
+          "helpText": "The client_secret from your Looker API3 credentials."
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "looker_employee_access",
+      "name": "Employee Access",
+      "description": "Lists all Looker users and their assigned roles to verify access controls and role-based permissions.",
+      "defaultSeverity": "high",
+      "enabled": true
+    },
+    {
+      "slug": "looker_app_availability",
+      "name": "App Availability",
+      "description": "Verifies the Looker instance is accessible and API credentials are valid by authenticating and retrieving the current user profile.",
+      "defaultSeverity": "high",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

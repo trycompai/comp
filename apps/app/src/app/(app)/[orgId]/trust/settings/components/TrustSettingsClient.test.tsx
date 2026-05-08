@@ -28,14 +28,14 @@ vi.mock('@/hooks/useDebounce', () => ({
 }));
 
 vi.mock('@/hooks/use-domain', () => ({
-  DEFAULT_CNAME_TARGET: 'cname.vercel-dns.com',
   useDomain: () => ({
     data: {
       data: {
         domain: 'trust.example.com',
         verified: true,
         verification: [],
-        cnameTarget: 'cname.vercel-dns.com',
+        cnameTarget: '3a69a5bb27875189.vercel-dns-016.com',
+        misconfigured: false,
       },
     },
   }),

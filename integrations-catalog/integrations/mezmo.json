@@ -1,0 +1,45 @@
+{
+  "slug": "mezmo",
+  "name": "Mezmo",
+  "description": "Mezmo (formerly LogDNA) log management platform",
+  "category": "Monitoring",
+  "docsUrl": "https://docs.mezmo.com/",
+  "baseUrl": "https://api.mezmo.com/v1",
+  "authConfig": {
+    "type": "custom",
+    "config": {
+      "setupInstructions": "1. Log in to app.mezmo.com\n2. Settings → Organization → API Keys\n3. Copy your Service Key\n4. Paste it below",
+      "credentialFields": [
+        {
+          "label": "Service Key",
+          "type": "password",
+          "required": true,
+          "helpText": "Mezmo → Settings → Organization → API Keys → Service Key"
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "mezmo_monitoring",
+      "name": "Monitoring & Alerting",
+      "description": "Verifies Mezmo has active log alerts configured",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "mezmo_employee_access",
+      "name": "Employee Access",
+      "description": "Lists Mezmo team members",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

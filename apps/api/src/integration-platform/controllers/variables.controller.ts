@@ -9,12 +9,15 @@ import {
   Logger,
   UseGuards,
 } from '@nestjs/common';
-import { ApiTags, ApiSecurity } from '@nestjs/swagger';
+import { ApiTags, ApiSecurity, ApiOperation } from '@nestjs/swagger';
 import { HybridAuthGuard } from '../../auth/hybrid-auth.guard';
 import { PermissionGuard } from '../../auth/permission.guard';
 import { RequirePermission } from '../../auth/require-permission.decorator';
 import { OrganizationId } from '../../auth/auth-context.decorator';
-import { getManifest, type CheckVariable } from '@trycompai/integration-platform';
+import {
+  getManifest,
+  type CheckVariable,
+} from '@trycompai/integration-platform';
 import { ConnectionRepository } from '../repositories/connection.repository';
 import { ConnectionService } from '../services/connection.service';
 import { ProviderRepository } from '../repositories/provider.repository';
@@ -61,6 +64,7 @@ export class VariablesController {
    * Get all variables required for a provider's checks
    */
   @Get('providers/:providerSlug')
+  @ApiOperation({ summary: 'List variable definitions for a provider' })
   @RequirePermission('integration', 'read')
   async getProviderVariables(
     @Param('providerSlug') providerSlug: string,
@@ -111,12 +115,16 @@ export class VariablesController {
    * Get variables for a specific connection (with current values)
    */
   @Get('connections/:connectionId')
+  @ApiOperation({ summary: 'List connection variables' })
   @RequirePermission('integration', 'read')
   async getConnectionVariables(
     @Param('connectionId') connectionId: string,
     @OrganizationId() organizationId: string,
   ) {
-    await this.connectionService.getConnectionForOrg(connectionId, organizationId);
+    await this.connectionService.getConnectionForOrg(
+      connectionId,
+      organizationId,
+    );
 
     const connection = await this.connectionRepository.findById(connectionId);
     if (!connection) {
@@ -183,13 +191,17 @@ export class VariablesController {
    * Fetch dynamic options for a variable (requires active connection)
    */
   @Get('connections/:connectionId/options/:variableId')
+  @ApiOperation({ summary: 'Get options for a connection variable' })
   @RequirePermission('integration', 'read')
   async fetchVariableOptions(
     @Param('connectionId') connectionId: string,
     @Param('variableId') variableId: string,
     @OrganizationId() organizationId: string,
   ): Promise<{ options: VariableOption[] }> {
-    await this.connectionService.getConnectionForOrg(connectionId, organizationId);
+    await this.connectionService.getConnectionForOrg(
+      connectionId,
+      organizationId,
+    );
 
     const connection = await this.connectionRepository.findById(connectionId);
     if (!connection) {
@@ -393,13 +405,17 @@ export class VariablesController {
    * Save variable values for a connection
    */
   @Post('connections/:connectionId')
+  @ApiOperation({ summary: 'Update connection variables' })
   @RequirePermission('integration', 'update')
   async saveConnectionVariables(
     @Param('connectionId') connectionId: string,
     @Body() body: SaveVariablesDto,
     @OrganizationId() organizationId: string,
   ) {
-    await this.connectionService.getConnectionForOrg(connectionId, organizationId);
+    await this.connectionService.getConnectionForOrg(
+      connectionId,
+      organizationId,
+    );
 
     const connection = await this.connectionRepository.findById(connectionId);
     if (!connection) {

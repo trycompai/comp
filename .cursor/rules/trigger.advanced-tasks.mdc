@@ -39,7 +39,7 @@ for await (const run of runs.subscribeToRunsWithTag('user_123')) {
 **Tag Best Practices:**
 
 - Use prefixes: `user_123`, `org_abc`, `video:456`
-- Max 10 tags per run, 1-64 characters each
+- Max 10 tags per run, 1-128 characters each
 - Tags don't propagate to child tasks automatically
 
 ## Concurrency & Queues
@@ -402,7 +402,7 @@ export const tracedTask = task({
 ## Usage Monitoring
 
 ```ts
-import { task, usage } from '@trigger.dev/sdk';
+import { logger, task, usage } from '@trigger.dev/sdk';
 
 export const monitoredTask = task({
   id: 'monitored-task',

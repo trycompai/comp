@@ -1,0 +1,37 @@
+{
+  "slug": "clickup",
+  "name": "ClickUp",
+  "description": "Monitor ClickUp workspace members and space organization for compliance",
+  "category": "Productivity",
+  "docsUrl": "https://clickup.com/api",
+  "baseUrl": "https://api.clickup.com/",
+  "authConfig": {
+    "type": "api_key",
+    "config": {
+      "setupInstructions": "1. Log in to ClickUp as a Workspace Admin or Owner\n2. Click your avatar (top-right) > Settings > Apps\n3. Under API Token, click Generate and copy the token (starts with pk_)\n4. For the Team/Workspace ID, go to Settings > Workspace Settings — the ID is in the URL\n\nNote: Use an admin account's personal token. It gives workspace-wide access to members and spaces. Personal tokens never expire."
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "clickup_employee_access",
+      "name": "Employee Access",
+      "description": "Reviews ClickUp workspace members and their roles",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "clickup_separation_of_envs",
+      "name": "Separation of Environments",
+      "description": "Verifies ClickUp spaces are organized for environment separation",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

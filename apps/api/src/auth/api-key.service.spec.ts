@@ -56,9 +56,19 @@ describe('ApiKeyService', () => {
 
     it('should include expected public resources', () => {
       const expected = [
-        'risk', 'vendor', 'task', 'control', 'policy',
-        'evidence', 'framework', 'audit', 'finding',
-        'questionnaire', 'integration', 'apiKey', 'pentest',
+        'risk',
+        'vendor',
+        'task',
+        'control',
+        'policy',
+        'evidence',
+        'framework',
+        'audit',
+        'finding',
+        'questionnaire',
+        'integration',
+        'apiKey',
+        'pentest',
       ];
       for (const resource of expected) {
         const matching = scopes.filter((s) => s.startsWith(`${resource}:`));

@@ -1,0 +1,63 @@
+{
+  "slug": "mosyle",
+  "name": "Mosyle",
+  "description": "Apple Mobile Device Management (MDM) solution for managing iPads, iPhones, Macs, and Apple TVs in educational and enterprise environments.",
+  "category": "Security",
+  "docsUrl": "https://mosyle.com",
+  "baseUrl": "https://businessapi.mosyle.com/v1",
+  "authConfig": {
+    "type": "custom",
+    "config": {
+      "setupInstructions": "1. Log in to your Mosyle admin console\n2. Go to Organization > API Integration\n3. Enable the API and generate an Access Token\n4. Copy the Access Token\n5. Enter the token along with your admin email and password",
+      "credentialFields": [
+        {
+          "label": "Mosyle Environment",
+          "type": "select",
+          "required": true,
+          "helpText": "Select your Mosyle product type"
+        },
+        {
+          "label": "Access Token",
+          "type": "password",
+          "required": true,
+          "helpText": "API access token from Organization > API Integration"
+        },
+        {
+          "label": "Admin Email",
+          "type": "text",
+          "required": true,
+          "helpText": "Email address of an admin user for API authentication"
+        },
+        {
+          "label": "Admin Password",
+          "type": "password",
+          "required": true,
+          "helpText": "Password for the admin user account"
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "device_list",
+      "name": "Device List",
+      "description": "Retrieve a comprehensive list of all managed devices from Mosyle, including iPads, iPhones, Macs, and Apple TVs with their security status and configuration details.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "secure_devices",
+      "name": "Secure Devices",
+      "description": "Identify devices that meet security requirements including supervision status, encryption, and compliance with organizational security policies.",
+      "defaultSeverity": "high",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

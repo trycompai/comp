@@ -11,6 +11,26 @@ const dateStringOrEmptySchema = z
   .nullable();
 
 export const vendorRiskAssessmentAgentSchema = z.object({
+  /**
+   * ENG-221: replaces risk_level. Likelihood and impact are scored
+   * independently so vendors can land on any cell of the 5x5 matrix
+   * instead of pooling on the diagonal.
+   */
+  likelihood: z
+    .enum(['very_unlikely', 'unlikely', 'possible', 'likely', 'very_likely'])
+    .optional()
+    .nullable(),
+  impact: z
+    .enum(['insignificant', 'minor', 'moderate', 'major', 'severe'])
+    .optional()
+    .nullable(),
+  rationale: z.string().optional().nullable(),
+  /**
+   * Legacy single-dimension score retained as optional so stored payloads
+   * from before ENG-221 still parse. New assessments should set
+   * `likelihood` + `impact` + `rationale` instead.
+   */
+  // TODO(ENG-221 follow-up): remove once globalVendors.riskAssessmentData backfill ships.
   risk_level: z.string().optional().nullable(),
   security_assessment: z.string().optional().nullable(),
   last_researched_at: dateStringOrEmptySchema,

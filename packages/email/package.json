@@ -16,7 +16,8 @@
     "react": "^19.1.1",
     "react-dom": "^19.1.0",
     "tsup": "^8.5.0",
-    "typescript": "^5.8.3"
+    "typescript": "^5.8.3",
+    "vitest": "^3.2.4"
   },
   "exports": {
     ".": {
@@ -57,6 +58,7 @@
     "dev": "tsup index.ts --format cjs,esm --watch --dts",
     "format": "prettier --write .",
     "lint": "prettier --check .",
+    "test": "vitest run",
     "typecheck": "tsc --noEmit"
   },
   "types": "./dist/index.d.ts"

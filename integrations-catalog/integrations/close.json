@@ -1,0 +1,45 @@
+{
+  "slug": "close",
+  "name": "Close",
+  "description": "Sales CRM platform. Monitor user access and pipeline data.",
+  "category": "Productivity",
+  "docsUrl": "https://developer.close.com/",
+  "baseUrl": "https://api.close.com",
+  "authConfig": {
+    "type": "custom",
+    "config": {
+      "setupInstructions": "1. Log in to Close at https://app.close.com\n2. Go to Settings > Developer > API Keys\n3. Create a new API key\n4. Copy the API key and paste it below",
+      "credentialFields": [
+        {
+          "label": "API Key",
+          "type": "password",
+          "required": true,
+          "helpText": "Found in Close Settings > Developer > API Keys"
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "close_app_availability",
+      "name": "Close App Availability",
+      "description": "Checks Close app availability.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "close_employee_access",
+      "name": "Close Employee Access",
+      "description": "Checks Close employee access.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

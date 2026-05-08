@@ -1,0 +1,35 @@
+{
+  "slug": "dynatrace",
+  "name": "Dynatrace",
+  "description": "Monitor Dynatrace problems, synthetic monitors, and alerts for observability compliance",
+  "category": "Monitoring",
+  "docsUrl": "https://www.dynatrace.com/support/help/dynatrace-api",
+  "baseUrl": "https://example.live.dynatrace.com/",
+  "authConfig": {
+    "type": "api_key",
+    "config": {}
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "dynatrace_monitoring",
+      "name": "Monitoring & Alerting",
+      "description": "Checks Dynatrace for open problems requiring attention",
+      "defaultSeverity": "high",
+      "enabled": true
+    },
+    {
+      "slug": "dynatrace_synthetic",
+      "name": "Utility Monitoring",
+      "description": "Verifies Dynatrace synthetic monitors are configured for uptime monitoring",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

@@ -1,5 +1,5 @@
 import { apiClient } from '@/lib/api-client';
-import type { Control, Task, TaskStatus } from '@db';
+import type { Control, Task, TaskFrequency, TaskStatus } from '@db';
 import { useParams } from 'next/navigation';
 import useSWR from 'swr';
 
@@ -17,6 +17,8 @@ interface UpdateTaskPayload {
   reviewDate?: string | null;
   title?: string;
   description?: string;
+  integrationScheduleFrequency?: TaskFrequency;
+  notRelevantJustification?: string;
 }
 
 interface UseTaskReturn {

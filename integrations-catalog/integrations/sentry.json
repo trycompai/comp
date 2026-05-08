@@ -1,0 +1,45 @@
+{
+  "slug": "sentry",
+  "name": "Sentry",
+  "description": "Monitor Sentry projects and alert rules for application error tracking and incident response compliance",
+  "category": "Monitoring",
+  "docsUrl": "https://docs.sentry.io/api/",
+  "baseUrl": "https://sentry.io/",
+  "authConfig": {
+    "type": "custom",
+    "config": {
+      "setupInstructions": "1. Log in to Sentry\n2. Go to Settings > Developer Settings > Internal Integrations\n3. Create a new internal integration\n4. Set permissions: Organization: Read, Project: Read, and Alert Rule: Read\n5. Click Save, then copy the generated token",
+      "credentialFields": [
+        {
+          "label": "Auth Token",
+          "type": "password",
+          "required": true,
+          "helpText": "Create an Internal Integration token in Sentry > Settings > Developer Settings"
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "projects_active",
+      "name": "App Availability",
+      "description": "Verifies that Sentry projects exist and are actively monitoring errors",
+      "defaultSeverity": "high",
+      "enabled": true
+    },
+    {
+      "slug": "alert_rules",
+      "name": "Incident Response",
+      "description": "Verifies that Sentry alert rules are configured for incident response",
+      "defaultSeverity": "high",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

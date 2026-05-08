@@ -1,0 +1,57 @@
+{
+  "slug": "shopify",
+  "name": "Shopify",
+  "description": "Monitor Shopify e-commerce platform for store security, staff access, and payment compliance",
+  "category": "Productivity",
+  "docsUrl": "https://shopify.dev/docs/api/admin-rest",
+  "baseUrl": "https://placeholder.myshopify.com",
+  "authConfig": {
+    "type": "custom",
+    "config": {
+      "setupInstructions": "1. Go to the Shopify Dev Dashboard at https://dev.shopify.com/dashboard\n2. Click 'Create app' and select 'Start from Dev Dashboard'\n3. Name the app (e.g. 'CompAI') and click Create\n4. Go to the Versions tab, add the required scopes: read_products, read_orders, read_customers, read_themes, read_content (add read_users if you have Shopify Plus for staff access checks)\n5. Set your Webhooks API version and click Release\n6. Go to Home, scroll down, click 'Install app', select your store, and click Install\n7. Go to Settings and copy the Client ID and Client Secret\n8. Enter your store subdomain, Client ID, and Client Secret below\n\nNote: The Employee Access check requires Shopify Plus and the read_users scope (contact Shopify Plus Support to enable it). Non-Plus stores will still get the App Availability check.",
+      "credentialFields": [
+        {
+          "label": "Store Subdomain",
+          "type": "text",
+          "required": true,
+          "helpText": "Your Shopify store subdomain (e.g. 'mystore' from mystore.myshopify.com)"
+        },
+        {
+          "label": "Client ID",
+          "type": "text",
+          "required": true,
+          "helpText": "Found in Dev Dashboard > Your App > Settings"
+        },
+        {
+          "label": "Client Secret",
+          "type": "password",
+          "required": true,
+          "helpText": "Found in Dev Dashboard > Your App > Settings"
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "shopify_employee_access",
+      "name": "Employee Access",
+      "description": "Reviews Shopify staff accounts and their store access permissions (requires Shopify Plus with read_users scope)",
+      "defaultSeverity": "high",
+      "enabled": true
+    },
+    {
+      "slug": "shopify_app_availability",
+      "name": "App Availability",
+      "description": "Verifies Shopify platform is operational and SSL is enforced",
+      "defaultSeverity": "low",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

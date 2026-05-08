@@ -26,6 +26,8 @@ interface AppShellSearchGroupsParams {
   permissions: UserPermissions;
   hasAuditorRole: boolean;
   isOnlyAuditor: boolean;
+  /** CS-189: resolved server-side — see AppShellWrapper. */
+  canAccessAuditorView: boolean;
   isQuestionnaireEnabled: boolean;
   isTrustNdaEnabled: boolean;
   isSecurityEnabled: boolean;
@@ -64,6 +66,7 @@ export const getAppShellSearchGroups = ({
   permissions,
   hasAuditorRole,
   isOnlyAuditor,
+  canAccessAuditorView,
   isQuestionnaireEnabled,
   isTrustNdaEnabled,
   isSecurityEnabled,
@@ -96,7 +99,9 @@ export const getAppShellSearchGroups = ({
           }),
         ]
       : []),
-    ...(hasAuditorRole && can('auditor')
+    // CS-189: gate on the server-resolved canAccessAuditorView flag so
+    // owner/admin are hidden unless they explicitly opt in via a custom role.
+    ...(canAccessAuditorView
       ? [
           createNavItem({
             id: 'auditor',

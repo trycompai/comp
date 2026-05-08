@@ -1,0 +1,37 @@
+{
+  "slug": "cohere",
+  "name": "Cohere",
+  "description": "Enterprise AI platform for NLP and embeddings. Monitor API access.",
+  "category": "Cloud",
+  "docsUrl": "https://docs.cohere.com/reference/",
+  "baseUrl": "https://api.cohere.com",
+  "authConfig": {
+    "type": "api_key",
+    "config": {
+      "setupInstructions": "1. Log in to the Cohere Dashboard at https://dashboard.cohere.com\n2. Navigate to API Keys\n3. Click 'Create Trial Key' or use an existing production key\n4. Copy and paste the key below"
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "cohere_app_availability",
+      "name": "Cohere App Availability",
+      "description": "Checks that the Cohere API is accessible with the provided credentials.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "cohere_employee_access",
+      "name": "Cohere Employee Access",
+      "description": "Verifies employee access to Cohere via API.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

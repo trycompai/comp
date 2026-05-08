@@ -1,0 +1,76 @@
+{
+  "slug": "mend-io",
+  "name": "Mend.io",
+  "description": "Monitor software composition analysis, vulnerability scanning, and security policy enforcement across your organization's projects with Mend.io (formerly WhiteSource)",
+  "category": "Security",
+  "docsUrl": "https://docs.mend.io/platform/latest/getting-started-with-mend-api-3-0",
+  "baseUrl": "https://api-saas.mend.io",
+  "authConfig": {
+    "type": "custom",
+    "config": {
+      "credentialFields": [
+        {
+          "label": "API Base URL",
+          "type": "text",
+          "required": true,
+          "helpText": "Your Mend API base URL. Find it in Mend App → Integrate → Organization → API Base URL. Examples: https://api-saas.mend.io, https://api-app.mend.io, https://api-saas-eu.mend.io"
+        },
+        {
+          "label": "Email",
+          "type": "text",
+          "required": true,
+          "helpText": "Your Mend account email (Mend Platform → My Profile → General)"
+        },
+        {
+          "label": "User Key",
+          "type": "secret",
+          "required": true,
+          "helpText": "Your Mend user key (Mend Platform → My Profile → User Keys). For production use, create a Service User in Administration → Users."
+        },
+        {
+          "label": "Organization UUID",
+          "type": "text",
+          "required": true,
+          "helpText": "Your organization UUID (Mend Platform → Administration → General Configuration → Organization UUID)"
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "employee_access",
+      "name": "Employee Access",
+      "description": "Reviews all users in the Mend.io organization and their account status",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "vulnerability_monitoring",
+      "name": "Monitoring & Alerting",
+      "description": "Verifies that vulnerability scanning and monitoring is active across projects in the Mend.io organization",
+      "defaultSeverity": "high",
+      "enabled": true
+    },
+    {
+      "slug": "infrastructure_inventory",
+      "name": "Infrastructure Inventory",
+      "description": "Lists all projects and applications in the Mend.io organization as infrastructure inventory",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "secure_code",
+      "name": "Secure Code",
+      "description": "Verifies that security policy enforcement and vulnerability tracking is active in Mend.io",
+      "defaultSeverity": "high",
+      "enabled": true
+    }
+  ],
+  "checkCount": 4,
+  "isActive": true
+}

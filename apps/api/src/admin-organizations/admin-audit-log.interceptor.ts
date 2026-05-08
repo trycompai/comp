@@ -6,8 +6,10 @@ import {
   NestInterceptor,
 } from '@nestjs/common';
 import { AuditLogEntityType, db, Prisma } from '@db';
+import { Reflector } from '@nestjs/core';
 import { Observable, tap } from 'rxjs';
 import { MUTATION_METHODS, SENSITIVE_KEYS } from '../audit/audit-log.constants';
+import { SKIP_ADMIN_AUDIT_LOG_KEY } from './skip-admin-audit-log.decorator';
 
 const SEGMENT_TO_RESOURCE: Record<
   string,
@@ -18,6 +20,14 @@ const SEGMENT_TO_RESOURCE: Record<
   tasks: { entity: AuditLogEntityType.task, singular: 'task' },
   vendors: { entity: AuditLogEntityType.vendor, singular: 'vendor' },
   context: { entity: AuditLogEntityType.organization, singular: 'context' },
+  'pentest-credits': {
+    entity: AuditLogEntityType.pentest,
+    singular: 'pentest credits',
+  },
+  billing: {
+    entity: AuditLogEntityType.organization,
+    singular: 'billing',
+  },
 };
 
 const SPECIAL_ACTION_DESCRIPTIONS: Record<string, string> = {
@@ -41,7 +51,17 @@ interface ParsedPath {
 export class AdminAuditLogInterceptor implements NestInterceptor {
   private readonly logger = new Logger(AdminAuditLogInterceptor.name);
 
+  constructor(private readonly reflector: Reflector) {}
+
   intercept(context: ExecutionContext, next: CallHandler): Observable<unknown> {
+    const skip = this.reflector.get<boolean>(
+      SKIP_ADMIN_AUDIT_LOG_KEY,
+      context.getHandler(),
+    );
+    if (skip) {
+      return next.handle();
+    }
+
     const request = context.switchToHttp().getRequest();
     const method: string = request.method;
 
@@ -137,6 +157,14 @@ export class AdminAuditLogInterceptor implements NestInterceptor {
     }
 
     const mapped = SEGMENT_TO_RESOURCE[resourceSegment];
+    if (resourceSegment === 'billing' && mapped) {
+      return {
+        resource: mapped.singular,
+        entityType: mapped.entity,
+        entityId: orgId,
+        actionSegment: possibleEntityId ?? null,
+      };
+    }
 
     return {
       resource: mapped?.singular ?? resourceSegment,

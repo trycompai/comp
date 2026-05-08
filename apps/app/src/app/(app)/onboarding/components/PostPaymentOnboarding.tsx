@@ -3,25 +3,27 @@
 import { OnboardingStepInput } from '@/app/(app)/setup/components/OnboardingStepInput';
 import { AnimatedWrapper } from '@/components/animated-wrapper';
 import { LogoSpinner } from '@/components/logo-spinner';
+import type { Organization } from '@db';
 import { Button } from '@trycompai/ui/button';
 import { Form, FormControl, FormField, FormItem, FormMessage } from '@trycompai/ui/form';
-import type { Organization } from '@db';
 import { AnimatePresence, motion } from 'framer-motion';
 import { AlertCircle, Loader2 } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import Balancer from 'react-wrap-balancer';
 import { usePostPaymentOnboarding } from '../hooks/usePostPaymentOnboarding';
+import { CancelOnboardingButton } from './CancelOnboardingButton';
 
 interface PostPaymentOnboardingProps {
   organization: Organization;
   initialData?: Record<string, any>;
   userEmail?: string;
+  hasOtherOrgs?: boolean;
 }
 
 export function PostPaymentOnboarding({
   organization,
   initialData = {},
   userEmail,
+  hasOtherOrgs = false,
 }: PostPaymentOnboardingProps) {
   const {
     stepIndex,
@@ -59,7 +61,7 @@ export function PostPaymentOnboarding({
   const [hasInvalidUrl, setHasInvalidUrl] = useState(false);
   // Track if user has attempted to submit with invalid URLs
   const [showUrlError, setShowUrlError] = useState(false);
-  
+
   const handleTouchedInvalidUrlChange = useCallback((hasInvalid: boolean) => {
     setHasInvalidUrl(hasInvalid);
     // Clear error if URLs are now valid
@@ -101,7 +103,8 @@ export function PostPaymentOnboarding({
     }
     // For software step, check if there's a value in software OR customVendors
     if (step.key === 'software') {
-      const hasSoftwareValue = Boolean(currentStepValue) && String(currentStepValue).trim().length > 0;
+      const hasSoftwareValue =
+        Boolean(currentStepValue) && String(currentStepValue).trim().length > 0;
       const hasCustomVendors = Array.isArray(customVendorsValue) && customVendorsValue.length > 0;
       return hasSoftwareValue || hasCustomVendors;
     }
@@ -157,12 +160,12 @@ export function PostPaymentOnboarding({
         <div className="mb-8">
           <AnimatedWrapper delay={800} animationKey={`title-${step?.key}`}>
             <h1 className="text-2xl md:text-4xl font-bold text-foreground mb-2">
-              <Balancer>{step?.question || ''}</Balancer>
+              {step?.question || ''}
             </h1>
           </AnimatedWrapper>
           <AnimatedWrapper delay={1000} animationKey={`subtitle-${step?.key}`}>
             <p className="text-md md:text-lg text-muted-foreground flex items-center flex-wrap">
-              <Balancer>Our AI will personalize the platform based on your answers.</Balancer>
+              Our AI will personalize the platform based on your answers.
             </p>
           </AnimatedWrapper>
         </div>
@@ -232,124 +235,126 @@ export function PostPaymentOnboarding({
                 >
                   <AlertCircle className="h-4 w-4 text-destructive shrink-0" />
                 </motion.div>
-                <p className="text-sm text-destructive">
-                  Please fix the invalid URL format
-                </p>
+                <p className="text-sm text-destructive">Please fix the invalid URL format</p>
               </motion.div>
             )}
           </AnimatePresence>
-        <div className="flex items-center gap-2 justify-end">
-          <AnimatePresence>
-            {stepIndex > 0 && (
-              <motion.div
-                key="back"
-                initial={{ opacity: 0, x: 20 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: 20 }}
-                transition={{ duration: 0.25 }}
-              >
-                <Button
-                  type="button"
-                  variant="outline"
-                  className="flex items-center gap-2"
-                  onClick={handleBack}
-                  disabled={isOnboarding || isLoading}
+          <div className="flex items-center gap-2 justify-end">
+            <CancelOnboardingButton
+              organizationId={organization.id}
+              hasOtherOrgs={hasOtherOrgs && !isOnboarding && !isFinalizing}
+            />
+            <AnimatePresence>
+              {stepIndex > 0 && (
+                <motion.div
+                  key="back"
+                  initial={{ opacity: 0, x: 20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: 20 }}
+                  transition={{ duration: 0.25 }}
                 >
-                  Previous
-                </Button>
-              </motion.div>
-            )}
-          </AnimatePresence>
-          <AnimatePresence>
-            {isSkippable && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="flex items-center gap-2"
+                    onClick={handleBack}
+                    disabled={isOnboarding || isLoading}
+                  >
+                    Previous
+                  </Button>
+                </motion.div>
+              )}
+            </AnimatePresence>
+            <AnimatePresence>
+              {isSkippable && (
+                <motion.div
+                  key="skip"
+                  initial={{ opacity: 0, x: 20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: 20 }}
+                  transition={{ duration: 0.25 }}
+                >
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    className="flex items-center gap-2 text-muted-foreground"
+                    onClick={handleSkip}
+                    disabled={isOnboarding || isFinalizing || isLoading}
+                    data-testid="onboarding-skip-button"
+                  >
+                    Skip for now
+                  </Button>
+                </motion.div>
+              )}
+            </AnimatePresence>
+            {(isLocal || canSkipOnboarding) && (
               <motion.div
-                key="skip"
+                key="complete-now"
                 initial={{ opacity: 0, x: 20 }}
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: 20 }}
-                transition={{ duration: 0.25 }}
+                transition={{ duration: 0.25, delay: 0.05 }}
               >
                 <Button
                   type="button"
-                  variant="ghost"
-                  className="flex items-center gap-2 text-muted-foreground"
-                  onClick={handleSkip}
+                  variant="secondary"
+                  onClick={completeNow}
                   disabled={isOnboarding || isFinalizing || isLoading}
-                  data-testid="onboarding-skip-button"
                 >
-                  Skip for now
+                  Complete
                 </Button>
               </motion.div>
             )}
-          </AnimatePresence>
-          {(isLocal || canSkipOnboarding) && (
             <motion.div
-              key="complete-now"
+              key="next-finish"
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: 20 }}
               transition={{ duration: 0.25, delay: 0.05 }}
             >
-              <Button
-                type="button"
-                variant="secondary"
-                onClick={completeNow}
-                disabled={isOnboarding || isFinalizing || isLoading}
-              >
-                Complete
-              </Button>
-            </motion.div>
-          )}
-          <motion.div
-            key="next-finish"
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: 20 }}
-            transition={{ duration: 0.25, delay: 0.05 }}
-          >
-            {isLastStep ? (
-              <Button
-                type="submit"
-                form="onboarding-form"
-                className="flex items-center gap-2"
-                disabled={!isCurrentStepValid || isOnboarding || isFinalizing || isLoading}
-                data-testid="onboarding-next-button"
-              >
-                <motion.span
-                  key="finish-label"
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -10 }}
-                  transition={{ duration: 0.2 }}
+              {isLastStep ? (
+                <Button
+                  type="submit"
+                  form="onboarding-form"
                   className="flex items-center gap-2"
+                  disabled={!isCurrentStepValid || isOnboarding || isFinalizing || isLoading}
+                  data-testid="onboarding-next-button"
                 >
-                  {isOnboarding && <Loader2 className="h-4 w-4 animate-spin" />}
-                  Complete
-                </motion.span>
-              </Button>
-            ) : (
-              <Button
-                type={step?.key === 'software' && hasInvalidUrl ? 'button' : 'submit'}
-                form={step?.key === 'software' && hasInvalidUrl ? undefined : 'onboarding-form'}
-                className="flex items-center gap-2"
-                disabled={!isCurrentStepValid || isOnboarding || isFinalizing || isLoading}
-                data-testid="onboarding-next-button"
-                onClick={handleContinueClick}
-              >
-                <motion.span
-                  key="next-label"
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -10 }}
-                  transition={{ duration: 0.2 }}
-                  className="flex items-center"
+                  <motion.span
+                    key="finish-label"
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -10 }}
+                    transition={{ duration: 0.2 }}
+                    className="flex items-center gap-2"
+                  >
+                    {isOnboarding && <Loader2 className="h-4 w-4 animate-spin" />}
+                    Complete
+                  </motion.span>
+                </Button>
+              ) : (
+                <Button
+                  type={step?.key === 'software' && hasInvalidUrl ? 'button' : 'submit'}
+                  form={step?.key === 'software' && hasInvalidUrl ? undefined : 'onboarding-form'}
+                  className="flex items-center gap-2"
+                  disabled={!isCurrentStepValid || isOnboarding || isFinalizing || isLoading}
+                  data-testid="onboarding-next-button"
+                  onClick={handleContinueClick}
                 >
-                  Continue
-                </motion.span>
-              </Button>
-            )}
-          </motion.div>
-        </div>
+                  <motion.span
+                    key="next-label"
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -10 }}
+                    transition={{ duration: 0.2 }}
+                    className="flex items-center"
+                  >
+                    Continue
+                  </motion.span>
+                </Button>
+              )}
+            </motion.div>
+          </div>
         </div>
       </div>
     </div>

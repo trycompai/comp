@@ -1,9 +1,9 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { HybridAuthGuard } from '../auth/hybrid-auth.guard';
-import { PermissionGuard } from '../auth/permission.guard';
-import type { AuthContext } from '../auth/types';
-import { SecretsController } from './secrets.controller';
-import { SecretsService } from './secrets.service';
+
+// Mock @db before any controller imports load Prisma client lazily.
+jest.mock('@db', () => ({
+  db: {},
+}));
 
 // Mock auth.server to avoid importing better-auth ESM in Jest
 jest.mock('../auth/auth.server', () => ({
@@ -14,6 +14,12 @@ jest.mock('@trycompai/auth', () => ({
   statement: {},
   BUILT_IN_ROLE_PERMISSIONS: {},
 }));
+
+import { HybridAuthGuard } from '../auth/hybrid-auth.guard';
+import { PermissionGuard, PERMISSIONS_KEY } from '../auth/permission.guard';
+import type { AuthContext } from '../auth/types';
+import { SecretsController } from './secrets.controller';
+import { SecretsService } from './secrets.service';
 
 describe('SecretsController', () => {
   let controller: SecretsController;
@@ -129,10 +135,7 @@ describe('SecretsController', () => {
         mockAuthContext,
       );
 
-      expect(secretsService.createSecret).toHaveBeenCalledWith(
-        'org_123',
-        body,
-      );
+      expect(secretsService.createSecret).toHaveBeenCalledWith('org_123', body);
       expect(result).toEqual({
         secret: created,
         authType: 'session',
@@ -187,6 +190,58 @@ describe('SecretsController', () => {
         authType: 'session',
         authenticatedUser: { id: 'usr_123', email: 'test@example.com' },
       });
+    });
+  });
+
+  describe('RBAC - permission decorators', () => {
+    // AUTHZ-VULN-01: Secrets endpoints previously gated on `organization`
+    // permissions, which let read-only auditors fetch DECRYPTED plaintext.
+    // Each endpoint must now require the dedicated `secret` resource so the
+    // owner/admin grant is the only path to decrypted credentials.
+    it('listSecrets should require secret:read (NOT organization:read)', () => {
+      const permissions = Reflect.getMetadata(
+        PERMISSIONS_KEY,
+        controller.listSecrets,
+      );
+      expect(permissions).toEqual([{ resource: 'secret', actions: ['read'] }]);
+    });
+
+    it('getSecret should require secret:read', () => {
+      const permissions = Reflect.getMetadata(
+        PERMISSIONS_KEY,
+        controller.getSecret,
+      );
+      expect(permissions).toEqual([{ resource: 'secret', actions: ['read'] }]);
+    });
+
+    it('createSecret should require secret:create', () => {
+      const permissions = Reflect.getMetadata(
+        PERMISSIONS_KEY,
+        controller.createSecret,
+      );
+      expect(permissions).toEqual([
+        { resource: 'secret', actions: ['create'] },
+      ]);
+    });
+
+    it('updateSecret should require secret:update', () => {
+      const permissions = Reflect.getMetadata(
+        PERMISSIONS_KEY,
+        controller.updateSecret,
+      );
+      expect(permissions).toEqual([
+        { resource: 'secret', actions: ['update'] },
+      ]);
+    });
+
+    it('deleteSecret should require secret:delete', () => {
+      const permissions = Reflect.getMetadata(
+        PERMISSIONS_KEY,
+        controller.deleteSecret,
+      );
+      expect(permissions).toEqual([
+        { resource: 'secret', actions: ['delete'] },
+      ]);
     });
   });
 });

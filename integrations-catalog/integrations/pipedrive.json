@@ -1,0 +1,35 @@
+{
+  "slug": "pipedrive",
+  "name": "Pipedrive",
+  "description": "Monitor Pipedrive users and contact records for CRM access compliance",
+  "category": "Productivity",
+  "docsUrl": "https://developers.pipedrive.com/docs/api/v1",
+  "baseUrl": "https://api.pipedrive.com/",
+  "authConfig": {
+    "type": "api_key",
+    "config": {}
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "pipedrive_employee_access",
+      "name": "Employee Access",
+      "description": "Reviews Pipedrive users and their access levels",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "pipedrive_contact_information",
+      "name": "Contact Information",
+      "description": "Verifies Pipedrive contact records are being maintained",
+      "defaultSeverity": "low",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

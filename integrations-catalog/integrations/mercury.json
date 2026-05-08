@@ -1,0 +1,38 @@
+{
+  "slug": "mercury",
+  "name": "Mercury",
+  "description": "Monitor Mercury corporate banking platform for account access and financial data compliance",
+  "category": "Productivity",
+  "docsUrl": "https://docs.mercury.com/reference/introduction",
+  "baseUrl": "https://api.mercury.com/",
+  "authConfig": {
+    "type": "api_key",
+    "config": {
+      "setupInstructions": "1. Log in to Mercury at https://app.mercury.com\n2. Go to Settings → API Tokens\n3. Create a new token with read access\n4. Enter it below",
+      "credentialFields": [
+        {
+          "label": "API Token",
+          "type": "password",
+          "required": true,
+          "helpText": "Found in Mercury Settings → API Tokens"
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "mercury_employee_access",
+      "name": "Employee Access",
+      "description": "Reviews Mercury bank account access and team permissions",
+      "defaultSeverity": "high",
+      "enabled": true
+    }
+  ],
+  "checkCount": 1,
+  "isActive": true
+}

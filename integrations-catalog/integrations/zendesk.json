@@ -1,0 +1,45 @@
+{
+  "slug": "zendesk",
+  "name": "Zendesk",
+  "description": "Monitor Zendesk agents and group configuration for customer support compliance",
+  "category": "Productivity",
+  "docsUrl": "https://developer.zendesk.com/api-reference/",
+  "baseUrl": "https://yoursubdomain.zendesk.com/",
+  "authConfig": {
+    "type": "custom",
+    "config": {
+      "setupInstructions": "1. Go to Zendesk Admin > Apps and Integrations > Zendesk API\n2. Enable Token Access and create an API token\n3. Encode your credentials: base64('your_email/token:your_api_token')\n4. Enter the encoded value below along with your subdomain",
+      "credentialFields": [
+        {
+          "label": "Encoded API Credentials",
+          "type": "password",
+          "required": true,
+          "helpText": "Base64 encode your credentials: {email}/token:{api_token}. Use https://www.base64encode.org/ — encode 'user@example.com/token:your_api_token'"
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "zendesk_employee_access",
+      "name": "Employee Access",
+      "description": "Reviews Zendesk agents and verifies appropriate access levels",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "zendesk_contact_information",
+      "name": "Contact Information",
+      "description": "Verifies Zendesk groups are configured for support organization",
+      "defaultSeverity": "low",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

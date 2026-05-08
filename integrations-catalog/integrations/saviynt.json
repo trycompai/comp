@@ -1,0 +1,65 @@
+{
+  "slug": "saviynt",
+  "name": "Saviynt",
+  "description": "Identity governance and administration (IGA) platform. Monitor employee access, role-based access controls, and access review campaigns.",
+  "category": "Identity & Access",
+  "docsUrl": "https://developers.saviynt.com/apis/rest/",
+  "baseUrl": "https://example.saviyntcloud.com",
+  "authConfig": {
+    "type": "custom",
+    "config": {
+      "setupInstructions": "1. Log in to your Saviynt EIC instance as an admin\n2. Create or identify a service account with API access\n3. Navigate to Admin > Settings > Webservice Auth Configuration\n4. Ensure the service account has read permissions for Users, Roles, and Campaigns APIs\n5. Enter your instance URL (e.g. https://yourcompany.saviyntcloud.com), username, and password below",
+      "credentialFields": [
+        {
+          "label": "Instance URL",
+          "type": "text",
+          "required": true,
+          "helpText": "Your Saviynt instance URL, e.g. https://yourcompany.saviyntcloud.com (no trailing slash)"
+        },
+        {
+          "label": "Service Account Username",
+          "type": "text",
+          "required": true,
+          "helpText": "API service account username with webservice access permissions."
+        },
+        {
+          "label": "Service Account Password",
+          "type": "password",
+          "required": true,
+          "helpText": "Password for the API service account."
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks",
+    "sync"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": true,
+  "checks": [
+    {
+      "slug": "saviynt_employee_access",
+      "name": "Employee Access",
+      "description": "Verifies that employee user accounts can be retrieved from Saviynt, confirming identity directory access.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "saviynt_role_based_access_controls",
+      "name": "Role-based Access Controls",
+      "description": "Verifies that roles are configured in Saviynt for role-based access governance.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "saviynt_access_review_log",
+      "name": "Access Review Log",
+      "description": "Verifies that access review campaigns exist in Saviynt, confirming periodic access certifications are performed.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 3,
+  "isActive": true
+}

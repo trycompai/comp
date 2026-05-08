@@ -1,8 +1,14 @@
-import { BadRequestException, Injectable, NotFoundException, Logger } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+  Logger,
+} from '@nestjs/common';
 import { db, Prisma } from '@db';
 import { CreateRiskDto } from './dto/create-risk.dto';
 import { GetRisksQueryDto } from './dto/get-risks-query.dto';
 import { UpdateRiskDto } from './dto/update-risk.dto';
+import { resolveStrategyDescriptionUpdate } from './strategy-descriptions';
 
 export interface PaginatedRisksResult {
   data: Prisma.RiskGetPayload<{
@@ -25,13 +31,18 @@ export interface PaginatedRisksResult {
 export class RisksService {
   private readonly logger = new Logger(RisksService.name);
 
-  private async validateAssigneeNotPlatformAdmin(assigneeId: string, organizationId: string) {
+  private async validateAssigneeNotPlatformAdmin(
+    assigneeId: string,
+    organizationId: string,
+  ) {
     const member = await db.member.findFirst({
       where: { id: assigneeId, organizationId },
       include: { user: { select: { role: true } } },
     });
     if (member?.user.role === 'admin') {
-      throw new BadRequestException('Cannot assign a platform admin as assignee');
+      throw new BadRequestException(
+        'Cannot assign a platform admin as assignee',
+      );
     }
   }
 
@@ -84,6 +95,10 @@ export class RisksService {
                 },
               },
             },
+            // Linked task statuses are needed by the table to compute the
+            // current (interpolated) severity score so the badge reflects
+            // treatment progress, not just inherent risk.
+            tasks: { select: { id: true, status: true } },
           },
         }),
         db.risk.count({ where }),
@@ -118,6 +133,14 @@ export class RisksService {
               user: true,
             },
           },
+          tasks: {
+            select: {
+              id: true,
+              title: true,
+              status: true,
+              controls: { select: { id: true, name: true } },
+            },
+          },
         },
       });
 
@@ -141,7 +164,10 @@ export class RisksService {
   async create(organizationId: string, createRiskDto: CreateRiskDto) {
     try {
       if (createRiskDto.assigneeId) {
-        await this.validateAssigneeNotPlatformAdmin(createRiskDto.assigneeId, organizationId);
+        await this.validateAssigneeNotPlatformAdmin(
+          createRiskDto.assigneeId,
+          organizationId,
+        );
       }
       const risk = await db.risk.create({
         data: {
@@ -169,16 +195,28 @@ export class RisksService {
     updateRiskDto: UpdateRiskDto,
   ) {
     try {
-      // First check if the risk exists in the organization
-      await this.findById(id, organizationId);
+      // Need the existing row to resolve strategy/description swaps below.
+      const existing = await this.findById(id, organizationId);
 
       if (updateRiskDto.assigneeId) {
-        await this.validateAssigneeNotPlatformAdmin(updateRiskDto.assigneeId, organizationId);
+        await this.validateAssigneeNotPlatformAdmin(
+          updateRiskDto.assigneeId,
+          organizationId,
+        );
       }
+
+      // Keep per-strategy descriptions independent in the strategyDescriptions
+      // JSON map: a Mitigate plan, an Accept rationale, and a Transfer
+      // rationale all live alongside each other, swapped in/out of the active
+      // `treatmentStrategyDescription` field as the user changes strategy.
+      const resolvedStrategyFields = resolveStrategyDescriptionUpdate(
+        existing,
+        updateRiskDto,
+      );
 
       const updatedRisk = await db.risk.update({
         where: { id },
-        data: updateRiskDto,
+        data: { ...updateRiskDto, ...resolvedStrategyFields },
       });
 
       this.logger.log(`Updated risk: ${updatedRisk.title} (${id})`);

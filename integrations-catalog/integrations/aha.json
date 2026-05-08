@@ -1,0 +1,51 @@
+{
+  "slug": "aha",
+  "name": "Aha!",
+  "description": "Monitor Aha! product roadmap and strategy platform for team access and product planning compliance",
+  "category": "Productivity",
+  "docsUrl": "https://www.aha.io/api",
+  "baseUrl": "https://secure.aha.io/",
+  "authConfig": {
+    "type": "custom",
+    "config": {
+      "setupInstructions": "1. Log in to Aha! at https://secure.aha.io\n2. Go to Profile → Developer → API Key\n3. Note your account subdomain from the URL\n4. Enter both below",
+      "credentialFields": [
+        {
+          "label": "API Key",
+          "type": "password",
+          "required": true,
+          "helpText": "Found in Aha! → Profile → Developer → API Key"
+        },
+        {
+          "label": "Account Subdomain",
+          "type": "text",
+          "required": true,
+          "helpText": "Your Aha! account subdomain (e.g. mycompany from mycompany.aha.io)"
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "aha_employee_access",
+      "name": "Employee Access",
+      "description": "Reviews Aha! account users and their product roadmap access",
+      "defaultSeverity": "low",
+      "enabled": true
+    },
+    {
+      "slug": "aha_app_availability",
+      "name": "App Availability",
+      "description": "Verifies Aha! product management is active and accessible",
+      "defaultSeverity": "low",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

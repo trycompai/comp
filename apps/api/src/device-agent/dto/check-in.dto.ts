@@ -33,7 +33,11 @@ class CheckDetailsDto {
 
 export class CheckResultDto {
   @IsEnum(['disk_encryption', 'antivirus', 'password_policy', 'screen_lock'])
-  checkType: 'disk_encryption' | 'antivirus' | 'password_policy' | 'screen_lock';
+  checkType:
+    | 'disk_encryption'
+    | 'antivirus'
+    | 'password_policy'
+    | 'screen_lock';
 
   @IsBoolean()
   passed: boolean;

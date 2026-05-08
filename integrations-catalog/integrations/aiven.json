@@ -1,0 +1,45 @@
+{
+  "slug": "aiven",
+  "name": "Aiven",
+  "description": "Monitor Aiven managed database services for infrastructure inventory and access compliance",
+  "category": "Cloud",
+  "docsUrl": "https://docs.aiven.io/docs/tools/api",
+  "baseUrl": "https://api.aiven.io/",
+  "authConfig": {
+    "type": "api_key",
+    "config": {
+      "setupInstructions": "1. Log in to Aiven at https://console.aiven.io\n2. Click your user icon → Profile\n3. Go to Authentication → Tokens\n4. Create a new token and enter it below",
+      "credentialFields": [
+        {
+          "label": "Authentication Token",
+          "type": "password",
+          "required": true,
+          "helpText": "Found in Aiven Console → Profile → Authentication → Tokens"
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "aiven_infrastructure",
+      "name": "Infrastructure Inventory",
+      "description": "Lists Aiven managed database services for cloud infrastructure inventory",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "aiven_employee_access",
+      "name": "Employee Access",
+      "description": "Reviews Aiven account users with access to managed database services",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

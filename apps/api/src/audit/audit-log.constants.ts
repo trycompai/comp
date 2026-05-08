@@ -39,6 +39,7 @@ export const RESOURCE_TO_ENTITY_TYPE: Record<
   trust: AuditLogEntityType.trust,
   app: AuditLogEntityType.organization,
   questionnaire: AuditLogEntityType.organization,
+  pentest: AuditLogEntityType.pentest,
   audit: null,
 };
 

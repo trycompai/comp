@@ -1,0 +1,58 @@
+{
+  "slug": "sentinelone",
+  "name": "SentinelOne",
+  "description": "Monitor SentinelOne endpoint agents and threat status for device security compliance",
+  "category": "Security",
+  "docsUrl": "https://usea1.sentinelone.net/api-doc/overview",
+  "baseUrl": "https://usea1.sentinelone.net/",
+  "authConfig": {
+    "type": "api_key",
+    "config": {
+      "setupInstructions": "1. Log in to your SentinelOne management console as an Admin.\n2. Navigate to Settings > Users, click your user name.\n3. In the API Token section, click Generate API Token.\n4. Copy the token.\n5. Enter your console URL (e.g. https://usea1.sentinelone.net) and the API token in CompAI."
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "s1_secure_devices",
+      "name": "Secure Devices",
+      "description": "Verifies SentinelOne agents are healthy and not infected",
+      "defaultSeverity": "high",
+      "enabled": true
+    },
+    {
+      "slug": "s1_device_list",
+      "name": "Device List",
+      "description": "Lists all endpoints managed by SentinelOne for device inventory",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "s1_threat_detection",
+      "name": "Threat Detection",
+      "description": "Checks for unresolved threats in SentinelOne and flags critical or malicious incidents",
+      "defaultSeverity": "high",
+      "enabled": true
+    },
+    {
+      "slug": "s1_policy_enforcement",
+      "name": "Policy Enforcement",
+      "description": "Verifies that endpoint protection policies are configured across SentinelOne groups",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "s1_agent_updates",
+      "name": "Agent Version Currency",
+      "description": "Checks for outdated SentinelOne agent versions across the fleet and compares against available GA releases",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 5,
+  "isActive": true
+}

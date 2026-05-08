@@ -1,0 +1,37 @@
+{
+  "slug": "clerk",
+  "name": "Clerk",
+  "description": "Monitor Clerk user authentication — verify user access and authentication configuration",
+  "category": "Identity & Access",
+  "docsUrl": "https://clerk.com/docs/reference/backend-api",
+  "baseUrl": "https://api.clerk.com/",
+  "authConfig": {
+    "type": "api_key",
+    "config": {
+      "setupInstructions": "1. Log in to your Clerk Dashboard at https://dashboard.clerk.com\n2. Select your application\n3. Go to API Keys in the left sidebar\n4. Copy the Secret Key (starts with sk_)\n5. Paste it below\n\nNote: Use the Secret Key (not the Publishable Key). The Secret Key provides backend API access."
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "clerk_employee_access",
+      "name": "Employee Access",
+      "description": "Reviews Clerk users and their authentication status",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "clerk_2fa",
+      "name": "2FA",
+      "description": "Verifies Clerk MFA is configured for enhanced authentication security",
+      "defaultSeverity": "high",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

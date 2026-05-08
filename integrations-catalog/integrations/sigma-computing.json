@@ -1,0 +1,51 @@
+{
+  "slug": "sigma-computing",
+  "name": "Sigma Computing",
+  "description": "Monitor Sigma Computing business intelligence platform for user access and data governance compliance",
+  "category": "Productivity",
+  "docsUrl": "https://help.sigmacomputing.com/reference/overview-1",
+  "baseUrl": "https://api.sigmacomputing.com/",
+  "authConfig": {
+    "type": "custom",
+    "config": {
+      "setupInstructions": "1. Log in to Sigma Computing as an Admin\n2. Go to Administration > Developer Access\n3. Click 'Create new' to generate API client credentials\n4. Copy the Client ID and Client Secret\n5. Enter them below",
+      "credentialFields": [
+        {
+          "label": "Client ID",
+          "type": "text",
+          "required": true,
+          "helpText": "From Sigma Administration > Developer Access > Create new client credentials"
+        },
+        {
+          "label": "Client Secret",
+          "type": "password",
+          "required": true,
+          "helpText": "The secret generated with your Client ID"
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "sigma_employee_access",
+      "name": "Employee Access",
+      "description": "Reviews Sigma Computing workspace members with access to BI data",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "sigma_app_availability",
+      "name": "App Availability",
+      "description": "Verifies Sigma Computing BI platform is operational",
+      "defaultSeverity": "low",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

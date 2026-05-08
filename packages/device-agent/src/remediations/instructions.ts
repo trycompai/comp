@@ -12,11 +12,11 @@ interface InstructionSet {
 
 const MACOS_INSTRUCTIONS: Record<DeviceCheckType, InstructionSet> = {
   screen_lock: {
-    description: 'Enable screen lock with a 5-minute timeout',
+    description: 'Enable screen lock with a 15-minute timeout',
     steps: [
       'Open System Settings',
       'Go to Lock Screen',
-      'Set "Start Screen Saver when inactive" to 5 minutes or less',
+      'Set "Start Screen Saver when inactive" to 15 minutes or less',
       'Set "Require password after screen saver begins or display is turned off" to Immediately',
     ],
   },
@@ -55,14 +55,14 @@ const MACOS_INSTRUCTIONS: Record<DeviceCheckType, InstructionSet> = {
 
 const LINUX_INSTRUCTIONS: Record<DeviceCheckType, InstructionSet> = {
   screen_lock: {
-    description: 'Enable screen lock with a 5-minute timeout',
+    description: 'Enable screen lock with a 15-minute timeout',
     steps: [
       'GNOME: Open Settings > Privacy > Screen Lock',
-      'Set "Blank Screen Delay" to 5 minutes or less',
+      'Set "Blank Screen Delay" to 15 minutes or less',
       'Enable "Automatic Screen Lock"',
       'Set "Automatic Screen Lock Delay" to immediately',
       'KDE: Open System Settings > Workspace Behavior > Screen Locking',
-      'Set "Lock screen automatically after" to 5 minutes or less',
+      'Set "Lock screen automatically after" to 15 minutes or less',
     ],
   },
   password_policy: {
@@ -103,11 +103,11 @@ const LINUX_INSTRUCTIONS: Record<DeviceCheckType, InstructionSet> = {
 
 const WINDOWS_INSTRUCTIONS: Record<DeviceCheckType, InstructionSet> = {
   screen_lock: {
-    description: 'Enable screen lock with a 5-minute timeout',
+    description: 'Enable screen lock with a 15-minute timeout',
     steps: [
       'Open Settings (Win + I)',
       'Go to System > Power & battery (or Power)',
-      'Under "Screen and sleep", set "When plugged in, turn off my screen after" to 5 minutes or less',
+      'Under "Screen and sleep", set "When plugged in, turn off my screen after" to 15 minutes or less',
       'Then go to Accounts > Sign-in options',
       'Under "If you\'ve been away, when should Windows require you to sign in again?", select "When PC wakes up from sleep"',
     ],

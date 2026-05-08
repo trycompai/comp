@@ -7,7 +7,7 @@
   "private": true,
   "main": "dist/main/index.js",
   "scripts": {
-    "postinstall": "node node_modules/electron/install.js || true",
+    "postinstall": "electron-builder install-app-deps",
     "dev": "electron-vite dev --watch",
     "build": "electron-vite build",
     "preview": "electron-vite preview",
@@ -16,7 +16,9 @@
     "package:mac": "electron-builder --mac --config electron-builder.config.js",
     "package:win": "electron-builder --win --config electron-builder.config.js",
     "package:linux": "electron-builder --linux --config electron-builder.config.js",
-    "package:all": "electron-builder --mac --win --linux --config electron-builder.config.js"
+    "package:all": "electron-builder --mac --win --linux --config electron-builder.config.js",
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "dependencies": {
     "@trycompai/design-system": "*",
@@ -29,13 +31,14 @@
     "@types/react": "^19.2.7",
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^4.5.2",
-    "electron": "39.8.4",
+    "electron": "39.8.5",
     "electron-builder": "^25.1.8",
     "electron-vite": "^3.1.0",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
     "tailwindcss": "^4.1.4",
     "typescript": "^5.9.3",
-    "vite": "^6.3.5"
+    "vite": "^6.3.5",
+    "vitest": "^3.2.4"
   }
 }

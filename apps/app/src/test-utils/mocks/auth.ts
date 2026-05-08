@@ -44,6 +44,7 @@ export const createMockSession = (overrides?: Partial<Session>): Session => ({
   userAgent: 'test-agent',
   activeOrganizationId: 'org_test123',
   impersonatedBy: null,
+  deviceAgent: false,
   ...overrides,
 });
 
@@ -81,6 +82,7 @@ export const createMockMember = (overrides?: Partial<Member>): Member => ({
   deactivated: false,
   externalUserId: null,
   externalUserSource: null,
+  backgroundCheckExempt: false,
   ...overrides,
 });
 

@@ -1,0 +1,76 @@
+{
+  "slug": "cyberark-identity",
+  "name": "CyberArk Identity",
+  "description": "Monitor user access, MFA enrollment, and role-based access controls in CyberArk Identity (SSO/MFA)",
+  "category": "Security",
+  "docsUrl": "https://docs.cyberark.com/identity/latest/en/content/developer/developer-home.htm",
+  "baseUrl": "https://placeholder.id.cyberark.cloud",
+  "authConfig": {
+    "type": "custom",
+    "config": {
+      "credentialFields": [
+        {
+          "label": "Tenant URL",
+          "type": "text",
+          "required": true,
+          "helpText": "Your CyberArk Identity tenant URL, e.g. abc1234.id.cyberark.cloud (no https:// prefix)"
+        },
+        {
+          "label": "OAuth2 Client ID",
+          "type": "text",
+          "required": true,
+          "helpText": "The Client ID from your OAuth2 Confidential Client application in CyberArk Identity"
+        },
+        {
+          "label": "OAuth2 Client Secret",
+          "type": "password",
+          "required": true,
+          "helpText": "The Client Secret from your OAuth2 Confidential Client application"
+        },
+        {
+          "label": "OAuth2 App ID",
+          "type": "text",
+          "required": true,
+          "helpText": "The OAuth2 application ID (used in the token endpoint path). Found in the app settings in Identity Administration."
+        },
+        {
+          "label": "OAuth2 Scope",
+          "type": "text",
+          "required": false,
+          "helpText": "OAuth2 scope (optional). Leave blank to use defaults."
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks",
+    "sync"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": true,
+  "checks": [
+    {
+      "slug": "user_access",
+      "name": "Employee Access",
+      "description": "Lists all users in CyberArk Identity directory to verify employee access management",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "mfa_enrollment",
+      "name": "2FA",
+      "description": "Checks MFA enrollment status for users in CyberArk Identity to ensure multi-factor authentication is configured",
+      "defaultSeverity": "high",
+      "enabled": true
+    },
+    {
+      "slug": "role_access_controls",
+      "name": "Role-based Access Controls",
+      "description": "Reviews roles and administrative rights assignments in CyberArk Identity",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 3,
+  "isActive": true
+}

@@ -132,12 +132,17 @@ import { TaskList } from './TaskList';
 const baseMockTask = {
   description: 'Test',
   status: 'todo' as const,
+  previousStatus: null,
   frequency: null,
+  integrationScheduleFrequency: 'daily' as const,
+  integrationLastRunAt: null,
   department: null,
   assigneeId: null,
   organizationId: 'org_123',
   createdAt: new Date(),
   updatedAt: new Date(),
+  archivedAt: null,
+  lastCompletedAt: null,
   order: 0,
   taskTemplateId: null,
   reviewDate: null,
@@ -145,6 +150,8 @@ const baseMockTask = {
   approverId: null,
   approvedAt: null,
   approvalComment: null,
+  embeddingHash: null,
+  notRelevantJustification: null,
   controls: [] as { id: string; name: string }[],
 };
 

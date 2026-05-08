@@ -1,0 +1,51 @@
+{
+  "slug": "snowflake",
+  "name": "Snowflake",
+  "description": "Cloud data platform for data warehousing and analytics. Monitor database access and user accounts.",
+  "category": "Cloud",
+  "docsUrl": "https://docs.snowflake.com/en/developer-guide/snowflake-rest-api",
+  "baseUrl": "https://app.snowflake.com",
+  "authConfig": {
+    "type": "custom",
+    "config": {
+      "setupInstructions": "1. Find your Account Identifier from your Snowflake URL:\n   https://<account_identifier>.snowflakecomputing.com\n   Example: 'myorg-myaccount'\n\n2. Set up a Network Policy:\n   Snowflake requires a network policy to use Programmatic Access Tokens.\n   In your Snowflake account, create a network policy that includes CompAI's IP address: 54.159.77.69\n   Then assign that network policy to the user who will generate the token.\n\n3. Generate a Programmatic Access Token (PAT):\n   Option A - In Snowsight, go to Admin > Users & Roles > select your user > Generate Token\n   Option B - Use SQL to create a token for your user\n\n   Note: The user's authentication policy must allow PATs. If you're having trouble generating a token, check your authentication policy settings.\n\n4. Copy the token and paste both values below.",
+      "credentialFields": [
+        {
+          "label": "Account Identifier",
+          "type": "text",
+          "required": true,
+          "helpText": "Your Snowflake account identifier from your URL: https://<account_identifier>.snowflakecomputing.com (e.g. 'myorg-myaccount')."
+        },
+        {
+          "label": "Programmatic Access Token (PAT)",
+          "type": "password",
+          "required": true,
+          "helpText": "Generate via Snowsight: Admin → Users → select user → Generate Token. Or SQL: ALTER USER <user> ADD PROGRAMMATIC ACCESS TOKEN <name> DAYS_TO_EXPIRY = 30."
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "snowflake_app_availability",
+      "name": "Snowflake App Availability",
+      "description": "Checks that the Snowflake API is accessible by listing databases.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "snowflake_employee_access",
+      "name": "Snowflake Employee Access",
+      "description": "Verifies employee access by listing Snowflake user accounts.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}
