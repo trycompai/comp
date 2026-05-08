@@ -448,16 +448,16 @@ export class PeopleService {
       organizationId,
     );
 
-    if (member) {
+    if (member && member.isActive) {
       throw new BadRequestException('Member is already active');
     }
 
-    // Look for deactivated member
-    const deactivatedMember = await db.member.findFirst({
+    // Look for inactive or deactivated member
+    const inactiveMember = await db.member.findFirst({
       where: { id: memberId, organizationId },
     });
 
-    if (!deactivatedMember) {
+    if (!inactiveMember) {
       throw new NotFoundException(
         `Member with ID ${memberId} not found in organization ${organizationId}`,
       );
