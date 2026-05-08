@@ -121,6 +121,8 @@ model Member {
   backgroundCheckExempt           Boolean                           @default(false)
   backgroundCheckExemptReason     String?
   backgroundCheckExemptJustification String?                        @db.Text
+  onboardDate                     DateTime?
+  offboardDate                    DateTime?
   externalUserId                  String?
   externalUserSource              String?
   employeeTrainingVideoCompletion EmployeeTrainingVideoCompletion[]
