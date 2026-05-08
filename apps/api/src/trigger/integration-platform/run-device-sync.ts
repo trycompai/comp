@@ -85,10 +85,7 @@ export const runDeviceSync = task({
         errors: result.errors,
       });
 
-      return {
-        success: true,
-        ...result,
-      };
+      return result;
     } catch (error) {
       const errorMessage =
         error instanceof Error ? error.message : String(error);
