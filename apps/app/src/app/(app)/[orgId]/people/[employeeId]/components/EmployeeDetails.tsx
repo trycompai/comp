@@ -53,6 +53,14 @@ export const EmployeeDetails = ({
   const [status, setStatus] = useState<string>(employee.isActive ? 'active' : 'inactive');
   const [joinDate, setJoinDate] = useState<Date>(new Date(employee.createdAt));
   const [datePickerOpen, setDatePickerOpen] = useState(false);
+  const [onboardDate, setOnboardDate] = useState<Date | undefined>(
+    employee.onboardDate ? new Date(employee.onboardDate) : undefined,
+  );
+  const [offboardDate, setOffboardDate] = useState<Date | undefined>(
+    employee.offboardDate ? new Date(employee.offboardDate) : undefined,
+  );
+  const [onboardDatePickerOpen, setOnboardDatePickerOpen] = useState(false);
+  const [offboardDatePickerOpen, setOffboardDatePickerOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const api = useApi();
 
@@ -62,9 +70,15 @@ export const EmployeeDetails = ({
     const departmentChanged = department !== (employee.department ?? 'none');
     const statusChanged = status !== (employee.isActive ? 'active' : 'inactive');
     const dateChanged = joinDate.toISOString() !== new Date(employee.createdAt).toISOString();
+    const onboardDateChanged =
+      (onboardDate?.toISOString() ?? null) !==
+      (employee.onboardDate ? new Date(employee.onboardDate).toISOString() : null);
+    const offboardDateChanged =
+      (offboardDate?.toISOString() ?? null) !==
+      (employee.offboardDate ? new Date(employee.offboardDate).toISOString() : null);
 
-    return nameChanged || jobTitleChanged || departmentChanged || statusChanged || dateChanged;
-  }, [name, jobTitle, department, status, joinDate, employee]);
+    return nameChanged || jobTitleChanged || departmentChanged || statusChanged || dateChanged || onboardDateChanged || offboardDateChanged;
+  }, [name, jobTitle, department, status, joinDate, onboardDate, offboardDate, employee]);
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -80,6 +94,8 @@ export const EmployeeDetails = ({
       isActive?: boolean;
       createdAt?: string;
       jobTitle?: string;
+      onboardDate?: string | null;
+      offboardDate?: string | null;
     } = {};
 
     if (name !== (employee.user.name ?? '')) {
@@ -98,6 +114,20 @@ export const EmployeeDetails = ({
     const isActive = status === 'active';
     if (isActive !== employee.isActive) {
       updateData.isActive = isActive;
+    }
+
+    const onboardDateChanged =
+      (onboardDate?.toISOString() ?? null) !==
+      (employee.onboardDate ? new Date(employee.onboardDate).toISOString() : null);
+    if (onboardDateChanged) {
+      updateData.onboardDate = onboardDate ? onboardDate.toISOString() : null;
+    }
+
+    const offboardDateChanged =
+      (offboardDate?.toISOString() ?? null) !==
+      (employee.offboardDate ? new Date(employee.offboardDate).toISOString() : null);
+    if (offboardDateChanged) {
+      updateData.offboardDate = offboardDate ? offboardDate.toISOString() : null;
     }
 
     if (Object.keys(updateData).length === 0) {
@@ -233,6 +263,74 @@ export const EmployeeDetails = ({
                     fromYear={2000}
                     toYear={new Date().getFullYear()}
                     disabled={(date) => date > new Date()}
+                  />
+                </PopoverContent>
+              </Popover>
+            </Stack>
+
+            {/* Onboard Date Field */}
+            <Stack gap="sm">
+              <Label htmlFor="onboardDate">Onboard Date</Label>
+              <Popover
+                open={!canEdit ? false : onboardDatePickerOpen}
+                onOpenChange={!canEdit ? undefined : setOnboardDatePickerOpen}
+              >
+                <PopoverTrigger asChild>
+                  <button
+                    type="button"
+                    id="onboardDate"
+                    disabled={!canEdit}
+                    className="border-border bg-background text-foreground hover:bg-muted flex h-9 w-full items-center justify-between rounded-md border px-3 py-2 text-sm disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    {onboardDate ? format(onboardDate, 'PPP') : 'Not set'}
+                    <ChevronDown size={16} />
+                  </button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={onboardDate}
+                    onSelect={(date) => {
+                      setOnboardDate(date ?? undefined);
+                      setOnboardDatePickerOpen(false);
+                    }}
+                    captionLayout="dropdown"
+                    fromYear={2000}
+                    toYear={new Date().getFullYear() + 1}
+                  />
+                </PopoverContent>
+              </Popover>
+            </Stack>
+
+            {/* Offboard Date Field */}
+            <Stack gap="sm">
+              <Label htmlFor="offboardDate">Offboard Date</Label>
+              <Popover
+                open={!canEdit ? false : offboardDatePickerOpen}
+                onOpenChange={!canEdit ? undefined : setOffboardDatePickerOpen}
+              >
+                <PopoverTrigger asChild>
+                  <button
+                    type="button"
+                    id="offboardDate"
+                    disabled={!canEdit}
+                    className="border-border bg-background text-foreground hover:bg-muted flex h-9 w-full items-center justify-between rounded-md border px-3 py-2 text-sm disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    {offboardDate ? format(offboardDate, 'PPP') : 'Not set'}
+                    <ChevronDown size={16} />
+                  </button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={offboardDate}
+                    onSelect={(date) => {
+                      setOffboardDate(date ?? undefined);
+                      setOffboardDatePickerOpen(false);
+                    }}
+                    captionLayout="dropdown"
+                    fromYear={2000}
+                    toYear={new Date().getFullYear() + 1}
                   />
                 </PopoverContent>
               </Popover>
