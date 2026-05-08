@@ -79,10 +79,16 @@ export function useDeviceSync({ organizationId }: UseDeviceSyncOptions): UseDevi
 
   const setSyncProvider = async (provider: string | null) => {
     try {
-      await apiClient.post(
+      const response = await apiClient.post(
         `/v1/integrations/sync/device-sync-provider?organizationId=${organizationId}`,
         { provider },
       );
+
+      if (response.error) {
+        toast.error('Failed to set device sync provider');
+        return;
+      }
+
       mutateProvider({ provider }, false);
 
       if (provider) {

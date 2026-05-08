@@ -138,6 +138,31 @@ describe('GenericDeviceSyncService', () => {
       expect(result.imported).toBe(0);
     });
 
+    it('updates memberId when device ownership changes', async () => {
+      mockDeviceFindFirst.mockResolvedValue({
+        id: 'dev_existing',
+        serialNumber: 'SN-001',
+        organizationId: ORG_ID,
+      });
+      mockMemberFindFirst.mockResolvedValue({ id: 'mem_new_owner' });
+
+      const result = await service.processDevices({
+        organizationId: ORG_ID,
+        connectionId: CONN_ID,
+        devices: [baseDevice()],
+      });
+
+      expect(mockDeviceUpdate).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { id: 'dev_existing' },
+          data: expect.objectContaining({
+            memberId: 'mem_new_owner',
+          }),
+        }),
+      );
+      expect(result.updated).toBe(1);
+    });
+
     it('skips devices when no matching member exists', async () => {
       mockMemberFindFirst.mockResolvedValue(null);
 
@@ -209,8 +234,31 @@ describe('GenericDeviceSyncService', () => {
       expect(result.removed).toBe(1);
     });
 
-    it('should NOT delete existing devices when all sync devices were skipped', async () => {
+    it('should NOT delete existing devices when all sync devices were skipped (member not found)', async () => {
       mockMemberFindFirst.mockResolvedValue(null);
+      mockDeviceFindMany.mockResolvedValue([
+        {
+          id: 'dev_existing',
+          serialNumber: 'SN-001',
+          externalDeviceId: null,
+          integrationConnectionId: CONN_ID,
+        },
+      ]);
+
+      const result = await service.processDevices({
+        organizationId: ORG_ID,
+        connectionId: CONN_ID,
+        devices: [baseDevice({ serialNumber: 'SN-001' })],
+      });
+
+      // Device was skipped because member doesn't exist, but its identifier
+      // is still tracked so Phase 2 won't remove it from the DB.
+      expect(result.skipped).toBe(1);
+      expect(result.removed).toBe(0);
+      expect(mockDeviceDeleteMany).not.toHaveBeenCalled();
+    });
+
+    it('should skip Phase 2 when sync payload contains only inactive devices', async () => {
       mockDeviceFindMany.mockResolvedValue([
         {
           id: 'dev_existing',
@@ -223,10 +271,10 @@ describe('GenericDeviceSyncService', () => {
       const result = await service.processDevices({
         organizationId: ORG_ID,
         connectionId: CONN_ID,
-        devices: [baseDevice()],
+        devices: [baseDevice({ status: 'inactive', serialNumber: 'SN-INACTIVE' })],
       });
 
-      expect(result.skipped).toBe(1);
+      // No active devices means no identifiers tracked → Phase 2 guard skips removal
       expect(result.removed).toBe(0);
       expect(mockDeviceDeleteMany).not.toHaveBeenCalled();
     });

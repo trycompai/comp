@@ -1,4 +1,3 @@
-import { db } from '@db';
 import { logger, tags, task } from '@trigger.dev/sdk';
 
 const API_BASE_URL = process.env.BASE_URL || 'http://localhost:3333';
@@ -47,18 +46,6 @@ export const runDeviceSync = task({
         logger.error(
           `Device sync API call failed: ${response.status} - ${errorBody}`,
         );
-
-        // Mark connection as error if credentials are invalid
-        if (response.status === 401) {
-          await db.integrationConnection.update({
-            where: { id: connectionId },
-            data: {
-              status: 'error',
-              errorMessage:
-                'Credentials expired during scheduled device sync. Please reconnect.',
-            },
-          });
-        }
 
         return {
           success: false,

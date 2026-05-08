@@ -85,6 +85,12 @@ export class GenericDeviceSyncService {
       try {
         const normalizedEmail = device.userEmail.toLowerCase();
 
+        // Track ALL sync identifiers for Phase 2 (even if member doesn't exist yet)
+        syncedIdentifiers.push({
+          serialNumber: device.serialNumber,
+          externalId: device.externalId,
+        });
+
         // Find member by email in this org
         const member = await db.member.findFirst({
           where: {
@@ -104,12 +110,6 @@ export class GenericDeviceSyncService {
           });
           continue;
         }
-
-        // Track identifiers for Phase 2
-        syncedIdentifiers.push({
-          serialNumber: device.serialNumber,
-          externalId: device.externalId,
-        });
 
         // Find existing device — serialNumber match takes priority
         let existingDevice: { id: string } | null = null;
@@ -147,7 +147,7 @@ export class GenericDeviceSyncService {
         if (existingDevice) {
           await db.device.update({
             where: { id: existingDevice.id },
-            data: updateData,
+            data: { ...updateData, memberId: member.id },
           });
           result.updated++;
           result.details.push({ identifier, status: 'updated' });
