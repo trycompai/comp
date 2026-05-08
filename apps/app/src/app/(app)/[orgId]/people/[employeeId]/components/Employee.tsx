@@ -20,8 +20,16 @@ import { EmployeeDevice } from './EmployeeDevice';
 import { EmployeePageHeader } from './EmployeePageHeader';
 import { EmployeePolicies } from './EmployeePolicies';
 import { EmployeeHipaaTraining, EmployeeTrainingVideos } from './EmployeeTraining';
+import { EmploymentEvidence } from './EmploymentEvidence';
 
-type EmployeeTab = 'details' | 'policies' | 'training' | 'hipaa' | 'device' | 'background-check';
+type EmployeeTab =
+  | 'details'
+  | 'policies'
+  | 'training'
+  | 'hipaa'
+  | 'device'
+  | 'employment-evidence'
+  | 'background-check';
 
 interface EmployeeProps {
   employee: Member & {
@@ -108,6 +116,7 @@ export function Employee({
             <TabsTrigger value="training">Training Videos</TabsTrigger>
             {hasHipaaFramework && <TabsTrigger value="hipaa">HIPAA Training</TabsTrigger>}
             <TabsTrigger value="device">Device</TabsTrigger>
+            <TabsTrigger value="employment-evidence">Employment Evidence</TabsTrigger>
             {backgroundCheckStepEnabled && (
               <TabsTrigger value="background-check">Background Check</TabsTrigger>
             )}
@@ -140,6 +149,14 @@ export function Employee({
               memberDevice={memberDevice}
               host={host}
               fleetPolicies={fleetPolicies}
+            />
+          </TabsContent>
+          <TabsContent value="employment-evidence">
+            <EmploymentEvidence
+              memberId={employee.id}
+              onboardDate={employee.onboardDate?.toString() ?? null}
+              offboardDate={employee.offboardDate?.toString() ?? null}
+              canEdit={canEdit}
             />
           </TabsContent>
           {backgroundCheckStepEnabled && (
