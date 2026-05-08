@@ -72,7 +72,7 @@
         "@trycompai/billing": "workspace:*",
         "@trycompai/company": "workspace:*",
         "@trycompai/db": "workspace:*",
-        "@trycompai/design-system": "^1.0.32",
+        "@trycompai/design-system": "^1.1.16",
         "@trycompai/email": "workspace:*",
         "@trycompai/integration-platform": "workspace:*",
         "@types/canvas-confetti": "^1.9.0",
