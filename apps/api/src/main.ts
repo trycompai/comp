@@ -153,8 +153,10 @@ async function bootstrap(): Promise<void> {
   const serverDescription = describeServer(baseUrl);
 
   const config = new DocumentBuilder()
-    .setTitle('API Documentation')
-    .setDescription('The API documentation for this application')
+    .setTitle('Comp AI API')
+    .setDescription(
+      'Comp AI API reference for automating compliance workflows, including evidence collection, policies, trust access, tasks, and security questionnaires.',
+    )
     .setVersion('1.0')
     .addApiKey(
       {
@@ -168,6 +170,13 @@ async function bootstrap(): Promise<void> {
     .addServer(baseUrl, serverDescription)
     .build();
   const document: OpenAPIObject = SwaggerModule.createDocument(app, config);
+
+  // Keep implementation-only routes out of public Swagger and Mintlify docs.
+  for (const routePath of Object.keys(document.paths)) {
+    if (/^\/v\d+\/internal(?:\/|$)/.test(routePath)) {
+      delete document.paths[routePath];
+    }
+  }
 
   // Setup Swagger UI at /api/docs
   SwaggerModule.setup('api/docs', app, document, {
