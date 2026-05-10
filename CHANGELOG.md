@@ -1,3 +1,10 @@
+# [3.49.0](https://github.com/trycompai/comp/compare/v3.48.0...v3.49.0) (2026-05-10)
+
+
+### Features
+
+* **cloud-security:** add AWS partition handling and GovCloud support ([8558265](https://github.com/trycompai/comp/commit/85582656bd1dff5ab25f700ffefbc9994434cb68))
+
 # [3.48.0](https://github.com/trycompai/comp/compare/v3.47.0...v3.48.0) (2026-05-08)
 
 
