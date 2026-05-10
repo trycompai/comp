@@ -254,7 +254,9 @@ export function TeamMembersClient({
             }}
           >
             <SelectTrigger>
-              <SelectValue placeholder="Active" />
+              <SelectValue placeholder="Active">
+                {{ all: 'All People', active: 'Active', pending: 'Pending', deactivated: 'Deactivated' }[statusFilter] ?? 'Active'}
+              </SelectValue>
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All People</SelectItem>
