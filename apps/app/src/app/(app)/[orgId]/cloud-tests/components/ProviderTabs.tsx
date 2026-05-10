@@ -162,6 +162,7 @@ function CloudConnectionContent({
             orgId={orgId}
             lastRunAt={connection.lastRunAt}
             variables={connection.variables ?? undefined}
+            awsType={connection.awsType}
             onScanComplete={onScanComplete}
           />
         </div>

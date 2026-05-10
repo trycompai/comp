@@ -18,7 +18,12 @@ import {
   Label,
 } from '@trycompai/design-system';
 import { ArrowLeft, Loader2, Plus, Settings, Trash2 } from 'lucide-react';
-import { awsRemediationScript } from '@trycompai/integration-platform';
+import {
+  getAwsCloudShellUrl,
+  getAwsCloudShellScript,
+  getAwsRemediationScript,
+  normalizeAwsEnvironment,
+} from '@trycompai/integration-platform';
 import Image from 'next/image';
 import { useParams } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -90,6 +95,25 @@ export function ConnectIntegrationDialog({
   const authType = provider?.authType;
   const credentialFields = provider?.credentialFields ?? [];
   const supportsMultipleConnections = provider?.supportsMultipleConnections ?? false;
+  const hasSelectedAwsEnvironment =
+    integrationId !== 'aws' || typeof credentials.awsType === 'string';
+  const awsEnvironment = normalizeAwsEnvironment(credentials.awsType);
+  const regionField = credentialFields.find((field) => field.id === 'regions');
+  const regionOptions = regionField?.options ?? [];
+  const filteredRegionOptions =
+    integrationId === 'aws'
+      ? regionOptions.filter((option) =>
+          awsEnvironment === 'aws-us-gov'
+            ? option.value.startsWith('us-gov-')
+            : !option.value.startsWith('us-gov-'),
+        )
+      : regionOptions;
+  const setupScript =
+    integrationId === 'aws'
+      ? getAwsCloudShellScript(awsEnvironment)
+      : provider?.setupScript;
+  const remediationScript = getAwsRemediationScript(awsEnvironment);
+  const cloudShellUrl = getAwsCloudShellUrl(awsEnvironment);
 
   // Track if data is still loading - use isLoading flags instead of checking for undefined
   // since hooks return [] as fallback, not undefined
@@ -336,8 +360,17 @@ export function ConnectIntegrationDialog({
       if (typeof metadata.externalId === 'string') {
         prefillCredentials.externalId = metadata.externalId;
       }
+      if (typeof metadata.awsType === 'string') {
+        prefillCredentials.awsType = metadata.awsType;
+      }
       if (Array.isArray(metadata.regions)) {
-        prefillCredentials.regions = metadata.regions as string[];
+        const existingRegions = metadata.regions as string[];
+        const existingAwsEnvironment = normalizeAwsEnvironment(metadata.awsType);
+        prefillCredentials.regions = existingRegions.filter((region) =>
+          existingAwsEnvironment === 'aws-us-gov'
+            ? region.startsWith('us-gov-')
+            : !region.startsWith('us-gov-'),
+        );
       }
       // Azure-specific metadata pre-fill
       if (typeof metadata.tenantId === 'string') {
@@ -387,10 +420,15 @@ export function ConnectIntegrationDialog({
       }
       if (typeof credentials.roleArn === 'string' && credentials.roleArn.trim()) {
         metadataUpdates.roleArn = credentials.roleArn.trim();
-        const arnMatch = credentials.roleArn.match(/^arn:aws:iam::(\d{12}):role\/.+$/);
+        const arnMatch = credentials.roleArn.match(
+          /^arn:(?:aws|aws-us-gov):iam::(\d{12}):role\/.+$/,
+        );
         if (arnMatch) {
           metadataUpdates.accountId = arnMatch[1];
         }
+      }
+      if (typeof credentials.awsType === 'string' && credentials.awsType.trim()) {
+        metadataUpdates.awsType = credentials.awsType.trim();
       }
       if (typeof credentials.externalId === 'string' && credentials.externalId.trim()) {
         metadataUpdates.externalId = credentials.externalId.trim();
@@ -424,7 +462,11 @@ export function ConnectIntegrationDialog({
   }, [configureConnectionId, credentials, orgId, refreshConnections, updateConnectionCredentials, updateConnectionMetadata]);
 
   const updateCredential = (fieldId: string, value: string | string[]) => {
-    setCredentials((prev) => ({ ...prev, [fieldId]: value }));
+    setCredentials((prev) => ({
+      ...prev,
+      [fieldId]: value,
+      ...(fieldId === 'awsType' ? { regions: [] } : {}),
+    }));
     if (errors[fieldId]) {
       setErrors((prev) => {
         const newErrors = { ...prev };
@@ -547,8 +589,13 @@ export function ConnectIntegrationDialog({
                 Back to connections
               </Button>
             )}
-            {provider?.setupScript && (
-              <CloudShellSetup script={provider.setupScript} externalId={orgId} />
+            {setupScript && (
+              <CloudShellSetup
+                script={setupScript}
+                externalId={orgId}
+                cloudShellUrl={cloudShellUrl}
+                disabled={!hasSelectedAwsEnvironment}
+              />
             )}
             {!provider?.setupScript && provider?.setupInstructions && (
               <div className="text-sm text-muted-foreground bg-muted/50 p-3 rounded-md max-h-32 overflow-y-auto overflow-x-hidden">
@@ -570,8 +617,10 @@ export function ConnectIntegrationDialog({
                     <SectionDivider label="Auto-Remediation (Optional)" />
                     <div className="mb-4 mt-4">
                       <CloudShellSetup
-                        script={awsRemediationScript}
+                        script={remediationScript}
                         externalId={orgId}
+                        cloudShellUrl={cloudShellUrl}
+                        disabled={!hasSelectedAwsEnvironment}
                         title="Remediation Role Setup"
                         subtitle="Create a write-access role for auto-fix"
                         footnote="The remediation role is separate from your audit role — your audit role stays read-only."
@@ -592,6 +641,8 @@ export function ConnectIntegrationDialog({
                     field={field}
                     value={credentials[field.id] || (field.type === 'multi-select' ? [] : '')}
                     onChange={(value) => updateCredential(field.id, value)}
+                    optionsOverride={field.id === 'regions' ? filteredRegionOptions : undefined}
+                    disabled={field.id === 'regions' && !hasSelectedAwsEnvironment}
                   />
                   {field.helpText && (
                     <p className="text-[11px] text-muted-foreground/70">{field.helpText}</p>
@@ -640,6 +691,8 @@ export function ConnectIntegrationDialog({
               field={field}
               value={credentials[field.id] || (field.type === 'multi-select' ? [] : '')}
               onChange={(value) => updateCredential(field.id, value)}
+              optionsOverride={field.id === 'regions' ? filteredRegionOptions : undefined}
+              disabled={field.id === 'regions' && !hasSelectedAwsEnvironment}
             />
             {field.helpText && <p className="text-xs text-muted-foreground">{field.helpText}</p>}
           </div>

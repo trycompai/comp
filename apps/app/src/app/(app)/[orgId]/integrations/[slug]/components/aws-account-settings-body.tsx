@@ -8,8 +8,12 @@ import {
   useIntegrationMutations,
 } from '@/hooks/use-integration-platform';
 import { Button } from '@trycompai/design-system';
+import {
+  getAwsCloudShellUrl,
+  getAwsRemediationScript,
+  normalizeAwsEnvironment,
+} from '@trycompai/integration-platform';
 import { Badge } from '@trycompai/ui/badge';
-import { awsRemediationScript } from '@trycompai/integration-platform';
 import { AlertTriangle, CheckCircle2, Loader2 } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
 import { toast } from 'sonner';
@@ -42,7 +46,9 @@ export function AwsAccountSettingsBody({
   const [savingCredentials, setSavingCredentials] = useState(false);
   const [savingRemediation, setSavingRemediation] = useState(false);
   const [savingRegions, setSavingRegions] = useState(false);
+  const [savingAwsType, setSavingAwsType] = useState(false);
   const [disconnecting, setDisconnecting] = useState(false);
+  const [awsType, setAwsType] = useState('');
 
   const metadata = (connection?.metadata ?? {}) as Record<string, unknown>;
   const displayName =
@@ -51,13 +57,40 @@ export function AwsAccountSettingsBody({
   const externalId = (metadata.externalId as string) ?? orgId;
   const hasRemediation = Boolean(metadata.remediationRoleArn);
   const regionsField = provider.credentialFields?.find((f) => f.id === 'regions');
+  const awsEnvironment = normalizeAwsEnvironment(awsType);
+  const remediationScript = getAwsRemediationScript(awsEnvironment);
+  const cloudShellUrl = getAwsCloudShellUrl(awsEnvironment);
+  const filteredRegionOptions =
+    regionsField?.options?.filter((option) =>
+      awsEnvironment === 'aws-us-gov'
+        ? option.value.startsWith('us-gov-')
+        : !option.value.startsWith('us-gov-'),
+    ) ?? [];
 
   useEffect(() => {
     if (!connection) return;
+    const nextAwsType = typeof metadata.awsType === 'string' ? metadata.awsType : 'aws';
     setRoleArn((metadata.roleArn as string) ?? '');
     setRemediationRoleArn((metadata.remediationRoleArn as string) ?? '');
-    setRegions(Array.isArray(metadata.regions) ? (metadata.regions as string[]) : []);
-  }, [connection, metadata.roleArn, metadata.remediationRoleArn, metadata.regions]);
+    setRegions(
+      Array.isArray(metadata.regions)
+        ? (metadata.regions as string[]).filter((region) =>
+            nextAwsType === 'aws-us-gov'
+              ? region.startsWith('us-gov-')
+              : !region.startsWith('us-gov-'),
+          )
+        : [],
+    );
+    setAwsType(nextAwsType);
+
+    console.log('awsType', nextAwsType, metadata);
+  }, [
+    connection,
+    metadata.roleArn,
+    metadata.remediationRoleArn,
+    metadata.regions,
+    metadata.awsType,
+  ]);
 
   const saveField = useCallback(
     async (
@@ -92,20 +125,36 @@ export function AwsAccountSettingsBody({
       toast.error('Role ARN is required');
       return;
     }
+    const expectedPrefix =
+      awsEnvironment === 'aws-us-gov'
+        ? 'arn:aws-us-gov:iam::'
+        : 'arn:aws:iam::';
+    if (!roleArn.startsWith(expectedPrefix)) {
+      toast.error('Role ARN must match the selected AWS environment');
+      return;
+    }
     const meta: Record<string, unknown> = { roleArn };
-    const arnMatch = roleArn.match(/^arn:aws:iam::(\d{12}):role\/.+$/);
+    const arnMatch = roleArn.match(/^arn:(?:aws|aws-us-gov):iam::(\d{12}):role\/.+$/);
     if (arnMatch) meta.accountId = arnMatch[1];
     await saveField({ roleArn }, meta, setSavingCredentials, 'Credentials saved');
-  }, [roleArn, saveField]);
+  }, [awsEnvironment, roleArn, saveField]);
 
   const handleSaveRemediation = useCallback(async () => {
+    const expectedPrefix =
+      awsEnvironment === 'aws-us-gov'
+        ? 'arn:aws-us-gov:iam::'
+        : 'arn:aws:iam::';
+    if (remediationRoleArn && !remediationRoleArn.startsWith(expectedPrefix)) {
+      toast.error('Remediation Role ARN must match the selected AWS environment');
+      return;
+    }
     await saveField(
       { remediationRoleArn },
       { remediationRoleArn },
       setSavingRemediation,
       'Remediation role saved',
     );
-  }, [remediationRoleArn, saveField]);
+  }, [awsEnvironment, remediationRoleArn, saveField]);
 
   const handleSaveRegions = useCallback(async () => {
     if (regions.length === 0) {
@@ -114,6 +163,20 @@ export function AwsAccountSettingsBody({
     }
     await saveField({ regions }, { regions }, setSavingRegions, 'Regions saved');
   }, [regions, saveField]);
+
+  const handleSaveAwsType = useCallback(async () => {
+    if (!awsType) {
+      toast.error('Select an AWS environment');
+      return;
+    }
+    await saveField(
+      { awsType, regions: [] },
+      { awsType, regions: [] },
+      setSavingAwsType,
+      'AWS environment saved',
+    );
+    setRegions([]);
+  }, [awsType, saveField]);
 
   const handleDisconnect = useCallback(async () => {
     if (!confirm('Are you sure? All associated data will be removed.')) return;
@@ -160,9 +223,7 @@ export function AwsAccountSettingsBody({
             )
           }
         />
-        {accountId && (
-          <AccountSettingsInfoRow label="Account ID" value={accountId} mono />
-        )}
+        {accountId && <AccountSettingsInfoRow label="Account ID" value={accountId} mono />}
         {displayName && !accountId && (
           <AccountSettingsInfoRow label="Account" value={displayName} mono />
         )}
@@ -180,6 +241,35 @@ export function AwsAccountSettingsBody({
           />
         )}
       </div>
+
+      <AccountSettingsSection label="AWS Environment">
+        <AccountSettingsFieldGroup label="AWS Environment">
+          <CredentialInput
+            field={{
+              id: 'awsType',
+              label: '',
+              type: 'select',
+              required: true,
+              placeholder: 'Select AWS environment',
+              helpText: 'Choose the AWS partition where this account runs.',
+              options: [
+                { value: 'aws', label: 'Commercial AWS' },
+                { value: 'aws-us-gov', label: 'AWS GovCloud (US)' },
+              ],
+            }}
+            value={awsType}
+            onChange={(v) => setAwsType(v as string)}
+          />
+          <Button
+            onClick={() => void handleSaveAwsType()}
+            loading={savingAwsType}
+            disabled={savingAwsType}
+            size="sm"
+          >
+            Save
+          </Button>
+        </AccountSettingsFieldGroup>
+      </AccountSettingsSection>
 
       <AccountSettingsSection label="Credentials">
         <AccountSettingsFieldGroup label="Role ARN">
@@ -228,8 +318,9 @@ export function AwsAccountSettingsBody({
           )}
         </div>
         <CloudShellSetup
-          script={awsRemediationScript}
+          script={remediationScript}
           externalId={orgId}
+          cloudShellUrl={cloudShellUrl}
           title="Setup Script"
           subtitle="Create a write-access role for auto-fix"
           footnote=""
@@ -263,6 +354,7 @@ export function AwsAccountSettingsBody({
             field={regionsField}
             value={regions}
             onChange={(v) => setRegions(v as string[])}
+            optionsOverride={filteredRegionOptions}
           />
           <Button
             onClick={() => void handleSaveRegions()}

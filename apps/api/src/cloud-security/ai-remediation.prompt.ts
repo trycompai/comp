@@ -99,6 +99,27 @@ export type CompletePermissions = z.infer<typeof completePermissionsSchema>;
 
 // ─── Prompt Builders ────────────────────────────────────────────────────────
 
+function inferAwsPartition(finding: {
+  resourceId: string;
+  evidence: Record<string, unknown>;
+}): 'aws' | 'aws-us-gov' {
+  if (finding.resourceId.startsWith('arn:aws-us-gov:')) return 'aws-us-gov';
+
+  const region =
+    typeof finding.evidence.region === 'string' ? finding.evidence.region : '';
+  return region.startsWith('us-gov-') ? 'aws-us-gov' : 'aws';
+}
+
+function inferAwsRegion(finding: {
+  resourceId: string;
+  evidence: Record<string, unknown>;
+}): string {
+  if (typeof finding.evidence.region === 'string') return finding.evidence.region;
+
+  const arnMatch = finding.resourceId.match(/^arn:[^:]+:[^:]*:([^:]*):/);
+  return arnMatch?.[1] || 'the execution region';
+}
+
 const SYSTEM_PROMPT = `You are an AWS security remediation expert. You analyze security findings and produce structured fix plans that will be executed by an automated system using AWS SDK v3.
 
 A human will ALWAYS review your plan before execution. Be precise and correct.
@@ -117,11 +138,19 @@ A human will ALWAYS review your plan before execution. Be precise and correct.
 
 ## RESOURCE ID PARSING
 - Extract actual resource names from ARNs:
-  - "arn:aws:s3:::my-bucket" → Bucket: "my-bucket"
-  - "arn:aws:kms:us-east-1:123:key/abc" → KeyId: "arn:aws:kms:us-east-1:123:key/abc" (use full ARN for KMS)
-  - "arn:aws:rds:us-east-1:123:db:mydb" → DBInstanceIdentifier: "mydb"
-  - "arn:aws:ec2:us-east-1:123:vpc/vpc-abc" → VpcId: "vpc-abc"
+  - "arn:aws:s3:::my-bucket" or "arn:aws-us-gov:s3:::my-bucket" → Bucket: "my-bucket"
+  - "arn:aws:kms:us-east-1:123:key/abc" → KeyId: use the full ARN exactly as provided
+  - "arn:aws-us-gov:kms:us-gov-west-1:123:key/abc" → KeyId: use the full GovCloud ARN exactly as provided
+  - "arn:aws:rds:us-east-1:123:db:mydb" or "arn:aws-us-gov:rds:us-gov-west-1:123:db:mydb" → DBInstanceIdentifier: "mydb"
+  - "arn:aws:ec2:us-east-1:123:vpc/vpc-abc" or "arn:aws-us-gov:ec2:us-gov-west-1:123:vpc/vpc-abc" → VpcId: "vpc-abc"
 - Use the correct parameter names that the AWS SDK expects
+
+## AWS PARTITIONS AND GOVCLOUD
+- Preserve the AWS partition from the finding context.
+- If AWS Partition is "aws-us-gov", every ARN you create or pass MUST start with "arn:aws-us-gov:".
+- If AWS Partition is "aws", every ARN you create or pass MUST start with "arn:aws:".
+- Never convert a GovCloud ARN to a commercial AWS ARN.
+- For GovCloud findings, use GovCloud regions such as "us-gov-west-1" or "us-gov-east-1"; never default to "us-east-1".
 
 ## SAFETY RULES (NEVER violate)
 - NEVER delete data, buckets, tables, databases, or file systems
@@ -259,9 +288,18 @@ export function buildFixPlanPrompt(finding: {
   findingKey: string;
   evidence: Record<string, unknown>;
 }): string {
+  const awsPartition = inferAwsPartition(finding);
+  const awsRegion = inferAwsRegion(finding);
+
   return `Analyze this AWS security finding and generate a fix plan.
 
 IMPORTANT: Your fix must change the EXACT AWS setting/resource that caused this finding. The scan will re-check the same thing after the fix — if you fix something different, the finding will persist.
+
+AWS EXECUTION CONTEXT:
+- AWS Partition: ${awsPartition}
+- Region: ${awsRegion}
+- When constructing ARNs, use partition prefix: arn:${awsPartition}:
+- If region-specific values are needed, use this region unless the finding explicitly gives a different one.
 
 FINDING:
 - Title: ${finding.title}

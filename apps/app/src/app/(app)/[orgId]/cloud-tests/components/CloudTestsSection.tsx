@@ -29,7 +29,11 @@ import {
   X,
   Zap,
 } from 'lucide-react';
-import { awsRemediationScript } from '@trycompai/integration-platform';
+import {
+  getAwsCloudShellUrl,
+  getAwsRemediationScript,
+  normalizeAwsEnvironment,
+} from '@trycompai/integration-platform';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import { getActiveBatch } from '../actions/batch-fix';
@@ -63,6 +67,7 @@ interface CloudTestsSectionProps {
   lastRunAt?: Date | null;
   /** Connection variables (e.g., GCP org ID) */
   variables?: Record<string, unknown>;
+  awsType?: string;
 }
 
 const SEVERITY_ORDER: Record<string, number> = {
@@ -155,6 +160,7 @@ export function CloudTestsSection({
   orgId,
   lastRunAt,
   variables,
+  awsType,
 }: CloudTestsSectionProps) {
   const api = useApi();
   const [scanCompleted, setScanCompleted] = useState(false);
@@ -999,6 +1005,7 @@ export function CloudTestsSection({
         onOpenChange={setShowSetupDialog}
         orgId={orgId}
         connectionId={connectionId}
+        awsType={awsType}
         onSaved={() => {
           setShowSetupDialog(false);
           // Reload capabilities after role ARN is saved
@@ -1047,12 +1054,14 @@ function RemediationSetupDialog({
   onOpenChange,
   orgId,
   connectionId,
+  awsType,
   onSaved,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   orgId: string;
   connectionId: string;
+  awsType?: string;
   onSaved?: () => void;
 }) {
   const api = useApi();
@@ -1060,11 +1069,13 @@ function RemediationSetupDialog({
   const [roleArn, setRoleArn] = useState('');
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
+  const awsEnvironment = normalizeAwsEnvironment(awsType);
 
-  const finalScript = awsRemediationScript.replace(
+  const finalScript = getAwsRemediationScript(awsEnvironment).replace(
     /YOUR_EXTERNAL_ID/g,
     orgId,
   );
+  const cloudShellUrl = getAwsCloudShellUrl(awsEnvironment);
 
   const handleCopy = useCallback(() => {
     navigator.clipboard.writeText(finalScript);
@@ -1075,9 +1086,9 @@ function RemediationSetupDialog({
   const handleSaveRoleArn = useCallback(async () => {
     if (!roleArn.trim() || !connectionId) return;
 
-    const arnPattern = /^arn:aws:iam::\d{12}:role\/.+$/;
+    const arnPattern = /^arn:(aws|aws-us-gov):iam::\d{12}:role\/.+$/;
     if (!arnPattern.test(roleArn.trim())) {
-      setSaveError('Invalid ARN format. Expected: arn:aws:iam::<account-id>:role/<role-name>');
+      setSaveError('Invalid ARN format. Expected an AWS IAM role ARN.');
       return;
     }
 
@@ -1164,7 +1175,7 @@ function RemediationSetupDialog({
                 )}
               </button>
               <a
-                href="https://console.aws.amazon.com/cloudshell"
+                href={cloudShellUrl}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="flex flex-1 select-none items-center justify-center gap-2 rounded-md border px-3 py-2.5 text-xs font-medium transition-colors hover:bg-muted"
