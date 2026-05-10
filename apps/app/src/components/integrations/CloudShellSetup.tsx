@@ -8,12 +8,18 @@ export function CloudShellSetup({
   script,
   externalId,
   footnote,
+  cloudShellUrl = 'https://console.aws.amazon.com/cloudshell',
+  disabled = false,
+  disabledMessage = 'Select an AWS environment before copying the setup script.',
 }: {
   script: string;
   externalId: string;
   title?: string;
   subtitle?: string;
   footnote?: string;
+  cloudShellUrl?: string;
+  disabled?: boolean;
+  disabledMessage?: string;
 }) {
   const [copied, setCopied] = useState(false);
   const [expanded, setExpanded] = useState(false);
@@ -21,11 +27,16 @@ export function CloudShellSetup({
   const finalScript = script.replace(/YOUR_EXTERNAL_ID/g, externalId);
 
   const handleCopy = useCallback(() => {
+    if (disabled) {
+      toast.error(disabledMessage);
+      return;
+    }
+
     navigator.clipboard.writeText(finalScript);
     setCopied(true);
     toast.success('Script copied to clipboard');
     setTimeout(() => setCopied(false), 2000);
-  }, [finalScript]);
+  }, [disabled, disabledMessage, finalScript]);
 
   // Show first 3 meaningful lines as preview
   const previewLines = finalScript
@@ -56,13 +67,14 @@ export function CloudShellSetup({
             <button
               type="button"
               onClick={handleCopy}
-              className="inline-flex items-center gap-1.5 rounded px-2 py-1 text-[10px] font-medium text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+              disabled={disabled}
+              className="inline-flex items-center gap-1.5 rounded px-2 py-1 text-[10px] font-medium text-muted-foreground hover:text-foreground hover:bg-muted transition-colors disabled:cursor-not-allowed disabled:opacity-50"
             >
               {copied ? <Check className="h-3 w-3 text-emerald-500" /> : <Copy className="h-3 w-3" />}
               {copied ? 'Copied' : 'Copy'}
             </button>
             <a
-              href="https://console.aws.amazon.com/cloudshell"
+              href={cloudShellUrl}
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center gap-1.5 rounded px-2 py-1 text-[10px] font-medium text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
@@ -74,7 +86,7 @@ export function CloudShellSetup({
         </div>
         <div className="px-3 py-2.5">
           <pre className="text-[11px] font-mono leading-relaxed text-foreground/70 whitespace-pre-wrap break-all">
-            {expanded ? finalScript : previewLines}
+            {disabled ? disabledMessage : expanded ? finalScript : previewLines}
           </pre>
           {!expanded && (
             <button

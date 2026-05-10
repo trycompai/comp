@@ -10,7 +10,7 @@ export function getConnectionDisplayLabel(connection: ConnectionListItem): strin
     return `AWS ${meta.accountId}`;
   }
   const roleArn = meta.roleArn as string | undefined;
-  const arnMatch = roleArn?.match(/arn:aws:iam::(\d{12})/);
+  const arnMatch = roleArn?.match(/arn:(?:aws|aws-us-gov):iam::(\d{12})/);
   if (arnMatch) return `AWS ${arnMatch[1]}`;
   return `Account ${connection.id.slice(4, 12)}`;
 }
