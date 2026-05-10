@@ -114,7 +114,8 @@ function inferAwsRegion(finding: {
   resourceId: string;
   evidence: Record<string, unknown>;
 }): string {
-  if (typeof finding.evidence.region === 'string') return finding.evidence.region;
+  if (typeof finding.evidence.region === 'string')
+    return finding.evidence.region;
 
   const arnMatch = finding.resourceId.match(/^arn:[^:]+:[^:]*:([^:]*):/);
   return arnMatch?.[1] || 'the execution region';
