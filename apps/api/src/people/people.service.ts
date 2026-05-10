@@ -402,7 +402,11 @@ export class PeopleService {
 
     await db.member.update({
       where: { id: memberId, organizationId },
-      data: { deactivated: true, isActive: false },
+      data: {
+        deactivated: true,
+        isActive: false,
+        offboardDate: member.offboardDate ?? new Date(),
+      },
     });
 
     // Direct DB session deletion is correct here — the API server IS the auth server,
