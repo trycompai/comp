@@ -5,6 +5,17 @@ import {
   GetCostAndUsageCommand,
 } from '@aws-sdk/client-cost-explorer';
 import type { SecurityFinding } from '../cloud-security.service';
+import {
+  type AwsPartition,
+  getAwsBaseCredentials,
+  getAwsDefaultRegion,
+  getAwsPartitionForRegion,
+  getAwsRoleAssumerArn,
+  getAwsRoleAssumerEnvName,
+  normalizeAwsPartition,
+  parseAwsRoleArn,
+  validateAwsPartitionConfig,
+} from '../aws-partition.utils';
 import type {
   AwsCredentials,
   AwsServiceAdapter,
@@ -53,6 +64,8 @@ import { EventBridgeAdapter } from './aws/eventbridge.adapter';
 import { TransferFamilyAdapter } from './aws/transfer-family.adapter';
 import { ElasticBeanstalkAdapter } from './aws/elastic-beanstalk.adapter';
 import { AppFlowAdapter } from './aws/appflow.adapter';
+
+const GOVCLOUD_UNSUPPORTED_SERVICE_IDS = new Set(['cloudfront', 'shield']);
 
 @Injectable()
 export class AWSSecurityService {
@@ -121,20 +134,45 @@ export class AWSSecurityService {
       );
     }
 
-    const configuredRegions = this.getConfiguredRegions(credentials, variables);
+    const partition = normalizeAwsPartition(
+      credentials.awsType ?? variables.awsType,
+    );
+    const configuredRegions = this.getConfiguredRegions(
+      credentials,
+      variables,
+      partition,
+    );
     const primaryRegion = configuredRegions[0];
+    const mismatchedRegions = configuredRegions.filter(
+      (region) => getAwsPartitionForRegion(region) !== partition,
+    );
+    if (mismatchedRegions.length > 0) {
+      throw new Error(
+        `AWS regions do not match selected environment (${partition}): ${mismatchedRegions.join(', ')}`,
+      );
+    }
 
     this.logger.log(
-      `Scanning ${configuredRegions.length} region(s): ${configuredRegions.join(', ')}`,
+      `Scanning ${configuredRegions.length} ${partition} region(s): ${configuredRegions.join(', ')}`,
     );
 
     // Assume role ONCE — IAM is global, credentials work across all regions
     let awsCredentials: AwsCredentials;
     if (isRoleAuth) {
+      const partitionErrors = validateAwsPartitionConfig({
+        partition,
+        roleArn: credentials.roleArn as string,
+        regions: configuredRegions,
+      });
+      if (partitionErrors.length > 0) {
+        throw new Error(partitionErrors.join(' '));
+      }
+
       awsCredentials = await this.assumeRole({
         roleArn: credentials.roleArn as string,
         externalId: credentials.externalId as string,
         region: primaryRegion,
+        partition,
       });
     } else {
       awsCredentials = {
@@ -144,10 +182,16 @@ export class AWSSecurityService {
     }
 
     // undefined = scan all (no detection data), [] = scan nothing (all disabled), [...] = scan specific
-    const activeAdapters =
+    const activeAdaptersBeforePartitionFilter =
       enabledServices === undefined
         ? this.adapters
         : this.adapters.filter((a) => enabledServices.includes(a.serviceId));
+    const activeAdapters =
+      partition === 'aws-us-gov'
+        ? activeAdaptersBeforePartitionFilter.filter(
+            (adapter) => !GOVCLOUD_UNSUPPORTED_SERVICE_IDS.has(adapter.serviceId),
+          )
+        : activeAdaptersBeforePartitionFilter;
 
     this.logger.log(
       `Scanning ${activeAdapters.length} service adapters` +
@@ -231,6 +275,7 @@ export class AWSSecurityService {
   private getConfiguredRegions(
     credentials: Record<string, unknown>,
     variables: Record<string, unknown>,
+    partition: AwsPartition,
   ): string[] {
     if (Array.isArray(credentials.regions) && credentials.regions.length > 0) {
       const filtered = credentials.regions.filter(
@@ -257,7 +302,7 @@ export class AWSSecurityService {
       return [singleRegion.trim()];
     }
 
-    return ['us-east-1'];
+    return [getAwsDefaultRegion(partition)];
   }
 
   /**
@@ -277,11 +322,18 @@ export class AWSSecurityService {
       );
     }
 
+    const partition = normalizeAwsPartition(
+      credentials.awsType ??
+        parseAwsRoleArn(remediationRoleArn)?.partition ??
+        getAwsPartitionForRegion(region),
+    );
+
     return this.assumeRole({
       roleArn: remediationRoleArn,
       externalId: credentials.externalId as string,
       region,
       sessionName: 'CompSecurityRemediation',
+      partition,
     });
   }
 
@@ -293,18 +345,38 @@ export class AWSSecurityService {
     externalId: string;
     region: string;
     sessionName?: string;
+    partition?: AwsPartition;
   }): Promise<AwsCredentials> {
     const { roleArn, externalId, region, sessionName } = params;
+    const parsedRoleArn = parseAwsRoleArn(roleArn);
+    const partition =
+      params.partition ?? parsedRoleArn?.partition ?? getAwsPartitionForRegion(region);
 
-    const roleAssumerArn = process.env.SECURITY_HUB_ROLE_ASSUMER_ARN;
-    if (!roleAssumerArn) {
+    if (!parsedRoleArn) {
       throw new Error(
-        'Missing SECURITY_HUB_ROLE_ASSUMER_ARN (our roleAssumer ARN).',
+        'Invalid IAM Role ARN format. Expected arn:aws:iam::... or arn:aws-us-gov:iam::...',
+      );
+    }
+
+    if (parsedRoleArn.partition !== partition) {
+      throw new Error(
+        `Role ARN partition (${parsedRoleArn.partition}) does not match selected AWS environment (${partition}).`,
+      );
+    }
+
+    const roleAssumerArn = getAwsRoleAssumerArn(partition);
+    if (!roleAssumerArn) {
+      const envName = getAwsRoleAssumerEnvName(partition);
+      throw new Error(
+        `Missing ${envName} (our ${partition} roleAssumer ARN).`,
       );
     }
 
     // Hop 1: task role -> roleAssumer
-    const baseSts = new STSClient({ region });
+    const baseSts = new STSClient({
+      region,
+      credentials: getAwsBaseCredentials(partition),
+    });
     const roleAssumerResp = await baseSts.send(
       new AssumeRoleCommand({
         RoleArn: roleAssumerArn,
@@ -363,8 +435,23 @@ export class AWSSecurityService {
     credentials: Record<string, unknown>,
     variables: Record<string, unknown>,
   ): Promise<string[]> {
-    const configuredRegions = this.getConfiguredRegions(credentials, variables);
+    const partition = normalizeAwsPartition(
+      credentials.awsType ?? variables.awsType,
+    );
+    const configuredRegions = this.getConfiguredRegions(
+      credentials,
+      variables,
+      partition,
+    );
     const primaryRegion = configuredRegions[0];
+    const mismatchedRegions = configuredRegions.filter(
+      (region) => getAwsPartitionForRegion(region) !== partition,
+    );
+    if (mismatchedRegions.length > 0) {
+      throw new Error(
+        `AWS regions do not match selected environment (${partition}): ${mismatchedRegions.join(', ')}`,
+      );
+    }
 
     const isRoleAuth = Boolean(credentials.roleArn && credentials.externalId);
     const isKeyAuth = Boolean(
@@ -381,6 +468,7 @@ export class AWSSecurityService {
         roleArn: credentials.roleArn as string,
         externalId: credentials.externalId as string,
         region: primaryRegion,
+        partition,
       });
     } else {
       awsCredentials = {
@@ -390,7 +478,7 @@ export class AWSSecurityService {
     }
 
     const client = new CostExplorerClient({
-      region: 'us-east-1', // Cost Explorer is global, always use us-east-1
+      region: getAwsDefaultRegion(partition),
       credentials: awsCredentials,
     });
 
@@ -436,6 +524,12 @@ export class AWSSecurityService {
     )) {
       if (activeAwsNames.has(awsName)) {
         for (const id of serviceIds) {
+          if (
+            partition === 'aws-us-gov' &&
+            GOVCLOUD_UNSUPPORTED_SERVICE_IDS.has(id)
+          ) {
+            continue;
+          }
           if (!detected.includes(id)) {
             detected.push(id);
           }

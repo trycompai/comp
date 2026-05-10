@@ -1,5 +1,9 @@
 import type { AwsCredentialIdentity } from '@aws-sdk/types';
 import type { AwsCommandStep } from './ai-remediation.prompt';
+import {
+  type AwsPartition,
+  getAwsPartitionForRegion,
+} from './aws-partition.utils';
 
 import * as s3 from '@aws-sdk/client-s3';
 import * as dynamodb from '@aws-sdk/client-dynamodb';
@@ -145,6 +149,50 @@ const JSON_STRING_PARAMS = new Set([
   'Definition',
 ]);
 
+function normalizeArnPartition(value: string, partition: AwsPartition): string {
+  if (partition === 'aws-us-gov') {
+    return value.replace(/\barn:aws:/g, 'arn:aws-us-gov:');
+  }
+
+  return value;
+}
+
+function normalizeArnPartitionsInValue(
+  value: unknown,
+  partition: AwsPartition,
+): unknown {
+  if (typeof value === 'string') {
+    return normalizeArnPartition(value, partition);
+  }
+
+  if (Array.isArray(value)) {
+    return value.map((item) => normalizeArnPartitionsInValue(item, partition));
+  }
+
+  if (value !== null && typeof value === 'object') {
+    return Object.fromEntries(
+      Object.entries(value).map(([key, item]) => [
+        key,
+        normalizeArnPartitionsInValue(item, partition),
+      ]),
+    );
+  }
+
+  return value;
+}
+
+function normalizeArnPartitions(
+  input: Record<string, unknown>,
+  region: string,
+): void {
+  const partition = getAwsPartitionForRegion(region);
+  if (partition === 'aws') return;
+
+  for (const [key, value] of Object.entries(input)) {
+    input[key] = normalizeArnPartitionsInValue(value, partition);
+  }
+}
+
 /**
  * Universal pre-execution param normalisation.
  * Fixes common AI mistakes without per-command logic.
@@ -154,6 +202,8 @@ function normaliseInputParams(
   command: string,
   region: string,
 ): void {
+  normalizeArnPartitions(input, region);
+
   for (const [key, value] of Object.entries(input)) {
     // Rule 1: Stringify any object param that AWS expects as a JSON string
     if (

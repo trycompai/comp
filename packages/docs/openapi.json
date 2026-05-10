@@ -2037,6 +2037,37 @@
         ]
       }
     },
+    "/v1/people/{id}/resend-portal-invite": {
+      "post": {
+        "operationId": "PeopleController_resendPortalInvite_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "description": "Member ID",
+            "schema": {
+              "example": "mem_abc123def456",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Resend portal invite email to a member",
+        "tags": [
+          "People"
+        ]
+      }
+    },
     "/v1/people/{id}/unlink-device": {
       "patch": {
         "description": "Resets the fleetDmLabelId for a member, effectively unlinking their device from FleetDM. This will disconnect the device from the organization. Supports both API key authentication (X-API-Key header) and session authentication (Bearer token or cookies).",
@@ -21970,6 +22001,10 @@
             "items": {
               "type": "string"
             }
+          },
+          "sendPortalEmail": {
+            "type": "boolean",
+            "example": false
           }
         },
         "required": [

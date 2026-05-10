@@ -11,6 +11,10 @@ import {
   executePlanSteps,
   validatePlanSteps,
 } from './aws-command-executor';
+import {
+  getAwsDefaultRegion,
+  normalizeAwsPartition,
+} from './aws-partition.utils';
 import type { FixPlan, AwsCommandStep } from './ai-remediation.prompt';
 
 @Injectable()
@@ -891,7 +895,7 @@ export class RemediationService {
     if (Array.isArray(credentials.regions) && credentials.regions.length > 0) {
       return credentials.regions[0] as string;
     }
-    return 'us-east-1';
+    return getAwsDefaultRegion(normalizeAwsPartition(credentials.awsType));
   }
 
   /**
