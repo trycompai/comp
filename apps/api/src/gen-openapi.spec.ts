@@ -1,7 +1,7 @@
 // Script-style Jest spec: generates packages/docs/openapi.json using the same
 // mocks as openapi-docs.spec.ts (no live DB or env vars needed).
 // Skipped by default to avoid side effects in CI.
-// Run manually with: cd apps/api && GEN_OPENAPI=1 npx jest src/gen-openapi.spec.ts
+// Run manually with: cd apps/api && GEN_OPENAPI=1 bunx jest src/gen-openapi.spec.ts
 
 // Mock better-auth ESM-only modules so Jest (CJS) can import AppModule's transitive AuthModule.
 jest.mock('./auth/auth.server', () => ({
@@ -21,7 +21,12 @@ jest.mock('@thallesp/nestjs-better-auth', () => {
   @Module({})
   class AuthModuleStub {
     static forRoot() {
-      return { module: AuthModuleStub, imports: [], providers: [], exports: [] };
+      return {
+        module: AuthModuleStub,
+        imports: [],
+        providers: [],
+        exports: [],
+      };
     }
   }
   return { AuthModule: AuthModuleStub };
@@ -72,6 +77,7 @@ jest.mock('@db', () => {
       organization: { findFirst: jest.fn(), findMany: jest.fn() },
       auditLog: { create: jest.fn() },
       trust: { findMany: jest.fn().mockResolvedValue([]) },
+      dynamicIntegration: { findMany: jest.fn().mockResolvedValue([]) },
       apiKey: { findFirst: jest.fn() },
       session: { findFirst: jest.fn() },
       member: { findFirst: jest.fn() },
@@ -99,6 +105,13 @@ import { Test } from '@nestjs/testing';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { INestApplication, VersioningType } from '@nestjs/common';
 import { AppModule } from './app.module';
+import {
+  applyPublicOpenApiMetadata,
+  PUBLIC_OPENAPI_DESCRIPTION,
+  PUBLIC_OPENAPI_TITLE,
+  PUBLIC_SERVER_URL,
+} from './openapi/public-docs-metadata';
+import { collectPublicOpenApiIssues } from './openapi/public-docs-quality';
 
 const shouldRun = process.env.GEN_OPENAPI === '1';
 const maybeDescribe = shouldRun ? describe : describe.skip;
@@ -121,18 +134,9 @@ maybeDescribe('Generate openapi.json', () => {
   });
 
   it('writes openapi.json without excluded paths', () => {
-    const baseUrl = process.env.BASE_URL ?? 'http://localhost:3333';
-    const serverDescription = baseUrl.includes('api.staging.trycomp.ai')
-      ? 'Staging API Server'
-      : baseUrl.includes('api.trycomp.ai')
-        ? 'Production API Server'
-        : baseUrl.startsWith('http://localhost')
-          ? 'Local API Server'
-          : 'API Server';
-
     const config = new DocumentBuilder()
-      .setTitle('API Documentation')
-      .setDescription('The API documentation for this application')
+      .setTitle(PUBLIC_OPENAPI_TITLE)
+      .setDescription(PUBLIC_OPENAPI_DESCRIPTION)
       .setVersion('1.0')
       .addApiKey(
         {
@@ -143,10 +147,10 @@ maybeDescribe('Generate openapi.json', () => {
         },
         'apikey',
       )
-      .addServer(baseUrl, serverDescription)
       .build();
 
     const document = SwaggerModule.createDocument(app, config);
+    applyPublicOpenApiMetadata(document);
 
     const openapiPath = path.join(
       __dirname,
@@ -161,13 +165,16 @@ maybeDescribe('Generate openapi.json', () => {
     writeFileSync(openapiPath, JSON.stringify(document, null, 2));
     console.log(`OpenAPI documentation written to ${openapiPath}`);
 
-    // Verify excluded paths are absent
-    const hiddenPrefixes = ['/v1/auth', '/v1/admin', '/v1/internal'];
-    for (const prefix of hiddenPrefixes) {
-      const exposed = Object.keys(document.paths).filter((p) =>
-        p.startsWith(prefix),
-      );
-      expect(exposed).toEqual([]);
-    }
+    expect(document.servers).toEqual([
+      {
+        url: PUBLIC_SERVER_URL,
+        description: 'Production API Server',
+      },
+    ]);
+
+    const issues = collectPublicOpenApiIssues(document);
+    expect(issues.excludedPaths).toEqual([]);
+    expect(issues.exposedTags).toEqual([]);
+    expect(issues.sensitiveSchemaDetails).toEqual([]);
   });
 });

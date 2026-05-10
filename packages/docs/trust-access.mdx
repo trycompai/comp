@@ -1,6 +1,6 @@
 ---
-title: 'Access'
-description: 'A comprehensive guide to managing external access requests, NDAs, and approvals.'
+title: 'Trust Access'
+description: 'Manage Trust Center access requests, NDAs, reviewer grants, audit trails, and shared compliance resources in Comp AI.'
 ---
 
 ## Overview
@@ -189,7 +189,10 @@ The **Security Questionnaire** tab enables external users to automatically parse
 After processing, the completed questionnaire is automatically downloaded with all questions answered based on the organization's compliance documentation. Users can review and edit answers before final submission.
 
 <Note>
-  For detailed API documentation and integration examples, see the [Security Questionnaire](./security-questionnaire-trust-center) documentation in the Trust section.
+  Trust Access is API-backed across request intake, grant management, public Trust Center data, and
+  reviewer workflows. Public organization automation should use API-key protected endpoints;
+  reviewer session calls used by the Trust Portal app are intentionally omitted from the API
+  reference.
 </Note>
 
 Access grant status shows as `Active` in the dashboard, the grant expiration date is visible, and all activity (document downloads and questionnaire submissions) is logged for audit purposes.

@@ -1,10 +1,11 @@
 ---
-title: "Security Questionnaire"
-description: "Automatically answer security questionnaires using AI-powered analysis of your organization's policies and documentation"
+title: 'Security Questionnaire'
+description: 'Automatically answer vendor security questionnaires with approved policies, knowledge base documents, and Comp AI review workflows.'
 ---
 
 <Note>
-  For external users accessing via Trust Access tokens, see [Security Questionnaire](./security-questionnaire-trust-center) in the Trust section.
+  For server-side automation, use the API-key protected questionnaire endpoints in the [API
+  reference](/api-reference/questionnaire/upload-a-questionnaire-file-and-auto-answer-with-export).
 </Note>
 
 ### About Security Questionnaire
@@ -12,6 +13,7 @@ description: "Automatically answer security questionnaires using AI-powered anal
 The Security Questionnaire feature allows you to automatically analyze and answer vendor security questionnaires using AI. Upload questionnaires from vendors, and our system will extract questions and generate answers based on your organization's published policies and documentation.
 
 **Key Benefits:**
+
 - **Automated Question Extraction**: Upload questionnaire files and let AI extract all questions automatically
 - **Intelligent Answer Generation**: Answers are generated based on your published policies and organizational context
 - **Manual Review & Editing**: Review and edit answers before exporting
@@ -26,7 +28,8 @@ Before using the Security Questionnaire feature, ensure you have:
    - Published policies are used as the source of truth for generating answers
 
 <Note>
-  If you don't have published policies, you'll see an onboarding screen prompting you to publish policies first.
+  If you don't have published policies, you'll see an onboarding screen prompting you to publish
+  policies first.
 </Note>
 
 ### Getting Started
@@ -78,15 +81,15 @@ The Security Questionnaire feature integrates with your organization's knowledge
 
 <Accordion title="Answer Types" description="Different ways to answer questions" icon="sparkles">
   ### Automated Answers
-  
+
   Answers generated automatically by AI based on your policies and documentation.
-  
+
   ### Manual Answers
-  
+
   Custom answers you create for specific questions. These can be reused across questionnaires.
-  
+
   ### Knowledge Base Answers
-  
+
   Answers linked to specific documents in your knowledge base for traceability.
 </Accordion>
 
@@ -102,20 +105,20 @@ The Security Questionnaire feature integrates with your organization's knowledge
 
 <Accordion title="Common Issues" description="Solutions to common problems" icon="warning">
   ### No Published Policies
-  
+
   If you see the onboarding screen, you need to publish at least one policy first.
-  
+
   Navigate to **Policies** → **All Policies** and publish your policies.
-  
+
   ### Questions Not Extracted
-  
+
   If questions aren't extracted properly:
   - Ensure the questionnaire file is readable and not corrupted
   - Try re-uploading the file
   - Contact support if issues persist
-  
+
   ### Answers Not Accurate
-  
+
   If generated answers aren't accurate:
   - Review and update your published policies
   - Add additional context documents to your knowledge base
@@ -129,4 +132,3 @@ For additional assistance with Security Questionnaire:
 1. Check our [Knowledge Base](https://help.trycomp.ai/security-questionnaire)
 2. Contact support at [support@trycomp.ai](mailto:support@trycomp.ai)
 3. Join our [Discord community](https://discord.gg/compai) for peer support
-

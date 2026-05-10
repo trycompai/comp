@@ -1,6 +1,6 @@
 ---
-title: "Comp AI Device Agent"
-description: "Install and use the Comp AI Device Agent to keep your device compliant with your organization's security policies"
+title: 'Comp AI Device Agent'
+description: 'Install the Comp AI Device Agent to monitor endpoint encryption, antivirus, password policy, and screen-lock compliance.'
 ---
 
 ### About Comp AI Device Agent
@@ -9,26 +9,27 @@ Comp AI Device Agent is a lightweight desktop application that runs in your syst
 
 The agent checks four security areas:
 
-| Security Check | What It Verifies |
-|----------------|-----------------|
-| **Disk Encryption** | FileVault (macOS), BitLocker (Windows), or LUKS (Linux) is enabled |
-| **Antivirus** | Active antivirus protection (XProtect, Windows Defender, ClamAV, etc.) |
-| **Password Policy** | Minimum 8-character password enforced at the OS level |
-| **Screen Lock** | Automatic screen lock activates within 15 minutes of inactivity |
+| Security Check      | What It Verifies                                                       |
+| ------------------- | ---------------------------------------------------------------------- |
+| **Disk Encryption** | FileVault (macOS), BitLocker (Windows), or LUKS (Linux) is enabled     |
+| **Antivirus**       | Active antivirus protection (XProtect, Windows Defender, ClamAV, etc.) |
+| **Password Policy** | Minimum 8-character password enforced at the OS level                  |
+| **Screen Lock**     | Automatic screen lock activates within 15 minutes of inactivity        |
 
 Your device is **compliant** when all four checks pass.
 
 <Note>
-  The agent runs silently in your system tray and uses minimal system resources. It does not collect personal data, browsing history, or file contents.
+  The agent runs silently in your system tray and uses minimal system resources. It does not collect
+  personal data, browsing history, or file contents.
 </Note>
 
 ### System Requirements
 
-| Requirement | Details |
-|-------------|---------|
+| Requirement           | Details                                       |
+| --------------------- | --------------------------------------------- |
 | **Operating Systems** | macOS 14+, Windows 10+, Linux (Ubuntu 20.04+) |
-| **Memory** | 512MB RAM minimum |
-| **Storage** | 200MB available disk space |
+| **Memory**            | 512MB RAM minimum                             |
+| **Storage**           | 200MB available disk space                    |
 
 ### Installation
 
@@ -39,6 +40,7 @@ Your device is **compliant** when all four checks pass.
     - **macOS**: Downloads a `.dmg` file. If you have an Apple Silicon Mac (M1/M2/M3/M4), the portal selects the correct version automatically. You can also switch between Apple Silicon and Intel using the dropdown.
     - **Windows**: Downloads a `.exe` installer.
     - **Linux**: Downloads a `.deb` package.
+
   </Accordion>
 
   <Accordion title="Step 2: Install the Agent" icon="computer">
@@ -50,6 +52,7 @@ Your device is **compliant** when all four checks pass.
     ```bash
     sudo dpkg -i CompAI-Device-Agent-amd64.deb
     ```
+
   </Accordion>
 
   <Accordion title="Step 3: Sign In" icon="user">
@@ -66,6 +69,7 @@ Your device is **compliant** when all four checks pass.
     1. Registers your device with your organization(s)
     2. Runs the first compliance check immediately
     3. Starts checking every hour in the background
+
   </Accordion>
 </AccordionGroup>
 
@@ -77,40 +81,43 @@ After signing in, the agent lives in your system tray (menu bar on macOS, system
   src="/images/device-agent-status.png"
   alt="Device Agent Status Window"
   className="mx-auto"
-  style={{ width: "55%" }}
+  style={{ width: '55%' }}
 />
 
 The status window shows:
+
 - **Compliance status** — whether your device is compliant or needs attention
 - **Individual checks** — each of the four security checks with Pass/Fail status
 - **Remediation options** — for any failing check, the agent offers a way to fix it
 
 #### Tray Icon Status
 
-| Icon Color | Meaning |
-|-----------|---------|
-| **Green** | Device is compliant — all checks passing |
-| **Red** | Device is non-compliant — one or more checks failing |
-| **Gray** | Agent is not signed in or checks are loading |
+| Icon Color | Meaning                                              |
+| ---------- | ---------------------------------------------------- |
+| **Green**  | Device is compliant — all checks passing             |
+| **Red**    | Device is non-compliant — one or more checks failing |
+| **Gray**   | Agent is not signed in or checks are loading         |
 
 #### Fixing Failing Checks
 
 When a check fails, the agent provides remediation options depending on what can be done automatically:
 
-| Option | Description |
-|--------|-------------|
-| **Fix** | The agent fixes the issue automatically |
-| **Fix (Admin)** | The agent fixes it but may prompt for your system password |
+| Option            | Description                                                    |
+| ----------------- | -------------------------------------------------------------- |
+| **Fix**           | The agent fixes the issue automatically                        |
+| **Fix (Admin)**   | The agent fixes it but may prompt for your system password     |
 | **Open Settings** | Opens the relevant OS settings pane so you can fix it manually |
-| **View Guide** | Shows step-by-step instructions to resolve the issue |
+| **View Guide**    | Shows step-by-step instructions to resolve the issue           |
 
 <Tip>
-  After fixing a failing check, click **Run Checks Now** to verify the fix immediately instead of waiting for the next hourly check.
+  After fixing a failing check, click **Run Checks Now** to verify the fix immediately instead of
+  waiting for the next hourly check.
 </Tip>
 
 #### Tray Menu Options
 
 Right-click (or click on macOS) the tray icon to access:
+
 - **Run Checks Now** — trigger an immediate compliance check
 - **View Details** — open the status window
 - **Start at Login** — toggle whether the agent launches automatically when you log in (enabled by default)
@@ -118,7 +125,8 @@ Right-click (or click on macOS) the tray icon to access:
 - **Quit** — close the agent completely
 
 <Warning>
-  If you quit or sign out of the agent, your device will stop reporting compliance status to your organization. Your security administrator may follow up if your device stops checking in.
+  If you quit or sign out of the agent, your device will stop reporting compliance status to your
+  organization. Your security administrator may follow up if your device stops checking in.
 </Warning>
 
 ### Verifying on the Portal
@@ -213,6 +221,7 @@ For users who cannot install the agent on their device, manual evidence of devic
     <Note>
       Evidence gathered manually will be uploaded as a comment and attachment to the "Secure Devices" and "Device List" tasks with the user's email of the device the evidence is for.
     </Note>
+
   </Accordion>
 
   <Accordion title="macOS Manual Evidence" icon="apple">
@@ -256,6 +265,7 @@ For users who cannot install the agent on their device, manual evidence of devic
     <Note>
       Evidence gathered manually will be uploaded as a comment and attachment to the "Secure Devices" and "Device List" tasks with the user's email of the device the evidence is for.
     </Note>
+
   </Accordion>
 
   <Accordion title="Linux Manual Evidence" icon="linux">
@@ -295,6 +305,7 @@ For users who cannot install the agent on their device, manual evidence of devic
     <Note>
       Evidence gathered manually will be uploaded as a comment and attachment to the "Secure Devices" and "Device List" tasks with the user's email of the device the evidence is for.
     </Note>
+
   </Accordion>
 </AccordionGroup>
 
