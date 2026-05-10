@@ -22,6 +22,7 @@ export const PUBLIC_TAG_METADATA: Record<string, PublicTagMetadata> = {
   'Background Checks': {
     description:
       'Request, review, and attach employee background checks used as people-security evidence for compliance programs.',
+    visibility: 'excluded',
   },
   Billing: {
     description:
@@ -86,7 +87,7 @@ export const PUBLIC_TAG_METADATA: Record<string, PublicTagMetadata> = {
   },
   Frameworks: {
     description:
-      'Manage SOC 2, ISO 27001, HIPAA, GDPR, FedRAMP, and custom framework instances, requirements, scores, and sync history.',
+      'Manage SOC 2, ISO 27001, HIPAA, GDPR, and custom framework instances, requirements, scores, and sync history.',
   },
   Health: {
     description: 'Check API service health for uptime monitoring.',

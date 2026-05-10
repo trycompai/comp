@@ -7,6 +7,7 @@ export type PublicOperationMetadata = {
   sidebarTitle?: string;
   visibility?: PublicVisibility;
   content?: string;
+  security?: Array<Record<string, string[]>>;
   codeSamples?: Array<{
     lang: string;
     label?: string;

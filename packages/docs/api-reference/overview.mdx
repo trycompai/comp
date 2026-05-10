@@ -5,7 +5,7 @@ description: 'Use the Comp AI API to automate SOC 2 evidence, policies, Trust Ac
 
 The Comp AI API lets engineering, security, and compliance teams connect their internal systems to the compliance workflows they run in Comp AI.
 
-Use it to automate evidence collection, manage policies, coordinate compliance tasks, answer security questionnaires, configure Trust Center access, track risks and vendors, and keep SOC 2, ISO 27001, HIPAA, GDPR, and FedRAMP programs connected to the systems where work actually happens.
+Use it to automate evidence collection, manage policies, coordinate compliance tasks, answer security questionnaires, configure Trust Center access, track risks and vendors, and keep SOC 2, ISO 27001, HIPAA, GDPR, and custom framework programs connected to the systems where work actually happens.
 
 ## Authentication
 
@@ -17,12 +17,12 @@ curl --request GET \
   --header "X-API-Key: $COMP_AI_API_KEY"
 ```
 
-Some reference pages document other authentication flows because they are part of the product surface:
+The reference covers Comp AI's product APIs across compliance operations, not just a single workflow. API-key backed endpoints are the integration contract for organization automation, while app session routes are kept out of the public reference.
 
-- Trust Access endpoints can use tokenized reviewer links for customer security reviews.
+- Trust Access management, public Trust Center data, evidence, policies, questionnaires, vendors, risks, integrations, cloud checks, and device compliance are API-backed workflows.
 - Device Agent endpoints are used by signed-in employee devices.
 - Webhook endpoints are intentionally omitted from the public reference unless they are useful for implementers.
-- Internal, admin-only, health, assistant, and browser automation routes are excluded from Mintlify docs.
+- Internal, platform-admin, health, assistant, and browser automation routes are excluded from Mintlify docs.
 
 ## API Surface
 
@@ -48,7 +48,7 @@ Some reference pages document other authentication flows because they are part o
 <Card
   title="Security questionnaire API"
   icon="file-question"
-  href="/api-reference/questionnaire/upload-and-auto-answer-a-questionnaire-via-trust-portal-token"
+  href="/api-reference/questionnaire/upload-a-questionnaire-file-and-auto-answer-with-export"
 >
   Upload questionnaires, generate approved answers, and export reviewer-ready files.
 </Card>

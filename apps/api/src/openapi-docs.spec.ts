@@ -116,6 +116,7 @@ import {
   PUBLIC_OPENAPI_TITLE,
   PUBLIC_SERVER_URL,
 } from './openapi/public-docs-metadata';
+import { collectPublicOpenApiIssues } from './openapi/public-docs-quality';
 
 describe('OpenAPI document', () => {
   let app: INestApplication;
@@ -143,36 +144,6 @@ describe('OpenAPI document', () => {
     if (app) await app.close();
   });
 
-  const excludedPrefixes = [
-    '/v1/auth',
-    '/v1/admin',
-    '/v1/internal',
-    '/v1/framework-editor',
-    '/v1/browserbase',
-    '/v1/assistant-chat',
-    '/v1/health',
-    '/v1/email/unsubscribe',
-    '/v1/integrations/webhooks',
-    '/v1/secrets',
-    '/v1/billing',
-    '/v1/background-check-billing',
-    '/v1/pentest-credits',
-    '/v1/finding-template',
-  ];
-
-  const excludedPathPatterns = [/\/admin(?:\/|$)/, /\/webhooks?(?:\/|$)/];
-
-  it('does not expose excluded public docs paths', () => {
-    const routePaths = Object.keys(document.paths);
-    const exposed = routePaths.filter(
-      (path) =>
-        excludedPrefixes.some((prefix) => path.startsWith(prefix)) ||
-        excludedPathPatterns.some((pattern) => pattern.test(path)),
-    );
-
-    expect(exposed).toEqual([]);
-  });
-
   describe('public metadata', () => {
     it('uses production API servers in the generated Mintlify spec', () => {
       expect(document.info.title).toBe(PUBLIC_OPENAPI_TITLE);
@@ -185,101 +156,35 @@ describe('OpenAPI document', () => {
       ]);
     });
 
-    it('every public operation declares a non-empty summary', () => {
-      const missing: string[] = [];
-      for (const [routePath, methods] of Object.entries(document.paths)) {
-        for (const [method, op] of Object.entries(
-          methods as Record<string, { summary?: string; 'x-excluded'?: true }>,
-        )) {
-          if (typeof op !== 'object' || !op) continue;
-          if (op['x-excluded']) continue;
-          if (!op.summary || op.summary.trim() === '') {
-            missing.push(`${method.toUpperCase()} ${routePath}`);
-          }
-        }
-      }
-      expect(missing).toEqual([]);
-    });
+    it('keeps the public spec complete, SEO-ready, and free of private surfaces', () => {
+      const issues = collectPublicOpenApiIssues(document);
 
-    it('every public operation has a description and Mintlify metadata', () => {
-      const missing: string[] = [];
-      const invalidSeo: string[] = [];
-      for (const [routePath, methods] of Object.entries(document.paths)) {
-        for (const [method, op] of Object.entries(
-          methods as Record<
-            string,
-            {
-              description?: string;
-              'x-excluded'?: true;
-              'x-mint'?: {
-                metadata?: { description?: string; title?: string };
-              };
-            }
-          >,
-        )) {
-          if (typeof op !== 'object' || !op) continue;
-          if (op['x-excluded']) continue;
-
-          const metaDescription = op['x-mint']?.metadata?.description;
-          if (!op.description?.trim() || !metaDescription?.trim()) {
-            missing.push(`${method.toUpperCase()} ${routePath}`);
-          }
-
-          const metaTitle = op['x-mint']?.metadata?.title;
-          if (
-            metaDescription &&
-            (metaDescription.length < 80 ||
-              metaDescription.length > 160 ||
-              metaDescription.includes('Use this Comp AI'))
-          ) {
-            invalidSeo.push(`${method.toUpperCase()} ${routePath}`);
-          }
-          if (metaTitle && metaTitle.length > 60) {
-            invalidSeo.push(`${method.toUpperCase()} ${routePath}`);
-          }
-        }
-      }
-
-      expect(missing).toEqual([]);
-      expect(invalidSeo).toEqual([]);
-    });
-
-    it('does not retain sensitive hidden tags in the public spec', () => {
-      const sensitiveTags = [
-        'Background Check Billing',
-        'Billing',
-        'Finding Templates',
-        'Pentest Credits',
-        'Secrets',
-      ];
-      const exposedTags = new Set(
-        Object.values(document.paths).flatMap((methods) =>
-          Object.values(methods as Record<string, { tags?: string[] }>)
-            .flatMap((op) => op.tags ?? [])
-            .filter((tag) => sensitiveTags.includes(tag)),
-        ),
-      );
-
-      expect([...exposedTags].sort()).toEqual([]);
+      expect(issues.excludedPaths).toEqual([]);
+      expect(issues.exposedTags).toEqual([]);
+      expect(issues.invalidSeo).toEqual([]);
+      expect(issues.missingMetadata).toEqual([]);
+      expect(issues.missingSummaries).toEqual([]);
+      expect(issues.sensitiveSchemaDetails).toEqual([]);
     });
 
     it('curates high-value API pages with operation-specific SEO copy', () => {
-      const upload = document.paths['/v1/questionnaire/parse/upload/token']
-        ?.post as
+      expect(
+        document.paths['/v1/questionnaire/parse/upload/token'],
+      ).toBeUndefined();
+
+      const upload = document.paths['/v1/questionnaire/parse/upload']?.post as
         | {
             summary?: string;
             description?: string;
-            'x-codeSamples'?: Array<{ lang: string }>;
             'x-mint'?: { href?: string; metadata?: { title?: string } };
           }
         | undefined;
 
-      expect(upload?.summary).toBe('Upload questionnaire with Trust Access');
-      expect(upload?.description).toContain('Trust Portal access token');
+      expect(upload?.summary).toBe('Auto-answer uploaded questionnaire');
+      expect(upload?.description).toContain('approved organization evidence');
       expect(upload?.['x-mint']?.href).toBe(
-        '/api-reference/questionnaire/upload-and-auto-answer-a-questionnaire-via-trust-portal-token',
+        '/api-reference/questionnaire/upload-a-questionnaire-file-and-auto-answer-with-export',
       );
-      expect(upload?.['x-codeSamples']?.[0]?.lang).toBe('bash');
 
       const policies = document.paths['/v1/policies']?.get as
         | {

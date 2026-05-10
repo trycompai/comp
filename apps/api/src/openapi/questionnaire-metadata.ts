@@ -73,19 +73,8 @@ export const QUESTIONNAIRE_OPERATION_METADATA: Record<
   QuestionnaireController_parseQuestionnaireUploadByToken_v1: {
     summary: 'Upload questionnaire with Trust Access',
     description:
-      'Upload a questionnaire with a Trust Portal access token and return a ZIP containing answered PDF, CSV, and XLSX exports for reviewers.',
-    href: '/api-reference/questionnaire/upload-and-auto-answer-a-questionnaire-via-trust-portal-token',
-    sidebarTitle: 'Trust Access auto-answer',
-    content:
-      'Use this endpoint when an external reviewer has an active Trust Access token and needs to upload a security questionnaire for automated answering. Comp AI validates the token, generates answers from approved Trust Center evidence, and returns a ZIP with completed PDF, CSV, and XLSX exports.',
-    codeSamples: [
-      {
-        lang: 'bash',
-        label: 'Upload a questionnaire with a Trust Access token',
-        source:
-          'curl --request POST --url "https://api.trycomp.ai/v1/questionnaire/parse/upload/token?token=$TRUST_ACCESS_TOKEN" --form "file=@security-questionnaire.xlsx"',
-      },
-    ],
+      'Internal Trust Access questionnaire upload used by the Comp AI frontend for reviewer access sessions.',
+    visibility: 'excluded',
   },
   QuestionnaireController_autoAnswerAndExport_v1: {
     summary: 'Export generated questionnaire answers',

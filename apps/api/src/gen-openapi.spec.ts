@@ -111,6 +111,7 @@ import {
   PUBLIC_OPENAPI_TITLE,
   PUBLIC_SERVER_URL,
 } from './openapi/public-docs-metadata';
+import { collectPublicOpenApiIssues } from './openapi/public-docs-quality';
 
 const shouldRun = process.env.GEN_OPENAPI === '1';
 const maybeDescribe = shouldRun ? describe : describe.skip;
@@ -171,36 +172,9 @@ maybeDescribe('Generate openapi.json', () => {
       },
     ]);
 
-    // Verify excluded paths are absent
-    const excludedPrefixes = [
-      '/v1/auth',
-      '/v1/admin',
-      '/v1/internal',
-      '/v1/framework-editor',
-      '/v1/browserbase',
-      '/v1/assistant-chat',
-      '/v1/health',
-      '/v1/email/unsubscribe',
-      '/v1/integrations/webhooks',
-      '/v1/secrets',
-      '/v1/billing',
-      '/v1/background-check-billing',
-      '/v1/pentest-credits',
-      '/v1/finding-template',
-    ];
-    for (const prefix of excludedPrefixes) {
-      const exposed = Object.keys(document.paths).filter((p) =>
-        p.startsWith(prefix),
-      );
-      expect(exposed).toEqual([]);
-    }
-
-    const excludedPathPatterns = [/\/admin(?:\/|$)/, /\/webhooks?(?:\/|$)/];
-    for (const pattern of excludedPathPatterns) {
-      const exposed = Object.keys(document.paths).filter((p) =>
-        pattern.test(p),
-      );
-      expect(exposed).toEqual([]);
-    }
+    const issues = collectPublicOpenApiIssues(document);
+    expect(issues.excludedPaths).toEqual([]);
+    expect(issues.exposedTags).toEqual([]);
+    expect(issues.sensitiveSchemaDetails).toEqual([]);
   });
 });

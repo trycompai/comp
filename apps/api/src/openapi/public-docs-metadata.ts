@@ -1,5 +1,9 @@
 import type { OpenAPIObject } from '@nestjs/swagger';
 import { PUBLIC_OPERATION_METADATA } from './operation-metadata';
+import {
+  PUBLIC_DOCS_EXCLUDED_PATH_PATTERNS,
+  PUBLIC_DOCS_EXCLUDED_PREFIXES,
+} from './public-docs-quality';
 import { removeUnusedSchemas, sanitizePublicSchemas } from './schema-pruning';
 import {
   toActionFragment,
@@ -21,25 +25,6 @@ export const PUBLIC_OPENAPI_DESCRIPTION =
   'Compliance automation API for SOC 2, ISO 27001, HIPAA, GDPR, evidence collection, policy workflows, Trust Access, security questionnaires, integrations, cloud checks, and device compliance.';
 
 export const PUBLIC_SERVER_URL = 'https://api.trycomp.ai';
-
-const EXCLUDED_PATH_PATTERNS = [
-  /^\/v\d+\/admin(?:\/|$)/,
-  /^\/v\d+\/internal(?:\/|$)/,
-  /^\/v\d+\/auth(?:\/|$)/,
-  /^\/v\d+\/framework-editor(?:\/|$)/,
-  /^\/v\d+\/browserbase(?:\/|$)/,
-  /^\/v\d+\/assistant-chat(?:\/|$)/,
-  /^\/v\d+\/health(?:\/|$)/,
-  /^\/v\d+\/email\/unsubscribe(?:\/|$)/,
-  /^\/v\d+\/integrations\/webhooks(?:\/|$)/,
-  /^\/v\d+\/secrets(?:\/|$)/,
-  /^\/v\d+\/billing(?:\/|$)/,
-  /^\/v\d+\/background-check-billing(?:\/|$)/,
-  /^\/v\d+\/pentest-credits(?:\/|$)/,
-  /^\/v\d+\/finding-template(?:\/|$)/,
-  /^\/v\d+\/.*\/admin(?:\/|$)/,
-  /^\/v\d+\/.*\/webhooks?(?:\/|$)/,
-];
 
 function getVisibilityForOperation(
   operation: OpenApiOperation,
@@ -91,6 +76,10 @@ function applyOperationMetadata(
 
   if (metadata.codeSamples) {
     operation['x-codeSamples'] = metadata.codeSamples;
+  }
+
+  if (metadata.security) {
+    operation.security = metadata.security;
   }
 }
 
@@ -180,7 +169,15 @@ function addTagMetadata(document: OpenAPIObject): void {
 
 function removeExcludedPaths(paths: Record<string, unknown>): void {
   for (const routePath of Object.keys(paths)) {
-    if (EXCLUDED_PATH_PATTERNS.some((pattern) => pattern.test(routePath))) {
+    const isExcluded =
+      PUBLIC_DOCS_EXCLUDED_PREFIXES.some((prefix) =>
+        routePath.startsWith(prefix),
+      ) ||
+      PUBLIC_DOCS_EXCLUDED_PATH_PATTERNS.some((pattern) =>
+        pattern.test(routePath),
+      );
+
+    if (isExcluded) {
       delete paths[routePath];
     }
   }

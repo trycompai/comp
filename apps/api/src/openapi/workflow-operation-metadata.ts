@@ -7,7 +7,7 @@ export const WORKFLOW_OPERATION_METADATA: Record<
   FrameworksController_findAll_v1: {
     summary: 'List compliance frameworks',
     description:
-      'List active SOC 2, ISO 27001, HIPAA, GDPR, FedRAMP, and custom compliance frameworks with implementation status and progress data.',
+      'List active SOC 2, ISO 27001, HIPAA, GDPR, and custom compliance frameworks with implementation status and progress data.',
   },
   FrameworksController_addFrameworks_v1: {
     summary: 'Add compliance frameworks',

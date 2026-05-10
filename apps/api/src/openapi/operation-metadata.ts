@@ -1,8 +1,14 @@
 import { QUESTIONNAIRE_OPERATION_METADATA } from './questionnaire-metadata';
+import { TRUST_OPERATION_METADATA } from './trust-operation-metadata';
 import type { PublicOperationMetadata } from './types';
 import { WORKFLOW_OPERATION_METADATA } from './workflow-operation-metadata';
 
 const CORE_OPERATION_METADATA: Record<string, PublicOperationMetadata> = {
+  AttachmentsController_getAttachmentDownloadUrl_v1: {
+    summary: 'Get shared attachment download URL',
+    description:
+      'Generate a signed download URL for a shared attachment linked to comments, evidence records, or compliance workflow reviews.',
+  },
   OrganizationController_getOrganization_v1: {
     summary: 'Get organization profile',
     description:
@@ -30,6 +36,11 @@ const CORE_OPERATION_METADATA: Record<string, PublicOperationMetadata> = {
     summary: 'List API key scopes',
     description:
       'Retrieve available API key scopes and permissions before creating credentials for a specific compliance automation workflow.',
+  },
+  OrganizationController_getPrimaryColor_v1: {
+    summary: 'Get organization brand color',
+    description:
+      'Retrieve the organization primary brand color used for Trust Center theming, portals, and API-driven embedded experiences.',
   },
   OrganizationController_revokeApiKey_v1: {
     summary: 'Revoke API key',
@@ -74,6 +85,21 @@ const CORE_OPERATION_METADATA: Record<string, PublicOperationMetadata> = {
     description:
       'Ask policy-specific questions and request draft improvements while preserving human review before policy changes are applied.',
   },
+  PoliciesController_getPolicy_v1: {
+    summary: 'Get compliance policy',
+    description:
+      'Retrieve one compliance policy with its current content, review status, framework links, and audit-ready metadata.',
+  },
+  PoliciesController_updatePolicy_v1: {
+    summary: 'Update compliance policy',
+    description:
+      'Update compliance policy details or content while keeping policy workflows connected to controls, tasks, and approvals.',
+  },
+  PoliciesController_deletePolicy_v1: {
+    summary: 'Delete compliance policy',
+    description:
+      'Delete a compliance policy that is no longer part of the organization evidence library or control program.',
+  },
   KnowledgeBaseController_listDocuments_v1: {
     summary: 'List knowledge base documents',
     description:
@@ -117,6 +143,11 @@ const CORE_OPERATION_METADATA: Record<string, PublicOperationMetadata> = {
     description:
       'Upload an evidence attachment to a task so auditors and reviewers can trace completion back to source documentation.',
   },
+  TasksController_getTaskAttachmentDownloadUrl_v1: {
+    summary: 'Get task attachment download URL',
+    description:
+      'Generate a signed download URL for an attachment on a compliance task so reviewers can access uploaded evidence.',
+  },
   EvidenceExportController_exportTaskEvidenceZip_v1: {
     summary: 'Export task evidence as ZIP',
     description:
@@ -127,50 +158,20 @@ const CORE_OPERATION_METADATA: Record<string, PublicOperationMetadata> = {
     description:
       'Create an automated evidence workflow attached to a task so Comp AI can collect recurring proof from connected systems.',
   },
-  TrustAccessController_createAccessRequest_v1: {
-    summary: 'Submit Trust Access request',
+  ContextController_getAllContext_v1: {
+    summary: 'List organization context',
     description:
-      'Submit an external Trust Center access request with requester details, company context, and review reason for administrator approval.',
+      'List organization context entries used as approved source material for evidence, questionnaires, policies, and AI workflows.',
   },
-  TrustAccessController_approveRequest_v1: {
-    summary: 'Approve Trust Access request',
+  ContextController_getContextById_v1: {
+    summary: 'Get organization context',
     description:
-      'Approve a Trust Center access request, configure the grant window, and start the NDA or access email workflow.',
+      'Retrieve one organization context entry with source details and approved content for compliance automation workflows.',
   },
-  TrustAccessController_signNda_v1: {
-    summary: 'Sign Trust Access NDA',
+  ContextController_updateContext_v1: {
+    summary: 'Update organization context',
     description:
-      'Submit a digital NDA signature for a Trust Access token so the requester can receive time-limited access to shared resources.',
-  },
-  TrustAccessController_getGrantByAccessToken_v1: {
-    summary: 'Get Trust Access grant',
-    description:
-      'Retrieve grant details for a Trust Access token before showing token-scoped policies, documents, questionnaires, and resources.',
-  },
-  TrustAccessController_getPoliciesByAccessToken_v1: {
-    summary: 'List Trust Access policies',
-    description:
-      'List published policies available to an external reviewer through a valid Trust Access token.',
-  },
-  TrustAccessController_downloadAllPolicies_v1: {
-    summary: 'Download Trust Access policy bundle',
-    description:
-      'Generate a watermarked PDF bundle of policies available through a Trust Access token for customer security review.',
-  },
-  TrustPortalController_getSettings_v1: {
-    summary: 'Get Trust Center settings',
-    description:
-      'Retrieve Trust Center settings used to configure public status, custom domains, framework visibility, resources, FAQs, and access rules.',
-  },
-  TrustPortalController_uploadComplianceResource_v1: {
-    summary: 'Upload compliance certificate',
-    description:
-      'Upload or replace a compliance certificate PDF such as SOC 2, ISO 27001, HIPAA, or GDPR evidence for Trust Center sharing.',
-  },
-  TrustPortalController_updateOverview_v1: {
-    summary: 'Update Trust Center overview',
-    description:
-      'Update the public Trust Center overview content that explains security posture and compliance status to prospects and customers.',
+      'Update an organization context entry so approved business details stay current for evidence and questionnaire automation.',
   },
   ConnectionsController_listProviders_v1: {
     summary: 'List integration providers',
@@ -212,15 +213,45 @@ const CORE_OPERATION_METADATA: Record<string, PublicOperationMetadata> = {
     description:
       'Submit device security check results for encryption, antivirus, password policy, screen lock, and other endpoint controls.',
   },
+  DevicesController_getAllDevices_v1: {
+    summary: 'List managed devices',
+    description:
+      'List managed employee devices with endpoint compliance status, ownership, and security check results for workforce controls.',
+  },
   SecurityPenetrationTestsController_create_v1: {
     summary: 'Create penetration test',
     description:
       'Create an AI-powered penetration test run for an approved target and track the resulting findings and report artifacts.',
   },
+  PeopleController_updateMember_v1: {
+    summary: 'Update workforce member',
+    description:
+      'Update a workforce member profile, role, department, or compliance metadata used for people-security controls.',
+  },
   VendorsController_triggerAssessment_v1: {
     summary: 'Trigger vendor risk assessment',
     description:
       'Trigger a vendor risk assessment so Comp AI can update third-party risk evidence and vendor security review status.',
+  },
+  VendorsController_getVendorById_v1: {
+    summary: 'Get vendor details',
+    description:
+      'Retrieve one vendor record with ownership, review status, risk context, and third-party compliance metadata.',
+  },
+  VendorsController_updateVendor_v1: {
+    summary: 'Update vendor record',
+    description:
+      'Update vendor ownership, risk attributes, review metadata, and third-party compliance context for an organization.',
+  },
+  RisksController_getRiskById_v1: {
+    summary: 'Get organization risk',
+    description:
+      'Retrieve one organization risk with owner, department, likelihood, impact, mitigation, and remediation context.',
+  },
+  RisksController_deleteRisk_v1: {
+    summary: 'Delete organization risk',
+    description:
+      'Delete an organization risk that no longer needs active tracking in the risk register or compliance program.',
   },
   RisksController_createRisk_v1: {
     summary: 'Create organization risk',
@@ -235,5 +266,6 @@ export const PUBLIC_OPERATION_METADATA: Record<
 > = {
   ...CORE_OPERATION_METADATA,
   ...WORKFLOW_OPERATION_METADATA,
+  ...TRUST_OPERATION_METADATA,
   ...QUESTIONNAIRE_OPERATION_METADATA,
 };

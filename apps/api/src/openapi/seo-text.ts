@@ -1,5 +1,25 @@
+const TRAILING_FRAGMENT_WORDS = [
+  'and',
+  'bearer',
+  'by',
+  'for',
+  'from',
+  'or',
+  'session',
+  'to',
+  'via',
+  'with',
+];
+
+function removeAuthBoilerplate(value: string): string {
+  return value
+    .replace(/Supports both API key authentication[^.]*\./gi, '')
+    .replace(/Supports API key authentication[^.]*\./gi, '')
+    .replace(/Supports session authentication[^.]*\./gi, '');
+}
+
 function toSentence(value: string): string {
-  const normalized = value.replace(/\s+/g, ' ').trim();
+  const normalized = removeAuthBoilerplate(value).replace(/\s+/g, ' ').trim();
   if (!normalized) {
     return normalized;
   }
@@ -14,7 +34,14 @@ function trimToWordBoundary(value: string, maxLength: number): string {
 
   const truncated = value.slice(0, maxLength - 1);
   const boundary = truncated.lastIndexOf(' ');
-  const safe = boundary > 80 ? truncated.slice(0, boundary) : truncated;
+  let safe = boundary > 80 ? truncated.slice(0, boundary) : truncated;
+  while (
+    TRAILING_FRAGMENT_WORDS.some((word) =>
+      new RegExp(`\\b${word}$`, 'i').test(safe),
+    )
+  ) {
+    safe = safe.slice(0, safe.lastIndexOf(' ')).trim();
+  }
   return `${safe.replace(/[.,;:!?]+$/, '')}.`;
 }
 

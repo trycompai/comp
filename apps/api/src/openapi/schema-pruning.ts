@@ -1,5 +1,27 @@
 import type { OpenAPIObject } from '@nestjs/swagger';
 
+const INTERNAL_PROPERTY_NAMES = [
+  'checks',
+  'evidenceLevel',
+  'pipelineTesting',
+  'scanDepth',
+  'source',
+  'testMode',
+  'webhookUrl',
+];
+
+function shouldRemoveProperty(propertyName: string, propertySchema: unknown) {
+  if (INTERNAL_PROPERTY_NAMES.includes(propertyName)) {
+    return true;
+  }
+
+  if (propertyName !== 'templateId') {
+    return false;
+  }
+
+  return JSON.stringify(propertySchema).includes('Finding template');
+}
+
 function collectSchemaRefs(value: unknown, refs: Set<string>): void {
   if (Array.isArray(value)) {
     for (const item of value) collectSchemaRefs(item, refs);
@@ -59,6 +81,29 @@ function sanitizeSchemaDetails(value: unknown): void {
   }
 
   const record = value as Record<string, unknown>;
+  const properties = record.properties;
+
+  if (properties && typeof properties === 'object') {
+    const schemaProperties = properties as Record<string, unknown>;
+    const removedProperties = new Set<string>();
+    for (const [propertyName, propertySchema] of Object.entries(
+      schemaProperties,
+    )) {
+      if (shouldRemoveProperty(propertyName, propertySchema)) {
+        removedProperties.add(propertyName);
+        delete schemaProperties[propertyName];
+      }
+    }
+
+    if (Array.isArray(record.required)) {
+      record.required = record.required.filter(
+        (propertyName) =>
+          typeof propertyName !== 'string' ||
+          !removedProperties.has(propertyName),
+      );
+    }
+  }
+
   if (
     Array.isArray(record.enum) &&
     record.enum.includes('secrets_info_disclosure')

@@ -12,6 +12,50 @@
     {
       "source": "/api",
       "destination": "/api-reference/overview"
+    },
+    {
+      "source": "/docs/api",
+      "destination": "/api-reference/overview"
+    },
+    {
+      "source": "/security-questionnaire-trust-center",
+      "destination": "/security-questionnaire"
+    },
+    {
+      "source": "/api-reference/questionnaire/upload-and-auto-answer-a-questionnaire-via-trust-portal-token",
+      "destination": "/api-reference/questionnaire/upload-a-questionnaire-file-and-auto-answer-with-export"
+    },
+    {
+      "source": "/api-reference/background-checks/:slug*",
+      "destination": "/api-reference/overview"
+    },
+    {
+      "source": "/api-reference/billing/:slug*",
+      "destination": "/api-reference/overview"
+    },
+    {
+      "source": "/api-reference/browserbase/:slug*",
+      "destination": "/api-reference/overview"
+    },
+    {
+      "source": "/api-reference/finding-templates/:slug*",
+      "destination": "/api-reference/overview"
+    },
+    {
+      "source": "/api-reference/framework-editor/:slug*",
+      "destination": "/api-reference/overview"
+    },
+    {
+      "source": "/api-reference/health/:slug*",
+      "destination": "/api-reference/overview"
+    },
+    {
+      "source": "/api-reference/pentest-credits/:slug*",
+      "destination": "/api-reference/overview"
+    },
+    {
+      "source": "/api-reference/secrets/:slug*",
+      "destination": "/api-reference/overview"
     }
   ],
   "navigation": {
@@ -30,7 +74,7 @@
               "penetration-tests",
               {
                 "group": "Trust",
-                "pages": ["trust-access", "security-questionnaire-trust-center"]
+                "pages": ["trust-access"]
               }
             ]
           }
