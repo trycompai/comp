@@ -361,11 +361,7 @@ function CredentialSetup({
   const hasConfigurableFields = fields.length > 0;
 
   const updateCredential = (fieldId: string, value: string | string[]) => {
-    setCredentials((prev) => ({
-      ...prev,
-      [fieldId]: value,
-      ...(fieldId === 'awsType' ? { regions: [] } : {}),
-    }));
+    setCredentials((prev) => ({ ...prev, [fieldId]: value }));
     if (errors[fieldId]) {
       setErrors((prev) => {
         const next = { ...prev };
@@ -508,7 +504,11 @@ function CloudSetup({
   );
 
   const updateCredential = (fieldId: string, value: string | string[]) => {
-    setCredentials((prev) => ({ ...prev, [fieldId]: value }));
+    setCredentials((prev) => ({
+      ...prev,
+      [fieldId]: value,
+      ...(fieldId === 'awsType' ? { regions: [] } : {}),
+    }));
     if (errors[fieldId]) {
       setErrors((prev) => {
         const next = { ...prev };

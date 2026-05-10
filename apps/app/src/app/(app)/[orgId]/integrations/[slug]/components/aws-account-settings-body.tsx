@@ -82,8 +82,6 @@ export function AwsAccountSettingsBody({
         : [],
     );
     setAwsType(nextAwsType);
-
-    console.log('awsType', nextAwsType, metadata);
   }, [
     connection,
     metadata.roleArn,
