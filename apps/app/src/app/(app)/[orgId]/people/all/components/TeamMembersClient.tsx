@@ -276,7 +276,9 @@ export function TeamMembersClient({
             }}
           >
             <SelectTrigger>
-              <SelectValue placeholder="All Roles" />
+              <SelectValue placeholder="All Roles">
+                {{ owner: 'Owner', admin: 'Admin', auditor: 'Auditor', employee: 'Employee', contractor: 'Contractor' }[roleFilter] ?? 'All Roles'}
+              </SelectValue>
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All Roles</SelectItem>
