@@ -1,7 +1,7 @@
 // Script-style Jest spec: generates packages/docs/openapi.json using the same
 // mocks as openapi-docs.spec.ts (no live DB or env vars needed).
 // Skipped by default to avoid side effects in CI.
-// Run manually with: cd apps/api && GEN_OPENAPI=1 npx jest src/gen-openapi.spec.ts
+// Run manually with: cd apps/api && GEN_OPENAPI=1 bunx jest src/gen-openapi.spec.ts
 
 // Mock better-auth ESM-only modules so Jest (CJS) can import AppModule's transitive AuthModule.
 jest.mock('./auth/auth.server', () => ({
@@ -21,7 +21,12 @@ jest.mock('@thallesp/nestjs-better-auth', () => {
   @Module({})
   class AuthModuleStub {
     static forRoot() {
-      return { module: AuthModuleStub, imports: [], providers: [], exports: [] };
+      return {
+        module: AuthModuleStub,
+        imports: [],
+        providers: [],
+        exports: [],
+      };
     }
   }
   return { AuthModule: AuthModuleStub };
@@ -72,6 +77,7 @@ jest.mock('@db', () => {
       organization: { findFirst: jest.fn(), findMany: jest.fn() },
       auditLog: { create: jest.fn() },
       trust: { findMany: jest.fn().mockResolvedValue([]) },
+      dynamicIntegration: { findMany: jest.fn().mockResolvedValue([]) },
       apiKey: { findFirst: jest.fn() },
       session: { findFirst: jest.fn() },
       member: { findFirst: jest.fn() },
@@ -99,6 +105,12 @@ import { Test } from '@nestjs/testing';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { INestApplication, VersioningType } from '@nestjs/common';
 import { AppModule } from './app.module';
+import {
+  applyPublicOpenApiMetadata,
+  PUBLIC_OPENAPI_DESCRIPTION,
+  PUBLIC_OPENAPI_TITLE,
+  PUBLIC_SERVER_URL,
+} from './openapi/public-docs-metadata';
 
 const shouldRun = process.env.GEN_OPENAPI === '1';
 const maybeDescribe = shouldRun ? describe : describe.skip;
@@ -121,18 +133,9 @@ maybeDescribe('Generate openapi.json', () => {
   });
 
   it('writes openapi.json without excluded paths', () => {
-    const baseUrl = process.env.BASE_URL ?? 'http://localhost:3333';
-    const serverDescription = baseUrl.includes('api.staging.trycomp.ai')
-      ? 'Staging API Server'
-      : baseUrl.includes('api.trycomp.ai')
-        ? 'Production API Server'
-        : baseUrl.startsWith('http://localhost')
-          ? 'Local API Server'
-          : 'API Server';
-
     const config = new DocumentBuilder()
-      .setTitle('API Documentation')
-      .setDescription('The API documentation for this application')
+      .setTitle(PUBLIC_OPENAPI_TITLE)
+      .setDescription(PUBLIC_OPENAPI_DESCRIPTION)
       .setVersion('1.0')
       .addApiKey(
         {
@@ -143,10 +146,10 @@ maybeDescribe('Generate openapi.json', () => {
         },
         'apikey',
       )
-      .addServer(baseUrl, serverDescription)
       .build();
 
     const document = SwaggerModule.createDocument(app, config);
+    applyPublicOpenApiMetadata(document);
 
     const openapiPath = path.join(
       __dirname,
@@ -161,11 +164,41 @@ maybeDescribe('Generate openapi.json', () => {
     writeFileSync(openapiPath, JSON.stringify(document, null, 2));
     console.log(`OpenAPI documentation written to ${openapiPath}`);
 
+    expect(document.servers).toEqual([
+      {
+        url: PUBLIC_SERVER_URL,
+        description: 'Production API Server',
+      },
+    ]);
+
     // Verify excluded paths are absent
-    const hiddenPrefixes = ['/v1/auth', '/v1/admin', '/v1/internal'];
-    for (const prefix of hiddenPrefixes) {
+    const excludedPrefixes = [
+      '/v1/auth',
+      '/v1/admin',
+      '/v1/internal',
+      '/v1/framework-editor',
+      '/v1/browserbase',
+      '/v1/assistant-chat',
+      '/v1/health',
+      '/v1/email/unsubscribe',
+      '/v1/integrations/webhooks',
+      '/v1/secrets',
+      '/v1/billing',
+      '/v1/background-check-billing',
+      '/v1/pentest-credits',
+      '/v1/finding-template',
+    ];
+    for (const prefix of excludedPrefixes) {
       const exposed = Object.keys(document.paths).filter((p) =>
         p.startsWith(prefix),
+      );
+      expect(exposed).toEqual([]);
+    }
+
+    const excludedPathPatterns = [/\/admin(?:\/|$)/, /\/webhooks?(?:\/|$)/];
+    for (const pattern of excludedPathPatterns) {
+      const exposed = Object.keys(document.paths).filter((p) =>
+        pattern.test(p),
       );
       expect(exposed).toEqual([]);
     }
