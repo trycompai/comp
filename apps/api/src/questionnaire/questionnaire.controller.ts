@@ -13,14 +13,12 @@ import {
   UseGuards,
   UseInterceptors,
   Logger,
-  applyDecorators,
 } from '@nestjs/common';
 import type { Response } from 'express';
 import { FileInterceptor } from '@nestjs/platform-express';
 import {
   ApiBody,
   ApiConsumes,
-  ApiExtension,
   ApiOkResponse,
   ApiOperation,
   ApiProduces,
@@ -59,13 +57,6 @@ import {
   sanitizeErrorMessage,
 } from '../utils/sse-utils';
 
-function ApiDocsOperation(summary: string, description: string, slug: string) {
-  return applyDecorators(
-    ApiOperation({ summary, description }),
-    ApiExtension('x-mint', { href: `/api-reference/questionnaire/${slug}` }),
-  );
-}
-
 @ApiTags('Questionnaire')
 @Controller({
   path: 'questionnaire',
@@ -83,11 +74,7 @@ export class QuestionnaireController {
 
   @Get()
   @RequirePermission('questionnaire', 'read')
-  @ApiDocsOperation(
-    'List questionnaires',
-    'List all security questionnaires for an organization with auth context for API clients and compliance automation workflows.',
-    'list-questionnaires',
-  )
+  @ApiOperation({ summary: 'List questionnaires' })
   @ApiOkResponse({ description: 'List of questionnaires' })
   async findAll(
     @OrganizationId() organizationId: string,
@@ -110,11 +97,7 @@ export class QuestionnaireController {
 
   @Get(':id')
   @RequirePermission('questionnaire', 'read')
-  @ApiDocsOperation(
-    'Get questionnaire details',
-    'Retrieve one saved security questionnaire, including parsed questions, answers, and authentication context for the requesting client.',
-    'get-a-questionnaire-by-id',
-  )
+  @ApiOperation({ summary: 'Get a questionnaire by ID' })
   @ApiOkResponse({ description: 'Questionnaire details' })
   async findById(
     @Param('id') id: string,
@@ -143,11 +126,7 @@ export class QuestionnaireController {
 
   @Delete(':id')
   @RequirePermission('questionnaire', 'delete')
-  @ApiDocsOperation(
-    'Delete a questionnaire',
-    'Delete a saved security questionnaire for an organization when it is no longer needed for compliance review workflows.',
-    'delete-a-questionnaire',
-  )
+  @ApiOperation({ summary: 'Delete a questionnaire' })
   @ApiOkResponse({ description: 'Questionnaire deleted' })
   async deleteById(
     @Param('id') id: string,
@@ -158,11 +137,7 @@ export class QuestionnaireController {
 
   @Post('parse')
   @RequirePermission('questionnaire', 'read')
-  @ApiDocsOperation(
-    'Parse questionnaire content',
-    'Parse questionnaire content from a submitted payload so teams can extract security questions before generating or reviewing answers.',
-    'parse-an-uploaded-questionnaire-file',
-  )
+  @ApiOperation({ summary: 'Parse an uploaded questionnaire file' })
   @ApiConsumes('application/json')
   @ApiOkResponse({
     description: 'Parsed questionnaire content',
@@ -176,11 +151,7 @@ export class QuestionnaireController {
 
   @Post('answer-single')
   @RequirePermission('questionnaire', 'update')
-  @ApiDocsOperation(
-    'Answer one question',
-    'Generate an answer for one security questionnaire item using the organization evidence library and return source references.',
-    'answer-a-single-questionnaire-question',
-  )
+  @ApiOperation({ summary: 'Answer a single questionnaire question' })
   @ApiConsumes('application/json')
   @ApiOkResponse({
     description: 'Generated single answer result',
@@ -221,11 +192,7 @@ export class QuestionnaireController {
 
   @Post('save-answer')
   @RequirePermission('questionnaire', 'update')
-  @ApiDocsOperation(
-    'Save questionnaire answer',
-    'Save a manual or AI-generated security questionnaire answer for later review, export, and audit tracking.',
-    'save-a-questionnaire-answer',
-  )
+  @ApiOperation({ summary: 'Save a questionnaire answer' })
   @ApiConsumes('application/json')
   @ApiOkResponse({
     description: 'Save manual or generated answer',
@@ -247,11 +214,7 @@ export class QuestionnaireController {
 
   @Post('delete-answer')
   @RequirePermission('questionnaire', 'delete')
-  @ApiDocsOperation(
-    'Delete questionnaire answer',
-    'Delete a stored questionnaire answer when it should be removed from the active response set.',
-    'delete-a-questionnaire-answer',
-  )
+  @ApiOperation({ summary: 'Delete a questionnaire answer' })
   @ApiConsumes('application/json')
   @ApiOkResponse({
     description: 'Delete questionnaire answer',
@@ -274,11 +237,7 @@ export class QuestionnaireController {
   @Post('export')
   @RequirePermission('questionnaire', 'read')
   @AuditRead()
-  @ApiDocsOperation(
-    'Export a questionnaire',
-    'Export a saved security questionnaire response package as PDF, CSV, or XLSX for customer and vendor reviews.',
-    'export-a-questionnaire',
-  )
+  @ApiOperation({ summary: 'Export a questionnaire' })
   @ApiConsumes('application/json')
   @ApiProduces(
     'application/pdf',
@@ -307,11 +266,7 @@ export class QuestionnaireController {
 
   @Post('upload-and-parse')
   @RequirePermission('questionnaire', 'create')
-  @ApiDocsOperation(
-    'Start questionnaire parsing',
-    'Upload a questionnaire payload and start asynchronous parsing, returning a run ID for real-time progress tracking.',
-    'upload-and-parse-a-questionnaire-file',
-  )
+  @ApiOperation({ summary: 'Upload and parse a questionnaire file' })
   @ApiConsumes('application/json')
   @ApiOkResponse({
     description:
@@ -334,12 +289,8 @@ export class QuestionnaireController {
 
   @Post('upload-and-parse/upload')
   @RequirePermission('questionnaire', 'create')
+  @ApiOperation({ summary: 'Upload a questionnaire file and parse its questions' })
   @UseInterceptors(FileInterceptor('file'))
-  @ApiDocsOperation(
-    'Upload and parse file',
-    'Upload a questionnaire file, extract questions, save the parsed questionnaire, and return its identifier and question count.',
-    'upload-a-questionnaire-file-and-parse-its-questions',
-  )
   @ApiConsumes('multipart/form-data')
   @ApiBody({
     schema: {
@@ -401,12 +352,8 @@ export class QuestionnaireController {
 
   @Post('parse/upload')
   @RequirePermission('questionnaire', 'create')
+  @ApiOperation({ summary: 'Upload a questionnaire file and auto-answer with export' })
   @UseInterceptors(FileInterceptor('file'))
-  @ApiDocsOperation(
-    'Auto-answer uploaded file',
-    'Upload a questionnaire file and generate answer exports from approved organization evidence in PDF, CSV, or XLSX format.',
-    'upload-a-questionnaire-file-and-auto-answer-with-export',
-  )
   @ApiConsumes('multipart/form-data')
   @ApiBody({
     schema: {
@@ -486,12 +433,8 @@ export class QuestionnaireController {
   @Post('parse/upload/token')
   @Public()
   @UseGuards() // Override class-level guards — this endpoint uses token-based auth
+  @ApiOperation({ summary: 'Upload and auto-answer a questionnaire via trust portal token' })
   @UseInterceptors(FileInterceptor('file'))
-  @ApiDocsOperation(
-    'Auto-answer with Trust Access',
-    'Upload a questionnaire with a Trust Access token and return a ZIP containing answered PDF, CSV, and XLSX exports for reviewers.',
-    'upload-and-auto-answer-a-questionnaire-via-trust-portal-token',
-  )
   @ApiConsumes('multipart/form-data')
   @ApiQuery({
     name: 'token',
@@ -570,11 +513,7 @@ export class QuestionnaireController {
   @Post('answers/export')
   @RequirePermission('questionnaire', 'read')
   @AuditRead()
-  @ApiDocsOperation(
-    'Export generated answers',
-    'Generate and export questionnaire answers from a submitted payload using approved organization evidence.',
-    'export-questionnaire-answers',
-  )
+  @ApiOperation({ summary: 'Export questionnaire answers' })
   @ApiConsumes('application/json')
   @ApiProduces(
     'application/pdf',
@@ -604,12 +543,8 @@ export class QuestionnaireController {
 
   @Post('answers/export/upload')
   @RequirePermission('questionnaire', 'create')
+  @ApiOperation({ summary: 'Upload a questionnaire file and export auto-generated answers' })
   @UseInterceptors(FileInterceptor('file'))
-  @ApiDocsOperation(
-    'Upload and export answers',
-    'Upload a questionnaire file and return generated answer exports in PDF, CSV, or XLSX format.',
-    'upload-a-questionnaire-file-and-export-auto-generated-answers',
-  )
   @ApiConsumes('multipart/form-data')
   @ApiBody({
     schema: {
@@ -675,11 +610,7 @@ export class QuestionnaireController {
 
   @Post('auto-answer')
   @RequirePermission('questionnaire', 'update')
-  @ApiDocsOperation(
-    'Stream generated answers',
-    'Stream generated questionnaire answers over server-sent events so clients can show progress while answers are produced.',
-    'auto-answer-a-questionnaire',
-  )
+  @ApiOperation({ summary: 'Auto-answer a questionnaire' })
   @ApiConsumes('application/json')
   @ApiProduces('text/event-stream')
   async autoAnswer(

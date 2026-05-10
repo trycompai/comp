@@ -84,7 +84,16 @@
       },
       {
         "tab": "API",
-        "openapi": { "source": "./openapi.json" }
+        "groups": [
+          {
+            "group": "Overview",
+            "pages": ["api-reference/overview"]
+          },
+          {
+            "group": "Reference",
+            "openapi": { "source": "./openapi.json" }
+          }
+        ]
       }
     ],
     "global": {
@@ -112,6 +121,16 @@
       "type": "button",
       "label": "Get started",
       "href": "https://trycomp.ai"
+    }
+  },
+  "api": {
+    "playground": {
+      "display": "interactive"
+    },
+    "examples": {
+      "languages": ["bash", "javascript", "python"],
+      "defaults": "required",
+      "prefill": true
     }
   },
   "footer": {

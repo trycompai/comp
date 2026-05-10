@@ -8,6 +8,11 @@ import * as express from 'express';
 import helmet from 'helmet';
 import path from 'path';
 import { AppModule } from './app.module';
+import {
+  applyPublicOpenApiMetadata,
+  PUBLIC_OPENAPI_DESCRIPTION,
+  PUBLIC_OPENAPI_TITLE,
+} from './openapi/public-docs-metadata';
 import { isTrustedOrigin } from './auth/auth.server';
 import { adminAuthRateLimiter } from './auth/admin-rate-limit.middleware';
 import { originCheckMiddleware } from './auth/origin-check.middleware';
@@ -153,10 +158,8 @@ async function bootstrap(): Promise<void> {
   const serverDescription = describeServer(baseUrl);
 
   const config = new DocumentBuilder()
-    .setTitle('Comp AI API')
-    .setDescription(
-      'Comp AI API reference for automating compliance workflows, including evidence collection, policies, trust access, tasks, and security questionnaires.',
-    )
+    .setTitle(PUBLIC_OPENAPI_TITLE)
+    .setDescription(PUBLIC_OPENAPI_DESCRIPTION)
     .setVersion('1.0')
     .addApiKey(
       {
@@ -171,12 +174,7 @@ async function bootstrap(): Promise<void> {
     .build();
   const document: OpenAPIObject = SwaggerModule.createDocument(app, config);
 
-  // Keep implementation-only routes out of public Swagger and Mintlify docs.
-  for (const routePath of Object.keys(document.paths)) {
-    if (/^\/v\d+\/internal(?:\/|$)/.test(routePath)) {
-      delete document.paths[routePath];
-    }
-  }
+  applyPublicOpenApiMetadata(document);
 
   // Setup Swagger UI at /api/docs
   SwaggerModule.setup('api/docs', app, document, {

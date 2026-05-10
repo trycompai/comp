@@ -14346,7 +14346,14 @@
         ],
         "description": "List all security questionnaires for an organization with auth context for API clients and compliance automation workflows.",
         "x-mint": {
-          "href": "/api-reference/questionnaire/list-questionnaires"
+          "href": "/api-reference/questionnaire/list-questionnaires",
+          "metadata": {
+            "title": "List questionnaires",
+            "sidebarTitle": "List questionnaires",
+            "description": "List all security questionnaires for an organization with auth context for API clients and compliance automation workflows.",
+            "og:title": "List questionnaires",
+            "og:description": "List all security questionnaires for an organization with auth context for API clients and compliance automation workflows."
+          }
         }
       }
     },
@@ -14379,7 +14386,14 @@
         ],
         "description": "Retrieve one saved security questionnaire, including parsed questions, answers, and authentication context for the requesting client.",
         "x-mint": {
-          "href": "/api-reference/questionnaire/get-a-questionnaire-by-id"
+          "href": "/api-reference/questionnaire/get-a-questionnaire-by-id",
+          "metadata": {
+            "title": "Get questionnaire details",
+            "sidebarTitle": "Get questionnaire details",
+            "description": "Retrieve one saved security questionnaire, including parsed questions, answers, and authentication context for the requesting client.",
+            "og:title": "Get questionnaire details",
+            "og:description": "Retrieve one saved security questionnaire, including parsed questions, answers, and authentication context for the requesting client."
+          }
         }
       },
       "delete": {
@@ -14410,7 +14424,14 @@
         ],
         "description": "Delete a saved security questionnaire for an organization when it is no longer needed for compliance review workflows.",
         "x-mint": {
-          "href": "/api-reference/questionnaire/delete-a-questionnaire"
+          "href": "/api-reference/questionnaire/delete-a-questionnaire",
+          "metadata": {
+            "title": "Delete a questionnaire",
+            "sidebarTitle": "Delete a questionnaire",
+            "description": "Delete a saved security questionnaire for an organization when it is no longer needed for compliance review workflows.",
+            "og:title": "Delete a questionnaire",
+            "og:description": "Delete a saved security questionnaire for an organization when it is no longer needed for compliance review workflows."
+          }
         }
       }
     },
@@ -14451,7 +14472,14 @@
         ],
         "description": "Parse questionnaire content from a submitted payload so teams can extract security questions before generating or reviewing answers.",
         "x-mint": {
-          "href": "/api-reference/questionnaire/parse-an-uploaded-questionnaire-file"
+          "href": "/api-reference/questionnaire/parse-an-uploaded-questionnaire-file",
+          "metadata": {
+            "title": "Parse questionnaire content",
+            "sidebarTitle": "Parse questionnaire content",
+            "description": "Parse questionnaire content from a submitted payload so teams can extract security questions before generating or reviewing answers.",
+            "og:title": "Parse questionnaire content",
+            "og:description": "Parse questionnaire content from a submitted payload so teams can extract security questions before generating or reviewing answers."
+          }
         }
       }
     },
@@ -14522,7 +14550,14 @@
         ],
         "description": "Generate an answer for one security questionnaire item using the organization evidence library and return source references.",
         "x-mint": {
-          "href": "/api-reference/questionnaire/answer-a-single-questionnaire-question"
+          "href": "/api-reference/questionnaire/answer-a-single-questionnaire-question",
+          "metadata": {
+            "title": "Answer one question",
+            "sidebarTitle": "Answer one question",
+            "description": "Generate an answer for one security questionnaire item using the organization evidence library and return source references.",
+            "og:title": "Answer one question",
+            "og:description": "Generate an answer for one security questionnaire item using the organization evidence library and return source references."
+          }
         }
       }
     },
@@ -14572,7 +14607,14 @@
         ],
         "description": "Save a manual or AI-generated security questionnaire answer for later review, export, and audit tracking.",
         "x-mint": {
-          "href": "/api-reference/questionnaire/save-a-questionnaire-answer"
+          "href": "/api-reference/questionnaire/save-a-questionnaire-answer",
+          "metadata": {
+            "title": "Save questionnaire answer",
+            "sidebarTitle": "Save questionnaire answer",
+            "description": "Save a manual or AI-generated security questionnaire answer for later review, export, and audit tracking.",
+            "og:title": "Save questionnaire answer",
+            "og:description": "Save a manual or AI-generated security questionnaire answer for later review, export, and audit tracking."
+          }
         }
       }
     },
@@ -14622,7 +14664,14 @@
         ],
         "description": "Delete a stored questionnaire answer when it should be removed from the active response set.",
         "x-mint": {
-          "href": "/api-reference/questionnaire/delete-a-questionnaire-answer"
+          "href": "/api-reference/questionnaire/delete-a-questionnaire-answer",
+          "metadata": {
+            "title": "Delete questionnaire answer",
+            "sidebarTitle": "Delete questionnaire answer",
+            "description": "Delete a stored questionnaire answer when it should be removed from the active response set.",
+            "og:title": "Delete questionnaire answer",
+            "og:description": "Delete a stored questionnaire answer when it should be removed from the active response set."
+          }
         }
       }
     },
@@ -14656,7 +14705,14 @@
         ],
         "description": "Export a saved security questionnaire response package as PDF, CSV, or XLSX for customer and vendor reviews.",
         "x-mint": {
-          "href": "/api-reference/questionnaire/export-a-questionnaire"
+          "href": "/api-reference/questionnaire/export-a-questionnaire",
+          "metadata": {
+            "title": "Export a questionnaire",
+            "sidebarTitle": "Export a questionnaire",
+            "description": "Export a saved security questionnaire response package as PDF, CSV, or XLSX for customer and vendor reviews.",
+            "og:title": "Export a questionnaire",
+            "og:description": "Export a saved security questionnaire response package as PDF, CSV, or XLSX for customer and vendor reviews."
+          }
         }
       }
     },
@@ -14705,7 +14761,14 @@
         ],
         "description": "Upload a questionnaire payload and start asynchronous parsing, returning a run ID for real-time progress tracking.",
         "x-mint": {
-          "href": "/api-reference/questionnaire/upload-and-parse-a-questionnaire-file"
+          "href": "/api-reference/questionnaire/upload-and-parse-a-questionnaire-file",
+          "metadata": {
+            "title": "Start questionnaire parsing",
+            "sidebarTitle": "Start questionnaire parsing",
+            "description": "Upload a questionnaire payload and start asynchronous parsing, returning a run ID for real-time progress tracking.",
+            "og:title": "Start questionnaire parsing",
+            "og:description": "Upload a questionnaire payload and start asynchronous parsing, returning a run ID for real-time progress tracking."
+          }
         }
       }
     },
@@ -14778,7 +14841,14 @@
         ],
         "description": "Upload a questionnaire file, extract questions, save the parsed questionnaire, and return its identifier and question count.",
         "x-mint": {
-          "href": "/api-reference/questionnaire/upload-a-questionnaire-file-and-parse-its-questions"
+          "href": "/api-reference/questionnaire/upload-a-questionnaire-file-and-parse-its-questions",
+          "metadata": {
+            "title": "Upload and parse file",
+            "sidebarTitle": "Upload and parse file",
+            "description": "Upload a questionnaire file, extract questions, save the parsed questionnaire, and return its identifier and question count.",
+            "og:title": "Upload and parse file",
+            "og:description": "Upload a questionnaire file, extract questions, save the parsed questionnaire, and return its identifier and question count."
+          }
         }
       }
     },
@@ -14846,7 +14916,14 @@
         ],
         "description": "Upload a questionnaire file and generate answer exports from approved organization evidence in PDF, CSV, or XLSX format.",
         "x-mint": {
-          "href": "/api-reference/questionnaire/upload-a-questionnaire-file-and-auto-answer-with-export"
+          "href": "/api-reference/questionnaire/upload-a-questionnaire-file-and-auto-answer-with-export",
+          "metadata": {
+            "title": "Auto-answer uploaded file",
+            "sidebarTitle": "Auto-answer uploaded file",
+            "description": "Upload a questionnaire file and generate answer exports from approved organization evidence in PDF, CSV, or XLSX format.",
+            "og:title": "Auto-answer uploaded file",
+            "og:description": "Upload a questionnaire file and generate answer exports from approved organization evidence in PDF, CSV, or XLSX format."
+          }
         }
       }
     },
@@ -14910,8 +14987,23 @@
         ],
         "description": "Upload a questionnaire with a Trust Access token and return a ZIP containing answered PDF, CSV, and XLSX exports for reviewers.",
         "x-mint": {
-          "href": "/api-reference/questionnaire/upload-and-auto-answer-a-questionnaire-via-trust-portal-token"
-        }
+          "href": "/api-reference/questionnaire/upload-and-auto-answer-a-questionnaire-via-trust-portal-token",
+          "metadata": {
+            "title": "Auto-answer with Trust Access",
+            "sidebarTitle": "Trust Access auto-answer",
+            "description": "Upload a questionnaire with a Trust Access token and return a ZIP containing answered PDF, CSV, and XLSX exports for reviewers.",
+            "og:title": "Auto-answer with Trust Access",
+            "og:description": "Upload a questionnaire with a Trust Access token and return a ZIP containing answered PDF, CSV, and XLSX exports for reviewers."
+          },
+          "content": "Use this endpoint when an external reviewer has an active Trust Access token and needs to upload a security questionnaire for automated answering. Comp AI validates the token, generates answers from approved Trust Center evidence, and returns a ZIP with completed PDF, CSV, and XLSX exports."
+        },
+        "x-codeSamples": [
+          {
+            "lang": "bash",
+            "label": "Upload a questionnaire with a Trust Access token",
+            "source": "curl --request POST --url \"https://api.trycomp.ai/v1/questionnaire/parse/upload/token?token=$TRUST_ACCESS_TOKEN\" --form \"file=@security-questionnaire.xlsx\""
+          }
+        ]
       }
     },
     "/v1/questionnaire/answers/export": {
@@ -14944,7 +15036,14 @@
         ],
         "description": "Generate and export questionnaire answers from a submitted payload using approved organization evidence.",
         "x-mint": {
-          "href": "/api-reference/questionnaire/export-questionnaire-answers"
+          "href": "/api-reference/questionnaire/export-questionnaire-answers",
+          "metadata": {
+            "title": "Export generated answers",
+            "sidebarTitle": "Export generated answers",
+            "description": "Generate and export questionnaire answers from a submitted payload using approved organization evidence.",
+            "og:title": "Export generated answers",
+            "og:description": "Generate and export questionnaire answers from a submitted payload using approved organization evidence."
+          }
         }
       }
     },
@@ -15003,7 +15102,14 @@
         ],
         "description": "Upload a questionnaire file and return generated answer exports in PDF, CSV, or XLSX format.",
         "x-mint": {
-          "href": "/api-reference/questionnaire/upload-a-questionnaire-file-and-export-auto-generated-answers"
+          "href": "/api-reference/questionnaire/upload-a-questionnaire-file-and-export-auto-generated-answers",
+          "metadata": {
+            "title": "Upload and export answers",
+            "sidebarTitle": "Upload and export answers",
+            "description": "Upload a questionnaire file and return generated answer exports in PDF, CSV, or XLSX format.",
+            "og:title": "Upload and export answers",
+            "og:description": "Upload a questionnaire file and return generated answer exports in PDF, CSV, or XLSX format."
+          }
         }
       }
     },
@@ -15037,7 +15143,14 @@
         ],
         "description": "Stream generated questionnaire answers over server-sent events so clients can show progress while answers are produced.",
         "x-mint": {
-          "href": "/api-reference/questionnaire/auto-answer-a-questionnaire"
+          "href": "/api-reference/questionnaire/auto-answer-a-questionnaire",
+          "metadata": {
+            "title": "Stream generated answers",
+            "sidebarTitle": "Stream generated answers",
+            "description": "Stream generated questionnaire answers over server-sent events so clients can show progress while answers are produced.",
+            "og:title": "Stream generated answers",
+            "og:description": "Stream generated questionnaire answers over server-sent events so clients can show progress while answers are produced."
+          }
         }
       }
     },

@@ -1,0 +1,50 @@
+---
+title: 'Comp AI API'
+description: 'Automate compliance workflows with the Comp AI API, including evidence collection, policies, Trust Access, tasks, and security questionnaires.'
+---
+
+The Comp AI API helps teams connect compliance workflows to their own systems. Use it to build internal tools, automate evidence collection, manage questionnaires, and connect Trust Center access flows to the rest of your security program.
+
+## Authentication
+
+Comp AI API requests use the `X-API-Key` header. Create and manage API keys inside your Comp AI organization, then keep keys server-side and scoped to the workflow you are automating.
+
+```bash
+curl https://api.trycomp.ai/v1/organization \
+  -H "X-API-Key: $COMP_AI_API_KEY"
+```
+
+## Common API Workflows
+
+<CardGroup cols={2}>
+  <Card title="Security questionnaire API" icon="file-question" href="/api-reference/questionnaire/upload-and-auto-answer-a-questionnaire-via-trust-portal-token">
+    Upload questionnaires, extract security questions, generate answers from approved evidence, and export reviewer-ready files.
+  </Card>
+
+<Card
+  title="Organization API"
+  icon="building-2"
+  href="/api-reference/organization/get-organization-information"
+>
+  Read organization details and build internal admin workflows around Comp AI account data.
+</Card>
+
+<Card title="Trust Access" icon="shield-check" href="/trust-access">
+  Connect API workflows to Trust Center access requests, reviewer tokens, and shared compliance
+  resources.
+</Card>
+
+  <Card title="Questionnaire guide" icon="sparkles" href="/security-questionnaire">
+    Understand how Comp AI extracts questions and generates answers from published policies and knowledge base content.
+  </Card>
+</CardGroup>
+
+## Security Questionnaire Automation
+
+The highest-leverage API workflow is security questionnaire automation. Comp AI can parse uploaded questionnaires, generate answers from approved organization evidence, and export completed files in common review formats.
+
+For external reviewers who use Trust Access tokens, use the token-based upload endpoint. For authenticated organization workflows, use the standard questionnaire endpoints with an API key.
+
+## Public API Reference
+
+The API reference is generated from the same NestJS OpenAPI specification used by the Comp AI API. Endpoint titles, descriptions, and visibility are curated in the API source so generated Mintlify pages stay accurate when the API changes.
