@@ -294,7 +294,11 @@ export class GenericEmployeeSyncService {
         try {
           await db.member.update({
             where: { id: member.id },
-            data: { deactivated: true, isActive: false },
+            data: {
+              deactivated: true,
+              isActive: false,
+              offboardDate: member.offboardDate ?? new Date(),
+            },
           });
           results.deactivated++;
           results.details.push({
