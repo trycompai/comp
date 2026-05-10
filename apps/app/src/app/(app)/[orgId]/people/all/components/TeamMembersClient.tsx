@@ -313,11 +313,11 @@ export function TeamMembersClient({
           </Select>
         </div>
         {/* Onboard Date Filter */}
-        <div className="hidden items-center gap-1 sm:flex">
-          <div className="w-[140px]">
+        <div className="hidden items-center gap-2 sm:flex">
+          <span className="text-muted-foreground whitespace-nowrap text-sm">Onboarded</span>
+          <div className="w-[130px]">
             <Input
               type="date"
-              placeholder="Onboard from"
               value={onboardAfter}
               onChange={(e) => {
                 setOnboardAfter(e.target.value);
@@ -325,10 +325,10 @@ export function TeamMembersClient({
               }}
             />
           </div>
-          <div className="w-[140px]">
+          <span className="text-muted-foreground text-sm">to</span>
+          <div className="w-[130px]">
             <Input
               type="date"
-              placeholder="Onboard to"
               value={onboardBefore}
               onChange={(e) => {
                 setOnboardBefore(e.target.value);
@@ -339,11 +339,11 @@ export function TeamMembersClient({
         </div>
 
         {/* Offboard Date Filter */}
-        <div className="hidden items-center gap-1 sm:flex">
-          <div className="w-[140px]">
+        <div className="hidden items-center gap-2 sm:flex">
+          <span className="text-muted-foreground whitespace-nowrap text-sm">Offboarded</span>
+          <div className="w-[130px]">
             <Input
               type="date"
-              placeholder="Offboard from"
               value={offboardAfter}
               onChange={(e) => {
                 setOffboardAfter(e.target.value);
@@ -351,10 +351,10 @@ export function TeamMembersClient({
               }}
             />
           </div>
-          <div className="w-[140px]">
+          <span className="text-muted-foreground text-sm">to</span>
+          <div className="w-[130px]">
             <Input
               type="date"
-              placeholder="Offboard to"
               value={offboardBefore}
               onChange={(e) => {
                 setOffboardBefore(e.target.value);
