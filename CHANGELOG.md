@@ -1,3 +1,12 @@
+## [3.49.2](https://github.com/trycompai/comp/compare/v3.49.1...v3.49.2) (2026-05-11)
+
+
+### Bug Fixes
+
+* **api:** prevent stack overflow during base64 file parsing ([e8eaa0d](https://github.com/trycompai/comp/commit/e8eaa0dc59a6d9137b1314704a186a966e30b46d))
+* **app:** use re-encoding check for strict base64 validation ([35092d7](https://github.com/trycompai/comp/commit/35092d71b59b5cb7d47453fc0f498237a2c1dec0))
+* **cloud-security:** ignore unused govcloud session token ([cce868e](https://github.com/trycompai/comp/commit/cce868ec24e3ec9ca22b61ddf75c27ed27310968))
+
 ## [3.49.1](https://github.com/trycompai/comp/compare/v3.49.0...v3.49.1) (2026-05-11)
 
 
