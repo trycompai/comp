@@ -1,18 +1,18 @@
 {
-  "generatedAt": "2026-05-01T19:08:04.283Z",
-  "total": 574,
-  "sourceCount": 574,
-  "uniqueSlugs": 574,
+  "generatedAt": "2026-05-11T18:03:02.706Z",
+  "total": 583,
+  "sourceCount": 583,
+  "uniqueSlugs": 583,
   "byCategory": {
     "HR & People": 63,
-    "Security": 129,
+    "Security": 134,
     "Productivity": 120,
-    "Infrastructure": 32,
+    "Infrastructure": 33,
     "Communication": 47,
     "Monitoring": 56,
     "Cloud": 54,
-    "Development": 53,
-    "Identity & Access": 20
+    "Development": 54,
+    "Identity & Access": 22
   },
   "integrations": [
     {
@@ -475,6 +475,15 @@
       "file": "integrations/better-stack.json"
     },
     {
+      "slug": "beyond-identity",
+      "name": "Beyond Identity",
+      "category": "Identity & Access",
+      "authType": "custom",
+      "checkCount": 3,
+      "syncSupported": true,
+      "file": "integrations/beyond-identity.json"
+    },
+    {
       "slug": "beyond-trust",
       "name": "BeyondTrust",
       "category": "Security",
@@ -725,6 +734,15 @@
       "checkCount": 2,
       "syncSupported": false,
       "file": "integrations/census.json"
+    },
+    {
+      "slug": "censys",
+      "name": "Censys",
+      "category": "Security",
+      "authType": "basic",
+      "checkCount": 3,
+      "syncSupported": false,
+      "file": "integrations/censys.json"
     },
     {
       "slug": "ceridian-dayforce",
@@ -1024,6 +1042,15 @@
       "file": "integrations/codefresh.json"
     },
     {
+      "slug": "coder",
+      "name": "Coder",
+      "category": "Development",
+      "authType": "custom",
+      "checkCount": 4,
+      "syncSupported": true,
+      "file": "integrations/coder.json"
+    },
+    {
       "slug": "cohere",
       "name": "Cohere",
       "category": "Cloud",
@@ -1063,9 +1090,9 @@
       "slug": "confluence",
       "name": "Confluence",
       "category": "Productivity",
-      "authType": "custom",
-      "checkCount": 2,
-      "syncSupported": false,
+      "authType": "basic",
+      "checkCount": 3,
+      "syncSupported": true,
       "file": "integrations/confluence.json"
     },
     {
@@ -1438,6 +1465,15 @@
       "file": "integrations/dixa.json"
     },
     {
+      "slug": "dnsimple",
+      "name": "DNSimple",
+      "category": "Infrastructure",
+      "authType": "custom",
+      "checkCount": 3,
+      "syncSupported": false,
+      "file": "integrations/dnsimple.json"
+    },
+    {
       "slug": "docebo",
       "name": "Docebo",
       "category": "Productivity",
@@ -1591,15 +1627,6 @@
       "file": "integrations/egnyte.json"
     },
     {
-      "slug": "elastic",
-      "name": "Elastic Cloud",
-      "category": "Monitoring",
-      "authType": "custom",
-      "checkCount": 2,
-      "syncSupported": false,
-      "file": "integrations/elastic.json"
-    },
-    {
       "slug": "elastic-cloud",
       "name": "Elastic Cloud",
       "category": "Cloud",
@@ -1607,6 +1634,15 @@
       "checkCount": 2,
       "syncSupported": false,
       "file": "integrations/elastic-cloud.json"
+    },
+    {
+      "slug": "elastic",
+      "name": "Elastic Cloud",
+      "category": "Monitoring",
+      "authType": "custom",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/elastic.json"
     },
     {
       "slug": "employment-hero",
@@ -1787,6 +1823,15 @@
       "checkCount": 4,
       "syncSupported": false,
       "file": "integrations/fortinet-fortigate.json"
+    },
+    {
+      "slug": "fossa",
+      "name": "FOSSA",
+      "category": "Security",
+      "authType": "api_key",
+      "checkCount": 3,
+      "syncSupported": false,
+      "file": "integrations/fossa.json"
     },
     {
       "slug": "frame-io",
@@ -2122,15 +2167,6 @@
       "file": "integrations/hexnode.json"
     },
     {
-      "slug": "hibob",
-      "name": "HiBob",
-      "category": "HR & People",
-      "authType": "custom",
-      "checkCount": 2,
-      "syncSupported": false,
-      "file": "integrations/hibob.json"
-    },
-    {
       "slug": "bob",
       "name": "HiBob",
       "category": "HR & People",
@@ -2138,6 +2174,15 @@
       "checkCount": 2,
       "syncSupported": true,
       "file": "integrations/bob.json"
+    },
+    {
+      "slug": "hibob",
+      "name": "HiBob",
+      "category": "HR & People",
+      "authType": "custom",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/hibob.json"
     },
     {
       "slug": "highlight-io",
@@ -2423,8 +2468,8 @@
       "name": "JumpCloud",
       "category": "Identity & Access",
       "authType": "custom",
-      "checkCount": 3,
-      "syncSupported": false,
+      "checkCount": 4,
+      "syncSupported": true,
       "file": "integrations/jumpcloud.json"
     },
     {
@@ -2603,7 +2648,7 @@
       "name": "LastPass Business",
       "category": "Security",
       "authType": "custom",
-      "checkCount": 3,
+      "checkCount": 4,
       "syncSupported": false,
       "file": "integrations/lastpass.json"
     },
@@ -2639,7 +2684,7 @@
       "name": "Linear",
       "category": "Development",
       "authType": "custom",
-      "checkCount": 2,
+      "checkCount": 1,
       "syncSupported": false,
       "file": "integrations/linear.json"
     },
@@ -2698,15 +2743,6 @@
       "file": "integrations/logrocket.json"
     },
     {
-      "slug": "logzio",
-      "name": "Logz.io",
-      "category": "Monitoring",
-      "authType": "custom",
-      "checkCount": 2,
-      "syncSupported": false,
-      "file": "integrations/logzio.json"
-    },
-    {
       "slug": "logz-io",
       "name": "Logz.io",
       "category": "Monitoring",
@@ -2714,6 +2750,15 @@
       "checkCount": 3,
       "syncSupported": false,
       "file": "integrations/logz-io.json"
+    },
+    {
+      "slug": "logzio",
+      "name": "Logz.io",
+      "category": "Monitoring",
+      "authType": "custom",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/logzio.json"
     },
     {
       "slug": "looker",
@@ -3022,15 +3067,6 @@
       "file": "integrations/mixpanel.json"
     },
     {
-      "slug": "monday",
-      "name": "Monday.com",
-      "category": "Productivity",
-      "authType": "custom",
-      "checkCount": 2,
-      "syncSupported": false,
-      "file": "integrations/monday.json"
-    },
-    {
       "slug": "monday-com",
       "name": "Monday.com",
       "category": "Productivity",
@@ -3038,6 +3074,15 @@
       "checkCount": 3,
       "syncSupported": false,
       "file": "integrations/monday-com.json"
+    },
+    {
+      "slug": "monday",
+      "name": "Monday.com",
+      "category": "Productivity",
+      "authType": "custom",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/monday.json"
     },
     {
       "slug": "mongodb-atlas",
@@ -3170,7 +3215,7 @@
       "name": "NetSuite",
       "category": "Productivity",
       "authType": "custom",
-      "checkCount": 2,
+      "checkCount": 3,
       "syncSupported": true,
       "file": "integrations/netsuite.json"
     },
@@ -3299,6 +3344,15 @@
       "checkCount": 3,
       "syncSupported": false,
       "file": "integrations/onetrust.json"
+    },
+    {
+      "slug": "opal-security",
+      "name": "Opal Security",
+      "category": "Identity & Access",
+      "authType": "api_key",
+      "checkCount": 4,
+      "syncSupported": true,
+      "file": "integrations/opal-security.json"
     },
     {
       "slug": "openai",
@@ -3958,6 +4012,15 @@
       "file": "integrations/rudderstack.json"
     },
     {
+      "slug": "safebase",
+      "name": "SafeBase",
+      "category": "Security",
+      "authType": "api_key",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/safebase.json"
+    },
+    {
       "slug": "sage-accounting",
       "name": "Sage Accounting",
       "category": "Productivity",
@@ -4201,15 +4264,6 @@
       "file": "integrations/smartsheet.json"
     },
     {
-      "slug": "snipe-it",
-      "name": "Snipe-IT",
-      "category": "Infrastructure",
-      "authType": "custom",
-      "checkCount": 4,
-      "syncSupported": false,
-      "file": "integrations/snipe-it.json"
-    },
-    {
       "slug": "snipeit",
       "name": "Snipe-IT",
       "category": "Infrastructure",
@@ -4217,6 +4271,15 @@
       "checkCount": 3,
       "syncSupported": false,
       "file": "integrations/snipeit.json"
+    },
+    {
+      "slug": "snipe-it",
+      "name": "Snipe-IT",
+      "category": "Infrastructure",
+      "authType": "custom",
+      "checkCount": 4,
+      "syncSupported": false,
+      "file": "integrations/snipe-it.json"
     },
     {
       "slug": "snowflake",
@@ -4255,15 +4318,6 @@
       "file": "integrations/socket.json"
     },
     {
-      "slug": "sonarqube-cloud",
-      "name": "SonarCloud",
-      "category": "Development",
-      "authType": "api_key",
-      "checkCount": 2,
-      "syncSupported": false,
-      "file": "integrations/sonarqube-cloud.json"
-    },
-    {
       "slug": "sonarcloud",
       "name": "SonarCloud",
       "category": "Security",
@@ -4271,6 +4325,15 @@
       "checkCount": 2,
       "syncSupported": false,
       "file": "integrations/sonarcloud.json"
+    },
+    {
+      "slug": "sonarqube-cloud",
+      "name": "SonarCloud",
+      "category": "Development",
+      "authType": "api_key",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/sonarqube-cloud.json"
     },
     {
       "slug": "sonarqube-server",
@@ -4642,6 +4705,15 @@
       "file": "integrations/testrail.json"
     },
     {
+      "slug": "thinkst-canary",
+      "name": "Thinkst Canary",
+      "category": "Security",
+      "authType": "custom",
+      "checkCount": 4,
+      "syncSupported": false,
+      "file": "integrations/thinkst-canary.json"
+    },
+    {
       "slug": "threatdown",
       "name": "ThreatDown (Malwarebytes)",
       "category": "Security",
@@ -4838,6 +4910,15 @@
       "checkCount": 2,
       "syncSupported": false,
       "file": "integrations/updown.json"
+    },
+    {
+      "slug": "upguard",
+      "name": "UpGuard",
+      "category": "Security",
+      "authType": "api_key",
+      "checkCount": 2,
+      "syncSupported": false,
+      "file": "integrations/upguard.json"
     },
     {
       "slug": "upstash",
@@ -5131,7 +5212,7 @@
       "slug": "zoho-crm",
       "name": "Zoho CRM",
       "category": "Productivity",
-      "authType": "custom",
+      "authType": "oauth2",
       "checkCount": 3,
       "syncSupported": true,
       "file": "integrations/zoho-crm.json"
@@ -5140,7 +5221,7 @@
       "slug": "zoho-people",
       "name": "Zoho People",
       "category": "HR & People",
-      "authType": "custom",
+      "authType": "oauth2",
       "checkCount": 2,
       "syncSupported": true,
       "file": "integrations/zoho-people.json"

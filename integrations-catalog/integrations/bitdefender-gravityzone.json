@@ -8,7 +8,7 @@
   "authConfig": {
     "type": "custom",
     "config": {
-      "setupInstructions": "1. Log into your Bitdefender GravityZone Control Center\n2. Click your username (top-right) and select My Account\n3. Go to the API keys section and click Add\n4. Select the APIs you need (Network, Policies, General, Quarantine) and click Generate\n5. Copy the API key and paste it here\n6. Select your region (Global or EU)",
+      "setupInstructions": "1. Log into your Bitdefender GravityZone Control Center\n2. Click your username (top-right) and select My Account\n3. Scroll to the API keys section and click Add\n4. Enter a description (e.g. \"Comp AI\")\n5. Under Enabled APIs, check ALL of the following:\n   - Network API\n   - Policies API\n   - General API\n   - Event Push Service API   ← required for the Monitoring & Alerting check\n   - Quarantine API\n6. Click Generate, then copy the key (it is only shown once)\n7. Paste the key here and select your region (Global or EU)",
       "credentialFields": [
         {
           "label": "API Key",
@@ -55,7 +55,7 @@
     {
       "slug": "quarantine_management",
       "name": "Monitoring & Alerting",
-      "description": "Monitors quarantined threats for recent security incidents",
+      "description": "Verifies that the GravityZone Push Event Service is configured and active for security event monitoring",
       "defaultSeverity": "medium",
       "enabled": true
     },

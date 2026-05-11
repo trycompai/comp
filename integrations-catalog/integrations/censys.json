@@ -1,0 +1,46 @@
+{
+  "slug": "censys",
+  "name": "Censys",
+  "description": "Monitor internet-facing assets and attack surface with Censys Search. Verify infrastructure inventory, host monitoring, and account health for compliance.",
+  "category": "Security",
+  "docsUrl": "https://search.censys.io/api",
+  "baseUrl": "https://search.censys.io/api",
+  "authConfig": {
+    "type": "basic",
+    "config": {
+      "setupInstructions": "1. Log in to Censys at https://search.censys.io\n2. Go to Account > API (https://search.censys.io/account/api)\n3. Copy your API ID and API Secret\n4. Paste them below",
+      "usernameField": "api_id",
+      "passwordField": "api_secret"
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "censys_monitoring_alerting",
+      "name": "Censys Monitoring and Alerting",
+      "description": "Verifies the Censys account is active and has remaining query allowance for continuous monitoring.",
+      "defaultSeverity": "high",
+      "enabled": true
+    },
+    {
+      "slug": "censys_app_availability",
+      "name": "Censys App Availability",
+      "description": "Verifies that hosts are being monitored for the organization's domain via Censys Search.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "censys_infrastructure_inventory",
+      "name": "Censys Infrastructure Inventory",
+      "description": "Verifies that infrastructure assets are tracked and inventoried in Censys for the organization's domain.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 3,
+  "isActive": true
+}
