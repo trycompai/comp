@@ -1,3 +1,12 @@
+## [3.49.1](https://github.com/trycompai/comp/compare/v3.49.0...v3.49.1) (2026-05-11)
+
+
+### Bug Fixes
+
+* **app:** put 'Remove Device' menu in line ([e288a2c](https://github.com/trycompai/comp/commit/e288a2c72e4e6ae4d7464e42bf765ab51f3b6829))
+* **app:** unable to select the options in integration settings sheet ([8af9ef7](https://github.com/trycompai/comp/commit/8af9ef79d77167fa55ea8a5d5164100476329e18))
+* **questionnaire-storage:** sanitize original file name in uploadQuestionnaireFile function ([6c86bff](https://github.com/trycompai/comp/commit/6c86bff5ead16a6186823e28e710d811894d71e9))
+
 # [3.49.0](https://github.com/trycompai/comp/compare/v3.48.0...v3.49.0) (2026-05-10)
 
 
