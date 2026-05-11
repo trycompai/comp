@@ -24,7 +24,7 @@ function sync(progress: PreviewProgress) {
 
 export const remediatePreview = task({
   id: 'remediate-preview',
-  maxDuration: 60 * 3, // 3 minutes
+  maxDuration: 60 * 10, // 10 minutes
   retry: { maxAttempts: 1 },
   run: async (payload: {
     connectionId: string;
