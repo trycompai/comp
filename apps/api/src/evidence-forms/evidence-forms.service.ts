@@ -196,19 +196,17 @@ export class EvidenceFormsService {
       );
     }
 
-    const base64Pattern = /^[A-Za-z0-9+/]+={0,2}$/;
-    if (!base64Pattern.test(normalized)) {
-      throw new BadRequestException(
-        'Invalid file data. Expected base64 string.',
-      );
-    }
+    try {
+      const fileBuffer = Buffer.from(normalized, 'base64');
 
-    const fileBuffer = Buffer.from(normalized, 'base64');
-    if (!fileBuffer.length) {
-      throw new BadRequestException('File cannot be empty');
-    }
+      if (!fileBuffer.length) {
+        throw new BadRequestException('File cannot be empty.');
+      }
 
-    return fileBuffer;
+      return fileBuffer;
+    } catch {
+      throw new BadRequestException('Invalid file data. Expected base64 string.');
+    }
   }
 
   /**
