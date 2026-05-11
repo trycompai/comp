@@ -57,12 +57,11 @@ describe('aws partition utils', () => {
   it('uses explicit GovCloud base credentials when configured', () => {
     process.env.SECURITY_HUB_GOVCLOUD_ACCESS_KEY_ID = 'AKIAGOV';
     process.env.SECURITY_HUB_GOVCLOUD_SECRET_ACCESS_KEY = 'secret';
-    process.env.SECURITY_HUB_GOVCLOUD_SESSION_TOKEN = 'token';
+    process.env.SECURITY_HUB_GOVCLOUD_SESSION_TOKEN = 'placeholder';
 
     expect(getAwsBaseCredentials('aws-us-gov')).toEqual({
       accessKeyId: 'AKIAGOV',
       secretAccessKey: 'secret',
-      sessionToken: 'token',
     });
     expect(getAwsBaseCredentials('aws')).toBeUndefined();
 

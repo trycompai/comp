@@ -41,7 +41,6 @@ export function getAwsBaseCredentials(
   return {
     accessKeyId,
     secretAccessKey,
-    sessionToken: process.env.SECURITY_HUB_GOVCLOUD_SESSION_TOKEN,
   };
 }
 
