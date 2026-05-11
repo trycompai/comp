@@ -62,8 +62,15 @@
       "description": "Lists all roles defined in NetSuite via SuiteQL to verify that role-based access controls are properly configured.",
       "defaultSeverity": "medium",
       "enabled": true
+    },
+    {
+      "slug": "netsuite_2fa",
+      "name": "2FA",
+      "description": "Verifies that two-factor authentication is enforced for NetSuite users with login access, checking both company preferences and role-level 2FA requirements",
+      "defaultSeverity": "medium",
+      "enabled": true
     }
   ],
-  "checkCount": 2,
+  "checkCount": 3,
   "isActive": true
 }

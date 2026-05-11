@@ -1,59 +1,47 @@
 {
   "slug": "confluence",
   "name": "Confluence",
-  "description": "Monitor Confluence spaces and user access for documentation and policy publishing compliance",
+  "description": "Monitor Confluence Cloud access controls, space permissions, and audit logging for compliance evidence. Syncs employee access from Confluence user groups.",
   "category": "Productivity",
   "docsUrl": "https://developer.atlassian.com/cloud/confluence/rest/v1/",
-  "baseUrl": "https://atlassian.net/",
+  "baseUrl": "https://example.atlassian.net",
   "authConfig": {
-    "type": "custom",
+    "type": "basic",
     "config": {
-      "setupInstructions": "1. Log in to your Atlassian account at id.atlassian.com\n2. Go to Security > API tokens (id.atlassian.com/manage-profile/security/api-tokens)\n3. Click 'Create API token', give it a name, and copy the token\n4. Enter the fields above:\n   - Site Domain: your Atlassian site (e.g. yourcompany.atlassian.net)\n   - Email: the email of the account that created the token\n   - API Token: the token you just copied\n   - Group Name (optional): leave empty for the default 'confluence-users' group, or enter your custom group name\n5. Tip: We recommend using an Atlassian service account rather than a personal account. Create one at admin.atlassian.com > Directory > Users",
-      "credentialFields": [
-        {
-          "label": "Atlassian Site Domain",
-          "type": "text",
-          "required": true
-        },
-        {
-          "label": "Email",
-          "type": "text",
-          "required": true
-        },
-        {
-          "label": "API Token",
-          "type": "password",
-          "required": true
-        },
-        {
-          "label": "Confluence Group Name",
-          "type": "text",
-          "required": false
-        }
-      ]
+      "setupInstructions": "1. Go to https://id.atlassian.com/manage-profile/security/api-tokens\n2. Click 'Create API token' and give it a name like 'CompAI'\n3. Copy the API token\n4. Enter your Atlassian account email and the API token below\n5. After connecting, enter your Atlassian site name (the part before .atlassian.net in your URL, e.g. 'mycompany' from mycompany.atlassian.net)",
+      "usernameField": "email",
+      "passwordField": "api_token"
     }
   },
   "capabilities": [
-    "checks"
+    "checks",
+    "sync"
   ],
   "supportsMultipleConnections": false,
-  "syncSupported": false,
+  "syncSupported": true,
   "checks": [
     {
-      "slug": "spaces",
-      "name": "Publish Policies",
-      "description": "Verifies Confluence spaces exist for policy publishing",
+      "slug": "confluence_employee_access",
+      "name": "Employee Access",
+      "description": "Lists all users with access to Confluence for employee access review evidence",
       "defaultSeverity": "medium",
       "enabled": true
     },
     {
-      "slug": "members",
-      "name": "Employee Access",
-      "description": "Reviews Confluence group members for employee access management",
+      "slug": "confluence_space_permissions",
+      "name": "Space Permissions Review",
+      "description": "Reviews Confluence space permissions and flags spaces with anonymous or public access enabled",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "confluence_audit_log",
+      "name": "Audit Logging",
+      "description": "Verifies that Confluence audit logging is active with recent entries",
       "defaultSeverity": "medium",
       "enabled": true
     }
   ],
-  "checkCount": 2,
+  "checkCount": 3,
   "isActive": true
 }
