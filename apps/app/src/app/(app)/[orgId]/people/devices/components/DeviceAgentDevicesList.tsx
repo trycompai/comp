@@ -354,7 +354,7 @@ export const DeviceAgentDevicesList = ({
                       >
                         <OverflowMenuVertical />
                       </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
+                      <DropdownMenuContent align="end" style={{ width: 'auto' }}>
                         <DropdownMenuItem
                           disabled={!isCurrentUserOwner}
                           onClick={(e) => {
@@ -365,7 +365,7 @@ export const DeviceAgentDevicesList = ({
                           variant="destructive"
                         >
                           <TrashCan size={16} className="mr-2" />
-                          <span>Remove Device</span>
+                          <span className="whitespace-nowrap">Remove Device</span>
                         </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>

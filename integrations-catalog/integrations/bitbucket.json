@@ -8,19 +8,19 @@
   "authConfig": {
     "type": "custom",
     "config": {
-      "setupInstructions": "1. Log in to Bitbucket\n2. Go to Personal Settings > App passwords\n3. Create an App Password with Repositories:Read and Account:Read permissions\n4. Enter your Bitbucket username and the App Password below",
+      "setupInstructions": "1. Go to https://id.atlassian.com/manage-profile/security/api-tokens\n2. Click \"Create API token with scopes\"\n3. Name the token, set an expiry date, and select Bitbucket as the app\n4. Assign Repositories: Read and User data: Read permissions\n5. Copy the token (it is only shown once)\n6. Enter your Atlassian account email and the API token below\n\nNote: Bitbucket App Passwords have been deprecated. Use API tokens instead.",
       "credentialFields": [
         {
-          "label": "Bitbucket Username",
+          "label": "Atlassian Account Email",
           "type": "text",
           "required": true,
-          "helpText": "Your Bitbucket username (not email)"
+          "helpText": "Your Atlassian account email address (listed under Email Aliases in Bitbucket Personal Settings)"
         },
         {
-          "label": "App Password",
+          "label": "API Token",
           "type": "password",
           "required": true,
-          "helpText": "Created in Bitbucket > Personal Settings > App passwords"
+          "helpText": "Created in Atlassian Account Settings > Security > API tokens"
         }
       ]
     }

@@ -1,0 +1,52 @@
+{
+  "slug": "opal-security",
+  "name": "Opal Security",
+  "description": "Monitor Opal Security access governance including employee access management, access reviews, role-based access controls, and employee verification for compliance",
+  "category": "Identity & Access",
+  "docsUrl": "https://docs.opal.dev/reference",
+  "baseUrl": "https://api.opal.dev/v1",
+  "authConfig": {
+    "type": "api_key",
+    "config": {
+      "setupInstructions": "1. Log in to Opal Security at https://app.opal.dev\n2. Navigate to Settings > API Tokens\n3. Click 'Create Token'\n4. Give the token a descriptive name (e.g., 'CompAI Integration')\n5. Copy the generated API token\n6. Paste the token in the field below\n\nThe token needs read access to users, resources, groups, and access reviews."
+    }
+  },
+  "capabilities": [
+    "checks",
+    "sync"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": true,
+  "checks": [
+    {
+      "slug": "opal_employee_access",
+      "name": "Employee Access",
+      "description": "Reviews Opal Security users to verify employee access management and HR IDP status tracking",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "opal_access_review_log",
+      "name": "Access Review Log",
+      "description": "Verifies that user access reviews (UARs) are configured with deadlines in Opal Security",
+      "defaultSeverity": "high",
+      "enabled": true
+    },
+    {
+      "slug": "opal_rbac",
+      "name": "Role-based Access Controls",
+      "description": "Verifies that resources and groups are configured in Opal Security for role-based access control",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "opal_employee_verification",
+      "name": "Employee Verification",
+      "description": "Verifies that HR IDP status is tracked for all users in Opal Security for employee lifecycle management",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 4,
+  "isActive": true
+}
