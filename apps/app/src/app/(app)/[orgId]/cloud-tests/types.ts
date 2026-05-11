@@ -32,6 +32,7 @@ export interface Provider {
   variables?: Record<string, unknown> | null;
   requiredVariables?: string[];
   accountId?: string;
+  awsType?: string;
   regions?: string[];
   tenantId?: string;
   subscriptionId?: string;
