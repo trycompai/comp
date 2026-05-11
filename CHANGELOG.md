@@ -1,3 +1,10 @@
+## [3.49.3](https://github.com/trycompai/comp/compare/v3.49.2...v3.49.3) (2026-05-11)
+
+
+### Bug Fixes
+
+* **trigger:** extend remediation preview timeout ([32cf439](https://github.com/trycompai/comp/commit/32cf43995d590d3c40696c00899d8e6884e4df23))
+
 ## [3.49.2](https://github.com/trycompai/comp/compare/v3.49.1...v3.49.2) (2026-05-11)
 
 
