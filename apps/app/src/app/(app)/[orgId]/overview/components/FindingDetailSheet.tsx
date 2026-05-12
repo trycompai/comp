@@ -12,6 +12,7 @@ import {
 function capitalize(s: string) {
   return s ? s.charAt(0).toUpperCase() + s.slice(1) : s;
 }
+import { Comments } from '@/components/comments/Comments';
 import { usePermissions } from '@/hooks/use-permissions';
 import { useSession } from '@/utils/auth-client';
 import { FindingSeverity, FindingStatus } from '@db';
@@ -408,6 +409,18 @@ export function FindingDetailSheet({
                 </Button>
               </HStack>
             </HStack>
+
+            <Stack gap="xs">
+              <Text size="sm" weight="medium">
+                Comments
+              </Text>
+              <Comments
+                entityId={finding.id}
+                entityType="finding"
+                organizationId={organizationId}
+                readOnly={!canUpdate}
+              />
+            </Stack>
 
             <Stack gap="xs">
               <Text size="sm" weight="medium">
