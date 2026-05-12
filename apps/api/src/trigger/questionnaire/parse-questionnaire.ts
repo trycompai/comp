@@ -1,7 +1,7 @@
 import { extractS3KeyFromUrl } from '@/app/s3';
 import { GetObjectCommand, S3Client } from '@aws-sdk/client-s3';
 import { db } from '@db';
-import { logger, tags, task } from '@trigger.dev/sdk';
+import { logger, metadata, tags, task } from '@trigger.dev/sdk';
 
 // Import shared utilities
 import {
@@ -264,6 +264,7 @@ export const parseQuestionnaireTask = task({
       let extractedContent: string;
 
       // Extract content based on input type
+      metadata.set('status', 'extracting').set('progress', 10);
       switch (payload.inputType) {
         case 'file': {
           if (!payload.fileData || !payload.fileType) {
@@ -319,6 +320,10 @@ export const parseQuestionnaireTask = task({
         inputType: payload.inputType,
         contentLength: extractedContent.length,
       });
+      metadata
+        .set('status', 'classifying_answerable_items')
+        .set('progress', 45)
+        .set('extractedContentLength', extractedContent.length);
 
       // Parse questions and answers from extracted content
       const parseStartTime = Date.now();
@@ -335,6 +340,10 @@ export const parseQuestionnaireTask = task({
         parseTimeSeconds: parseTime,
         totalTimeSeconds: totalTime,
       });
+      metadata
+        .set('status', 'saving_questionnaire')
+        .set('progress', 80)
+        .set('questionCount', questionsAndAnswers.length);
 
       // Create questionnaire record in database
       let questionnaireId: string;
@@ -367,9 +376,9 @@ export const parseQuestionnaireTask = task({
               create: questionsAndAnswers.map(
                 (qa: QuestionAnswer, index: number) => ({
                   question: qa.question,
-                  answer: qa.answer || null,
+                  answer: null,
                   questionIndex: index,
-                  status: qa.answer ? 'generated' : 'untouched',
+                  status: 'untouched',
                 }),
               ),
             },
@@ -382,6 +391,10 @@ export const parseQuestionnaireTask = task({
           questionnaireId,
           questionCount: questionsAndAnswers.length,
         });
+        metadata
+          .set('status', 'completed')
+          .set('progress', 100)
+          .set('questionnaireId', questionnaireId);
       } catch (error) {
         logger.error('Failed to create questionnaire record', {
           error: error instanceof Error ? error.message : 'Unknown error',
