@@ -1,3 +1,10 @@
+# [3.50.0](https://github.com/trycompai/comp/compare/v3.49.3...v3.50.0) (2026-05-12)
+
+
+### Features
+
+* **admin:** manage organization frameworks ([ae1b5fe](https://github.com/trycompai/comp/commit/ae1b5fe09c75477f99cb4133f36d297ef2925326))
+
 ## [3.49.3](https://github.com/trycompai/comp/compare/v3.49.2...v3.49.3) (2026-05-11)
 
 
