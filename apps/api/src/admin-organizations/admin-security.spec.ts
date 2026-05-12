@@ -12,6 +12,7 @@ import { AdminTasksController } from './admin-tasks.controller';
 import { AdminVendorsController } from './admin-vendors.controller';
 import { AdminContextController } from './admin-context.controller';
 import { AdminEvidenceController } from './admin-evidence.controller';
+import { AdminFrameworksController } from './admin-frameworks.controller';
 import { AdminIntegrationsController } from '../integration-platform/controllers/admin-integrations.controller';
 import { PlatformAuditLogInterceptor } from '../integration-platform/interceptors/platform-audit-log.interceptor';
 
@@ -21,6 +22,20 @@ jest.mock('../auth/auth.server', () => ({
 
 jest.mock('@db', () => ({
   db: {},
+  AuditLogEntityType: {
+    organization: 'organization',
+    people: 'people',
+    control: 'control',
+    policy: 'policy',
+    task: 'task',
+    vendor: 'vendor',
+    risk: 'risk',
+    finding: 'finding',
+    framework: 'framework',
+    integration: 'integration',
+    trust: 'trust',
+    pentest: 'pentest',
+  },
   FindingStatus: {
     open: 'open',
     ready_for_review: 'ready_for_review',
@@ -28,6 +43,12 @@ jest.mock('@db', () => ({
     closed: 'closed',
   },
   FindingType: { soc2: 'soc2', iso27001: 'iso27001' },
+  FindingSeverity: {
+    low: 'low',
+    medium: 'medium',
+    high: 'high',
+    critical: 'critical',
+  },
   TaskStatus: { todo: 'todo', in_progress: 'in_progress', done: 'done' },
   TaskFrequency: { daily: 'daily', weekly: 'weekly', monthly: 'monthly' },
   Departments: { none: 'none', engineering: 'engineering' },
@@ -36,6 +57,17 @@ jest.mock('@db', () => ({
   VendorCategory: { cloud: 'cloud', saas: 'saas' },
   VendorStatus: { active: 'active', inactive: 'inactive' },
   Prisma: {},
+}));
+
+jest.mock('@trycompai/auth', () => ({
+  RESTRICTED_ROLES: ['employee', 'contractor'],
+  PRIVILEGED_ROLES: ['owner', 'admin', 'auditor'],
+}));
+
+jest.mock('../frameworks/frameworks-scores.helper', () => ({
+  getOverviewScores: jest.fn(),
+  getCurrentMember: jest.fn(),
+  computeFrameworkComplianceScore: jest.fn(),
 }));
 
 jest.mock('@trigger.dev/sdk', () => ({
@@ -59,6 +91,7 @@ const ORG_ADMIN_CONTROLLERS = [
   { name: 'AdminVendorsController', controller: AdminVendorsController },
   { name: 'AdminContextController', controller: AdminContextController },
   { name: 'AdminEvidenceController', controller: AdminEvidenceController },
+  { name: 'AdminFrameworksController', controller: AdminFrameworksController },
 ];
 
 describe('Admin controllers security baseline', () => {
@@ -103,8 +136,8 @@ describe('Admin controllers security baseline', () => {
     });
   });
 
-  it('covers all 7 expected org-scoped admin controllers', () => {
-    expect(ORG_ADMIN_CONTROLLERS).toHaveLength(7);
+  it('covers all 8 expected org-scoped admin controllers', () => {
+    expect(ORG_ADMIN_CONTROLLERS).toHaveLength(8);
   });
 
   describe('AdminIntegrationsController', () => {
@@ -150,8 +183,8 @@ describe('Admin controllers security baseline', () => {
     });
   });
 
-  it('covers all 8 admin controllers (7 org-scoped + 1 platform-scoped)', () => {
-    expect(ORG_ADMIN_CONTROLLERS).toHaveLength(7);
+  it('covers all 9 admin controllers (8 org-scoped + 1 platform-scoped)', () => {
+    expect(ORG_ADMIN_CONTROLLERS).toHaveLength(8);
     expect(AdminIntegrationsController).toBeDefined();
   });
 
