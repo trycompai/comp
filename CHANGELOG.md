@@ -1,3 +1,11 @@
+# [3.51.0](https://github.com/trycompai/comp/compare/v3.50.0...v3.51.0) (2026-05-12)
+
+
+### Features
+
+* **admin:** integrate FrameworksModule and AdminFrameworksController into admin organizations module ([3ad5001](https://github.com/trycompai/comp/commit/3ad50010b48a361c038ccfa7136396c11946ba6a))
+* **questionnaire:** implement PDF extraction fallback to OpenAI ([8b0626a](https://github.com/trycompai/comp/commit/8b0626a43d79a8e65faef73d53d7886e79322661))
+
 # [3.50.0](https://github.com/trycompai/comp/compare/v3.49.3...v3.50.0) (2026-05-12)
 
 
