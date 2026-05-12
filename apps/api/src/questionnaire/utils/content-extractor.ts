@@ -714,7 +714,7 @@ async function extractFromPdf(
     const shouldSplit = pageCount > 10 || fileBuffer.length > 10 * 1024 * 1024;
     const text = shouldSplit
       ? await extractPdfByPage({ pdf, pageCount, logger })
-      : await extractPdfWithClaude({
+      : await extractPdfText({
           fileData,
           logger,
           label: 'PDF document',
@@ -753,13 +753,13 @@ async function extractPdfByPage(params: {
   );
   const pageTexts = await mapWithConcurrency(
     pageIndexes,
-    2,
+    1,
     async (pageIndex) => {
       const pagePdf = await PDFDocument.create();
       const [page] = await pagePdf.copyPages(params.pdf, [pageIndex]);
       pagePdf.addPage(page);
       const bytes = await pagePdf.save();
-      const text = await extractPdfWithClaude({
+      const text = await extractPdfText({
         fileData: Buffer.from(bytes).toString('base64'),
         logger: params.logger,
         label: `PDF page ${pageIndex + 1}`,
@@ -769,6 +769,22 @@ async function extractPdfByPage(params: {
   );
 
   return pageTexts.join('\n\n');
+}
+
+async function extractPdfText(params: {
+  fileData: string;
+  logger: ContentExtractionLogger;
+  label: string;
+}): Promise<string> {
+  try {
+    return await extractPdfWithClaude(params);
+  } catch (error) {
+    params.logger.warn('Claude PDF extraction failed, trying OpenAI fallback', {
+      label: params.label,
+      error: error instanceof Error ? error.message : 'Unknown error',
+    });
+    return extractPdfWithOpenAI(params);
+  }
 }
 
 async function extractPdfWithClaude(params: {
@@ -781,6 +797,34 @@ async function extractPdfWithClaude(params: {
   });
   const { text } = await generateText({
     model: anthropic('claude-sonnet-4-6'),
+    messages: [
+      {
+        role: 'user',
+        content: [
+          { type: 'text', text: VISION_EXTRACTION_PROMPT },
+          {
+            type: 'file',
+            data: params.fileData,
+            mediaType: 'application/pdf',
+          },
+        ],
+      },
+    ],
+  });
+
+  return text;
+}
+
+async function extractPdfWithOpenAI(params: {
+  fileData: string;
+  logger: ContentExtractionLogger;
+  label: string;
+}): Promise<string> {
+  params.logger.info('Extracting PDF text with OpenAI fallback', {
+    label: params.label,
+  });
+  const { text } = await generateText({
+    model: openai(PARSING_MODEL),
     messages: [
       {
         role: 'user',

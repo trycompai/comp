@@ -1,5 +1,7 @@
 import { extractContentFromFile } from './content-extractor';
 import ExcelJS from 'exceljs';
+import { PDFDocument } from 'pdf-lib';
+import { generateText } from 'ai';
 
 // Mock AI dependencies
 jest.mock('@ai-sdk/openai', () => ({ openai: jest.fn() }));
@@ -108,6 +110,24 @@ describe('content-extractor: extractContentFromFile', () => {
 
     expect(result).toContain('question,answer');
     expect(result).toContain('What is 2+2?,4');
+  });
+
+  it('should fall back to OpenAI when Claude PDF extraction is overloaded', async () => {
+    const pdf = await PDFDocument.create();
+    pdf.addPage();
+    const bytes = await pdf.save();
+    const mockGenerateText = generateText as jest.Mock;
+    mockGenerateText
+      .mockRejectedValueOnce(new Error('Overloaded'))
+      .mockResolvedValueOnce({ text: 'Extracted PDF text' });
+
+    const result = await extractContentFromFile(
+      Buffer.from(bytes).toString('base64'),
+      'application/pdf',
+    );
+
+    expect(result).toBe('Extracted PDF text');
+    expect(mockGenerateText).toHaveBeenCalledTimes(2);
   });
 
   it('should reject legacy XLS files with a clear message', async () => {
