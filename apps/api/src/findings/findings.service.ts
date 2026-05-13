@@ -486,7 +486,7 @@ export class FindingsService {
     organizationId: string,
     findingId: string,
     userId: string,
-    memberId: string,
+    memberId: string | null,
   ) {
     const finding = await this.findById(organizationId, findingId);
 
