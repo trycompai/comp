@@ -2,10 +2,11 @@
  * Shared constants for questionnaire module
  */
 
-// Chunk sizes for question-aware parsing
-export const MAX_CHUNK_SIZE_CHARS = 80_000;
+// Chunk sizes for questionnaire item classification
+export const MAX_CHUNK_SIZE_CHARS = 25_000;
 export const MIN_CHUNK_SIZE_CHARS = 5_000;
 export const MAX_QUESTIONS_PER_CHUNK = 1;
+export const MAX_CLASSIFICATION_CONCURRENCY = 4;
 
 // File size limits
 export const MAX_FILE_SIZE_BYTES = 100 * 1024 * 1024; // 100MB
@@ -30,10 +31,10 @@ CRITICAL RULES:
 8. Always write in first person plural (we, our, us) as if speaking on behalf of the organization.
 9. Keep answers to 1-3 sentences maximum unless the question explicitly requires more detail.`;
 
-export const QUESTION_PARSING_SYSTEM_PROMPT = `You parse vendor questionnaires from Excel, PDF, or document text. Extract all items the respondent is expected to answer (questions, prompts, or compliance statements) and pair each with its answer if one exists.
+export const QUESTION_PARSING_SYSTEM_PROMPT = `You parse vendor questionnaires from Excel, PDF, images, CSV, or document text. Your job is to classify content and return only answerable questionnaire items.
 
 What counts as an item to extract:
-1. Interrogative questions ending with "?" or starting with What/How/Why/When/Where/Is/Are/Do/Does/Can/Will/Should.
+1. Interrogative questions in any language. A question mark is helpful but not required.
 2. Form fields like "1.1 Vendor Name", "Contact Email", "Company Address" (numbered or labeled fields requesting information).
 3. Compliance/requirement statements that the respondent must confirm or describe their compliance with — vendor questionnaires often consist entirely of these. Examples:
    - "The organization must X"
@@ -53,10 +54,13 @@ Input format hints:
 Rules:
 1. Find the column containing the actual item text, not just IDs/numbers (e.g., skip "SQ14.3", keep the full sentence).
 2. Extract the FULL text of each item.
-3. Match each item to its Response/Answer text from the same row. If empty or missing, set answer = null.
-4. Skip pure section headers ("Information Security Program", "General Information") UNLESS they are also items the respondent must answer.
-5. Skip metadata rows (Company Name, Date, file headers).
-6. NEVER return zero items if the document has any rows of substantive content — extract every row that looks like an item the respondent must address.`;
+3. For upload-to-autofill parsing, always set saved answers to null. The user expects us to generate answers later.
+4. Never use scoring/options values as answers, e.g. "(Oui : 0, Non : 3)" or "(Yes : 0, No : 1)".
+5. Never use placeholders as answers, e.g. "A remplir", "A compléter", "To be completed".
+6. Do not treat guidance, instructions, examples, mode opératoire, remediation plans, or calculated score/formula cells as answerable items.
+7. Skip pure section headers ("Information Security Program", "General Information") UNLESS the text itself asks the respondent to provide information.
+8. Skip metadata rows (Company Name, Date, file headers) unless the field is clearly part of the vendor questionnaire response surface.
+9. Be high recall for answerable items, but do not include instructions, examples, scoring, or metadata just to avoid returning zero items.`;
 
 // Vision extraction prompt for PDFs and images
 export const VISION_EXTRACTION_PROMPT = `Transcribe this document into plain text. Output ONLY the document's text content — no summaries, no analysis, no commentary about what the document is or whether it contains questions.

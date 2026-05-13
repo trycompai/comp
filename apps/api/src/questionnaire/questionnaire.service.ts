@@ -5,10 +5,7 @@ import { generateAnswerWithRAGBatch } from '@/trigger/questionnaire/answer-quest
 import { tasks } from '@trigger.dev/sdk';
 import type { parseQuestionnaireTask } from '@/trigger/questionnaire/parse-questionnaire';
 import { ParseQuestionnaireDto } from './dto/parse-questionnaire.dto';
-import {
-  ExportQuestionnaireDto,
-  type QuestionnaireExportFormat,
-} from './dto/export-questionnaire.dto';
+import { ExportQuestionnaireDto } from './dto/export-questionnaire.dto';
 import { AnswerSingleQuestionDto } from './dto/answer-single-question.dto';
 import { SaveAnswerDto } from './dto/save-answer.dto';
 import { DeleteAnswerDto } from './dto/delete-answer.dto';
@@ -24,13 +21,9 @@ import AdmZip from 'adm-zip';
 // Import shared utilities
 import {
   extractContentFromFile,
-  extractQuestionsWithAI,
   type ContentExtractionLogger,
 } from './utils/content-extractor';
-import {
-  parseQuestionsAndAnswers,
-  type QuestionAnswer as ParsedQA,
-} from './utils/question-parser';
+import { parseQuestionsAndAnswers } from './utils/question-parser';
 import {
   generateExportFile,
   type ExportFormat,
@@ -85,10 +78,13 @@ export class QuestionnaireService {
   async parseQuestionnaire(
     dto: ParseQuestionnaireDto,
   ): Promise<ParsedQuestionnaireResult> {
-    // Use faster AI-powered extraction (combines extraction + parsing in one step)
-    const questionsAndAnswers = await extractQuestionsWithAI(
+    const extractedContent = await extractContentFromFile(
       dto.fileData,
       dto.fileType,
+      this.contentLogger,
+    );
+    const questionsAndAnswers = await parseQuestionsAndAnswers(
+      extractedContent,
       this.contentLogger,
     );
 
@@ -122,24 +118,33 @@ export class QuestionnaireService {
       );
     }
 
-    console.log(Date.now(), 'Parsing questionnaire');
-    // Use faster AI-powered extraction (combines extraction + parsing in one step)
-    const questionsAndAnswers = await extractQuestionsWithAI(
+    this.logger.log('Parsing questionnaire for auto-answer export');
+    const extractedContent = await extractContentFromFile(
       dto.fileData,
       dto.fileType,
       this.contentLogger,
     );
-    console.log(Date.now(), 'Parsed questionnaire');
+    const questionsAndAnswers = await parseQuestionsAndAnswers(
+      extractedContent,
+      this.contentLogger,
+    );
+    this.logger.log('Parsed questionnaire for auto-answer export', {
+      questionCount: questionsAndAnswers.length,
+    });
 
-    console.log(Date.now(), 'Generating answers for questions');
+    this.logger.log('Generating answers for parsed questionnaire', {
+      questionCount: questionsAndAnswers.length,
+    });
     const answered = await this.generateAnswersForQuestions(
       questionsAndAnswers.map((qa) => ({
         question: qa.question,
-        answer: qa.answer,
+        answer: null,
       })),
       dto.organizationId,
     );
-    console.log(Date.now(), 'Generated answers for questions');
+    this.logger.log('Generated questionnaire answers', {
+      questionCount: answered.length,
+    });
 
     const vendorName = dto.vendorName || dto.fileName || 'questionnaire';
 
@@ -186,7 +191,7 @@ export class QuestionnaireService {
     // Single format export (default behavior)
     const exportFile = await generateExportFile(
       answered.map((a) => ({ question: a.question, answer: a.answer })),
-      dto.format as ExportFormat,
+      dto.format,
       vendorName,
     );
 
@@ -432,7 +437,7 @@ export class QuestionnaireService {
 
     return await generateExportFile(
       questionsAndAnswers,
-      dto.format as ExportFormat,
+      dto.format,
       questionnaire.filename,
     );
   }

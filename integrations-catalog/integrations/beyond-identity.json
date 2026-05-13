@@ -1,0 +1,79 @@
+{
+  "slug": "beyond-identity",
+  "name": "Beyond Identity",
+  "description": "Monitor Beyond Identity for passwordless MFA enrollment, identity access management, and role-based access controls.",
+  "category": "Identity & Access",
+  "docsUrl": "https://developer.beyondidentity.com/api/v1",
+  "baseUrl": null,
+  "authConfig": {
+    "type": "custom",
+    "config": {
+      "setupInstructions": "Setup steps:\n\n1. Log in to your Beyond Identity Admin Console at https://console-us.beyondidentity.com (US) or https://console-eu.beyondidentity.com (EU)\n2. Navigate to your tenant and realm\n3. Go to Applications and find or create a Management API application\n4. Copy the Application ID, Client ID, and Client Secret\n5. Note your Tenant ID and Realm ID from the console URL or settings\n6. Select your region (US or EU)",
+      "credentialFields": [
+        {
+          "label": "Tenant ID",
+          "type": "text",
+          "required": true
+        },
+        {
+          "label": "Realm ID",
+          "type": "text",
+          "required": true
+        },
+        {
+          "label": "Application ID",
+          "type": "text",
+          "required": true,
+          "helpText": "The Beyond Identity Management API application ID"
+        },
+        {
+          "label": "Client ID",
+          "type": "text",
+          "required": true
+        },
+        {
+          "label": "Client Secret",
+          "type": "password",
+          "required": true
+        },
+        {
+          "label": "Region",
+          "type": "text",
+          "required": true,
+          "helpText": "US or EU (e.g. 'us' or 'eu')"
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks",
+    "sync"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": true,
+  "checks": [
+    {
+      "slug": "beyond_identity_2fa",
+      "name": "Beyond Identity 2FA",
+      "description": "Verifies all identities have bound passwordless credentials (passkeys) for MFA authentication.",
+      "defaultSeverity": "high",
+      "enabled": true
+    },
+    {
+      "slug": "beyond_identity_employee_access",
+      "name": "Beyond Identity Employee Access",
+      "description": "Verifies identities and groups are properly configured for employee access management.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "beyond_identity_rbac",
+      "name": "Beyond Identity Role-Based Access Controls",
+      "description": "Verifies resource servers have roles defined for proper role-based access control.",
+      "defaultSeverity": "high",
+      "enabled": true
+    }
+  ],
+  "checkCount": 3,
+  "isActive": true
+}

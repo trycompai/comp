@@ -8,6 +8,56 @@
     "dark": "#0E0E10"
   },
   "favicon": "/favicon.ico",
+  "redirects": [
+    {
+      "source": "/api",
+      "destination": "/api-reference/overview"
+    },
+    {
+      "source": "/docs/api",
+      "destination": "/api-reference/overview"
+    },
+    {
+      "source": "/security-questionnaire-trust-center",
+      "destination": "/security-questionnaire"
+    },
+    {
+      "source": "/api-reference/questionnaire/upload-and-auto-answer-a-questionnaire-via-trust-portal-token",
+      "destination": "/api-reference/questionnaire/upload-a-questionnaire-file-and-auto-answer-with-export"
+    },
+    {
+      "source": "/api-reference/background-checks/:slug*",
+      "destination": "/api-reference/overview"
+    },
+    {
+      "source": "/api-reference/billing/:slug*",
+      "destination": "/api-reference/overview"
+    },
+    {
+      "source": "/api-reference/browserbase/:slug*",
+      "destination": "/api-reference/overview"
+    },
+    {
+      "source": "/api-reference/finding-templates/:slug*",
+      "destination": "/api-reference/overview"
+    },
+    {
+      "source": "/api-reference/framework-editor/:slug*",
+      "destination": "/api-reference/overview"
+    },
+    {
+      "source": "/api-reference/health/:slug*",
+      "destination": "/api-reference/overview"
+    },
+    {
+      "source": "/api-reference/pentest-credits/:slug*",
+      "destination": "/api-reference/overview"
+    },
+    {
+      "source": "/api-reference/secrets/:slug*",
+      "destination": "/api-reference/overview"
+    }
+  ],
   "navigation": {
     "tabs": [
       {
@@ -24,10 +74,7 @@
               "penetration-tests",
               {
                 "group": "Trust",
-                "pages": [
-                  "trust-access",
-                  "security-questionnaire-trust-center"
-                ]
+                "pages": ["trust-access"]
               }
             ]
           }
@@ -52,15 +99,11 @@
         "groups": [
           {
             "group": "Platform Overview",
-            "pages": [
-              "integrations/index"
-            ]
+            "pages": ["integrations/index"]
           },
           {
             "group": "Integration Guides",
-            "pages": [
-              "integrations/aikido"
-            ]
+            "pages": ["integrations/aikido"]
           },
           {
             "group": "Developer Guides",
@@ -83,8 +126,17 @@
         ]
       },
       {
-        "tab": "API",
-        "openapi": { "source": "./openapi.json" }
+        "tab": "API Reference",
+        "groups": [
+          {
+            "group": "Overview",
+            "pages": ["api-reference/overview"]
+          },
+          {
+            "group": "Reference",
+            "openapi": { "source": "./openapi.json" }
+          }
+        ]
       }
     ],
     "global": {
@@ -112,6 +164,16 @@
       "type": "button",
       "label": "Get started",
       "href": "https://trycomp.ai"
+    }
+  },
+  "api": {
+    "playground": {
+      "display": "interactive"
+    },
+    "examples": {
+      "languages": ["bash", "javascript", "python"],
+      "defaults": "required",
+      "prefill": true
     }
   },
   "footer": {

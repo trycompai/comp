@@ -39,6 +39,14 @@ import {
   type TaskTemplateId,
   type IntegrationCredentials,
 } from '@trycompai/integration-platform';
+import {
+  getAwsBaseCredentials,
+  getAwsRoleAssumerArn,
+  getAwsRoleAssumerEnvName,
+  normalizeAwsPartition,
+  parseAwsRoleArn,
+  validateAwsPartitionConfig,
+} from '../../cloud-security/aws-partition.utils';
 
 interface CreateConnectionDto {
   providerSlug: string;
@@ -339,11 +347,14 @@ export class ConnectionsController {
           const updates: Record<string, unknown> = {};
           if (typeof creds.roleArn === 'string') {
             updates.roleArn = creds.roleArn;
-            const m = creds.roleArn.match(/^arn:aws:iam::(\d{12}):role\/.+$/);
-            if (m) updates.accountId = m[1];
+            const parsedRoleArn = parseAwsRoleArn(creds.roleArn);
+            if (parsedRoleArn) updates.accountId = parsedRoleArn.accountId;
           }
           if (typeof creds.remediationRoleArn === 'string') {
             updates.remediationRoleArn = creds.remediationRoleArn;
+          }
+          if (typeof creds.awsType === 'string') {
+            updates.awsType = creds.awsType;
           }
           if (Array.isArray(creds.regions)) {
             updates.regions = creds.regions;
@@ -446,6 +457,9 @@ export class ConnectionsController {
       if (typeof credentials.connectionName === 'string') {
         metadata.connectionName = credentials.connectionName;
       }
+      if (typeof credentials.awsType === 'string') {
+        metadata.awsType = credentials.awsType;
+      }
       if (Array.isArray(credentials.regions)) {
         metadata.regions = credentials.regions;
       }
@@ -453,13 +467,8 @@ export class ConnectionsController {
       // These are not secrets - roleArn is visible in AWS console, externalId is typically the org ID
       if (typeof credentials.roleArn === 'string') {
         metadata.roleArn = credentials.roleArn;
-        // Extract account ID from ARN: arn:aws:iam::123456789012:role/RoleName
-        const arnMatch = credentials.roleArn.match(
-          /^arn:aws:iam::(\d{12}):role\/.+$/,
-        );
-        if (arnMatch) {
-          metadata.accountId = arnMatch[1];
-        }
+        const parsedRoleArn = parseAwsRoleArn(credentials.roleArn);
+        if (parsedRoleArn) metadata.accountId = parsedRoleArn.accountId;
       }
       if (typeof credentials.externalId === 'string') {
         metadata.externalId = credentials.externalId;
@@ -537,6 +546,7 @@ export class ConnectionsController {
     const roleArnValue = credentials.roleArn;
     const externalIdValue = credentials.externalId;
     const regionsValue = credentials.regions;
+    const partition = normalizeAwsPartition(credentials.awsType);
 
     if (typeof roleArnValue !== 'string' || !roleArnValue.trim()) {
       return { success: false, message: 'Missing or invalid IAM Role ARN' };
@@ -559,20 +569,32 @@ export class ConnectionsController {
       return { success: false, message: 'No valid AWS regions selected' };
     }
 
-    // Validate ARN format
-    const arnMatch = roleArn.match(/^arn:aws:iam::(\d{12}):role\/.+$/);
-    if (!arnMatch) {
+    const partitionErrors = validateAwsPartitionConfig({
+      partition,
+      roleArn,
+      regions,
+      remediationRoleArn:
+        typeof credentials.remediationRoleArn === 'string'
+          ? credentials.remediationRoleArn.trim()
+          : undefined,
+    });
+    if (partitionErrors.length > 0) {
+      return { success: false, message: partitionErrors.join(' ') };
+    }
+
+    const parsedRoleArn = parseAwsRoleArn(roleArn);
+    if (!parsedRoleArn) {
       return {
         success: false,
-        message:
-          'Invalid IAM Role ARN format. Expected: arn:aws:iam::ACCOUNT_ID:role/ROLE_NAME',
+        message: 'Invalid IAM Role ARN format.',
       };
     }
 
-    const roleAssumerArn = process.env.SECURITY_HUB_ROLE_ASSUMER_ARN;
+    const roleAssumerArn = getAwsRoleAssumerArn(partition);
     if (!roleAssumerArn) {
+      const envName = getAwsRoleAssumerEnvName(partition);
       this.logger.error(
-        'Missing SECURITY_HUB_ROLE_ASSUMER_ARN environment variable',
+        `Missing ${envName} environment variable`,
       );
       return {
         success: false,
@@ -585,7 +607,10 @@ export class ConnectionsController {
     try {
       // Step 1: Assume our role assumer role
       this.logger.log('Validating AWS: Assuming role assumer...');
-      const baseSts = new STSClient({ region: primaryRegion });
+      const baseSts = new STSClient({
+        region: primaryRegion,
+        credentials: getAwsBaseCredentials(partition),
+      });
       const roleAssumerResp = await baseSts.send(
         new AssumeRoleCommand({
           RoleArn: roleAssumerArn,
@@ -657,7 +682,7 @@ export class ConnectionsController {
       return {
         success: true,
         message,
-        details: { account: identity.Account, regions },
+        details: { account: identity.Account ?? parsedRoleArn.accountId, regions },
       };
     } catch (err) {
       const errorMessage =
@@ -1183,13 +1208,14 @@ export class ConnectionsController {
     const metaUpdates: Record<string, unknown> = {};
     if (typeof mergedCredentials.roleArn === 'string') {
       metaUpdates.roleArn = mergedCredentials.roleArn;
-      const arnMatch = mergedCredentials.roleArn.match(
-        /^arn:aws:iam::(\d{12}):role\/.+$/,
-      );
-      if (arnMatch) metaUpdates.accountId = arnMatch[1];
+      const parsedRoleArn = parseAwsRoleArn(mergedCredentials.roleArn);
+      if (parsedRoleArn) metaUpdates.accountId = parsedRoleArn.accountId;
     }
     if (typeof mergedCredentials.remediationRoleArn === 'string') {
       metaUpdates.remediationRoleArn = mergedCredentials.remediationRoleArn;
+    }
+    if (typeof mergedCredentials.awsType === 'string') {
+      metaUpdates.awsType = mergedCredentials.awsType;
     }
     if (Array.isArray(mergedCredentials.regions)) {
       metaUpdates.regions = mergedCredentials.regions;

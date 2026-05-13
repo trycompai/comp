@@ -31,6 +31,7 @@ export interface CloudProvider {
   variables: Record<string, unknown> | null;
   requiredVariables: string[];
   accountId?: string;
+  awsType?: string;
   regions?: string[];
   tenantId?: string;
   subscriptionId?: string;
@@ -133,6 +134,8 @@ export class CloudSecurityQueryService {
           typeof metadata.accountId === 'string'
             ? metadata.accountId
             : undefined,
+        awsType:
+          typeof metadata.awsType === 'string' ? metadata.awsType : undefined,
         regions: Array.isArray(metadata.regions)
           ? metadata.regions.filter((r): r is string => typeof r === 'string')
           : undefined,
@@ -171,6 +174,8 @@ export class CloudSecurityQueryService {
           typeof settings.accountId === 'string'
             ? settings.accountId
             : undefined,
+        awsType:
+          typeof settings.awsType === 'string' ? settings.awsType : undefined,
         regions: Array.isArray(settings.regions)
           ? settings.regions.filter((r): r is string => typeof r === 'string')
           : undefined,

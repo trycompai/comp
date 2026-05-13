@@ -1,9 +1,52 @@
 import { z } from 'zod';
 
+export type AwsEnvironment = 'aws' | 'aws-us-gov';
+
+const COMP_AI_COMMERCIAL_ROLE_ASSUMER_ACCOUNT_ID = '684120556289';
+const COMP_AI_GOVCLOUD_ROLE_ASSUMER_ACCOUNT_ID = '633779453318';
+
+export function normalizeAwsEnvironment(value: unknown): AwsEnvironment {
+  return value === 'aws-us-gov' ? 'aws-us-gov' : 'aws';
+}
+
+function getAwsRoleAssumerArn(environment: AwsEnvironment): string {
+  const accountId =
+    environment === 'aws-us-gov'
+      ? COMP_AI_GOVCLOUD_ROLE_ASSUMER_ACCOUNT_ID
+      : COMP_AI_COMMERCIAL_ROLE_ASSUMER_ACCOUNT_ID;
+
+  return `arn:${environment}:iam::${accountId}:role/roleAssumer`;
+}
+
+function getAwsManagedPolicyArn(
+  environment: AwsEnvironment,
+  policyName: string,
+): string {
+  return `arn:${environment}:iam::aws:policy/${policyName}`;
+}
+
+export function getAwsCloudShellUrl(environment: AwsEnvironment = 'aws'): string {
+  return environment === 'aws-us-gov'
+    ? 'https://console.amazonaws-us-gov.com/cloudshell'
+    : 'https://console.aws.amazon.com/cloudshell';
+}
+
 /**
  * AWS credential fields for the connection form
  */
 export const awsCredentialFields = [
+  {
+    id: 'awsType',
+    label: 'AWS Environment',
+    type: 'select' as const,
+    required: true,
+    placeholder: 'Select AWS environment',
+    helpText: 'Choose the AWS partition where this account runs.',
+    options: [
+      { value: 'aws', label: 'Commercial AWS' },
+      { value: 'aws-us-gov', label: 'AWS GovCloud (US)' },
+    ],
+  },
   {
     id: 'connectionName',
     label: 'Connection Name',
@@ -51,6 +94,9 @@ export const awsCredentialFields = [
       { value: 'us-east-2', label: 'us-east-2 (Ohio)' },
       { value: 'us-west-1', label: 'us-west-1 (N. California)' },
       { value: 'us-west-2', label: 'us-west-2 (Oregon)' },
+      // AWS GovCloud (US) Regions
+      { value: 'us-gov-west-1', label: 'us-gov-west-1 (GovCloud US-West)' },
+      { value: 'us-gov-east-1', label: 'us-gov-east-1 (GovCloud US-East)' },
       // Europe Regions
       { value: 'eu-west-1', label: 'eu-west-1 (Ireland)' },
       { value: 'eu-west-2', label: 'eu-west-2 (London)' },
@@ -92,18 +138,19 @@ export const awsCredentialFields = [
  * Validation schema for AWS credentials
  */
 export const awsCredentialSchema = z.object({
+  awsType: z.enum(['aws', 'aws-us-gov']),
   connectionName: z.string().min(1, 'Connection name is required'),
   roleArn: z
     .string()
     .regex(
-      /^arn:aws:iam::\d{12}:role\/.+$/,
-      'Must be a valid IAM Role ARN (arn:aws:iam::ACCOUNT_ID:role/ROLE_NAME)',
+      /^arn:(aws|aws-us-gov):iam::\d{12}:role\/.+$/,
+      'Must be a valid IAM Role ARN',
     ),
   externalId: z.string().min(1),
   remediationRoleArn: z
     .string()
     .regex(
-      /^arn:aws:iam::\d{12}:role\/.+$/,
+      /^arn:(aws|aws-us-gov):iam::\d{12}:role\/.+$/,
       'Must be a valid IAM Role ARN',
     )
     .optional()
@@ -115,8 +162,20 @@ export const awsCredentialSchema = z.object({
  * CloudShell setup script for customers to create the IAM role.
  * Customers run this in AWS CloudShell with their External ID as argument.
  */
-export const awsCloudShellScript = [
+export function getAwsCloudShellScript(environment: AwsEnvironment = 'aws'): string {
+  const roleAssumerArn = getAwsRoleAssumerArn(environment);
+  const securityAuditPolicyArn = getAwsManagedPolicyArn(
+    environment,
+    'SecurityAudit',
+  );
+  const viewOnlyPolicyArn = getAwsManagedPolicyArn(
+    environment,
+    'job-function/ViewOnlyAccess',
+  );
+
+  return [
   '#!/bin/bash',
+  '(',
   'set -euo pipefail',
   '',
   'ROLE_NAME="CompAI-Auditor"',
@@ -129,7 +188,7 @@ export const awsCloudShellScript = [
   '  "Version": "2012-10-17",',
   '  "Statement": [{',
   '    "Effect": "Allow",',
-  '    "Principal": { "AWS": "arn:aws:iam::684120556289:role/roleAssumer" },',
+  `    "Principal": { "AWS": "${roleAssumerArn}" },`,
   '    "Action": "sts:AssumeRole",',
   '    "Condition": { "StringEquals": { "sts:ExternalId": "$EXTERNAL_ID" } }',
   '  }]',
@@ -144,10 +203,10 @@ export const awsCloudShellScript = [
   '  --query "Role.Arn" --output text)',
   '',
   'aws iam attach-role-policy --role-name "$ROLE_NAME" \\',
-  '  --policy-arn arn:aws:iam::aws:policy/SecurityAudit',
+  `  --policy-arn ${securityAuditPolicyArn}`,
   '',
   'aws iam attach-role-policy --role-name "$ROLE_NAME" \\',
-  '  --policy-arn arn:aws:iam::aws:policy/job-function/ViewOnlyAccess',
+  `  --policy-arn ${viewOnlyPolicyArn}`,
   '',
   'aws iam put-role-policy --role-name "$ROLE_NAME" \\',
   '  --policy-name CompAI-CostExplorer \\',
@@ -164,20 +223,32 @@ export const awsCloudShellScript = [
   'echo "============================================"',
   'echo ""',
   'echo "Paste these values into your Comp AI connection form."',
-].join('\n');
+  ')',
+  ].join('\n');
+}
+
+export const awsCloudShellScript = getAwsCloudShellScript();
 
 /**
  * CloudShell setup script for the remediation IAM role.
  * Separate from the auditor role so the audit role stays read-only.
  */
-export const awsRemediationScript = `# Create Remediation Role for Auto-Fix
+export function getAwsRemediationScript(
+  environment: AwsEnvironment = 'aws',
+): string {
+  const roleAssumerArn = getAwsRoleAssumerArn(environment);
+
+  return `# Create Remediation Role for Auto-Fix
 # Run this in AWS CloudShell after setting up the Auditor role.
+
+(
+set -euo pipefail
 
 EXTERNAL_ID="YOUR_EXTERNAL_ID"
 ROLE_NAME="CompAI-Remediator"
 
 ROLE_ARN=$(aws iam create-role --role-name "$ROLE_NAME" --max-session-duration 3600 \\
-  --assume-role-policy-document '{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Principal":{"AWS":"arn:aws:iam::684120556289:role/roleAssumer"},"Action":"sts:AssumeRole","Condition":{"StringEquals":{"sts:ExternalId":"'$EXTERNAL_ID'"}}}]}' \\
+  --assume-role-policy-document '{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Principal":{"AWS":"${roleAssumerArn}"},"Action":"sts:AssumeRole","Condition":{"StringEquals":{"sts:ExternalId":"'$EXTERNAL_ID'"}}}]}' \\
   --query 'Role.Arn' --output text)
 
 # Storage Remediation: S3, DynamoDB, Redshift, Glue, Athena
@@ -214,7 +285,11 @@ echo "  Remediation Role ARN (paste this below):"
 echo ""
 echo "  $ROLE_ARN"
 echo ""
-echo "============================================"`;
+echo "============================================"
+)`;
+}
+
+export const awsRemediationScript = getAwsRemediationScript();
 
 /**
  * Setup instructions for AWS IAM Role

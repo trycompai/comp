@@ -4,11 +4,11 @@
   "description": "Monitor Infisical secrets management workspaces and member access for secrets hygiene compliance",
   "category": "Security",
   "docsUrl": "https://infisical.com/docs/api-reference/overview/introduction",
-  "baseUrl": "https://app.infisical.com/",
+  "baseUrl": "https://app.infisical.com",
   "authConfig": {
     "type": "api_key",
     "config": {
-      "setupInstructions": "1. In Infisical, go to Organization Settings > Access Control > Identities\n2. Create a Machine Identity with the 'Member' role\n3. Under Authentication, configure Universal Auth\n4. Note the Client ID and Client Secret\n5. Obtain an access token: POST https://app.infisical.com/api/v1/auth/universal-auth/login with clientId and clientSecret\n6. Paste the access token below\n\nNote: Access tokens expire (default 30 days). You may need to refresh periodically."
+      "setupInstructions": "1. Create a Machine Identity in Infisical (Org Settings > Access Control > Identities)\n2. Assign the 'Member' role (or a custom role with project read access)\n3. Configure authentication - choose ONE:\n\n   Option A (Token Auth - simplest):\n   - On the identity page, switch auth to Token Auth\n   - Create an access token directly in the UI\n   - Copy and paste it below\n\n   Option B (Universal Auth):\n   - Configure Universal Auth on the identity\n   - Note the Client ID and Client Secret\n   - Exchange them for an access token: POST https://app.infisical.com/api/v1/auth/universal-auth/login\n   - Paste the access token below\n\nIMPORTANT: Service tokens will NOT work. You must use a Machine Identity.\nNote: Access tokens expire (default 30 days). You may need to refresh periodically."
     }
   },
   "capabilities": [

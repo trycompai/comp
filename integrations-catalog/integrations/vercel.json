@@ -7,7 +7,9 @@
   "baseUrl": "https://api.vercel.com/",
   "authConfig": {
     "type": "api_key",
-    "config": {}
+    "config": {
+      "setupInstructions": "Connect your Vercel account so Comp AI can monitor deployments and project health.\n\nStep 1 — Create a Vercel API token\n1. Go to https://vercel.com/account/tokens\n2. Click \"Create Token\"\n3. Give it a name like \"Comp AI\"\n4. Set \"Scope\" to your team (or your personal account)\n5. **IMPORTANT — set \"Expiration\" to \"No Expiration\"** so you never have to reconnect\n6. Click Create and copy the token immediately (you can't view it again)\n\nStep 2 — Paste the token below\n\nNote: As long as you keep \"No Expiration\" and don't delete the token in Vercel, this connection is permanent. If you ever rotate or delete the token in Vercel, you'll need to paste a new one here."
+    }
   },
   "capabilities": [
     "checks"
@@ -23,9 +25,9 @@
       "enabled": true
     },
     {
-      "slug": "vercel_separation_of_envs",
-      "name": "Separation of Environments",
-      "description": "Verifies Vercel projects have environment variables configured per environment",
+      "slug": "vercel_monitoring_alerting",
+      "name": "Monitoring & Alerting Review",
+      "description": "Verify Vercel monitoring is capturing deployment failures and recent activity",
       "defaultSeverity": "medium",
       "enabled": true
     }

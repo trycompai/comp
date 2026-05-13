@@ -8,13 +8,13 @@
   "authConfig": {
     "type": "custom",
     "config": {
-      "setupInstructions": "1. Log in to HubSpot\n2. Go to Settings > Integrations > Private Apps\n3. Create a new private app\n4. Add scopes: settings.users.read, crm.objects.owners.read\n5. Copy and paste the access token below",
+      "setupInstructions": "1. Log in to HubSpot as a Super Admin\n2. Go to Development (left sidebar)\n3. Click Keys > Service keys\n4. Click \"Create service key\" in the top right\n5. Name your key (e.g. \"CompAI\")\n6. Click \"Add new scope\" and select: settings.users.read, crm.objects.owners.read\n7. Click Update, then Create\n8. Copy the service key and paste it below\n\nNote: If you still see Private Apps instead of Service Keys, go to Development > Legacy apps and create a legacy private app with the same scopes.",
       "credentialFields": [
         {
-          "label": "Private App Token",
+          "label": "Service Key",
           "type": "password",
           "required": true,
-          "helpText": "Create a Private App in HubSpot > Settings > Integrations > Private Apps"
+          "helpText": "Create a Service Key in HubSpot > Development > Keys > Service keys"
         }
       ]
     }

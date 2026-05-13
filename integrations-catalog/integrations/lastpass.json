@@ -51,8 +51,15 @@
       "description": "Reviews LastPass Business user groups and admin roles to verify role-based access controls are in place",
       "defaultSeverity": "medium",
       "enabled": true
+    },
+    {
+      "slug": "lastpass_secure_secrets",
+      "name": "Secure Secrets",
+      "description": "Reviews LastPass shared folders to verify secrets are managed securely with appropriate access controls and sharing policies",
+      "defaultSeverity": "medium",
+      "enabled": true
     }
   ],
-  "checkCount": 3,
+  "checkCount": 4,
   "isActive": true
 }

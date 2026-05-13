@@ -149,7 +149,7 @@ export async function uploadQuestionnaireFile(params: {
     Body: fileBuffer,
     ContentType: params.fileType,
     Metadata: {
-      originalFileName: params.fileName,
+      originalFileName: sanitizedFileName,
       organizationId: params.organizationId,
       source: params.source,
     },
