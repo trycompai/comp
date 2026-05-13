@@ -9,6 +9,7 @@ import type { Finding, Provider } from '../types';
 import { ActivitySection } from '@/app/(app)/[orgId]/integrations/[slug]/components/ActivitySection';
 import { RemediationHistorySection } from '@/app/(app)/[orgId]/integrations/[slug]/components/RemediationHistorySection';
 import { CloudTestsSection } from './CloudTestsSection';
+import { HistoryTab } from './HistoryTab';
 import { ResultsView } from './ResultsView';
 import { ServicesGrid } from './ServicesGrid';
 
@@ -146,7 +147,8 @@ function CloudConnectionContent({
   return (
     <Tabs defaultValue="findings">
       <TabsList variant="underline">
-        <TabsTrigger value="findings">Findings</TabsTrigger>
+        <TabsTrigger value="findings">Scan Results</TabsTrigger>
+        <TabsTrigger value="history">History</TabsTrigger>
         <TabsTrigger value="activity">Activity</TabsTrigger>
         <TabsTrigger value="remediations">Remediations</TabsTrigger>
         <TabsTrigger value="services">
@@ -161,10 +163,17 @@ function CloudConnectionContent({
             connectionId={connection.id}
             orgId={orgId}
             lastRunAt={connection.lastRunAt}
+            latestRun={connection.latestRun ?? null}
             variables={connection.variables ?? undefined}
             awsType={connection.awsType}
             onScanComplete={onScanComplete}
           />
+        </div>
+      </TabsContent>
+
+      <TabsContent value="history">
+        <div className="pt-4">
+          <HistoryTab connectionId={connection.id} />
         </div>
       </TabsContent>
 

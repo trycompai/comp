@@ -63,7 +63,7 @@ export function FindingsTable({ findings }: FindingsTableProps) {
   if (findings.length === 0) {
     return (
       <div className="rounded-xs border p-12 text-center">
-        <p className="text-muted-foreground text-lg">No findings available</p>
+        <p className="text-muted-foreground text-lg">No results available</p>
       </div>
     );
   }

@@ -1,6 +1,7 @@
 'use client';
 
 import { useApi } from '@/hooks/use-api';
+import { usePermissions } from '@/hooks/use-permissions';
 import {
   getAwsCloudShellUrl,
   getAwsRemediationScript,
@@ -41,7 +42,12 @@ import { GcpSetupGuide } from './GcpSetupGuide';
 import { RemediationDialog } from './RemediationDialog';
 import { ScheduledScanPopover } from './ScheduledScanPopover';
 
-import type { Finding } from '../types';
+import type { Finding, ProviderLatestRun } from '../types';
+import { CheckDefinitionPanel } from './CheckDefinitionPanel';
+import { CheckGroupBlock } from './CheckGroupBlock';
+import { buildCheckGroups } from './check-groups';
+import { EvidenceJsonViewer } from './EvidenceJsonViewer';
+import { MarkExceptionModal } from './MarkExceptionModal';
 
 interface RemediationCapabilities {
   enabled: boolean;
@@ -63,6 +69,8 @@ interface CloudTestsSectionProps {
   orgId: string;
   /** When the last scan completed — null means never scanned */
   lastRunAt?: Date | null;
+  /** Latest scan summary (counts, duration). null for legacy or never-scanned. */
+  latestRun?: ProviderLatestRun | null;
   /** Connection variables (e.g., GCP org ID) */
   variables?: Record<string, unknown>;
   awsType?: string;
@@ -155,6 +163,7 @@ const SERVICE_NAMES: Record<string, string> = {
 interface ServiceGroup {
   serviceId: string;
   name: string;
+  /** ALL findings for this service (passed + failed), already filtered by search query. */
   findings: Finding[];
   passed: number;
   failed: number;
@@ -166,6 +175,7 @@ export function CloudTestsSection({
   onScanComplete,
   orgId,
   lastRunAt,
+  latestRun,
   variables,
   awsType,
 }: CloudTestsSectionProps) {
@@ -198,6 +208,13 @@ export function CloudTestsSection({
     description?: string;
   } | null>(null);
   const [showSetupDialog, setShowSetupDialog] = useState(false);
+  const { hasPermission } = usePermissions();
+  const canMarkException = hasPermission('integration', 'update');
+  const [exceptionTarget, setExceptionTarget] = useState<{
+    findingId: string;
+    findingTitle: string;
+    resourceLabel: string | null;
+  } | null>(null);
 
   const findingsResponse = api.useSWR<{ data: Finding[]; count: number }>(
     '/v1/cloud-security/findings',
@@ -290,7 +307,9 @@ export function CloudTestsSection({
   const failedFindings = findings.filter((f) => f.status === 'failed' || f.status === 'FAILED');
   const passedFindings = findings.filter((f) => f.status === 'passed' || f.status === 'success');
 
-  // Group findings by serviceId
+  // Group findings by serviceId. `findings` on the resulting group holds the
+  // full set (passed + failed) matching the search query — per-check sub-
+  // grouping and the severity filter are applied at render time.
   const serviceGroups = useMemo(() => {
     const q = searchQuery.toLowerCase().trim();
     const groupMap = new Map<string, Finding[]>();
@@ -306,35 +325,48 @@ export function CloudTestsSection({
       const serviceName = SERVICE_NAMES[serviceId] ?? serviceId;
       const serviceMatches = q ? serviceName.toLowerCase().includes(q) : true;
 
-      const failed = groupFindings.filter((f) => f.status === 'failed' || f.status === 'FAILED');
-      const passed = groupFindings.filter((f) => f.status === 'passed' || f.status === 'success');
+      // If search query exists and service name doesn't match, filter findings
+      // by title/description/findingKey. Otherwise include all findings.
+      const matching =
+        q && !serviceMatches
+          ? groupFindings.filter(
+              (f) =>
+                f.title?.toLowerCase().includes(q) ||
+                f.description?.toLowerCase().includes(q) ||
+                f.findingKey?.toLowerCase().includes(q),
+            )
+          : groupFindings;
 
-      let filteredFailed = severityFilter
-        ? failed.filter((f) => f.severity?.toLowerCase() === severityFilter)
-        : failed;
+      const failed = matching.filter(
+        (f) => f.status === 'failed' || f.status === 'FAILED',
+      );
+      const passed = matching.filter(
+        (f) => f.status === 'passed' || f.status === 'success',
+      );
 
-      // If search query exists and service name doesn't match, filter findings by title
-      if (q && !serviceMatches) {
-        filteredFailed = filteredFailed.filter(
-          (f) =>
-            f.title?.toLowerCase().includes(q) ||
-            f.description?.toLowerCase().includes(q) ||
-            f.findingKey?.toLowerCase().includes(q),
+      // With severity filter active, hide services that have no matching
+      // failures. Without filters, keep services that have any findings.
+      if (severityFilter) {
+        const hasMatching = failed.some(
+          (f) => f.severity?.toLowerCase() === severityFilter,
         );
+        if (!hasMatching) continue;
+      } else if (q && failed.length === 0 && passed.length === 0) {
+        continue;
       }
 
       groups.push({
         serviceId,
         name: serviceName,
-        findings: filteredFailed,
+        findings: matching,
         passed: passed.length,
         failed: failed.length,
       });
     }
 
-    return groups
-      .filter((g) => g.findings.length > 0 || (!severityFilter && !q && g.passed > 0))
-      .sort((a, b) => b.failed - a.failed || a.name.localeCompare(b.name));
+    return groups.sort(
+      (a, b) => b.failed - a.failed || a.name.localeCompare(b.name),
+    );
   }, [findings, severityFilter, searchQuery]);
 
   // Split into baseline (security fundamentals) vs service-specific
@@ -479,9 +511,9 @@ export function CloudTestsSection({
       {/* Header with scan button */}
       <div className="flex items-center justify-between">
         <div>
-          <h3 className="text-sm font-medium">Security Findings</h3>
+          <h3 className="text-sm font-medium">Scan Results</h3>
           <p className="text-muted-foreground text-xs mt-0.5">
-            {findings.length} total findings for this account
+            {findings.length} total results for this account
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -496,6 +528,9 @@ export function CloudTestsSection({
           </Button>
         </div>
       </div>
+
+      {/* Last scan metadata strip — surfaces what's already in IntegrationCheckRun */}
+      <LastScanStrip latestRun={latestRun ?? null} fallbackLastRunAt={lastRunAt ?? null} />
 
       {/* Selected projects indicator (GCP) */}
       {providerSlug === 'gcp' &&
@@ -673,7 +708,7 @@ export function CloudTestsSection({
           <Search className="h-3 w-3 shrink-0 text-muted-foreground/40" />
           <input
             type="text"
-            placeholder="Search findings..."
+            placeholder="Search results..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="min-w-0 flex-1 bg-transparent text-xs outline-none placeholder:text-muted-foreground/40"
@@ -752,36 +787,43 @@ export function CloudTestsSection({
                 </button>
                 {isGroupExpanded && (
                   <div className="divide-y border-t">
-                    {group.findings.length > 0 ? (
-                      group.findings.map((finding) => {
-                        const match = canFixFinding(finding);
-                        return (
-                          <FindingRow
-                            key={finding.id}
-                            finding={finding}
-                            expanded={expandedIds.has(finding.id)}
-                            onToggle={() => toggleExpanded(finding.id)}
-                            remediationKey={match?.key ?? null}
-                            remediationEnabled={match?.enabled ?? false}
-                            capabilitiesLoaded={capabilitiesLoaded}
-                            onFix={(key) =>
-                              setRemediationTarget({
-                                connectionId: finding.connectionId,
-                                checkResultId: finding.id,
-                                remediationKey: key,
-                                findingTitle: finding.title ?? 'Finding',
-                              })
-                            }
-                            onSetup={() => setShowSetupDialog(true)}
-                          />
-                        );
-                      })
-                    ) : (
-                      <div className="flex items-center gap-2 px-4 py-3 text-xs text-primary">
-                        <ShieldCheck className="h-3.5 w-3.5" />
-                        All {group.passed} checks passed
-                      </div>
-                    )}
+                    {buildCheckGroups(group.findings).map((checkGroup) => (
+                      <CheckGroupBlock
+                        key={checkGroup.checkKey}
+                        group={checkGroup}
+                        severityFilter={severityFilter}
+                        renderRow={(finding) => {
+                          const match = canFixFinding(finding);
+                          return (
+                            <FindingRow
+                              finding={finding}
+                              expanded={expandedIds.has(finding.id)}
+                              onToggle={() => toggleExpanded(finding.id)}
+                              remediationKey={match?.key ?? null}
+                              remediationEnabled={match?.enabled ?? false}
+                              capabilitiesLoaded={capabilitiesLoaded}
+                              onFix={(key) =>
+                                setRemediationTarget({
+                                  connectionId: finding.connectionId,
+                                  checkResultId: finding.id,
+                                  remediationKey: key,
+                                  findingTitle: finding.title ?? 'Finding',
+                                })
+                              }
+                              onSetup={() => setShowSetupDialog(true)}
+                              canMarkException={canMarkException}
+                              onMarkException={() =>
+                                setExceptionTarget({
+                                  findingId: finding.id,
+                                  findingTitle: finding.title ?? 'Finding',
+                                  resourceLabel: formatResourceLabel(finding),
+                                })
+                              }
+                            />
+                          );
+                        }}
+                      />
+                    ))}
                   </div>
                 )}
               </div>
@@ -847,36 +889,43 @@ export function CloudTestsSection({
                 </button>
                 {isGroupExpanded && (
                   <div className="divide-y border-t">
-                    {group.findings.length > 0 ? (
-                      group.findings.map((finding) => {
-                        const match = canFixFinding(finding);
-                        return (
-                          <FindingRow
-                            key={finding.id}
-                            finding={finding}
-                            expanded={expandedIds.has(finding.id)}
-                            onToggle={() => toggleExpanded(finding.id)}
-                            remediationKey={match?.key ?? null}
-                            remediationEnabled={match?.enabled ?? false}
-                            capabilitiesLoaded={capabilitiesLoaded}
-                            onFix={(key) =>
-                              setRemediationTarget({
-                                connectionId: finding.connectionId,
-                                checkResultId: finding.id,
-                                remediationKey: key,
-                                findingTitle: finding.title ?? 'Finding',
-                              })
-                            }
-                            onSetup={() => setShowSetupDialog(true)}
-                          />
-                        );
-                      })
-                    ) : (
-                      <div className="flex items-center gap-2 px-4 py-3 text-xs text-primary">
-                        <ShieldCheck className="h-3.5 w-3.5" />
-                        All {group.passed} checks passed
-                      </div>
-                    )}
+                    {buildCheckGroups(group.findings).map((checkGroup) => (
+                      <CheckGroupBlock
+                        key={checkGroup.checkKey}
+                        group={checkGroup}
+                        severityFilter={severityFilter}
+                        renderRow={(finding) => {
+                          const match = canFixFinding(finding);
+                          return (
+                            <FindingRow
+                              finding={finding}
+                              expanded={expandedIds.has(finding.id)}
+                              onToggle={() => toggleExpanded(finding.id)}
+                              remediationKey={match?.key ?? null}
+                              remediationEnabled={match?.enabled ?? false}
+                              capabilitiesLoaded={capabilitiesLoaded}
+                              onFix={(key) =>
+                                setRemediationTarget({
+                                  connectionId: finding.connectionId,
+                                  checkResultId: finding.id,
+                                  remediationKey: key,
+                                  findingTitle: finding.title ?? 'Finding',
+                                })
+                              }
+                              onSetup={() => setShowSetupDialog(true)}
+                              canMarkException={canMarkException}
+                              onMarkException={() =>
+                                setExceptionTarget({
+                                  findingId: finding.id,
+                                  findingTitle: finding.title ?? 'Finding',
+                                  resourceLabel: formatResourceLabel(finding),
+                                })
+                              }
+                            />
+                          );
+                        }}
+                      />
+                    ))}
                   </div>
                 )}
               </div>
@@ -890,7 +939,7 @@ export function CloudTestsSection({
         <div className="flex flex-col items-center justify-center rounded-xl border-2 border-dashed py-8">
           <Search className="text-muted-foreground/30 mb-2 h-8 w-8" />
           <p className="text-muted-foreground text-sm font-medium">
-            No findings matching &quot;{searchQuery}&quot;
+            No results matching &quot;{searchQuery}&quot;
           </p>
           <button
             type="button"
@@ -1060,6 +1109,20 @@ export function CloudTestsSection({
           loadCapabilities();
         }}
       />
+
+      <MarkExceptionModal
+        open={Boolean(exceptionTarget)}
+        onOpenChange={(open) => {
+          if (!open) setExceptionTarget(null);
+        }}
+        findingId={exceptionTarget?.findingId ?? null}
+        findingTitle={exceptionTarget?.findingTitle ?? ''}
+        resourceLabel={exceptionTarget?.resourceLabel ?? null}
+        onMarked={() => {
+          findingsResponse.mutate();
+          setExceptionTarget(null);
+        }}
+      />
     </div>
   );
 }
@@ -1086,6 +1149,70 @@ function StatCard({
         <p className="text-xl font-bold tabular-nums">{value}</p>
         <p className="text-muted-foreground text-xs">{label}</p>
       </div>
+    </div>
+  );
+}
+
+function formatRelativeTime(date: Date): string {
+  const diff = Date.now() - date.getTime();
+  const seconds = Math.floor(diff / 1000);
+  if (seconds < 5) return 'just now';
+  if (seconds < 60) return `${seconds}s ago`;
+  const minutes = Math.floor(seconds / 60);
+  if (minutes < 60) return `${minutes}m ago`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours}h ago`;
+  const days = Math.floor(hours / 24);
+  if (days === 1) return 'yesterday';
+  if (days < 7) return `${days}d ago`;
+  return date.toLocaleDateString();
+}
+
+function formatDuration(ms: number): string {
+  if (ms < 1000) return `${ms}ms`;
+  const seconds = ms / 1000;
+  if (seconds < 60) return `${seconds.toFixed(1)}s`;
+  const totalSeconds = Math.floor(seconds);
+  const m = Math.floor(totalSeconds / 60);
+  const s = totalSeconds % 60;
+  return s === 0 ? `${m}m` : `${m}m ${s}s`;
+}
+
+function LastScanStrip({
+  latestRun,
+  fallbackLastRunAt,
+}: {
+  latestRun: ProviderLatestRun | null;
+  fallbackLastRunAt: Date | null;
+}) {
+  const completedRaw = latestRun?.completedAt ?? fallbackLastRunAt;
+  if (!completedRaw) return null;
+
+  const completedAt =
+    completedRaw instanceof Date ? completedRaw : new Date(completedRaw);
+  if (Number.isNaN(completedAt.getTime())) return null;
+
+  const parts: string[] = [`Ran ${formatRelativeTime(completedAt)}`];
+
+  if (latestRun) {
+    if (latestRun.totalChecked !== null) {
+      const noun = latestRun.totalChecked === 1 ? 'check' : 'checks';
+      parts.push(`${latestRun.totalChecked} ${noun} evaluated`);
+    }
+    if (latestRun.passedCount !== null) {
+      parts.push(`${latestRun.passedCount} passed`);
+    }
+    if (latestRun.failedCount !== null) {
+      parts.push(`${latestRun.failedCount} failed`);
+    }
+    if (latestRun.durationMs !== null && latestRun.durationMs > 0) {
+      parts.push(`Duration ${formatDuration(latestRun.durationMs)}`);
+    }
+  }
+
+  return (
+    <div className="rounded-md border bg-muted/20 px-3 py-2 text-[11px] text-muted-foreground">
+      {parts.join(' • ')}
     </div>
   );
 }
@@ -1257,6 +1384,59 @@ function RemediationSetupDialog({
   );
 }
 
+/**
+ * Format a resource label for a finding row, e.g. "IAM User: john" or
+ * just "sg-abc123" when type is unknown. Returns null when there's
+ * nothing meaningful to show.
+ */
+function formatResourceLabel(finding: Finding): string | null {
+  const id = finding.resourceId;
+  const type = finding.resourceType;
+  if (!id && !type) return null;
+  if (id && type) return `${type}: ${id}`;
+  return id ?? type ?? null;
+}
+
+function EvidenceSection({ evidence }: { evidence: unknown }) {
+  const [open, setOpen] = useState(false);
+
+  // Don't render the section when evidence is null, undefined, or an empty
+  // container — keeps the expanded state focused.
+  if (evidence === null || evidence === undefined) return null;
+  if (typeof evidence === 'object') {
+    const isEmpty = Array.isArray(evidence)
+      ? evidence.length === 0
+      : Object.keys(evidence as Record<string, unknown>).length === 0;
+    if (isEmpty) return null;
+  }
+
+  return (
+    <div className="rounded-md border bg-background">
+      <button
+        type="button"
+        onClick={() => setOpen((prev) => !prev)}
+        className="flex w-full items-center gap-1.5 px-3 py-2 text-left text-xs font-medium hover:bg-muted/30"
+        aria-expanded={open}
+      >
+        {open ? (
+          <ChevronDown className="h-3 w-3" />
+        ) : (
+          <ChevronRight className="h-3 w-3" />
+        )}
+        Evidence
+        <span className="ml-auto text-[10px] font-normal text-muted-foreground">
+          Sensitive values redacted
+        </span>
+      </button>
+      {open && (
+        <div className="border-t p-3">
+          <EvidenceJsonViewer evidence={evidence} />
+        </div>
+      )}
+    </div>
+  );
+}
+
 function FindingRow({
   finding,
   expanded,
@@ -1266,6 +1446,8 @@ function FindingRow({
   capabilitiesLoaded,
   onFix,
   onSetup,
+  onMarkException,
+  canMarkException,
 }: {
   finding: Finding;
   expanded: boolean;
@@ -1275,9 +1457,12 @@ function FindingRow({
   capabilitiesLoaded: boolean;
   onFix: (key: string) => void;
   onSetup: () => void;
+  onMarkException?: () => void;
+  canMarkException: boolean;
 }) {
   const severity = finding.severity?.toLowerCase() ?? 'info';
   const styles = SEVERITY_STYLES[severity] ?? SEVERITY_STYLES.info;
+  const resourceLabel = formatResourceLabel(finding);
 
   const handleFixClick = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -1339,7 +1524,14 @@ function FindingRow({
           {expanded ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
         </span>
         <span className={`h-2 w-2 shrink-0 rounded-full ${styles.dot}`} />
-        <span className="min-w-0 flex-1 truncate">{finding.title ?? 'Untitled finding'}</span>
+        <div className="min-w-0 flex-1">
+          <div className="truncate">{finding.title ?? 'Untitled finding'}</div>
+          {resourceLabel && (
+            <div className="truncate text-[10px] text-muted-foreground/70 mt-0.5">
+              {resourceLabel}
+            </div>
+          )}
+        </div>
         {finding.projectDisplayName && (
           <span className="shrink-0 rounded bg-muted px-1.5 py-0.5 text-[10px] text-muted-foreground">
             {finding.projectDisplayName}
@@ -1348,6 +1540,21 @@ function FindingRow({
         <span onClick={(e) => e.stopPropagation()} onKeyDown={(e) => e.stopPropagation()}>
           {renderFixButton()}
         </span>
+        {canMarkException &&
+          onMarkException &&
+          (finding.status === 'failed' || finding.status === 'FAILED') && (
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                onMarkException();
+              }}
+              className="shrink-0 inline-flex items-center gap-1 rounded-full border bg-background px-2.5 py-0.5 text-[10px] font-medium text-muted-foreground transition-colors hover:bg-muted"
+              title="Mark this finding as an exception"
+            >
+              Mark as exception
+            </button>
+          )}
         <Badge
           variant="outline"
           className={`shrink-0 w-14 justify-center text-[10px] ${styles.badge}`}
@@ -1357,9 +1564,16 @@ function FindingRow({
       </div>
       {expanded && (
         <div className="space-y-3 border-t bg-muted/20 px-12 py-4 text-sm">
+          <CheckDefinitionPanel findingId={finding.id} />
           {finding.description && (
-            <p className="text-muted-foreground text-xs leading-relaxed">{finding.description}</p>
+            <div className="rounded-md border bg-background p-3">
+              <p className="mb-1 text-xs font-medium">This account&apos;s result</p>
+              <p className="text-muted-foreground text-xs leading-relaxed">
+                {finding.description}
+              </p>
+            </div>
           )}
+          <EvidenceSection evidence={finding.evidence} />
           {finding.remediation && (
             <div className="rounded-md border bg-background p-3">
               <p className="mb-1 text-xs font-medium">Remediation</p>
