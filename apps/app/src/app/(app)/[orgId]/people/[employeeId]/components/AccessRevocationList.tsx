@@ -103,7 +103,7 @@ export function AccessRevocationList({
         )}
       </div>
 
-      <Stack gap="1">
+      <div className="flex min-h-[440px] flex-col gap-1">
         {paginatedVendors.map((vendor) => (
           <div
             key={vendor.vendorId}
@@ -155,7 +155,7 @@ export function AccessRevocationList({
             )}
           </div>
         ))}
-      </Stack>
+      </div>
 
       {totalPages > 1 && (
         <div className="flex items-center justify-between pt-1">
