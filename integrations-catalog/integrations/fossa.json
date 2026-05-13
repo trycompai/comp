@@ -1,0 +1,44 @@
+{
+  "slug": "fossa",
+  "name": "FOSSA",
+  "description": "Monitor FOSSA open source license compliance and vulnerability scanning for project security and policy enforcement",
+  "category": "Security",
+  "docsUrl": "https://docs.fossa.com/docs/api-reference",
+  "baseUrl": "https://app.fossa.com",
+  "authConfig": {
+    "type": "api_key",
+    "config": {
+      "setupInstructions": "1. Log in to FOSSA at https://app.fossa.com\n2. Go to Settings > API Tokens (or Account Settings > API)\n3. Click 'Generate Token' or 'Add Token'\n4. Copy the generated token and paste it below"
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "fossa_secure_code",
+      "name": "Secure Code - Project Scanning",
+      "description": "Verifies that projects are actively being scanned by FOSSA and have recent analysis results",
+      "defaultSeverity": "high",
+      "enabled": true
+    },
+    {
+      "slug": "fossa_sanitized_inputs",
+      "name": "Sanitized Inputs - License Compliance Policies",
+      "description": "Verifies that FOSSA license compliance policies are configured to enforce approved open source usage",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "fossa_publish_policies",
+      "name": "Publish Policies - Open Source Usage Policies",
+      "description": "Verifies that open source usage policies exist in FOSSA to govern how open source components are used across projects",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 3,
+  "isActive": true
+}

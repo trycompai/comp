@@ -1,11 +1,12 @@
 import { openai } from '@ai-sdk/openai';
 import { anthropic } from '@ai-sdk/anthropic';
-import { createGroq } from '@ai-sdk/groq';
-import { generateText, generateObject, jsonSchema } from 'ai';
+import { generateText } from 'ai';
 import ExcelJS from 'exceljs';
 import AdmZip from 'adm-zip';
 import mammoth from 'mammoth';
+import { PDFDocument } from 'pdf-lib';
 import { PARSING_MODEL, VISION_EXTRACTION_PROMPT } from './constants';
+import { parseQuestionsAndAnswers } from './question-parser';
 
 /**
  * Loads an Excel workbook from a buffer.
@@ -16,35 +17,6 @@ async function loadWorkbook(data: Uint8Array): Promise<ExcelJS.Workbook> {
   await (workbook.xlsx.load as unknown as LoadFn)(data);
   return workbook;
 }
-
-// Initialize Groq - ultra fast inference
-const groq = createGroq();
-
-// Schema for question extraction
-const questionExtractionSchema = jsonSchema<{
-  questions: { question: string; answer: string | null }[];
-}>({
-  type: 'object',
-  properties: {
-    questions: {
-      type: 'array',
-      items: {
-        type: 'object',
-        properties: {
-          question: { type: 'string', description: 'The full question text' },
-          answer: {
-            anyOf: [{ type: 'string' }, { type: 'null' }],
-            description: 'The answer/response if provided, null if empty',
-          },
-        },
-        required: ['question', 'answer'],
-        additionalProperties: false,
-      },
-    },
-  },
-  required: ['questions'],
-  additionalProperties: false,
-});
 
 export interface ContentExtractionLogger {
   info: (message: string, meta?: Record<string, unknown>) => void;
@@ -59,6 +31,268 @@ const defaultLogger: ContentExtractionLogger = {
   error: () => {},
 };
 
+interface ExtractedExcelCell {
+  address: string;
+  columnIndex: number;
+  value: string;
+  isFormula: boolean;
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null;
+}
+
+function normalizeCellText(value: string): string {
+  return value.replace(/\s+/g, ' ').trim();
+}
+
+async function mapWithConcurrency<T, R>(
+  items: T[],
+  concurrency: number,
+  worker: (item: T) => Promise<R>,
+): Promise<R[]> {
+  const results: R[] = [];
+  let nextIndex = 0;
+
+  const runWorker = async (): Promise<void> => {
+    while (nextIndex < items.length) {
+      const currentIndex = nextIndex;
+      nextIndex += 1;
+      results[currentIndex] = await worker(items[currentIndex]);
+    }
+  };
+
+  await Promise.all(
+    Array.from({ length: Math.min(concurrency, items.length) }, () =>
+      runWorker(),
+    ),
+  );
+
+  return results;
+}
+
+function extractExcelCellValue(value: unknown): string {
+  if (value === null || value === undefined) {
+    return '';
+  }
+
+  if (
+    typeof value === 'string' ||
+    typeof value === 'number' ||
+    typeof value === 'boolean'
+  ) {
+    return String(value);
+  }
+
+  if (value instanceof Date) {
+    return value.toISOString();
+  }
+
+  if (!isRecord(value)) {
+    return '';
+  }
+
+  if (Array.isArray(value.richText)) {
+    return value.richText
+      .map((part) =>
+        isRecord(part) && typeof part.text === 'string' ? part.text : '',
+      )
+      .join('');
+  }
+
+  if (value.result !== undefined) {
+    return extractExcelCellValue(value.result);
+  }
+
+  if (typeof value.text === 'string') {
+    return value.text;
+  }
+
+  return '';
+}
+
+function getExcelCellText(cell: ExcelJS.Cell): string {
+  const extracted = normalizeCellText(extractExcelCellValue(cell.value));
+  if (extracted) {
+    return extracted;
+  }
+
+  try {
+    return normalizeCellText(cell.text);
+  } catch {
+    return '';
+  }
+}
+
+function hasFormulaValue(value: unknown): boolean {
+  return isRecord(value) && typeof value.formula === 'string';
+}
+
+function columnNameFromIndex(index: number): string {
+  let current = index;
+  let name = '';
+
+  while (current > 0) {
+    const remainder = (current - 1) % 26;
+    name = String.fromCharCode(65 + remainder) + name;
+    current = Math.floor((current - 1) / 26);
+  }
+
+  return name;
+}
+
+function normalizeForClassification(value: string): string {
+  return value
+    .normalize('NFKD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function isPlaceholderCell(value: string): boolean {
+  const normalized = normalizeForClassification(value);
+  return /^(?:\d+#\s*-\s*)?a\s+(?:remplir|completer)$/.test(normalized);
+}
+
+function isScoringOptionsCell(value: string): boolean {
+  const normalized = normalizeForClassification(value);
+  return /^\((?:oui|yes|non|no|n\/a|na)\s*:\s*-?\d+(?:\s*,\s*(?:oui|yes|non|no|n\/a|na)\s*:\s*-?\d+)*\)$/.test(
+    normalized,
+  );
+}
+
+function headerLooksLike(header: string, keywords: string[]): boolean {
+  const normalized = normalizeForClassification(header);
+  return keywords.some((keyword) => normalized.includes(keyword));
+}
+
+function inferCellLabel(cell: ExtractedExcelCell, header?: string): string {
+  if (
+    header &&
+    headerLooksLike(header, ['question', 'prompt', 'requirement'])
+  ) {
+    return 'Question';
+  }
+
+  if (header && headerLooksLike(header, ['response', 'answer', 'reply'])) {
+    return 'Response';
+  }
+
+  if (header && headerLooksLike(header, ['comment', 'explanation'])) {
+    return 'Comment';
+  }
+
+  if (header && headerLooksLike(header, ['mode operatoire', 'guidance'])) {
+    return 'Guidance';
+  }
+
+  if (/[?？]/.test(cell.value)) {
+    return 'Question';
+  }
+
+  if (normalizeForClassification(cell.value).startsWith('exemple')) {
+    return 'Example';
+  }
+
+  return 'Cell';
+}
+
+function findHeaderRow(rows: ExtractedExcelCell[][]): {
+  rowIndex: number;
+  headersByColumn: Map<number, string>;
+} {
+  const headerKeywords = [
+    'question',
+    'response',
+    'answer',
+    'comment',
+    'commentaires',
+    'attachment',
+    'reply',
+    'mode operatoire',
+    'reponse',
+  ];
+
+  for (let i = 0; i < Math.min(10, rows.length); i++) {
+    const row = rows[i];
+    const matchCount = headerKeywords.filter((keyword) =>
+      row.some((cell) =>
+        normalizeForClassification(cell.value).includes(keyword),
+      ),
+    ).length;
+
+    if (matchCount >= 2) {
+      return {
+        rowIndex: i,
+        headersByColumn: new Map(
+          row.map((cell) => [cell.columnIndex, cell.value] as const),
+        ),
+      };
+    }
+  }
+
+  return { rowIndex: -1, headersByColumn: new Map() };
+}
+
+function formatExcelSheet(
+  name: string,
+  rows: ExtractedExcelCell[][],
+): string | null {
+  if (rows.length === 0) {
+    return null;
+  }
+
+  const formattedRows: string[] = [];
+  const { rowIndex: headerRowIndex, headersByColumn } = findHeaderRow(rows);
+
+  for (let i = 0; i < rows.length; i++) {
+    const row = rows[i];
+
+    if (i === headerRowIndex) {
+      formattedRows.push(
+        `[COLUMNS: ${row.map((cell) => `${cell.address} ${cell.value}`).join(', ')}]`,
+      );
+      continue;
+    }
+
+    const parts: string[] = [];
+    const seenValues = new Set<string>();
+
+    for (const cell of row) {
+      if (
+        cell.isFormula ||
+        isPlaceholderCell(cell.value) ||
+        isScoringOptionsCell(cell.value)
+      ) {
+        continue;
+      }
+
+      const normalizedValue = normalizeForClassification(cell.value);
+      if (seenValues.has(normalizedValue)) {
+        continue;
+      }
+      seenValues.add(normalizedValue);
+
+      const header = headersByColumn.get(cell.columnIndex);
+      const label = inferCellLabel(cell, header);
+      const headerPrefix = header ? ` ${header}` : '';
+      parts.push(`[${cell.address} ${label}${headerPrefix}] ${cell.value}`);
+    }
+
+    if (parts.length > 0) {
+      const rowNumber = row[0]?.address.match(/\d+$/)?.[0] ?? String(i + 1);
+      formattedRows.push(`[ROW ${rowNumber}] ${parts.join(' | ')}`);
+    }
+  }
+
+  if (formattedRows.length === 0) {
+    return null;
+  }
+
+  return `=== Sheet: ${name} ===\n${formattedRows.join('\n')}`;
+}
+
 /**
  * Extracts content from a file based on its MIME type
  * Supports: Excel, CSV, text, PDF, and images
@@ -69,6 +303,12 @@ export async function extractContentFromFile(
   logger: ContentExtractionLogger = defaultLogger,
 ): Promise<string> {
   const fileBuffer = Buffer.from(fileData, 'base64');
+
+  if (fileType === 'application/vnd.ms-excel') {
+    throw new Error(
+      'Legacy Excel files (.xls) are not reliably supported. Please convert the questionnaire to .xlsx, CSV, PDF, or DOCX.',
+    );
+  }
 
   // Handle Excel files (.xlsx, .xls)
   if (isExcelFile(fileType)) {
@@ -125,49 +365,12 @@ export async function extractQuestionsWithAI(
   const startTime = Date.now();
 
   try {
-    // For Excel files - use simple library extraction then AI parsing
-    if (isExcelFile(fileType)) {
-      const fileBuffer = Buffer.from(fileData, 'base64');
-      const rawContent = await extractExcelRawContent(fileBuffer, logger);
-
-      logger.info('Extracted raw Excel content', {
-        contentLength: rawContent.length,
-        extractionMs: Date.now() - startTime,
-      });
-
-      // Use Groq for ultra-fast AI parsing (~5-10 seconds)
-      return await parseQuestionsWithGroq(rawContent, logger);
-    }
-
-    // For CSV - simple text parsing
-    if (isCsvFile(fileType)) {
-      const fileBuffer = Buffer.from(fileData, 'base64');
-      const content = fileBuffer.toString('utf-8');
-      return await parseQuestionsWithGroq(content, logger);
-    }
-
-    // For Word documents (.docx) - extract text then AI parsing
-    if (isDocxFile(fileType)) {
-      const fileBuffer = Buffer.from(fileData, 'base64');
-      const result = await mammoth.extractRawText({ buffer: fileBuffer });
-      logger.info('Extracted DOCX content', {
-        contentLength: result.value.length,
-        extractionMs: Date.now() - startTime,
-      });
-      return await parseQuestionsWithGroq(result.value, logger);
-    }
-
-    // For PDFs - use Claude's native PDF support
-    if (isPdfFile(fileType)) {
-      return await parseQuestionsFromPdf(fileData, logger);
-    }
-
-    // For images - use OpenAI vision
-    if (isImageFile(fileType)) {
-      return await parseQuestionsWithVision(fileData, fileType, logger);
-    }
-
-    throw new Error(`Unsupported file type for AI extraction: ${fileType}`);
+    const content = await extractContentFromFile(fileData, fileType, logger);
+    logger.info('Extracted content for questionnaire classification', {
+      contentLength: content.length,
+      extractionMs: Date.now() - startTime,
+    });
+    return parseQuestionsAndAnswers(content, logger);
   } catch (error) {
     logger.error('AI extraction failed', {
       error: error instanceof Error ? error.message : 'Unknown error',
@@ -178,367 +381,26 @@ export async function extractQuestionsWithAI(
 }
 
 /**
- * Simple raw content extraction - just dump all cell values
- * No smart header detection, let AI figure it out
+ * Structured raw content extraction for Excel files.
+ * ExcelJS is the primary path; XML is only a fallback for unusual workbooks.
  */
 async function extractExcelRawContent(
   fileBuffer: Buffer,
   logger: ContentExtractionLogger,
 ): Promise<string> {
-  // Try custom XML parser first (handles rich text)
   try {
-    const zip = new AdmZip(fileBuffer);
-    const sharedStrings = extractSharedStrings(fileBuffer);
-    const sheetNames = extractSheetNames(zip);
-    const allContent: string[] = [];
-
-    for (let sheetIdx = 0; sheetIdx < sheetNames.length; sheetIdx++) {
-      const sheetName = sheetNames[sheetIdx];
-      const rows = extractSheetData(zip, sheetIdx, sharedStrings);
-
-      if (rows.length === 0) continue;
-
-      allContent.push(`\n--- ${sheetName} ---`);
-
-      for (const row of rows) {
-        const nonEmpty = row.filter((cell) => cell.trim());
-        if (nonEmpty.length > 0) {
-          allContent.push(nonEmpty.join(' | '));
-        }
-      }
-    }
-
-    const result = allContent.join('\n');
-
-    // If custom parser got content, use it
+    const result = await extractFromExcelStandard(fileBuffer);
     if (result.length > 100) {
       return result;
     }
+    logger.info('ExcelJS returned minimal raw content, trying XML fallback');
   } catch (error) {
-    logger.warn('Custom XML parser failed', {
+    logger.warn('ExcelJS raw extraction failed, trying XML fallback', {
       error: error instanceof Error ? error.message : 'Unknown',
     });
   }
 
-  // Fallback to exceljs library
-  const workbook = await loadWorkbook(fileBuffer);
-  const allContent: string[] = [];
-
-  for (const worksheet of workbook.worksheets) {
-    allContent.push(`\n--- ${worksheet.name} ---`);
-
-    worksheet.eachRow((row) => {
-      const cells = row.values as unknown[];
-      const nonEmpty = cells
-        .slice(1)
-        .map((c) => String(c ?? '').trim())
-        .filter((c) => c);
-      if (nonEmpty.length > 0) {
-        allContent.push(nonEmpty.join(' | '));
-      }
-    });
-  }
-
-  return allContent.join('\n');
-}
-
-const QUESTION_PROMPT = `Extract all questions/fields and their answers from this questionnaire or form data.
-
-Rules:
-- Extract BOTH traditional questions (ending with "?") AND form fields that request information
-- Form fields like "1.1 Vendor Name", "2.3 Company Address", "Contact Email" are valid questions - they request user input
-- Numbered items (1.1, 1.2, 2.1, etc.) followed by a label are questions
-- Items marked with "*" or "(required)" are definitely questions
-- Items with notes like "(Single selection allowed)", "(Allows other)", "(Multiple selections allowed)" are questions
-- Match each question/field to its response/answer from the same row or adjacent cell
-- If no answer is provided, set answer to null
-- Skip pure section headers (like "Section 1: General Information") but keep numbered fields within sections
-- Keep the full question/field text including any notes about selection type
-
-Content:
-`;
-
-/**
- * Parse questions using Groq (PRIMARY - ultra fast)
- * For large content: chunks and processes in parallel
- */
-async function parseQuestionsWithGroq(
-  content: string,
-  logger: ContentExtractionLogger,
-): Promise<{ question: string; answer: string | null }[]> {
-  const startTime = Date.now();
-  const CHUNK_SIZE = 25000; // Leave room for prompt in 32k context
-
-  try {
-    // If content fits in one chunk, process directly
-    if (content.length <= CHUNK_SIZE) {
-      logger.info('Starting Groq parsing (single chunk)...', {
-        contentLength: content.length,
-      });
-      return await parseChunkWithGroq(content, logger);
-    }
-
-    // Split content into chunks for parallel processing
-    const chunks = splitIntoChunks(content, CHUNK_SIZE);
-    logger.info('Starting Groq parsing (chunked)...', {
-      contentLength: content.length,
-      chunkCount: chunks.length,
-    });
-
-    // Process all chunks in parallel
-    const chunkResults = await Promise.all(
-      chunks.map((chunk, idx) => {
-        logger.info(`Processing chunk ${idx + 1}/${chunks.length}...`);
-        return parseChunkWithGroq(chunk, logger);
-      }),
-    );
-
-    // Merge and deduplicate results
-    const allQuestions = chunkResults.flat();
-    const uniqueQuestions = deduplicateQuestions(allQuestions);
-
-    logger.info('Groq chunked parsing complete', {
-      totalQuestions: uniqueQuestions.length,
-      chunksProcessed: chunks.length,
-      durationMs: Date.now() - startTime,
-    });
-
-    return uniqueQuestions;
-  } catch (error) {
-    logger.error('Groq parsing failed, trying Claude', {
-      error: error instanceof Error ? error.message : 'Unknown',
-      durationMs: Date.now() - startTime,
-    });
-
-    // Fallback to Claude (has 200k context, no chunking needed)
-    return parseQuestionsWithClaude(content, logger);
-  }
-}
-
-/**
- * Parse a single chunk with Groq
- */
-async function parseChunkWithGroq(
-  content: string,
-  logger: ContentExtractionLogger,
-): Promise<{ question: string; answer: string | null }[]> {
-  const { object } = await generateObject({
-    model: groq('openai/gpt-oss-120b'),
-    schema: questionExtractionSchema,
-    prompt: QUESTION_PROMPT + content,
-  });
-
-  const result = object as {
-    questions: { question: string; answer: string | null }[];
-  };
-
-  return (result.questions || [])
-    .map((q) => ({
-      question: q.question?.trim() || '',
-      answer: q.answer?.trim() || null,
-    }))
-    .filter((q) => q.question);
-}
-
-/**
- * Split content into chunks, trying to break at section boundaries
- */
-function splitIntoChunks(content: string, maxChunkSize: number): string[] {
-  const chunks: string[] = [];
-  const lines = content.split('\n');
-  let currentChunk: string[] = [];
-  let currentSize = 0;
-
-  for (const line of lines) {
-    const lineSize = line.length + 1; // +1 for newline
-
-    // If adding this line would exceed limit, start new chunk
-    if (currentSize + lineSize > maxChunkSize && currentChunk.length > 0) {
-      chunks.push(currentChunk.join('\n'));
-      currentChunk = [];
-      currentSize = 0;
-    }
-
-    currentChunk.push(line);
-    currentSize += lineSize;
-  }
-
-  // Don't forget the last chunk
-  if (currentChunk.length > 0) {
-    chunks.push(currentChunk.join('\n'));
-  }
-
-  return chunks;
-}
-
-/**
- * Deduplicate questions by comparing normalized text
- */
-function deduplicateQuestions(
-  questions: { question: string; answer: string | null }[],
-): { question: string; answer: string | null }[] {
-  const seen = new Set<string>();
-  const unique: { question: string; answer: string | null }[] = [];
-
-  for (const q of questions) {
-    // Normalize: lowercase, remove extra spaces, remove numbering prefix
-    const normalized = q.question
-      .toLowerCase()
-      .replace(/^\d+\.\d+\s*/, '') // Remove "1.1 " prefix
-      .replace(/\s+/g, ' ')
-      .trim();
-
-    if (!seen.has(normalized)) {
-      seen.add(normalized);
-      unique.push(q);
-    }
-  }
-
-  return unique;
-}
-
-/**
- * Parse questions using Claude (fallback - excellent quality)
- */
-async function parseQuestionsWithClaude(
-  content: string,
-  logger: ContentExtractionLogger,
-): Promise<{ question: string; answer: string | null }[]> {
-  const startTime = Date.now();
-
-  try {
-    logger.info('Starting Claude parsing...', {
-      contentLength: content.length,
-    });
-
-    const { object } = await generateObject({
-      model: anthropic('claude-sonnet-4-6'),
-      schema: questionExtractionSchema,
-      prompt: QUESTION_PROMPT + content.substring(0, 80000),
-    });
-
-    const result = object as {
-      questions: { question: string; answer: string | null }[];
-    };
-
-    logger.info('Claude parsing complete', {
-      questionCount: result.questions?.length || 0,
-      durationMs: Date.now() - startTime,
-      model: 'claude-sonnet-4-6',
-    });
-
-    return (result.questions || [])
-      .map((q) => ({
-        question: q.question?.trim() || '',
-        answer: q.answer?.trim() || null,
-      }))
-      .filter((q) => q.question);
-  } catch (error) {
-    logger.error('Claude parsing failed, trying OpenAI', {
-      error: error instanceof Error ? error.message : 'Unknown',
-      durationMs: Date.now() - startTime,
-    });
-
-    // Fallback to OpenAI
-    return parseQuestionsWithOpenAI(content, logger);
-  }
-}
-
-/**
- * Fallback: Parse questions using OpenAI
- */
-async function parseQuestionsWithOpenAI(
-  content: string,
-  logger: ContentExtractionLogger,
-): Promise<{ question: string; answer: string | null }[]> {
-  const startTime = Date.now();
-
-  const { object } = await generateObject({
-    model: openai('gpt-4o-mini'),
-    schema: questionExtractionSchema,
-    prompt: `Extract all questions/fields and their answers from this questionnaire or form.
-
-Include:
-- Traditional questions ending with "?"
-- Form fields like "1.1 Vendor Name", "Contact Email" that request input
-- Numbered items (1.1, 1.2) followed by field labels
-- Items marked with "*" or selection notes like "(Single selection allowed)"
-
-Match each to its response if provided. Set answer to null if empty.
-
-${content.substring(0, 80000)}`,
-  });
-
-  const result = object as {
-    questions: { question: string; answer: string | null }[];
-  };
-
-  logger.info('OpenAI parsing complete', {
-    questionCount: result.questions?.length || 0,
-    durationMs: Date.now() - startTime,
-  });
-
-  return (result.questions || [])
-    .map((q) => ({
-      question: q.question?.trim() || '',
-      answer: q.answer?.trim() || null,
-    }))
-    .filter((q) => q.question);
-}
-
-/**
- * Parse questions from PDF/image using vision
- */
-async function parseQuestionsWithVision(
-  fileData: string,
-  fileType: string,
-  logger: ContentExtractionLogger,
-): Promise<{ question: string; answer: string | null }[]> {
-  const startTime = Date.now();
-
-  const { object } = await generateObject({
-    model: openai('gpt-4o'),
-    schema: questionExtractionSchema,
-    messages: [
-      {
-        role: 'user',
-        content: [
-          {
-            type: 'text',
-            text: `Extract all questions/fields and their answers from this questionnaire or form document.
-
-Include:
-- Traditional questions ending with "?"
-- Form fields like "1.1 Vendor Name", "Contact Email" that request input
-- Numbered items (1.1, 1.2, 2.1) followed by field labels
-- Items marked with "*" or selection notes like "(Single selection allowed)"
-
-Match each to its response if provided. Set answer to null if empty.`,
-          },
-          {
-            type: 'image',
-            image: `data:${fileType};base64,${fileData}`,
-          },
-        ],
-      },
-    ],
-  });
-
-  const result = object as {
-    questions: { question: string; answer: string | null }[];
-  };
-
-  logger.info('Vision parsing complete', {
-    questionCount: result.questions?.length || 0,
-    durationMs: Date.now() - startTime,
-  });
-
-  return (result.questions || [])
-    .map((q) => ({
-      question: q.question?.trim() || '',
-      answer: q.answer?.trim() || null,
-    }))
-    .filter((q) => q.question);
+  return extractFromExcelXml(fileBuffer, logger);
 }
 
 // File type detection helpers
@@ -585,7 +447,7 @@ function extractSheetNames(zip: AdmZip): string[] {
     const content = workbookEntry.getData().toString('utf8');
     const names: string[] = [];
     const sheetPattern = /<sheet[^>]+name="([^"]*)"[^>]*\/>/g;
-    let m;
+    let m: RegExpExecArray | null;
 
     while ((m = sheetPattern.exec(content)) !== null) {
       names.push(m[1]);
@@ -644,16 +506,16 @@ function extractSheetData(
   zip: AdmZip,
   sheetIndex: number,
   sharedStrings: string[],
-): string[][] {
+): ExtractedExcelCell[][] {
   const sheetEntry = zip.getEntry(`xl/worksheets/sheet${sheetIndex + 1}.xml`);
   if (!sheetEntry) return [];
 
   const content = sheetEntry.getData().toString('utf8');
-  const rows: Map<number, Map<number, string>> = new Map();
+  const rows: Map<number, ExtractedExcelCell[]> = new Map();
 
-  // Match all cell elements: <c r="A1" ...>...</c>
-  const cellPattern = /<c r="([A-Z]+)(\d+)"[^>]*>[\s\S]*?<\/c>/g;
-  let match;
+  // Match normal and self-closing cells without accidentally spanning columns.
+  const cellPattern = /<c r="([A-Z]+)(\d+)"[^>]*(?:\/>|>[\s\S]*?<\/c>)/g;
+  let match: RegExpExecArray | null;
 
   while ((match = cellPattern.exec(content)) !== null) {
     const col = match[1];
@@ -667,8 +529,7 @@ function extractSheetData(
     }
     colNum -= 1; // 0-indexed
 
-    // Only process first 10 columns
-    if (colNum > 9) continue;
+    if (colNum > 29) continue;
 
     // Check if this is a shared string cell (t="s")
     const isSharedString = /t="s"/.test(cellXml);
@@ -687,114 +548,113 @@ function extractSheetData(
       }
     }
 
-    if (!rows.has(rowNum)) {
-      rows.set(rowNum, new Map());
+    const trimmedValue = normalizeCellText(value);
+    if (!trimmedValue) {
+      continue;
     }
-    rows.get(rowNum)!.set(colNum, value.trim());
+
+    if (!rows.has(rowNum)) {
+      rows.set(rowNum, []);
+    }
+
+    rows.get(rowNum)!.push({
+      address: `${col}${rowNum + 1}`,
+      columnIndex: colNum + 1,
+      value: trimmedValue,
+      isFormula: /<f(?:\s|>)/.test(cellXml),
+    });
   }
 
-  // Convert to 2D array
-  const maxRow = Math.max(...Array.from(rows.keys()), 0);
-  const result: string[][] = [];
+  const result: ExtractedExcelCell[][] = [];
+  const maxRow = Math.max(...Array.from(rows.keys()), -1);
 
   for (let r = 0; r <= maxRow; r++) {
-    const row: string[] = [];
-    const rowData = rows.get(r);
-    for (let c = 0; c <= 9; c++) {
-      row.push(rowData?.get(c) || '');
-    }
-    result.push(row);
+    result.push(rows.get(r) ?? []);
   }
 
   return result;
 }
 
 /**
- * Fallback extraction using exceljs library (for simple Excel files)
+ * Fallback extraction using raw worksheet XML for unusual Excel files.
  */
-async function extractFromExcelStandard(
+function extractFromExcelXml(
   fileBuffer: Buffer,
-  _logger: ContentExtractionLogger,
-): Promise<string> {
+  logger: ContentExtractionLogger,
+): string {
+  try {
+    const zip = new AdmZip(fileBuffer);
+    const sharedStrings = extractSharedStrings(fileBuffer);
+    const sheetNames = extractSheetNames(zip);
+    const sheets: string[] = [];
+
+    logger.info('Trying XML Excel fallback', {
+      sharedStringCount: sharedStrings.length,
+      sheetCount: sheetNames.length,
+    });
+
+    for (let sheetIdx = 0; sheetIdx < sheetNames.length; sheetIdx++) {
+      const sheet = formatExcelSheet(
+        sheetNames[sheetIdx],
+        extractSheetData(zip, sheetIdx, sharedStrings),
+      );
+      if (sheet) {
+        sheets.push(sheet);
+      }
+    }
+
+    return sheets.join('\n\n');
+  } catch (error) {
+    throw new Error(
+      `Failed to parse Excel file: ${
+        error instanceof Error ? error.message : 'Unknown error'
+      }`,
+    );
+  }
+}
+
+/**
+ * Primary extraction using ExcelJS so rows, columns, merged cells, and formulas
+ * are interpreted by the workbook parser instead of regex over raw XML.
+ */
+async function extractFromExcelStandard(fileBuffer: Buffer): Promise<string> {
   const workbook = await loadWorkbook(fileBuffer);
   const sheets: string[] = [];
 
   for (const worksheet of workbook.worksheets) {
-    const jsonData: string[][] = [];
+    const rows: ExtractedExcelCell[][] = [];
+
     worksheet.eachRow((row) => {
-      const cells = row.values as unknown[];
-      jsonData.push(
-        cells
-          .slice(1)
-          .map((cell) =>
-            cell !== null && cell !== undefined ? String(cell).trim() : '',
-          ),
-      );
+      const cells: ExtractedExcelCell[] = [];
+
+      for (
+        let columnIndex = 1;
+        columnIndex <= Math.min(row.cellCount, 30);
+        columnIndex++
+      ) {
+        const cell = row.getCell(columnIndex);
+        const value = getExcelCellText(cell);
+
+        if (!value) {
+          continue;
+        }
+
+        cells.push({
+          address: `${columnNameFromIndex(columnIndex)}${row.number}`,
+          columnIndex,
+          value,
+          isFormula: hasFormulaValue(cell.value),
+        });
+      }
+
+      if (cells.length > 0) {
+        rows.push(cells);
+      }
     });
 
-    if (jsonData.length === 0) continue;
-
-    const formattedRows: string[] = [];
-    let headerRowIndex = -1;
-    let columnHeaders: string[] = [];
-
-    // Find header row
-    for (let i = 0; i < Math.min(10, jsonData.length); i++) {
-      const row = jsonData[i];
-      const rowLower = row.map((cell) => cell.toLowerCase());
-      const headerKeywords = [
-        'question',
-        'response',
-        'answer',
-        'comment',
-        'attachment',
-      ];
-      const matchCount = headerKeywords.filter((kw) =>
-        rowLower.some((cell) => cell.includes(kw)),
-      ).length;
-
-      if (matchCount >= 2) {
-        headerRowIndex = i;
-        columnHeaders = row;
-        break;
-      }
-    }
-
-    // Process rows
-    for (let i = 0; i < jsonData.length; i++) {
-      const cells = jsonData[i];
-      const hasContent = cells.some((cell) => cell !== '');
-      if (!hasContent) continue;
-
-      if (i === headerRowIndex) {
-        formattedRows.push(`[COLUMNS: ${cells.filter((c) => c).join(', ')}]`);
-        continue;
-      }
-
-      if (headerRowIndex !== -1 && i > headerRowIndex) {
-        const parts: string[] = [];
-        for (let j = 0; j < Math.min(cells.length, 10); j++) {
-          const header = columnHeaders[j] || `Col${j + 1}`;
-          const value = cells[j] || '';
-          if (value) {
-            parts.push(`[${header}] ${value}`);
-          }
-        }
-        if (parts.length > 0) {
-          formattedRows.push(parts.join(' | '));
-        }
-      } else {
-        const nonEmptyCells = cells.filter((c) => c).slice(0, 10);
-        if (nonEmptyCells.length > 0) {
-          formattedRows.push(nonEmptyCells.join(' | '));
-        }
-      }
-    }
-
-    if (formattedRows.length > 0) {
-      sheets.push(
-        `=== Sheet: ${worksheet.name} ===\n${formattedRows.join('\n')}`,
-      );
+    const sheet = formatExcelSheet(worksheet.name, rows);
+    if (sheet) {
+      sheets.push(sheet);
     }
   }
 
@@ -812,103 +672,7 @@ async function extractFromExcel(
 
   logger.info('Processing Excel file', { fileType, fileSizeMB });
 
-  let result = '';
-
-  try {
-    // First try: Custom XML parser (handles rich text with namespace prefixes)
-    const zip = new AdmZip(fileBuffer);
-    const sharedStrings = extractSharedStrings(fileBuffer);
-
-    logger.info('Extracted shared strings', {
-      count: sharedStrings.length,
-    });
-
-    const sheetNames = extractSheetNames(zip);
-    const sheets: string[] = [];
-
-    for (let sheetIdx = 0; sheetIdx < sheetNames.length; sheetIdx++) {
-      const sheetName = sheetNames[sheetIdx];
-      const rows = extractSheetData(zip, sheetIdx, sharedStrings);
-
-      if (rows.length === 0) continue;
-
-      const formattedRows: string[] = [];
-      let headerRowIndex = -1;
-      let columnHeaders: string[] = [];
-
-      // Find header row
-      for (let i = 0; i < Math.min(10, rows.length); i++) {
-        const rowLower = rows[i].map((cell) => cell.toLowerCase());
-        const headerKeywords = [
-          'question',
-          'response',
-          'answer',
-          'comment',
-          'attachment',
-        ];
-        const matchCount = headerKeywords.filter((kw) =>
-          rowLower.some((cell) => cell.includes(kw)),
-        ).length;
-
-        if (matchCount >= 2) {
-          headerRowIndex = i;
-          columnHeaders = rows[i];
-          break;
-        }
-      }
-
-      // Process rows
-      for (let i = 0; i < rows.length; i++) {
-        const row = rows[i];
-        const hasContent = row.some((cell) => cell !== '');
-        if (!hasContent) continue;
-
-        if (i === headerRowIndex) {
-          formattedRows.push(`[COLUMNS: ${row.filter((c) => c).join(', ')}]`);
-          continue;
-        }
-
-        if (headerRowIndex !== -1 && i > headerRowIndex) {
-          const parts: string[] = [];
-          for (let j = 0; j < columnHeaders.length; j++) {
-            const header = columnHeaders[j] || `Col${j + 1}`;
-            const value = row[j] || '';
-            if (value) {
-              parts.push(`[${header}] ${value}`);
-            }
-          }
-          if (parts.length > 0) {
-            formattedRows.push(parts.join(' | '));
-          }
-        } else {
-          const nonEmptyCells = row.filter((c) => c);
-          if (nonEmptyCells.length > 0) {
-            formattedRows.push(nonEmptyCells.join(' | '));
-          }
-        }
-      }
-
-      if (formattedRows.length > 0) {
-        sheets.push(`=== Sheet: ${sheetName} ===\n${formattedRows.join('\n')}`);
-      }
-    }
-
-    result = sheets.join('\n\n');
-
-    // If custom parser returned empty/minimal content, try standard library
-    if (result.length < 100) {
-      logger.info(
-        'Custom parser returned minimal content, trying standard library',
-      );
-      result = await extractFromExcelStandard(fileBuffer, logger);
-    }
-  } catch (error) {
-    // Fallback to exceljs library if custom parser fails
-    logger.warn('Custom Excel parser failed, using standard library', {
-      error: error instanceof Error ? error.message : 'Unknown error',
-    });
-    result = await extractFromExcelStandard(fileBuffer, logger);
-  }
+  const result = await extractExcelRawContent(fileBuffer, logger);
 
   const extractionTime = ((Date.now() - excelStartTime) / 1000).toFixed(2);
   logger.info('Excel file processed', {
@@ -935,10 +699,8 @@ async function extractFromPdf(
   fileData: string,
   logger: ContentExtractionLogger,
 ): Promise<string> {
-  const fileSizeMB = (
-    Buffer.from(fileData, 'base64').length /
-    (1024 * 1024)
-  ).toFixed(2);
+  const fileBuffer = Buffer.from(fileData, 'base64');
+  const fileSizeMB = (fileBuffer.length / (1024 * 1024)).toFixed(2);
 
   logger.info('Extracting content from PDF using Claude', {
     fileSizeMB,
@@ -947,26 +709,22 @@ async function extractFromPdf(
   const startTime = Date.now();
 
   try {
-    const { text } = await generateText({
-      model: anthropic('claude-sonnet-4-6'),
-      messages: [
-        {
-          role: 'user',
-          content: [
-            { type: 'text', text: VISION_EXTRACTION_PROMPT },
-            {
-              type: 'file',
-              data: fileData,
-              mediaType: 'application/pdf',
-            },
-          ],
-        },
-      ],
-    });
+    const pdf = await PDFDocument.load(fileBuffer);
+    const pageCount = pdf.getPageCount();
+    const shouldSplit = pageCount > 10 || fileBuffer.length > 10 * 1024 * 1024;
+    const text = shouldSplit
+      ? await extractPdfByPage({ pdf, pageCount, logger })
+      : await extractPdfText({
+          fileData,
+          logger,
+          label: 'PDF document',
+        });
 
     const extractionTime = ((Date.now() - startTime) / 1000).toFixed(2);
     logger.info('Content extracted from PDF', {
       extractedLength: text.length,
+      pageCount,
+      splitByPage: shouldSplit,
       extractionTimeSeconds: extractionTime,
     });
 
@@ -984,37 +742,69 @@ async function extractFromPdf(
   }
 }
 
-/**
- * Extract questions directly from a PDF using Claude's native multi-page support
- */
-async function parseQuestionsFromPdf(
-  fileData: string,
-  logger: ContentExtractionLogger,
-): Promise<{ question: string; answer: string | null }[]> {
-  const startTime = Date.now();
+async function extractPdfByPage(params: {
+  pdf: PDFDocument;
+  pageCount: number;
+  logger: ContentExtractionLogger;
+}): Promise<string> {
+  const pageIndexes = Array.from(
+    { length: params.pageCount },
+    (_, index) => index,
+  );
+  const pageTexts = await mapWithConcurrency(
+    pageIndexes,
+    1,
+    async (pageIndex) => {
+      const pagePdf = await PDFDocument.create();
+      const [page] = await pagePdf.copyPages(params.pdf, [pageIndex]);
+      pagePdf.addPage(page);
+      const bytes = await pagePdf.save();
+      const text = await extractPdfText({
+        fileData: Buffer.from(bytes).toString('base64'),
+        logger: params.logger,
+        label: `PDF page ${pageIndex + 1}`,
+      });
+      return `--- PDF Page ${pageIndex + 1} ---\n${text}`;
+    },
+  );
 
-  const { object } = await generateObject({
+  return pageTexts.join('\n\n');
+}
+
+async function extractPdfText(params: {
+  fileData: string;
+  logger: ContentExtractionLogger;
+  label: string;
+}): Promise<string> {
+  try {
+    return await extractPdfWithClaude(params);
+  } catch (error) {
+    params.logger.warn('Claude PDF extraction failed, trying OpenAI fallback', {
+      label: params.label,
+      error: error instanceof Error ? error.message : 'Unknown error',
+    });
+    return extractPdfWithOpenAI(params);
+  }
+}
+
+async function extractPdfWithClaude(params: {
+  fileData: string;
+  logger: ContentExtractionLogger;
+  label: string;
+}): Promise<string> {
+  params.logger.info('Extracting PDF text with Claude', {
+    label: params.label,
+  });
+  const { text } = await generateText({
     model: anthropic('claude-sonnet-4-6'),
-    schema: questionExtractionSchema,
     messages: [
       {
         role: 'user',
         content: [
-          {
-            type: 'text',
-            text: `Extract all questions/fields and their answers from this questionnaire or form document.
-
-Include:
-- Traditional questions ending with "?"
-- Form fields like "1.1 Vendor Name", "Contact Email" that request input
-- Numbered items (1.1, 1.2, 2.1) followed by field labels
-- Items marked with "*" or selection notes like "(Single selection allowed)"
-
-Match each to its response if provided. Set answer to null if empty.`,
-          },
+          { type: 'text', text: VISION_EXTRACTION_PROMPT },
           {
             type: 'file',
-            data: fileData,
+            data: params.fileData,
             mediaType: 'application/pdf',
           },
         ],
@@ -1022,21 +812,35 @@ Match each to its response if provided. Set answer to null if empty.`,
     ],
   });
 
-  const result = object as {
-    questions: { question: string; answer: string | null }[];
-  };
+  return text;
+}
 
-  logger.info('PDF question parsing complete', {
-    questionCount: result.questions?.length || 0,
-    durationMs: Date.now() - startTime,
+async function extractPdfWithOpenAI(params: {
+  fileData: string;
+  logger: ContentExtractionLogger;
+  label: string;
+}): Promise<string> {
+  params.logger.info('Extracting PDF text with OpenAI fallback', {
+    label: params.label,
+  });
+  const { text } = await generateText({
+    model: openai(PARSING_MODEL),
+    messages: [
+      {
+        role: 'user',
+        content: [
+          { type: 'text', text: VISION_EXTRACTION_PROMPT },
+          {
+            type: 'file',
+            data: params.fileData,
+            mediaType: 'application/pdf',
+          },
+        ],
+      },
+    ],
   });
 
-  return (result.questions || [])
-    .map((q) => ({
-      question: q.question?.trim() || '',
-      answer: q.answer?.trim() || null,
-    }))
-    .filter((q) => q.question);
+  return text;
 }
 
 async function extractFromVision(

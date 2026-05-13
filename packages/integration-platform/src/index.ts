@@ -133,7 +133,14 @@ export { manifest as githubManifest } from './manifests/github';
 export { matchesSyncFilterTerms, parseSyncFilterTerms } from './sync-filter/email-exclusion-terms';
 
 // AWS credential helpers (used by frontend setup dialogs)
-export { awsRemediationScript } from './manifests/aws/credentials';
+export {
+  awsRemediationScript,
+  getAwsCloudShellUrl,
+  getAwsCloudShellScript,
+  getAwsRemediationScript,
+  normalizeAwsEnvironment,
+} from './manifests/aws/credentials';
+export type { AwsEnvironment } from './manifests/aws/credentials';
 
 
 // API Response types (for frontend and API type sharing)

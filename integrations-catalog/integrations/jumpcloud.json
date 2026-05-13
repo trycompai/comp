@@ -8,7 +8,7 @@
   "authConfig": {
     "type": "custom",
     "config": {
-      "setupInstructions": "1. Log in to JumpCloud Admin Console\n2. Click your user icon > API Settings\n3. Copy your API key\n4. Paste it below",
+      "setupInstructions": "1. Log in to JumpCloud Admin Console\n2. Click your account name (bottom-left) and select 'My API Key'\n3. Note: API access must be enabled by an Admin with Billing role. If you see 'You don't have permission', contact your Billing Admin.\n4. Click 'Generate New API Key' if needed\n5. Copy the API key and paste it below",
       "credentialFields": [
         {
           "label": "API Key",
@@ -20,10 +20,11 @@
     }
   },
   "capabilities": [
-    "checks"
+    "checks",
+    "sync"
   ],
   "supportsMultipleConnections": false,
-  "syncSupported": false,
+  "syncSupported": true,
   "checks": [
     {
       "slug": "user_access",
@@ -42,11 +43,18 @@
     {
       "slug": "systems",
       "name": "Secure Devices",
-      "description": "Lists JumpCloud managed systems for device compliance",
+      "description": "Verifies all JumpCloud-managed devices have full disk encryption enabled and reports OS version",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "os_patching",
+      "name": "OS Version & Patching",
+      "description": "Verifies OS versions across managed devices and lists applied patches (Windows). Requires JumpCloud System Insights to be enabled.",
       "defaultSeverity": "medium",
       "enabled": true
     }
   ],
-  "checkCount": 3,
+  "checkCount": 4,
   "isActive": true
 }

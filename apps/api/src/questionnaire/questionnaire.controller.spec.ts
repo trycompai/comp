@@ -321,13 +321,16 @@ describe('QuestionnaireController', () => {
         source: 'internal',
       };
       mockService.uploadAndParse.mockResolvedValue({
-        questionnaireId: 'q1',
-        totalQuestions: 10,
+        runId: 'run_123',
+        publicAccessToken: 'token_123',
       });
 
       const result = await controller.uploadAndParse(dto as any, 'org_1');
 
-      expect(result).toEqual({ questionnaireId: 'q1', totalQuestions: 10 });
+      expect(result).toEqual({
+        runId: 'run_123',
+        publicAccessToken: 'token_123',
+      });
     });
 
     it('should override body organizationId with auth-derived org', async () => {
@@ -339,8 +342,8 @@ describe('QuestionnaireController', () => {
         source: 'internal',
       };
       mockService.uploadAndParse.mockResolvedValue({
-        questionnaireId: 'q1',
-        totalQuestions: 10,
+        runId: 'run_123',
+        publicAccessToken: 'token_123',
       });
 
       await controller.uploadAndParse(dto as any, 'org_1');

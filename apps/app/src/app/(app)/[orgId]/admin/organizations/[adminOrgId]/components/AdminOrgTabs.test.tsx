@@ -6,6 +6,7 @@ vi.mock('@/lib/api-client', () => ({
     get: vi.fn().mockResolvedValue({ data: [] }),
     post: vi.fn().mockResolvedValue({ data: {} }),
     patch: vi.fn().mockResolvedValue({ data: {} }),
+    delete: vi.fn().mockResolvedValue({ data: {} }),
   },
 }));
 
@@ -63,6 +64,7 @@ describe('AdminOrgTabs', () => {
 
     expect(screen.getByRole('tab', { name: /overview/i })).toBeInTheDocument();
     expect(screen.getByRole('tab', { name: /findings/i })).toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: /frameworks/i })).toBeInTheDocument();
     expect(screen.getByRole('tab', { name: /tasks/i })).toBeInTheDocument();
     expect(screen.getByRole('tab', { name: /vendors/i })).toBeInTheDocument();
     expect(screen.getByRole('tab', { name: /context/i })).toBeInTheDocument();
