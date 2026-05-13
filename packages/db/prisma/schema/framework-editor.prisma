@@ -18,12 +18,15 @@ model FrameworkEditorFramework {
   description String
   visible     Boolean @default(false)
 
-  requirements       FrameworkEditorRequirement[]
-  frameworkInstances FrameworkInstance[]
-  soaConfigurations  SOAFrameworkConfiguration[] // Multiple SOA config versions per framework
-  soaDocuments       SOADocument[] // SOA documents from organizations
-  timelineTemplates  TimelineTemplate[]
-  versions           FrameworkVersion[]
+  requirements         FrameworkEditorRequirement[]
+  frameworkInstances   FrameworkInstance[]
+  soaConfigurations    SOAFrameworkConfiguration[] // Multiple SOA config versions per framework
+  soaDocuments         SOADocument[] // SOA documents from organizations
+  timelineTemplates    TimelineTemplate[]
+  versions             FrameworkVersion[]
+  controlPolicyLinks   FrameworkEditorControlPolicyTemplateLink[]
+  controlTaskLinks     FrameworkEditorControlTaskTemplateLink[]
+  controlDocumentLinks FrameworkEditorControlDocumentTypeLink[]
 
   // Dates
   createdAt DateTime @default(now())
@@ -55,7 +58,8 @@ model FrameworkEditorPolicyTemplate {
   department  Departments // Using the enum from shared.prisma
   content     Json
 
-  controlTemplates FrameworkEditorControlTemplate[]
+  controlTemplates      FrameworkEditorControlTemplate[]
+  frameworkControlLinks FrameworkEditorControlPolicyTemplateLink[]
 
   // Dates
   createdAt DateTime @default(now())
@@ -73,7 +77,8 @@ model FrameworkEditorTaskTemplate {
   department       Departments // Using the enum from shared.prisma
   automationStatus TaskAutomationStatus @default(AUTOMATED)
 
-  controlTemplates FrameworkEditorControlTemplate[]
+  controlTemplates      FrameworkEditorControlTemplate[]
+  frameworkControlLinks FrameworkEditorControlTaskTemplateLink[]
 
   // Dates
   createdAt DateTime @default(now())
@@ -88,10 +93,13 @@ model FrameworkEditorControlTemplate {
   name        String
   description String
 
-  policyTemplates FrameworkEditorPolicyTemplate[]
-  requirements    FrameworkEditorRequirement[]
-  taskTemplates   FrameworkEditorTaskTemplate[]
-  documentTypes   EvidenceFormType[]
+  policyTemplates        FrameworkEditorPolicyTemplate[]
+  requirements           FrameworkEditorRequirement[]
+  taskTemplates          FrameworkEditorTaskTemplate[]
+  documentTypes          EvidenceFormType[]
+  frameworkPolicyLinks   FrameworkEditorControlPolicyTemplateLink[]
+  frameworkTaskLinks     FrameworkEditorControlTaskTemplateLink[]
+  frameworkDocumentLinks FrameworkEditorControlDocumentTypeLink[]
 
   // Dates
   createdAt DateTime @default(now())
@@ -99,4 +107,50 @@ model FrameworkEditorControlTemplate {
 
   // Instances
   controls Control[]
+}
+
+model FrameworkEditorControlPolicyTemplateLink {
+  id                String                         @id @default(dbgenerated("generate_prefixed_cuid('fcp'::text)"))
+  frameworkId       String
+  framework         FrameworkEditorFramework       @relation(fields: [frameworkId], references: [id], onDelete: Cascade)
+  controlTemplateId String
+  controlTemplate   FrameworkEditorControlTemplate @relation(fields: [controlTemplateId], references: [id], onDelete: Cascade)
+  policyTemplateId  String
+  policyTemplate    FrameworkEditorPolicyTemplate  @relation(fields: [policyTemplateId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@unique([frameworkId, controlTemplateId, policyTemplateId])
+  @@index([controlTemplateId])
+  @@index([policyTemplateId])
+}
+
+model FrameworkEditorControlTaskTemplateLink {
+  id                String                         @id @default(dbgenerated("generate_prefixed_cuid('fct'::text)"))
+  frameworkId       String
+  framework         FrameworkEditorFramework       @relation(fields: [frameworkId], references: [id], onDelete: Cascade)
+  controlTemplateId String
+  controlTemplate   FrameworkEditorControlTemplate @relation(fields: [controlTemplateId], references: [id], onDelete: Cascade)
+  taskTemplateId    String
+  taskTemplate      FrameworkEditorTaskTemplate    @relation(fields: [taskTemplateId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@unique([frameworkId, controlTemplateId, taskTemplateId])
+  @@index([controlTemplateId])
+  @@index([taskTemplateId])
+}
+
+model FrameworkEditorControlDocumentTypeLink {
+  id                String                         @id @default(dbgenerated("generate_prefixed_cuid('fcd'::text)"))
+  frameworkId       String
+  framework         FrameworkEditorFramework       @relation(fields: [frameworkId], references: [id], onDelete: Cascade)
+  controlTemplateId String
+  controlTemplate   FrameworkEditorControlTemplate @relation(fields: [controlTemplateId], references: [id], onDelete: Cascade)
+  formType          EvidenceFormType
+
+  createdAt DateTime @default(now())
+
+  @@unique([frameworkId, controlTemplateId, formType])
+  @@index([controlTemplateId])
 }

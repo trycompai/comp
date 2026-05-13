@@ -6,12 +6,14 @@ import {
   Delete,
   Body,
   Param,
+  ParseEnumPipe,
   Query,
   UseGuards,
   UsePipes,
   ValidationPipe,
 } from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
+import { EvidenceFormType } from '@db';
 import { PlatformAdminGuard } from '../../auth/platform-admin.guard';
 import { CreateControlTemplateDto } from './dto/create-control-template.dto';
 import { UpdateControlTemplateDto } from './dto/update-control-template.dto';
@@ -84,8 +86,9 @@ export class ControlTemplateController {
   async linkPolicyTemplate(
     @Param('id') id: string,
     @Param('ptId') ptId: string,
+    @Query('frameworkId') frameworkId?: string,
   ) {
-    return this.service.linkPolicyTemplate(id, ptId);
+    return this.service.linkPolicyTemplate(id, ptId, frameworkId);
   }
 
   @Delete(':id/policy-templates/:ptId')
@@ -93,14 +96,19 @@ export class ControlTemplateController {
   async unlinkPolicyTemplate(
     @Param('id') id: string,
     @Param('ptId') ptId: string,
+    @Query('frameworkId') frameworkId?: string,
   ) {
-    return this.service.unlinkPolicyTemplate(id, ptId);
+    return this.service.unlinkPolicyTemplate(id, ptId, frameworkId);
   }
 
   @Post(':id/task-templates/:ttId')
   @ApiOperation({ summary: 'Link a task template to a control template' })
-  async linkTaskTemplate(@Param('id') id: string, @Param('ttId') ttId: string) {
-    return this.service.linkTaskTemplate(id, ttId);
+  async linkTaskTemplate(
+    @Param('id') id: string,
+    @Param('ttId') ttId: string,
+    @Query('frameworkId') frameworkId?: string,
+  ) {
+    return this.service.linkTaskTemplate(id, ttId, frameworkId);
   }
 
   @Delete(':id/task-templates/:ttId')
@@ -108,7 +116,30 @@ export class ControlTemplateController {
   async unlinkTaskTemplate(
     @Param('id') id: string,
     @Param('ttId') ttId: string,
+    @Query('frameworkId') frameworkId?: string,
   ) {
-    return this.service.unlinkTaskTemplate(id, ttId);
+    return this.service.unlinkTaskTemplate(id, ttId, frameworkId);
+  }
+
+  @Post(':id/document-types/:formType')
+  @ApiOperation({ summary: 'Link a document type to a control template' })
+  async linkDocumentType(
+    @Param('id') id: string,
+    @Param('formType', new ParseEnumPipe(EvidenceFormType))
+    formType: EvidenceFormType,
+    @Query('frameworkId') frameworkId?: string,
+  ) {
+    return this.service.linkDocumentType(id, formType, frameworkId);
+  }
+
+  @Delete(':id/document-types/:formType')
+  @ApiOperation({ summary: 'Unlink a document type from a control template' })
+  async unlinkDocumentType(
+    @Param('id') id: string,
+    @Param('formType', new ParseEnumPipe(EvidenceFormType))
+    formType: EvidenceFormType,
+    @Query('frameworkId') frameworkId?: string,
+  ) {
+    return this.service.unlinkDocumentType(id, formType, frameworkId);
   }
 }

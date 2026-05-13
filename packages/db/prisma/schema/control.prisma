@@ -15,14 +15,17 @@ model Control {
   archivedAt DateTime?
 
   // Relationships
-  organization         Organization                    @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  organizationId       String
-  requirementsMapped   RequirementMap[]
-  tasks                Task[]
-  policies             Policy[]
-  controlTemplateId    String?
-  controlTemplate      FrameworkEditorControlTemplate? @relation(fields: [controlTemplateId], references: [id])
-  controlDocumentTypes ControlDocumentType[]
+  organization           Organization                       @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  organizationId         String
+  requirementsMapped     RequirementMap[]
+  tasks                  Task[]
+  policies               Policy[]
+  controlTemplateId      String?
+  controlTemplate        FrameworkEditorControlTemplate?    @relation(fields: [controlTemplateId], references: [id])
+  controlDocumentTypes   ControlDocumentType[]
+  frameworkPolicyLinks   FrameworkControlPolicyLink[]
+  frameworkTaskLinks     FrameworkControlTaskLink[]
+  frameworkDocumentLinks FrameworkControlDocumentTypeLink[]
 
   @@index([organizationId])
   @@index([organizationId, archivedAt])

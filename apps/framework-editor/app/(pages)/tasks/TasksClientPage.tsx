@@ -103,20 +103,22 @@ export function TasksClientPage({ initialTasks, emptyMessage, frameworkId }: Tas
 
   const handleLinkControl = useCallback(
     async (taskId: string, controlId: string): Promise<void> => {
-      await apiClient(`/task-template/${taskId}/control-templates/${controlId}`, {
+      const query = frameworkId ? `?frameworkId=${frameworkId}` : '';
+      await apiClient(`/task-template/${taskId}/control-templates/${controlId}${query}`, {
         method: 'POST',
       });
     },
-    [],
+    [frameworkId],
   );
 
   const handleUnlinkControl = useCallback(
     async (taskId: string, controlId: string): Promise<void> => {
-      await apiClient(`/task-template/${taskId}/control-templates/${controlId}`, {
+      const query = frameworkId ? `?frameworkId=${frameworkId}` : '';
+      await apiClient(`/task-template/${taskId}/control-templates/${controlId}${query}`, {
         method: 'DELETE',
       });
     },
-    [],
+    [frameworkId],
   );
 
   const columns = useMemo(

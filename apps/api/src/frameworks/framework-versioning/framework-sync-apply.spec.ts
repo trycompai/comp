@@ -44,6 +44,9 @@ function mockTx() {
     frameworkInstance: { findMany: jest.fn().mockResolvedValue([]), update: jest.fn() },
     frameworkSyncOperation: { create: jest.fn().mockResolvedValue({ id: 'fso_new' }) },
     controlDocumentType: { findUnique: jest.fn().mockResolvedValue(null), create: jest.fn().mockResolvedValue({ id: 'cdt_new' }), delete: jest.fn() },
+    frameworkControlPolicyLink: { findMany: jest.fn().mockResolvedValue([]), createMany: jest.fn().mockResolvedValue({ count: 0 }), deleteMany: jest.fn().mockResolvedValue({ count: 0 }) },
+    frameworkControlTaskLink: { findMany: jest.fn().mockResolvedValue([]), createMany: jest.fn().mockResolvedValue({ count: 0 }), deleteMany: jest.fn().mockResolvedValue({ count: 0 }) },
+    frameworkControlDocumentTypeLink: { findUnique: jest.fn().mockResolvedValue(null), create: jest.fn().mockResolvedValue({ id: 'fdl_new' }), createMany: jest.fn().mockResolvedValue({ count: 0 }), deleteMany: jest.fn().mockResolvedValue({ count: 0 }) },
     $executeRaw: jest.fn().mockResolvedValue(0),
     $queryRaw: jest.fn().mockResolvedValue([]),
   } as any;
