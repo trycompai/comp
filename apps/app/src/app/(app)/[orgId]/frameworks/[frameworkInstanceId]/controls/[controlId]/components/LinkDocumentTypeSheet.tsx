@@ -23,9 +23,11 @@ import {
 
 export function LinkDocumentTypeSheet({
   controlId,
+  frameworkInstanceId,
   alreadyLinkedFormTypes,
 }: {
   controlId: string;
+  frameworkInstanceId: string;
   alreadyLinkedFormTypes: string[];
 }) {
   const { hasPermission } = usePermissions();
@@ -63,7 +65,7 @@ export function LinkDocumentTypeSheet({
     setIsSubmitting(true);
     try {
       const response = await apiClient.post(
-        `/v1/controls/${controlId}/document-types/link`,
+        `/v1/controls/${controlId}/document-types/link?frameworkInstanceId=${frameworkInstanceId}`,
         { formTypes: Array.from(selected) },
       );
       if (response.error) throw new Error(response.error);

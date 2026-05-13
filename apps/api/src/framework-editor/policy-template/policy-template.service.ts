@@ -13,17 +13,43 @@ export class PolicyTemplateService {
   private readonly logger = new Logger(PolicyTemplateService.name);
 
   async findAll(take = 500, skip = 0, frameworkId?: string) {
+    if (frameworkId) {
+      const policies = await db.frameworkEditorPolicyTemplate.findMany({
+        take,
+        skip,
+        orderBy: { name: 'asc' },
+        where: { frameworkControlLinks: { some: { frameworkId } } },
+        include: {
+          frameworkControlLinks: {
+            where: { frameworkId },
+            select: {
+              controlTemplate: {
+                select: {
+                  id: true,
+                  name: true,
+                  requirements: {
+                    select: {
+                      framework: { select: { id: true, name: true } },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      });
+      return policies.map(({ frameworkControlLinks, ...policy }) => ({
+        ...policy,
+        controlTemplates: frameworkControlLinks.map(
+          (link) => link.controlTemplate,
+        ),
+      }));
+    }
+
     return db.frameworkEditorPolicyTemplate.findMany({
       take,
       skip,
       orderBy: { name: 'asc' },
-      where: frameworkId
-        ? {
-            controlTemplates: {
-              some: { requirements: { some: { frameworkId } } },
-            },
-          }
-        : undefined,
       include: {
         controlTemplates: {
           select: {

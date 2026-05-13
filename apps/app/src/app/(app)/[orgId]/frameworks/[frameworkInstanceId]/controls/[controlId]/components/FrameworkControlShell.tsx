@@ -53,12 +53,13 @@ interface Breadcrumb {
 
 interface Props {
   orgId: string;
+  frameworkInstanceId: string;
   control: ControlDetail;
   breadcrumbs: Breadcrumb[];
   documentRows: DocumentRow[];
 }
 
-export function FrameworkControlShell({ orgId, control, breadcrumbs, documentRows }: Props) {
+export function FrameworkControlShell({ orgId, frameworkInstanceId, control, breadcrumbs, documentRows }: Props) {
   const [activeTab, setActiveTab] = useState('policies');
 
   const linkedPolicyIds = control.policies.map((p) => p.id);
@@ -67,11 +68,23 @@ export function FrameworkControlShell({ orgId, control, breadcrumbs, documentRow
 
   const actions =
     activeTab === 'policies' ? (
-      <LinkPolicySheet controlId={control.id} alreadyLinkedPolicyIds={linkedPolicyIds} />
+      <LinkPolicySheet
+        controlId={control.id}
+        frameworkInstanceId={frameworkInstanceId}
+        alreadyLinkedPolicyIds={linkedPolicyIds}
+      />
     ) : activeTab === 'tasks' ? (
-      <LinkTaskSheet controlId={control.id} alreadyLinkedTaskIds={linkedTaskIds} />
+      <LinkTaskSheet
+        controlId={control.id}
+        frameworkInstanceId={frameworkInstanceId}
+        alreadyLinkedTaskIds={linkedTaskIds}
+      />
     ) : (
-      <LinkDocumentTypeSheet controlId={control.id} alreadyLinkedFormTypes={linkedFormTypes} />
+      <LinkDocumentTypeSheet
+        controlId={control.id}
+        frameworkInstanceId={frameworkInstanceId}
+        alreadyLinkedFormTypes={linkedFormTypes}
+      />
     );
 
   return (
@@ -99,7 +112,12 @@ export function FrameworkControlShell({ orgId, control, breadcrumbs, documentRow
           </TabsContent>
 
           <TabsContent value="documents">
-            <DocumentsTable controlId={control.id} orgId={orgId} rows={documentRows} />
+            <DocumentsTable
+              controlId={control.id}
+              frameworkInstanceId={frameworkInstanceId}
+              orgId={orgId}
+              rows={documentRows}
+            />
           </TabsContent>
         </Stack>
       </PageLayout>

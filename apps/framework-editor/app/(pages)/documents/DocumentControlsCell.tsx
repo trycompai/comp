@@ -14,6 +14,7 @@ interface ControlTemplate {
 interface DocumentControlsCellProps {
   documentType: string;
   controls: { id: string; name: string }[];
+  frameworkId: string;
   onControlLinked: (documentType: string, control: { id: string; name: string }) => void;
   onControlUnlinked: (documentType: string, controlId: string) => void;
 }
@@ -21,6 +22,7 @@ interface DocumentControlsCellProps {
 export function DocumentControlsCell({
   documentType,
   controls,
+  frameworkId,
   onControlLinked,
   onControlUnlinked,
 }: DocumentControlsCellProps) {
@@ -49,7 +51,7 @@ export function DocumentControlsCell({
   useEffect(() => {
     if (isSearching && allControls.length === 0) {
       setIsLoading(true);
-      apiClient<ControlTemplate[]>('/control-template')
+      apiClient<ControlTemplate[]>(`/control-template?frameworkId=${frameworkId}`)
         .then((data: ControlTemplate[]) =>
           data.map((c: ControlTemplate) => ({ id: c.id, name: c.name || 'Unnamed Control' })),
         )
@@ -57,7 +59,7 @@ export function DocumentControlsCell({
         .catch(() => toast.error('Failed to load controls'))
         .finally(() => setIsLoading(false));
     }
-  }, [isSearching, allControls.length]);
+  }, [isSearching, allControls.length, frameworkId]);
 
   const filteredControls = useMemo(() => {
     const linkedIds = new Set(controls.map((c) => c.id));
@@ -74,16 +76,10 @@ export function DocumentControlsCell({
       }
 
       try {
-        const current = await apiClient<ControlTemplate>(`/control-template/${control.id}`);
-        const currentTypes: string[] = Array.isArray(current.documentTypes)
-          ? current.documentTypes
-          : [];
-        if (!currentTypes.includes(documentType)) {
-          await apiClient(`/control-template/${control.id}`, {
-            method: 'PATCH',
-            body: JSON.stringify({ documentTypes: [...currentTypes, documentType] }),
-          });
-        }
+        await apiClient(
+          `/control-template/${control.id}/document-types/${documentType}?frameworkId=${frameworkId}`,
+          { method: 'POST' },
+        );
         onControlLinked(documentType, control);
         toast.success(`Linked to ${control.name}`);
       } catch {
@@ -92,30 +88,24 @@ export function DocumentControlsCell({
       setSearch('');
       setIsSearching(false);
     },
-    [documentType, isSOADocument, onControlLinked],
+    [documentType, frameworkId, isSOADocument, onControlLinked],
   );
 
   const handleUnlink = useCallback(
     async (controlId: string) => {
       const control = controls.find((c) => c.id === controlId);
       try {
-        const current = await apiClient<ControlTemplate>(`/control-template/${controlId}`);
-        const currentTypes: string[] = Array.isArray(current.documentTypes)
-          ? current.documentTypes
-          : [];
-        await apiClient(`/control-template/${controlId}`, {
-          method: 'PATCH',
-          body: JSON.stringify({
-            documentTypes: currentTypes.filter((t) => t !== documentType),
-          }),
-        });
+        await apiClient(
+          `/control-template/${controlId}/document-types/${documentType}?frameworkId=${frameworkId}`,
+          { method: 'DELETE' },
+        );
         onControlUnlinked(documentType, controlId);
         toast.success(`Unlinked from ${control?.name ?? 'control'}`);
       } catch {
         toast.error('Failed to unlink control');
       }
     },
-    [documentType, controls, onControlUnlinked],
+    [documentType, frameworkId, controls, onControlUnlinked],
   );
 
   if (!isExpanded) {

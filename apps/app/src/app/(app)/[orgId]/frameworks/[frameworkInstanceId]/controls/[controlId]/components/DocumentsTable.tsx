@@ -27,10 +27,12 @@ interface DocumentTypeRow {
 
 export function DocumentsTable({
   controlId,
+  frameworkInstanceId,
   orgId,
   rows,
 }: {
   controlId: string;
+  frameworkInstanceId: string;
   orgId: string;
   rows: DocumentTypeRow[];
 }) {
@@ -45,7 +47,7 @@ export function DocumentsTable({
     setPending(formType);
     try {
       const response = await apiClient.delete(
-        `/v1/controls/${controlId}/document-types/${formType}`,
+        `/v1/controls/${controlId}/document-types/${formType}?frameworkInstanceId=${frameworkInstanceId}`,
       );
       if (response.error) throw new Error(response.error);
       toast.success('Document unlinked');
