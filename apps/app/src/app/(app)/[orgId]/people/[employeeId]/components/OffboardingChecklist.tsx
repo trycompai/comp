@@ -19,6 +19,7 @@ export function OffboardingChecklist({ memberId, canEdit }: OffboardingChecklist
     uncompleteItem,
     uploadEvidence,
     getDownloadUrl,
+    refreshChecklist,
   } = useOffboardingChecklist(memberId);
 
   const handleComplete = useCallback(
@@ -107,11 +108,13 @@ export function OffboardingChecklist({ memberId, canEdit }: OffboardingChecklist
             <OffboardingChecklistItem
               key={item.templateItemId}
               item={item}
+              memberId={memberId}
               canEdit={canEdit}
               onComplete={handleComplete}
               onUncomplete={handleUncomplete}
               onUploadEvidence={handleUploadEvidence}
               onDownload={handleDownload}
+              onChecklistRefresh={() => refreshChecklist()}
             />
           ))}
         </Accordion>

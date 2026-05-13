@@ -1,6 +1,7 @@
 'use client';
 
 import type { ChecklistItem } from '@/hooks/use-offboarding-checklist';
+import { AccessRevocationList } from './AccessRevocationList';
 import {
   AccordionContent,
   AccordionItem,
@@ -17,11 +18,13 @@ import { useRef, useState } from 'react';
 
 interface OffboardingChecklistItemProps {
   item: ChecklistItem;
+  memberId: string;
   canEdit: boolean;
   onComplete: (args: { templateItemId: string; file?: File }) => Promise<void>;
   onUncomplete: (templateItemId: string) => Promise<void>;
   onUploadEvidence: (templateItemId: string, file: File) => Promise<void>;
   onDownload: (attachmentId: string) => Promise<void>;
+  onChecklistRefresh?: () => void;
 }
 
 function StatusBadge({ item }: { item: ChecklistItem }) {
@@ -44,11 +47,13 @@ function CompletionInfo({ item }: { item: ChecklistItem }) {
 
 export function OffboardingChecklistItem({
   item,
+  memberId,
   canEdit,
   onComplete,
   onUncomplete,
   onUploadEvidence,
   onDownload,
+  onChecklistRefresh,
 }: OffboardingChecklistItemProps) {
   const [isProcessing, setIsProcessing] = useState(false);
   const dropzoneInputRef = useRef<HTMLInputElement>(null);
@@ -160,65 +165,73 @@ export function OffboardingChecklistItem({
         </Stack>
       </AccordionTrigger>
       <AccordionContent>
-        <Stack gap="3">
-          {item.evidence.length > 0 && (
-            <Stack gap="1">
-              {item.evidence.map((file) => (
-                <HStack key={file.id} gap="2" align="center">
-                  <Text size="sm" variant="muted">{file.name}</Text>
-                  <div>
-                    <Button
-                      variant="ghost"
-                      size="icon-xs"
-                      onClick={() => onDownload(file.id)}
-                    >
-                      <DocumentDownload size={14} />
-                    </Button>
-                  </div>
-                </HStack>
-              ))}
-            </Stack>
-          )}
+        {item.isAccessRevocation ? (
+          <AccessRevocationList
+            memberId={memberId}
+            canEdit={canEdit}
+            onRevocationChange={onChecklistRefresh}
+          />
+        ) : (
+          <Stack gap="3">
+            {item.evidence.length > 0 && (
+              <Stack gap="1">
+                {item.evidence.map((file) => (
+                  <HStack key={file.id} gap="2" align="center">
+                    <Text size="sm" variant="muted">{file.name}</Text>
+                    <div>
+                      <Button
+                        variant="ghost"
+                        size="icon-xs"
+                        onClick={() => onDownload(file.id)}
+                      >
+                        <DocumentDownload size={14} />
+                      </Button>
+                    </div>
+                  </HStack>
+                ))}
+              </Stack>
+            )}
 
-          {canEdit && (
-            <div
-              onDrop={handleFileDrop}
-              onDragOver={(e) => e.preventDefault()}
-              onClick={() => dropzoneInputRef.current?.click()}
-              className="flex cursor-pointer flex-col items-center gap-2 rounded-md border-2 border-dashed border-muted-foreground/25 px-4 py-6 text-center transition hover:border-muted-foreground/50 hover:bg-muted/25"
-            >
-              <Upload size={20} className="text-muted-foreground" />
-              <div>
-                <Text size="sm" variant="muted">
-                  {item.completed
-                    ? 'Drop files here or click to add more evidence'
-                    : 'Drop files here or click to upload proof and mark as complete'}
-                </Text>
-              </div>
-              <input
-                ref={dropzoneInputRef}
-                type="file"
-                className="hidden"
-                onChange={handleFileSelect}
-                accept=".pdf,.doc,.docx,.png,.jpg,.jpeg,.csv,.xlsx"
-              />
-            </div>
-          )}
-
-          {item.completed && canEdit && (
-            <div>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleUncomplete}
-                disabled={isProcessing}
-                loading={isProcessing}
+            {canEdit && (
+              <div
+                onDrop={handleFileDrop}
+                onDragOver={(e) => e.preventDefault()}
+                onClick={() => dropzoneInputRef.current?.click()}
+                className="flex cursor-pointer flex-col items-center gap-2 rounded-md border-2 border-dashed border-muted-foreground/25 px-4 py-6 text-center transition hover:border-muted-foreground/50 hover:bg-muted/25"
               >
-                Undo completion
-              </Button>
-            </div>
-          )}
-        </Stack>
+                <Upload size={20} className="text-muted-foreground" />
+                <div>
+                  <Text size="sm" variant="muted">
+                    {item.completed
+                      ? 'Drop files here or click to add more evidence'
+                      : 'Drop files here or click to upload proof and mark as complete'}
+                  </Text>
+                </div>
+                <input
+                  ref={dropzoneInputRef}
+                  type="file"
+                  className="hidden"
+                  onChange={handleFileSelect}
+                  accept=".pdf,.doc,.docx,.png,.jpg,.jpeg,.csv,.xlsx"
+                />
+              </div>
+            )}
+
+            {item.completed && canEdit && (
+              <div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleUncomplete}
+                  disabled={isProcessing}
+                  loading={isProcessing}
+                >
+                  Undo completion
+                </Button>
+              </div>
+            )}
+          </Stack>
+        )}
       </AccordionContent>
     </AccordionItem>
   );

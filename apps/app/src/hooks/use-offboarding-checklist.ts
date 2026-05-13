@@ -23,6 +23,7 @@ export interface ChecklistItem {
   title: string;
   description: string | null;
   evidenceRequired: boolean;
+  isAccessRevocation: boolean;
   sortOrder: number;
   completed: boolean;
   completedAt: string | null;
@@ -125,6 +126,7 @@ export function useOffboardingChecklist(memberId: string) {
     uncompleteItem,
     uploadEvidence,
     getDownloadUrl,
+    refreshChecklist: mutate,
   };
 }
 
