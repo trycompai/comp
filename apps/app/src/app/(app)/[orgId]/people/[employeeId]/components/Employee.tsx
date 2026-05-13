@@ -10,8 +10,8 @@ import {
   TabsList,
   TabsTrigger,
 } from '@trycompai/design-system';
-import { useSearchParams } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
+import { useCallback, useState } from 'react';
 import type { DeviceWithChecks, FleetPolicy, Host } from '../../devices/types';
 import type { BackgroundCheckBillingStatus, BackgroundCheckRecord } from './backgroundCheckTypes';
 import { EmployeeBackgroundCheck } from './EmployeeBackgroundCheck';
@@ -71,12 +71,43 @@ export function Employee({
   memberBackgroundCheckExempt,
 }: EmployeeProps) {
   const searchParams = useSearchParams();
-  const querySelectedTab: EmployeeTab =
-    backgroundCheckStepEnabled &&
-    (searchParams.get('background_check_step') || searchParams.get('background_check_billing'))
-      ? 'background-check'
-      : 'details';
-  const [activeTab, setActiveTab] = useState<EmployeeTab>(querySelectedTab);
+  const pathname = usePathname();
+  const router = useRouter();
+
+  const VALID_TABS: EmployeeTab[] = ['details', 'policies', 'training', 'hipaa', 'device', 'offboarding', 'background-check'];
+
+  const resolveTab = (): EmployeeTab => {
+    if (
+      backgroundCheckStepEnabled &&
+      (searchParams.get('background_check_step') || searchParams.get('background_check_billing'))
+    ) {
+      return 'background-check';
+    }
+    const tabParam = searchParams.get('tab');
+    if (tabParam && VALID_TABS.includes(tabParam as EmployeeTab)) {
+      return tabParam as EmployeeTab;
+    }
+    return 'details';
+  };
+
+  const activeTab = resolveTab();
+
+  const handleTabChange = useCallback(
+    (value: string) => {
+      const params = new URLSearchParams(searchParams.toString());
+      if (value === 'details') {
+        params.delete('tab');
+      } else {
+        params.set('tab', value);
+      }
+      params.delete('background_check_step');
+      params.delete('background_check_billing');
+      const query = params.toString();
+      router.replace(query ? `${pathname}?${query}` : pathname, { scroll: false });
+    },
+    [pathname, router, searchParams],
+  );
+
   const [memberExempt, setMemberExempt] = useState(memberBackgroundCheckExempt);
   const [lastSyncedExempt, setLastSyncedExempt] = useState(memberBackgroundCheckExempt);
 
@@ -84,12 +115,6 @@ export function Employee({
     setLastSyncedExempt(memberBackgroundCheckExempt);
     setMemberExempt(memberBackgroundCheckExempt);
   }
-
-  useEffect(() => {
-    if (querySelectedTab === 'background-check') {
-      setActiveTab('background-check');
-    }
-  }, [querySelectedTab]);
 
   return (
     <PageLayout
@@ -106,7 +131,7 @@ export function Employee({
       <Tabs
         value={activeTab}
         onValueChange={(value) => {
-          if (value) setActiveTab(value as EmployeeTab);
+          if (value) handleTabChange(value);
         }}
       >
         <Stack gap="4">
