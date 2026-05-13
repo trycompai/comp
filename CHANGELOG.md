@@ -1,3 +1,16 @@
+# [3.52.0](https://github.com/trycompai/comp/compare/v3.51.0...v3.52.0) (2026-05-13)
+
+
+### Bug Fixes
+
+* **rbac:** enforce app:read for app access, use permissions for member invites, gate portal ([d47cd5d](https://github.com/trycompai/comp/commit/d47cd5db15a4d198cfc0c67b549bda138b83ac4e))
+
+
+### Features
+
+* **control-template:** enhance control template service and controller for document type linking ([a024822](https://github.com/trycompai/comp/commit/a024822a36ef7ad328466d70bd4168c19c3fcc3a))
+* **controls:** add frameworkInstanceId support for control linking and retrieval ([8d23f15](https://github.com/trycompai/comp/commit/8d23f156a47593beac1c3b42ca23757971a7c12b))
+
 # [3.51.0](https://github.com/trycompai/comp/compare/v3.50.0...v3.51.0) (2026-05-12)
 
 
