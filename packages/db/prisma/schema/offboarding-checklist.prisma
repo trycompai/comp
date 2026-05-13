@@ -1,15 +1,16 @@
 model OffboardingChecklistTemplate {
-  id               String       @id @default(dbgenerated("generate_prefixed_cuid('oct'::text)"))
-  organizationId   String
-  organization     Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  title            String
-  description      String?
-  evidenceRequired Boolean      @default(false)
-  sortOrder        Int          @default(0)
-  isDefault        Boolean      @default(false)
-  isEnabled        Boolean      @default(true)
-  createdAt        DateTime     @default(now())
-  updatedAt        DateTime     @updatedAt
+  id                 String       @id @default(dbgenerated("generate_prefixed_cuid('oct'::text)"))
+  organizationId     String
+  organization       Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  title              String
+  description        String?
+  evidenceRequired   Boolean      @default(false)
+  sortOrder          Int          @default(0)
+  isDefault          Boolean      @default(false)
+  isEnabled          Boolean      @default(true)
+  isAccessRevocation Boolean      @default(false)
+  createdAt          DateTime     @default(now())
+  updatedAt          DateTime     @updatedAt
 
   completions OffboardingChecklistCompletion[]
 
@@ -32,6 +33,25 @@ model OffboardingChecklistCompletion {
   completedBy  User                         @relation("OffboardingChecklistCompletedBy", fields: [completedById], references: [id], onDelete: Cascade)
 
   @@unique([memberId, templateItemId])
+  @@index([organizationId])
+  @@index([memberId])
+}
+
+model OffboardingAccessRevocation {
+  id             String   @id @default(dbgenerated("generate_prefixed_cuid('oar'::text)"))
+  organizationId String
+  memberId       String
+  vendorId       String
+  revokedById    String
+  revokedAt      DateTime @default(now())
+  notes          String?
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  member       Member       @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  vendor       Vendor       @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  revokedBy    User         @relation("AccessRevocationRevokedBy", fields: [revokedById], references: [id], onDelete: Cascade)
+
+  @@unique([memberId, vendorId])
   @@index([organizationId])
   @@index([memberId])
 }

@@ -105,8 +105,9 @@ model Organization {
   customRequirements CustomRequirement[]
 
   // Offboarding Checklist
-  offboardingChecklistTemplates   OffboardingChecklistTemplate[]
-  offboardingChecklistCompletions OffboardingChecklistCompletion[]
+  offboardingChecklistTemplates    OffboardingChecklistTemplate[]
+  offboardingChecklistCompletions  OffboardingChecklistCompletion[]
+  offboardingAccessRevocations     OffboardingAccessRevocation[]
 
   @@index([slug])
 }

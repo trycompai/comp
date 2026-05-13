@@ -4,6 +4,7 @@ export const DEFAULT_OFFBOARDING_CHECKLIST_ITEMS = [
     description:
       "Disable or remove the employee's access to all company systems, applications, and cloud services.",
     evidenceRequired: true,
+    isAccessRevocation: true,
     sortOrder: 1,
   },
   {
@@ -11,6 +12,7 @@ export const DEFAULT_OFFBOARDING_CHECKLIST_ITEMS = [
     description:
       'Remove the employee from your identity provider (e.g., Okta, Azure AD, Google Workspace).',
     evidenceRequired: true,
+    isAccessRevocation: false,
     sortOrder: 2,
   },
   {
@@ -18,6 +20,7 @@ export const DEFAULT_OFFBOARDING_CHECKLIST_ITEMS = [
     description:
       'Collect all company-owned hardware including laptops, phones, access badges, and security keys.',
     evidenceRequired: true,
+    isAccessRevocation: false,
     sortOrder: 3,
   },
   {
@@ -25,6 +28,7 @@ export const DEFAULT_OFFBOARDING_CHECKLIST_ITEMS = [
     description:
       "Deactivate or redirect the employee's email account and remove from shared mailboxes and distribution lists.",
     evidenceRequired: true,
+    isAccessRevocation: false,
     sortOrder: 4,
   },
   {
@@ -32,6 +36,7 @@ export const DEFAULT_OFFBOARDING_CHECKLIST_ITEMS = [
     description:
       'Remove any elevated permissions, admin rights, SSH keys, API tokens, or shared credentials the employee had access to.',
     evidenceRequired: true,
+    isAccessRevocation: false,
     sortOrder: 5,
   },
   {
@@ -39,6 +44,7 @@ export const DEFAULT_OFFBOARDING_CHECKLIST_ITEMS = [
     description:
       "Inform the employee's team, IT, HR, and any relevant stakeholders of the departure.",
     evidenceRequired: false,
+    isAccessRevocation: false,
     sortOrder: 6,
   },
   {
@@ -46,6 +52,7 @@ export const DEFAULT_OFFBOARDING_CHECKLIST_ITEMS = [
     description:
       'Conduct an exit interview covering security reminders and NDA obligations.',
     evidenceRequired: false,
+    isAccessRevocation: false,
     sortOrder: 7,
   },
   {
@@ -53,6 +60,7 @@ export const DEFAULT_OFFBOARDING_CHECKLIST_ITEMS = [
     description:
       'Remove the employee from the org chart, on-call rotations, and internal documentation.',
     evidenceRequired: false,
+    isAccessRevocation: false,
     sortOrder: 8,
   },
 ] as const;
