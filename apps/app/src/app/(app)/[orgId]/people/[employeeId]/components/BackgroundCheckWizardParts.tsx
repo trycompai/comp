@@ -1,17 +1,13 @@
 'use client';
 
 import { Button, HStack, Stack, Text } from '@trycompai/design-system';
-import { CheckmarkFilled, Launch } from '@trycompai/design-system/icons';
+import { Launch } from '@trycompai/design-system/icons';
 import Link from 'next/link';
-
-const BENEFITS = [
-  'Required for Compliance',
-  'Full audited report / background check',
-  'Identity verification',
-  'Previous employer verification + checks',
-  'Reference checks',
-  'Social media verifications',
-];
+import {
+  MethodologyComplianceNote,
+  MethodologyIncluded,
+  MethodologyTrustSignals,
+} from './BackgroundCheckMethodology';
 
 export function OverviewStep({
   canRequest,
@@ -85,23 +81,17 @@ export function BackgroundCheckSummary() {
       <Stack gap="2">
         <div className="flex flex-wrap items-center gap-2">
           <Text size="lg" weight="semibold">
-            Employee Background Check
+            Background-checked the right way
           </Text>
         </div>
         <Text variant="muted">
-          Streamline employee background checks with Comp AI.
+          A serious check, designed for compliance hiring — biometric,
+          human-verified, and FCRA-aligned.
         </Text>
       </Stack>
-      <div className="grid gap-3 md:grid-cols-2">
-        {BENEFITS.map((benefit) => (
-          <div key={benefit} className="flex items-center gap-2 rounded-md border p-3">
-            <span className="text-primary">
-              <CheckmarkFilled size={16} />
-            </span>
-            <Text size="sm">{benefit}</Text>
-          </div>
-        ))}
-      </div>
+      <MethodologyTrustSignals />
+      <MethodologyIncluded />
+      <MethodologyComplianceNote />
     </Stack>
   );
 }
