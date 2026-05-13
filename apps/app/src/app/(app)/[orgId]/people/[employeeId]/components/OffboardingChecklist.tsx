@@ -102,19 +102,21 @@ export function OffboardingChecklist({ memberId, canEdit }: OffboardingChecklist
           <Progress value={progressValue} />
         </Stack>
 
-        <Accordion type="multiple">
-          {checklist.items.map((item) => (
-            <OffboardingChecklistItem
-              key={item.templateItemId}
-              item={item}
-              canEdit={canEdit}
-              onComplete={handleComplete}
-              onUncomplete={handleUncomplete}
-              onUploadEvidence={handleUploadEvidence}
-              onDownload={handleDownload}
-            />
-          ))}
-        </Accordion>
+        <div className="flex w-full flex-col gap-3">
+          <Accordion variant="bordered" type="multiple">
+            {checklist.items.map((item) => (
+              <OffboardingChecklistItem
+                key={item.templateItemId}
+                item={item}
+                canEdit={canEdit}
+                onComplete={handleComplete}
+                onUncomplete={handleUncomplete}
+                onUploadEvidence={handleUploadEvidence}
+                onDownload={handleDownload}
+              />
+            ))}
+          </Accordion>
+        </div>
       </Stack>
     </Section>
   );

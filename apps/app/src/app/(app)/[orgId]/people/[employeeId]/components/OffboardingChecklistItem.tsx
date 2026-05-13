@@ -24,6 +24,24 @@ interface OffboardingChecklistItemProps {
   onDownload: (attachmentId: string) => Promise<void>;
 }
 
+function StatusBadge({ item }: { item: ChecklistItem }) {
+  if (item.completed) return <Badge variant="default">Complete</Badge>;
+  if (item.evidenceRequired) return <Badge variant="destructive">Evidence required</Badge>;
+  return <Badge variant="secondary">Pending</Badge>;
+}
+
+function CompletionInfo({ item }: { item: ChecklistItem }) {
+  if (!item.completed || !item.completedBy || !item.completedAt) return null;
+  return (
+    <Text size="xs" variant="muted">
+      Completed by {item.completedBy.name} on{' '}
+      {format(new Date(item.completedAt), 'MMM d, yyyy')}
+      {item.evidence.length > 0 &&
+        ` · ${item.evidence.length} file${item.evidence.length !== 1 ? 's' : ''} attached`}
+    </Text>
+  );
+}
+
 export function OffboardingChecklistItem({
   item,
   canEdit,
@@ -35,18 +53,21 @@ export function OffboardingChecklistItem({
   const [isProcessing, setIsProcessing] = useState(false);
   const dropzoneInputRef = useRef<HTMLInputElement>(null);
 
-  const handleCheckedChange = async (checked: boolean) => {
+  const handleComplete = async () => {
     if (isProcessing) return;
-
-    if (checked && item.evidenceRequired) return;
-
     setIsProcessing(true);
     try {
-      if (checked) {
-        await onComplete({ templateItemId: item.templateItemId });
-      } else {
-        await onUncomplete(item.templateItemId);
-      }
+      await onComplete({ templateItemId: item.templateItemId });
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  const handleUncomplete = async () => {
+    if (isProcessing) return;
+    setIsProcessing(true);
+    try {
+      await onUncomplete(item.templateItemId);
     } finally {
       setIsProcessing(false);
     }
@@ -79,107 +100,126 @@ export function OffboardingChecklistItem({
     }
   };
 
+  if (!item.evidenceRequired) {
+    return (
+      <div className="flex items-center justify-between rounded-lg border px-4 py-3">
+        <Stack gap="1">
+          <HStack gap="2" align="center">
+            <span className="text-sm font-medium">{item.title}</span>
+            <StatusBadge item={item} />
+          </HStack>
+          {item.description && (
+            <Text size="sm" variant="muted">{item.description}</Text>
+          )}
+          <CompletionInfo item={item} />
+        </Stack>
+        {canEdit && (
+          <div className="shrink-0 pl-4">
+            {item.completed ? (
+              <div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleUncomplete}
+                  disabled={isProcessing}
+                  loading={isProcessing}
+                >
+                  Undo
+                </Button>
+              </div>
+            ) : (
+              <div>
+                <Button
+                  size="sm"
+                  onClick={handleComplete}
+                  disabled={isProcessing}
+                  loading={isProcessing}
+                >
+                  Mark complete
+                </Button>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+    );
+  }
+
   return (
     <AccordionItem value={item.templateItemId}>
       <AccordionTrigger>
         <Stack gap="1">
           <HStack gap="2" align="center">
-            <span className="font-medium text-sm">{item.title}</span>
-            {item.completed ? (
-              <Badge variant="default">Complete</Badge>
-            ) : item.evidenceRequired ? (
-              <Badge variant="destructive">Evidence required</Badge>
-            ) : (
-              <Badge variant="secondary">Pending</Badge>
-            )}
+            <span className="text-sm font-medium">{item.title}</span>
+            <StatusBadge item={item} />
           </HStack>
           {item.description && (
             <Text size="sm" variant="muted">{item.description}</Text>
           )}
-          {item.completed && item.completedBy && item.completedAt && (
-            <Text size="xs" variant="muted">
-              Completed by {item.completedBy.name} on{' '}
-              {format(new Date(item.completedAt), 'MMM d, yyyy')}
-              {item.evidence.length > 0 && ` · ${item.evidence.length} file${item.evidence.length !== 1 ? 's' : ''} attached`}
-            </Text>
-          )}
+          <CompletionInfo item={item} />
         </Stack>
       </AccordionTrigger>
-          <AccordionContent>
-            <Stack gap="3">
-              {item.evidence.length > 0 && (
-                <Stack gap="1">
-                  {item.evidence.map((file) => (
-                    <HStack key={file.id} gap="2" align="center">
-                      <Text size="sm" variant="muted">{file.name}</Text>
-                      <div>
-                        <Button
-                          variant="ghost"
-                          size="icon-xs"
-                          onClick={() => onDownload(file.id)}
-                        >
-                          <DocumentDownload size={14} />
-                        </Button>
-                      </div>
-                    </HStack>
-                  ))}
-                </Stack>
-              )}
-
-              {canEdit && (item.evidenceRequired || item.completed) && (
-                <div
-                  onDrop={handleFileDrop}
-                  onDragOver={(e) => e.preventDefault()}
-                  onClick={() => dropzoneInputRef.current?.click()}
-                  className="flex cursor-pointer flex-col items-center gap-2 rounded-md border-2 border-dashed border-muted-foreground/25 px-4 py-6 text-center transition hover:border-muted-foreground/50 hover:bg-muted/25"
-                >
-                  <Upload size={20} className="text-muted-foreground" />
+      <AccordionContent>
+        <Stack gap="3">
+          {item.evidence.length > 0 && (
+            <Stack gap="1">
+              {item.evidence.map((file) => (
+                <HStack key={file.id} gap="2" align="center">
+                  <Text size="sm" variant="muted">{file.name}</Text>
                   <div>
-                    <Text size="sm" variant="muted">
-                      {item.completed
-                        ? 'Drop files here or click to add more evidence'
-                        : 'Drop files here or click to upload proof and mark as complete'}
-                    </Text>
+                    <Button
+                      variant="ghost"
+                      size="icon-xs"
+                      onClick={() => onDownload(file.id)}
+                    >
+                      <DocumentDownload size={14} />
+                    </Button>
                   </div>
-                  <input
-                    ref={dropzoneInputRef}
-                    type="file"
-                    className="hidden"
-                    onChange={handleFileSelect}
-                    accept=".pdf,.doc,.docx,.png,.jpg,.jpeg,.csv,.xlsx"
-                  />
-                </div>
-              )}
-
-              {canEdit && (
-                <HStack gap="2">
-                  {!item.completed && !item.evidenceRequired && (
-                    <div>
-                      <Button
-                        onClick={() => handleCheckedChange(true)}
-                        disabled={isProcessing}
-                        loading={isProcessing}
-                      >
-                        Mark as complete
-                      </Button>
-                    </div>
-                  )}
-                  {item.completed && (
-                    <div>
-                      <Button
-                        variant="outline"
-                        onClick={() => handleCheckedChange(false)}
-                        disabled={isProcessing}
-                        loading={isProcessing}
-                      >
-                        Undo completion
-                      </Button>
-                    </div>
-                  )}
                 </HStack>
-              )}
+              ))}
             </Stack>
-          </AccordionContent>
+          )}
+
+          {canEdit && (
+            <div
+              onDrop={handleFileDrop}
+              onDragOver={(e) => e.preventDefault()}
+              onClick={() => dropzoneInputRef.current?.click()}
+              className="flex cursor-pointer flex-col items-center gap-2 rounded-md border-2 border-dashed border-muted-foreground/25 px-4 py-6 text-center transition hover:border-muted-foreground/50 hover:bg-muted/25"
+            >
+              <Upload size={20} className="text-muted-foreground" />
+              <div>
+                <Text size="sm" variant="muted">
+                  {item.completed
+                    ? 'Drop files here or click to add more evidence'
+                    : 'Drop files here or click to upload proof and mark as complete'}
+                </Text>
+              </div>
+              <input
+                ref={dropzoneInputRef}
+                type="file"
+                className="hidden"
+                onChange={handleFileSelect}
+                accept=".pdf,.doc,.docx,.png,.jpg,.jpeg,.csv,.xlsx"
+              />
+            </div>
+          )}
+
+          {item.completed && canEdit && (
+            <div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleUncomplete}
+                disabled={isProcessing}
+                loading={isProcessing}
+              >
+                Undo completion
+              </Button>
+            </div>
+          )}
+        </Stack>
+      </AccordionContent>
     </AccordionItem>
   );
 }
