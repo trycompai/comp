@@ -20,7 +20,7 @@ import { EmployeeDevice } from './EmployeeDevice';
 import { EmployeePageHeader } from './EmployeePageHeader';
 import { EmployeePolicies } from './EmployeePolicies';
 import { EmployeeHipaaTraining, EmployeeTrainingVideos } from './EmployeeTraining';
-import { EmploymentEvidence } from './EmploymentEvidence';
+import { OffboardingChecklist } from './OffboardingChecklist';
 
 type EmployeeTab =
   | 'details'
@@ -28,7 +28,7 @@ type EmployeeTab =
   | 'training'
   | 'hipaa'
   | 'device'
-  | 'employment-evidence'
+  | 'offboarding'
   | 'background-check';
 
 interface EmployeeProps {
@@ -116,7 +116,9 @@ export function Employee({
             <TabsTrigger value="training">Training Videos</TabsTrigger>
             {hasHipaaFramework && <TabsTrigger value="hipaa">HIPAA Training</TabsTrigger>}
             <TabsTrigger value="device">Device</TabsTrigger>
-            <TabsTrigger value="employment-evidence">Employment Evidence</TabsTrigger>
+            {employee.offboardDate && (
+              <TabsTrigger value="offboarding">Offboarding</TabsTrigger>
+            )}
             {backgroundCheckStepEnabled && (
               <TabsTrigger value="background-check">Background Check</TabsTrigger>
             )}
@@ -151,14 +153,11 @@ export function Employee({
               fleetPolicies={fleetPolicies}
             />
           </TabsContent>
-          <TabsContent value="employment-evidence">
-            <EmploymentEvidence
-              memberId={employee.id}
-              onboardDate={employee.onboardDate?.toString() ?? null}
-              offboardDate={employee.offboardDate?.toString() ?? null}
-              canEdit={canEdit}
-            />
-          </TabsContent>
+          {employee.offboardDate && (
+            <TabsContent value="offboarding">
+              <OffboardingChecklist memberId={employee.id} canEdit={canEdit} />
+            </TabsContent>
+          )}
           {backgroundCheckStepEnabled && (
             <TabsContent value="background-check">
               <EmployeeBackgroundCheck
