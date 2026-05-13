@@ -156,11 +156,14 @@ export class FrameworksService {
             include: {
               control: {
                 include: {
-                  policies: {
-                    where: { archivedAt: null },
-                    select: { id: true, name: true, status: true },
+                  frameworkPolicyLinks: {
+                    include: {
+                      policy: {
+                        select: { id: true, name: true, status: true },
+                      },
+                    },
                   },
-                  controlDocumentTypes: true,
+                  frameworkDocumentLinks: true,
                   requirementsMapped: { where: { archivedAt: null } },
                 },
               },
@@ -182,10 +185,21 @@ export class FrameworksService {
       for (const rm of fi.requirementsMapped || []) {
         if (rm.control && !controlsMap.has(rm.control.id)) {
           const { requirementsMapped: _, ...controlData } = rm.control;
+          const policyLinks = rm.control.frameworkPolicyLinks.filter(
+            (link: { frameworkInstanceId: string }) =>
+              link.frameworkInstanceId === fi.id,
+          );
+          const documentLinks = rm.control.frameworkDocumentLinks.filter(
+            (link: { frameworkInstanceId: string }) =>
+              link.frameworkInstanceId === fi.id,
+          );
           controlsMap.set(rm.control.id, {
             ...controlData,
-            policies: rm.control.policies || [],
-            controlDocumentTypes: (rm.control.controlDocumentTypes || []).map(
+            policies: policyLinks.map(
+              (link: { policy: { id: string; name: string; status: string } }) =>
+                link.policy,
+            ),
+            controlDocumentTypes: documentLinks.map(
               (documentType: { formType: EvidenceFormType }) => ({
                 ...documentType,
                 isNotRelevant: notRelevantFormTypes.has(documentType.formType),
@@ -208,9 +222,16 @@ export class FrameworksService {
         where: {
           organizationId,
           archivedAt: null,
-          controls: { some: { organizationId, archivedAt: null } },
+          frameworkControlLinks: {
+            some: { frameworkInstance: { organizationId } },
+          },
         },
-        include: { controls: { where: { archivedAt: null } } },
+        include: {
+          frameworkControlLinks: {
+            where: { frameworkInstance: { organizationId } },
+            include: { control: true },
+          },
+        },
       }),
       db.evidenceSubmission.findMany({
         where: { organizationId },
@@ -222,7 +243,12 @@ export class FrameworksService {
       ...fw,
       complianceScore: computeFrameworkComplianceScore(
         fw,
-        tasks,
+        tasks.map(({ frameworkControlLinks, ...task }) => ({
+          ...task,
+          controls: frameworkControlLinks
+            .filter((link) => link.frameworkInstanceId === fw.id)
+            .map((link) => link.control),
+        })),
         evidenceSubmissions,
       ),
     }));
@@ -239,12 +265,18 @@ export class FrameworksService {
           include: {
             control: {
               include: {
-                policies: {
-                  where: { archivedAt: null },
-                  select: { id: true, name: true, status: true },
+                frameworkPolicyLinks: {
+                  where: { frameworkInstanceId },
+                  include: {
+                    policy: {
+                      select: { id: true, name: true, status: true },
+                    },
+                  },
                 },
                 requirementsMapped: { where: { archivedAt: null } },
-                controlDocumentTypes: true,
+                frameworkDocumentLinks: {
+                  where: { frameworkInstanceId },
+                },
               },
             },
           },
@@ -265,9 +297,10 @@ export class FrameworksService {
         const { requirementsMapped: _, ...controlData } = rm.control;
         controlsMap.set(rm.control.id, {
           ...controlData,
-          policies: rm.control.policies || [],
+          policies:
+            rm.control.frameworkPolicyLinks?.map((link) => link.policy) || [],
           requirementsMapped: rm.control.requirementsMapped || [],
-          controlDocumentTypes: (rm.control.controlDocumentTypes || []).map(
+          controlDocumentTypes: (rm.control.frameworkDocumentLinks || []).map(
             (documentType) => ({
               ...documentType,
               isNotRelevant: notRelevantFormTypes.has(documentType.formType),
@@ -297,9 +330,14 @@ export class FrameworksService {
         where: {
           organizationId,
           archivedAt: null,
-          controls: { some: { organizationId, archivedAt: null } },
+          frameworkControlLinks: { some: { frameworkInstanceId } },
         },
-        include: { controls: { where: { archivedAt: null } } },
+        include: {
+          frameworkControlLinks: {
+            where: { frameworkInstanceId },
+            include: { control: true },
+          },
+        },
       }),
       db.requirementMap.findMany({
         where: { frameworkInstanceId, archivedAt: null },
@@ -321,7 +359,10 @@ export class FrameworksService {
       ...rest,
       controls: Array.from(controlsMap.values()),
       requirementDefinitions,
-      tasks,
+      tasks: tasks.map(({ frameworkControlLinks, ...task }) => ({
+        ...task,
+        controls: frameworkControlLinks.map((link) => link.control),
+      })),
       requirementMaps,
       evidenceSubmissions,
     };
@@ -728,25 +769,40 @@ export class FrameworksService {
         include: {
           control: {
             include: {
-              policies: {
-                where: { archivedAt: null },
-                select: { id: true, name: true, status: true },
+              frameworkPolicyLinks: {
+                where: { frameworkInstanceId },
+                include: {
+                  policy: {
+                    select: { id: true, name: true, status: true },
+                  },
+                },
               },
-              controlDocumentTypes: true,
+              frameworkDocumentLinks: {
+                where: { frameworkInstanceId },
+              },
             },
           },
         },
       }),
       db.task.findMany({
-        where: { organizationId, archivedAt: null },
-        include: { controls: { where: { archivedAt: null } } },
+        where: {
+          organizationId,
+          archivedAt: null,
+          frameworkControlLinks: { some: { frameworkInstanceId } },
+        },
+        include: {
+          frameworkControlLinks: {
+            where: { frameworkInstanceId },
+            include: { control: true },
+          },
+        },
       }),
       this.getNotRelevantFormTypes(organizationId),
     ]);
 
     const formTypes = new Set<EvidenceFormType>();
     for (const rc of relatedControls) {
-      for (const dt of rc.control.controlDocumentTypes || []) {
+      for (const dt of rc.control.frameworkDocumentLinks || []) {
         if (notRelevantFormTypes.has(dt.formType)) continue;
         formTypes.add(dt.formType);
       }
@@ -774,7 +830,10 @@ export class FrameworksService {
         ...relatedControl,
         control: {
           ...relatedControl.control,
-          controlDocumentTypes: relatedControl.control.controlDocumentTypes.map(
+          policies: relatedControl.control.frameworkPolicyLinks.map(
+            (link) => link.policy,
+          ),
+          controlDocumentTypes: relatedControl.control.frameworkDocumentLinks.map(
             (documentType) => ({
               ...documentType,
               isNotRelevant: notRelevantFormTypes.has(documentType.formType),
@@ -782,7 +841,10 @@ export class FrameworksService {
           ),
         },
       })),
-      tasks,
+      tasks: tasks.map(({ frameworkControlLinks, ...task }) => ({
+        ...task,
+        controls: frameworkControlLinks.map((link) => link.control),
+      })),
       evidenceSubmissions,
       siblingRequirements,
     };

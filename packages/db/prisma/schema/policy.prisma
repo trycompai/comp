@@ -41,20 +41,21 @@ model Policy {
   archivedAt DateTime?
 
   // Relationships
-  organizationId   String
-  organization     Organization                   @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  assigneeId       String?
-  assignee         Member?                        @relation("PolicyAssignee", fields: [assigneeId], references: [id], onDelete: SetNull, onUpdate: Cascade)
-  approverId       String?
-  approver         Member?                        @relation("PolicyApprover", fields: [approverId], references: [id], onDelete: SetNull, onUpdate: Cascade)
-  policyTemplateId String?
-  policyTemplate   FrameworkEditorPolicyTemplate? @relation(fields: [policyTemplateId], references: [id])
-  controls         Control[]
-  currentVersionId String?                        @unique
-  currentVersion   PolicyVersion?                 @relation("PolicyCurrentVersion", fields: [currentVersionId], references: [id])
-  pendingVersionId String?
-  versions         PolicyVersion[]                @relation("PolicyVersions")
-  findings         Finding[]
+  organizationId        String
+  organization          Organization                   @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  assigneeId            String?
+  assignee              Member?                        @relation("PolicyAssignee", fields: [assigneeId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  approverId            String?
+  approver              Member?                        @relation("PolicyApprover", fields: [approverId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  policyTemplateId      String?
+  policyTemplate        FrameworkEditorPolicyTemplate? @relation(fields: [policyTemplateId], references: [id])
+  controls              Control[]
+  frameworkControlLinks FrameworkControlPolicyLink[]
+  currentVersionId      String?                        @unique
+  currentVersion        PolicyVersion?                 @relation("PolicyCurrentVersion", fields: [currentVersionId], references: [id])
+  pendingVersionId      String?
+  versions              PolicyVersion[]                @relation("PolicyVersions")
+  findings              Finding[]
 
   @@index([organizationId])
   @@index([organizationId, archivedAt])

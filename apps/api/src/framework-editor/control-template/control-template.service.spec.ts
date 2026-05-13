@@ -10,6 +10,22 @@ jest.mock('@db', () => ({
     frameworkEditorRequirement: {
       findMany: jest.fn(),
     },
+    frameworkEditorFramework: {
+      findUnique: jest.fn(),
+    },
+    frameworkEditorControlDocumentTypeLink: {
+      deleteMany: jest.fn(),
+      createMany: jest.fn(),
+    },
+    frameworkEditorControlPolicyTemplateLink: {
+      createMany: jest.fn(),
+      deleteMany: jest.fn(),
+    },
+    frameworkEditorControlTaskTemplateLink: {
+      createMany: jest.fn(),
+      deleteMany: jest.fn(),
+    },
+    $transaction: jest.fn((operations) => Promise.all(operations)),
   },
   Prisma: { PrismaClientKnownRequestError: class {} },
 }));
@@ -28,6 +44,19 @@ describe('ControlTemplateService', () => {
     (mockDb.frameworkEditorControlTemplate.create as jest.Mock).mockResolvedValue({
       id: 'frk_ct_new',
       name: 'New Control',
+    });
+    (mockDb.frameworkEditorFramework.findUnique as jest.Mock).mockResolvedValue({
+      id: 'frk_soc2',
+    });
+    (mockDb.frameworkEditorControlTemplate.findUnique as jest.Mock).mockResolvedValue({
+      id: 'frk_ct_new',
+      name: 'New Control',
+    });
+    (mockDb.frameworkEditorControlDocumentTypeLink.createMany as jest.Mock).mockResolvedValue({
+      count: 1,
+    });
+    (mockDb.frameworkEditorControlDocumentTypeLink.deleteMany as jest.Mock).mockResolvedValue({
+      count: 0,
     });
   });
 
@@ -66,12 +95,23 @@ describe('ControlTemplateService', () => {
       });
     });
 
-    it('persists documentTypes when provided', async () => {
-      await service.create({ ...baseDto, documentTypes: ['penetration-test'] });
+    it('persists documentTypes as framework-scoped links when provided', async () => {
+      await service.create({
+        ...baseDto,
+        frameworkId: 'frk_soc2',
+        documentTypes: ['penetration-test'],
+      });
 
-      const createArgs = (mockDb.frameworkEditorControlTemplate.create as jest.Mock).mock
-        .calls[0][0];
-      expect(createArgs.data.documentTypes).toEqual(['penetration-test']);
+      expect(mockDb.frameworkEditorControlDocumentTypeLink.createMany).toHaveBeenCalledWith({
+        data: [
+          {
+            frameworkId: 'frk_soc2',
+            controlTemplateId: 'frk_ct_new',
+            formType: 'penetration-test',
+          },
+        ],
+        skipDuplicates: true,
+      });
     });
 
     it('omits documentTypes when not provided', async () => {
@@ -80,6 +120,44 @@ describe('ControlTemplateService', () => {
       const createArgs = (mockDb.frameworkEditorControlTemplate.create as jest.Mock).mock
         .calls[0][0];
       expect(createArgs.data).not.toHaveProperty('documentTypes');
+    });
+
+    it('requires frameworkId when documentTypes are provided', async () => {
+      await expect(
+        service.create({ ...baseDto, documentTypes: ['penetration-test'] }),
+      ).rejects.toThrow('frameworkId is required');
+    });
+  });
+
+  describe('scoped links', () => {
+    it('links policy templates with framework context', async () => {
+      await service.linkPolicyTemplate('frk_ct_new', 'frk_pt_1', 'frk_soc2');
+
+      expect(mockDb.frameworkEditorControlPolicyTemplateLink.createMany).toHaveBeenCalledWith({
+        data: [
+          {
+            frameworkId: 'frk_soc2',
+            controlTemplateId: 'frk_ct_new',
+            policyTemplateId: 'frk_pt_1',
+          },
+        ],
+        skipDuplicates: true,
+      });
+    });
+
+    it('links task templates with framework context', async () => {
+      await service.linkTaskTemplate('frk_ct_new', 'frk_tt_1', 'frk_soc2');
+
+      expect(mockDb.frameworkEditorControlTaskTemplateLink.createMany).toHaveBeenCalledWith({
+        data: [
+          {
+            frameworkId: 'frk_soc2',
+            controlTemplateId: 'frk_ct_new',
+            taskTemplateId: 'frk_tt_1',
+          },
+        ],
+        skipDuplicates: true,
+      });
     });
   });
 });

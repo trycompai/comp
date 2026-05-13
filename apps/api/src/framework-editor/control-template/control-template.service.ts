@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Injectable,
   NotFoundException,
   ConflictException,
@@ -14,13 +15,56 @@ export class ControlTemplateService {
   private readonly logger = new Logger(ControlTemplateService.name);
 
   async findAll(take = 500, skip = 0, frameworkId?: string) {
-    return db.frameworkEditorControlTemplate.findMany({
+    if (frameworkId) {
+      const controls = await db.frameworkEditorControlTemplate.findMany({
+        take,
+        skip,
+        orderBy: { createdAt: 'asc' },
+        where: { requirements: { some: { frameworkId } } },
+        include: {
+          requirements: {
+            select: {
+              id: true,
+              name: true,
+              framework: { select: { name: true } },
+            },
+          },
+          frameworkPolicyLinks: {
+            where: { frameworkId },
+            select: { policyTemplate: { select: { id: true, name: true } } },
+          },
+          frameworkTaskLinks: {
+            where: { frameworkId },
+            select: { taskTemplate: { select: { id: true, name: true } } },
+          },
+          frameworkDocumentLinks: {
+            where: { frameworkId },
+            select: { formType: true },
+          },
+        },
+      });
+
+      return controls.map(
+        ({
+          frameworkPolicyLinks,
+          frameworkTaskLinks,
+          frameworkDocumentLinks,
+          ...control
+        }) => ({
+          ...control,
+          policyTemplates: frameworkPolicyLinks.map(
+            (link) => link.policyTemplate,
+          ),
+          taskTemplates: frameworkTaskLinks.map((link) => link.taskTemplate),
+          documentTypes: frameworkDocumentLinks.map((link) => link.formType),
+        }),
+      );
+    }
+
+    const controls = await db.frameworkEditorControlTemplate.findMany({
       take,
       skip,
       orderBy: { createdAt: 'asc' },
-      where: frameworkId
-        ? { requirements: { some: { frameworkId } } }
-        : undefined,
       include: {
         policyTemplates: { select: { id: true, name: true } },
         requirements: {
@@ -33,6 +77,7 @@ export class ControlTemplateService {
         taskTemplates: { select: { id: true, name: true } },
       },
     });
+    return controls;
   }
 
   async findById(id: string) {
@@ -59,11 +104,15 @@ export class ControlTemplateService {
       data: {
         name: dto.name,
         description: dto.description ?? '',
-        ...(dto.documentTypes && {
-          documentTypes: dto.documentTypes as EvidenceFormType[],
-        }),
       },
     });
+    if (dto.documentTypes !== undefined) {
+      await this.replaceDocumentTypeLinks({
+        controlId: ct.id,
+        frameworkId: dto.frameworkId,
+        formTypes: dto.documentTypes as EvidenceFormType[],
+      });
+    }
     this.logger.log(`Created control template: ${ct.name} (${ct.id})`);
     return ct;
   }
@@ -75,11 +124,15 @@ export class ControlTemplateService {
       data: {
         ...(dto.name !== undefined && { name: dto.name }),
         ...(dto.description !== undefined && { description: dto.description }),
-        ...(dto.documentTypes !== undefined && {
-          documentTypes: dto.documentTypes as EvidenceFormType[],
-        }),
       },
     });
+    if (dto.documentTypes !== undefined) {
+      await this.replaceDocumentTypeLinks({
+        controlId: id,
+        frameworkId: dto.frameworkId,
+        formTypes: dto.documentTypes as EvidenceFormType[],
+      });
+    }
     this.logger.log(`Updated control template: ${updated.name} (${id})`);
     return updated;
   }
@@ -119,35 +172,172 @@ export class ControlTemplateService {
     return { message: 'Requirement unlinked' };
   }
 
-  async linkPolicyTemplate(controlId: string, policyTemplateId: string) {
-    await db.frameworkEditorControlTemplate.update({
-      where: { id: controlId },
-      data: { policyTemplates: { connect: { id: policyTemplateId } } },
+  async linkPolicyTemplate(
+    controlId: string,
+    policyTemplateId: string,
+    frameworkId?: string,
+  ) {
+    const scopedFrameworkId = await this.ensureFrameworkScopedControl({
+      controlId,
+      frameworkId,
+    });
+    await db.frameworkEditorControlPolicyTemplateLink.createMany({
+      data: [{
+        frameworkId: scopedFrameworkId,
+        controlTemplateId: controlId,
+        policyTemplateId,
+      }],
+      skipDuplicates: true,
     });
     return { message: 'Policy template linked' };
   }
 
-  async unlinkPolicyTemplate(controlId: string, policyTemplateId: string) {
-    await db.frameworkEditorControlTemplate.update({
-      where: { id: controlId },
-      data: { policyTemplates: { disconnect: { id: policyTemplateId } } },
+  async unlinkPolicyTemplate(
+    controlId: string,
+    policyTemplateId: string,
+    frameworkId?: string,
+  ) {
+    const scopedFrameworkId = await this.ensureFrameworkScopedControl({
+      controlId,
+      frameworkId,
+    });
+    await db.frameworkEditorControlPolicyTemplateLink.deleteMany({
+      where: {
+        frameworkId: scopedFrameworkId,
+        controlTemplateId: controlId,
+        policyTemplateId,
+      },
     });
     return { message: 'Policy template unlinked' };
   }
 
-  async linkTaskTemplate(controlId: string, taskTemplateId: string) {
-    await db.frameworkEditorControlTemplate.update({
-      where: { id: controlId },
-      data: { taskTemplates: { connect: { id: taskTemplateId } } },
+  async linkTaskTemplate(
+    controlId: string,
+    taskTemplateId: string,
+    frameworkId?: string,
+  ) {
+    const scopedFrameworkId = await this.ensureFrameworkScopedControl({
+      controlId,
+      frameworkId,
+    });
+    await db.frameworkEditorControlTaskTemplateLink.createMany({
+      data: [{
+        frameworkId: scopedFrameworkId,
+        controlTemplateId: controlId,
+        taskTemplateId,
+      }],
+      skipDuplicates: true,
     });
     return { message: 'Task template linked' };
   }
 
-  async unlinkTaskTemplate(controlId: string, taskTemplateId: string) {
-    await db.frameworkEditorControlTemplate.update({
-      where: { id: controlId },
-      data: { taskTemplates: { disconnect: { id: taskTemplateId } } },
+  async unlinkTaskTemplate(
+    controlId: string,
+    taskTemplateId: string,
+    frameworkId?: string,
+  ) {
+    const scopedFrameworkId = await this.ensureFrameworkScopedControl({
+      controlId,
+      frameworkId,
+    });
+    await db.frameworkEditorControlTaskTemplateLink.deleteMany({
+      where: {
+        frameworkId: scopedFrameworkId,
+        controlTemplateId: controlId,
+        taskTemplateId,
+      },
     });
     return { message: 'Task template unlinked' };
+  }
+
+  async linkDocumentType(
+    controlId: string,
+    formType: EvidenceFormType,
+    frameworkId?: string,
+  ) {
+    const scopedFrameworkId = await this.ensureFrameworkScopedControl({
+      controlId,
+      frameworkId,
+    });
+    await db.frameworkEditorControlDocumentTypeLink.createMany({
+      data: [{
+        frameworkId: scopedFrameworkId,
+        controlTemplateId: controlId,
+        formType,
+      }],
+      skipDuplicates: true,
+    });
+    return { message: 'Document type linked' };
+  }
+
+  async unlinkDocumentType(
+    controlId: string,
+    formType: EvidenceFormType,
+    frameworkId?: string,
+  ) {
+    const scopedFrameworkId = await this.ensureFrameworkScopedControl({
+      controlId,
+      frameworkId,
+    });
+    await db.frameworkEditorControlDocumentTypeLink.deleteMany({
+      where: { frameworkId: scopedFrameworkId, controlTemplateId: controlId, formType },
+    });
+    return { message: 'Document type unlinked' };
+  }
+
+  private async replaceDocumentTypeLinks(params: {
+    controlId: string;
+    frameworkId?: string;
+    formTypes: EvidenceFormType[];
+  }) {
+    const scopedFrameworkId = await this.ensureFrameworkScopedControl({
+      controlId: params.controlId,
+      frameworkId: params.frameworkId,
+    });
+    const uniqueFormTypes = Array.from(new Set(params.formTypes));
+    await db.$transaction([
+      db.frameworkEditorControlDocumentTypeLink.deleteMany({
+        where: {
+          frameworkId: scopedFrameworkId,
+          controlTemplateId: params.controlId,
+        },
+      }),
+      db.frameworkEditorControlDocumentTypeLink.createMany({
+        data: uniqueFormTypes.map((formType) => ({
+          frameworkId: scopedFrameworkId,
+          controlTemplateId: params.controlId,
+          formType,
+        })),
+        skipDuplicates: true,
+      }),
+    ]);
+  }
+
+  private async ensureFrameworkScopedControl(params: {
+    controlId: string;
+    frameworkId?: string;
+  }): Promise<string> {
+    if (!params.frameworkId) {
+      throw new BadRequestException(
+        'frameworkId is required for policy, task, and document links',
+      );
+    }
+    const [framework, control] = await Promise.all([
+      db.frameworkEditorFramework.findUnique({
+        where: { id: params.frameworkId },
+        select: { id: true },
+      }),
+      db.frameworkEditorControlTemplate.findUnique({
+        where: { id: params.controlId },
+        select: { id: true },
+      }),
+    ]);
+    if (!framework) throw new NotFoundException('Framework not found');
+    if (!control) {
+      throw new NotFoundException(
+        `Control template ${params.controlId} not found`,
+      );
+    }
+    return params.frameworkId;
   }
 }

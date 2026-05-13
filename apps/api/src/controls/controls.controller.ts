@@ -84,8 +84,9 @@ export class ControlsController {
   async findOne(
     @OrganizationId() organizationId: string,
     @Param('id') id: string,
+    @Query('frameworkInstanceId') frameworkInstanceId?: string,
   ) {
-    return this.controlsService.findOne(id, organizationId);
+    return this.controlsService.findOne(id, organizationId, frameworkInstanceId);
   }
 
   @Post()
@@ -105,11 +106,13 @@ export class ControlsController {
     @OrganizationId() organizationId: string,
     @Param('id') id: string,
     @Body() dto: LinkPoliciesDto,
+    @Query('frameworkInstanceId') frameworkInstanceId?: string,
   ) {
     return this.controlsService.linkPolicies(
       id,
       organizationId,
       dto.policyIds,
+      frameworkInstanceId,
     );
   }
 
@@ -120,8 +123,14 @@ export class ControlsController {
     @OrganizationId() organizationId: string,
     @Param('id') id: string,
     @Body() dto: LinkTasksDto,
+    @Query('frameworkInstanceId') frameworkInstanceId?: string,
   ) {
-    return this.controlsService.linkTasks(id, organizationId, dto.taskIds);
+    return this.controlsService.linkTasks(
+      id,
+      organizationId,
+      dto.taskIds,
+      frameworkInstanceId,
+    );
   }
 
   @Post(':id/requirements/link')
@@ -146,11 +155,13 @@ export class ControlsController {
     @OrganizationId() organizationId: string,
     @Param('id') id: string,
     @Body() dto: LinkDocumentTypesDto,
+    @Query('frameworkInstanceId') frameworkInstanceId?: string,
   ) {
     return this.controlsService.linkDocumentTypes(
       id,
       organizationId,
       dto.formTypes,
+      frameworkInstanceId,
     );
   }
 
@@ -162,11 +173,13 @@ export class ControlsController {
     @Param('id') id: string,
     @Param('formType', new ParseEnumPipe(EvidenceFormType))
     formType: EvidenceFormType,
+    @Query('frameworkInstanceId') frameworkInstanceId?: string,
   ) {
     return this.controlsService.unlinkDocumentType(
       id,
       organizationId,
       formType,
+      frameworkInstanceId,
     );
   }
 
