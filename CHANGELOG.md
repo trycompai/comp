@@ -1,3 +1,15 @@
+# [3.53.0](https://github.com/trycompai/comp/compare/v3.52.0...v3.53.0) (2026-05-13)
+
+
+### Bug Fixes
+
+* **pentest:** wire authorization error to checkbox via aria-invalid + aria-describedby ([2e871d6](https://github.com/trycompai/comp/commit/2e871d67f886f192fdb7b297c1dd02d545a630b3))
+
+
+### Features
+
+* **pentest:** improve scan-creation copy and add authorization gate ([5d58635](https://github.com/trycompai/comp/commit/5d58635e91ef19e4c3bf4cb1cce410a027347a36))
+
 # [3.52.0](https://github.com/trycompai/comp/compare/v3.51.0...v3.52.0) (2026-05-13)
 
 
