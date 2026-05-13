@@ -74,7 +74,7 @@ export function BackgroundCheckV1Page(props: V1PageProps) {
   };
 
   return (
-    <div className="px-10 pt-8 pb-10">
+    <div>
       <BackgroundCheckStatusStrip
         status={statusForStrip(props)}
         creditsUsed={props.creditsUsed}
