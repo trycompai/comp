@@ -12,26 +12,35 @@ import {
   Text,
 } from '@trycompai/design-system';
 import { BackgroundCheckExternalReport } from './BackgroundCheckExternalReport';
+import { MethodologyReportBanner } from './BackgroundCheckMethodology';
 import {
   BackgroundCheckShareableSummary,
   hasShareableSummary,
 } from './BackgroundCheckShareableSummary';
 
-const REPORT_SECTIONS = [
+const REPORT_SECTIONS: Array<{
+  title: string;
+  method: string;
+  paths: string[][];
+}> = [
   {
-    title: 'Identity verification',
+    title: 'Identity & liveness',
+    method: 'Government ID + live video, face-matched',
     paths: [['identityVerification'], ['report', 'identity'], ['report', 'report', 'identity']],
   },
   {
     title: 'Employment verification',
+    method: 'HR-confirmed by email per employer',
     paths: [['employment'], ['report', 'employment'], ['report', 'report', 'employment']],
   },
   {
     title: 'References',
+    method: 'Structured questionnaire per reference',
     paths: [['references'], ['report', 'references'], ['report', 'report', 'references']],
   },
   {
-    title: 'Social and media research',
+    title: 'Public-source research',
+    method: 'LinkedIn + public web, cross-referenced',
     paths: [
       ['linkedinAnalysis'],
       ['latestResearchRun'],
@@ -56,18 +65,20 @@ export function BackgroundCheckReport({
   return (
     <Stack gap="md">
       <Stack gap="xs">
-        <Text weight="medium">Report</Text>
+        <Text weight="medium">Verification report</Text>
         {syncedAt && (
           <Text size="xs" variant="muted">
             Snapshot synced {new Date(syncedAt).toLocaleString()}
           </Text>
         )}
       </Stack>
+      <MethodologyReportBanner />
       <div className="grid items-start gap-3 md:grid-cols-2 xl:grid-cols-3">
         {REPORT_SECTIONS.map((section) => (
           <ReportSection
             key={section.title}
             title={section.title}
+            method={section.method}
             value={firstValue(snapshot, section.paths)}
           />
         ))}
@@ -84,9 +95,11 @@ export function BackgroundCheckReport({
 
 function ReportSection({
   title,
+  method,
   value,
 }: {
   title: string;
+  method: string;
   value: unknown;
 }) {
   const status = readStatus(value);
@@ -95,12 +108,17 @@ function ReportSection({
   return (
     <div className="min-w-0 rounded-md border bg-background p-4">
       <Stack gap="sm">
-        <div className="flex items-center justify-between gap-3">
-          <Text weight="medium">{title}</Text>
-          {status && shouldShowStatus(status) && (
-            <Badge variant="secondary">{formatLabel(status)}</Badge>
-          )}
-        </div>
+        <Stack gap="1">
+          <div className="flex items-center justify-between gap-3">
+            <Text weight="medium">{title}</Text>
+            {status && shouldShowStatus(status) && (
+              <Badge variant="secondary">{formatLabel(status)}</Badge>
+            )}
+          </div>
+          <Text size="xs" variant="muted">
+            {method}
+          </Text>
+        </Stack>
         <div className="min-w-0 overflow-hidden break-words text-sm text-muted-foreground">
           {description}
         </div>
@@ -165,18 +183,18 @@ function getPath(root: unknown, path: string[]): unknown {
 function describeValue(value: unknown): string {
   const values = toArray(value);
   if (values.length > 0) {
-    return `${values.length} item${values.length === 1 ? '' : 's'} recorded`;
+    return `${values.length} verified entr${values.length === 1 ? 'y' : 'ies'} on file`;
   }
 
   const record = toRecord(value);
-  if (!record) return 'Not included in the synced report snapshot';
+  if (!record) return 'Awaiting candidate submission for this section.';
 
   for (const key of ['summary', 'notes', 'message', 'decision', 'result', 'outcome']) {
     const text = readString(record[key]);
     if (text) return truncateSummary(text);
   }
 
-  return `${Object.keys(record).length} report fields captured`;
+  return `${Object.keys(record).length} verification fields recorded`;
 }
 
 function truncateSummary(value: string): string {

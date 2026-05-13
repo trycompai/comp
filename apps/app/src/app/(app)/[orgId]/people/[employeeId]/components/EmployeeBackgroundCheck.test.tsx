@@ -120,16 +120,18 @@ describe('EmployeeBackgroundCheck', () => {
     });
   });
 
-  it('renders overview benefits before the form', () => {
+  it('renders methodology overview before the form', () => {
     renderSection({
       initialBillingStatus: { hasPaymentMethod: false, setupAt: null },
     });
 
-    expect(screen.getByText('Employee Background Check')).toBeInTheDocument();
-    expect(screen.getByText('Required for Compliance')).toBeInTheDocument();
-    expect(screen.getByText('Full audited report / background check')).toBeInTheDocument();
+    expect(screen.getByText('Background-checked the right way')).toBeInTheDocument();
+    expect(screen.getByText('Biometric identity verification')).toBeInTheDocument();
+    expect(screen.getByText('FCRA-compliant adjudication')).toBeInTheDocument();
     expect(
-      screen.getByText('Streamline employee background checks with Comp AI.'),
+      screen.getByText(
+        'A serious check, designed for compliance hiring — biometric, human-verified, and FCRA-aligned.',
+      ),
     ).toBeInTheDocument();
     expect(screen.getByText('$79 / month')).toBeInTheDocument();
     expect(screen.queryByText(/charged \$49/i)).not.toBeInTheDocument();
@@ -143,7 +145,7 @@ describe('EmployeeBackgroundCheck', () => {
   it('skips the overview when a payment method is already saved', () => {
     renderSection();
 
-    expect(screen.getByText('Employee Background Check')).toBeInTheDocument();
+    expect(screen.getByText('Background-checked the right way')).toBeInTheDocument();
     expect(screen.getByLabelText('Personal email')).toBeInTheDocument();
     expect(screen.getByText('2 background checks remaining this period.')).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /back/i })).not.toBeInTheDocument();
