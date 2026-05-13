@@ -13,7 +13,62 @@ import type { CloudFinding } from './cloud-security-query.types';
 const CLOUD_PROVIDER_SLUGS = ['aws', 'gcp', 'azure'] as const;
 
 /** Scan window for filtering legacy results to latest scan only */
-const SCAN_WINDOW_MS = 10 * 60 * 1000; // 10 minutes
+export const SCAN_WINDOW_MS = 10 * 60 * 1000; // 10 minutes
+
+interface LatestScanResult {
+  integrationId: string;
+  completedAt: Date | null;
+}
+
+/**
+ * Keep only the legacy IntegrationResult rows that belong to each
+ * integration's most-recent scan.
+ *
+ * The naive `completedAt <= lastRunAt` filter silently hides results when
+ * a scan writes IntegrationResult rows but does NOT advance
+ * Integration.lastRunAt (a known consistency gap on the legacy path).
+ *
+ * Robust strategy: per integration, treat the LATER of `lastRunAt` and
+ * the maximum result `completedAt` as the "effective" last-run time, and
+ * keep all results within SCAN_WINDOW_MS of that reference. Falls back
+ * to either signal alone when the other is missing.
+ *
+ * Exported for unit-testing — the function is pure and takes its inputs
+ * explicitly so the test suite doesn't have to mock Prisma.
+ */
+export function filterToLatestScanResults<T extends LatestScanResult>(
+  results: T[],
+  lastRunMap: Map<string, Date>,
+): T[] {
+  // Per-integration maximum result completedAt — the only authoritative
+  // signal that survives a missing-lastRunAt-advance bug.
+  const maxCompletedMsByIntegration = new Map<string, number>();
+  for (const r of results) {
+    if (!r.completedAt) continue;
+    const t = r.completedAt.getTime();
+    const current = maxCompletedMsByIntegration.get(r.integrationId);
+    if (current === undefined || t > current) {
+      maxCompletedMsByIntegration.set(r.integrationId, t);
+    }
+  }
+
+  return results.filter((r) => {
+    if (!r.completedAt) return false;
+    const lastRunMs = lastRunMap.get(r.integrationId)?.getTime();
+    const maxResultMs = maxCompletedMsByIntegration.get(r.integrationId);
+    // Use whichever signal is later — handles both directions of skew.
+    const referenceMs =
+      lastRunMs !== undefined && maxResultMs !== undefined
+        ? Math.max(lastRunMs, maxResultMs)
+        : (lastRunMs ?? maxResultMs);
+    if (referenceMs === undefined) return false;
+    const completedMs = r.completedAt.getTime();
+    return (
+      completedMs <= referenceMs &&
+      completedMs >= referenceMs - SCAN_WINDOW_MS
+    );
+  });
+}
 
 export async function getLegacyFindings(
   organizationId: string,
@@ -52,18 +107,14 @@ export async function getLegacyFindings(
   });
 
   // Only include results from the most recent scan window per integration.
-  const filtered = results.filter((result) => {
-    const lastRunAt = lastRunMap.get(result.integration.id);
-    if (!lastRunAt) return result.completedAt !== null;
-    if (!result.completedAt) return false;
-
-    const lastRunTime = lastRunAt.getTime();
-    const completedTime = result.completedAt.getTime();
-    return (
-      completedTime <= lastRunTime &&
-      completedTime >= lastRunTime - SCAN_WINDOW_MS
-    );
-  });
+  // Uses the LATER of `lastRunAt` and the per-integration max result
+  // completedAt as the reference, so a missed `lastRunAt` advance doesn't
+  // hide the newest legacy failures.
+  const resultsForFilter = results.map((r) => ({
+    ...r,
+    integrationId: r.integration.id,
+  }));
+  const filtered = filterToLatestScanResults(resultsForFilter, lastRunMap);
 
   return filtered.map((result) => ({
     id: result.id,
