@@ -1,20 +1,25 @@
 'use client';
 
 import type { ChecklistItem } from '@/hooks/use-offboarding-checklist';
-import { AccessRevocationList } from './AccessRevocationList';
+import { useAccessRevocations } from '@/hooks/use-access-revocations';
 import {
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
   Badge,
   Button,
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
   HStack,
   Stack,
   Text,
 } from '@trycompai/design-system';
-import { DocumentDownload, Upload } from '@trycompai/design-system/icons';
-import { format } from 'date-fns';
+import {
+  Checkmark,
+  ChevronDown,
+  DocumentDownload,
+  Upload,
+} from '@trycompai/design-system/icons';
 import { useRef, useState } from 'react';
+import { AccessRevocationList } from './AccessRevocationList';
 
 interface OffboardingChecklistItemProps {
   item: ChecklistItem;
@@ -27,21 +32,87 @@ interface OffboardingChecklistItemProps {
   onChecklistRefresh?: () => void;
 }
 
-function StatusBadge({ item }: { item: ChecklistItem }) {
-  if (item.completed) return <Badge variant="default">Complete</Badge>;
-  if (item.evidenceRequired) return <Badge variant="destructive">Evidence required</Badge>;
-  return <Badge variant="secondary">Pending</Badge>;
+function StatusCircle({ completed }: { completed: boolean }) {
+  if (completed) {
+    return (
+      <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-green-500 text-white">
+        <Checkmark size={12} />
+      </div>
+    );
+  }
+  return (
+    <div className="h-5 w-5 shrink-0 rounded-full border-2 border-muted-foreground/30" />
+  );
 }
 
-function CompletionInfo({ item }: { item: ChecklistItem }) {
-  if (!item.completed || !item.completedBy || !item.completedAt) return null;
+function ItemBadges({
+  item,
+}: {
+  item: ChecklistItem;
+}) {
   return (
-    <Text size="xs" variant="muted">
-      Completed by {item.completedBy.name} on{' '}
-      {format(new Date(item.completedAt), 'MMM d, yyyy')}
-      {item.evidence.length > 0 &&
-        ` · ${item.evidence.length} file${item.evidence.length !== 1 ? 's' : ''} attached`}
-    </Text>
+    <>
+      {item.isAccessRevocation && (
+        <div>
+          <Badge variant="destructive">Critical</Badge>
+        </div>
+      )}
+      {item.evidenceRequired && (
+        <div>
+          <Badge variant="outline">Evidence</Badge>
+        </div>
+      )}
+    </>
+  );
+}
+
+function ItemProgress({
+  item,
+  memberId,
+}: {
+  item: ChecklistItem;
+  memberId: string;
+}) {
+  if (item.isAccessRevocation) {
+    return <AccessRevocationProgress memberId={memberId} />;
+  }
+  const done = item.completed ? 1 : 0;
+  const total = 1;
+  const pct = done / total;
+  return (
+    <div className="flex items-center gap-2">
+      <span className="text-xs text-muted-foreground">
+        {done}/{total}
+      </span>
+      <div className="h-1 w-10 overflow-hidden rounded-full bg-muted">
+        <div
+          className="h-full bg-primary transition-all"
+          style={{ width: `${pct * 100}%` }}
+        />
+      </div>
+    </div>
+  );
+}
+
+function AccessRevocationProgress({ memberId }: { memberId: string }) {
+  const { revocations } = useAccessRevocations(memberId);
+  if (!revocations) return null;
+  const pct =
+    revocations.totalVendors > 0
+      ? revocations.revokedCount / revocations.totalVendors
+      : 0;
+  return (
+    <div className="flex items-center gap-2">
+      <span className="text-xs text-muted-foreground">
+        {revocations.revokedCount}/{revocations.totalVendors}
+      </span>
+      <div className="h-1 w-10 overflow-hidden rounded-full bg-muted">
+        <div
+          className="h-full bg-primary transition-all"
+          style={{ width: `${pct * 100}%` }}
+        />
+      </div>
+    </div>
   );
 }
 
@@ -55,6 +126,7 @@ export function OffboardingChecklistItem({
   onDownload,
   onChecklistRefresh,
 }: OffboardingChecklistItemProps) {
+  const [isOpen, setIsOpen] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const dropzoneInputRef = useRef<HTMLInputElement>(null);
 
@@ -105,134 +177,192 @@ export function OffboardingChecklistItem({
     }
   };
 
-  if (!item.evidenceRequired) {
-    return (
-      <div className="flex items-center justify-between rounded-lg border px-4 py-3">
-        <Stack gap="1">
-          <HStack gap="2" align="center">
-            <span className="text-sm font-medium">{item.title}</span>
-            <StatusBadge item={item} />
-          </HStack>
-          {item.description && (
-            <Text size="sm" variant="muted">{item.description}</Text>
-          )}
-          <CompletionInfo item={item} />
-        </Stack>
-        {canEdit && (
-          <div className="shrink-0 pl-4">
-            {item.completed ? (
-              <div>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleUncomplete}
-                  disabled={isProcessing}
-                  loading={isProcessing}
-                >
-                  Undo
-                </Button>
-              </div>
-            ) : (
-              <div>
-                <Button
-                  size="sm"
-                  onClick={handleComplete}
-                  disabled={isProcessing}
-                  loading={isProcessing}
-                >
-                  Mark complete
-                </Button>
-              </div>
-            )}
-          </div>
-        )}
-      </div>
-    );
-  }
+  const isExpandable =
+    item.isAccessRevocation || item.evidenceRequired || canEdit;
 
   return (
-    <AccordionItem value={item.templateItemId}>
-      <AccordionTrigger>
-        <Stack gap="1">
-          <HStack gap="2" align="center">
-            <span className="text-sm font-medium">{item.title}</span>
-            <StatusBadge item={item} />
-          </HStack>
-          {item.description && (
-            <Text size="sm" variant="muted">{item.description}</Text>
+    <Collapsible open={isOpen} onOpenChange={setIsOpen}>
+      <div className="rounded-lg border">
+        <CollapsibleTrigger className="flex w-full items-center gap-3 px-4 py-3 text-left hover:bg-muted/50 transition-colors">
+          <StatusCircle completed={item.completed} />
+          <div className="flex min-w-0 flex-1 flex-col gap-0.5">
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-medium">{item.title}</span>
+              <ItemBadges item={item} />
+            </div>
+            {item.description && (
+              <span className="text-xs text-muted-foreground line-clamp-1">
+                {item.description}
+              </span>
+            )}
+          </div>
+          {isExpandable && (
+            <div className="flex shrink-0 items-center gap-3">
+              <ItemProgress item={item} memberId={memberId} />
+              <ChevronDown
+                size={16}
+                className={`text-muted-foreground transition-transform ${isOpen ? 'rotate-180' : ''}`}
+              />
+            </div>
           )}
-          <CompletionInfo item={item} />
-        </Stack>
-      </AccordionTrigger>
-      <AccordionContent>
-        {item.isAccessRevocation ? (
-          <AccessRevocationList
-            memberId={memberId}
-            canEdit={canEdit}
-            onRevocationChange={onChecklistRefresh}
-          />
-        ) : (
-          <Stack gap="3">
-            {item.evidence.length > 0 && (
-              <Stack gap="1">
-                {item.evidence.map((file) => (
-                  <HStack key={file.id} gap="2" align="center">
-                    <Text size="sm" variant="muted">{file.name}</Text>
-                    <div>
-                      <Button
-                        variant="ghost"
-                        size="icon-xs"
-                        onClick={() => onDownload(file.id)}
-                      >
-                        <DocumentDownload size={14} />
-                      </Button>
-                    </div>
-                  </HStack>
-                ))}
-              </Stack>
-            )}
+        </CollapsibleTrigger>
 
-            {canEdit && (
-              <div
-                onDrop={handleFileDrop}
-                onDragOver={(e) => e.preventDefault()}
-                onClick={() => dropzoneInputRef.current?.click()}
-                className="flex cursor-pointer flex-col items-center gap-2 rounded-md border-2 border-dashed border-muted-foreground/25 px-4 py-6 text-center transition hover:border-muted-foreground/50 hover:bg-muted/25"
-              >
-                <Upload size={20} className="text-muted-foreground" />
-                <div>
-                  <Text size="sm" variant="muted">
-                    {item.completed
-                      ? 'Drop files here or click to add more evidence'
-                      : 'Drop files here or click to upload proof and mark as complete'}
-                  </Text>
-                </div>
-                <input
-                  ref={dropzoneInputRef}
-                  type="file"
-                  className="hidden"
-                  onChange={handleFileSelect}
-                  accept=".pdf,.doc,.docx,.png,.jpg,.jpeg,.csv,.xlsx"
-                />
-              </div>
+        <CollapsibleContent>
+          <div className="border-t px-4 py-3">
+            {item.isAccessRevocation ? (
+              <AccessRevocationList
+                memberId={memberId}
+                canEdit={canEdit}
+                onRevocationChange={onChecklistRefresh}
+              />
+            ) : item.evidenceRequired ? (
+              <EvidenceContent
+                item={item}
+                canEdit={canEdit}
+                isProcessing={isProcessing}
+                dropzoneInputRef={dropzoneInputRef}
+                onFileDrop={handleFileDrop}
+                onFileSelect={handleFileSelect}
+                onDownload={onDownload}
+                onUncomplete={handleUncomplete}
+              />
+            ) : (
+              <SimpleContent
+                item={item}
+                canEdit={canEdit}
+                isProcessing={isProcessing}
+                onComplete={handleComplete}
+                onUncomplete={handleUncomplete}
+              />
             )}
+          </div>
+        </CollapsibleContent>
+      </div>
+    </Collapsible>
+  );
+}
 
-            {item.completed && canEdit && (
+function SimpleContent({
+  item,
+  canEdit,
+  isProcessing,
+  onComplete,
+  onUncomplete,
+}: {
+  item: ChecklistItem;
+  canEdit: boolean;
+  isProcessing: boolean;
+  onComplete: () => void;
+  onUncomplete: () => void;
+}) {
+  if (!canEdit) return null;
+
+  return (
+    <div>
+      {item.completed ? (
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={onUncomplete}
+          disabled={isProcessing}
+          loading={isProcessing}
+        >
+          Undo
+        </Button>
+      ) : (
+        <Button
+          size="sm"
+          onClick={onComplete}
+          disabled={isProcessing}
+          loading={isProcessing}
+        >
+          Mark complete
+        </Button>
+      )}
+    </div>
+  );
+}
+
+function EvidenceContent({
+  item,
+  canEdit,
+  isProcessing,
+  dropzoneInputRef,
+  onFileDrop,
+  onFileSelect,
+  onDownload,
+  onUncomplete,
+}: {
+  item: ChecklistItem;
+  canEdit: boolean;
+  isProcessing: boolean;
+  dropzoneInputRef: React.RefObject<HTMLInputElement | null>;
+  onFileDrop: (e: React.DragEvent<HTMLDivElement>) => void;
+  onFileSelect: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  onDownload: (attachmentId: string) => void;
+  onUncomplete: () => void;
+}) {
+  return (
+    <Stack gap="3">
+      {item.evidence.length > 0 && (
+        <Stack gap="1">
+          {item.evidence.map((file) => (
+            <HStack key={file.id} gap="2" align="center">
+              <Text size="sm" variant="muted">
+                {file.name}
+              </Text>
               <div>
                 <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleUncomplete}
-                  disabled={isProcessing}
-                  loading={isProcessing}
+                  variant="ghost"
+                  size="icon-xs"
+                  onClick={() => onDownload(file.id)}
                 >
-                  Undo completion
+                  <DocumentDownload size={14} />
                 </Button>
               </div>
-            )}
-          </Stack>
-        )}
-      </AccordionContent>
-    </AccordionItem>
+            </HStack>
+          ))}
+        </Stack>
+      )}
+
+      {canEdit && (
+        <div
+          onDrop={onFileDrop}
+          onDragOver={(e) => e.preventDefault()}
+          onClick={() => dropzoneInputRef.current?.click()}
+          className="flex cursor-pointer flex-col items-center gap-2 rounded-md border-2 border-dashed border-muted-foreground/25 px-4 py-6 text-center transition hover:border-muted-foreground/50 hover:bg-muted/25"
+        >
+          <Upload size={20} className="text-muted-foreground" />
+          <div>
+            <Text size="sm" variant="muted">
+              {item.completed
+                ? 'Drop files here or click to add more evidence'
+                : 'Drop files here or click to upload proof and mark as complete'}
+            </Text>
+          </div>
+          <input
+            ref={dropzoneInputRef}
+            type="file"
+            className="hidden"
+            onChange={onFileSelect}
+            accept=".pdf,.doc,.docx,.png,.jpg,.jpeg,.csv,.xlsx"
+          />
+        </div>
+      )}
+
+      {item.completed && canEdit && (
+        <div>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={onUncomplete}
+            disabled={isProcessing}
+            loading={isProcessing}
+          >
+            Undo completion
+          </Button>
+        </div>
+      )}
+    </Stack>
   );
 }

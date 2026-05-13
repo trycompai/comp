@@ -1,17 +1,23 @@
 'use client';
 
 import { useOffboardingChecklist } from '@/hooks/use-offboarding-checklist';
-import { Accordion, Progress, Section, Stack, Text } from '@trycompai/design-system';
-import { useCallback } from 'react';
+import { HStack, Label, Section, Stack, Switch, Text } from '@trycompai/design-system';
+import { useCallback, useState } from 'react';
 import { toast } from 'sonner';
 import { OffboardingChecklistItem } from './OffboardingChecklistItem';
+import { OffboardingSummaryCard } from './OffboardingSummaryCard';
 
 interface OffboardingChecklistProps {
   memberId: string;
   canEdit: boolean;
+  offboardDate: string;
 }
 
-export function OffboardingChecklist({ memberId, canEdit }: OffboardingChecklistProps) {
+export function OffboardingChecklist({
+  memberId,
+  canEdit,
+  offboardDate,
+}: OffboardingChecklistProps) {
   const {
     checklist,
     isLoading,
@@ -21,6 +27,8 @@ export function OffboardingChecklist({ memberId, canEdit }: OffboardingChecklist
     getDownloadUrl,
     refreshChecklist,
   } = useOffboardingChecklist(memberId);
+
+  const [showOnlyRemaining, setShowOnlyRemaining] = useState(false);
 
   const handleComplete = useCallback(
     async ({ templateItemId, file }: { templateItemId: string; file?: File }) => {
@@ -72,7 +80,10 @@ export function OffboardingChecklist({ memberId, canEdit }: OffboardingChecklist
 
   if (isLoading) {
     return (
-      <Section title="Offboarding Checklist" description="Track offboarding tasks for this member.">
+      <Section
+        title="Offboarding Checklist"
+        description="Track tasks required to complete this offboarding."
+      >
         <Text variant="muted">Loading checklist...</Text>
       </Section>
     );
@@ -80,31 +91,55 @@ export function OffboardingChecklist({ memberId, canEdit }: OffboardingChecklist
 
   if (!checklist || checklist.items.length === 0) {
     return (
-      <Section title="Offboarding Checklist" description="Track offboarding tasks for this member.">
+      <Section
+        title="Offboarding Checklist"
+        description="Track tasks required to complete this offboarding."
+      >
         <Text variant="muted">
-          No checklist items configured. Add items in the offboarding checklist settings.
+          No checklist items configured. Add items in the offboarding checklist
+          settings.
         </Text>
       </Section>
     );
   }
 
-  const progressValue =
-    checklist.totalItems > 0
-      ? Math.round((checklist.completedItems / checklist.totalItems) * 100)
-      : 0;
+  const filteredItems = showOnlyRemaining
+    ? checklist.items.filter((item) => !item.completed)
+    : checklist.items;
 
   return (
-    <Section title="Offboarding Checklist" description="Track offboarding tasks for this member.">
-      <Stack gap="4">
-        <Stack gap="2">
-          <Text variant="muted">
-            {checklist.completedItems} of {checklist.totalItems} items completed
-          </Text>
-          <Progress value={progressValue} />
-        </Stack>
+    <Stack gap="6">
+      {offboardDate && (
+        <OffboardingSummaryCard
+          offboardDate={offboardDate}
+          totalItems={checklist.totalItems}
+          completedItems={checklist.completedItems}
+        />
+      )}
 
-        <Accordion variant="bordered" multiple>
-          {checklist.items.map((item) => (
+      <Stack gap="4">
+        <div className="flex items-center justify-between">
+          <div>
+            <h3 className="text-base font-semibold">Offboarding checklist</h3>
+            <p className="text-sm text-muted-foreground">
+              Track tasks required to complete this offboarding.
+            </p>
+          </div>
+          <HStack gap="2" align="center">
+            <Label htmlFor="show-remaining">
+              <Text size="sm">Show only remaining</Text>
+            </Label>
+            <Switch
+              id="show-remaining"
+              checked={showOnlyRemaining}
+              onCheckedChange={setShowOnlyRemaining}
+              size="sm"
+            />
+          </HStack>
+        </div>
+
+        <div className="flex flex-col gap-2">
+          {filteredItems.map((item) => (
             <OffboardingChecklistItem
               key={item.templateItemId}
               item={item}
@@ -117,8 +152,15 @@ export function OffboardingChecklist({ memberId, canEdit }: OffboardingChecklist
               onChecklistRefresh={() => refreshChecklist()}
             />
           ))}
-        </Accordion>
+          {filteredItems.length === 0 && showOnlyRemaining && (
+            <div className="rounded-lg border px-4 py-8 text-center">
+              <Text variant="muted">
+                All tasks completed. Turn off the filter to see all items.
+              </Text>
+            </div>
+          )}
+        </div>
       </Stack>
-    </Section>
+    </Stack>
   );
 }

@@ -180,7 +180,11 @@ export function Employee({
           </TabsContent>
           {employee.offboardDate && (
             <TabsContent value="offboarding">
-              <OffboardingChecklist memberId={employee.id} canEdit={canEdit} />
+              <OffboardingChecklist
+                memberId={employee.id}
+                canEdit={canEdit}
+                offboardDate={employee.offboardDate?.toISOString() ?? ''}
+              />
             </TabsContent>
           )}
           {backgroundCheckStepEnabled && (
