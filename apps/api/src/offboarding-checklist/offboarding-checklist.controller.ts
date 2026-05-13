@@ -188,4 +188,20 @@ export class OffboardingChecklistController {
       vendorId,
     });
   }
+
+  @Post('member/:memberId/access-revocations/confirm-all')
+  @RequirePermission('member', 'update')
+  @ApiOperation({ summary: 'Confirm all vendor access as revoked' })
+  @ApiParam({ name: 'memberId', description: 'Member ID' })
+  async revokeAllVendorAccess(
+    @OrganizationId() organizationId: string,
+    @Param('memberId') memberId: string,
+    @AuthContext() authContext: AuthContextType,
+  ) {
+    return this.offboardingChecklistService.revokeAllVendorAccess({
+      organizationId,
+      memberId,
+      revokedById: authContext.userId!,
+    });
+  }
 }

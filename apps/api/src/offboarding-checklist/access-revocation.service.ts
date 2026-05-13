@@ -123,6 +123,45 @@ export class AccessRevocationService {
     return { success: true };
   }
 
+  async revokeAllVendorAccess({
+    organizationId,
+    memberId,
+    revokedById,
+  }: {
+    organizationId: string;
+    memberId: string;
+    revokedById: string;
+  }) {
+    const vendors = await db.vendor.findMany({
+      where: { organizationId },
+      select: { id: true },
+    });
+
+    const existing = await db.offboardingAccessRevocation.findMany({
+      where: { organizationId, memberId },
+      select: { vendorId: true },
+    });
+
+    const existingSet = new Set(existing.map((r) => r.vendorId));
+    const toCreate = vendors.filter((v) => !existingSet.has(v.id));
+
+    if (toCreate.length > 0) {
+      await db.offboardingAccessRevocation.createMany({
+        data: toCreate.map((v) => ({
+          organizationId,
+          memberId,
+          vendorId: v.id,
+          revokedById,
+        })),
+        skipDuplicates: true,
+      });
+    }
+
+    await this.syncAccessRevocationCompletion(organizationId, memberId, revokedById);
+
+    return { confirmed: toCreate.length };
+  }
+
   private async syncAccessRevocationCompletion(
     organizationId: string,
     memberId: string,

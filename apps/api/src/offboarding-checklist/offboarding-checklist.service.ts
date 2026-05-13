@@ -302,6 +302,14 @@ export class OffboardingChecklistService {
     return this.accessRevocationService.undoVendorRevocation(params);
   }
 
+  async revokeAllVendorAccess(params: {
+    organizationId: string;
+    memberId: string;
+    revokedById: string;
+  }) {
+    return this.accessRevocationService.revokeAllVendorAccess(params);
+  }
+
   private async seedDefaultsIfNeeded(organizationId: string) {
     const count = await db.offboardingChecklistTemplate.count({
       where: { organizationId },

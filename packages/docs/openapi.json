@@ -22214,6 +22214,142 @@
           "Offboarding Checklist"
         ]
       }
+    },
+    "/v1/offboarding-checklist/member/{memberId}/access-revocations": {
+      "get": {
+        "operationId": "OffboardingChecklistController_getAccessRevocations_v1",
+        "parameters": [
+          {
+            "name": "memberId",
+            "required": true,
+            "in": "path",
+            "description": "Member ID",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Get vendor access revocation status for a member",
+        "tags": [
+          "Offboarding Checklist"
+        ]
+      }
+    },
+    "/v1/offboarding-checklist/member/{memberId}/access-revocations/{vendorId}": {
+      "post": {
+        "operationId": "OffboardingChecklistController_revokeVendorAccess_v1",
+        "parameters": [
+          {
+            "name": "memberId",
+            "required": true,
+            "in": "path",
+            "description": "Member ID",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "vendorId",
+            "required": true,
+            "in": "path",
+            "description": "Vendor ID",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Mark vendor access as revoked",
+        "tags": [
+          "Offboarding Checklist"
+        ]
+      },
+      "delete": {
+        "operationId": "OffboardingChecklistController_undoVendorRevocation_v1",
+        "parameters": [
+          {
+            "name": "memberId",
+            "required": true,
+            "in": "path",
+            "description": "Member ID",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "vendorId",
+            "required": true,
+            "in": "path",
+            "description": "Vendor ID",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Undo vendor access revocation",
+        "tags": [
+          "Offboarding Checklist"
+        ]
+      }
+    },
+    "/v1/offboarding-checklist/member/{memberId}/access-revocations/confirm-all": {
+      "post": {
+        "operationId": "OffboardingChecklistController_revokeAllVendorAccess_v1",
+        "parameters": [
+          {
+            "name": "memberId",
+            "required": true,
+            "in": "path",
+            "description": "Member ID",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Confirm all vendor access as revoked",
+        "tags": [
+          "Offboarding Checklist"
+        ]
+      }
     }
   },
   "info": {

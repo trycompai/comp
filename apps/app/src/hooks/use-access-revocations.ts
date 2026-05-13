@@ -50,11 +50,21 @@ export function useAccessRevocations(memberId: string) {
     [api, endpoint, mutate],
   );
 
+  const revokeAll = useCallback(
+    async () => {
+      const response = await api.post(`${endpoint}/confirm-all`);
+      if (response.error) throw new Error(response.error);
+      await mutate();
+    },
+    [api, endpoint, mutate],
+  );
+
   return {
     revocations,
     isLoading,
     error,
     revokeAccess,
     undoRevocation,
+    revokeAll,
   };
 }
