@@ -268,6 +268,28 @@ describe('CreateRunPanel', () => {
     expect(onSubmit).not.toHaveBeenCalled();
   });
 
+  it('exposes authorization error to assistive tech via aria-invalid and aria-describedby', async () => {
+    const user = userEvent.setup();
+
+    render(<CreateRunPanel orgId="org_1" balance={1} onSubmit={vi.fn()} />);
+
+    const checkbox = screen.getByRole('checkbox', { name: /i own this target/i });
+    expect(checkbox).toHaveAttribute('aria-invalid', 'false');
+    expect(checkbox).toHaveAttribute('aria-describedby', 'pt-authorized-help');
+
+    await user.type(screen.getByLabelText(/target url/i), 'app.example.com');
+    await user.click(screen.getByRole('button', { name: /start scan/i }));
+
+    await waitFor(() => {
+      expect(checkbox).toHaveAttribute('aria-invalid', 'true');
+    });
+    expect(checkbox.getAttribute('aria-describedby')).toContain('pt-authorized-error');
+
+    const alert = screen.getByRole('alert');
+    expect(alert).toHaveAttribute('id', 'pt-authorized-error');
+    expect(alert).toHaveTextContent(/confirm you own or are authorized to test this target/i);
+  });
+
   it('requires confirmation for impact-proof validation before submit', async () => {
     const user = userEvent.setup();
     const onSubmit = vi.fn(async () => ({ id: 'run_deep' }));

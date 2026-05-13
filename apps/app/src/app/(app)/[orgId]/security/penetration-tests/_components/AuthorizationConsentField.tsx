@@ -11,6 +11,11 @@ export function AuthorizationConsentField({
   onCheckedChange,
   errorMessage,
 }: AuthorizationConsentFieldProps) {
+  const hasError = Boolean(errorMessage);
+  const describedBy = hasError
+    ? 'pt-authorized-help pt-authorized-error'
+    : 'pt-authorized-help';
+
   return (
     <label
       htmlFor="pt-authorized"
@@ -20,7 +25,8 @@ export function AuthorizationConsentField({
         id="pt-authorized"
         checked={checked}
         onCheckedChange={(nextChecked) => onCheckedChange(nextChecked === true)}
-        aria-describedby="pt-authorized-help"
+        aria-describedby={describedBy}
+        aria-invalid={hasError}
       />
       <span className="min-w-0 flex-1">
         <span className="block font-medium text-foreground">
@@ -33,8 +39,14 @@ export function AuthorizationConsentField({
           Unauthorized testing may violate applicable computer-misuse laws and your
           provider's terms of service.
         </span>
-        {errorMessage && (
-          <span className="mt-1 block text-[11px] text-destructive">{errorMessage}</span>
+        {hasError && (
+          <span
+            id="pt-authorized-error"
+            role="alert"
+            className="mt-1 block text-[11px] text-destructive"
+          >
+            {errorMessage}
+          </span>
         )}
       </span>
     </label>
