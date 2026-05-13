@@ -18,8 +18,9 @@ const STEPS = [
     Icon: Link,
   },
   {
-    title: 'Configure scope',
-    description: 'Optionally attach a public repository for deeper, code-aware coverage.',
+    title: 'Add code context',
+    description:
+      'Optionally attach a public repository — we use it to write better remediation steps.',
     Icon: Settings,
   },
   {
