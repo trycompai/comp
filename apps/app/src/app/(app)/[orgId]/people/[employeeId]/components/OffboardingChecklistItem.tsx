@@ -87,10 +87,9 @@ export function OffboardingChecklistItem({
   const hasContent = item.evidenceRequired || item.completed;
 
   return (
-    <Collapsible open={isOpen} onOpenChange={setIsOpen}>
-      <div className="rounded-lg border">
+    <Collapsible open={isOpen} onOpenChange={setIsOpen} className="rounded-lg border">
         <CollapsibleTrigger asChild disabled={!hasContent}>
-          <div className={`flex items-start gap-3 p-4 transition-colors ${hasContent ? 'cursor-pointer hover:bg-muted/50' : ''}`}>
+          <div className={`flex items-start gap-3 p-4 transition-colors ${hasContent ? 'cursor-pointer hover:bg-muted/50' : ''} ${hasContent ? 'rounded-lg' : ''}`}>
             <div className="pt-0.5" onClick={(e) => e.stopPropagation()}>
               <Checkbox
                 checked={item.completed}
@@ -176,7 +175,6 @@ export function OffboardingChecklistItem({
             </Stack>
           </div>
         </CollapsibleContent>
-      </div>
     </Collapsible>
   );
 }
