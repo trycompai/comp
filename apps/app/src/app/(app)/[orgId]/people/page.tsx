@@ -42,16 +42,14 @@ export default async function PeoplePage({ params }: { params: Promise<{ orgId: 
   const canManageMembers = hasPermission(userPermissions, 'member', 'update');
   const canInviteUsers = hasPermission(userPermissions, 'member', 'create');
 
-  const isAdminOrOwner = currentUserRoles.some((r) => ['owner', 'admin'].includes(r));
-  const isAuditor = currentUserRoles.includes('auditor');
-  let allowedBuiltInRoles: Role[];
-  if (isAdminOrOwner) {
-    allowedBuiltInRoles = ['admin', 'auditor', 'employee', 'contractor'];
-  } else if (isAuditor) {
-    allowedBuiltInRoles = ['auditor'];
-  } else {
-    allowedBuiltInRoles = ['employee', 'contractor'];
-  }
+  const hasWriteMemberAccess =
+    canInviteUsers &&
+    hasPermission(userPermissions, 'member', 'read') &&
+    canManageMembers &&
+    hasPermission(userPermissions, 'member', 'delete');
+  const allowedBuiltInRoles: Role[] = hasWriteMemberAccess
+    ? ['admin', 'auditor', 'employee', 'contractor']
+    : ['employee', 'contractor'];
   const canManageOrgSettings = hasPermission(
     userPermissions,
     'organization',
