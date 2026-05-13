@@ -29,6 +29,7 @@ export function CreateRunTargetFields({ form }: CreateRunTargetFieldsProps) {
         </div>
         <p className="mt-1 text-[11px] text-muted-foreground">
           Must be reachable from the scanner - localhost and private IPs are rejected.
+          External, unauthenticated scan — we don't log in.
         </p>
       </div>
 
