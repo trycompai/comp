@@ -153,17 +153,6 @@ export function getDefaultRoute(permissions: UserPermissions, orgId: string): st
   return null;
 }
 
-/**
- * Resources that imply the user should have access to the main app.
- * Portal-only resources (policy, compliance) are excluded — employees/contractors
- * have those but should NOT enter the app.
- */
-const APP_IMPLYING_RESOURCES = new Set([
-  'organization', 'member', 'control', 'evidence', 'risk', 'vendor',
-  'task', 'framework', 'audit', 'finding', 'questionnaire', 'integration',
-  'apiKey', 'trust', 'pentest',
-]);
-
 /** Compliance route segments — used to determine if the Compliance rail icon should show. */
 const COMPLIANCE_ROUTE_SEGMENTS = [
   'overview', 'frameworks', 'controls', 'policies', 'tasks', 'documents', 'people',
@@ -181,22 +170,11 @@ export function canAccessCompliance(permissions: UserPermissions): boolean {
 /**
  * Check if user can access the main app (as opposed to portal-only).
  *
- * Returns true if the user has explicit `app:read` (built-in roles like owner/admin/auditor),
- * OR if they have any permission on a resource that implies app access (e.g. a custom role
- * with only `pentest:read`).
- *
- * Employees and contractors are portal-only — they only have `policy:read`
- * and compliance obligations, neither of which is in APP_IMPLYING_RESOURCES.
+ * Requires explicit `app:read` — controlled by the "App Access" toggle
+ * on custom roles, and included by default in owner/admin/auditor.
  */
 export function canAccessApp(permissions: UserPermissions): boolean {
-  if (hasPermission(permissions, 'app', 'read')) return true;
-
-  for (const resource of Object.keys(permissions)) {
-    if (APP_IMPLYING_RESOURCES.has(resource) && permissions[resource]?.length > 0) {
-      return true;
-    }
-  }
-  return false;
+  return hasPermission(permissions, 'app', 'read');
 }
 
 /**

@@ -7,6 +7,7 @@ import { db } from '@db/server';
 import { PageHeader, PageLayout } from '@trycompai/design-system';
 import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
+import { hasPortalAccess } from '@/utils/portal-access';
 import { OrganizationDashboard } from './components/OrganizationDashboard';
 import type { FleetPolicy, Host } from './types';
 
@@ -49,8 +50,15 @@ export default async function OrganizationPage({ params }: { params: Promise<{ o
     redirect('/');
   }
 
-  // Member check - redirect happens outside try-catch
   if (!member) {
+    redirect('/');
+  }
+
+  const canAccessPortal = await hasPortalAccess({
+    roleString: member.role,
+    organizationId: orgId,
+  });
+  if (!canAccessPortal) {
     redirect('/');
   }
 

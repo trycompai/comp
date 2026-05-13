@@ -208,9 +208,10 @@ export const ROLE_HIERARCHY = [
  */
 export const RESTRICTED_ROLES = ['employee', 'contractor'] as const;
 
-/**
- * Roles that have full access without assignment filtering
- */
+export function isRestrictedRole(role: string): boolean {
+  return (RESTRICTED_ROLES as readonly string[]).includes(role);
+}
+
 export const PRIVILEGED_ROLES = ['owner', 'admin', 'auditor'] as const;
 
 /**
@@ -257,3 +258,29 @@ export const BUILT_IN_ROLE_OBLIGATIONS: Record<string, RoleObligations> = {
   employee: { compliance: true },
   contractor: { compliance: true },
 };
+
+// ─── JSON field parsers ─────────────────────────────────────────────
+// OrganizationRole stores permissions/obligations as JSON text in the DB.
+
+export type RolePermissions = Record<string, string[]>;
+
+function parseJsonField<T>(value: unknown): T | null {
+  try {
+    if (!value) return null;
+    const parsed = typeof value === 'string' ? JSON.parse(value) : value;
+    if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+      return parsed as T;
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+export function parseRolePermissions(value: unknown): RolePermissions | null {
+  return parseJsonField<RolePermissions>(value);
+}
+
+export function parseRoleObligations(value: unknown): RoleObligations {
+  return parseJsonField<RoleObligations>(value) ?? {};
+}
