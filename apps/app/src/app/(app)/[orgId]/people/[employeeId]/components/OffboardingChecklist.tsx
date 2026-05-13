@@ -102,7 +102,7 @@ export function OffboardingChecklist({ memberId, canEdit }: OffboardingChecklist
           <Progress value={progressValue} />
         </Stack>
 
-        <Stack gap="3">
+        <div className="flex w-full flex-col gap-3">
           {checklist.items.map((item) => (
             <OffboardingChecklistItem
               key={item.templateItemId}
@@ -114,7 +114,7 @@ export function OffboardingChecklist({ memberId, canEdit }: OffboardingChecklist
               onDownload={handleDownload}
             />
           ))}
-        </Stack>
+        </div>
       </Stack>
     </Section>
   );
