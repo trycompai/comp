@@ -25,7 +25,7 @@ export function AccessRevocationList({
     setProcessingVendorId(vendorId);
     try {
       await revokeAccess(vendorId);
-      toast.success('Access revoked');
+      toast.success('Access removal confirmed');
       onRevocationChange?.();
     } catch {
       toast.error('Failed to revoke access');
@@ -62,7 +62,7 @@ export function AccessRevocationList({
   return (
     <Stack gap="2">
       <Text size="sm" variant="muted">
-        {revocations.revokedCount} of {revocations.totalVendors} vendors revoked
+        {revocations.revokedCount} of {revocations.totalVendors} vendor access removals confirmed
       </Text>
       {revocations.vendors.map((vendor) => (
         <div
@@ -73,9 +73,9 @@ export function AccessRevocationList({
             <HStack gap="2" align="center">
               <Text size="sm" weight="medium">{vendor.vendorName}</Text>
               {vendor.revoked ? (
-                <Badge variant="default">Revoked</Badge>
+                <Badge variant="default">Confirmed</Badge>
               ) : (
-                <Badge variant="secondary">Pending</Badge>
+                <Badge variant="secondary">Not confirmed</Badge>
               )}
             </HStack>
             {vendor.revoked && vendor.revokedBy && vendor.revokedAt && (
@@ -102,13 +102,13 @@ export function AccessRevocationList({
               ) : (
                 <div>
                   <Button
-                    variant="destructive"
+                    variant="outline"
                     size="xs"
                     onClick={() => handleRevoke(vendor.vendorId)}
                     disabled={processingVendorId === vendor.vendorId}
                     loading={processingVendorId === vendor.vendorId}
                   >
-                    Revoke
+                    Confirm revoked
                   </Button>
                 </div>
               )}
