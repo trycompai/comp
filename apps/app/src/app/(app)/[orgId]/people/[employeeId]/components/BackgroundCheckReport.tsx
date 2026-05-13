@@ -1,37 +1,43 @@
 'use client';
 
-import {
-  Badge,
-  Stack,
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-  Text,
-} from '@trycompai/design-system';
+import { Badge, Stack, Text } from '@trycompai/design-system';
+import { BackgroundCheckAuditTimeline } from './BackgroundCheckAuditTimeline';
 import { BackgroundCheckExternalReport } from './BackgroundCheckExternalReport';
 import {
   BackgroundCheckShareableSummary,
   hasShareableSummary,
 } from './BackgroundCheckShareableSummary';
 
-const REPORT_SECTIONS = [
+const METHODOLOGY_LABELS = [
+  'Biometric identity verification',
+  'Human-verified employment & references',
+  'FCRA-compliant adjudication',
+  'AI-augmented public-source research',
+];
+
+const REPORT_SECTIONS: Array<{
+  title: string;
+  method: string;
+  paths: string[][];
+}> = [
   {
-    title: 'Identity verification',
+    title: 'Identity & liveness',
+    method: 'Government ID + live video, face-matched',
     paths: [['identityVerification'], ['report', 'identity'], ['report', 'report', 'identity']],
   },
   {
     title: 'Employment verification',
+    method: 'HR-confirmed by email per employer',
     paths: [['employment'], ['report', 'employment'], ['report', 'report', 'employment']],
   },
   {
     title: 'References',
+    method: 'Structured questionnaire per reference',
     paths: [['references'], ['report', 'references'], ['report', 'report', 'references']],
   },
   {
-    title: 'Social and media research',
+    title: 'Public-source research',
+    method: 'LinkedIn + public web, cross-referenced',
     paths: [
       ['linkedinAnalysis'],
       ['latestResearchRun'],
@@ -56,18 +62,20 @@ export function BackgroundCheckReport({
   return (
     <Stack gap="md">
       <Stack gap="xs">
-        <Text weight="medium">Report</Text>
+        <Text weight="medium">Verification report</Text>
         {syncedAt && (
           <Text size="xs" variant="muted">
             Snapshot synced {new Date(syncedAt).toLocaleString()}
           </Text>
         )}
       </Stack>
+      <MethodologyBanner />
       <div className="grid items-start gap-3 md:grid-cols-2 xl:grid-cols-3">
         {REPORT_SECTIONS.map((section) => (
           <ReportSection
             key={section.title}
             title={section.title}
+            method={section.method}
             value={firstValue(snapshot, section.paths)}
           />
         ))}
@@ -77,16 +85,42 @@ export function BackgroundCheckReport({
       ) : (
         <BackgroundCheckExternalReport snapshot={snapshot} />
       )}
-      {auditEvents.length > 0 && <AuditTimeline events={auditEvents} />}
+      {auditEvents.length > 0 && <BackgroundCheckAuditTimeline events={auditEvents} />}
     </Stack>
+  );
+}
+
+function MethodologyBanner() {
+  return (
+    <div className="rounded-md border bg-muted/20 p-4">
+      <Stack gap="3">
+        <Stack gap="1">
+          <Text weight="medium">How this check was performed</Text>
+          <Text size="xs" variant="muted">
+            Every report combines biometric identity verification with direct employer and
+            reference confirmation, plus AI-augmented public-source research — all under an
+            FCRA-style adjudication workflow.
+          </Text>
+        </Stack>
+        <div className="flex flex-wrap gap-1.5">
+          {METHODOLOGY_LABELS.map((label) => (
+            <Badge key={label} variant="secondary">
+              {label}
+            </Badge>
+          ))}
+        </div>
+      </Stack>
+    </div>
   );
 }
 
 function ReportSection({
   title,
+  method,
   value,
 }: {
   title: string;
+  method: string;
   value: unknown;
 }) {
   const status = readStatus(value);
@@ -95,52 +129,22 @@ function ReportSection({
   return (
     <div className="min-w-0 rounded-md border bg-background p-4">
       <Stack gap="sm">
-        <div className="flex items-center justify-between gap-3">
-          <Text weight="medium">{title}</Text>
-          {status && shouldShowStatus(status) && (
-            <Badge variant="secondary">{formatLabel(status)}</Badge>
-          )}
-        </div>
+        <Stack gap="1">
+          <div className="flex items-center justify-between gap-3">
+            <Text weight="medium">{title}</Text>
+            {status && shouldShowStatus(status) && (
+              <Badge variant="secondary">{formatLabel(status)}</Badge>
+            )}
+          </div>
+          <Text size="xs" variant="muted">
+            {method}
+          </Text>
+        </Stack>
         <div className="min-w-0 overflow-hidden break-words text-sm text-muted-foreground">
           {description}
         </div>
       </Stack>
     </div>
-  );
-}
-
-function AuditTimeline({ events }: { events: unknown[] }) {
-  const sortedEvents = [...events].sort((a, b) => eventTimestamp(b) - eventTimestamp(a));
-
-  return (
-    <Stack gap="sm">
-      <Text weight="medium">Audit timeline</Text>
-      <Table variant="bordered">
-        <TableHeader>
-          <TableRow>
-            <TableHead>Event</TableHead>
-            <TableHead>Time</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {sortedEvents.slice(0, 5).map((event, index) => (
-            <TableRow key={eventKey(event, index)}>
-              <TableCell>
-                <div className="flex min-w-0 items-center gap-2">
-                  <Badge variant="secondary">{eventCategory(event)}</Badge>
-                  <Text size="sm">{eventLabel(event)}</Text>
-                </div>
-              </TableCell>
-              <TableCell>
-                <Text size="sm" variant="muted">
-                  {eventTime(event) ?? '-'}
-                </Text>
-              </TableCell>
-            </TableRow>
-          ))}
-        </TableBody>
-      </Table>
-    </Stack>
   );
 }
 
@@ -165,18 +169,18 @@ function getPath(root: unknown, path: string[]): unknown {
 function describeValue(value: unknown): string {
   const values = toArray(value);
   if (values.length > 0) {
-    return `${values.length} item${values.length === 1 ? '' : 's'} recorded`;
+    return `${values.length} verified entr${values.length === 1 ? 'y' : 'ies'} on file`;
   }
 
   const record = toRecord(value);
-  if (!record) return 'Not included in the synced report snapshot';
+  if (!record) return 'Awaiting candidate submission for this section.';
 
   for (const key of ['summary', 'notes', 'message', 'decision', 'result', 'outcome']) {
     const text = readString(record[key]);
     if (text) return truncateSummary(text);
   }
 
-  return `${Object.keys(record).length} report fields captured`;
+  return `${Object.keys(record).length} verification fields recorded`;
 }
 
 function truncateSummary(value: string): string {
@@ -200,56 +204,6 @@ function shouldShowStatus(status: string): boolean {
   return !HIDDEN_STATUS_VALUES.has(status.trim().toLowerCase());
 }
 
-function eventLabel(event: unknown): string {
-  const record = toRecord(event);
-  if (!record) return 'Report event';
-  const label =
-    readString(record.eventType) ??
-    readString(record.type) ??
-    readString(record.message) ??
-    'Report event';
-
-  return formatEventLabel(label);
-}
-
-function eventCategory(event: unknown): string {
-  const record = toRecord(event);
-  if (!record) return 'Report';
-  const label = readString(record.eventType) ?? readString(record.type) ?? '';
-  return formatLabel(label.split('.')[0] || 'report');
-}
-
-function eventTime(event: unknown): string | null {
-  const timestamp = eventTimestamp(event);
-  if (timestamp > 0) {
-    return new Date(timestamp).toLocaleString();
-  }
-  return null;
-}
-
-function eventTimestamp(event: unknown): number {
-  const record = toRecord(event);
-  if (!record) return 0;
-  const value = record.createdAt ?? record.timestamp ?? record.processedAt;
-  if (typeof value === 'number') {
-    return value;
-  }
-  if (typeof value === 'string') {
-    const numeric = Number(value);
-    if (!Number.isNaN(numeric) && value.trim() !== '') {
-      return numeric;
-    }
-    const timestamp = new Date(value).getTime();
-    return Number.isNaN(timestamp) ? 0 : timestamp;
-  }
-  return 0;
-}
-
-function eventKey(event: unknown, index: number): string {
-  const record = toRecord(event);
-  return readString(record?.id) ?? readString(record?.eventId) ?? `event-${index}`;
-}
-
 function toArray(value: unknown): unknown[] {
   return Array.isArray(value) ? value : [];
 }
@@ -265,8 +219,4 @@ function readString(value: unknown): string | null {
 
 function formatLabel(value: string): string {
   return value.replace(/_/g, ' ').replace(/\b\w/g, (letter) => letter.toUpperCase());
-}
-
-function formatEventLabel(value: string): string {
-  return formatLabel(value.split('.').slice(1).join('.') || value).replace(/\./g, ' ');
 }
