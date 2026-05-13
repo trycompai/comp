@@ -1,0 +1,37 @@
+{
+  "slug": "upguard",
+  "name": "UpGuard",
+  "description": "UpGuard provides vendor risk management and external attack surface monitoring with automated security ratings and risk detection.",
+  "category": "Security",
+  "docsUrl": "https://cyber-risk.upguard.com/api/docs",
+  "baseUrl": "https://cyber-risk.upguard.com/api/public",
+  "authConfig": {
+    "type": "api_key",
+    "config": {
+      "setupInstructions": "1. Log in to UpGuard at https://cyber-risk.upguard.com\n2. Click the Settings icon (top-right)\n3. Go to the API tab\n4. Create a new API key or copy your existing one\n5. Enter the API key above (no prefix needed)"
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "upguard_monitoring_alerting",
+      "name": "Monitoring & Alerting",
+      "description": "Checks vendor risk scores in UpGuard to identify third-party vendors with low security ratings.",
+      "defaultSeverity": "high",
+      "enabled": true
+    },
+    {
+      "slug": "upguard_incident_response",
+      "name": "Incident Response",
+      "description": "Checks for active security risks detected by UpGuard for your organization's external attack surface.",
+      "defaultSeverity": "high",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

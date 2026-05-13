@@ -42,6 +42,11 @@ vi.mock('lucide-react', () => ({
 
 vi.mock('@trycompai/integration-platform', () => ({
   awsRemediationScript: '',
+  getAwsCloudShellUrl: () => 'https://console.aws.amazon.com/cloudshell',
+  getAwsCloudShellScript: () => '',
+  getAwsRemediationScript: () => '',
+  normalizeAwsEnvironment: (value: unknown) =>
+    value === 'aws-us-gov' ? 'aws-us-gov' : 'aws',
 }));
 
 vi.mock('sonner', () => ({

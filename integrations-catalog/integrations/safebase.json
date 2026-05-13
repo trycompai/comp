@@ -1,0 +1,37 @@
+{
+  "slug": "safebase",
+  "name": "SafeBase",
+  "description": "SafeBase is a trust center platform that automates security reviews, manages NDAs, and centralizes compliance documentation for customers.",
+  "category": "Security",
+  "docsUrl": "https://docs.safebase.io/reference/",
+  "baseUrl": "https://app.safebase.io/api/ext/v1/rest",
+  "authConfig": {
+    "type": "api_key",
+    "config": {
+      "setupInstructions": "1. Log in to your SafeBase admin dashboard\n2. Navigate to Settings > API\n3. Generate a new API key\n4. Copy the key and enter it above"
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "safebase_public_policies",
+      "name": "Public Policies",
+      "description": "Verifies that your SafeBase trust center has active accounts configured for customer-facing security documentation.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "safebase_contact_information",
+      "name": "Contact Information",
+      "description": "Verifies that the SafeBase trust center API is accessible and the organization account is properly configured.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 2,
+  "isActive": true
+}

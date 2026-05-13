@@ -8,13 +8,13 @@
   "authConfig": {
     "type": "custom",
     "config": {
-      "setupInstructions": "1. Log in to Linear\n2. Go to Settings → API\n3. Create a Personal API key\n4. Paste it below",
+      "setupInstructions": "1. Log in to Linear\n2. Go to Settings > Account > Security & Access (or visit https://linear.app/settings/account/security)\n3. Under Personal API keys, click Create key\n4. Paste the key below",
       "credentialFields": [
         {
           "label": "API Key",
           "type": "password",
           "required": true,
-          "helpText": "Linear → Settings → API → Personal API keys → Create key"
+          "helpText": "Linear > Settings > Account > Security & Access > Personal API keys > Create key"
         }
       ]
     }
@@ -31,15 +31,8 @@
       "description": "Verifies Linear is connected and lists workspace members",
       "defaultSeverity": "medium",
       "enabled": true
-    },
-    {
-      "slug": "linear_app_availability",
-      "name": "App Availability",
-      "description": "Verifies Linear platform is operational",
-      "defaultSeverity": "medium",
-      "enabled": true
     }
   ],
-  "checkCount": 2,
+  "checkCount": 1,
   "isActive": true
 }

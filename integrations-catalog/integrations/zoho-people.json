@@ -6,17 +6,14 @@
   "docsUrl": "https://www.zoho.com/people/api/",
   "baseUrl": "https://people.zoho.com",
   "authConfig": {
-    "type": "custom",
+    "type": "oauth2",
     "config": {
-      "setupInstructions": "1. Go to Zoho API Console at https://api-console.zoho.com\n2. Create a Self Client application\n3. Generate a token with scope: ZOHOPEOPLE.forms.ALL\n4. Paste the access token below\n\nNote: Tokens expire. For long-term use, set up OAuth2 refresh tokens.",
-      "credentialFields": [
-        {
-          "label": "OAuth Access Token",
-          "type": "password",
-          "required": true,
-          "helpText": "Generate from Zoho API Console (https://api-console.zoho.com). Create a Self Client, generate token with scope: ZOHOPEOPLE.forms.ALL."
-        }
-      ]
+      "setupInstructions": "Connect your Zoho People account so Comp AI can verify access and sync employee records.\n\nWhen you click \"Connect\":\n1. You will be redirected to Zoho\n2. Sign in with the Zoho account that has access to your People app\n3. Authorize the requested permission (read employee data)\n4. You will be redirected back here, ready to use\n\nAfter connection, tokens auto-refresh — you will not need to reconnect periodically.\n\nNote: Currently optimized for the Zoho US data center (.com). If your Zoho account is in EU/India/Australia/etc., contact support — multi-region support is in progress.",
+      "scopes": [
+        "ZohoPeople.forms.ALL"
+      ],
+      "clientAuthMethod": "body",
+      "supportsRefreshToken": true
     }
   },
   "capabilities": [

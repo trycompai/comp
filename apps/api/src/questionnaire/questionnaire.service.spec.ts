@@ -36,9 +36,14 @@ jest.mock('@/trigger/questionnaire/answer-question-helpers', () => ({
   generateAnswerWithRAGBatch: jest.fn(),
 }));
 
+jest.mock('@trigger.dev/sdk', () => ({
+  tasks: {
+    trigger: jest.fn(),
+  },
+}));
+
 jest.mock('./utils/content-extractor', () => ({
   extractContentFromFile: jest.fn(),
-  extractQuestionsWithAI: jest.fn(),
 }));
 
 jest.mock('./utils/question-parser', () => ({
@@ -59,13 +64,13 @@ jest.mock('./utils/questionnaire-storage', () => ({
 import { db } from '@db';
 import { syncManualAnswerToVector } from '@/vector-store/lib';
 import { answerQuestion } from '@/trigger/questionnaire/answer-question';
+import { tasks } from '@trigger.dev/sdk';
 import {
   updateAnsweredCount,
   persistQuestionnaireResult,
   uploadQuestionnaireFile,
   saveGeneratedAnswer,
 } from './utils/questionnaire-storage';
-import { extractQuestionsWithAI } from './utils/content-extractor';
 import { generateExportFile } from './utils/export-generator';
 
 const mockDb = db as jest.Mocked<typeof db>;
@@ -218,7 +223,7 @@ describe('QuestionnaireService', () => {
       (mockDb.questionnaire.findUnique as jest.Mock).mockResolvedValue(null);
 
       await expect(service.deleteById('missing', 'org_1')).rejects.toThrow(
-        'Questionnaire not found',
+        'Questionnaire with ID missing not found',
       );
       expect(mockDb.questionnaire.delete).not.toHaveBeenCalled();
     });
@@ -454,16 +459,15 @@ describe('QuestionnaireService', () => {
   });
 
   describe('uploadAndParse', () => {
-    it('should upload file, parse questions, and persist', async () => {
+    it('should upload file and trigger async parsing', async () => {
       (uploadQuestionnaireFile as jest.Mock).mockResolvedValue({
         s3Key: 'key',
         fileSize: 1024,
       });
-      (extractQuestionsWithAI as jest.Mock).mockResolvedValue([
-        { question: 'Q1?', answer: null },
-        { question: 'Q2?', answer: null },
-      ]);
-      (persistQuestionnaireResult as jest.Mock).mockResolvedValue('q1');
+      (tasks.trigger as jest.Mock).mockResolvedValue({
+        id: 'run_123',
+        publicAccessToken: 'token_123',
+      });
 
       const result = await service.uploadAndParse({
         organizationId: 'org_1',
@@ -473,23 +477,23 @@ describe('QuestionnaireService', () => {
         source: 'internal',
       } as any);
 
-      expect(result).toEqual({ questionnaireId: 'q1', totalQuestions: 2 });
+      expect(result).toEqual({
+        runId: 'run_123',
+        publicAccessToken: 'token_123',
+      });
       expect(uploadQuestionnaireFile).toHaveBeenCalled();
-      expect(extractQuestionsWithAI).toHaveBeenCalledWith(
-        'base64data',
-        'application/pdf',
-        expect.any(Object),
-      );
-      expect(persistQuestionnaireResult).toHaveBeenCalled();
-    });
-
-    it('should throw when persist returns null', async () => {
-      (uploadQuestionnaireFile as jest.Mock).mockResolvedValue({
+      expect(tasks.trigger).toHaveBeenCalledWith('parse-questionnaire', {
+        inputType: 's3',
+        organizationId: 'org_1',
         s3Key: 'key',
+        fileName: 'test.pdf',
+        fileType: 'application/pdf',
         fileSize: 1024,
       });
-      (extractQuestionsWithAI as jest.Mock).mockResolvedValue([]);
-      (persistQuestionnaireResult as jest.Mock).mockResolvedValue(null);
+    });
+
+    it('should throw when upload fails', async () => {
+      (uploadQuestionnaireFile as jest.Mock).mockResolvedValue(null);
 
       await expect(
         service.uploadAndParse({
@@ -498,7 +502,7 @@ describe('QuestionnaireService', () => {
           fileType: 'application/pdf',
           fileData: 'base64data',
         } as any),
-      ).rejects.toThrow('Failed to save questionnaire');
+      ).rejects.toThrow('Failed to upload questionnaire file to S3');
     });
   });
 

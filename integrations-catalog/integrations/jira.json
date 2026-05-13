@@ -8,7 +8,7 @@
   "authConfig": {
     "type": "custom",
     "config": {
-      "setupInstructions": "1. Go to https://id.atlassian.com/manage-profile/security/api-tokens\n2. Create an API token\n3. Enter your Atlassian email and the API token below, along with your Jira subdomain in each check",
+      "setupInstructions": "1. Go to https://id.atlassian.com/manage-profile/security/api-tokens\n2. Click \"Create API token\" (not \"Create API token with scopes\")\n3. Name the token and set an expiry date, then copy it\n4. Enter your Atlassian account email and the token below\n5. Enter your Jira subdomain in each check (e.g. mycompany from mycompany.atlassian.net)\n\nImportant: Use an API token WITHOUT scopes (classic token). Scoped API tokens require a different API URL that is not currently supported. If you see empty results or errors, verify you created a token without scopes.",
       "credentialFields": [
         {
           "label": "Email Address",

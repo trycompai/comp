@@ -125,10 +125,12 @@ export class FrameworksController {
   async addFrameworks(
     @OrganizationId() organizationId: string,
     @Body() dto: AddFrameworksDto,
+    @AuthContext() authContext: AuthContextType,
   ) {
     return this.frameworksService.addFrameworks(
       organizationId,
       dto.frameworkIds,
+      authContext.memberId,
     );
   }
 

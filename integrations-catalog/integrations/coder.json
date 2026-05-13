@@ -1,0 +1,66 @@
+{
+  "slug": "coder",
+  "name": "Coder",
+  "description": "Coder provides self-hosted cloud development environments. This integration verifies employee access, audit logging, authentication methods, and employee status tracking.",
+  "category": "Development",
+  "docsUrl": "https://coder.com/docs/reference/api",
+  "baseUrl": null,
+  "authConfig": {
+    "type": "custom",
+    "config": {
+      "setupInstructions": "1. Log in to your Coder deployment\n2. Go to Settings > Tokens (or visit /cli-auth)\n3. Create a new token and copy it\n4. Enter your Coder instance URL and the token below",
+      "credentialFields": [
+        {
+          "label": "Instance URL",
+          "type": "text",
+          "required": true,
+          "helpText": "Your Coder deployment URL, e.g. https://coder.company.com (no trailing slash)"
+        },
+        {
+          "label": "Session Token",
+          "type": "password",
+          "required": true,
+          "helpText": "Generate at your-instance/cli-auth or Settings > Tokens"
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks",
+    "sync"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": true,
+  "checks": [
+    {
+      "slug": "coder_employee_access",
+      "name": "Employee Access",
+      "description": "Lists all Coder users with their roles and status, verifying proper access management.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "coder_access_review_log",
+      "name": "Access Review Log",
+      "description": "Verifies that audit logging is active in Coder with recent entries for access review.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "coder_2fa",
+      "name": "2FA",
+      "description": "Verifies that external authentication (OIDC or GitHub SSO) is enabled, delegating 2FA to the identity provider.",
+      "defaultSeverity": "high",
+      "enabled": true
+    },
+    {
+      "slug": "coder_employee_verification",
+      "name": "Employee Verification",
+      "description": "Verifies that all Coder users have proper status tracking (active, suspended, or dormant).",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 4,
+  "isActive": true
+}

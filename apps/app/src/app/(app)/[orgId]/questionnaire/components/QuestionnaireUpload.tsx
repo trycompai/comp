@@ -1,13 +1,7 @@
 'use client';
 
-import { Button } from '@trycompai/ui/button';
-import { cn } from '@trycompai/ui/cn';
-import {
-  FileText,
-  Loader2,
-  Upload,
-  X,
-} from 'lucide-react';
+import { Button, cn } from '@trycompai/design-system';
+import { Close, Document, Upload } from '@trycompai/design-system/icons';
 import type { FileRejection } from 'react-dropzone';
 import Dropzone from 'react-dropzone';
 
@@ -36,7 +30,7 @@ export function QuestionnaireUpload({
         {selectedFile ? (
           <div className="flex items-center justify-between gap-4 p-4 bg-muted/30 rounded-lg border border-border/40">
             <div className="flex items-center gap-3 flex-1 min-w-0">
-              <FileText className="h-5 w-5 text-muted-foreground shrink-0" />
+              <Document size={20} />
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium truncate">{selectedFile.name}</p>
                 <p className="text-xs text-muted-foreground mt-0.5">
@@ -45,15 +39,15 @@ export function QuestionnaireUpload({
               </div>
             </div>
             {!isLoading && (
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={onFileRemove}
-                disabled={isLoading}
-                className="h-9 w-9 shrink-0"
-              >
-                <X className="h-4 w-4" />
-              </Button>
+              <div className="shrink-0">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={onFileRemove}
+                  disabled={isLoading}
+                  iconLeft={<Close size={16} />}
+                />
+              </div>
             )}
           </div>
         ) : (
@@ -65,7 +59,6 @@ export function QuestionnaireUpload({
             disabled={isLoading}
             accept={{
               'application/pdf': ['.pdf'],
-              'application/vnd.ms-excel': ['.xls'],
               'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': ['.xlsx'],
               'text/csv': ['.csv'],
             }}
@@ -83,13 +76,13 @@ export function QuestionnaireUpload({
               >
                 <input {...getInputProps()} />
                 <div className="flex flex-col items-center gap-3">
-                  <Upload className="h-10 w-10 text-muted-foreground" />
+                  <Upload size={40} />
                   <div className="text-center space-y-1">
                     <p className="text-sm font-medium text-foreground">
                       {isDragActive ? 'Drop file here' : 'Drag & drop or click to select'}
                     </p>
                     <p className="text-xs text-muted-foreground">
-                      PDF, Excel, CSV (max 100MB)
+                      PDF, XLSX, CSV (max 100MB)
                     </p>
                   </div>
                 </div>
@@ -99,36 +92,29 @@ export function QuestionnaireUpload({
         )}
 
         <div className="flex items-center justify-end">
-          <Button
-            onClick={onParse}
-            disabled={isLoading || !selectedFile || hasResults}
-            className="h-11 lg:h-12 px-6 lg:px-8 w-full sm:w-auto"
-            size="lg"
-          >
-            {isLoading ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                <span className="transition-opacity duration-500">
-                  {parseStatus === 'uploading'
-                    ? 'Uploading your file...'
-                    : parseStatus === 'starting'
-                      ? 'Getting ready...'
-                      : parseStatus === 'queued'
-                        ? 'Almost ready...'
-                        : parseStatus === 'analyzing'
-                          ? 'Reading your document...'
-                          : parseStatus === 'processing'
-                            ? 'Finding questions...'
-                            : 'Almost done...'}
-                </span>
-              </>
-            ) : (
-              <>
-                <FileText className="mr-2 h-4 w-4" />
-                Analyze Questionnaire
-              </>
-            )}
-          </Button>
+          <div className="w-full sm:w-auto">
+            <Button
+              onClick={onParse}
+              disabled={isLoading || !selectedFile || hasResults}
+              loading={isLoading}
+              size="lg"
+              iconLeft={!isLoading ? <Document size={16} /> : undefined}
+            >
+              {isLoading
+                ? parseStatus === 'uploading'
+                  ? 'Uploading your file...'
+                  : parseStatus === 'starting'
+                    ? 'Getting ready...'
+                    : parseStatus === 'queued'
+                      ? 'Almost ready...'
+                      : parseStatus === 'analyzing'
+                        ? 'Reading your document...'
+                        : parseStatus === 'processing'
+                          ? 'Finding questions...'
+                          : 'Almost done...'
+                : 'Analyze Questionnaire'}
+            </Button>
+          </div>
         </div>
     </div>
   );
