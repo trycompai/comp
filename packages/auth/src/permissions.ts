@@ -257,3 +257,27 @@ export const BUILT_IN_ROLE_OBLIGATIONS: Record<string, RoleObligations> = {
   employee: { compliance: true },
   contractor: { compliance: true },
 };
+
+// ─── JSON field parsers ─────────────────────────────────────────────
+// OrganizationRole stores permissions/obligations as JSON text in the DB.
+// These helpers parse them into typed objects.
+
+export type RolePermissions = Record<string, string[]>;
+
+export function parseRolePermissions(value: unknown): RolePermissions | null {
+  if (!value) return null;
+  const parsed = typeof value === 'string' ? JSON.parse(value) : value;
+  if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+    return parsed as RolePermissions;
+  }
+  return null;
+}
+
+export function parseRoleObligations(value: unknown): RoleObligations {
+  if (!value) return {};
+  const parsed = typeof value === 'string' ? JSON.parse(value) : value;
+  if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+    return parsed as RoleObligations;
+  }
+  return {};
+}

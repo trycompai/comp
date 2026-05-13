@@ -14,6 +14,9 @@ export {
   BUILT_IN_ROLE_OBLIGATIONS,
   type RoleName,
   type RoleObligations,
+  type RolePermissions,
+  parseRolePermissions,
+  parseRoleObligations,
 } from './permissions';
 
 export { createAuthServer, type CreateAuthServerOptions, type AuthServer } from './server';

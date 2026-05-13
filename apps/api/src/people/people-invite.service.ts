@@ -2,7 +2,6 @@ import {
   Injectable,
   Logger,
   BadRequestException,
-  ForbiddenException,
 } from '@nestjs/common';
 import { db } from '@db';
 import { triggerEmail } from '../email/trigger-email';
@@ -12,6 +11,8 @@ import {
   BUILT_IN_ROLE_OBLIGATIONS,
   BUILT_IN_ROLE_PERMISSIONS,
   RESTRICTED_ROLES,
+  parseRoleObligations,
+  parseRolePermissions,
 } from '@trycompai/auth';
 import type { InviteItemDto } from './dto/invite-people.dto';
 import { checkAutoCompletePhases } from '../frameworks/frameworks-timeline.helper';
@@ -427,13 +428,9 @@ export class PeopleInviteService {
       select: { obligations: true },
     });
 
-    return customRoles.some((role) => {
-      const obligations =
-        typeof role.obligations === 'string'
-          ? JSON.parse(role.obligations)
-          : role.obligations || {};
-      return !!obligations.compliance;
-    });
+    return customRoles.some((role) =>
+      parseRoleObligations(role.obligations).compliance,
+    );
   }
 
   /**
@@ -484,11 +481,8 @@ export class PeopleInviteService {
         select: { permissions: true },
       });
       for (const role of customRoles) {
-        const perms =
-          typeof role.permissions === 'string'
-            ? JSON.parse(role.permissions)
-            : role.permissions;
-        if (Array.isArray(perms?.member)) {
+        const perms = parseRolePermissions(role.permissions);
+        if (perms?.member) {
           for (const a of perms.member) actions.add(a);
         }
       }

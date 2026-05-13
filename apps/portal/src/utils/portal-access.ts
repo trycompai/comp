@@ -1,6 +1,8 @@
 import {
   BUILT_IN_ROLE_OBLIGATIONS,
   BUILT_IN_ROLE_PERMISSIONS,
+  parseRoleObligations,
+  parseRolePermissions,
 } from '@trycompai/auth';
 import { db } from '@db/server';
 
@@ -17,8 +19,7 @@ export async function hasPortalAccess({
 
   for (const role of roles) {
     if (builtInNames.has(role)) {
-      const perms = BUILT_IN_ROLE_PERMISSIONS[role];
-      if (perms?.portal?.length > 0) return true;
+      if (BUILT_IN_ROLE_PERMISSIONS[role]?.portal?.length > 0) return true;
       if (BUILT_IN_ROLE_OBLIGATIONS[role]?.compliance) return true;
     } else {
       customRoleNames.push(role);
@@ -33,26 +34,11 @@ export async function hasPortalAccess({
   });
 
   for (const role of customRoles) {
-    const perms =
-      typeof role.permissions === 'string'
-        ? JSON.parse(role.permissions)
-        : role.permissions;
-    if (
-      perms &&
-      typeof perms === 'object' &&
-      Array.isArray(perms.portal) &&
-      perms.portal.length > 0
-    ) {
-      return true;
-    }
+    const perms = parseRolePermissions(role.permissions);
+    if (perms?.portal?.length) return true;
 
-    const obligations =
-      typeof role.obligations === 'string'
-        ? JSON.parse(role.obligations)
-        : role.obligations;
-    if (obligations && typeof obligations === 'object' && obligations.compliance) {
-      return true;
-    }
+    const obligations = parseRoleObligations(role.obligations);
+    if (obligations.compliance) return true;
   }
 
   return false;
