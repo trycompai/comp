@@ -1,0 +1,65 @@
+{
+  "slug": "thinkst-canary",
+  "name": "Thinkst Canary",
+  "description": "Thinkst Canary provides deception-based intrusion detection using canaries (honeypots) and canarytokens deployed across your network.",
+  "category": "Security",
+  "docsUrl": "https://docs.canary.tools/",
+  "baseUrl": "https://placeholder.canary.tools",
+  "authConfig": {
+    "type": "custom",
+    "config": {
+      "setupInstructions": "1. Log in to your Canary Console at https://<your-hash>.canary.tools\n2. Go to Settings (gear icon) and click the API tab\n3. Create a new API key with at least Read-Only role\n4. Copy the auth_token and your console domain hash\n5. Enter both values in the fields above",
+      "credentialFields": [
+        {
+          "label": "Console Domain Hash",
+          "type": "text",
+          "required": true,
+          "helpText": "Your unique console hash (e.g. abc123def). Found in your console URL: https://<hash>.canary.tools"
+        },
+        {
+          "label": "API Auth Token",
+          "type": "text",
+          "required": true,
+          "helpText": "API key from your console Settings > API section."
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "thinkst_canary_device_list",
+      "name": "Device List",
+      "description": "Verifies that Canary Birds (honeypots) are deployed and checks their online/offline status across the network.",
+      "defaultSeverity": "high",
+      "enabled": true
+    },
+    {
+      "slug": "thinkst_canary_incident_response",
+      "name": "Incident Response",
+      "description": "Checks for unacknowledged incidents on the Canary console to ensure timely incident response.",
+      "defaultSeverity": "high",
+      "enabled": true
+    },
+    {
+      "slug": "thinkst_canary_2fa",
+      "name": "2FA",
+      "description": "Checks that all Canary console users have two-factor authentication (TOTP) enabled.",
+      "defaultSeverity": "high",
+      "enabled": true
+    },
+    {
+      "slug": "thinkst_canary_monitoring_alerting",
+      "name": "Monitoring & Alerting",
+      "description": "Verifies that alert notifications (email, SMS, webhook, or Slack) are configured on the Canary console.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    }
+  ],
+  "checkCount": 4,
+  "isActive": true
+}

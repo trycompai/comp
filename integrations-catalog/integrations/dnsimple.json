@@ -1,0 +1,58 @@
+{
+  "slug": "dnsimple",
+  "name": "DNSimple",
+  "description": "DNSimple provides domain registration, DNS hosting, and SSL certificate management with a developer-friendly API.",
+  "category": "Infrastructure",
+  "docsUrl": "https://developer.dnsimple.com/v2/",
+  "baseUrl": "https://api.dnsimple.com/v2",
+  "authConfig": {
+    "type": "custom",
+    "config": {
+      "setupInstructions": "1. Log in to DNSimple at https://dnsimple.com\n2. Go to Account > Access Tokens\n3. Create a new account token or user token\n4. Copy the token value\n5. Find your Account ID in Account settings\n6. Enter both values above",
+      "credentialFields": [
+        {
+          "label": "API Token",
+          "type": "text",
+          "required": true,
+          "helpText": "OAuth2 or account token from your DNSimple account settings."
+        },
+        {
+          "label": "Account ID",
+          "type": "text",
+          "required": true,
+          "helpText": "Your DNSimple account ID (numeric). Find it at Settings > Account."
+        }
+      ]
+    }
+  },
+  "capabilities": [
+    "checks"
+  ],
+  "supportsMultipleConnections": false,
+  "syncSupported": false,
+  "checks": [
+    {
+      "slug": "dnsimple_tls_https",
+      "name": "TLS / HTTPS",
+      "description": "Checks SSL/TLS certificates managed in DNSimple for expiration and validity status.",
+      "defaultSeverity": "high",
+      "enabled": true
+    },
+    {
+      "slug": "dnsimple_encryption_at_rest",
+      "name": "Encryption at Rest",
+      "description": "Checks DNSSEC status for domains managed in DNSimple to ensure DNS query integrity.",
+      "defaultSeverity": "medium",
+      "enabled": true
+    },
+    {
+      "slug": "dnsimple_app_availability",
+      "name": "App Availability",
+      "description": "Checks domain registration status and expiration dates to ensure continuity of service.",
+      "defaultSeverity": "high",
+      "enabled": true
+    }
+  ],
+  "checkCount": 3,
+  "isActive": true
+}

@@ -4,12 +4,14 @@ import type { CredentialField } from '@/hooks/use-integration-platform';
 import { ComboboxDropdown } from '@trycompai/ui/combobox-dropdown';
 import MultipleSelector from '@trycompai/ui/multiple-selector';
 import {
-  Input,
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
+} from '@trycompai/ui/select';
+import {
+  Input,
   Textarea,
 } from '@trycompai/design-system';
 import { Eye, EyeOff } from 'lucide-react';
@@ -19,10 +21,14 @@ export function CredentialInput({
   field,
   value,
   onChange,
+  optionsOverride,
+  disabled = false,
 }: {
   field: CredentialField;
   value: string | string[];
   onChange: (value: string | string[]) => void;
+  optionsOverride?: { value: string; label: string }[];
+  disabled?: boolean;
 }) {
   const [showPassword, setShowPassword] = useState(false);
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
@@ -62,13 +68,19 @@ export function CredentialInput({
   }
 
   if (field.type === 'select') {
+    const options = optionsOverride ?? field.options ?? [];
+
     return (
-      <Select value={stringValue} onValueChange={(v) => { if (v) onChange(v); }}>
+      <Select
+        value={stringValue}
+        onValueChange={(v) => { if (v) onChange(v); }}
+        disabled={disabled}
+      >
         <SelectTrigger>
           <SelectValue placeholder={field.placeholder || 'Select...'} />
         </SelectTrigger>
         <SelectContent>
-          {field.options?.map((opt) => (
+          {options.map((opt) => (
             <SelectItem key={opt.value} value={opt.value}>
               {opt.label}
             </SelectItem>
@@ -109,7 +121,7 @@ export function CredentialInput({
 
   if (field.type === 'multi-select') {
     const selectedValues = Array.isArray(value) ? value : [];
-    const options = field.options ?? [];
+    const options = optionsOverride ?? field.options ?? [];
 
     return (
       <MultipleSelector
@@ -121,6 +133,7 @@ export function CredentialInput({
         defaultOptions={options.map((opt) => ({ value: opt.value, label: opt.label }))}
         options={options.map((opt) => ({ value: opt.value, label: opt.label }))}
         placeholder={field.placeholder || 'Select...'}
+        disabled={disabled}
         creatable={options.length === 0}
         emptyIndicator={<p className="text-center text-sm text-muted-foreground">No options</p>}
       />

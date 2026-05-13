@@ -1,3 +1,63 @@
+# [3.51.0](https://github.com/trycompai/comp/compare/v3.50.0...v3.51.0) (2026-05-12)
+
+
+### Features
+
+* **admin:** integrate FrameworksModule and AdminFrameworksController into admin organizations module ([3ad5001](https://github.com/trycompai/comp/commit/3ad50010b48a361c038ccfa7136396c11946ba6a))
+* **questionnaire:** implement PDF extraction fallback to OpenAI ([8b0626a](https://github.com/trycompai/comp/commit/8b0626a43d79a8e65faef73d53d7886e79322661))
+
+# [3.50.0](https://github.com/trycompai/comp/compare/v3.49.3...v3.50.0) (2026-05-12)
+
+
+### Features
+
+* **admin:** manage organization frameworks ([ae1b5fe](https://github.com/trycompai/comp/commit/ae1b5fe09c75477f99cb4133f36d297ef2925326))
+
+## [3.49.3](https://github.com/trycompai/comp/compare/v3.49.2...v3.49.3) (2026-05-11)
+
+
+### Bug Fixes
+
+* **trigger:** extend remediation preview timeout ([32cf439](https://github.com/trycompai/comp/commit/32cf43995d590d3c40696c00899d8e6884e4df23))
+
+## [3.49.2](https://github.com/trycompai/comp/compare/v3.49.1...v3.49.2) (2026-05-11)
+
+
+### Bug Fixes
+
+* **api:** prevent stack overflow during base64 file parsing ([e8eaa0d](https://github.com/trycompai/comp/commit/e8eaa0dc59a6d9137b1314704a186a966e30b46d))
+* **app:** use re-encoding check for strict base64 validation ([35092d7](https://github.com/trycompai/comp/commit/35092d71b59b5cb7d47453fc0f498237a2c1dec0))
+* **cloud-security:** ignore unused govcloud session token ([cce868e](https://github.com/trycompai/comp/commit/cce868ec24e3ec9ca22b61ddf75c27ed27310968))
+
+## [3.49.1](https://github.com/trycompai/comp/compare/v3.49.0...v3.49.1) (2026-05-11)
+
+
+### Bug Fixes
+
+* **app:** put 'Remove Device' menu in line ([e288a2c](https://github.com/trycompai/comp/commit/e288a2c72e4e6ae4d7464e42bf765ab51f3b6829))
+* **app:** unable to select the options in integration settings sheet ([8af9ef7](https://github.com/trycompai/comp/commit/8af9ef79d77167fa55ea8a5d5164100476329e18))
+* **questionnaire-storage:** sanitize original file name in uploadQuestionnaireFile function ([6c86bff](https://github.com/trycompai/comp/commit/6c86bff5ead16a6186823e28e710d811894d71e9))
+
+# [3.49.0](https://github.com/trycompai/comp/compare/v3.48.0...v3.49.0) (2026-05-10)
+
+
+### Features
+
+* **cloud-security:** add AWS partition handling and GovCloud support ([8558265](https://github.com/trycompai/comp/commit/85582656bd1dff5ab25f700ffefbc9994434cb68))
+
+# [3.48.0](https://github.com/trycompai/comp/compare/v3.47.0...v3.48.0) (2026-05-08)
+
+
+### Bug Fixes
+
+* **people:** default portal email checkbox to checked, respect user choice ([#2806](https://github.com/trycompai/comp/issues/2806)) ([c413a9a](https://github.com/trycompai/comp/commit/c413a9a2f7171f109786f1aa4dea3748530b0c1c))
+* **people:** restore isActive when re-inviting deactivated contractor ([#2801](https://github.com/trycompai/comp/issues/2801)) ([871d706](https://github.com/trycompai/comp/commit/871d70644fd0995ff33a7c8d483654dd0f6a5be0))
+
+
+### Features
+
+* **people:** add option to trigger employee portal emails ([#2800](https://github.com/trycompai/comp/issues/2800)) ([42d06db](https://github.com/trycompai/comp/commit/42d06db1c6c7a41c311cc89d923be2d81f335393))
+
 # [3.47.0](https://github.com/trycompai/comp/compare/v3.46.1...v3.47.0) (2026-05-08)
 
 

@@ -7,6 +7,10 @@ import {
   PageHeader,
   PageHeaderDescription,
   PageLayout,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
   Tabs,
   TabsContent,
   TabsList,
@@ -21,6 +25,7 @@ import { ContextTab } from './ContextTab';
 import { EvidenceTab } from './EvidenceTab';
 import { FeatureFlagsTab } from './FeatureFlagsTab';
 import { FindingsTab } from './FindingsTab';
+import { FrameworksTab } from './FrameworksTab';
 import { MembersTab } from './MembersTab';
 import { OrganizationDetail } from './OrganizationDetail';
 import { PoliciesTab } from './PoliciesTab';
@@ -52,6 +57,21 @@ export interface AdminOrgDetail {
   backgroundCheckStepEnabled: boolean;
   members: OrgMember[];
 }
+
+const ADMIN_ORG_TABS = [
+  { value: 'overview', label: 'Overview' },
+  { value: 'members', label: 'Members' },
+  { value: 'policies', label: 'Policies' },
+  { value: 'findings', label: 'Findings' },
+  { value: 'frameworks', label: 'Frameworks' },
+  { value: 'tasks', label: 'Tasks' },
+  { value: 'vendors', label: 'Vendors' },
+  { value: 'context', label: 'Context' },
+  { value: 'evidence', label: 'Evidence' },
+  { value: 'timeline', label: 'Timeline' },
+  { value: 'billing', label: 'Billing' },
+  { value: 'feature-flags', label: 'Feature Flags' },
+];
 
 export function AdminOrgTabs({ org, currentOrgId }: { org: AdminOrgDetail; currentOrgId: string }) {
   const router = useRouter();
@@ -118,7 +138,7 @@ export function AdminOrgTabs({ org, currentOrgId }: { org: AdminOrgDetail; curre
               { label: org.name, isCurrent: true },
             ]}
             actions={
-              <div className="flex items-center gap-3">
+              <div className="flex flex-wrap items-center gap-3">
                 <Badge variant={hasAccess ? 'default' : 'destructive'}>
                   {hasAccess ? 'Active' : 'Inactive'}
                 </Badge>
@@ -143,19 +163,36 @@ export function AdminOrgTabs({ org, currentOrgId }: { org: AdminOrgDetail; curre
               </div>
             }
             tabs={
-              <TabsList variant="underline">
-                <TabsTrigger value="overview">Overview</TabsTrigger>
-                <TabsTrigger value="members">Members</TabsTrigger>
-                <TabsTrigger value="policies">Policies</TabsTrigger>
-                <TabsTrigger value="findings">Findings</TabsTrigger>
-                <TabsTrigger value="tasks">Tasks</TabsTrigger>
-                <TabsTrigger value="vendors">Vendors</TabsTrigger>
-                <TabsTrigger value="context">Context</TabsTrigger>
-                <TabsTrigger value="evidence">Evidence</TabsTrigger>
-                <TabsTrigger value="timeline">Timeline</TabsTrigger>
-                <TabsTrigger value="billing">Billing</TabsTrigger>
-                <TabsTrigger value="feature-flags">Feature Flags</TabsTrigger>
-              </TabsList>
+              <div className="w-full">
+                <div className="xl:hidden">
+                  <Select
+                    value={activeTab}
+                    onValueChange={(value) => {
+                      if (value) setActiveTab(value);
+                    }}
+                  >
+                    <SelectTrigger size="sm">
+                      {ADMIN_ORG_TABS.find((tab) => tab.value === activeTab)?.label ?? 'Overview'}
+                    </SelectTrigger>
+                    <SelectContent alignItemWithTrigger={false}>
+                      {ADMIN_ORG_TABS.map((tab) => (
+                        <SelectItem key={tab.value} value={tab.value}>
+                          {tab.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="hidden xl:block">
+                  <TabsList variant="underline">
+                    {ADMIN_ORG_TABS.map((tab) => (
+                      <TabsTrigger key={tab.value} value={tab.value}>
+                        {tab.label}
+                      </TabsTrigger>
+                    ))}
+                  </TabsList>
+                </div>
+              </div>
             }
           >
             {org.website && (
@@ -184,6 +221,9 @@ export function AdminOrgTabs({ org, currentOrgId }: { org: AdminOrgDetail; curre
         </TabsContent>
         <TabsContent value="findings">
           <FindingsTab orgId={org.id} />
+        </TabsContent>
+        <TabsContent value="frameworks">
+          <FrameworksTab orgId={org.id} />
         </TabsContent>
         <TabsContent value="tasks">
           <TasksTab orgId={org.id} />

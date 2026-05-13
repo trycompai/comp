@@ -2,8 +2,7 @@ import { openai } from '@ai-sdk/openai';
 import { generateObject, jsonSchema } from 'ai';
 import {
   MAX_CHUNK_SIZE_CHARS,
-  MIN_CHUNK_SIZE_CHARS,
-  MAX_QUESTIONS_PER_CHUNK,
+  MAX_CLASSIFICATION_CONCURRENCY,
   PARSING_MODEL,
   QUESTION_PARSING_SYSTEM_PROMPT,
 } from './constants';
@@ -16,6 +15,21 @@ export interface QuestionAnswer {
 export interface ChunkInfo {
   content: string;
   questionCount: number;
+}
+
+export type QuestionnaireItemClassification =
+  | 'answerable_item'
+  | 'metadata'
+  | 'section_header'
+  | 'instruction'
+  | 'guidance'
+  | 'example'
+  | 'scoring'
+  | 'noise';
+
+interface ClassifiedQuestionnaireItem {
+  text: string;
+  classification: QuestionnaireItemClassification;
 }
 
 export interface QuestionParserLogger {
@@ -31,6 +45,38 @@ const defaultLogger: QuestionParserLogger = {
   error: () => {},
 };
 
+export function sanitizeParsedAnswer(
+  answer: string | null | undefined,
+): string | null {
+  const trimmed = answer?.trim();
+  if (!trimmed) {
+    return null;
+  }
+
+  const normalized = trimmed
+    .normalize('NFKD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/\s+/g, ' ')
+    .trim();
+
+  const isPlaceholder =
+    /^(?:\d+#\s*-\s*)?a\s+(?:remplir|completer)$/.test(normalized) ||
+    normalized === 'to be completed' ||
+    normalized === 'to fill';
+
+  const isScoringOptions =
+    /^\((?:oui|yes|non|no|n\/a|na)\s*:\s*-?\d+(?:\s*,\s*(?:oui|yes|non|no|n\/a|na)\s*:\s*-?\d+)*\)$/.test(
+      normalized,
+    );
+
+  if (isPlaceholder || isScoringOptions) {
+    return null;
+  }
+
+  return trimmed;
+}
+
 /**
  * Parses questions and answers from extracted content using LLM
  * Handles large content by chunking and processing in parallel
@@ -41,8 +87,6 @@ export async function parseQuestionsAndAnswers(
 ): Promise<QuestionAnswer[]> {
   const chunkInfos = buildQuestionAwareChunks(content, {
     maxChunkChars: MAX_CHUNK_SIZE_CHARS,
-    minChunkChars: MIN_CHUNK_SIZE_CHARS,
-    maxQuestionsPerChunk: MAX_QUESTIONS_PER_CHUNK,
   });
 
   if (chunkInfos.length === 0) {
@@ -50,30 +94,19 @@ export async function parseQuestionsAndAnswers(
     return [];
   }
 
-  if (chunkInfos.length === 1) {
-    logger.info('Processing content as a single chunk', {
-      contentLength: chunkInfos[0].content.length,
-      estimatedQuestions: chunkInfos[0].questionCount,
-    });
-    return parseChunkQuestionsAndAnswers(chunkInfos[0].content, 0, 1);
-  }
+  logger.info('Classifying questionnaire content in chunks', {
+    contentLength: content.length,
+    totalChunks: chunkInfos.length,
+    concurrency: MAX_CLASSIFICATION_CONCURRENCY,
+  });
 
-  logger.info(
-    'Chunking content by individual questions for parallel processing',
-    {
-      contentLength: content.length,
-      totalChunks: chunkInfos.length,
-      questionsPerChunk: 1,
-    },
-  );
-
-  // Process all chunks in parallel for maximum speed
   const parseStartTime = Date.now();
-  const allPromises = chunkInfos.map((chunk, index) =>
-    parseChunkQuestionsAndAnswers(chunk.content, index, chunkInfos.length),
+  const allResults = await mapWithConcurrency(
+    chunkInfos.map((chunk, index) => ({ chunk, index })),
+    MAX_CLASSIFICATION_CONCURRENCY,
+    ({ chunk, index }) =>
+      parseChunkQuestionsAndAnswers(chunk.content, index, chunkInfos.length),
   );
-
-  const allResults = await Promise.all(allPromises);
   const parseTime = ((Date.now() - parseStartTime) / 1000).toFixed(2);
 
   const totalRawQuestions = allResults.reduce(
@@ -81,7 +114,7 @@ export async function parseQuestionsAndAnswers(
     0,
   );
 
-  logger.info('All chunks processed in parallel', {
+  logger.info('All chunks classified', {
     totalChunks: chunkInfos.length,
     parseTimeSeconds: parseTime,
     totalQuestions: totalRawQuestions,
@@ -92,7 +125,7 @@ export async function parseQuestionsAndAnswers(
 
   for (const qaArray of allResults) {
     for (const qa of qaArray) {
-      const normalizedQuestion = qa.question.toLowerCase().trim();
+      const normalizedQuestion = normalizeQuestionForDedupe(qa.question);
       if (!seenQuestions.has(normalizedQuestion)) {
         seenQuestions.set(normalizedQuestion, qa);
       }
@@ -123,57 +156,68 @@ export async function parseChunkQuestionsAndAnswers(
       schema: jsonSchema({
         type: 'object',
         properties: {
-          questionsAndAnswers: {
+          items: {
             type: 'array',
             items: {
               type: 'object',
               properties: {
-                question: { type: 'string', description: 'The question text' },
-                answer: {
-                  anyOf: [{ type: 'string' }, { type: 'null' }],
+                text: {
+                  type: 'string',
                   description:
-                    'The answer to the question. Use null if no answer is provided.',
+                    'The exact text of the content block or row being classified.',
+                },
+                classification: {
+                  type: 'string',
+                  enum: [
+                    'answerable_item',
+                    'metadata',
+                    'section_header',
+                    'instruction',
+                    'guidance',
+                    'example',
+                    'scoring',
+                    'noise',
+                  ],
+                  description:
+                    'Whether this text is an answerable questionnaire item or non-answerable content.',
                 },
               },
-              required: ['question', 'answer'],
+              required: ['text', 'classification'],
               additionalProperties: false,
             },
           },
         },
-        required: ['questionsAndAnswers'],
+        required: ['items'],
         additionalProperties: false,
       }),
       system: QUESTION_PARSING_SYSTEM_PROMPT,
       prompt: buildParsingPrompt(chunk, chunkIndex, totalChunks),
     });
 
-    const parsed = (object as { questionsAndAnswers?: QuestionAnswer[] })
-      ?.questionsAndAnswers;
+    const parsed = (object as { items?: ClassifiedQuestionnaireItem[] })?.items;
 
-    // Handle case where LLM returns unexpected response
     if (!parsed || !Array.isArray(parsed)) {
       return [];
     }
 
-    // Post-process to ensure empty strings are converted to null
     return parsed
       .filter(
-        (qa) => qa && typeof qa.question === 'string' && qa.question.trim(),
+        (item) =>
+          item &&
+          item.classification === 'answerable_item' &&
+          typeof item.text === 'string' &&
+          item.text.trim(),
       )
-      .map((qa) => ({
-        question: qa.question.trim(),
-        answer:
-          qa.answer && typeof qa.answer === 'string' && qa.answer.trim() !== ''
-            ? qa.answer.trim()
-            : null,
+      .map((item) => ({
+        question: item.text.trim(),
+        answer: null,
       }));
   } catch (error) {
-    // Log error but don't fail the entire parsing
     console.error(
       `Error parsing chunk ${chunkIndex + 1}/${totalChunks}:`,
       error,
     );
-    return [];
+    throw error;
   }
 }
 
@@ -183,13 +227,14 @@ function buildParsingPrompt(
   totalChunks: number,
 ): string {
   const instructions = `Instructions:
-- Extract every item the respondent must address from this questionnaire data, paired with its answer.
-- Items include: interrogative questions (ending in "?" or starting with What/How/Do/Is/Are/etc.), form fields ("1.1 Vendor Name"), AND compliance/requirement statements ("The organization must X", "The organization has X", "We have X"). All are valid items.
-- IMPORTANT: Extract the FULL item text, not just IDs like "SQ14.3". Find the column with the actual sentences.
-- Match each item to its corresponding Response/Answer/Comment from the same row.
-- If the Response/Answer is empty or missing, set answer to null.
-- Skip pure section headers (e.g., "Information Security Program") and metadata (Company Name, Date).
-- If the document is a single-column checklist of statements, treat each row as one item with answer = null.`;
+- Classify the provided questionnaire rows/blocks.
+- Return only blocks that the respondent is expected to answer as classification = "answerable_item".
+- An answerable item can be a question, request, field label, or compliance statement. It does not need a question mark and can be in any language.
+- Extract the FULL item text, not just IDs like "SQ14.3".
+- Classify pure section headers, metadata, instructions, scoring/options, examples, guidance, remediation plans, and placeholders as non-answerable.
+- Never classify values like "(Oui : 0, Non : 3)", "A remplir", "A compléter", or "To be completed" as answerable.
+- Do not return existing answers from the source file. This upload flow generates answers later, so persisted answers must be null.
+- Prefer high recall for real answerable items, but do not include obvious metadata or instructions just to avoid returning zero items.`;
 
   if (totalChunks > 1) {
     return `${instructions}
@@ -210,11 +255,7 @@ ${chunk}`;
  */
 export function buildQuestionAwareChunks(
   content: string,
-  options: {
-    maxChunkChars: number;
-    minChunkChars: number;
-    maxQuestionsPerChunk: number;
-  },
+  options: { maxChunkChars: number },
 ): ChunkInfo[] {
   const trimmedContent = content.trim();
   if (!trimmedContent) {
@@ -224,7 +265,7 @@ export function buildQuestionAwareChunks(
   const chunks: ChunkInfo[] = [];
   const lines = trimmedContent.split(/\r?\n/);
   let currentChunk: string[] = [];
-  let currentQuestionFound = false;
+  let currentSize = 0;
 
   const pushChunk = () => {
     const chunkText = currentChunk.join('\n').trim();
@@ -233,30 +274,24 @@ export function buildQuestionAwareChunks(
     }
     chunks.push({
       content: chunkText,
-      questionCount: 1,
+      questionCount: estimateQuestionCount(chunkText),
     });
     currentChunk = [];
-    currentQuestionFound = false;
+    currentSize = 0;
   };
 
   for (const line of lines) {
-    const trimmedLine = line.trim();
-    const isEmpty = trimmedLine.length === 0;
-    const looksLikeQuestion = !isEmpty && looksLikeQuestionLine(trimmedLine);
-
-    // If we find a new question and we already have a question in the current chunk, start a new chunk
-    if (looksLikeQuestion && currentQuestionFound && currentChunk.length > 0) {
+    const lineSize = line.length + 1;
+    if (
+      currentChunk.length > 0 &&
+      currentSize + lineSize > options.maxChunkChars
+    ) {
       pushChunk();
     }
 
-    // Add line to current chunk (including empty lines for context)
-    if (!isEmpty || currentChunk.length > 0) {
+    if (line.trim() || currentChunk.length > 0) {
       currentChunk.push(line);
-    }
-
-    // Mark that we've found a question in this chunk
-    if (looksLikeQuestion) {
-      currentQuestionFound = true;
+      currentSize += lineSize;
     }
   }
 
@@ -265,15 +300,41 @@ export function buildQuestionAwareChunks(
     pushChunk();
   }
 
-  // If no questions were detected, return the entire content as a single chunk
-  return chunks.length > 0
-    ? chunks
-    : [
-        {
-          content: trimmedContent,
-          questionCount: estimateQuestionCount(trimmedContent),
-        },
-      ];
+  return chunks;
+}
+
+async function mapWithConcurrency<T, R>(
+  items: T[],
+  concurrency: number,
+  worker: (item: T) => Promise<R>,
+): Promise<R[]> {
+  const results: R[] = [];
+  let nextIndex = 0;
+
+  const runWorker = async (): Promise<void> => {
+    while (nextIndex < items.length) {
+      const currentIndex = nextIndex;
+      nextIndex += 1;
+      results[currentIndex] = await worker(items[currentIndex]);
+    }
+  };
+
+  await Promise.all(
+    Array.from({ length: Math.min(concurrency, items.length) }, () =>
+      runWorker(),
+    ),
+  );
+
+  return results;
+}
+
+function normalizeQuestionForDedupe(question: string): string {
+  return question
+    .toLowerCase()
+    .replace(/^\[[^\]]+\]\s*/, '')
+    .replace(/^\d+\.\d+\s*/, '')
+    .replace(/\s+/g, ' ')
+    .trim();
 }
 
 /**
@@ -287,7 +348,7 @@ export function looksLikeQuestionLine(line: string): boolean {
   const questionLabel = /question\s*:/i;
 
   // Line starts with optional number prefix, then explicit question/q label
-  const explicitQuestionPrefix = /^(?:\d+\s*[\).\]]\s*)?(?:question|q)\b/i;
+  const explicitQuestionPrefix = /^(?:\d+\s*[.)\]]\s*)?(?:question|q)\b/i;
 
   // Interrogative words at the START of line
   const interrogativePrefix =
@@ -296,7 +357,7 @@ export function looksLikeQuestionLine(line: string): boolean {
   // Numbered questions: "06. Do you have...", "1) What is...", "Q1: How do..."
   // This handles questions where a number/prefix comes before the interrogative
   const numberedQuestionWithInterrogative =
-    /^(?:\d+\s*[\).\]:]\s*|[qQ]\d*\s*[\).\]:]\s*)(?:what|why|how|when|where|is|are|does|do|can|will|should|have|list|describe|explain|if)\b/i;
+    /^(?:\d+\s*[.):\]]\s*|[qQ]\d*\s*[.):\]]\s*)(?:what|why|how|when|where|is|are|does|do|can|will|should|have|list|describe|explain|if)\b/i;
 
   // Form-style numbered fields: "1.1 Vendor Name", "2.3 Contact Email", "1.4 Company Address"
   // Pattern: number.number followed by a word (the field label)
