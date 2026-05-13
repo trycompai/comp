@@ -19,7 +19,7 @@ export async function hasPortalAccess({
 
   for (const role of roles) {
     if (builtInNames.has(role)) {
-      if (BUILT_IN_ROLE_PERMISSIONS[role]?.portal?.length > 0) return true;
+      if (BUILT_IN_ROLE_PERMISSIONS[role]?.portal?.length) return true;
       if (BUILT_IN_ROLE_OBLIGATIONS[role]?.compliance) return true;
     } else {
       customRoleNames.push(role);

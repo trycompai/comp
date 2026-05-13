@@ -10,7 +10,7 @@ import { InvitePortalEmail } from '@trycompai/email';
 import {
   BUILT_IN_ROLE_OBLIGATIONS,
   BUILT_IN_ROLE_PERMISSIONS,
-  RESTRICTED_ROLES,
+  isRestrictedRole,
   parseRoleObligations,
   parseRolePermissions,
 } from '@trycompai/auth';
@@ -58,9 +58,7 @@ export class PeopleInviteService {
         }
 
         const email = invite.email.toLowerCase();
-        const restrictedRoles: readonly string[] = RESTRICTED_ROLES;
-        const isStrictlyEmployee =
-          invite.roles.every((role) => restrictedRoles.includes(role));
+        const isStrictlyEmployee = invite.roles.every(isRestrictedRole);
 
         const hasCompliance = await this.rolesHaveComplianceObligation(
           invite.roles,
@@ -447,11 +445,8 @@ export class PeopleInviteService {
     );
     if (hasWriteAccess) return null;
 
-    const restrictedSet: readonly string[] = RESTRICTED_ROLES;
     const disallowed = targetRoles.filter(
-      (r) =>
-        !restrictedSet.includes(r) &&
-        Object.hasOwn(BUILT_IN_ROLE_PERMISSIONS, r),
+      (r) => !isRestrictedRole(r) && Object.hasOwn(BUILT_IN_ROLE_PERMISSIONS, r),
     );
     if (disallowed.length > 0) {
       return `You cannot assign privileged roles: ${disallowed.join(', ')}.`;
