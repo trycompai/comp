@@ -63,10 +63,39 @@ export const checkLabels: Record<PentestCheck, string> = {
   business_logic: 'Business logic',
 };
 
+export const checkDescriptions: Record<PentestCheck, string> = {
+  discovery: 'Maps the target attack surface — endpoints, subdomains, and exposed services.',
+  secrets_info_disclosure:
+    'Looks for leaked API keys, tokens, debug output, and exposed files like .git or .env.',
+  technology_config:
+    'Checks for missing security headers, outdated libraries, and exposed admin panels.',
+  xss: 'Cross-site scripting — reflected, stored, and DOM-based variants.',
+  injection: 'SQL, NoSQL, command, and LDAP injection in user-controlled inputs.',
+  authentication:
+    'Login flow weaknesses, weak password policies, and broken session handling.',
+  authorization: 'Privilege escalation and missing access controls between roles.',
+  idor_bola:
+    'Insecure Direct Object References — whether one user can access another user\'s data by changing an ID.',
+  ssrf_xxe: 'Server-side request forgery and XML external-entity attacks.',
+  csrf: 'Cross-site request forgery — actions performed without user consent.',
+  race_conditions:
+    'Concurrency bugs like double-spend and time-of-check vs time-of-use issues.',
+  business_logic: 'App-specific workflow abuse (e.g., skipping payment or approval steps).',
+};
+
 export const evidenceLabels: Record<EvidenceLevel, string> = {
   report_only: 'Report only',
   safe_proof: 'Safe proof',
   impact_proof: 'Impact proof',
+};
+
+export const evidenceDescriptions: Record<EvidenceLevel, string> = {
+  report_only:
+    'Findings are reported without exploitation. No active attack attempted. Fastest and safest — some findings may need manual confirmation.',
+  safe_proof:
+    'Findings are validated with non-destructive proofs. Safe for production and staging. Recommended default.',
+  impact_proof:
+    'Findings are validated with active exploitation attempts (no data destruction). May trigger WAF alerts or rate limits. Use on staging or with explicit owner approval.',
 };
 
 const checkWeights: Record<PentestCheck, number> = {
