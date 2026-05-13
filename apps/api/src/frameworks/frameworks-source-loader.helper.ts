@@ -38,10 +38,12 @@ export interface LoadedFrameworkSources {
     automationStatus: TaskAutomationStatus;
   }>;
   groupedRelations: Array<{
+    frameworkId: string;
     controlTemplateId: string;
     requirementTemplateIds: string[];
     policyTemplateIds: string[];
     taskTemplateIds: string[];
+    documentTypes: EvidenceFormType[];
   }>;
   latestVersionByFrameworkId: Map<string, string>;
   frameworksWithoutVersion: string[];
@@ -87,28 +89,33 @@ export async function loadFrameworkSources({
   const policiesMap = new Map<string, LoadedFrameworkSources['policyTemplates'][number]>();
   const tasksMap = new Map<string, LoadedFrameworkSources['taskTemplates'][number]>();
 
-  // groupedRelations accumulates per-control edges; when a control appears in
-  // multiple frameworks we union its requirement/policy/task id sets.
+  // groupedRelations accumulates per-framework control edges. A reusable
+  // control can carry different policy/task/document links in each framework.
   const relationsByControl = new Map<
     string,
     {
+      frameworkId: string;
       controlTemplateId: string;
       requirementTemplateIds: Set<string>;
       policyTemplateIds: Set<string>;
       taskTemplateIds: Set<string>;
+      documentTypes: Set<EvidenceFormType>;
     }
   >();
 
-  const getOrCreateRelation = (controlTemplateId: string) => {
-    let rel = relationsByControl.get(controlTemplateId);
+  const getOrCreateRelation = (frameworkId: string, controlTemplateId: string) => {
+    const key = `${frameworkId}::${controlTemplateId}`;
+    let rel = relationsByControl.get(key);
     if (!rel) {
       rel = {
+        frameworkId,
         controlTemplateId,
         requirementTemplateIds: new Set(),
         policyTemplateIds: new Set(),
         taskTemplateIds: new Set(),
+        documentTypes: new Set(),
       };
-      relationsByControl.set(controlTemplateId, rel);
+      relationsByControl.set(key, rel);
     }
     return rel;
   };
@@ -129,10 +136,13 @@ export async function loadFrameworkSources({
           documentTypes: (c.documentTypes ?? []) as EvidenceFormType[],
         });
       }
-      const rel = getOrCreateRelation(c.id);
+      const rel = getOrCreateRelation(frameworkId, c.id);
       for (const rid of c.requirementIds) rel.requirementTemplateIds.add(rid);
       for (const pid of c.policyIds) rel.policyTemplateIds.add(pid);
       for (const tid of c.taskIds) rel.taskTemplateIds.add(tid);
+      for (const formType of c.documentTypes ?? []) {
+        rel.documentTypes.add(formType as EvidenceFormType);
+      }
     }
   }
 
@@ -223,19 +233,53 @@ export async function loadFrameworkSources({
           where: { id: { in: fallbackRequirementIds } },
           select: { id: true },
         },
-        policyTemplates: { select: { id: true } },
-        taskTemplates: { select: { id: true } },
+        frameworkPolicyLinks: {
+          where: { frameworkId: { in: frameworksWithoutVersion } },
+          select: { frameworkId: true, policyTemplateId: true },
+        },
+        frameworkTaskLinks: {
+          where: { frameworkId: { in: frameworksWithoutVersion } },
+          select: { frameworkId: true, taskTemplateId: true },
+        },
+        frameworkDocumentLinks: {
+          where: { frameworkId: { in: frameworksWithoutVersion } },
+          select: { frameworkId: true, formType: true },
+        },
       },
     });
     for (const cr of controlRelationsLive) {
-      const rel = getOrCreateRelation(cr.id);
-      for (const r of cr.requirements) rel.requirementTemplateIds.add(r.id);
-      for (const p of cr.policyTemplates) rel.policyTemplateIds.add(p.id);
-      for (const t of cr.taskTemplates) rel.taskTemplateIds.add(t.id);
+      const frameworkIds = new Set(
+        cr.requirements
+          .map((r) => requirementToFrameworkId.get(r.id))
+          .filter((id): id is string => Boolean(id)),
+      );
+      for (const frameworkId of frameworkIds) {
+        const rel = getOrCreateRelation(frameworkId, cr.id);
+        for (const r of cr.requirements) {
+          if (requirementToFrameworkId.get(r.id) === frameworkId) {
+            rel.requirementTemplateIds.add(r.id);
+          }
+        }
+        for (const link of cr.frameworkPolicyLinks) {
+          if (link.frameworkId === frameworkId) {
+            rel.policyTemplateIds.add(link.policyTemplateId);
+          }
+        }
+        for (const link of cr.frameworkTaskLinks) {
+          if (link.frameworkId === frameworkId) {
+            rel.taskTemplateIds.add(link.taskTemplateId);
+          }
+        }
+        for (const link of cr.frameworkDocumentLinks) {
+          if (link.frameworkId === frameworkId) {
+            rel.documentTypes.add(link.formType);
+          }
+        }
+      }
     }
 
     const fallbackPolicyIds = controlRelationsLive.flatMap((cr) =>
-      cr.policyTemplates.map((p) => p.id),
+      cr.frameworkPolicyLinks.map((p) => p.policyTemplateId),
     );
     if (fallbackPolicyIds.length > 0) {
       const livePolicies = await tx.frameworkEditorPolicyTemplate.findMany({
@@ -256,7 +300,7 @@ export async function loadFrameworkSources({
     }
 
     const fallbackTaskIds = controlRelationsLive.flatMap((cr) =>
-      cr.taskTemplates.map((t) => t.id),
+      cr.frameworkTaskLinks.map((t) => t.taskTemplateId),
     );
     if (fallbackTaskIds.length > 0) {
       const liveTasks = await tx.frameworkEditorTaskTemplate.findMany({
@@ -278,10 +322,12 @@ export async function loadFrameworkSources({
   }
 
   const groupedRelations = Array.from(relationsByControl.values()).map((rel) => ({
+    frameworkId: rel.frameworkId,
     controlTemplateId: rel.controlTemplateId,
     requirementTemplateIds: Array.from(rel.requirementTemplateIds),
     policyTemplateIds: Array.from(rel.policyTemplateIds),
     taskTemplateIds: Array.from(rel.taskTemplateIds),
+    documentTypes: Array.from(rel.documentTypes),
   }));
 
   return {

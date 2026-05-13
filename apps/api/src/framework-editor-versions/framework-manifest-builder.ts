@@ -16,8 +16,18 @@ export async function buildManifestForFramework(frameworkId: string): Promise<Fr
           controlTemplates: {
             include: {
               requirements: { select: { id: true } },
-              policyTemplates: true,
-              taskTemplates: true,
+              frameworkPolicyLinks: {
+                where: { frameworkId },
+                include: { policyTemplate: true },
+              },
+              frameworkTaskLinks: {
+                where: { frameworkId },
+                include: { taskTemplate: true },
+              },
+              frameworkDocumentLinks: {
+                where: { frameworkId },
+                select: { formType: true },
+              },
             },
           },
         },
@@ -39,6 +49,12 @@ export async function buildManifestForFramework(frameworkId: string): Promise<Fr
 
   for (const req of framework.requirements) {
     for (const ct of req.controlTemplates) {
+      const policyTemplates = ct.frameworkPolicyLinks.map(
+        (link) => link.policyTemplate,
+      );
+      const taskTemplates = ct.frameworkTaskLinks.map(
+        (link) => link.taskTemplate,
+      );
       if (!controlsMap.has(ct.id)) {
         controlsMap.set(ct.id, {
           id: ct.id,
@@ -47,12 +63,12 @@ export async function buildManifestForFramework(frameworkId: string): Promise<Fr
           requirementIds: ct.requirements
             .map((r) => r.id)
             .filter((id) => ownRequirementIds.has(id)),
-          policyIds: ct.policyTemplates.map((p) => p.id),
-          taskIds: ct.taskTemplates.map((t) => t.id),
-          documentTypes: [...ct.documentTypes],
+          policyIds: policyTemplates.map((p) => p.id),
+          taskIds: taskTemplates.map((t) => t.id),
+          documentTypes: ct.frameworkDocumentLinks.map((link) => link.formType),
         });
       }
-      for (const pt of ct.policyTemplates) {
+      for (const pt of policyTemplates) {
         if (!policiesMap.has(pt.id)) {
           policiesMap.set(pt.id, {
             id: pt.id,
@@ -64,7 +80,7 @@ export async function buildManifestForFramework(frameworkId: string): Promise<Fr
           });
         }
       }
-      for (const tt of ct.taskTemplates) {
+      for (const tt of taskTemplates) {
         if (!tasksMap.has(tt.id)) {
           tasksMap.set(tt.id, {
             id: tt.id,

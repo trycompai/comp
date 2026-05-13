@@ -2,7 +2,6 @@ import {
   Injectable,
   Logger,
   BadRequestException,
-  ForbiddenException,
 } from '@nestjs/common';
 import { db } from '@db';
 import { triggerEmail } from '../email/trigger-email';
@@ -10,7 +9,10 @@ import { InviteEmail } from '../email/templates/invite-member';
 import { InvitePortalEmail } from '@trycompai/email';
 import {
   BUILT_IN_ROLE_OBLIGATIONS,
-  RESTRICTED_ROLES,
+  BUILT_IN_ROLE_PERMISSIONS,
+  isRestrictedRole,
+  parseRoleObligations,
+  parseRolePermissions,
 } from '@trycompai/auth';
 import type { InviteItemDto } from './dto/invite-people.dto';
 import { checkAutoCompletePhases } from '../frameworks/frameworks-timeline.helper';
@@ -37,38 +39,26 @@ export class PeopleInviteService {
   }): Promise<InviteResult[]> {
     const { organizationId, invites, callerUserId, callerRole } = params;
 
-    const isAdmin =
-      callerRole.includes('admin') || callerRole.includes('owner');
-    const isAuditor = callerRole.includes('auditor');
-
-    if (!isAdmin && !isAuditor) {
-      throw new ForbiddenException(
-        "You don't have permission to invite members.",
-      );
-    }
+    const callerMemberActions = await this.resolveCallerMemberActions(
+      callerRole,
+      organizationId,
+    );
 
     const results: InviteResult[] = [];
 
     for (const invite of invites) {
       try {
-        // Auditors can only invite auditors
-        if (isAuditor && !isAdmin) {
-          const onlyAuditor =
-            invite.roles.length === 1 && invite.roles[0] === 'auditor';
-          if (!onlyAuditor) {
-            results.push({
-              email: invite.email,
-              success: false,
-              error: "Auditors can only invite users with the 'auditor' role.",
-            });
-            continue;
-          }
+        const roleError = this.validateAssignableRoles(
+          invite.roles,
+          callerMemberActions,
+        );
+        if (roleError) {
+          results.push({ email: invite.email, success: false, error: roleError });
+          continue;
         }
 
         const email = invite.email.toLowerCase();
-        const restrictedRoles: readonly string[] = RESTRICTED_ROLES;
-        const isStrictlyEmployee =
-          invite.roles.every((role) => restrictedRoles.includes(role));
+        const isStrictlyEmployee = invite.roles.every(isRestrictedRole);
 
         const hasCompliance = await this.rolesHaveComplianceObligation(
           invite.roles,
@@ -436,13 +426,64 @@ export class PeopleInviteService {
       select: { obligations: true },
     });
 
-    return customRoles.some((role) => {
-      const obligations =
-        typeof role.obligations === 'string'
-          ? JSON.parse(role.obligations)
-          : role.obligations || {};
-      return !!obligations.compliance;
-    });
+    return customRoles.some((role) =>
+      parseRoleObligations(role.obligations).compliance,
+    );
+  }
+
+  /**
+   * Write-level = all CRUD actions. Callers with Write can assign any role.
+   * Partial access (e.g. auditor with create+read) can only assign
+   * restricted roles (employee/contractor) and custom roles.
+   */
+  private validateAssignableRoles(
+    targetRoles: string[],
+    callerMemberActions: Set<string>,
+  ): string | null {
+    const hasWriteAccess = ['create', 'read', 'update', 'delete'].every((a) =>
+      callerMemberActions.has(a),
+    );
+    if (hasWriteAccess) return null;
+
+    const disallowed = targetRoles.filter(
+      (r) => !isRestrictedRole(r) && Object.hasOwn(BUILT_IN_ROLE_PERMISSIONS, r),
+    );
+    if (disallowed.length > 0) {
+      return `You cannot assign privileged roles: ${disallowed.join(', ')}.`;
+    }
+    return null;
+  }
+
+  private async resolveCallerMemberActions(
+    callerRole: string,
+    organizationId: string,
+  ): Promise<Set<string>> {
+    const roles = callerRole.split(',').map((r) => r.trim());
+    const actions = new Set<string>();
+    const customRoleNames: string[] = [];
+
+    for (const role of roles) {
+      const builtIn = BUILT_IN_ROLE_PERMISSIONS[role];
+      if (builtIn?.member) {
+        for (const a of builtIn.member) actions.add(a);
+      }
+      if (!builtIn) customRoleNames.push(role);
+    }
+
+    if (customRoleNames.length > 0) {
+      const customRoles = await db.organizationRole.findMany({
+        where: { organizationId, name: { in: customRoleNames } },
+        select: { permissions: true },
+      });
+      for (const role of customRoles) {
+        const perms = parseRolePermissions(role.permissions);
+        if (perms?.member) {
+          for (const a of perms.member) actions.add(a);
+        }
+      }
+    }
+
+    return actions;
   }
 
   private buildPortalUrl(organizationId: string): string {

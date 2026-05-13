@@ -30,11 +30,12 @@ interface DocumentRow {
 
 interface DocumentsClientPageProps {
   controls: ControlWithDocumentTypes[];
+  frameworkId: string;
 }
 
 const columnHelper = createColumnHelper<DocumentRow>();
 
-export function DocumentsClientPage({ controls }: DocumentsClientPageProps) {
+export function DocumentsClientPage({ controls, frameworkId }: DocumentsClientPageProps) {
   const [controlsState, setControlsState] = useState(controls);
 
   const data: DocumentRow[] = useMemo(() => {
@@ -104,6 +105,7 @@ export function DocumentsClientPage({ controls }: DocumentsClientPageProps) {
             <DocumentControlsCell
               documentType={row.original.value}
               controls={row.original.controls}
+              frameworkId={frameworkId}
               onControlLinked={handleControlLinked}
               onControlUnlinked={handleControlUnlinked}
             />
@@ -129,7 +131,7 @@ export function DocumentsClientPage({ controls }: DocumentsClientPageProps) {
         ),
       }),
     ],
-    [handleControlLinked, handleControlUnlinked],
+    [handleControlLinked, handleControlUnlinked, frameworkId],
   );
 
   const [sorting, setSorting] = useState<SortingState>([]);

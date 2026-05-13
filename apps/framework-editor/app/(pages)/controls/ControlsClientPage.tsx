@@ -64,16 +64,20 @@ async function linkControlRelation(
   controlId: string,
   relation: string,
   itemId: string,
+  frameworkId?: string,
 ): Promise<void> {
-  await apiClient(`/control-template/${controlId}/${relation}/${itemId}`, { method: 'POST' });
+  const query = frameworkId ? `?frameworkId=${frameworkId}` : '';
+  await apiClient(`/control-template/${controlId}/${relation}/${itemId}${query}`, { method: 'POST' });
 }
 
 async function unlinkControlRelation(
   controlId: string,
   relation: string,
   itemId: string,
+  frameworkId?: string,
 ): Promise<void> {
-  await apiClient(`/control-template/${controlId}/${relation}/${itemId}`, { method: 'DELETE' });
+  const query = frameworkId ? `?frameworkId=${frameworkId}` : '';
+  await apiClient(`/control-template/${controlId}/${relation}/${itemId}${query}`, { method: 'DELETE' });
 }
 
 interface ControlsClientPageProps {
@@ -94,7 +98,7 @@ export function ControlsClientPage({ initialControls, emptyMessage, frameworkId 
       }) =>
         apiClient<{ id: string }>('/control-template', {
           method: 'POST',
-          body: JSON.stringify(data),
+          body: JSON.stringify({ ...data, frameworkId }),
         }),
       updateControl: (
         id: string,
@@ -102,14 +106,14 @@ export function ControlsClientPage({ initialControls, emptyMessage, frameworkId 
       ) =>
         apiClient(`/control-template/${id}`, {
           method: 'PATCH',
-          body: JSON.stringify(data),
+          body: JSON.stringify({ ...data, frameworkId }),
         }),
       deleteControl: (id: string) =>
         apiClient(`/control-template/${id}`, {
           method: 'DELETE',
         }),
     }),
-    [],
+    [frameworkId],
   );
   const initialGridData: ControlsPageGridData[] = useMemo(
     () =>
@@ -196,10 +200,10 @@ export function ControlsClientPage({ initialControls, emptyMessage, frameworkId 
               isNewRow={createdIds.has(row.original.id)}
               getAllItems={fetchAllPolicyTemplates}
               onLink={(controlId: string, ptId: string) =>
-                linkControlRelation(controlId, 'policy-templates', ptId)
+                linkControlRelation(controlId, 'policy-templates', ptId, frameworkId)
               }
               onUnlink={(controlId: string, ptId: string) =>
-                unlinkControlRelation(controlId, 'policy-templates', ptId)
+                unlinkControlRelation(controlId, 'policy-templates', ptId, frameworkId)
               }
               onLocalUpdate={(newItems: RelationalItem[]) =>
                 updateRelational(row.original.id, 'policyTemplates', newItems)
@@ -248,10 +252,10 @@ export function ControlsClientPage({ initialControls, emptyMessage, frameworkId 
               isNewRow={createdIds.has(row.original.id)}
               getAllItems={fetchAllTaskTemplates}
               onLink={(controlId: string, ttId: string) =>
-                linkControlRelation(controlId, 'task-templates', ttId)
+                linkControlRelation(controlId, 'task-templates', ttId, frameworkId)
               }
               onUnlink={(controlId: string, ttId: string) =>
-                unlinkControlRelation(controlId, 'task-templates', ttId)
+                unlinkControlRelation(controlId, 'task-templates', ttId, frameworkId)
               }
               onLocalUpdate={(newItems: RelationalItem[]) =>
                 updateRelational(row.original.id, 'taskTemplates', newItems)
@@ -314,7 +318,7 @@ export function ControlsClientPage({ initialControls, emptyMessage, frameworkId 
         ),
       }),
     ],
-    [updateCell, updateRelational, deleteRow, createdIds, handleDocumentTypesUpdate],
+    [updateCell, updateRelational, deleteRow, createdIds, handleDocumentTypesUpdate, frameworkId],
   );
 
   const [sorting, setSorting] = useState<SortingState>([]);

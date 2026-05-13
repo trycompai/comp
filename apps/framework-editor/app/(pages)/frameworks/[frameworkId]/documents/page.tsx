@@ -23,5 +23,5 @@ export default async function Page({
     `/framework/${frameworkId}/documents`,
   );
 
-  return <DocumentsClientPage controls={controls} />;
+  return <DocumentsClientPage controls={controls} frameworkId={frameworkId} />;
 }

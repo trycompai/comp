@@ -238,6 +238,79 @@ async function replayUndo(
     await tx.$executeRaw`INSERT INTO "_ControlToTask" ("A", "B") VALUES ${rows} ON CONFLICT ("A", "B") DO NOTHING`;
   }
 
+  const scopedPolicyLinks = ctx.undo.frameworkControlPolicyLinks ?? {
+    connected: [],
+    disconnected: [],
+  };
+  const scopedTaskLinks = ctx.undo.frameworkControlTaskLinks ?? {
+    connected: [],
+    disconnected: [],
+  };
+  const scopedDocumentLinks = ctx.undo.frameworkControlDocumentTypeLinks ?? {
+    connected: [],
+    disconnected: [],
+  };
+
+  for (const link of scopedPolicyLinks.connected) {
+    await tx.frameworkControlPolicyLink.deleteMany({
+      where: {
+        frameworkInstanceId: ctx.syncOp.frameworkInstanceId,
+        controlId: link.controlId,
+        policyId: link.otherId,
+      },
+    });
+  }
+  if (scopedPolicyLinks.disconnected.length > 0) {
+    await tx.frameworkControlPolicyLink.createMany({
+      data: scopedPolicyLinks.disconnected.map((link) => ({
+        frameworkInstanceId: ctx.syncOp.frameworkInstanceId,
+        controlId: link.controlId,
+        policyId: link.otherId,
+      })),
+      skipDuplicates: true,
+    });
+  }
+
+  for (const link of scopedTaskLinks.connected) {
+    await tx.frameworkControlTaskLink.deleteMany({
+      where: {
+        frameworkInstanceId: ctx.syncOp.frameworkInstanceId,
+        controlId: link.controlId,
+        taskId: link.otherId,
+      },
+    });
+  }
+  if (scopedTaskLinks.disconnected.length > 0) {
+    await tx.frameworkControlTaskLink.createMany({
+      data: scopedTaskLinks.disconnected.map((link) => ({
+        frameworkInstanceId: ctx.syncOp.frameworkInstanceId,
+        controlId: link.controlId,
+        taskId: link.otherId,
+      })),
+      skipDuplicates: true,
+    });
+  }
+
+  for (const link of scopedDocumentLinks.connected) {
+    await tx.frameworkControlDocumentTypeLink.deleteMany({
+      where: {
+        frameworkInstanceId: ctx.syncOp.frameworkInstanceId,
+        controlId: link.controlId,
+        formType: normalizeFormType(link.otherId) as never,
+      },
+    });
+  }
+  if (scopedDocumentLinks.disconnected.length > 0) {
+    await tx.frameworkControlDocumentTypeLink.createMany({
+      data: scopedDocumentLinks.disconnected.map((link) => ({
+        frameworkInstanceId: ctx.syncOp.frameworkInstanceId,
+        controlId: link.controlId,
+        formType: normalizeFormType(link.otherId) as never,
+      })),
+      skipDuplicates: true,
+    });
+  }
+
   // Revert framework instance version pointer
   await tx.frameworkInstance.update({
     where: { id: ctx.syncOp.frameworkInstanceId },
