@@ -21,7 +21,7 @@ import {
   TableRow,
 } from '@trycompai/design-system';
 import { Add } from '@trycompai/design-system/icons';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useState, type MouseEvent } from 'react';
 import { toast } from 'sonner';
 import { EditFindingSheet } from './EditFindingSheet';
 import { AdminFindingRow, getTargetLabel, type AdminFinding } from './AdminFindingRow';
@@ -73,8 +73,13 @@ export function FindingsTab({ orgId }: { orgId: string }) {
     [orgId],
   );
 
-  const handleConfirmDelete = async () => {
-    if (!deletingFinding) return;
+  // Radix's AlertDialogAction auto-closes the dialog on click. We
+  // preventDefault so the dialog stays open while the request is in flight,
+  // and we only close it ourselves on success — keeping the confirm UI
+  // mounted on error so the user can retry without re-opening the menu.
+  const handleConfirmDelete = async (event: MouseEvent<HTMLButtonElement>) => {
+    event.preventDefault();
+    if (!deletingFinding || deleting) return;
     setDeleting(true);
     const res = await api.delete(
       `/v1/admin/organizations/${orgId}/findings/${deletingFinding.id}`,
