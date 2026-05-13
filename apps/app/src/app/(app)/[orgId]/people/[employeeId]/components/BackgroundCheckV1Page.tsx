@@ -97,7 +97,7 @@ export function BackgroundCheckV1Page(props: V1PageProps) {
           onNavigate={(direction) => navigateRelative('order', direction)}
           icon={Flash}
           title="Order a new check"
-          description="Comp AI runs a full audited check via our vendor."
+          description="Comp AI runs the check end-to-end via our vendor."
           meta={<span className="text-muted-foreground">1 credit · 3–5 business days</span>}
         />
         <BackgroundCheckPathCard
