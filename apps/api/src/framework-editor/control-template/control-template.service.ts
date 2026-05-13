@@ -100,39 +100,87 @@ export class ControlTemplateService {
   }
 
   async create(dto: CreateControlTemplateDto) {
-    const ct = await db.frameworkEditorControlTemplate.create({
-      data: {
-        name: dto.name,
-        description: dto.description ?? '',
-      },
-    });
-    if (dto.documentTypes !== undefined) {
-      await this.replaceDocumentTypeLinks({
-        controlId: ct.id,
-        frameworkId: dto.frameworkId,
-        formTypes: dto.documentTypes as EvidenceFormType[],
+    if (dto.documentTypes === undefined) {
+      const ct = await db.frameworkEditorControlTemplate.create({
+        data: {
+          name: dto.name,
+          description: dto.description ?? '',
+        },
       });
+      this.logger.log(`Created control template: ${ct.name} (${ct.id})`);
+      return ct;
     }
+
+    const scopedFrameworkId = await this.ensureFramework(dto.frameworkId);
+    const uniqueFormTypes = Array.from(
+      new Set(dto.documentTypes as EvidenceFormType[]),
+    );
+    const ct = await db.$transaction(async (tx) => {
+      const created = await tx.frameworkEditorControlTemplate.create({
+        data: {
+          name: dto.name,
+          description: dto.description ?? '',
+        },
+      });
+      await tx.frameworkEditorControlDocumentTypeLink.createMany({
+        data: uniqueFormTypes.map((formType) => ({
+          frameworkId: scopedFrameworkId,
+          controlTemplateId: created.id,
+          formType,
+        })),
+        skipDuplicates: true,
+      });
+      return created;
+    });
     this.logger.log(`Created control template: ${ct.name} (${ct.id})`);
     return ct;
   }
 
   async update(id: string, dto: UpdateControlTemplateDto) {
-    await this.findById(id);
-    const updated = await db.frameworkEditorControlTemplate.update({
-      where: { id },
-      data: {
-        ...(dto.name !== undefined && { name: dto.name }),
-        ...(dto.description !== undefined && { description: dto.description }),
-      },
-    });
-    if (dto.documentTypes !== undefined) {
-      await this.replaceDocumentTypeLinks({
-        controlId: id,
-        frameworkId: dto.frameworkId,
-        formTypes: dto.documentTypes as EvidenceFormType[],
+    if (dto.documentTypes === undefined) {
+      await this.findById(id);
+      const updated = await db.frameworkEditorControlTemplate.update({
+        where: { id },
+        data: {
+          ...(dto.name !== undefined && { name: dto.name }),
+          ...(dto.description !== undefined && { description: dto.description }),
+        },
       });
+      this.logger.log(`Updated control template: ${updated.name} (${id})`);
+      return updated;
     }
+
+    const scopedFrameworkId = await this.ensureFrameworkScopedControl({
+      controlId: id,
+      frameworkId: dto.frameworkId,
+    });
+    const uniqueFormTypes = Array.from(
+      new Set(dto.documentTypes as EvidenceFormType[]),
+    );
+    const updated = await db.$transaction(async (tx) => {
+      const control = await tx.frameworkEditorControlTemplate.update({
+        where: { id },
+        data: {
+          ...(dto.name !== undefined && { name: dto.name }),
+          ...(dto.description !== undefined && { description: dto.description }),
+        },
+      });
+      await tx.frameworkEditorControlDocumentTypeLink.deleteMany({
+        where: {
+          frameworkId: scopedFrameworkId,
+          controlTemplateId: id,
+        },
+      });
+      await tx.frameworkEditorControlDocumentTypeLink.createMany({
+        data: uniqueFormTypes.map((formType) => ({
+          frameworkId: scopedFrameworkId,
+          controlTemplateId: id,
+          formType,
+        })),
+        skipDuplicates: true,
+      });
+      return control;
+    });
     this.logger.log(`Updated control template: ${updated.name} (${id})`);
     return updated;
   }
@@ -285,59 +333,34 @@ export class ControlTemplateService {
     return { message: 'Document type unlinked' };
   }
 
-  private async replaceDocumentTypeLinks(params: {
-    controlId: string;
-    frameworkId?: string;
-    formTypes: EvidenceFormType[];
-  }) {
-    const scopedFrameworkId = await this.ensureFrameworkScopedControl({
-      controlId: params.controlId,
-      frameworkId: params.frameworkId,
-    });
-    const uniqueFormTypes = Array.from(new Set(params.formTypes));
-    await db.$transaction([
-      db.frameworkEditorControlDocumentTypeLink.deleteMany({
-        where: {
-          frameworkId: scopedFrameworkId,
-          controlTemplateId: params.controlId,
-        },
-      }),
-      db.frameworkEditorControlDocumentTypeLink.createMany({
-        data: uniqueFormTypes.map((formType) => ({
-          frameworkId: scopedFrameworkId,
-          controlTemplateId: params.controlId,
-          formType,
-        })),
-        skipDuplicates: true,
-      }),
-    ]);
-  }
-
   private async ensureFrameworkScopedControl(params: {
     controlId: string;
     frameworkId?: string;
   }): Promise<string> {
-    if (!params.frameworkId) {
-      throw new BadRequestException(
-        'frameworkId is required for policy, task, and document links',
-      );
-    }
-    const [framework, control] = await Promise.all([
-      db.frameworkEditorFramework.findUnique({
-        where: { id: params.frameworkId },
-        select: { id: true },
-      }),
-      db.frameworkEditorControlTemplate.findUnique({
-        where: { id: params.controlId },
-        select: { id: true },
-      }),
-    ]);
-    if (!framework) throw new NotFoundException('Framework not found');
+    const frameworkId = await this.ensureFramework(params.frameworkId);
+    const control = await db.frameworkEditorControlTemplate.findUnique({
+      where: { id: params.controlId },
+      select: { id: true },
+    });
     if (!control) {
       throw new NotFoundException(
         `Control template ${params.controlId} not found`,
       );
     }
-    return params.frameworkId;
+    return frameworkId;
+  }
+
+  private async ensureFramework(frameworkId?: string): Promise<string> {
+    if (!frameworkId) {
+      throw new BadRequestException(
+        'frameworkId is required for policy, task, and document links',
+      );
+    }
+    const framework = await db.frameworkEditorFramework.findUnique({
+      where: { id: frameworkId },
+      select: { id: true },
+    });
+    if (!framework) throw new NotFoundException('Framework not found');
+    return frameworkId;
   }
 }

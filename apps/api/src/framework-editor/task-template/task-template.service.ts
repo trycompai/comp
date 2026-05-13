@@ -102,17 +102,23 @@ export class TaskTemplateService {
     if (!frameworkId) {
       throw new NotFoundException('Framework not found');
     }
-    await Promise.all([
-      this.findById(taskTemplateId),
-      db.frameworkEditorControlTemplate.findUniqueOrThrow({
+    await this.findById(taskTemplateId);
+    const [controlTemplate, framework] = await Promise.all([
+      db.frameworkEditorControlTemplate.findUnique({
         where: { id: controlTemplateId },
         select: { id: true },
       }),
-      db.frameworkEditorFramework.findUniqueOrThrow({
+      db.frameworkEditorFramework.findUnique({
         where: { id: frameworkId },
         select: { id: true },
       }),
     ]);
+    if (!controlTemplate) {
+      throw new NotFoundException('Control template not found');
+    }
+    if (!framework) {
+      throw new NotFoundException('Framework not found');
+    }
     await db.frameworkEditorControlTaskTemplateLink.createMany({
       data: [{ frameworkId, controlTemplateId, taskTemplateId }],
       skipDuplicates: true,

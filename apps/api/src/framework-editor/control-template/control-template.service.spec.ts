@@ -1,5 +1,5 @@
-jest.mock('@db', () => ({
-  db: {
+jest.mock('@db', () => {
+  const dbMock = {
     frameworkEditorControlTemplate: {
       create: jest.fn(),
       findUnique: jest.fn(),
@@ -25,10 +25,18 @@ jest.mock('@db', () => ({
       createMany: jest.fn(),
       deleteMany: jest.fn(),
     },
-    $transaction: jest.fn((operations) => Promise.all(operations)),
-  },
-  Prisma: { PrismaClientKnownRequestError: class {} },
-}));
+    $transaction: jest.fn((operations) =>
+      typeof operations === 'function'
+        ? operations(dbMock)
+        : Promise.all(operations),
+    ),
+  };
+
+  return {
+    db: dbMock,
+    Prisma: { PrismaClientKnownRequestError: class {} },
+  };
+});
 
 import { db } from '@db';
 import { ControlTemplateService } from './control-template.service';

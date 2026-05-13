@@ -210,11 +210,17 @@ export class ControlsService {
       where: { id: controlId, organizationId },
       include: {
         frameworkPolicyLinks: {
-          where: { frameworkInstanceId },
+          where: {
+            frameworkInstanceId,
+            policy: { archivedAt: null },
+          },
           include: { policy: true },
         },
         frameworkTaskLinks: {
-          where: { frameworkInstanceId },
+          where: {
+            frameworkInstanceId,
+            task: { archivedAt: null },
+          },
           include: { task: true },
         },
         frameworkDocumentLinks: {
@@ -277,8 +283,15 @@ export class ControlsService {
     const completed = policyCompleted + taskCompleted;
     const totalItems = policies.length + tasks.length;
 
+    const {
+      frameworkPolicyLinks,
+      frameworkTaskLinks,
+      frameworkDocumentLinks,
+      ...controlData
+    } = control;
+
     return {
-      ...control,
+      ...controlData,
       policies,
       tasks,
       controlDocumentTypes: controlDocumentTypes.map((documentType) => ({

@@ -157,6 +157,7 @@ export class FrameworksService {
               control: {
                 include: {
                   frameworkPolicyLinks: {
+                    where: { policy: { archivedAt: null } },
                     include: {
                       policy: {
                         select: { id: true, name: true, status: true },
@@ -184,7 +185,12 @@ export class FrameworksService {
       const controlsMap = new Map<string, any>();
       for (const rm of fi.requirementsMapped || []) {
         if (rm.control && !controlsMap.has(rm.control.id)) {
-          const { requirementsMapped: _, ...controlData } = rm.control;
+          const {
+            requirementsMapped: _,
+            frameworkPolicyLinks,
+            frameworkDocumentLinks,
+            ...controlData
+          } = rm.control;
           const policyLinks = rm.control.frameworkPolicyLinks.filter(
             (link: { frameworkInstanceId: string }) =>
               link.frameworkInstanceId === fi.id,
@@ -266,7 +272,10 @@ export class FrameworksService {
             control: {
               include: {
                 frameworkPolicyLinks: {
-                  where: { frameworkInstanceId },
+                  where: {
+                    frameworkInstanceId,
+                    policy: { archivedAt: null },
+                  },
                   include: {
                     policy: {
                       select: { id: true, name: true, status: true },
@@ -294,7 +303,12 @@ export class FrameworksService {
     const controlsMap = new Map<string, any>();
     for (const rm of fi.requirementsMapped) {
       if (rm.control && !controlsMap.has(rm.control.id)) {
-        const { requirementsMapped: _, ...controlData } = rm.control;
+        const {
+          requirementsMapped: _,
+          frameworkPolicyLinks,
+          frameworkDocumentLinks,
+          ...controlData
+        } = rm.control;
         controlsMap.set(rm.control.id, {
           ...controlData,
           policies:
@@ -770,7 +784,10 @@ export class FrameworksService {
           control: {
             include: {
               frameworkPolicyLinks: {
-                where: { frameworkInstanceId },
+                where: {
+                  frameworkInstanceId,
+                  policy: { archivedAt: null },
+                },
                 include: {
                   policy: {
                     select: { id: true, name: true, status: true },
@@ -828,18 +845,23 @@ export class FrameworksService {
       requirement,
       relatedControls: relatedControls.map((relatedControl) => ({
         ...relatedControl,
-        control: {
-          ...relatedControl.control,
-          policies: relatedControl.control.frameworkPolicyLinks.map(
-            (link) => link.policy,
-          ),
-          controlDocumentTypes: relatedControl.control.frameworkDocumentLinks.map(
-            (documentType) => ({
-              ...documentType,
-              isNotRelevant: notRelevantFormTypes.has(documentType.formType),
-            }),
-          ),
-        },
+        control: (() => {
+          const {
+            frameworkPolicyLinks,
+            frameworkDocumentLinks,
+            ...control
+          } = relatedControl.control;
+          return {
+            ...control,
+            policies: frameworkPolicyLinks.map((link) => link.policy),
+            controlDocumentTypes: frameworkDocumentLinks.map(
+              (documentType) => ({
+                ...documentType,
+                isNotRelevant: notRelevantFormTypes.has(documentType.formType),
+              }),
+            ),
+          };
+        })(),
       })),
       tasks: tasks.map(({ frameworkControlLinks, ...task }) => ({
         ...task,

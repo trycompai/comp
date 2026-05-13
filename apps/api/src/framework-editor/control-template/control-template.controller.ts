@@ -6,13 +6,14 @@ import {
   Delete,
   Body,
   Param,
+  ParseEnumPipe,
   Query,
   UseGuards,
   UsePipes,
   ValidationPipe,
 } from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
-import type { EvidenceFormType } from '@db';
+import { EvidenceFormType } from '@db';
 import { PlatformAdminGuard } from '../../auth/platform-admin.guard';
 import { CreateControlTemplateDto } from './dto/create-control-template.dto';
 import { UpdateControlTemplateDto } from './dto/update-control-template.dto';
@@ -124,7 +125,8 @@ export class ControlTemplateController {
   @ApiOperation({ summary: 'Link a document type to a control template' })
   async linkDocumentType(
     @Param('id') id: string,
-    @Param('formType') formType: EvidenceFormType,
+    @Param('formType', new ParseEnumPipe(EvidenceFormType))
+    formType: EvidenceFormType,
     @Query('frameworkId') frameworkId?: string,
   ) {
     return this.service.linkDocumentType(id, formType, frameworkId);
@@ -134,7 +136,8 @@ export class ControlTemplateController {
   @ApiOperation({ summary: 'Unlink a document type from a control template' })
   async unlinkDocumentType(
     @Param('id') id: string,
-    @Param('formType') formType: EvidenceFormType,
+    @Param('formType', new ParseEnumPipe(EvidenceFormType))
+    formType: EvidenceFormType,
     @Query('frameworkId') frameworkId?: string,
   ) {
     return this.service.unlinkDocumentType(id, formType, frameworkId);
