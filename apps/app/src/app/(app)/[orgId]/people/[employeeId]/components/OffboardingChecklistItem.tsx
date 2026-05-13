@@ -7,7 +7,6 @@ import {
   AccordionTrigger,
   Badge,
   Button,
-  Checkbox,
   HStack,
   Stack,
   Text,
@@ -82,35 +81,31 @@ export function OffboardingChecklistItem({
 
   return (
     <AccordionItem value={item.templateItemId}>
-      <div className="flex items-start gap-3">
-        <div className="pt-4" onClick={(e) => e.stopPropagation()}>
-          <Checkbox
-            checked={item.completed}
-            onCheckedChange={handleCheckedChange}
-            disabled={!canEdit || isProcessing}
-          />
-        </div>
-        <div className="min-w-0 flex-1">
-          <AccordionTrigger>
-            <Stack gap="1">
-              <HStack gap="2" align="center">
-                <span className="font-medium text-sm">{item.title}</span>
-                {item.evidenceRequired && (
-                  <Badge variant="outline">Evidence required</Badge>
-                )}
-              </HStack>
-              {item.description && (
-                <Text size="sm" variant="muted">{item.description}</Text>
-              )}
-              {item.completed && item.completedBy && item.completedAt && (
-                <Text size="xs" variant="muted">
-                  Completed by {item.completedBy.name} on{' '}
-                  {format(new Date(item.completedAt), 'MMM d, yyyy')}
-                  {item.evidence.length > 0 && ` · ${item.evidence.length} file${item.evidence.length !== 1 ? 's' : ''} attached`}
-                </Text>
-              )}
-            </Stack>
-          </AccordionTrigger>
+      <AccordionTrigger>
+        <Stack gap="1">
+          <HStack gap="2" align="center">
+            <span className="font-medium text-sm">{item.title}</span>
+            {item.completed ? (
+              <Badge variant="default">Complete</Badge>
+            ) : (
+              <Badge variant="outline">Pending</Badge>
+            )}
+            {item.evidenceRequired && !item.completed && (
+              <Badge variant="outline">Evidence required</Badge>
+            )}
+          </HStack>
+          {item.description && (
+            <Text size="sm" variant="muted">{item.description}</Text>
+          )}
+          {item.completed && item.completedBy && item.completedAt && (
+            <Text size="xs" variant="muted">
+              Completed by {item.completedBy.name} on{' '}
+              {format(new Date(item.completedAt), 'MMM d, yyyy')}
+              {item.evidence.length > 0 && ` · ${item.evidence.length} file${item.evidence.length !== 1 ? 's' : ''} attached`}
+            </Text>
+          )}
+        </Stack>
+      </AccordionTrigger>
           <AccordionContent>
             <Stack gap="3">
               {item.evidence.length > 0 && (
@@ -132,7 +127,7 @@ export function OffboardingChecklistItem({
                 </Stack>
               )}
 
-              {canEdit && (
+              {canEdit && (item.evidenceRequired || item.completed) && (
                 <div
                   onDrop={handleFileDrop}
                   onDragOver={(e) => e.preventDefault()}
@@ -156,10 +151,36 @@ export function OffboardingChecklistItem({
                   />
                 </div>
               )}
+
+              {canEdit && (
+                <HStack gap="2">
+                  {!item.completed && !item.evidenceRequired && (
+                    <div>
+                      <Button
+                        onClick={() => handleCheckedChange(true)}
+                        disabled={isProcessing}
+                        loading={isProcessing}
+                      >
+                        Mark as complete
+                      </Button>
+                    </div>
+                  )}
+                  {item.completed && (
+                    <div>
+                      <Button
+                        variant="outline"
+                        onClick={() => handleCheckedChange(false)}
+                        disabled={isProcessing}
+                        loading={isProcessing}
+                      >
+                        Undo completion
+                      </Button>
+                    </div>
+                  )}
+                </HStack>
+              )}
             </Stack>
           </AccordionContent>
-        </div>
-      </div>
     </AccordionItem>
   );
 }
