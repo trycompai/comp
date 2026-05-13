@@ -17,6 +17,16 @@ const mockDb = {
     create: jest.fn(),
     delete: jest.fn(),
   },
+  offboardingAccessRevocation: {
+    findMany: jest.fn(),
+    findUnique: jest.fn(),
+    create: jest.fn(),
+    delete: jest.fn(),
+  },
+  vendor: {
+    findMany: jest.fn(),
+    findFirst: jest.fn(),
+  },
 };
 
 jest.mock('@db', () => ({
@@ -27,6 +37,7 @@ jest.mock('@db', () => ({
 }));
 
 import { OffboardingChecklistService } from './offboarding-checklist.service';
+import { AccessRevocationService } from './access-revocation.service';
 import { DEFAULT_OFFBOARDING_CHECKLIST_ITEMS } from './default-checklist-items';
 
 describe('OffboardingChecklistService', () => {
@@ -37,11 +48,14 @@ describe('OffboardingChecklistService', () => {
   };
 
   let service: OffboardingChecklistService;
+  let accessRevocationService: AccessRevocationService;
 
   beforeEach(() => {
     jest.clearAllMocks();
+    accessRevocationService = new AccessRevocationService();
     service = new OffboardingChecklistService(
       mockAttachmentsService as never,
+      accessRevocationService,
     );
   });
 
@@ -402,6 +416,128 @@ describe('OffboardingChecklistService', () => {
           userId: 'usr_1',
         }),
       ).rejects.toBeInstanceOf(BadRequestException);
+    });
+  });
+
+  describe('getAccessRevocations', () => {
+    it('returns vendor list with revocation status', async () => {
+      mockDb.vendor.findMany.mockResolvedValue([
+        { id: 'vnd_1', name: 'Slack' },
+        { id: 'vnd_2', name: 'AWS' },
+      ]);
+      mockDb.offboardingAccessRevocation.findMany.mockResolvedValue([
+        {
+          vendorId: 'vnd_1',
+          revokedBy: { id: 'usr_1', name: 'Jane', email: 'jane@test.com' },
+          revokedAt: new Date(),
+          notes: null,
+        },
+      ]);
+
+      const result = await service.getAccessRevocations('org_1', 'mem_1');
+
+      expect(result.totalVendors).toBe(2);
+      expect(result.revokedCount).toBe(1);
+      expect(result.vendors[0].revoked).toBe(true);
+      expect(result.vendors[1].revoked).toBe(false);
+    });
+
+    it('returns empty when no vendors exist', async () => {
+      mockDb.vendor.findMany.mockResolvedValue([]);
+      mockDb.offboardingAccessRevocation.findMany.mockResolvedValue([]);
+
+      const result = await service.getAccessRevocations('org_1', 'mem_1');
+
+      expect(result.totalVendors).toBe(0);
+      expect(result.revokedCount).toBe(0);
+      expect(result.vendors).toHaveLength(0);
+    });
+  });
+
+  describe('revokeVendorAccess', () => {
+    it('creates revocation record', async () => {
+      mockDb.vendor.findFirst.mockResolvedValue({ id: 'vnd_1' });
+      mockDb.offboardingAccessRevocation.findUnique.mockResolvedValue(null);
+      mockDb.offboardingAccessRevocation.create.mockResolvedValue({
+        id: 'oar_1',
+        vendorId: 'vnd_1',
+        revokedBy: { id: 'usr_1', name: 'Jane', email: 'jane@test.com' },
+      });
+      // syncAccessRevocationCompletion mocks
+      mockDb.offboardingChecklistTemplate.findFirst.mockResolvedValue(null);
+
+      const result = await service.revokeVendorAccess({
+        organizationId: 'org_1',
+        memberId: 'mem_1',
+        vendorId: 'vnd_1',
+        revokedById: 'usr_1',
+      });
+
+      expect(mockDb.offboardingAccessRevocation.create).toHaveBeenCalled();
+      expect(result.id).toBe('oar_1');
+    });
+
+    it('throws if vendor not found', async () => {
+      mockDb.vendor.findFirst.mockResolvedValue(null);
+
+      await expect(
+        service.revokeVendorAccess({
+          organizationId: 'org_1',
+          memberId: 'mem_1',
+          vendorId: 'vnd_invalid',
+          revokedById: 'usr_1',
+        }),
+      ).rejects.toBeInstanceOf(NotFoundException);
+    });
+
+    it('throws if already revoked', async () => {
+      mockDb.vendor.findFirst.mockResolvedValue({ id: 'vnd_1' });
+      mockDb.offboardingAccessRevocation.findUnique.mockResolvedValue({
+        id: 'oar_1',
+      });
+
+      await expect(
+        service.revokeVendorAccess({
+          organizationId: 'org_1',
+          memberId: 'mem_1',
+          vendorId: 'vnd_1',
+          revokedById: 'usr_1',
+        }),
+      ).rejects.toBeInstanceOf(BadRequestException);
+    });
+  });
+
+  describe('undoVendorRevocation', () => {
+    it('deletes revocation record', async () => {
+      mockDb.offboardingAccessRevocation.findUnique.mockResolvedValue({
+        id: 'oar_1',
+      });
+      mockDb.offboardingAccessRevocation.delete.mockResolvedValue({});
+      // syncAccessRevocationCompletion mocks
+      mockDb.offboardingChecklistTemplate.findFirst.mockResolvedValue(null);
+
+      const result = await service.undoVendorRevocation({
+        organizationId: 'org_1',
+        memberId: 'mem_1',
+        vendorId: 'vnd_1',
+      });
+
+      expect(
+        mockDb.offboardingAccessRevocation.delete,
+      ).toHaveBeenCalledWith({ where: { id: 'oar_1' } });
+      expect(result.success).toBe(true);
+    });
+
+    it('throws if revocation not found', async () => {
+      mockDb.offboardingAccessRevocation.findUnique.mockResolvedValue(null);
+
+      await expect(
+        service.undoVendorRevocation({
+          organizationId: 'org_1',
+          memberId: 'mem_1',
+          vendorId: 'vnd_1',
+        }),
+      ).rejects.toBeInstanceOf(NotFoundException);
     });
   });
 });

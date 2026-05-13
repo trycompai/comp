@@ -1,0 +1,168 @@
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
+import { db } from '@db';
+
+@Injectable()
+export class AccessRevocationService {
+  async getAccessRevocations(organizationId: string, memberId: string) {
+    const vendors = await db.vendor.findMany({
+      where: { organizationId },
+      select: { id: true, name: true },
+      orderBy: { name: 'asc' },
+    });
+
+    const revocations = await db.offboardingAccessRevocation.findMany({
+      where: { organizationId, memberId },
+      include: {
+        revokedBy: { select: { id: true, name: true, email: true } },
+      },
+    });
+
+    const revocationMap = new Map(
+      revocations.map((r) => [r.vendorId, r]),
+    );
+
+    const vendorList = vendors.map((vendor) => {
+      const revocation = revocationMap.get(vendor.id);
+      return {
+        vendorId: vendor.id,
+        vendorName: vendor.name,
+        revoked: !!revocation,
+        revokedAt: revocation?.revokedAt ?? null,
+        revokedBy: revocation?.revokedBy ?? null,
+        notes: revocation?.notes ?? null,
+      };
+    });
+
+    return {
+      vendors: vendorList,
+      totalVendors: vendors.length,
+      revokedCount: revocations.length,
+    };
+  }
+
+  async revokeVendorAccess({
+    organizationId,
+    memberId,
+    vendorId,
+    revokedById,
+    notes,
+  }: {
+    organizationId: string;
+    memberId: string;
+    vendorId: string;
+    revokedById: string;
+    notes?: string;
+  }) {
+    const vendor = await db.vendor.findFirst({
+      where: { id: vendorId, organizationId },
+    });
+
+    if (!vendor) {
+      throw new NotFoundException('Vendor not found in this organization');
+    }
+
+    const existing = await db.offboardingAccessRevocation.findUnique({
+      where: { memberId_vendorId: { memberId, vendorId } },
+    });
+
+    if (existing) {
+      throw new BadRequestException(
+        'Vendor access has already been revoked for this member',
+      );
+    }
+
+    const revocation = await db.offboardingAccessRevocation.create({
+      data: {
+        organizationId,
+        memberId,
+        vendorId,
+        revokedById,
+        notes,
+      },
+      include: {
+        revokedBy: { select: { id: true, name: true, email: true } },
+      },
+    });
+
+    await this.syncAccessRevocationCompletion(
+      organizationId,
+      memberId,
+      revokedById,
+    );
+
+    return revocation;
+  }
+
+  async undoVendorRevocation({
+    organizationId,
+    memberId,
+    vendorId,
+  }: {
+    organizationId: string;
+    memberId: string;
+    vendorId: string;
+  }) {
+    const revocation = await db.offboardingAccessRevocation.findUnique({
+      where: { memberId_vendorId: { memberId, vendorId } },
+    });
+
+    if (!revocation) {
+      throw new NotFoundException('Revocation record not found');
+    }
+
+    await db.offboardingAccessRevocation.delete({
+      where: { id: revocation.id },
+    });
+
+    await this.syncAccessRevocationCompletion(organizationId, memberId);
+
+    return { success: true };
+  }
+
+  private async syncAccessRevocationCompletion(
+    organizationId: string,
+    memberId: string,
+    completedById?: string,
+  ) {
+    const templateItem = await db.offboardingChecklistTemplate.findFirst({
+      where: { organizationId, isAccessRevocation: true, isEnabled: true },
+    });
+
+    if (!templateItem) {
+      return;
+    }
+
+    const { totalVendors, revokedCount } = await this.getAccessRevocations(
+      organizationId,
+      memberId,
+    );
+
+    const allRevoked = totalVendors > 0 && revokedCount === totalVendors;
+
+    const existingCompletion =
+      await db.offboardingChecklistCompletion.findFirst({
+        where: { organizationId, memberId, templateItemId: templateItem.id },
+      });
+
+    if (allRevoked && !existingCompletion && completedById) {
+      await db.offboardingChecklistCompletion.create({
+        data: {
+          organizationId,
+          memberId,
+          templateItemId: templateItem.id,
+          completedById,
+        },
+      });
+    }
+
+    if (!allRevoked && existingCompletion) {
+      await db.offboardingChecklistCompletion.delete({
+        where: { id: existingCompletion.id },
+      });
+    }
+  }
+}

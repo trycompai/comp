@@ -8,7 +8,7 @@ import {
   Param,
   UseGuards,
 } from '@nestjs/common';
-import { ApiSecurity, ApiTags } from '@nestjs/swagger';
+import { ApiOperation, ApiParam, ApiSecurity, ApiTags } from '@nestjs/swagger';
 import { AuthContext, OrganizationId } from '../auth/auth-context.decorator';
 import { HybridAuthGuard } from '../auth/hybrid-auth.guard';
 import { PermissionGuard } from '../auth/permission.guard';
@@ -132,6 +132,60 @@ export class OffboardingChecklistController {
       templateItemId,
       uploadDto,
       userId: authContext.userId!,
+    });
+  }
+
+  @Get('member/:memberId/access-revocations')
+  @RequirePermission('member', 'read')
+  @ApiOperation({
+    summary: 'Get vendor access revocation status for a member',
+  })
+  @ApiParam({ name: 'memberId', description: 'Member ID' })
+  async getAccessRevocations(
+    @OrganizationId() organizationId: string,
+    @Param('memberId') memberId: string,
+  ) {
+    return this.offboardingChecklistService.getAccessRevocations(
+      organizationId,
+      memberId,
+    );
+  }
+
+  @Post('member/:memberId/access-revocations/:vendorId')
+  @RequirePermission('member', 'update')
+  @ApiOperation({ summary: 'Mark vendor access as revoked' })
+  @ApiParam({ name: 'memberId', description: 'Member ID' })
+  @ApiParam({ name: 'vendorId', description: 'Vendor ID' })
+  async revokeVendorAccess(
+    @OrganizationId() organizationId: string,
+    @Param('memberId') memberId: string,
+    @Param('vendorId') vendorId: string,
+    @AuthContext() authContext: AuthContextType,
+    @Body() body: { notes?: string },
+  ) {
+    return this.offboardingChecklistService.revokeVendorAccess({
+      organizationId,
+      memberId,
+      vendorId,
+      revokedById: authContext.userId!,
+      notes: body?.notes,
+    });
+  }
+
+  @Delete('member/:memberId/access-revocations/:vendorId')
+  @RequirePermission('member', 'update')
+  @ApiOperation({ summary: 'Undo vendor access revocation' })
+  @ApiParam({ name: 'memberId', description: 'Member ID' })
+  @ApiParam({ name: 'vendorId', description: 'Vendor ID' })
+  async undoVendorRevocation(
+    @OrganizationId() organizationId: string,
+    @Param('memberId') memberId: string,
+    @Param('vendorId') vendorId: string,
+  ) {
+    return this.offboardingChecklistService.undoVendorRevocation({
+      organizationId,
+      memberId,
+      vendorId,
     });
   }
 }

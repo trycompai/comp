@@ -5,6 +5,7 @@ import {
 } from '@nestjs/common';
 import { AttachmentEntityType, db } from '@db';
 import { AttachmentsService } from '../attachments/attachments.service';
+import { AccessRevocationService } from './access-revocation.service';
 import { DEFAULT_OFFBOARDING_CHECKLIST_ITEMS } from './default-checklist-items';
 
 interface CompleteChecklistItemDto {
@@ -23,7 +24,10 @@ interface UploadEvidenceDto {
 
 @Injectable()
 export class OffboardingChecklistService {
-  constructor(private readonly attachmentsService: AttachmentsService) {}
+  constructor(
+    private readonly attachmentsService: AttachmentsService,
+    private readonly accessRevocationService: AccessRevocationService,
+  ) {}
 
   async getTemplate(organizationId: string) {
     await this.seedDefaultsIfNeeded(organizationId);
@@ -273,6 +277,31 @@ export class OffboardingChecklistService {
     );
   }
 
+  async getAccessRevocations(organizationId: string, memberId: string) {
+    return this.accessRevocationService.getAccessRevocations(
+      organizationId,
+      memberId,
+    );
+  }
+
+  async revokeVendorAccess(params: {
+    organizationId: string;
+    memberId: string;
+    vendorId: string;
+    revokedById: string;
+    notes?: string;
+  }) {
+    return this.accessRevocationService.revokeVendorAccess(params);
+  }
+
+  async undoVendorRevocation(params: {
+    organizationId: string;
+    memberId: string;
+    vendorId: string;
+  }) {
+    return this.accessRevocationService.undoVendorRevocation(params);
+  }
+
   private async seedDefaultsIfNeeded(organizationId: string) {
     const count = await db.offboardingChecklistTemplate.count({
       where: { organizationId },
@@ -288,6 +317,7 @@ export class OffboardingChecklistService {
         title: item.title,
         description: item.description,
         evidenceRequired: item.evidenceRequired,
+        isAccessRevocation: item.isAccessRevocation,
         sortOrder: item.sortOrder,
         isDefault: true,
         isEnabled: true,
