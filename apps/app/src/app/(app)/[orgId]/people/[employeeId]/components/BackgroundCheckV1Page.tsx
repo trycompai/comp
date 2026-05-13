@@ -66,8 +66,8 @@ export function BackgroundCheckV1Page(props: V1PageProps) {
     setAnimationKey((value) => value + 1);
   };
 
-  const navigateRelative = (current: SelectedPath, direction: 'next' | 'prev') => {
-    const index = PATH_ORDER.indexOf(current);
+  const navigateRelative = (direction: 'next' | 'prev') => {
+    const index = PATH_ORDER.indexOf(selectedPath);
     const length = PATH_ORDER.length;
     const nextIndex = (index + (direction === 'next' ? 1 : -1) + length) % length;
     handleSelect(PATH_ORDER[nextIndex]);
@@ -94,7 +94,7 @@ export function BackgroundCheckV1Page(props: V1PageProps) {
         <BackgroundCheckPathCard
           selected={selectedPath === 'order'}
           onSelect={() => handleSelect('order')}
-          onNavigate={(direction) => navigateRelative('order', direction)}
+          onNavigate={navigateRelative}
           icon={Flash}
           title="Order a new check"
           description="Comp AI runs the check end-to-end via our vendor."
@@ -103,7 +103,7 @@ export function BackgroundCheckV1Page(props: V1PageProps) {
         <BackgroundCheckPathCard
           selected={selectedPath === 'attach'}
           onSelect={() => handleSelect('attach')}
-          onNavigate={(direction) => navigateRelative('attach', direction)}
+          onNavigate={navigateRelative}
           icon={Attachment}
           title="Attach an existing report"
           description="Upload a report from Checkr, Sterling, or another vendor."
@@ -112,7 +112,7 @@ export function BackgroundCheckV1Page(props: V1PageProps) {
         <BackgroundCheckPathCard
           selected={selectedPath === 'exempt'}
           onSelect={() => handleSelect('exempt')}
-          onNavigate={(direction) => navigateRelative('exempt', direction)}
+          onNavigate={navigateRelative}
           icon={Security}
           title="Mark as exempt"
           description="This employee won't be required to pass a check."

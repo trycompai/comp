@@ -119,8 +119,8 @@ export function EmployeeBackgroundCheck({
     const response = await apiClient.post<BackgroundCheckRecord>(
       `/v1/people/${employee.id}/background-check`,
       {
-        employeeName: orderValues.employeeName,
-        employeeEmail: orderValues.employeeEmail,
+        employeeName: orderValues.employeeName.trim(),
+        employeeEmail: orderValues.employeeEmail.trim(),
         requesterNotes: orderValues.requesterNotes?.trim() || undefined,
       },
       organizationId,

@@ -1,3 +1,4 @@
+import { getBillingSkuProductKey } from '@trycompai/billing';
 import type { AttachFormValues } from './BackgroundCheckAttachForm';
 import type { BackgroundCheckBillingStatus } from './backgroundCheckTypes';
 
@@ -11,7 +12,9 @@ export function computeCredits(billing: BackgroundCheckBillingStatus | undefined
 } {
   if (!billing) return { creditsUsed: 0, creditsIncluded: 0 };
   const activeSub = (billing.subscriptions ?? []).find(
-    (s) => s.status === 'active' || s.status === 'trialing',
+    (s) =>
+      getBillingSkuProductKey(s.skuKey) === 'background_check' &&
+      (s.status === 'active' || s.status === 'trialing'),
   );
   const wallet =
     (billing.creditBalances ?? []).find((b) => b.productKey === 'background_check')?.balance ?? 0;
