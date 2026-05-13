@@ -90,7 +90,7 @@ export function OffboardingChecklistItem({
     <Collapsible open={isOpen} onOpenChange={setIsOpen}>
       <div className="rounded-lg border">
         <CollapsibleTrigger asChild disabled={!hasContent}>
-          <div className={`flex items-start gap-3 p-4 ${hasContent ? 'cursor-pointer' : ''}`}>
+          <div className={`flex items-start gap-3 p-4 transition-colors ${hasContent ? 'cursor-pointer hover:bg-muted/50' : ''}`}>
             <div className="pt-0.5" onClick={(e) => e.stopPropagation()}>
               <Checkbox
                 checked={item.completed}
