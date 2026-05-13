@@ -2,17 +2,17 @@
 
 import type { ChecklistItem } from '@/hooks/use-offboarding-checklist';
 import {
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
   Badge,
   Button,
   Checkbox,
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
   HStack,
   Stack,
   Text,
 } from '@trycompai/design-system';
-import { ChevronDown, DocumentDownload, Upload } from '@trycompai/design-system/icons';
+import { DocumentDownload, Upload } from '@trycompai/design-system/icons';
 import { format } from 'date-fns';
 import { useRef, useState } from 'react';
 
@@ -34,16 +34,12 @@ export function OffboardingChecklistItem({
   onDownload,
 }: OffboardingChecklistItemProps) {
   const [isProcessing, setIsProcessing] = useState(false);
-  const [isOpen, setIsOpen] = useState(false);
   const dropzoneInputRef = useRef<HTMLInputElement>(null);
 
   const handleCheckedChange = async (checked: boolean) => {
     if (isProcessing) return;
 
-    if (checked && item.evidenceRequired) {
-      setIsOpen(true);
-      return;
-    }
+    if (checked && item.evidenceRequired) return;
 
     setIsProcessing(true);
     try {
@@ -84,50 +80,38 @@ export function OffboardingChecklistItem({
     }
   };
 
-  const hasContent = item.evidenceRequired || item.completed;
-
   return (
-    <Collapsible open={isOpen} onOpenChange={setIsOpen} className="rounded-lg border">
-        <CollapsibleTrigger asChild disabled={!hasContent}>
-          <div className={`flex items-start gap-3 p-4 transition-colors ${hasContent ? 'cursor-pointer hover:bg-muted/50' : ''} ${hasContent ? 'rounded-lg' : ''}`}>
-            <div className="pt-0.5" onClick={(e) => e.stopPropagation()}>
-              <Checkbox
-                checked={item.completed}
-                onCheckedChange={handleCheckedChange}
-                disabled={!canEdit || isProcessing}
-              />
-            </div>
-            <div className="min-w-0 flex-1">
-              <Stack gap="1">
-                <HStack gap="2" align="center">
-                  <Text weight="medium">{item.title}</Text>
-                  {item.evidenceRequired && (
-                    <Badge variant="outline">Evidence required</Badge>
-                  )}
-                </HStack>
-                {item.description && (
-                  <Text size="sm" variant="muted">{item.description}</Text>
+    <AccordionItem value={item.templateItemId}>
+      <div className="flex items-start gap-3">
+        <div className="pt-4" onClick={(e) => e.stopPropagation()}>
+          <Checkbox
+            checked={item.completed}
+            onCheckedChange={handleCheckedChange}
+            disabled={!canEdit || isProcessing}
+          />
+        </div>
+        <div className="min-w-0 flex-1">
+          <AccordionTrigger>
+            <Stack gap="1">
+              <HStack gap="2" align="center">
+                <span className="font-medium text-sm">{item.title}</span>
+                {item.evidenceRequired && (
+                  <Badge variant="outline">Evidence required</Badge>
                 )}
-                {item.completed && item.completedBy && item.completedAt && (
-                  <Text size="xs" variant="muted">
-                    Completed by {item.completedBy.name} on{' '}
-                    {format(new Date(item.completedAt), 'MMM d, yyyy')}
-                    {item.evidence.length > 0 && ` · ${item.evidence.length} file${item.evidence.length !== 1 ? 's' : ''} attached`}
-                  </Text>
-                )}
-              </Stack>
-            </div>
-            {hasContent && (
-              <ChevronDown
-                size={16}
-                className={`text-muted-foreground mt-1 shrink-0 transition-transform ${isOpen ? 'rotate-180' : ''}`}
-              />
-            )}
-          </div>
-        </CollapsibleTrigger>
-
-        <CollapsibleContent>
-          <div className="border-t px-4 pb-4 pt-3">
+              </HStack>
+              {item.description && (
+                <Text size="sm" variant="muted">{item.description}</Text>
+              )}
+              {item.completed && item.completedBy && item.completedAt && (
+                <Text size="xs" variant="muted">
+                  Completed by {item.completedBy.name} on{' '}
+                  {format(new Date(item.completedAt), 'MMM d, yyyy')}
+                  {item.evidence.length > 0 && ` · ${item.evidence.length} file${item.evidence.length !== 1 ? 's' : ''} attached`}
+                </Text>
+              )}
+            </Stack>
+          </AccordionTrigger>
+          <AccordionContent>
             <Stack gap="3">
               {item.evidence.length > 0 && (
                 <Stack gap="1">
@@ -173,8 +157,9 @@ export function OffboardingChecklistItem({
                 </div>
               )}
             </Stack>
-          </div>
-        </CollapsibleContent>
-    </Collapsible>
+          </AccordionContent>
+        </div>
+      </div>
+    </AccordionItem>
   );
 }

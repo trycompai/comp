@@ -1,7 +1,7 @@
 'use client';
 
 import { useOffboardingChecklist } from '@/hooks/use-offboarding-checklist';
-import { Progress, Section, Stack, Text } from '@trycompai/design-system';
+import { Accordion, Progress, Section, Stack, Text } from '@trycompai/design-system';
 import { useCallback } from 'react';
 import { toast } from 'sonner';
 import { OffboardingChecklistItem } from './OffboardingChecklistItem';
@@ -102,7 +102,7 @@ export function OffboardingChecklist({ memberId, canEdit }: OffboardingChecklist
           <Progress value={progressValue} />
         </Stack>
 
-        <div className="flex w-full flex-col gap-3">
+        <Accordion type="multiple">
           {checklist.items.map((item) => (
             <OffboardingChecklistItem
               key={item.templateItemId}
@@ -114,7 +114,7 @@ export function OffboardingChecklist({ memberId, canEdit }: OffboardingChecklist
               onDownload={handleDownload}
             />
           ))}
-        </div>
+        </Accordion>
       </Stack>
     </Section>
   );
