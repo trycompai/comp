@@ -3,15 +3,16 @@
 import { useAccessRevocations } from '@/hooks/use-access-revocations';
 import {
   Button,
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
   InputGroup,
   InputGroupAddon,
   InputGroupInput,
   Text,
 } from '@trycompai/design-system';
-import { Checkmark, ChevronDown, Search } from '@trycompai/design-system/icons';
+import {
+  Checkmark,
+  DocumentAttachment,
+  Search,
+} from '@trycompai/design-system/icons';
 import { format } from 'date-fns';
 import { useMemo, useState } from 'react';
 import { toast } from 'sonner';
@@ -53,8 +54,6 @@ export function AccessRevocationList({
   );
   const [isConfirmingAll, setIsConfirmingAll] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  const [remainingOpen, setRemainingOpen] = useState(true);
-  const [revokedOpen, setRevokedOpen] = useState(true);
 
   const { remaining, revoked } = useMemo(() => {
     if (!revocations) return { remaining: [], revoked: [] };
@@ -108,7 +107,7 @@ export function AccessRevocationList({
 
   if (isLoading) {
     return (
-      <div className="py-2">
+      <div className="border-t bg-muted py-4 pl-11 pr-3.5">
         <Text variant="muted">Loading vendor access list...</Text>
       </div>
     );
@@ -116,7 +115,7 @@ export function AccessRevocationList({
 
   if (!revocations || revocations.vendors.length === 0) {
     return (
-      <div className="py-2">
+      <div className="border-t bg-muted py-4 pl-11 pr-3.5">
         <Text variant="muted">
           No vendors configured. Add vendors to your organization to track
           access revocation.
@@ -128,8 +127,8 @@ export function AccessRevocationList({
   const allConfirmed = revocations.revokedCount === revocations.totalVendors;
 
   return (
-    <div className="flex flex-col gap-3">
-      <div className="flex items-center gap-2">
+    <div className="border-t bg-muted">
+      <div className="flex items-center gap-2 border-b bg-background py-2 pl-11 pr-3.5">
         <InputGroup>
           <InputGroupAddon variant="icon">
             <Search size={16} />
@@ -154,77 +153,68 @@ export function AccessRevocationList({
         )}
       </div>
 
-      <div className="flex flex-col gap-2">
-        <Collapsible open={remainingOpen} onOpenChange={setRemainingOpen}>
-          <CollapsibleTrigger className="flex w-full items-center gap-2 py-1.5 text-xs font-medium uppercase tracking-wider text-muted-foreground hover:text-foreground transition-colors">
-            <ChevronDown
-              size={14}
-              className={`transition-transform ${remainingOpen ? '' : '-rotate-90'}`}
-            />
-            Remaining · {remaining.length}
-          </CollapsibleTrigger>
-          <CollapsibleContent>
-            <div className="flex max-h-[280px] flex-col gap-1 overflow-y-auto pt-1">
-              {remaining.map((vendor) => (
-                <VendorRow
-                  key={vendor.vendorId}
-                  vendor={vendor}
-                  canEdit={canEdit}
-                  isProcessing={processingVendorId === vendor.vendorId}
-                  onRevoke={() => handleRevoke(vendor.vendorId)}
-                />
-              ))}
-              {remaining.length === 0 && (
-                <div className="py-2">
-                  <Text size="sm" variant="muted">
-                    {searchQuery ? 'No matching vendors' : 'All vendor access revoked'}
-                  </Text>
-                </div>
-              )}
-            </div>
-          </CollapsibleContent>
-        </Collapsible>
+      {remaining.length > 0 && (
+        <>
+          <SectionHeader label="Remaining" count={remaining.length} />
+          <div className="max-h-[280px] overflow-y-auto">
+            {remaining.map((vendor) => (
+              <VendorRow
+                key={vendor.vendorId}
+                vendor={vendor}
+                canEdit={canEdit}
+                isProcessing={processingVendorId === vendor.vendorId}
+                onRevoke={() => handleRevoke(vendor.vendorId)}
+              />
+            ))}
+          </div>
+        </>
+      )}
 
-        <Collapsible open={revokedOpen} onOpenChange={setRevokedOpen}>
-          <CollapsibleTrigger className="flex w-full items-center gap-2 py-1.5 text-xs font-medium uppercase tracking-wider text-muted-foreground hover:text-foreground transition-colors">
-            <ChevronDown
-              size={14}
-              className={`transition-transform ${revokedOpen ? '' : '-rotate-90'}`}
-            />
-            Revoked · {revoked.length}
-          </CollapsibleTrigger>
-          <CollapsibleContent>
-            <div className="flex max-h-[280px] flex-col gap-1 overflow-y-auto pt-1">
-              {revoked.map((vendor) => (
-                <RevokedVendorRow
-                  key={vendor.vendorId}
-                  vendor={vendor}
-                  canEdit={canEdit}
-                  isProcessing={processingVendorId === vendor.vendorId}
-                  onUndo={() => handleUndo(vendor.vendorId)}
-                />
-              ))}
-              {revoked.length === 0 && (
-                <div className="py-2">
-                  <Text size="sm" variant="muted">
-                    {searchQuery ? 'No matching vendors' : 'No vendors revoked yet'}
-                  </Text>
-                </div>
-              )}
-            </div>
-          </CollapsibleContent>
-        </Collapsible>
-      </div>
+      {revoked.length > 0 && (
+        <>
+          <SectionHeader label="Revoked" count={revoked.length} />
+          <div className="max-h-[280px] overflow-y-auto">
+            {revoked.map((vendor) => (
+              <RevokedVendorRow
+                key={vendor.vendorId}
+                vendor={vendor}
+                canEdit={canEdit}
+                isProcessing={processingVendorId === vendor.vendorId}
+                onUndo={() => handleUndo(vendor.vendorId)}
+              />
+            ))}
+          </div>
+        </>
+      )}
+
+      {remaining.length === 0 && revoked.length === 0 && (
+        <div className="py-4 pl-11 pr-3.5">
+          <Text size="sm" variant="muted">
+            {searchQuery ? 'No matching vendors' : 'No vendors found'}
+          </Text>
+        </div>
+      )}
     </div>
   );
 }
 
-function VendorMonogram({ name }: { name: string }) {
+function SectionHeader({ label, count }: { label: string; count: number }) {
+  return (
+    <div className="bg-muted py-2 pl-11 pr-3.5">
+      <span className="text-[10px] font-bold uppercase tracking-[0.08em] text-muted-foreground">
+        {label}
+        <span className="text-muted-foreground/60"> &middot; {count}</span>
+      </span>
+    </div>
+  );
+}
+
+function VendorMark({ name }: { name: string }) {
   const color = getMonogramColor(name);
   const letter = name.charAt(0).toUpperCase();
   return (
     <div
-      className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-medium text-white ${color}`}
+      className={`flex h-[22px] w-[22px] shrink-0 items-center justify-center rounded-sm text-[10px] font-bold text-white ${color}`}
     >
       {letter}
     </div>
@@ -240,22 +230,31 @@ interface VendorRowProps {
 
 function VendorRow({ vendor, canEdit, isProcessing, onRevoke }: VendorRowProps) {
   return (
-    <div className="flex items-center justify-between rounded-md border px-3 py-2">
+    <div className="flex items-center justify-between border-b bg-background py-2.5 pl-11 pr-3.5">
       <div className="flex items-center gap-2.5">
-        <VendorMonogram name={vendor.vendorName} />
-        <span className="text-sm font-medium">{vendor.vendorName}</span>
+        <VendorMark name={vendor.vendorName} />
+        <span className="text-[13px] font-normal">{vendor.vendorName}</span>
       </div>
       {canEdit && (
-        <div className="shrink-0">
-          <Button
-            variant="outline"
-            size="xs"
-            onClick={onRevoke}
-            disabled={isProcessing}
-            loading={isProcessing}
+        <div className="flex shrink-0 items-center gap-3">
+          <button
+            type="button"
+            className="flex items-center gap-1 text-xs text-primary hover:underline"
           >
-            Confirm revoked
-          </Button>
+            <DocumentAttachment size={12} />
+            Attach evidence
+          </button>
+          <div>
+            <Button
+              variant="outline"
+              size="xs"
+              onClick={onRevoke}
+              disabled={isProcessing}
+              loading={isProcessing}
+            >
+              Confirm revoked
+            </Button>
+          </div>
         </div>
       )}
     </div>
@@ -281,20 +280,18 @@ function RevokedVendorRow({
   onUndo,
 }: RevokedVendorRowProps) {
   return (
-    <div className="flex items-center justify-between rounded-md border px-3 py-2">
+    <div className="flex items-center justify-between border-b bg-background py-2.5 pl-11 pr-3.5">
       <div className="flex items-center gap-2.5">
-        <VendorMonogram name={vendor.vendorName} />
-        <div className="flex flex-col">
-          <span className="text-sm font-medium">{vendor.vendorName}</span>
-          {vendor.revokedBy && vendor.revokedAt && (
-            <span className="text-xs text-muted-foreground">
-              {vendor.revokedBy.name} ·{' '}
-              {format(new Date(vendor.revokedAt), 'MMM d, yyyy')}
-            </span>
-          )}
-        </div>
+        <VendorMark name={vendor.vendorName} />
+        <span className="text-[13px] font-normal">{vendor.vendorName}</span>
       </div>
-      <div className="flex shrink-0 items-center gap-2">
+      <div className="flex shrink-0 items-center gap-3">
+        {vendor.revokedBy && vendor.revokedAt && (
+          <span className="font-mono text-xs text-muted-foreground">
+            {vendor.revokedBy.name} &middot;{' '}
+            {format(new Date(vendor.revokedAt), 'MMM d, yyyy')}
+          </span>
+        )}
         {canEdit && (
           <div>
             <Button
@@ -308,7 +305,7 @@ function RevokedVendorRow({
             </Button>
           </div>
         )}
-        <div className="flex h-5 w-5 items-center justify-center rounded-full bg-green-500 text-white">
+        <div className="flex h-5 w-5 items-center justify-center rounded-full bg-primary text-primary-foreground">
           <Checkmark size={12} />
         </div>
       </div>

@@ -32,16 +32,54 @@ interface OffboardingChecklistItemProps {
   onChecklistRefresh?: () => void;
 }
 
-function StatusCircle({ completed }: { completed: boolean }) {
-  if (completed) {
+function StatusCircle({ done, total }: { done: number; total: number }) {
+  const allDone = done === total && total > 0;
+  const partial = done > 0 && !allDone;
+
+  if (allDone) {
     return (
-      <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-green-500 text-white">
-        <Checkmark size={12} />
+      <div className="flex h-[18px] w-[18px] shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground">
+        <Checkmark size={11} />
+      </div>
+    );
+  }
+  if (partial) {
+    return (
+      <div className="flex h-[18px] w-[18px] shrink-0 items-center justify-center rounded-full border-[1.5px] border-primary">
+        <div className="h-2 w-2 rounded-full bg-primary" />
       </div>
     );
   }
   return (
-    <div className="h-5 w-5 shrink-0 rounded-full border-2 border-muted-foreground/30" />
+    <div
+      className="h-[18px] w-[18px] shrink-0 rounded-full border-[1.5px]"
+      style={{ borderColor: 'oklch(0.85 0 0)' }}
+    />
+  );
+}
+
+function ChecklistStatusCircle({
+  item,
+  memberId,
+}: {
+  item: ChecklistItem;
+  memberId: string;
+}) {
+  if (item.isAccessRevocation) {
+    return <AccessRevocationStatusCircle memberId={memberId} />;
+  }
+  const done = item.completed ? 1 : 0;
+  return <StatusCircle done={done} total={1} />;
+}
+
+function AccessRevocationStatusCircle({ memberId }: { memberId: string }) {
+  const { revocations } = useAccessRevocations(memberId);
+  if (!revocations) return <StatusCircle done={0} total={0} />;
+  return (
+    <StatusCircle
+      done={revocations.revokedCount}
+      total={revocations.totalVendors}
+    />
   );
 }
 
@@ -54,7 +92,7 @@ function ItemBadges({
     <>
       {item.isAccessRevocation && (
         <div>
-          <Badge variant="destructive">Critical</Badge>
+          <Badge variant="accent">Critical</Badge>
         </div>
       )}
       {item.evidenceRequired && (
@@ -81,10 +119,10 @@ function ItemProgress({
   const pct = done / total;
   return (
     <div className="flex items-center gap-2">
-      <span className="text-xs text-muted-foreground">
+      <span className="min-w-[56px] text-right font-mono text-xs tabular-nums text-muted-foreground">
         {done}/{total}
       </span>
-      <div className="h-1 w-10 overflow-hidden rounded-full bg-muted">
+      <div className="h-1 w-[60px] overflow-hidden rounded-full bg-muted">
         <div
           className="h-full bg-primary transition-all"
           style={{ width: `${pct * 100}%` }}
@@ -103,10 +141,10 @@ function AccessRevocationProgress({ memberId }: { memberId: string }) {
       : 0;
   return (
     <div className="flex items-center gap-2">
-      <span className="text-xs text-muted-foreground">
+      <span className="min-w-[56px] text-right font-mono text-xs tabular-nums text-muted-foreground">
         {revocations.revokedCount}/{revocations.totalVendors}
       </span>
-      <div className="h-1 w-10 overflow-hidden rounded-full bg-muted">
+      <div className="h-1 w-[60px] overflow-hidden rounded-full bg-muted">
         <div
           className="h-full bg-primary transition-all"
           style={{ width: `${pct * 100}%` }}
@@ -182,16 +220,16 @@ export function OffboardingChecklistItem({
 
   return (
     <Collapsible open={isOpen} onOpenChange={setIsOpen}>
-      <div className="rounded-lg border">
-        <CollapsibleTrigger className="flex w-full items-center gap-3 px-4 py-3 text-left hover:bg-muted/50 transition-colors">
-          <StatusCircle completed={item.completed} />
+      <div className="overflow-hidden rounded-lg border bg-background">
+        <CollapsibleTrigger className="flex w-full items-center gap-2 px-3.5 py-3 text-left transition-colors hover:bg-muted/50">
+          <ChecklistStatusCircle item={item} memberId={memberId} />
           <div className="flex min-w-0 flex-1 flex-col gap-0.5">
             <div className="flex items-center gap-2">
-              <span className="text-sm font-medium">{item.title}</span>
+              <span className="text-sm font-normal">{item.title}</span>
               <ItemBadges item={item} />
             </div>
             {item.description && (
-              <span className="text-xs text-muted-foreground line-clamp-1">
+              <span className="truncate text-xs text-muted-foreground">
                 {item.description}
               </span>
             )}
@@ -200,7 +238,7 @@ export function OffboardingChecklistItem({
             <div className="flex shrink-0 items-center gap-3">
               <ItemProgress item={item} memberId={memberId} />
               <ChevronDown
-                size={16}
+                size={14}
                 className={`text-muted-foreground transition-transform ${isOpen ? 'rotate-180' : ''}`}
               />
             </div>
@@ -208,34 +246,36 @@ export function OffboardingChecklistItem({
         </CollapsibleTrigger>
 
         <CollapsibleContent>
-          <div className="border-t px-4 py-3">
-            {item.isAccessRevocation ? (
-              <AccessRevocationList
-                memberId={memberId}
-                canEdit={canEdit}
-                onRevocationChange={onChecklistRefresh}
-              />
-            ) : item.evidenceRequired ? (
-              <EvidenceContent
-                item={item}
-                canEdit={canEdit}
-                isProcessing={isProcessing}
-                dropzoneInputRef={dropzoneInputRef}
-                onFileDrop={handleFileDrop}
-                onFileSelect={handleFileSelect}
-                onDownload={onDownload}
-                onUncomplete={handleUncomplete}
-              />
-            ) : (
-              <SimpleContent
-                item={item}
-                canEdit={canEdit}
-                isProcessing={isProcessing}
-                onComplete={handleComplete}
-                onUncomplete={handleUncomplete}
-              />
-            )}
-          </div>
+          {item.isAccessRevocation ? (
+            <AccessRevocationList
+              memberId={memberId}
+              canEdit={canEdit}
+              onRevocationChange={onChecklistRefresh}
+            />
+          ) : (
+            <div className="border-t px-3.5 py-3">
+              {item.evidenceRequired ? (
+                <EvidenceContent
+                  item={item}
+                  canEdit={canEdit}
+                  isProcessing={isProcessing}
+                  dropzoneInputRef={dropzoneInputRef}
+                  onFileDrop={handleFileDrop}
+                  onFileSelect={handleFileSelect}
+                  onDownload={onDownload}
+                  onUncomplete={handleUncomplete}
+                />
+              ) : (
+                <SimpleContent
+                  item={item}
+                  canEdit={canEdit}
+                  isProcessing={isProcessing}
+                  onComplete={handleComplete}
+                  onUncomplete={handleUncomplete}
+                />
+              )}
+            </div>
+          )}
         </CollapsibleContent>
       </div>
     </Collapsible>

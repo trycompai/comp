@@ -1,7 +1,6 @@
 'use client';
 
 import { differenceInDays, format } from 'date-fns';
-import { Text } from '@trycompai/design-system';
 
 interface OffboardingSummaryCardProps {
   offboardDate: string;
@@ -19,15 +18,17 @@ export function OffboardingSummaryCard({
     totalItems > 0 ? Math.round((completedItems / totalItems) * 100) : 0;
 
   return (
-    <div className="grid grid-cols-3 gap-6 rounded-lg border p-5">
+    <div className="grid grid-cols-[1.4fr_1fr_1fr_1fr] gap-6 rounded-lg border p-5">
       <div>
         <div className="mb-1">
-          <Text size="xs" variant="muted" weight="medium">
-            OFFBOARDING PROGRESS
-          </Text>
+          <span className="text-[10px] font-bold uppercase tracking-[0.08em] text-muted-foreground">
+            Offboarding progress
+          </span>
         </div>
         <div className="flex items-baseline gap-1">
-          <span className="text-2xl font-bold">{completedItems}</span>
+          <span className="font-mono text-2xl font-normal tabular-nums">
+            {completedItems}
+          </span>
           <span className="text-sm text-muted-foreground">
             / {totalItems} tasks
           </span>
@@ -41,21 +42,33 @@ export function OffboardingSummaryCard({
       </div>
       <div>
         <div className="mb-1">
-          <Text size="xs" variant="muted" weight="medium">
-            TERMINATION DATE
-          </Text>
+          <span className="text-[10px] font-bold uppercase tracking-[0.08em] text-muted-foreground">
+            Termination date
+          </span>
         </div>
-        <p className="mt-1 text-lg font-semibold font-mono">
+        <p className="mt-1 font-mono text-lg font-normal">
           {format(new Date(offboardDate), 'MMM d, yyyy')}
         </p>
       </div>
       <div>
         <div className="mb-1">
-          <Text size="xs" variant="muted" weight="medium">
-            DAYS SINCE
-          </Text>
+          <span className="text-[10px] font-bold uppercase tracking-[0.08em] text-muted-foreground">
+            Days since
+          </span>
         </div>
-        <p className="mt-1 text-2xl font-bold font-mono">{daysSince}</p>
+        <p className="mt-1 font-mono text-2xl font-normal text-primary tabular-nums">
+          {daysSince}
+        </p>
+      </div>
+      <div>
+        <div className="mb-1">
+          <span className="text-[10px] font-bold uppercase tracking-[0.08em] text-muted-foreground">
+            Completion
+          </span>
+        </div>
+        <p className="mt-1 font-mono text-2xl font-normal tabular-nums">
+          {progressPercent}%
+        </p>
       </div>
     </div>
   );
