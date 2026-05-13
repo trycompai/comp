@@ -89,48 +89,43 @@ export function OffboardingChecklistItem({
   return (
     <Collapsible open={isOpen} onOpenChange={setIsOpen}>
       <div className="rounded-lg border">
-        <div className="flex items-start gap-3 p-4">
-          <div className="pt-0.5">
-            <Checkbox
-              checked={item.completed}
-              onCheckedChange={handleCheckedChange}
-              disabled={!canEdit || isProcessing}
-            />
-          </div>
-          <div className="min-w-0 flex-1">
-            <Stack gap="1">
-              <HStack gap="2" align="center">
-                <Text weight="medium">{item.title}</Text>
-                {item.evidenceRequired && (
-                  <Badge variant="outline">Evidence required</Badge>
+        <CollapsibleTrigger asChild disabled={!hasContent}>
+          <div className={`flex items-start gap-3 p-4 ${hasContent ? 'cursor-pointer' : ''}`}>
+            <div className="pt-0.5" onClick={(e) => e.stopPropagation()}>
+              <Checkbox
+                checked={item.completed}
+                onCheckedChange={handleCheckedChange}
+                disabled={!canEdit || isProcessing}
+              />
+            </div>
+            <div className="min-w-0 flex-1">
+              <Stack gap="1">
+                <HStack gap="2" align="center">
+                  <Text weight="medium">{item.title}</Text>
+                  {item.evidenceRequired && (
+                    <Badge variant="outline">Evidence required</Badge>
+                  )}
+                </HStack>
+                {item.description && (
+                  <Text size="sm" variant="muted">{item.description}</Text>
                 )}
-              </HStack>
-              {item.description && (
-                <Text size="sm" variant="muted">{item.description}</Text>
-              )}
-              {item.completed && item.completedBy && item.completedAt && (
-                <Text size="xs" variant="muted">
-                  Completed by {item.completedBy.name} on{' '}
-                  {format(new Date(item.completedAt), 'MMM d, yyyy')}
-                  {item.evidence.length > 0 && ` · ${item.evidence.length} file${item.evidence.length !== 1 ? 's' : ''} attached`}
-                </Text>
-              )}
-            </Stack>
+                {item.completed && item.completedBy && item.completedAt && (
+                  <Text size="xs" variant="muted">
+                    Completed by {item.completedBy.name} on{' '}
+                    {format(new Date(item.completedAt), 'MMM d, yyyy')}
+                    {item.evidence.length > 0 && ` · ${item.evidence.length} file${item.evidence.length !== 1 ? 's' : ''} attached`}
+                  </Text>
+                )}
+              </Stack>
+            </div>
+            {hasContent && (
+              <ChevronDown
+                size={16}
+                className={`text-muted-foreground mt-1 shrink-0 transition-transform ${isOpen ? 'rotate-180' : ''}`}
+              />
+            )}
           </div>
-          {hasContent && (
-            <CollapsibleTrigger asChild>
-              <button
-                type="button"
-                className="text-muted-foreground hover:text-foreground rounded-md p-1 transition-colors"
-              >
-                <ChevronDown
-                  size={16}
-                  className={`transition-transform ${isOpen ? 'rotate-180' : ''}`}
-                />
-              </button>
-            </CollapsibleTrigger>
-          )}
-        </div>
+        </CollapsibleTrigger>
 
         <CollapsibleContent>
           <div className="border-t px-4 pb-4 pt-3">
