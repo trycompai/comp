@@ -111,4 +111,32 @@ export class TaskTemplateController {
   ) {
     return await this.taskTemplateService.deleteById(taskTemplateId);
   }
+
+  @Post(':id/control-templates/:controlTemplateId')
+  @ApiOperation({ summary: 'Link a control template to a task template' })
+  async linkControlTemplate(
+    @Param('id', ValidateIdPipe) taskTemplateId: string,
+    @Param('controlTemplateId') controlTemplateId: string,
+    @Query('frameworkId') frameworkId?: string,
+  ) {
+    return this.taskTemplateService.linkControlTemplate(
+      taskTemplateId,
+      controlTemplateId,
+      frameworkId,
+    );
+  }
+
+  @Delete(':id/control-templates/:controlTemplateId')
+  @ApiOperation({ summary: 'Unlink a control template from a task template' })
+  async unlinkControlTemplate(
+    @Param('id', ValidateIdPipe) taskTemplateId: string,
+    @Param('controlTemplateId') controlTemplateId: string,
+    @Query('frameworkId') frameworkId?: string,
+  ) {
+    return this.taskTemplateService.unlinkControlTemplate(
+      taskTemplateId,
+      controlTemplateId,
+      frameworkId,
+    );
+  }
 }

@@ -36,7 +36,9 @@ export default async function FrameworkControlPage({ params }: PageProps) {
   const { orgId, frameworkInstanceId, controlId } = await params;
 
   const [controlRes, frameworkRes] = await Promise.all([
-    serverApi.get<ControlDetail>(`/v1/controls/${controlId}`),
+    serverApi.get<ControlDetail>(
+      `/v1/controls/${controlId}?frameworkInstanceId=${frameworkInstanceId}`,
+    ),
     serverApi.get<any>(`/v1/frameworks/${frameworkInstanceId}`),
   ]);
 
@@ -78,6 +80,7 @@ export default async function FrameworkControlPage({ params }: PageProps) {
   return (
     <FrameworkControlShell
       orgId={orgId}
+      frameworkInstanceId={frameworkInstanceId}
       control={control}
       breadcrumbs={breadcrumbs}
       documentRows={documentRows}

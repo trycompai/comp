@@ -10,6 +10,11 @@ export interface UndoPayload {
   // disconnect between a Control and a Policy / Task instance.
   controlPolicyLinks: ImplicitEdgeBucket;
   controlTaskLinks: ImplicitEdgeBucket;
+  // Framework-instance scoped equivalents for reusable controls. New syncs
+  // write these; older sync operations may not have the buckets.
+  frameworkControlPolicyLinks?: ImplicitEdgeBucket;
+  frameworkControlTaskLinks?: ImplicitEdgeBucket;
+  frameworkControlDocumentTypeLinks?: ImplicitEdgeBucket;
 }
 
 export interface EntityUndoBucket<Content> {

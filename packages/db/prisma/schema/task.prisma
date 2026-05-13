@@ -18,17 +18,18 @@ model Task {
   reviewDate      DateTime?
 
   // Relationships
-  assigneeId          String?
-  assignee            Member?                      @relation(fields: [assigneeId], references: [id])
-  organizationId      String
-  organization        Organization                 @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  taskTemplateId      String?
-  taskTemplate        FrameworkEditorTaskTemplate? @relation(fields: [taskTemplateId], references: [id])
-  controls            Control[]
-  vendors             Vendor[]
-  risks               Risk[]
-  evidenceAutomations EvidenceAutomation[]
-  browserAutomations  BrowserAutomation[]
+  assigneeId            String?
+  assignee              Member?                      @relation(fields: [assigneeId], references: [id])
+  organizationId        String
+  organization          Organization                 @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  taskTemplateId        String?
+  taskTemplate          FrameworkEditorTaskTemplate? @relation(fields: [taskTemplateId], references: [id])
+  controls              Control[]
+  frameworkControlLinks FrameworkControlTaskLink[]
+  vendors               Vendor[]
+  risks                 Risk[]
+  evidenceAutomations   EvidenceAutomation[]
+  browserAutomations    BrowserAutomation[]
 
   evidenceAutomationRuns EvidenceAutomationRun[]
   integrationCheckRuns   IntegrationCheckRun[]

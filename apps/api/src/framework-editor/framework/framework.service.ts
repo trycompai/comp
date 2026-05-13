@@ -127,10 +127,9 @@ export class FrameworkEditorFrameworkService {
   async getControls(frameworkId: string) {
     await this.findById(frameworkId);
 
-    return db.frameworkEditorControlTemplate.findMany({
+    const controls = await db.frameworkEditorControlTemplate.findMany({
       where: { requirements: { some: { frameworkId } } },
       include: {
-        policyTemplates: { select: { id: true, name: true } },
         requirements: {
           select: {
             id: true,
@@ -138,10 +137,37 @@ export class FrameworkEditorFrameworkService {
             framework: { select: { name: true } },
           },
         },
-        taskTemplates: { select: { id: true, name: true } },
+        frameworkPolicyLinks: {
+          where: { frameworkId },
+          select: { policyTemplate: { select: { id: true, name: true } } },
+        },
+        frameworkTaskLinks: {
+          where: { frameworkId },
+          select: { taskTemplate: { select: { id: true, name: true } } },
+        },
+        frameworkDocumentLinks: {
+          where: { frameworkId },
+          select: { formType: true },
+        },
       },
       orderBy: { createdAt: 'asc' },
     });
+
+    return controls.map(
+      ({
+        frameworkPolicyLinks,
+        frameworkTaskLinks,
+        frameworkDocumentLinks,
+        ...control
+      }) => ({
+        ...control,
+        policyTemplates: frameworkPolicyLinks.map(
+          (link) => link.policyTemplate,
+        ),
+        taskTemplates: frameworkTaskLinks.map((link) => link.taskTemplate),
+        documentTypes: frameworkDocumentLinks.map((link) => link.formType),
+      }),
+    );
   }
 
   async getPolicies(frameworkId: string) {
@@ -149,8 +175,8 @@ export class FrameworkEditorFrameworkService {
 
     return db.frameworkEditorPolicyTemplate.findMany({
       where: {
-        controlTemplates: {
-          some: { requirements: { some: { frameworkId } } },
+        frameworkControlLinks: {
+          some: { frameworkId },
         },
       },
       orderBy: { name: 'asc' },
@@ -162,25 +188,47 @@ export class FrameworkEditorFrameworkService {
 
     return db.frameworkEditorTaskTemplate.findMany({
       where: {
-        controlTemplates: {
-          some: { requirements: { some: { frameworkId } } },
+        frameworkControlLinks: {
+          some: { frameworkId },
         },
       },
       include: {
-        controlTemplates: { select: { id: true, name: true } },
+        frameworkControlLinks: {
+          where: { frameworkId },
+          select: { controlTemplate: { select: { id: true, name: true } } },
+        },
       },
       orderBy: { name: 'asc' },
-    });
+    }).then((tasks) =>
+      tasks.map(({ frameworkControlLinks, ...task }) => ({
+        ...task,
+        controlTemplates: frameworkControlLinks.map(
+          (link) => link.controlTemplate,
+        ),
+      })),
+    );
   }
 
   async getDocuments(frameworkId: string) {
     await this.findById(frameworkId);
 
-    return db.frameworkEditorControlTemplate.findMany({
+    const controls = await db.frameworkEditorControlTemplate.findMany({
       where: { requirements: { some: { frameworkId } } },
-      select: { id: true, name: true, documentTypes: true },
+      select: {
+        id: true,
+        name: true,
+        frameworkDocumentLinks: {
+          where: { frameworkId },
+          select: { formType: true },
+        },
+      },
       orderBy: { name: 'asc' },
     });
+
+    return controls.map(({ frameworkDocumentLinks, ...control }) => ({
+      ...control,
+      documentTypes: frameworkDocumentLinks.map((link) => link.formType),
+    }));
   }
 
   async linkControl(frameworkId: string, controlId: string) {
@@ -213,7 +261,7 @@ export class FrameworkEditorFrameworkService {
         where: { requirements: { some: { frameworkId } } },
         select: { id: true },
       })
-      .then((cts) => cts.map((ct) => ({ id: ct.id })));
+      .then((cts) => cts.map((ct) => ct.id));
 
     if (controlIds.length === 0) {
       throw new ConflictException(
@@ -221,9 +269,13 @@ export class FrameworkEditorFrameworkService {
       );
     }
 
-    await db.frameworkEditorTaskTemplate.update({
-      where: { id: taskId },
-      data: { controlTemplates: { connect: controlIds } },
+    await db.frameworkEditorControlTaskTemplateLink.createMany({
+      data: controlIds.map((controlTemplateId) => ({
+        frameworkId,
+        controlTemplateId,
+        taskTemplateId: taskId,
+      })),
+      skipDuplicates: true,
     });
 
     this.logger.log(`Linked task ${taskId} to framework ${frameworkId}`);
@@ -238,7 +290,7 @@ export class FrameworkEditorFrameworkService {
         where: { requirements: { some: { frameworkId } } },
         select: { id: true },
       })
-      .then((cts) => cts.map((ct) => ({ id: ct.id })));
+      .then((cts) => cts.map((ct) => ct.id));
 
     if (controlIds.length === 0) {
       throw new ConflictException(
@@ -246,9 +298,13 @@ export class FrameworkEditorFrameworkService {
       );
     }
 
-    await db.frameworkEditorPolicyTemplate.update({
-      where: { id: policyId },
-      data: { controlTemplates: { connect: controlIds } },
+    await db.frameworkEditorControlPolicyTemplateLink.createMany({
+      data: controlIds.map((controlTemplateId) => ({
+        frameworkId,
+        controlTemplateId,
+        policyTemplateId: policyId,
+      })),
+      skipDuplicates: true,
     });
 
     this.logger.log(`Linked policy ${policyId} to framework ${frameworkId}`);
