@@ -2,6 +2,7 @@
   "$schema": "https://mintlify.com/docs.json",
   "theme": "mint",
   "name": "Comp AI - Documentation",
+  "description": "Comp AI documentation for compliance automation, public API workflows, evidence collection, policies, Trust Centers, integrations, device compliance, and security questionnaires.",
   "colors": {
     "primary": "#0E0E10",
     "light": "#E6E6E6",

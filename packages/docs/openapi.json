@@ -20686,14 +20686,6 @@
             "schema": {
               "type": "string"
             }
-          },
-          {
-            "name": "formType",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
           }
         ],
         "responses": {
