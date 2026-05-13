@@ -10,6 +10,7 @@ import { InviteEmail } from '../email/templates/invite-member';
 import { InvitePortalEmail } from '@trycompai/email';
 import {
   BUILT_IN_ROLE_OBLIGATIONS,
+  BUILT_IN_ROLE_PERMISSIONS,
   RESTRICTED_ROLES,
 } from '@trycompai/auth';
 import type { InviteItemDto } from './dto/invite-people.dto';
@@ -37,10 +38,11 @@ export class PeopleInviteService {
   }): Promise<InviteResult[]> {
     const { organizationId, invites, callerUserId, callerRole } = params;
 
-    const callerRoles = callerRole.split(',').map((r) => r.trim());
-    const isAdmin =
-      callerRoles.includes('admin') || callerRoles.includes('owner');
-    const isAuditor = callerRoles.includes('auditor');
+    const callerMemberActions = await this.resolveCallerMemberActions(
+      callerRole,
+      organizationId,
+    );
+    const hasFullMemberControl = callerMemberActions.has('delete');
 
     const results: InviteResult[] = [];
 
@@ -48,8 +50,7 @@ export class PeopleInviteService {
       try {
         const roleError = this.validateAssignableRoles(
           invite.roles,
-          isAdmin,
-          isAuditor,
+          hasFullMemberControl,
         );
         if (roleError) {
           results.push({ email: invite.email, success: false, error: roleError });
@@ -438,26 +439,53 @@ export class PeopleInviteService {
 
   private validateAssignableRoles(
     targetRoles: string[],
-    callerIsAdmin: boolean,
-    callerIsAuditor: boolean,
+    callerHasFullControl: boolean,
   ): string | null {
-    if (callerIsAdmin) return null;
+    if (callerHasFullControl) return null;
 
-    if (callerIsAuditor) {
-      const allAuditor = targetRoles.every((r) => r === 'auditor');
-      if (!allAuditor) {
-        return "Auditors can only invite users with the 'auditor' role.";
-      }
-      return null;
-    }
-
-    const privileged = targetRoles.filter((r) =>
-      ['owner', 'admin', 'auditor'].includes(r),
+    const restrictedSet: readonly string[] = RESTRICTED_ROLES;
+    const privileged = targetRoles.filter(
+      (r) => !restrictedSet.includes(r) && Object.hasOwn(BUILT_IN_ROLE_PERMISSIONS, r),
     );
     if (privileged.length > 0) {
       return `You cannot assign privileged roles: ${privileged.join(', ')}.`;
     }
     return null;
+  }
+
+  private async resolveCallerMemberActions(
+    callerRole: string,
+    organizationId: string,
+  ): Promise<Set<string>> {
+    const roles = callerRole.split(',').map((r) => r.trim());
+    const actions = new Set<string>();
+    const customRoleNames: string[] = [];
+
+    for (const role of roles) {
+      const builtIn = BUILT_IN_ROLE_PERMISSIONS[role];
+      if (builtIn?.member) {
+        for (const a of builtIn.member) actions.add(a);
+      }
+      if (!builtIn) customRoleNames.push(role);
+    }
+
+    if (customRoleNames.length > 0) {
+      const customRoles = await db.organizationRole.findMany({
+        where: { organizationId, name: { in: customRoleNames } },
+        select: { permissions: true },
+      });
+      for (const role of customRoles) {
+        const perms =
+          typeof role.permissions === 'string'
+            ? JSON.parse(role.permissions)
+            : role.permissions;
+        if (Array.isArray(perms?.member)) {
+          for (const a of perms.member) actions.add(a);
+        }
+      }
+    }
+
+    return actions;
   }
 
   private buildPortalUrl(organizationId: string): string {
