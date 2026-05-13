@@ -67,24 +67,21 @@ export function AccessRevocationList({
       {revocations.vendors.map((vendor) => (
         <div
           key={vendor.vendorId}
-          className="flex items-center justify-between rounded-md border px-3 py-2"
+          className="flex items-center justify-between rounded-md border px-3 py-2.5"
         >
-          <Stack gap="0">
-            <HStack gap="2" align="center">
-              <Text size="sm" weight="medium">{vendor.vendorName}</Text>
-              {vendor.revoked ? (
-                <Badge variant="default">Confirmed</Badge>
-              ) : (
-                <Badge variant="secondary">Not confirmed</Badge>
-              )}
-            </HStack>
+          <div className="flex items-center gap-2">
+            <Text size="sm" weight="medium">{vendor.vendorName}</Text>
+            {vendor.revoked ? (
+              <Badge variant="default">Confirmed</Badge>
+            ) : (
+              <Badge variant="secondary">Not confirmed</Badge>
+            )}
             {vendor.revoked && vendor.revokedBy && vendor.revokedAt && (
               <Text size="xs" variant="muted">
-                by {vendor.revokedBy.name} on{' '}
-                {format(new Date(vendor.revokedAt), 'MMM d, yyyy')}
+                · {vendor.revokedBy.name}, {format(new Date(vendor.revokedAt), 'MMM d, yyyy')}
               </Text>
             )}
-          </Stack>
+          </div>
           {canEdit && (
             <div className="shrink-0 pl-3">
               {vendor.revoked ? (
