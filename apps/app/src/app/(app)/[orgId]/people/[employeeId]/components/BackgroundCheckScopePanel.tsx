@@ -9,9 +9,7 @@ import {
 } from '@trycompai/design-system';
 import {
   ChevronDown,
-  Document,
   FingerprintRecognition,
-  Hashtag,
   Portfolio,
   Security,
   UserMultiple,
@@ -50,22 +48,10 @@ const SCOPE_ROWS: ScopeRow[] = [
     description: '2–3 personal references contacted',
   },
   {
-    id: 'report',
-    icon: Document,
-    label: 'Full audited report',
-    description: 'Court records, criminal, civil',
-  },
-  {
     id: 'employment',
     icon: Portfolio,
     label: 'Previous employer verification',
     description: 'Last 7 years, dates and titles',
-  },
-  {
-    id: 'social',
-    icon: Hashtag,
-    label: 'Social media screening',
-    description: 'Public posts, flagged content',
   },
 ];
 
