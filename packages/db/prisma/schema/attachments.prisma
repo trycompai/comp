@@ -29,6 +29,7 @@ enum AttachmentEntityType {
   background_check
   employment_onboard
   employment_offboard
+  offboarding_checklist
 }
 
 enum AttachmentType {

@@ -29,6 +29,7 @@ model User {
   lockedTimelineInstances    TimelineInstance[]   @relation("TimelineInstanceLockedBy")
   unlockedTimelineInstances  TimelineInstance[]   @relation("TimelineInstanceUnlockedBy")
   publishedFrameworkVersions FrameworkVersion[]   @relation("FrameworkVersionPublisher")
+  offboardingChecklistCompletions OffboardingChecklistCompletion[] @relation("OffboardingChecklistCompletedBy")
 
   @@unique([email])
 }
@@ -149,6 +150,7 @@ model Member {
   approvedTasks                    Task[]                   @relation("TaskApprover")
   devices                          Device[]
   backgroundCheckRequests          BackgroundCheckRequest[]
+  offboardingChecklistCompletions  OffboardingChecklistCompletion[]
 }
 
 model Invitation {
