@@ -103,7 +103,7 @@ export function OffboardingChecklist({ memberId, canEdit }: OffboardingChecklist
           <Progress value={progressValue} />
         </Stack>
 
-        <Accordion variant="bordered" type="multiple">
+        <Accordion variant="bordered" multiple>
           {checklist.items.map((item) => (
             <OffboardingChecklistItem
               key={item.templateItemId}
