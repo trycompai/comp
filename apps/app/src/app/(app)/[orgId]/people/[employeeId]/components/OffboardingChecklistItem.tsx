@@ -87,11 +87,10 @@ export function OffboardingChecklistItem({
             <span className="font-medium text-sm">{item.title}</span>
             {item.completed ? (
               <Badge variant="default">Complete</Badge>
+            ) : item.evidenceRequired ? (
+              <Badge variant="destructive">Evidence required</Badge>
             ) : (
-              <Badge variant="outline">Pending</Badge>
-            )}
-            {item.evidenceRequired && !item.completed && (
-              <Badge variant="outline">Evidence required</Badge>
+              <Badge variant="secondary">Pending</Badge>
             )}
           </HStack>
           {item.description && (
