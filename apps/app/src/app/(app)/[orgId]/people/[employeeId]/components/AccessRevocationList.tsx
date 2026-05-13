@@ -103,7 +103,7 @@ export function AccessRevocationList({
         )}
       </div>
 
-      <div className="flex min-h-[440px] flex-col gap-1">
+      <div className="flex h-[440px] flex-col gap-1">
         {paginatedVendors.map((vendor) => (
           <div
             key={vendor.vendorId}
