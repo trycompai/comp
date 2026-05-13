@@ -1,3 +1,17 @@
+# [3.54.0](https://github.com/trycompai/comp/compare/v3.53.0...v3.54.0) (2026-05-13)
+
+
+### Bug Fixes
+
+* **background-check:** address cubic review — arrow nav, credit filter, trim payload ([800265a](https://github.com/trycompai/comp/commit/800265afcdb5ecbafa7d3831445d6594350ddfbd))
+* **background-check:** align V1 content with tab strip and page header ([9d5454b](https://github.com/trycompai/comp/commit/9d5454b8f3987462acb44c047a385901f21d88a8))
+
+
+### Features
+
+* **background-check:** redesign overview and report to surface real verification methodology ([a5ebe77](https://github.com/trycompai/comp/commit/a5ebe7778dee104affff0480772e5f980e8402c6))
+* **background-check:** replace marketing overview with V1 two-paths task surface ([4c81b38](https://github.com/trycompai/comp/commit/4c81b38bafe7d7daeeea8e5145b6b060f066ff73))
+
 # [3.53.0](https://github.com/trycompai/comp/compare/v3.52.0...v3.53.0) (2026-05-13)
 
 
