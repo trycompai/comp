@@ -69,9 +69,9 @@ export function AccessRevocationList({
           key={vendor.vendorId}
           className="flex items-center justify-between rounded-md border px-3 py-2.5"
         >
-          <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
-            <span className="text-sm font-medium">{vendor.vendorName}</span>
-            <div className="flex items-center">
+          <div className="flex flex-col">
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-medium">{vendor.vendorName}</span>
               {vendor.revoked ? (
                 <Badge variant="default">Confirmed</Badge>
               ) : (
@@ -80,7 +80,7 @@ export function AccessRevocationList({
             </div>
             {vendor.revoked && vendor.revokedBy && vendor.revokedAt && (
               <span className="text-xs text-muted-foreground">
-                · {vendor.revokedBy.name}, {format(new Date(vendor.revokedAt), 'MMM d, yyyy')}
+                Confirmed by {vendor.revokedBy.name} on {format(new Date(vendor.revokedAt), 'MMM d, yyyy')}
               </span>
             )}
           </div>
