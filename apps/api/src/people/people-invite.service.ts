@@ -2,6 +2,7 @@ import {
   Injectable,
   Logger,
   BadRequestException,
+  ForbiddenException,
 } from '@nestjs/common';
 import { db } from '@db';
 import { triggerEmail } from '../email/trigger-email';
@@ -9,6 +10,7 @@ import { InviteEmail } from '../email/templates/invite-member';
 import { InvitePortalEmail } from '@trycompai/email';
 import {
   BUILT_IN_ROLE_OBLIGATIONS,
+  BUILT_IN_ROLE_PERMISSIONS,
   RESTRICTED_ROLES,
 } from '@trycompai/auth';
 import type { InviteItemDto } from './dto/invite-people.dto';
@@ -36,10 +38,24 @@ export class PeopleInviteService {
   }): Promise<InviteResult[]> {
     const { organizationId, invites, callerUserId, callerRole } = params;
 
+    const callerMemberActions = await this.resolveCallerMemberActions(
+      callerRole,
+      organizationId,
+    );
+
     const results: InviteResult[] = [];
 
     for (const invite of invites) {
       try {
+        const roleError = this.validateAssignableRoles(
+          invite.roles,
+          callerMemberActions,
+        );
+        if (roleError) {
+          results.push({ email: invite.email, success: false, error: roleError });
+          continue;
+        }
+
         const email = invite.email.toLowerCase();
         const restrictedRoles: readonly string[] = RESTRICTED_ROLES;
         const isStrictlyEmployee =
@@ -418,6 +434,67 @@ export class PeopleInviteService {
           : role.obligations || {};
       return !!obligations.compliance;
     });
+  }
+
+  /**
+   * Write-level = all CRUD actions. Callers with Write can assign any role.
+   * Partial access (e.g. auditor with create+read) can only assign
+   * restricted roles (employee/contractor) and custom roles.
+   */
+  private validateAssignableRoles(
+    targetRoles: string[],
+    callerMemberActions: Set<string>,
+  ): string | null {
+    const hasWriteAccess = ['create', 'read', 'update', 'delete'].every((a) =>
+      callerMemberActions.has(a),
+    );
+    if (hasWriteAccess) return null;
+
+    const restrictedSet: readonly string[] = RESTRICTED_ROLES;
+    const disallowed = targetRoles.filter(
+      (r) =>
+        !restrictedSet.includes(r) &&
+        Object.hasOwn(BUILT_IN_ROLE_PERMISSIONS, r),
+    );
+    if (disallowed.length > 0) {
+      return `You cannot assign privileged roles: ${disallowed.join(', ')}.`;
+    }
+    return null;
+  }
+
+  private async resolveCallerMemberActions(
+    callerRole: string,
+    organizationId: string,
+  ): Promise<Set<string>> {
+    const roles = callerRole.split(',').map((r) => r.trim());
+    const actions = new Set<string>();
+    const customRoleNames: string[] = [];
+
+    for (const role of roles) {
+      const builtIn = BUILT_IN_ROLE_PERMISSIONS[role];
+      if (builtIn?.member) {
+        for (const a of builtIn.member) actions.add(a);
+      }
+      if (!builtIn) customRoleNames.push(role);
+    }
+
+    if (customRoleNames.length > 0) {
+      const customRoles = await db.organizationRole.findMany({
+        where: { organizationId, name: { in: customRoleNames } },
+        select: { permissions: true },
+      });
+      for (const role of customRoles) {
+        const perms =
+          typeof role.permissions === 'string'
+            ? JSON.parse(role.permissions)
+            : role.permissions;
+        if (Array.isArray(perms?.member)) {
+          for (const a of perms.member) actions.add(a);
+        }
+      }
+    }
+
+    return actions;
   }
 
   private buildPortalUrl(organizationId: string): string {
