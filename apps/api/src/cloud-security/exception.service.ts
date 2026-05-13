@@ -49,45 +49,42 @@ export class CloudExceptionService {
       input.organizationId,
     );
 
-    // Reuse an active exception if one already exists for this finding —
-    // mark-then-edit avoids duplicate rows under the same (org, conn, check,
-    // resource) tuple.
-    const existing = await db.findingException.findFirst({
+    // Atomic upsert against the (orgId, connectionId, checkId, resourceId)
+    // unique constraint — guarantees a single row per finding even under
+    // concurrent mark-as-exception requests. The unique constraint allows
+    // re-marking after a revoke to clear `revokedAt` on the same row; the
+    // full mark/revoke history still lives in AuditLog.
+    const upserted = await db.findingException.upsert({
       where: {
-        organizationId: input.organizationId,
-        connectionId: lookup.connectionId,
-        checkId: lookup.checkId,
-        resourceId: lookup.resourceId,
-        revokedAt: null,
-      },
-    });
-
-    let exceptionId: string;
-    if (existing) {
-      const updated = await db.findingException.update({
-        where: { id: existing.id },
-        data: {
-          reason: input.reason.trim(),
-          reviewedBy: input.reviewedBy ?? null,
-          expiresAt: input.expiresAt ?? null,
-        },
-      });
-      exceptionId = updated.id;
-    } else {
-      const created = await db.findingException.create({
-        data: {
+        organizationId_connectionId_checkId_resourceId: {
           organizationId: input.organizationId,
           connectionId: lookup.connectionId,
           checkId: lookup.checkId,
           resourceId: lookup.resourceId,
-          reason: input.reason.trim(),
-          reviewedBy: input.reviewedBy ?? null,
-          expiresAt: input.expiresAt ?? null,
-          markedById: input.userId,
         },
-      });
-      exceptionId = created.id;
-    }
+      },
+      create: {
+        organizationId: input.organizationId,
+        connectionId: lookup.connectionId,
+        checkId: lookup.checkId,
+        resourceId: lookup.resourceId,
+        reason: input.reason.trim(),
+        reviewedBy: input.reviewedBy ?? null,
+        expiresAt: input.expiresAt ?? null,
+        markedById: input.userId,
+      },
+      update: {
+        reason: input.reason.trim(),
+        reviewedBy: input.reviewedBy ?? null,
+        expiresAt: input.expiresAt ?? null,
+        // Clear revocation when re-marking — same row, refreshed metadata.
+        revokedAt: null,
+        revokedById: null,
+        markedById: input.userId,
+        markedAt: new Date(),
+      },
+    });
+    const exceptionId = upserted.id;
 
     await logCloudSecurityActivity({
       organizationId: input.organizationId,

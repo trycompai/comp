@@ -65,12 +65,20 @@ export class CloudReconciliationService {
     }
 
     // Idempotency guard — if reconciliation already wrote rows for this run,
-    // skip silently.
-    const alreadyDone = await db.findingResolution.findFirst({
-      where: { detectedInRunId: currentRun.id },
-      select: { id: true },
-    });
-    if (alreadyDone) {
+    // skip silently. Check BOTH resolutions and regressions: a run that
+    // produced only regressions (no resolutions) would otherwise be
+    // re-reconciled and duplicate the regression rows.
+    const [priorResolution, priorRegression] = await Promise.all([
+      db.findingResolution.findFirst({
+        where: { detectedInRunId: currentRun.id },
+        select: { id: true },
+      }),
+      db.findingRegression.findFirst({
+        where: { detectedInRunId: currentRun.id },
+        select: { id: true },
+      }),
+    ]);
+    if (priorResolution || priorRegression) {
       return { resolutions: 0, regressions: 0, skipped: true };
     }
 

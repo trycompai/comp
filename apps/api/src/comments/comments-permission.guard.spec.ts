@@ -21,6 +21,12 @@ jest.mock('../auth/permission.guard', () => ({
   PERMISSIONS_KEY: 'permissions',
 }));
 
+const resolveServiceByNameMock = jest.fn();
+jest.mock('../auth/service-token.config', () => ({
+  resolveServiceByName: (...args: unknown[]) =>
+    resolveServiceByNameMock(...args),
+}));
+
 jest.mock('../auth/auth.server', () => ({
   auth: { api: { hasPermission: jest.fn() } },
 }));
@@ -158,7 +164,7 @@ describe('CommentsPermissionGuard', () => {
     );
   });
 
-  it('returns true without invoking better-auth for API keys (handled by scope check upstream)', async () => {
+  it('allows API keys whose scopes include the resolved permission', async () => {
     const guard = new CommentsPermissionGuard(
       reflectorWith('task', 'update'),
     );
@@ -168,8 +174,67 @@ describe('CommentsPermissionGuard', () => {
       headers: {},
       isApiKey: true,
     });
+    // Inject explicit scope set on the request — entityType=finding requires
+    // `finding:update`, NOT `task:update`.
+    (context.switchToHttp().getRequest() as { apiKeyScopes: string[] }).apiKeyScopes =
+      ['finding:update'];
     await expect(guard.canActivate(context)).resolves.toBe(true);
     expect(hasPermissionMock).not.toHaveBeenCalled();
+  });
+
+  it('rejects API keys whose scopes do not include the resolved permission (no bypass)', async () => {
+    const guard = new CommentsPermissionGuard(
+      reflectorWith('task', 'update'),
+    );
+    const context = makeContext({
+      method: 'POST',
+      body: { entityType: 'finding' },
+      headers: {},
+      isApiKey: true,
+    });
+    (context.switchToHttp().getRequest() as { apiKeyScopes: string[] }).apiKeyScopes =
+      ['task:update']; // wrong scope
+    await expect(guard.canActivate(context)).rejects.toThrow(
+      ForbiddenException,
+    );
+  });
+
+  it('rejects service tokens whose allowlist lacks the resolved permission', async () => {
+    resolveServiceByNameMock.mockReturnValueOnce({
+      permissions: ['task:update'],
+    });
+    const guard = new CommentsPermissionGuard(
+      reflectorWith('task', 'update'),
+    );
+    const context = makeContext({
+      method: 'POST',
+      body: { entityType: 'finding' },
+      headers: {},
+      isServiceToken: true,
+    });
+    (context.switchToHttp().getRequest() as { serviceName: string }).serviceName =
+      'svc-test';
+    await expect(guard.canActivate(context)).rejects.toThrow(
+      ForbiddenException,
+    );
+  });
+
+  it('allows service tokens whose allowlist includes the resolved permission', async () => {
+    resolveServiceByNameMock.mockReturnValueOnce({
+      permissions: ['finding:update'],
+    });
+    const guard = new CommentsPermissionGuard(
+      reflectorWith('task', 'update'),
+    );
+    const context = makeContext({
+      method: 'POST',
+      body: { entityType: 'finding' },
+      headers: {},
+      isServiceToken: true,
+    });
+    (context.switchToHttp().getRequest() as { serviceName: string }).serviceName =
+      'svc-test';
+    await expect(guard.canActivate(context)).resolves.toBe(true);
   });
 
   it('returns true without invoking better-auth for platform admins', async () => {

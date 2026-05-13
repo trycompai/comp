@@ -13,6 +13,7 @@ const dbMock = {
   },
   findingRegression: {
     create: jest.fn(),
+    findFirst: jest.fn(),
   },
   remediationAction: {
     findFirst: jest.fn(),
@@ -87,6 +88,7 @@ describe('CloudReconciliationService.reconcile', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     dbMock.findingResolution.findFirst.mockResolvedValue(null);
+    dbMock.findingRegression.findFirst.mockResolvedValue(null);
     dbMock.findingRegression.create.mockResolvedValue({ id: 'freg_x' });
     dbMock.findingResolution.create.mockResolvedValue({ id: 'fres_x' });
     dbMock.remediationAction.findFirst.mockResolvedValue(null);
@@ -118,6 +120,25 @@ describe('CloudReconciliationService.reconcile', () => {
     const result = await service.reconcile({ currentRunId: 'icr_current' });
     expect(result.skipped).toBe(true);
     expect(dbMock.findingResolution.create).not.toHaveBeenCalled();
+  });
+
+  it('is idempotent for runs that produced only regressions (no resolutions)', async () => {
+    // Regression-only runs would otherwise re-execute reconciliation and
+    // duplicate FindingRegression rows.
+    dbMock.integrationCheckRun.findUnique.mockResolvedValueOnce({
+      id: 'icr_current',
+      status: 'success',
+      connection: { organizationId: 'org_1' },
+      results: [],
+      scannedServices: [],
+    });
+    dbMock.findingResolution.findFirst.mockResolvedValueOnce(null);
+    dbMock.findingRegression.findFirst.mockResolvedValueOnce({ id: 'freg_existing' });
+
+    const service = new CloudReconciliationService(makeExceptionsStub());
+    const result = await service.reconcile({ currentRunId: 'icr_current' });
+    expect(result.skipped).toBe(true);
+    expect(dbMock.findingRegression.create).not.toHaveBeenCalled();
   });
 
   it('returns 0/0 on first scan (no prior run)', async () => {

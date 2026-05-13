@@ -8,6 +8,7 @@ const dbMock = {
     findFirst: jest.fn(),
     create: jest.fn(),
     update: jest.fn(),
+    upsert: jest.fn(),
   },
   auditLog: { create: jest.fn() },
 };
@@ -45,6 +46,7 @@ describe('CloudExceptionService.markAsException', () => {
     dbMock.findingException.findFirst.mockReset();
     dbMock.findingException.create.mockReset();
     dbMock.findingException.update.mockReset();
+    dbMock.findingException.upsert.mockReset();
   });
 
   it('rejects reasons shorter than 20 characters', async () => {
@@ -70,14 +72,13 @@ describe('CloudExceptionService.markAsException', () => {
     ).rejects.toThrow(BadRequestException);
   });
 
-  it('creates a new exception when none exists for this finding', async () => {
+  it('upserts atomically — the unique constraint prevents concurrent duplicates', async () => {
     withFinding({
       findingKey: 'iam-no-mfa-john',
       resourceId: 'john',
       connectionId: 'icn_aws',
     });
-    dbMock.findingException.findFirst.mockResolvedValueOnce(null);
-    dbMock.findingException.create.mockResolvedValueOnce({ id: 'fex_new' });
+    dbMock.findingException.upsert.mockResolvedValueOnce({ id: 'fex_new' });
 
     const result = await buildService().markAsException({
       findingId: 'icx_1',
@@ -87,15 +88,16 @@ describe('CloudExceptionService.markAsException', () => {
     });
 
     expect(result.id).toBe('fex_new');
-    expect(dbMock.findingException.create).toHaveBeenCalledWith(
+    expect(dbMock.findingException.upsert).toHaveBeenCalledWith(
       expect.objectContaining({
-        data: expect.objectContaining({
-          organizationId: 'org_1',
-          connectionId: 'icn_aws',
-          checkId: 'iam-no-mfa', // normalized from finding key
-          resourceId: 'john',
-          markedById: 'usr_1',
-        }),
+        where: {
+          organizationId_connectionId_checkId_resourceId: {
+            organizationId: 'org_1',
+            connectionId: 'icn_aws',
+            checkId: 'iam-no-mfa', // normalized from finding key
+            resourceId: 'john',
+          },
+        },
       }),
     );
     expect(auditLogMock).toHaveBeenCalledWith(
@@ -103,25 +105,29 @@ describe('CloudExceptionService.markAsException', () => {
     );
   });
 
-  it('updates an existing active exception instead of creating a duplicate', async () => {
+  it('upsert update branch clears prior revocation and refreshes markedById/At', async () => {
     withFinding({
       findingKey: 'iam-no-mfa-alice',
       resourceId: 'alice',
       connectionId: 'icn_aws',
     });
-    dbMock.findingException.findFirst.mockResolvedValueOnce({ id: 'fex_old' });
-    dbMock.findingException.update.mockResolvedValueOnce({ id: 'fex_old' });
+    dbMock.findingException.upsert.mockResolvedValueOnce({ id: 'fex_old' });
 
-    const result = await buildService().markAsException({
+    await buildService().markAsException({
       findingId: 'icx_2',
       organizationId: 'org_1',
-      userId: 'usr_1',
+      userId: 'usr_2',
       reason: 'Updated reason now exceeds the twenty char minimum length.',
     });
 
-    expect(result.id).toBe('fex_old');
-    expect(dbMock.findingException.update).toHaveBeenCalled();
-    expect(dbMock.findingException.create).not.toHaveBeenCalled();
+    const call = dbMock.findingException.upsert.mock.calls[0][0];
+    expect(call.update).toEqual(
+      expect.objectContaining({
+        revokedAt: null,
+        revokedById: null,
+        markedById: 'usr_2',
+      }),
+    );
   });
 
   it('rejects findings that lack a stable check/resource identity', async () => {
@@ -186,17 +192,21 @@ describe('CloudExceptionService.revokeException', () => {
     });
     dbMock.findingException.update.mockResolvedValueOnce({ id: 'fex_1' });
 
+    const before = Date.now();
     await buildService().revokeException({
       exceptionId: 'fex_1',
       organizationId: 'org_1',
       userId: 'usr_1',
     });
+    const after = Date.now();
 
-    expect(dbMock.findingException.update).toHaveBeenCalledWith(
-      expect.objectContaining({
-        data: expect.objectContaining({ revokedById: 'usr_1' }),
-      }),
-    );
+    expect(dbMock.findingException.update).toHaveBeenCalled();
+    const call = dbMock.findingException.update.mock.calls[0][0];
+    expect(call.data.revokedById).toBe('usr_1');
+    // revokedAt must be a Date set during this call window.
+    expect(call.data.revokedAt).toBeInstanceOf(Date);
+    expect(call.data.revokedAt.getTime()).toBeGreaterThanOrEqual(before);
+    expect(call.data.revokedAt.getTime()).toBeLessThanOrEqual(after);
     expect(auditLogMock).toHaveBeenCalledWith(
       expect.objectContaining({ action: 'exception_revoked' }),
     );

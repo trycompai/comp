@@ -13,6 +13,7 @@ import {
   PERMISSIONS_KEY,
   type RequiredPermission,
 } from '../auth/permission.guard';
+import { resolveServiceByName } from '../auth/service-token.config';
 import type { AuthenticatedRequest } from '../auth/types';
 
 /**
@@ -62,23 +63,59 @@ export class CommentsPermissionGuard implements CanActivate {
 
     const request = context.switchToHttp().getRequest<GuardedRequest>();
 
-    // API keys and service tokens use the existing fallback behaviour from
-    // the standard PermissionGuard — no entity-type-aware logic needed.
-    // Defer to scope checks against the literal metadata.
-    if (request.isApiKey || request.isServiceToken || request.isPlatformAdmin) {
-      return true;
-    }
+    if (request.isPlatformAdmin) return true;
 
     const fallback = required[0];
     const action = fallback.actions[0];
     const resource = this.resolveEntityResource(request, fallback.resource);
+    const requiredScope = `${resource}:${action}`;
+
+    // API keys: scope must explicitly include `${resource}:${action}`.
+    // Mirrors PermissionGuard's API-key handling so the dynamic-resource
+    // resolution doesn't accidentally bypass scope enforcement.
+    if (request.isApiKey) {
+      const scopes = request.apiKeyScopes;
+      if (!scopes || scopes.length === 0) {
+        // Legacy keys: same deprecation behavior as the standard guard —
+        // allow until April 20 2026, deny after.
+        const deprecationDate = new Date('2026-04-20T00:00:00Z');
+        if (new Date() >= deprecationDate) {
+          this.logger.warn(
+            `[CommentsPermissionGuard] Legacy API key with empty scopes BLOCKED on ${request.method} ${request.url}.`,
+          );
+          throw new ForbiddenException(
+            'This API key is no longer supported. Please regenerate your API key with explicit scopes.',
+          );
+        }
+        return true;
+      }
+      if (!scopes.includes(requiredScope)) {
+        this.logger.warn(
+          `[CommentsPermissionGuard] API key lacks scope ${requiredScope}`,
+        );
+        throw new ForbiddenException('API key lacks required permission scope');
+      }
+      return true;
+    }
+
+    // Service tokens: same scope check against the token's allowlist.
+    if (request.isServiceToken) {
+      const service = resolveServiceByName(request.serviceName);
+      if (!service) throw new ForbiddenException('Unknown service');
+      if (!service.permissions.includes(requiredScope)) {
+        this.logger.warn(
+          `[CommentsPermissionGuard] Service "${request.serviceName}" lacks ${requiredScope}`,
+        );
+        throw new ForbiddenException('Service token lacks required permission');
+      }
+      return true;
+    }
 
     const permissions: Record<string, string[]> = { [resource]: [action] };
-
     const allowed = await this.checkPermission(request, permissions);
     if (!allowed) {
       this.logger.warn(
-        `[CommentsPermissionGuard] Denied ${request.method} ${request.url}. Required: ${resource}:${action}`,
+        `[CommentsPermissionGuard] Denied ${request.method} ${request.url}. Required: ${requiredScope}`,
       );
       throw new ForbiddenException('Access denied');
     }

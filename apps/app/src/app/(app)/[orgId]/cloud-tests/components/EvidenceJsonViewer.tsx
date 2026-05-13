@@ -65,7 +65,7 @@ export function EvidenceJsonViewer({ evidence }: EvidenceJsonViewerProps) {
       <button
         type="button"
         onClick={handleCopy}
-        className="absolute right-2 top-2 inline-flex items-center gap-1 rounded-md border border-border/50 bg-background/80 px-1.5 py-1 text-[10px] font-medium text-muted-foreground opacity-0 transition-opacity hover:bg-background group-hover:opacity-100"
+        className="absolute right-2 top-2 inline-flex items-center gap-1 rounded-md border border-border/50 bg-background/80 px-1.5 py-1 text-[10px] font-medium text-muted-foreground opacity-0 transition-opacity hover:bg-background group-hover:opacity-100 focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
         aria-label="Copy evidence JSON to clipboard"
       >
         {copied ? (

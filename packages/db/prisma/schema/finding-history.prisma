@@ -37,9 +37,14 @@ model FindingException {
   revokedAt   DateTime?
   revokedById String?
 
+  /// At most one row per (org, connection, check, resource). Re-marking
+  /// after revoke updates the same row (revokedAt cleared, fields refreshed)
+  /// so the audit history lives in AuditLog rather than duplicate FindingException
+  /// rows. Guarantees DB-level dedupe under concurrent mark-as-exception.
+  @@unique([organizationId, connectionId, checkId, resourceId])
+
   @@index([organizationId])
   @@index([connectionId])
-  @@index([checkId, resourceId])
   @@index([expiresAt])
 }
 

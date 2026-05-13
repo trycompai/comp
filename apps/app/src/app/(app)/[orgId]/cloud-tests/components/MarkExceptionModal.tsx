@@ -15,6 +15,23 @@ import { toast } from 'sonner';
 
 const MIN_REASON_LENGTH = 20;
 
+/**
+ * Tomorrow's date in the user's LOCAL time zone, formatted as YYYY-MM-DD.
+ *
+ * Avoids the UTC-midnight bug where `new Date().toISOString().slice(0, 10)`
+ * computes the next day in UTC instead of locally — for a user in
+ * UTC-8 picking at 9pm local, the UTC-derived minimum would already be
+ * "tomorrow" UTC and incorrectly block valid local-tomorrow selections.
+ */
+function tomorrowLocalDateString(): string {
+  const tomorrow = new Date();
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  const yyyy = tomorrow.getFullYear();
+  const mm = String(tomorrow.getMonth() + 1).padStart(2, '0');
+  const dd = String(tomorrow.getDate()).padStart(2, '0');
+  return `${yyyy}-${mm}-${dd}`;
+}
+
 export interface MarkExceptionModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -160,9 +177,7 @@ export function MarkExceptionModal({
               type="date"
               value={expiresAt}
               onChange={(e) => setExpiresAt(e.target.value)}
-              min={new Date(Date.now() + 24 * 60 * 60 * 1000)
-                .toISOString()
-                .slice(0, 10)}
+              min={tomorrowLocalDateString()}
               className="w-full rounded-md border bg-background px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-primary/30"
             />
             <p className="text-muted-foreground mt-1 text-[10px]">

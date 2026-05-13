@@ -18,6 +18,32 @@ describe('evidence-sanitizer', () => {
       });
     });
 
+    it('redacts snake_case credential keys (e.g. AWS-style access_key_id)', () => {
+      expect(
+        sanitizeEvidence({
+          access_key_id: 'AKIAIOSFODNN7EXAMPLE',
+          secret_access_key: 'wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY',
+          session_token: 'IQoJb3JpZ2luX2VjEHMa...',
+        }),
+      ).toEqual({
+        access_key_id: REDACTED_VALUE,
+        secret_access_key: REDACTED_VALUE,
+        session_token: REDACTED_VALUE,
+      });
+    });
+
+    it('redacts kebab-case and dotted credential keys (e.g. x-api-key)', () => {
+      expect(
+        sanitizeEvidence({
+          'x-api-key': 'sk-abc',
+          'auth.token': 'bearer-xyz',
+        }),
+      ).toEqual({
+        'x-api-key': REDACTED_VALUE,
+        'auth.token': REDACTED_VALUE,
+      });
+    });
+
     it('redacts every configured sensitive suffix pattern', () => {
       const input: Record<string, string> = {
         password: 'a',
@@ -152,6 +178,31 @@ describe('evidence-sanitizer', () => {
         sanitizeEvidence({ regions: ['us-east-1', 'eu-west-1'] }),
       ).toEqual({
         regions: ['us-east-1', 'eu-west-1'],
+      });
+    });
+
+    it('redacts string elements of an array under a sensitive key', () => {
+      expect(
+        sanitizeEvidence({
+          tokens: ['t1', 't2', 't3'],
+          numericMix: 'should stay visible',
+        }),
+      ).toEqual({
+        tokens: [REDACTED_VALUE, REDACTED_VALUE, REDACTED_VALUE],
+        numericMix: 'should stay visible',
+      });
+    });
+
+    it('redacts object elements of an array under a sensitive key', () => {
+      expect(
+        sanitizeEvidence({
+          credentials: [
+            { user: 'john', secret: 'x' },
+            { user: 'alice', secret: 'y' },
+          ],
+        }),
+      ).toEqual({
+        credentials: [REDACTED_VALUE, REDACTED_VALUE],
       });
     });
 

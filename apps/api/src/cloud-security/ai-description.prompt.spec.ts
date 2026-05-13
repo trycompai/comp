@@ -107,7 +107,35 @@ describe('ai-description.prompt', () => {
         }),
       ).toMatchObject({ field: 'passCriteria' });
     });
+
+    it('flags bare CIS/PCI/NIST/HIPAA control numbers (e.g. "CIS 1.8")', () => {
+      expect(
+        findForbiddenContent({
+          ...baseline,
+          whyItMatters: 'Aligns with CIS 1.8 best practices.',
+        }),
+      ).toMatchObject({ field: 'whyItMatters' });
+      expect(
+        findForbiddenContent({
+          ...baseline,
+          whyItMatters: 'Required by PCI 8.2.3.',
+        }),
+      ).toMatchObject({ field: 'whyItMatters' });
+      expect(
+        findForbiddenContent({
+          ...baseline,
+          whyItMatters: 'See also: NIST AC-2.',
+        }),
+      ).toMatchObject({ field: 'whyItMatters' });
+      expect(
+        findForbiddenContent({
+          ...baseline,
+          whyItMatters: 'Maps to HIPAA 164.312.',
+        }),
+      ).toMatchObject({ field: 'whyItMatters' });
+    });
   });
+
 
   describe('buildCheckDescriptionPrompt', () => {
     it('includes provider, severity, title and description', () => {

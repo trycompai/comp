@@ -92,7 +92,7 @@ export function buildCheckDescriptionPrompt(input: CheckDescriptionInput): strin
  * patterns that should NEVER match in production output.
  */
 const FORBIDDEN_PATTERNS: readonly RegExp[] = [
-  // Compliance control numbers and framework citations
+  // Compliance framework names (full)
   /\bSOC ?2\b/i,
   /\bISO ?27001\b/i,
   /\bISO ?27002\b/i,
@@ -100,8 +100,13 @@ const FORBIDDEN_PATTERNS: readonly RegExp[] = [
   /\bNIST\b/i,
   /\bPCI ?DSS\b/i,
   /\bCIS ?Benchmark\b/i,
-  /\bCC\d+\.\d+\b/i, // SOC 2 control numbers like CC6.1
-  /\bA\.\d+\.\d+(\.\d+)?\b/, // ISO control numbers like A.9.4.3
+  // Bare control-number citations following any of the known framework
+  // prefixes — catches "CIS 1.8", "PCI 8.2.3", "NIST AC-2",
+  // "HIPAA 164.312" even without the full framework name re-mentioned.
+  /\b(CIS|PCI|NIST|HIPAA|HITRUST|FedRAMP) ?[A-Z]*[- ]?\d+(\.\d+){0,3}\b/i,
+  // SOC 2 / ISO control-number formats
+  /\bCC\d+\.\d+\b/i,
+  /\bA\.\d+\.\d+(\.\d+)?\b/,
   // URLs
   /https?:\/\//i,
   /www\./i,

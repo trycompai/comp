@@ -21,23 +21,35 @@
 export const REDACTED_VALUE = '[REDACTED]';
 
 const SENSITIVE_SUFFIXES: readonly string[] = [
+  // singular + plural pairs — plurals can appear in arrays
+  // (e.g. `tokens: [...]`, `secrets: [...]`)
   'password',
+  'passwords',
   'secret',
+  'secrets',
   'token',
+  'tokens',
   'credential',
   'credentials',
   'privatekey',
+  'privatekeys',
   'publickey',
+  'publickeys',
   'accesskey',
+  'accesskeys',
   'accesskeyid',
   'secretaccesskey',
   'apikey',
+  'apikeys',
   'signingkey',
+  'signingkeys',
   'sessionid',
   'sessiontoken',
+  'sessiontokens',
   'bearer',
   'authorization',
   'cookie',
+  'cookies',
 ];
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -45,8 +57,24 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 }
 
 function keyIsSensitive(key: string): boolean {
-  const normalized = key.toLowerCase();
+  // Strip underscores, hyphens, dots, and whitespace so suffix matching
+  // catches snake_case (`access_key_id`), kebab-case (`access-key-id`),
+  // and human-formatted (`access key id`) variants alongside camelCase.
+  const normalized = key.toLowerCase().replace(/[\s._-]/g, '');
   return SENSITIVE_SUFFIXES.some((suffix) => normalized.endsWith(suffix));
+}
+
+/**
+ * Replace every string element of an array with REDACTED. Arrays under
+ * sensitive keys (e.g. `tokens: ["t1","t2"]`, `accessKeys: [{...}]`) need
+ * their values scrubbed but their length preserved.
+ */
+function redactArray(value: unknown[]): unknown[] {
+  return value.map((item) => {
+    if (typeof item === 'string') return REDACTED_VALUE;
+    if (isRecord(item)) return REDACTED_VALUE;
+    return item;
+  });
 }
 
 /**
@@ -64,9 +92,19 @@ export function sanitizeEvidence(value: unknown): unknown {
   const result: Record<string, unknown> = {};
   for (const key of Object.keys(value)) {
     const child = value[key];
-    const shouldRedact =
-      keyIsSensitive(key) && (typeof child === 'string' || isRecord(child));
-    result[key] = shouldRedact ? REDACTED_VALUE : sanitizeEvidence(child);
+    if (keyIsSensitive(key)) {
+      if (typeof child === 'string' || isRecord(child)) {
+        result[key] = REDACTED_VALUE;
+      } else if (Array.isArray(child)) {
+        result[key] = redactArray(child);
+      } else {
+        // Booleans / numbers under a sensitive key stay visible — they're
+        // typically config flags (e.g. `requirePassword: true`).
+        result[key] = child;
+      }
+    } else {
+      result[key] = sanitizeEvidence(child);
+    }
   }
   return result;
 }

@@ -128,7 +128,7 @@ export class CloudSecurityController {
       userId: req.userId,
       reason: body.reason,
       reviewedBy: body.reviewedBy ?? null,
-      expiresAt: body.expiresAt ? new Date(body.expiresAt) : null,
+      expiresAt: parseExceptionExpiry(body.expiresAt),
     });
     return { data: result };
   }
@@ -968,4 +968,28 @@ export class CloudSecurityController {
     await this.legacyService.disconnectLegacy(integrationId, organizationId);
     return { success: true };
   }
+}
+
+/**
+ * Convert a user-supplied exception expiry into a Date, treating bare
+ * date strings ("YYYY-MM-DD") as end-of-day UTC so the exception persists
+ * through the user's chosen calendar day in any reasonable time zone.
+ *
+ * Without this, `new Date("2026-08-13")` is parsed as `2026-08-13T00:00:00Z`,
+ * which is the START of Aug 13 UTC — already in the past by late evening
+ * Aug 12 in US Pacific, expiring the exception ~8h before the user expected.
+ */
+function parseExceptionExpiry(input: string | undefined): Date | null {
+  if (!input) return null;
+  // Bare YYYY-MM-DD → end of that day in UTC (close enough to "end of day
+  // anywhere on Earth" without per-user-TZ tracking).
+  const bareDate = /^(\d{4})-(\d{2})-(\d{2})$/.exec(input);
+  if (bareDate) {
+    const [, y, m, d] = bareDate;
+    return new Date(Date.UTC(+y, +m - 1, +d, 23, 59, 59, 999));
+  }
+  // Full ISO timestamp — trust it as-is.
+  const parsed = new Date(input);
+  if (Number.isNaN(parsed.getTime())) return null;
+  return parsed;
 }
