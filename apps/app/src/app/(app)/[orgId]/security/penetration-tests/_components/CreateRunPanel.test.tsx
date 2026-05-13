@@ -16,6 +16,16 @@ vi.mock('sonner', () => ({
   toast: { error: vi.fn() },
 }));
 
+async function confirmAuthorization(user: ReturnType<typeof userEvent.setup>) {
+  await user.click(
+    screen.getByText('I own this target or have written authorization to test it.'),
+  );
+}
+
+function checkInput(label: RegExp) {
+  return screen.getByLabelText(label, { selector: 'input' });
+}
+
 describe('CreateRunPanel', () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -48,6 +58,7 @@ describe('CreateRunPanel', () => {
     render(<CreateRunPanel orgId="org_1" balance={1} onSubmit={onSubmit} />);
 
     await user.type(screen.getByLabelText(/target url/i), 'app.example.com');
+    await confirmAuthorization(user);
     await user.click(screen.getByRole('button', { name: /start scan/i }));
 
     await waitFor(() => {
@@ -85,8 +96,7 @@ describe('CreateRunPanel', () => {
     render(<CreateRunPanel orgId="org_1" balance={1} onSubmit={vi.fn()} />);
 
     await user.click(screen.getByText('Quick'));
-    await user.click(screen.getByRole('button', { name: /customize scan/i }));
-    await user.click(screen.getByLabelText(/^xss$/i));
+    await user.click(checkInput(/^xss$/i));
 
     expect(screen.getByText('Custom · 11 min-25 min')).toBeInTheDocument();
     expect(screen.queryByText(/based on/i)).not.toBeInTheDocument();
@@ -103,20 +113,20 @@ describe('CreateRunPanel', () => {
     render(<CreateRunPanel orgId="org_1" balance={1} onSubmit={onSubmit} />);
 
     await user.click(screen.getByText('Quick'));
-    await user.click(screen.getByRole('button', { name: /customize scan/i }));
-    await user.click(validationLevel().getByLabelText(/safe proof/i));
-    await user.click(screen.getByLabelText(/^xss$/i));
-    await user.click(screen.getByLabelText(/^injection$/i));
-    await user.click(screen.getByLabelText(/^authentication$/i));
-    await user.click(screen.getByLabelText(/^authorization$/i));
-    await user.click(screen.getByLabelText(/idor \/ bola/i));
-    await user.click(screen.getByLabelText(/ssrf \/ xxe/i));
-    await user.click(screen.getByLabelText(/^csrf$/i));
+    await user.click(validationLevel().getByLabelText(/safe proof/i, { selector: 'input' }));
+    await user.click(checkInput(/^xss$/i));
+    await user.click(checkInput(/^injection$/i));
+    await user.click(checkInput(/^authentication$/i));
+    await user.click(checkInput(/^authorization$/i));
+    await user.click(checkInput(/^idor \/ bola$/i));
+    await user.click(checkInput(/^ssrf \/ xxe$/i));
+    await user.click(checkInput(/^csrf$/i));
 
     expect(screen.getByText('Standard · 30-90 min')).toBeInTheDocument();
     expect(screen.queryByText(/based on/i)).not.toBeInTheDocument();
 
     await user.type(screen.getByLabelText(/target url/i), 'app.example.com');
+    await confirmAuthorization(user);
     await user.click(screen.getByRole('button', { name: /start scan/i }));
 
     await waitFor(() => {
@@ -142,12 +152,11 @@ describe('CreateRunPanel', () => {
     render(<CreateRunPanel orgId="org_1" balance={1} onSubmit={vi.fn()} />);
 
     await user.click(screen.getByText('Quick'));
-    await user.click(screen.getByRole('button', { name: /customize scan/i }));
-    await user.click(screen.getByLabelText(/^xss$/i));
+    await user.click(checkInput(/^xss$/i));
 
     expect(screen.getByText('Custom · 11 min-25 min')).toBeInTheDocument();
 
-    await user.click(validationLevel().getByLabelText(/safe proof/i));
+    await user.click(validationLevel().getByLabelText(/safe proof/i, { selector: 'input' }));
 
     expect(screen.getByText('Custom · 17 min-38 min')).toBeInTheDocument();
   });
@@ -158,10 +167,9 @@ describe('CreateRunPanel', () => {
     render(<CreateRunPanel orgId="org_1" balance={1} onSubmit={vi.fn()} />);
 
     await user.click(screen.getByText('Quick'));
-    await user.click(screen.getByRole('button', { name: /customize scan/i }));
-    await user.click(screen.getByLabelText(/secrets & info disclosure/i));
-    await user.click(screen.getByLabelText(/technology config/i));
-    await user.click(screen.getByLabelText(/^discovery$/i));
+    await user.click(checkInput(/^secrets & info disclosure$/i));
+    await user.click(checkInput(/^technology config$/i));
+    await user.click(checkInput(/^discovery$/i));
 
     expect(screen.getByText('Custom · 5 min-5 min')).toBeInTheDocument();
   });
@@ -172,13 +180,10 @@ describe('CreateRunPanel', () => {
     expect(screen.getByLabelText(/repository/i)).toBeInTheDocument();
   });
 
-  it('uses design-system radio styling for evidence options', async () => {
-    const user = userEvent.setup();
+  it('uses design-system radio styling for evidence options', () => {
     render(<CreateRunPanel orgId="org_1" balance={1} onSubmit={vi.fn()} />);
 
-    await user.click(screen.getByRole('button', { name: /customize scan/i }));
-
-    expect(validationLevel().getByLabelText(/safe proof/i).closest('label')).toHaveClass(
+    expect(validationLevel().getByLabelText(/safe proof/i, { selector: 'input' }).closest('label')).toHaveClass(
       'has-[[data-checked]]:border-primary',
       'has-[[data-checked]]:bg-primary/5',
       'has-[[data-checked]]:text-primary',
@@ -191,50 +196,51 @@ describe('CreateRunPanel', () => {
     render(<CreateRunPanel orgId="org_1" balance={1} onSubmit={vi.fn()} />);
 
     await user.click(screen.getByText('Quick'));
-    await user.click(screen.getByRole('button', { name: /customize scan/i }));
-    await user.click(screen.getByLabelText(/secrets & info disclosure/i));
-    await user.click(screen.getByLabelText(/technology config/i));
-    await user.click(screen.getByLabelText(/^discovery$/i));
-    await user.click(screen.getByLabelText(/^xss$/i));
+    await user.click(checkInput(/^secrets & info disclosure$/i));
+    await user.click(checkInput(/^technology config$/i));
+    await user.click(checkInput(/^discovery$/i));
+    await user.click(checkInput(/^xss$/i));
 
-    expect(screen.getByLabelText(/^discovery$/i)).toBeChecked();
+    expect(checkInput(/^discovery$/i)).toBeChecked();
   });
 
-  it('shows report-only helper text', async () => {
+  it('shows report-only helper text when report_only is selected', async () => {
     const user = userEvent.setup();
 
     render(<CreateRunPanel orgId="org_1" balance={1} onSubmit={vi.fn()} />);
 
     await user.click(screen.getByText('Quick'));
-    await user.click(screen.getByRole('button', { name: /customize scan/i }));
 
     expect(
-      screen.getByText(/fastest and lowest risk/i),
+      screen.getByText(/findings are reported without exploitation/i),
     ).toBeInTheDocument();
   });
 
-  it('shows validation level choices and selected helper copy', async () => {
+  it('renders the Scan coverage panel open by default and exposes validation level options', async () => {
     const user = userEvent.setup();
 
     render(<CreateRunPanel orgId="org_1" balance={1} onSubmit={vi.fn()} />);
 
-    expect(screen.getByText('Customize scan')).toBeInTheDocument();
-
-    await user.click(screen.getByRole('button', { name: /customize scan/i }));
-
+    expect(screen.getByText('Scan coverage')).toBeInTheDocument();
     expect(screen.getByText('Validation level')).toBeInTheDocument();
-    expect(validationLevel().getByLabelText(/report only/i)).toBeInTheDocument();
-    expect(validationLevel().getByLabelText(/safe proof/i)).toBeInTheDocument();
-    expect(validationLevel().getByLabelText(/impact proof/i)).toBeInTheDocument();
+    expect(validationLevel().getByLabelText(/report only/i, { selector: 'input' })).toBeInTheDocument();
+    expect(validationLevel().getByLabelText(/safe proof/i, { selector: 'input' })).toBeInTheDocument();
+    expect(validationLevel().getByLabelText(/impact proof/i, { selector: 'input' })).toBeInTheDocument();
 
-    await user.click(validationLevel().getByLabelText(/report only/i));
-    expect(screen.getByText(/fastest and lowest risk/i)).toBeInTheDocument();
+    await user.click(validationLevel().getByLabelText(/report only/i, { selector: 'input' }));
+    expect(
+      screen.getByText(/findings are reported without exploitation/i),
+    ).toBeInTheDocument();
 
-    await user.click(validationLevel().getByLabelText(/safe proof/i));
-    expect(screen.getByText(/balanced validation/i)).toBeInTheDocument();
+    await user.click(validationLevel().getByLabelText(/safe proof/i, { selector: 'input' }));
+    expect(
+      screen.getByText(/findings are validated with non-destructive proofs/i),
+    ).toBeInTheDocument();
 
-    await user.click(validationLevel().getByLabelText(/impact proof/i));
-    expect(screen.getByText(/highest confidence, longer runtime/i)).toBeInTheDocument();
+    await user.click(validationLevel().getByLabelText(/impact proof/i, { selector: 'input' }));
+    expect(
+      screen.getByText(/findings are validated with active exploitation/i),
+    ).toBeInTheDocument();
   });
 
   it('keeps preset cards concise without validation metadata', () => {
@@ -245,7 +251,46 @@ describe('CreateRunPanel', () => {
     expect(screen.queryByText('Impact proof · 12 checks')).not.toBeInTheDocument();
   });
 
-  it('requires confirmation for Deep profile before submit', async () => {
+  it('blocks submit when authorization is not confirmed', async () => {
+    const user = userEvent.setup();
+    const onSubmit = vi.fn(async () => ({ id: 'never' }));
+
+    render(<CreateRunPanel orgId="org_1" balance={1} onSubmit={onSubmit} />);
+
+    await user.type(screen.getByLabelText(/target url/i), 'app.example.com');
+    await user.click(screen.getByRole('button', { name: /start scan/i }));
+
+    await waitFor(() => {
+      expect(
+        screen.getByText(/confirm you own or are authorized to test this target/i),
+      ).toBeInTheDocument();
+    });
+    expect(onSubmit).not.toHaveBeenCalled();
+  });
+
+  it('exposes authorization error to assistive tech via aria-invalid and aria-describedby', async () => {
+    const user = userEvent.setup();
+
+    render(<CreateRunPanel orgId="org_1" balance={1} onSubmit={vi.fn()} />);
+
+    const checkbox = screen.getByRole('checkbox', { name: /i own this target/i });
+    expect(checkbox).toHaveAttribute('aria-invalid', 'false');
+    expect(checkbox).toHaveAttribute('aria-describedby', 'pt-authorized-help');
+
+    await user.type(screen.getByLabelText(/target url/i), 'app.example.com');
+    await user.click(screen.getByRole('button', { name: /start scan/i }));
+
+    await waitFor(() => {
+      expect(checkbox).toHaveAttribute('aria-invalid', 'true');
+    });
+    expect(checkbox.getAttribute('aria-describedby')).toContain('pt-authorized-error');
+
+    const alert = screen.getByRole('alert');
+    expect(alert).toHaveAttribute('id', 'pt-authorized-error');
+    expect(alert).toHaveTextContent(/confirm you own or are authorized to test this target/i);
+  });
+
+  it('requires confirmation for impact-proof validation before submit', async () => {
     const user = userEvent.setup();
     const onSubmit = vi.fn(async () => ({ id: 'run_deep' }));
 
@@ -253,13 +298,17 @@ describe('CreateRunPanel', () => {
 
     await user.type(screen.getByLabelText(/target url/i), 'app.example.com');
     await user.click(screen.getByText('Deep'));
+    await confirmAuthorization(user);
     await user.click(screen.getByRole('button', { name: /start scan/i }));
 
     expect(onSubmit).not.toHaveBeenCalled();
     const dialog = screen.getByRole('alertdialog');
-    expect(within(dialog).getByText(/confirm scan intensity/i)).toBeInTheDocument();
+    expect(within(dialog).getByText(/confirm impact-proof scan/i)).toBeInTheDocument();
+    expect(
+      within(dialog).getByText(/actively exploits findings/i),
+    ).toBeInTheDocument();
 
-    await user.click(within(dialog).getByRole('button', { name: /start scan/i }));
+    await user.click(within(dialog).getByRole('button', { name: /run impact-proof scan/i }));
 
     await waitFor(() => {
       expect(onSubmit).toHaveBeenCalledWith(
@@ -269,6 +318,30 @@ describe('CreateRunPanel', () => {
         }),
       );
     });
+  });
+
+  it('does not show the impact-proof modal for Standard profile', async () => {
+    const user = userEvent.setup();
+    const onSubmit = vi.fn(async () => ({ id: 'run_standard' }));
+
+    render(<CreateRunPanel orgId="org_1" balance={1} onSubmit={onSubmit} />);
+
+    await user.type(screen.getByLabelText(/target url/i), 'app.example.com');
+    await confirmAuthorization(user);
+    await user.click(screen.getByRole('button', { name: /start scan/i }));
+
+    await waitFor(() => {
+      expect(onSubmit).toHaveBeenCalled();
+    });
+    expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
+  });
+
+  it('exposes a tooltip trigger for each vulnerability check', () => {
+    render(<CreateRunPanel orgId="org_1" balance={1} onSubmit={vi.fn()} />);
+
+    expect(screen.getByRole('button', { name: /about xss/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /about csrf/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /about business logic/i })).toBeInTheDocument();
   });
 });
 
