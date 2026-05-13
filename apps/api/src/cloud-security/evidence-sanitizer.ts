@@ -65,14 +65,20 @@ function keyIsSensitive(key: string): boolean {
 }
 
 /**
- * Replace every string element of an array with REDACTED. Arrays under
- * sensitive keys (e.g. `tokens: ["t1","t2"]`, `accessKeys: [{...}]`) need
- * their values scrubbed but their length preserved.
+ * Replace every string / object / nested-array element of an array with
+ * REDACTED. Arrays under sensitive keys (e.g. `tokens: ["t1","t2"]`,
+ * `accessKeys: [{...}]`, or even `secrets: [["a","b"], ["c"]]`) need their
+ * values scrubbed but their length preserved. Booleans and numbers stay
+ * visible to match how the parent record handles them under sensitive
+ * keys.
  */
 function redactArray(value: unknown[]): unknown[] {
   return value.map((item) => {
     if (typeof item === 'string') return REDACTED_VALUE;
     if (isRecord(item)) return REDACTED_VALUE;
+    // Recurse into nested arrays so secrets inside `[[...], [...]]` are
+    // scrubbed too — without this, nested arrays passed through unchanged.
+    if (Array.isArray(item)) return redactArray(item);
     return item;
   });
 }

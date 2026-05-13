@@ -206,6 +206,24 @@ describe('evidence-sanitizer', () => {
       });
     });
 
+    it('recursively redacts nested arrays under a sensitive key', () => {
+      // Without recursion, the inner arrays would pass through with their
+      // secret strings intact — a real leak path.
+      expect(
+        sanitizeEvidence({
+          secrets: [
+            ['s1', 's2'],
+            ['s3', { nested: 'x' }],
+          ],
+        }),
+      ).toEqual({
+        secrets: [
+          [REDACTED_VALUE, REDACTED_VALUE],
+          [REDACTED_VALUE, REDACTED_VALUE],
+        ],
+      });
+    });
+
     it('handles a top-level array', () => {
       expect(sanitizeEvidence([{ token: 'a' }, { name: 'b' }])).toEqual([
         { token: REDACTED_VALUE },
