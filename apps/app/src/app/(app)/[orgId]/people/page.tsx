@@ -3,6 +3,7 @@ import { resolveUserPermissions } from '@/lib/permissions.server';
 import { auth } from '@/utils/auth';
 import { db } from '@db/server';
 import type { Metadata } from 'next';
+import type { Role } from '@db';
 import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { Suspense } from 'react';
@@ -32,15 +33,25 @@ export default async function PeoplePage({ params }: { params: Promise<{ orgId: 
     where: { organizationId: orgId, userId: session.user.id },
   });
   const currentUserRoles = currentUserMember?.role?.split(',').map((r) => r.trim()) ?? [];
-  const canManageMembers = currentUserRoles.some((role) => ['owner', 'admin'].includes(role));
-  const isAuditor = currentUserRoles.includes('auditor');
-  const canInviteUsers = canManageMembers || isAuditor;
   const isCurrentUserOwner = currentUserRoles.includes('owner');
 
   const userPermissions = await resolveUserPermissions(
     currentUserMember?.role ?? null,
     orgId,
   );
+  const canManageMembers = hasPermission(userPermissions, 'member', 'update');
+  const canInviteUsers = hasPermission(userPermissions, 'member', 'create');
+
+  const isAdminOrOwner = currentUserRoles.some((r) => ['owner', 'admin'].includes(r));
+  const isAuditor = currentUserRoles.includes('auditor');
+  let allowedBuiltInRoles: Role[];
+  if (isAdminOrOwner) {
+    allowedBuiltInRoles = ['admin', 'auditor', 'employee', 'contractor'];
+  } else if (isAuditor) {
+    allowedBuiltInRoles = ['auditor'];
+  } else {
+    allowedBuiltInRoles = ['employee', 'contractor'];
+  }
   const canManageOrgSettings = hasPermission(
     userPermissions,
     'organization',
@@ -85,6 +96,7 @@ export default async function PeoplePage({ params }: { params: Promise<{ orgId: 
       showEmployeeTasks
       canInviteUsers={canInviteUsers}
       canManageMembers={canManageMembers}
+      allowedBuiltInRoles={allowedBuiltInRoles}
       organizationId={orgId}
     />
   );

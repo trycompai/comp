@@ -37,32 +37,23 @@ export class PeopleInviteService {
   }): Promise<InviteResult[]> {
     const { organizationId, invites, callerUserId, callerRole } = params;
 
+    const callerRoles = callerRole.split(',').map((r) => r.trim());
     const isAdmin =
-      callerRole.includes('admin') || callerRole.includes('owner');
-    const isAuditor = callerRole.includes('auditor');
-
-    if (!isAdmin && !isAuditor) {
-      throw new ForbiddenException(
-        "You don't have permission to invite members.",
-      );
-    }
+      callerRoles.includes('admin') || callerRoles.includes('owner');
+    const isAuditor = callerRoles.includes('auditor');
 
     const results: InviteResult[] = [];
 
     for (const invite of invites) {
       try {
-        // Auditors can only invite auditors
-        if (isAuditor && !isAdmin) {
-          const onlyAuditor =
-            invite.roles.length === 1 && invite.roles[0] === 'auditor';
-          if (!onlyAuditor) {
-            results.push({
-              email: invite.email,
-              success: false,
-              error: "Auditors can only invite users with the 'auditor' role.",
-            });
-            continue;
-          }
+        const roleError = this.validateAssignableRoles(
+          invite.roles,
+          isAdmin,
+          isAuditor,
+        );
+        if (roleError) {
+          results.push({ email: invite.email, success: false, error: roleError });
+          continue;
         }
 
         const email = invite.email.toLowerCase();
@@ -443,6 +434,30 @@ export class PeopleInviteService {
           : role.obligations || {};
       return !!obligations.compliance;
     });
+  }
+
+  private validateAssignableRoles(
+    targetRoles: string[],
+    callerIsAdmin: boolean,
+    callerIsAuditor: boolean,
+  ): string | null {
+    if (callerIsAdmin) return null;
+
+    if (callerIsAuditor) {
+      const allAuditor = targetRoles.every((r) => r === 'auditor');
+      if (!allAuditor) {
+        return "Auditors can only invite users with the 'auditor' role.";
+      }
+      return null;
+    }
+
+    const privileged = targetRoles.filter((r) =>
+      ['owner', 'admin', 'auditor'].includes(r),
+    );
+    if (privileged.length > 0) {
+      return `You cannot assign privileged roles: ${privileged.join(', ')}.`;
+    }
+    return null;
   }
 
   private buildPortalUrl(organizationId: string): string {
