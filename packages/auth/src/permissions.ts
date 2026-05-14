@@ -125,8 +125,6 @@ export const admin = ac.newRole({
   pentest: ['create', 'read', 'delete'],
   // Training management
   training: ['read', 'update'],
-  // Portal self-service
-  portal: ['read', 'update'],
   // Secrets manager — admin can fully manage decrypted credentials
   secret: ['create', 'read', 'update', 'delete'],
 });
