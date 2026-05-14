@@ -6,13 +6,6 @@ import { SWRConfig } from 'swr';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { EmployeeBackgroundCheck } from './EmployeeBackgroundCheck';
 
-const navigationMock = vi.hoisted(() => ({
-  pathname: '/org_1/people/mem_1',
-  push: vi.fn(),
-  replace: vi.fn(),
-  searchParams: new URLSearchParams(),
-}));
-
 vi.mock('@/hooks/use-permissions', () => ({
   usePermissions: () => ({
     hasPermission: (resource: string, action: string) =>
@@ -27,12 +20,6 @@ vi.mock('@/lib/api-client', () => ({
     post: vi.fn(),
     patch: vi.fn(),
   },
-}));
-
-vi.mock('next/navigation', () => ({
-  usePathname: () => navigationMock.pathname,
-  useRouter: () => ({ push: navigationMock.push, replace: navigationMock.replace }),
-  useSearchParams: () => navigationMock.searchParams,
 }));
 
 vi.mock('sonner', () => ({
@@ -52,17 +39,7 @@ const employee = {
   },
 } as unknown as Member & { user: User };
 
-const emptyBackgroundCheckDetails = {
-  identityStatus: null,
-  employmentStatus: null,
-  referenceStatus: null,
-  rightToWorkStatus: null,
-  adjudicationStatus: null,
-  reportSnapshot: null,
-  reportSyncedAt: null,
-};
-
-const activeBackgroundCheckSubscription = {
+const activeSubscription = {
   skuKey: 'background_checks_monthly_3',
   status: 'active',
   includedQuantity: 3,
@@ -82,7 +59,7 @@ function renderSection(props?: Partial<Parameters<typeof EmployeeBackgroundCheck
         initialBillingStatus={{
           hasPaymentMethod: true,
           setupAt: null,
-          subscriptions: [activeBackgroundCheckSubscription],
+          subscriptions: [activeSubscription],
         }}
         backgroundCheckStepEnabled={true}
         memberBackgroundCheckExempt={false}
@@ -92,217 +69,169 @@ function renderSection(props?: Partial<Parameters<typeof EmployeeBackgroundCheck
   );
 }
 
-describe('EmployeeBackgroundCheck', () => {
+describe('EmployeeBackgroundCheck — V1 two-paths', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    navigationMock.push.mockReset();
-    vi.mocked(apiClient.get).mockReset();
-    vi.mocked(apiClient.post).mockReset();
-    window.sessionStorage.clear();
-    navigationMock.pathname = '/org_1/people/mem_1';
-    navigationMock.searchParams = new URLSearchParams();
-    vi.mocked(apiClient.get).mockResolvedValue({
-      data: null,
-      status: 200,
-    });
+    vi.mocked(apiClient.get).mockResolvedValue({ data: null, status: 200 });
     vi.mocked(apiClient.post).mockResolvedValue({
       data: {
         id: 'bcr_1',
         employeeName: 'Ada Lovelace',
         employeeEmail: 'ada@example.com',
-        requesterNotes: 'Recruiting requested an expedited check.',
         candidateUrl: 'https://identity.trycomp.ai/cand_1',
         status: 'invited',
-        lastSyncedAt: null,
-        ...emptyBackgroundCheckDetails,
       },
       status: 200,
     });
+    vi.mocked(apiClient.patch).mockResolvedValue({ data: { id: 'mem_1' }, status: 200 });
   });
 
-  it('renders overview benefits before the form', () => {
-    renderSection({
-      initialBillingStatus: { hasPaymentMethod: false, setupAt: null },
-    });
+  it('renders the three paths with Order selected by default', () => {
+    renderSection();
 
-    expect(screen.getByText('Employee Background Check')).toBeInTheDocument();
-    expect(screen.getByText('Required for Compliance')).toBeInTheDocument();
-    expect(screen.getByText('Full audited report / background check')).toBeInTheDocument();
-    expect(
-      screen.getByText('Streamline employee background checks with Comp AI.'),
-    ).toBeInTheDocument();
-    expect(screen.getByText('$79 / month')).toBeInTheDocument();
-    expect(screen.queryByText(/charged \$49/i)).not.toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /view plans/i })).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: /billing plans/i })).toHaveAttribute(
+    expect(screen.getByText('How would you like to proceed?')).toBeInTheDocument();
+    expect(screen.getByText('Order a new check')).toBeInTheDocument();
+    expect(screen.getByText('Attach an existing report')).toBeInTheDocument();
+    expect(screen.getByText('Mark as exempt')).toBeInTheDocument();
+
+    const orderCard = screen.getByRole('radio', { name: /Order a new check/i });
+    expect(orderCard).toHaveAttribute('aria-checked', 'true');
+
+    expect(screen.getByLabelText(/Employee name/)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Send invite/i })).toBeInTheDocument();
+  });
+
+  it('shows the status strip with credits remaining', () => {
+    renderSection();
+
+    expect(screen.getByText('Not started')).toBeInTheDocument();
+    expect(screen.getByText(/Credits remaining/)).toBeInTheDocument();
+    expect(screen.getByText('2 / 3')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /Choose a plan/ })).toHaveAttribute(
       'href',
       '/org_1/settings/billing/add-ons/background-checks',
     );
   });
 
-  it('skips the overview when a payment method is already saved', () => {
-    renderSection();
-
-    expect(screen.getByText('Employee Background Check')).toBeInTheDocument();
-    expect(screen.getByLabelText('Personal email')).toBeInTheDocument();
-    expect(screen.getByText('2 background checks remaining this period.')).toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: /back/i })).not.toBeInTheDocument();
-  });
-
-  it('validates personal email before requesting', async () => {
+  it('switches to the Attach form when the Attach path is selected', async () => {
     const user = userEvent.setup();
     renderSection();
 
-    await user.type(screen.getByLabelText('Personal email'), 'not-an-email');
-    await user.click(screen.getByRole('button', { name: /complete/i }));
+    await user.click(screen.getByRole('radio', { name: /Attach an existing report/i }));
+
+    expect(screen.getByRole('radio', { name: /Attach an existing report/i })).toHaveAttribute(
+      'aria-checked',
+      'true',
+    );
+    expect(screen.getByText(/Drop the PDF here/)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Attach report/i })).toBeDisabled();
+  });
+
+  it('switches to the Exempt form and warns about compliance exception', async () => {
+    const user = userEvent.setup();
+    renderSection();
+
+    await user.click(screen.getByRole('radio', { name: /Mark as exempt/i }));
+
+    expect(screen.getByText('Exemptions create a compliance exception')).toBeInTheDocument();
+    expect(screen.getByText(/Reason for exemption/)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Confirm exemption/i })).toBeDisabled();
+  });
+
+  it('hides the scope panel on the Exempt path and shows it on Order and Attach', async () => {
+    const user = userEvent.setup();
+    renderSection();
+
+    expect(screen.getByText(/What's verified in this check/)).toBeInTheDocument();
+
+    await user.click(screen.getByRole('radio', { name: /Mark as exempt/i }));
+    expect(screen.queryByText(/What's verified in this check/)).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole('radio', { name: /Attach an existing report/i }));
+    expect(screen.getByText(/What's verified in this check/)).toBeInTheDocument();
+  });
+
+  it('validates personal email before sending the invite', async () => {
+    const user = userEvent.setup();
+    renderSection();
+
+    await user.type(screen.getByLabelText(/Personal email/), 'not-an-email');
+    await user.click(screen.getByRole('button', { name: /Send invite/i }));
 
     expect(await screen.findByText('Enter a valid personal email')).toBeInTheDocument();
     expect(apiClient.post).not.toHaveBeenCalled();
   });
 
-  it('includes optional internal notes in the request payload', async () => {
+  it('POSTs the order to /v1/people/:id/background-check', async () => {
     const user = userEvent.setup();
     renderSection();
 
-    await user.type(screen.getByLabelText('Personal email'), 'ada@example.com');
-    await user.type(
-      screen.getByLabelText('Additional information'),
-      'Recruiting requested an expedited check.',
-    );
-    await user.click(screen.getByRole('button', { name: /complete/i }));
+    await user.type(screen.getByLabelText(/Personal email/), 'ada@example.com');
+    await user.type(screen.getByLabelText(/Internal notes/), 'Needs quick turnaround.');
+    await user.click(screen.getByRole('button', { name: /Send invite/i }));
 
     await waitFor(() => {
       expect(apiClient.post).toHaveBeenCalledWith(
         '/v1/people/mem_1/background-check',
         expect.objectContaining({
-          requesterNotes: 'Recruiting requested an expedited check.',
+          employeeName: 'Ada Lovelace',
+          employeeEmail: 'ada@example.com',
+          requesterNotes: 'Needs quick turnaround.',
         }),
         'org_1',
       );
     });
-    expect(
-      await screen.findByText(/an invitation has been sent to the employee/i),
-    ).toBeInTheDocument();
-    expect(screen.getByText(/spam or junk folders/i)).toBeInTheDocument();
   });
 
-  it('opens plan selection from the overview when no subscription exists', async () => {
-    const user = userEvent.setup();
-    renderSection({
-      initialBillingStatus: { hasPaymentMethod: false, setupAt: null },
-    });
-
-    await user.click(screen.getByRole('button', { name: /view plans/i }));
-
-    expect(navigationMock.push).toHaveBeenCalledWith(
-      '/org_1/settings/billing/add-ons/background-checks',
-    );
-    expect(
-      window.sessionStorage.getItem('background-check:org_1:mem_1:pending-request'),
-    ).toBeNull();
-  });
-
-  it('stores the pending check details and routes to plans when allowance disappears', async () => {
-    const user = userEvent.setup();
-    vi.mocked(apiClient.post).mockResolvedValueOnce({
-      error: 'No credits',
-      status: 402,
-    });
-    renderSection();
-
-    await user.type(screen.getByLabelText('Personal email'), 'ada@example.com');
-    await user.type(
-      screen.getByLabelText('Additional information'),
-      'Recruiting requested an expedited check.',
-    );
-    await user.click(screen.getByRole('button', { name: /complete/i }));
-
-    await waitFor(() => {
-      expect(navigationMock.push).toHaveBeenCalledWith(
-        '/org_1/settings/billing/add-ons/background-checks',
-      );
-    });
-    expect(window.sessionStorage.getItem('background-check:org_1:mem_1:pending-request')).toBe(
-      JSON.stringify({
-        organizationId: 'org_1',
-        memberId: 'mem_1',
-        employeeName: 'Ada Lovelace',
-        employeeEmail: 'ada@example.com',
-        requesterNotes: 'Recruiting requested an expedited check.',
-      }),
-    );
-  });
-
-  it('stores pending check details instead of blocking submit when no allowance remains', async () => {
-    const user = userEvent.setup();
+  it('disables Send invite when out of credits', () => {
     renderSection({
       initialBillingStatus: {
         hasPaymentMethod: true,
         setupAt: null,
-        subscriptions: [
-          {
-            ...activeBackgroundCheckSubscription,
-            usedQuantity: 3,
-          },
-        ],
+        subscriptions: [{ ...activeSubscription, usedQuantity: 3 }],
       },
     });
 
-    await user.type(screen.getByLabelText('Personal email'), 'ada@example.com');
-    await user.type(screen.getByLabelText('Additional information'), 'Needs quick turnaround.');
-    await user.click(screen.getByRole('button', { name: /complete/i }));
-
-    await waitFor(() => {
-      expect(navigationMock.push).toHaveBeenCalledWith(
-        '/org_1/settings/billing/add-ons/background-checks',
-      );
-    });
-    expect(apiClient.post).not.toHaveBeenCalled();
-    expect(window.sessionStorage.getItem('background-check:org_1:mem_1:pending-request')).toBe(
-      JSON.stringify({
-        organizationId: 'org_1',
-        memberId: 'mem_1',
-        employeeName: 'Ada Lovelace',
-        employeeEmail: 'ada@example.com',
-        requesterNotes: 'Needs quick turnaround.',
-      }),
-    );
+    expect(screen.getByRole('button', { name: /Send invite/i })).toBeDisabled();
   });
 
-  it('keeps legacy pending check drafts that do not have employee details', async () => {
-    navigationMock.searchParams = new URLSearchParams({
-      background_check_billing: 'success',
-      session_id: 'cs_test_legacy',
-    });
-    window.sessionStorage.setItem(
-      'background-check:org_1:mem_1:pending-request',
-      JSON.stringify({
-        organizationId: 'org_1',
-        memberId: 'mem_1',
-        requesterNotes: 'Legacy note before billing.',
-      }),
-    );
-
+  it('PATCHes /v1/people/:id with exempt + reason when Confirm exemption is clicked', async () => {
+    const user = userEvent.setup();
     renderSection();
 
+    await user.click(screen.getByRole('radio', { name: /Mark as exempt/i }));
+
+    // open Select dropdown and pick a reason via keyboard
+    const trigger = screen.getByRole('combobox');
+    await user.click(trigger);
+    await user.click(screen.getByRole('option', { name: /Local law prohibits check/i }));
+
+    await user.click(screen.getByRole('button', { name: /Confirm exemption/i }));
+
     await waitFor(() => {
-      expect(apiClient.post).toHaveBeenCalledWith(
-        '/v1/background-check-billing/setup-success',
-        { sessionId: 'cs_test_legacy' },
+      expect(apiClient.patch).toHaveBeenCalledWith(
+        '/v1/people/mem_1',
+        expect.objectContaining({
+          backgroundCheckExempt: true,
+          backgroundCheckExemptReason: 'local_law_prohibits',
+        }),
         'org_1',
       );
     });
-    expect(screen.getByLabelText('Employee name')).toHaveValue('Ada Lovelace');
-    expect(screen.getByLabelText('Personal email')).toHaveValue('');
-    expect(screen.getByLabelText('Additional information')).toHaveValue(
-      'Legacy note before billing.',
-    );
-    expect(
-      window.sessionStorage.getItem('background-check:org_1:mem_1:pending-request'),
-    ).not.toBeNull();
   });
 
-  it('renders the bypass info card when backgroundCheckStepEnabled is false', () => {
+  it('preserves Order form values when switching paths and returning', async () => {
+    const user = userEvent.setup();
+    renderSection();
+
+    await user.type(screen.getByLabelText(/Personal email/), 'ada@example.com');
+    await user.click(screen.getByRole('radio', { name: /Attach an existing report/i }));
+    await user.click(screen.getByRole('radio', { name: /Order a new check/i }));
+
+    expect(screen.getByLabelText(/Personal email/)).toHaveValue('ada@example.com');
+  });
+
+  it('renders the bypass notice when backgroundCheckStepEnabled is false', () => {
     render(
       <EmployeeBackgroundCheck
         employee={employee}
@@ -315,7 +244,7 @@ describe('EmployeeBackgroundCheck', () => {
     );
 
     expect(screen.getByText(/background checks are not required/i)).toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: /get started/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('radio')).not.toBeInTheDocument();
   });
 
   it('does not fetch background-check or billing data when bypassed', async () => {
@@ -330,10 +259,8 @@ describe('EmployeeBackgroundCheck', () => {
       />,
     );
 
-    // Allow any pending microtasks/SWR scheduling to settle.
     await Promise.resolve();
     await Promise.resolve();
-
     expect(apiClient.get).not.toHaveBeenCalled();
   });
 
@@ -349,12 +276,8 @@ describe('EmployeeBackgroundCheck', () => {
       />,
     );
 
-    expect(
-      screen.getByText(/this employee is exempt/i),
-    ).toBeInTheDocument();
-    expect(
-      screen.queryByRole('button', { name: /get started/i }),
-    ).not.toBeInTheDocument();
+    expect(screen.getByText(/this employee is exempt/i)).toBeInTheDocument();
+    expect(screen.queryByRole('radio', { name: /Order a new check/i })).not.toBeInTheDocument();
   });
 
   it('prefers the org-level bypass over per-member exempt when both are set', () => {
@@ -369,104 +292,46 @@ describe('EmployeeBackgroundCheck', () => {
       />,
     );
 
-    // Org-level bypass card wins; per-member exempt toggle should not appear.
     expect(
       screen.getByText(/background checks are disabled for your organization/i),
     ).toBeInTheDocument();
-    expect(
-      screen.queryByRole('switch', { name: /exempt this employee/i }),
-    ).not.toBeInTheDocument();
+    expect(screen.queryByRole('switch', { name: /exempt this employee/i })).not.toBeInTheDocument();
   });
 
-  it('calls onMemberBackgroundCheckExemptChange when toggled (controlled mode)', async () => {
-    const onChange = vi.fn();
-    vi.mocked(apiClient.patch).mockResolvedValue({ data: { id: 'mem_1' }, status: 200 });
-    const user = userEvent.setup();
-
-    render(
-      <EmployeeBackgroundCheck
-        employee={employee}
-        organizationId="org_1"
-        initialBackgroundCheck={null}
-        initialBillingStatus={{ hasPaymentMethod: false, setupAt: null }}
-        backgroundCheckStepEnabled={true}
-        memberBackgroundCheckExempt={false}
-        onMemberBackgroundCheckExemptChange={onChange}
-      />,
-    );
-
-    const toggle = screen.getByRole('switch', {
-      name: /exempt this employee/i,
-    });
-    await user.click(toggle);
-
-    await waitFor(() => {
-      expect(onChange).toHaveBeenCalledWith(true);
-    });
-  });
-
-  it('toggles exempt on and PATCHes /v1/people/:id', async () => {
-    const user = userEvent.setup();
-    vi.mocked(apiClient.patch).mockResolvedValue({ data: { id: 'mem_1' }, status: 200 });
-
-    render(
-      <EmployeeBackgroundCheck
-        employee={employee}
-        organizationId="org_1"
-        initialBackgroundCheck={null}
-        initialBillingStatus={{ hasPaymentMethod: false, setupAt: null }}
-        backgroundCheckStepEnabled={true}
-        memberBackgroundCheckExempt={false}
-      />,
-    );
-
-    const toggle = screen.getByRole('switch', {
-      name: /exempt this employee/i,
-    });
-    await user.click(toggle);
-
-    await waitFor(() => {
-      expect(apiClient.patch).toHaveBeenCalledWith(
-        '/v1/people/mem_1',
-        { backgroundCheckExempt: true },
-        'org_1',
-      );
-    });
-  });
-
-  it('resyncs internal exempt state when the prop changes (uncontrolled mode)', () => {
+  it('resyncs internal exempt state when the prop flips to true', () => {
     const { rerender } = render(
       <EmployeeBackgroundCheck
         employee={employee}
         organizationId="org_1"
         initialBackgroundCheck={null}
-        initialBillingStatus={{ hasPaymentMethod: false, setupAt: null }}
+        initialBillingStatus={{
+          hasPaymentMethod: true,
+          setupAt: null,
+          subscriptions: [activeSubscription],
+        }}
         backgroundCheckStepEnabled={true}
         memberBackgroundCheckExempt={false}
       />,
     );
 
-    // Wizard is rendered (member is not exempt)
-    expect(
-      screen.getByRole('switch', { name: /exempt this employee/i }),
-    ).toBeInTheDocument();
-    expect(screen.queryByText(/this employee is exempt/i)).not.toBeInTheDocument();
+    // V1 page is rendered (member is not exempt)
+    expect(screen.getByText('How would you like to proceed?')).toBeInTheDocument();
 
-    // Parent re-renders with the prop flipped
     rerender(
       <EmployeeBackgroundCheck
         employee={employee}
         organizationId="org_1"
         initialBackgroundCheck={null}
-        initialBillingStatus={{ hasPaymentMethod: false, setupAt: null }}
+        initialBillingStatus={{
+          hasPaymentMethod: true,
+          setupAt: null,
+          subscriptions: [activeSubscription],
+        }}
         backgroundCheckStepEnabled={true}
         memberBackgroundCheckExempt={true}
       />,
     );
 
-    // Exempt info card is now rendered
-    expect(
-      screen.getByText(/this employee is exempt/i),
-    ).toBeInTheDocument();
+    expect(screen.getByText(/this employee is exempt/i)).toBeInTheDocument();
   });
 });

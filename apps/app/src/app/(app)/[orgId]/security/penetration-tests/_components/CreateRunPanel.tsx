@@ -20,6 +20,7 @@ import { useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import { z } from 'zod';
+import { AuthorizationConsentField } from './AuthorizationConsentField';
 import { CreateRunTargetFields } from './CreateRunTargetFields';
 import { RunExpectationSummary } from './RunExpectationSummary';
 import { ScanAdvancedOptions } from './ScanAdvancedOptions';
@@ -65,6 +66,11 @@ const createRunSchema = z.object({
       ]),
     )
     .min(1, 'Select at least one check.'),
+  authorized: z
+    .boolean()
+    .refine((value) => value === true, {
+      message: 'Confirm you own or are authorized to test this target.',
+    }),
 });
 
 export type CreateRunForm = z.infer<typeof createRunSchema>;
@@ -78,7 +84,7 @@ export function CreateRunPanel({
   quotaLabel = 'Plan',
 }: CreateRunPanelProps) {
   const router = useRouter();
-  const [advancedOpen, setAdvancedOpen] = useState(false);
+  const [advancedOpen, setAdvancedOpen] = useState(true);
   const [confirmationOpen, setConfirmationOpen] = useState(false);
   const canCreate = balance === undefined ? true : balance > 0;
   const standardDefaults = scanProfiles.standard;
@@ -91,11 +97,12 @@ export function CreateRunPanel({
       scanDepth: standardDefaults.scanDepth,
       evidenceLevel: standardDefaults.evidenceLevel,
       checks: standardDefaults.checks,
+      authorized: false,
     },
   });
-  const selectedProfile = form.watch('selectedProfile');
   const evidenceLevel = form.watch('evidenceLevel');
   const checks = form.watch('checks');
+  const authorized = form.watch('authorized');
   const effectiveMode = useMemo(
     () =>
       resolveEffectiveScanMode({
@@ -155,7 +162,7 @@ export function CreateRunPanel({
     const submitScanDepth =
       resolvedMode === 'custom' ? values.scanDepth : scanProfiles[resolvedMode].scanDepth;
 
-    if (!confirmed && (submitScanDepth === 'deep' || values.evidenceLevel === 'impact_proof')) {
+    if (!confirmed && values.evidenceLevel === 'impact_proof') {
       setConfirmationOpen(true);
       return;
     }
@@ -247,6 +254,17 @@ export function CreateRunPanel({
             checksError={form.formState.errors.checks?.message}
           />
 
+          <AuthorizationConsentField
+            checked={authorized}
+            onCheckedChange={(nextChecked) =>
+              form.setValue('authorized', nextChecked, {
+                shouldDirty: true,
+                shouldValidate: true,
+              })
+            }
+            errorMessage={form.formState.errors.authorized?.message}
+          />
+
           <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
             <div className="w-full sm:w-auto">
               <Button type="button" variant="outline" onClick={handleCancel} disabled={isSubmitting}>
@@ -270,15 +288,19 @@ export function CreateRunPanel({
       <AlertDialog open={confirmationOpen} onOpenChange={setConfirmationOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Confirm scan intensity</AlertDialogTitle>
+            <AlertDialogTitle>Confirm impact-proof scan</AlertDialogTitle>
             <AlertDialogDescription>
-              Deep scans and impact proof may take longer and perform stronger validation against
-              the target. Confirm this target is approved for that scan intensity.
+              Impact-proof validation actively exploits findings to demonstrate real-world
+              impact. This may trigger WAF alerts, rate limits, or temporary service
+              degradation on the target. Proceed only if you've coordinated with the target
+              owner.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleConfirmSubmit}>Start scan</AlertDialogAction>
+            <AlertDialogAction onClick={handleConfirmSubmit}>
+              Run impact-proof scan
+            </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
