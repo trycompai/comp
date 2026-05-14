@@ -269,6 +269,8 @@ export async function loadFrameworkSources({
         }
         for (const p of cr.policyTemplates) rel.policyTemplateIds.add(p.id);
         for (const t of cr.taskTemplates) rel.taskTemplateIds.add(t.id);
+        const controlEntry = controlsMap.get(cr.id);
+        for (const dt of controlEntry?.documentTypes ?? []) rel.documentTypes.add(dt);
       }
     }
 
