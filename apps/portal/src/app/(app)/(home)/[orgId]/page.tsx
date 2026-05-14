@@ -1,5 +1,3 @@
-'use server';
-
 import { auth } from '@/app/lib/auth';
 import { getFleetInstance } from '@/utils/fleet';
 import type { FleetPolicyResult, Member } from '@db';
