@@ -25,7 +25,7 @@ export class TrustEmailService {
         organizationName,
         ndaSigningLink,
       }),
-      system: true,
+      trustPortal: true,
     });
 
     this.logger.log(`NDA signing email sent to ${toEmail} (ID: ${id})`);
@@ -49,7 +49,7 @@ export class TrustEmailService {
         expiresAt,
         portalUrl,
       }),
-      system: true,
+      trustPortal: true,
     });
 
     this.logger.log(`Access granted email sent to ${toEmail} (ID: ${id})`);
@@ -73,7 +73,7 @@ export class TrustEmailService {
         accessLink,
         expiresAt,
       }),
-      system: true,
+      trustPortal: true,
     });
 
     this.logger.log(`Access reclaim email sent to ${toEmail} (ID: ${id})`);
@@ -115,7 +115,7 @@ export class TrustEmailService {
         requestedDurationDays,
         reviewUrl,
       }),
-      system: true,
+      trustPortal: true,
     });
 
     this.logger.log(

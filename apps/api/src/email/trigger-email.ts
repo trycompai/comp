@@ -10,6 +10,7 @@ export async function triggerEmail(params: {
   react: ReactElement;
   marketing?: boolean;
   system?: boolean;
+  trustPortal?: boolean;
   cc?: string | string[];
   scheduledAt?: string;
   attachments?: EmailAttachment[];
@@ -20,12 +21,15 @@ export async function triggerEmail(params: {
     const fromMarketing = process.env.RESEND_FROM_MARKETING;
     const fromSystem = process.env.RESEND_FROM_SYSTEM;
     const fromDefault = process.env.RESEND_FROM_DEFAULT;
+    const fromTrustPortal = process.env.RESEND_FROM_TRUST_PORTAL;
 
-    const fromAddress = params.marketing
-      ? fromMarketing
-      : params.system
-        ? fromSystem
-        : fromDefault;
+    const fromAddress = params.trustPortal
+      ? (fromTrustPortal ?? fromSystem)
+      : params.marketing
+        ? fromMarketing
+        : params.system
+          ? fromSystem
+          : fromDefault;
 
     const handle = await tasks.trigger<typeof sendEmailTask>('send-email', {
       to: params.to,
