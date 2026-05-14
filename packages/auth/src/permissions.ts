@@ -252,7 +252,7 @@ export interface RoleObligations {
  * tasks (sign policies, watch training, install device agent) is listed here.
  */
 export const BUILT_IN_ROLE_OBLIGATIONS: Record<string, RoleObligations> = {
-  owner: {},
+  owner: { compliance: true },
   admin: {},
   auditor: {},
   employee: { compliance: true },
