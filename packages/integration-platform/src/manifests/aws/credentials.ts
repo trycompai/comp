@@ -173,58 +173,41 @@ export function getAwsCloudShellScript(environment: AwsEnvironment = 'aws'): str
     'job-function/ViewOnlyAccess',
   );
 
-  return [
-  '#!/bin/bash',
-  '(',
-  'set -euo pipefail',
-  '',
-  'ROLE_NAME="CompAI-Auditor"',
-  'EXTERNAL_ID="YOUR_EXTERNAL_ID"',
-  '',
-  'echo "Creating IAM role $ROLE_NAME..."',
-  '',
-  'TRUST_POLICY=$(cat <<EOF',
-  '{',
-  '  "Version": "2012-10-17",',
-  '  "Statement": [{',
-  '    "Effect": "Allow",',
-  `    "Principal": { "AWS": "${roleAssumerArn}" },`,
-  '    "Action": "sts:AssumeRole",',
-  '    "Condition": { "StringEquals": { "sts:ExternalId": "$EXTERNAL_ID" } }',
-  '  }]',
-  '}',
-  'EOF',
-  ')',
-  '',
-  'ROLE_ARN=$(aws iam create-role \\',
-  '  --role-name "$ROLE_NAME" \\',
-  '  --max-session-duration 43200 \\',
-  '  --assume-role-policy-document "$TRUST_POLICY" \\',
-  '  --query "Role.Arn" --output text)',
-  '',
-  'aws iam attach-role-policy --role-name "$ROLE_NAME" \\',
-  `  --policy-arn ${securityAuditPolicyArn}`,
-  '',
-  'aws iam attach-role-policy --role-name "$ROLE_NAME" \\',
-  `  --policy-arn ${viewOnlyPolicyArn}`,
-  '',
-  'aws iam put-role-policy --role-name "$ROLE_NAME" \\',
-  '  --policy-name CompAI-CostExplorer \\',
-  '  --policy-document \'{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Action":"ce:GetCostAndUsage","Resource":"*"}]}\'',
-  '',
-  'aws iam put-role-policy --role-name "$ROLE_NAME" \\',
-  '  --policy-name CompAI-ExtraReadAccess \\',
-  '  --policy-document \'{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Action":["ssm:GetDocument","ssm:DescribeDocument","ssm:ListDocuments"],"Resource":"*"}]}\'',
-  '',
-  'echo ""',
-  'echo "============================================"',
-  'echo "  Role ARN:    $ROLE_ARN"',
-  'echo "  External ID: $EXTERNAL_ID"',
-  'echo "============================================"',
-  'echo ""',
-  'echo "Paste these values into your Comp AI connection form."',
-  ')',
-  ].join('\n');
+  return `# Create Auditor Role for Comp AI
+# Run this in AWS CloudShell to create the read-only IAM role.
+
+(
+set -euo pipefail
+
+EXTERNAL_ID="YOUR_EXTERNAL_ID"
+ROLE_NAME="CompAI-Auditor"
+
+echo "Creating IAM role $ROLE_NAME..."
+
+ROLE_ARN=$(aws iam create-role --role-name "$ROLE_NAME" --max-session-duration 43200 \\
+  --assume-role-policy-document '{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Principal":{"AWS":"${roleAssumerArn}"},"Action":"sts:AssumeRole","Condition":{"StringEquals":{"sts:ExternalId":"'$EXTERNAL_ID'"}}}]}' \\
+  --query 'Role.Arn' --output text)
+
+aws iam attach-role-policy --role-name "$ROLE_NAME" \\
+  --policy-arn ${securityAuditPolicyArn}
+
+aws iam attach-role-policy --role-name "$ROLE_NAME" \\
+  --policy-arn ${viewOnlyPolicyArn}
+
+aws iam put-role-policy --role-name "$ROLE_NAME" --policy-name CompAI-CostExplorer \\
+  --policy-document '{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Action":"ce:GetCostAndUsage","Resource":"*"}]}'
+
+aws iam put-role-policy --role-name "$ROLE_NAME" --policy-name CompAI-ExtraReadAccess \\
+  --policy-document '{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Action":["ssm:GetDocument","ssm:DescribeDocument","ssm:ListDocuments"],"Resource":"*"}]}'
+
+echo ""
+echo "============================================"
+echo "  Role ARN (paste this below):"
+echo ""
+echo "  $ROLE_ARN"
+echo ""
+echo "============================================"
+)`;
 }
 
 export const awsCloudShellScript = getAwsCloudShellScript();
