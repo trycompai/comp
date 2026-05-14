@@ -29,15 +29,12 @@ export class EmailController {
   })
   @ApiResponse({ status: 200, description: 'Email task triggered' })
   async sendEmail(@Body() dto: SendEmailDto) {
-    const fromAddress = dto.system
-      ? (process.env.RESEND_FROM_SYSTEM ?? process.env.RESEND_FROM_DEFAULT)
-      : (dto.from ?? process.env.RESEND_FROM_DEFAULT);
-
     const handle = await tasks.trigger<typeof sendEmailTask>('send-email', {
       to: dto.to,
       subject: dto.subject,
       html: dto.html,
-      from: fromAddress,
+      from: dto.from,
+      channel: dto.system ? 'system' : 'default',
       cc: dto.cc,
       scheduledAt: dto.scheduledAt,
       attachments: dto.attachments,
