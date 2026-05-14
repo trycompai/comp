@@ -1,3 +1,10 @@
+## [3.54.1](https://github.com/trycompai/comp/compare/v3.54.0...v3.54.1) (2026-05-14)
+
+
+### Bug Fixes
+
+* **integrations:** remove fragile heredoc from AWS auditor setup script ([#2845](https://github.com/trycompai/comp/issues/2845)) ([f056c60](https://github.com/trycompai/comp/commit/f056c60ab8e6ebc59eed43df541f43bad0cfeea4))
+
 # [3.54.0](https://github.com/trycompai/comp/compare/v3.53.0...v3.54.0) (2026-05-13)
 
 
