@@ -1,3 +1,11 @@
+## [3.54.2](https://github.com/trycompai/comp/compare/v3.54.1...v3.54.2) (2026-05-14)
+
+
+### Bug Fixes
+
+* **integrations:** remove fragile heredoc from AWS auditor setup script ([6acb361](https://github.com/trycompai/comp/commit/6acb3610d5a11ae12b6dbc67f9f54c22510e74c0))
+* **portal:** resolve RBAC permissions instead of checking role names ([9316c6d](https://github.com/trycompai/comp/commit/9316c6d29d95f7e6019c6954a01666c1b5f9c73e))
+
 ## [3.54.1](https://github.com/trycompai/comp/compare/v3.54.0...v3.54.1) (2026-05-14)
 
 
