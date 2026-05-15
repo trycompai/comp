@@ -52,6 +52,13 @@ interface HistoryPayload {
   resolutions: ResolutionRow[];
   exceptions: ExceptionRow[];
   regressions: RegressionRow[];
+  // Server may cap rows at 200/100; this signals the UI to show
+  // "showing N of M" when the response is partial.
+  truncated?: {
+    resolutions: boolean;
+    exceptions: boolean;
+    regressions: boolean;
+  };
 }
 
 const RESOLUTION_METHOD_LABEL: Record<
@@ -135,13 +142,21 @@ export function HistoryTab({ connectionId }: HistoryTabProps) {
     );
   }
 
+  const truncated = payload.truncated;
+  const sectionCount = (total: number, shown: number, isTruncated: boolean) =>
+    isTruncated ? `${shown} of ${total}` : `${total}`;
+
   return (
     <div className="space-y-6">
       <SummaryCard summary={payload.summary} />
       {payload.resolutions.length > 0 && (
         <Section
           title="Resolutions"
-          count={payload.resolutions.length}
+          count={sectionCount(
+            payload.summary.resolutions,
+            payload.resolutions.length,
+            truncated?.resolutions ?? false,
+          )}
           subtitle={`${payload.summary.platformFixes} platform · ${payload.summary.externalFixes} external · ${payload.summary.resourceDeleted} deleted · ${payload.summary.exceptionMarked} exception`}
         >
           {payload.resolutions.map((row) => (
@@ -152,7 +167,11 @@ export function HistoryTab({ connectionId }: HistoryTabProps) {
       {payload.exceptions.length > 0 && (
         <Section
           title="Active exceptions"
-          count={payload.exceptions.length}
+          count={sectionCount(
+            payload.summary.activeExceptions,
+            payload.exceptions.length,
+            truncated?.exceptions ?? false,
+          )}
           subtitle="Findings the customer has documented as accepted or not applicable."
         >
           {payload.exceptions.map((row) => (
@@ -168,7 +187,11 @@ export function HistoryTab({ connectionId }: HistoryTabProps) {
       {payload.regressions.length > 0 && (
         <Section
           title="Regressions"
-          count={payload.regressions.length}
+          count={sectionCount(
+            payload.summary.regressions,
+            payload.regressions.length,
+            truncated?.regressions ?? false,
+          )}
           subtitle="Findings that were previously resolved and are failing again."
         >
           {payload.regressions.map((row) => (
@@ -213,7 +236,7 @@ function Section({
 }: {
   title: string;
   subtitle: string;
-  count: number;
+  count: number | string;
   children: React.ReactNode;
 }) {
   return (

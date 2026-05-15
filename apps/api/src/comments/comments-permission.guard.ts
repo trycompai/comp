@@ -112,14 +112,25 @@ export class CommentsPermissionGuard implements CanActivate {
     }
 
     const permissions: Record<string, string[]> = { [resource]: [action] };
-    const allowed = await this.checkPermission(request, permissions);
-    if (!allowed) {
-      this.logger.warn(
-        `[CommentsPermissionGuard] Denied ${request.method} ${request.url}. Required: ${requiredScope}`,
+    // Mirror standard PermissionGuard's try/catch — without it, network or
+    // auth-service errors surface as 500s, potentially leaking internals.
+    try {
+      const allowed = await this.checkPermission(request, permissions);
+      if (!allowed) {
+        this.logger.warn(
+          `[CommentsPermissionGuard] Denied ${request.method} ${request.url}. Required: ${requiredScope}`,
+        );
+        throw new ForbiddenException('Access denied');
+      }
+      return true;
+    } catch (error) {
+      if (error instanceof ForbiddenException) throw error;
+      this.logger.error(
+        `[CommentsPermissionGuard] Error checking permissions for ${request.method} ${request.url}:`,
+        error,
       );
-      throw new ForbiddenException('Access denied');
+      throw new ForbiddenException('Unable to verify permissions');
     }
-    return true;
   }
 
   private resolveEntityResource(

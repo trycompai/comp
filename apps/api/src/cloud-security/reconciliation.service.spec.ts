@@ -44,14 +44,17 @@ function makeExceptionsStub(active = false): CloudExceptionService {
 const PRIOR_RUN_TIME = new Date('2026-05-01T00:00:00Z');
 const CURRENT_RUN_TIME = new Date('2026-05-13T00:00:00Z');
 
+let resultIdCounter = 0;
 function makeResult(opts: {
   findingKey: string;
   resourceId: string;
   passed: boolean;
   resourceType?: string;
   serviceId?: string;
+  id?: string;
 }) {
   return {
+    id: opts.id ?? `icrr_${++resultIdCounter}`,
     passed: opts.passed,
     resourceId: opts.resourceId,
     resourceType: opts.resourceType ?? 'AwsIamUser',

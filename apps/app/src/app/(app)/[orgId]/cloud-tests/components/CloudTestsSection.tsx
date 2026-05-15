@@ -726,7 +726,10 @@ export function CloudTestsSection({
         <div className="space-y-3">
           {regularGroups.map((group) => {
             const isGroupExpanded = expandedGroups.has(group.serviceId);
-            const hasFailures = group.findings.length > 0;
+            // "All passed" should render for groups with only passing checks
+            // — `group.findings` is the merged failed+passed set, so we'd
+            // mis-read empty-of-failures groups as having failures otherwise.
+            const hasFailures = group.failed > 0;
 
             return (
               <div key={group.serviceId} className="rounded-lg border">
@@ -843,7 +846,10 @@ export function CloudTestsSection({
           </p>
           {baselineGroups.map((group) => {
             const isGroupExpanded = expandedGroups.has(group.serviceId);
-            const hasFailures = group.findings.length > 0;
+            // "All passed" should render for groups with only passing checks
+            // — `group.findings` is the merged failed+passed set, so we'd
+            // mis-read empty-of-failures groups as having failures otherwise.
+            const hasFailures = group.failed > 0;
 
             return (
               <div key={group.serviceId} className="rounded-lg border">

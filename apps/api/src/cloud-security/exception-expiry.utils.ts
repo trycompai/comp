@@ -43,6 +43,16 @@ export function parseExceptionExpiry(
     return new Date(Date.UTC(y, m - 1, d, 23, 59, 59, 999));
   }
 
+  // Reject anything that isn't strict ISO 8601 — `new Date()` happily parses
+  // locale-specific strings like "January 1, 2026" and "2026/08/13", which
+  // would silently bypass the documented contract.
+  const ISO_8601 =
+    /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(:\d{2})?(\.\d+)?(Z|[+-]\d{2}:?\d{2})?$/;
+  if (!ISO_8601.test(input)) {
+    throw new BadRequestException(
+      'expiresAt must be a valid ISO date or YYYY-MM-DD calendar date.',
+    );
+  }
   const parsed = new Date(input);
   if (Number.isNaN(parsed.getTime())) {
     throw new BadRequestException(

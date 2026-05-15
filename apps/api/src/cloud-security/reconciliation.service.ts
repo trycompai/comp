@@ -4,6 +4,7 @@ import { normalizeCheckId } from './check-definition.utils';
 import { CloudExceptionService } from './exception.service';
 
 interface NormalizedResult {
+  id: string;
   findingKey: string;
   resourceId: string;
   resourceType: string | null;
@@ -49,6 +50,7 @@ export class CloudReconciliationService {
         connection: { select: { organizationId: true } },
         results: {
           select: {
+            id: true,
             passed: true,
             resourceId: true,
             resourceType: true,
@@ -95,6 +97,7 @@ export class CloudReconciliationService {
         completedAt: true,
         results: {
           select: {
+            id: true,
             passed: true,
             resourceId: true,
             resourceType: true,
@@ -143,6 +146,10 @@ export class CloudReconciliationService {
         checkKey,
         resourceId: prior.resourceId,
         currentExists: Boolean(current),
+        // Scope the platform_fix lookup to THIS specific check — without it,
+        // an unrelated fix on the same resource gets mis-attributed as
+        // having resolved this check.
+        priorCheckResultId: prior.id,
       });
 
       const daysOpen =
@@ -225,6 +232,7 @@ export class CloudReconciliationService {
     checkKey: string;
     resourceId: string;
     currentExists: boolean;
+    priorCheckResultId: string;
   }): Promise<{
     method: FindingResolutionMethod;
     resolvedById?: string;
@@ -240,11 +248,15 @@ export class CloudReconciliationService {
     if (exceptionActive) return { method: 'exception_marked' };
 
     // 2) Did our Fix button apply a successful remediation between scans?
+    //    Scope by `checkResultId` so a fix for check A on resource X doesn't
+    //    get attributed to check B on the same resource. RemediationAction
+    //    is created with the prior run's checkResultId, so matching against
+    //    `prior.id` ties the fix to THIS check, not any check on the resource.
     if (input.priorRunCompletedAt) {
       const fix = await db.remediationAction.findFirst({
         where: {
           connectionId: input.connectionId,
-          resourceId: input.resourceId,
+          checkResultId: input.priorCheckResultId,
           status: 'success',
           createdAt: {
             gte: input.priorRunCompletedAt,
@@ -273,6 +285,7 @@ export class CloudReconciliationService {
 
 function indexResults(
   results: Array<{
+    id: string;
     passed: boolean;
     resourceId: string | null;
     resourceType: string | null;
@@ -298,6 +311,7 @@ function indexResults(
     const checkKey = normalizeCheckId(findingKey, r.resourceId);
     const compositeKey = `${checkKey}::${r.resourceId}`;
     map.set(compositeKey, {
+      id: r.id,
       findingKey,
       resourceId: r.resourceId,
       resourceType: r.resourceType,

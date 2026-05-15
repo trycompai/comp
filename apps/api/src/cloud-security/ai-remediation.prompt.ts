@@ -288,7 +288,7 @@ Some fixes create a resource that doesn't exist yet — e.g. "No CloudTrail trai
 - proposedState MUST describe the resource that will be created, in concrete terms.
   - Use the fixSteps you generated as the source of truth — the values you'll pass to CreateTrail / CreateBucket / etc. go here.
   - Include "exists: true" plus the key configuration the user is being asked to accept.
-  - Example: { "exists": true, "trailName": "compai-cloudtrail", "multiRegion": true, "logFileValidation": true, "s3Bucket": "compai-cloudtrail-logs-<accountId>" }
+  - Example: { "exists": true, "trailName": "compai-cloudtrail", "multiRegion": true, "logFileValidation": true, "s3Bucket": "compai-cloudtrail-logs-013388577167-us-east-1" } — use the concrete AWS account ID and region from evidence, never a placeholder
   - Example: { "exists": true, "detectorEnabled": true, "findingPublishingFrequency": "FIFTEEN_MINUTES" }
 - Both blocks STILL must share the same keys so the user can see "false → true" diffs at a glance.
 - NEVER leave both currentState and proposedState empty. An empty diff is unreadable for the user — if you cannot describe the resource concretely, at minimum return { "exists": false } / { "exists": true }.`;

@@ -79,6 +79,9 @@ model FindingResolution {
   /// How long the finding was open before being resolved.
   daysOpen Int?
 
+  /// Back-relation: regressions that reference this as the prior fix.
+  regressions FindingRegression[]
+
   @@index([organizationId])
   @@index([connectionId])
   @@index([resolvedAt])
@@ -112,7 +115,10 @@ model FindingRegression {
 
   previouslyResolvedAt DateTime
   /// Optional FK to the FindingResolution that introduced the prior fix.
+  /// `onDelete: SetNull` so deleting a resolution leaves the regression
+  /// intact but clears the dangling reference.
   previousResolutionId String?
+  previousResolution   FindingResolution? @relation(fields: [previousResolutionId], references: [id], onDelete: SetNull)
 
   regressedAt     DateTime
   detectedInRunId String

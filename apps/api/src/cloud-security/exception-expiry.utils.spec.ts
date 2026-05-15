@@ -60,10 +60,24 @@ describe('parseExceptionExpiry', () => {
     expect(() => parseExceptionExpiry('xyz')).toThrow(BadRequestException);
   });
 
-  it('accepts non-canonical-but-parseable date forms via the fallback', () => {
-    // Slash-separated form is non-canonical but `new Date()` parses it on
-    // most engines — we don't reject these. Calendar validation only kicks
-    // in for bare `YYYY-MM-DD` (the canonical form the picker emits).
-    expect(parseExceptionExpiry('2026/08/13')).not.toBeNull();
+  it('rejects non-ISO date forms even when `new Date()` would parse them', () => {
+    // Defense in depth — the documented contract is "YYYY-MM-DD" OR strict
+    // ISO 8601. Locale-specific forms (slash-separated, "January 1, 2026")
+    // are parseable by JS Date but outside the contract, so we reject them.
+    expect(() => parseExceptionExpiry('2026/08/13')).toThrow(
+      BadRequestException,
+    );
+    expect(() => parseExceptionExpiry('January 1, 2026')).toThrow(
+      BadRequestException,
+    );
+    expect(() => parseExceptionExpiry('Aug 13, 2026')).toThrow(
+      BadRequestException,
+    );
+  });
+
+  it('accepts strict ISO 8601 timestamps via the fallback', () => {
+    expect(parseExceptionExpiry('2026-08-13T23:59:59Z')).not.toBeNull();
+    expect(parseExceptionExpiry('2026-08-13T23:59:59.999Z')).not.toBeNull();
+    expect(parseExceptionExpiry('2026-08-13T23:59:59+02:00')).not.toBeNull();
   });
 });
