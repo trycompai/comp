@@ -45,12 +45,14 @@ export function parseExceptionExpiry(
 
   // Reject anything that isn't strict ISO 8601 — `new Date()` happily parses
   // locale-specific strings like "January 1, 2026" and "2026/08/13", which
-  // would silently bypass the documented contract.
+  // would silently bypass the documented contract. The timezone offset is
+  // REQUIRED — without it, `new Date("2026-08-13T23:59:59")` is parsed in
+  // server-local time, giving different expiries on UTC vs Pacific hosts.
   const ISO_8601 =
-    /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(:\d{2})?(\.\d+)?(Z|[+-]\d{2}:?\d{2})?$/;
+    /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(:\d{2})?(\.\d+)?(Z|[+-]\d{2}:?\d{2})$/;
   if (!ISO_8601.test(input)) {
     throw new BadRequestException(
-      'expiresAt must be a valid ISO date or YYYY-MM-DD calendar date.',
+      'expiresAt must be a YYYY-MM-DD calendar date or an ISO 8601 timestamp with an explicit timezone offset (e.g. "2026-08-13T23:59:59Z").',
     );
   }
   const parsed = new Date(input);

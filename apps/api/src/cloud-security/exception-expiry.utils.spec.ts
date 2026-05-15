@@ -75,9 +75,25 @@ describe('parseExceptionExpiry', () => {
     );
   });
 
-  it('accepts strict ISO 8601 timestamps via the fallback', () => {
+  it('accepts strict ISO 8601 timestamps with an explicit timezone offset', () => {
     expect(parseExceptionExpiry('2026-08-13T23:59:59Z')).not.toBeNull();
     expect(parseExceptionExpiry('2026-08-13T23:59:59.999Z')).not.toBeNull();
     expect(parseExceptionExpiry('2026-08-13T23:59:59+02:00')).not.toBeNull();
+    expect(parseExceptionExpiry('2026-08-13T23:59:59-07:00')).not.toBeNull();
+  });
+
+  it('rejects timestamps without an explicit timezone offset', () => {
+    // No `Z`, no `+02:00` etc. — `new Date()` would parse these in server
+    // local time, giving inconsistent expiries across environments. Force
+    // the caller to commit to a timezone explicitly.
+    expect(() => parseExceptionExpiry('2026-08-13T23:59:59')).toThrow(
+      BadRequestException,
+    );
+    expect(() => parseExceptionExpiry('2026-08-13T23:59')).toThrow(
+      BadRequestException,
+    );
+    expect(() =>
+      parseExceptionExpiry('2026-08-13T23:59:59.999'),
+    ).toThrow(BadRequestException);
   });
 });

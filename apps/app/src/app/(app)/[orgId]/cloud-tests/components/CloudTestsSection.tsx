@@ -455,7 +455,12 @@ export function CloudTestsSection({
     if (!batchServiceId) return null;
     const group = serviceGroups.find((g) => g.serviceId === batchServiceId);
     if (!group) return null;
+    // `group.findings` is the merged failed+passed set — restrict the batch
+    // to failing findings only. `canFixFinding` doesn't gate on status, so
+    // without this filter a passing check could be targeted by "Fix All".
     const fixable = group.findings.filter((f) => {
+      const isFailed = f.status === 'failed' || f.status === 'FAILED';
+      if (!isFailed) return false;
       const match = canFixFinding(f);
       return match?.key && match.enabled;
     });
