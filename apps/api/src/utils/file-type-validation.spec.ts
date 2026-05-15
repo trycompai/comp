@@ -91,6 +91,29 @@ describe('validateFileContent', () => {
     ).toThrow(BadRequestException);
   });
 
+  it('should allow prose mentioning "JavaScript:" in text content', () => {
+    const jsonBuffer = Buffer.from(
+      '{"summary":"JavaScript: zod; Python: pydantic"}',
+    );
+    expect(() =>
+      validateFileContent(jsonBuffer, 'application/json', 'report.json'),
+    ).not.toThrow();
+  });
+
+  it('should still reject javascript: URL schemes', () => {
+    const malicious = Buffer.from('<a href="javascript:alert(1)">x</a>');
+    expect(() =>
+      validateFileContent(malicious, 'text/html', 'evil.html'),
+    ).toThrow(BadRequestException);
+  });
+
+  it('should still reject vbscript: URL schemes', () => {
+    const malicious = Buffer.from('<a href="vbscript:msgbox(1)">x</a>');
+    expect(() =>
+      validateFileContent(malicious, 'text/html', 'evil.html'),
+    ).toThrow(BadRequestException);
+  });
+
   it('should reject a RIFF file with script content disguised as WebP', () => {
     const malicious = Buffer.alloc(64);
     malicious.write('RIFF', 0);
