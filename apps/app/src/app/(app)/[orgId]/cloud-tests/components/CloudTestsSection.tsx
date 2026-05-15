@@ -1471,21 +1471,6 @@ function FindingRow({
         <span onClick={(e) => e.stopPropagation()} onKeyDown={(e) => e.stopPropagation()}>
           {renderFixButton()}
         </span>
-        {canMarkException &&
-          onMarkException &&
-          (finding.status === 'failed' || finding.status === 'FAILED') && (
-            <button
-              type="button"
-              onClick={(e) => {
-                e.stopPropagation();
-                onMarkException();
-              }}
-              className="shrink-0 inline-flex items-center gap-1 rounded-full border bg-background px-2.5 py-0.5 text-[10px] font-medium text-muted-foreground transition-colors hover:bg-muted"
-              title="Mark this finding as an exception"
-            >
-              Mark as exception
-            </button>
-          )}
         <Badge
           variant="outline"
           className={`shrink-0 w-14 justify-center text-[10px] ${styles.badge}`}
@@ -1511,6 +1496,22 @@ function FindingRow({
               <p className="text-muted-foreground text-xs leading-relaxed">{finding.remediation}</p>
             </div>
           )}
+          {canMarkException &&
+            onMarkException &&
+            (finding.status === 'failed' || finding.status === 'FAILED') && (
+              <div className="flex justify-end border-t pt-3">
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onMarkException();
+                  }}
+                  className="rounded-md border bg-background px-3 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                >
+                  Mark as exception
+                </button>
+              </div>
+            )}
         </div>
       )}
     </div>
