@@ -1,3 +1,10 @@
+# [3.55.0](https://github.com/trycompai/comp/compare/v3.54.3...v3.55.0) (2026-05-15)
+
+
+### Features
+
+* **trust-portal:** dedicated FROM env var for trust portal emails ([#2851](https://github.com/trycompai/comp/issues/2851)) ([69b9157](https://github.com/trycompai/comp/commit/69b91570bbcfa7bd658b94619d10dc6a6b087362))
+
 ## [3.54.3](https://github.com/trycompai/comp/compare/v3.54.2...v3.54.3) (2026-05-14)
 
 
