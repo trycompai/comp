@@ -11,17 +11,10 @@ import { cn } from '@/lib/utils';
 interface DescriptionEditorProps {
   value: string;
   onSave: (next: string) => Promise<void>;
-  onRegenerate: () => Promise<void>;
-  regenerating: boolean;
+  onRegenerate?: () => Promise<void>;
+  regenerating?: boolean;
   disabled?: boolean;
-  /**
-   * The trigger.dev run handle for an in-flight regeneration. When set, the
-   * editor subscribes via `useRealtimeRun`, renders status-specific progress
-   * copy, and notifies the parent via `onRegenSettled` when the run reaches
-   * a terminal state. Null/undefined while no regen is active.
-   */
   regenRun?: { runId: string; publicAccessToken: string } | null;
-  /** Called once the regeneration run terminates (success or failure). */
   onRegenSettled?: (result: { success: boolean; reason?: string }) => void;
 }
 
@@ -34,32 +27,17 @@ const TERMINAL_FAILURE_STATUSES = new Set([
   'TIMED_OUT',
 ]);
 
-/**
- * Cap (in px) for both the markdown preview and the auto-growing textarea.
- * Past this height, the body scrolls internally so the Treatment plan column
- * stays roughly aligned with the Strategy and Linked Work columns instead
- * of pushing the whole row downward when AI emits a long plan.
- */
 const TEXTAREA_MAX_PX = 480;
 
 function regenStatusCopy(status: string | undefined): { headline: string; sub: string } {
   if (!status || status === 'WAITING_FOR_DEPLOY') {
-    return {
-      headline: 'Starting AI scan…',
-      sub: 'Allocating compute capacity.',
-    };
+    return { headline: 'Starting AI scan…', sub: 'Allocating compute capacity.' };
   }
   if (status === 'QUEUED' || status === 'DELAYED') {
-    return {
-      headline: 'Queued — waiting to start…',
-      sub: 'Your regeneration will begin in a moment.',
-    };
+    return { headline: 'Queued — waiting to start…', sub: 'Your regeneration will begin in a moment.' };
   }
   if (status === 'INTERRUPTED' || status === 'WAITING_TO_RESUME') {
-    return {
-      headline: 'Resuming…',
-      sub: 'Picking up where the run left off.',
-    };
+    return { headline: 'Resuming…', sub: 'Picking up where the run left off.' };
   }
   return {
     headline: 'AI is drafting your treatment plan…',
@@ -82,121 +60,55 @@ export function DescriptionEditor({
   regenRun,
   onRegenSettled,
 }: DescriptionEditorProps) {
-  const [draft, setDraft] = useState(value);
-  const [saving, setSaving] = useState(false);
-  // Mode: 'preview' renders markdown, 'edit' shows the auto-growing textarea.
-  // We default to 'edit' when the value is empty (nothing to preview yet) and
-  // stay in 'edit' when an AI regeneration completes with new content so the
-  // user immediately sees what was drafted.
-  const [mode, setMode] = useState<'preview' | 'edit'>(
-    value.trim().length > 0 ? 'preview' : 'edit',
+  // null = preview mode (render value directly), string = edit mode (user's draft).
+  // Initialized to edit mode when value is empty (nothing to preview).
+  // Parent uses key={strategy} to remount on strategy change, so this
+  // always initializes from the correct value — no sync effects needed.
+  const [draft, setDraft] = useState<string | null>(
+    value.trim().length > 0 ? null : value,
   );
+  const [saving, setSaving] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
 
-  // Resync the draft from upstream `value` ONLY when the user isn't
-  // actively editing. Without the `mode === 'edit'` guard, a background
-  // SWR revalidation, AI regeneration, or any other prop change would
-  // wipe whatever the user was typing. (Cubic finding on PR #2671.)
-  useEffect(() => {
-    if (saving) return;
-    if (mode === 'edit') return;
-    setDraft(value);
-  }, [value, saving, mode]);
+  const isEditing = draft !== null;
+  const displayText = draft ?? value;
+  const hasValue = value.trim().length > 0;
+  const isDirty = isEditing && draft.trim() !== value.trim();
+  const wordCount = countWords(displayText);
+  const charCount = displayText.length;
 
-  // When a fresh value arrives from upstream (regenerate, server update) and
-  // we're not actively editing, drop back to preview.
-  useEffect(() => {
-    if (mode === 'edit' || saving) return;
-    if (value.trim().length === 0) setMode('edit');
-  }, [value, mode, saving]);
-
-  // Regenerate-with-AI bypasses the in-edit guard above. When a regen run
-  // terminates (`regenRun` flips from set → null), the user explicitly
-  // asked to overwrite whatever they had — keeping the stale draft and
-  // requiring a refresh to see the new prose was confusing.
-  //
-  // The new prose may already be in `value` at the moment regenRun
-  // clears (sync write before the parent flips the run handle), or it
-  // may arrive in a later render after SWR refetches. Both paths are
-  // handled:
-  //
-  // 1. Sync arrival: when regenRun flips set→null, immediately apply
-  //    the current value and force preview.
-  // 2. Async arrival: capture the value-at-clear-time. The next render
-  //    where `value` differs from the captured snapshot is the AI prose
-  //    landing — apply it, force preview, and clear the latch.
-  //
-  // Without (2), a regen that completes BEFORE the SWR refetch would
-  // sync-apply the OLD value, and the new prose arriving moments later
-  // would be ignored because the in-edit guard skips resync while
-  // mode === 'edit'.
-  const prevRegenRunRef = useRef(regenRun);
-  const valueAtRegenClearRef = useRef<string | null>(null);
-  useEffect(() => {
-    const wasRunning = prevRegenRunRef.current != null;
-    const isRunning = regenRun != null;
-    prevRegenRunRef.current = regenRun;
-    if (wasRunning && !isRunning) {
-      // Path 1: sync arrival — value has already updated.
-      valueAtRegenClearRef.current = value;
-      setDraft(value);
-      if (value.trim().length > 0) setMode('preview');
-    }
-  }, [regenRun, value]);
-
-  useEffect(() => {
-    const captured = valueAtRegenClearRef.current;
-    if (captured === null) return;
-    if (value === captured) return;
-    // Path 2: async arrival — value just changed since regen cleared,
-    // so this is the AI prose landing. Overwrite even if user is in
-    // edit mode (they explicitly opted into the overwrite by clicking
-    // Regenerate).
-    valueAtRegenClearRef.current = null;
-    setDraft(value);
-    if (value.trim().length > 0) setMode('preview');
-  }, [value]);
-
-  // Auto-grow the textarea to fit content, but cap at TEXTAREA_MAX_PX so a
-  // long draft doesn't stretch the Treatment plan column past the Strategy
-  // / Linked Work columns. Internal scroll kicks in past the cap.
   useLayoutEffect(() => {
-    if (mode !== 'edit') return;
+    if (!isEditing) return;
     const el = textareaRef.current;
     if (!el) return;
     el.style.height = 'auto';
     const next = Math.max(Math.min(el.scrollHeight, TEXTAREA_MAX_PX), 200);
     el.style.height = `${next}px`;
     el.style.overflowY = el.scrollHeight > TEXTAREA_MAX_PX ? 'auto' : 'hidden';
-  }, [draft, mode]);
-
-  const isDirty = draft.trim() !== (value ?? '').trim();
-  const wordCount = countWords(draft);
-  const charCount = draft.length;
-  const hasValue = value.trim().length > 0;
+  }, [displayText, isEditing]);
 
   const handleSave = async () => {
     if (!isDirty) {
-      setMode('preview');
+      setDraft(null);
       return;
     }
     setSaving(true);
     try {
       await onSave(draft.trim());
-      setMode('preview');
+      setDraft(null);
     } finally {
       setSaving(false);
     }
   };
 
-  const handleCancelEdit = () => {
-    setDraft(value);
-    setMode('preview');
+  const handleRegenerate = () => {
+    setDraft(null);
+    onRegenerate?.();
   };
 
   return (
     <div className="flex flex-col">
-      {mode === 'preview' && hasValue ? (
+      {!isEditing && hasValue ? (
         <div
           className="mt-4 overflow-y-auto border-t border-border pt-4"
           style={{ maxHeight: TEXTAREA_MAX_PX }}
@@ -206,7 +118,7 @@ export function DescriptionEditor({
       ) : (
         <textarea
           ref={textareaRef}
-          value={draft}
+          value={displayText}
           onChange={(e) => setDraft(e.target.value)}
           disabled={disabled || saving}
           placeholder="Describe how this risk is being treated — concrete controls, owners, timelines. Markdown supported."
@@ -214,27 +126,29 @@ export function DescriptionEditor({
           style={{ resize: 'none', minHeight: 200 }}
         />
       )}
-      <div className={cn('flex items-center gap-2 border-t border-border pt-2.5', !hasValue && mode === 'preview' && 'mt-4')}>
+      <div className={cn('flex items-center gap-2 border-t border-border pt-2.5', !isEditing && !hasValue && 'mt-4')}>
         <span className="font-mono text-[11px] tabular-nums text-muted-foreground">
           {wordCount} {wordCount === 1 ? 'word' : 'words'} · {charCount}{' '}
           {charCount === 1 ? 'char' : 'chars'}
         </span>
         <span className="flex-1" />
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={onRegenerate}
-          disabled={disabled || regenerating}
-          loading={regenerating}
-          iconLeft={<Renew aria-hidden="true" />}
-        >
-          {hasValue ? 'Regenerate with AI' : 'Generate treatment plan'}
-        </Button>
-        {mode === 'preview' ? (
+        {onRegenerate && (
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={handleRegenerate}
+            disabled={disabled || regenerating}
+            loading={regenerating}
+            iconLeft={<Renew aria-hidden="true" />}
+          >
+            {hasValue ? 'Regenerate with AI' : 'Generate treatment plan'}
+          </Button>
+        )}
+        {!isEditing ? (
           <Button
             variant="outline"
             size="sm"
-            onClick={() => setMode('edit')}
+            onClick={() => setDraft(value)}
             disabled={disabled}
             iconLeft={<Edit aria-hidden="true" />}
           >
@@ -246,7 +160,7 @@ export function DescriptionEditor({
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={handleCancelEdit}
+                onClick={() => setDraft(null)}
                 disabled={disabled || saving}
               >
                 Cancel
@@ -267,9 +181,6 @@ export function DescriptionEditor({
         <RegenProgress
           regenRun={regenRun ?? null}
           onSettled={onRegenSettled}
-          /* While `regenerating` is true but no run handle yet, the POST
-             that triggers the task is in flight — show a generic starter
-             until the runId arrives. */
           fallbackHeadline="Starting AI scan…"
         />
       )}
@@ -309,7 +220,7 @@ function RegenProgress({
       };
       onSettled?.({ success: false, reason: reasons[status] ?? 'The AI run failed.' });
     }
-  }, [status]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [status, onSettled]);
 
   const { headline, sub } = regenRun
     ? regenStatusCopy(status)
@@ -336,11 +247,6 @@ function RegenProgress({
   );
 }
 
-/**
- * Lightweight markdown preview tuned for treatment-plan prose. Headings,
- * bullets, ordered lists, links, bold/italic, code spans. No raw HTML or
- * complex blocks — the AI prompts already shape output to this.
- */
 function MarkdownPreview({ content }: { content: string }) {
   return (
     <div className="prose-sm max-w-none text-sm leading-[1.65] text-foreground">

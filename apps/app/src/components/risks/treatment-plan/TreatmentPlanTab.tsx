@@ -206,9 +206,10 @@ export function TreatmentPlanTab({
             <>
               <ColumnHeader number="02" title={planTitle} subtitle={planSubtitle} />
               <DescriptionEditor
+                key={strategy}
                 value={description}
                 onSave={onUpdateDescription}
-                onRegenerate={onRegenerate}
+                onRegenerate={isMitigate ? onRegenerate : undefined}
                 regenerating={regenerating}
                 disabled={!canUpdate}
                 regenRun={regenRun}
