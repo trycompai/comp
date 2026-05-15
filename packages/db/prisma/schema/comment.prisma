@@ -24,4 +24,5 @@ enum CommentEntityType {
   vendor
   risk
   policy
+  finding
 }

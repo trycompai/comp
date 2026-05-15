@@ -22,9 +22,9 @@ import {
 } from '@nestjs/swagger';
 import { AuthContext, OrganizationId } from '../auth/auth-context.decorator';
 import { HybridAuthGuard } from '../auth/hybrid-auth.guard';
-import { PermissionGuard } from '../auth/permission.guard';
 import { RequirePermission } from '../auth/require-permission.decorator';
 import type { AuthContext as AuthContextType } from '../auth/types';
+import { CommentsPermissionGuard } from './comments-permission.guard';
 import { CommentsService } from './comments.service';
 import { CommentResponseDto } from './dto/comment-responses.dto';
 import { CreateCommentDto } from './dto/create-comment.dto';
@@ -33,7 +33,10 @@ import { UpdateCommentDto } from './dto/update-comment.dto';
 
 @ApiTags('Comments')
 @Controller({ path: 'comments', version: '1' })
-@UseGuards(HybridAuthGuard, PermissionGuard)
+// CommentsPermissionGuard replaces the standard PermissionGuard so that
+// permission checks scale by entityType (task/finding/policy/vendor/risk)
+// rather than always gating on `task:*`. See comments-permission.guard.ts.
+@UseGuards(HybridAuthGuard, CommentsPermissionGuard)
 @ApiSecurity('apikey')
 export class CommentsController {
   constructor(private readonly commentsService: CommentsService) {}
