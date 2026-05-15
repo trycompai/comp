@@ -42,7 +42,7 @@ import { GcpSetupGuide } from './GcpSetupGuide';
 import { RemediationDialog } from './RemediationDialog';
 import { ScheduledScanPopover } from './ScheduledScanPopover';
 
-import type { Finding, ProviderLatestRun } from '../types';
+import type { Finding } from '../types';
 import { CheckDefinitionPanel } from './CheckDefinitionPanel';
 import { CheckGroupBlock } from './CheckGroupBlock';
 import { buildCheckGroups } from './check-groups';
@@ -69,8 +69,6 @@ interface CloudTestsSectionProps {
   orgId: string;
   /** When the last scan completed — null means never scanned */
   lastRunAt?: Date | null;
-  /** Latest scan summary (counts, duration). null for legacy or never-scanned. */
-  latestRun?: ProviderLatestRun | null;
   /** Connection variables (e.g., GCP org ID) */
   variables?: Record<string, unknown>;
   awsType?: string;
@@ -175,7 +173,6 @@ export function CloudTestsSection({
   onScanComplete,
   orgId,
   lastRunAt,
-  latestRun,
   variables,
   awsType,
 }: CloudTestsSectionProps) {
@@ -529,8 +526,6 @@ export function CloudTestsSection({
         </div>
       </div>
 
-      {/* Last scan metadata strip — surfaces what's already in IntegrationCheckRun */}
-      <LastScanStrip latestRun={latestRun ?? null} fallbackLastRunAt={lastRunAt ?? null} />
 
       {/* Selected projects indicator (GCP) */}
       {providerSlug === 'gcp' &&
@@ -1149,70 +1144,6 @@ function StatCard({
         <p className="text-xl font-bold tabular-nums">{value}</p>
         <p className="text-muted-foreground text-xs">{label}</p>
       </div>
-    </div>
-  );
-}
-
-function formatRelativeTime(date: Date): string {
-  const diff = Date.now() - date.getTime();
-  const seconds = Math.floor(diff / 1000);
-  if (seconds < 5) return 'just now';
-  if (seconds < 60) return `${seconds}s ago`;
-  const minutes = Math.floor(seconds / 60);
-  if (minutes < 60) return `${minutes}m ago`;
-  const hours = Math.floor(minutes / 60);
-  if (hours < 24) return `${hours}h ago`;
-  const days = Math.floor(hours / 24);
-  if (days === 1) return 'yesterday';
-  if (days < 7) return `${days}d ago`;
-  return date.toLocaleDateString();
-}
-
-function formatDuration(ms: number): string {
-  if (ms < 1000) return `${ms}ms`;
-  const seconds = ms / 1000;
-  if (seconds < 60) return `${seconds.toFixed(1)}s`;
-  const totalSeconds = Math.floor(seconds);
-  const m = Math.floor(totalSeconds / 60);
-  const s = totalSeconds % 60;
-  return s === 0 ? `${m}m` : `${m}m ${s}s`;
-}
-
-function LastScanStrip({
-  latestRun,
-  fallbackLastRunAt,
-}: {
-  latestRun: ProviderLatestRun | null;
-  fallbackLastRunAt: Date | null;
-}) {
-  const completedRaw = latestRun?.completedAt ?? fallbackLastRunAt;
-  if (!completedRaw) return null;
-
-  const completedAt =
-    completedRaw instanceof Date ? completedRaw : new Date(completedRaw);
-  if (Number.isNaN(completedAt.getTime())) return null;
-
-  const parts: string[] = [`Ran ${formatRelativeTime(completedAt)}`];
-
-  if (latestRun) {
-    if (latestRun.totalChecked !== null) {
-      const noun = latestRun.totalChecked === 1 ? 'check' : 'checks';
-      parts.push(`${latestRun.totalChecked} ${noun} evaluated`);
-    }
-    if (latestRun.passedCount !== null) {
-      parts.push(`${latestRun.passedCount} passed`);
-    }
-    if (latestRun.failedCount !== null) {
-      parts.push(`${latestRun.failedCount} failed`);
-    }
-    if (latestRun.durationMs !== null && latestRun.durationMs > 0) {
-      parts.push(`Duration ${formatDuration(latestRun.durationMs)}`);
-    }
-  }
-
-  return (
-    <div className="rounded-md border bg-muted/20 px-3 py-2 text-[11px] text-muted-foreground">
-      {parts.join(' • ')}
     </div>
   );
 }

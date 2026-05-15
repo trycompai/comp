@@ -163,7 +163,6 @@ function CloudConnectionContent({
             connectionId={connection.id}
             orgId={orgId}
             lastRunAt={connection.lastRunAt}
-            latestRun={connection.latestRun ?? null}
             variables={connection.variables ?? undefined}
             awsType={connection.awsType}
             onScanComplete={onScanComplete}
