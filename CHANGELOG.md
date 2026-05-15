@@ -1,3 +1,10 @@
+## [3.55.1](https://github.com/trycompai/comp/compare/v3.55.0...v3.55.1) (2026-05-15)
+
+
+### Bug Fixes
+
+* **cloud-security:** use credential report for iam-root-access-keys check ([#2846](https://github.com/trycompai/comp/issues/2846)) ([2e58e26](https://github.com/trycompai/comp/commit/2e58e26d160998854aedca64307dcdd7594c3bf8))
+
 # [3.55.0](https://github.com/trycompai/comp/compare/v3.54.3...v3.55.0) (2026-05-15)
 
 
