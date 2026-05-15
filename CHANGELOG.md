@@ -1,3 +1,25 @@
+# [3.55.0](https://github.com/trycompai/comp/compare/v3.54.3...v3.55.0) (2026-05-15)
+
+
+### Features
+
+* **trust-portal:** dedicated FROM env var for trust portal emails ([#2851](https://github.com/trycompai/comp/issues/2851)) ([69b9157](https://github.com/trycompai/comp/commit/69b91570bbcfa7bd658b94619d10dc6a6b087362))
+
+## [3.54.3](https://github.com/trycompai/comp/compare/v3.54.2...v3.54.3) (2026-05-14)
+
+
+### Bug Fixes
+
+* **frameworks:** populate framework-scoped link tables during org onboarding ([7cbbaa0](https://github.com/trycompai/comp/commit/7cbbaa0329802e88ec5d1a52ff8312768f23afd9))
+
+## [3.54.2](https://github.com/trycompai/comp/compare/v3.54.1...v3.54.2) (2026-05-14)
+
+
+### Bug Fixes
+
+* **integrations:** remove fragile heredoc from AWS auditor setup script ([6acb361](https://github.com/trycompai/comp/commit/6acb3610d5a11ae12b6dbc67f9f54c22510e74c0))
+* **portal:** resolve RBAC permissions instead of checking role names ([9316c6d](https://github.com/trycompai/comp/commit/9316c6d29d95f7e6019c6954a01666c1b5f9c73e))
+
 ## [3.54.1](https://github.com/trycompai/comp/compare/v3.54.0...v3.54.1) (2026-05-14)
 
 
