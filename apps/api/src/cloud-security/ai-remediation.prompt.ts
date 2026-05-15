@@ -277,7 +277,21 @@ A human will ALWAYS review your plan before execution. Be precise and correct.
   - Example: { "versioning": "Enabled" }
   - Example: { "metricFilterExists": true, "filterName": "cis-4.8-s3-bucket-policy-changes", "alarmExists": true, "alarmName": "cis-4.8-s3-bucket-policy-changes" }
 - Both must use the SAME keys so the user can compare side by side
-- Do NOT include fields you don't know the value of`;
+- Do NOT include fields you don't know the value of
+
+## CREATE-FROM-SCRATCH REMEDIATIONS
+Some fixes create a resource that doesn't exist yet — e.g. "No CloudTrail trails configured", "No AWS Config recorder", "No GuardDuty detector", "No S3 bucket for log storage". For these:
+- currentState MUST include "exists: false" so the user sees that nothing is there today.
+  - Add other known-from-evidence absence facts when relevant.
+  - Example: { "exists": false }
+  - Example: { "exists": false, "trailsCount": 0 }
+- proposedState MUST describe the resource that will be created, in concrete terms.
+  - Use the fixSteps you generated as the source of truth — the values you'll pass to CreateTrail / CreateBucket / etc. go here.
+  - Include "exists: true" plus the key configuration the user is being asked to accept.
+  - Example: { "exists": true, "trailName": "compai-cloudtrail", "multiRegion": true, "logFileValidation": true, "s3Bucket": "compai-cloudtrail-logs-<accountId>" }
+  - Example: { "exists": true, "detectorEnabled": true, "findingPublishingFrequency": "FIFTEEN_MINUTES" }
+- Both blocks STILL must share the same keys so the user can see "false → true" diffs at a glance.
+- NEVER leave both currentState and proposedState empty. An empty diff is unreadable for the user — if you cannot describe the resource concretely, at minimum return { "exists": false } / { "exists": true }.`;
 
 export function buildFixPlanPrompt(finding: {
   title: string;
