@@ -1,3 +1,61 @@
+## [3.55.2](https://github.com/trycompai/comp/compare/v3.55.1...v3.55.2) (2026-05-15)
+
+
+### Bug Fixes
+
+* **people:** send single combined email for admin+employee invites with portal ([#2857](https://github.com/trycompai/comp/issues/2857)) ([a4adb20](https://github.com/trycompai/comp/commit/a4adb2035779fb3d77d0f21adbb50f8714956407))
+* **risks:** treatment plan disappears when switching strategies ([#2860](https://github.com/trycompai/comp/issues/2860)) ([9b052f5](https://github.com/trycompai/comp/commit/9b052f50f55280fdb24f9f33ae771e2553048a59))
+
+## [3.55.1](https://github.com/trycompai/comp/compare/v3.55.0...v3.55.1) (2026-05-15)
+
+
+### Bug Fixes
+
+* **cloud-security:** use credential report for iam-root-access-keys check ([#2846](https://github.com/trycompai/comp/issues/2846)) ([2e58e26](https://github.com/trycompai/comp/commit/2e58e26d160998854aedca64307dcdd7594c3bf8))
+
+# [3.55.0](https://github.com/trycompai/comp/compare/v3.54.3...v3.55.0) (2026-05-15)
+
+
+### Features
+
+* **trust-portal:** dedicated FROM env var for trust portal emails ([#2851](https://github.com/trycompai/comp/issues/2851)) ([69b9157](https://github.com/trycompai/comp/commit/69b91570bbcfa7bd658b94619d10dc6a6b087362))
+
+## [3.54.3](https://github.com/trycompai/comp/compare/v3.54.2...v3.54.3) (2026-05-14)
+
+
+### Bug Fixes
+
+* **frameworks:** populate framework-scoped link tables during org onboarding ([7cbbaa0](https://github.com/trycompai/comp/commit/7cbbaa0329802e88ec5d1a52ff8312768f23afd9))
+
+## [3.54.2](https://github.com/trycompai/comp/compare/v3.54.1...v3.54.2) (2026-05-14)
+
+
+### Bug Fixes
+
+* **integrations:** remove fragile heredoc from AWS auditor setup script ([6acb361](https://github.com/trycompai/comp/commit/6acb3610d5a11ae12b6dbc67f9f54c22510e74c0))
+* **portal:** resolve RBAC permissions instead of checking role names ([9316c6d](https://github.com/trycompai/comp/commit/9316c6d29d95f7e6019c6954a01666c1b5f9c73e))
+
+## [3.54.1](https://github.com/trycompai/comp/compare/v3.54.0...v3.54.1) (2026-05-14)
+
+
+### Bug Fixes
+
+* **integrations:** remove fragile heredoc from AWS auditor setup script ([#2845](https://github.com/trycompai/comp/issues/2845)) ([f056c60](https://github.com/trycompai/comp/commit/f056c60ab8e6ebc59eed43df541f43bad0cfeea4))
+
+# [3.54.0](https://github.com/trycompai/comp/compare/v3.53.0...v3.54.0) (2026-05-13)
+
+
+### Bug Fixes
+
+* **background-check:** address cubic review — arrow nav, credit filter, trim payload ([800265a](https://github.com/trycompai/comp/commit/800265afcdb5ecbafa7d3831445d6594350ddfbd))
+* **background-check:** align V1 content with tab strip and page header ([9d5454b](https://github.com/trycompai/comp/commit/9d5454b8f3987462acb44c047a385901f21d88a8))
+
+
+### Features
+
+* **background-check:** redesign overview and report to surface real verification methodology ([a5ebe77](https://github.com/trycompai/comp/commit/a5ebe7778dee104affff0480772e5f980e8402c6))
+* **background-check:** replace marketing overview with V1 two-paths task surface ([4c81b38](https://github.com/trycompai/comp/commit/4c81b38bafe7d7daeeea8e5145b6b060f066ff73))
+
 # [3.53.0](https://github.com/trycompai/comp/compare/v3.52.0...v3.53.0) (2026-05-13)
 
 

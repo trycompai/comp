@@ -120,6 +120,39 @@ describe('TreatmentPlanTab', () => {
     expect(screen.getByRole('button', { name: /Regenerate with AI/i })).toBeInTheDocument();
   });
 
+  it('hides the regenerate button for non-Mitigate strategies', () => {
+    const entity: TreatmentPlanEntity = {
+      ...baseEntity,
+      treatmentStrategy: RiskTreatmentType.accept,
+      treatmentStrategyDescription: 'We accept this risk.',
+    };
+    render(<TreatmentPlanTab {...buildProps({ entity })} />);
+    expect(
+      screen.queryByRole('button', { name: /Generate treatment plan/i }),
+    ).toBeNull();
+    expect(
+      screen.queryByRole('button', { name: /Regenerate with AI/i }),
+    ).toBeNull();
+  });
+
+  it('shows the correct description when switching strategies via strategyDescriptions', () => {
+    const entity: TreatmentPlanEntity = {
+      ...baseEntity,
+      treatmentStrategy: RiskTreatmentType.accept,
+      treatmentStrategyDescription: 'We accept this risk.',
+      strategyDescriptions: {
+        [RiskTreatmentType.mitigate]: 'Mitigation plan here.',
+        [RiskTreatmentType.accept]: 'We accept this risk.',
+      },
+      tasks: [],
+    };
+    render(<TreatmentPlanTab {...buildProps({ entity })} />);
+    expect(screen.getByText('We accept this risk.')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('radio', { name: 'Mitigate' }));
+    expect(screen.getByText('Mitigation plan here.')).toBeInTheDocument();
+  });
+
   it('shows task completion percent in the hero stats', () => {
     const entity: TreatmentPlanEntity = {
       ...baseEntity,

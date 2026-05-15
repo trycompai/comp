@@ -1,22 +1,19 @@
 'use client';
 
-import {
-  Badge,
-  Stack,
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-  Text,
-} from '@trycompai/design-system';
+import { Badge, Stack, Text } from '@trycompai/design-system';
+import { BackgroundCheckAuditTimeline } from './BackgroundCheckAuditTimeline';
 import { BackgroundCheckExternalReport } from './BackgroundCheckExternalReport';
-import { MethodologyReportBanner } from './BackgroundCheckMethodology';
 import {
   BackgroundCheckShareableSummary,
   hasShareableSummary,
 } from './BackgroundCheckShareableSummary';
+
+const METHODOLOGY_LABELS = [
+  'Biometric identity verification',
+  'Human-verified employment & references',
+  'FCRA-compliant adjudication',
+  'AI-augmented public-source research',
+];
 
 const REPORT_SECTIONS: Array<{
   title: string;
@@ -72,7 +69,7 @@ export function BackgroundCheckReport({
           </Text>
         )}
       </Stack>
-      <MethodologyReportBanner />
+      <MethodologyBanner />
       <div className="grid items-start gap-3 md:grid-cols-2 xl:grid-cols-3">
         {REPORT_SECTIONS.map((section) => (
           <ReportSection
@@ -88,8 +85,32 @@ export function BackgroundCheckReport({
       ) : (
         <BackgroundCheckExternalReport snapshot={snapshot} />
       )}
-      {auditEvents.length > 0 && <AuditTimeline events={auditEvents} />}
+      {auditEvents.length > 0 && <BackgroundCheckAuditTimeline events={auditEvents} />}
     </Stack>
+  );
+}
+
+function MethodologyBanner() {
+  return (
+    <div className="rounded-md border bg-muted/20 p-4">
+      <Stack gap="3">
+        <Stack gap="1">
+          <Text weight="medium">How this check was performed</Text>
+          <Text size="xs" variant="muted">
+            Every report combines biometric identity verification with direct employer and
+            reference confirmation, plus AI-augmented public-source research — all under an
+            FCRA-style adjudication workflow.
+          </Text>
+        </Stack>
+        <div className="flex flex-wrap gap-1.5">
+          {METHODOLOGY_LABELS.map((label) => (
+            <Badge key={label} variant="secondary">
+              {label}
+            </Badge>
+          ))}
+        </div>
+      </Stack>
+    </div>
   );
 }
 
@@ -124,41 +145,6 @@ function ReportSection({
         </div>
       </Stack>
     </div>
-  );
-}
-
-function AuditTimeline({ events }: { events: unknown[] }) {
-  const sortedEvents = [...events].sort((a, b) => eventTimestamp(b) - eventTimestamp(a));
-
-  return (
-    <Stack gap="sm">
-      <Text weight="medium">Audit timeline</Text>
-      <Table variant="bordered">
-        <TableHeader>
-          <TableRow>
-            <TableHead>Event</TableHead>
-            <TableHead>Time</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {sortedEvents.slice(0, 5).map((event, index) => (
-            <TableRow key={eventKey(event, index)}>
-              <TableCell>
-                <div className="flex min-w-0 items-center gap-2">
-                  <Badge variant="secondary">{eventCategory(event)}</Badge>
-                  <Text size="sm">{eventLabel(event)}</Text>
-                </div>
-              </TableCell>
-              <TableCell>
-                <Text size="sm" variant="muted">
-                  {eventTime(event) ?? '-'}
-                </Text>
-              </TableCell>
-            </TableRow>
-          ))}
-        </TableBody>
-      </Table>
-    </Stack>
   );
 }
 
@@ -218,56 +204,6 @@ function shouldShowStatus(status: string): boolean {
   return !HIDDEN_STATUS_VALUES.has(status.trim().toLowerCase());
 }
 
-function eventLabel(event: unknown): string {
-  const record = toRecord(event);
-  if (!record) return 'Report event';
-  const label =
-    readString(record.eventType) ??
-    readString(record.type) ??
-    readString(record.message) ??
-    'Report event';
-
-  return formatEventLabel(label);
-}
-
-function eventCategory(event: unknown): string {
-  const record = toRecord(event);
-  if (!record) return 'Report';
-  const label = readString(record.eventType) ?? readString(record.type) ?? '';
-  return formatLabel(label.split('.')[0] || 'report');
-}
-
-function eventTime(event: unknown): string | null {
-  const timestamp = eventTimestamp(event);
-  if (timestamp > 0) {
-    return new Date(timestamp).toLocaleString();
-  }
-  return null;
-}
-
-function eventTimestamp(event: unknown): number {
-  const record = toRecord(event);
-  if (!record) return 0;
-  const value = record.createdAt ?? record.timestamp ?? record.processedAt;
-  if (typeof value === 'number') {
-    return value;
-  }
-  if (typeof value === 'string') {
-    const numeric = Number(value);
-    if (!Number.isNaN(numeric) && value.trim() !== '') {
-      return numeric;
-    }
-    const timestamp = new Date(value).getTime();
-    return Number.isNaN(timestamp) ? 0 : timestamp;
-  }
-  return 0;
-}
-
-function eventKey(event: unknown, index: number): string {
-  const record = toRecord(event);
-  return readString(record?.id) ?? readString(record?.eventId) ?? `event-${index}`;
-}
-
 function toArray(value: unknown): unknown[] {
   return Array.isArray(value) ? value : [];
 }
@@ -283,8 +219,4 @@ function readString(value: unknown): string | null {
 
 function formatLabel(value: string): string {
   return value.replace(/_/g, ' ').replace(/\b\w/g, (letter) => letter.toUpperCase());
-}
-
-function formatEventLabel(value: string): string {
-  return formatLabel(value.split('.').slice(1).join('.') || value).replace(/\./g, ' ');
 }
