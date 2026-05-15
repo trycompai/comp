@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { parseRemediation } from './remediation-parser';
+import { parseRemediation, safeHttpUrl } from './remediation-parser';
 
 describe('parseRemediation', () => {
   it('parses a full GCP remediation with nextSteps + reference + compliance', () => {
@@ -123,5 +123,53 @@ describe('parseRemediation', () => {
     expect(parsed.compliance).toEqual([
       { standard: 'cis', version: '1.0', ids: ['1.1'] },
     ]);
+  });
+});
+
+describe('safeHttpUrl', () => {
+  it('returns http URLs unchanged', () => {
+    expect(safeHttpUrl('http://example.com/path')).toBe('http://example.com/path');
+  });
+
+  it('returns https URLs unchanged', () => {
+    expect(safeHttpUrl('https://cloud.google.com/docs')).toBe(
+      'https://cloud.google.com/docs',
+    );
+  });
+
+  it('rejects javascript: URLs', () => {
+    expect(safeHttpUrl('javascript:alert(1)')).toBeNull();
+  });
+
+  it('rejects data: URLs', () => {
+    expect(safeHttpUrl('data:text/html,<script>alert(1)</script>')).toBeNull();
+  });
+
+  it('rejects vbscript: URLs', () => {
+    expect(safeHttpUrl('vbscript:msgbox(1)')).toBeNull();
+  });
+
+  it('rejects file: URLs', () => {
+    expect(safeHttpUrl('file:///etc/passwd')).toBeNull();
+  });
+
+  it('rejects relative URLs (no protocol)', () => {
+    expect(safeHttpUrl('//evil.example/path')).toBeNull();
+    expect(safeHttpUrl('/relative/path')).toBeNull();
+  });
+
+  it('rejects malformed URLs', () => {
+    expect(safeHttpUrl('not a url at all')).toBeNull();
+    expect(safeHttpUrl('')).toBeNull();
+  });
+
+  it('rejects null input', () => {
+    expect(safeHttpUrl(null)).toBeNull();
+  });
+
+  it('case-insensitively rejects upper-case JAVASCRIPT:', () => {
+    // `new URL` normalizes the protocol to lowercase, so we still match the
+    // safe-list correctly even if attacker uses unusual casing.
+    expect(safeHttpUrl('JavaScript:alert(1)')).toBeNull();
   });
 });

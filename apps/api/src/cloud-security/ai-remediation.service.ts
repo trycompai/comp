@@ -471,13 +471,17 @@ function enrichEmptyState(plan: FixPlan): FixPlan {
     if (!willCreate.includes(label)) willCreate.push(label);
   }
 
+  // Only enrich when we have actual `Create*` commands — otherwise we'd
+  // fabricate "exists: false → exists: true" for updates/reads (e.g.
+  // UpdateAccountPasswordPolicy), which misrepresents the diff in the UI.
+  // For non-create remediations we leave the AI's (admittedly empty) output
+  // alone rather than inventing state.
+  if (willCreate.length === 0) return plan;
+
   return {
     ...plan,
     currentState: { exists: false },
-    proposedState:
-      willCreate.length > 0
-        ? { exists: true, willCreate }
-        : { exists: true },
+    proposedState: { exists: true, willCreate },
   };
 }
 

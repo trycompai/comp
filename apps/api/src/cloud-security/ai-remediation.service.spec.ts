@@ -43,9 +43,9 @@ describe('AiRemediationService.generateFixPlan empty-state backstop', () => {
     generateObjectMock.mockResolvedValueOnce({
       object: basePlan({
         fixSteps: [
-          { service: 'cloudtrail', command: 'CreateTrailCommand', params: {} },
-          { service: 's3', command: 'CreateBucketCommand', params: {} },
-          { service: 'cloudtrail', command: 'StartLoggingCommand', params: {} },
+          { service: 'cloudtrail', command: 'CreateTrailCommand', params: {}, purpose: 'Create trail' },
+          { service: 's3', command: 'CreateBucketCommand', params: {}, purpose: 'Create bucket' },
+          { service: 'cloudtrail', command: 'StartLoggingCommand', params: {}, purpose: 'Start logging' },
         ],
       }),
     });
@@ -69,11 +69,16 @@ describe('AiRemediationService.generateFixPlan empty-state backstop', () => {
     });
   });
 
-  it('falls back to { exists: true } without willCreate when no Create* steps are present', async () => {
+  it('leaves both states empty when AI returns {}/{} for an update-style plan (no Create* commands)', async () => {
+    // Previously this test asserted the backstop fabricated
+    // `{ exists: false }` / `{ exists: true }` even for updates, which
+    // misrepresented the diff in the UI ("we'll create it" when the truth
+    // was "we'll update the existing one"). The backstop now only fires
+    // when at least one `Create*` command is present.
     generateObjectMock.mockResolvedValueOnce({
       object: basePlan({
         fixSteps: [
-          { service: 'iam', command: 'UpdateAccountPasswordPolicyCommand', params: {} },
+          { service: 'iam', command: 'UpdateAccountPasswordPolicyCommand', params: {}, purpose: 'Update password policy' },
         ],
       }),
     });
@@ -90,8 +95,8 @@ describe('AiRemediationService.generateFixPlan empty-state backstop', () => {
       evidence: {},
     });
 
-    expect(plan.currentState).toEqual({ exists: false });
-    expect(plan.proposedState).toEqual({ exists: true });
+    expect(plan.currentState).toEqual({});
+    expect(plan.proposedState).toEqual({});
   });
 
   it('leaves a plan untouched when currentState is non-empty', async () => {

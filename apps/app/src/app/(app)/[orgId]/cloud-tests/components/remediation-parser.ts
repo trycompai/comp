@@ -22,6 +22,28 @@ export interface ParsedRemediation {
   compliance: ComplianceFramework[];
 }
 
+/**
+ * Returns the URL only if it parses as an absolute http/https URL.
+ * Returns `null` for `javascript:`, `data:`, `vbscript:`, relative URLs,
+ * or anything malformed — so callers can safely assign the result to an
+ * `href` attribute without enabling script-URL execution.
+ *
+ * Today's source for remediation URLs is Google SCC's `externalUri`
+ * field, but the parser is generic — defense in depth applies.
+ */
+export function safeHttpUrl(url: string | null): string | null {
+  if (!url) return null;
+  try {
+    const parsed = new URL(url);
+    if (parsed.protocol === 'http:' || parsed.protocol === 'https:') {
+      return parsed.toString();
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}
+
 // Use prefixes without trailing whitespace so we match even after the
 // section has been trimmed (an empty URL renders as "More info:" with
 // no trailing space).

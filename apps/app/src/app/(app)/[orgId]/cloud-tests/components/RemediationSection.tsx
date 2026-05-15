@@ -2,7 +2,7 @@
 
 import { ExternalLink, Wrench } from 'lucide-react';
 
-import { parseRemediation } from './remediation-parser';
+import { parseRemediation, safeHttpUrl } from './remediation-parser';
 
 interface RemediationSectionProps {
   remediation: string;
@@ -20,7 +20,9 @@ interface RemediationSectionProps {
  */
 export function RemediationSection({ remediation }: RemediationSectionProps) {
   const parsed = parseRemediation(remediation);
-  if (!parsed.steps && !parsed.referenceUrl && parsed.compliance.length === 0) {
+  // Only honor `http(s)` schemes — never assign `javascript:` / `data:` to href.
+  const safeReferenceUrl = safeHttpUrl(parsed.referenceUrl);
+  if (!parsed.steps && !safeReferenceUrl && parsed.compliance.length === 0) {
     return null;
   }
 
@@ -36,9 +38,9 @@ export function RemediationSection({ remediation }: RemediationSectionProps) {
             {parsed.steps}
           </p>
         )}
-        {parsed.referenceUrl && (
+        {safeReferenceUrl && (
           <a
-            href={parsed.referenceUrl}
+            href={safeReferenceUrl}
             target="_blank"
             rel="noopener noreferrer"
             className="inline-flex items-center gap-1 text-primary hover:underline"
