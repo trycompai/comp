@@ -114,6 +114,36 @@ describe('validateFileContent', () => {
     ).toThrow(BadRequestException);
   });
 
+  it('should reject javascript: URLs with whitespace after the colon', () => {
+    const malicious = Buffer.from('<a href="javascript: alert(1)">x</a>');
+    expect(() =>
+      validateFileContent(malicious, 'text/html', 'evil.html'),
+    ).toThrow(BadRequestException);
+  });
+
+  it('should reject javascript: in single-quoted attributes', () => {
+    const malicious = Buffer.from("<a href='javascript:alert(1)'>x</a>");
+    expect(() =>
+      validateFileContent(malicious, 'text/html', 'evil.html'),
+    ).toThrow(BadRequestException);
+  });
+
+  it('should reject javascript: in svg xlink:href', () => {
+    const malicious = Buffer.from(
+      '<svg><a xlink:href="javascript:alert(1)">x</a></svg>',
+    );
+    expect(() =>
+      validateFileContent(malicious, 'image/svg+xml', 'evil.svg'),
+    ).toThrow(BadRequestException);
+  });
+
+  it('should allow prose mentioning "javascript:" outside attribute context', () => {
+    const docs = Buffer.from('See the javascript: URL scheme documentation.');
+    expect(() =>
+      validateFileContent(docs, 'text/plain', 'notes.txt'),
+    ).not.toThrow();
+  });
+
   it('should reject a RIFF file with script content disguised as WebP', () => {
     const malicious = Buffer.alloc(64);
     malicious.write('RIFF', 0);
