@@ -21,6 +21,8 @@ export class MemberQueries {
     isActive: true,
     deactivated: true,
     backgroundCheckExempt: true,
+    backgroundCheckExemptReason: true,
+    backgroundCheckExemptJustification: true,
     fleetDmLabelId: true,
     user: {
       select: {
@@ -126,6 +128,14 @@ export class MemberQueries {
       'fleetDmLabelId' in memberFields
     ) {
       updatePayload.fleetDmLabelId = null;
+    }
+
+    // Un-exempting clears reason + justification so a future re-exemption
+    // starts from a clean state. The audit log retains the prior values
+    // from the original exempt-true request.
+    if (updatePayload.backgroundCheckExempt === false) {
+      updatePayload.backgroundCheckExemptReason = null;
+      updatePayload.backgroundCheckExemptJustification = null;
     }
 
     const hasUserUpdates = name !== undefined || email !== undefined;

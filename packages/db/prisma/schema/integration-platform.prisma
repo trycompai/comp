@@ -75,6 +75,9 @@ model IntegrationConnection {
   syncLogs           IntegrationSyncLog[]
   remediationActions RemediationAction[]
   remediationBatches RemediationBatch[]
+  findingExceptions  FindingException[]
+  findingResolutions FindingResolution[]
+  findingRegressions FindingRegression[]
 
   @@index([organizationId])
   @@index([providerId])
@@ -332,6 +335,16 @@ model IntegrationCheckRun {
 
   /// Full execution logs (JSON array)
   logs Json?
+
+  /// Service IDs (e.g. "s3", "iam") successfully scanned in this run.
+  /// Used by reconciliation to distinguish a passing finding from a
+  /// service that simply wasn't re-scanned (e.g. rate limit, transient
+  /// API failure) — prevents false "resolved" events on partial scans.
+  scannedServices String[] @default([])
+
+  /// Service IDs that errored out mid-scan. Findings under these services
+  /// are NOT considered for resolution detection on this run.
+  failedServices String[] @default([])
 
   createdAt DateTime @default(now())
 
