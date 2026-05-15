@@ -37,18 +37,21 @@ function fromGcpEvidence(
       : null;
   if (!category) return null;
 
+  const humanCategory = humanizeCategory(category);
+
+  // Each of the four fields needs a genuinely different sentence — auditors
+  // shouldn't see the same paragraph three times under different labels.
+  // Derived from the category code (stable, machine-readable), not from
+  // SCC's per-finding `description` (which is generic category info that
+  // duplicates across fields when used naively).
   return {
     title: input.title,
-    description: input.description ?? humanizeCategory(category),
-    passCriteria: `No ${category
-      .toLowerCase()
-      .replace(/_/g, ' ')} detected by Google Security Command Center.`,
-    failCriteria: input.description
-      ? input.description
-      : `Google Security Command Center flagged this resource under category ${category}.`,
+    description: `This check surfaces findings from Google Security Command Center under the "${humanCategory}" detector. SCC continuously evaluates your projects against Google's security baseline and flags resources matching the ${category} pattern.`,
+    passCriteria: `Google Security Command Center reports no active "${humanCategory}" findings for this project.`,
+    failCriteria: `Google Security Command Center detected a resource matching the "${humanCategory}" criteria in this project.`,
     whyItMatters: findingClass
-      ? `Google classifies this finding as a "${findingClass}" — addressing it reduces the underlying security risk Google identified.`
-      : 'Findings from Google Security Command Center indicate a security concern Google detected in the customer environment.',
+      ? `Google classifies this finding as a ${findingClass.toLowerCase()} — addressing it reduces the underlying security risk Google identified for the ${humanCategory} category.`
+      : `Findings under the ${humanCategory} category indicate a security concern Google detected in the customer environment.`,
     source: 'provider',
   };
 }
@@ -63,18 +66,15 @@ function fromAzureEvidence(
         ? (input.evidence.serviceName as string)
         : null;
 
+  const subject = alertType ?? 'this configuration';
+
   return {
     title: input.title,
-    description:
-      input.description ??
-      'Surfaced from Microsoft Defender for Cloud. Defender flagged this resource as not meeting its recommended secure configuration.',
-    passCriteria:
-      'Microsoft Defender for Cloud reports the resource as healthy.',
-    failCriteria: input.description
-      ? input.description
-      : 'Microsoft Defender for Cloud reports the resource as unhealthy.',
+    description: `This check surfaces findings from Microsoft Defender for Cloud${alertType ? ` under the "${alertType}" assessment` : ''}. Defender continuously evaluates the subscription against Microsoft's secure-configuration baseline and flags resources that diverge from the recommended state.`,
+    passCriteria: `Microsoft Defender for Cloud reports ${subject} as healthy on this subscription.`,
+    failCriteria: `Microsoft Defender for Cloud reports ${subject} as unhealthy on this resource.`,
     whyItMatters: alertType
-      ? `Defender raised this finding under "${alertType}" — addressing it brings the resource in line with Microsoft\'s recommended configuration.`
+      ? `Defender raised this finding under "${alertType}" — addressing it brings the resource in line with Microsoft's recommended configuration.`
       : 'Defender for Cloud findings indicate a deviation from Microsoft-recommended secure configuration in the customer environment.',
     source: 'provider',
   };

@@ -48,6 +48,7 @@ import { CheckGroupBlock } from './CheckGroupBlock';
 import { buildCheckGroups } from './check-groups';
 import { EvidenceJsonViewer } from './EvidenceJsonViewer';
 import { MarkExceptionModal } from './MarkExceptionModal';
+import { RemediationSection } from './RemediationSection';
 
 interface RemediationCapabilities {
   enabled: boolean;
@@ -1482,20 +1483,17 @@ function FindingRow({
         <div className="space-y-3 border-t bg-muted/20 px-12 py-4 text-sm">
           <CheckDefinitionPanel findingId={finding.id} />
           {finding.description && (
-            <div className="rounded-md border bg-background p-3">
-              <p className="mb-1 text-xs font-medium">This account&apos;s result</p>
-              <p className="text-muted-foreground text-xs leading-relaxed">
+            <div className="rounded-md border-l-2 border-l-destructive/40 border-y border-r bg-background">
+              <div className="border-b px-3 py-2">
+                <h4 className="text-xs font-medium">This account&apos;s result</h4>
+              </div>
+              <p className="text-muted-foreground px-3 py-2.5 text-xs leading-relaxed">
                 {finding.description}
               </p>
             </div>
           )}
           <EvidenceSection evidence={finding.evidence} />
-          {finding.remediation && (
-            <div className="rounded-md border bg-background p-3">
-              <p className="mb-1 text-xs font-medium">Remediation</p>
-              <p className="text-muted-foreground text-xs leading-relaxed">{finding.remediation}</p>
-            </div>
-          )}
+          {finding.remediation && <RemediationSection remediation={finding.remediation} />}
           {canMarkException &&
             onMarkException &&
             (finding.status === 'failed' || finding.status === 'FAILED') && (

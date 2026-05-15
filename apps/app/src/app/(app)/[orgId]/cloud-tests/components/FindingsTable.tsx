@@ -13,6 +13,8 @@ import {
 import { ChevronDown, ChevronRight } from 'lucide-react';
 import { Fragment, useState } from 'react';
 
+import { RemediationSection } from './RemediationSection';
+
 interface Finding {
   id: string;
   title: string | null;
@@ -127,26 +129,7 @@ export function FindingsTable({ findings }: FindingsTableProps) {
                         </div>
                       )}
                       {finding.remediation && (
-                        <div>
-                          <h4 className="mb-2 font-semibold">Remediation</h4>
-                          <div className="text-muted-foreground text-sm">
-                            {finding.remediation.split(/\b(https?:\/\/\S+)\b/).map((part, i) => {
-                              return /^https?:\/\/\S+$/.test(part) ? (
-                                <a
-                                  key={i}
-                                  href={part}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="text-primary hover:underline"
-                                >
-                                  {part}
-                                </a>
-                              ) : (
-                                <span key={i}>{part}</span>
-                              );
-                            })}
-                          </div>
-                        </div>
+                        <RemediationSection remediation={finding.remediation} />
                       )}
                     </div>
                   </TableCell>
