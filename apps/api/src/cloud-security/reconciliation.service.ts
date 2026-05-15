@@ -124,8 +124,7 @@ export class CloudReconciliationService {
 
     // Resolutions: prior failed → current absent or passed.
     for (const [key, prior] of priorMap.entries()) {
-      if (!prior.passed === false) continue; // only interested in prior failures
-      if (prior.passed) continue;
+      if (prior.passed) continue; // only interested in prior failures
 
       const current = currentMap.get(key);
       if (current && !current.passed) continue; // still failing

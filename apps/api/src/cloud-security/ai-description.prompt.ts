@@ -104,9 +104,10 @@ const FORBIDDEN_PATTERNS: readonly RegExp[] = [
   // prefixes — catches "CIS 1.8", "PCI 8.2.3", "NIST AC-2",
   // "HIPAA 164.312" even without the full framework name re-mentioned.
   /\b(CIS|PCI|NIST|HIPAA|HITRUST|FedRAMP) ?[A-Z]*[- ]?\d+(\.\d+){0,3}\b/i,
-  // SOC 2 / ISO control-number formats
+  // SOC 2 / ISO control-number formats — case-insensitive so lowercase
+  // variants (e.g. "a.5.1.2") are blocked too.
   /\bCC\d+\.\d+\b/i,
-  /\bA\.\d+\.\d+(\.\d+)?\b/,
+  /\bA\.\d+\.\d+(\.\d+)?\b/i,
   // URLs
   /https?:\/\//i,
   /www\./i,

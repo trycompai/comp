@@ -69,6 +69,23 @@ describe('ai-description.prompt', () => {
       ).toMatchObject({ field: 'whyItMatters' });
     });
 
+    it('flags ISO 27001 control numbers in lowercase variants (a.5.1)', () => {
+      // The regex must be case-insensitive — auditors won't accept the
+      // model getting around the gate by lowercasing a citation.
+      expect(
+        findForbiddenContent({
+          ...baseline,
+          whyItMatters: 'Maps to a.9.4.3.',
+        }),
+      ).toMatchObject({ field: 'whyItMatters' });
+      expect(
+        findForbiddenContent({
+          ...baseline,
+          description: 'Control a.5.1.2 enforces this.',
+        }),
+      ).toMatchObject({ field: 'description' });
+    });
+
     it('flags HIPAA / NIST framework citations', () => {
       expect(
         findForbiddenContent({
