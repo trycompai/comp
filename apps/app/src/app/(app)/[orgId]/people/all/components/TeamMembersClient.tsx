@@ -602,7 +602,7 @@ function DateFilterButton({
           {value ? format(value, 'MMM d, yyyy') : <span className="text-muted-foreground">{placeholder}</span>}
         </button>
       </PopoverTrigger>
-      <PopoverContent className="w-auto p-0" align="start">
+      <PopoverContent className="w-auto border bg-background p-0 shadow-md" align="start">
         <Calendar
           mode="single"
           selected={value}
