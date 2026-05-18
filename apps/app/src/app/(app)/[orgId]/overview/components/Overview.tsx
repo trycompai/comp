@@ -5,6 +5,7 @@ import type { FrameworkInstanceWithControls } from '@/lib/types/framework';
 import { ComplianceOverview } from './ComplianceOverview';
 import { FrameworksOverview } from './FrameworksOverview';
 import { ToDoOverview } from './ToDoOverview';
+import { TodosOverview } from './TodosOverview';
 import { FrameworkInstanceWithComplianceScore } from './types';
 
 export interface PublishedPoliciesScore {
@@ -103,6 +104,7 @@ export const Overview = ({
         currentMember={currentMember}
         onboardingTriggerJobId={onboardingTriggerJobId}
       />
+      <TodosOverview />
     </div>
   );
 };
