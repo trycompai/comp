@@ -262,7 +262,7 @@ function VendorRow({ vendor, canEdit, isProcessing, onRevoke }: VendorRowProps) 
           <div>
             <Button
               variant="outline"
-              size="xs"
+              size="sm"
               onClick={() => fileInputRef.current?.click()}
               iconLeft={<DocumentAttachment size={12} />}
             >
@@ -279,7 +279,7 @@ function VendorRow({ vendor, canEdit, isProcessing, onRevoke }: VendorRowProps) 
           <div>
             <Button
               variant="outline"
-              size="xs"
+              size="sm"
               onClick={() => onRevoke()}
               disabled={isProcessing}
               loading={isProcessing}
@@ -328,7 +328,7 @@ function RevokedVendorRow({
           <div>
             <Button
               variant="outline"
-              size="xs"
+              size="sm"
               onClick={onUndo}
               disabled={isProcessing}
               loading={isProcessing}
