@@ -81,11 +81,13 @@ export function TodosOverview() {
                 </Avatar>
                 <div className="flex min-w-0 flex-1 flex-col">
                   <span className="truncate text-sm font-medium">
-                    {member.name}
+                    Complete offboarding for {member.name}
                   </span>
                   <span className="text-xs text-muted-foreground">
                     Offboarded{' '}
                     {format(new Date(member.offboardDate), 'MMM d, yyyy')}
+                    {' · '}
+                    {member.completedItems}/{member.totalItems} tasks done
                   </span>
                 </div>
                 <div className="flex shrink-0 items-center gap-2">
