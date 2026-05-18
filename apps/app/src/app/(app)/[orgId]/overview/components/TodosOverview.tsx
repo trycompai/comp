@@ -1,15 +1,8 @@
 'use client';
 
 import { useApiSWR } from '@/hooks/use-api-swr';
-import {
-  Avatar,
-  AvatarFallback,
-  AvatarImage,
-  Badge,
-  Stack,
-  Text,
-} from '@trycompai/design-system';
-import { ArrowRight, Checkmark } from '@trycompai/design-system/icons';
+import { Badge, Text } from '@trycompai/design-system';
+import { ArrowRight, Checkmark, UserFollow } from '@trycompai/design-system/icons';
 import { format } from 'date-fns';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
@@ -62,43 +55,39 @@ export function TodosOverview() {
             </Text>
           </div>
         ) : (
-          <Stack gap="1">
-            {members.map((member) => (
-              <Link
-                key={member.memberId}
-                href={`/${organizationId}/people/${member.memberId}?tab=offboarding`}
-                className="flex items-center gap-3 rounded-md px-2 py-2.5 transition-colors hover:bg-muted/50"
-              >
-                <Avatar size="sm">
-                  <AvatarImage src={member.image ?? undefined} />
-                  <AvatarFallback>
-                    {member.name
-                      ?.split(' ')
-                      .map((n) => n[0])
-                      .join('')
-                      .toUpperCase() ?? '??'}
-                  </AvatarFallback>
-                </Avatar>
-                <div className="flex min-w-0 flex-1 flex-col">
-                  <span className="truncate text-sm font-medium">
-                    Complete offboarding for {member.name}
-                  </span>
-                  <span className="text-xs text-muted-foreground">
-                    Offboarded{' '}
-                    {format(new Date(member.offboardDate), 'MMM d, yyyy')}
-                    {' · '}
-                    {member.completedItems}/{member.totalItems} tasks done
-                  </span>
+          <div className="space-y-0">
+            {members.map((member, index) => (
+              <div key={member.memberId}>
+                <div className="flex items-start justify-between px-1 py-3">
+                  <div className="flex min-w-0 flex-1 items-start gap-3">
+                    <div className="flex h-6 w-6 items-center justify-center rounded-full">
+                      <UserFollow size={14} />
+                    </div>
+                    <div className="flex min-w-0 flex-1 flex-col">
+                      <span className="text-sm font-medium">
+                        Complete offboarding for {member.name}
+                      </span>
+                      <span className="text-xs text-muted-foreground">
+                        Offboarded{' '}
+                        {format(new Date(member.offboardDate), 'MMM d, yyyy')}
+                        {' · '}
+                        {member.completedItems}/{member.totalItems} tasks done
+                      </span>
+                    </div>
+                  </div>
+                  <Link
+                    href={`/${organizationId}/people/${member.memberId}?tab=offboarding`}
+                    className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md border transition-colors hover:bg-muted"
+                  >
+                    <ArrowRight size={14} />
+                  </Link>
                 </div>
-                <div className="flex shrink-0 items-center gap-2">
-                  <span className="font-mono text-xs tabular-nums text-muted-foreground">
-                    {member.completedItems}/{member.totalItems}
-                  </span>
-                  <ArrowRight size={14} className="text-muted-foreground" />
-                </div>
-              </Link>
+                {index < members.length - 1 && (
+                  <div className="border-t border-muted/30" />
+                )}
+              </div>
             ))}
-          </Stack>
+          </div>
         )}
       </div>
     </div>
