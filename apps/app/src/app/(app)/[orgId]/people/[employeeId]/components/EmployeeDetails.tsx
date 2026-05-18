@@ -54,7 +54,7 @@ export const EmployeeDetails = ({
   const [joinDate, setJoinDate] = useState<Date>(new Date(employee.createdAt));
   const [datePickerOpen, setDatePickerOpen] = useState(false);
   const [onboardDate, setOnboardDate] = useState<Date | undefined>(
-    employee.onboardDate ? new Date(employee.onboardDate) : undefined,
+    employee.onboardDate ? new Date(employee.onboardDate) : new Date(employee.createdAt),
   );
   const [offboardDate, setOffboardDate] = useState<Date | undefined>(
     employee.offboardDate ? new Date(employee.offboardDate) : undefined,
