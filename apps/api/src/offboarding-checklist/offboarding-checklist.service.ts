@@ -290,6 +290,7 @@ export class OffboardingChecklistService {
     vendorId: string;
     revokedById: string;
     notes?: string;
+    evidence?: { fileName: string; fileType: string; fileData: string };
   }) {
     return this.accessRevocationService.revokeVendorAccess(params);
   }
@@ -308,6 +309,41 @@ export class OffboardingChecklistService {
     revokedById: string;
   }) {
     return this.accessRevocationService.revokeAllVendorAccess(params);
+  }
+
+  async getPendingOffboardings(organizationId: string) {
+    await this.seedDefaultsIfNeeded(organizationId);
+
+    const totalEnabled = await db.offboardingChecklistTemplate.count({
+      where: { organizationId, isEnabled: true },
+    });
+
+    const offboardedMembers = await db.member.findMany({
+      where: {
+        organizationId,
+        offboardDate: { not: null },
+        deactivated: true,
+      },
+      include: {
+        user: { select: { id: true, name: true, email: true, image: true } },
+        offboardingChecklistCompletions: { select: { id: true } },
+      },
+      orderBy: { offboardDate: 'desc' },
+    });
+
+    return {
+      members: offboardedMembers
+        .filter((m) => m.offboardingChecklistCompletions.length < totalEnabled)
+        .map((m) => ({
+          memberId: m.id,
+          name: m.user.name,
+          email: m.user.email,
+          image: m.user.image,
+          offboardDate: m.offboardDate,
+          completedItems: m.offboardingChecklistCompletions.length,
+          totalItems: totalEnabled,
+        })),
+    };
   }
 
   private async seedDefaultsIfNeeded(organizationId: string) {

@@ -29,6 +29,17 @@ export class OffboardingChecklistController {
     private readonly offboardingChecklistService: OffboardingChecklistService,
   ) {}
 
+  @Get('pending')
+  @RequirePermission('member', 'read')
+  @ApiOperation({ summary: 'Get members with pending offboarding checklists' })
+  async getPendingOffboardings(
+    @OrganizationId() organizationId: string,
+  ) {
+    return this.offboardingChecklistService.getPendingOffboardings(
+      organizationId,
+    );
+  }
+
   @Get('template')
   @RequirePermission('member', 'read')
   async getTemplate(@OrganizationId() organizationId: string) {
@@ -161,14 +172,18 @@ export class OffboardingChecklistController {
     @Param('memberId') memberId: string,
     @Param('vendorId') vendorId: string,
     @AuthContext() authContext: AuthContextType,
-    @Body() body: { notes?: string },
+    @Body() body: { notes?: string; fileName?: string; fileType?: string; fileData?: string },
   ) {
+    const evidence = body?.fileName && body?.fileType && body?.fileData
+      ? { fileName: body.fileName, fileType: body.fileType, fileData: body.fileData }
+      : undefined;
     return this.offboardingChecklistService.revokeVendorAccess({
       organizationId,
       memberId,
       vendorId,
       revokedById: authContext.userId!,
       notes: body?.notes,
+      evidence,
     });
   }
 
