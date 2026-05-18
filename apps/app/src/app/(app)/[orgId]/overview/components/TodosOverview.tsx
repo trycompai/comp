@@ -2,7 +2,7 @@
 
 import { useApiSWR } from '@/hooks/use-api-swr';
 import { Badge, Text } from '@trycompai/design-system';
-import { Checkmark } from '@trycompai/design-system/icons';
+import { ArrowRight, Checkmark } from '@trycompai/design-system/icons';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 
@@ -57,12 +57,22 @@ export function TodosOverview() {
           <div className="space-y-0">
             {members.map((member, index) => (
               <div key={member.memberId}>
-                <Link
-                  href={`/${organizationId}/people/${member.memberId}?tab=offboarding`}
-                  className="block px-1 py-2.5 text-sm hover:underline"
-                >
-                  Complete offboarding for {member.name}
-                </Link>
+                <div className="flex items-start justify-between px-1 py-3">
+                  <div className="flex min-w-0 flex-1 flex-col">
+                    <span className="text-sm font-medium">
+                      Complete offboarding for {member.name}
+                    </span>
+                    <span className="text-xs capitalize text-muted-foreground">
+                      {member.completedItems}/{member.totalItems} tasks done
+                    </span>
+                  </div>
+                  <Link
+                    href={`/${organizationId}/people/${member.memberId}?tab=offboarding`}
+                    className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md border transition-colors hover:bg-muted"
+                  >
+                    <ArrowRight size={14} />
+                  </Link>
+                </div>
                 {index < members.length - 1 && (
                   <div className="border-t border-muted/30" />
                 )}
