@@ -140,6 +140,7 @@ export class OffboardingChecklistService {
 
         return {
           ...template,
+          templateItemId: template.id,
           completed: !!completion,
           completion: completion ?? null,
           evidence,

@@ -10,13 +10,23 @@ interface RevokedBy {
   email: string;
 }
 
+interface EvidenceFile {
+  id: string;
+  name: string;
+  type: string;
+  downloadUrl: string;
+  createdAt: string;
+}
+
 export interface VendorRevocationItem {
   vendorId: string;
   vendorName: string;
+  logoUrl: string | null;
   revoked: boolean;
   revokedAt: string | null;
   revokedBy: RevokedBy | null;
   notes: string | null;
+  evidence: EvidenceFile[];
 }
 
 interface AccessRevocationsResponse {
@@ -33,8 +43,14 @@ export function useAccessRevocations(memberId: string) {
   const revocations = data?.data ?? null;
 
   const revokeAccess = useCallback(
-    async (vendorId: string, notes?: string) => {
-      const response = await api.post(`${endpoint}/${vendorId}`, notes ? { notes } : {});
+    async (vendorId: string, opts?: { notes?: string; file?: File }) => {
+      let body: Record<string, unknown> = {};
+      if (opts?.notes) body.notes = opts.notes;
+      if (opts?.file) {
+        const base64 = await fileToBase64(opts.file);
+        body = { ...body, fileName: opts.file.name, fileType: opts.file.type || 'application/octet-stream', fileData: base64 };
+      }
+      const response = await api.post(`${endpoint}/${vendorId}`, body);
       if (response.error) throw new Error(response.error);
       await mutate();
     },
@@ -67,4 +83,16 @@ export function useAccessRevocations(memberId: string) {
     undoRevocation,
     revokeAll,
   };
+}
+
+function fileToBase64(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const result = reader.result as string;
+      resolve(result.split(',')[1]);
+    };
+    reader.onerror = () => reject(new Error('Failed to read file'));
+    reader.readAsDataURL(file);
+  });
 }

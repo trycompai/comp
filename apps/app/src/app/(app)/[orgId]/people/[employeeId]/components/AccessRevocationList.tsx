@@ -299,6 +299,7 @@ interface RevokedVendorRowProps {
     vendorName: string;
     revokedAt: string | null;
     revokedBy: { id: string; name: string; email: string } | null;
+    evidence?: { id: string; name: string; downloadUrl: string }[];
   };
   canEdit: boolean;
   isProcessing: boolean;
@@ -318,6 +319,17 @@ function RevokedVendorRow({
         <span className="text-[13px] font-normal">{vendor.vendorName}</span>
       </div>
       <div className="flex shrink-0 items-center gap-3">
+        {vendor.evidence && vendor.evidence.length > 0 && (
+          <a
+            href={vendor.evidence[0].downloadUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
+          >
+            <DocumentAttachment size={12} />
+            <span className="underline decoration-dotted">{vendor.evidence[0].name}</span>
+          </a>
+        )}
         {vendor.revokedBy && vendor.revokedAt && (
           <span className="font-mono text-xs text-muted-foreground">
             {vendor.revokedBy.name} &middot;{' '}

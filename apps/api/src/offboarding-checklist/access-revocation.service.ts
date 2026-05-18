@@ -3,14 +3,16 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { db } from '@db';
+import { AttachmentEntityType, db } from '@db';
+import { AttachmentsService } from '../attachments/attachments.service';
 
 @Injectable()
 export class AccessRevocationService {
+  constructor(private readonly attachmentsService: AttachmentsService) {}
   async getAccessRevocations(organizationId: string, memberId: string) {
     const vendors = await db.vendor.findMany({
       where: { organizationId },
-      select: { id: true, name: true },
+      select: { id: true, name: true, website: true, logoUrl: true },
       orderBy: { name: 'asc' },
     });
 
@@ -25,17 +27,29 @@ export class AccessRevocationService {
       revocations.map((r) => [r.vendorId, r]),
     );
 
-    const vendorList = vendors.map((vendor) => {
-      const revocation = revocationMap.get(vendor.id);
-      return {
-        vendorId: vendor.id,
-        vendorName: vendor.name,
-        revoked: !!revocation,
-        revokedAt: revocation?.revokedAt ?? null,
-        revokedBy: revocation?.revokedBy ?? null,
-        notes: revocation?.notes ?? null,
-      };
-    });
+    const vendorList = await Promise.all(
+      vendors.map(async (vendor) => {
+        const revocation = revocationMap.get(vendor.id);
+        const domain = vendor.website?.replace(/^https?:\/\//, '').replace(/\/.*$/, '') ?? null;
+        const evidence = revocation
+          ? await this.attachmentsService.getAttachments(
+              organizationId,
+              revocation.id,
+              AttachmentEntityType.offboarding_checklist,
+            )
+          : [];
+        return {
+          vendorId: vendor.id,
+          vendorName: vendor.name,
+          logoUrl: vendor.logoUrl ?? (domain ? `https://img.logo.dev/${domain}?token=pk_X-1ZO13GSgeOoUrIuJ6GMQ&size=64` : null),
+          revoked: !!revocation,
+          revokedAt: revocation?.revokedAt ?? null,
+          revokedBy: revocation?.revokedBy ?? null,
+          notes: revocation?.notes ?? null,
+          evidence,
+        };
+      }),
+    );
 
     return {
       vendors: vendorList,
@@ -50,12 +64,14 @@ export class AccessRevocationService {
     vendorId,
     revokedById,
     notes,
+    evidence,
   }: {
     organizationId: string;
     memberId: string;
     vendorId: string;
     revokedById: string;
     notes?: string;
+    evidence?: { fileName: string; fileType: string; fileData: string };
   }) {
     const vendor = await db.vendor.findFirst({
       where: { id: vendorId, organizationId },
@@ -87,6 +103,16 @@ export class AccessRevocationService {
         revokedBy: { select: { id: true, name: true, email: true } },
       },
     });
+
+    if (evidence) {
+      await this.attachmentsService.uploadAttachment(
+        organizationId,
+        revocation.id,
+        AttachmentEntityType.offboarding_checklist,
+        evidence,
+        revokedById,
+      );
+    }
 
     await this.syncAccessRevocationCompletion(
       organizationId,
