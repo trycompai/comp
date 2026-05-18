@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { toast } from 'sonner';
 
+import { format } from 'date-fns';
 import { useApi } from '@/hooks/use-api';
 import { usePeopleActions } from '@/hooks/use-people-api';
 import { parseRolesString } from '@/lib/permissions';
@@ -12,6 +13,8 @@ import { authClient } from '@/utils/auth-client';
 import useSWR from 'swr';
 import type { Invitation } from '@db';
 import {
+  Button,
+  Calendar,
   Empty,
   EmptyDescription,
   EmptyHeader,
@@ -19,6 +22,9 @@ import {
   InputGroup,
   InputGroupAddon,
   InputGroupInput,
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
   Select,
   SelectContent,
   SelectItem,
@@ -32,7 +38,7 @@ import {
   TableHeader,
   TableRow,
 } from '@trycompai/design-system';
-import { InProgress, Search } from '@trycompai/design-system/icons';
+import { Calendar as CalendarIcon, InProgress, Search } from '@trycompai/design-system/icons';
 
 import { apiClient } from '@/lib/api-client';
 import { useMemo } from 'react';
@@ -81,10 +87,10 @@ export function TeamMembersClient({
   const [searchQuery, setSearchQuery] = useState('');
   const [roleFilter, setRoleFilter] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
-  const [onboardFrom, setOnboardFrom] = useState('');
-  const [onboardTo, setOnboardTo] = useState('');
-  const [offboardFrom, setOffboardFrom] = useState('');
-  const [offboardTo, setOffboardTo] = useState('');
+  const [onboardFrom, setOnboardFrom] = useState<Date | undefined>();
+  const [onboardTo, setOnboardTo] = useState<Date | undefined>();
+  const [offboardFrom, setOffboardFrom] = useState<Date | undefined>();
+  const [offboardTo, setOffboardTo] = useState<Date | undefined>();
   const [page, setPage] = useState(1);
   const [perPage, setPerPage] = useState(25);
 
@@ -147,15 +153,23 @@ export function TeamMembersClient({
       const onboard = member.onboardDate ?? member.createdAt;
       if (!onboard) return false;
       const d = new Date(onboard);
-      if (onboardFrom && d < new Date(onboardFrom)) return false;
-      if (onboardTo && d > new Date(onboardTo + 'T23:59:59')) return false;
+      if (onboardFrom && d < onboardFrom) return false;
+      if (onboardTo) {
+        const end = new Date(onboardTo);
+        end.setHours(23, 59, 59, 999);
+        if (d > end) return false;
+      }
     }
 
     if (offboardFrom || offboardTo) {
       if (!member.offboardDate) return false;
       const d = new Date(member.offboardDate);
-      if (offboardFrom && d < new Date(offboardFrom)) return false;
-      if (offboardTo && d > new Date(offboardTo + 'T23:59:59')) return false;
+      if (offboardFrom && d < offboardFrom) return false;
+      if (offboardTo) {
+        const end = new Date(offboardTo);
+        end.setHours(23, 59, 59, 999);
+        if (d > end) return false;
+      }
     }
 
     return true;
@@ -319,35 +333,31 @@ export function TeamMembersClient({
         {/* Onboarded Date Filter */}
         <div className="hidden items-center gap-1.5 sm:flex">
           <span className="whitespace-nowrap text-xs text-muted-foreground">Onboarded</span>
-          <input
-            type="date"
-            className="border-border bg-background h-7 rounded-md border px-2 text-xs"
+          <DateFilterButton
             value={onboardFrom}
-            onChange={(e) => { setOnboardFrom(e.target.value); setPage(1); }}
+            onChange={(d) => { setOnboardFrom(d); setPage(1); }}
+            placeholder="From"
           />
           <span className="text-xs text-muted-foreground">–</span>
-          <input
-            type="date"
-            className="border-border bg-background h-7 rounded-md border px-2 text-xs"
+          <DateFilterButton
             value={onboardTo}
-            onChange={(e) => { setOnboardTo(e.target.value); setPage(1); }}
+            onChange={(d) => { setOnboardTo(d); setPage(1); }}
+            placeholder="To"
           />
         </div>
         {/* Offboarded Date Filter */}
         <div className="hidden items-center gap-1.5 sm:flex">
           <span className="whitespace-nowrap text-xs text-muted-foreground">Offboarded</span>
-          <input
-            type="date"
-            className="border-border bg-background h-7 rounded-md border px-2 text-xs"
+          <DateFilterButton
             value={offboardFrom}
-            onChange={(e) => { setOffboardFrom(e.target.value); setPage(1); }}
+            onChange={(d) => { setOffboardFrom(d); setPage(1); }}
+            placeholder="From"
           />
           <span className="text-xs text-muted-foreground">–</span>
-          <input
-            type="date"
-            className="border-border bg-background h-7 rounded-md border px-2 text-xs"
+          <DateFilterButton
             value={offboardTo}
-            onChange={(e) => { setOffboardTo(e.target.value); setPage(1); }}
+            onChange={(d) => { setOffboardTo(d); setPage(1); }}
+            placeholder="To"
           />
         </div>
         {hasAnyConnection && (
@@ -567,5 +577,44 @@ export function TeamMembersClient({
         </Table>
       )}
     </Stack>
+  );
+}
+
+function DateFilterButton({
+  value,
+  onChange,
+  placeholder,
+}: {
+  value: Date | undefined;
+  onChange: (date: Date | undefined) => void;
+  placeholder: string;
+}) {
+  const [open, setOpen] = useState(false);
+
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <button
+          type="button"
+          className="border-border bg-background text-foreground hover:bg-muted flex h-7 items-center gap-1.5 rounded-md border px-2 text-xs disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          <CalendarIcon size={12} className="text-muted-foreground" />
+          {value ? format(value, 'MMM d, yyyy') : <span className="text-muted-foreground">{placeholder}</span>}
+        </button>
+      </PopoverTrigger>
+      <PopoverContent className="w-auto p-0" align="start">
+        <Calendar
+          mode="single"
+          selected={value}
+          onSelect={(date) => {
+            onChange(date ?? undefined);
+            setOpen(false);
+          }}
+          captionLayout="dropdown"
+          fromYear={2000}
+          toYear={new Date().getFullYear() + 1}
+        />
+      </PopoverContent>
+    </Popover>
   );
 }
