@@ -51,8 +51,6 @@ export const EmployeeDetails = ({
   const [jobTitle, setJobTitle] = useState(employee.jobTitle ?? '');
   const [department, setDepartment] = useState<string>(employee.department ?? 'none');
   const [status, setStatus] = useState<string>(employee.isActive ? 'active' : 'inactive');
-  const [joinDate, setJoinDate] = useState<Date>(new Date(employee.createdAt));
-  const [datePickerOpen, setDatePickerOpen] = useState(false);
   const [onboardDate, setOnboardDate] = useState<Date | undefined>(
     employee.onboardDate ? new Date(employee.onboardDate) : new Date(employee.createdAt),
   );
@@ -69,7 +67,6 @@ export const EmployeeDetails = ({
     const jobTitleChanged = jobTitle !== (employee.jobTitle ?? '');
     const departmentChanged = department !== (employee.department ?? 'none');
     const statusChanged = status !== (employee.isActive ? 'active' : 'inactive');
-    const dateChanged = joinDate.toISOString() !== new Date(employee.createdAt).toISOString();
     const onboardDateChanged =
       (onboardDate?.toISOString() ?? null) !==
       (employee.onboardDate ? new Date(employee.onboardDate).toISOString() : null);
@@ -77,8 +74,8 @@ export const EmployeeDetails = ({
       (offboardDate?.toISOString() ?? null) !==
       (employee.offboardDate ? new Date(employee.offboardDate).toISOString() : null);
 
-    return nameChanged || jobTitleChanged || departmentChanged || statusChanged || dateChanged || onboardDateChanged || offboardDateChanged;
-  }, [name, jobTitle, department, status, joinDate, onboardDate, offboardDate, employee]);
+    return nameChanged || jobTitleChanged || departmentChanged || statusChanged || onboardDateChanged || offboardDateChanged;
+  }, [name, jobTitle, department, status, onboardDate, offboardDate, employee]);
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -92,7 +89,6 @@ export const EmployeeDetails = ({
       name?: string;
       department?: string;
       isActive?: boolean;
-      createdAt?: string;
       jobTitle?: string;
       onboardDate?: string | null;
       offboardDate?: string | null;
@@ -106,9 +102,6 @@ export const EmployeeDetails = ({
     }
     if (department !== employee.department) {
       updateData.department = department;
-    }
-    if (joinDate.toISOString() !== new Date(employee.createdAt).toISOString()) {
-      updateData.createdAt = joinDate.toISOString();
     }
 
     const isActive = status === 'active';
@@ -235,37 +228,6 @@ export const EmployeeDetails = ({
                   ))}
                 </SelectContent>
               </Select>
-            </Stack>
-
-            {/* Join Date Field */}
-            <Stack gap="sm">
-              <Label htmlFor="joinDate">Join Date</Label>
-              <Popover
-                open={!canEdit ? false : datePickerOpen}
-                onOpenChange={!canEdit ? undefined : setDatePickerOpen}
-              >
-                <PopoverTrigger asChild>
-                  <button
-                    type="button"
-                    disabled={!canEdit}
-                    className="border-border bg-background text-foreground hover:bg-muted flex h-9 w-full items-center justify-between rounded-md border px-3 py-2 text-sm disabled:cursor-not-allowed disabled:opacity-50"
-                  >
-                    {joinDate ? format(joinDate, 'PPP') : 'Pick a date'}
-                    <CalendarIcon size={16} />
-                  </button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="start">
-                  <Calendar
-                    mode="single"
-                    selected={joinDate}
-                    onSelect={(date) => date && setJoinDate(date)}
-                    captionLayout="dropdown"
-                    fromYear={2000}
-                    toYear={new Date().getFullYear()}
-                    disabled={(date) => date > new Date()}
-                  />
-                </PopoverContent>
-              </Popover>
             </Stack>
 
             {/* Onboard Date Field */}
