@@ -14,7 +14,7 @@ import {
   Search,
 } from '@trycompai/design-system/icons';
 import { format } from 'date-fns';
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
 
 const MONOGRAM_COLORS = [
@@ -66,11 +66,11 @@ export function AccessRevocationList({
     };
   }, [revocations, searchQuery]);
 
-  const handleRevoke = async (vendorId: string) => {
+  const handleRevoke = async (vendorId: string, file?: File) => {
     setProcessingVendorId(vendorId);
     try {
-      await revokeAccess(vendorId);
-      toast.success('Access removal confirmed');
+      await revokeAccess(vendorId, file ? { file } : undefined);
+      toast.success(file ? 'Access removal confirmed with evidence' : 'Access removal confirmed');
       onRevocationChange?.();
     } catch {
       toast.error('Failed to confirm access removal');
@@ -163,7 +163,7 @@ export function AccessRevocationList({
                 vendor={vendor}
                 canEdit={canEdit}
                 isProcessing={processingVendorId === vendor.vendorId}
-                onRevoke={() => handleRevoke(vendor.vendorId)}
+                onRevoke={(file) => handleRevoke(vendor.vendorId, file)}
               />
             ))}
           </div>
@@ -209,9 +209,22 @@ function SectionHeader({ label, count }: { label: string; count: number }) {
   );
 }
 
-function VendorMark({ name }: { name: string }) {
+function VendorMark({ name, logoUrl }: { name: string; logoUrl?: string | null }) {
+  const [imgError, setImgError] = useState(false);
   const color = getMonogramColor(name);
   const letter = name.charAt(0).toUpperCase();
+
+  if (logoUrl && !imgError) {
+    return (
+      <img
+        src={logoUrl}
+        alt={name}
+        className="h-[22px] w-[22px] shrink-0 rounded-sm object-contain"
+        onError={() => setImgError(true)}
+      />
+    );
+  }
+
   return (
     <div
       className={`flex h-[22px] w-[22px] shrink-0 items-center justify-center rounded-sm text-[10px] font-bold text-white ${color}`}
@@ -222,33 +235,52 @@ function VendorMark({ name }: { name: string }) {
 }
 
 interface VendorRowProps {
-  vendor: { vendorId: string; vendorName: string };
+  vendor: { vendorId: string; vendorName: string; logoUrl?: string | null };
   canEdit: boolean;
   isProcessing: boolean;
-  onRevoke: () => void;
+  onRevoke: (file?: File) => void;
 }
 
 function VendorRow({ vendor, canEdit, isProcessing, onRevoke }: VendorRowProps) {
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleFileSelected = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    onRevoke(file);
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  };
+
   return (
     <div className="flex items-center justify-between border-b bg-background py-2.5 pl-11 pr-3.5">
       <div className="flex items-center gap-2.5">
-        <VendorMark name={vendor.vendorName} />
+        <VendorMark name={vendor.vendorName} logoUrl={vendor.logoUrl} />
         <span className="text-[13px] font-normal">{vendor.vendorName}</span>
       </div>
       {canEdit && (
         <div className="flex shrink-0 items-center gap-3">
-          <button
-            type="button"
-            className="flex items-center gap-1 text-xs text-primary hover:underline"
-          >
-            <DocumentAttachment size={12} />
-            Attach evidence
-          </button>
           <div>
             <Button
               variant="outline"
               size="xs"
-              onClick={onRevoke}
+              onClick={() => fileInputRef.current?.click()}
+              iconLeft={<DocumentAttachment size={12} />}
+            >
+              Attach evidence
+            </Button>
+          </div>
+          <input
+            ref={fileInputRef}
+            type="file"
+            className="hidden"
+            onChange={handleFileSelected}
+            accept=".pdf,.doc,.docx,.png,.jpg,.jpeg,.csv,.xlsx"
+          />
+          <div>
+            <Button
+              variant="outline"
+              size="xs"
+              onClick={() => onRevoke()}
               disabled={isProcessing}
               loading={isProcessing}
             >
@@ -282,7 +314,7 @@ function RevokedVendorRow({
   return (
     <div className="flex items-center justify-between border-b bg-background py-2.5 pl-11 pr-3.5">
       <div className="flex items-center gap-2.5">
-        <VendorMark name={vendor.vendorName} />
+        <VendorMark name={vendor.vendorName} logoUrl={vendor.logoUrl} />
         <span className="text-[13px] font-normal">{vendor.vendorName}</span>
       </div>
       <div className="flex shrink-0 items-center gap-3">
