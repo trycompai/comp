@@ -18,7 +18,7 @@ import {
   SelectValue,
   Stack,
 } from '@trycompai/design-system';
-import { ChevronDown } from '@trycompai/design-system/icons';
+import { Calendar as CalendarIcon } from '@trycompai/design-system/icons';
 import { format } from 'date-fns';
 import { useMemo, useState } from 'react';
 import { toast } from 'sonner';
@@ -251,7 +251,7 @@ export const EmployeeDetails = ({
                     className="border-border bg-background text-foreground hover:bg-muted flex h-9 w-full items-center justify-between rounded-md border px-3 py-2 text-sm disabled:cursor-not-allowed disabled:opacity-50"
                   >
                     {joinDate ? format(joinDate, 'PPP') : 'Pick a date'}
-                    <ChevronDown size={16} />
+                    <CalendarIcon size={16} />
                   </button>
                 </PopoverTrigger>
                 <PopoverContent className="w-auto p-0" align="start">
@@ -283,7 +283,7 @@ export const EmployeeDetails = ({
                     className="border-border bg-background text-foreground hover:bg-muted flex h-9 w-full items-center justify-between rounded-md border px-3 py-2 text-sm disabled:cursor-not-allowed disabled:opacity-50"
                   >
                     {onboardDate ? format(onboardDate, 'PPP') : 'Not set'}
-                    <ChevronDown size={16} />
+                    <CalendarIcon size={16} />
                   </button>
                 </PopoverTrigger>
                 <PopoverContent className="w-auto p-0" align="start">
@@ -317,7 +317,7 @@ export const EmployeeDetails = ({
                     className="border-border bg-background text-foreground hover:bg-muted flex h-9 w-full items-center justify-between rounded-md border px-3 py-2 text-sm disabled:cursor-not-allowed disabled:opacity-50"
                   >
                     {offboardDate ? format(offboardDate, 'PPP') : 'Not set'}
-                    <ChevronDown size={16} />
+                    <CalendarIcon size={16} />
                   </button>
                 </PopoverTrigger>
                 <PopoverContent className="w-auto p-0" align="start">
