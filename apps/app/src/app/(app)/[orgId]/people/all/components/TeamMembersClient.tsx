@@ -81,6 +81,9 @@ export function TeamMembersClient({
   const [searchQuery, setSearchQuery] = useState('');
   const [roleFilter, setRoleFilter] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
+  const [dateFilter, setDateFilter] = useState<'none' | 'onboarded' | 'offboarded'>('none');
+  const [dateFrom, setDateFrom] = useState('');
+  const [dateTo, setDateTo] = useState('');
   const [page, setPage] = useState(1);
   const [perPage, setPerPage] = useState(25);
 
@@ -135,8 +138,22 @@ export function TeamMembersClient({
     statusFilter,
   });
 
-  const activeMembers = filteredItems.filter((item) => item.type === 'member');
-  const pendingInvites = filteredItems.filter((item) => item.type === 'invitation');
+  const dateFilteredItems = filteredItems.filter((item) => {
+    if (dateFilter === 'none' || !dateFrom) return true;
+    if (item.type !== 'member') return true;
+    const member = item as MemberWithUser;
+    const dateField = dateFilter === 'onboarded'
+      ? (member.onboardDate ?? member.createdAt)
+      : member.offboardDate;
+    if (!dateField) return false;
+    const d = new Date(dateField);
+    if (dateFrom && d < new Date(dateFrom)) return false;
+    if (dateTo && d > new Date(dateTo + 'T23:59:59')) return false;
+    return true;
+  });
+
+  const activeMembers = dateFilteredItems.filter((item) => item.type === 'member');
+  const pendingInvites = dateFilteredItems.filter((item) => item.type === 'invitation');
 
   // Combine all items for table display
   const allDisplayItems = [...activeMembers, ...pendingInvites];
@@ -290,6 +307,48 @@ export function TeamMembersClient({
             </SelectContent>
           </Select>
         </div>
+        {/* Date Filter */}
+        <div className="hidden w-[160px] sm:block">
+          <Select
+            value={dateFilter}
+            onValueChange={(value) => {
+              setDateFilter((value as 'none' | 'onboarded' | 'offboarded') ?? 'none');
+              if (value === 'none') {
+                setDateFrom('');
+                setDateTo('');
+              }
+              setPage(1);
+            }}
+          >
+            <SelectTrigger>
+              <SelectValue placeholder="Date filter">
+                {{ none: 'Date filter', onboarded: 'Onboarded', offboarded: 'Offboarded' }[dateFilter]}
+              </SelectValue>
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="none">No date filter</SelectItem>
+              <SelectItem value="onboarded">Onboarded</SelectItem>
+              <SelectItem value="offboarded">Offboarded</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+        {dateFilter !== 'none' && (
+          <div className="hidden items-center gap-2 sm:flex">
+            <input
+              type="date"
+              className="border-border bg-background h-7 rounded-md border px-2 text-xs"
+              value={dateFrom}
+              onChange={(e) => { setDateFrom(e.target.value); setPage(1); }}
+            />
+            <span className="text-xs text-muted-foreground">to</span>
+            <input
+              type="date"
+              className="border-border bg-background h-7 rounded-md border px-2 text-xs"
+              value={dateTo}
+              onChange={(e) => { setDateTo(e.target.value); setPage(1); }}
+            />
+          </div>
+        )}
         {hasAnyConnection && (
           <div className="flex items-center gap-2">
             <div className="w-[200px]">
