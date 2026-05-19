@@ -185,6 +185,9 @@ export class GenericEmployeeSyncService {
             );
           }
 
+          const needsOnboardDate =
+            !existingMember.onboardDate && employee.startDate;
+
           if (existingMember.deactivated && allowReactivation) {
             await db.member.update({
               where: { id: existingMember.id },
@@ -192,6 +195,7 @@ export class GenericEmployeeSyncService {
                 deactivated: false,
                 isActive: true,
                 ...(needsHeal ? { role: healedRole } : {}),
+                ...(needsOnboardDate ? { onboardDate: new Date(employee.startDate!) } : {}),
               },
             });
             results.reactivated++;
@@ -200,10 +204,13 @@ export class GenericEmployeeSyncService {
               status: 'reactivated',
             });
           } else {
-            if (needsHeal) {
+            if (needsHeal || needsOnboardDate) {
               await db.member.update({
                 where: { id: existingMember.id },
-                data: { role: healedRole },
+                data: {
+                  ...(needsHeal ? { role: healedRole } : {}),
+                  ...(needsOnboardDate ? { onboardDate: new Date(employee.startDate!) } : {}),
+                },
               });
             }
             results.skipped++;

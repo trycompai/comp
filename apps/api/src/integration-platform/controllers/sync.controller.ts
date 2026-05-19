@@ -381,9 +381,12 @@ export class SyncController {
         });
 
         if (existingMember) {
-          // Never reactivate deactivated members — whether deactivated manually
-          // by an admin or by a previous sync, they should stay deactivated.
-          // Admins can reactivate manually if needed.
+          if (!existingMember.onboardDate && gwUser.creationTime) {
+            await db.member.update({
+              where: { id: existingMember.id },
+              data: { onboardDate: new Date(gwUser.creationTime) },
+            });
+          }
           results.skipped++;
           results.details.push({
             email: normalizedEmail,
@@ -840,6 +843,12 @@ export class SyncController {
         });
 
         if (existingMember) {
+          if (!existingMember.onboardDate && worker.start_date) {
+            await db.member.update({
+              where: { id: existingMember.id },
+              data: { onboardDate: new Date(worker.start_date) },
+            });
+          }
           if (existingMember.deactivated) {
             await db.member.update({
               where: { id: existingMember.id },
@@ -1335,7 +1344,12 @@ export class SyncController {
         });
 
         if (existingMember) {
-          // If member was deactivated but is now active in JumpCloud, reactivate them
+          if (!existingMember.onboardDate && jcUser.created) {
+            await db.member.update({
+              where: { id: existingMember.id },
+              data: { onboardDate: new Date(jcUser.created) },
+            });
+          }
           if (existingMember.deactivated) {
             await db.member.update({
               where: { id: existingMember.id },
