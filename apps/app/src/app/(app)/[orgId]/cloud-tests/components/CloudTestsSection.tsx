@@ -35,6 +35,7 @@ import {
 } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
+import { mutate as globalMutate } from 'swr';
 import { getActiveBatch } from '../actions/batch-fix';
 import { AzureSetupGuide } from './AzureSetupGuide';
 import { BatchRemediationDialog } from './BatchRemediationDialog';
@@ -1127,6 +1128,16 @@ export function CloudTestsSection({
         resourceLabel={exceptionTarget?.resourceLabel ?? null}
         onMarked={() => {
           findingsResponse.mutate();
+          // Invalidate the History tab's SWR cache so the new exception
+          // appears in "Active exceptions" immediately. The History hook
+          // keys on a tuple `[endpoint, organizationId]` (see useApiSWR),
+          // so we match by inspecting the endpoint string in the key.
+          globalMutate(
+            (key) =>
+              Array.isArray(key) &&
+              typeof key[0] === 'string' &&
+              key[0].startsWith('/v1/cloud-security/history'),
+          );
           setExceptionTarget(null);
         }}
       />
