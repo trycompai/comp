@@ -333,9 +333,11 @@ describe('CloudReconciliationService.reconcile', () => {
       );
     });
 
-    it('passes null scanMode for legacy / non-AWS runs so they reconcile against each other', async () => {
-      // Pre-feature runs and GCP/Azure runs have scanMode = null. They
-      // must still reconcile against each other (null === null).
+    it('passes null scanMode for GCP / Azure runs so they reconcile against each other', async () => {
+      // GCP / Azure runs have scanMode = null (no scan-mode concept). They
+      // must reconcile against each other (null === null). AWS rows
+      // ALWAYS have an explicit scanMode — pre-feature rows were
+      // backfilled to 'comp_scanners' by the schema migration.
       dbMock.integrationCheckRun.findUnique.mockResolvedValueOnce({
         id: 'icr_current',
         connectionId: 'icn_gcp',
@@ -357,6 +359,50 @@ describe('CloudReconciliationService.reconcile', () => {
           where: expect.objectContaining({ scanMode: null }),
         }),
       );
+    });
+
+    it('reconciles comp_scanners runs against backfilled comp_scanners history (post-deploy continuity)', async () => {
+      // After the deploy, every existing AWS customer's first scan should
+      // continue diffing against their prior history seamlessly. The
+      // migration backfills pre-feature AWS rows to 'comp_scanners', so
+      // the new scan (also 'comp_scanners') finds matching prior runs.
+      // Locks in that we DO NOT skip History events on the first post-
+      // deploy scan for existing customers.
+      setupRuns({
+        currentResults: [
+          makeResult({ findingKey: 'iam-no-mfa-john', resourceId: 'john', passed: true }),
+        ],
+        priorResults: [
+          makeResult({ findingKey: 'iam-no-mfa-john', resourceId: 'john', passed: false }),
+        ],
+      });
+      // Override findUnique to set scanMode explicitly on the current run.
+      dbMock.integrationCheckRun.findUnique.mockReset();
+      dbMock.integrationCheckRun.findUnique.mockResolvedValueOnce({
+        id: 'icr_current',
+        connectionId: 'icn_aws',
+        status: 'success',
+        startedAt: CURRENT_RUN_TIME,
+        completedAt: CURRENT_RUN_TIME,
+        scannedServices: [],
+        scanMode: 'comp_scanners',
+        connection: { organizationId: 'org_1' },
+        results: [
+          makeResult({ findingKey: 'iam-no-mfa-john', resourceId: 'john', passed: true }),
+        ],
+      });
+
+      const service = new CloudReconciliationService(makeExceptionsStub());
+      const result = await service.reconcile({ currentRunId: 'icr_current' });
+
+      expect(dbMock.integrationCheckRun.findFirst).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({ scanMode: 'comp_scanners' }),
+        }),
+      );
+      // Resolution should still be detected — backfilled prior run had
+      // scanMode='comp_scanners', matches the new run's scanMode.
+      expect(result.resolutions).toBe(1);
     });
 
     it('returns 0/0 when no prior run of the same mode exists (post-switch baseline)', async () => {

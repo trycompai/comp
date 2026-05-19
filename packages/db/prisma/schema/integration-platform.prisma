@@ -347,11 +347,14 @@ model IntegrationCheckRun {
   failedServices String[] @default([])
 
   /// AWS-only: which scan engine produced this run.
-  ///   'comp_scanners' — our 49 service adapters (today's default).
+  ///   'comp_scanners' — our service adapters (default).
   ///   'security_hub' — AWS Security Hub findings.
-  /// Null for non-AWS runs and pre-feature historical rows. Reconciliation
-  /// uses this to only diff like-for-like — findingKeys live in different
-  /// namespaces across modes, so cross-mode diffs would produce false
+  /// Null for GCP / Azure runs (no scan-mode concept). Pre-feature AWS
+  /// rows were backfilled to 'comp_scanners' in the
+  /// 20260519143715_integration_check_run_scan_mode migration, so every
+  /// AWS run has an explicit value. Reconciliation uses this to only
+  /// diff like-for-like — findingKeys live in different namespaces
+  /// across modes, so cross-mode diffs would produce false
   /// resolutions/regressions.
   scanMode String?
 
