@@ -1,3 +1,10 @@
+## [3.59.1](https://github.com/trycompai/comp/compare/v3.59.0...v3.59.1) (2026-05-19)
+
+
+### Bug Fixes
+
+* **cloud-tests:** remove "Fix button supported" from scan-engine picker ([23bb1bb](https://github.com/trycompai/comp/commit/23bb1bbda3deb221c552b2ea4ea94b73c75dc899))
+
 # [3.59.0](https://github.com/trycompai/comp/compare/v3.58.0...v3.59.0) (2026-05-19)
 
 
