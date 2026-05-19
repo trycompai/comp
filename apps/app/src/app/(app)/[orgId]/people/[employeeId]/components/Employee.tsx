@@ -141,11 +141,11 @@ export function Employee({
             <TabsTrigger value="training">Training Videos</TabsTrigger>
             {hasHipaaFramework && <TabsTrigger value="hipaa">HIPAA Training</TabsTrigger>}
             <TabsTrigger value="device">Device</TabsTrigger>
-            {employee.offboardDate && (
-              <TabsTrigger value="offboarding">Offboarding</TabsTrigger>
-            )}
             {backgroundCheckStepEnabled && (
               <TabsTrigger value="background-check">Background Check</TabsTrigger>
+            )}
+            {employee.offboardDate && (
+              <TabsTrigger value="offboarding">Offboarding</TabsTrigger>
             )}
           </TabsList>
           <TabsContent value="details">
