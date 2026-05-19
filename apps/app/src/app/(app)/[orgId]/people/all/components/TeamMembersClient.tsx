@@ -138,11 +138,13 @@ export function TeamMembersClient({
   };
 
   const allItems = buildDisplayItems(data);
+  const hasOffboardFilter = !!(offboardFrom || offboardTo);
+  const effectiveStatusFilter = hasOffboardFilter && !statusFilter ? 'all' : statusFilter;
   const filteredItems = filterDisplayItems({
     items: allItems,
     searchQuery,
     roleFilter,
-    statusFilter,
+    statusFilter: effectiveStatusFilter,
   });
 
   const dateFilteredItems = filteredItems.filter((item) => {
