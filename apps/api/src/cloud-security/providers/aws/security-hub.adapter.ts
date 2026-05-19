@@ -292,20 +292,29 @@ function formatSingleRequirement(requirement: string): string {
   //   "CIS AWS Foundations Benchmark v1.2.0 1.1"
   //   "PCI DSS v3.2.1 8.2.3"
   //   "AWS Foundational Security Best Practices v1.0.0/EC2.2"
-  // We try a few patterns then fall back to a sensible default so we
-  // surface SOMETHING rather than drop a real compliance mapping.
+  //
+  // AWS FSBP uses `/` between the version and the control id; normalize
+  // it to whitespace first so the same regex handles all four formats.
+  const normalized = cleaned.replace(/\//g, ' ');
 
-  const standardMatch = cleaned.match(
-    /^([A-Z][A-Z0-9 .]+?)(?:\s+v?([\d.]+(?:[a-z]\d*)?))?\s+([A-Za-z0-9.\-]+)$/,
+  // Match `STANDARD vVERSION CONTROL`. The first group must accept
+  // lowercase letters and hyphens — without them, 3 of the 4 documented
+  // formats (NIST, CIS, AWS FSBP) fall through to the raw fallback and
+  // never produce structured `standard version (control)` output for
+  // the compliance chips.
+  const standardMatch = normalized.match(
+    /^([A-Za-z][A-Za-z0-9 .\-]+?)\s+v?([\d.]+(?:[a-z]\d*)?)\s+([A-Za-z0-9.\-]+)$/,
   );
   if (standardMatch) {
     const [, rawStandard, version, control] = standardMatch;
     const standard = normalizeStandardName(rawStandard);
-    const ver = version ?? 'unspecified';
-    return `${standard} ${ver} (${control})`;
+    return `${standard} ${version} (${control})`;
   }
 
-  // Fallback — keep the raw string so we don't silently drop data.
+  // Fallback — keep the raw string for formats without an explicit
+  // version (e.g. NIST 800-53 where the revision is embedded in the
+  // standard name: "NIST.800-53.r5 AC-2"). The downstream parser
+  // surfaces it as a single chip label, which is still informative.
   return cleaned;
 }
 

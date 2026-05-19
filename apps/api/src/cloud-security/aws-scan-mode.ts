@@ -23,6 +23,16 @@
  */
 export type AwsScanMode = 'comp_scanners' | 'security_hub';
 
+/** Canonical list of valid scan modes. Exported so DTOs, validators,
+ * and tests reference ONE array instead of duplicating the string
+ * literals everywhere. If a new mode is added, only this file changes
+ * and all importers automatically pick it up — that's the
+ * "single source of truth" promise this module makes. */
+export const AWS_SCAN_MODES = [
+  'comp_scanners',
+  'security_hub',
+] as const satisfies readonly AwsScanMode[];
+
 /** Default behavior for AWS connections with no scan-mode set (including
  * every pre-feature connection that already exists in production). */
 export const DEFAULT_AWS_SCAN_MODE: AwsScanMode = 'comp_scanners';
