@@ -30,11 +30,15 @@ interface AwsScanModeStepProps {
  * performs their cloud security scans. Two radio cards, mutually
  * exclusive:
  *
- *   1. Comp AI Scanners (default) — our service adapters, free,
- *      full Fix button support.
+ *   1. Comp AI Scanners (default) — our service adapters running
+ *      directly against AWS APIs, free.
  *   2. AWS Security Hub — read findings from the customer's existing
  *      Security Hub deployment, surface native NIST 800-53 / CIS / PCI
- *      mapping, Fix button available with a small disclosure.
+ *      mapping.
+ *
+ * Note: Fix button works for findings from BOTH modes (Security Hub
+ * findings just get a small disclosure banner in the Fix dialog).
+ * Fix support isn't a differentiator and isn't listed as a card badge.
  *
  * Pure UI — no API calls, no side effects. The parent owns state and
  * passes the choice into the createConnection payload via the
@@ -57,10 +61,10 @@ export function AwsScanModeStep({
         subtitle="Recommended"
         description={
           'Run our security checks directly against your AWS account. ' +
-          'No additional AWS cost. Full Fix button support. Covers IAM, ' +
-          'CloudTrail, S3, EC2, RDS, KMS, GuardDuty, and 40+ other services.'
+          'No additional AWS cost. Covers IAM, CloudTrail, S3, EC2, RDS, ' +
+          'KMS, GuardDuty, and 40+ other services.'
         }
-        badges={['Free', 'Fix button supported']}
+        badges={['Free']}
       />
       <ScanModeCard
         modeValue="security_hub"
