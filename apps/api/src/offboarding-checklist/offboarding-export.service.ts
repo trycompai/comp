@@ -163,7 +163,7 @@ export class OffboardingExportService {
         .replace(/[^a-zA-Z0-9 ]/g, '')
         .replace(/\s+/g, '-')
         .toLowerCase();
-      const prefix = `${safeName}/`;
+      const prefix = `offboarded-employees/${safeName}/`;
 
       const checklist = await this.offboardingChecklistService.getMemberChecklist(
         organizationId,
