@@ -63,6 +63,7 @@ export class OffboardingExportService {
   private appendSummaryCsv(
     archive: archiver.Archiver,
     items: ChecklistItems,
+    prefix = '',
   ) {
     const rows = [
       'Item,Status,Completed By,Completed Date,Evidence Count',
@@ -75,12 +76,13 @@ export class OffboardingExportService {
         return `"${escapeCsvField(item.title)}",${status},"${escapeCsvField(completedBy)}",${completedDate},${item.evidence.length}`;
       }),
     ];
-    archive.append(rows.join('\n'), { name: 'summary.csv' });
+    archive.append(rows.join('\n'), { name: `${prefix}summary.csv` });
   }
 
   private appendVendorRevocationsCsv(
     archive: archiver.Archiver,
     vendors: VendorList,
+    prefix = '',
   ) {
     const rows = [
       'Vendor,Confirmed By,Date,Has Evidence',
@@ -94,7 +96,7 @@ export class OffboardingExportService {
       }),
     ];
     archive.append(rows.join('\n'), {
-      name: 'vendor-access-revocations/vendor-access-revocations.csv',
+      name: `${prefix}vendor-access-revocations/vendor-access-revocations.csv`,
     });
   }
 
@@ -102,6 +104,7 @@ export class OffboardingExportService {
     archive: archiver.Archiver,
     organizationId: string,
     vendors: VendorList,
+    prefix = '',
   ) {
     for (const vendor of vendors) {
       if (!vendor.evidence || vendor.evidence.length === 0) continue;
@@ -109,7 +112,7 @@ export class OffboardingExportService {
         const buffer = await this.getAttachmentBuffer(organizationId, file.id);
         if (!buffer) continue;
         archive.append(buffer, {
-          name: `vendor-access-revocations/evidence/${file.name}`,
+          name: `${prefix}vendor-access-revocations/evidence/${file.name}`,
         });
       }
     }
@@ -119,6 +122,7 @@ export class OffboardingExportService {
     archive: archiver.Archiver,
     organizationId: string,
     items: ChecklistItems,
+    prefix = '',
   ) {
     for (let i = 0; i < items.length; i++) {
       const item = items[i];
@@ -132,10 +136,51 @@ export class OffboardingExportService {
         const buffer = await this.getAttachmentBuffer(organizationId, file.id);
         if (!buffer) continue;
         archive.append(buffer, {
-          name: `checklist-items/${folderNum}-${folderName}/${file.name}`,
+          name: `${prefix}checklist-items/${folderNum}-${folderName}/${file.name}`,
         });
       }
     }
+  }
+
+  async exportAllOffboardings({
+    organizationId,
+    output,
+  }: {
+    organizationId: string;
+    output: NodeJS.WritableStream;
+  }) {
+    const archive = archiver('zip', { zlib: { level: 9 } });
+    archive.pipe(output);
+
+    const members = await db.member.findMany({
+      where: { organizationId, offboardDate: { not: null }, deactivated: true },
+      include: { user: { select: { name: true, email: true } } },
+      orderBy: { offboardDate: 'desc' },
+    });
+
+    for (const member of members) {
+      const safeName = (member.user.name ?? 'member')
+        .replace(/[^a-zA-Z0-9 ]/g, '')
+        .replace(/\s+/g, '-')
+        .toLowerCase();
+      const prefix = `${safeName}/`;
+
+      const checklist = await this.offboardingChecklistService.getMemberChecklist(
+        organizationId,
+        member.id,
+      );
+      const revocations = await this.accessRevocationService.getAccessRevocations(
+        organizationId,
+        member.id,
+      );
+
+      this.appendSummaryCsv(archive, checklist.items, prefix);
+      this.appendVendorRevocationsCsv(archive, revocations.vendors, prefix);
+      await this.appendVendorEvidence(archive, organizationId, revocations.vendors, prefix);
+      await this.appendChecklistEvidence(archive, organizationId, checklist.items, prefix);
+    }
+
+    await archive.finalize();
   }
 
   private async getAttachmentBuffer(

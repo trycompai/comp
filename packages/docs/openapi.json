@@ -21520,6 +21520,36 @@
         ]
       }
     },
+    "/v1/offboarding-checklist/export-all": {
+      "get": {
+        "operationId": "OffboardingChecklistController_exportAllEvidence_v1",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Export all offboarding evidence as a zip file",
+        "tags": [
+          "Offboarding Checklist"
+        ],
+        "description": "Export all offboarding evidence as a zip file in Comp AI.",
+        "x-mint": {
+          "metadata": {
+            "title": "Export all offboarding evidence as a zip file | Comp AI API",
+            "sidebarTitle": "Export all offboarding evidence as a zip file",
+            "description": "Export all offboarding evidence as a zip file in Comp AI.",
+            "og:title": "Export all offboarding evidence as a zip file | Comp AI API",
+            "og:description": "Export all offboarding evidence as a zip file in Comp AI."
+          }
+        }
+      }
+    },
     "/v1/offboarding-checklist/member/{memberId}/export": {
       "get": {
         "operationId": "OffboardingChecklistController_exportEvidence_v1",

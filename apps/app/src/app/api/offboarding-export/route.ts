@@ -2,9 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 
 export async function GET(request: NextRequest) {
   const memberId = request.nextUrl.searchParams.get('memberId');
-  if (!memberId) {
-    return NextResponse.json({ error: 'memberId required' }, { status: 400 });
-  }
+  const exportAll = request.nextUrl.searchParams.get('all') === 'true';
 
   const apiUrl =
     process.env.NEXT_PUBLIC_API_URL ||
@@ -13,10 +11,19 @@ export async function GET(request: NextRequest) {
 
   const cookieHeader = request.headers.get('cookie') ?? '';
 
-  const response = await fetch(
-    `${apiUrl}/v1/offboarding-checklist/member/${encodeURIComponent(memberId)}/export`,
-    { headers: { cookie: cookieHeader } },
-  );
+  const endpoint = exportAll
+    ? `${apiUrl}/v1/offboarding-checklist/export-all`
+    : memberId
+      ? `${apiUrl}/v1/offboarding-checklist/member/${encodeURIComponent(memberId)}/export`
+      : null;
+
+  if (!endpoint) {
+    return NextResponse.json({ error: 'memberId or all=true required' }, { status: 400 });
+  }
+
+  const response = await fetch(endpoint, {
+    headers: { cookie: cookieHeader },
+  });
 
   if (!response.ok) {
     return NextResponse.json(

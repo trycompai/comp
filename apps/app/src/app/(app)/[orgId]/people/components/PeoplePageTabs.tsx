@@ -2,6 +2,11 @@
 
 import {
   Button,
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+  HStack,
   PageHeader,
   PageLayout,
   Tabs,
@@ -9,7 +14,7 @@ import {
   TabsList,
   TabsTrigger,
 } from '@trycompai/design-system';
-import { Add } from '@trycompai/design-system/icons';
+import { Add, Download, OverflowMenuVertical } from '@trycompai/design-system/icons';
 import type { Role } from '@db';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import type { ReactNode } from 'react';
@@ -138,13 +143,36 @@ export function PeoplePageTabs({
               </TabsList>
             }
             actions={
-              <Button
-                iconLeft={<Add size={16} />}
-                onClick={() => setIsInviteModalOpen(true)}
-                disabled={!canInviteUsers}
-              >
-                Add User
-              </Button>
+              <HStack gap="2">
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <div>
+                      <Button variant="outline" size="icon">
+                        <OverflowMenuVertical size={16} />
+                      </Button>
+                    </div>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem
+                      onClick={() => {
+                        window.open('/api/offboarding-export?all=true', '_blank');
+                      }}
+                    >
+                      <Download size={14} className="mr-2" />
+                      Export all offboarding data
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+                <div>
+                  <Button
+                    iconLeft={<Add size={16} />}
+                    onClick={() => setIsInviteModalOpen(true)}
+                    disabled={!canInviteUsers}
+                  >
+                    Add User
+                  </Button>
+                </div>
+              </HStack>
             }
           />
         }

@@ -101,6 +101,24 @@ export class OffboardingChecklistController {
     );
   }
 
+  @Get('export-all')
+  @RequirePermission('member', 'read')
+  @ApiOperation({ summary: 'Export all offboarding evidence as a zip file' })
+  async exportAllEvidence(
+    @OrganizationId() organizationId: string,
+    @Res() res: Response,
+  ) {
+    const date = new Date().toISOString().split('T')[0];
+    res.set({
+      'Content-Type': 'application/zip',
+      'Content-Disposition': `attachment; filename="all-offboardings-${date}.zip"`,
+    });
+    await this.offboardingExportService.exportAllOffboardings({
+      organizationId,
+      output: res,
+    });
+  }
+
   @Get('member/:memberId/export')
   @RequirePermission('member', 'read')
   @ApiOperation({ summary: 'Export offboarding evidence as a zip file' })
