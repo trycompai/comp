@@ -33,8 +33,8 @@ const DANGEROUS_CONTENT_PATTERNS = [
   /<iframe[\s>]/i,
   /<object[\s>]/i,
   /<embed[\s>]/i,
-  /javascript:/i,
-  /vbscript:/i,
+  /(?:href|src|action|formaction|xlink:href|content|poster|background|data)\s*=\s*["']?\s*javascript:/i,
+  /(?:href|src|action|formaction|xlink:href|content|poster|background|data)\s*=\s*["']?\s*vbscript:/i,
   /\bon(?:click|load|error|mouseover|focus|blur|submit|change|input|keydown|keyup|mousedown|mouseup|dblclick|contextmenu|drag|drop|touchstart|touchend|pointerdown|pointerup|animationend|abort|beforeunload|unload)\s*=/i,
 ];
 
