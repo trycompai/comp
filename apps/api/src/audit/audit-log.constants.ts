@@ -61,6 +61,7 @@ export const COMMENT_ENTITY_TYPE_MAP: Record<string, AuditLogEntityType> = {
   [CommentEntityType.vendor]: AuditLogEntityType.vendor,
   [CommentEntityType.risk]: AuditLogEntityType.risk,
   [CommentEntityType.policy]: AuditLogEntityType.policy,
+  [CommentEntityType.finding]: AuditLogEntityType.finding,
 };
 
 // Fields that reference the member table and should be resolved to user names.

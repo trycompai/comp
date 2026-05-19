@@ -174,6 +174,27 @@ async function buildFallbackCommentContext(params: {
     };
   }
 
+  if (entityType === CommentEntityType.finding) {
+    const finding = await db.finding.findFirst({
+      where: { id: entityId, organizationId },
+      select: { content: true },
+    });
+
+    if (!finding) {
+      return null;
+    }
+
+    const url = new URL(`${appUrl}/${organizationId}/overview/findings`);
+    url.searchParams.set('open', entityId);
+
+    const snippet = finding.content?.trim().split('\n')[0]?.slice(0, 80);
+    return {
+      entityName: snippet || 'Finding',
+      entityRoutePath: 'overview/findings',
+      commentUrl: url.toString(),
+    };
+  }
+
   // CommentEntityType.policy
   const policy = await db.policy.findFirst({
     where: { id: entityId, organizationId },
