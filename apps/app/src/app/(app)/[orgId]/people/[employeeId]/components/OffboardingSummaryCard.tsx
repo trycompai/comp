@@ -76,23 +76,22 @@ export function OffboardingSummaryCard({
           {progressPercent}%
         </p>
       </div>
-      {hasEvidence && (
-        <div>
-          <Button
-            variant="outline"
-            size="sm"
-            iconLeft={<Download size={14} />}
-            onClick={() => {
-              window.open(
-                `/api/offboarding-export?memberId=${encodeURIComponent(memberId)}`,
-                '_blank',
-              );
-            }}
-          >
-            Export evidence
-          </Button>
-        </div>
-      )}
+      <div>
+        <Button
+          variant={hasEvidence ? 'default' : 'outline'}
+          size="sm"
+          iconLeft={<Download size={14} />}
+          disabled={!hasEvidence}
+          onClick={() => {
+            window.open(
+              `/api/offboarding-export?memberId=${encodeURIComponent(memberId)}`,
+              '_blank',
+            );
+          }}
+        >
+          Export evidence
+        </Button>
+      </div>
     </div>
   );
 }
