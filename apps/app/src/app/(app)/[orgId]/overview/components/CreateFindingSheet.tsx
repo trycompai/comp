@@ -29,7 +29,6 @@ import {
   DrawerContent,
   DrawerHeader,
   DrawerTitle,
-  Input,
   Select,
   SelectContent,
   SelectGroup,
@@ -56,7 +55,6 @@ type TargetKind =
   | 'member'
   | 'device'
   | 'evidenceFormType'
-  | 'evidenceSubmission'
   | 'area';
 
 const TARGET_OPTIONS: { value: TargetKind; label: string }[] = [
@@ -67,7 +65,6 @@ const TARGET_OPTIONS: { value: TargetKind; label: string }[] = [
   { value: 'member', label: 'Person' },
   { value: 'device', label: 'Device' },
   { value: 'evidenceFormType', label: 'Document type' },
-  { value: 'evidenceSubmission', label: 'Evidence submission' },
   { value: 'area', label: 'Area' },
 ];
 
@@ -232,8 +229,6 @@ export function CreateFindingSheet({
         else if (values.targetKind === 'risk' && targetId) payload.riskId = targetId;
         else if (values.targetKind === 'member' && targetId) payload.memberId = targetId;
         else if (values.targetKind === 'device' && targetId) payload.deviceId = targetId;
-        else if (values.targetKind === 'evidenceSubmission' && targetId)
-          payload.evidenceSubmissionId = targetId;
 
         const hasTarget =
           payload.taskId ||
@@ -242,7 +237,6 @@ export function CreateFindingSheet({
           payload.riskId ||
           payload.memberId ||
           payload.deviceId ||
-          payload.evidenceSubmissionId ||
           payload.evidenceFormType ||
           payload.area;
 
@@ -522,7 +516,6 @@ function EntityPicker({
   endpointOverrides?: Partial<Record<TargetKind, string | null>>;
 }) {
   const endpoint = useMemo(() => {
-    if (kind === 'evidenceSubmission') return null;
     // An explicit override (including `null`) wins over the default. `null`
     // means "no admin endpoint exists for this kind", so skip fetching.
     if (endpointOverrides && kind in endpointOverrides) {
@@ -535,19 +528,6 @@ function EntityPicker({
     () => extractOptions(kind, data),
     [kind, data],
   );
-
-  if (kind === 'evidenceSubmission') {
-    return (
-      <div className="w-full">
-        <label className="text-sm font-medium">Evidence submission ID</label>
-        <Input
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          placeholder="evs_..."
-        />
-      </div>
-    );
-  }
 
   return (
     <div className="w-full">
@@ -571,7 +551,7 @@ function EntityPicker({
   );
 }
 
-function endpointForKind(kind: Exclude<TargetKind, 'area' | 'evidenceSubmission'>): string | null {
+function endpointForKind(kind: Exclude<TargetKind, 'area'>): string | null {
   switch (kind) {
     case 'task':
       return '/v1/tasks';
@@ -646,7 +626,7 @@ function extractOptions(
     .filter((x): x is Option => x !== null);
 }
 
-function labelForKind(kind: Exclude<TargetKind, 'area' | 'evidenceSubmission'>): string {
+function labelForKind(kind: Exclude<TargetKind, 'area'>): string {
   switch (kind) {
     case 'task':
       return 'task';

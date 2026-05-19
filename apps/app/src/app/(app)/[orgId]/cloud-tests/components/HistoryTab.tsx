@@ -5,6 +5,7 @@ import { usePermissions } from '@/hooks/use-permissions';
 import { Button } from '@trycompai/ui/button';
 import { Loader2, ShieldCheck, RotateCcw, X } from 'lucide-react';
 import { toast } from 'sonner';
+import { mutate as globalMutate } from 'swr';
 
 interface ResolutionRow {
   id: string;
@@ -105,6 +106,16 @@ export function HistoryTab({ connectionId }: HistoryTabProps) {
     }
     toast.success('Exception revoked');
     mutate();
+    // Invalidate the cloud-tests findings cache so the revoked exception's
+    // finding reappears in the active scan results immediately. Mirrors
+    // the mark-as-exception flow which invalidates history; both directions
+    // keep the two views in sync without a manual refresh.
+    globalMutate(
+      (key) =>
+        Array.isArray(key) &&
+        typeof key[0] === 'string' &&
+        key[0].startsWith('/v1/cloud-security/findings'),
+    );
   };
 
   if (isLoading) {
