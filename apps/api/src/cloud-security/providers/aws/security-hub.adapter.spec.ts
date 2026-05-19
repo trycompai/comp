@@ -88,10 +88,40 @@ describe('security-hub.adapter helpers', () => {
       expect(formatRelatedRequirements([])).toBe('');
     });
 
-    it('formats a NIST 800-53 requirement in parser-compatible form', () => {
-      expect(formatRelatedRequirements(['NIST.800-53.r5 AC-2'])).toMatch(
-        /nist.*AC-2/i,
+    it('emits NIST 800-53 verbatim when no explicit version separator is present', () => {
+      // NIST embeds the revision in the standard name ("NIST.800-53.r5"),
+      // so the structured `standard version (control)` regex doesn't
+      // match — fallback emits the raw string and the parser surfaces it
+      // as a single chip label. Better than fabricating a placeholder.
+      expect(formatRelatedRequirements(['NIST.800-53.r5 AC-2'])).toBe(
+        'NIST.800-53.r5 AC-2',
       );
+    });
+
+    it('formats CIS AWS Foundations Benchmark in parser-compatible form (regex must accept lowercase)', () => {
+      // Cubic P2 regression guard — the prior regex `[A-Z][A-Z0-9 .]+?`
+      // could not match "Foundations" / "Benchmark" because of the
+      // lowercase letters, so this format silently fell through.
+      const result = formatRelatedRequirements([
+        'CIS AWS Foundations Benchmark v1.2.0 1.1',
+      ]);
+      expect(result).toMatch(/^cis .*1\.2\.0 \(1\.1\)$/);
+    });
+
+    it('formats PCI DSS in parser-compatible form', () => {
+      const result = formatRelatedRequirements(['PCI DSS v3.2.1 8.2.3']);
+      expect(result).toBe('pci dss 3.2.1 (8.2.3)');
+    });
+
+    it('formats AWS FSBP in parser-compatible form, handling the slash separator', () => {
+      // Cubic P2 regression guard — `/` between version and control is
+      // unique to AWS Foundational Security Best Practices. Without the
+      // pre-normalization, the regex `\s+` between version and control
+      // would never match.
+      const result = formatRelatedRequirements([
+        'AWS Foundational Security Best Practices v1.0.0/EC2.2',
+      ]);
+      expect(result).toMatch(/^aws fsbp 1\.0\.0 \(EC2\.2\)$/);
     });
 
     it('joins multiple requirements with "; " so the parser splits them correctly', () => {
