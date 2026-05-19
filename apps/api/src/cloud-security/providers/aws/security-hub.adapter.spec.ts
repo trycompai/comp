@@ -9,22 +9,55 @@ import {
 
 describe('security-hub.adapter helpers', () => {
   describe('deriveFindingKey', () => {
-    it('extracts the trailing control id from a foundational best-practices GeneratorId', () => {
+    it('combines standard + control for a foundational best-practices GeneratorId', () => {
       expect(
         deriveFindingKey('aws-foundational-security-best-practices/v/1.0.0/EC2.13'),
-      ).toBe('aws-securityhub-ec2.13');
+      ).toBe('aws-securityhub-aws-foundational-security-best-practices-ec2.13');
     });
 
-    it('extracts the trailing control id from a CIS GeneratorId', () => {
+    it('combines standard + control for a CIS GeneratorId', () => {
       expect(
         deriveFindingKey('cis-aws-foundations-benchmark/v/1.2.0/1.1'),
-      ).toBe('aws-securityhub-1.1');
+      ).toBe('aws-securityhub-cis-aws-foundations-benchmark-1.1');
     });
 
-    it('extracts the trailing control id from a NIST GeneratorId', () => {
+    it('combines standard + control for a NIST GeneratorId', () => {
       expect(deriveFindingKey('nist-800-53/r/5/AC-2')).toBe(
-        'aws-securityhub-ac-2',
+        'aws-securityhub-nist-800-53-ac-2',
       );
+    });
+
+    it('does NOT collide across standards that share a control id (P1 regression guard)', () => {
+      // The original implementation used only the trailing segment, so
+      // CIS 1.1 and PCI 1.1 produced the same findingKey and would have
+      // merged into one row in the UI — silently corrupting exception
+      // scoping and reconciliation. Cubic caught this on initial review;
+      // this test exists to prevent regression.
+      const cis11 = deriveFindingKey(
+        'cis-aws-foundations-benchmark/v/1.2.0/1.1',
+      );
+      const pci11 = deriveFindingKey('pci-dss/v/3.2.1/1.1');
+      expect(cis11).not.toBe(pci11);
+      expect(cis11).toContain('cis');
+      expect(pci11).toContain('pci');
+    });
+
+    it('produces the same key for two findings from the same standard + control', () => {
+      // Findings sharing both standard AND control SHOULD merge — that's
+      // the whole point of findingKey: group instances of the same check
+      // across resources.
+      const a = deriveFindingKey('aws-foundational-security-best-practices/v/1.0.0/EC2.13');
+      const b = deriveFindingKey('aws-foundational-security-best-practices/v/1.0.0/EC2.13');
+      expect(a).toBe(b);
+    });
+
+    it('ignores version/revision changes within the same standard + control', () => {
+      // SecHub bumping the standard version shouldn't fragment a finding's
+      // identity. CIS 1.2.0 → 4.0.0 with the same control 1.1 stays one key,
+      // so reconciliation can still diff before/after the version bump.
+      const v12 = deriveFindingKey('cis-aws-foundations-benchmark/v/1.2.0/1.1');
+      const v40 = deriveFindingKey('cis-aws-foundations-benchmark/v/4.0.0/1.1');
+      expect(v12).toBe(v40);
     });
 
     it('sanitizes characters not safe for use in identifiers', () => {
@@ -33,10 +66,10 @@ describe('security-hub.adapter helpers', () => {
       );
     });
 
-    it('produces a stable key (no timestamps / randomness) so reconciliation can diff scans', () => {
-      const a = deriveFindingKey('aws-foundational-security-best-practices/v/1.0.0/EC2.13');
-      const b = deriveFindingKey('aws-foundational-security-best-practices/v/1.0.0/EC2.13');
-      expect(a).toBe(b);
+    it('handles single-segment GeneratorIds (no path structure)', () => {
+      expect(deriveFindingKey('SimpleGenerator')).toBe(
+        'aws-securityhub-simplegenerator',
+      );
     });
 
     it('returns a sentinel key rather than throwing when GeneratorId is missing', () => {
@@ -160,7 +193,9 @@ describe('security-hub.adapter helpers', () => {
 
     it('stamps evidence.findingKey so the Fix pipeline picks it up', () => {
       const mapped = mapSecurityHubFinding(baseFinding, 'us-east-1');
-      expect(mapped.evidence?.findingKey).toBe('aws-securityhub-ec2.13');
+      expect(mapped.evidence?.findingKey).toBe(
+        'aws-securityhub-aws-foundational-security-best-practices-ec2.13',
+      );
     });
 
     it('stamps evidence.serviceId so the UI can detect SecHub findings', () => {

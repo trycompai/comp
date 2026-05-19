@@ -177,22 +177,46 @@ export function mapSecurityHubFinding(
  * `aws-foundational-security-best-practices/v/1.0.0/EC2.13` or
  * `cis-aws-foundations-benchmark/v/1.2.0/1.1`.
  *
- * Strategy: take the trailing control identifier (last `/`-delimited
- * segment) since that's what makes the finding semantically unique.
- * Falls back to a sanitized form of the full GeneratorId, then to a
- * generic key, so we ALWAYS produce a key — the Fix button gates on
- * its existence, so missing findingKey would silently disable Fix.
+ * Strategy: combine the standard prefix (first segment) with the control
+ * identifier (last segment) so distinct findings from different standards
+ * never collide under the same key. The middle segments (version /
+ * revision) are intentionally dropped — they shouldn't change a finding's
+ * identity within a standard.
+ *
+ *   aws-foundational-security-best-practices/v/1.0.0/EC2.13
+ *     → aws-securityhub-aws-foundational-security-best-practices-ec2.13
+ *
+ *   cis-aws-foundations-benchmark/v/1.2.0/1.1
+ *     → aws-securityhub-cis-aws-foundations-benchmark-1.1
+ *
+ *   pci-dss/v/3.2.1/1.1
+ *     → aws-securityhub-pci-dss-1.1   (no collision with the CIS 1.1 above)
+ *
+ * Falls back gracefully when the GeneratorId has no path structure or is
+ * missing entirely — we ALWAYS produce a key because the Fix button gates
+ * on its existence, and missing findingKey would silently disable Fix.
  */
 export function deriveFindingKey(generatorId: string | undefined): string {
   if (!generatorId) return 'aws-securityhub-unknown';
   const trimmed = generatorId.trim();
   if (!trimmed) return 'aws-securityhub-unknown';
 
-  const lastSegment = trimmed.split('/').pop() ?? trimmed;
-  const sanitized = sanitizeKeySegment(lastSegment);
-  if (sanitized) return `aws-securityhub-${sanitized}`;
+  const segments = trimmed.split('/').filter((s) => s.length > 0);
+  if (segments.length === 0) return 'aws-securityhub-unknown';
 
-  return `aws-securityhub-${sanitizeKeySegment(trimmed) || 'unknown'}`;
+  if (segments.length === 1) {
+    // No path structure — sanitize the whole thing.
+    const sanitized = sanitizeKeySegment(segments[0]);
+    return `aws-securityhub-${sanitized || 'unknown'}`;
+  }
+
+  // Combine first segment (standard identifier — namespaces the key) with
+  // the last segment (control identifier — uniquely identifies WHICH check
+  // within that standard). This prevents collisions like CIS 1.1 ↔ PCI 1.1.
+  const standard = sanitizeKeySegment(segments[0]);
+  const control = sanitizeKeySegment(segments[segments.length - 1]);
+  const combined = [standard, control].filter(Boolean).join('-');
+  return `aws-securityhub-${combined || 'unknown'}`;
 }
 
 function sanitizeKeySegment(value: string): string {
