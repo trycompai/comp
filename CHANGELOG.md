@@ -1,3 +1,115 @@
+# [3.57.0](https://github.com/trycompai/comp/compare/v3.56.0...v3.57.0) (2026-05-19)
+
+
+### Features
+
+* **pen-test-marketing:** add marketing components and empty state for penetration tests ([445e433](https://github.com/trycompai/comp/commit/445e433ae910ca5bc9489083129e1bf73f491507))
+
+# [3.56.0](https://github.com/trycompai/comp/compare/v3.55.2...v3.56.0) (2026-05-15)
+
+
+### Bug Fixes
+
+* **app:** add new exemption fields to createMockMember ([ada894d](https://github.com/trycompai/comp/commit/ada894dbbfbbadf5fb57d96a804d03ab695a302d))
+* **background-check:** persist exemption reason + justification on member ([6988e37](https://github.com/trycompai/comp/commit/6988e37e7ad65ca6b662782cc4a7631a40995c9e))
+* **cloud-tests:** address cubic findings on production deploy PR ([33042e7](https://github.com/trycompai/comp/commit/33042e79918196f8c4e585844649622329e6f041))
+* **cloud-tests:** address cubic review findings ([c05da23](https://github.com/trycompai/comp/commit/c05da233efe41a10baaeeb556a60c4ca51c927b9))
+* **cloud-tests:** address cubic review on RemediationSection and enrichEmptyState ([79bfb0f](https://github.com/trycompai/comp/commit/79bfb0f328ad41ec4f30c442a7a35aadeb0d6e00))
+* **cloud-tests:** address cubic round 4 findings ([0e193c2](https://github.com/trycompai/comp/commit/0e193c2ff5b187496554a38d20268edd92b4bab4))
+* **cloud-tests:** deterministic backstop for empty CURRENT/PROPOSED in fix-plan dialog ([8111faf](https://github.com/trycompai/comp/commit/8111faf787087bbb967e3ec3fe6a9c897186efbf))
+* **cloud-tests:** differentiate check-definition fields + structured remediation rendering ([9faf036](https://github.com/trycompai/comp/commit/9faf03637cb1ec4f30f2c371fc8bd3cb533c2028))
+* **cloud-tests:** legacy result-filter robustness + Prisma migration cleanup ([d52294e](https://github.com/trycompai/comp/commit/d52294eb67b6c86b57fa83ac6e59bce18d2d6a89)), closes [#6](https://github.com/trycompai/comp/issues/6)
+* **cloud-tests:** nested arrays in sanitizer + strict date-only expiry validation ([12411c7](https://github.com/trycompai/comp/commit/12411c7e64bf94552c5f3d4f896fc5f0ad6d2e86))
+* **cloud-tests:** teach AI fix-plan to describe create-from-scratch remediations ([11d717f](https://github.com/trycompai/comp/commit/11d717fa2b9fdf0797e0845c70482e734ae62e2b))
+
+
+### Features
+
+* **cloud-tests:** auditor visibility improvements (phases 1-5) ([3456655](https://github.com/trycompai/comp/commit/34566555f85845a4d7e6bf7fe6ad25fe82851a20))
+
+## [3.55.2](https://github.com/trycompai/comp/compare/v3.55.1...v3.55.2) (2026-05-15)
+
+
+### Bug Fixes
+
+* **people:** send single combined email for admin+employee invites with portal ([#2857](https://github.com/trycompai/comp/issues/2857)) ([a4adb20](https://github.com/trycompai/comp/commit/a4adb2035779fb3d77d0f21adbb50f8714956407))
+* **risks:** treatment plan disappears when switching strategies ([#2860](https://github.com/trycompai/comp/issues/2860)) ([9b052f5](https://github.com/trycompai/comp/commit/9b052f50f55280fdb24f9f33ae771e2553048a59))
+
+## [3.55.1](https://github.com/trycompai/comp/compare/v3.55.0...v3.55.1) (2026-05-15)
+
+
+### Bug Fixes
+
+* **cloud-security:** use credential report for iam-root-access-keys check ([#2846](https://github.com/trycompai/comp/issues/2846)) ([2e58e26](https://github.com/trycompai/comp/commit/2e58e26d160998854aedca64307dcdd7594c3bf8))
+
+# [3.55.0](https://github.com/trycompai/comp/compare/v3.54.3...v3.55.0) (2026-05-15)
+
+
+### Features
+
+* **trust-portal:** dedicated FROM env var for trust portal emails ([#2851](https://github.com/trycompai/comp/issues/2851)) ([69b9157](https://github.com/trycompai/comp/commit/69b91570bbcfa7bd658b94619d10dc6a6b087362))
+
+## [3.54.3](https://github.com/trycompai/comp/compare/v3.54.2...v3.54.3) (2026-05-14)
+
+
+### Bug Fixes
+
+* **frameworks:** populate framework-scoped link tables during org onboarding ([7cbbaa0](https://github.com/trycompai/comp/commit/7cbbaa0329802e88ec5d1a52ff8312768f23afd9))
+
+## [3.54.2](https://github.com/trycompai/comp/compare/v3.54.1...v3.54.2) (2026-05-14)
+
+
+### Bug Fixes
+
+* **integrations:** remove fragile heredoc from AWS auditor setup script ([6acb361](https://github.com/trycompai/comp/commit/6acb3610d5a11ae12b6dbc67f9f54c22510e74c0))
+* **portal:** resolve RBAC permissions instead of checking role names ([9316c6d](https://github.com/trycompai/comp/commit/9316c6d29d95f7e6019c6954a01666c1b5f9c73e))
+
+## [3.54.1](https://github.com/trycompai/comp/compare/v3.54.0...v3.54.1) (2026-05-14)
+
+
+### Bug Fixes
+
+* **integrations:** remove fragile heredoc from AWS auditor setup script ([#2845](https://github.com/trycompai/comp/issues/2845)) ([f056c60](https://github.com/trycompai/comp/commit/f056c60ab8e6ebc59eed43df541f43bad0cfeea4))
+
+# [3.54.0](https://github.com/trycompai/comp/compare/v3.53.0...v3.54.0) (2026-05-13)
+
+
+### Bug Fixes
+
+* **background-check:** address cubic review — arrow nav, credit filter, trim payload ([800265a](https://github.com/trycompai/comp/commit/800265afcdb5ecbafa7d3831445d6594350ddfbd))
+* **background-check:** align V1 content with tab strip and page header ([9d5454b](https://github.com/trycompai/comp/commit/9d5454b8f3987462acb44c047a385901f21d88a8))
+
+
+### Features
+
+* **background-check:** redesign overview and report to surface real verification methodology ([a5ebe77](https://github.com/trycompai/comp/commit/a5ebe7778dee104affff0480772e5f980e8402c6))
+* **background-check:** replace marketing overview with V1 two-paths task surface ([4c81b38](https://github.com/trycompai/comp/commit/4c81b38bafe7d7daeeea8e5145b6b060f066ff73))
+
+# [3.53.0](https://github.com/trycompai/comp/compare/v3.52.0...v3.53.0) (2026-05-13)
+
+
+### Bug Fixes
+
+* **pentest:** wire authorization error to checkbox via aria-invalid + aria-describedby ([2e871d6](https://github.com/trycompai/comp/commit/2e871d67f886f192fdb7b297c1dd02d545a630b3))
+
+
+### Features
+
+* **pentest:** improve scan-creation copy and add authorization gate ([5d58635](https://github.com/trycompai/comp/commit/5d58635e91ef19e4c3bf4cb1cce410a027347a36))
+
+# [3.52.0](https://github.com/trycompai/comp/compare/v3.51.0...v3.52.0) (2026-05-13)
+
+
+### Bug Fixes
+
+* **rbac:** enforce app:read for app access, use permissions for member invites, gate portal ([d47cd5d](https://github.com/trycompai/comp/commit/d47cd5db15a4d198cfc0c67b549bda138b83ac4e))
+
+
+### Features
+
+* **control-template:** enhance control template service and controller for document type linking ([a024822](https://github.com/trycompai/comp/commit/a024822a36ef7ad328466d70bd4168c19c3fcc3a))
+* **controls:** add frameworkInstanceId support for control linking and retrieval ([8d23f15](https://github.com/trycompai/comp/commit/8d23f156a47593beac1c3b42ca23757971a7c12b))
+
 # [3.51.0](https://github.com/trycompai/comp/compare/v3.50.0...v3.51.0) (2026-05-12)
 
 

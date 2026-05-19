@@ -109,7 +109,7 @@ describe('BackgroundCheckStatusView', () => {
     expect(screen.getByText('Complete with flags')).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /copy candidate link/i })).not.toBeInTheDocument();
     expect(screen.queryByText(/Adjudication: Draft/i)).not.toBeInTheDocument();
-    expect(screen.getByText('Identity verification')).toBeInTheDocument();
+    expect(screen.getByText('Identity & liveness')).toBeInTheDocument();
     expect(screen.getByText('Shareable summary')).toBeInTheDocument();
     expect(screen.getByText('The background check is completed with flags.')).toBeInTheDocument();
     expect(
@@ -119,7 +119,7 @@ describe('BackgroundCheckStatusView', () => {
     expect(screen.getByText('Name mismatch needs review')).toBeInTheDocument();
     expect(screen.getByText('Public source data can change.')).toBeInTheDocument();
     expect(screen.getByText('Employment verification')).toBeInTheDocument();
-    expect(screen.getByText('Social and media research')).toBeInTheDocument();
+    expect(screen.getByText('Public-source research')).toBeInTheDocument();
     expect(screen.queryByText(/Right-to-work/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/Right to work/i)).not.toBeInTheDocument();
     expect(screen.queryByText('Not Found')).not.toBeInTheDocument();

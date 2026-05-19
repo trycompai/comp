@@ -8,6 +8,7 @@ import { GCPSecurityService } from './providers/gcp-security.service';
 import { AWSSecurityService } from './providers/aws-security.service';
 import { AzureSecurityService } from './providers/azure-security.service';
 import { AWS_SERVICE_TASK_MAPPINGS } from './aws-task-mappings';
+import { CloudReconciliationService } from './reconciliation.service';
 
 export interface SecurityFinding {
   id: string;
@@ -46,6 +47,7 @@ export class CloudSecurityService {
     private readonly gcpService: GCPSecurityService,
     private readonly awsService: AWSSecurityService,
     private readonly azureService: AzureSecurityService,
+    private readonly reconciliation: CloudReconciliationService,
   ) {}
 
   async scan(
@@ -276,7 +278,22 @@ export class CloudSecurityService {
       }
 
       // Store findings in database
-      await this.storeFindings(connectionId, providerSlug, findings);
+      const currentRunId = await this.storeFindings(
+        connectionId,
+        providerSlug,
+        findings,
+      );
+
+      // Reconcile against the prior scan to record resolutions and regressions.
+      // Failures must NOT fail the scan — log and continue so customers always
+      // see fresh findings even if the audit trail step hits an edge case.
+      try {
+        await this.reconciliation.reconcile({ currentRunId });
+      } catch (err) {
+        this.logger.error(
+          `Reconciliation failed for run ${currentRunId}: ${err instanceof Error ? err.message : String(err)}`,
+        );
+      }
 
       // Auto-satisfy evidence tasks based on passing scan results (AWS only)
       if (providerSlug === 'aws') {
@@ -556,12 +573,27 @@ export class CloudSecurityService {
     connectionId: string,
     provider: string,
     findings: SecurityFinding[],
-  ): Promise<void> {
+  ): Promise<string> {
     const passedCount = findings.filter((f) => f.passed).length;
     const failedCount = findings.filter((f) => !f.passed).length;
 
+    // Derive successfully-scanned service IDs from finding evidence. Used by
+    // Phase 5 reconciliation to avoid false "resolved" events when a service
+    // wasn't actually scanned this run.
+    const scannedServices = Array.from(
+      new Set(
+        findings
+          .map((f) => {
+            const evidence = f.evidence as Record<string, unknown> | undefined;
+            const serviceId = evidence?.serviceId;
+            return typeof serviceId === 'string' ? serviceId : null;
+          })
+          .filter((id): id is string => Boolean(id)),
+      ),
+    );
+
     // Use a transaction to ensure atomicity - both run and results are created together
-    await db.$transaction(async (tx) => {
+    const runId = await db.$transaction(async (tx) => {
       // Create a scan run record
       const scanRun = await tx.integrationCheckRun.create({
         data: {
@@ -574,6 +606,7 @@ export class CloudSecurityService {
           totalChecked: findings.length,
           passedCount,
           failedCount,
+          scannedServices,
         },
       });
 
@@ -594,7 +627,11 @@ export class CloudSecurityService {
           })),
         });
       }
+
+      return scanRun.id;
     });
+
+    return runId;
   }
 
   /**

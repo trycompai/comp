@@ -29,15 +29,43 @@ export class TaskTemplateService {
 
   async findAll(frameworkId?: string) {
     try {
+      if (frameworkId) {
+        const taskTemplates = await db.frameworkEditorTaskTemplate.findMany({
+          orderBy: { name: 'asc' },
+          where: { frameworkControlLinks: { some: { frameworkId } } },
+          include: {
+            frameworkControlLinks: {
+              where: { frameworkId },
+              select: {
+                controlTemplate: {
+                  select: {
+                    id: true,
+                    name: true,
+                    requirements: {
+                      select: {
+                        framework: { select: { id: true, name: true } },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        });
+
+        this.logger.log(
+          `Retrieved ${taskTemplates.length} framework editor task templates`,
+        );
+        return taskTemplates.map(({ frameworkControlLinks, ...task }) => ({
+          ...task,
+          controlTemplates: frameworkControlLinks.map(
+            (link) => link.controlTemplate,
+          ),
+        }));
+      }
+
       const taskTemplates = await db.frameworkEditorTaskTemplate.findMany({
         orderBy: { name: 'asc' },
-        where: frameworkId
-          ? {
-              controlTemplates: {
-                some: { requirements: { some: { frameworkId } } },
-              },
-            }
-          : undefined,
         include: {
           controlTemplates: {
             select: {
@@ -64,6 +92,52 @@ export class TaskTemplateService {
       );
       throw error;
     }
+  }
+
+  async linkControlTemplate(
+    taskTemplateId: string,
+    controlTemplateId: string,
+    frameworkId?: string,
+  ) {
+    if (!frameworkId) {
+      throw new NotFoundException('Framework not found');
+    }
+    await this.findById(taskTemplateId);
+    const [controlTemplate, framework] = await Promise.all([
+      db.frameworkEditorControlTemplate.findUnique({
+        where: { id: controlTemplateId },
+        select: { id: true },
+      }),
+      db.frameworkEditorFramework.findUnique({
+        where: { id: frameworkId },
+        select: { id: true },
+      }),
+    ]);
+    if (!controlTemplate) {
+      throw new NotFoundException('Control template not found');
+    }
+    if (!framework) {
+      throw new NotFoundException('Framework not found');
+    }
+    await db.frameworkEditorControlTaskTemplateLink.createMany({
+      data: [{ frameworkId, controlTemplateId, taskTemplateId }],
+      skipDuplicates: true,
+    });
+    return { message: 'Control linked' };
+  }
+
+  async unlinkControlTemplate(
+    taskTemplateId: string,
+    controlTemplateId: string,
+    frameworkId?: string,
+  ) {
+    if (!frameworkId) {
+      throw new NotFoundException('Framework not found');
+    }
+    await db.frameworkEditorControlTaskTemplateLink.deleteMany({
+      where: { frameworkId, controlTemplateId, taskTemplateId },
+    });
+    return { message: 'Control unlinked' };
   }
 
   async findById(id: string) {

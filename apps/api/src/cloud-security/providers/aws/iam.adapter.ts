@@ -4,10 +4,10 @@ import {
   ListUsersCommand,
   ListMFADevicesCommand,
   ListAccessKeysCommand,
-  GetAccountSummaryCommand,
 } from '@aws-sdk/client-iam';
 import type { SecurityFinding } from '../../cloud-security.service';
 import type { AwsCredentials, AwsServiceAdapter } from './aws-service-adapter';
+import { checkRootAccessKeys } from './iam-root-access-keys';
 
 const STALE_KEY_DAYS = 90;
 
@@ -29,7 +29,7 @@ export class IamAdapter implements AwsServiceAdapter {
       this.checkPasswordPolicy(iam, accountId),
       this.checkUsersWithoutMfa(iam, accountId),
       this.checkStaleAccessKeys(iam, accountId),
-      this.checkRootAccessKeys(iam, accountId),
+      checkRootAccessKeys({ iam, accountId }),
     ]);
 
     for (const result of results) {
@@ -215,47 +215,6 @@ export class IamAdapter implements AwsServiceAdapter {
     }
 
     return findings;
-  }
-
-  private async checkRootAccessKeys(
-    iam: IAMClient,
-    accountId?: string,
-  ): Promise<SecurityFinding[]> {
-    const resp = await iam.send(new GetAccountSummaryCommand({}));
-    const summary = resp.SummaryMap;
-
-    if (!summary) return [];
-
-    const rootKeys = summary['AccountAccessKeysPresent'];
-
-    if (rootKeys && rootKeys > 0) {
-      return [
-        this.makeFinding({
-          id: 'iam-root-access-keys',
-          title: 'Root account has active access keys',
-          description:
-            'The root account has active access keys. Root access keys provide unrestricted access and should be removed.',
-          severity: 'critical',
-          resourceType: 'AwsAccount',
-          resourceId: accountId || 'root',
-          remediation:
-            '[MANUAL] Cannot be auto-fixed. Root access keys must be deleted manually through the AWS Console root account security credentials page.',
-          passed: false,
-          accountId,
-        }),
-      ];
-    }
-
-    return [
-      this.makeFinding({
-        id: 'iam-root-access-keys',
-        title: 'Root account has no active access keys',
-        description: 'The root account does not have active access keys.',
-        severity: 'info',
-        passed: true,
-        accountId,
-      }),
-    ];
   }
 
   private async listAllUsers(iam: IAMClient) {

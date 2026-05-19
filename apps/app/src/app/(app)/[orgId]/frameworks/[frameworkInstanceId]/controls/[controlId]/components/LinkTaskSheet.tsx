@@ -20,9 +20,11 @@ import { useControlOptions } from './useControlOptions';
 
 export function LinkTaskSheet({
   controlId,
+  frameworkInstanceId,
   alreadyLinkedTaskIds,
 }: {
   controlId: string;
+  frameworkInstanceId: string;
   alreadyLinkedTaskIds: string[];
 }) {
   const { hasPermission } = usePermissions();
@@ -61,7 +63,7 @@ export function LinkTaskSheet({
     setIsSubmitting(true);
     try {
       const response = await apiClient.post(
-        `/v1/controls/${controlId}/tasks/link`,
+        `/v1/controls/${controlId}/tasks/link?frameworkInstanceId=${frameworkInstanceId}`,
         { taskIds: Array.from(selected) },
       );
       if (response.error) throw new Error(response.error);

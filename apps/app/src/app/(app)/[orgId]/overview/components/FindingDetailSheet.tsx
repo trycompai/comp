@@ -414,12 +414,14 @@ export function FindingDetailSheet({
               <Text size="sm" weight="medium">
                 Comments
               </Text>
-              <Comments
-                entityId={finding.id}
-                entityType="finding"
-                organizationId={organizationId}
-                readOnly={!canUpdate}
-              />
+              {finding ? (
+                <Comments
+                  entityId={finding.id}
+                  entityType="finding"
+                  organizationId={organizationId}
+                  readOnly={!canUpdate}
+                />
+              ) : null}
             </Stack>
 
             <Stack gap="xs">

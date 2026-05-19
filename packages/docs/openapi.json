@@ -11771,7 +11771,8 @@
                 "task",
                 "vendor",
                 "risk",
-                "policy"
+                "policy",
+                "finding"
               ],
               "type": "string"
             }
@@ -17111,6 +17112,152 @@
         }
       }
     },
+    "/v1/cloud-security/findings/{findingId}/exception": {
+      "post": {
+        "operationId": "CloudSecurityController_markFindingAsException_v1",
+        "parameters": [
+          {
+            "name": "findingId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MarkExceptionDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "summary": "Mark a finding as an exception so it no longer appears in the active Scan Results list",
+        "tags": [
+          "CloudSecurity"
+        ],
+        "description": "Mark a finding as an exception so it no longer appears in the active Scan Results list in Comp AI. Run AWS, Azure, and GCP cloud security scans, detect enabled services, review findings, and connect cloud posture results to compliance work.",
+        "x-mint": {
+          "metadata": {
+            "title": "Mark a finding as an exception so it no | Comp AI API",
+            "sidebarTitle": "Mark a finding as an exception so it no longer appears in the active Scan Results list",
+            "description": "Mark a finding as an exception so it no longer appears in the active Scan Results list in Comp AI. Run AWS, Azure, and GCP cloud security scans, detect.",
+            "og:title": "Mark a finding as an exception so it no | Comp AI API",
+            "og:description": "Mark a finding as an exception so it no longer appears in the active Scan Results list in Comp AI. Run AWS, Azure, and GCP cloud security scans, detect."
+          }
+        }
+      }
+    },
+    "/v1/cloud-security/exceptions/{exceptionId}": {
+      "delete": {
+        "operationId": "CloudSecurityController_revokeException_v1",
+        "parameters": [
+          {
+            "name": "exceptionId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "summary": "Revoke an exception, reopening the finding",
+        "tags": [
+          "CloudSecurity"
+        ],
+        "description": "Revoke an exception, reopening the finding in Comp AI. Run AWS, Azure, and GCP cloud security scans, detect enabled services, review findings, and connect cloud posture results to compliance work.",
+        "x-mint": {
+          "metadata": {
+            "title": "Revoke an exception, reopening the finding | Comp AI API",
+            "sidebarTitle": "Revoke an exception, reopening the finding",
+            "description": "Revoke an exception, reopening the finding in Comp AI. Run AWS, Azure, and GCP cloud security scans, detect enabled services, review findings, and connect.",
+            "og:title": "Revoke an exception, reopening the finding | Comp AI API",
+            "og:description": "Revoke an exception, reopening the finding in Comp AI. Run AWS, Azure, and GCP cloud security scans, detect enabled services, review findings, and connect."
+          }
+        }
+      }
+    },
+    "/v1/cloud-security/history": {
+      "get": {
+        "operationId": "CloudSecurityController_getHistory_v1",
+        "parameters": [
+          {
+            "name": "connectionId",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "summary": "List resolution, exception, and regression history for a connection",
+        "tags": [
+          "CloudSecurity"
+        ],
+        "description": "List resolution, exception, and regression history for a connection in Comp AI. Run AWS, Azure, and GCP cloud security scans, detect enabled services, review findings, and connect cloud posture results to compliance work.",
+        "x-mint": {
+          "metadata": {
+            "title": "List resolution, exception, and regression | Comp AI API",
+            "sidebarTitle": "List resolution, exception, and regression history for a connection",
+            "description": "List resolution, exception, and regression history for a connection in Comp AI. Run AWS, Azure, and GCP cloud security scans, detect enabled services.",
+            "og:title": "List resolution, exception, and regression | Comp AI API",
+            "og:description": "List resolution, exception, and regression history for a connection in Comp AI. Run AWS, Azure, and GCP cloud security scans, detect enabled services."
+          }
+        }
+      }
+    },
+    "/v1/cloud-security/findings/{findingId}/check-definition": {
+      "get": {
+        "operationId": "CloudSecurityController_getCheckDefinition_v1",
+        "parameters": [
+          {
+            "name": "findingId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "summary": "Resolve the \"About this check\" description for a finding (AI-cached for AWS; provider-derived for GCP/Azure)",
+        "tags": [
+          "CloudSecurity"
+        ],
+        "description": "Resolve the \"About this check\" description for a finding (AI-cached for AWS; provider-derived for GCP/Azure) in Comp AI. Run AWS, Azure, and GCP cloud security scans, detect enabled services, review findings, and connect cloud posture.",
+        "x-mint": {
+          "metadata": {
+            "title": "Resolve the \"About this check\" description | Comp AI API",
+            "sidebarTitle": "Resolve the \"About this check\" description for a finding (AI-cached for AWS; provider-derived for GCP/Azure)",
+            "description": "Resolve the \"About this check\" description for a finding (AI-cached for AWS; provider-derived for GCP/Azure) in Comp AI. Run AWS, Azure, and GCP cloud.",
+            "og:title": "Resolve the \"About this check\" description | Comp AI API",
+            "og:description": "Resolve the \"About this check\" description for a finding (AI-cached for AWS; provider-derived for GCP/Azure) in Comp AI. Run AWS, Azure, and GCP cloud."
+          }
+        }
+      }
+    },
     "/v1/cloud-security/scan/{connectionId}": {
       "post": {
         "operationId": "CloudSecurityController_scan_v1",
@@ -20414,6 +20561,14 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "name": "frameworkInstanceId",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
           }
         ],
         "responses": {
@@ -20490,6 +20645,14 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "name": "frameworkInstanceId",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
           }
         ],
         "requestBody": {
@@ -20536,6 +20699,14 @@
             "name": "id",
             "required": true,
             "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "frameworkInstanceId",
+            "required": true,
+            "in": "query",
             "schema": {
               "type": "string"
             }
@@ -20637,6 +20808,14 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "name": "frameworkInstanceId",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
           }
         ],
         "requestBody": {
@@ -20691,6 +20870,14 @@
             "name": "formType",
             "required": true,
             "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "frameworkInstanceId",
+            "required": true,
+            "in": "query",
             "schema": {
               "type": "string"
             }
@@ -21627,6 +21814,16 @@
             "type": "boolean",
             "description": "When true, this member is exempt from the org-level background check requirement and will count as complete in people scores.",
             "example": false
+          },
+          "backgroundCheckExemptReason": {
+            "type": "string",
+            "description": "Reason code for the exemption (e.g. \"contractor_with_vendor_check\", \"other\"). Persisted alongside backgroundCheckExempt and cleared when the member becomes non-exempt.",
+            "example": "other"
+          },
+          "backgroundCheckExemptJustification": {
+            "type": "string",
+            "description": "Free-text justification for the exemption, attached to the audit log. Cleared when the member becomes non-exempt.",
+            "example": "Contractor with existing background check on file from staffing agency."
           }
         }
       },
@@ -23757,7 +23954,8 @@
               "task",
               "vendor",
               "risk",
-              "policy"
+              "policy",
+              "finding"
             ],
             "example": "task"
           },
@@ -24422,6 +24620,29 @@
       "ExportSOADocumentDto": {
         "type": "object",
         "properties": {}
+      },
+      "MarkExceptionDto": {
+        "type": "object",
+        "properties": {
+          "reason": {
+            "type": "string",
+            "description": "Documentation for why this finding does not apply or is being accepted. Minimum 20 non-whitespace characters.",
+            "example": "Bucket hosts intentionally public marketing assets; writes restricted to the marketing IAM role."
+          },
+          "reviewedBy": {
+            "type": "string",
+            "description": "Free-text reviewer or approval reference.",
+            "example": "Approved by CISO 2026-Q1"
+          },
+          "expiresAt": {
+            "type": "string",
+            "description": "ISO date when this exception should auto-expire. Null/missing = never.",
+            "example": "2026-08-13"
+          }
+        },
+        "required": [
+          "reason"
+        ]
       },
       "TaskItemAssigneeDto": {
         "type": "object",

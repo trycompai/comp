@@ -6,7 +6,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "file=\"$CLAUDE_FILE_PATH\"; if echo \"$file\" | grep -qE '\\.(ts|tsx)$' && echo \"$file\" | grep -qE '^(apps/api|apps/app)/'; then echo 'TypeScript file modified — remember to run typecheck before committing'; fi"
+            "command": "file=\"$CLAUDE_FILE_PATH\"; if echo \"$file\" | grep -qE '\\.(ts|tsx)$' && echo \"$file\" | grep -qE '^(apps/|packages/)'; then echo 'TypeScript file modified — run the cleanup skill and typecheck before committing'; fi"
           }
         ]
       },

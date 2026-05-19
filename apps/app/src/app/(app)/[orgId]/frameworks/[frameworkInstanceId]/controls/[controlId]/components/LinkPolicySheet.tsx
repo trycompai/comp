@@ -20,9 +20,11 @@ import { useControlOptions } from './useControlOptions';
 
 export function LinkPolicySheet({
   controlId,
+  frameworkInstanceId,
   alreadyLinkedPolicyIds,
 }: {
   controlId: string;
+  frameworkInstanceId: string;
   alreadyLinkedPolicyIds: string[];
 }) {
   const { hasPermission } = usePermissions();
@@ -61,7 +63,7 @@ export function LinkPolicySheet({
     setIsSubmitting(true);
     try {
       const response = await apiClient.post(
-        `/v1/controls/${controlId}/policies/link`,
+        `/v1/controls/${controlId}/policies/link?frameworkInstanceId=${frameworkInstanceId}`,
         { policyIds: Array.from(selected) },
       );
       if (response.error) throw new Error(response.error);

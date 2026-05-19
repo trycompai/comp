@@ -10,6 +10,7 @@ import {
   TabsTrigger,
 } from '@trycompai/design-system';
 import { Add } from '@trycompai/design-system/icons';
+import type { Role } from '@db';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import type { ReactNode } from 'react';
 import { useCallback, useState } from 'react';
@@ -28,6 +29,7 @@ interface PeoplePageTabsProps {
   showSettings: boolean;
   canInviteUsers: boolean;
   canManageMembers: boolean;
+  allowedBuiltInRoles: Role[];
   organizationId: string;
 }
 
@@ -89,6 +91,7 @@ export function PeoplePageTabs({
   showSettings,
   canInviteUsers,
   canManageMembers,
+  allowedBuiltInRoles,
   organizationId,
 }: PeoplePageTabsProps) {
   const pathname = usePathname();
@@ -164,9 +167,7 @@ export function PeoplePageTabs({
         open={isInviteModalOpen}
         onOpenChange={setIsInviteModalOpen}
         organizationId={organizationId}
-        allowedBuiltInRoles={
-          canManageMembers ? ['admin', 'auditor', 'employee', 'contractor'] : ['auditor']
-        }
+        allowedBuiltInRoles={allowedBuiltInRoles}
       />
     </Tabs>
   );

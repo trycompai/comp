@@ -61,6 +61,10 @@ model Organization {
   integrationConnections IntegrationConnection[]
   integrationOAuthApps   IntegrationOAuthApp[]
   integrationSyncLogs    IntegrationSyncLog[]
+  checkDefinitions       CheckDefinition[]
+  findingExceptions      FindingException[]
+  findingResolutions     FindingResolution[]
+  findingRegressions     FindingRegression[]
 
   // Pentest credits — wallet of run-credits an org can spend.
   // Source of credits (trial / future Stripe subscription / top-up)

@@ -24,4 +24,9 @@ export class CreateControlTemplateDto {
   @IsString({ each: true })
   @IsOptional()
   documentTypes?: string[];
+
+  @ApiPropertyOptional({ example: 'frk_soc2' })
+  @IsString()
+  @IsOptional()
+  frameworkId?: string;
 }

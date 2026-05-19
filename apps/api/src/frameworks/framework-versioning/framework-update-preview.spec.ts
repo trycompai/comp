@@ -5,6 +5,10 @@ const empty: FrameworkManifest = {
   framework: { id: 'f', name: 'n', catalogVersion: '1', description: null },
   requirements: [], controls: [], policies: [], tasks: [],
 };
+const labels = {
+  fromVersionLabel: { id: 'fvr_1', version: '1.0.0' },
+  toVersionLabel: { id: 'fvr_2', version: '1.1.0' },
+};
 
 describe('buildUpdatePreview', () => {
   it('classifies added control', () => {
@@ -14,6 +18,7 @@ describe('buildUpdatePreview', () => {
       instanceControls: [],
       instanceTasks: [],
       instancePolicies: [],
+      ...labels,
     });
     expect(preview.controls.added).toHaveLength(1);
     expect(preview.controls.archived).toHaveLength(0);
@@ -26,6 +31,7 @@ describe('buildUpdatePreview', () => {
       instanceControls: [{ id: 'ctl_1', controlTemplateId: 'c1', name: 'C', description: 'd' }],
       instanceTasks: [],
       instancePolicies: [],
+      ...labels,
     });
     expect(preview.controls.archived).toHaveLength(1);
   });
@@ -37,6 +43,7 @@ describe('buildUpdatePreview', () => {
       instanceControls: [{ id: 'ctl_1', controlTemplateId: 'c1', name: 'Old', description: 'd' }],
       instanceTasks: [],
       instancePolicies: [],
+      ...labels,
     });
     expect(preview.controls.updatedApplied).toHaveLength(1);
     expect(preview.controls.updatedPreserved).toHaveLength(0);
@@ -49,6 +56,7 @@ describe('buildUpdatePreview', () => {
       instanceControls: [{ id: 'ctl_1', controlTemplateId: 'c1', name: 'My edit', description: 'd' }],
       instanceTasks: [],
       instancePolicies: [],
+      ...labels,
     });
     expect(preview.controls.updatedPreserved).toHaveLength(1);
     expect(preview.controls.updatedApplied).toHaveLength(0);

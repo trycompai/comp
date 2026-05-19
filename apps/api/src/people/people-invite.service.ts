@@ -2,7 +2,6 @@ import {
   Injectable,
   Logger,
   BadRequestException,
-  ForbiddenException,
 } from '@nestjs/common';
 import { db } from '@db';
 import { triggerEmail } from '../email/trigger-email';
@@ -10,7 +9,10 @@ import { InviteEmail } from '../email/templates/invite-member';
 import { InvitePortalEmail } from '@trycompai/email';
 import {
   BUILT_IN_ROLE_OBLIGATIONS,
-  RESTRICTED_ROLES,
+  BUILT_IN_ROLE_PERMISSIONS,
+  isRestrictedRole,
+  parseRoleObligations,
+  parseRolePermissions,
 } from '@trycompai/auth';
 import type { InviteItemDto } from './dto/invite-people.dto';
 import { checkAutoCompletePhases } from '../frameworks/frameworks-timeline.helper';
@@ -37,38 +39,26 @@ export class PeopleInviteService {
   }): Promise<InviteResult[]> {
     const { organizationId, invites, callerUserId, callerRole } = params;
 
-    const isAdmin =
-      callerRole.includes('admin') || callerRole.includes('owner');
-    const isAuditor = callerRole.includes('auditor');
-
-    if (!isAdmin && !isAuditor) {
-      throw new ForbiddenException(
-        "You don't have permission to invite members.",
-      );
-    }
+    const callerMemberActions = await this.resolveCallerMemberActions(
+      callerRole,
+      organizationId,
+    );
 
     const results: InviteResult[] = [];
 
     for (const invite of invites) {
       try {
-        // Auditors can only invite auditors
-        if (isAuditor && !isAdmin) {
-          const onlyAuditor =
-            invite.roles.length === 1 && invite.roles[0] === 'auditor';
-          if (!onlyAuditor) {
-            results.push({
-              email: invite.email,
-              success: false,
-              error: "Auditors can only invite users with the 'auditor' role.",
-            });
-            continue;
-          }
+        const roleError = this.validateAssignableRoles(
+          invite.roles,
+          callerMemberActions,
+        );
+        if (roleError) {
+          results.push({ email: invite.email, success: false, error: roleError });
+          continue;
         }
 
         const email = invite.email.toLowerCase();
-        const restrictedRoles: readonly string[] = RESTRICTED_ROLES;
-        const isStrictlyEmployee =
-          invite.roles.every((role) => restrictedRoles.includes(role));
+        const isStrictlyEmployee = invite.roles.every(isRestrictedRole);
 
         const hasCompliance = await this.rolesHaveComplianceObligation(
           invite.roles,
@@ -76,6 +66,10 @@ export class PeopleInviteService {
         );
         const shouldSendPortalEmail =
           !!invite.sendPortalEmail && hasCompliance;
+        const shouldSendAppEmail = await this.rolesHaveAppAccess(
+          invite.roles,
+          organizationId,
+        );
 
         if (isStrictlyEmployee) {
           const result = await this.addEmployeeWithoutInvite(
@@ -90,13 +84,14 @@ export class PeopleInviteService {
             emailSent: result.emailSent,
           });
         } else {
-          await this.inviteWithCheck(
+          await this.inviteWithCheck({
             email,
-            invite.roles,
+            roles: invite.roles,
             organizationId,
-            callerUserId,
-            shouldSendPortalEmail,
-          );
+            currentUserId: callerUserId,
+            sendPortalEmail: shouldSendPortalEmail,
+            sendAppEmail: shouldSendAppEmail,
+          });
           results.push({ email: invite.email, success: true });
         }
       } catch (error) {
@@ -221,13 +216,23 @@ export class PeopleInviteService {
     return { emailSent };
   }
 
-  private async inviteWithCheck(
-    email: string,
-    roles: string[],
-    organizationId: string,
-    currentUserId: string,
-    sendPortalEmail?: boolean,
-  ): Promise<void> {
+  private async inviteWithCheck(params: {
+    email: string;
+    roles: string[];
+    organizationId: string;
+    currentUserId: string;
+    sendPortalEmail?: boolean;
+    sendAppEmail?: boolean;
+  }): Promise<void> {
+    const {
+      email,
+      roles,
+      organizationId,
+      currentUserId,
+      sendPortalEmail,
+      sendAppEmail,
+    } = params;
+
     const existingUser = await db.user.findFirst({
       where: { email: { equals: email, mode: 'insensitive' } },
     });
@@ -247,19 +252,18 @@ export class PeopleInviteService {
           return;
         }
 
-        // Active member — send invitation email
-        await this.sendInvitationEmailToExistingMember(
+        await this.sendInvitationEmailToExistingMember({
           email,
           roles,
           organizationId,
-          currentUserId,
+          inviterId: currentUserId,
           sendPortalEmail,
-        );
+          sendAppEmail,
+        });
         return;
       }
     }
 
-    // User doesn't exist or isn't a member — create invitation and send email
     const roleString = roles.join(',');
     const organization = await db.organization.findUnique({
       where: { id: organizationId },
@@ -281,34 +285,33 @@ export class PeopleInviteService {
       },
     });
 
-    if (sendPortalEmail) {
-      const inviteLink = this.buildPortalUrl(organizationId);
-      await triggerEmail({
-        to: email,
-        subject: `You've been invited to join ${organization.name} on Comp AI`,
-        react: InvitePortalEmail({
-          organizationName: organization.name,
-          inviteLink,
-          email,
-        }),
-      });
-    } else {
-      const inviteLink = this.buildInviteLink(invitation.id);
-      await triggerEmail({
-        to: email,
-        subject: `You've been invited to join ${organization.name} on Comp AI`,
-        react: InviteEmail({ organizationName: organization.name, inviteLink }),
-      });
-    }
+    await this.sendInviteEmails({
+      email,
+      organizationName: organization.name,
+      sendPortalEmail,
+      sendAppEmail,
+      portalLink: this.buildPortalUrl(organizationId),
+      appLink: this.buildInviteLink(invitation.id),
+    });
   }
 
-  private async sendInvitationEmailToExistingMember(
-    email: string,
-    roles: string[],
-    organizationId: string,
-    inviterId: string,
-    sendPortalEmail?: boolean,
-  ): Promise<void> {
+  private async sendInvitationEmailToExistingMember(params: {
+    email: string;
+    roles: string[];
+    organizationId: string;
+    inviterId: string;
+    sendPortalEmail?: boolean;
+    sendAppEmail?: boolean;
+  }): Promise<void> {
+    const {
+      email,
+      roles,
+      organizationId,
+      inviterId,
+      sendPortalEmail,
+      sendAppEmail,
+    } = params;
+
     const organization = await db.organization.findUnique({
       where: { id: organizationId },
       select: { name: true },
@@ -329,25 +332,14 @@ export class PeopleInviteService {
       },
     });
 
-    if (sendPortalEmail) {
-      const inviteLink = this.buildPortalUrl(organizationId);
-      await triggerEmail({
-        to: email.toLowerCase(),
-        subject: `You've been invited to join ${organization.name} on Comp AI`,
-        react: InvitePortalEmail({
-          organizationName: organization.name,
-          inviteLink,
-          email: email.toLowerCase(),
-        }),
-      });
-    } else {
-      const inviteLink = this.buildInviteLink(invitation.id);
-      await triggerEmail({
-        to: email.toLowerCase(),
-        subject: `You've been invited to join ${organization.name} on Comp AI`,
-        react: InviteEmail({ organizationName: organization.name, inviteLink }),
-      });
-    }
+    await this.sendInviteEmails({
+      email: email.toLowerCase(),
+      organizationName: organization.name,
+      sendPortalEmail,
+      sendAppEmail,
+      portalLink: this.buildPortalUrl(organizationId),
+      appLink: this.buildInviteLink(invitation.id),
+    });
   }
 
   async resendPortalInvite(params: {
@@ -417,6 +409,81 @@ export class PeopleInviteService {
     });
   }
 
+  private async sendInviteEmails(params: {
+    email: string;
+    organizationName: string;
+    sendPortalEmail?: boolean;
+    sendAppEmail?: boolean;
+    portalLink: string;
+    appLink: string;
+  }): Promise<void> {
+    const {
+      email,
+      organizationName,
+      sendPortalEmail,
+      sendAppEmail,
+      portalLink,
+      appLink,
+    } = params;
+
+    if (sendAppEmail) {
+      await triggerEmail({
+        to: email,
+        subject: `You've been invited to join ${organizationName} on Comp AI`,
+        react: InviteEmail({
+          organizationName,
+          inviteLink: appLink,
+          portalLink: sendPortalEmail ? portalLink : undefined,
+        }),
+      });
+    } else if (sendPortalEmail) {
+      await triggerEmail({
+        to: email,
+        subject: `You've been invited to join ${organizationName} on Comp AI`,
+        react: InvitePortalEmail({
+          organizationName,
+          inviteLink: portalLink,
+          email,
+        }),
+      });
+    } else {
+      await triggerEmail({
+        to: email,
+        subject: `You've been invited to join ${organizationName} on Comp AI`,
+        react: InviteEmail({
+          organizationName,
+          inviteLink: appLink,
+        }),
+      });
+    }
+  }
+
+  private async rolesHaveAppAccess(
+    roles: string[],
+    organizationId: string,
+  ): Promise<boolean> {
+    for (const role of roles) {
+      if (BUILT_IN_ROLE_PERMISSIONS[role]?.app) return true;
+    }
+
+    const customRoleNames = roles.filter(
+      (r) => !BUILT_IN_ROLE_PERMISSIONS[r],
+    );
+    if (customRoleNames.length === 0) return false;
+
+    const customRoles = await db.organizationRole.findMany({
+      where: {
+        organizationId,
+        name: { in: customRoleNames },
+      },
+      select: { permissions: true },
+    });
+
+    return customRoles.some((role) =>
+      parseRolePermissions(role.permissions)?.app,
+    );
+  }
+
   private async rolesHaveComplianceObligation(
     roles: string[],
     organizationId: string,
@@ -436,13 +503,64 @@ export class PeopleInviteService {
       select: { obligations: true },
     });
 
-    return customRoles.some((role) => {
-      const obligations =
-        typeof role.obligations === 'string'
-          ? JSON.parse(role.obligations)
-          : role.obligations || {};
-      return !!obligations.compliance;
-    });
+    return customRoles.some((role) =>
+      parseRoleObligations(role.obligations).compliance,
+    );
+  }
+
+  /**
+   * Write-level = all CRUD actions. Callers with Write can assign any role.
+   * Partial access (e.g. auditor with create+read) can only assign
+   * restricted roles (employee/contractor) and custom roles.
+   */
+  private validateAssignableRoles(
+    targetRoles: string[],
+    callerMemberActions: Set<string>,
+  ): string | null {
+    const hasWriteAccess = ['create', 'read', 'update', 'delete'].every((a) =>
+      callerMemberActions.has(a),
+    );
+    if (hasWriteAccess) return null;
+
+    const disallowed = targetRoles.filter(
+      (r) => !isRestrictedRole(r) && Object.hasOwn(BUILT_IN_ROLE_PERMISSIONS, r),
+    );
+    if (disallowed.length > 0) {
+      return `You cannot assign privileged roles: ${disallowed.join(', ')}.`;
+    }
+    return null;
+  }
+
+  private async resolveCallerMemberActions(
+    callerRole: string,
+    organizationId: string,
+  ): Promise<Set<string>> {
+    const roles = callerRole.split(',').map((r) => r.trim());
+    const actions = new Set<string>();
+    const customRoleNames: string[] = [];
+
+    for (const role of roles) {
+      const builtIn = BUILT_IN_ROLE_PERMISSIONS[role];
+      if (builtIn?.member) {
+        for (const a of builtIn.member) actions.add(a);
+      }
+      if (!builtIn) customRoleNames.push(role);
+    }
+
+    if (customRoleNames.length > 0) {
+      const customRoles = await db.organizationRole.findMany({
+        where: { organizationId, name: { in: customRoleNames } },
+        select: { permissions: true },
+      });
+      for (const role of customRoles) {
+        const perms = parseRolePermissions(role.permissions);
+        if (perms?.member) {
+          for (const a of perms.member) actions.add(a);
+        }
+      }
+    }
+
+    return actions;
   }
 
   private buildPortalUrl(organizationId: string): string {

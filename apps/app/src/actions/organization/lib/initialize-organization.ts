@@ -312,6 +312,9 @@ export const _upsertOrgFrameworkStructureCore = async ({
   const controlToPolicyPairs: Array<{ controlId: string; policyId: string }> = [];
   const controlToTaskPairs: Array<{ controlId: string; taskId: string }> = [];
   const controlDocumentTypeEntries: Prisma.ControlDocumentTypeCreateManyInput[] = [];
+  const frameworkControlPolicyEntries: Prisma.FrameworkControlPolicyLinkCreateManyInput[] = [];
+  const frameworkControlTaskEntries: Prisma.FrameworkControlTaskLinkCreateManyInput[] = [];
+  const frameworkControlDocumentTypeEntries: Prisma.FrameworkControlDocumentTypeLinkCreateManyInput[] = [];
   const controlTemplateById = new Map(controlTemplates.map((c) => [c.id, c]));
 
   for (const controlTemplateRelation of groupedControlTemplateRelations) {
@@ -326,33 +329,28 @@ export const _upsertOrgFrameworkStructureCore = async ({
       continue;
     }
 
-    for (const reqTemplateId of controlTemplateRelation.requirementTemplateIds) {
-      const frameworkEditorFrameworkIdForReq = requirementToFrameworkId.get(reqTemplateId);
-      const frameworkInstanceId = frameworkEditorFrameworkIdForReq
-        ? editorFrameworkIdToInstanceIdMap.get(frameworkEditorFrameworkIdForReq)
-        : undefined;
+    const frameworkInstanceId = editorFrameworkIdToInstanceIdMap.get(
+      controlTemplateRelation.frameworkId,
+    );
+    if (!frameworkInstanceId) continue;
 
-      if (frameworkInstanceId) {
-        requirementMapEntriesToCreate.push({
-          controlId: newControlId,
-          requirementId: reqTemplateId,
-          frameworkInstanceId: frameworkInstanceId,
-        });
-      } else {
-        console.warn(
-          `UpsertOrgFrameworkStructureCore: Could not find FrameworkInstanceId for editor requirement ID ${reqTemplateId}. Cannot create RequirementMap for Control ${newControlId}.`,
-        );
-      }
+    for (const reqTemplateId of controlTemplateRelation.requirementTemplateIds) {
+      requirementMapEntriesToCreate.push({
+        controlId: newControlId,
+        requirementId: reqTemplateId,
+        frameworkInstanceId,
+      });
     }
 
     for (const policyTemplateId of controlTemplateRelation.policyTemplateIds) {
       const newPolicyId = policyTemplateIdToInstanceIdMap.get(policyTemplateId);
       if (newPolicyId) {
         controlToPolicyPairs.push({ controlId: newControlId, policyId: newPolicyId });
-      } else {
-        console.warn(
-          `UpsertOrgFrameworkStructureCore: Policy instance not found for template ID ${policyTemplateId}. Cannot connect to Control ${newControlId}.`,
-        );
+        frameworkControlPolicyEntries.push({
+          frameworkInstanceId,
+          controlId: newControlId,
+          policyId: newPolicyId,
+        });
       }
     }
 
@@ -360,20 +358,24 @@ export const _upsertOrgFrameworkStructureCore = async ({
       const newTaskId = taskTemplateIdToInstanceIdMap.get(taskTemplateId);
       if (newTaskId) {
         controlToTaskPairs.push({ controlId: newControlId, taskId: newTaskId });
-      } else {
-        console.warn(
-          `UpsertOrgFrameworkStructureCore: Task instance not found for template ID ${taskTemplateId}. Cannot connect to Control ${newControlId}.`,
-        );
+        frameworkControlTaskEntries.push({
+          frameworkInstanceId,
+          controlId: newControlId,
+          taskId: newTaskId,
+        });
       }
     }
 
-    // ControlDocumentType: explicit junction rows driven from manifest/live
-    // documentTypes so the org starts with the same evidence form types the
-    // published version specified. Deduped against existing rows via the
-    // unique constraint.
-    const ct = controlTemplateById.get(controlTemplateRelation.controlTemplateId);
-    for (const formType of ct?.documentTypes ?? []) {
+    const documentTypes = controlTemplateRelation.documentTypes.length > 0
+      ? controlTemplateRelation.documentTypes
+      : (controlTemplateById.get(controlTemplateRelation.controlTemplateId)?.documentTypes ?? []);
+    for (const formType of documentTypes) {
       controlDocumentTypeEntries.push({ controlId: newControlId, formType });
+      frameworkControlDocumentTypeEntries.push({
+        frameworkInstanceId,
+        controlId: newControlId,
+        formType,
+      });
     }
   }
 
@@ -418,6 +420,27 @@ export const _upsertOrgFrameworkStructureCore = async ({
   if (controlDocumentTypeEntries.length > 0) {
     await tx.controlDocumentType.createMany({
       data: controlDocumentTypeEntries,
+      skipDuplicates: true,
+    });
+  }
+
+  if (frameworkControlPolicyEntries.length > 0) {
+    await tx.frameworkControlPolicyLink.createMany({
+      data: frameworkControlPolicyEntries,
+      skipDuplicates: true,
+    });
+  }
+
+  if (frameworkControlTaskEntries.length > 0) {
+    await tx.frameworkControlTaskLink.createMany({
+      data: frameworkControlTaskEntries,
+      skipDuplicates: true,
+    });
+  }
+
+  if (frameworkControlDocumentTypeEntries.length > 0) {
+    await tx.frameworkControlDocumentTypeLink.createMany({
+      data: frameworkControlDocumentTypeEntries,
       skipDuplicates: true,
     });
   }

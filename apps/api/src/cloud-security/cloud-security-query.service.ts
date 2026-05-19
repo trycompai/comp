@@ -1,11 +1,20 @@
 import { Injectable } from '@nestjs/common';
 import { db } from '@db';
 import { getManifest } from '@trycompai/integration-platform';
+import { sanitizeEvidence } from './evidence-sanitizer';
+import { getLegacyFindings } from './cloud-security-query.legacy';
+import { normalizeCheckId } from './check-definition.utils';
+import type {
+  CloudFinding,
+  CloudProvider,
+  CloudProviderLatestRun,
+} from './cloud-security-query.types';
+
+// Re-export so existing imports of CloudProvider/CloudFinding from the service
+// path keep working (the controller imports them).
+export type { CloudFinding, CloudProvider, CloudProviderLatestRun };
 
 const CLOUD_PROVIDER_SLUGS = ['aws', 'gcp', 'azure'] as const;
-
-/** Scan window for filtering legacy results to latest scan only */
-const SCAN_WINDOW_MS = 10 * 60 * 1000; // 10 minutes
 
 /** Extract project ID from a GCP resource path like //iam.googleapis.com/projects/my-proj/... */
 function extractProjectIdFromResource(
@@ -14,45 +23,6 @@ function extractProjectIdFromResource(
   if (!resourceId) return null;
   const match = resourceId.match(/\/projects\/([^/]+)/);
   return match?.[1] ?? null;
-}
-
-export interface CloudProvider {
-  id: string;
-  integrationId: string;
-  name: string;
-  displayName?: string;
-  organizationId: string;
-  lastRunAt: Date | null;
-  status: string;
-  createdAt: Date;
-  updatedAt: Date;
-  reconnectedAt?: Date;
-  isLegacy: boolean;
-  variables: Record<string, unknown> | null;
-  requiredVariables: string[];
-  accountId?: string;
-  awsType?: string;
-  regions?: string[];
-  tenantId?: string;
-  subscriptionId?: string;
-  supportsMultipleConnections?: boolean;
-}
-
-export interface CloudFinding {
-  id: string;
-  title: string | null;
-  description: string | null;
-  remediation: string | null;
-  status: string | null;
-  severity: string | null;
-  completedAt: Date | null;
-  connectionId: string;
-  providerSlug: string;
-  serviceId: string | null;
-  findingKey: string | null;
-  resourceId: string | null;
-  projectDisplayName: string | null;
-  integration: { integrationId: string };
 }
 
 /** Get required variables from manifest (both manifest-level and check-level) */
@@ -103,6 +73,12 @@ export class CloudSecurityQueryService {
       (CLOUD_PROVIDER_SLUGS as readonly string[]).includes(i.integrationId),
     );
 
+    // Per-connection latest scan summary for new-platform connections — one
+    // query, distinct-by-connection so we get only the most recent run each.
+    const latestRunByConnection = await this.getLatestRunsByConnection(
+      newConnections.map((c) => c.id),
+    );
+
     // Map new connections
     const newProviders: CloudProvider[] = newConnections.map((conn) => {
       const metadata = (conn.metadata || {}) as Record<string, unknown>;
@@ -147,6 +123,7 @@ export class CloudSecurityQueryService {
             : undefined,
         supportsMultipleConnections:
           manifest?.supportsMultipleConnections ?? false,
+        latestRun: latestRunByConnection.get(conn.id) ?? null,
       };
     });
 
@@ -187,21 +164,107 @@ export class CloudSecurityQueryService {
             : undefined,
         supportsMultipleConnections:
           manifest?.supportsMultipleConnections ?? false,
+        latestRun: integration.lastRunAt
+          ? {
+              completedAt: integration.lastRunAt,
+              durationMs: null,
+              totalChecked: null,
+              passedCount: null,
+              failedCount: null,
+              status: 'success',
+            }
+          : null,
       };
     });
 
     return [...newProviders, ...legacyProviders];
   }
 
-  async getFindings(organizationId: string): Promise<CloudFinding[]> {
-    const newFindings = await this.getNewPlatformFindings(organizationId);
-    const legacyFindings = await this.getLegacyFindings(organizationId);
+  async getFindings(
+    organizationId: string,
+    options: { includeExceptions?: boolean } = {},
+  ): Promise<CloudFinding[]> {
+    const [newFindings, legacyFindings] = await Promise.all([
+      this.getNewPlatformFindings(organizationId),
+      getLegacyFindings(organizationId),
+    ]);
 
-    return [...newFindings, ...legacyFindings].sort((a, b) => {
+    const combined = [...newFindings, ...legacyFindings].sort((a, b) => {
       const dateA = a.completedAt ? new Date(a.completedAt).getTime() : 0;
       const dateB = b.completedAt ? new Date(b.completedAt).getTime() : 0;
       return dateB - dateA;
     });
+
+    if (options.includeExceptions) return combined;
+
+    // Filter out findings under an active (non-revoked, non-expired)
+    // FindingException. Looked up in one query keyed by org so the cost
+    // stays constant regardless of finding count.
+    const activeExceptionKeys = await this.loadActiveExceptionKeys(organizationId);
+    if (activeExceptionKeys.size === 0) return combined;
+
+    return combined.filter((finding) => {
+      if (!finding.checkKey || !finding.resourceId) return true;
+      const key = `${finding.connectionId}::${finding.checkKey}::${finding.resourceId}`;
+      return !activeExceptionKeys.has(key);
+    });
+  }
+
+  /**
+   * Return the set of (connectionId, checkId, resourceId) tuples that have
+   * an active exception in this org. One DB query per getFindings call.
+   */
+  private async loadActiveExceptionKeys(
+    organizationId: string,
+  ): Promise<Set<string>> {
+    const active = await db.findingException.findMany({
+      where: {
+        organizationId,
+        revokedAt: null,
+        OR: [{ expiresAt: null }, { expiresAt: { gt: new Date() } }],
+      },
+      select: { connectionId: true, checkId: true, resourceId: true },
+    });
+    return new Set(
+      active.map((e) => `${e.connectionId}::${e.checkId}::${e.resourceId}`),
+    );
+  }
+
+  private async getLatestRunsByConnection(
+    connectionIds: string[],
+  ): Promise<Map<string, CloudProviderLatestRun>> {
+    if (connectionIds.length === 0) return new Map();
+
+    const runs = await db.integrationCheckRun.findMany({
+      where: {
+        connectionId: { in: connectionIds },
+        status: { in: ['success', 'failed'] },
+      },
+      orderBy: { completedAt: 'desc' },
+      distinct: ['connectionId'],
+      select: {
+        connectionId: true,
+        completedAt: true,
+        durationMs: true,
+        totalChecked: true,
+        passedCount: true,
+        failedCount: true,
+        status: true,
+      },
+    });
+
+    const map = new Map<string, CloudProviderLatestRun>();
+    for (const run of runs) {
+      map.set(run.connectionId, {
+        completedAt: run.completedAt,
+        durationMs: run.durationMs,
+        totalChecked: run.totalChecked,
+        passedCount: run.passedCount,
+        failedCount: run.failedCount,
+        status: run.status,
+      });
+    }
+    return map;
   }
 
   private async getNewPlatformFindings(
@@ -242,7 +305,12 @@ export class CloudSecurityQueryService {
       },
       orderBy: { completedAt: 'desc' },
       distinct: ['connectionId'],
-      select: { id: true, connectionId: true, status: true },
+      select: {
+        id: true,
+        connectionId: true,
+        status: true,
+        checkId: true,
+      },
     });
 
     const latestRunIds = latestRuns.map((r) => r.id);
@@ -263,6 +331,7 @@ export class CloudSecurityQueryService {
         passed: true,
         evidence: true,
         resourceId: true,
+        resourceType: true,
       },
       orderBy: { collectedAt: 'desc' },
     });
@@ -272,7 +341,14 @@ export class CloudSecurityQueryService {
       const slug = checkRun
         ? connectionToSlug[checkRun.connectionId] || 'unknown'
         : 'unknown';
-      const evidence = (result.evidence ?? {}) as Record<string, unknown>;
+      const rawEvidence = (result.evidence ?? {}) as Record<string, unknown>;
+      // Read service/finding hints from raw evidence BEFORE sanitization — these
+      // are non-sensitive metadata fields the UI groups and filters by.
+      const serviceId = (rawEvidence.serviceId as string) ?? null;
+      const findingKey = (rawEvidence.findingKey as string) ?? null;
+      const projectDisplayNameFromEvidence = rawEvidence.projectDisplayName as
+        | string
+        | undefined;
       return {
         id: result.id,
         title: result.title,
@@ -283,14 +359,19 @@ export class CloudSecurityQueryService {
         completedAt: result.collectedAt,
         connectionId: checkRun?.connectionId ?? '',
         providerSlug: slug,
-        serviceId: (evidence.serviceId as string) ?? null,
-        findingKey: (evidence.findingKey as string) ?? null,
+        serviceId,
+        findingKey,
         resourceId: result.resourceId ?? null,
+        resourceType: result.resourceType ?? null,
+        checkId: checkRun?.checkId ?? null,
+        checkKey: findingKey
+          ? normalizeCheckId(findingKey, result.resourceId)
+          : null,
+        evidence: sanitizeEvidence(result.evidence ?? null),
         projectDisplayName: (() => {
-          const fromEvidence = evidence.projectDisplayName as
-            | string
-            | undefined;
-          if (fromEvidence) return fromEvidence;
+          if (projectDisplayNameFromEvidence) {
+            return projectDisplayNameFromEvidence;
+          }
           const projectId = extractProjectIdFromResource(result.resourceId);
           if (!projectId) return null;
           return projectNameMap.get(projectId) ?? projectId;
@@ -298,72 +379,5 @@ export class CloudSecurityQueryService {
         integration: { integrationId: slug },
       };
     });
-  }
-
-  private async getLegacyFindings(
-    organizationId: string,
-  ): Promise<CloudFinding[]> {
-    const legacyIntegrations = await db.integration.findMany({
-      where: { organizationId },
-    });
-
-    const activeLegacy = legacyIntegrations.filter((i) =>
-      (CLOUD_PROVIDER_SLUGS as readonly string[]).includes(i.integrationId),
-    );
-
-    const legacyIds = activeLegacy.map((i) => i.id);
-    if (legacyIds.length === 0) return [];
-
-    const lastRunMap = new Map(
-      activeLegacy.filter((i) => i.lastRunAt).map((i) => [i.id, i.lastRunAt!]),
-    );
-
-    const results = await db.integrationResult.findMany({
-      where: { integrationId: { in: legacyIds } },
-      select: {
-        id: true,
-        title: true,
-        description: true,
-        remediation: true,
-        status: true,
-        severity: true,
-        completedAt: true,
-        integration: {
-          select: { integrationId: true, id: true, lastRunAt: true },
-        },
-      },
-      orderBy: { completedAt: 'desc' },
-    });
-
-    // Filter to only include results from the most recent scan
-    const filtered = results.filter((result) => {
-      const lastRunAt = lastRunMap.get(result.integration.id);
-      if (!lastRunAt) return result.completedAt !== null;
-      if (!result.completedAt) return false;
-
-      const lastRunTime = lastRunAt.getTime();
-      const completedTime = result.completedAt.getTime();
-      return (
-        completedTime <= lastRunTime &&
-        completedTime >= lastRunTime - SCAN_WINDOW_MS
-      );
-    });
-
-    return filtered.map((result) => ({
-      id: result.id,
-      title: result.title,
-      description: result.description,
-      remediation: result.remediation,
-      status: result.status,
-      severity: result.severity,
-      completedAt: result.completedAt,
-      connectionId: result.integration.id,
-      providerSlug: result.integration.integrationId,
-      serviceId: null,
-      findingKey: null,
-      resourceId: null,
-      projectDisplayName: null,
-      integration: { integrationId: result.integration.integrationId },
-    }));
   }
 }

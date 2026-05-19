@@ -57,6 +57,9 @@ export async function applySync(
     controlDocumentTypes: { created: [], deleted: [] },
     controlPolicyLinks: { connected: [], disconnected: [] },
     controlTaskLinks: { connected: [], disconnected: [] },
+    frameworkControlPolicyLinks: { connected: [], disconnected: [] },
+    frameworkControlTaskLinks: { connected: [], disconnected: [] },
+    frameworkControlDocumentTypeLinks: { connected: [], disconnected: [] },
   };
   const summary: SyncSummary = {
     controlsAdded: 0, controlsArchived: 0, controlsUpdatedApplied: 0, controlsUpdatedPreserved: 0,
@@ -309,19 +312,46 @@ export async function applySync(
         `
       : [];
   const existingCpKey = new Set(existingCp.map((r) => `${r.A}::${r.B}`));
+  const existingScopedCp = await tx.frameworkControlPolicyLink.findMany({
+    where: { frameworkInstanceId: ctx.instance.id, controlId: { in: ctlInstIds } },
+    select: { controlId: true, policyId: true },
+  });
+  const existingScopedCpKey = new Set(
+    existingScopedCp.map((r) => `${r.controlId}::${r.policyId}`),
+  );
 
   const cpAdded: Array<{ controlId: string; policyId: string }> = [];
+  const scopedCpAdded: Array<{ controlId: string; policyId: string }> = [];
   for (const c of to.controls) {
     const ctlInst = ctlByTemplate.get(c.id);
     if (!ctlInst) continue;
     for (const pid of c.policyIds) {
       const polInst = polByTemplate.get(pid);
       if (!polInst) continue;
-      if (existingCpKey.has(`${ctlInst.id}::${polInst.id}`)) continue;
+      const key = `${ctlInst.id}::${polInst.id}`;
+      if (!existingScopedCpKey.has(key)) {
+        scopedCpAdded.push({ controlId: ctlInst.id, policyId: polInst.id });
+        undo.frameworkControlPolicyLinks?.connected.push({
+          controlId: ctlInst.id,
+          otherId: polInst.id,
+        });
+        existingScopedCpKey.add(key);
+      }
+      if (existingCpKey.has(key)) continue;
       cpAdded.push({ controlId: ctlInst.id, policyId: polInst.id });
       undo.controlPolicyLinks.connected.push({ controlId: ctlInst.id, otherId: polInst.id });
-      existingCpKey.add(`${ctlInst.id}::${polInst.id}`);
+      existingCpKey.add(key);
     }
+  }
+  if (scopedCpAdded.length > 0) {
+    await tx.frameworkControlPolicyLink.createMany({
+      data: scopedCpAdded.map(({ controlId, policyId }) => ({
+        frameworkInstanceId: ctx.instance.id,
+        controlId,
+        policyId,
+      })),
+      skipDuplicates: true,
+    });
   }
   if (cpAdded.length > 0) {
     const rows = Prisma.join(
@@ -331,19 +361,23 @@ export async function applySync(
   }
 
   // Diff-based removal: only edges v1 claimed and v2 dropped.
-  const cpRemoved: Array<{ controlId: string; policyId: string }> = [];
   for (const edge of diff.controlPolicyEdges.removed) {
     const ctlInst = ctlByTemplate.get(edge.controlTemplateId);
     const polInst = polByTemplate.get(edge.policyTemplateId);
     if (!ctlInst || !polInst) continue;
-    cpRemoved.push({ controlId: ctlInst.id, policyId: polInst.id });
-    undo.controlPolicyLinks.disconnected.push({ controlId: ctlInst.id, otherId: polInst.id });
-  }
-  if (cpRemoved.length > 0) {
-    const pairs = Prisma.join(
-      cpRemoved.map(({ controlId, policyId }) => Prisma.sql`(${controlId}::text, ${policyId}::text)`),
-    );
-    await tx.$executeRaw`DELETE FROM "_ControlToPolicy" WHERE ("A", "B") IN (${pairs})`;
+    const deleted = await tx.frameworkControlPolicyLink.deleteMany({
+      where: {
+        frameworkInstanceId: ctx.instance.id,
+        controlId: ctlInst.id,
+        policyId: polInst.id,
+      },
+    });
+    if (deleted.count > 0) {
+      undo.frameworkControlPolicyLinks?.disconnected.push({
+        controlId: ctlInst.id,
+        otherId: polInst.id,
+      });
+    }
   }
 
   const existingCt =
@@ -354,19 +388,46 @@ export async function applySync(
         `
       : [];
   const existingCtKey = new Set(existingCt.map((r) => `${r.A}::${r.B}`));
+  const existingScopedCt = await tx.frameworkControlTaskLink.findMany({
+    where: { frameworkInstanceId: ctx.instance.id, controlId: { in: ctlInstIds } },
+    select: { controlId: true, taskId: true },
+  });
+  const existingScopedCtKey = new Set(
+    existingScopedCt.map((r) => `${r.controlId}::${r.taskId}`),
+  );
 
   const ctAdded: Array<{ controlId: string; taskId: string }> = [];
+  const scopedCtAdded: Array<{ controlId: string; taskId: string }> = [];
   for (const c of to.controls) {
     const ctlInst = ctlByTemplate.get(c.id);
     if (!ctlInst) continue;
     for (const tid of c.taskIds) {
       const tInst = taskByTemplate.get(tid);
       if (!tInst) continue;
-      if (existingCtKey.has(`${ctlInst.id}::${tInst.id}`)) continue;
+      const key = `${ctlInst.id}::${tInst.id}`;
+      if (!existingScopedCtKey.has(key)) {
+        scopedCtAdded.push({ controlId: ctlInst.id, taskId: tInst.id });
+        undo.frameworkControlTaskLinks?.connected.push({
+          controlId: ctlInst.id,
+          otherId: tInst.id,
+        });
+        existingScopedCtKey.add(key);
+      }
+      if (existingCtKey.has(key)) continue;
       ctAdded.push({ controlId: ctlInst.id, taskId: tInst.id });
       undo.controlTaskLinks.connected.push({ controlId: ctlInst.id, otherId: tInst.id });
-      existingCtKey.add(`${ctlInst.id}::${tInst.id}`);
+      existingCtKey.add(key);
     }
+  }
+  if (scopedCtAdded.length > 0) {
+    await tx.frameworkControlTaskLink.createMany({
+      data: scopedCtAdded.map(({ controlId, taskId }) => ({
+        frameworkInstanceId: ctx.instance.id,
+        controlId,
+        taskId,
+      })),
+      skipDuplicates: true,
+    });
   }
   if (ctAdded.length > 0) {
     const rows = Prisma.join(
@@ -375,19 +436,23 @@ export async function applySync(
     await tx.$executeRaw`INSERT INTO "_ControlToTask" ("A", "B") VALUES ${rows} ON CONFLICT ("A", "B") DO NOTHING`;
   }
 
-  const ctRemoved: Array<{ controlId: string; taskId: string }> = [];
   for (const edge of diff.controlTaskEdges.removed) {
     const ctlInst = ctlByTemplate.get(edge.controlTemplateId);
     const tInst = taskByTemplate.get(edge.taskTemplateId);
     if (!ctlInst || !tInst) continue;
-    ctRemoved.push({ controlId: ctlInst.id, taskId: tInst.id });
-    undo.controlTaskLinks.disconnected.push({ controlId: ctlInst.id, otherId: tInst.id });
-  }
-  if (ctRemoved.length > 0) {
-    const pairs = Prisma.join(
-      ctRemoved.map(({ controlId, taskId }) => Prisma.sql`(${controlId}::text, ${taskId}::text)`),
-    );
-    await tx.$executeRaw`DELETE FROM "_ControlToTask" WHERE ("A", "B") IN (${pairs})`;
+    const deleted = await tx.frameworkControlTaskLink.deleteMany({
+      where: {
+        frameworkInstanceId: ctx.instance.id,
+        controlId: ctlInst.id,
+        taskId: tInst.id,
+      },
+    });
+    if (deleted.count > 0) {
+      undo.frameworkControlTaskLinks?.disconnected.push({
+        controlId: ctlInst.id,
+        otherId: tInst.id,
+      });
+    }
   }
 
   // --- Control <-> DocumentType (explicit junction table ControlDocumentType) ---
@@ -402,6 +467,29 @@ export async function applySync(
     if (!ctlInst) continue;
     for (const rawFormType of c.documentTypes ?? []) {
       const formType = normalizeFormType(rawFormType);
+      const scopedExisting = await tx.frameworkControlDocumentTypeLink.findUnique({
+        where: {
+          frameworkInstanceId_controlId_formType: {
+            frameworkInstanceId: ctx.instance.id,
+            controlId: ctlInst.id,
+            formType: formType as never,
+          },
+        },
+        select: { id: true },
+      });
+      if (!scopedExisting) {
+        await tx.frameworkControlDocumentTypeLink.create({
+          data: {
+            frameworkInstanceId: ctx.instance.id,
+            controlId: ctlInst.id,
+            formType: formType as never,
+          },
+        });
+        undo.frameworkControlDocumentTypeLinks?.connected.push({
+          controlId: ctlInst.id,
+          otherId: formType,
+        });
+      }
       const existing = await tx.controlDocumentType.findUnique({
         where: { controlId_formType: { controlId: ctlInst.id, formType: formType as never } },
         select: { id: true },
@@ -418,14 +506,20 @@ export async function applySync(
     const ctlInst = ctlByTemplate.get(edge.controlTemplateId);
     if (!ctlInst) continue;
     const formType = normalizeFormType(edge.formType);
-    const existing = await tx.controlDocumentType.findUnique({
-      where: { controlId_formType: { controlId: ctlInst.id, formType: formType as never } },
-      select: { id: true },
+    const deleted = await tx.frameworkControlDocumentTypeLink.deleteMany({
+      where: {
+        frameworkInstanceId: ctx.instance.id,
+        controlId: ctlInst.id,
+        formType: formType as never,
+      },
     });
-    if (!existing) continue;
-    await tx.controlDocumentType.delete({ where: { id: existing.id } });
-    undo.controlDocumentTypes.deleted.push({ controlId: ctlInst.id, formType });
-    summary.controlDocumentTypesArchived += 1;
+    if (deleted.count > 0) {
+      undo.frameworkControlDocumentTypeLinks?.disconnected.push({
+        controlId: ctlInst.id,
+        otherId: formType,
+      });
+      summary.controlDocumentTypesArchived += 1;
+    }
   }
 
   // --- Persist sync op + update currentVersionId ---
