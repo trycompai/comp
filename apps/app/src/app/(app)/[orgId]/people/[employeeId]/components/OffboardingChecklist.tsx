@@ -111,10 +111,11 @@ export function OffboardingChecklist({
     <Stack gap="6">
       {offboardDate && (
         <OffboardingSummaryCard
+          memberId={memberId}
           offboardDate={offboardDate}
           totalItems={checklist.totalItems}
           completedItems={checklist.completedItems}
-          evidence={checklist.items.flatMap((item) => item.evidence)}
+          hasEvidence={checklist.items.some((item) => item.evidence.length > 0)}
         />
       )}
 

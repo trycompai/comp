@@ -6,9 +6,12 @@ import {
   Delete,
   Body,
   Param,
+  Res,
   UseGuards,
 } from '@nestjs/common';
 import { ApiOperation, ApiParam, ApiSecurity, ApiTags } from '@nestjs/swagger';
+import { db } from '@db';
+import type { Response } from 'express';
 import { AuthContext, OrganizationId } from '../auth/auth-context.decorator';
 import { HybridAuthGuard } from '../auth/hybrid-auth.guard';
 import { PermissionGuard } from '../auth/permission.guard';
@@ -16,6 +19,7 @@ import { RequirePermission } from '../auth/require-permission.decorator';
 import type { AuthContext as AuthContextType } from '../auth/types';
 import { UploadAttachmentDto } from '../attachments/upload-attachment.dto';
 import { OffboardingChecklistService } from './offboarding-checklist.service';
+import { OffboardingExportService } from './offboarding-export.service';
 import { CreateTemplateItemDto } from './dto/create-template-item.dto';
 import { UpdateTemplateItemDto } from './dto/update-template-item.dto';
 import { CompleteChecklistItemDto } from './dto/complete-checklist-item.dto';
@@ -27,6 +31,7 @@ import { CompleteChecklistItemDto } from './dto/complete-checklist-item.dto';
 export class OffboardingChecklistController {
   constructor(
     private readonly offboardingChecklistService: OffboardingChecklistService,
+    private readonly offboardingExportService: OffboardingExportService,
   ) {}
 
   @Get('pending')
@@ -94,6 +99,38 @@ export class OffboardingChecklistController {
       organizationId,
       memberId,
     );
+  }
+
+  @Get('member/:memberId/export')
+  @RequirePermission('member', 'read')
+  @ApiOperation({ summary: 'Export offboarding evidence as a zip file' })
+  @ApiParam({ name: 'memberId', description: 'Member ID' })
+  async exportEvidence(
+    @Param('memberId') memberId: string,
+    @OrganizationId() organizationId: string,
+    @Res() res: Response,
+  ) {
+    const member = await db.member.findFirst({
+      where: { id: memberId, organizationId },
+      include: { user: { select: { name: true } } },
+    });
+
+    const safeName = (member?.user.name ?? 'member').replace(
+      /[^a-zA-Z0-9]/g,
+      '-',
+    );
+    const date = new Date().toISOString().split('T')[0];
+
+    res.set({
+      'Content-Type': 'application/zip',
+      'Content-Disposition': `attachment; filename="offboarding-${safeName}-${date}.zip"`,
+    });
+
+    await this.offboardingExportService.exportMemberEvidence({
+      organizationId,
+      memberId,
+      output: res,
+    });
   }
 
   @Post('member/:memberId/item/:templateItemId/complete')

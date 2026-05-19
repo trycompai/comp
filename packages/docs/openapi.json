@@ -21520,6 +21520,46 @@
         ]
       }
     },
+    "/v1/offboarding-checklist/member/{memberId}/export": {
+      "get": {
+        "operationId": "OffboardingChecklistController_exportEvidence_v1",
+        "parameters": [
+          {
+            "name": "memberId",
+            "required": true,
+            "in": "path",
+            "description": "Member ID",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Export offboarding evidence as a zip file",
+        "tags": [
+          "Offboarding Checklist"
+        ],
+        "description": "Export offboarding evidence as a zip file in Comp AI.",
+        "x-mint": {
+          "metadata": {
+            "title": "Export offboarding evidence as a zip file | Comp AI API",
+            "sidebarTitle": "Export offboarding evidence as a zip file",
+            "description": "Export offboarding evidence as a zip file in Comp AI.",
+            "og:title": "Export offboarding evidence as a zip file | Comp AI API",
+            "og:description": "Export offboarding evidence as a zip file in Comp AI."
+          }
+        }
+      }
+    },
     "/v1/offboarding-checklist/member/{memberId}/item/{templateItemId}/complete": {
       "post": {
         "operationId": "OffboardingChecklistController_completeItem_v1",
@@ -21686,6 +21726,46 @@
         }
       }
     },
+    "/v1/offboarding-checklist/member/{memberId}/access-revocations/confirm-all": {
+      "post": {
+        "operationId": "OffboardingChecklistController_revokeAllVendorAccess_v1",
+        "parameters": [
+          {
+            "name": "memberId",
+            "required": true,
+            "in": "path",
+            "description": "Member ID",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Confirm all vendor access as revoked",
+        "tags": [
+          "Offboarding Checklist"
+        ],
+        "description": "Confirm all vendor access as revoked in Comp AI.",
+        "x-mint": {
+          "metadata": {
+            "title": "Confirm all vendor access as revoked | Comp AI API",
+            "sidebarTitle": "Confirm all vendor access as revoked",
+            "description": "Confirm all vendor access as revoked in Comp AI.",
+            "og:title": "Confirm all vendor access as revoked | Comp AI API",
+            "og:description": "Confirm all vendor access as revoked in Comp AI."
+          }
+        }
+      }
+    },
     "/v1/offboarding-checklist/member/{memberId}/access-revocations/{vendorId}": {
       "post": {
         "operationId": "OffboardingChecklistController_revokeVendorAccess_v1",
@@ -21778,46 +21858,6 @@
             "description": "Undo vendor access revocation in Comp AI.",
             "og:title": "Undo vendor access revocation | Comp AI API",
             "og:description": "Undo vendor access revocation in Comp AI."
-          }
-        }
-      }
-    },
-    "/v1/offboarding-checklist/member/{memberId}/access-revocations/confirm-all": {
-      "post": {
-        "operationId": "OffboardingChecklistController_revokeAllVendorAccess_v1",
-        "parameters": [
-          {
-            "name": "memberId",
-            "required": true,
-            "in": "path",
-            "description": "Member ID",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "201": {
-            "description": ""
-          }
-        },
-        "security": [
-          {
-            "apikey": []
-          }
-        ],
-        "summary": "Confirm all vendor access as revoked",
-        "tags": [
-          "Offboarding Checklist"
-        ],
-        "description": "Confirm all vendor access as revoked in Comp AI.",
-        "x-mint": {
-          "metadata": {
-            "title": "Confirm all vendor access as revoked | Comp AI API",
-            "sidebarTitle": "Confirm all vendor access as revoked",
-            "description": "Confirm all vendor access as revoked in Comp AI.",
-            "og:title": "Confirm all vendor access as revoked | Comp AI API",
-            "og:description": "Confirm all vendor access as revoked in Comp AI."
           }
         }
       }
