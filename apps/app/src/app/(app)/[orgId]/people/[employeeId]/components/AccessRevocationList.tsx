@@ -297,6 +297,7 @@ interface RevokedVendorRowProps {
   vendor: {
     vendorId: string;
     vendorName: string;
+    logoUrl?: string | null;
     revokedAt: string | null;
     revokedBy: { id: string; name: string; email: string } | null;
     evidence?: { id: string; name: string; downloadUrl: string }[];
