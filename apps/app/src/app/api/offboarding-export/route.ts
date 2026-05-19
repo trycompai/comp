@@ -21,9 +21,14 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: 'memberId or all=true required' }, { status: 400 });
   }
 
-  const response = await fetch(endpoint, {
-    headers: { cookie: cookieHeader },
-  });
+  let response: Response;
+  try {
+    response = await fetch(endpoint, {
+      headers: { cookie: cookieHeader },
+    });
+  } catch {
+    return NextResponse.json({ error: 'Export service unavailable' }, { status: 502 });
+  }
 
   if (!response.ok) {
     return NextResponse.json(

@@ -203,6 +203,7 @@ export function OffboardingChecklistItem({
   };
 
   const handleFileUpload = async (file: File) => {
+    if (isProcessing) return;
     setIsProcessing(true);
     try {
       if (!item.completed) {
