@@ -8,6 +8,36 @@ const emailQueue = queue({
   concurrencyLimit: 10,
 });
 
+export const emailChannelSchema = z.enum([
+  'marketing',
+  'system',
+  'trustPortal',
+  'default',
+]);
+export type EmailChannel = z.infer<typeof emailChannelSchema>;
+
+function resolveFromAddressForChannel(
+  channel: EmailChannel | undefined,
+): string | undefined {
+  const fromMarketing = process.env.RESEND_FROM_MARKETING;
+  const fromSystem = process.env.RESEND_FROM_SYSTEM;
+  const fromDefault = process.env.RESEND_FROM_DEFAULT;
+  const fromTrustPortal = process.env.RESEND_FROM_TRUST_PORTAL;
+
+  switch (channel) {
+    case 'trustPortal':
+      return fromTrustPortal ?? fromSystem;
+    case 'marketing':
+      return fromMarketing;
+    case 'system':
+      return fromSystem;
+    case 'default':
+      return fromDefault;
+    default:
+      return undefined;
+  }
+}
+
 export const sendEmailTask = schemaTask({
   id: 'send-email',
   queue: emailQueue,
@@ -18,6 +48,7 @@ export const sendEmailTask = schemaTask({
     to: z.string(),
     subject: z.string(),
     html: z.string(),
+    channel: emailChannelSchema.optional(),
     from: z.string().optional(),
     cc: z.union([z.string(), z.array(z.string())]).optional(),
     scheduledAt: z.string().optional(),
@@ -40,11 +71,15 @@ export const sendEmailTask = schemaTask({
       throw new Error('Resend not initialized - missing API key');
     }
 
+    const toTest = process.env.RESEND_TO_TEST;
     const fromSystem = process.env.RESEND_FROM_SYSTEM;
     const fromDefault = process.env.RESEND_FROM_DEFAULT;
-    const toTest = process.env.RESEND_TO_TEST;
 
-    const fromAddress = params.from ?? fromSystem ?? fromDefault;
+    const fromAddress =
+      params.from ??
+      resolveFromAddressForChannel(params.channel) ??
+      fromSystem ??
+      fromDefault;
     const toAddress = toTest ?? params.to;
 
     if (!fromAddress) {

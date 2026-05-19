@@ -1,0 +1,132 @@
+// Cloud-tests audit trail models — record what was fixed, what is
+// intentionally accepted (exceptions), and what regressed. Surfaces in the
+// History tab so auditors can see the journey, not just current state.
+
+/// A customer-declared exception saying "this finding does not apply / is
+/// intentional / risk accepted, with this reason". Removes the finding
+/// from the active list until revoked or expired.
+///
+/// Required reason captures the documentation an auditor needs. Optional
+/// `reviewedBy` (free text — name or process) and `expiresAt` (auto-review
+/// date) give the customer a way to keep exceptions honest.
+model FindingException {
+  id             String       @id @default(dbgenerated("generate_prefixed_cuid('fex'::text)"))
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  connectionId String
+  connection   IntegrationConnection @relation(fields: [connectionId], references: [id], onDelete: Cascade)
+
+  /// Normalized check identifier (e.g. "iam-no-mfa") — matches CloudFinding.checkKey.
+  checkId String
+  /// Per-resource (e.g. user name, bucket name) — same source as CloudFinding.resourceId.
+  resourceId String
+
+  /// Required, min ~20 chars enforced at the service layer.
+  reason String
+  /// Optional free-text — e.g. "approved by CISO 2026-Q1".
+  reviewedBy String?
+  /// Optional. null = never expires. If set, getFindings re-introduces the
+  /// finding to the active list on the first scan after this date.
+  expiresAt DateTime?
+
+  markedById String
+  markedAt   DateTime @default(now())
+
+  /// Set when the exception is revoked manually (separate from natural expiry).
+  revokedAt   DateTime?
+  revokedById String?
+
+  /// At most one row per (org, connection, check, resource). Re-marking
+  /// after revoke updates the same row (revokedAt cleared, fields refreshed)
+  /// so the audit history lives in AuditLog rather than duplicate FindingException
+  /// rows. Guarantees DB-level dedupe under concurrent mark-as-exception.
+  @@unique([organizationId, connectionId, checkId, resourceId])
+
+  @@index([organizationId])
+  @@index([connectionId])
+  @@index([expiresAt])
+}
+
+/// One row per "finding stopped failing" event — written by reconciliation
+/// after each scan. The `resolutionMethod` distinguishes a platform fix
+/// (we did it via the AI Fix button) from external (customer fixed in the
+/// provider console), resource deletion, or an exception being marked.
+model FindingResolution {
+  id             String       @id @default(dbgenerated("generate_prefixed_cuid('fres'::text)"))
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  connectionId String
+  connection   IntegrationConnection @relation(fields: [connectionId], references: [id], onDelete: Cascade)
+
+  /// Identity of the resolved finding (matches CloudFinding.checkKey + resourceId).
+  checkId      String
+  resourceId   String
+  resourceType String?
+
+  resolvedAt       DateTime
+  resolutionMethod FindingResolutionMethod
+  /// Only set for `platform_fix`. Identifies the user who clicked Fix.
+  resolvedById        String?
+  /// Only set for `platform_fix`. Links to the successful RemediationAction.
+  remediationActionId String?
+
+  /// Run-id pair lets the UI link "the prior scan that was failing" to
+  /// "the current scan that's clean", reproducible from the audit log.
+  resolvedFromRunId String
+  detectedInRunId   String
+  /// How long the finding was open before being resolved.
+  daysOpen Int?
+
+  /// Back-relation: regressions that reference this as the prior fix.
+  regressions FindingRegression[]
+
+  @@index([organizationId])
+  @@index([connectionId])
+  @@index([resolvedAt])
+  @@index([resolutionMethod])
+  @@index([checkId, resourceId])
+}
+
+enum FindingResolutionMethod {
+  /// Resolved by our Fix button — RemediationAction shows what was applied.
+  platform_fix
+  /// Resolved outside the platform (customer fixed in the AWS console, etc.).
+  external_fix
+  /// Resource no longer exists in the provider — finding is moot.
+  resource_deleted
+  /// User marked this finding as an exception. Filtered, not actually fixed.
+  exception_marked
+}
+
+/// A finding that was previously resolved but is now failing again. The
+/// History tab uses this to surface "fix didn't stick" patterns to auditors.
+model FindingRegression {
+  id             String       @id @default(dbgenerated("generate_prefixed_cuid('freg'::text)"))
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  connectionId String
+  connection   IntegrationConnection @relation(fields: [connectionId], references: [id], onDelete: Cascade)
+
+  checkId    String
+  resourceId String
+
+  previouslyResolvedAt DateTime
+  /// Optional FK to the FindingResolution that introduced the prior fix.
+  /// `onDelete: SetNull` so deleting a resolution leaves the regression
+  /// intact but clears the dangling reference.
+  previousResolutionId String?
+  previousResolution   FindingResolution? @relation(fields: [previousResolutionId], references: [id], onDelete: SetNull)
+
+  regressedAt     DateTime
+  detectedInRunId String
+  /// Days between the last resolution and this regression.
+  daysClean Int?
+
+  @@index([organizationId])
+  @@index([connectionId])
+  @@index([regressedAt])
+  @@index([checkId, resourceId])
+}
