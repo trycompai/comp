@@ -205,6 +205,11 @@ export function CloudTestsSection({
     guidedSteps?: string[];
     risk?: string;
     description?: string;
+    // Set when the finding came from AWS Security Hub — surfaces a
+    // disclosure banner in the Fix dialog since the AI plan is generated
+    // from AWS's remediation text (quality varies) and SecHub re-evaluates
+    // findings on its own schedule.
+    fromSecurityHub?: boolean;
   } | null>(null);
   const [showSetupDialog, setShowSetupDialog] = useState(false);
   const { hasPermission } = usePermissions();
@@ -813,6 +818,7 @@ export function CloudTestsSection({
                                   checkResultId: finding.id,
                                   remediationKey: key,
                                   findingTitle: finding.title ?? 'Finding',
+                                  fromSecurityHub: finding.serviceId === 'security-hub',
                                 })
                               }
                               onSetup={() => setShowSetupDialog(true)}
@@ -918,6 +924,7 @@ export function CloudTestsSection({
                                   checkResultId: finding.id,
                                   remediationKey: key,
                                   findingTitle: finding.title ?? 'Finding',
+                                  fromSecurityHub: finding.serviceId === 'security-hub',
                                 })
                               }
                               onSetup={() => setShowSetupDialog(true)}
@@ -1066,6 +1073,7 @@ export function CloudTestsSection({
           guidedSteps={remediationTarget.guidedSteps}
           risk={remediationTarget.risk}
           description={remediationTarget.description}
+          fromSecurityHub={remediationTarget.fromSecurityHub}
           onComplete={() => {
             toast.message('Re-scanning to verify fix...');
             handleRunScan();

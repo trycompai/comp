@@ -22,10 +22,17 @@ vi.mock('@/hooks/use-api', () => ({
   }),
 }));
 
-// Mock useIntegrationMutations
+// Mock useIntegrationMutations + useIntegrationConnection (the latter is
+// used by the AWS scan-mode settings section).
 vi.mock('@/hooks/use-integration-platform', () => ({
   useIntegrationMutations: () => ({
     deleteConnection: vi.fn(),
+  }),
+  useIntegrationConnection: () => ({
+    connection: { id: 'conn_test', metadata: {} },
+    isLoading: false,
+    error: undefined,
+    refresh: vi.fn(),
   }),
 }));
 
