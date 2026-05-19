@@ -415,7 +415,12 @@ export function FindingDetailSheet({
                 Comments
               </Text>
               {finding ? (
-                <Comments entityId={finding.id} entityType="finding" />
+                <Comments
+                  entityId={finding.id}
+                  entityType="finding"
+                  organizationId={organizationId}
+                  readOnly={!canUpdate}
+                />
               ) : null}
             </Stack>
 
