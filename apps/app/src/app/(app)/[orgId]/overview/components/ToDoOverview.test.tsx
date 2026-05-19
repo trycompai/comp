@@ -74,6 +74,11 @@ vi.mock('lucide-react', () => ({
   NotebookText: () => <span data-testid="notebook-icon" />,
   Play: () => <span data-testid="play-icon" />,
   Upload: () => <span data-testid="upload-icon" />,
+  UserMinus: () => <span data-testid="user-minus-icon" />,
+}));
+
+vi.mock('@/hooks/use-api-swr', () => ({
+  useApiSWR: () => ({ data: { data: { members: [] } }, isLoading: false }),
 }));
 
 import { ToDoOverview } from './ToDoOverview';
@@ -220,13 +225,16 @@ describe('ToDoOverview', () => {
       ).not.toBeInTheDocument();
     });
 
-    it('renders tab triggers for policies and tasks', () => {
+    it('renders tab triggers for policies, tasks, and offboarding', () => {
       setMockPermissions(ADMIN_PERMISSIONS);
 
       render(<ToDoOverview {...defaultProps} />);
 
       expect(screen.getByTestId('tab-trigger-policies')).toBeInTheDocument();
       expect(screen.getByTestId('tab-trigger-tasks')).toBeInTheDocument();
+      expect(
+        screen.getByTestId('tab-trigger-offboarding'),
+      ).toBeInTheDocument();
     });
   });
 });
