@@ -9,6 +9,7 @@ import { AWSSecurityService } from './providers/aws-security.service';
 import { AzureSecurityService } from './providers/azure-security.service';
 import { AWS_SERVICE_TASK_MAPPINGS } from './aws-task-mappings';
 import { CloudReconciliationService } from './reconciliation.service';
+import { type AwsScanMode, resolveAwsScanMode } from './aws-scan-mode';
 
 export interface SecurityFinding {
   id: string;
@@ -245,6 +246,11 @@ export class CloudSecurityService {
         }
       }
 
+      // AWS-only — which engine produced this scan. Persisted on the run
+      // so reconciliation only diffs like-for-like (cross-mode findingKeys
+      // live in different namespaces). Null for GCP / Azure runs.
+      let awsScanMode: AwsScanMode | null = null;
+
       switch (providerSlug) {
         case 'gcp':
           findings = await this.gcpService.scanSecurityFindings(
@@ -253,13 +259,21 @@ export class CloudSecurityService {
             enabledServices,
           );
           break;
-        case 'aws':
+        case 'aws': {
+          // AWS scan-mode lives on connection.metadata (non-secret, frontend-
+          // readable); credentials are encrypted blobs intended for the AWS
+          // SDK. Read from metadata so a single source of truth.
+          const metadata =
+            (connection.metadata as Record<string, unknown> | null) ?? {};
+          awsScanMode = resolveAwsScanMode(metadata.awsScanMode);
           findings = await this.awsService.scanSecurityFindings(
             credentials,
             variables,
             enabledServices,
+            awsScanMode,
           );
           break;
+        }
         case 'azure':
           findings = await this.azureService.scanSecurityFindings(
             credentials,
@@ -282,6 +296,7 @@ export class CloudSecurityService {
         connectionId,
         providerSlug,
         findings,
+        awsScanMode,
       );
 
       // Reconcile against the prior scan to record resolutions and regressions.
@@ -573,6 +588,9 @@ export class CloudSecurityService {
     connectionId: string,
     provider: string,
     findings: SecurityFinding[],
+    // AWS only — which engine produced these findings. Stored on the run so
+    // reconciliation can avoid cross-mode diffs. Null for GCP / Azure runs.
+    awsScanMode: AwsScanMode | null,
   ): Promise<string> {
     const passedCount = findings.filter((f) => f.passed).length;
     const failedCount = findings.filter((f) => !f.passed).length;
@@ -607,6 +625,7 @@ export class CloudSecurityService {
           passedCount,
           failedCount,
           scannedServices,
+          scanMode: awsScanMode,
         },
       });
 

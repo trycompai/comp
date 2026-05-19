@@ -47,6 +47,11 @@ export class CloudReconciliationService {
         startedAt: true,
         status: true,
         scannedServices: true,
+        // Used below to scope the prior-run lookup. AWS connections can
+        // switch between 'comp_scanners' and 'security_hub' modes; the two
+        // engines produce findingKeys in completely different namespaces,
+        // so cross-mode diffs would produce garbage resolutions.
+        scanMode: true,
         connection: { select: { organizationId: true } },
         results: {
           select: {
@@ -90,6 +95,16 @@ export class CloudReconciliationService {
         id: { not: currentRun.id },
         status: 'success',
         completedAt: { lt: currentRun.completedAt ?? currentRun.startedAt ?? new Date() },
+        // Only compare runs that used the same scan engine. The two AWS
+        // modes ('comp_scanners' vs 'security_hub') emit findingKeys in
+        // different namespaces — cross-mode diffs would mark every
+        // prior-mode finding as "resolved", which would be a lie. After a
+        // mode switch, the next scan finds no matching prior run and is
+        // treated as a fresh baseline (same as a first-ever scan).
+        //
+        // Null scanMode matches null scanMode — pre-feature historical
+        // runs (and all GCP/Azure runs) reconcile against each other.
+        scanMode: currentRun.scanMode,
       },
       orderBy: { completedAt: 'desc' },
       select: {

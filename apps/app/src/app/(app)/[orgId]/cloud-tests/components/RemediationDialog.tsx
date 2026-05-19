@@ -42,6 +42,14 @@ interface RemediationDialogProps {
   guidedSteps?: string[];
   risk?: string;
   description?: string;
+  /**
+   * True when the underlying finding came from AWS Security Hub rather
+   * than one of our service adapters. Surfaces a disclosure banner —
+   * SecHub remediation text quality varies and SecHub re-evaluates
+   * findings on its own schedule, so the customer should verify in the
+   * AWS console after applying.
+   */
+  fromSecurityHub?: boolean;
   onComplete?: () => void;
 }
 
@@ -85,6 +93,33 @@ function RichText({ text }: { text: string }) {
         ) : (<span key={i}>{part}</span>),
       )}
     </p>
+  );
+}
+
+/**
+ * Disclosure shown in the Fix dialog when the underlying finding came
+ * from AWS Security Hub. Two things customers need to know that aren't
+ * true for our own adapter findings:
+ *
+ *   1. AI fix plans are generated from AWS's remediation text, which
+ *      varies in specificity. The plan may need adjustment after
+ *      reviewing in the AWS console.
+ *   2. Security Hub re-evaluates findings on its own schedule (hours,
+ *      not minutes). After a successful Fix, the SecHub-side finding
+ *      may take time to clear even though the underlying issue is gone.
+ */
+function SecurityHubFixDisclosure() {
+  return (
+    <div className="rounded-md border border-amber-200 bg-amber-50 p-3 text-xs text-amber-900 dark:border-amber-900/40 dark:bg-amber-950/30 dark:text-amber-200">
+      <p className="font-medium">Security Hub finding</p>
+      <p className="mt-1 leading-relaxed">
+        This fix was generated from AWS Security Hub remediation
+        guidance. Verify the result in your AWS console after applying —
+        Security Hub re-evaluates findings on its own schedule, so the
+        finding may take a few hours to clear there even after a
+        successful fix.
+      </p>
+    </div>
   );
 }
 
@@ -270,6 +305,7 @@ export function RemediationDialog({
   guidedSteps,
   risk,
   description,
+  fromSecurityHub,
   onComplete,
 }: RemediationDialogProps) {
   const [preview, setPreview] = useState<PreviewData | null>(null);
@@ -467,6 +503,8 @@ export function RemediationDialog({
             {findingTitle}
           </DialogDescription>
         </DialogHeader>
+
+        {fromSecurityHub && <SecurityHubFixDisclosure />}
 
         <div className="space-y-3 min-w-0">
           {/* Applying state — shown while executing */}

@@ -301,4 +301,89 @@ describe('CloudReconciliationService.reconcile', () => {
       }),
     );
   });
+
+  describe('scanMode safety — only diffs same-mode runs', () => {
+    it('passes scanMode from current run into the prior-run lookup', async () => {
+      // When SecHub mode is active, reconciliation must look up the prior
+      // SecHub run — not the prior comp_scanners run, which would mark
+      // every SecHub finding as "new" and every comp_scanners finding as
+      // "resolved" (both wrong).
+      dbMock.integrationCheckRun.findUnique.mockResolvedValueOnce({
+        id: 'icr_current',
+        connectionId: 'icn_aws',
+        status: 'success',
+        startedAt: CURRENT_RUN_TIME,
+        completedAt: CURRENT_RUN_TIME,
+        scannedServices: [],
+        scanMode: 'security_hub',
+        connection: { organizationId: 'org_1' },
+        results: [],
+      });
+      dbMock.integrationCheckRun.findFirst.mockResolvedValueOnce(null);
+
+      const service = new CloudReconciliationService(makeExceptionsStub());
+      await service.reconcile({ currentRunId: 'icr_current' });
+
+      // findFirst is called once: the prior-run lookup. Its where clause
+      // MUST scope by the same scanMode as the current run.
+      expect(dbMock.integrationCheckRun.findFirst).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({ scanMode: 'security_hub' }),
+        }),
+      );
+    });
+
+    it('passes null scanMode for legacy / non-AWS runs so they reconcile against each other', async () => {
+      // Pre-feature runs and GCP/Azure runs have scanMode = null. They
+      // must still reconcile against each other (null === null).
+      dbMock.integrationCheckRun.findUnique.mockResolvedValueOnce({
+        id: 'icr_current',
+        connectionId: 'icn_gcp',
+        status: 'success',
+        startedAt: CURRENT_RUN_TIME,
+        completedAt: CURRENT_RUN_TIME,
+        scannedServices: [],
+        scanMode: null,
+        connection: { organizationId: 'org_1' },
+        results: [],
+      });
+      dbMock.integrationCheckRun.findFirst.mockResolvedValueOnce(null);
+
+      const service = new CloudReconciliationService(makeExceptionsStub());
+      await service.reconcile({ currentRunId: 'icr_current' });
+
+      expect(dbMock.integrationCheckRun.findFirst).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({ scanMode: null }),
+        }),
+      );
+    });
+
+    it('returns 0/0 when no prior run of the same mode exists (post-switch baseline)', async () => {
+      // After a customer switches modes, the next scan finds no matching
+      // prior run and returns a clean baseline. This is the same code
+      // path as a first-ever scan — confirmed here to lock in the
+      // contract that mode switches are safe.
+      dbMock.integrationCheckRun.findUnique.mockResolvedValueOnce({
+        id: 'icr_current',
+        connectionId: 'icn_aws',
+        status: 'success',
+        startedAt: CURRENT_RUN_TIME,
+        completedAt: CURRENT_RUN_TIME,
+        scannedServices: [],
+        scanMode: 'security_hub',
+        connection: { organizationId: 'org_1' },
+        results: [],
+      });
+      // Simulate no prior SecHub run found (only comp_scanners runs exist).
+      dbMock.integrationCheckRun.findFirst.mockResolvedValueOnce(null);
+
+      const service = new CloudReconciliationService(makeExceptionsStub());
+      const result = await service.reconcile({ currentRunId: 'icr_current' });
+
+      expect(result).toEqual({ resolutions: 0, regressions: 0, skipped: false });
+      expect(dbMock.findingResolution.create).not.toHaveBeenCalled();
+      expect(dbMock.findingRegression.create).not.toHaveBeenCalled();
+    });
+  });
 });

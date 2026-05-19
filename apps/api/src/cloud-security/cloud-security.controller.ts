@@ -3,6 +3,7 @@ import {
   Post,
   Get,
   Delete,
+  Patch,
   Param,
   Query,
   Body,
@@ -27,8 +28,10 @@ import { CloudSecurityLegacyService } from './cloud-security-legacy.service';
 import { CheckDefinitionService } from './check-definition.service';
 import { CloudExceptionService } from './exception.service';
 import { CloudHistoryService } from './history.service';
+import { CloudAwsScanModeService } from './aws-scan-mode.service';
 import { parseExceptionExpiry } from './exception-expiry.utils';
 import { MarkExceptionDto } from './dto/mark-exception.dto';
+import { UpdateAwsScanModeDto } from './dto/update-scan-mode.dto';
 import { logCloudSecurityActivity } from './cloud-security-audit';
 import { CloudSecurityActivityService } from './cloud-security-activity.service';
 import {
@@ -52,6 +55,7 @@ export class CloudSecurityController {
     private readonly checkDefinitionService: CheckDefinitionService,
     private readonly exceptionService: CloudExceptionService,
     private readonly historyService: CloudHistoryService,
+    private readonly scanModeService: CloudAwsScanModeService,
   ) {}
 
   @Get('activity')
@@ -130,6 +134,34 @@ export class CloudSecurityController {
       reason: body.reason,
       reviewedBy: body.reviewedBy ?? null,
       expiresAt: parseExceptionExpiry(body.expiresAt),
+    });
+    return { data: result };
+  }
+
+  @Patch('connections/:connectionId/scan-mode')
+  @UseGuards(HybridAuthGuard, PermissionGuard)
+  @RequirePermission('integration', 'update')
+  @ApiOperation({
+    summary:
+      'Switch the AWS scan engine for a connection (Comp AI scanners ↔ Security Hub)',
+  })
+  async updateAwsScanMode(
+    @Param('connectionId') connectionId: string,
+    @Body() body: UpdateAwsScanModeDto,
+    @OrganizationId() organizationId: string,
+    @Req() req: { userId?: string },
+  ) {
+    if (!req.userId) {
+      throw new HttpException(
+        'Switching the scan engine requires session authentication.',
+        HttpStatus.UNAUTHORIZED,
+      );
+    }
+    const result = await this.scanModeService.updateMode({
+      connectionId,
+      organizationId,
+      userId: req.userId,
+      mode: body.mode,
     });
     return { data: result };
   }
