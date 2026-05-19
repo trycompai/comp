@@ -287,10 +287,11 @@ function formatSingleRequirement(requirement: string): string {
 
 function normalizeStandardName(value: string): string {
   // Compact common multi-word framework names so chips render cleanly.
+  // ("PCI DSS" → "pci dss" via lowercase; the full "DSS" token stays
+  // as-is intentionally — the parser handles whitespace-separated parts.)
   return value
     .toLowerCase()
     .replace(/aws foundations benchmark/g, '')
-    .replace(/dss/g, 'dss')
     .replace(/foundational security best practices/g, 'fsbp')
     .replace(/\s+/g, ' ')
     .trim()
