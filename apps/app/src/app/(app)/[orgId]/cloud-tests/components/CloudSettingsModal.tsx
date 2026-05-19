@@ -63,6 +63,12 @@ export function CloudSettingsModal({
   const api = useApi();
   const { hasPermission } = usePermissions();
   const canDelete = hasPermission('integration', 'delete');
+  // Scan-mode switch is an UPDATE operation (the API endpoint is
+  // gated by integration:update — see CloudSecurityController.updateAwsScanMode),
+  // so the UI must use update permission, NOT delete permission. Using
+  // canDelete here would silently block valid update users from seeing
+  // the "Switch" button even though the API would accept their request.
+  const canUpdate = hasPermission('integration', 'update');
   const [activeProvider, setActiveProvider] = useState<string>(connectedProviders[0]?.connectionId || '');
   const [isDeleting, setIsDeleting] = useState(false);
   const { deleteConnection } = useIntegrationMutations();
@@ -129,6 +135,7 @@ export function CloudSettingsModal({
           <ConnectionTab
             provider={currentProvider}
             canDelete={canDelete}
+            canUpdate={canUpdate}
             isDeleting={isDeleting}
             onDisconnect={handleDisconnect}
           />
@@ -143,11 +150,13 @@ export function CloudSettingsModal({
 function ConnectionTab({
   provider,
   canDelete,
+  canUpdate,
   isDeleting,
   onDisconnect,
 }: {
   provider: CloudProvider;
   canDelete: boolean;
+  canUpdate: boolean;
   isDeleting: boolean;
   onDisconnect: (p: CloudProvider) => void;
 }) {
@@ -185,9 +194,14 @@ function ConnectionTab({
       {/* AWS-only — scan engine switcher. Lets the customer change between
           Comp AI scanners and Security Hub on an existing connection.
           Surfaces the current mode + a "Change" button that opens
-          ScanModeSwitchDialog with the right confirmation copy. */}
+          ScanModeSwitchDialog with the right confirmation copy.
+
+          Gated by `canUpdate` (integration:update) — matches the API
+          endpoint at PATCH /v1/cloud-security/connections/:id/scan-mode.
+          Using canDelete here would silently block users who legitimately
+          have update permission. */}
       {provider.id === 'aws' && !provider.isLegacy && (
-        <AwsScanModeSection connectionId={provider.connectionId} canEdit={canDelete} />
+        <AwsScanModeSection connectionId={provider.connectionId} canEdit={canUpdate} />
       )}
 
       {canDelete && (

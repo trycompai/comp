@@ -211,4 +211,37 @@ describe('CloudSettingsModal permission gating', () => {
     render(<CloudSettingsModal {...defaultProps} open={false} />);
     expect(screen.queryByTestId('dialog')).not.toBeInTheDocument();
   });
+
+  it('shows the AWS scan-mode switch button when the user has integration:update', () => {
+    // Regression guard for the cubic P2: the switch button is an UPDATE
+    // operation and must be gated by integration:update, NOT
+    // integration:delete. Admin has both, so the button shows.
+    setMockPermissions(ADMIN_PERMISSIONS);
+    render(<CloudSettingsModal {...defaultProps} />);
+    expect(
+      screen.getByRole('button', { name: /switch to/i }),
+    ).toBeInTheDocument();
+  });
+
+  it('hides the AWS scan-mode switch button for users without integration:update', () => {
+    // Auditor has read-only permissions — should not see Switch.
+    setMockPermissions(AUDITOR_PERMISSIONS);
+    render(<CloudSettingsModal {...defaultProps} />);
+    expect(
+      screen.queryByRole('button', { name: /switch to/i }),
+    ).not.toBeInTheDocument();
+  });
+
+  it('shows the AWS scan-mode switch for update-only users (NOT delete users)', () => {
+    // The exact regression cubic flagged: a user with integration:update
+    // but WITHOUT integration:delete must still see the Switch button,
+    // because the API gates this endpoint on integration:update only.
+    setMockPermissions({ integration: ['read', 'update'] });
+    render(<CloudSettingsModal {...defaultProps} />);
+    expect(
+      screen.getByRole('button', { name: /switch to/i }),
+    ).toBeInTheDocument();
+    // ...and they correctly DO NOT see Disconnect (delete permission required).
+    expect(screen.queryByText('Disconnect')).not.toBeInTheDocument();
+  });
 });
