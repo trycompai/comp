@@ -330,9 +330,13 @@ export function MemberRow({
 
         {/* ONBOARDED */}
         <TableCell>
-          <Text size="sm" variant="muted">
-            {format(member.onboardDate ?? member.createdAt, 'MMM d, yyyy')}
-          </Text>
+          {member.onboardDate ? (
+            <Text size="sm" variant="muted">
+              {format(member.onboardDate, 'MMM d, yyyy')}
+            </Text>
+          ) : (
+            <Text size="sm" variant="muted">—</Text>
+          )}
         </TableCell>
 
         {/* OFFBOARDED */}

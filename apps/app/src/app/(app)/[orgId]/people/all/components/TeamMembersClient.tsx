@@ -152,8 +152,8 @@ export function TeamMembersClient({
     const member = item as MemberWithUser;
 
     if (onboardFrom || onboardTo) {
-      const onboard = member.onboardDate ?? member.createdAt;
-      if (!onboard) return false;
+      if (!member.onboardDate) return false;
+      const onboard = member.onboardDate;
       const d = new Date(onboard);
       if (onboardFrom && d < onboardFrom) return false;
       if (onboardTo) {

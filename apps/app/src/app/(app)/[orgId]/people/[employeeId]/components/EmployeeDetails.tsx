@@ -52,7 +52,7 @@ export const EmployeeDetails = ({
   const [department, setDepartment] = useState<string>(employee.department ?? 'none');
   const [status, setStatus] = useState<string>(employee.isActive ? 'active' : 'inactive');
   const [onboardDate, setOnboardDate] = useState<Date | undefined>(
-    employee.onboardDate ? new Date(employee.onboardDate) : new Date(employee.createdAt),
+    employee.onboardDate ? new Date(employee.onboardDate) : undefined,
   );
   const [offboardDate, setOffboardDate] = useState<Date | undefined>(
     employee.offboardDate ? new Date(employee.offboardDate) : undefined,
