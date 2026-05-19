@@ -27,6 +27,7 @@ import { CreateRunPanel } from './CreateRunPanel';
 import { DetailPane } from './DetailPane';
 import { EmptyState } from './EmptyState';
 import { OverviewPane } from './OverviewPane';
+import { PenTestMarketingEmptyState } from './pen-test-marketing/PenTestMarketingEmptyState';
 import { RunList } from './RunList';
 import './pentest-tokens.css';
 
@@ -71,8 +72,25 @@ export function SplitView({ orgId, selectedRunId, mode = 'default' }: SplitViewP
   const { balance, planRequired } = getPentestAllowance(billingStatus);
   const quotaLabel = 'Plan';
 
+  // Marketing empty state — shown when the workspace has no pentest entitlement
+  // (no active/trialing subscription and no wallet credit) AND has never run a
+  // scan. Once either flips, fall through to the existing list / empty-state
+  // surface. The boolean uses the universal `isMarketingStateEnabled` naming
+  // so any feature that adopts <MarketingEmptyState> stays consistent.
+  const isMarketingStateEnabled =
+    !listLoading &&
+    billingStatus !== undefined &&
+    planRequired &&
+    reports.length === 0 &&
+    selectedRunId === null &&
+    mode !== 'create';
+
   const showEmptyState =
-    !listLoading && reports.length === 0 && selectedRunId === null && mode !== 'create';
+    !listLoading &&
+    reports.length === 0 &&
+    selectedRunId === null &&
+    mode !== 'create' &&
+    !isMarketingStateEnabled;
   const isCreateMode = mode === 'create';
 
   const handleCreateSubmit = async (payload: PentestCreateRequest): Promise<{ id: string }> => {
@@ -132,6 +150,14 @@ export function SplitView({ orgId, selectedRunId, mode = 'default' }: SplitViewP
   // SplitView even starts; below xl, the IDE-style split squeezes the
   // main pane to <600px and the SevTally / detail header overflow.
   const showListOnMobile = selectedRunId === null && !isCreateMode;
+
+  if (isMarketingStateEnabled) {
+    return (
+      <div className="pt-tokens -m-4 h-[calc(100vh-4rem)] md:-m-6">
+        <PenTestMarketingEmptyState onViewPlans={goToPentestPlans} />
+      </div>
+    );
+  }
 
   // Empty state only shown when there are no runs AND no selection AND not
   // in create mode. Once there is at least one run we always render the

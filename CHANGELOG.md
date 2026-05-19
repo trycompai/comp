@@ -1,3 +1,40 @@
+# [3.57.0](https://github.com/trycompai/comp/compare/v3.56.0...v3.57.0) (2026-05-19)
+
+
+### Features
+
+* **pen-test-marketing:** add marketing components and empty state for penetration tests ([445e433](https://github.com/trycompai/comp/commit/445e433ae910ca5bc9489083129e1bf73f491507))
+
+# [3.56.0](https://github.com/trycompai/comp/compare/v3.55.2...v3.56.0) (2026-05-15)
+
+
+### Bug Fixes
+
+* **app:** add new exemption fields to createMockMember ([ada894d](https://github.com/trycompai/comp/commit/ada894dbbfbbadf5fb57d96a804d03ab695a302d))
+* **background-check:** persist exemption reason + justification on member ([6988e37](https://github.com/trycompai/comp/commit/6988e37e7ad65ca6b662782cc4a7631a40995c9e))
+* **cloud-tests:** address cubic findings on production deploy PR ([33042e7](https://github.com/trycompai/comp/commit/33042e79918196f8c4e585844649622329e6f041))
+* **cloud-tests:** address cubic review findings ([c05da23](https://github.com/trycompai/comp/commit/c05da233efe41a10baaeeb556a60c4ca51c927b9))
+* **cloud-tests:** address cubic review on RemediationSection and enrichEmptyState ([79bfb0f](https://github.com/trycompai/comp/commit/79bfb0f328ad41ec4f30c442a7a35aadeb0d6e00))
+* **cloud-tests:** address cubic round 4 findings ([0e193c2](https://github.com/trycompai/comp/commit/0e193c2ff5b187496554a38d20268edd92b4bab4))
+* **cloud-tests:** deterministic backstop for empty CURRENT/PROPOSED in fix-plan dialog ([8111faf](https://github.com/trycompai/comp/commit/8111faf787087bbb967e3ec3fe6a9c897186efbf))
+* **cloud-tests:** differentiate check-definition fields + structured remediation rendering ([9faf036](https://github.com/trycompai/comp/commit/9faf03637cb1ec4f30f2c371fc8bd3cb533c2028))
+* **cloud-tests:** legacy result-filter robustness + Prisma migration cleanup ([d52294e](https://github.com/trycompai/comp/commit/d52294eb67b6c86b57fa83ac6e59bce18d2d6a89)), closes [#6](https://github.com/trycompai/comp/issues/6)
+* **cloud-tests:** nested arrays in sanitizer + strict date-only expiry validation ([12411c7](https://github.com/trycompai/comp/commit/12411c7e64bf94552c5f3d4f896fc5f0ad6d2e86))
+* **cloud-tests:** teach AI fix-plan to describe create-from-scratch remediations ([11d717f](https://github.com/trycompai/comp/commit/11d717fa2b9fdf0797e0845c70482e734ae62e2b))
+
+
+### Features
+
+* **cloud-tests:** auditor visibility improvements (phases 1-5) ([3456655](https://github.com/trycompai/comp/commit/34566555f85845a4d7e6bf7fe6ad25fe82851a20))
+
+## [3.55.2](https://github.com/trycompai/comp/compare/v3.55.1...v3.55.2) (2026-05-15)
+
+
+### Bug Fixes
+
+* **people:** send single combined email for admin+employee invites with portal ([#2857](https://github.com/trycompai/comp/issues/2857)) ([a4adb20](https://github.com/trycompai/comp/commit/a4adb2035779fb3d77d0f21adbb50f8714956407))
+* **risks:** treatment plan disappears when switching strategies ([#2860](https://github.com/trycompai/comp/issues/2860)) ([9b052f5](https://github.com/trycompai/comp/commit/9b052f50f55280fdb24f9f33ae771e2553048a59))
+
 ## [3.55.1](https://github.com/trycompai/comp/compare/v3.55.0...v3.55.1) (2026-05-15)
 
 

@@ -11,7 +11,9 @@ interface CloudSecurityAuditParams {
     | 'remediation_failed'
     | 'rollback_executed'
     | 'rollback_failed'
-    | 'service_toggled';
+    | 'service_toggled'
+    | 'exception_marked'
+    | 'exception_revoked';
   description: string;
   metadata?: Record<string, unknown>;
 }

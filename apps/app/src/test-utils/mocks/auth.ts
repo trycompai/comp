@@ -83,6 +83,8 @@ export const createMockMember = (overrides?: Partial<Member>): Member => ({
   externalUserId: null,
   externalUserSource: null,
   backgroundCheckExempt: false,
+  backgroundCheckExemptReason: null,
+  backgroundCheckExemptJustification: null,
   ...overrides,
 });
 
