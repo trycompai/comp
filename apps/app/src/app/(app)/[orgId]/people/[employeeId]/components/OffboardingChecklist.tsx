@@ -114,6 +114,7 @@ export function OffboardingChecklist({
           offboardDate={offboardDate}
           totalItems={checklist.totalItems}
           completedItems={checklist.completedItems}
+          evidence={checklist.items.flatMap((item) => item.evidence)}
         />
       )}
 

@@ -1,24 +1,34 @@
 'use client';
 
+import { Button } from '@trycompai/design-system';
+import { Download } from '@trycompai/design-system/icons';
 import { differenceInDays, format } from 'date-fns';
+
+interface EvidenceFile {
+  id: string;
+  name: string;
+  downloadUrl: string;
+}
 
 interface OffboardingSummaryCardProps {
   offboardDate: string;
   totalItems: number;
   completedItems: number;
+  evidence?: EvidenceFile[];
 }
 
 export function OffboardingSummaryCard({
   offboardDate,
   totalItems,
   completedItems,
+  evidence = [],
 }: OffboardingSummaryCardProps) {
   const daysSince = differenceInDays(new Date(), new Date(offboardDate));
   const progressPercent =
     totalItems > 0 ? Math.round((completedItems / totalItems) * 100) : 0;
 
   return (
-    <div className="grid grid-cols-[1.4fr_1fr_1fr_1fr] gap-6 rounded-lg border p-5">
+    <div className="grid grid-cols-[1.4fr_1fr_1fr_1fr_auto] items-center gap-6 rounded-lg border p-5">
       <div>
         <div className="mb-1">
           <span className="text-[10px] font-bold uppercase tracking-[0.08em] text-muted-foreground">
@@ -70,6 +80,22 @@ export function OffboardingSummaryCard({
           {progressPercent}%
         </p>
       </div>
+      {evidence.length > 0 && (
+        <div>
+          <Button
+            variant="outline"
+            size="sm"
+            iconLeft={<Download size={14} />}
+            onClick={() => {
+              for (const file of evidence) {
+                window.open(file.downloadUrl, '_blank');
+              }
+            }}
+          >
+            Export evidence
+          </Button>
+        </div>
+      )}
     </div>
   );
 }
