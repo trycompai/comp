@@ -652,7 +652,7 @@ function DateRangeFilter({
         <PopoverTrigger asChild>
           <button
             type="button"
-            className="border-border bg-background hover:bg-muted flex h-8 items-center gap-2 rounded-full border px-3 text-xs transition-colors"
+            className="border-border bg-background hover:bg-muted flex h-8 items-center gap-2 rounded-md border px-3 text-xs transition-colors"
           >
             <CalendarIcon size={13} className="text-muted-foreground" />
             <span className="text-muted-foreground">{label}</span>
