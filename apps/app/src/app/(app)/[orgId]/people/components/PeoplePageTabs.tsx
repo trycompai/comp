@@ -144,6 +144,15 @@ export function PeoplePageTabs({
             }
             actions={
               <HStack gap="2">
+                <div>
+                  <Button
+                    iconLeft={<Add size={16} />}
+                    onClick={() => setIsInviteModalOpen(true)}
+                    disabled={!canInviteUsers}
+                  >
+                    Add User
+                  </Button>
+                </div>
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <div>
@@ -163,15 +172,6 @@ export function PeoplePageTabs({
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
-                <div>
-                  <Button
-                    iconLeft={<Add size={16} />}
-                    onClick={() => setIsInviteModalOpen(true)}
-                    disabled={!canInviteUsers}
-                  >
-                    Add User
-                  </Button>
-                </div>
               </HStack>
             }
           />
