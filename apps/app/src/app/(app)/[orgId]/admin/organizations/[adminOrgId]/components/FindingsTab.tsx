@@ -4,92 +4,36 @@ import { CreateFindingSheet } from '@/app/(app)/[orgId]/overview/components/Crea
 import { api } from '@/lib/api-client';
 import type { CreateFindingData } from '@/hooks/use-findings-api';
 import {
-  Badge,
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
   Button,
   Section,
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
   Table,
   TableBody,
-  TableCell,
   TableHead,
   TableHeader,
   TableRow,
-  Text,
 } from '@trycompai/design-system';
 import { Add } from '@trycompai/design-system/icons';
-import { useCallback, useEffect, useState } from 'react';
-
-interface AdminFinding {
-  id: string;
-  type: string;
-  status: string;
-  severity: string;
-  content: string;
-  area: string | null;
-  createdAt: string;
-  createdBy?: { user?: { name: string; email: string } } | null;
-  createdByAdmin?: { name: string; email: string } | null;
-  task?: { id: string; title: string } | null;
-  evidenceSubmission?: { id: string; formType: string } | null;
-  evidenceFormType?: string | null;
-  policy?: { id: string; name: string } | null;
-  vendor?: { id: string; name: string } | null;
-  risk?: { id: string; title: string } | null;
-  member?: { id: string; user: { name: string; email: string } } | null;
-  device?: { id: string; name: string; hostname: string } | null;
-}
-
-const STATUS_OPTIONS = ['open', 'ready_for_review', 'needs_revision', 'closed'];
-
-const STATUS_VARIANT: Record<string, 'default' | 'secondary' | 'destructive' | 'outline'> = {
-  open: 'destructive',
-  ready_for_review: 'outline',
-  needs_revision: 'secondary',
-  closed: 'default',
-};
-
-const SEVERITY_VARIANT: Record<string, 'default' | 'secondary' | 'destructive' | 'outline'> = {
-  low: 'outline',
-  medium: 'secondary',
-  high: 'secondary',
-  critical: 'destructive',
-};
-
-function formatStatus(status: string) {
-  return status.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
-}
-
-function getCreatorName(finding: AdminFinding): string {
-  return (
-    finding.createdBy?.user?.name ||
-    finding.createdBy?.user?.email ||
-    finding.createdByAdmin?.name ||
-    finding.createdByAdmin?.email ||
-    'Unknown'
-  );
-}
-
-function getTargetLabel(f: AdminFinding): string {
-  if (f.task) return `Task: ${f.task.title}`;
-  if (f.policy) return `Policy: ${f.policy.name}`;
-  if (f.vendor) return `Vendor: ${f.vendor.name}`;
-  if (f.risk) return `Risk: ${f.risk.title}`;
-  if (f.member) return `Person: ${f.member.user.name || f.member.user.email}`;
-  if (f.device) return `Device: ${f.device.name || f.device.hostname}`;
-  if (f.evidenceSubmission) return `Evidence: ${f.evidenceSubmission.formType}`;
-  if (f.evidenceFormType) return `Form: ${f.evidenceFormType}`;
-  if (f.area) return `Area: ${f.area}`;
-  return '—';
-}
+import { useCallback, useEffect, useState, type MouseEvent } from 'react';
+import { toast } from 'sonner';
+import { EditFindingSheet } from './EditFindingSheet';
+import { AdminFindingRow, getTargetLabel, type AdminFinding } from './AdminFindingRow';
 
 export function FindingsTab({ orgId }: { orgId: string }) {
   const [findings, setFindings] = useState<AdminFinding[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [updatingId, setUpdatingId] = useState<string | null>(null);
+  const [editingFinding, setEditingFinding] = useState<AdminFinding | null>(null);
+  const [deletingFinding, setDeletingFinding] = useState<AdminFinding | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   const fetchFindings = useCallback(async () => {
     setLoading(true);
@@ -129,6 +73,27 @@ export function FindingsTab({ orgId }: { orgId: string }) {
     [orgId],
   );
 
+  // Radix's AlertDialogAction auto-closes the dialog on click. We
+  // preventDefault so the dialog stays open while the request is in flight,
+  // and we only close it ourselves on success — keeping the confirm UI
+  // mounted on error so the user can retry without re-opening the menu.
+  const handleConfirmDelete = async (event: MouseEvent<HTMLButtonElement>) => {
+    event.preventDefault();
+    if (!deletingFinding || deleting) return;
+    setDeleting(true);
+    const res = await api.delete(
+      `/v1/admin/organizations/${orgId}/findings/${deletingFinding.id}`,
+    );
+    if (res.error) {
+      toast.error(res.error);
+    } else {
+      toast.success('Finding deleted');
+      setFindings((prev) => prev.filter((f) => f.id !== deletingFinding.id));
+      setDeletingFinding(null);
+    }
+    setDeleting(false);
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center py-12 text-muted-foreground">
@@ -160,56 +125,21 @@ export function FindingsTab({ orgId }: { orgId: string }) {
                 <TableHead>Severity</TableHead>
                 <TableHead>Created By</TableHead>
                 <TableHead>Status</TableHead>
+                <TableHead>Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {[...findings]
                 .sort((a, b) => a.content.localeCompare(b.content))
                 .map((finding) => (
-                  <TableRow key={finding.id}>
-                    <TableCell>
-                      <div className="max-w-[400px] truncate">
-                        <Text size="sm">{finding.content}</Text>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <Text size="sm" variant="muted">
-                        {getTargetLabel(finding)}
-                      </Text>
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant={SEVERITY_VARIANT[finding.severity] ?? 'secondary'}>
-                        {finding.severity}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      <Text size="sm" variant="muted">
-                        {getCreatorName(finding)}
-                      </Text>
-                    </TableCell>
-                    <TableCell>
-                      <Select
-                        value={finding.status}
-                        onValueChange={(val) => {
-                          if (val) void handleStatusChange(finding.id, val);
-                        }}
-                        disabled={updatingId === finding.id}
-                      >
-                        <SelectTrigger size="sm">
-                          <Badge variant={STATUS_VARIANT[finding.status] ?? 'default'}>
-                            {formatStatus(finding.status)}
-                          </Badge>
-                        </SelectTrigger>
-                        <SelectContent alignItemWithTrigger={false}>
-                          {STATUS_OPTIONS.map((s) => (
-                            <SelectItem key={s} value={s}>
-                              {formatStatus(s)}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </TableCell>
-                  </TableRow>
+                  <AdminFindingRow
+                    key={finding.id}
+                    finding={finding}
+                    statusUpdating={updatingId === finding.id}
+                    onStatusChange={handleStatusChange}
+                    onEdit={setEditingFinding}
+                    onDelete={setDeletingFinding}
+                  />
                 ))}
             </TableBody>
           </Table>
@@ -239,6 +169,48 @@ export function FindingsTab({ orgId }: { orgId: string }) {
           void fetchFindings();
         }}
       />
+
+      <EditFindingSheet
+        orgId={orgId}
+        finding={editingFinding}
+        targetLabel={editingFinding ? getTargetLabel(editingFinding) : ''}
+        onOpenChange={(open) => {
+          if (!open) setEditingFinding(null);
+        }}
+        onSaved={(updated) => {
+          setFindings((prev) =>
+            prev.map((f) => (f.id === updated.id ? { ...f, ...updated } : f)),
+          );
+          setEditingFinding(null);
+        }}
+      />
+
+      <AlertDialog
+        open={deletingFinding !== null}
+        onOpenChange={(open) => {
+          if (!open && !deleting) setDeletingFinding(null);
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete finding?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This permanently removes the finding and its activity history. This
+              action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleting}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              variant="destructive"
+              onClick={handleConfirmDelete}
+              disabled={deleting}
+            >
+              {deleting ? 'Deleting…' : 'Delete'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 }
