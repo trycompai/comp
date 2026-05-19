@@ -1,3 +1,19 @@
+# [3.59.0](https://github.com/trycompai/comp/compare/v3.58.0...v3.59.0) (2026-05-19)
+
+
+### Bug Fixes
+
+* **cloud-tests:** backfill scanMode on pre-feature AWS runs ([e394db0](https://github.com/trycompai/comp/commit/e394db064688e3373b4b3550f351de0d8f85c901))
+* **cloud-tests:** deriveFindingKey must namespace by Security Hub standard ([744814f](https://github.com/trycompai/comp/commit/744814fb344e4f6a754d569ea69698b915026645))
+* **cloud-tests:** gate AWS scan-mode switch by integration:update, not delete ([8ec0eea](https://github.com/trycompai/comp/commit/8ec0eea4a3b746d949babd721cde6a33ccc25c3e)), closes [#2871](https://github.com/trycompai/comp/issues/2871)
+* **cloud-tests:** parse all SecHub compliance formats + dedupe scan-mode literals ([a5d1539](https://github.com/trycompai/comp/commit/a5d15397853bdade8c026e187a95bacd996f319a))
+* **cloud-tests:** remove no-op .replace('dss', 'dss') in normalizeStandardName ([57a4077](https://github.com/trycompai/comp/commit/57a4077821f75b19654cc8402f4594e12afbe87d))
+
+
+### Features
+
+* **cloud-tests:** aws security hub as alternative scan engine ([8b7fa7e](https://github.com/trycompai/comp/commit/8b7fa7edcc2f56f4a5322b398d3d81396cc8d2d5))
+
 # [3.58.0](https://github.com/trycompai/comp/compare/v3.57.0...v3.58.0) (2026-05-19)
 
 
