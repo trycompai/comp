@@ -108,10 +108,15 @@ export class OffboardingChecklistController {
     @OrganizationId() organizationId: string,
     @Res() res: Response,
   ) {
+    const org = await db.organization.findFirst({
+      where: { id: organizationId },
+      select: { name: true },
+    });
+    const safeOrgName = (org?.name ?? 'org').replace(/[^a-zA-Z0-9]/g, '-').toLowerCase();
     const date = new Date().toISOString().split('T')[0];
     res.set({
       'Content-Type': 'application/zip',
-      'Content-Disposition': `attachment; filename="all-offboardings-${date}.zip"`,
+      'Content-Disposition': `attachment; filename="${safeOrgName}-offboardings-${date}.zip"`,
     });
     await this.offboardingExportService.exportAllOffboardings({
       organizationId,
