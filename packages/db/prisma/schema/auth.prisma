@@ -119,6 +119,8 @@ model Member {
   isActive                        Boolean                           @default(true)
   deactivated                     Boolean                           @default(false)
   backgroundCheckExempt           Boolean                           @default(false)
+  backgroundCheckExemptReason     String?
+  backgroundCheckExemptJustification String?                        @db.Text
   externalUserId                  String?
   externalUserSource              String?
   employeeTrainingVideoCompletion EmployeeTrainingVideoCompletion[]
