@@ -6,6 +6,10 @@ vi.mock('next/navigation', () => ({
   useParams: () => ({ orgId: 'org_1' }),
 }));
 
+vi.mock('@/hooks/use-permissions', () => ({
+  usePermissions: () => ({ hasPermission: () => true }),
+}));
+
 vi.mock('../lib/devices-csv', async (importOriginal) => {
   const mod = await importOriginal<typeof import('../lib/devices-csv')>();
   return {
