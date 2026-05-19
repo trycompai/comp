@@ -48,6 +48,7 @@ interface GoogleWorkspaceUser {
   isAdmin?: boolean;
   suspended?: boolean;
   orgUnitPath?: string;
+  creationTime?: string;
 }
 
 interface GoogleWorkspaceUsersResponse {
