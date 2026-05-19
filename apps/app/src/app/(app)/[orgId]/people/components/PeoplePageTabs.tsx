@@ -168,7 +168,7 @@ export function PeoplePageTabs({
                       }}
                     >
                       <Download size={14} className="mr-2" />
-                      Export all offboarding data
+                      Export offboarding
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
