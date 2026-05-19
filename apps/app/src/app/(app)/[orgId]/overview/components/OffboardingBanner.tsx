@@ -25,7 +25,9 @@ export function OffboardingBanner() {
 
   if (dismissed || members.length === 0) return null;
 
-  const firstMember = members[0];
+  const link = members.length === 1
+    ? `/${params.orgId}/people/${members[0].memberId}?tab=offboarding`
+    : `/${params.orgId}/people`;
 
   return (
     <div className="flex items-center justify-between rounded-lg border border-amber-200 bg-amber-50 px-4 py-3">
@@ -40,7 +42,7 @@ export function OffboardingBanner() {
       </div>
       <div className="flex items-center gap-2">
         <Link
-          href={`/${params.orgId}/people/${firstMember.memberId}?tab=offboarding`}
+          href={link}
           className="rounded-md px-3 py-1 text-sm font-medium text-amber-700 transition-colors hover:bg-amber-100"
         >
           View details
