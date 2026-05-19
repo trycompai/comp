@@ -402,6 +402,7 @@ export class SyncController {
             userId,
             role: 'employee',
             isActive: true,
+            ...(gwUser.creationTime ? { onboardDate: new Date(gwUser.creationTime) } : {}),
           },
         });
 
@@ -865,6 +866,7 @@ export class SyncController {
               userId,
               role: 'employee',
               isActive: true,
+              ...(worker.start_date ? { onboardDate: new Date(worker.start_date) } : {}),
             },
           });
           results.imported++;
@@ -1365,6 +1367,7 @@ export class SyncController {
             userId,
             role: 'employee',
             isActive: true,
+            ...(jcUser.created ? { onboardDate: new Date(jcUser.created) } : {}),
           },
         });
 

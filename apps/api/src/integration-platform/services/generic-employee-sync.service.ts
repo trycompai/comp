@@ -231,6 +231,7 @@ export class GenericEmployeeSyncService {
             userId: existingUser.id,
             role: sanitizedRole,
             isActive: true,
+            ...(employee.startDate ? { onboardDate: new Date(employee.startDate) } : {}),
           },
         });
 
