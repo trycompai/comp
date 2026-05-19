@@ -1,3 +1,26 @@
+# [3.58.0](https://github.com/trycompai/comp/compare/v3.57.0...v3.58.0) (2026-05-19)
+
+
+### Bug Fixes
+
+* **api:** add an endpoint to delete the finding as platform admin ([c8a91e0](https://github.com/trycompai/comp/commit/c8a91e05644cb256af7dc1e68b4e216258b78646))
+* **api:** anchor javascript:/vbscript: detection to URL attribute context ([634d95b](https://github.com/trycompai/comp/commit/634d95bcdbe41e9afaf293aae58bfe7f884f51c0))
+* **api:** tighten javascript:/vbscript: regex to require non-whitespace after colon ([07a1243](https://github.com/trycompai/comp/commit/07a1243dbe3f60318105b71659ed951cdffcca6f))
+* **api:** update comment endpoint to support finding entityType ([08d314c](https://github.com/trycompai/comp/commit/08d314cfb9428bbf3bb9b54d194c2dd615fc6c72))
+* **app:** allow admin & owner to remove the device ([4611e48](https://github.com/trycompai/comp/commit/4611e48d99f3644e0e1d43b10ba35a0db41021d7))
+* **app:** keep delete-finding dialog mounted while the request is in flight ([8b6a665](https://github.com/trycompai/comp/commit/8b6a665d872109d7948f19871c9bd7fad3cecdb5))
+* **app:** remove 'evidence submission' from adding finding box ([36ba9d2](https://github.com/trycompai/comp/commit/36ba9d25578a964503f831364d236eeb3250ee1a))
+* **app:** show comments on task overview ([3df5115](https://github.com/trycompai/comp/commit/3df5115427832ad5a1804ea3570b0d03612f9248))
+* **cloud-tests:** keep findings and history caches in sync on mark/revoke ([ae06acf](https://github.com/trycompai/comp/commit/ae06acf262364776264b236717929e367d781bbb))
+* **db:** add finding to CommentEntityType ([42357e3](https://github.com/trycompai/comp/commit/42357e3d3dcbed3bd255b43d4783060e9afd7ff4))
+* **db:** remove duplicate add-finding-to-CommentEntityType migration ([2c6267d](https://github.com/trycompai/comp/commit/2c6267d85d64c6cf9a952cfc2ed310248009775c)), closes [#2827](https://github.com/trycompai/comp/issues/2827)
+
+
+### Features
+
+* **app:** add ability to edit/delete findings from admin dashboard ([7dac1e8](https://github.com/trycompai/comp/commit/7dac1e81f09a12b5d432da7b99a5b304017e00c4))
+* **app:** add comments directly to findings ([b8b5874](https://github.com/trycompai/comp/commit/b8b587425a9ec11f37caae2315c96f37a6df8f20))
+
 # [3.57.0](https://github.com/trycompai/comp/compare/v3.56.0...v3.57.0) (2026-05-19)
 
 
