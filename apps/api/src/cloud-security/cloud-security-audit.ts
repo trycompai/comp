@@ -13,7 +13,8 @@ interface CloudSecurityAuditParams {
     | 'rollback_failed'
     | 'service_toggled'
     | 'exception_marked'
-    | 'exception_revoked';
+    | 'exception_revoked'
+    | 'scan_mode_changed';
   description: string;
   metadata?: Record<string, unknown>;
 }

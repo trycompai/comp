@@ -15,6 +15,7 @@ import { AiDescriptionService } from './ai-description.service';
 import { CheckDefinitionService } from './check-definition.service';
 import { CloudExceptionService } from './exception.service';
 import { CloudHistoryService } from './history.service';
+import { CloudAwsScanModeService } from './aws-scan-mode.service';
 import { CloudReconciliationService } from './reconciliation.service';
 import { CloudSecurityActivityService } from './cloud-security-activity.service';
 import { IntegrationPlatformModule } from '../integration-platform/integration-platform.module';
@@ -40,6 +41,7 @@ import { AuthModule } from '../auth/auth.module';
     CloudExceptionService,
     CloudReconciliationService,
     CloudHistoryService,
+    CloudAwsScanModeService,
   ],
   exports: [CloudSecurityService],
 })
