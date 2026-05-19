@@ -651,17 +651,14 @@ function DateRangeFilter({
   return (
     <div className="hidden sm:block">
       <Popover open={open} onOpenChange={handleOpenChange}>
-        <PopoverTrigger asChild>
-          <button
-            type="button"
-            className="border-border bg-background hover:bg-muted flex h-8 items-center gap-2 rounded-md border px-3 text-xs transition-colors"
-          >
+        <PopoverTrigger
+          className="border-border bg-background hover:bg-muted flex h-8 items-center gap-2 rounded-md border px-3 text-xs transition-colors"
+        >
             <CalendarIcon size={13} className="text-muted-foreground" />
             <span className="text-muted-foreground">{label}</span>
             <span className="font-medium">·</span>
             <span className="font-medium">{displayLabel}</span>
             <ChevronDown size={12} className="text-muted-foreground" />
-          </button>
         </PopoverTrigger>
         <PopoverContent className="w-[420px] border bg-background p-4 shadow-md" align="start">
           <div className="flex flex-col gap-4">
@@ -688,14 +685,9 @@ function DateRangeFilter({
 
             <div className="flex items-center gap-2">
               <Popover open={fromPickerOpen} onOpenChange={setFromPickerOpen}>
-                <PopoverTrigger asChild>
-                  <button
-                    type="button"
-                    className="border-border bg-muted/50 flex h-10 flex-1 items-center gap-2 rounded-lg border px-3 text-sm"
-                  >
+                <PopoverTrigger className="border-border bg-muted/50 flex h-10 flex-1 items-center gap-2 rounded-lg border px-3 text-sm">
                     <CalendarIcon size={14} className="text-muted-foreground" />
                     {draftFrom ? format(draftFrom, 'MMM d, yyyy') : <span className="text-muted-foreground">Start date</span>}
-                  </button>
                 </PopoverTrigger>
                 <PopoverContent className="w-auto border bg-background p-0 shadow-md" align="start">
                   <Calendar
@@ -710,14 +702,9 @@ function DateRangeFilter({
               </Popover>
               <span className="text-muted-foreground">→</span>
               <Popover open={toPickerOpen} onOpenChange={setToPickerOpen}>
-                <PopoverTrigger asChild>
-                  <button
-                    type="button"
-                    className="border-border bg-muted/50 flex h-10 flex-1 items-center gap-2 rounded-lg border px-3 text-sm"
-                  >
+                <PopoverTrigger className="border-border bg-muted/50 flex h-10 flex-1 items-center gap-2 rounded-lg border px-3 text-sm">
                     <CalendarIcon size={14} className="text-muted-foreground" />
                     {draftTo ? format(draftTo, 'MMM d, yyyy') : <span className="text-muted-foreground">End date</span>}
-                  </button>
                 </PopoverTrigger>
                 <PopoverContent className="w-auto border bg-background p-0 shadow-md" align="start">
                   <Calendar
