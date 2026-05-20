@@ -198,8 +198,11 @@ export function OffboardingChecklistItem({
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    await handleFileUpload(file);
-    if (dropzoneInputRef.current) dropzoneInputRef.current.value = '';
+    try {
+      await handleFileUpload(file);
+    } finally {
+      if (dropzoneInputRef.current) dropzoneInputRef.current.value = '';
+    }
   };
 
   const handleFileUpload = async (file: File) => {

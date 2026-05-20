@@ -23,7 +23,7 @@ interface PendingResponse {
 export function TodosOverview() {
   const params = useParams<{ orgId: string }>();
   const organizationId = params.orgId;
-  const { data, isLoading } = useApiSWR<PendingResponse>(
+  const { data, isLoading, error } = useApiSWR<PendingResponse>(
     '/v1/offboarding-checklist/pending',
   );
   const members = data?.data?.members ?? [];
@@ -43,6 +43,12 @@ export function TodosOverview() {
         {isLoading ? (
           <div className="flex items-center justify-center py-8">
             <Text variant="muted">Loading...</Text>
+          </div>
+        ) : error ? (
+          <div className="flex items-center justify-center py-8">
+            <Text size="sm" variant="muted">
+              Failed to load todos
+            </Text>
           </div>
         ) : members.length === 0 ? (
           <div className="flex flex-col items-center justify-center gap-2 py-8">
