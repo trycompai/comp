@@ -660,7 +660,7 @@ function DateRangeFilter({
             <ChevronDown size={12} className="text-muted-foreground" />
           </div>
         </PopoverTrigger>
-        <PopoverContent align="start">
+        <PopoverContent align="start" style={{ width: 'auto' }}>
           <div className="flex w-[380px] flex-col gap-4 p-1.5">
             <span className="text-[10px] font-bold uppercase tracking-[0.08em] text-muted-foreground">
               {label} between
