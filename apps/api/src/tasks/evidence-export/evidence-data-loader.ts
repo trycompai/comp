@@ -188,7 +188,7 @@ async function loadAppAutomationRuns(
   header: NormalizedAutomation,
 ): Promise<NormalizedAutomation> {
   const runs: NormalizedEvidenceRun[] = [];
-  let skip = 0;
+  let cursor: { id: string } | undefined;
 
   for (;;) {
     const batch = await db.integrationCheckRun.findMany({
@@ -199,7 +199,7 @@ async function loadAppAutomationRuns(
       },
       orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
       take: RUN_BATCH_SIZE,
-      skip,
+      ...(cursor ? { cursor, skip: 1 } : {}),
     });
 
     if (batch.length === 0) break;
@@ -209,7 +209,7 @@ async function loadAppAutomationRuns(
     }
 
     if (batch.length < RUN_BATCH_SIZE) break;
-    skip += RUN_BATCH_SIZE;
+    cursor = { id: batch[batch.length - 1].id };
   }
 
   return { ...header, runs };
@@ -220,7 +220,7 @@ async function loadCustomAutomationRuns(
   header: NormalizedAutomation,
 ): Promise<NormalizedAutomation> {
   const runs: NormalizedEvidenceRun[] = [];
-  let skip = 0;
+  let cursor: { id: string } | undefined;
 
   for (;;) {
     const batch = await db.evidenceAutomationRun.findMany({
@@ -233,7 +233,7 @@ async function loadCustomAutomationRuns(
       },
       orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
       take: RUN_BATCH_SIZE,
-      skip,
+      ...(cursor ? { cursor, skip: 1 } : {}),
     });
 
     if (batch.length === 0) break;
@@ -243,7 +243,7 @@ async function loadCustomAutomationRuns(
     }
 
     if (batch.length < RUN_BATCH_SIZE) break;
-    skip += RUN_BATCH_SIZE;
+    cursor = { id: batch[batch.length - 1].id };
   }
 
   return { ...header, runs };
