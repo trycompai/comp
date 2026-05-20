@@ -3,12 +3,17 @@ import { db, AttachmentEntityType } from '@db';
 import type {
   TaskEvidenceSummary,
   NormalizedAutomation,
+  NormalizedEvidenceRun,
 } from './evidence-export.types';
 import {
+  type AppAutomationRun,
+  type CustomAutomationRun,
   normalizeAppAutomationRun,
   normalizeCustomAutomationRun,
   normalizeStatus,
 } from './evidence-normalizer';
+
+const RUN_BATCH_SIZE = 50;
 
 interface AppRunHeader {
   checkId: string;
@@ -65,7 +70,9 @@ function groupAppRunHeaders(runs: AppRunHeader[]): NormalizedAutomation[] {
   return Array.from(grouped.values());
 }
 
-function groupCustomRunHeaders(runs: CustomRunHeader[]): NormalizedAutomation[] {
+function groupCustomRunHeaders(
+  runs: CustomRunHeader[],
+): NormalizedAutomation[] {
   const grouped = new Map<string, NormalizedAutomation>();
 
   for (const run of runs) {
@@ -162,7 +169,7 @@ export async function getAutomationHeaders({
   };
 }
 
-// Loads one automation's runs with full results/logs — called per-automation to bound memory.
+// Loads one automation's runs in batches to bound both JSON.parse and heap pressure.
 export async function loadFullAutomation({
   taskId,
   header,
@@ -171,90 +178,175 @@ export async function loadFullAutomation({
   header: NormalizedAutomation;
 }): Promise<NormalizedAutomation> {
   if (header.type === 'app_automation' && header.checkId) {
-    const runs = await db.integrationCheckRun.findMany({
+    return loadAppAutomationRuns(taskId, header);
+  }
+  return loadCustomAutomationRuns(taskId, header);
+}
+
+async function loadAppAutomationRuns(
+  taskId: string,
+  header: NormalizedAutomation,
+): Promise<NormalizedAutomation> {
+  const runs: NormalizedEvidenceRun[] = [];
+  let skip = 0;
+
+  for (;;) {
+    const batch = await db.integrationCheckRun.findMany({
       where: { taskId, checkId: header.checkId },
       include: {
         results: true,
         connection: { include: { provider: true } },
       },
       orderBy: { createdAt: 'desc' },
+      take: RUN_BATCH_SIZE,
+      skip,
     });
 
-    return {
-      ...header,
-      runs: runs.map((run) =>
-        normalizeAppAutomationRun({
-          id: run.id,
-          checkId: run.checkId,
-          checkName: run.checkName,
-          status: run.status,
-          startedAt: run.startedAt,
-          completedAt: run.completedAt,
-          durationMs: run.durationMs,
-          totalChecked: run.totalChecked,
-          passedCount: run.passedCount,
-          failedCount: run.failedCount,
-          errorMessage: run.errorMessage,
-          logs: run.logs,
-          createdAt: run.createdAt,
-          connection: {
-            provider: run.connection.provider
-              ? {
-                  slug: run.connection.provider.slug,
-                  name: run.connection.provider.name,
-                }
-              : undefined,
-          },
-          results: run.results.map((r) => ({
-            id: r.id,
-            passed: r.passed,
-            resourceType: r.resourceType,
-            resourceId: r.resourceId,
-            title: r.title,
-            description: r.description,
-            severity: r.severity,
-            remediation: r.remediation,
-            evidence: r.evidence,
-            collectedAt: r.collectedAt,
-          })),
-        }),
-      ),
-    };
+    if (batch.length === 0) break;
+
+    for (const run of batch) {
+      runs.push(normalizeAppAutomationRun(toAppAutomationRun(run)));
+    }
+
+    if (batch.length < RUN_BATCH_SIZE) break;
+    skip += RUN_BATCH_SIZE;
   }
 
-  const runs = await db.evidenceAutomationRun.findMany({
-    where: {
-      evidenceAutomation: { id: header.id, taskId },
-      version: { not: null },
-    },
-    include: {
-      evidenceAutomation: { select: { id: true, name: true } },
-    },
-    orderBy: { createdAt: 'desc' },
-  });
+  return { ...header, runs };
+}
 
+async function loadCustomAutomationRuns(
+  taskId: string,
+  header: NormalizedAutomation,
+): Promise<NormalizedAutomation> {
+  const runs: NormalizedEvidenceRun[] = [];
+  let skip = 0;
+
+  for (;;) {
+    const batch = await db.evidenceAutomationRun.findMany({
+      where: {
+        evidenceAutomation: { id: header.id, taskId },
+        version: { not: null },
+      },
+      include: {
+        evidenceAutomation: { select: { id: true, name: true } },
+      },
+      orderBy: { createdAt: 'desc' },
+      take: RUN_BATCH_SIZE,
+      skip,
+    });
+
+    if (batch.length === 0) break;
+
+    for (const run of batch) {
+      runs.push(normalizeCustomAutomationRun(toCustomAutomationRun(run)));
+    }
+
+    if (batch.length < RUN_BATCH_SIZE) break;
+    skip += RUN_BATCH_SIZE;
+  }
+
+  return { ...header, runs };
+}
+
+// Prisma result → normalizer interface mappers (single source of truth).
+function toAppAutomationRun(run: {
+  id: string;
+  checkId: string;
+  checkName: string;
+  status: string;
+  startedAt: Date | null;
+  completedAt: Date | null;
+  durationMs: number | null;
+  totalChecked: number;
+  passedCount: number;
+  failedCount: number;
+  errorMessage: string | null;
+  logs: unknown;
+  createdAt: Date;
+  connection: { provider: { slug: string; name: string } | null };
+  results: Array<{
+    id: string;
+    passed: boolean;
+    resourceType: string;
+    resourceId: string;
+    title: string;
+    description: string | null;
+    severity: string | null;
+    remediation: string | null;
+    evidence: unknown;
+    collectedAt: Date;
+  }>;
+}): AppAutomationRun {
   return {
-    ...header,
-    runs: runs.map((run) =>
-      normalizeCustomAutomationRun({
-        id: run.id,
-        status: run.status,
-        startedAt: run.startedAt,
-        completedAt: run.completedAt,
-        runDuration: run.runDuration,
-        success: run.success,
-        error: run.error,
-        logs: run.logs,
-        output: run.output,
-        evaluationStatus: run.evaluationStatus,
-        evaluationReason: run.evaluationReason,
-        createdAt: run.createdAt,
-        evidenceAutomation: {
-          id: run.evidenceAutomation.id,
-          name: run.evidenceAutomation.name,
-        },
-      }),
-    ),
+    id: run.id,
+    checkId: run.checkId,
+    checkName: run.checkName,
+    status: run.status,
+    startedAt: run.startedAt,
+    completedAt: run.completedAt,
+    durationMs: run.durationMs,
+    totalChecked: run.totalChecked,
+    passedCount: run.passedCount,
+    failedCount: run.failedCount,
+    errorMessage: run.errorMessage,
+    logs: run.logs,
+    createdAt: run.createdAt,
+    connection: {
+      provider: run.connection.provider
+        ? {
+            slug: run.connection.provider.slug,
+            name: run.connection.provider.name,
+          }
+        : undefined,
+    },
+    results: run.results.map((r) => ({
+      id: r.id,
+      passed: r.passed,
+      resourceType: r.resourceType,
+      resourceId: r.resourceId,
+      title: r.title,
+      description: r.description,
+      severity: r.severity,
+      remediation: r.remediation,
+      evidence: r.evidence,
+      collectedAt: r.collectedAt,
+    })),
+  };
+}
+
+function toCustomAutomationRun(run: {
+  id: string;
+  status: string;
+  startedAt: Date | null;
+  completedAt: Date | null;
+  runDuration: number | null;
+  success: boolean | null;
+  error: string | null;
+  logs: unknown;
+  output: unknown;
+  evaluationStatus: string | null;
+  evaluationReason: string | null;
+  createdAt: Date;
+  evidenceAutomation: { id: string; name: string };
+}): CustomAutomationRun {
+  return {
+    id: run.id,
+    status: run.status,
+    startedAt: run.startedAt,
+    completedAt: run.completedAt,
+    runDuration: run.runDuration,
+    success: run.success,
+    error: run.error,
+    logs: run.logs,
+    output: run.output,
+    evaluationStatus: run.evaluationStatus,
+    evaluationReason: run.evaluationReason,
+    createdAt: run.createdAt,
+    evidenceAutomation: {
+      id: run.evidenceAutomation.id,
+      name: run.evidenceAutomation.name,
+    },
   };
 }
 

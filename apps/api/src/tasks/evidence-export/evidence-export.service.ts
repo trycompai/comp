@@ -9,13 +9,12 @@ import type {
   EvidenceZipStream,
   NormalizedAutomation,
 } from './evidence-export.types';
-import { buildTaskEvidenceSummary } from './evidence-normalizer';
 import {
   generateAutomationPDF,
   generateTaskSummaryPDF,
   sanitizeFilename,
 } from './evidence-pdf-generator';
-import { redactSensitiveData } from './evidence-redaction';
+import { buildAutomationJson } from './evidence-json-builder';
 import {
   appendAttachmentToArchive,
   createFilenameTracker,
@@ -37,114 +36,25 @@ const safeStringify = configureStringify({
 @Injectable()
 export class EvidenceExportService {
   private readonly logger = new Logger(EvidenceExportService.name);
-
-  // Loads all run data into memory — only for the JSON summary endpoint, not ZIP exports.
+  // Used by the JSON summary endpoint — loads automations sequentially via the data loader.
   async getTaskEvidenceSummary(
     organizationId: string,
     taskId: string,
   ): Promise<TaskEvidenceSummary> {
-    this.logger.log('Building task evidence summary', {
-      organizationId,
-      taskId,
-    });
-    const task = await db.task.findFirst({
-      where: { id: taskId, organizationId },
-      include: { organization: { select: { name: true } } },
-    });
+    const headers = await getAutomationHeaders({ organizationId, taskId });
 
-    if (!task) {
-      throw new NotFoundException('Task not found');
+    const automations: NormalizedAutomation[] = [];
+    for (const header of headers.automations) {
+      automations.push(await loadFullAutomation({ taskId, header }));
     }
-
-    const appAutomationRuns = await db.integrationCheckRun.findMany({
-      where: { taskId },
-      include: {
-        results: true,
-        connection: { include: { provider: true } },
-      },
-      orderBy: { createdAt: 'desc' },
-    });
-
-    const customAutomationRuns = await db.evidenceAutomationRun.findMany({
-      where: {
-        evidenceAutomation: { taskId },
-        version: { not: null },
-      },
-      include: {
-        evidenceAutomation: { select: { id: true, name: true } },
-      },
-      orderBy: { createdAt: 'desc' },
-    });
-
-    const summary = buildTaskEvidenceSummary({
-      taskId: task.id,
-      taskTitle: task.title,
-      organizationId,
-      organizationName: task.organization.name,
-      appAutomationRuns: appAutomationRuns.map((run) => ({
-        id: run.id,
-        checkId: run.checkId,
-        checkName: run.checkName,
-        status: run.status,
-        startedAt: run.startedAt,
-        completedAt: run.completedAt,
-        durationMs: run.durationMs,
-        totalChecked: run.totalChecked,
-        passedCount: run.passedCount,
-        failedCount: run.failedCount,
-        errorMessage: run.errorMessage,
-        logs: run.logs,
-        createdAt: run.createdAt,
-        connection: {
-          provider: run.connection.provider
-            ? {
-                slug: run.connection.provider.slug,
-                name: run.connection.provider.name,
-              }
-            : undefined,
-        },
-        results: run.results.map((r) => ({
-          id: r.id,
-          passed: r.passed,
-          resourceType: r.resourceType,
-          resourceId: r.resourceId,
-          title: r.title,
-          description: r.description,
-          severity: r.severity,
-          remediation: r.remediation,
-          evidence: r.evidence,
-          collectedAt: r.collectedAt,
-        })),
-      })),
-      customAutomationRuns: customAutomationRuns.map((run) => ({
-        id: run.id,
-        status: run.status,
-        startedAt: run.startedAt,
-        completedAt: run.completedAt,
-        runDuration: run.runDuration,
-        success: run.success,
-        error: run.error,
-        logs: run.logs,
-        output: run.output,
-        evaluationStatus: run.evaluationStatus,
-        evaluationReason: run.evaluationReason,
-        createdAt: run.createdAt,
-        evidenceAutomation: {
-          id: run.evidenceAutomation.id,
-          name: run.evidenceAutomation.name,
-        },
-      })),
-    });
 
     this.logger.log('Task evidence summary built', {
       organizationId,
       taskId,
-      appRuns: appAutomationRuns.length,
-      customRuns: customAutomationRuns.length,
-      automations: summary.automations.length,
+      automations: automations.length,
     });
 
-    return summary;
+    return { ...headers, automations };
   }
 
   async exportAutomationPDF(
@@ -201,13 +111,7 @@ export class EvidenceExportService {
     const folderName = `${sanitizeFilename(task.organization.name)}_${sanitizeFilename(task.title)}_evidence`;
     const filename = `${folderName}_${format(new Date(), 'yyyy-MM-dd')}.zip`;
 
-    const archive = archiver('zip', { zlib: { level: 6 } });
-    archive.on('warning', (err) => {
-      this.logger.warn(`Archive warning (task ${taskId}): ${err.message}`);
-    });
-    archive.on('error', (err) => {
-      this.logger.error(`Archive error (task ${taskId}): ${err.message}`);
-    });
+    const archive = this.createArchive(`task ${taskId}`);
 
     void this.populateTaskArchive({
       archive,
@@ -225,6 +129,62 @@ export class EvidenceExportService {
     });
 
     return { archive, filename };
+  }
+
+  async streamOrganizationEvidenceZip(
+    organizationId: string,
+    options: { includeRawJson?: boolean } = {},
+  ): Promise<EvidenceZipStream> {
+    const organization = await db.organization.findUnique({
+      where: { id: organizationId },
+      select: { name: true },
+    });
+
+    if (!organization) {
+      throw new NotFoundException('Organization not found');
+    }
+
+    const taskIds = await findTasksWithEvidence(organizationId);
+    if (taskIds.length === 0) {
+      throw new NotFoundException(
+        'No tasks with evidence or attachments found',
+      );
+    }
+
+    const orgFolder = sanitizeFilename(organization.name);
+    const exportDate = format(new Date(), 'yyyy-MM-dd');
+    const filename = `${orgFolder}_all-evidence_${exportDate}.zip`;
+
+    const archive = this.createArchive(`org ${organizationId}`);
+
+    void this.populateOrganizationArchive({
+      archive,
+      organizationId,
+      organizationName: organization.name,
+      orgFolder,
+      taskIds,
+      options,
+    }).catch((err) => {
+      this.logger.error(
+        `Failed to populate org ZIP for ${organizationId}: ${
+          err instanceof Error ? err.stack : String(err)
+        }`,
+      );
+      archive.abort();
+    });
+
+    return { archive, filename };
+  }
+
+  private createArchive(label: string): Archiver {
+    const archive = archiver('zip', { zlib: { level: 6 } });
+    archive.on('warning', (err) => {
+      this.logger.warn(`Archive warning (${label}): ${err.message}`);
+    });
+    archive.on('error', (err) => {
+      this.logger.error(`Archive error (${label}): ${err.message}`);
+    });
+    return archive;
   }
 
   private async populateTaskArchive(params: {
@@ -302,142 +262,62 @@ export class EvidenceExportService {
         header: automationHeader,
       });
 
-      const typePrefix =
-        automation.type === 'app_automation' ? 'app' : 'custom';
-      const automationName = sanitizeFilename(automation.name);
-      const idSuffix = automation.id.slice(-8);
-
-      const pdfBuffer = generateAutomationPDF(automation, {
-        organizationName: headers.organizationName,
-        taskTitle: headers.taskTitle,
+      this.appendAutomationToArchive({
+        archive,
+        headers,
+        automation,
+        folderName,
+        options,
+        perAutomationSubfolders,
       });
-
-      if (perAutomationSubfolders) {
-        const sub = `${folderName}/${typePrefix}-${automationName}-${idSuffix}`;
-        archive.append(pdfBuffer, { name: `${sub}/evidence.pdf` });
-        if (options.includeRawJson) {
-          archive.append(
-            Buffer.from(
-              this.buildAutomationJson(headers, automation),
-              'utf-8',
-            ),
-            { name: `${sub}/evidence.json` },
-          );
-        }
-      } else {
-        archive.append(pdfBuffer, {
-          name: `${folderName}/${typePrefix}-${automationName}-${idSuffix}.pdf`,
-        });
-        if (options.includeRawJson) {
-          archive.append(
-            Buffer.from(
-              this.buildAutomationJson(headers, automation),
-              'utf-8',
-            ),
-            {
-              name: `${folderName}/${typePrefix}-${automationName}-${idSuffix}.json`,
-            },
-          );
-        }
-      }
     }
   }
 
-  private buildAutomationJson(
-    summary: TaskEvidenceSummary,
-    automation: NormalizedAutomation,
-  ): string {
-    return (
-      safeStringify(
-        redactSensitiveData({
-          automation: {
-            id: automation.id,
-            name: automation.name,
-            type: automation.type,
-            integrationName: automation.integrationName,
-            totalRuns: automation.totalRuns,
-            successfulRuns: automation.successfulRuns,
-            failedRuns: automation.failedRuns,
-            latestRunAt: automation.latestRunAt,
-          },
-          runs: automation.runs.map((run) => ({
-            id: run.id,
-            status: run.status,
-            startedAt: run.startedAt,
-            completedAt: run.completedAt,
-            durationMs: run.durationMs,
-            totalChecked: run.totalChecked,
-            passedCount: run.passedCount,
-            failedCount: run.failedCount,
-            evaluationStatus: run.evaluationStatus,
-            evaluationReason: run.evaluationReason,
-            logs: run.logs,
-            output: run.output,
-            error: run.error,
-            results: run.results,
-            createdAt: run.createdAt,
-          })),
-          exportedAt: summary.exportedAt,
-        }),
-        null,
-        2,
-      ) ?? '{}'
-    );
-  }
-
-  async streamOrganizationEvidenceZip(
-    organizationId: string,
-    options: { includeRawJson?: boolean } = {},
-  ): Promise<EvidenceZipStream> {
-    const organization = await db.organization.findUnique({
-      where: { id: organizationId },
-      select: { name: true },
-    });
-
-    if (!organization) {
-      throw new NotFoundException('Organization not found');
-    }
-
-    const taskIds = await findTasksWithEvidence(organizationId);
-    if (taskIds.length === 0) {
-      throw new NotFoundException(
-        'No tasks with evidence or attachments found',
-      );
-    }
-
-    const orgFolder = sanitizeFilename(organization.name);
-    const exportDate = format(new Date(), 'yyyy-MM-dd');
-    const filename = `${orgFolder}_all-evidence_${exportDate}.zip`;
-
-    const archive = archiver('zip', { zlib: { level: 6 } });
-    archive.on('warning', (err) => {
-      this.logger.warn(
-        `Archive warning (org ${organizationId}): ${err.message}`,
-      );
-    });
-    archive.on('error', (err) => {
-      this.logger.error(
-        `Archive error (org ${organizationId}): ${err.message}`,
-      );
-    });
-
-    void this.populateOrganizationArchive({
+  private appendAutomationToArchive(params: {
+    archive: Archiver;
+    headers: TaskEvidenceSummary;
+    automation: NormalizedAutomation;
+    folderName: string;
+    options: { includeRawJson?: boolean };
+    perAutomationSubfolders: boolean;
+  }): void {
+    const {
       archive,
-      organizationId,
-      organizationName: organization.name,
-      orgFolder,
-      taskIds,
+      headers,
+      automation,
+      folderName,
       options,
-    }).catch((err) => {
-      this.logger.error(
-        `Failed to populate org ZIP for ${organizationId}: ${
-          err instanceof Error ? err.stack : String(err)
-        }`,
-      );
-      archive.abort();
+      perAutomationSubfolders,
+    } = params;
+
+    const typePrefix =
+      automation.type === 'app_automation' ? 'app' : 'custom';
+    const automationName = sanitizeFilename(automation.name);
+    const idSuffix = automation.id.slice(-8);
+
+    const pdfBuffer = generateAutomationPDF(automation, {
+      organizationName: headers.organizationName,
+      taskTitle: headers.taskTitle,
     });
 
-    return { archive, filename };
+    const basePath = perAutomationSubfolders
+      ? `${folderName}/${typePrefix}-${automationName}-${idSuffix}`
+      : folderName;
+    const pdfName = perAutomationSubfolders
+      ? `${basePath}/evidence.pdf`
+      : `${basePath}/${typePrefix}-${automationName}-${idSuffix}.pdf`;
+
+    archive.append(pdfBuffer, { name: pdfName });
+
+    if (options.includeRawJson) {
+      const jsonName = perAutomationSubfolders
+        ? `${basePath}/evidence.json`
+        : `${basePath}/${typePrefix}-${automationName}-${idSuffix}.json`;
+      archive.append(
+        Buffer.from(buildAutomationJson(headers, automation), 'utf-8'),
+        { name: jsonName },
+      );
+    }
   }
 
   private async populateOrganizationArchive(params: {
