@@ -92,7 +92,7 @@ function ItemBadges({
     <>
       {item.isAccessRevocation && (
         <div>
-          <Badge variant="accent">Critical</Badge>
+          <Badge variant="destructive">Critical</Badge>
         </div>
       )}
       {item.evidenceRequired && (
