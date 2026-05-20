@@ -130,6 +130,56 @@ describe('CloudExceptionService.markAsException', () => {
     );
   });
 
+  it('prepends callerLabel to audit description when set (API key / service token attribution)', async () => {
+    // When the userId came from ActingUserResolver's owner-fallback path,
+    // the controller forwards a callerLabel so the audit log makes it
+    // clear this was automation, not a UI click.
+    withFinding({
+      findingKey: 'iam-no-mfa-john',
+      resourceId: 'john',
+      connectionId: 'icn_aws',
+    });
+    dbMock.findingException.upsert.mockResolvedValueOnce({ id: 'fex_new' });
+
+    await buildService().markAsException({
+      findingId: 'icx_1',
+      organizationId: 'org_1',
+      userId: 'usr_owner',
+      reason: 'CI pipeline marking this finding under approved exception policy.',
+      callerLabel: 'via API key "CI Pipeline"',
+    });
+
+    const auditCall = auditLogMock.mock.calls[0][0];
+    expect(auditCall.description).toMatch(
+      /^\[via API key "CI Pipeline"\] Marked finding /,
+    );
+    expect(auditCall.metadata).toEqual(
+      expect.objectContaining({ callerLabel: 'via API key "CI Pipeline"' }),
+    );
+  });
+
+  it('omits the [callerLabel] prefix when callerLabel is not provided (session calls)', async () => {
+    withFinding({
+      findingKey: 'iam-no-mfa-john',
+      resourceId: 'john',
+      connectionId: 'icn_aws',
+    });
+    dbMock.findingException.upsert.mockResolvedValueOnce({ id: 'fex_new' });
+
+    await buildService().markAsException({
+      findingId: 'icx_1',
+      organizationId: 'org_1',
+      userId: 'usr_human',
+      reason: 'Documented exception with sufficient supporting rationale here.',
+      // no callerLabel — this is a session call
+    });
+
+    const auditCall = auditLogMock.mock.calls[0][0];
+    // No bracket prefix — description begins directly with "Marked finding"
+    expect(auditCall.description).toMatch(/^Marked finding /);
+    expect(auditCall.metadata.callerLabel).toBeNull();
+  });
+
   it('rejects findings that lack a stable check/resource identity', async () => {
     dbMock.integrationCheckResult.findFirst.mockResolvedValueOnce({
       resourceId: null,

@@ -17,10 +17,17 @@ export const MIN_EXCEPTION_REASON_LENGTH = 20;
 export interface MarkExceptionInput {
   findingId: string;
   organizationId: string;
+  /** User to attribute the mutation to. For session callers this is the
+   *  signed-in user; for API key / service token callers this is the org's
+   *  owner (resolved by ActingUserResolver). */
   userId: string;
   reason: string;
   reviewedBy?: string | null;
   expiresAt?: Date | null;
+  /** Optional audit-log description prefix when the userId came from
+   *  owner-fallback (e.g. `via API key "CI Pipeline"`). Undefined for
+   *  session callers so the description is unchanged. */
+  callerLabel?: string;
 }
 
 @Injectable()
@@ -86,18 +93,24 @@ export class CloudExceptionService {
     });
     const exceptionId = upserted.id;
 
+    const reasonPreview = `${input.reason.slice(0, 80)}${input.reason.length > 80 ? '…' : ''}`;
+    const description = input.callerLabel
+      ? `[${input.callerLabel}] Marked finding ${lookup.checkId}:${lookup.resourceId} as exception — ${reasonPreview}`
+      : `Marked finding ${lookup.checkId}:${lookup.resourceId} as exception — ${reasonPreview}`;
+
     await logCloudSecurityActivity({
       organizationId: input.organizationId,
       userId: input.userId,
       connectionId: lookup.connectionId,
       action: 'exception_marked',
-      description: `Marked finding ${lookup.checkId}:${lookup.resourceId} as exception — ${input.reason.slice(0, 80)}${input.reason.length > 80 ? '…' : ''}`,
+      description,
       metadata: {
         findingId: input.findingId,
         exceptionId,
         checkId: lookup.checkId,
         resourceId: lookup.resourceId,
         expiresAt: input.expiresAt?.toISOString() ?? null,
+        callerLabel: input.callerLabel ?? null,
       },
     });
 
@@ -108,6 +121,8 @@ export class CloudExceptionService {
     exceptionId: string;
     organizationId: string;
     userId: string;
+    /** Optional audit-log prefix for owner-fallback callers (see MarkExceptionInput). */
+    callerLabel?: string;
   }): Promise<void> {
     const existing = await db.findingException.findFirst({
       where: { id: params.exceptionId, organizationId: params.organizationId },
@@ -122,16 +137,21 @@ export class CloudExceptionService {
       data: { revokedAt: new Date(), revokedById: params.userId },
     });
 
+    const description = params.callerLabel
+      ? `[${params.callerLabel}] Revoked exception on ${existing.checkId}:${existing.resourceId}.`
+      : `Revoked exception on ${existing.checkId}:${existing.resourceId}.`;
+
     await logCloudSecurityActivity({
       organizationId: params.organizationId,
       userId: params.userId,
       connectionId: existing.connectionId,
       action: 'exception_revoked',
-      description: `Revoked exception on ${existing.checkId}:${existing.resourceId}.`,
+      description,
       metadata: {
         exceptionId: params.exceptionId,
         checkId: existing.checkId,
         resourceId: existing.resourceId,
+        callerLabel: params.callerLabel ?? null,
       },
     });
   }

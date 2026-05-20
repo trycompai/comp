@@ -32,6 +32,8 @@ import { CloudAwsScanModeService } from './aws-scan-mode.service';
 import { parseExceptionExpiry } from './exception-expiry.utils';
 import { MarkExceptionDto } from './dto/mark-exception.dto';
 import { UpdateAwsScanModeDto } from './dto/update-scan-mode.dto';
+import { ActingUserResolver } from '../auth/acting-user.service';
+import type { AuthenticatedRequest } from '../auth/types';
 import { logCloudSecurityActivity } from './cloud-security-audit';
 import { CloudSecurityActivityService } from './cloud-security-activity.service';
 import {
@@ -56,6 +58,7 @@ export class CloudSecurityController {
     private readonly exceptionService: CloudExceptionService,
     private readonly historyService: CloudHistoryService,
     private readonly scanModeService: CloudAwsScanModeService,
+    private readonly actingUser: ActingUserResolver,
   ) {}
 
   @Get('activity')
@@ -114,26 +117,32 @@ export class CloudSecurityController {
   @ApiOperation({
     summary:
       'Mark a finding as an exception so it no longer appears in the active Scan Results list',
+    description:
+      'Accepts session, API key, or service token auth. For API key / service token callers ' +
+      'without an explicit user attribution, the action is attributed to the org\'s owner and ' +
+      'the audit log description records the calling key/service name.',
   })
   async markFindingAsException(
     @Param('findingId') findingId: string,
     @Body() body: MarkExceptionDto,
     @OrganizationId() organizationId: string,
-    @Req() req: { userId?: string },
+    @Req() req: AuthenticatedRequest,
   ) {
-    if (!req.userId) {
+    const acting = await this.actingUser.resolve(req, organizationId);
+    if (!acting.userId) {
       throw new HttpException(
-        'Marking an exception requires session authentication.',
-        HttpStatus.UNAUTHORIZED,
+        'Cannot attribute this action — your organization must have at least one user with the "owner" role.',
+        HttpStatus.BAD_REQUEST,
       );
     }
     const result = await this.exceptionService.markAsException({
       findingId,
       organizationId,
-      userId: req.userId,
+      userId: acting.userId,
       reason: body.reason,
       reviewedBy: body.reviewedBy ?? null,
       expiresAt: parseExceptionExpiry(body.expiresAt),
+      callerLabel: acting.callerLabel,
     });
     return { data: result };
   }
@@ -144,24 +153,29 @@ export class CloudSecurityController {
   @ApiOperation({
     summary:
       'Switch the AWS scan engine for a connection (Comp AI scanners ↔ Security Hub)',
+    description:
+      'Accepts session, API key, or service token auth. For API key / service token callers ' +
+      'without an explicit user attribution, the action is attributed to the org\'s owner.',
   })
   async updateAwsScanMode(
     @Param('connectionId') connectionId: string,
     @Body() body: UpdateAwsScanModeDto,
     @OrganizationId() organizationId: string,
-    @Req() req: { userId?: string },
+    @Req() req: AuthenticatedRequest,
   ) {
-    if (!req.userId) {
+    const acting = await this.actingUser.resolve(req, organizationId);
+    if (!acting.userId) {
       throw new HttpException(
-        'Switching the scan engine requires session authentication.',
-        HttpStatus.UNAUTHORIZED,
+        'Cannot attribute this action — your organization must have at least one user with the "owner" role.',
+        HttpStatus.BAD_REQUEST,
       );
     }
     const result = await this.scanModeService.updateMode({
       connectionId,
       organizationId,
-      userId: req.userId,
+      userId: acting.userId,
       mode: body.mode,
+      callerLabel: acting.callerLabel,
     });
     return { data: result };
   }
@@ -169,22 +183,29 @@ export class CloudSecurityController {
   @Delete('exceptions/:exceptionId')
   @UseGuards(HybridAuthGuard, PermissionGuard)
   @RequirePermission('integration', 'update')
-  @ApiOperation({ summary: 'Revoke an exception, reopening the finding' })
+  @ApiOperation({
+    summary: 'Revoke an exception, reopening the finding',
+    description:
+      'Accepts session, API key, or service token auth. For API key / service token callers ' +
+      'without an explicit user attribution, the action is attributed to the org\'s owner.',
+  })
   async revokeException(
     @Param('exceptionId') exceptionId: string,
     @OrganizationId() organizationId: string,
-    @Req() req: { userId?: string },
+    @Req() req: AuthenticatedRequest,
   ) {
-    if (!req.userId) {
+    const acting = await this.actingUser.resolve(req, organizationId);
+    if (!acting.userId) {
       throw new HttpException(
-        'Revoking an exception requires session authentication.',
-        HttpStatus.UNAUTHORIZED,
+        'Cannot attribute this action — your organization must have at least one user with the "owner" role.',
+        HttpStatus.BAD_REQUEST,
       );
     }
     await this.exceptionService.revokeException({
       exceptionId,
       organizationId,
-      userId: req.userId,
+      userId: acting.userId,
+      callerLabel: acting.callerLabel,
     });
     return { success: true };
   }
