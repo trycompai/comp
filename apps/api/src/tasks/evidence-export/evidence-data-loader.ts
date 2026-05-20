@@ -197,7 +197,7 @@ async function loadAppAutomationRuns(
         results: true,
         connection: { include: { provider: true } },
       },
-      orderBy: { createdAt: 'desc' },
+      orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
       take: RUN_BATCH_SIZE,
       skip,
     });
@@ -231,7 +231,7 @@ async function loadCustomAutomationRuns(
       include: {
         evidenceAutomation: { select: { id: true, name: true } },
       },
-      orderBy: { createdAt: 'desc' },
+      orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
       take: RUN_BATCH_SIZE,
       skip,
     });
