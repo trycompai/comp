@@ -473,6 +473,101 @@ describe('EvidenceExportService — streaming ZIPs', () => {
       );
     });
 
+    it('loads each automation individually instead of all runs at once (OOM fix)', async () => {
+      const appRuns = [
+        {
+          id: 'icr_1',
+          checkId: 'mfa-check',
+          checkName: 'MFA Enabled',
+          status: 'success',
+          startedAt: new Date('2024-01-15'),
+          completedAt: new Date('2024-01-15'),
+          durationMs: 5000,
+          totalChecked: 1,
+          passedCount: 1,
+          failedCount: 0,
+          errorMessage: null,
+          logs: { entries: ['checked MFA'] },
+          createdAt: new Date('2024-01-15'),
+          connection: { provider: { slug: 'gws', name: 'Google Workspace' } },
+          results: [
+            {
+              id: 'r1',
+              passed: true,
+              resourceType: 'user',
+              resourceId: 'u1',
+              title: 'MFA active',
+              description: null,
+              severity: null,
+              remediation: null,
+              evidence: { mfa: true },
+              collectedAt: new Date(),
+            },
+          ],
+        },
+        {
+          id: 'icr_2',
+          checkId: 'access-review',
+          checkName: 'Access Review',
+          status: 'success',
+          startedAt: new Date('2024-01-16'),
+          completedAt: new Date('2024-01-16'),
+          durationMs: 3000,
+          totalChecked: 2,
+          passedCount: 2,
+          failedCount: 0,
+          errorMessage: null,
+          logs: null,
+          createdAt: new Date('2024-01-16'),
+          connection: { provider: { slug: 'gws', name: 'Google Workspace' } },
+          results: [],
+        },
+      ];
+
+      mockDb.task.findFirst.mockResolvedValue(taskRow);
+      mockDb.attachment.findMany.mockResolvedValue([]);
+      mockDb.evidenceAutomationRun.findMany.mockResolvedValue([]);
+      mockDb.integrationCheckRun.findMany.mockImplementation(
+        (args: { where: { checkId?: string } }) => {
+          if (args.where.checkId) {
+            return Promise.resolve(
+              appRuns.filter((r) => r.checkId === args.where.checkId),
+            );
+          }
+          return Promise.resolve(appRuns);
+        },
+      );
+
+      const { archive } = await service.streamTaskEvidenceZip(
+        'org_1',
+        'tsk_123',
+      );
+      const mock = archive as unknown as MockArchive;
+      await mock.finalized;
+
+      const paths = mock.appendCalls.map((c) => c.options.name);
+
+      // Both automations get their own subfolder and PDF
+      expect(paths.filter((p) => /\/evidence\.pdf$/.test(p))).toHaveLength(2);
+      expect(paths.some((p) => p.includes('/app-mfa-enabled-'))).toBe(true);
+      expect(paths.some((p) => p.includes('/app-access-review-'))).toBe(true);
+
+      // Verify per-automation loading: findMany is called with individual
+      // checkId filters (not a single bulk load of all results).
+      const findManyCalls = mockDb.integrationCheckRun.findMany.mock.calls;
+      const perAutomationCalls = findManyCalls.filter(
+        (call: unknown[]) =>
+          (call[0] as { where: { checkId?: string } }).where.checkId,
+      );
+      expect(perAutomationCalls).toHaveLength(2);
+      const loadedCheckIds = perAutomationCalls.map(
+        (call: unknown[]) =>
+          (call[0] as { where: { checkId: string } }).where.checkId,
+      );
+      expect(loadedCheckIds).toContain('mfa-check');
+      expect(loadedCheckIds).toContain('access-review');
+    });
+
     it('produces a summary-only ZIP when task has neither automations nor attachments', async () => {
       primeTaskQueries({ attachments: [], appRuns: [], customRuns: [] });
 
