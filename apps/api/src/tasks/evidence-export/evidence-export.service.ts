@@ -1,6 +1,5 @@
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { db } from '@db';
-import { AttachmentEntityType } from '@db';
 import archiver, { type Archiver } from 'archiver';
 import { format } from 'date-fns';
 import { configure as configureStringify } from 'safe-stable-stringify';
@@ -23,8 +22,12 @@ import {
   getTaskAttachments,
   type TaskAttachment,
 } from './evidence-attachment-streamer';
+import {
+  getAutomationHeaders,
+  loadFullAutomation,
+  findTasksWithEvidence,
+} from './evidence-data-loader';
 
-// Configure safe stringify to handle BigInt, circular refs, etc.
 const safeStringify = configureStringify({
   bigint: true,
   circularValue: '[Circular]',
@@ -35,9 +38,7 @@ const safeStringify = configureStringify({
 export class EvidenceExportService {
   private readonly logger = new Logger(EvidenceExportService.name);
 
-  /**
-   * Get task evidence summary with all automation runs
-   */
+  // Loads all run data into memory — only for the JSON summary endpoint, not ZIP exports.
   async getTaskEvidenceSummary(
     organizationId: string,
     taskId: string,
@@ -47,15 +48,8 @@ export class EvidenceExportService {
       taskId,
     });
     const task = await db.task.findFirst({
-      where: {
-        id: taskId,
-        organizationId,
-      },
-      include: {
-        organization: {
-          select: { name: true },
-        },
-      },
+      where: { id: taskId, organizationId },
+      include: { organization: { select: { name: true } } },
     });
 
     if (!task) {
@@ -66,25 +60,18 @@ export class EvidenceExportService {
       where: { taskId },
       include: {
         results: true,
-        connection: {
-          include: {
-            provider: true,
-          },
-        },
+        connection: { include: { provider: true } },
       },
       orderBy: { createdAt: 'desc' },
     });
 
-    // Only include published custom automation runs (version !== null).
     const customAutomationRuns = await db.evidenceAutomationRun.findMany({
       where: {
         evidenceAutomation: { taskId },
         version: { not: null },
       },
       include: {
-        evidenceAutomation: {
-          select: { id: true, name: true },
-        },
+        evidenceAutomation: { select: { id: true, name: true } },
       },
       orderBy: { createdAt: 'desc' },
     });
@@ -160,25 +147,28 @@ export class EvidenceExportService {
     return summary;
   }
 
-  /**
-   * Export a single automation's evidence as PDF (small, buffered — no stream).
-   */
   async exportAutomationPDF(
     organizationId: string,
     taskId: string,
     automationId: string,
   ): Promise<EvidenceExportResult> {
-    const summary = await this.getTaskEvidenceSummary(organizationId, taskId);
+    const headers = await getAutomationHeaders({ organizationId, taskId });
 
-    const automation = summary.automations.find((a) => a.id === automationId);
-
-    if (!automation) {
+    const automationHeader = headers.automations.find(
+      (a) => a.id === automationId,
+    );
+    if (!automationHeader) {
       throw new NotFoundException('Automation not found');
     }
 
+    const automation = await loadFullAutomation({
+      taskId,
+      header: automationHeader,
+    });
+
     const pdfBuffer = generateAutomationPDF(automation, {
-      organizationName: summary.organizationName,
-      taskTitle: summary.taskTitle,
+      organizationName: headers.organizationName,
+      taskTitle: headers.taskTitle,
     });
 
     this.logger.log('Automation evidence PDF generated', {
@@ -189,20 +179,11 @@ export class EvidenceExportService {
       pdfBytes: pdfBuffer.length,
     });
 
-    const filename = `${sanitizeFilename(summary.organizationName)}_${sanitizeFilename(automation.name)}_evidence_${format(new Date(), 'yyyy-MM-dd')}.pdf`;
+    const filename = `${sanitizeFilename(headers.organizationName)}_${sanitizeFilename(automation.name)}_evidence_${format(new Date(), 'yyyy-MM-dd')}.pdf`;
 
-    return {
-      fileBuffer: pdfBuffer,
-      mimeType: 'application/pdf',
-      filename,
-    };
+    return { fileBuffer: pdfBuffer, mimeType: 'application/pdf', filename };
   }
 
-  /**
-   * Stream all evidence for a task as a ZIP.
-   * Returns a live archiver — caller pipes it to an HTTP response. S3 bodies
-   * stream through so peak memory ≈ the largest single file.
-   */
   async streamTaskEvidenceZip(
     organizationId: string,
     taskId: string,
@@ -255,14 +236,14 @@ export class EvidenceExportService {
   }): Promise<void> {
     const { archive, organizationId, taskId, folderName, options } = params;
 
-    const [summary, attachments] = await Promise.all([
-      this.getTaskEvidenceSummary(organizationId, taskId),
+    const [headers, attachments] = await Promise.all([
+      getAutomationHeaders({ organizationId, taskId }),
       getTaskAttachments(organizationId, taskId),
     ]);
 
     await this.appendTaskContents({
       archive,
-      summary,
+      headers,
       attachments,
       folderName,
       options,
@@ -274,19 +255,16 @@ export class EvidenceExportService {
     this.logger.log('Task evidence ZIP streamed', {
       organizationId,
       taskId,
-      automations: summary.automations.length,
+      automations: headers.automations.length,
       attachments: attachments.length,
       includeRawJson: !!options.includeRawJson,
     });
   }
 
-  /**
-   * Append a task's contents (summary PDF, attachments, automation PDFs/JSON)
-   * to the archive under `folderName`. Shared by per-task and org-wide exports.
-   */
+  // Loads each automation's runs individually so peak memory ≈ one automation, not all combined.
   private async appendTaskContents(params: {
     archive: Archiver;
-    summary: TaskEvidenceSummary;
+    headers: TaskEvidenceSummary;
     attachments: TaskAttachment[];
     folderName: string;
     options: { includeRawJson?: boolean };
@@ -294,14 +272,14 @@ export class EvidenceExportService {
   }): Promise<void> {
     const {
       archive,
-      summary,
+      headers,
       attachments,
       folderName,
       options,
       perAutomationSubfolders,
     } = params;
 
-    const summaryPdf = generateTaskSummaryPDF(summary, {
+    const summaryPdf = generateTaskSummaryPDF(headers, {
       attachmentsCount: attachments.length,
     });
     archive.append(summaryPdf, { name: `${folderName}/00-summary.pdf` });
@@ -318,15 +296,20 @@ export class EvidenceExportService {
       }
     }
 
-    for (const automation of summary.automations) {
+    for (const automationHeader of headers.automations) {
+      const automation = await loadFullAutomation({
+        taskId: headers.taskId,
+        header: automationHeader,
+      });
+
       const typePrefix =
         automation.type === 'app_automation' ? 'app' : 'custom';
       const automationName = sanitizeFilename(automation.name);
       const idSuffix = automation.id.slice(-8);
 
       const pdfBuffer = generateAutomationPDF(automation, {
-        organizationName: summary.organizationName,
-        taskTitle: summary.taskTitle,
+        organizationName: headers.organizationName,
+        taskTitle: headers.taskTitle,
       });
 
       if (perAutomationSubfolders) {
@@ -335,7 +318,7 @@ export class EvidenceExportService {
         if (options.includeRawJson) {
           archive.append(
             Buffer.from(
-              this.buildAutomationJson(summary, automation),
+              this.buildAutomationJson(headers, automation),
               'utf-8',
             ),
             { name: `${sub}/evidence.json` },
@@ -348,7 +331,7 @@ export class EvidenceExportService {
         if (options.includeRawJson) {
           archive.append(
             Buffer.from(
-              this.buildAutomationJson(summary, automation),
+              this.buildAutomationJson(headers, automation),
               'utf-8',
             ),
             {
@@ -402,13 +385,6 @@ export class EvidenceExportService {
     );
   }
 
-  /**
-   * Stream all evidence across an organization as a ZIP.
-   *
-   * Pre-flight checks (organization exists, has content) run synchronously
-   * before the archive is created so failures turn into proper HTTP errors
-   * instead of mid-stream aborts with headers already sent.
-   */
   async streamOrganizationEvidenceZip(
     organizationId: string,
     options: { includeRawJson?: boolean } = {},
@@ -422,8 +398,7 @@ export class EvidenceExportService {
       throw new NotFoundException('Organization not found');
     }
 
-    // Pre-flight: error synchronously if nothing to export.
-    const taskIds = await this.findTasksWithEvidence(organizationId);
+    const taskIds = await findTasksWithEvidence(organizationId);
     if (taskIds.length === 0) {
       throw new NotFoundException(
         'No tasks with evidence or attachments found',
@@ -482,8 +457,6 @@ export class EvidenceExportService {
       options,
     } = params;
 
-    // Stream tasks one at a time. Only keep lightweight manifest metadata in
-    // memory (task title + counts) — never hold all summaries simultaneously.
     const manifestEntries: Array<{
       id: string;
       title: string;
@@ -494,32 +467,31 @@ export class EvidenceExportService {
 
     for (const taskId of taskIds) {
       try {
-        const [summary, attachments] = await Promise.all([
-          this.getTaskEvidenceSummary(organizationId, taskId),
+        const [headers, attachments] = await Promise.all([
+          getAutomationHeaders({ organizationId, taskId }),
           getTaskAttachments(organizationId, taskId),
         ]);
 
-        if (summary.automations.length === 0 && attachments.length === 0) {
+        if (headers.automations.length === 0 && attachments.length === 0) {
           continue;
         }
 
-        const taskIdSuffix = summary.taskId.slice(-8);
-        const taskFolder = `${orgFolder}/${sanitizeFilename(summary.taskTitle)}-${taskIdSuffix}`;
+        const taskIdSuffix = headers.taskId.slice(-8);
+        const taskFolder = `${orgFolder}/${sanitizeFilename(headers.taskTitle)}-${taskIdSuffix}`;
 
         await this.appendTaskContents({
           archive,
-          summary,
+          headers,
           attachments,
           folderName: taskFolder,
           options,
-          // Org-wide keeps automation files flat (existing convention).
           perAutomationSubfolders: false,
         });
 
         manifestEntries.push({
-          id: summary.taskId,
-          title: summary.taskTitle,
-          automations: summary.automations.length,
+          id: headers.taskId,
+          title: headers.taskTitle,
+          automations: headers.automations.length,
           attachments: attachments.length,
         });
         totalAttachments += attachments.length;
@@ -534,9 +506,6 @@ export class EvidenceExportService {
 
     manifestEntries.sort((a, b) => a.title.localeCompare(b.title));
 
-    // Manifest written last — archiver doesn't care about append order for the
-    // final ZIP structure, and this lets us include final counts without a
-    // separate aggregation pass.
     const manifest = {
       organization: organizationName,
       organizationId,
@@ -558,43 +527,5 @@ export class EvidenceExportService {
       totalAttachments,
       includeRawJson: !!options.includeRawJson,
     });
-  }
-
-  /**
-   * Find task IDs that have either automation runs or task attachments.
-   * Union of two cheap queries — avoids scanning every task for the org.
-   */
-  private async findTasksWithEvidence(
-    organizationId: string,
-  ): Promise<string[]> {
-    const [tasksWithRuns, taskAttachments] = await Promise.all([
-      db.task.findMany({
-        where: {
-          organizationId,
-          OR: [
-            { integrationCheckRuns: { some: {} } },
-            {
-              evidenceAutomations: {
-                some: { runs: { some: { version: { not: null } } } },
-              },
-            },
-          ],
-        },
-        select: { id: true },
-      }),
-      db.attachment.findMany({
-        where: {
-          organizationId,
-          entityType: AttachmentEntityType.task,
-        },
-        select: { entityId: true },
-        distinct: ['entityId'],
-      }),
-    ]);
-
-    const ids = new Set<string>();
-    for (const t of tasksWithRuns) ids.add(t.id);
-    for (const a of taskAttachments) ids.add(a.entityId);
-    return Array.from(ids);
   }
 }
