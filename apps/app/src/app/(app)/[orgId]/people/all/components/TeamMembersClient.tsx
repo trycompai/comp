@@ -660,7 +660,8 @@ function DateRangeFilter({
             <ChevronDown size={12} className="text-muted-foreground" />
           </div>
         </PopoverTrigger>
-        <PopoverContent className="w-[420px] border bg-background p-4 shadow-md" align="start">
+        <PopoverContent align="start">
+          <div className="w-[420px] border bg-background p-4 shadow-md rounded-lg">
           <div className="flex flex-col gap-4">
             <span className="text-[10px] font-bold uppercase tracking-[0.08em] text-muted-foreground">
               {label} between
@@ -691,15 +692,17 @@ function DateRangeFilter({
                     {draftFrom ? format(draftFrom, 'MMM d, yyyy') : <span className="text-muted-foreground">Start date</span>}
                   </div>
                 </PopoverTrigger>
-                <PopoverContent className="w-auto border bg-background p-0 shadow-md" align="start">
-                  <Calendar
-                    mode="single"
-                    selected={draftFrom}
-                    onSelect={(d) => { setDraftFrom(d ?? undefined); setActivePreset(null); setFromPickerOpen(false); }}
-                    captionLayout="dropdown"
-                    fromYear={2000}
-                    toYear={new Date().getFullYear() + 1}
-                  />
+                <PopoverContent align="start">
+                  <div className="w-auto border bg-background p-0 shadow-md rounded-lg">
+                    <Calendar
+                      mode="single"
+                      selected={draftFrom}
+                      onSelect={(d) => { setDraftFrom(d ?? undefined); setActivePreset(null); setFromPickerOpen(false); }}
+                      captionLayout="dropdown"
+                      fromYear={2000}
+                      toYear={new Date().getFullYear() + 1}
+                    />
+                  </div>
                 </PopoverContent>
               </Popover>
               <span className="text-muted-foreground">→</span>
@@ -710,15 +713,17 @@ function DateRangeFilter({
                     {draftTo ? format(draftTo, 'MMM d, yyyy') : <span className="text-muted-foreground">End date</span>}
                   </div>
                 </PopoverTrigger>
-                <PopoverContent className="w-auto border bg-background p-0 shadow-md" align="start">
-                  <Calendar
-                    mode="single"
-                    selected={draftTo}
-                    onSelect={(d) => { setDraftTo(d ?? undefined); setActivePreset(null); setToPickerOpen(false); }}
-                    captionLayout="dropdown"
-                    fromYear={2000}
-                    toYear={new Date().getFullYear() + 1}
-                  />
+                <PopoverContent align="start">
+                  <div className="w-auto border bg-background p-0 shadow-md rounded-lg">
+                    <Calendar
+                      mode="single"
+                      selected={draftTo}
+                      onSelect={(d) => { setDraftTo(d ?? undefined); setActivePreset(null); setToPickerOpen(false); }}
+                      captionLayout="dropdown"
+                      fromYear={2000}
+                      toYear={new Date().getFullYear() + 1}
+                    />
+                  </div>
                 </PopoverContent>
               </Popover>
             </div>
@@ -731,6 +736,7 @@ function DateRangeFilter({
                 <Button size="sm" onClick={handleApply}>Apply</Button>
               </div>
             </div>
+          </div>
           </div>
         </PopoverContent>
       </Popover>
