@@ -660,9 +660,8 @@ function DateRangeFilter({
             <ChevronDown size={12} className="text-muted-foreground" />
           </div>
         </PopoverTrigger>
-        <PopoverContent align="start">
-          <div className="w-[420px] border bg-background p-4 shadow-md rounded-lg">
-          <div className="flex flex-col gap-4">
+        <PopoverContent align="start" style={{ width: 'auto' }}>
+          <div className="flex w-[380px] flex-col gap-4 p-1.5">
             <span className="text-[10px] font-bold uppercase tracking-[0.08em] text-muted-foreground">
               {label} between
             </span>
@@ -693,16 +692,14 @@ function DateRangeFilter({
                   </div>
                 </PopoverTrigger>
                 <PopoverContent align="start">
-                  <div className="w-auto border bg-background p-0 shadow-md rounded-lg">
-                    <Calendar
-                      mode="single"
-                      selected={draftFrom}
-                      onSelect={(d) => { setDraftFrom(d ?? undefined); setActivePreset(null); setFromPickerOpen(false); }}
-                      captionLayout="dropdown"
-                      fromYear={2000}
-                      toYear={new Date().getFullYear() + 1}
-                    />
-                  </div>
+                  <Calendar
+                    mode="single"
+                    selected={draftFrom}
+                    onSelect={(d) => { setDraftFrom(d ?? undefined); setActivePreset(null); setFromPickerOpen(false); }}
+                    captionLayout="dropdown"
+                    fromYear={2000}
+                    toYear={new Date().getFullYear() + 1}
+                  />
                 </PopoverContent>
               </Popover>
               <span className="text-muted-foreground">→</span>
@@ -714,16 +711,14 @@ function DateRangeFilter({
                   </div>
                 </PopoverTrigger>
                 <PopoverContent align="start">
-                  <div className="w-auto border bg-background p-0 shadow-md rounded-lg">
-                    <Calendar
-                      mode="single"
-                      selected={draftTo}
-                      onSelect={(d) => { setDraftTo(d ?? undefined); setActivePreset(null); setToPickerOpen(false); }}
-                      captionLayout="dropdown"
-                      fromYear={2000}
-                      toYear={new Date().getFullYear() + 1}
-                    />
-                  </div>
+                  <Calendar
+                    mode="single"
+                    selected={draftTo}
+                    onSelect={(d) => { setDraftTo(d ?? undefined); setActivePreset(null); setToPickerOpen(false); }}
+                    captionLayout="dropdown"
+                    fromYear={2000}
+                    toYear={new Date().getFullYear() + 1}
+                  />
                 </PopoverContent>
               </Popover>
             </div>
@@ -736,7 +731,6 @@ function DateRangeFilter({
                 <Button size="sm" onClick={handleApply}>Apply</Button>
               </div>
             </div>
-          </div>
           </div>
         </PopoverContent>
       </Popover>
