@@ -1085,6 +1085,38 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "name": "onboardAfter",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "onboardBefore",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "offboardAfter",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "offboardBefore",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
           }
         ],
         "responses": {
@@ -2494,6 +2526,182 @@
         }
       }
     },
+    "/v1/people/{id}/employment-evidence/{eventType}": {
+      "get": {
+        "operationId": "PeopleController_getEmploymentEvidence_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "description": "Member ID",
+            "schema": {
+              "example": "mem_abc123def456",
+              "type": "string"
+            }
+          },
+          {
+            "name": "eventType",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "enum": [
+                "onboard",
+                "offboard"
+              ],
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Get employment evidence attachments",
+        "tags": [
+          "People"
+        ],
+        "description": "Get employment evidence attachments in Comp AI. Invite and manage workforce members, training status, device compliance, email preferences, and employee evidence records.",
+        "x-mint": {
+          "metadata": {
+            "title": "Get employment evidence attachments | Comp AI API",
+            "sidebarTitle": "Get employment evidence attachments",
+            "description": "Get employment evidence attachments in Comp AI. Invite and manage workforce members, training status, device compliance, email preferences, and employee.",
+            "og:title": "Get employment evidence attachments | Comp AI API",
+            "og:description": "Get employment evidence attachments in Comp AI. Invite and manage workforce members, training status, device compliance, email preferences, and employee."
+          }
+        }
+      },
+      "post": {
+        "operationId": "PeopleController_uploadEmploymentEvidence_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "description": "Member ID",
+            "schema": {
+              "example": "mem_abc123def456",
+              "type": "string"
+            }
+          },
+          {
+            "name": "eventType",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "enum": [
+                "onboard",
+                "offboard"
+              ],
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UploadAttachmentDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Upload employment evidence",
+        "tags": [
+          "People"
+        ],
+        "description": "Upload employment evidence in Comp AI. Invite and manage workforce members, training status, device compliance, email preferences, and employee evidence records.",
+        "x-mint": {
+          "metadata": {
+            "title": "Upload employment evidence | Comp AI API",
+            "sidebarTitle": "Upload employment evidence",
+            "description": "Upload employment evidence in Comp AI. Invite and manage workforce members, training status, device compliance, email preferences, and employee evidence.",
+            "og:title": "Upload employment evidence | Comp AI API",
+            "og:description": "Upload employment evidence in Comp AI. Invite and manage workforce members, training status, device compliance, email preferences, and employee evidence."
+          }
+        }
+      }
+    },
+    "/v1/people/{id}/employment-evidence/{eventType}/{attachmentId}": {
+      "delete": {
+        "operationId": "PeopleController_deleteEmploymentEvidence_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "description": "Member ID",
+            "schema": {
+              "example": "mem_abc123def456",
+              "type": "string"
+            }
+          },
+          {
+            "name": "eventType",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "enum": [
+                "onboard",
+                "offboard"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "name": "attachmentId",
+            "required": true,
+            "in": "path",
+            "description": "Attachment ID",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Delete employment evidence",
+        "tags": [
+          "People"
+        ],
+        "description": "Delete employment evidence in Comp AI. Invite and manage workforce members, training status, device compliance, email preferences, and employee evidence records.",
+        "x-mint": {
+          "metadata": {
+            "title": "Delete employment evidence | Comp AI API",
+            "sidebarTitle": "Delete employment evidence",
+            "description": "Delete employment evidence in Comp AI. Invite and manage workforce members, training status, device compliance, email preferences, and employee evidence.",
+            "og:title": "Delete employment evidence | Comp AI API",
+            "og:description": "Delete employment evidence in Comp AI. Invite and manage workforce members, training status, device compliance, email preferences, and employee evidence."
+          }
+        }
+      }
+    },
     "/v1/people/me/email-preferences": {
       "get": {
         "operationId": "PeopleController_getEmailPreferences_v1",
@@ -2558,6 +2766,66 @@
             "description": "Update current user email notification preferences in Comp AI. Invite and manage workforce members, training status, device compliance, email preferences.",
             "og:title": "Update current user email notification | Comp AI API",
             "og:description": "Update current user email notification preferences in Comp AI. Invite and manage workforce members, training status, device compliance, email preferences."
+          }
+        }
+      }
+    },
+    "/v1/attachments/{attachmentId}/download": {
+      "get": {
+        "description": "Generate a signed download URL for a shared attachment linked to comments, evidence records, or compliance workflow reviews.",
+        "operationId": "AttachmentsController_getAttachmentDownloadUrl_v1",
+        "parameters": [
+          {
+            "name": "attachmentId",
+            "required": true,
+            "in": "path",
+            "description": "Unique attachment identifier",
+            "schema": {
+              "example": "att_abc123def456",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Download URL generated successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "downloadUrl": {
+                      "type": "string",
+                      "description": "Signed URL for downloading the file",
+                      "example": "https://bucket.s3.amazonaws.com/path/to/file.pdf?signature=..."
+                    },
+                    "expiresIn": {
+                      "type": "number",
+                      "description": "URL expiration time in seconds",
+                      "example": 900
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Get shared attachment download URL",
+        "tags": [
+          "Attachments"
+        ],
+        "x-mint": {
+          "metadata": {
+            "title": "Get shared attachment download URL | Comp AI API",
+            "sidebarTitle": "Get shared attachment download URL",
+            "description": "Generate a signed download URL for a shared attachment linked to comments, evidence records, or compliance workflow reviews.",
+            "og:title": "Get shared attachment download URL | Comp AI API",
+            "og:description": "Generate a signed download URL for a shared attachment linked to comments, evidence records, or compliance workflow reviews."
           }
         }
       }
@@ -8743,66 +9011,6 @@
         }
       }
     },
-    "/v1/attachments/{attachmentId}/download": {
-      "get": {
-        "description": "Generate a signed download URL for a shared attachment linked to comments, evidence records, or compliance workflow reviews.",
-        "operationId": "AttachmentsController_getAttachmentDownloadUrl_v1",
-        "parameters": [
-          {
-            "name": "attachmentId",
-            "required": true,
-            "in": "path",
-            "description": "Unique attachment identifier",
-            "schema": {
-              "example": "att_abc123def456",
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Download URL generated successfully",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "downloadUrl": {
-                      "type": "string",
-                      "description": "Signed URL for downloading the file",
-                      "example": "https://bucket.s3.amazonaws.com/path/to/file.pdf?signature=..."
-                    },
-                    "expiresIn": {
-                      "type": "number",
-                      "description": "URL expiration time in seconds",
-                      "example": 900
-                    }
-                  }
-                }
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "apikey": []
-          }
-        ],
-        "summary": "Get shared attachment download URL",
-        "tags": [
-          "Attachments"
-        ],
-        "x-mint": {
-          "metadata": {
-            "title": "Get shared attachment download URL | Comp AI API",
-            "sidebarTitle": "Get shared attachment download URL",
-            "description": "Generate a signed download URL for a shared attachment linked to comments, evidence records, or compliance workflow reviews.",
-            "og:title": "Get shared attachment download URL | Comp AI API",
-            "og:description": "Generate a signed download URL for a shared attachment linked to comments, evidence records, or compliance workflow reviews."
-          }
-        }
-      }
-    },
     "/v1/device-agent/exchange-code": {
       "post": {
         "operationId": "DeviceAgentController_exchangeCode_v1",
@@ -11771,8 +11979,7 @@
                 "task",
                 "vendor",
                 "risk",
-                "policy",
-                "finding"
+                "policy"
               ],
               "type": "string"
             }
@@ -17112,152 +17319,6 @@
         }
       }
     },
-    "/v1/cloud-security/findings/{findingId}/exception": {
-      "post": {
-        "operationId": "CloudSecurityController_markFindingAsException_v1",
-        "parameters": [
-          {
-            "name": "findingId",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/MarkExceptionDto"
-              }
-            }
-          }
-        },
-        "responses": {
-          "201": {
-            "description": ""
-          }
-        },
-        "summary": "Mark a finding as an exception so it no longer appears in the active Scan Results list",
-        "tags": [
-          "CloudSecurity"
-        ],
-        "description": "Mark a finding as an exception so it no longer appears in the active Scan Results list in Comp AI. Run AWS, Azure, and GCP cloud security scans, detect enabled services, review findings, and connect cloud posture results to compliance work.",
-        "x-mint": {
-          "metadata": {
-            "title": "Mark a finding as an exception so it no | Comp AI API",
-            "sidebarTitle": "Mark a finding as an exception so it no longer appears in the active Scan Results list",
-            "description": "Mark a finding as an exception so it no longer appears in the active Scan Results list in Comp AI. Run AWS, Azure, and GCP cloud security scans, detect.",
-            "og:title": "Mark a finding as an exception so it no | Comp AI API",
-            "og:description": "Mark a finding as an exception so it no longer appears in the active Scan Results list in Comp AI. Run AWS, Azure, and GCP cloud security scans, detect."
-          }
-        }
-      }
-    },
-    "/v1/cloud-security/exceptions/{exceptionId}": {
-      "delete": {
-        "operationId": "CloudSecurityController_revokeException_v1",
-        "parameters": [
-          {
-            "name": "exceptionId",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": ""
-          }
-        },
-        "summary": "Revoke an exception, reopening the finding",
-        "tags": [
-          "CloudSecurity"
-        ],
-        "description": "Revoke an exception, reopening the finding in Comp AI. Run AWS, Azure, and GCP cloud security scans, detect enabled services, review findings, and connect cloud posture results to compliance work.",
-        "x-mint": {
-          "metadata": {
-            "title": "Revoke an exception, reopening the finding | Comp AI API",
-            "sidebarTitle": "Revoke an exception, reopening the finding",
-            "description": "Revoke an exception, reopening the finding in Comp AI. Run AWS, Azure, and GCP cloud security scans, detect enabled services, review findings, and connect.",
-            "og:title": "Revoke an exception, reopening the finding | Comp AI API",
-            "og:description": "Revoke an exception, reopening the finding in Comp AI. Run AWS, Azure, and GCP cloud security scans, detect enabled services, review findings, and connect."
-          }
-        }
-      }
-    },
-    "/v1/cloud-security/history": {
-      "get": {
-        "operationId": "CloudSecurityController_getHistory_v1",
-        "parameters": [
-          {
-            "name": "connectionId",
-            "required": true,
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": ""
-          }
-        },
-        "summary": "List resolution, exception, and regression history for a connection",
-        "tags": [
-          "CloudSecurity"
-        ],
-        "description": "List resolution, exception, and regression history for a connection in Comp AI. Run AWS, Azure, and GCP cloud security scans, detect enabled services, review findings, and connect cloud posture results to compliance work.",
-        "x-mint": {
-          "metadata": {
-            "title": "List resolution, exception, and regression | Comp AI API",
-            "sidebarTitle": "List resolution, exception, and regression history for a connection",
-            "description": "List resolution, exception, and regression history for a connection in Comp AI. Run AWS, Azure, and GCP cloud security scans, detect enabled services.",
-            "og:title": "List resolution, exception, and regression | Comp AI API",
-            "og:description": "List resolution, exception, and regression history for a connection in Comp AI. Run AWS, Azure, and GCP cloud security scans, detect enabled services."
-          }
-        }
-      }
-    },
-    "/v1/cloud-security/findings/{findingId}/check-definition": {
-      "get": {
-        "operationId": "CloudSecurityController_getCheckDefinition_v1",
-        "parameters": [
-          {
-            "name": "findingId",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": ""
-          }
-        },
-        "summary": "Resolve the \"About this check\" description for a finding (AI-cached for AWS; provider-derived for GCP/Azure)",
-        "tags": [
-          "CloudSecurity"
-        ],
-        "description": "Resolve the \"About this check\" description for a finding (AI-cached for AWS; provider-derived for GCP/Azure) in Comp AI. Run AWS, Azure, and GCP cloud security scans, detect enabled services, review findings, and connect cloud posture.",
-        "x-mint": {
-          "metadata": {
-            "title": "Resolve the \"About this check\" description | Comp AI API",
-            "sidebarTitle": "Resolve the \"About this check\" description for a finding (AI-cached for AWS; provider-derived for GCP/Azure)",
-            "description": "Resolve the \"About this check\" description for a finding (AI-cached for AWS; provider-derived for GCP/Azure) in Comp AI. Run AWS, Azure, and GCP cloud.",
-            "og:title": "Resolve the \"About this check\" description | Comp AI API",
-            "og:description": "Resolve the \"About this check\" description for a finding (AI-cached for AWS; provider-derived for GCP/Azure) in Comp AI. Run AWS, Azure, and GCP cloud."
-          }
-        }
-      }
-    },
     "/v1/cloud-security/scan/{connectionId}": {
       "post": {
         "operationId": "CloudSecurityController_scan_v1",
@@ -21290,6 +21351,546 @@
           }
         }
       }
+    },
+    "/v1/offboarding-checklist/pending": {
+      "get": {
+        "operationId": "OffboardingChecklistController_getPendingOffboardings_v1",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Get members with pending offboarding checklists",
+        "tags": [
+          "Offboarding Checklist"
+        ],
+        "description": "Get members with pending offboarding checklists in Comp AI.",
+        "x-mint": {
+          "metadata": {
+            "title": "Get members with pending offboarding | Comp AI API",
+            "sidebarTitle": "Get members with pending offboarding checklists",
+            "description": "Get members with pending offboarding checklists in Comp AI.",
+            "og:title": "Get members with pending offboarding | Comp AI API",
+            "og:description": "Get members with pending offboarding checklists in Comp AI."
+          }
+        }
+      }
+    },
+    "/v1/offboarding-checklist/template": {
+      "get": {
+        "operationId": "OffboardingChecklistController_getTemplate_v1",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "tags": [
+          "Offboarding Checklist"
+        ]
+      },
+      "post": {
+        "operationId": "OffboardingChecklistController_createTemplateItem_v1",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateTemplateItemDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "tags": [
+          "Offboarding Checklist"
+        ]
+      }
+    },
+    "/v1/offboarding-checklist/template/{id}": {
+      "patch": {
+        "operationId": "OffboardingChecklistController_updateTemplateItem_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateTemplateItemDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "tags": [
+          "Offboarding Checklist"
+        ]
+      },
+      "delete": {
+        "operationId": "OffboardingChecklistController_deleteTemplateItem_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "tags": [
+          "Offboarding Checklist"
+        ]
+      }
+    },
+    "/v1/offboarding-checklist/member/{memberId}": {
+      "get": {
+        "operationId": "OffboardingChecklistController_getMemberChecklist_v1",
+        "parameters": [
+          {
+            "name": "memberId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "tags": [
+          "Offboarding Checklist"
+        ]
+      }
+    },
+    "/v1/offboarding-checklist/export-all": {
+      "get": {
+        "operationId": "OffboardingChecklistController_exportAllEvidence_v1",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Export all offboarding evidence as a zip file",
+        "tags": [
+          "Offboarding Checklist"
+        ],
+        "description": "Export all offboarding evidence as a zip file in Comp AI.",
+        "x-mint": {
+          "metadata": {
+            "title": "Export all offboarding evidence as a zip file | Comp AI API",
+            "sidebarTitle": "Export all offboarding evidence as a zip file",
+            "description": "Export all offboarding evidence as a zip file in Comp AI.",
+            "og:title": "Export all offboarding evidence as a zip file | Comp AI API",
+            "og:description": "Export all offboarding evidence as a zip file in Comp AI."
+          }
+        }
+      }
+    },
+    "/v1/offboarding-checklist/member/{memberId}/export": {
+      "get": {
+        "operationId": "OffboardingChecklistController_exportEvidence_v1",
+        "parameters": [
+          {
+            "name": "memberId",
+            "required": true,
+            "in": "path",
+            "description": "Member ID",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Export offboarding evidence as a zip file",
+        "tags": [
+          "Offboarding Checklist"
+        ],
+        "description": "Export offboarding evidence as a zip file in Comp AI.",
+        "x-mint": {
+          "metadata": {
+            "title": "Export offboarding evidence as a zip file | Comp AI API",
+            "sidebarTitle": "Export offboarding evidence as a zip file",
+            "description": "Export offboarding evidence as a zip file in Comp AI.",
+            "og:title": "Export offboarding evidence as a zip file | Comp AI API",
+            "og:description": "Export offboarding evidence as a zip file in Comp AI."
+          }
+        }
+      }
+    },
+    "/v1/offboarding-checklist/member/{memberId}/item/{templateItemId}/complete": {
+      "post": {
+        "operationId": "OffboardingChecklistController_completeItem_v1",
+        "parameters": [
+          {
+            "name": "memberId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "templateItemId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CompleteChecklistItemDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "tags": [
+          "Offboarding Checklist"
+        ]
+      },
+      "delete": {
+        "operationId": "OffboardingChecklistController_uncompleteItem_v1",
+        "parameters": [
+          {
+            "name": "memberId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "templateItemId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "tags": [
+          "Offboarding Checklist"
+        ]
+      }
+    },
+    "/v1/offboarding-checklist/member/{memberId}/item/{templateItemId}/evidence": {
+      "post": {
+        "operationId": "OffboardingChecklistController_uploadEvidence_v1",
+        "parameters": [
+          {
+            "name": "memberId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "templateItemId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UploadAttachmentDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "tags": [
+          "Offboarding Checklist"
+        ]
+      }
+    },
+    "/v1/offboarding-checklist/member/{memberId}/access-revocations": {
+      "get": {
+        "operationId": "OffboardingChecklistController_getAccessRevocations_v1",
+        "parameters": [
+          {
+            "name": "memberId",
+            "required": true,
+            "in": "path",
+            "description": "Member ID",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Get vendor access revocation status for a member",
+        "tags": [
+          "Offboarding Checklist"
+        ],
+        "description": "Get vendor access revocation status for a member in Comp AI.",
+        "x-mint": {
+          "metadata": {
+            "title": "Get vendor access revocation status for a | Comp AI API",
+            "sidebarTitle": "Get vendor access revocation status for a member",
+            "description": "Get vendor access revocation status for a member in Comp AI.",
+            "og:title": "Get vendor access revocation status for a | Comp AI API",
+            "og:description": "Get vendor access revocation status for a member in Comp AI."
+          }
+        }
+      }
+    },
+    "/v1/offboarding-checklist/member/{memberId}/access-revocations/confirm-all": {
+      "post": {
+        "operationId": "OffboardingChecklistController_revokeAllVendorAccess_v1",
+        "parameters": [
+          {
+            "name": "memberId",
+            "required": true,
+            "in": "path",
+            "description": "Member ID",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Confirm all vendor access as revoked",
+        "tags": [
+          "Offboarding Checklist"
+        ],
+        "description": "Confirm all vendor access as revoked in Comp AI.",
+        "x-mint": {
+          "metadata": {
+            "title": "Confirm all vendor access as revoked | Comp AI API",
+            "sidebarTitle": "Confirm all vendor access as revoked",
+            "description": "Confirm all vendor access as revoked in Comp AI.",
+            "og:title": "Confirm all vendor access as revoked | Comp AI API",
+            "og:description": "Confirm all vendor access as revoked in Comp AI."
+          }
+        }
+      }
+    },
+    "/v1/offboarding-checklist/member/{memberId}/access-revocations/{vendorId}": {
+      "post": {
+        "operationId": "OffboardingChecklistController_revokeVendorAccess_v1",
+        "parameters": [
+          {
+            "name": "memberId",
+            "required": true,
+            "in": "path",
+            "description": "Member ID",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "vendorId",
+            "required": true,
+            "in": "path",
+            "description": "Vendor ID",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Mark vendor access as revoked",
+        "tags": [
+          "Offboarding Checklist"
+        ],
+        "description": "Mark vendor access as revoked in Comp AI.",
+        "x-mint": {
+          "metadata": {
+            "title": "Mark vendor access as revoked | Comp AI API",
+            "sidebarTitle": "Mark vendor access as revoked",
+            "description": "Mark vendor access as revoked in Comp AI.",
+            "og:title": "Mark vendor access as revoked | Comp AI API",
+            "og:description": "Mark vendor access as revoked in Comp AI."
+          }
+        }
+      },
+      "delete": {
+        "operationId": "OffboardingChecklistController_undoVendorRevocation_v1",
+        "parameters": [
+          {
+            "name": "memberId",
+            "required": true,
+            "in": "path",
+            "description": "Member ID",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "vendorId",
+            "required": true,
+            "in": "path",
+            "description": "Vendor ID",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Undo vendor access revocation",
+        "tags": [
+          "Offboarding Checklist"
+        ],
+        "description": "Undo vendor access revocation in Comp AI.",
+        "x-mint": {
+          "metadata": {
+            "title": "Undo vendor access revocation | Comp AI API",
+            "sidebarTitle": "Undo vendor access revocation",
+            "description": "Undo vendor access revocation in Comp AI.",
+            "og:title": "Undo vendor access revocation | Comp AI API",
+            "og:description": "Undo vendor access revocation in Comp AI."
+          }
+        }
+      }
     }
   },
   "info": {
@@ -21359,6 +21960,9 @@
     {
       "name": "Knowledge Base",
       "description": "Upload source documents, process them for retrieval, and manage reusable manual answers that power questionnaires and AI policy workflows."
+    },
+    {
+      "name": "Offboarding Checklist"
     },
     {
       "name": "Org Chart",
@@ -21815,17 +22419,54 @@
             "description": "When true, this member is exempt from the org-level background check requirement and will count as complete in people scores.",
             "example": false
           },
-          "backgroundCheckExemptReason": {
-            "type": "string",
-            "description": "Reason code for the exemption (e.g. \"contractor_with_vendor_check\", \"other\"). Persisted alongside backgroundCheckExempt and cleared when the member becomes non-exempt.",
-            "example": "other"
+          "onboardDate": {
+            "type": "object",
+            "description": "Employee onboard date",
+            "example": "2026-01-15T00:00:00.000Z"
           },
-          "backgroundCheckExemptJustification": {
-            "type": "string",
-            "description": "Free-text justification for the exemption, attached to the audit log. Cleared when the member becomes non-exempt.",
-            "example": "Contractor with existing background check on file from staffing agency."
+          "offboardDate": {
+            "type": "object",
+            "description": "Employee offboard date",
+            "example": "2026-04-30T00:00:00.000Z"
           }
         }
+      },
+      "UploadAttachmentDto": {
+        "type": "object",
+        "properties": {
+          "fileName": {
+            "type": "string",
+            "description": "Name of the file",
+            "example": "document.pdf",
+            "maxLength": 255
+          },
+          "fileType": {
+            "type": "string",
+            "description": "MIME type of the file",
+            "example": "application/pdf"
+          },
+          "fileData": {
+            "type": "string",
+            "description": "Base64 encoded file data",
+            "example": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8/5+hHgAHggJ/PchI7wAAAABJRU5ErkJggg=="
+          },
+          "description": {
+            "type": "string",
+            "description": "Description of the attachment",
+            "example": "Meeting notes from Q4 planning session",
+            "maxLength": 500
+          },
+          "userId": {
+            "type": "string",
+            "description": "User ID of the user uploading the attachment (required for API key auth, ignored for JWT auth)",
+            "example": "usr_abc123def456"
+          }
+        },
+        "required": [
+          "fileName",
+          "fileType",
+          "fileData"
+        ]
       },
       "EmailPreferencesDto": {
         "type": "object",
@@ -23748,43 +24389,6 @@
           "createdAt"
         ]
       },
-      "UploadAttachmentDto": {
-        "type": "object",
-        "properties": {
-          "fileName": {
-            "type": "string",
-            "description": "Name of the file",
-            "example": "document.pdf",
-            "maxLength": 255
-          },
-          "fileType": {
-            "type": "string",
-            "description": "MIME type of the file",
-            "example": "application/pdf"
-          },
-          "fileData": {
-            "type": "string",
-            "description": "Base64 encoded file data",
-            "example": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8/5+hHgAHggJ/PchI7wAAAABJRU5ErkJggg=="
-          },
-          "description": {
-            "type": "string",
-            "description": "Description of the attachment",
-            "example": "Meeting notes from Q4 planning session",
-            "maxLength": 500
-          },
-          "userId": {
-            "type": "string",
-            "description": "User ID of the user uploading the attachment (required for API key auth, ignored for JWT auth)",
-            "example": "usr_abc123def456"
-          }
-        },
-        "required": [
-          "fileName",
-          "fileType",
-          "fileData"
-        ]
-      },
       "UpdateAutomationDto": {
         "type": "object",
         "properties": {
@@ -23954,8 +24558,7 @@
               "task",
               "vendor",
               "risk",
-              "policy",
-              "finding"
+              "policy"
             ],
             "example": "task"
           },
@@ -24620,29 +25223,6 @@
       "ExportSOADocumentDto": {
         "type": "object",
         "properties": {}
-      },
-      "MarkExceptionDto": {
-        "type": "object",
-        "properties": {
-          "reason": {
-            "type": "string",
-            "description": "Documentation for why this finding does not apply or is being accepted. Minimum 20 non-whitespace characters.",
-            "example": "Bucket hosts intentionally public marketing assets; writes restricted to the marketing IAM role."
-          },
-          "reviewedBy": {
-            "type": "string",
-            "description": "Free-text reviewer or approval reference.",
-            "example": "Approved by CISO 2026-Q1"
-          },
-          "expiresAt": {
-            "type": "string",
-            "description": "ISO date when this exception should auto-expire. Null/missing = never.",
-            "example": "2026-08-13"
-          }
-        },
-        "required": [
-          "reason"
-        ]
       },
       "TaskItemAssigneeDto": {
         "type": "object",
@@ -25431,6 +26011,68 @@
         "required": [
           "targetUrl"
         ]
+      },
+      "CreateTemplateItemDto": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string",
+            "description": "Checklist item title",
+            "example": "Collect access badges"
+          },
+          "description": {
+            "type": "string",
+            "description": "Guidance text for the admin"
+          },
+          "evidenceRequired": {
+            "type": "boolean",
+            "description": "Whether evidence upload is required"
+          }
+        },
+        "required": [
+          "title"
+        ]
+      },
+      "UpdateTemplateItemDto": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "evidenceRequired": {
+            "type": "boolean"
+          },
+          "sortOrder": {
+            "type": "number"
+          },
+          "isEnabled": {
+            "type": "boolean"
+          }
+        }
+      },
+      "CompleteChecklistItemDto": {
+        "type": "object",
+        "properties": {
+          "notes": {
+            "type": "string",
+            "description": "Optional notes"
+          },
+          "fileName": {
+            "type": "string",
+            "description": "Evidence file name"
+          },
+          "fileType": {
+            "type": "string",
+            "description": "Evidence file MIME type"
+          },
+          "fileData": {
+            "type": "string",
+            "description": "Base64 encoded evidence file"
+          }
+        }
       }
     }
   }

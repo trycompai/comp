@@ -1,5 +1,6 @@
 'use client';
 
+import { useApiSWR } from '@/hooks/use-api-swr';
 import { Button } from '@trycompai/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@trycompai/ui/card';
 import { ScrollArea } from '@trycompai/ui/scroll-area';
@@ -13,6 +14,7 @@ import {
   NotebookText,
   Play,
   Upload,
+  UserMinus,
 } from 'lucide-react';
 import { usePermissions } from '@/hooks/use-permissions';
 import Link from 'next/link';
@@ -20,6 +22,19 @@ import { useRouter } from 'next/navigation';
 import { useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import { ConfirmActionDialog } from './ConfirmActionDialog';
+
+interface PendingOffboardingMember {
+  memberId: string;
+  name: string;
+  email: string;
+  offboardDate: string;
+  completedItems: number;
+  totalItems: number;
+}
+
+interface PendingOffboardingResponse {
+  members: PendingOffboardingMember[];
+}
 
 export function ToDoOverview({
   totalPolicies,
@@ -47,6 +62,11 @@ export function ToDoOverview({
   const { hasPermission } = usePermissions();
   const [isConfirmDialogOpen, setIsConfirmDialogOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+
+  const { data: pendingData } = useApiSWR<PendingOffboardingResponse>(
+    '/v1/offboarding-checklist/pending',
+  );
+  const pendingOffboardings = pendingData?.data?.members ?? [];
 
   const isOnboardingInProgress = !!onboardingTriggerJobId;
 
@@ -115,11 +135,15 @@ export function ToDoOverview({
       <CardContent className="flex flex-col gap-4">
         <Tabs
           defaultValue={
-            unpublishedPolicies.length === 0 ? 'tasks' : 'policies'
+            pendingOffboardings.length > 0
+              ? 'offboarding'
+              : unpublishedPolicies.length === 0
+                ? 'tasks'
+                : 'policies'
           }
           className="w-full"
         >
-          <TabsList className="grid w-full grid-cols-2">
+          <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger
               value="policies"
               className="flex items-center gap-2"
@@ -130,6 +154,13 @@ export function ToDoOverview({
             <TabsTrigger value="tasks" className="flex items-center gap-2">
               <Upload className="h-3 w-3" />
               Tasks ({remainingTasks})
+            </TabsTrigger>
+            <TabsTrigger
+              value="offboarding"
+              className="flex items-center gap-2"
+            >
+              <UserMinus className="h-3 w-3" />
+              Offboarding ({pendingOffboardings.length})
             </TabsTrigger>
           </TabsList>
 
@@ -237,6 +268,54 @@ export function ToDoOverview({
                           </Button>
                         </div>
                         {index < incompleteTasks.length - 1 && (
+                          <div className="border-t border-muted/30" />
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </ScrollArea>
+              </div>
+            )}
+          </TabsContent>
+
+          <TabsContent value="offboarding" className="mt-4">
+            {pendingOffboardings.length === 0 ? (
+              <div className="flex items-center justify-center gap-2 rounded-lg bg-accent p-3">
+                <CheckCircle2 className="h-4 w-4 text-primary" />
+                <span className="text-sm text-primary">
+                  No pending offboardings
+                </span>
+              </div>
+            ) : (
+              <div className="h-[300px]">
+                <ScrollArea className="h-full">
+                  <div className="space-y-0 pr-4">
+                    {pendingOffboardings.map((member, index) => (
+                      <div key={member.memberId}>
+                        <div className="flex items-start justify-between px-1 py-3">
+                          <div className="flex min-w-0 flex-1 items-start gap-3">
+                            <div className="flex h-6 w-6 items-center justify-center rounded-full">
+                              <UserMinus className="h-3 w-3" />
+                            </div>
+                            <div className="flex min-w-0 flex-1 flex-col">
+                              <span className="text-sm font-medium text-foreground">
+                                Complete offboarding for {member.name}
+                              </span>
+                              <span className="text-xs text-muted-foreground">
+                                {member.completedItems}/{member.totalItems}{' '}
+                                tasks done
+                              </span>
+                            </div>
+                          </div>
+                          <Button asChild size="icon" variant="outline">
+                            <Link
+                              href={`/${organizationId}/people/${member.memberId}?tab=offboarding`}
+                            >
+                              <ArrowRight className="h-3 w-3" />
+                            </Link>
+                          </Button>
+                        </div>
+                        {index < pendingOffboardings.length - 1 && (
                           <div className="border-t border-muted/30" />
                         )}
                       </div>

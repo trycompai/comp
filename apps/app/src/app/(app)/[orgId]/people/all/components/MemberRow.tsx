@@ -1,5 +1,6 @@
 'use client';
 
+import { format } from 'date-fns';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { useState } from 'react';
@@ -325,6 +326,28 @@ export function MemberRow({
               ))}
             </div>
           </div>
+        </TableCell>
+
+        {/* ONBOARDED */}
+        <TableCell>
+          {member.onboardDate ? (
+            <Text size="sm" variant="muted">
+              {format(member.onboardDate, 'MMM d, yyyy')}
+            </Text>
+          ) : (
+            <Text size="sm" variant="muted">—</Text>
+          )}
+        </TableCell>
+
+        {/* OFFBOARDED */}
+        <TableCell>
+          {member.offboardDate ? (
+            <Text size="sm" variant="muted">
+              {format(member.offboardDate, 'MMM d, yyyy')}
+            </Text>
+          ) : (
+            <Text size="sm" variant="muted">—</Text>
+          )}
         </TableCell>
 
         {/* TASKS */}

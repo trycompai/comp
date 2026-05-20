@@ -185,6 +185,9 @@ export class GenericEmployeeSyncService {
             );
           }
 
+          const needsOnboardDate =
+            !existingMember.onboardDate && employee.startDate;
+
           if (existingMember.deactivated && allowReactivation) {
             await db.member.update({
               where: { id: existingMember.id },
@@ -192,6 +195,7 @@ export class GenericEmployeeSyncService {
                 deactivated: false,
                 isActive: true,
                 ...(needsHeal ? { role: healedRole } : {}),
+                ...(needsOnboardDate ? { onboardDate: new Date(employee.startDate!) } : {}),
               },
             });
             results.reactivated++;
@@ -200,10 +204,13 @@ export class GenericEmployeeSyncService {
               status: 'reactivated',
             });
           } else {
-            if (needsHeal) {
+            if (needsHeal || needsOnboardDate) {
               await db.member.update({
                 where: { id: existingMember.id },
-                data: { role: healedRole },
+                data: {
+                  ...(needsHeal ? { role: healedRole } : {}),
+                  ...(needsOnboardDate ? { onboardDate: new Date(employee.startDate!) } : {}),
+                },
               });
             }
             results.skipped++;
@@ -231,6 +238,7 @@ export class GenericEmployeeSyncService {
             userId: existingUser.id,
             role: sanitizedRole,
             isActive: true,
+            ...(employee.startDate ? { onboardDate: new Date(employee.startDate) } : {}),
           },
         });
 
@@ -294,7 +302,11 @@ export class GenericEmployeeSyncService {
         try {
           await db.member.update({
             where: { id: member.id },
-            data: { deactivated: true, isActive: false },
+            data: {
+              deactivated: true,
+              isActive: false,
+              offboardDate: member.offboardDate ?? new Date(),
+            },
           });
           results.deactivated++;
           results.details.push({
