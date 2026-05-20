@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { AuthModule as BetterAuthModule } from '@thallesp/nestjs-better-auth';
 import { auth } from './auth.server';
+import { ActingUserResolver } from './acting-user.service';
 import { ApiKeyGuard } from './api-key.guard';
 import { ApiKeyService } from './api-key.service';
 import { AuthController } from './auth.controller';
@@ -24,12 +25,19 @@ import { PermissionGuard } from './permission.guard';
     }),
   ],
   controllers: [AuthController],
-  providers: [ApiKeyService, ApiKeyGuard, HybridAuthGuard, PermissionGuard],
+  providers: [
+    ApiKeyService,
+    ApiKeyGuard,
+    HybridAuthGuard,
+    PermissionGuard,
+    ActingUserResolver,
+  ],
   exports: [
     ApiKeyService,
     ApiKeyGuard,
     HybridAuthGuard,
     PermissionGuard,
+    ActingUserResolver,
     BetterAuthModule,
   ],
 })
