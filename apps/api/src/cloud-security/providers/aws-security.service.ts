@@ -64,8 +64,25 @@ import { EventBridgeAdapter } from './aws/eventbridge.adapter';
 import { TransferFamilyAdapter } from './aws/transfer-family.adapter';
 import { ElasticBeanstalkAdapter } from './aws/elastic-beanstalk.adapter';
 import { AppFlowAdapter } from './aws/appflow.adapter';
+import { SecurityHubAdapter } from './aws/security-hub.adapter';
+import {
+  type AwsScanMode,
+  DEFAULT_AWS_SCAN_MODE,
+} from '../aws-scan-mode';
 
 const GOVCLOUD_UNSUPPORTED_SERVICE_IDS = new Set(['cloudfront', 'shield']);
+
+/**
+ * Pre-computed scan context shared by both scan engines (adapter mode
+ * and Security Hub mode). Produced by `prepareScan`, consumed by
+ * `scanViaAdapters` / `scanViaSecurityHub`.
+ */
+interface AwsScanSetup {
+  awsCredentials: AwsCredentials;
+  configuredRegions: string[];
+  primaryRegion: string;
+  partition: AwsPartition;
+}
 
 @Injectable()
 export class AWSSecurityService {
@@ -118,11 +135,41 @@ export class AWSSecurityService {
     new AppFlowAdapter(),
   ];
 
+  /**
+   * Entry point — resolves credentials + regions, then dispatches to the
+   * chosen scan engine. The two engines are mutually exclusive:
+   *
+   *   - 'comp_scanners' → runs our ~49 service adapters (default).
+   *   - 'security_hub'  → runs ONLY the Security Hub adapter, per region.
+   *
+   * Engineers tracing this code can jump straight to `scanViaAdapters`
+   * or `scanViaSecurityHub` to see what each mode does — no nested
+   * branching.
+   */
   async scanSecurityFindings(
     credentials: Record<string, unknown>,
     variables: Record<string, unknown>,
     enabledServices?: string[],
+    mode: AwsScanMode = DEFAULT_AWS_SCAN_MODE,
   ): Promise<SecurityFinding[]> {
+    const setup = await this.prepareScan(credentials, variables);
+
+    if (mode === 'security_hub') {
+      return this.scanViaSecurityHub(setup);
+    }
+    return this.scanViaAdapters(setup, enabledServices);
+  }
+
+  /**
+   * Validates credentials, resolves the region list, and (for role
+   * auth) assumes the IAM role. Returns the shared context both scan
+   * engines need. Throws on any precondition failure — both engines
+   * skip out of an unhappy path before they begin.
+   */
+  private async prepareScan(
+    credentials: Record<string, unknown>,
+    variables: Record<string, unknown>,
+  ): Promise<AwsScanSetup> {
     const isRoleAuth = Boolean(credentials.roleArn && credentials.externalId);
     const isKeyAuth = Boolean(
       credentials.access_key_id && credentials.secret_access_key,
@@ -143,6 +190,7 @@ export class AWSSecurityService {
       partition,
     );
     const primaryRegion = configuredRegions[0];
+
     const mismatchedRegions = configuredRegions.filter(
       (region) => getAwsPartitionForRegion(region) !== partition,
     );
@@ -156,30 +204,64 @@ export class AWSSecurityService {
       `Scanning ${configuredRegions.length} ${partition} region(s): ${configuredRegions.join(', ')}`,
     );
 
-    // Assume role ONCE — IAM is global, credentials work across all regions
-    let awsCredentials: AwsCredentials;
-    if (isRoleAuth) {
-      const partitionErrors = validateAwsPartitionConfig({
-        partition,
-        roleArn: credentials.roleArn as string,
-        regions: configuredRegions,
-      });
-      if (partitionErrors.length > 0) {
-        throw new Error(partitionErrors.join(' '));
-      }
+    // Assume role ONCE — IAM is global, credentials work across all regions.
+    const awsCredentials: AwsCredentials = isRoleAuth
+      ? await this.resolveRoleCredentials({
+          roleArn: credentials.roleArn as string,
+          externalId: credentials.externalId as string,
+          partition,
+          regions: configuredRegions,
+          primaryRegion,
+        })
+      : {
+          accessKeyId: credentials.access_key_id as string,
+          secretAccessKey: credentials.secret_access_key as string,
+        };
 
-      awsCredentials = await this.assumeRole({
-        roleArn: credentials.roleArn as string,
-        externalId: credentials.externalId as string,
-        region: primaryRegion,
-        partition,
-      });
-    } else {
-      awsCredentials = {
-        accessKeyId: credentials.access_key_id as string,
-        secretAccessKey: credentials.secret_access_key as string,
-      };
+    return {
+      awsCredentials,
+      configuredRegions,
+      primaryRegion,
+      partition,
+    };
+  }
+
+  private async resolveRoleCredentials(params: {
+    roleArn: string;
+    externalId: string;
+    partition: AwsPartition;
+    regions: string[];
+    primaryRegion: string;
+  }): Promise<AwsCredentials> {
+    const partitionErrors = validateAwsPartitionConfig({
+      partition: params.partition,
+      roleArn: params.roleArn,
+      regions: params.regions,
+    });
+    if (partitionErrors.length > 0) {
+      throw new Error(partitionErrors.join(' '));
     }
+
+    return this.assumeRole({
+      roleArn: params.roleArn,
+      externalId: params.externalId,
+      region: params.primaryRegion,
+      partition: params.partition,
+    });
+  }
+
+  /**
+   * Today's default scan engine. Runs each registered service adapter
+   * (global once, regional per region) and aggregates the findings.
+   * Behavior is byte-for-byte identical to the pre-mode implementation —
+   * the SecurityHubAdapter is NOT in `this.adapters`, so it can never
+   * run on this path.
+   */
+  private async scanViaAdapters(
+    setup: AwsScanSetup,
+    enabledServices: string[] | undefined,
+  ): Promise<SecurityFinding[]> {
+    const { awsCredentials, configuredRegions, primaryRegion, partition } = setup;
 
     // undefined = scan all (no detection data), [] = scan nothing (all disabled), [...] = scan specific
     const activeAdaptersBeforePartitionFilter =
@@ -265,6 +347,59 @@ export class AWSSecurityService {
       );
     }
 
+    return allFindings;
+  }
+
+  /**
+   * Alternative scan engine. Pulls findings from AWS Security Hub
+   * `GetFindings` per region — does NOT touch any of the 49 service
+   * adapters. SecurityHubAdapter handles the "not subscribed" /
+   * "AccessDenied" cases gracefully (returns []).
+   *
+   * Activated by `awsScanMode: 'security_hub'` on the connection.
+   */
+  private async scanViaSecurityHub(
+    setup: AwsScanSetup,
+  ): Promise<SecurityFinding[]> {
+    const { awsCredentials, configuredRegions } = setup;
+    const adapter = new SecurityHubAdapter();
+
+    this.logger.log(
+      `Scanning Security Hub across ${configuredRegions.length} region(s)`,
+    );
+
+    const allFindings: SecurityFinding[] = [];
+    const successfulRegions = new Set<string>();
+    const failedRegions = new Set<string>();
+
+    for (const region of configuredRegions) {
+      try {
+        const findings = await adapter.scan({
+          credentials: awsCredentials,
+          region,
+        });
+        // Adapter already stamps evidence.serviceId — no need to re-stamp.
+        allFindings.push(...findings);
+        successfulRegions.add(region);
+        this.logger.log(
+          `[security-hub] ${findings.length} findings in ${region}`,
+        );
+      } catch (error) {
+        const msg = error instanceof Error ? error.message : String(error);
+        this.logger.warn(`[security-hub] Error in ${region}: ${msg}`);
+        failedRegions.add(region);
+      }
+    }
+
+    if (successfulRegions.size === 0 && failedRegions.size > 0) {
+      throw new Error(
+        `Security Hub scan failed in all ${failedRegions.size} region(s): ${[...failedRegions].join(', ')}`,
+      );
+    }
+
+    this.logger.log(
+      `Security Hub scan complete: ${allFindings.length} findings from ${successfulRegions.size} region(s)`,
+    );
     return allFindings;
   }
 
