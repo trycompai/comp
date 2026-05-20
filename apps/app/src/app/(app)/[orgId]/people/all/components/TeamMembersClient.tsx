@@ -646,7 +646,9 @@ function DateRangeFilter({
     ? `${format(from, 'MMM d')} – ${format(to, 'MMM d, yyyy')}`
     : from
       ? `From ${format(from, 'MMM d, yyyy')}`
-      : 'Any time';
+      : to
+        ? `Until ${format(to, 'MMM d, yyyy')}`
+        : 'Any time';
 
   return (
     <div className="hidden sm:block">

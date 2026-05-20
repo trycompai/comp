@@ -132,8 +132,8 @@ export class AccessRevocationService {
     memberId: string;
     vendorId: string;
   }) {
-    const revocation = await db.offboardingAccessRevocation.findUnique({
-      where: { memberId_vendorId: { memberId, vendorId } },
+    const revocation = await db.offboardingAccessRevocation.findFirst({
+      where: { memberId, vendorId, organizationId },
     });
 
     if (!revocation) {

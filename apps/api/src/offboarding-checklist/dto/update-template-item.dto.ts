@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsString, IsOptional, IsBoolean, IsNumber } from 'class-validator';
+import { IsString, IsOptional, IsBoolean, IsInt } from 'class-validator';
 
 export class UpdateTemplateItemDto {
   @ApiProperty({ required: false })
@@ -19,7 +19,7 @@ export class UpdateTemplateItemDto {
 
   @ApiProperty({ required: false })
   @IsOptional()
-  @IsNumber()
+  @IsInt()
   sortOrder?: number;
 
   @ApiProperty({ required: false })

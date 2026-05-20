@@ -195,17 +195,24 @@ export class OffboardingChecklistService {
     });
 
     if (dto.fileName && dto.fileData && dto.fileType) {
-      await this.attachmentsService.uploadAttachment(
-        organizationId,
-        completion.id,
-        AttachmentEntityType.offboarding_checklist,
-        {
-          fileName: dto.fileName,
-          fileData: dto.fileData,
-          fileType: dto.fileType,
-        },
-        completedById,
-      );
+      try {
+        await this.attachmentsService.uploadAttachment(
+          organizationId,
+          completion.id,
+          AttachmentEntityType.offboarding_checklist,
+          {
+            fileName: dto.fileName,
+            fileData: dto.fileData,
+            fileType: dto.fileType,
+          },
+          completedById,
+        );
+      } catch (err) {
+        await db.offboardingChecklistCompletion.delete({
+          where: { id: completion.id },
+        });
+        throw err;
+      }
     }
 
     return completion;
@@ -327,7 +334,12 @@ export class OffboardingChecklistService {
       },
       include: {
         user: { select: { id: true, name: true, email: true, image: true } },
-        offboardingChecklistCompletions: { select: { id: true } },
+        offboardingChecklistCompletions: {
+          where: {
+            templateItem: { organizationId, isEnabled: true },
+          },
+          select: { id: true },
+        },
       },
       orderBy: { offboardDate: 'desc' },
     });

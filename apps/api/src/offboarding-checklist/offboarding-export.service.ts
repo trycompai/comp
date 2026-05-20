@@ -111,8 +111,9 @@ export class OffboardingExportService {
       for (const file of vendor.evidence) {
         const buffer = await this.getAttachmentBuffer(organizationId, file.id);
         if (!buffer) continue;
+        const safeName = sanitizeFileName(file.name);
         archive.append(buffer, {
-          name: `${prefix}vendor-access-revocations/evidence/${file.name}`,
+          name: `${prefix}vendor-access-revocations/evidence/${safeName}`,
         });
       }
     }
@@ -135,8 +136,9 @@ export class OffboardingExportService {
       for (const file of item.evidence) {
         const buffer = await this.getAttachmentBuffer(organizationId, file.id);
         if (!buffer) continue;
+        const safeName = sanitizeFileName(file.name);
         archive.append(buffer, {
-          name: `${prefix}checklist-items/${folderNum}-${folderName}/${file.name}`,
+          name: `${prefix}checklist-items/${folderNum}-${folderName}/${safeName}`,
         });
       }
     }
@@ -163,7 +165,7 @@ export class OffboardingExportService {
         .replace(/[^a-zA-Z0-9 ]/g, '')
         .replace(/\s+/g, '-')
         .toLowerCase();
-      const prefix = `offboarded-employees/${safeName}/`;
+      const prefix = `offboarded-employees/${safeName}-${member.id}/`;
 
       const checklist = await this.offboardingChecklistService.getMemberChecklist(
         organizationId,
@@ -199,6 +201,14 @@ export class OffboardingExportService {
   }
 }
 
+function sanitizeFileName(name: string): string {
+  return name.replace(/.*[/\\]/, '').replace(/[/\\]/g, '_') || 'file';
+}
+
 function escapeCsvField(value: string): string {
-  return value.replace(/"/g, '""');
+  const escaped = value.replace(/"/g, '""');
+  if (/^[=+\-@\t\r]/.test(escaped)) {
+    return `'${escaped}`;
+  }
+  return escaped;
 }
