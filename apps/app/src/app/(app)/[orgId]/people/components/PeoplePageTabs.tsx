@@ -154,12 +154,10 @@ export function PeoplePageTabs({
                   </Button>
                 </div>
                 <DropdownMenu>
-                  <DropdownMenuTrigger>
-                    <div>
-                      <Button variant="outline" size="icon">
-                        <OverflowMenuVertical size={16} />
-                      </Button>
-                    </div>
+                  <DropdownMenuTrigger
+                    render={<Button variant="outline" size="icon" />}
+                  >
+                    <OverflowMenuVertical size={16} />
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
                     <DropdownMenuItem
