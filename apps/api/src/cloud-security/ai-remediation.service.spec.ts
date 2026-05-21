@@ -8,7 +8,7 @@ jest.mock('ai', () => ({
   generateObject: jest.fn(),
 }));
 
-import type { FixPlan } from './ai-remediation.prompt';
+import type { AwsCommandStep, FixPlan } from './ai-remediation.prompt';
 import { AiRemediationService } from './ai-remediation.service';
 
 // `enrichEmptyState` isn't exported — exercise it through the service's
@@ -247,5 +247,155 @@ describe('AiRemediationService.generateFixPlan empty-state backstop', () => {
 
     expect(plan.currentState).toEqual({ someField: 'X' });
     expect(plan.proposedState).toEqual({});
+  });
+});
+
+describe('AiRemediationService.refineStepFromError', () => {
+  const generateObjectMock = generateObject as unknown as jest.Mock;
+
+  const findingContext = {
+    title: 'AWS Config recorder not configured',
+    description: 'Config recorder is missing',
+    severity: 'high',
+    resourceType: 'AwsAccount',
+    resourceId: 'account-level',
+    remediation: 'Create configuration recorder',
+    findingKey: 'config-no-recorder',
+    evidence: { awsAccountId: '123456789012', region: 'us-east-1' },
+  };
+
+  function makeStep(overrides: Partial<AwsCommandStep> = {}): AwsCommandStep {
+    return {
+      service: overrides.service ?? 'iam',
+      command: overrides.command ?? 'CreateServiceLinkedRoleCommand',
+      params: overrides.params ?? {},
+      purpose: overrides.purpose ?? 'create SLR',
+    };
+  }
+
+  beforeEach(() => {
+    generateObjectMock.mockReset();
+  });
+
+  it('returns the refined step when AI proposes corrected params for the same command', async () => {
+    const refined: AwsCommandStep = {
+      service: 'iam',
+      command: 'CreateServiceLinkedRoleCommand',
+      params: { AWSServiceName: 'config.amazonaws.com' },
+      purpose: 'create SLR for AWS Config',
+    };
+    generateObjectMock.mockResolvedValueOnce({ object: refined });
+
+    const result = await new AiRemediationService().refineStepFromError({
+      step: makeStep(),
+      awsError:
+        "1 validation error detected: Value at 'aWSServiceName' failed to satisfy constraint: Member must not be null",
+      finding: findingContext,
+      planContext: { fixSteps: [], readSteps: [] },
+    });
+
+    expect(result).toEqual(refined);
+  });
+
+  it('returns null when the AI swaps to a different service (defensive — refusing to retry a different API)', async () => {
+    generateObjectMock.mockResolvedValueOnce({
+      object: {
+        service: 'config-service', // ← different from original 'iam'
+        command: 'CreateServiceLinkedRoleCommand',
+        params: { AWSServiceName: 'config.amazonaws.com' },
+        purpose: 'mismatched service',
+      },
+    });
+
+    const result = await new AiRemediationService().refineStepFromError({
+      step: makeStep({ service: 'iam' }),
+      awsError: 'Member must not be null',
+      finding: findingContext,
+      planContext: { fixSteps: [], readSteps: [] },
+    });
+
+    expect(result).toBeNull();
+  });
+
+  it('returns null when the AI swaps to a different command (defensive)', async () => {
+    generateObjectMock.mockResolvedValueOnce({
+      object: {
+        service: 'iam',
+        command: 'CreateRoleCommand', // ← different from original
+        params: { RoleName: 'foo' },
+        purpose: 'mismatched command',
+      },
+    });
+
+    const result = await new AiRemediationService().refineStepFromError({
+      step: makeStep({ command: 'CreateServiceLinkedRoleCommand' }),
+      awsError: 'Member must not be null',
+      finding: findingContext,
+      planContext: { fixSteps: [], readSteps: [] },
+    });
+
+    expect(result).toBeNull();
+  });
+
+  it('returns null when the AI call throws — caller surfaces the original error', async () => {
+    generateObjectMock.mockRejectedValueOnce(new Error('AI provider down'));
+
+    const result = await new AiRemediationService().refineStepFromError({
+      step: makeStep(),
+      awsError: 'Member must not be null',
+      finding: findingContext,
+      planContext: { fixSteps: [], readSteps: [] },
+    });
+
+    expect(result).toBeNull();
+  });
+
+  it('passes the failing step, AWS error, and finding context to the model in the prompt', async () => {
+    generateObjectMock.mockResolvedValueOnce({
+      object: {
+        service: 'iam',
+        command: 'CreateServiceLinkedRoleCommand',
+        params: { AWSServiceName: 'guardduty.amazonaws.com' },
+        purpose: 'fixed',
+      },
+    });
+
+    await new AiRemediationService().refineStepFromError({
+      step: makeStep({
+        command: 'CreateServiceLinkedRoleCommand',
+        params: {},
+        purpose: 'create SLR for GuardDuty',
+      }),
+      awsError:
+        "1 validation error detected: Value at 'aWSServiceName' failed to satisfy constraint: Member must not be null",
+      finding: findingContext,
+      planContext: {
+        fixSteps: [
+          {
+            service: 'guardduty',
+            command: 'CreateDetectorCommand',
+            params: { Enable: true },
+            purpose: 'enable detector',
+          },
+        ],
+        readSteps: [],
+      },
+    });
+
+    const callArgs = generateObjectMock.mock.calls[0][0];
+    // The system prompt should make the role clear.
+    expect(callArgs.system).toMatch(/repair/i);
+    expect(callArgs.system).toMatch(/SAME service/);
+    expect(callArgs.system).toMatch(/SAME command/);
+    // The user prompt should include the failing AWS error verbatim.
+    expect(callArgs.prompt).toContain(
+      "Value at 'aWSServiceName' failed to satisfy constraint",
+    );
+    // ... and the failing command name.
+    expect(callArgs.prompt).toContain('CreateServiceLinkedRoleCommand');
+    // ... and the neighbor step's service so the AI can use cross-step context.
+    expect(callArgs.prompt).toContain('guardduty');
+    // Temperature is 0 for deterministic repair.
+    expect(callArgs.temperature).toBe(0);
   });
 });

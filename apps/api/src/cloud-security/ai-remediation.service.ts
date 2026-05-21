@@ -6,6 +6,7 @@ import {
   type PermissionFix,
   type AwsCommandStep,
   fixPlanSchema,
+  awsCommandStepSchema,
   permissionFixSchema,
   completePermissionsSchema,
   SYSTEM_PROMPT,
@@ -223,6 +224,97 @@ OVERESTIMATE. Better to have 5 extra permissions than to miss one.`,
         },
         fixScript: `aws iam put-role-policy --role-name ${REMEDIATION_ROLE_NAME} --policy-name CompAI-AutoFix --policy-document '${policy}'`,
       };
+    }
+  }
+
+  /**
+   * Universal step-level repair. Called by the executor when AWS rejects
+   * a step with a validation-class error AND the rules-based fixer in
+   * `tryAutoFixValidationError` couldn't resolve it.
+   *
+   * The AI sees the failing step, AWS's exact error message, the
+   * surrounding plan, and the finding context, and returns a corrected
+   * step (same service + command, refined params). Returns null when the
+   * model declines to refine — the executor then surfaces AWS's error
+   * unchanged.
+   *
+   * This is the universal escape hatch for "AI omitted a required AWS
+   * param" bugs: no per-command map, no hardcoded principal table — the
+   * AI uses AWS's own validation message as ground truth.
+   */
+  async refineStepFromError(params: {
+    step: AwsCommandStep;
+    awsError: string;
+    finding: FindingContext;
+    planContext: Pick<FixPlan, 'fixSteps' | 'readSteps'>;
+  }): Promise<AwsCommandStep | null> {
+    try {
+      const neighbors = [
+        ...params.planContext.readSteps.map((s) => ({ role: 'read', ...s })),
+        ...params.planContext.fixSteps.map((s) => ({ role: 'fix', ...s })),
+      ].filter((s) => s.command !== params.step.command || s.purpose !== params.step.purpose);
+
+      const { object } = await generateObject({
+        model: MODEL,
+        schema: awsCommandStepSchema,
+        system:
+          'You are repairing a single AWS auto-remediation step that the AWS SDK rejected with a validation error. Return a corrected step with the SAME service and SAME command — only the params should change. Use the AWS error message to identify exactly which field is wrong and why. Use neighbor steps and the finding context to infer the right value. If you cannot fix it without external information, return the original step unchanged.',
+        prompt: `FAILING STEP:
+service: ${params.step.service}
+command: ${params.step.command}
+purpose: ${params.step.purpose}
+params: ${JSON.stringify(params.step.params ?? {}, null, 2)}
+
+AWS SDK ERROR (verbatim):
+${params.awsError}
+
+OTHER STEPS IN THE SAME PLAN (for context — DO NOT include their params in the output):
+${JSON.stringify(neighbors, null, 2)}
+
+FINDING BEING FIXED:
+title: ${params.finding.title}
+description: ${params.finding.description ?? '(none)'}
+resourceType: ${params.finding.resourceType}
+resourceId: ${params.finding.resourceId}
+remediation guidance: ${params.finding.remediation ?? '(none)'}
+evidence: ${JSON.stringify(params.finding.evidence ?? {}, null, 2)}
+
+INSTRUCTIONS:
+1. Read the AWS error carefully — it tells you which field is wrong.
+2. If the error says "Member must not be null" or "must not be empty" for a field X, populate X with the correct value (from finding evidence, neighbor steps, or AWS conventions like service principals).
+3. If the error says "failed to satisfy constraint" or "regular expression pattern", fix the value to match.
+4. Keep the same service and command — do not switch to a different API.
+5. Return a complete AwsCommandStep with all required schema fields.`,
+        temperature: 0,
+      });
+
+      this.logger.log(
+        `Step repair for ${params.step.command}: returned ${JSON.stringify(
+          object.params ?? {},
+        ).slice(0, 200)}`,
+      );
+
+      // Defensive: if the AI swapped the service or command (against
+      // instructions), discard the refinement — the executor would
+      // reject it anyway and we don't want to retry with a different API.
+      if (
+        object.service !== params.step.service ||
+        object.command !== params.step.command
+      ) {
+        this.logger.warn(
+          `Step repair returned a different service/command — ` +
+            `expected ${params.step.service}:${params.step.command}, got ` +
+            `${object.service}:${object.command}. Discarding refinement.`,
+        );
+        return null;
+      }
+
+      return object;
+    } catch (err) {
+      this.logger.error(
+        `AI step repair failed: ${err instanceof Error ? err.message : String(err)}`,
+      );
+      return null;
     }
   }
 

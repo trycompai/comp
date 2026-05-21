@@ -1,5 +1,9 @@
 import type { AwsCommandStep } from './ai-remediation.prompt';
-import { REQUIRED_PARAMS, validatePlanSteps } from './aws-command-executor';
+import {
+  REQUIRED_PARAMS,
+  looksLikeValidationError,
+  validatePlanSteps,
+} from './aws-command-executor';
 
 function step(overrides: Partial<AwsCommandStep>): AwsCommandStep {
   return {
@@ -124,6 +128,31 @@ describe('validatePlanSteps — REQUIRED_PARAMS', () => {
     expect(REQUIRED_PARAMS.PutDeliveryChannelCommand).toContain(
       'DeliveryChannel',
     );
+  });
+});
+
+describe('looksLikeValidationError', () => {
+  it.each([
+    "1 validation error detected: Value at 'aWSServiceName' failed to satisfy constraint: Member must not be null",
+    'ValidationException: The Bucket parameter is required',
+    'InvalidParameterValue: Value (foo) for parameter X is invalid',
+    'Member must not be null',
+    'failed to satisfy constraint: Member must have length less than or equal to 64',
+    'Missing required parameter Bucket',
+    'is required',
+    'must be a valid ARN',
+  ])('detects %p as a validation-class error', (msg) => {
+    expect(looksLikeValidationError(msg)).toBe(true);
+  });
+
+  it.each([
+    'AccessDeniedException: User is not authorized to perform iam:CreateRole',
+    'ThrottlingException: Rate exceeded',
+    'ResourceNotFoundException: detector not found',
+    'NoSuchBucket: The specified bucket does not exist',
+    '',
+  ])('rejects %p as a non-validation error', (msg) => {
+    expect(looksLikeValidationError(msg)).toBe(false);
   });
 });
 
