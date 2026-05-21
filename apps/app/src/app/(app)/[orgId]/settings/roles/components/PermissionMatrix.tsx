@@ -104,7 +104,15 @@ interface PermissionMatrixProps {
   onChange: (permissions: Record<string, string[]>) => void;
   obligations?: Record<string, boolean>;
   onObligationsChange?: (obligations: Record<string, boolean>) => void;
+  /** Disables the whole matrix. */
   disabled?: boolean;
+  /**
+   * When true, keeps the permission matrix and access toggles disabled but
+   * leaves the obligation toggles editable. Used on built-in role pages so
+   * customers can opt in/out of the compliance obligation without being able
+   * to edit the role's permissions.
+   */
+  obligationsEditable?: boolean;
 }
 
 /**
@@ -215,7 +223,8 @@ function AccessToggle({
   );
 }
 
-export function PermissionMatrix({ value, onChange, obligations, onObligationsChange, disabled = false }: PermissionMatrixProps) {
+export function PermissionMatrix({ value, onChange, obligations, onObligationsChange, disabled = false, obligationsEditable = false }: PermissionMatrixProps) {
+  const obligationsDisabled = disabled && !obligationsEditable;
   const handleObligationChange = (key: string, enabled: boolean) => {
     if (!onObligationsChange) return;
     const newObligations = { ...obligations };
@@ -306,7 +315,7 @@ export function PermissionMatrix({ value, onChange, obligations, onObligationsCh
             toggle={toggle}
             enabled={Boolean(obligations?.[toggle.key])}
             onToggle={(enabled) => handleObligationChange(toggle.key, enabled)}
-            disabled={disabled}
+            disabled={obligationsDisabled}
           />
         ))}
       </div>
