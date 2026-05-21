@@ -126,10 +126,14 @@ export async function getAutomationHeaders({
     throw new NotFoundException('Task not found');
   }
 
-  const [appRuns, customRuns] = await Promise.all([
-    db.integrationCheckRun.findMany({
+  const HEADER_BATCH = 500;
+  const appRuns: AppRunHeader[] = [];
+  let appCursor: string | undefined;
+  while (true) {
+    const batch = await db.integrationCheckRun.findMany({
       where: { taskId },
       select: {
+        id: true,
         checkId: true,
         checkName: true,
         status: true,
@@ -140,21 +144,37 @@ export async function getAutomationHeaders({
         },
       },
       orderBy: { createdAt: 'desc' },
-    }),
-    db.evidenceAutomationRun.findMany({
+      take: HEADER_BATCH,
+      ...(appCursor ? { cursor: { id: appCursor }, skip: 1 } : {}),
+    });
+    appRuns.push(...batch);
+    if (batch.length < HEADER_BATCH) break;
+    appCursor = batch[batch.length - 1]!.id;
+  }
+
+  const customRuns: CustomRunHeader[] = [];
+  let customCursor: string | undefined;
+  while (true) {
+    const batch = await db.evidenceAutomationRun.findMany({
       where: {
         evidenceAutomation: { taskId },
         version: { not: null },
       },
       select: {
+        id: true,
         status: true,
         evaluationStatus: true,
         createdAt: true,
         evidenceAutomation: { select: { id: true, name: true } },
       },
       orderBy: { createdAt: 'desc' },
-    }),
-  ]);
+      take: HEADER_BATCH,
+      ...(customCursor ? { cursor: { id: customCursor }, skip: 1 } : {}),
+    });
+    customRuns.push(...batch);
+    if (batch.length < HEADER_BATCH) break;
+    customCursor = batch[batch.length - 1]!.id;
+  }
 
   return {
     taskId: task.id,
