@@ -54,7 +54,6 @@ export function OffboardingChecklistSettings() {
     item: TemplateItem;
     next: boolean;
   }) => {
-    const previous = items;
     mutate(
       (current) => {
         if (!current) return current;
@@ -76,16 +75,7 @@ export function OffboardingChecklistSettings() {
     );
 
     if (res.error) {
-      mutate(
-        (current) => {
-          if (!current) return current;
-          return {
-            ...current,
-            data: previous,
-          };
-        },
-        { revalidate: false },
-      );
+      mutate();
       toast.error('Failed to update checklist item');
       return;
     }

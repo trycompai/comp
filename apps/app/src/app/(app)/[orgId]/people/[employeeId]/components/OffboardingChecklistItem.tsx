@@ -223,7 +223,7 @@ export function OffboardingChecklistItem({
     item.isAccessRevocation || item.evidenceRequired || canEdit;
 
   return (
-    <Collapsible open={isOpen} onOpenChange={setIsOpen}>
+    <Collapsible open={isExpandable ? isOpen : false} onOpenChange={isExpandable ? setIsOpen : undefined}>
       <div className="overflow-hidden rounded-lg border bg-background">
         <CollapsibleTrigger className="flex w-full items-center gap-2 px-3.5 py-3 text-left transition-colors hover:bg-muted/50">
           <ChecklistStatusCircle item={item} memberId={memberId} />

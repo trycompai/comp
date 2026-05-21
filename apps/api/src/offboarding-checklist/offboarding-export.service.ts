@@ -139,7 +139,7 @@ export class OffboardingExportService {
         if (!buffer) continue;
         const safeName = sanitizeFileName(file.name);
         archive.append(buffer, {
-          name: `${prefix}checklist-items/${folderNum}-${folderName}/${safeName}`,
+          name: `${prefix}checklist-items/${folderNum}-${folderName}/${file.id}-${safeName}`,
         });
       }
     }

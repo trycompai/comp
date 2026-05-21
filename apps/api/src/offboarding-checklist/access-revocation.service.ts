@@ -119,11 +119,13 @@ export class AccessRevocationService {
       }
     }
 
-    await this.syncAccessRevocationCompletion(
-      organizationId,
-      memberId,
-      revokedById,
-    );
+    try {
+      await this.syncAccessRevocationCompletion(
+        organizationId,
+        memberId,
+        revokedById,
+      );
+    } catch {}
 
     return revocation;
   }
