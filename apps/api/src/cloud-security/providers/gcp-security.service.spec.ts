@@ -276,5 +276,63 @@ describe('GCPSecurityService — project detection', () => {
       const result = await service.detectProjectsForOrg('token', 'org-no-projects');
       expect(result).toEqual([]);
     });
+
+    it('still returns direct-arm projects when the folder arm throws (no-regression guarantee)', async () => {
+      // Hard guarantee: even if GCP rejects the parent.type:folder query
+      // outright or the connection drops mid-call, the picker must
+      // remain at least as functional as production. This locks in the
+      // promise-allSettled isolation.
+      fetchMock.mockImplementation(async (url: string) => {
+        if (url.includes('parent.id%3A555')) {
+          return gcpPage({
+            projects: [
+              {
+                projectId: 'direct-only',
+                name: 'Direct Only',
+                projectNumber: '777',
+              },
+            ],
+          });
+        }
+        if (url.includes('parent.type%3Afolder')) {
+          // Simulate fetch throwing — e.g., DNS failure, TLS error,
+          // GCP returning an invalid response that breaks .json().
+          throw new Error('simulated network failure on folder arm');
+        }
+        throw new Error(`Unexpected URL: ${url}`);
+      });
+
+      const result = await service.detectProjectsForOrg('token', '555');
+
+      expect(result).toEqual([
+        { id: 'direct-only', name: 'Direct Only', number: '777' },
+      ]);
+    });
+
+    it('still returns folder-arm projects when the direct arm throws', async () => {
+      fetchMock.mockImplementation(async (url: string) => {
+        if (url.includes('parent.id%3A666')) {
+          throw new Error('simulated failure on direct arm');
+        }
+        if (url.includes('parent.type%3Afolder')) {
+          return gcpPage({
+            projects: [
+              {
+                projectId: 'folder-only',
+                name: 'Folder Only',
+                projectNumber: '888',
+              },
+            ],
+          });
+        }
+        throw new Error(`Unexpected URL: ${url}`);
+      });
+
+      const result = await service.detectProjectsForOrg('token', '666');
+
+      expect(result).toEqual([
+        { id: 'folder-only', name: 'Folder Only', number: '888' },
+      ]);
+    });
   });
 });

@@ -819,7 +819,11 @@ export class GCPSecurityService {
     accessToken: string,
     organizationId: string,
   ): Promise<Array<{ id: string; name: string; number: string }>> {
-    const [directChildren, folderNested] = await Promise.all([
+    // Promise.allSettled (not Promise.all) so a transient failure on
+    // the folder-nested arm cannot blank the entire picker. The direct
+    // arm matches the prior production behavior — if THAT works, we
+    // are at minimum no worse than today's prod.
+    const [directResult, folderResult] = await Promise.allSettled([
       this.listProjectsPaginated(
         accessToken,
         `lifecycleState:ACTIVE AND parent.id:${organizationId}`,
@@ -829,6 +833,22 @@ export class GCPSecurityService {
         'lifecycleState:ACTIVE AND parent.type:folder',
       ),
     ]);
+
+    const directChildren =
+      directResult.status === 'fulfilled' ? directResult.value : [];
+    const folderNested =
+      folderResult.status === 'fulfilled' ? folderResult.value : [];
+
+    if (directResult.status === 'rejected') {
+      this.logger.warn(
+        `GCP detectProjectsForOrg(${organizationId}): direct arm threw — ${directResult.reason}`,
+      );
+    }
+    if (folderResult.status === 'rejected') {
+      this.logger.warn(
+        `GCP detectProjectsForOrg(${organizationId}): folder arm threw — ${folderResult.reason}`,
+      );
+    }
 
     const seen = new Set<string>();
     const merged: Array<{ id: string; name: string; number: string }> = [];
