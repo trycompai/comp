@@ -149,6 +149,24 @@ const JSON_STRING_PARAMS = new Set([
   'Definition',
 ]);
 
+/**
+ * Commands where AWS rejects the call with a confusing
+ * "Member must not be null" error if a top-level param is missing.
+ * We surface a clear, actionable error BEFORE the SDK call so the
+ * remediation pipeline fails fast and the customer sees what's wrong.
+ *
+ * Keep this list narrow — only commands where we've seen the AI omit a
+ * required param in practice and the resulting AWS error is unhelpful.
+ */
+export const REQUIRED_PARAMS: Record<string, readonly string[]> = {
+  CreateServiceLinkedRoleCommand: ['AWSServiceName'],
+  PutConfigurationRecorderCommand: ['ConfigurationRecorder'],
+  PutDeliveryChannelCommand: ['DeliveryChannel'],
+  StartConfigurationRecorderCommand: ['ConfigurationRecorderName'],
+  PutBucketPolicyCommand: ['Bucket', 'Policy'],
+  CreateTrailCommand: ['Name', 'S3BucketName'],
+};
+
 function normalizeArnPartition(value: string, partition: AwsPartition): string {
   if (partition === 'aws-us-gov') {
     return value.replace(/\barn:aws:/g, 'arn:aws-us-gov:');
@@ -480,6 +498,21 @@ export function validatePlanSteps(steps: AwsCommandStep[]): string[] {
       errors.push(
         `${prefix}: Contains placeholder values: ${placeholders.join(', ')}`,
       );
+    }
+
+    // Check required top-level params for commands AWS rejects with
+    // cryptic "Member must not be null" errors. Fail fast with a clear
+    // message instead of letting the SDK return its uninformative one.
+    const required = REQUIRED_PARAMS[step.command];
+    if (required) {
+      for (const key of required) {
+        const value = step.params?.[key];
+        if (value === undefined || value === null || value === '') {
+          errors.push(
+            `${prefix}: Required param "${key}" is missing or empty`,
+          );
+        }
+      }
     }
   }
 
