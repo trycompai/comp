@@ -167,6 +167,11 @@ export const REQUIRED_PARAMS: Record<string, readonly string[]> = {
   CreateTrailCommand: ['Name', 'S3BucketName'],
 };
 
+const REQUIRED_PARAM_ONE_OF: Record<string, readonly (readonly string[])[]> = {
+  AuthorizeSecurityGroupIngressCommand: [['GroupId', 'GroupName']],
+  RevokeSecurityGroupIngressCommand: [['GroupId', 'GroupName']],
+};
+
 function normalizeArnPartition(value: string, partition: AwsPartition): string {
   if (partition === 'aws-us-gov') {
     return value.replace(/\barn:aws:/g, 'arn:aws-us-gov:');
@@ -412,7 +417,8 @@ export function looksLikeValidationError(message: string): boolean {
     lower.includes('invalid parameter') ||
     lower.includes('must be a valid') ||
     lower.includes('is required') ||
-    lower.includes('missing required')
+    lower.includes('missing required') ||
+    lower.includes('must contain')
   );
 }
 
@@ -534,8 +540,21 @@ export function validatePlanSteps(steps: AwsCommandStep[]): string[] {
       for (const key of required) {
         const value = step.params?.[key];
         if (value === undefined || value === null || value === '') {
+          errors.push(`${prefix}: Required param "${key}" is missing or empty`);
+        }
+      }
+    }
+
+    const oneOfGroups = REQUIRED_PARAM_ONE_OF[step.command];
+    if (oneOfGroups) {
+      for (const group of oneOfGroups) {
+        const hasAny = group.some((key) => {
+          const value = step.params?.[key];
+          return value !== undefined && value !== null && value !== '';
+        });
+        if (!hasAny) {
           errors.push(
-            `${prefix}: Required param "${key}" is missing or empty`,
+            `${prefix}: One of "${group.join('" or "')}" is required`,
           );
         }
       }

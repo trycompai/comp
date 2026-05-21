@@ -15,7 +15,13 @@ import {
   getAwsDefaultRegion,
   normalizeAwsPartition,
 } from './aws-partition.utils';
+import {
+  buildManualRemediationPreview,
+  isManualRemediation,
+} from './manual-remediation';
 import type { FixPlan, AwsCommandStep } from './ai-remediation.prompt';
+
+const UNSUPPORTED_S3_ACL_PERMISSIONS = new Set(['s3:PutBucketAcl']);
 
 @Injectable()
 export class RemediationService {
@@ -98,6 +104,14 @@ export class RemediationService {
     }
 
     const { finding, credentials, region } = await this.resolveContext(params);
+
+    if (isManualRemediation(finding.remediation)) {
+      return buildManualRemediationPreview({
+        remediation: finding.remediation ?? '',
+        description: finding.description,
+        severity: finding.severity,
+      });
+    }
 
     const evidence = (finding.evidence ?? {}) as Record<string, unknown>;
     const findingKey = evidence.findingKey as string;
@@ -293,6 +307,7 @@ export class RemediationService {
             .filter(
               (p) => p !== 'sts:GetCallerIdentity' && p !== 'sts:AssumeRole',
             )
+            .filter((p) => !UNSUPPORTED_S3_ACL_PERMISSIONS.has(p))
             .sort();
           // Check permissions by reading the ACTUAL policies on CompAI-Remediator
           let missingPermissions: string[] | undefined;
@@ -399,6 +414,12 @@ export class RemediationService {
     }
 
     const { finding, credentials, region } = await this.resolveContext(params);
+
+    if (isManualRemediation(finding.remediation)) {
+      throw new Error(
+        'This finding requires manual remediation and cannot be auto-fixed.',
+      );
+    }
 
     // Get plan from cache or regenerate
     let plan: FixPlan;

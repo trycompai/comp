@@ -59,7 +59,9 @@ export class AiRemediationService {
       this.logger.log(
         `AI plan for ${finding.findingKey}: canAutoFix=${object.canAutoFix}, risk=${object.risk}`,
       );
-      return normalizeFixPlan(enrichEmptyState(object));
+      return normalizeFixPlan(enrichEmptyState(object), {
+        resourceId: finding.resourceId,
+      });
     } catch (err) {
       this.logger.error(
         `AI plan failed: ${err instanceof Error ? err.message : String(err)}`,
@@ -101,13 +103,17 @@ Generate the complete fix plan with EXACT values from the real AWS state.`,
       });
 
       this.logger.log(`AI refined plan for ${params.finding.findingKey}`);
-      return normalizeFixPlan(enrichEmptyState(object));
+      return normalizeFixPlan(enrichEmptyState(object), {
+        resourceId: params.finding.resourceId,
+      });
     } catch (err) {
       this.logger.error(
         `AI refine failed: ${err instanceof Error ? err.message : String(err)}`,
       );
       // Fall back to original plan
-      return normalizeFixPlan(enrichEmptyState(params.originalPlan));
+      return normalizeFixPlan(enrichEmptyState(params.originalPlan), {
+        resourceId: params.finding.resourceId,
+      });
     }
   }
 
@@ -252,7 +258,11 @@ OVERESTIMATE. Better to have 5 extra permissions than to miss one.`,
       const neighbors = [
         ...params.planContext.readSteps.map((s) => ({ role: 'read', ...s })),
         ...params.planContext.fixSteps.map((s) => ({ role: 'fix', ...s })),
-      ].filter((s) => s.command !== params.step.command || s.purpose !== params.step.purpose);
+      ].filter(
+        (s) =>
+          s.command !== params.step.command ||
+          s.purpose !== params.step.purpose,
+      );
 
       const { object } = await generateObject({
         model: MODEL,
@@ -475,9 +485,7 @@ Generate the complete fix plan with EXACT values from the real Azure state.`,
 
     const steps: string[] = [];
     if (externalUri) {
-      steps.push(
-        `Open the resource in GCP Console: ${externalUri}`,
-      );
+      steps.push(`Open the resource in GCP Console: ${externalUri}`);
     }
     if (finding.remediation) {
       // Split SCC remediation text into separate steps if it contains "More info:" or multiple sentences
@@ -579,7 +587,9 @@ function enrichEmptyState(plan: FixPlan): FixPlan {
     const command = typeof step?.command === 'string' ? step.command : '';
     const prefix = ACTIONABLE_PREFIXES.find((p) => command.startsWith(p));
     if (!prefix) continue;
-    const resource = command.replace(/Command$/, '').replace(/^[A-Z][a-z]+/, '');
+    const resource = command
+      .replace(/Command$/, '')
+      .replace(/^[A-Z][a-z]+/, '');
     const label = step.service ? `${step.service}:${resource}` : resource;
     if (prefix === 'Create') {
       if (!willCreate.includes(label)) willCreate.push(label);
