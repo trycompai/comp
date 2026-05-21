@@ -1,3 +1,19 @@
+# [3.62.0](https://github.com/trycompai/comp/compare/v3.61.1...v3.62.0) (2026-05-21)
+
+
+### Bug Fixes
+
+* **rbac:** exclude override rows from role count + safer obligation fallback ([3fb0080](https://github.com/trycompai/comp/commit/3fb0080f1b4e3dcec67a817c18ebc07e484ec30e))
+* **rbac:** sync digest BUILT_IN_ROLE_OBLIGATIONS snapshot with auth package ([5fab22f](https://github.com/trycompai/comp/commit/5fab22f6a51f92b17a3bd67ca25d7d0e10a41e53))
+* **rbac:** sync system role obligations state on prop change ([32c3353](https://github.com/trycompai/comp/commit/32c335334fde304ee6d56c96225096680ba9b5aa))
+* **rbac:** tighten obligation DTO + resync state on role navigation ([6b0fa6c](https://github.com/trycompai/comp/commit/6b0fa6cf2e275d14f31493d7ca5d6460b2392d40))
+* **rbac:** unify obligation fallback across read paths ([ba889ca](https://github.com/trycompai/comp/commit/ba889ca6740da9f43d544ebed2207695f2e90fea))
+
+
+### Features
+
+* **rbac:** allow toggling employee compliance obligation on built-in roles ([013061c](https://github.com/trycompai/comp/commit/013061c0919d93ccb66279d55f8a14417543b816))
+
 ## [3.61.1](https://github.com/trycompai/comp/compare/v3.61.0...v3.61.1) (2026-05-21)
 
 
