@@ -533,13 +533,36 @@ export class RemediationService {
         throw new Error(`Invalid fix steps: ${fixErrors.join('; ')}`);
       }
 
-      // Phase 3: Execute the refined fix steps (now with REAL values)
-      // Pass rollback steps for automatic undo on partial failure
+      // Phase 3: Execute the refined fix steps (now with REAL values).
+      // Pass rollback steps for automatic undo on partial failure.
+      // Pass a repairStep callback so that when AWS rejects any step with
+      // a validation error the AI can self-repair the step once before
+      // we give up — universal fix for "AI omitted a required param"
+      // bugs that no per-command map can fully cover.
       const fixResult = await executePlanSteps({
         steps: refinedPlan.fixSteps,
         credentials: remediationCreds,
         region,
         autoRollbackSteps: refinedPlan.rollbackSteps,
+        repairStep: async ({ step, awsError }) =>
+          this.aiRemediationService.refineStepFromError({
+            step,
+            awsError,
+            finding: {
+              title: finding.title ?? 'Unknown',
+              description: finding.description,
+              severity: finding.severity,
+              resourceType: finding.resourceType,
+              resourceId: finding.resourceId,
+              remediation: finding.remediation,
+              findingKey: evidence.findingKey as string,
+              evidence,
+            },
+            planContext: {
+              fixSteps: refinedPlan.fixSteps,
+              readSteps: refinedPlan.readSteps,
+            },
+          }),
       });
 
       if (fixResult.error) {
