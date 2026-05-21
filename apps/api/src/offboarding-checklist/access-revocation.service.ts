@@ -1,6 +1,7 @@
 import {
   BadRequestException,
   Injectable,
+  Logger,
   NotFoundException,
 } from '@nestjs/common';
 import { AttachmentEntityType, db } from '@db';
@@ -8,6 +9,8 @@ import { AttachmentsService } from '../attachments/attachments.service';
 
 @Injectable()
 export class AccessRevocationService {
+  private readonly logger = new Logger(AccessRevocationService.name);
+
   constructor(private readonly attachmentsService: AttachmentsService) {}
   async getAccessRevocations(organizationId: string, memberId: string) {
     const vendors = await db.vendor.findMany({
@@ -133,7 +136,9 @@ export class AccessRevocationService {
         memberId,
         revokedById,
       );
-    } catch {}
+    } catch (err) {
+      this.logger.warn(`Failed to sync access revocation completion for member ${memberId}`, err);
+    }
 
     return revocation;
   }
