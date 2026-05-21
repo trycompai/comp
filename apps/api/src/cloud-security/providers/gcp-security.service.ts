@@ -803,45 +803,45 @@ export class GCPSecurityService {
 
   /**
    * Detect active GCP projects scoped to a specific organization.
-   * Returns only projects whose parent is the given org ID.
+   * Returns:
+   *  - projects whose IMMEDIATE parent is the given org ID, AND
+   *  - projects nested inside any folder the user has access to.
+   *
+   * Background: GCP's `v1/projects` list endpoint does not support a
+   * "descendants of org" query — `parent.id:<org>` only matches direct
+   * children, so customers whose production projects live under a
+   * folder (org → folder → project, a common SOC2-friendly layout)
+   * never see those projects in our picker. We compensate by also
+   * listing every accessible folder-nested project; the user's IAM
+   * scope already limits what they can see.
    */
   async detectProjectsForOrg(
     accessToken: string,
     organizationId: string,
   ): Promise<Array<{ id: string; name: string; number: string }>> {
-    const params = new URLSearchParams({
-      pageSize: '50',
-      filter: `lifecycleState:ACTIVE AND parent.id:${organizationId}`,
-    });
-    const response = await fetch(
-      `https://cloudresourcemanager.googleapis.com/v1/projects?${params.toString()}`,
-      {
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-          'Content-Type': 'application/json',
-        },
-      },
-    );
+    const [directChildren, folderNested] = await Promise.all([
+      this.listProjectsPaginated(
+        accessToken,
+        `lifecycleState:ACTIVE AND parent.id:${organizationId}`,
+      ),
+      this.listProjectsPaginated(
+        accessToken,
+        'lifecycleState:ACTIVE AND parent.type:folder',
+      ),
+    ]);
 
-    if (!response.ok) {
-      this.logger.warn(
-        `Failed to list GCP projects for org ${organizationId}: ${await response.text()}`,
-      );
-      return [];
+    const seen = new Set<string>();
+    const merged: Array<{ id: string; name: string; number: string }> = [];
+    for (const p of [...directChildren, ...folderNested]) {
+      if (seen.has(p.id)) continue;
+      seen.add(p.id);
+      merged.push(p);
     }
 
-    const data = await response.json();
-    return (
-      (data.projects ?? []) as Array<{
-        projectId: string;
-        name: string;
-        projectNumber: string;
-      }>
-    ).map((p) => ({
-      id: p.projectId,
-      name: p.name,
-      number: p.projectNumber,
-    }));
+    this.logger.log(
+      `GCP detectProjectsForOrg(${organizationId}): ${directChildren.length} direct + ${folderNested.length} folder-nested → ${merged.length} unique`,
+    );
+    return merged;
   }
 
   /**
@@ -852,54 +852,10 @@ export class GCPSecurityService {
   async detectProjects(
     accessToken: string,
   ): Promise<Array<{ id: string; name: string; number: string }>> {
-    const mapRow = (p: {
-      projectId: string;
-      name: string;
-      projectNumber: string;
-    }) => ({
-      id: p.projectId,
-      name: p.name,
-      number: p.projectNumber,
-    });
-
-    const listProjectsWithFilter = async (
-      filter: string,
-    ): Promise<
-      Array<{ id: string; name: string; number: string }>
-    > => {
-      const params = new URLSearchParams({
-        pageSize: '50',
-        filter,
-      });
-      const response = await fetch(
-        `https://cloudresourcemanager.googleapis.com/v1/projects?${params.toString()}`,
-        {
-          headers: {
-            Authorization: `Bearer ${accessToken}`,
-            'Content-Type': 'application/json',
-          },
-        },
-      );
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        this.logger.warn(
-          `Failed to list GCP projects (filter=${filter}): ${errorText}`,
-        );
-        return [];
-      }
-
-      const data = await response.json();
-      return (
-        (data.projects ?? []) as Array<{
-          projectId: string;
-          name: string;
-          projectNumber: string;
-        }>
-      ).map(mapRow);
-    };
-
-    const direct = await listProjectsWithFilter('lifecycleState:ACTIVE');
+    const direct = await this.listProjectsPaginated(
+      accessToken,
+      'lifecycleState:ACTIVE',
+    );
     if (direct.length > 0) {
       this.logger.log(
         `GCP detectProjects: ${direct.length} project(s) via direct list`,
@@ -919,7 +875,8 @@ export class GCPSecurityService {
     const merged: Array<{ id: string; name: string; number: string }> = [];
 
     for (const org of orgs) {
-      const underOrg = await listProjectsWithFilter(
+      const underOrg = await this.listProjectsPaginated(
+        accessToken,
         `lifecycleState:ACTIVE AND parent.id:${org.id}`,
       );
       for (const p of underOrg) {
@@ -943,6 +900,95 @@ export class GCPSecurityService {
     }
 
     return merged;
+  }
+
+  /**
+   * Paginated wrapper around GCP's `cloudresourcemanager.projects.list`.
+   *
+   * The v1 list endpoint paginates via `nextPageToken`. The previous
+   * implementation requested a single page with `pageSize=50` and never
+   * followed `nextPageToken`, which silently truncated the result for
+   * any customer with more than ~50 accessible projects (large orgs,
+   * accounts with many sandboxes/Gemini default projects, etc.) and
+   * caused critical production projects to be missing from our picker.
+   *
+   * Behavior:
+   *  - Follows `nextPageToken` until exhaustion.
+   *  - Uses `pageSize=200` (well under GCP's 500 max) to keep
+   *    round-trips low.
+   *  - Stops at `SAFE_MAX_PROJECTS=1000` to bound API usage; if a
+   *    customer legitimately has more accessible projects, they
+   *    should narrow with a filter rather than load all of them in
+   *    the picker.
+   *  - On non-OK response from any page, logs and returns what was
+   *    collected so far instead of throwing — matches the prior
+   *    failure mode (UI gets best-effort results) and prevents one
+   *    transient page error from blanking the whole picker.
+   */
+  private async listProjectsPaginated(
+    accessToken: string,
+    filter: string,
+  ): Promise<Array<{ id: string; name: string; number: string }>> {
+    const PAGE_SIZE = 200;
+    const SAFE_MAX_PROJECTS = 1000;
+
+    const collected: Array<{ id: string; name: string; number: string }> = [];
+    let pageToken: string | undefined;
+    let pages = 0;
+
+    do {
+      const params = new URLSearchParams({
+        pageSize: String(PAGE_SIZE),
+        filter,
+      });
+      if (pageToken) params.set('pageToken', pageToken);
+
+      const response = await fetch(
+        `https://cloudresourcemanager.googleapis.com/v1/projects?${params.toString()}`,
+        {
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+            'Content-Type': 'application/json',
+          },
+        },
+      );
+
+      if (!response.ok) {
+        this.logger.warn(
+          `Failed to list GCP projects (filter="${filter}", page=${pages + 1}, collected=${collected.length}): ${await response.text()}`,
+        );
+        return collected;
+      }
+
+      const data = (await response.json()) as {
+        projects?: Array<{
+          projectId: string;
+          name: string;
+          projectNumber: string;
+        }>;
+        nextPageToken?: string;
+      };
+
+      for (const p of data.projects ?? []) {
+        collected.push({
+          id: p.projectId,
+          name: p.name,
+          number: p.projectNumber,
+        });
+      }
+
+      pageToken = data.nextPageToken;
+      pages++;
+
+      if (collected.length >= SAFE_MAX_PROJECTS) {
+        this.logger.warn(
+          `GCP projects: hit safety cap of ${SAFE_MAX_PROJECTS} for filter="${filter}" — consider a narrower filter if more results are needed`,
+        );
+        break;
+      }
+    } while (pageToken);
+
+    return collected;
   }
 
   /**
