@@ -28,6 +28,35 @@ const BUILT_IN_ROLES = Object.keys(allRoles);
 // changing behavior for roles the request didn't cover.
 const EDITABLE_BUILT_IN_OBLIGATION_ROLES = new Set(['owner', 'admin']);
 
+function parseObligationsField(value: unknown): RoleObligations {
+  if (typeof value === 'string') {
+    try {
+      return JSON.parse(value) as RoleObligations;
+    } catch {
+      return {};
+    }
+  }
+  return (value as RoleObligations) || {};
+}
+
+/**
+ * Resolve the effective obligations for a single role, given an optional DB
+ * override row. Centralized so every read path applies the same fallback
+ * rule: a DB row only wins when it explicitly sets `compliance`, otherwise
+ * we fall back to the hardcoded built-in default. Prevents the UI and the
+ * enforcement layer from diverging when a row exists with `{}` obligations.
+ */
+function resolveEffectiveObligations(
+  roleName: string,
+  override: RoleObligations | null,
+): RoleObligations {
+  if (override && 'compliance' in override) return override;
+  if (BUILT_IN_ROLES.includes(roleName)) {
+    return BUILT_IN_ROLE_OBLIGATIONS[roleName] ?? {};
+  }
+  return override ?? {};
+}
+
 @Injectable()
 export class RolesService {
   /**
@@ -262,16 +291,12 @@ export class RolesService {
     // Include built-in roles info (with effective obligations: override or default)
     const builtInRoles = BUILT_IN_ROLES.map((name) => {
       const override = overrideByName.get(name);
-      const obligations = override
-        ? (typeof override.obligations === 'string'
-            ? (JSON.parse(override.obligations) as RoleObligations)
-            : ((override.obligations as RoleObligations) || {}))
-        : (BUILT_IN_ROLE_OBLIGATIONS[name] ?? {});
+      const parsed = override ? parseObligationsField(override.obligations) : null;
       return {
         name,
         isBuiltIn: true,
         description: this.getBuiltInRoleDescription(name),
-        obligations,
+        obligations: resolveEffectiveObligations(name, parsed),
       };
     });
 
@@ -576,26 +601,13 @@ export class RolesService {
     });
     const overrideByName = new Map<string, RoleObligations>();
     for (const role of dbRoles) {
-      const obligations =
-        typeof role.obligations === 'string'
-          ? (JSON.parse(role.obligations) as RoleObligations)
-          : ((role.obligations as RoleObligations) || {});
-      overrideByName.set(role.name, obligations);
+      overrideByName.set(role.name, parseObligationsField(role.obligations));
     }
 
     const combined: RoleObligations = {};
     for (const name of roleNames) {
-      const fromDb = overrideByName.get(name);
-      // Use the override only when `compliance` is explicitly set in it;
-      // otherwise fall back to the built-in default.
-      let effective: RoleObligations;
-      if (fromDb && 'compliance' in fromDb) {
-        effective = fromDb;
-      } else if (BUILT_IN_ROLES.includes(name)) {
-        effective = BUILT_IN_ROLE_OBLIGATIONS[name] ?? {};
-      } else {
-        effective = fromDb ?? {};
-      }
+      const fromDb = overrideByName.get(name) ?? null;
+      const effective = resolveEffectiveObligations(name, fromDb);
       if (effective.compliance) combined.compliance = true;
     }
 
@@ -660,12 +672,8 @@ export class RolesService {
       where: { organizationId, name: roleName },
       select: { obligations: true },
     });
-    if (override) {
-      return typeof override.obligations === 'string'
-        ? (JSON.parse(override.obligations) as RoleObligations)
-        : ((override.obligations as RoleObligations) || {});
-    }
-    return BUILT_IN_ROLE_OBLIGATIONS[roleName] ?? {};
+    const parsed = override ? parseObligationsField(override.obligations) : null;
+    return resolveEffectiveObligations(roleName, parsed);
   }
 
   /**

@@ -777,6 +777,16 @@ describe('RolesService', () => {
         service.getBuiltInObligations(organizationId, 'not-a-built-in'),
       ).rejects.toThrow(BadRequestException);
     });
+
+    it('falls back to built-in default when override row exists but has no compliance key', async () => {
+      // Override row with `{}` should be treated as "no override on compliance"
+      // — UI must show the built-in default to match what enforcement does.
+      (mockDb.organizationRole.findFirst as jest.Mock).mockResolvedValue({
+        obligations: '{}',
+      });
+      const result = await service.getBuiltInObligations(organizationId, 'owner');
+      expect(result).toEqual({ compliance: true });
+    });
   });
 
   describe('updateBuiltInObligations', () => {
@@ -923,6 +933,26 @@ describe('RolesService', () => {
       expect(adminEntry?.obligations).toEqual({});
       const employeeEntry = result.builtInRoles.find((r) => r.name === 'employee');
       expect(employeeEntry?.obligations).toEqual({ compliance: true });
+    });
+
+    it('shows the built-in default when override row exists with no compliance key', async () => {
+      // Override row with `{}` should not silently flip the built-in entry off.
+      (mockDb.organizationRole.findMany as jest.Mock).mockResolvedValue([
+        {
+          id: 'rol_owner_override',
+          name: 'owner',
+          permissions: '{}',
+          obligations: '{}',
+          organizationId,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        },
+      ]);
+      (mockDb.member.count as jest.Mock).mockResolvedValue(0);
+
+      const result = await service.listRoles(organizationId);
+      const ownerEntry = result.builtInRoles.find((r) => r.name === 'owner');
+      expect(ownerEntry?.obligations).toEqual({ compliance: true });
     });
   });
 });
