@@ -31,7 +31,12 @@ export class OffboardingExportService {
     output: NodeJS.WritableStream;
   }) {
     const archive = archiver('zip', { zlib: { level: 9 } });
-    archive.on('error', () => { archive.abort(); });
+    archive.on('error', (err) => {
+      archive.abort();
+      if ('destroy' in output && typeof (output as { destroy?: unknown }).destroy === 'function') {
+        (output as { destroy: (err: Error) => void }).destroy(err);
+      }
+    });
     archive.pipe(output);
 
     const checklist =
@@ -153,7 +158,12 @@ export class OffboardingExportService {
     output: NodeJS.WritableStream;
   }) {
     const archive = archiver('zip', { zlib: { level: 9 } });
-    archive.on('error', () => { archive.abort(); });
+    archive.on('error', (err) => {
+      archive.abort();
+      if ('destroy' in output && typeof (output as { destroy?: unknown }).destroy === 'function') {
+        (output as { destroy: (err: Error) => void }).destroy(err);
+      }
+    });
     archive.pipe(output);
 
     const BATCH_SIZE = 50;

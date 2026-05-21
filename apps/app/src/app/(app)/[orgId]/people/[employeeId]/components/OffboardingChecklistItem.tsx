@@ -190,6 +190,7 @@ export function OffboardingChecklistItem({
 
   const handleFileDrop = async (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
+    if (isProcessing) return;
     const file = e.dataTransfer.files[0];
     if (!file) return;
     await handleFileUpload(file);
@@ -373,8 +374,8 @@ function EvidenceContent({
         <div
           onDrop={onFileDrop}
           onDragOver={(e) => e.preventDefault()}
-          onClick={() => dropzoneInputRef.current?.click()}
-          className="flex cursor-pointer flex-col items-center gap-2 rounded-md border-2 border-dashed border-muted-foreground/25 px-4 py-6 text-center transition hover:border-muted-foreground/50 hover:bg-muted/25"
+          onClick={() => !isProcessing && dropzoneInputRef.current?.click()}
+          className={`flex cursor-pointer flex-col items-center gap-2 rounded-md border-2 border-dashed border-muted-foreground/25 px-4 py-6 text-center transition hover:border-muted-foreground/50 hover:bg-muted/25${isProcessing ? ' pointer-events-none opacity-50' : ''}`}
         >
           <Upload size={20} className="text-muted-foreground" />
           <div>
