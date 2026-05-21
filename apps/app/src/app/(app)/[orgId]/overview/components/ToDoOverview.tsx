@@ -63,9 +63,11 @@ export function ToDoOverview({
   const [isConfirmDialogOpen, setIsConfirmDialogOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
-  const { data: pendingData } = useApiSWR<PendingOffboardingResponse>(
-    '/v1/offboarding-checklist/pending',
-  );
+  const {
+    data: pendingData,
+    isLoading: isPendingLoading,
+    error: pendingError,
+  } = useApiSWR<PendingOffboardingResponse>('/v1/offboarding-checklist/pending');
   const pendingOffboardings = pendingData?.data?.members ?? [];
 
   const isOnboardingInProgress = !!onboardingTriggerJobId;
@@ -279,7 +281,19 @@ export function ToDoOverview({
           </TabsContent>
 
           <TabsContent value="offboarding" className="mt-4">
-            {pendingOffboardings.length === 0 ? (
+            {isPendingLoading ? (
+              <div className="flex items-center justify-center gap-2 rounded-lg bg-accent p-3">
+                <span className="text-sm text-muted-foreground">
+                  Loading offboardings...
+                </span>
+              </div>
+            ) : pendingError ? (
+              <div className="flex items-center justify-center gap-2 rounded-lg bg-accent p-3">
+                <span className="text-sm text-destructive">
+                  Failed to load offboardings
+                </span>
+              </div>
+            ) : pendingOffboardings.length === 0 ? (
               <div className="flex items-center justify-center gap-2 rounded-lg bg-accent p-3">
                 <CheckCircle2 className="h-4 w-4 text-primary" />
                 <span className="text-sm text-primary">

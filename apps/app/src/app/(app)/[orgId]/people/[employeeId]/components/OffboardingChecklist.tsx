@@ -70,7 +70,7 @@ export function OffboardingChecklist({
     async (attachmentId: string) => {
       try {
         const url = await getDownloadUrl(attachmentId);
-        window.open(url, '_blank');
+        window.open(url, '_blank', 'noopener,noreferrer');
       } catch {
         toast.error('Failed to download file');
       }
