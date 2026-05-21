@@ -24,6 +24,14 @@ const MAGIC_LINK_EXPIRES_IN_SECONDS = 60 * 60; // 1 hour
  * Determine the cookie domain based on environment.
  */
 function getCookieDomain(): string | undefined {
+  // Allow self-hosters to set the cookie domain explicitly. Required for
+  // any deployment that isn't on *.trycomp.ai — without this, cross-subdomain
+  // cookies between app/api/portal don't work and the OAuth flow lands users
+  // back on /auth instead of the dashboard.
+  if (process.env.COOKIE_DOMAIN) {
+    return process.env.COOKIE_DOMAIN;
+  }
+
   const baseUrl = process.env.BASE_URL || '';
 
   if (baseUrl.includes('staging.trycomp.ai')) {
