@@ -8,7 +8,7 @@ import type { Departments, PolicyVisibility } from '@db';
 // Keep in sync with packages/auth/src/permissions.ts BUILT_IN_ROLE_OBLIGATIONS.
 const BUILT_IN_ROLE_OBLIGATIONS: Record<string, { compliance?: boolean }> = {
   owner: { compliance: true },
-  admin: { compliance: true },
+  admin: {},
   auditor: {},
   employee: { compliance: true },
   contractor: { compliance: true },
