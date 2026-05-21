@@ -73,6 +73,14 @@ export class AccessRevocationService {
     notes?: string;
     evidence?: { fileName: string; fileType: string; fileData: string };
   }) {
+    const member = await db.member.findFirst({
+      where: { id: memberId, organizationId },
+    });
+
+    if (!member) {
+      throw new NotFoundException('Member not found in this organization');
+    }
+
     const vendor = await db.vendor.findFirst({
       where: { id: vendorId, organizationId },
     });
@@ -173,6 +181,14 @@ export class AccessRevocationService {
     memberId: string;
     revokedById: string;
   }) {
+    const member = await db.member.findFirst({
+      where: { id: memberId, organizationId },
+    });
+
+    if (!member) {
+      throw new NotFoundException('Member not found in this organization');
+    }
+
     const vendors = await db.vendor.findMany({
       where: { organizationId },
       select: { id: true },

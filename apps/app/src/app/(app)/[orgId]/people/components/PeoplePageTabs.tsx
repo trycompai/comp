@@ -162,7 +162,7 @@ export function PeoplePageTabs({
                   <DropdownMenuContent align="end">
                     <DropdownMenuItem
                       onClick={() => {
-                        window.open('/api/offboarding-export?all=true', '_blank');
+                        window.open('/api/offboarding-export?all=true', '_blank', 'noopener,noreferrer');
                       }}
                     >
                       <Download size={14} className="mr-2" />

@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Controller,
   Get,
   Post,
@@ -33,6 +34,13 @@ export class OffboardingChecklistController {
     private readonly offboardingChecklistService: OffboardingChecklistService,
     private readonly offboardingExportService: OffboardingExportService,
   ) {}
+
+  private requireUserId(authContext: AuthContextType): string {
+    if (!authContext.userId) {
+      throw new BadRequestException('User context required');
+    }
+    return authContext.userId;
+  }
 
   @Get('pending')
   @RequirePermission('member', 'read')
@@ -169,7 +177,7 @@ export class OffboardingChecklistController {
       organizationId,
       memberId,
       templateItemId,
-      completedById: authContext.userId!,
+      completedById: this.requireUserId(authContext),
       dto,
     });
   }
@@ -202,7 +210,7 @@ export class OffboardingChecklistController {
       memberId,
       templateItemId,
       uploadDto,
-      userId: authContext.userId!,
+      userId: this.requireUserId(authContext),
     });
   }
 
@@ -234,7 +242,7 @@ export class OffboardingChecklistController {
     return this.offboardingChecklistService.revokeAllVendorAccess({
       organizationId,
       memberId,
-      revokedById: authContext.userId!,
+      revokedById: this.requireUserId(authContext),
     });
   }
 
@@ -250,6 +258,11 @@ export class OffboardingChecklistController {
     @AuthContext() authContext: AuthContextType,
     @Body() body: { notes?: string; fileName?: string; fileType?: string; fileData?: string },
   ) {
+    const evidenceFields = [body?.fileName, body?.fileType, body?.fileData];
+    const providedCount = evidenceFields.filter(Boolean).length;
+    if (providedCount > 0 && providedCount < 3) {
+      throw new BadRequestException('fileName, fileType, and fileData must all be provided together');
+    }
     const evidence = body?.fileName && body?.fileType && body?.fileData
       ? { fileName: body.fileName, fileType: body.fileType, fileData: body.fileData }
       : undefined;
@@ -257,7 +270,7 @@ export class OffboardingChecklistController {
       organizationId,
       memberId,
       vendorId,
-      revokedById: authContext.userId!,
+      revokedById: this.requireUserId(authContext),
       notes: body?.notes,
       evidence,
     });

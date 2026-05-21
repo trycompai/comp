@@ -509,7 +509,7 @@ describe('OffboardingChecklistService', () => {
 
   describe('undoVendorRevocation', () => {
     it('deletes revocation record', async () => {
-      mockDb.offboardingAccessRevocation.findUnique.mockResolvedValue({
+      mockDb.offboardingAccessRevocation.findFirst.mockResolvedValue({
         id: 'oar_1',
       });
       mockDb.offboardingAccessRevocation.delete.mockResolvedValue({});

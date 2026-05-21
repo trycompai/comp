@@ -23,14 +23,14 @@ model OffboardingChecklistCompletion {
   organizationId String
   memberId       String
   templateItemId String?
-  completedById  String
+  completedById  String?
   completedAt    DateTime @default(now())
   notes          String?
 
   organization Organization                  @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   member       Member                        @relation(fields: [memberId], references: [id], onDelete: Cascade)
   templateItem OffboardingChecklistTemplate? @relation(fields: [templateItemId], references: [id], onDelete: SetNull)
-  completedBy  User                          @relation("OffboardingChecklistCompletedBy", fields: [completedById], references: [id], onDelete: Cascade)
+  completedBy  User?                         @relation("OffboardingChecklistCompletedBy", fields: [completedById], references: [id], onDelete: SetNull)
 
   @@unique([memberId, templateItemId])
   @@index([organizationId])
@@ -42,14 +42,14 @@ model OffboardingAccessRevocation {
   organizationId String
   memberId       String
   vendorId       String
-  revokedById    String
+  revokedById    String?
   revokedAt      DateTime @default(now())
   notes          String?
 
   organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   member       Member       @relation(fields: [memberId], references: [id], onDelete: Cascade)
   vendor       Vendor       @relation(fields: [vendorId], references: [id], onDelete: Cascade)
-  revokedBy    User         @relation("AccessRevocationRevokedBy", fields: [revokedById], references: [id], onDelete: Cascade)
+  revokedBy    User?        @relation("AccessRevocationRevokedBy", fields: [revokedById], references: [id], onDelete: SetNull)
 
   @@unique([memberId, vendorId])
   @@index([organizationId])
