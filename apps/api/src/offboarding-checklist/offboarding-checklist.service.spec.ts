@@ -19,14 +19,26 @@ const mockDb = {
   },
   offboardingAccessRevocation: {
     findMany: jest.fn(),
+    findFirst: jest.fn(),
     findUnique: jest.fn(),
     create: jest.fn(),
+    createMany: jest.fn(),
     delete: jest.fn(),
+    count: jest.fn(),
   },
   vendor: {
     findMany: jest.fn(),
     findFirst: jest.fn(),
+    count: jest.fn(),
   },
+  member: {
+    findFirst: jest.fn(),
+    findMany: jest.fn(),
+  },
+  attachment: {
+    findMany: jest.fn(),
+  },
+  $transaction: jest.fn((fn: (tx: typeof mockDb) => Promise<unknown>) => fn(mockDb)),
 };
 
 jest.mock('@db', () => ({
@@ -45,6 +57,7 @@ describe('OffboardingChecklistService', () => {
     getAttachments: jest.fn(),
     uploadAttachment: jest.fn(),
     deleteAttachment: jest.fn(),
+    getPresignedDownloadUrl: jest.fn().mockResolvedValue('https://signed-url.example.com'),
   };
 
   let service: OffboardingChecklistService;
@@ -52,7 +65,7 @@ describe('OffboardingChecklistService', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
-    accessRevocationService = new AccessRevocationService();
+    accessRevocationService = new AccessRevocationService(mockAttachmentsService as never);
     service = new OffboardingChecklistService(
       mockAttachmentsService as never,
       accessRevocationService,
@@ -145,8 +158,8 @@ describe('OffboardingChecklistService', () => {
           completedBy: { id: 'usr_1', name: 'Test User' },
         },
       ]);
-      mockAttachmentsService.getAttachments.mockResolvedValue([
-        { id: 'att_1', name: 'evidence.pdf' },
+      mockDb.attachment.findMany.mockResolvedValue([
+        { id: 'att_1', name: 'evidence.pdf', url: 's3://bucket/key', entityId: 'occ_1' },
       ]);
 
       const result = await service.getMemberChecklist('org_1', 'mem_1');
@@ -422,17 +435,19 @@ describe('OffboardingChecklistService', () => {
   describe('getAccessRevocations', () => {
     it('returns vendor list with revocation status', async () => {
       mockDb.vendor.findMany.mockResolvedValue([
-        { id: 'vnd_1', name: 'Slack' },
-        { id: 'vnd_2', name: 'AWS' },
+        { id: 'vnd_1', name: 'Slack', website: null, logoUrl: null },
+        { id: 'vnd_2', name: 'AWS', website: null, logoUrl: null },
       ]);
       mockDb.offboardingAccessRevocation.findMany.mockResolvedValue([
         {
+          id: 'oar_1',
           vendorId: 'vnd_1',
           revokedBy: { id: 'usr_1', name: 'Jane', email: 'jane@test.com' },
           revokedAt: new Date(),
           notes: null,
         },
       ]);
+      mockDb.attachment.findMany.mockResolvedValue([]);
 
       const result = await service.getAccessRevocations('org_1', 'mem_1');
 
@@ -445,6 +460,7 @@ describe('OffboardingChecklistService', () => {
     it('returns empty when no vendors exist', async () => {
       mockDb.vendor.findMany.mockResolvedValue([]);
       mockDb.offboardingAccessRevocation.findMany.mockResolvedValue([]);
+      mockDb.attachment.findMany.mockResolvedValue([]);
 
       const result = await service.getAccessRevocations('org_1', 'mem_1');
 
@@ -456,6 +472,7 @@ describe('OffboardingChecklistService', () => {
 
   describe('revokeVendorAccess', () => {
     it('creates revocation record', async () => {
+      mockDb.member.findFirst.mockResolvedValue({ id: 'mem_1', organizationId: 'org_1' });
       mockDb.vendor.findFirst.mockResolvedValue({ id: 'vnd_1' });
       mockDb.offboardingAccessRevocation.findUnique.mockResolvedValue(null);
       mockDb.offboardingAccessRevocation.create.mockResolvedValue({
@@ -478,6 +495,7 @@ describe('OffboardingChecklistService', () => {
     });
 
     it('throws if vendor not found', async () => {
+      mockDb.member.findFirst.mockResolvedValue({ id: 'mem_1', organizationId: 'org_1' });
       mockDb.vendor.findFirst.mockResolvedValue(null);
 
       await expect(
@@ -491,6 +509,7 @@ describe('OffboardingChecklistService', () => {
     });
 
     it('throws if already revoked', async () => {
+      mockDb.member.findFirst.mockResolvedValue({ id: 'mem_1', organizationId: 'org_1' });
       mockDb.vendor.findFirst.mockResolvedValue({ id: 'vnd_1' });
       mockDb.offboardingAccessRevocation.findUnique.mockResolvedValue({
         id: 'oar_1',
@@ -509,10 +528,11 @@ describe('OffboardingChecklistService', () => {
 
   describe('undoVendorRevocation', () => {
     it('deletes revocation record', async () => {
-      mockDb.offboardingAccessRevocation.findUnique.mockResolvedValue({
+      mockDb.offboardingAccessRevocation.findFirst.mockResolvedValue({
         id: 'oar_1',
       });
       mockDb.offboardingAccessRevocation.delete.mockResolvedValue({});
+      mockAttachmentsService.getAttachments.mockResolvedValue([]);
       // syncAccessRevocationCompletion mocks
       mockDb.offboardingChecklistTemplate.findFirst.mockResolvedValue(null);
 
@@ -529,7 +549,7 @@ describe('OffboardingChecklistService', () => {
     });
 
     it('throws if revocation not found', async () => {
-      mockDb.offboardingAccessRevocation.findUnique.mockResolvedValue(null);
+      mockDb.offboardingAccessRevocation.findFirst.mockResolvedValue(null);
 
       await expect(
         service.undoVendorRevocation({

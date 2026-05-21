@@ -596,6 +596,9 @@ export class PeopleController {
     @AuthContext() authContext: AuthContextType,
     @Body() uploadDto: UploadAttachmentDto,
   ) {
+    if (!authContext.userId) {
+      throw new BadRequestException('User context required for this operation');
+    }
     const entityType = this.resolveEventType(eventType);
     await this.peopleService.findById(memberId, organizationId);
     return this.attachmentsService.uploadAttachment(

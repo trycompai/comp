@@ -1,3 +1,28 @@
+# [3.60.0](https://github.com/trycompai/comp/compare/v3.59.2...v3.60.0) (2026-05-21)
+
+
+### Bug Fixes
+
+* **cloud-tests:** show meaningful Auto-Remediate diff for configure-only plans ([90c95f6](https://github.com/trycompai/comp/commit/90c95f66fba7f8ca281386b417ebcf018f53f0e9))
+* **evidence-export:** load automations one at a time to prevent OOM ([07f02e4](https://github.com/trycompai/comp/commit/07f02e4783649ba710fc1fcace6c6009bd498bd7))
+* **people:** address cubic review findings for offboarding feature ([#2884](https://github.com/trycompai/comp/issues/2884)) ([9d43a6b](https://github.com/trycompai/comp/commit/9d43a6b7453748cd0b50783f5c157d02a6bea9f6))
+* **people:** address fifth round of cubic review findings ([#2893](https://github.com/trycompai/comp/issues/2893)) ([dbc364c](https://github.com/trycompai/comp/commit/dbc364cd3a7a8893c77b97727b340007db08b053))
+* **people:** address fourth round of cubic review findings ([#2892](https://github.com/trycompai/comp/issues/2892)) ([ca9d9a5](https://github.com/trycompai/comp/commit/ca9d9a59ca2a4c822f635ef1080752f3801b731b))
+* **people:** address remaining cubic review findings for offboarding ([#2890](https://github.com/trycompai/comp/issues/2890)) ([8026352](https://github.com/trycompai/comp/commit/802635274921ed9ad07e6a0d9d75c97c9fcc4492))
+* **people:** address third round of cubic review findings ([#2891](https://github.com/trycompai/comp/issues/2891)) ([8ec5214](https://github.com/trycompai/comp/commit/8ec52148625e29c08c84fa4f18284bf270c780a0))
+* **people:** ds component compatibility fixes for offboarding UI ([200b112](https://github.com/trycompai/comp/commit/200b11207fa3aabf7868d582ac36551643c355e9))
+* **ui:** close MultipleSelector dropdown on blur so it stops blocking sibling form controls ([b9d08c8](https://github.com/trycompai/comp/commit/b9d08c8ad608442a8c80c47db08bb1dfd6a62e18))
+
+
+### Features
+
+* **api:** unblock cloud-tests mutations for API key + service token callers ([26e53da](https://github.com/trycompai/comp/commit/26e53dae1bead19de84f27562f52b41cb40c4238))
+* **cloud-tests:** add deterministic AWS plan normalizer for SLR params ([e0ec0f7](https://github.com/trycompai/comp/commit/e0ec0f712bcbb203a5a3b634e7bfa003a7a059b8))
+* **cloud-tests:** fail fast on missing required AWS command params ([5f2d342](https://github.com/trycompai/comp/commit/5f2d342fc6489d69fcae96917b50f24fb181f15e))
+* **cloud-tests:** universal AI step-repair on AWS validation errors ([8adf505](https://github.com/trycompai/comp/commit/8adf505f26ccc4b6b0ca96516d3bc3a1513aecff))
+* **frameworks:** show controls as default tab with requirement column ([e41365d](https://github.com/trycompai/comp/commit/e41365d07049735e0ede7fac11d282df0628f614))
+* **people:** add employment events tracking and offboarding checklist ([5e15a73](https://github.com/trycompai/comp/commit/5e15a7368fab5c68d3f314b8daeb1d5afd861832))
+
 ## [3.59.2](https://github.com/trycompai/comp/compare/v3.59.1...v3.59.2) (2026-05-21)
 
 

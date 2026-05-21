@@ -147,8 +147,10 @@ export function TeamMembersClient({
     statusFilter: effectiveStatusFilter,
   });
 
+  const hasAnyDateFilter = !!(onboardFrom || onboardTo || offboardFrom || offboardTo);
+
   const dateFilteredItems = filteredItems.filter((item) => {
-    if (item.type !== 'member') return true;
+    if (item.type !== 'member') return !hasAnyDateFilter;
     const member = item as MemberWithUser;
 
     if (onboardFrom || onboardTo) {
@@ -297,7 +299,9 @@ export function TeamMembersClient({
           >
             <SelectTrigger>
               <SelectValue placeholder="Active">
-                {{ all: 'All People', active: 'Active', pending: 'Pending', deactivated: 'Deactivated' }[statusFilter] ?? 'Active'}
+                {hasOffboardFilter && !statusFilter
+                  ? 'All People'
+                  : ({ all: 'All People', active: 'Active', pending: 'Pending', deactivated: 'Deactivated' }[statusFilter] ?? 'Active')}
               </SelectValue>
             </SelectTrigger>
             <SelectContent>
@@ -579,6 +583,7 @@ function getPresetRange(days: number): { from: Date | undefined; to: Date | unde
   const to = new Date();
   const from = new Date();
   from.setDate(from.getDate() - days);
+  from.setHours(0, 0, 0, 0);
   return { from, to };
 }
 

@@ -1,13 +1,16 @@
 import {
   BadRequestException,
   Injectable,
+  Logger,
   NotFoundException,
 } from '@nestjs/common';
-import { AttachmentEntityType, db } from '@db';
+import { AttachmentEntityType, Prisma, db } from '@db';
 import { AttachmentsService } from '../attachments/attachments.service';
 
 @Injectable()
 export class AccessRevocationService {
+  private readonly logger = new Logger(AccessRevocationService.name);
+
   constructor(private readonly attachmentsService: AttachmentsService) {}
   async getAccessRevocations(organizationId: string, memberId: string) {
     const vendors = await db.vendor.findMany({
@@ -27,17 +30,42 @@ export class AccessRevocationService {
       revocations.map((r) => [r.vendorId, r]),
     );
 
+    const revocationIds = revocations.map((r) => r.id);
+    const allAttachments =
+      revocationIds.length > 0
+        ? await db.attachment.findMany({
+            where: {
+              organizationId,
+              entityId: { in: revocationIds },
+              entityType: AttachmentEntityType.offboarding_checklist,
+            },
+            orderBy: { createdAt: 'asc' },
+          })
+        : [];
+
+    const attachmentsByRevocation = new Map<string, typeof allAttachments>();
+    for (const attachment of allAttachments) {
+      const existing = attachmentsByRevocation.get(attachment.entityId) ?? [];
+      existing.push(attachment);
+      attachmentsByRevocation.set(attachment.entityId, existing);
+    }
+
     const vendorList = await Promise.all(
       vendors.map(async (vendor) => {
         const revocation = revocationMap.get(vendor.id);
         const domain = vendor.website?.replace(/^https?:\/\//, '').replace(/\/.*$/, '') ?? null;
-        const evidence = revocation
-          ? await this.attachmentsService.getAttachments(
-              organizationId,
-              revocation.id,
-              AttachmentEntityType.offboarding_checklist,
-            )
+        const rawAttachments = revocation
+          ? (attachmentsByRevocation.get(revocation.id) ?? [])
           : [];
+        const evidence = await Promise.all(
+          rawAttachments.map(async (attachment) => ({
+            id: attachment.id,
+            name: attachment.name,
+            type: attachment.type,
+            downloadUrl: await this.attachmentsService.getPresignedDownloadUrl(attachment.url),
+            createdAt: attachment.createdAt,
+          })),
+        );
         return {
           vendorId: vendor.id,
           vendorName: vendor.name,
@@ -73,6 +101,14 @@ export class AccessRevocationService {
     notes?: string;
     evidence?: { fileName: string; fileType: string; fileData: string };
   }) {
+    const member = await db.member.findFirst({
+      where: { id: memberId, organizationId },
+    });
+
+    if (!member) {
+      throw new NotFoundException('Member not found in this organization');
+    }
+
     const vendor = await db.vendor.findFirst({
       where: { id: vendorId, organizationId },
     });
@@ -91,34 +127,51 @@ export class AccessRevocationService {
       );
     }
 
-    const revocation = await db.offboardingAccessRevocation.create({
-      data: {
-        organizationId,
-        memberId,
-        vendorId,
-        revokedById,
-        notes,
-      },
-      include: {
-        revokedBy: { select: { id: true, name: true, email: true } },
-      },
-    });
-
-    if (evidence) {
-      await this.attachmentsService.uploadAttachment(
-        organizationId,
-        revocation.id,
-        AttachmentEntityType.offboarding_checklist,
-        evidence,
-        revokedById,
-      );
+    let revocation: Awaited<ReturnType<typeof db.offboardingAccessRevocation.create>>;
+    try {
+      revocation = await db.offboardingAccessRevocation.create({
+        data: {
+          organizationId,
+          memberId,
+          vendorId,
+          revokedById,
+          notes,
+        },
+        include: {
+          revokedBy: { select: { id: true, name: true, email: true } },
+        },
+      });
+    } catch (err) {
+      if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2002') {
+        throw new BadRequestException('Vendor access has already been revoked for this member');
+      }
+      throw err;
     }
 
-    await this.syncAccessRevocationCompletion(
-      organizationId,
-      memberId,
-      revokedById,
-    );
+    if (evidence) {
+      try {
+        await this.attachmentsService.uploadAttachment(
+          organizationId,
+          revocation.id,
+          AttachmentEntityType.offboarding_checklist,
+          evidence,
+          revokedById,
+        );
+      } catch (err) {
+        await db.offboardingAccessRevocation.delete({ where: { id: revocation.id } });
+        throw err;
+      }
+    }
+
+    try {
+      await this.syncAccessRevocationCompletion(
+        organizationId,
+        memberId,
+        revokedById,
+      );
+    } catch (err) {
+      this.logger.warn(`Failed to sync access revocation completion for member ${memberId}`, err);
+    }
 
     return revocation;
   }
@@ -140,11 +193,25 @@ export class AccessRevocationService {
       throw new NotFoundException('Revocation record not found');
     }
 
+    const attachments = await this.attachmentsService.getAttachments(
+      organizationId,
+      revocation.id,
+      AttachmentEntityType.offboarding_checklist,
+    );
+
+    for (const attachment of attachments) {
+      await this.attachmentsService.deleteAttachment(organizationId, attachment.id);
+    }
+
     await db.offboardingAccessRevocation.delete({
       where: { id: revocation.id },
     });
 
-    await this.syncAccessRevocationCompletion(organizationId, memberId);
+    try {
+      await this.syncAccessRevocationCompletion(organizationId, memberId);
+    } catch (err) {
+      this.logger.warn(`Failed to sync access revocation completion for member ${memberId}`, err);
+    }
 
     return { success: true };
   }
@@ -158,6 +225,14 @@ export class AccessRevocationService {
     memberId: string;
     revokedById: string;
   }) {
+    const member = await db.member.findFirst({
+      where: { id: memberId, organizationId },
+    });
+
+    if (!member) {
+      throw new NotFoundException('Member not found in this organization');
+    }
+
     const vendors = await db.vendor.findMany({
       where: { organizationId },
       select: { id: true },
@@ -183,7 +258,11 @@ export class AccessRevocationService {
       });
     }
 
-    await this.syncAccessRevocationCompletion(organizationId, memberId, revokedById);
+    try {
+      await this.syncAccessRevocationCompletion(organizationId, memberId, revokedById);
+    } catch (err) {
+      this.logger.warn(`Failed to sync access revocation completion for member ${memberId}`, err);
+    }
 
     return { confirmed: toCreate.length };
   }
@@ -201,10 +280,10 @@ export class AccessRevocationService {
       return;
     }
 
-    const { totalVendors, revokedCount } = await this.getAccessRevocations(
-      organizationId,
-      memberId,
-    );
+    const [totalVendors, revokedCount] = await Promise.all([
+      db.vendor.count({ where: { organizationId } }),
+      db.offboardingAccessRevocation.count({ where: { organizationId, memberId } }),
+    ]);
 
     const allRevoked = totalVendors > 0 && revokedCount === totalVendors;
 
