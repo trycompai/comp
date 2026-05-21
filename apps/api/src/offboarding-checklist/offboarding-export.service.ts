@@ -31,7 +31,7 @@ export class OffboardingExportService {
     output: NodeJS.WritableStream;
   }) {
     const archive = archiver('zip', { zlib: { level: 9 } });
-    archive.on('error', (err) => { throw err; });
+    archive.on('error', () => { archive.abort(); });
     archive.pipe(output);
 
     const checklist =
@@ -153,7 +153,7 @@ export class OffboardingExportService {
     output: NodeJS.WritableStream;
   }) {
     const archive = archiver('zip', { zlib: { level: 9 } });
-    archive.on('error', (err) => { throw err; });
+    archive.on('error', () => { archive.abort(); });
     archive.pipe(output);
 
     const BATCH_SIZE = 50;

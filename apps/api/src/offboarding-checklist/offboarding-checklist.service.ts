@@ -395,8 +395,10 @@ export class OffboardingChecklistService {
         })),
         });
       });
-    } catch {
-      // Concurrent seed won — safe to ignore
+    } catch (err) {
+      const isPrismaConflict =
+        err instanceof Error && 'code' in err && (err as { code: string }).code === 'P2002';
+      if (!isPrismaConflict) throw err;
     }
   }
 }
