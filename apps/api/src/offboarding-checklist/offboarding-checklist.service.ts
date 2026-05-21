@@ -184,6 +184,10 @@ export class OffboardingChecklistService {
       throw new NotFoundException('Template item not found');
     }
 
+    if (template.evidenceRequired && !dto.fileData) {
+      throw new BadRequestException('Evidence is required to complete this item');
+    }
+
     const completion = await db.offboardingChecklistCompletion.create({
       data: {
         organizationId,
@@ -368,17 +372,27 @@ export class OffboardingChecklistService {
       return;
     }
 
-    await db.offboardingChecklistTemplate.createMany({
-      data: DEFAULT_OFFBOARDING_CHECKLIST_ITEMS.map((item) => ({
-        organizationId,
-        title: item.title,
-        description: item.description,
-        evidenceRequired: item.evidenceRequired,
-        isAccessRevocation: item.isAccessRevocation,
-        sortOrder: item.sortOrder,
-        isDefault: true,
-        isEnabled: true,
-      })),
+    await db.$transaction(async (tx) => {
+      const recheck = await tx.offboardingChecklistTemplate.count({
+        where: { organizationId },
+      });
+
+      if (recheck > 0) {
+        return;
+      }
+
+      await tx.offboardingChecklistTemplate.createMany({
+        data: DEFAULT_OFFBOARDING_CHECKLIST_ITEMS.map((item) => ({
+          organizationId,
+          title: item.title,
+          description: item.description,
+          evidenceRequired: item.evidenceRequired,
+          isAccessRevocation: item.isAccessRevocation,
+          sortOrder: item.sortOrder,
+          isDefault: true,
+          isEnabled: true,
+        })),
+      });
     });
   }
 }

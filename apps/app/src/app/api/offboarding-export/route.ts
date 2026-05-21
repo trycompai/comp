@@ -10,6 +10,7 @@ export async function GET(request: NextRequest) {
     'http://localhost:3333';
 
   const cookieHeader = request.headers.get('cookie') ?? '';
+  const authorizationHeader = request.headers.get('authorization');
 
   const endpoint = exportAll
     ? `${apiUrl}/v1/offboarding-checklist/export-all`
@@ -23,8 +24,12 @@ export async function GET(request: NextRequest) {
 
   let response: Response;
   try {
+    const forwardHeaders: Record<string, string> = { cookie: cookieHeader };
+    if (authorizationHeader) {
+      forwardHeaders.authorization = authorizationHeader;
+    }
     response = await fetch(endpoint, {
-      headers: { cookie: cookieHeader },
+      headers: forwardHeaders,
     });
   } catch {
     return NextResponse.json({ error: 'Export service unavailable' }, { status: 502 });

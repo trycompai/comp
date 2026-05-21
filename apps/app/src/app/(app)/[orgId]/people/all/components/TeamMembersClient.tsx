@@ -297,7 +297,9 @@ export function TeamMembersClient({
           >
             <SelectTrigger>
               <SelectValue placeholder="Active">
-                {{ all: 'All People', active: 'Active', pending: 'Pending', deactivated: 'Deactivated' }[statusFilter] ?? 'Active'}
+                {hasOffboardFilter && !statusFilter
+                  ? 'All People'
+                  : ({ all: 'All People', active: 'Active', pending: 'Pending', deactivated: 'Deactivated' }[statusFilter] ?? 'Active')}
               </SelectValue>
             </SelectTrigger>
             <SelectContent>

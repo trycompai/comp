@@ -105,13 +105,18 @@ export class AccessRevocationService {
     });
 
     if (evidence) {
-      await this.attachmentsService.uploadAttachment(
-        organizationId,
-        revocation.id,
-        AttachmentEntityType.offboarding_checklist,
-        evidence,
-        revokedById,
-      );
+      try {
+        await this.attachmentsService.uploadAttachment(
+          organizationId,
+          revocation.id,
+          AttachmentEntityType.offboarding_checklist,
+          evidence,
+          revokedById,
+        );
+      } catch (err) {
+        await db.offboardingAccessRevocation.delete({ where: { id: revocation.id } });
+        throw err;
+      }
     }
 
     await this.syncAccessRevocationCompletion(
@@ -138,6 +143,16 @@ export class AccessRevocationService {
 
     if (!revocation) {
       throw new NotFoundException('Revocation record not found');
+    }
+
+    const attachments = await this.attachmentsService.getAttachments(
+      organizationId,
+      revocation.id,
+      AttachmentEntityType.offboarding_checklist,
+    );
+
+    for (const attachment of attachments) {
+      await this.attachmentsService.deleteAttachment(organizationId, attachment.id);
     }
 
     await db.offboardingAccessRevocation.delete({
@@ -201,10 +216,10 @@ export class AccessRevocationService {
       return;
     }
 
-    const { totalVendors, revokedCount } = await this.getAccessRevocations(
-      organizationId,
-      memberId,
-    );
+    const [totalVendors, revokedCount] = await Promise.all([
+      db.vendor.count({ where: { organizationId } }),
+      db.offboardingAccessRevocation.count({ where: { organizationId, memberId } }),
+    ]);
 
     const allRevoked = totalVendors > 0 && revokedCount === totalVendors;
 
