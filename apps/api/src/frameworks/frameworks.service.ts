@@ -271,6 +271,9 @@ export class FrameworksService {
           include: {
             control: {
               include: {
+                controlTemplate: {
+                  select: { controlFamily: true },
+                },
                 frameworkPolicyLinks: {
                   where: {
                     frameworkInstanceId,
