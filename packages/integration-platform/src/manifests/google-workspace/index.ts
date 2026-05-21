@@ -53,6 +53,11 @@ Note: The user authorizing must be a Google Workspace admin.`,
 
   capabilities: ['checks', 'sync'],
 
+  // Google Workspace is the customer's authoritative employee directory:
+  // users provisioned here are employees, users removed here are offboarded.
+  // Phase 2 deactivation is intentionally allowed for this provider.
+  isDirectorySource: true,
+
   services: [
     { id: 'user-sync', name: 'User Sync', description: 'Sync users from Google Workspace as organization members', enabledByDefault: true, implemented: true },
     { id: 'mfa-compliance', name: 'MFA Compliance', description: 'Monitor two-factor authentication enforcement', enabledByDefault: true, implemented: true },

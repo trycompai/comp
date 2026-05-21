@@ -60,6 +60,11 @@ export const ripplingManifest: IntegrationManifest = {
   // Sync capability - this integration syncs employee data
   capabilities: ['sync'],
 
+  // Rippling is an HRIS — the authoritative source of truth for who works
+  // at the company. Phase 2 deactivation is intentionally allowed: when a
+  // worker is offboarded in Rippling they should be deactivated in Comp AI.
+  isDirectorySource: true,
+
   services: [
     { id: 'employee-sync', name: 'Employee Sync', description: 'Sync employees from Rippling to organization members', enabledByDefault: true, implemented: true },
     { id: 'device-management', name: 'Device Management', description: 'Monitor device compliance and enrollment status', implemented: false },

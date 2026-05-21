@@ -811,6 +811,21 @@ export interface IntegrationManifest {
   capabilities: IntegrationCapability[];
 
   /**
+   * Whether this integration is the authoritative source of truth for employment status.
+   *
+   * When `true`, the sync paths are allowed to deactivate members who appear in Comp AI
+   * but are absent from this provider's user list (Phase 2 deactivation).
+   *
+   * When `false` or omitted (default), Phase 2 deactivation is skipped — useful for
+   * feature-licensed tools (Confluence, Slack, Linear, etc.) whose user lists answer
+   * "who has this product" rather than "who works here."
+   *
+   * For dynamic integrations the equivalent flag lives at `syncDefinition.isDirectorySource`
+   * (see `SyncDefinitionSchema`). Code-based manifests declare it here.
+   */
+  isDirectorySource?: boolean;
+
+  /**
    * Integration-level variables that are collected after authentication.
    * These can be used by checks OR by standalone features (like cloud security scanning).
    * Variables defined here are merged with check-specific variables.
