@@ -1,3 +1,17 @@
+# [3.61.0](https://github.com/trycompai/comp/compare/v3.60.0...v3.61.0) (2026-05-21)
+
+
+### Bug Fixes
+
+* **api:** add isDirectorySource flag to SyncDefinition to skip member deactivation ([2e0c6f9](https://github.com/trycompai/comp/commit/2e0c6f9521af27326261b7eb2aed9ce7154576cf))
+* **api:** change default value of isDirectorySource ([47ba323](https://github.com/trycompai/comp/commit/47ba323b645bd831b24ace16a2e4d9c83e8fab12))
+* **integration-platform:** change default value of isDirectorySource ([932f275](https://github.com/trycompai/comp/commit/932f2759c23ddebacb47d69ff9f8fb0823096d90))
+
+
+### Features
+
+* **integration-platform:** declare isDirectorySource on code-based authoritative manifests ([410f378](https://github.com/trycompai/comp/commit/410f37809b389327fba02e34b59e9904d19bb7e3))
+
 # [3.60.0](https://github.com/trycompai/comp/compare/v3.59.2...v3.60.0) (2026-05-21)
 
 
