@@ -19,6 +19,7 @@ const mockDb = {
   },
   offboardingAccessRevocation: {
     findMany: jest.fn(),
+    findFirst: jest.fn(),
     findUnique: jest.fn(),
     create: jest.fn(),
     delete: jest.fn(),
@@ -52,7 +53,7 @@ describe('OffboardingChecklistService', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
-    accessRevocationService = new AccessRevocationService();
+    accessRevocationService = new AccessRevocationService(mockAttachmentsService as never);
     service = new OffboardingChecklistService(
       mockAttachmentsService as never,
       accessRevocationService,
@@ -513,6 +514,7 @@ describe('OffboardingChecklistService', () => {
         id: 'oar_1',
       });
       mockDb.offboardingAccessRevocation.delete.mockResolvedValue({});
+      mockAttachmentsService.getAttachments.mockResolvedValue([]);
       // syncAccessRevocationCompletion mocks
       mockDb.offboardingChecklistTemplate.findFirst.mockResolvedValue(null);
 
@@ -529,7 +531,7 @@ describe('OffboardingChecklistService', () => {
     });
 
     it('throws if revocation not found', async () => {
-      mockDb.offboardingAccessRevocation.findUnique.mockResolvedValue(null);
+      mockDb.offboardingAccessRevocation.findFirst.mockResolvedValue(null);
 
       await expect(
         service.undoVendorRevocation({
