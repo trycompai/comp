@@ -891,8 +891,17 @@ export class GCPSecurityService {
     );
     if (folderIds.length === 0) return [];
 
-    const perFolder = await Promise.all(
-      folderIds.map((folderId) =>
+    // Bound the fan-out: an unbounded `Promise.all(folderIds.map(...))`
+    // can trigger GCP rate limiting (`429 Too Many Requests`) on
+    // tenants with many folders. Because `listProjectsPaginated`
+    // returns the projects collected so far on a non-OK response, a
+    // throttled folder query LOOKS like an empty folder to the caller
+    // — silently truncating the picker with no visible error. A modest
+    // concurrency limit avoids the problem entirely.
+    const perFolder = await mapWithConcurrency(
+      folderIds,
+      FOLDER_QUERY_CONCURRENCY,
+      (folderId) =>
         this.listProjectsPaginated(
           accessToken,
           `lifecycleState:ACTIVE AND parent.type:folder AND parent.id:${folderId}`,
@@ -902,7 +911,6 @@ export class GCPSecurityService {
           );
           return [];
         }),
-      ),
     );
 
     return perFolder.flat();
@@ -1455,4 +1463,43 @@ export class GCPSecurityService {
     };
     return map[gcpSeverity] ?? 'medium';
   }
+}
+
+/**
+ * Max simultaneous in-flight folder→projects queries when expanding an
+ * organization's folder tree. GCP's `cloudresourcemanager` quota
+ * (~600 read req/min/user) is well above this, but a small cap keeps us
+ * comfortably below throttling thresholds even for tenants with deep
+ * folder hierarchies, and prevents bursts that could starve other
+ * concurrent GCP work on the same account.
+ */
+const FOLDER_QUERY_CONCURRENCY = 5;
+
+/**
+ * Map `items` through `fn` with at most `concurrency` promises in flight
+ * at any moment. Preserves input order in the result array. No deps —
+ * inlined here because the only call site is the GCP folder fan-out.
+ */
+export async function mapWithConcurrency<T, R>(
+  items: T[],
+  concurrency: number,
+  fn: (item: T) => Promise<R>,
+): Promise<R[]> {
+  const results: R[] = new Array(items.length);
+  let cursor = 0;
+
+  const worker = async (): Promise<void> => {
+    while (true) {
+      const idx = cursor++;
+      if (idx >= items.length) return;
+      results[idx] = await fn(items[idx]);
+    }
+  };
+
+  const workers = Array.from(
+    { length: Math.min(concurrency, items.length) },
+    () => worker(),
+  );
+  await Promise.all(workers);
+  return results;
 }

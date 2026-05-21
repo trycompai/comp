@@ -362,6 +362,93 @@ describe('GCPSecurityService — project detection', () => {
       ]);
     });
 
+    it('caps concurrent folder→projects queries to avoid GCP throttling (cubic P2)', async () => {
+      // Pathological tenant: 20 folders under the org. Without a
+      // concurrency cap, all 20 project-list calls would fire at once,
+      // and any 429s would be silently treated as "empty folder",
+      // dropping projects from the picker.
+      const FOLDER_COUNT = 20;
+      const folderIds = Array.from(
+        { length: FOLDER_COUNT },
+        (_, i) => `f${i}`,
+      );
+
+      let inFlight = 0;
+      let maxInFlight = 0;
+      const pending: Array<() => void> = [];
+
+      fetchMock.mockImplementation((url: string) => {
+        if (
+          url.includes('v2/folders') &&
+          url.includes('organizations%2Fbig-org')
+        ) {
+          return Promise.resolve(foldersPage({ folders: folderIds }));
+        }
+        if (url.includes('v2/folders')) {
+          return Promise.resolve(foldersPage({ folders: [] })); // no sub-folders
+        }
+        if (
+          url.includes('v1/projects') &&
+          url.includes('parent.id%3Abig-org') &&
+          !url.includes('parent.type%3Afolder')
+        ) {
+          return Promise.resolve(gcpPage({ projects: [] })); // direct arm
+        }
+        if (
+          url.includes('v1/projects') &&
+          url.includes('parent.type%3Afolder')
+        ) {
+          // Per-folder project queries — hold the response so we can
+          // observe concurrency.
+          inFlight++;
+          maxInFlight = Math.max(maxInFlight, inFlight);
+          return new Promise((resolve) => {
+            pending.push(() => {
+              inFlight--;
+              resolve(gcpPage({ projects: [] }));
+            });
+          });
+        }
+        throw new Error(`Unexpected URL: ${url}`);
+      });
+
+      const promise = service.detectProjectsForOrg('token', 'big-org');
+
+      // Wait for the concurrency cap to be reached. setTimeout(0) drains
+      // the full microtask queue and lets pending I/O settle, which is
+      // necessary because the folder enumeration does 21 sequential
+      // fetches (1 org-level + 20 per-folder) before per-folder project
+      // queries can begin.
+      const start = Date.now();
+      while (Date.now() - start < 2000 && inFlight < 5) {
+        await new Promise((r) => setTimeout(r, 5));
+      }
+
+      // The cap is 5 — observed peak must not exceed it.
+      expect(maxInFlight).toBeGreaterThan(0);
+      expect(maxInFlight).toBeLessThanOrEqual(5);
+
+      // Drain — release pending project queries one at a time so the
+      // remaining folder workers can pick up the next IDs.
+      while (pending.length > 0 || inFlight > 0) {
+        const resolver = pending.shift();
+        if (resolver) resolver();
+        await new Promise((r) => setTimeout(r, 5));
+      }
+      await promise;
+
+      // After full drain, every folder's project query must have run
+      // exactly once. Confirms the concurrency cap didn't prematurely
+      // truncate the work.
+      const perFolderCalls = fetchMock.mock.calls.filter(
+        (c) =>
+          typeof c[0] === 'string' &&
+          c[0].includes('v1/projects') &&
+          c[0].includes('parent.type%3Afolder'),
+      ).length;
+      expect(perFolderCalls).toBe(FOLDER_COUNT);
+    });
+
     it('isolates per-folder query failures so one bad folder does not blank the rest', async () => {
       // Two folders, the first one's project list throws. The second
       // one should still return its projects.
