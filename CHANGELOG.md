@@ -1,3 +1,10 @@
+## [3.59.2](https://github.com/trycompai/comp/compare/v3.59.1...v3.59.2) (2026-05-21)
+
+
+### Bug Fixes
+
+* **ui:** close MultipleSelector dropdown on blur so it stops blocking sibling form controls ([3d7fc3f](https://github.com/trycompai/comp/commit/3d7fc3f68c3e21b552c8d4eefb44d29aac2d4aa0)), closes [#2886](https://github.com/trycompai/comp/issues/2886)
+
 ## [3.59.1](https://github.com/trycompai/comp/compare/v3.59.0...v3.59.1) (2026-05-19)
 
 
