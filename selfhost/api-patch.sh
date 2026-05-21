@@ -65,15 +65,17 @@ node <<'NODE_EOF'
 const fs = require('fs');
 const f = '/app/dist/src/auth/auth.server.js';
 let s = fs.readFileSync(f, 'utf8');
-// getCustomDomains — replace with no-op (no Redis dependency)
+// getCustomDomains — replace with no-op (no Redis dependency). Use function
+// boundaries rather than a bare closing brace so nested object literals don't
+// leave trailing syntax behind in the compiled JS.
 s = s.replace(
-  /async function getCustomDomains\(\) \{[\s\S]*?^\}/m,
-  'async function getCustomDomains() { return new Set(); }'
+  /async function getCustomDomains\(\) \{[\s\S]*?\nasync function isTrustedOrigin/,
+  'async function getCustomDomains() { return new Set(); }\nasync function isTrustedOrigin'
 );
 // isTrustedOrigin — always true (single-host self-host, no strict CORS)
 s = s.replace(
-  /async function isTrustedOrigin\(origin\) \{[\s\S]*?^\}/m,
-  'async function isTrustedOrigin(origin) { return true; }'
+  /async function isTrustedOrigin\(origin\) \{[\s\S]*?\nconst socialProviders =/,
+  'async function isTrustedOrigin(origin) { return true; }\nconst socialProviders ='
 );
 // sendMagicLink — wrap the entire body so we never call triggerEmail
 s = s.replace(

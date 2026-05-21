@@ -1,0 +1,28 @@
+{
+  "name": "@trycompai/compctl",
+  "description": "Agent-friendly CLI for Comp AI readiness workflows",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "bin": {
+    "compctl": "./dist/index.js"
+  },
+  "files": [
+    "dist/**"
+  ],
+  "scripts": {
+    "build": "tsup",
+    "clean": "rm -rf .turbo node_modules dist",
+    "typecheck": "tsc --noEmit",
+    "lint": "prettier --check ."
+  },
+  "dependencies": {
+    "commander": "^13.1.0",
+    "zod": "^4.3.6"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "tsup": "^8.5.0",
+    "typescript": "^5.8.3"
+  }
+}

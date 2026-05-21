@@ -1206,11 +1206,12 @@ export class ConnectionsController {
       });
     }
 
-    // Only activate the connection if it was in error state (don't resume paused connections)
-    if (connection.status === 'error') {
+    // Activate failed or incomplete custom-auth connections after credentials
+    // have been successfully validated and stored. Do not resume paused ones.
+    if (connection.status === 'error' || connection.status === 'pending') {
       await this.connectionService.activateConnection(id);
       this.logger.log(
-        `Activated connection ${id} after credential update (was in error state)`,
+        `Activated connection ${id} after credential update (was ${connection.status})`,
       );
     }
 

@@ -55,6 +55,7 @@ import { AdminFeatureFlagsModule } from './admin-feature-flags/admin-feature-fla
 import { TimelinesModule } from './timelines/timelines.module';
 import { BackgroundChecksModule } from './background-checks/background-checks.module';
 import { BillingModule } from './billing/billing.module';
+import { ReadinessModule } from './readiness/readiness.module';
 
 @Module({
   imports: [
@@ -118,6 +119,7 @@ import { BillingModule } from './billing/billing.module';
     SecurityPenetrationTestsModule,
     StripeModule,
     BillingModule,
+    ReadinessModule,
     BackgroundChecksModule,
     AdminOrganizationsModule,
     AdminFeatureFlagsModule,
