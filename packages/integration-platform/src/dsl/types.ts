@@ -303,7 +303,7 @@ export const SyncDefinitionSchema = z.object({
    * silently deactivates real employees whenever the API returns a partial list (privacy
    * filters, scope gaps, paginated breaks, etc.).
    */
-  isDirectorySource: z.boolean().optional().default(true),
+  isDirectorySource: z.boolean().optional().default(false),
 });
 
 export type SyncDefinition = z.infer<typeof SyncDefinitionSchema>;

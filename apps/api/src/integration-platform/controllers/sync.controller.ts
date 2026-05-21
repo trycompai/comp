@@ -1809,7 +1809,7 @@ export class SyncController {
         employees,
         options: {
           providerName: manifest.name,
-          isDirectorySource: syncDefinition.isDirectorySource ?? true,
+          isDirectorySource: syncDefinition.isDirectorySource ?? false,
         },
       });
 
