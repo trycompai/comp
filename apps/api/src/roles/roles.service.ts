@@ -226,10 +226,19 @@ export class RolesService {
    * List all roles for an organization (built-in + custom)
    */
   async listRoles(organizationId: string) {
-    // Get custom roles
-    const customRoles = await db.organizationRole.findMany({
+    // Get all organization_role rows; rows named after a built-in role are
+    // obligation overrides, not custom roles.
+    const allRows = await db.organizationRole.findMany({
       where: { organizationId },
       orderBy: { createdAt: 'desc' },
+    });
+    const overrideByName = new Map<string, (typeof allRows)[number]>();
+    const customRoles = allRows.filter((r) => {
+      if (BUILT_IN_ROLES.includes(r.name)) {
+        overrideByName.set(r.name, r);
+        return false;
+      }
+      return true;
     });
 
     // Get member counts for custom roles
@@ -243,12 +252,21 @@ export class RolesService {
     );
     const countMap = new Map(memberCounts.map((mc) => [mc.roleId, mc.count]));
 
-    // Include built-in roles info
-    const builtInRoles = BUILT_IN_ROLES.map((name) => ({
-      name,
-      isBuiltIn: true,
-      description: this.getBuiltInRoleDescription(name),
-    }));
+    // Include built-in roles info (with effective obligations: override or default)
+    const builtInRoles = BUILT_IN_ROLES.map((name) => {
+      const override = overrideByName.get(name);
+      const obligations = override
+        ? (typeof override.obligations === 'string'
+            ? (JSON.parse(override.obligations) as RoleObligations)
+            : ((override.obligations as RoleObligations) || {}))
+        : (BUILT_IN_ROLE_OBLIGATIONS[name] ?? {});
+      return {
+        name,
+        isBuiltIn: true,
+        description: this.getBuiltInRoleDescription(name),
+        obligations,
+      };
+    });
 
     return {
       builtInRoles,
@@ -533,8 +551,11 @@ export class RolesService {
   }
 
   /**
-   * Get merged obligations for a list of custom role names.
-   * Used by the frontend to resolve effective obligations for custom roles.
+   * Get merged obligations for a list of role names (custom + built-in).
+   *
+   * Built-in roles default to `BUILT_IN_ROLE_OBLIGATIONS[name]`, but an
+   * organization can override by storing an `organization_role` row with the
+   * built-in name — the DB row wins when present.
    */
   async getObligationsForRoles(
     organizationId: string,
@@ -542,21 +563,86 @@ export class RolesService {
   ): Promise<RoleObligations> {
     if (roleNames.length === 0) return {};
 
-    const customRoles = await db.organizationRole.findMany({
+    const dbRoles = await db.organizationRole.findMany({
       where: { organizationId, name: { in: roleNames } },
       select: { name: true, obligations: true },
     });
-
-    const combined: RoleObligations = {};
-    for (const role of customRoles) {
+    const overrideByName = new Map<string, RoleObligations>();
+    for (const role of dbRoles) {
       const obligations =
         typeof role.obligations === 'string'
-          ? JSON.parse(role.obligations)
-          : role.obligations || {};
-      if (obligations.compliance) combined.compliance = true;
+          ? (JSON.parse(role.obligations) as RoleObligations)
+          : ((role.obligations as RoleObligations) || {});
+      overrideByName.set(role.name, obligations);
+    }
+
+    const combined: RoleObligations = {};
+    for (const name of roleNames) {
+      const fromDb = overrideByName.get(name);
+      const effective =
+        fromDb ?? (BUILT_IN_ROLES.includes(name) ? BUILT_IN_ROLE_OBLIGATIONS[name] ?? {} : {});
+      if (effective.compliance) combined.compliance = true;
     }
 
     return combined;
+  }
+
+  /**
+   * Upsert an obligation override for a built-in role. The `organization_role`
+   * row stores only the obligations JSON; permissions stay sourced from the
+   * hardcoded `BUILT_IN_ROLE_PERMISSIONS` map.
+   */
+  async updateBuiltInObligations(
+    organizationId: string,
+    roleName: string,
+    obligations: RoleObligations,
+  ) {
+    if (!BUILT_IN_ROLES.includes(roleName)) {
+      throw new BadRequestException(`Not a built-in role: ${roleName}`);
+    }
+
+    const permissions = JSON.stringify(BUILT_IN_ROLE_PERMISSIONS[roleName] ?? {});
+    const obligationsJson = JSON.stringify(obligations);
+
+    const role = await db.organizationRole.upsert({
+      where: { organizationId_name: { organizationId, name: roleName } },
+      create: {
+        organizationId,
+        name: roleName,
+        permissions,
+        obligations: obligationsJson,
+      },
+      update: { obligations: obligationsJson },
+    });
+
+    return {
+      name: role.name,
+      obligations: JSON.parse(role.obligations) as RoleObligations,
+    };
+  }
+
+  /**
+   * Read the obligations for a single built-in role for this organization —
+   * DB override if present, else the hardcoded default.
+   */
+  async getBuiltInObligations(
+    organizationId: string,
+    roleName: string,
+  ): Promise<RoleObligations> {
+    if (!BUILT_IN_ROLES.includes(roleName)) {
+      throw new BadRequestException(`Not a built-in role: ${roleName}`);
+    }
+
+    const override = await db.organizationRole.findFirst({
+      where: { organizationId, name: roleName },
+      select: { obligations: true },
+    });
+    if (override) {
+      return typeof override.obligations === 'string'
+        ? (JSON.parse(override.obligations) as RoleObligations)
+        : ((override.obligations as RoleObligations) || {});
+    }
+    return BUILT_IN_ROLE_OBLIGATIONS[roleName] ?? {};
   }
 
   /**

@@ -3,6 +3,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { BUILT_IN_ROLE_OBLIGATIONS } from '@trycompai/auth';
+import { serverApi } from '@/lib/api-server';
 import { SYSTEM_ROLES, SYSTEM_ROLE_PERMISSIONS } from '../../constants/system-roles';
 import { SystemRoleDetail } from './system-role-detail';
 
@@ -20,6 +21,16 @@ export default async function SystemRolePage({
     notFound();
   }
 
+  // Resolve the effective obligations for this org — falls back to the
+  // hardcoded default if the API call fails or no override is set.
+  const overrideRes = await serverApi.get<{
+    name: string;
+    obligations: Record<string, boolean>;
+  }>(`/v1/roles/built-in/${encodeURIComponent(roleName)}/obligations`);
+  const effectiveObligations =
+    overrideRes.data?.obligations ??
+    ((BUILT_IN_ROLE_OBLIGATIONS[roleName] || {}) as Record<string, boolean>);
+
   return (
     <PageLayout>
       <Breadcrumb
@@ -33,7 +44,12 @@ export default async function SystemRolePage({
         ]}
       />
       <PageHeader title={role.name} />
-      <SystemRoleDetail permissions={permissions} obligations={(BUILT_IN_ROLE_OBLIGATIONS[roleName] || {}) as Record<string, boolean>} description={role.description} />
+      <SystemRoleDetail
+        roleName={roleName}
+        permissions={permissions}
+        obligations={effectiveObligations}
+        description={role.description}
+      />
     </PageLayout>
   );
 }

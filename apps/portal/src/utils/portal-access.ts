@@ -16,30 +16,42 @@ export async function hasPortalAccess({
   const roles = roleString.split(',').map((r) => r.trim()).filter(Boolean);
   const permissions: Record<string, string[]> = {};
   let hasComplianceObligation = false;
-  const customRoleNames: string[] = [];
 
+  // Built-in role permissions come from the hardcoded map. Obligations can be
+  // overridden per-org by a row in organization_role with the built-in name.
   for (const role of roles) {
     const builtInPerms = BUILT_IN_ROLE_PERMISSIONS[role];
-    if (builtInPerms) {
-      mergePermissions(permissions, builtInPerms);
-      if (BUILT_IN_ROLE_OBLIGATIONS[role]?.compliance) {
-        hasComplianceObligation = true;
-      }
-    } else {
-      customRoleNames.push(role);
-    }
+    if (builtInPerms) mergePermissions(permissions, builtInPerms);
   }
 
-  if (customRoleNames.length > 0) {
-    const customRoles = await db.organizationRole.findMany({
-      where: { organizationId, name: { in: customRoleNames } },
-      select: { permissions: true, obligations: true },
+  if (roles.length > 0) {
+    const dbRoles = await db.organizationRole.findMany({
+      where: { organizationId, name: { in: roles } },
+      select: { name: true, permissions: true, obligations: true },
     });
+    type DbRoleRow = (typeof dbRoles)[number];
+    const overrideByName = new Map<string, DbRoleRow>(
+      dbRoles.map((r: DbRoleRow) => [r.name, r] as const),
+    );
 
-    for (const role of customRoles) {
-      const perms = parseRolePermissions(role.permissions);
-      if (perms) mergePermissions(permissions, perms);
-      if (parseRoleObligations(role.obligations).compliance) {
+    for (const role of roles) {
+      const dbRow = overrideByName.get(role);
+      const isBuiltIn = Boolean(BUILT_IN_ROLE_PERMISSIONS[role]);
+
+      if (dbRow) {
+        // For custom roles, the DB row is the source of permissions.
+        // For built-in roles, we only consult it for the obligations override.
+        if (!isBuiltIn) {
+          const perms = parseRolePermissions(dbRow.permissions);
+          if (perms) mergePermissions(permissions, perms);
+        }
+        if (parseRoleObligations(dbRow.obligations).compliance) {
+          hasComplianceObligation = true;
+        }
+        continue;
+      }
+
+      if (isBuiltIn && BUILT_IN_ROLE_OBLIGATIONS[role]?.compliance) {
         hasComplianceObligation = true;
       }
     }
