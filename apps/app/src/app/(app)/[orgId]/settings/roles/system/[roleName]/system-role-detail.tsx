@@ -21,13 +21,12 @@ export function SystemRoleDetail({ roleName, permissions, obligations, descripti
     useState<Record<string, boolean>>(obligations);
   const [isSaving, setIsSaving] = useState(false);
 
-  // Resync if the user navigates between built-in role pages without a full
-  // reload — `useState`'s initial value is only honored on mount.
+  // Resync when the parent passes new props — either because the user
+  // navigated to a different built-in role, or because the page re-fetched
+  // the same role's obligations.
   useEffect(() => {
     setCurrentObligations(obligations);
-    // Keyed on roleName so a re-fetched obligations for the same role
-    // (e.g., after the user toggles it) doesn't clobber the optimistic value.
-  }, [roleName]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [roleName, obligations]);
 
   const handleObligationsChange = async (next: Record<string, boolean>) => {
     if (isSaving || !obligationsEditable) return;
