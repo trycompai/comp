@@ -17,13 +17,13 @@ interface PendingResponse {
 
 export function OffboardingBanner() {
   const params = useParams<{ orgId: string }>();
-  const { data } = useApiSWR<PendingResponse>(
+  const { data, error } = useApiSWR<PendingResponse>(
     '/v1/offboarding-checklist/pending',
   );
   const members = data?.data?.members ?? [];
   const [dismissed, setDismissed] = useState(false);
 
-  if (dismissed || members.length === 0) return null;
+  if (error || dismissed || members.length === 0) return null;
 
   const link = members.length === 1
     ? `/${params.orgId}/people/${members[0].memberId}?tab=offboarding`

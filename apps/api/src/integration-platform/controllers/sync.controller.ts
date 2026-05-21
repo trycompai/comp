@@ -383,10 +383,14 @@ export class SyncController {
 
         if (existingMember) {
           if (!existingMember.onboardDate && gwUser.creationTime) {
-            await db.member.update({
-              where: { id: existingMember.id },
-              data: { onboardDate: new Date(gwUser.creationTime) },
-            });
+            const parsed = new Date(gwUser.creationTime);
+            const onboardDate = isNaN(parsed.getTime()) ? undefined : parsed;
+            if (onboardDate) {
+              await db.member.update({
+                where: { id: existingMember.id },
+                data: { onboardDate },
+              });
+            }
           }
           results.skipped++;
           results.details.push({
@@ -400,13 +404,15 @@ export class SyncController {
         }
 
         // Create member - always as employee, admins can be promoted manually
+        const gwParsed = gwUser.creationTime ? new Date(gwUser.creationTime) : null;
+        const gwOnboardDate = gwParsed && !isNaN(gwParsed.getTime()) ? gwParsed : undefined;
         await db.member.create({
           data: {
             organizationId,
             userId,
             role: 'employee',
             isActive: true,
-            ...(gwUser.creationTime ? { onboardDate: new Date(gwUser.creationTime) } : {}),
+            ...(gwOnboardDate ? { onboardDate: gwOnboardDate } : {}),
           },
         });
 
@@ -845,10 +851,14 @@ export class SyncController {
 
         if (existingMember) {
           if (!existingMember.onboardDate && worker.start_date) {
-            await db.member.update({
-              where: { id: existingMember.id },
-              data: { onboardDate: new Date(worker.start_date) },
-            });
+            const parsed = new Date(worker.start_date);
+            const onboardDate = isNaN(parsed.getTime()) ? undefined : parsed;
+            if (onboardDate) {
+              await db.member.update({
+                where: { id: existingMember.id },
+                data: { onboardDate },
+              });
+            }
           }
           if (existingMember.deactivated) {
             await db.member.update({
@@ -870,13 +880,15 @@ export class SyncController {
             });
           }
         } else {
+          const ripplingParsed = worker.start_date ? new Date(worker.start_date) : null;
+          const ripplingOnboardDate = ripplingParsed && !isNaN(ripplingParsed.getTime()) ? ripplingParsed : undefined;
           await db.member.create({
             data: {
               organizationId,
               userId,
               role: 'employee',
               isActive: true,
-              ...(worker.start_date ? { onboardDate: new Date(worker.start_date) } : {}),
+              ...(ripplingOnboardDate ? { onboardDate: ripplingOnboardDate } : {}),
             },
           });
           results.imported++;
@@ -1346,10 +1358,14 @@ export class SyncController {
 
         if (existingMember) {
           if (!existingMember.onboardDate && jcUser.created) {
-            await db.member.update({
-              where: { id: existingMember.id },
-              data: { onboardDate: new Date(jcUser.created) },
-            });
+            const parsed = new Date(jcUser.created);
+            const onboardDate = isNaN(parsed.getTime()) ? undefined : parsed;
+            if (onboardDate) {
+              await db.member.update({
+                where: { id: existingMember.id },
+                data: { onboardDate },
+              });
+            }
           }
           if (existingMember.deactivated) {
             await db.member.update({
@@ -1376,13 +1392,15 @@ export class SyncController {
         }
 
         // Create member - always as employee, admins can be promoted manually
+        const jcParsed = jcUser.created ? new Date(jcUser.created) : null;
+        const jcOnboardDate = jcParsed && !isNaN(jcParsed.getTime()) ? jcParsed : undefined;
         await db.member.create({
           data: {
             organizationId,
             userId,
             role: 'employee',
             isActive: true,
-            ...(jcUser.created ? { onboardDate: new Date(jcUser.created) } : {}),
+            ...(jcOnboardDate ? { onboardDate: jcOnboardDate } : {}),
           },
         });
 

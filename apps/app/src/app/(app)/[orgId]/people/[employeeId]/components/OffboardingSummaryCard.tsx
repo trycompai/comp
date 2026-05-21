@@ -86,6 +86,7 @@ export function OffboardingSummaryCard({
             window.open(
               `/api/offboarding-export?memberId=${encodeURIComponent(memberId)}`,
               '_blank',
+              'noopener,noreferrer',
             );
           }}
         >

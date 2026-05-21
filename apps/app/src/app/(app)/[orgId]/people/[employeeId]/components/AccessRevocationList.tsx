@@ -263,8 +263,9 @@ function VendorRow({ vendor, canEdit, isProcessing, onRevoke }: VendorRowProps) 
             <Button
               variant="outline"
               size="sm"
-              onClick={() => fileInputRef.current?.click()}
+              onClick={() => !isProcessing && fileInputRef.current?.click()}
               iconLeft={<DocumentAttachment size={12} />}
+              disabled={isProcessing}
             >
               Attach evidence
             </Button>
