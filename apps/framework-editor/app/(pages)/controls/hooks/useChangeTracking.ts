@@ -8,11 +8,12 @@ export interface ControlMutations {
   createControl: (data: {
     name: string | null;
     description: string | null;
+    controlFamily: string | null;
     documentTypes: string[];
   }) => Promise<{ id: string }>;
   updateControl: (
     id: string,
-    data: { name: string; description: string; documentTypes: string[] },
+    data: { name: string; description: string; controlFamily: string | null; documentTypes: string[] },
   ) => Promise<unknown>;
   deleteControl: (id: string) => Promise<unknown>;
 }
@@ -151,6 +152,7 @@ export const useChangeTracking = (
           const newControl = await mutations.createControl({
             name: row.name,
             description: row.description,
+            controlFamily: row.controlFamily,
             documentTypes: row.documentTypes,
           });
           results.successes.push(`Created: ${row.name}`);
@@ -186,6 +188,7 @@ export const useChangeTracking = (
           await mutations.updateControl(id, {
             name: row.name,
             description: row.description || '',
+            controlFamily: row.controlFamily,
             documentTypes: row.documentTypes,
           });
           results.successes.push(`Updated: ${row.name}`);

@@ -94,6 +94,7 @@ export function ControlsClientPage({ initialControls, emptyMessage, frameworkId 
       createControl: (data: {
         name: string | null;
         description: string | null;
+        controlFamily: string | null;
         documentTypes: string[];
       }) =>
         apiClient<{ id: string }>('/control-template', {
@@ -102,7 +103,7 @@ export function ControlsClientPage({ initialControls, emptyMessage, frameworkId 
         }),
       updateControl: (
         id: string,
-        data: { name: string; description: string; documentTypes: string[] },
+        data: { name: string; description: string; controlFamily: string | null; documentTypes: string[] },
       ) =>
         apiClient(`/control-template/${id}`, {
           method: 'PATCH',
@@ -121,6 +122,7 @@ export function ControlsClientPage({ initialControls, emptyMessage, frameworkId 
         id: control.id || simpleUUID(),
         name: control.name ?? null,
         description: control.description ?? null,
+        controlFamily: control.controlFamily ?? null,
         policyTemplates: control.policyTemplates?.map((pt) => ({ id: pt.id, name: pt.name })) ?? [],
         requirements:
           control.requirements?.map((r) => ({
@@ -184,6 +186,18 @@ export function ControlsClientPage({ initialControls, emptyMessage, frameworkId 
             value={getValue()}
             rowId={row.original.id}
             columnId="description"
+            onUpdate={updateCell}
+          />
+        ),
+      }),
+      columnHelper.accessor('controlFamily', {
+        header: 'Control Family',
+        size: 200,
+        cell: ({ row, getValue }) => (
+          <EditableCell
+            value={getValue()}
+            rowId={row.original.id}
+            columnId="controlFamily"
             onUpdate={updateCell}
           />
         ),
@@ -350,6 +364,7 @@ export function ControlsClientPage({ initialControls, emptyMessage, frameworkId 
       id: simpleUUID(),
       name: 'New Control',
       description: '',
+      controlFamily: null,
       policyTemplates: [],
       requirements: [],
       taskTemplates: [],
