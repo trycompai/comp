@@ -4,7 +4,7 @@ import {
   Logger,
   NotFoundException,
 } from '@nestjs/common';
-import { AttachmentEntityType, db } from '@db';
+import { AttachmentEntityType, Prisma, db } from '@db';
 import { AttachmentsService } from '../attachments/attachments.service';
 
 @Injectable()
@@ -30,17 +30,42 @@ export class AccessRevocationService {
       revocations.map((r) => [r.vendorId, r]),
     );
 
+    const revocationIds = revocations.map((r) => r.id);
+    const allAttachments =
+      revocationIds.length > 0
+        ? await db.attachment.findMany({
+            where: {
+              organizationId,
+              entityId: { in: revocationIds },
+              entityType: AttachmentEntityType.offboarding_checklist,
+            },
+            orderBy: { createdAt: 'asc' },
+          })
+        : [];
+
+    const attachmentsByRevocation = new Map<string, typeof allAttachments>();
+    for (const attachment of allAttachments) {
+      const existing = attachmentsByRevocation.get(attachment.entityId) ?? [];
+      existing.push(attachment);
+      attachmentsByRevocation.set(attachment.entityId, existing);
+    }
+
     const vendorList = await Promise.all(
       vendors.map(async (vendor) => {
         const revocation = revocationMap.get(vendor.id);
         const domain = vendor.website?.replace(/^https?:\/\//, '').replace(/\/.*$/, '') ?? null;
-        const evidence = revocation
-          ? await this.attachmentsService.getAttachments(
-              organizationId,
-              revocation.id,
-              AttachmentEntityType.offboarding_checklist,
-            )
+        const rawAttachments = revocation
+          ? (attachmentsByRevocation.get(revocation.id) ?? [])
           : [];
+        const evidence = await Promise.all(
+          rawAttachments.map(async (attachment) => ({
+            id: attachment.id,
+            name: attachment.name,
+            type: attachment.type,
+            downloadUrl: await this.attachmentsService.getPresignedDownloadUrl(attachment.url),
+            createdAt: attachment.createdAt,
+          })),
+        );
         return {
           vendorId: vendor.id,
           vendorName: vendor.name,
@@ -102,18 +127,26 @@ export class AccessRevocationService {
       );
     }
 
-    const revocation = await db.offboardingAccessRevocation.create({
-      data: {
-        organizationId,
-        memberId,
-        vendorId,
-        revokedById,
-        notes,
-      },
-      include: {
-        revokedBy: { select: { id: true, name: true, email: true } },
-      },
-    });
+    let revocation: Awaited<ReturnType<typeof db.offboardingAccessRevocation.create>>;
+    try {
+      revocation = await db.offboardingAccessRevocation.create({
+        data: {
+          organizationId,
+          memberId,
+          vendorId,
+          revokedById,
+          notes,
+        },
+        include: {
+          revokedBy: { select: { id: true, name: true, email: true } },
+        },
+      });
+    } catch (err) {
+      if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2002') {
+        throw new BadRequestException('Vendor access has already been revoked for this member');
+      }
+      throw err;
+    }
 
     if (evidence) {
       try {

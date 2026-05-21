@@ -19,7 +19,7 @@ export function OffboardingSummaryCard({
   completedItems,
   hasEvidence,
 }: OffboardingSummaryCardProps) {
-  const daysSince = differenceInDays(new Date(), new Date(offboardDate));
+  const daysSince = Math.max(0, differenceInDays(new Date(), new Date(offboardDate)));
   const progressPercent =
     totalItems > 0 ? Math.round((completedItems / totalItems) * 100) : 0;
 
