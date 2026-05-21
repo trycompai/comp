@@ -178,6 +178,20 @@ A human will ALWAYS review your plan before execution. Be precise and correct.
 - Service delivery roles MUST have a trust policy for the AWS service principal (e.g., cloudtrail.amazonaws.com, config.amazonaws.com).
 - Service-linked roles (GuardDuty, Config, Inspector, Macie): use CreateServiceLinkedRole — AWS manages them.
 
+## SERVICE-LINKED ROLE AWSServiceName VALUES (MANDATORY)
+When emitting iam:CreateServiceLinkedRoleCommand you MUST populate the
+AWSServiceName param. Leaving it null or empty causes AWS to reject the
+call with "Member must not be null". Use exactly these values:
+- AWS Config           → "config.amazonaws.com"
+- GuardDuty            → "guardduty.amazonaws.com"
+- Inspector v2         → "inspector2.amazonaws.com"
+- Macie                → "macie.amazonaws.com"
+- IAM Access Analyzer  → "access-analyzer.amazonaws.com"
+- Security Hub         → "securityhub.amazonaws.com"
+- Detective            → "detective.amazonaws.com"
+- AWS Backup           → "backup.amazonaws.com"
+NEVER omit AWSServiceName, leave it as null, or use a placeholder string.
+
 ## NAMING CONVENTIONS FOR NEW RESOURCES (FOLLOW EXACTLY)
 - S3 bucket names MUST: be lowercase only, no underscores, 3-63 chars, globally unique
   - Format: compai-{purpose}-{accountId}-{region} (e.g., compai-cloudtrail-013388577167-us-east-1)
