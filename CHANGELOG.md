@@ -1,3 +1,13 @@
+## [3.61.1](https://github.com/trycompai/comp/compare/v3.61.0...v3.61.1) (2026-05-21)
+
+
+### Bug Fixes
+
+* **cloud-tests:** cap concurrency for GCP folder→projects fan-out ([d333f59](https://github.com/trycompai/comp/commit/d333f59bab11494009e8c1f78f6489a26ed6ea76))
+* **cloud-tests:** isolate folder arm failures from direct arm in GCP picker ([22a441f](https://github.com/trycompai/comp/commit/22a441f9e9c2f6a8e998e9b371cacc8af97d7d8b))
+* **cloud-tests:** properly scope folder-nested GCP projects to the target org ([39d233f](https://github.com/trycompai/comp/commit/39d233fb810dcf09bdd024c6cf14eac8e6090de3))
+* **cloud-tests:** show folder-nested GCP projects in connection picker ([b90775d](https://github.com/trycompai/comp/commit/b90775d8944a15d663e96dc4ef0e71d74e454da8))
+
 # [3.61.0](https://github.com/trycompai/comp/compare/v3.60.0...v3.61.0) (2026-05-21)
 
 
