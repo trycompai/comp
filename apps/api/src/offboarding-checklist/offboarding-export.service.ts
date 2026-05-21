@@ -163,7 +163,7 @@ export class OffboardingExportService {
       const batch = await db.member.findMany({
         where: { organizationId, offboardDate: { not: null }, deactivated: true },
         include: { user: { select: { name: true, email: true } } },
-        orderBy: { offboardDate: 'desc' },
+        orderBy: [{ offboardDate: 'desc' }, { id: 'asc' }],
         take: BATCH_SIZE,
         ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
       });
