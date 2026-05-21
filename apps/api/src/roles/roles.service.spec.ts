@@ -230,6 +230,32 @@ describe('RolesService', () => {
       ).rejects.toThrow('Maximum of 20 custom roles per organization');
     });
 
+    it('excludes built-in obligation override rows from the 20-role limit', async () => {
+      // The count query should filter out override rows so they don't steal
+      // slots from the customer's custom-role budget.
+      (mockDb.organizationRole.findFirst as jest.Mock).mockResolvedValue(null);
+      (mockDb.organizationRole.count as jest.Mock).mockResolvedValue(0);
+      (mockDb.organizationRole.create as jest.Mock).mockResolvedValue({
+        id: 'rol_xyz',
+        name: validDto.name,
+        permissions: JSON.stringify(validDto.permissions),
+        obligations: '{}',
+        organizationId,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      });
+
+      await service.createRole(organizationId, validDto, ['owner']);
+      expect(mockDb.organizationRole.count).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({
+            organizationId,
+            name: { notIn: expect.arrayContaining(['owner', 'admin']) },
+          }),
+        }),
+      );
+    });
+
     it('should prevent privilege escalation - cannot grant permissions you do not have', async () => {
       // Employee trying to grant admin-level permissions
       const dto = {
@@ -842,6 +868,17 @@ describe('RolesService', () => {
       ]);
       const result = await service.getObligationsForRoles(organizationId, [
         'admin',
+      ]);
+      expect(result).toEqual({ compliance: true });
+    });
+
+    it('falls back to built-in default when override JSON has no compliance key', async () => {
+      // A row with `{}` should not silently disable the owner default.
+      (mockDb.organizationRole.findMany as jest.Mock).mockResolvedValue([
+        { name: 'owner', obligations: '{}' },
+      ]);
+      const result = await service.getObligationsForRoles(organizationId, [
+        'owner',
       ]);
       expect(result).toEqual({ compliance: true });
     });

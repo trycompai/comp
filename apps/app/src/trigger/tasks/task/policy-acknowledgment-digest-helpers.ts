@@ -71,9 +71,11 @@ export async function filterDigestMembersByCompliance<T extends DigestMember>(
       // Platform admins are excluded — matches the @/lib/compliance behavior.
       if (member.user?.role === 'admin') return false;
       for (const name of roleNames) {
-        // DB override wins over the hardcoded built-in default
-        if (name in obligationMap) {
-          if (obligationMap[name]?.compliance) return true;
+        // DB override wins, but only if `compliance` is explicitly set —
+        // otherwise fall back to the hardcoded built-in default.
+        const override = obligationMap[name];
+        if (override && 'compliance' in override) {
+          if (override.compliance) return true;
           continue;
         }
         if (BUILT_IN_ROLE_NAMES.has(name)) {

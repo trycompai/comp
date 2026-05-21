@@ -199,9 +199,11 @@ export class RolesService {
       throw new BadRequestException(`Role '${dto.name}' already exists`);
     }
 
-    // Check max roles limit
+    // Check max roles limit — exclude rows that exist solely as obligation
+    // overrides for built-in roles, since those don't count against the
+    // customer's 20-custom-role budget.
     const roleCount = await db.organizationRole.count({
-      where: { organizationId },
+      where: { organizationId, name: { notIn: BUILT_IN_ROLES } },
     });
 
     if (roleCount >= 20) {
@@ -584,8 +586,16 @@ export class RolesService {
     const combined: RoleObligations = {};
     for (const name of roleNames) {
       const fromDb = overrideByName.get(name);
-      const effective =
-        fromDb ?? (BUILT_IN_ROLES.includes(name) ? BUILT_IN_ROLE_OBLIGATIONS[name] ?? {} : {});
+      // Use the override only when `compliance` is explicitly set in it;
+      // otherwise fall back to the built-in default.
+      let effective: RoleObligations;
+      if (fromDb && 'compliance' in fromDb) {
+        effective = fromDb;
+      } else if (BUILT_IN_ROLES.includes(name)) {
+        effective = BUILT_IN_ROLE_OBLIGATIONS[name] ?? {};
+      } else {
+        effective = fromDb ?? {};
+      }
       if (effective.compliance) combined.compliance = true;
     }
 

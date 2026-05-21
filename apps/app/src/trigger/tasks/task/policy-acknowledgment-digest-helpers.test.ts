@@ -159,4 +159,17 @@ describe('filterDigestMembersByCompliance', () => {
     const result = await filterDigestMembersByCompliance(mockDb, [member], 'org_1');
     expect(result).toEqual([member]);
   });
+
+  it('falls back to built-in default when override row has no compliance key', async () => {
+    // A row with `{}` should NOT silently disable the owner default.
+    mockDb.organizationRole.findMany.mockResolvedValueOnce([
+      { name: 'owner', obligations: {} },
+    ]);
+    const member: DigestMember = {
+      id: 'm8', role: 'owner', department: 'it',
+      user: { id: 'u8', name: 'H', email: 'h@x', role: null },
+    };
+    const result = await filterDigestMembersByCompliance(mockDb, [member], 'org_1');
+    expect(result).toEqual([member]);
+  });
 });

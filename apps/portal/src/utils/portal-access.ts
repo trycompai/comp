@@ -38,19 +38,20 @@ export async function hasPortalAccess({
       const dbRow = overrideByName.get(role);
       const isBuiltIn = Boolean(BUILT_IN_ROLE_PERMISSIONS[role]);
 
-      if (dbRow) {
-        // For custom roles, the DB row is the source of permissions.
-        // For built-in roles, we only consult it for the obligations override.
-        if (!isBuiltIn) {
-          const perms = parseRolePermissions(dbRow.permissions);
-          if (perms) mergePermissions(permissions, perms);
-        }
-        if (parseRoleObligations(dbRow.obligations).compliance) {
-          hasComplianceObligation = true;
-        }
-        continue;
+      // For custom roles, the DB row is the source of permissions.
+      // For built-in roles, we only consult it for the obligations override.
+      if (dbRow && !isBuiltIn) {
+        const perms = parseRolePermissions(dbRow.permissions);
+        if (perms) mergePermissions(permissions, perms);
       }
 
+      // Obligations: use the override only when `compliance` is explicitly
+      // set in it; otherwise fall back to the built-in default.
+      const overrideObligations = dbRow ? parseRoleObligations(dbRow.obligations) : null;
+      if (overrideObligations && 'compliance' in overrideObligations) {
+        if (overrideObligations.compliance) hasComplianceObligation = true;
+        continue;
+      }
       if (isBuiltIn && BUILT_IN_ROLE_OBLIGATIONS[role]?.compliance) {
         hasComplianceObligation = true;
       }
