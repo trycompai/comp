@@ -17,10 +17,19 @@ COPY packages/integrations/package.json ./packages/integrations/
 COPY packages/utils/package.json ./packages/utils/
 COPY packages/tsconfig/package.json ./packages/tsconfig/
 COPY packages/analytics/package.json ./packages/analytics/
+COPY packages/auth/package.json ./packages/auth/
+COPY packages/billing/package.json ./packages/billing/
+COPY packages/company/package.json ./packages/company/
+COPY packages/db/package.json ./packages/db/
+COPY packages/device-agent/package.json ./packages/device-agent/
+COPY packages/docs/package.json ./packages/docs/
+COPY packages/framework-editor-cli/package.json ./packages/framework-editor-cli/
 
 # Copy app package.json files
 COPY apps/app/package.json ./apps/app/
 COPY apps/portal/package.json ./apps/portal/
+COPY apps/api/package.json ./apps/api/
+COPY apps/framework-editor/package.json ./apps/framework-editor/
 
 # Install all dependencies
 RUN PRISMA_SKIP_POSTINSTALL_GENERATE=true bun install --ignore-scripts
