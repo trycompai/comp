@@ -788,6 +788,29 @@ describe('RolesService', () => {
       ).rejects.toThrow(BadRequestException);
       expect(mockDb.organizationRole.upsert).not.toHaveBeenCalled();
     });
+
+    it('rejects built-in roles whose obligations are not user-editable', async () => {
+      for (const locked of ['auditor', 'employee', 'contractor']) {
+        await expect(
+          service.updateBuiltInObligations(organizationId, locked, {
+            compliance: false,
+          }),
+        ).rejects.toThrow(BadRequestException);
+      }
+      expect(mockDb.organizationRole.upsert).not.toHaveBeenCalled();
+    });
+
+    it('accepts owner and admin', async () => {
+      (mockDb.organizationRole.upsert as jest.Mock).mockResolvedValue({
+        name: 'admin',
+        obligations: JSON.stringify({ compliance: true }),
+      });
+      await expect(
+        service.updateBuiltInObligations(organizationId, 'admin', {
+          compliance: true,
+        }),
+      ).resolves.toEqual({ name: 'admin', obligations: { compliance: true } });
+    });
   });
 
   describe('getObligationsForRoles with built-in overrides', () => {

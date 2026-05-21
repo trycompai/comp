@@ -12,15 +12,17 @@ interface SystemRoleDetailProps {
   permissions: Record<string, string[]>;
   obligations: Record<string, boolean>;
   description: string;
+  /** When false, the obligation toggle stays locked along with the rest of the matrix. */
+  obligationsEditable?: boolean;
 }
 
-export function SystemRoleDetail({ roleName, permissions, obligations, description }: SystemRoleDetailProps) {
+export function SystemRoleDetail({ roleName, permissions, obligations, description, obligationsEditable = false }: SystemRoleDetailProps) {
   const [currentObligations, setCurrentObligations] =
     useState<Record<string, boolean>>(obligations);
   const [isSaving, setIsSaving] = useState(false);
 
   const handleObligationsChange = async (next: Record<string, boolean>) => {
-    if (isSaving) return;
+    if (isSaving || !obligationsEditable) return;
     const previous = currentObligations;
     setCurrentObligations(next);
     setIsSaving(true);
@@ -53,7 +55,7 @@ export function SystemRoleDetail({ roleName, permissions, obligations, descripti
             obligations={currentObligations}
             onObligationsChange={handleObligationsChange}
             disabled
-            obligationsEditable
+            obligationsEditable={obligationsEditable}
           />
         </Stack>
       </CardContent>

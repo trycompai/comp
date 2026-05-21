@@ -7,6 +7,11 @@ import { serverApi } from '@/lib/api-server';
 import { SYSTEM_ROLES, SYSTEM_ROLE_PERMISSIONS } from '../../constants/system-roles';
 import { SystemRoleDetail } from './system-role-detail';
 
+// Customers can opt admins/owners in or out of the Employee Compliance
+// obligation; the other built-in roles keep their obligation locked because
+// the request only covered admin + owner.
+const EDITABLE_OBLIGATION_ROLES = new Set(['owner', 'admin']);
+
 export default async function SystemRolePage({
   params,
 }: {
@@ -49,6 +54,7 @@ export default async function SystemRolePage({
         permissions={permissions}
         obligations={effectiveObligations}
         description={role.description}
+        obligationsEditable={EDITABLE_OBLIGATION_ROLES.has(roleName)}
       />
     </PageLayout>
   );

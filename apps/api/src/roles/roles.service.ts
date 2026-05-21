@@ -23,6 +23,11 @@ const VALID_RESOURCES: Record<string, string[]> = Object.fromEntries(
 // Built-in roles that cannot be modified or deleted
 const BUILT_IN_ROLES = Object.keys(allRoles);
 
+// Subset of built-in roles whose obligations the customer can override. Today
+// only owner and admin — the others keep their hardcoded defaults to avoid
+// changing behavior for roles the request didn't cover.
+const EDITABLE_BUILT_IN_OBLIGATION_ROLES = new Set(['owner', 'admin']);
+
 @Injectable()
 export class RolesService {
   /**
@@ -591,6 +596,9 @@ export class RolesService {
    * Upsert an obligation override for a built-in role. The `organization_role`
    * row stores only the obligations JSON; permissions stay sourced from the
    * hardcoded `BUILT_IN_ROLE_PERMISSIONS` map.
+   *
+   * Only owner and admin obligations are user-overridable today (matches the
+   * customer request); the other built-in roles keep their hardcoded defaults.
    */
   async updateBuiltInObligations(
     organizationId: string,
@@ -599,6 +607,11 @@ export class RolesService {
   ) {
     if (!BUILT_IN_ROLES.includes(roleName)) {
       throw new BadRequestException(`Not a built-in role: ${roleName}`);
+    }
+    if (!EDITABLE_BUILT_IN_OBLIGATION_ROLES.has(roleName)) {
+      throw new BadRequestException(
+        `Obligations are not editable for role: ${roleName}`,
+      );
     }
 
     const permissions = JSON.stringify(BUILT_IN_ROLE_PERMISSIONS[roleName] ?? {});
