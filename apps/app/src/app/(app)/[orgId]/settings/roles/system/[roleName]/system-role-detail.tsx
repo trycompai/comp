@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Card, CardContent } from '@trycompai/ui/card';
 import { Stack, Text } from '@trycompai/design-system';
 import { toast } from 'sonner';
@@ -20,6 +20,14 @@ export function SystemRoleDetail({ roleName, permissions, obligations, descripti
   const [currentObligations, setCurrentObligations] =
     useState<Record<string, boolean>>(obligations);
   const [isSaving, setIsSaving] = useState(false);
+
+  // Resync if the user navigates between built-in role pages without a full
+  // reload — `useState`'s initial value is only honored on mount.
+  useEffect(() => {
+    setCurrentObligations(obligations);
+    // Keyed on roleName so a re-fetched obligations for the same role
+    // (e.g., after the user toggles it) doesn't clobber the optimistic value.
+  }, [roleName]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleObligationsChange = async (next: Record<string, boolean>) => {
     if (isSaving || !obligationsEditable) return;

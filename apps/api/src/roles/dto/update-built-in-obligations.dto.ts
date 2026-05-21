@@ -1,12 +1,27 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsObject } from 'class-validator';
+import { IsBoolean, IsObject, IsOptional, ValidateNested } from 'class-validator';
+import { Type } from 'class-transformer';
+
+export class BuiltInObligationsBody {
+  @ApiProperty({
+    description: 'Whether the role must complete compliance tasks.',
+    example: false,
+    required: false,
+  })
+  @IsBoolean()
+  @IsOptional()
+  compliance?: boolean;
+}
 
 export class UpdateBuiltInObligationsDto {
   @ApiProperty({
     description: 'Obligations override for the built-in role.',
     example: { compliance: false },
     required: true,
+    type: BuiltInObligationsBody,
   })
   @IsObject()
-  obligations!: { compliance?: boolean } & Record<string, boolean>;
+  @ValidateNested()
+  @Type(() => BuiltInObligationsBody)
+  obligations!: BuiltInObligationsBody;
 }
