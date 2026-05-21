@@ -185,13 +185,19 @@ export class GenericEmployeeSyncService {
             );
           }
 
+          const needsOnboardDate =
+            !existingMember.onboardDate && employee.startDate;
+
           if (existingMember.deactivated && allowReactivation) {
+            const parsedStartDate = employee.startDate ? new Date(employee.startDate) : null;
             await db.member.update({
               where: { id: existingMember.id },
               data: {
                 deactivated: false,
                 isActive: true,
+                offboardDate: null,
                 ...(needsHeal ? { role: healedRole } : {}),
+                ...(needsOnboardDate && parsedStartDate && !isNaN(parsedStartDate.getTime()) ? { onboardDate: parsedStartDate } : {}),
               },
             });
             results.reactivated++;
@@ -200,10 +206,15 @@ export class GenericEmployeeSyncService {
               status: 'reactivated',
             });
           } else {
-            if (needsHeal) {
+            const parsedStartDate = employee.startDate ? new Date(employee.startDate) : null;
+            const validStartDate = parsedStartDate && !isNaN(parsedStartDate.getTime()) ? parsedStartDate : null;
+            if (needsHeal || (needsOnboardDate && validStartDate)) {
               await db.member.update({
                 where: { id: existingMember.id },
-                data: { role: healedRole },
+                data: {
+                  ...(needsHeal ? { role: healedRole } : {}),
+                  ...(needsOnboardDate && validStartDate ? { onboardDate: validStartDate } : {}),
+                },
               });
             }
             results.skipped++;
@@ -225,12 +236,14 @@ export class GenericEmployeeSyncService {
             `[GenericSync] Provider "${providerName}" sent unrecognized role "${employee.role}" for ${normalizedEmail}; falling back to "${sanitizedRole}"`,
           );
         }
+        const newMemberStartDate = employee.startDate ? new Date(employee.startDate) : null;
         await db.member.create({
           data: {
             organizationId,
             userId: existingUser.id,
             role: sanitizedRole,
             isActive: true,
+            ...(newMemberStartDate && !isNaN(newMemberStartDate.getTime()) ? { onboardDate: newMemberStartDate } : {}),
           },
         });
 
@@ -294,7 +307,11 @@ export class GenericEmployeeSyncService {
         try {
           await db.member.update({
             where: { id: member.id },
-            data: { deactivated: true, isActive: false },
+            data: {
+              deactivated: true,
+              isActive: false,
+              offboardDate: member.offboardDate ?? new Date(),
+            },
           });
           results.deactivated++;
           results.details.push({

@@ -100,6 +100,16 @@ export function PendingInvitationRow({
           </div>
         </TableCell>
 
+        {/* ONBOARDED */}
+        <TableCell>
+          <Text size="sm" variant="muted">—</Text>
+        </TableCell>
+
+        {/* OFFBOARDED */}
+        <TableCell>
+          <Text size="sm" variant="muted">—</Text>
+        </TableCell>
+
         {/* TASKS */}
         <TableCell>
           <Text size="sm" variant="muted">

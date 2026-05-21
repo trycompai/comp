@@ -104,5 +104,10 @@ model Organization {
   customFrameworks   CustomFramework[]
   customRequirements CustomRequirement[]
 
+  // Offboarding Checklist
+  offboardingChecklistTemplates    OffboardingChecklistTemplate[]
+  offboardingChecklistCompletions  OffboardingChecklistCompletion[]
+  offboardingAccessRevocations     OffboardingAccessRevocation[]
+
   @@index([slug])
 }

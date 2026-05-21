@@ -13,6 +13,8 @@ export interface PeopleResponseDto {
   isActive: boolean;
   deactivated: boolean;
   fleetDmLabelId: number | null;
+  onboardDate: string | null;
+  offboardDate: string | null;
   user: {
     id: string;
     name: string;

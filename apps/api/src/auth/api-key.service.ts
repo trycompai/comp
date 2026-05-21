@@ -10,6 +10,13 @@ import { createHash, randomBytes } from 'node:crypto';
 
 /** Result from validating an API key */
 export interface ApiKeyValidationResult {
+  /** API key row primary key — exposed on the request so downstream
+   *  attribution logic (audit logs, owner-fallback resolver) can reference
+   *  the exact key used without an extra DB lookup. */
+  apiKeyId: string;
+  /** Human-readable name set when the key was created (e.g. "CI Pipeline").
+   *  Surfaced in audit log descriptions for API-key-initiated mutations. */
+  apiKeyName: string;
   organizationId: string;
   scopes: string[];
 }
@@ -187,6 +194,7 @@ export class ApiKeyService {
         },
         select: {
           id: true,
+          name: true,
           key: true,
           salt: true,
           organizationId: true,
@@ -214,6 +222,7 @@ export class ApiKeyService {
             },
             select: {
               id: true,
+              name: true,
               key: true,
               salt: true,
               organizationId: true,
@@ -234,6 +243,8 @@ export class ApiKeyService {
               data: { keyPrefix, lastUsedAt: new Date() },
             });
             return {
+              apiKeyId: legacyMatch.id,
+              apiKeyName: legacyMatch.name,
               organizationId: legacyMatch.organizationId,
               scopes: legacyMatch.scopes,
             };
@@ -258,6 +269,8 @@ export class ApiKeyService {
       );
 
       return {
+        apiKeyId: matchingRecord.id,
+        apiKeyName: matchingRecord.name,
         organizationId: matchingRecord.organizationId,
         scopes: matchingRecord.scopes,
       };

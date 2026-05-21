@@ -38,8 +38,13 @@ export class CloudAwsScanModeService {
   async updateMode(params: {
     connectionId: string;
     organizationId: string;
+    /** Session user, or org owner for API key / service token callers
+     *  (resolved by ActingUserResolver in the controller). */
     userId: string;
     mode: AwsScanMode;
+    /** Optional audit-log description prefix when userId came from
+     *  owner-fallback (e.g. `via API key "CI Pipeline"`). */
+    callerLabel?: string;
   }): Promise<{ mode: AwsScanMode }> {
     const connection = await db.integrationConnection.findFirst({
       where: {
@@ -84,15 +89,20 @@ export class CloudAwsScanModeService {
       },
     });
 
+    const description = params.callerLabel
+      ? `[${params.callerLabel}] Switched AWS scan engine: ${previousMode} → ${params.mode}`
+      : `Switched AWS scan engine: ${previousMode} → ${params.mode}`;
+
     await logCloudSecurityActivity({
       organizationId: params.organizationId,
       userId: params.userId,
       connectionId: connection.id,
       action: 'scan_mode_changed',
-      description: `Switched AWS scan engine: ${previousMode} → ${params.mode}`,
+      description,
       metadata: {
         previousMode,
         newMode: params.mode,
+        callerLabel: params.callerLabel ?? null,
       },
     });
 

@@ -1,6 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { PeopleService } from './people.service';
 import { PeopleInviteService } from './people-invite.service';
+import { AttachmentsService } from '../attachments/attachments.service';
 import type { AuthContext } from '../auth/types';
 import { HybridAuthGuard } from '../auth/hybrid-auth.guard';
 import { PermissionGuard } from '../auth/permission.guard';
@@ -83,6 +84,12 @@ describe('PeopleController', () => {
     inviteMembers: jest.fn(),
   };
 
+  const mockAttachmentsService = {
+    getAttachments: jest.fn(),
+    uploadAttachment: jest.fn(),
+    deleteAttachment: jest.fn(),
+  };
+
   const mockGuard = { canActivate: jest.fn().mockReturnValue(true) };
 
   const mockAuthContext: AuthContext = {
@@ -101,6 +108,7 @@ describe('PeopleController', () => {
       providers: [
         { provide: PeopleService, useValue: mockPeopleService },
         { provide: PeopleInviteService, useValue: mockPeopleInviteService },
+        { provide: AttachmentsService, useValue: mockAttachmentsService },
       ],
     })
       .overrideGuard(HybridAuthGuard)
@@ -136,6 +144,7 @@ describe('PeopleController', () => {
       expect(peopleService.findAllByOrganization).toHaveBeenCalledWith(
         'org_123',
         false,
+        undefined,
       );
     });
 
@@ -147,6 +156,7 @@ describe('PeopleController', () => {
       expect(peopleService.findAllByOrganization).toHaveBeenCalledWith(
         'org_123',
         true,
+        undefined,
       );
     });
 

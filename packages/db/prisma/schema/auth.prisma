@@ -29,6 +29,8 @@ model User {
   lockedTimelineInstances    TimelineInstance[]   @relation("TimelineInstanceLockedBy")
   unlockedTimelineInstances  TimelineInstance[]   @relation("TimelineInstanceUnlockedBy")
   publishedFrameworkVersions FrameworkVersion[]   @relation("FrameworkVersionPublisher")
+  offboardingChecklistCompletions OffboardingChecklistCompletion[] @relation("OffboardingChecklistCompletedBy")
+  offboardingAccessRevocations    OffboardingAccessRevocation[]    @relation("AccessRevocationRevokedBy")
 
   @@unique([email])
 }
@@ -121,6 +123,8 @@ model Member {
   backgroundCheckExempt           Boolean                           @default(false)
   backgroundCheckExemptReason     String?
   backgroundCheckExemptJustification String?                        @db.Text
+  onboardDate                     DateTime?
+  offboardDate                    DateTime?
   externalUserId                  String?
   externalUserSource              String?
   employeeTrainingVideoCompletion EmployeeTrainingVideoCompletion[]
@@ -147,6 +151,8 @@ model Member {
   approvedTasks                    Task[]                   @relation("TaskApprover")
   devices                          Device[]
   backgroundCheckRequests          BackgroundCheckRequest[]
+  offboardingChecklistCompletions  OffboardingChecklistCompletion[]
+  offboardingAccessRevocations     OffboardingAccessRevocation[]
 }
 
 model Invitation {

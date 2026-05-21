@@ -281,6 +281,7 @@ export const SyncEmployeeSchema = z.object({
   status: z.enum(['active', 'inactive', 'suspended']),
   role: z.string().optional(),
   department: z.string().optional(),
+  startDate: z.string().optional(),
   metadata: z.record(z.string(), z.unknown()).optional(),
 });
 

@@ -72,6 +72,11 @@ export class HybridAuthGuard implements CanActivate {
     request.isServiceToken = false;
     request.isPlatformAdmin = false;
     request.apiKeyScopes = result.scopes;
+    // Surface the key's id + name on the request so downstream attribution
+    // (ActingUserResolver, audit logs) can record "via API key '<name>'"
+    // without an extra DB lookup.
+    request.apiKeyId = result.apiKeyId;
+    request.apiKeyName = result.apiKeyName;
     // API keys are organization-scoped and are not tied to a specific user/member.
     request.userRoles = null;
 

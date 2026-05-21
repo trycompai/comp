@@ -149,6 +149,24 @@ const JSON_STRING_PARAMS = new Set([
   'Definition',
 ]);
 
+/**
+ * Commands where AWS rejects the call with a confusing
+ * "Member must not be null" error if a top-level param is missing.
+ * We surface a clear, actionable error BEFORE the SDK call so the
+ * remediation pipeline fails fast and the customer sees what's wrong.
+ *
+ * Keep this list narrow — only commands where we've seen the AI omit a
+ * required param in practice and the resulting AWS error is unhelpful.
+ */
+export const REQUIRED_PARAMS: Record<string, readonly string[]> = {
+  CreateServiceLinkedRoleCommand: ['AWSServiceName'],
+  PutConfigurationRecorderCommand: ['ConfigurationRecorder'],
+  PutDeliveryChannelCommand: ['DeliveryChannel'],
+  StartConfigurationRecorderCommand: ['ConfigurationRecorderName'],
+  PutBucketPolicyCommand: ['Bucket', 'Policy'],
+  CreateTrailCommand: ['Name', 'S3BucketName'],
+};
+
 function normalizeArnPartition(value: string, partition: AwsPartition): string {
   if (partition === 'aws-us-gov') {
     return value.replace(/\barn:aws:/g, 'arn:aws-us-gov:');
@@ -373,6 +391,32 @@ function isValidationError(errName: string, errMsg: string): boolean {
 }
 
 /**
+ * Message-only detector for the broader class of validation-style errors
+ * that AWS may surface after the rules-based retry inside
+ * `sendWithAutoRetry` has given up. Used by `executePlanSteps` to decide
+ * whether to invoke the AI step-repair callback.
+ *
+ * Universal by design — pattern-matches AWS's standard error wording
+ * rather than enumerating per-command error names.
+ */
+export function looksLikeValidationError(message: string): boolean {
+  if (!message) return false;
+  const lower = message.toLowerCase();
+  return (
+    lower.includes('validationexception') ||
+    lower.includes('validation error') ||
+    lower.includes('failed to satisfy constraint') ||
+    lower.includes('member must not be null') ||
+    lower.includes('invalidparametervalue') ||
+    lower.includes('invalidparameter ') ||
+    lower.includes('invalid parameter') ||
+    lower.includes('must be a valid') ||
+    lower.includes('is required') ||
+    lower.includes('missing required')
+  );
+}
+
+/**
  * Parse the AWS validation error, fix the offending param, return true if fixed.
  * AWS error format: "Value at 'fieldName' failed to satisfy constraint: ..."
  *
@@ -481,6 +525,21 @@ export function validatePlanSteps(steps: AwsCommandStep[]): string[] {
         `${prefix}: Contains placeholder values: ${placeholders.join(', ')}`,
       );
     }
+
+    // Check required top-level params for commands AWS rejects with
+    // cryptic "Member must not be null" errors. Fail fast with a clear
+    // message instead of letting the SDK return its uninformative one.
+    const required = REQUIRED_PARAMS[step.command];
+    if (required) {
+      for (const key of required) {
+        const value = step.params?.[key];
+        if (value === undefined || value === null || value === '') {
+          errors.push(
+            `${prefix}: Required param "${key}" is missing or empty`,
+          );
+        }
+      }
+    }
   }
 
   return errors;
@@ -495,6 +554,27 @@ export interface PlanExecutionResult {
   results: StepResult[];
   error?: { stepIndex: number; message: string; step: AwsCommandStep };
 }
+
+/**
+ * Optional per-step repair callback. Invoked at most ONCE per step when:
+ *   1. The SDK call failed with a validation-class error
+ *      (`looksLikeValidationError`), AND
+ *   2. The existing rules-based `tryAutoFixValidationError` could not fix it.
+ *
+ * The callback is expected to return a refined `AwsCommandStep` to retry
+ * with, or `null` if it cannot repair the step. Returning the same step
+ * unchanged also counts as "cannot repair" (we won't loop forever).
+ *
+ * Universal contract — the callback decides HOW to refine (typically by
+ * asking an LLM with the failing step + AWS error + plan context). The
+ * executor only cares about the in/out shape, so this scales to any
+ * future AWS command without per-command changes here.
+ */
+export type StepRepairFn = (args: {
+  step: AwsCommandStep;
+  awsError: string;
+  stepIndex: number;
+}) => Promise<AwsCommandStep | null>;
 
 /**
  * Execute a single AWS SDK v3 command.
@@ -607,22 +687,91 @@ export async function executePlanSteps(params: {
   region: string;
   isRollback?: boolean;
   autoRollbackSteps?: AwsCommandStep[];
+  repairStep?: StepRepairFn;
 }): Promise<PlanExecutionResult> {
   const results: StepResult[] = [];
 
   for (let i = 0; i < params.steps.length; i++) {
-    const step = params.steps[i];
-    try {
-      const output = await executeAwsCommand({
-        service: step.service,
-        command: step.command,
-        input: structuredClone(step.params),
-        credentials: params.credentials,
-        region: params.region,
-        isRollback: params.isRollback,
-      });
-      results.push({ step, output });
-    } catch (err) {
+    const originalStep = params.steps[i];
+    let stepToRun = originalStep;
+    let repairAttempted = false;
+    let success = false;
+    let lastError: Error | null = null;
+
+    // Inner attempt loop: 1 initial attempt + at most 1 AI repair retry.
+    // The AI repair fires only on validation-class errors AND only when
+    // a repair callback is provided. This keeps reads/rollbacks/no-AI
+    // call sites at the same single-attempt behavior they had before.
+    for (let attempt = 0; attempt < 2; attempt++) {
+      try {
+        const output = await executeAwsCommand({
+          service: stepToRun.service,
+          command: stepToRun.command,
+          input: structuredClone(stepToRun.params),
+          credentials: params.credentials,
+          region: params.region,
+          isRollback: params.isRollback,
+        });
+        results.push({ step: stepToRun, output });
+        success = true;
+        lastError = null;
+        break;
+      } catch (err) {
+        lastError = err instanceof Error ? err : new Error(String(err));
+        const message = lastError.message;
+
+        if (
+          !repairAttempted &&
+          params.repairStep &&
+          looksLikeValidationError(message)
+        ) {
+          repairAttempted = true;
+          console.log(
+            `Step ${i + 1} (${originalStep.service}:${originalStep.command}) ` +
+              `failed with validation error — attempting AI step repair`,
+          );
+          const refined = await params.repairStep({
+            step: originalStep,
+            awsError: message,
+            stepIndex: i,
+          });
+          if (
+            refined &&
+            JSON.stringify(refined.params ?? {}) !==
+              JSON.stringify(originalStep.params ?? {})
+          ) {
+            console.log(
+              `AI returned refined step for ${originalStep.command} — retrying once`,
+            );
+            stepToRun = refined;
+            continue;
+          }
+          console.log(
+            `AI repair returned no change for ${originalStep.command} — ` +
+              `surfacing original AWS error`,
+          );
+        }
+        break;
+      }
+    }
+
+    if (success) continue;
+
+    // lastError must be set when !success — keep TS happy with a guard.
+    if (!lastError) {
+      return {
+        results,
+        error: {
+          stepIndex: i,
+          message: 'Unknown execution failure',
+          step: originalStep,
+        },
+      };
+    }
+
+    const step = stepToRun;
+    const err: unknown = lastError;
+    {
       const message = err instanceof Error ? err.message : String(err);
 
       // If a prior step was a no-op (already exists / duplicate content),

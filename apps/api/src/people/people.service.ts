@@ -36,12 +36,19 @@ export class PeopleService {
   async findAllByOrganization(
     organizationId: string,
     includeDeactivated?: boolean,
+    filters?: {
+      onboardAfter?: Date;
+      onboardBefore?: Date;
+      offboardAfter?: Date;
+      offboardBefore?: Date;
+    },
   ): Promise<PeopleResponseDto[]> {
     try {
       await MemberValidator.validateOrganization(organizationId);
       const members = await MemberQueries.findAllByOrganization(
         organizationId,
         includeDeactivated,
+        filters,
       );
 
       this.logger.log(
@@ -395,7 +402,11 @@ export class PeopleService {
 
     await db.member.update({
       where: { id: memberId, organizationId },
-      data: { deactivated: true, isActive: false },
+      data: {
+        deactivated: true,
+        isActive: false,
+        offboardDate: member.offboardDate ?? new Date(),
+      },
     });
 
     // Direct DB session deletion is correct here — the API server IS the auth server,

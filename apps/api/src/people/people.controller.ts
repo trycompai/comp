@@ -36,6 +36,9 @@ import { BulkCreatePeopleDto } from './dto/bulk-create-people.dto';
 import { InvitePeopleDto } from './dto/invite-people.dto';
 import { PeopleResponseDto, UserResponseDto } from './dto/people-responses.dto';
 import { UpdateEmailPreferencesDto } from './dto/update-email-preferences.dto';
+import { AttachmentsService } from '../attachments/attachments.service';
+import { UploadAttachmentDto } from '../attachments/upload-attachment.dto';
+import { AttachmentEntityType } from '@db';
 import { PeopleService } from './people.service';
 import { PeopleInviteService } from './people-invite.service';
 import { GET_ALL_PEOPLE_RESPONSES } from './schemas/get-all-people.responses';
@@ -58,7 +61,17 @@ export class PeopleController {
   constructor(
     private readonly peopleService: PeopleService,
     private readonly peopleInviteService: PeopleInviteService,
+    private readonly attachmentsService: AttachmentsService,
   ) {}
+
+  private resolveEventType(eventType: string): AttachmentEntityType {
+    if (eventType === 'onboard') return AttachmentEntityType.employment_onboard;
+    if (eventType === 'offboard')
+      return AttachmentEntityType.employment_offboard;
+    throw new BadRequestException(
+      `Invalid event type "${eventType}". Must be "onboard" or "offboard".`,
+    );
+  }
 
   @Post('invite')
   @RequirePermission('member', 'create')
@@ -99,10 +112,33 @@ export class PeopleController {
     @OrganizationId() organizationId: string,
     @AuthContext() authContext: AuthContextType,
     @Query('includeDeactivated') includeDeactivated?: string,
+    @Query('onboardAfter') onboardAfter?: string,
+    @Query('onboardBefore') onboardBefore?: string,
+    @Query('offboardAfter') offboardAfter?: string,
+    @Query('offboardBefore') offboardBefore?: string,
   ) {
+    const parseDateParam = (param: string | undefined, name: string): Date | undefined => {
+      if (!param) return undefined;
+      const date = new Date(param);
+      if (isNaN(date.getTime())) {
+        throw new BadRequestException(`Invalid date value for "${name}": ${param}`);
+      }
+      return date;
+    };
+
+    const filters = {
+      ...(onboardAfter ? { onboardAfter: parseDateParam(onboardAfter, 'onboardAfter') } : {}),
+      ...(onboardBefore ? { onboardBefore: parseDateParam(onboardBefore, 'onboardBefore') } : {}),
+      ...(offboardAfter ? { offboardAfter: parseDateParam(offboardAfter, 'offboardAfter') } : {}),
+      ...(offboardBefore ? { offboardBefore: parseDateParam(offboardBefore, 'offboardBefore') } : {}),
+    };
+
+    const hasFilters = Object.keys(filters).length > 0;
+
     const people = await this.peopleService.findAllByOrganization(
       organizationId,
       includeDeactivated === 'true',
+      hasFilters ? filters : undefined,
     );
 
     return {
@@ -527,6 +563,77 @@ export class PeopleController {
           },
         }),
     };
+  }
+
+  @Get(':id/employment-evidence/:eventType')
+  @RequirePermission('member', 'read')
+  @ApiOperation({ summary: 'Get employment evidence attachments' })
+  @ApiParam(PEOPLE_PARAMS.memberId)
+  @ApiParam({ name: 'eventType', enum: ['onboard', 'offboard'] })
+  async getEmploymentEvidence(
+    @Param('id') memberId: string,
+    @Param('eventType') eventType: string,
+    @OrganizationId() organizationId: string,
+  ) {
+    const entityType = this.resolveEventType(eventType);
+    await this.peopleService.findById(memberId, organizationId);
+    return this.attachmentsService.getAttachments(
+      organizationId,
+      memberId,
+      entityType,
+    );
+  }
+
+  @Post(':id/employment-evidence/:eventType')
+  @RequirePermission('member', 'update')
+  @ApiOperation({ summary: 'Upload employment evidence' })
+  @ApiParam(PEOPLE_PARAMS.memberId)
+  @ApiParam({ name: 'eventType', enum: ['onboard', 'offboard'] })
+  async uploadEmploymentEvidence(
+    @Param('id') memberId: string,
+    @Param('eventType') eventType: string,
+    @OrganizationId() organizationId: string,
+    @AuthContext() authContext: AuthContextType,
+    @Body() uploadDto: UploadAttachmentDto,
+  ) {
+    if (!authContext.userId) {
+      throw new BadRequestException('User context required for this operation');
+    }
+    const entityType = this.resolveEventType(eventType);
+    await this.peopleService.findById(memberId, organizationId);
+    return this.attachmentsService.uploadAttachment(
+      organizationId,
+      memberId,
+      entityType,
+      uploadDto,
+      authContext.userId,
+    );
+  }
+
+  @Delete(':id/employment-evidence/:eventType/:attachmentId')
+  @RequirePermission('member', 'delete')
+  @ApiOperation({ summary: 'Delete employment evidence' })
+  @ApiParam(PEOPLE_PARAMS.memberId)
+  @ApiParam({ name: 'eventType', enum: ['onboard', 'offboard'] })
+  @ApiParam({ name: 'attachmentId', description: 'Attachment ID' })
+  async deleteEmploymentEvidence(
+    @Param('id') memberId: string,
+    @Param('eventType') eventType: string,
+    @Param('attachmentId') attachmentId: string,
+    @OrganizationId() organizationId: string,
+  ) {
+    const entityType = this.resolveEventType(eventType);
+    await this.peopleService.findById(memberId, organizationId);
+    const attachments = await this.attachmentsService.getAttachments(
+      organizationId,
+      memberId,
+      entityType,
+    );
+    if (!attachments.some((a) => a.id === attachmentId)) {
+      throw new BadRequestException('Attachment not found for this member and event type');
+    }
+    await this.attachmentsService.deleteAttachment(organizationId, attachmentId);
+    return { success: true };
   }
 
   @Get('me/email-preferences')
