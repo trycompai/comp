@@ -512,9 +512,16 @@ const MultipleSelector = React.forwardRef<MultipleSelectorRef, MultipleSelectorP
                 inputProps?.onValueChange?.(value);
               }}
               onBlur={(event) => {
-                if (!onScrollbar) {
-                  setOpen(false);
-                }
+                // Close the dropdown whenever the input loses focus. The previous
+                // `if (!onScrollbar)` guard kept the dropdown open while the user's
+                // mouse was hovering the CommandList — but that left the absolutely
+                // positioned CommandList floating over sibling form controls below
+                // (e.g. a Select inside the same form), trapping their clicks and
+                // making them appear unresponsive. Closing on every blur restores
+                // the natural focus contract: clicking anywhere outside the input
+                // dismisses the dropdown immediately, so the next form control
+                // receives the click as expected.
+                setOpen(false);
                 inputProps?.onBlur?.(event);
               }}
               onFocus={(event) => {
@@ -562,9 +569,16 @@ const MultipleSelector = React.forwardRef<MultipleSelectorRef, MultipleSelectorP
               onMouseEnter={() => {
                 setOnScrollbar(true);
               }}
-              onMouseUp={() => {
-                inputRef?.current?.focus();
-              }}
+              // Intentionally no onMouseUp re-focus here.
+              // Previously, releasing the mouse anywhere on the CommandList
+              // (including its bounds while it floated over sibling form fields)
+              // re-focused the input and re-opened the dropdown. That trapped
+              // clicks meant for elements below it (e.g. a `@base-ui/react` Select
+              // trigger sitting under the popup), making them appear unresponsive —
+              // base-ui's trigger cancels its open if `mouseup` lands outside its
+              // bounds, so the captured `mouseup` would also cancel the next
+              // dropdown's open. Focus on items is already preserved because
+              // `CommandItem.onMouseDown` calls `e.preventDefault()`.
             >
               {isLoading ? (
                 <>{loadingIndicator}</>
