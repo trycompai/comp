@@ -127,16 +127,43 @@ export class OffboardingChecklistService {
       completions.map((c) => [c.templateItemId, c]),
     );
 
+    const completionIds = completions.map((c) => c.id);
+
+    const allAttachments =
+      completionIds.length > 0
+        ? await db.attachment.findMany({
+            where: {
+              organizationId,
+              entityId: { in: completionIds },
+              entityType: AttachmentEntityType.offboarding_checklist,
+            },
+            orderBy: { createdAt: 'asc' },
+          })
+        : [];
+
+    const attachmentsByCompletion = new Map<string, typeof allAttachments>();
+    for (const attachment of allAttachments) {
+      const existing = attachmentsByCompletion.get(attachment.entityId) ?? [];
+      existing.push(attachment);
+      attachmentsByCompletion.set(attachment.entityId, existing);
+    }
+
     const items = await Promise.all(
       templateItems.map(async (template) => {
         const completion = completionMap.get(template.id);
-        const evidence = completion
-          ? await this.attachmentsService.getAttachments(
-              organizationId,
-              completion.id,
-              AttachmentEntityType.offboarding_checklist,
-            )
+        const rawAttachments = completion
+          ? (attachmentsByCompletion.get(completion.id) ?? [])
           : [];
+
+        const evidence = await Promise.all(
+          rawAttachments.map(async (attachment) => ({
+            id: attachment.id,
+            name: attachment.name,
+            type: attachment.type,
+            downloadUrl: await this.attachmentsService.getPresignedDownloadUrl(attachment.url),
+            createdAt: attachment.createdAt,
+          })),
+        );
 
         return {
           ...template,
