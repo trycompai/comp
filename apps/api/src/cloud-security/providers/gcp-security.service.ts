@@ -819,19 +819,24 @@ export class GCPSecurityService {
     accessToken: string,
     organizationId: string,
   ): Promise<Array<{ id: string; name: string; number: string }>> {
-    // Promise.allSettled (not Promise.all) so a transient failure on
-    // the folder-nested arm cannot blank the entire picker. The direct
-    // arm matches the prior production behavior — if THAT works, we
-    // are at minimum no worse than today's prod.
+    // Two arms, isolated via Promise.allSettled so a failure on one
+    // cannot blank the picker:
+    //  1. Direct org children: existing behavior.
+    //  2. Folder-nested projects, scoped to THIS org's folder tree:
+    //     recursively enumerate folders under the org, then query
+    //     each with `parent.type:folder AND parent.id:<folderId>`,
+    //     which is GCP's documented happy path (uses the alternate
+    //     consistent search index).
+    //
+    // The folder arm is properly org-scoped — a user with access to
+    // projects in OTHER organizations will not see those projects
+    // here. This honors the "ForOrg" contract.
     const [directResult, folderResult] = await Promise.allSettled([
       this.listProjectsPaginated(
         accessToken,
         `lifecycleState:ACTIVE AND parent.id:${organizationId}`,
       ),
-      this.listProjectsPaginated(
-        accessToken,
-        'lifecycleState:ACTIVE AND parent.type:folder',
-      ),
+      this.listProjectsInOrgFolderTree(accessToken, organizationId),
     ]);
 
     const directChildren =
@@ -862,6 +867,137 @@ export class GCPSecurityService {
       `GCP detectProjectsForOrg(${organizationId}): ${directChildren.length} direct + ${folderNested.length} folder-nested → ${merged.length} unique`,
     );
     return merged;
+  }
+
+  /**
+   * Recursively enumerate all folders under an org, then list projects
+   * inside each folder. The per-folder project query uses the paired
+   * `parent.type:folder AND parent.id:<folderId>` filter, which is the
+   * shape GCP explicitly documents for by-parent project queries
+   * ("the filter must contain both a parent.type and a parent.id
+   * restriction") and which triggers their alternate consistent index.
+   *
+   * Per-folder failures are isolated: if one folder's project list
+   * fails (transient 5xx, permission edge case), the rest still
+   * succeed.
+   */
+  private async listProjectsInOrgFolderTree(
+    accessToken: string,
+    organizationId: string,
+  ): Promise<Array<{ id: string; name: string; number: string }>> {
+    const folderIds = await this.listFoldersUnderOrg(
+      accessToken,
+      organizationId,
+    );
+    if (folderIds.length === 0) return [];
+
+    const perFolder = await Promise.all(
+      folderIds.map((folderId) =>
+        this.listProjectsPaginated(
+          accessToken,
+          `lifecycleState:ACTIVE AND parent.type:folder AND parent.id:${folderId}`,
+        ).catch((err) => {
+          this.logger.warn(
+            `GCP folder ${folderId}: project list failed — ${err instanceof Error ? err.message : String(err)}`,
+          );
+          return [];
+        }),
+      ),
+    );
+
+    return perFolder.flat();
+  }
+
+  /**
+   * Breadth-first walk of the folder tree under an organization.
+   * Returns every folder ID the caller has visibility into, no matter
+   * how deeply nested. Bounded by SAFE_MAX_FOLDERS to keep API usage
+   * predictable in pathological cases.
+   */
+  private async listFoldersUnderOrg(
+    accessToken: string,
+    organizationId: string,
+  ): Promise<string[]> {
+    const SAFE_MAX_FOLDERS = 500;
+
+    const collected: string[] = [];
+    const seenParents = new Set<string>();
+    const queue: string[] = [`organizations/${organizationId}`];
+
+    while (queue.length > 0 && collected.length < SAFE_MAX_FOLDERS) {
+      const parent = queue.shift();
+      if (!parent || seenParents.has(parent)) continue;
+      seenParents.add(parent);
+
+      const children = await this.listChildFolders(accessToken, parent);
+      for (const folderId of children) {
+        if (collected.includes(folderId)) continue;
+        collected.push(folderId);
+        queue.push(`folders/${folderId}`);
+        if (collected.length >= SAFE_MAX_FOLDERS) {
+          this.logger.warn(
+            `GCP folder enumeration: hit safety cap of ${SAFE_MAX_FOLDERS} folders for org ${organizationId}`,
+          );
+          break;
+        }
+      }
+    }
+
+    return collected;
+  }
+
+  /**
+   * One paginated call to `v2/folders?parent=<parent>` returning the
+   * immediate child folder IDs (stripped of the "folders/" prefix).
+   * Errors are non-fatal — log and return what we collected so far so
+   * one bad page doesn't kill the whole tree walk.
+   */
+  private async listChildFolders(
+    accessToken: string,
+    parent: string,
+  ): Promise<string[]> {
+    const PAGE_SIZE = 100;
+    const collected: string[] = [];
+    let pageToken: string | undefined;
+
+    do {
+      const params = new URLSearchParams({
+        parent,
+        pageSize: String(PAGE_SIZE),
+      });
+      if (pageToken) params.set('pageToken', pageToken);
+
+      const response = await fetch(
+        `https://cloudresourcemanager.googleapis.com/v2/folders?${params.toString()}`,
+        {
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+            'Content-Type': 'application/json',
+          },
+        },
+      );
+
+      if (!response.ok) {
+        this.logger.warn(
+          `Failed to list child folders of ${parent}: ${await response.text()}`,
+        );
+        return collected;
+      }
+
+      const data = (await response.json()) as {
+        folders?: Array<{ name: string }>;
+        nextPageToken?: string;
+      };
+
+      for (const f of data.folders ?? []) {
+        // f.name has shape "folders/123456".
+        const id = f.name.replace(/^folders\//, '');
+        collected.push(id);
+      }
+      pageToken = data.nextPageToken;
+    } while (pageToken);
+
+    return collected;
   }
 
   /**
