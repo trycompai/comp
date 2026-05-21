@@ -174,7 +174,11 @@ export class AccessRevocationService {
       where: { id: revocation.id },
     });
 
-    await this.syncAccessRevocationCompletion(organizationId, memberId);
+    try {
+      await this.syncAccessRevocationCompletion(organizationId, memberId);
+    } catch (err) {
+      this.logger.warn(`Failed to sync access revocation completion for member ${memberId}`, err);
+    }
 
     return { success: true };
   }
@@ -221,7 +225,11 @@ export class AccessRevocationService {
       });
     }
 
-    await this.syncAccessRevocationCompletion(organizationId, memberId, revokedById);
+    try {
+      await this.syncAccessRevocationCompletion(organizationId, memberId, revokedById);
+    } catch (err) {
+      this.logger.warn(`Failed to sync access revocation completion for member ${memberId}`, err);
+    }
 
     return { confirmed: toCreate.length };
   }
