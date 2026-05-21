@@ -24,6 +24,7 @@ import {
   AZURE_SYSTEM_PROMPT,
   buildAzureFixPlanPrompt,
 } from './azure-ai-remediation.prompt';
+import { normalizeFixPlan } from './plan-normalizer';
 
 const MODEL = anthropic('claude-opus-4-6');
 const REMEDIATION_ROLE_NAME = 'CompAI-Remediator';
@@ -57,7 +58,7 @@ export class AiRemediationService {
       this.logger.log(
         `AI plan for ${finding.findingKey}: canAutoFix=${object.canAutoFix}, risk=${object.risk}`,
       );
-      return enrichEmptyState(object);
+      return normalizeFixPlan(enrichEmptyState(object));
     } catch (err) {
       this.logger.error(
         `AI plan failed: ${err instanceof Error ? err.message : String(err)}`,
@@ -99,13 +100,13 @@ Generate the complete fix plan with EXACT values from the real AWS state.`,
       });
 
       this.logger.log(`AI refined plan for ${params.finding.findingKey}`);
-      return enrichEmptyState(object);
+      return normalizeFixPlan(enrichEmptyState(object));
     } catch (err) {
       this.logger.error(
         `AI refine failed: ${err instanceof Error ? err.message : String(err)}`,
       );
       // Fall back to original plan
-      return enrichEmptyState(params.originalPlan);
+      return normalizeFixPlan(enrichEmptyState(params.originalPlan));
     }
   }
 
@@ -445,14 +446,32 @@ Generate the complete fix plan with EXACT values from the real Azure state.`,
   }
 }
 
+/** Action-style prefixes the AI uses for steps that change AWS state. */
+const ACTIONABLE_PREFIXES = [
+  'Create',
+  'Put',
+  'Update',
+  'Modify',
+  'Start',
+  'Enable',
+  'Attach',
+  'Set',
+] as const;
+
 /**
  * Deterministic backstop: if the AI returns BOTH currentState and
- * proposedState as empty (which is what was rendering as `{} → {}` in the
- * Auto-Remediate dialog for "No CloudTrail trails configured" and similar
- * create-from-scratch findings), fill in a basic `{ exists: false }` →
- * `{ exists: true, willCreate: [...] }` derived from the plan's Create*
- * fix steps. Guarantees the user sees a meaningful diff regardless of
- * model behavior.
+ * proposedState as empty (rendering as `{} → {}` in the Auto-Remediate
+ * dialog), derive a meaningful diff from the plan's actionable fix steps.
+ *
+ * - When the plan contains `Create*` commands, emit
+ *   `{ exists: false }` → `{ exists: true, willCreate: [...] }` so the UI
+ *   keeps the existing create-from-scratch language for findings like
+ *   "No CloudTrail trails configured".
+ * - When the plan contains only configure/enable-style commands
+ *   (`PutConfigurationRecorderCommand`, `StartConfigurationRecorderCommand`,
+ *   `EnableMacieCommand`, ...), emit
+ *   `{ configured: false }` → `{ configured: true, willChange: [...] }`
+ *   instead of claiming creation.
  *
  * Only kicks in when BOTH states are empty — verify-only plans that
  * legitimately have one side blank are untouched.
@@ -463,26 +482,47 @@ function enrichEmptyState(plan: FixPlan): FixPlan {
   if (!currentEmpty || !proposedEmpty) return plan;
 
   const willCreate: string[] = [];
+  const willChange: string[] = [];
   for (const step of plan.fixSteps ?? []) {
     const command = typeof step?.command === 'string' ? step.command : '';
-    if (!command.startsWith('Create')) continue;
-    const resource = command.replace(/Command$/, '').replace(/^Create/, '');
+    const prefix = ACTIONABLE_PREFIXES.find((p) => command.startsWith(p));
+    if (!prefix) continue;
+    const resource = command.replace(/Command$/, '').replace(/^[A-Z][a-z]+/, '');
     const label = step.service ? `${step.service}:${resource}` : resource;
-    if (!willCreate.includes(label)) willCreate.push(label);
+    if (prefix === 'Create') {
+      if (!willCreate.includes(label)) willCreate.push(label);
+    } else if (!willChange.includes(label)) {
+      willChange.push(label);
+    }
   }
 
-  // Only enrich when we have actual `Create*` commands — otherwise we'd
-  // fabricate "exists: false → exists: true" for updates/reads (e.g.
-  // UpdateAccountPasswordPolicy), which misrepresents the diff in the UI.
-  // For non-create remediations we leave the AI's (admittedly empty) output
-  // alone rather than inventing state.
-  if (willCreate.length === 0) return plan;
+  // Create-from-scratch plan: emit exists:false → exists:true so the UI
+  // keeps the existing "we'll create this" language for findings like
+  // "No CloudTrail trails configured". Non-Create steps in the same plan
+  // (e.g., StartLoggingCommand on the just-created trail) are bundled
+  // into the resource being created, so we don't double-list them.
+  if (willCreate.length > 0) {
+    return {
+      ...plan,
+      currentState: { exists: false },
+      proposedState: { exists: true, willCreate },
+    };
+  }
 
-  return {
-    ...plan,
-    currentState: { exists: false },
-    proposedState: { exists: true, willCreate },
-  };
+  // Pure configure / enable / update flow: surface what will change
+  // without claiming creation. This is the Bug B fix — previously plans
+  // with only Put*/Start*/Update* steps left both states empty.
+  if (willChange.length > 0) {
+    return {
+      ...plan,
+      currentState: { configured: false },
+      proposedState: { configured: true, willChange },
+    };
+  }
+
+  // No actionable steps detected — leave the plan alone rather than
+  // fabricating state.
+  return plan;
 }
 
 function isEmptyState(
