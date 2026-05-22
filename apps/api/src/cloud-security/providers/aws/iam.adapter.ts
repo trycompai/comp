@@ -192,7 +192,9 @@ export class IamAdapter implements AwsServiceAdapter {
       return true;
     } catch (error) {
       if (isNoSuchEntityError(error)) return false;
-      throw error;
+      // Keep the MFA scan alive when console access cannot be determined.
+      // This preserves the previous behavior instead of suppressing findings.
+      return true;
     }
   }
 

@@ -169,10 +169,17 @@ export const REQUIRED_PARAMS: Record<string, readonly string[]> = {
 
 const REQUIRED_PARAM_ONE_OF: Record<string, readonly (readonly string[])[]> = {
   AuthorizeSecurityGroupIngressCommand: [['GroupId', 'GroupName']],
-  RevokeSecurityGroupIngressCommand: [
-    ['GroupId', 'GroupName', 'SecurityGroupRuleIds'],
-  ],
 };
+
+const REVOKE_SECURITY_GROUP_INGRESS_RULE_PROPERTY_PARAMS = [
+  'CidrIp',
+  'FromPort',
+  'IpPermissions',
+  'IpProtocol',
+  'SourceSecurityGroupName',
+  'SourceSecurityGroupOwnerId',
+  'ToPort',
+] as const;
 
 function normalizeArnPartition(value: string, partition: AwsPartition): string {
   if (partition === 'aws-us-gov') {
@@ -243,8 +250,9 @@ function normaliseInputParams(
 
   // Rule 2: S3 CreateBucket needs LocationConstraint for non-us-east-1
   if (command === 'CreateBucketCommand') {
-    if (input.Bucket) {
-      input.Bucket = String(input.Bucket).toLowerCase().replace(/_/g, '-');
+    const bucket = input.Bucket;
+    if (typeof bucket === 'string' || typeof bucket === 'number') {
+      input.Bucket = String(bucket).toLowerCase().replace(/_/g, '-');
     }
     if (region !== 'us-east-1' && !input.CreateBucketConfiguration) {
       input.CreateBucketConfiguration = { LocationConstraint: region };
@@ -561,9 +569,33 @@ export function validatePlanSteps(steps: AwsCommandStep[]): string[] {
         }
       }
     }
+
+    if (step.command === 'RevokeSecurityGroupIngressCommand') {
+      errors.push(...validateRevokeSecurityGroupIngressParams(step, prefix));
+    }
   }
 
   return errors;
+}
+
+function validateRevokeSecurityGroupIngressParams(
+  step: AwsCommandStep,
+  prefix: string,
+): string[] {
+  const params = step.params ?? {};
+  const hasGroupIdentifier =
+    hasRequiredParamValue(params.GroupId) ||
+    hasRequiredParamValue(params.GroupName);
+  const hasRuleIds = hasRequiredParamValue(params.SecurityGroupRuleIds);
+  const hasRuleProperties =
+    REVOKE_SECURITY_GROUP_INGRESS_RULE_PROPERTY_PARAMS.some((key) =>
+      hasRequiredParamValue(params[key]),
+    );
+
+  if (hasRuleIds && !hasRuleProperties) return [];
+  if (hasGroupIdentifier) return [];
+
+  return [`${prefix}: One of "GroupId" or "GroupName" is required`];
 }
 
 function hasRequiredParamValue(value: unknown): boolean {
