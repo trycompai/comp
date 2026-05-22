@@ -6,7 +6,7 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
-} from '@trycompai/design-system';
+} from '@trycompai/ui';
 import { Check, Pencil, Search, Trash2, X } from 'lucide-react';
 import { useCallback, useMemo, useState } from 'react';
 
@@ -85,7 +85,7 @@ export function ManageFamiliesDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent size="lg">
+      <DialogContent className="sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>Manage Control Families</DialogTitle>
           <DialogDescription>
