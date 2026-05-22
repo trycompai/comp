@@ -195,6 +195,13 @@ export async function retryFinding(
         missingPermissions: result.permissionError.missingActions,
       };
     }
+    if (result.type === 'manual') {
+      // Batch flow doesn't surface per-finding manual steps in the UI
+      // today — mark as failed with the AI-generated reason so the
+      // user knows it needs manual attention. (Per-finding manual
+      // steps are available via the single-fix dialog.)
+      return { status: 'failed', error: result.reason };
+    }
 
     return { status: 'failed', error: result.error };
   } catch (err) {
