@@ -9,6 +9,7 @@ import {
 } from '@trycompai/design-system';
 import { Check, Pencil, Search, Trash2, X } from 'lucide-react';
 import { useCallback, useMemo, useState } from 'react';
+import { DeleteFamilyConfirmation } from './DeleteFamilyConfirmation';
 
 export interface FamilyInfo {
   name: string;
@@ -198,40 +199,11 @@ function FamilyRow({
 
   if (isDeleting) {
     return (
-      <div className="rounded border border-destructive/30 bg-destructive/5 px-3 py-2">
-        <p className="text-destructive text-sm font-medium">
-          Remove &ldquo;{family.name}&rdquo; from {family.controls.length} control
-          {family.controls.length !== 1 ? 's' : ''}?
-        </p>
-        <ul className="mt-1.5 max-h-32 space-y-1 overflow-y-auto">
-          {family.controls.map((c) => (
-            <li key={c.id} className="text-xs">
-              <span className="text-foreground">{c.name || 'Unnamed control'}</span>
-              {c.frameworks.length > 0 && (
-                <span className="text-muted-foreground ml-1">
-                  ({c.frameworks.join(', ')})
-                </span>
-              )}
-            </li>
-          ))}
-        </ul>
-        <div className="mt-2 flex items-center gap-2">
-          <button
-            type="button"
-            onClick={onConfirmDelete}
-            className="bg-destructive text-destructive-foreground rounded px-2.5 py-1 text-xs transition-colors hover:opacity-90"
-          >
-            Remove
-          </button>
-          <button
-            type="button"
-            onClick={onCancelDelete}
-            className="text-muted-foreground hover:text-foreground rounded px-2.5 py-1 text-xs transition-colors"
-          >
-            Cancel
-          </button>
-        </div>
-      </div>
+      <DeleteFamilyConfirmation
+        family={family}
+        onConfirm={onConfirmDelete}
+        onCancel={onCancelDelete}
+      />
     );
   }
 
