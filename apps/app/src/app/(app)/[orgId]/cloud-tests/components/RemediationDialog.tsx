@@ -24,10 +24,11 @@ interface PreviewProgress {
 }
 
 interface SingleFixProgress {
-  phase: 'executing' | 'success' | 'failed' | 'needs_permissions';
+  phase: 'executing' | 'success' | 'failed' | 'needs_permissions' | 'manual';
   error?: string;
   actionId?: string;
   permissionError?: { missingActions: string[]; fixScript?: string };
+  guidedSteps?: string[];
 }
 
 interface RemediationDialogProps {
@@ -379,6 +380,26 @@ export function RemediationDialog({
         setExecuteRunId(null);
         setExecuteAccessToken(null);
       }, 4000);
+    } else if (progress.phase === 'manual') {
+      // Auto-fix gave up but the API returned real manual steps.
+      // Switch the dialog into guided rendering instead of showing a
+      // raw error — same UI the preview flow already uses for
+      // canAutoFix:false plans.
+      setIsExecuting(false);
+      setError(null);
+      const steps = progress.guidedSteps ?? [];
+      setPreview({
+        currentState: {},
+        proposedState: {},
+        description: progress.error ?? description ?? '',
+        risk: risk ?? 'medium',
+        apiCalls: [],
+        guidedOnly: true,
+        guidedSteps: steps,
+        rollbackSupported: false,
+      });
+      setExecuteRunId(null);
+      setExecuteAccessToken(null);
     } else if (progress.phase === 'failed') {
       setIsExecuting(false);
       setError(progress.error || 'Remediation failed');
