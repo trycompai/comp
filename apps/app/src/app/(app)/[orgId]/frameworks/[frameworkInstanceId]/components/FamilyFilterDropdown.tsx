@@ -52,7 +52,7 @@ export function FamilyFilterDropdown({
   return (
     <div ref={containerRef} className="relative">
       <div className="flex items-center gap-1">
-        <Button variant="outline" size="sm" onClick={() => setOpen((prev) => !prev)}>
+        <Button variant="outline" onClick={() => setOpen((prev) => !prev)}>
           <Filter size={16} />
           {label}
         </Button>
