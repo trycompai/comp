@@ -6,6 +6,9 @@ import { ConnectionRepository } from '../repositories/connection.repository';
 import { CredentialVaultService } from '../services/credential-vault.service';
 import { OAuthCredentialsService } from '../services/oauth-credentials.service';
 import { IntegrationSyncLoggerService } from '../services/integration-sync-logger.service';
+import { GenericEmployeeSyncService } from '../services/generic-employee-sync.service';
+import { DynamicIntegrationRepository } from '../repositories/dynamic-integration.repository';
+import { CheckRunRepository } from '../repositories/check-run.repository';
 import { db } from '@db';
 
 jest.mock('@db', () => ({
@@ -99,6 +102,9 @@ describe('SyncController - Google Workspace employees', () => {
           provide: IntegrationSyncLoggerService,
           useValue: { logSync: jest.fn() },
         },
+        { provide: GenericEmployeeSyncService, useValue: {} },
+        { provide: DynamicIntegrationRepository, useValue: {} },
+        { provide: CheckRunRepository, useValue: {} },
       ],
     })
       .overrideGuard(HybridAuthGuard)
@@ -596,9 +602,12 @@ describe('SyncController - Google Workspace employees', () => {
   // ── Exclude filter mode ────────────────────────────────────────
 
   describe('exclude filter mode', () => {
-    it('should NOT deactivate excluded members in exclude mode', async () => {
+    it('should deactivate existing non-privileged members excluded from sync', async () => {
       setupSync({
-        gwUsers: [makeGwUser('kept@example.com')],
+        gwUsers: [
+          makeGwUser('kept@example.com'),
+          makeGwUser('excluded@example.com'),
+        ],
         variables: {
           sync_user_filter_mode: 'exclude',
           sync_excluded_emails: 'excluded@example.com',
@@ -613,7 +622,6 @@ describe('SyncController - Google Workspace employees', () => {
         makeMember('kept@example.com', { userId: 'user_kept' }),
       );
 
-      // Excluded member is in the org but not in the GWS active list
       (mockedDb.member.findMany as jest.Mock).mockResolvedValue([
         makeMember('kept@example.com'),
         makeMember('excluded@example.com'),
@@ -629,7 +637,14 @@ describe('SyncController - Google Workspace employees', () => {
       const deactivatedEmails = result.details
         .filter((d) => d.status === 'deactivated')
         .map((d) => d.email);
-      expect(deactivatedEmails).not.toContain('excluded@example.com');
+      expect(deactivatedEmails).toContain('excluded@example.com');
+      expect(result.details).toContainEqual(
+        expect.objectContaining({
+          email: 'excluded@example.com',
+          status: 'deactivated',
+          reason: 'User is excluded from Google Workspace sync',
+        }),
+      );
     });
 
     it('should exclude users from import by email match', async () => {

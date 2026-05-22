@@ -191,10 +191,6 @@ describe('normalizeFixPlan — CreateServiceLinkedRoleCommand backfill', () => {
   });
 
   it('backfills each SLR step independently via nearest-neighbor in a multi-SLR plan', () => {
-    // Layout: [SLR-A, guardduty, SLR-B, config]
-    // SLR-A (idx 0) nearest non-IAM = guardduty (offset 1).
-    // SLR-B (idx 2) nearest non-IAM = config (offset 1 to the right beats
-    //   guardduty at offset 1 to the left because we check right first).
     const plan = makePlan({
       fixSteps: [
         makeStep({
@@ -282,14 +278,18 @@ describe('normalizeFixPlan — CreateServiceLinkedRoleCommand backfill', () => {
   });
 
   it('exports a non-empty AWS_SERVICE_LINKED_ROLE_PRINCIPAL map covering core services', () => {
-    expect(AWS_SERVICE_LINKED_ROLE_PRINCIPAL.config).toBe('config.amazonaws.com');
+    expect(AWS_SERVICE_LINKED_ROLE_PRINCIPAL.config).toBe(
+      'config.amazonaws.com',
+    );
     expect(AWS_SERVICE_LINKED_ROLE_PRINCIPAL.guardduty).toBe(
       'guardduty.amazonaws.com',
     );
     expect(AWS_SERVICE_LINKED_ROLE_PRINCIPAL.inspector2).toBe(
       'inspector2.amazonaws.com',
     );
-    expect(AWS_SERVICE_LINKED_ROLE_PRINCIPAL.macie2).toBe('macie.amazonaws.com');
+    expect(AWS_SERVICE_LINKED_ROLE_PRINCIPAL.macie2).toBe(
+      'macie.amazonaws.com',
+    );
     expect(AWS_SERVICE_LINKED_ROLE_PRINCIPAL.securityhub).toBe(
       'securityhub.amazonaws.com',
     );

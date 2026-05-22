@@ -167,6 +167,20 @@ export const REQUIRED_PARAMS: Record<string, readonly string[]> = {
   CreateTrailCommand: ['Name', 'S3BucketName'],
 };
 
+const REQUIRED_PARAM_ONE_OF: Record<string, readonly (readonly string[])[]> = {
+  AuthorizeSecurityGroupIngressCommand: [['GroupId', 'GroupName']],
+};
+
+const REVOKE_SECURITY_GROUP_INGRESS_RULE_PROPERTY_PARAMS = [
+  'CidrIp',
+  'FromPort',
+  'IpPermissions',
+  'IpProtocol',
+  'SourceSecurityGroupName',
+  'SourceSecurityGroupOwnerId',
+  'ToPort',
+] as const;
+
 function normalizeArnPartition(value: string, partition: AwsPartition): string {
   if (partition === 'aws-us-gov') {
     return value.replace(/\barn:aws:/g, 'arn:aws-us-gov:');
@@ -236,8 +250,9 @@ function normaliseInputParams(
 
   // Rule 2: S3 CreateBucket needs LocationConstraint for non-us-east-1
   if (command === 'CreateBucketCommand') {
-    if (input.Bucket) {
-      input.Bucket = String(input.Bucket).toLowerCase().replace(/_/g, '-');
+    const bucket = input.Bucket;
+    if (typeof bucket === 'string' || typeof bucket === 'number') {
+      input.Bucket = String(bucket).toLowerCase().replace(/_/g, '-');
     }
     if (region !== 'us-east-1' && !input.CreateBucketConfiguration) {
       input.CreateBucketConfiguration = { LocationConstraint: region };
@@ -412,7 +427,12 @@ export function looksLikeValidationError(message: string): boolean {
     lower.includes('invalid parameter') ||
     lower.includes('must be a valid') ||
     lower.includes('is required') ||
-    lower.includes('missing required')
+    lower.includes('missing required') ||
+    lower.includes('must contain') ||
+    lower.includes('missingparameter') ||
+    lower.includes('missing parameter') ||
+    lower.includes('parameter is required') ||
+    lower.includes('must specify')
   );
 }
 
@@ -533,16 +553,71 @@ export function validatePlanSteps(steps: AwsCommandStep[]): string[] {
     if (required) {
       for (const key of required) {
         const value = step.params?.[key];
-        if (value === undefined || value === null || value === '') {
+        if (!hasRequiredParamValue(value)) {
+          errors.push(`${prefix}: Required param "${key}" is missing or empty`);
+        }
+      }
+    }
+
+    const oneOfGroups = REQUIRED_PARAM_ONE_OF[step.command];
+    if (oneOfGroups) {
+      for (const group of oneOfGroups) {
+        const hasAny = group.some((key) => {
+          const value = step.params?.[key];
+          return hasRequiredParamValue(value);
+        });
+        if (!hasAny) {
           errors.push(
-            `${prefix}: Required param "${key}" is missing or empty`,
+            `${prefix}: One of "${group.join('" or "')}" is required`,
           );
         }
       }
     }
+
+    if (step.command === 'RevokeSecurityGroupIngressCommand') {
+      errors.push(...validateRevokeSecurityGroupIngressParams(step, prefix));
+    }
   }
 
   return errors;
+}
+
+function validateRevokeSecurityGroupIngressParams(
+  step: AwsCommandStep,
+  prefix: string,
+): string[] {
+  const params = step.params ?? {};
+  const hasGroupIdentifier =
+    hasRequiredParamValue(params.GroupId) ||
+    hasRequiredParamValue(params.GroupName);
+  const hasRuleIds = hasRequiredParamValue(params.SecurityGroupRuleIds);
+  const hasRuleProperties =
+    REVOKE_SECURITY_GROUP_INGRESS_RULE_PROPERTY_PARAMS.some((key) =>
+      hasRequiredParamValue(params[key]),
+    );
+
+  if (!hasRuleIds && !hasRuleProperties) {
+    return [
+      `${prefix}: One of "SecurityGroupRuleIds" or rule property params is required`,
+    ];
+  }
+
+  if (hasRuleIds && hasRuleProperties) {
+    return [
+      `${prefix}: SecurityGroupRuleIds cannot be combined with rule property params`,
+    ];
+  }
+
+  if (hasRuleIds && !hasRuleProperties) return [];
+  if (hasGroupIdentifier) return [];
+
+  return [`${prefix}: One of "GroupId" or "GroupName" is required`];
+}
+
+function hasRequiredParamValue(value: unknown): boolean {
+  if (value === undefined || value === null || value === '') return false;
+  if (Array.isArray(value)) return value.length > 0;
+  return true;
 }
 
 export interface StepResult {

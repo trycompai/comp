@@ -1,20 +1,11 @@
 'use client';
 
 import { Text } from '@trycompai/design-system';
-import { Attachment, Flash, Security, Warning } from '@trycompai/design-system/icons';
+import { Attachment, Flash, Security } from '@trycompai/design-system/icons';
 import { useState } from 'react';
-import {
-  BackgroundCheckAttachForm,
-  type AttachFormValues,
-} from './BackgroundCheckAttachForm';
-import {
-  BackgroundCheckExemptForm,
-  type ExemptFormValues,
-} from './BackgroundCheckExemptForm';
-import {
-  BackgroundCheckOrderForm,
-  type OrderFormValues,
-} from './BackgroundCheckOrderForm';
+import { BackgroundCheckAttachForm, type AttachFormValues } from './BackgroundCheckAttachForm';
+import { BackgroundCheckExemptForm, type ExemptFormValues } from './BackgroundCheckExemptForm';
+import { BackgroundCheckOrderForm, type OrderFormValues } from './BackgroundCheckOrderForm';
 import { BackgroundCheckPathCard } from './BackgroundCheckPathCard';
 import { BackgroundCheckScopePanel } from './BackgroundCheckScopePanel';
 import { BackgroundCheckStatusStrip } from './BackgroundCheckStatusStrip';
@@ -90,7 +81,11 @@ export function BackgroundCheckV1Page(props: V1PageProps) {
         How would you like to proceed?
       </div>
 
-      <div role="radiogroup" aria-label="How would you like to proceed?" className="mb-6 grid gap-3 md:grid-cols-3">
+      <div
+        role="radiogroup"
+        aria-label="How would you like to proceed?"
+        className="mb-6 grid gap-3 md:grid-cols-3"
+      >
         <BackgroundCheckPathCard
           selected={selectedPath === 'order'}
           onSelect={() => handleSelect('order')}
@@ -116,12 +111,6 @@ export function BackgroundCheckV1Page(props: V1PageProps) {
           icon={Security}
           title="Mark as exempt"
           description="This employee won't be required to pass a check."
-          meta={
-            <span className="inline-flex items-center gap-1 text-[var(--warning)]">
-              <Warning size={12} />
-              Logs a compliance exception
-            </span>
-          }
         />
       </div>
 
@@ -141,7 +130,9 @@ export function BackgroundCheckV1Page(props: V1PageProps) {
                 Boolean(props.orderValues.employeeEmail)
               }
               disabledReason={
-                !props.hasAllowance ? "You're out of credits. Choose a plan to continue." : undefined
+                !props.hasAllowance
+                  ? "You're out of credits. Choose a plan to continue."
+                  : undefined
               }
             />
           )}
@@ -152,7 +143,9 @@ export function BackgroundCheckV1Page(props: V1PageProps) {
               onSubmit={props.onAttachSubmit}
               submitting={props.isAttachSubmitting}
               canSubmit={
-                props.canRequest && Boolean(props.attachValues.vendor) && Boolean(props.attachValues.file)
+                props.canRequest &&
+                Boolean(props.attachValues.vendor) &&
+                Boolean(props.attachValues.file)
               }
             />
           )}

@@ -444,18 +444,9 @@ export class SyncController {
       },
     });
 
-    const deactivationGwDomains =
-      effectiveSyncFilterMode === 'include'
-        ? new Set(
-            ouFilteredUsers.map((u) =>
-              u.primaryEmail.split('@')[1]?.toLowerCase(),
-            ),
-          )
-        : new Set(
-            filteredUsers.map((u) =>
-              u.primaryEmail.split('@')[1]?.toLowerCase(),
-            ),
-          );
+    const deactivationGwDomains = new Set(
+      ouFilteredUsers.map((u) => u.primaryEmail.split('@')[1]?.toLowerCase()),
+    );
     const deactivationSuspendedEmails =
       effectiveSyncFilterMode === 'include'
         ? allSuspendedEmails
@@ -486,12 +477,26 @@ export class SyncController {
         continue;
       }
 
-      // In exclude mode we keep excluded users unchanged and only stop syncing them.
-      if (
+      const isExcluded =
         effectiveSyncFilterMode === 'exclude' &&
         excludedTerms.length > 0 &&
-        matchesSyncFilterTerms(memberEmail, excludedTerms)
-      ) {
+        matchesSyncFilterTerms(memberEmail, excludedTerms);
+
+      if (isExcluded) {
+        try {
+          await db.member.update({
+            where: { id: member.id },
+            data: { deactivated: true, isActive: false },
+          });
+          results.deactivated++;
+          results.details.push({
+            email: member.user.email,
+            status: 'deactivated',
+            reason: 'User is excluded from Google Workspace sync',
+          });
+        } catch (error) {
+          this.logger.error(`Error deactivating excluded member: ${error}`);
+        }
         continue;
       }
 
@@ -1809,6 +1814,7 @@ export class SyncController {
         employees,
         options: {
           providerName: manifest.name,
+          isDirectorySource: syncDefinition.isDirectorySource ?? false,
         },
       });
 
