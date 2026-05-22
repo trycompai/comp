@@ -17,6 +17,7 @@ import {
   type ExistingItemRaw,
 } from '../../components/AddExistingItemDialog';
 import {
+  ComboboxCell,
   DateCell,
   EditableCell,
   MultiSelectCell,
@@ -193,14 +194,23 @@ export function ControlsClientPage({ initialControls, emptyMessage, frameworkId 
       columnHelper.accessor('controlFamily', {
         header: 'Control Family',
         size: 200,
-        cell: ({ row, getValue }) => (
-          <EditableCell
-            value={getValue()}
-            rowId={row.original.id}
-            columnId="controlFamily"
-            onUpdate={updateCell}
-          />
-        ),
+        cell: ({ row, getValue }) => {
+          const uniqueFamilies = [...new Set(
+            data
+              .map((r) => r.controlFamily)
+              .filter((f): f is string => f != null && f !== ''),
+          )].sort();
+          return (
+            <ComboboxCell
+              value={getValue()}
+              rowId={row.original.id}
+              columnId="controlFamily"
+              options={uniqueFamilies}
+              onUpdate={updateCell}
+              placeholder="Select family..."
+            />
+          );
+        },
       }),
       columnHelper.accessor('policyTemplates', {
         header: 'Linked Policies',
@@ -332,7 +342,7 @@ export function ControlsClientPage({ initialControls, emptyMessage, frameworkId 
         ),
       }),
     ],
-    [updateCell, updateRelational, deleteRow, createdIds, handleDocumentTypesUpdate, frameworkId],
+    [data, updateCell, updateRelational, deleteRow, createdIds, handleDocumentTypesUpdate, frameworkId],
   );
 
   const [sorting, setSorting] = useState<SortingState>([]);
