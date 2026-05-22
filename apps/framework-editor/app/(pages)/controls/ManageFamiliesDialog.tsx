@@ -80,7 +80,7 @@ export function ManageFamiliesDialog({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-      <div className="bg-popover border-border w-full max-w-md rounded-lg border p-4 shadow-xl">
+      <div className="bg-popover border-border w-full max-w-lg rounded-lg border p-5 shadow-xl">
         <div className="mb-3 flex items-center justify-between">
           <h2 className="text-sm font-semibold">Manage Control Families</h2>
           <button
