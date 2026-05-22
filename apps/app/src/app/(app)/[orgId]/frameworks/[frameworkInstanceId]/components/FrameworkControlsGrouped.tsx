@@ -18,6 +18,7 @@ import {
   Text,
 } from '@trycompai/design-system';
 import { ChevronDown, ChevronRight, Search } from '@trycompai/design-system/icons';
+import { parseAsArrayOf, parseAsString, useQueryState } from 'nuqs';
 import { useEffect, useMemo, useState } from 'react';
 import { FamilyFilterDropdown } from './FamilyFilterDropdown';
 import {
@@ -82,10 +83,12 @@ export function FrameworkControlsGrouped({
   tasks: (Task & { controls: Control[] })[];
   evidenceSubmissions?: EvidenceSubmissionInfo[];
 }) {
-  const [searchTerm, setSearchTerm] = useState('');
+  const [searchTerm, setSearchTerm] = useQueryState('q', parseAsString.withDefault('').withOptions({ shallow: true, throttleMs: 300 }));
+  const [familyFilterParam, setFamilyFilterParam] = useQueryState('families', parseAsArrayOf(parseAsString, ',').withDefault([]).withOptions({ shallow: true }));
   const [expandedFamilies, setExpandedFamilies] = useState<Set<string>>(new Set());
   const [initialized, setInitialized] = useState(false);
-  const [selectedFamilyFilter, setSelectedFamilyFilter] = useState<Set<string>>(new Set());
+
+  const selectedFamilyFilter = useMemo(() => new Set(familyFilterParam), [familyFilterParam]);
 
   const requirementMap = useMemo(
     () => buildRequirementMap(requirementDefinitions),
@@ -150,23 +153,21 @@ export function FrameworkControlsGrouped({
   };
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setSearchTerm(e.target.value);
+    setSearchTerm(e.target.value || null);
   };
 
   const handleToggleFamilyFilter = (family: string) => {
-    setSelectedFamilyFilter((prev) => {
-      const next = new Set(prev);
-      if (next.has(family)) {
-        next.delete(family);
-      } else {
-        next.add(family);
-      }
-      return next;
-    });
+    const next = new Set(selectedFamilyFilter);
+    if (next.has(family)) {
+      next.delete(family);
+    } else {
+      next.add(family);
+    }
+    setFamilyFilterParam(next.size > 0 ? [...next].sort() : null);
   };
 
   const handleClearFamilyFilter = () => {
-    setSelectedFamilyFilter(new Set());
+    setFamilyFilterParam(null);
   };
 
   const isFamilyExpanded = (family: string) => isSearching || expandedFamilies.has(family);
@@ -255,7 +256,7 @@ function FamilySection({
 
   return (
     <>
-      <TableRow className="bg-secondary hover:bg-secondary/80">
+      <tr className="bg-secondary hover:bg-secondary/80">
         <TableCell colSpan={COLUMN_COUNT}>
           <button
             type="button"
@@ -276,7 +277,7 @@ function FamilySection({
             </span>
           </button>
         </TableCell>
-      </TableRow>
+      </tr>
       {expanded &&
         group.items.map(({ control, requirements }) => (
           <GroupedControlRow
