@@ -33,10 +33,15 @@ interface BrandSettingsProps {
   onPrimaryColorChange?: (primaryColor: string | null) => void;
 }
 
-function normalizePrimaryColor(value: unknown): string | null {
-  if (typeof value !== 'string' || value.length === 0) return null;
-  if (!HEX_COLOR_PATTERN.test(value)) return null;
-  return value.toUpperCase();
+function normalizePrimaryColor(value: unknown): string | null | undefined {
+  if (value === null) return null;
+  if (typeof value !== 'string') return undefined;
+
+  const trimmedValue = value.trim();
+  if (trimmedValue.length === 0) return null;
+  if (!HEX_COLOR_PATTERN.test(trimmedValue)) return undefined;
+
+  return trimmedValue.toUpperCase();
 }
 
 export function BrandSettings({
@@ -57,7 +62,7 @@ export function BrandSettings({
   });
 
   const lastSaved = useRef<{ [key: string]: string | null }>({
-    primaryColor: normalizePrimaryColor(primaryColor),
+    primaryColor: normalizePrimaryColor(primaryColor) ?? null,
   });
 
   const savingRef = useRef<{ [key: string]: boolean }>({
@@ -71,7 +76,7 @@ export function BrandSettings({
       }
 
       const nextPrimaryColor = normalizePrimaryColor(value);
-      if (!nextPrimaryColor) {
+      if (nextPrimaryColor === undefined) {
         return;
       }
 
@@ -82,7 +87,7 @@ export function BrandSettings({
             enabled,
             primaryColor:
               field === 'primaryColor'
-                ? nextPrimaryColor
+                ? (nextPrimaryColor ?? '')
                 : (form.getValues('primaryColor') ?? undefined),
           });
           toast.success('Brand settings updated');
@@ -106,7 +111,7 @@ export function BrandSettings({
     const normalizedPrimaryColor = normalizePrimaryColor(primaryColor);
     form.reset({ primaryColor: normalizedPrimaryColor ?? undefined });
     setPrimaryColorValue(normalizedPrimaryColor ?? '');
-    lastSaved.current.primaryColor = normalizedPrimaryColor;
+    lastSaved.current.primaryColor = normalizedPrimaryColor ?? null;
   }, [form, primaryColor]);
 
   useEffect(() => {
@@ -116,8 +121,8 @@ export function BrandSettings({
       !savingRef.current.primaryColor
     ) {
       const normalizedPrimaryColor = normalizePrimaryColor(debouncedPrimaryColor);
-      if (normalizedPrimaryColor) {
-        form.setValue('primaryColor', normalizedPrimaryColor);
+      if (normalizedPrimaryColor !== undefined) {
+        form.setValue('primaryColor', normalizedPrimaryColor ?? undefined);
         void autoSave('primaryColor', normalizedPrimaryColor);
       }
     }
@@ -126,12 +131,12 @@ export function BrandSettings({
   const handlePrimaryColorBlur = useCallback(
     (e: React.FocusEvent<HTMLInputElement>) => {
       const value = normalizePrimaryColor(e.target.value);
-      if (!value) {
+      if (value === undefined) {
         toast.error('Enter a valid hex color');
         return;
       }
-      form.setValue('primaryColor', value);
-      setPrimaryColorValue(value);
+      form.setValue('primaryColor', value ?? undefined);
+      setPrimaryColorValue(value ?? '');
       void autoSave('primaryColor', value);
     },
     [form, autoSave],
@@ -181,7 +186,7 @@ export function BrandSettings({
                     <div className="flex-1">
                       <div className="font-mono">
                         <Input
-                          value={primaryColorValue?.toUpperCase() || DEFAULT_PRIMARY_COLOR}
+                          value={primaryColorValue?.toUpperCase() ?? ''}
                           onChange={(e) => {
                             let value = e.target.value;
                             if (value.length > 0 && !value.startsWith('#')) {
