@@ -15,7 +15,13 @@ import {
   getAwsDefaultRegion,
   normalizeAwsPartition,
 } from './aws-partition.utils';
+import {
+  buildManualRemediationPreview,
+  isManualRemediation,
+} from './manual-remediation';
 import type { FixPlan, AwsCommandStep } from './ai-remediation.prompt';
+
+const UNSUPPORTED_S3_ACL_PERMISSIONS = new Set(['s3:PutBucketAcl']);
 
 @Injectable()
 export class RemediationService {
@@ -96,8 +102,23 @@ export class RemediationService {
     if (connection.provider.slug === 'azure') {
       return this.azureRemediationService.previewRemediation(params);
     }
+    if (connection.provider.slug !== 'aws') {
+      throw new Error('Remediation is only supported for AWS');
+    }
 
-    const { finding, credentials, region } = await this.resolveContext(params);
+    const finding = await this.getFinding(params);
+    if (isManualRemediation(finding.remediation)) {
+      return buildManualRemediationPreview({
+        remediation: finding.remediation ?? '',
+        description: finding.description,
+        severity: finding.severity,
+      });
+    }
+
+    const { credentials, region } = await this.resolveAwsExecutionContext({
+      connectionId: params.connectionId,
+      finding,
+    });
 
     const evidence = (finding.evidence ?? {}) as Record<string, unknown>;
     const findingKey = evidence.findingKey as string;
@@ -293,6 +314,7 @@ export class RemediationService {
             .filter(
               (p) => p !== 'sts:GetCallerIdentity' && p !== 'sts:AssumeRole',
             )
+            .filter((p) => !UNSUPPORTED_S3_ACL_PERMISSIONS.has(p))
             .sort();
           // Check permissions by reading the ACTUAL policies on CompAI-Remediator
           let missingPermissions: string[] | undefined;
@@ -397,8 +419,21 @@ export class RemediationService {
     if (connection.provider.slug === 'azure') {
       return this.azureRemediationService.executeRemediation(params);
     }
+    if (connection.provider.slug !== 'aws') {
+      throw new Error('Remediation is only supported for AWS');
+    }
 
-    const { finding, credentials, region } = await this.resolveContext(params);
+    const finding = await this.getFinding(params);
+    if (isManualRemediation(finding.remediation)) {
+      throw new Error(
+        'This finding requires manual remediation and cannot be auto-fixed.',
+      );
+    }
+
+    const { credentials, region } = await this.resolveAwsExecutionContext({
+      connectionId: params.connectionId,
+      finding,
+    });
 
     // Get plan from cache or regenerate
     let plan: FixPlan;
@@ -803,17 +838,10 @@ export class RemediationService {
     return connection;
   }
 
-  private async resolveContext(params: {
+  private async getFinding(params: {
     connectionId: string;
-    organizationId: string;
     checkResultId: string;
-    remediationKey: string;
   }) {
-    const connection = await this.getConnection(params);
-    if (connection.provider.slug !== 'aws') {
-      throw new Error('Remediation is only supported for AWS');
-    }
-
     const finding = await db.integrationCheckResult.findFirst({
       where: {
         id: params.checkResultId,
@@ -822,6 +850,13 @@ export class RemediationService {
     });
     if (!finding) throw new Error('Finding not found');
 
+    return finding;
+  }
+
+  private async resolveAwsExecutionContext(params: {
+    connectionId: string;
+    finding: { resourceId: string | null; evidence: unknown };
+  }) {
     const credentials =
       await this.credentialVaultService.getDecryptedCredentials(
         params.connectionId,
@@ -829,8 +864,8 @@ export class RemediationService {
     if (!credentials) throw new Error('No credentials found');
 
     // Extract region from finding evidence or resourceId (not just first configured region)
-    const region = this.getRegionForFinding(finding, credentials);
-    return { finding, credentials, region };
+    const region = this.getRegionForFinding(params.finding, credentials);
+    return { credentials, region };
   }
 
   /**

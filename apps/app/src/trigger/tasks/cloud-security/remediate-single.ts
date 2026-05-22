@@ -1,4 +1,10 @@
 import { logger, metadata, task } from '@trigger.dev/sdk';
+import {
+  getCloudSecurityApiBaseUrl,
+  makeServiceTokenHeaders,
+  parseApiResponse,
+} from './api-response';
+import { classifyExecuteResult } from './execute-result';
 
 interface SingleFixProgress {
   phase: 'executing' | 'success' | 'failed' | 'needs_permissions';
@@ -7,27 +13,8 @@ interface SingleFixProgress {
   permissionError?: { missingActions: string[]; fixScript?: string };
 }
 
-const getApiBaseUrl = () =>
-  process.env.NEXT_PUBLIC_API_URL || process.env.API_BASE_URL || 'http://localhost:3333';
-
-function makeHeaders(organizationId: string, userId?: string): Record<string, string> {
-  return {
-    'Content-Type': 'application/json',
-    'x-service-token': process.env.SERVICE_TOKEN_TRIGGER!,
-    'x-organization-id': organizationId,
-    ...(userId && { 'x-user-id': userId }),
-  };
-}
-
 function sync(progress: SingleFixProgress) {
   metadata.set('progress', JSON.parse(JSON.stringify(progress)));
-}
-
-interface ExecuteResult {
-  actionId?: string;
-  status: string;
-  error?: string;
-  permissionError?: { missingActions: string[]; fixScript?: string };
 }
 
 export const remediateSingle = task({
@@ -42,7 +29,8 @@ export const remediateSingle = task({
     userId: string;
     acknowledgment?: string;
   }) => {
-    const { connectionId, organizationId, checkResultId, remediationKey, userId, acknowledgment } = payload;
+    const { connectionId, organizationId, checkResultId, remediationKey, userId, acknowledgment } =
+      payload;
 
     logger.info(`Single fix: ${remediationKey} on ${checkResultId} (user: ${userId})`);
 
@@ -50,10 +38,10 @@ export const remediateSingle = task({
     sync(progress);
 
     try {
-      const url = `${getApiBaseUrl()}/v1/cloud-security/remediation/execute`;
+      const url = `${getCloudSecurityApiBaseUrl()}/v1/cloud-security/remediation/execute`;
       const resp = await fetch(url, {
         method: 'POST',
-        headers: makeHeaders(organizationId, userId),
+        headers: makeServiceTokenHeaders({ organizationId, userId }),
         body: JSON.stringify({
           connectionId,
           checkResultId,
@@ -62,10 +50,10 @@ export const remediateSingle = task({
         }),
       });
 
-      const json = (await resp.json()) as ExecuteResult;
+      const parsed = await parseApiResponse<unknown>(resp, url);
 
-      if (!resp.ok) {
-        const errorMsg = (json as { message?: string }).message ?? `HTTP ${resp.status}`;
+      if (!parsed.ok) {
+        const errorMsg = parsed.error ?? `HTTP ${parsed.status}`;
         progress.phase = 'failed';
         progress.error = errorMsg;
         sync(progress);
@@ -73,28 +61,36 @@ export const remediateSingle = task({
         return { success: false, error: errorMsg };
       }
 
-      if (json.status === 'success') {
+      const result = classifyExecuteResult(parsed.data);
+
+      if (result.type === 'success') {
         progress.phase = 'success';
-        progress.actionId = json.actionId;
+        progress.actionId = result.actionId;
         sync(progress);
-        logger.info(`Single fix succeeded: ${json.actionId}`);
-        return { success: true, actionId: json.actionId };
+        logger.info(`Single fix succeeded: ${result.actionId}`);
+        return { success: true, actionId: result.actionId };
       }
 
-      if (json.permissionError) {
+      if (result.type === 'needs_permissions') {
         progress.phase = 'needs_permissions';
-        progress.error = json.error ?? 'Missing permissions';
-        progress.permissionError = json.permissionError;
+        progress.error = result.error;
+        progress.permissionError = result.permissionError;
         sync(progress);
-        logger.warn(`Single fix needs permissions: ${json.permissionError.missingActions.join(', ')}`);
-        return { success: false, needsPermissions: true, permissionError: json.permissionError };
+        logger.warn(
+          `Single fix needs permissions: ${result.permissionError.missingActions.join(', ')}`,
+        );
+        return {
+          success: false,
+          needsPermissions: true,
+          permissionError: result.permissionError,
+        };
       }
 
       progress.phase = 'failed';
-      progress.error = json.error ?? 'Remediation failed';
+      progress.error = result.error;
       sync(progress);
-      logger.error(`Single fix failed: ${json.error}`);
-      return { success: false, error: json.error };
+      logger.error(`Single fix failed: ${result.error}`);
+      return { success: false, error: result.error };
     } catch (err) {
       const errorMsg = err instanceof Error ? err.message : String(err);
       progress.phase = 'failed';

@@ -1,21 +1,14 @@
 import { logger, metadata, task } from '@trigger.dev/sdk';
+import {
+  getCloudSecurityApiBaseUrl,
+  makeServiceTokenHeaders,
+  parseApiResponse,
+} from './api-response';
 
 interface PreviewProgress {
   phase: 'analyzing' | 'complete' | 'failed';
   error?: string;
   preview?: Record<string, unknown>;
-}
-
-const getApiBaseUrl = () =>
-  process.env.NEXT_PUBLIC_API_URL || process.env.API_BASE_URL || 'http://localhost:3333';
-
-function makeHeaders(organizationId: string, userId?: string): Record<string, string> {
-  return {
-    'Content-Type': 'application/json',
-    'x-service-token': process.env.SERVICE_TOKEN_TRIGGER!,
-    'x-organization-id': organizationId,
-    ...(userId && { 'x-user-id': userId }),
-  };
 }
 
 function sync(progress: PreviewProgress) {
@@ -34,7 +27,14 @@ export const remediatePreview = task({
     userId: string;
     cachedPermissions?: string[];
   }) => {
-    const { connectionId, organizationId, checkResultId, remediationKey, userId, cachedPermissions } = payload;
+    const {
+      connectionId,
+      organizationId,
+      checkResultId,
+      remediationKey,
+      userId,
+      cachedPermissions,
+    } = payload;
 
     logger.info(`Preview: ${remediationKey} on ${checkResultId} (user: ${userId})`);
 
@@ -42,10 +42,10 @@ export const remediatePreview = task({
     sync(progress);
 
     try {
-      const url = `${getApiBaseUrl()}/v1/cloud-security/remediation/preview`;
+      const url = `${getCloudSecurityApiBaseUrl()}/v1/cloud-security/remediation/preview`;
       const resp = await fetch(url, {
         method: 'POST',
-        headers: makeHeaders(organizationId, userId),
+        headers: makeServiceTokenHeaders({ organizationId, userId }),
         body: JSON.stringify({
           connectionId,
           checkResultId,
@@ -54,10 +54,10 @@ export const remediatePreview = task({
         }),
       });
 
-      const json = await resp.json();
+      const parsed = await parseApiResponse<Record<string, unknown>>(resp, url);
 
-      if (!resp.ok) {
-        const errorMsg = (json as { message?: string }).message ?? `HTTP ${resp.status}`;
+      if (!parsed.ok) {
+        const errorMsg = parsed.error ?? `HTTP ${parsed.status}`;
         progress.phase = 'failed';
         progress.error = errorMsg;
         sync(progress);
@@ -66,10 +66,10 @@ export const remediatePreview = task({
       }
 
       progress.phase = 'complete';
-      progress.preview = json as Record<string, unknown>;
+      progress.preview = parsed.data;
       sync(progress);
       logger.info(`Preview complete for ${remediationKey}`);
-      return { success: true, preview: json };
+      return { success: true, preview: parsed.data };
     } catch (err) {
       const errorMsg = err instanceof Error ? err.message : String(err);
       progress.phase = 'failed';

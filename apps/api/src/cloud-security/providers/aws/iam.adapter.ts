@@ -1,6 +1,7 @@
 import {
   IAMClient,
   GetAccountPasswordPolicyCommand,
+  GetLoginProfileCommand,
   ListUsersCommand,
   ListMFADevicesCommand,
   ListAccessKeysCommand,
@@ -148,6 +149,12 @@ export class IamAdapter implements AwsServiceAdapter {
     for (const user of users) {
       if (!user.UserName) continue;
 
+      const hasConsoleAccess = await this.userHasConsoleAccess({
+        iam,
+        userName: user.UserName,
+      });
+      if (!hasConsoleAccess) continue;
+
       const mfaResp = await iam.send(
         new ListMFADevicesCommand({ UserName: user.UserName }),
       );
@@ -172,6 +179,21 @@ export class IamAdapter implements AwsServiceAdapter {
     }
 
     return findings;
+  }
+
+  private async userHasConsoleAccess(params: {
+    iam: IAMClient;
+    userName: string;
+  }): Promise<boolean> {
+    try {
+      await params.iam.send(
+        new GetLoginProfileCommand({ UserName: params.userName }),
+      );
+      return true;
+    } catch (error) {
+      if (isNoSuchEntityError(error)) return false;
+      throw error;
+    }
   }
 
   private async checkStaleAccessKeys(
@@ -263,4 +285,11 @@ export class IamAdapter implements AwsServiceAdapter {
       passed: opts.passed,
     };
   }
+}
+
+function isNoSuchEntityError(error: unknown): boolean {
+  if (!(error instanceof Error)) return false;
+  return (
+    error.name === 'NoSuchEntity' || error.name === 'NoSuchEntityException'
+  );
 }

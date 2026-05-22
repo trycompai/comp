@@ -45,9 +45,7 @@ describe('validatePlanSteps — REQUIRED_PARAMS', () => {
         params: { AWSServiceName: 'config.amazonaws.com' },
       }),
     ]);
-    expect(
-      errors.filter((e) => e.includes('AWSServiceName')),
-    ).toHaveLength(0);
+    expect(errors.filter((e) => e.includes('AWSServiceName'))).toHaveLength(0);
   });
 
   it.each(['', null, undefined])(
@@ -84,6 +82,71 @@ describe('validatePlanSteps — REQUIRED_PARAMS', () => {
     ).toHaveLength(1);
   });
 
+  it('reports a clear one-of error when security-group ingress revoke commands omit GroupId, GroupName, and rule IDs', () => {
+    const errors = validatePlanSteps([
+      step({
+        service: 'ec2',
+        command: 'RevokeSecurityGroupIngressCommand',
+        params: {
+          IpPermissions: [
+            {
+              IpProtocol: 'tcp',
+              FromPort: 22,
+              ToPort: 22,
+              IpRanges: [{ CidrIp: '0.0.0.0/0' }],
+            },
+          ],
+        },
+      }),
+    ]);
+
+    expect(errors).toEqual(
+      expect.arrayContaining([
+        'Step 1 (RevokeSecurityGroupIngressCommand): One of "GroupId" or "GroupName" or "SecurityGroupRuleIds" is required',
+      ]),
+    );
+  });
+
+  it('allows security-group ingress commands when GroupId is present', () => {
+    const errors = validatePlanSteps([
+      step({
+        service: 'ec2',
+        command: 'RevokeSecurityGroupIngressCommand',
+        params: { GroupId: 'sg-0123abc' },
+      }),
+    ]);
+
+    expect(errors.some((e) => /GroupId/.test(e))).toBe(false);
+  });
+
+  it('allows security-group revoke commands that use SecurityGroupRuleIds only', () => {
+    const errors = validatePlanSteps([
+      step({
+        service: 'ec2',
+        command: 'RevokeSecurityGroupIngressCommand',
+        params: { SecurityGroupRuleIds: ['sgr-0123abc'] },
+      }),
+    ]);
+
+    expect(errors.some((e) => /GroupId|GroupName/.test(e))).toBe(false);
+  });
+
+  it('treats empty one-of arrays as missing values', () => {
+    const errors = validatePlanSteps([
+      step({
+        service: 'ec2',
+        command: 'RevokeSecurityGroupIngressCommand',
+        params: { SecurityGroupRuleIds: [] },
+      }),
+    ]);
+
+    expect(errors).toEqual(
+      expect.arrayContaining([
+        'Step 1 (RevokeSecurityGroupIngressCommand): One of "GroupId" or "GroupName" or "SecurityGroupRuleIds" is required',
+      ]),
+    );
+  });
+
   it('does NOT apply required-param checks to commands not in REQUIRED_PARAMS', () => {
     // PutBucketVersioningCommand isn't in REQUIRED_PARAMS — should pass
     // even with no params (the AWS SDK will surface its own errors then).
@@ -101,7 +164,11 @@ describe('validatePlanSteps — REQUIRED_PARAMS', () => {
 
   it('uses the step index in the error message so customers know which step is broken', () => {
     const errors = validatePlanSteps([
-      step({ service: 's3', command: 'PutBucketVersioningCommand', params: { Bucket: 'b', VersioningConfiguration: { Status: 'Enabled' } } }),
+      step({
+        service: 's3',
+        command: 'PutBucketVersioningCommand',
+        params: { Bucket: 'b', VersioningConfiguration: { Status: 'Enabled' } },
+      }),
       step({
         service: 'iam',
         command: 'CreateServiceLinkedRoleCommand',
@@ -139,6 +206,7 @@ describe('looksLikeValidationError', () => {
     'Member must not be null',
     'failed to satisfy constraint: Member must have length less than or equal to 64',
     'Missing required parameter Bucket',
+    'The request must contain the parameter groupName or groupId',
     'is required',
     'must be a valid ARN',
   ])('detects %p as a validation-class error', (msg) => {
