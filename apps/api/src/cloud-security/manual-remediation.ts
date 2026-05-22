@@ -1,6 +1,6 @@
 const MANUAL_PREFIX = '[MANUAL]';
 
-type ManualRemediationRisk = 'low' | 'medium' | 'high' | 'critical';
+type ManualRemediationRisk = 'info' | 'low' | 'medium' | 'high' | 'critical';
 
 export interface ManualRemediationPreview {
   currentState: Record<string, unknown>;
@@ -47,7 +47,8 @@ function normalizeRisk(severity?: string | null): ManualRemediationRisk {
     severity === 'low' ||
     severity === 'medium' ||
     severity === 'high' ||
-    severity === 'critical'
+    severity === 'critical' ||
+    severity === 'info'
   ) {
     return severity;
   }
