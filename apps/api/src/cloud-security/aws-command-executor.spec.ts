@@ -82,7 +82,7 @@ describe('validatePlanSteps — REQUIRED_PARAMS', () => {
     ).toHaveLength(1);
   });
 
-  it('reports a clear one-of error when security-group ingress commands omit GroupId and GroupName', () => {
+  it('reports a clear one-of error when security-group ingress revoke commands omit GroupId, GroupName, and rule IDs', () => {
     const errors = validatePlanSteps([
       step({
         service: 'ec2',
@@ -102,7 +102,7 @@ describe('validatePlanSteps — REQUIRED_PARAMS', () => {
 
     expect(errors).toEqual(
       expect.arrayContaining([
-        'Step 1 (RevokeSecurityGroupIngressCommand): One of "GroupId" or "GroupName" is required',
+        'Step 1 (RevokeSecurityGroupIngressCommand): One of "GroupId" or "GroupName" or "SecurityGroupRuleIds" is required',
       ]),
     );
   });
@@ -117,6 +117,34 @@ describe('validatePlanSteps — REQUIRED_PARAMS', () => {
     ]);
 
     expect(errors.some((e) => /GroupId/.test(e))).toBe(false);
+  });
+
+  it('allows security-group revoke commands that use SecurityGroupRuleIds only', () => {
+    const errors = validatePlanSteps([
+      step({
+        service: 'ec2',
+        command: 'RevokeSecurityGroupIngressCommand',
+        params: { SecurityGroupRuleIds: ['sgr-0123abc'] },
+      }),
+    ]);
+
+    expect(errors.some((e) => /GroupId|GroupName/.test(e))).toBe(false);
+  });
+
+  it('treats empty one-of arrays as missing values', () => {
+    const errors = validatePlanSteps([
+      step({
+        service: 'ec2',
+        command: 'RevokeSecurityGroupIngressCommand',
+        params: { SecurityGroupRuleIds: [] },
+      }),
+    ]);
+
+    expect(errors).toEqual(
+      expect.arrayContaining([
+        'Step 1 (RevokeSecurityGroupIngressCommand): One of "GroupId" or "GroupName" or "SecurityGroupRuleIds" is required',
+      ]),
+    );
   });
 
   it('does NOT apply required-param checks to commands not in REQUIRED_PARAMS', () => {
