@@ -110,6 +110,9 @@ export async function tryFix(
       missingPerms: result.permissionError.missingActions,
     };
   }
+  if (result.type === 'manual') {
+    return { status: 'failed', error: result.reason };
+  }
 
   return { status: 'failed', error: result.error };
 }
