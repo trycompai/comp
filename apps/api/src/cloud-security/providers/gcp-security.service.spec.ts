@@ -315,24 +315,31 @@ describe('GCPSecurityService — project detection', () => {
       expect(result).toEqual([]);
     });
 
-    it('falls back to broad parent.type:folder query when folder enumeration returns empty (customer Propper regression)', async () => {
-      // Verified failure mode in production: v3/folders (and v2 before
-      // it) returns `403 PERMISSION_DENIED` for some OAuth grants
-      // despite the user having org-level folder roles. Folder
-      // enumeration silently returns []. The picker would have been
-      // missing folder-nested projects.
-      //
-      // After the fallback: a broad `parent.type:folder` query (no
-      // parent.id) catches every folder-nested project the OAuth user
-      // can `projects.get`, including the ones we couldn't enumerate.
+    it('falls back to broad parent.type:folder query when v3/folders returns 403 PERMISSION_DENIED (customer Propper regression)', async () => {
+      // Exact production failure mode: v3/folders returns
+      // `403 PERMISSION_DENIED` for some OAuth grants despite the
+      // user having org-level folder roles. The fallback MUST fire
+      // ONLY for true forbiddens — cubic P2 on PR #2916 noted that
+      // an unconditional fallback on "empty folders" would leak
+      // cross-org projects for multi-org users whose selected org
+      // simply has no folders. See the next test for that case.
       const broadQueryHits: string[] = [];
       fetchMock.mockImplementation(async (url: string) => {
-        // Simulate 403 PERMISSION_DENIED → my prod code path returns
-        // the collected-so-far ([]) and logs a warning.
         if (url.includes('v3/folders')) {
-          return foldersPage({ folders: [] });
+          // Real 403 PERMISSION_DENIED body that GCP returns.
+          return {
+            ok: false,
+            status: 403,
+            text: async () =>
+              JSON.stringify({
+                error: {
+                  code: 403,
+                  message: 'The caller does not have permission',
+                  status: 'PERMISSION_DENIED',
+                },
+              }),
+          };
         }
-        // Direct arm: org children.
         if (
           url.includes('v1/projects') &&
           url.includes('parent.id%3A43356919874')
@@ -343,7 +350,6 @@ describe('GCPSecurityService — project detection', () => {
             ],
           });
         }
-        // Broad fallback query (parent.type:folder, NO parent.id).
         if (
           url.includes('v1/projects') &&
           url.includes('parent.type%3Afolder') &&
@@ -364,8 +370,66 @@ describe('GCPSecurityService — project detection', () => {
 
       const ids = result.map((p) => p.id).sort();
       expect(ids).toEqual(['direct-1', 'propperai-demo', 'propperai-prod']);
-      // The fallback fired exactly once.
       expect(broadQueryHits).toHaveLength(1);
+    });
+
+    it('does NOT fall back to the broad query when the org simply has no folders (cubic P2 fix)', async () => {
+      // The previous PR (#2916) fired the broad fallback for ANY
+      // empty enumeration result. That meant a multi-org user whose
+      // selected org legitimately had no folders would see folder-
+      // nested projects from OTHER orgs they had IAM access to —
+      // because the broad query is not org-scoped.
+      //
+      // This test locks in the cubic P2 fix: enumeration returns
+      // empty WITHOUT a 403 → no fallback → folder arm returns []
+      // and the picker shows only the org's direct children.
+      const broadQueryHits: string[] = [];
+      fetchMock.mockImplementation(async (url: string) => {
+        if (url.includes('v3/folders')) {
+          // 200 OK + empty list. NOT a 403. The org just has no
+          // folders. Common shape for small single-org tenants too.
+          return foldersPage({ folders: [] });
+        }
+        if (
+          url.includes('v1/projects') &&
+          url.includes('parent.id%3Aflat-org')
+        ) {
+          return gcpPage({
+            projects: [
+              {
+                projectId: 'only-direct',
+                name: 'Only Direct',
+                projectNumber: '900',
+              },
+            ],
+          });
+        }
+        if (
+          url.includes('v1/projects') &&
+          url.includes('parent.type%3Afolder') &&
+          !/parent\.id%3A/.test(url)
+        ) {
+          // Would return cross-org projects if the fallback ever
+          // fires. Track hits — must be zero.
+          broadQueryHits.push(url);
+          return gcpPage({
+            projects: [
+              {
+                projectId: 'should-not-appear',
+                name: 'Other Org Folder Project',
+                projectNumber: '999',
+              },
+            ],
+          });
+        }
+        throw new Error(`Unexpected URL: ${url}`);
+      });
+
+      const result = await service.detectProjectsForOrg('token', 'flat-org');
+
+      expect(result.map((p) => p.id)).toEqual(['only-direct']);
+      // The broad fallback must NOT fire. Cubic P2.
+      expect(broadQueryHits).toHaveLength(0);
     });
 
     it('does NOT fire the broad-query fallback when folder enumeration succeeds (precise scoping preserved)', async () => {
