@@ -19,7 +19,7 @@ export interface LoadedFrameworkSources {
     id: string;
     name: string;
     description: string;
-    controlFamily?: string;
+    controlFamily?: string | null;
     documentTypes: EvidenceFormType[];
   }>;
   policyTemplates: Array<{
