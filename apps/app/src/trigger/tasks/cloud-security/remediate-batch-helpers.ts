@@ -1,4 +1,4 @@
-import { db } from '@db/server';
+import { Prisma, db } from '@db/server';
 import { metadata } from '@trigger.dev/sdk';
 import { postCloudSecurityApi } from './api-response';
 import { classifyExecuteResult } from './execute-result';
@@ -34,6 +34,10 @@ export interface BatchProgress {
   /** All confirmed-available permissions (dedup: don't ask for these again) */
   confirmedPermissions?: string[];
 }
+
+export type BatchTerminalStatus = 'cancelled' | 'done';
+
+const MAX_PERSIST_PROGRESS_ATTEMPTS = 3;
 
 interface PreviewResult {
   guidedOnly?: boolean;
@@ -128,14 +132,84 @@ export async function isFindingCancelled(batchId: string, findingId: string): Pr
   return findings.find((f) => f.id === findingId)?.status === 'cancelled';
 }
 
-export async function persistProgress(batchId: string, progress: BatchProgress) {
-  await db.remediationBatch.update({
-    where: { id: batchId },
-    data: {
-      findings: JSON.parse(JSON.stringify(progress.findings)),
-      fixed: progress.fixed,
-      skipped: progress.skipped,
-      failed: progress.failed,
-    },
+function preservePersistedCancellations(params: {
+  progress: BatchProgress;
+  persistedFindings: FindingProgress[];
+}): void {
+  const cancelledById = new Map(
+    params.persistedFindings
+      .filter((finding) => finding.status === 'cancelled')
+      .map((finding) => [finding.id, finding]),
+  );
+
+  if (cancelledById.size === 0) return;
+
+  params.progress.findings = params.progress.findings.map((finding) => {
+    const cancelled = cancelledById.get(finding.id);
+    if (!cancelled) return finding;
+    return {
+      ...finding,
+      ...cancelled,
+      status: 'cancelled',
+      missingPermissions: undefined,
+    };
   });
+}
+
+function recalculateProgressCounts(progress: BatchProgress): void {
+  progress.fixed = progress.findings.filter((finding) => finding.status === 'fixed').length;
+  progress.failed = progress.findings.filter((finding) => finding.status === 'failed').length;
+  progress.skipped = progress.findings.filter((finding) =>
+    ['cancelled', 'needs_permissions', 'skipped'].includes(finding.status),
+  ).length;
+}
+
+function isSerializableTransactionConflict(error: unknown): boolean {
+  return error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2034';
+}
+
+export async function persistProgress(
+  batchId: string,
+  progress: BatchProgress,
+  status?: BatchTerminalStatus,
+) {
+  for (let attempt = 1; attempt <= MAX_PERSIST_PROGRESS_ATTEMPTS; attempt++) {
+    try {
+      // Per-finding skips update the same JSON field; serializable isolation turns
+      // stale read/write windows into P2034 conflicts that we can retry safely.
+      await db.$transaction(
+        async (tx) => {
+          const current = await tx.remediationBatch.findUnique({
+            where: { id: batchId },
+            select: { findings: true },
+          });
+
+          if (current) {
+            preservePersistedCancellations({
+              progress,
+              persistedFindings: current.findings as unknown as FindingProgress[],
+            });
+            recalculateProgressCounts(progress);
+          }
+
+          await tx.remediationBatch.update({
+            where: { id: batchId },
+            data: {
+              ...(status && { status }),
+              findings: JSON.parse(JSON.stringify(progress.findings)),
+              fixed: progress.fixed,
+              skipped: progress.skipped,
+              failed: progress.failed,
+            },
+          });
+        },
+        { isolationLevel: Prisma.TransactionIsolationLevel.Serializable },
+      );
+      return;
+    } catch (error) {
+      if (!isSerializableTransactionConflict(error) || attempt === MAX_PERSIST_PROGRESS_ATTEMPTS) {
+        throw error;
+      }
+    }
+  }
 }
