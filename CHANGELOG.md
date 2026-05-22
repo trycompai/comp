@@ -1,3 +1,16 @@
+## [3.62.1](https://github.com/trycompai/comp/compare/v3.62.0...v3.62.1) (2026-05-22)
+
+
+### Bug Fixes
+
+* **cloud-tests:** address release remediation review ([1b3b84a](https://github.com/trycompai/comp/commit/1b3b84a77f810c539b3805819623ed718571999b))
+* **cloud-tests:** address remediation review gaps ([eaced08](https://github.com/trycompai/comp/commit/eaced0807194335cce2333ea479620f9f6bcba54))
+* **cloud-tests:** backfill egress security group ids ([816ba5c](https://github.com/trycompai/comp/commit/816ba5cdc696a987134be863dbb5c0bf2ebb487e))
+* **cloud-tests:** harden aws validation paths ([c903201](https://github.com/trycompai/comp/commit/c903201dc41bed2757ec47eaf4005f6fe14db883))
+* **cloud-tests:** preserve batch finding cancellations ([ddcf466](https://github.com/trycompai/comp/commit/ddcf466c2aaaf424913d8a22c880b474949c03a5))
+* **cloud-tests:** retry batch progress conflicts ([199dfc3](https://github.com/trycompai/comp/commit/199dfc388ccb298e9b2cb74a75cc52aec30b8c41))
+* harden cloud remediation and chat ([af3402d](https://github.com/trycompai/comp/commit/af3402dce919f6426d7bfe58b2806ed0d3c29a05))
+
 # [3.62.0](https://github.com/trycompai/comp/compare/v3.61.1...v3.62.0) (2026-05-21)
 
 
