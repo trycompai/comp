@@ -107,6 +107,15 @@ export function ComboboxCell({
             />
           </div>
           <div className="max-h-48 overflow-auto py-1">
+            {value && !trimmedSearch && (
+              <button
+                type="button"
+                className="hover:bg-muted text-muted-foreground flex w-full items-center px-3 py-1.5 text-left text-sm italic"
+                onClick={() => handleSelect(value)}
+              >
+                Clear
+              </button>
+            )}
             {filteredOptions.map((option) => (
               <button
                 key={option}
