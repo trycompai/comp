@@ -1,7 +1,7 @@
 'use client';
 
-import { Check, Pencil, Trash2, X } from 'lucide-react';
-import { useCallback, useState } from 'react';
+import { Check, Pencil, Search, Trash2, X } from 'lucide-react';
+import { useCallback, useMemo, useState } from 'react';
 
 interface ManageFamiliesDialogProps {
   open: boolean;
@@ -18,9 +18,16 @@ export function ManageFamiliesDialog({
   onRename,
   onDelete,
 }: ManageFamiliesDialogProps) {
+  const [searchTerm, setSearchTerm] = useState('');
   const [editingFamily, setEditingFamily] = useState<string | null>(null);
   const [editValue, setEditValue] = useState('');
   const [deletingFamily, setDeletingFamily] = useState<string | null>(null);
+
+  const filteredFamilies = useMemo(() => {
+    if (!searchTerm.trim()) return families;
+    const lower = searchTerm.toLowerCase();
+    return families.filter((f) => f.name.toLowerCase().includes(lower));
+  }, [families, searchTerm]);
 
   const handleStartEdit = useCallback((familyName: string) => {
     setEditingFamily(familyName);
@@ -85,8 +92,19 @@ export function ManageFamiliesDialog({
           </button>
         </div>
 
-        <div className="max-h-80 space-y-1 overflow-y-auto">
-          {families.map((family) => (
+        <div className="border-border flex items-center border-b px-2 py-1.5">
+          <Search className="text-muted-foreground mr-2 h-3.5 w-3.5 shrink-0" />
+          <input
+            type="text"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            placeholder="Search families..."
+            className="w-full bg-transparent text-sm outline-none"
+          />
+        </div>
+
+        <div className="max-h-72 space-y-1 overflow-y-auto py-1">
+          {filteredFamilies.map((family) => (
             <FamilyRow
               key={family.name}
               family={family}
@@ -103,13 +121,12 @@ export function ManageFamiliesDialog({
               onKeyDown={handleKeyDown}
             />
           ))}
+          {filteredFamilies.length === 0 && (
+            <p className="text-muted-foreground py-4 text-center text-sm">
+              {families.length === 0 ? 'No control families found.' : 'No matching families.'}
+            </p>
+          )}
         </div>
-
-        {families.length === 0 && (
-          <p className="text-muted-foreground py-4 text-center text-sm">
-            No control families found.
-          </p>
-        )}
       </div>
     </div>
   );
