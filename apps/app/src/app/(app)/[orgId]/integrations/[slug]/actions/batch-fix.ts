@@ -2,6 +2,7 @@
 
 import { serverApi } from '@/lib/api-server';
 import { classifyExecuteResult } from '@/trigger/tasks/cloud-security/execute-result';
+import { classifyRetryPreview } from '@/trigger/tasks/cloud-security/retry-preview';
 import { auth, runs, tasks } from '@trigger.dev/sdk';
 
 interface BatchFixInput {
@@ -162,8 +163,15 @@ export async function retryFinding(
     const data = preview.data as
       | { guidedOnly?: boolean; missingPermissions?: string[] }
       | undefined;
-    if (data?.missingPermissions && data.missingPermissions.length > 0) {
-      return { status: 'needs_permissions', missingPermissions: data.missingPermissions };
+    const previewDecision = classifyRetryPreview(data);
+    if (previewDecision.type === 'needs_permissions') {
+      return {
+        status: 'needs_permissions',
+        missingPermissions: previewDecision.missingPermissions,
+      };
+    }
+    if (previewDecision.type === 'manual') {
+      return { status: 'failed', error: previewDecision.error };
     }
 
     // Execute

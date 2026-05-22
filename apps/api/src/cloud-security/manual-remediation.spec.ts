@@ -28,4 +28,13 @@ describe('manual remediation helpers', () => {
       'Cannot be auto-fixed. RDS encryption requires snapshot copy and restore.',
     ]);
   });
+
+  it('preserves info severity for manual remediation risk', () => {
+    const preview = buildManualRemediationPreview({
+      remediation: '[MANUAL] Review the passed informational check.',
+      severity: 'info',
+    });
+
+    expect(preview.risk).toBe('info');
+  });
 });

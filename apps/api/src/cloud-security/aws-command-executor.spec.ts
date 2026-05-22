@@ -107,12 +107,13 @@ describe('validatePlanSteps — REQUIRED_PARAMS', () => {
     );
   });
 
-  it('does not let SecurityGroupRuleIds satisfy a property-based revoke group requirement', () => {
+  it('rejects revoke commands that mix rule IDs with rule properties', () => {
     const errors = validatePlanSteps([
       step({
         service: 'ec2',
         command: 'RevokeSecurityGroupIngressCommand',
         params: {
+          GroupId: 'sg-0123abc',
           SecurityGroupRuleIds: ['sgr-0123abc'],
           IpPermissions: [
             {
@@ -128,12 +129,12 @@ describe('validatePlanSteps — REQUIRED_PARAMS', () => {
 
     expect(errors).toEqual(
       expect.arrayContaining([
-        'Step 1 (RevokeSecurityGroupIngressCommand): One of "GroupId" or "GroupName" is required',
+        'Step 1 (RevokeSecurityGroupIngressCommand): SecurityGroupRuleIds cannot be combined with rule property params',
       ]),
     );
   });
 
-  it('allows security-group ingress commands when GroupId is present', () => {
+  it('requires a rule selector for security-group revoke commands', () => {
     const errors = validatePlanSteps([
       step({
         service: 'ec2',
@@ -142,7 +143,35 @@ describe('validatePlanSteps — REQUIRED_PARAMS', () => {
       }),
     ]);
 
-    expect(errors.some((e) => /GroupId/.test(e))).toBe(false);
+    expect(errors).toEqual(
+      expect.arrayContaining([
+        'Step 1 (RevokeSecurityGroupIngressCommand): One of "SecurityGroupRuleIds" or rule property params is required',
+      ]),
+    );
+  });
+
+  it('allows property-based security-group revoke commands when GroupId is present', () => {
+    const errors = validatePlanSteps([
+      step({
+        service: 'ec2',
+        command: 'RevokeSecurityGroupIngressCommand',
+        params: {
+          GroupId: 'sg-0123abc',
+          IpPermissions: [
+            {
+              IpProtocol: 'tcp',
+              FromPort: 22,
+              ToPort: 22,
+              IpRanges: [{ CidrIp: '0.0.0.0/0' }],
+            },
+          ],
+        },
+      }),
+    ]);
+
+    expect(
+      errors.some((e) => /RevokeSecurityGroupIngressCommand/.test(e)),
+    ).toBe(false);
   });
 
   it('allows security-group revoke commands that use SecurityGroupRuleIds only', () => {
@@ -168,7 +197,7 @@ describe('validatePlanSteps — REQUIRED_PARAMS', () => {
 
     expect(errors).toEqual(
       expect.arrayContaining([
-        'Step 1 (RevokeSecurityGroupIngressCommand): One of "GroupId" or "GroupName" is required',
+        'Step 1 (RevokeSecurityGroupIngressCommand): One of "SecurityGroupRuleIds" or rule property params is required',
       ]),
     );
   });

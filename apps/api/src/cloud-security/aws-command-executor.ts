@@ -592,6 +592,18 @@ function validateRevokeSecurityGroupIngressParams(
       hasRequiredParamValue(params[key]),
     );
 
+  if (!hasRuleIds && !hasRuleProperties) {
+    return [
+      `${prefix}: One of "SecurityGroupRuleIds" or rule property params is required`,
+    ];
+  }
+
+  if (hasRuleIds && hasRuleProperties) {
+    return [
+      `${prefix}: SecurityGroupRuleIds cannot be combined with rule property params`,
+    ];
+  }
+
   if (hasRuleIds && !hasRuleProperties) return [];
   if (hasGroupIdentifier) return [];
 
