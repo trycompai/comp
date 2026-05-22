@@ -271,9 +271,6 @@ export class FrameworksService {
           include: {
             control: {
               include: {
-                controlTemplate: {
-                  select: { controlFamily: true },
-                },
                 frameworkPolicyLinks: {
                   where: {
                     frameworkInstanceId,
@@ -1069,6 +1066,7 @@ export class FrameworksService {
         controlTemplateId: c.controlTemplateId,
         name: c.name,
         description: c.description,
+        controlFamily: c.controlFamily,
       })),
       instanceTasks: instanceTasks.map((t) => ({
         id: t.id,

@@ -1,10 +1,10 @@
 import type { ManifestControl, ManifestPolicy, ManifestTask } from './manifest.types';
 
 export function isControlEdited(
-  instance: { name: string; description: string },
+  instance: { name: string; description: string; controlFamily?: string | null },
   manifest: ManifestControl,
 ): boolean {
-  return instance.name !== manifest.name || instance.description !== manifest.description;
+  return instance.name !== manifest.name || instance.description !== manifest.description || (instance.controlFamily ?? null) !== (manifest.controlFamily ?? null);
 }
 
 export function isTaskEdited(

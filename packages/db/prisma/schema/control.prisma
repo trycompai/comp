@@ -1,8 +1,9 @@
 model Control {
   // Metadata
   id          String @id @default(dbgenerated("generate_prefixed_cuid('ctl'::text)"))
-  name        String
-  description String
+  name          String
+  description   String
+  controlFamily String?
 
   // Review dates
   lastReviewDate DateTime?

@@ -31,6 +31,7 @@ export interface PolicyUndoBucket extends EntityUndoBucket<PolicyUndoContent> {
 export interface ControlUndoContent {
   name: string;
   description: string;
+  controlFamily?: string | null;
 }
 
 export interface TaskUndoContent {

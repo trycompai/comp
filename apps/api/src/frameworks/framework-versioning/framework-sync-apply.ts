@@ -78,6 +78,7 @@ export async function applySync(
         controlTemplateId: targetControl.id,
         name: targetControl.name,
         description: targetControl.description,
+        controlFamily: targetControl.controlFamily ?? null,
       },
     });
     ctlByTemplate.set(targetControl.id, created);
@@ -100,8 +101,8 @@ export async function applySync(
       summary.controlsUpdatedPreserved += 1;
       continue;
     }
-    undo.controls.contentUpdated.push({ id: inst.id, prevContent: { name: inst.name, description: inst.description } });
-    await tx.control.update({ where: { id: inst.id }, data: { name: u.to.name, description: u.to.description } });
+    undo.controls.contentUpdated.push({ id: inst.id, prevContent: { name: inst.name, description: inst.description, controlFamily: inst.controlFamily } });
+    await tx.control.update({ where: { id: inst.id }, data: { name: u.to.name, description: u.to.description, controlFamily: u.to.controlFamily ?? null } });
     summary.controlsUpdatedApplied += 1;
   }
 

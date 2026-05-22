@@ -13,6 +13,7 @@ export interface InstanceControl {
   controlTemplateId: string | null;
   name: string;
   description: string;
+  controlFamily?: string | null;
 }
 
 export interface InstanceTask {

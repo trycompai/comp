@@ -19,6 +19,7 @@ export interface LoadedFrameworkSources {
     id: string;
     name: string;
     description: string;
+    controlFamily?: string;
     documentTypes: EvidenceFormType[];
   }>;
   policyTemplates: Array<{
@@ -133,6 +134,7 @@ export async function loadFrameworkSources({
           id: c.id,
           name: c.name,
           description: c.description,
+          controlFamily: c.controlFamily,
           documentTypes: (c.documentTypes ?? []) as EvidenceFormType[],
         });
       }
@@ -211,7 +213,7 @@ export async function loadFrameworkSources({
 
     const liveControls = await tx.frameworkEditorControlTemplate.findMany({
       where: { requirements: { some: { id: { in: fallbackRequirementIds } } } },
-      select: { id: true, name: true, description: true, documentTypes: true },
+      select: { id: true, name: true, description: true, controlFamily: true, documentTypes: true },
     });
     for (const lc of liveControls) {
       if (!controlsMap.has(lc.id)) {
@@ -219,6 +221,7 @@ export async function loadFrameworkSources({
           id: lc.id,
           name: lc.name,
           description: lc.description,
+          controlFamily: lc.controlFamily ?? undefined,
           documentTypes: lc.documentTypes,
         });
       }

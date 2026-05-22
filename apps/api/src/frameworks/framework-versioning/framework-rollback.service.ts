@@ -154,7 +154,7 @@ async function replayUndo(
   for (const u of ctx.undo.controls.contentUpdated) {
     await tx.control.update({
       where: { id: u.id },
-      data: { name: u.prevContent.name, description: u.prevContent.description },
+      data: { name: u.prevContent.name, description: u.prevContent.description, controlFamily: u.prevContent.controlFamily ?? null },
     });
   }
   for (const u of ctx.undo.tasks.contentUpdated) {

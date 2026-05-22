@@ -137,6 +137,7 @@ export async function upsertOrgFrameworkStructure({
       data: controlsToCreate.map((ct) => ({
         name: ct.name,
         description: ct.description,
+        controlFamily: ct.controlFamily ?? null,
         organizationId,
         controlTemplateId: ct.id,
       })),
