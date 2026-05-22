@@ -35,6 +35,8 @@ export interface BatchProgress {
   confirmedPermissions?: string[];
 }
 
+export type BatchTerminalStatus = 'cancelled' | 'done';
+
 interface PreviewResult {
   guidedOnly?: boolean;
   missingPermissions?: string[];
@@ -128,10 +130,60 @@ export async function isFindingCancelled(batchId: string, findingId: string): Pr
   return findings.find((f) => f.id === findingId)?.status === 'cancelled';
 }
 
-export async function persistProgress(batchId: string, progress: BatchProgress) {
+function preservePersistedCancellations(params: {
+  progress: BatchProgress;
+  persistedFindings: FindingProgress[];
+}): void {
+  const cancelledById = new Map(
+    params.persistedFindings
+      .filter((finding) => finding.status === 'cancelled')
+      .map((finding) => [finding.id, finding]),
+  );
+
+  if (cancelledById.size === 0) return;
+
+  params.progress.findings = params.progress.findings.map((finding) => {
+    const cancelled = cancelledById.get(finding.id);
+    if (!cancelled) return finding;
+    return {
+      ...finding,
+      ...cancelled,
+      status: 'cancelled',
+      missingPermissions: undefined,
+    };
+  });
+}
+
+function recalculateProgressCounts(progress: BatchProgress): void {
+  progress.fixed = progress.findings.filter((finding) => finding.status === 'fixed').length;
+  progress.failed = progress.findings.filter((finding) => finding.status === 'failed').length;
+  progress.skipped = progress.findings.filter((finding) =>
+    ['cancelled', 'needs_permissions', 'skipped'].includes(finding.status),
+  ).length;
+}
+
+export async function persistProgress(
+  batchId: string,
+  progress: BatchProgress,
+  status?: BatchTerminalStatus,
+) {
+  const current = await db.remediationBatch.findUnique({
+    where: { id: batchId },
+    select: { findings: true },
+  });
+
+  if (current) {
+    preservePersistedCancellations({
+      progress,
+      persistedFindings: current.findings as unknown as FindingProgress[],
+    });
+    recalculateProgressCounts(progress);
+  }
+
   await db.remediationBatch.update({
     where: { id: batchId },
     data: {
+      ...(status && { status }),
       findings: JSON.parse(JSON.stringify(progress.findings)),
       fixed: progress.fixed,
       skipped: progress.skipped,

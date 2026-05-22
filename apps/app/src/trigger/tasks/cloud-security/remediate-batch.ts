@@ -59,6 +59,16 @@ export const remediateBatch = task({
       progress.current = i + 1;
       progress.findings[i]!.status = 'fixing';
       sync(progress);
+      await persistProgress(batchId, progress);
+      if (
+        progress.findings[i]!.status === 'cancelled' ||
+        (await isFindingCancelled(batchId, findings[i]!.id))
+      ) {
+        progress.findings[i]!.status = 'cancelled';
+        await persistProgress(batchId, progress);
+        sync(progress);
+        continue;
+      }
 
       logger.info(`[${i + 1}/${findings.length}] ${findings[i]!.title}`);
       const result = await tryFix(findings[i]!, connectionId, organizationId, userId);
@@ -209,16 +219,7 @@ export const remediateBatch = task({
     progress.phase = progress.phase === 'cancelled' ? 'cancelled' : 'done';
     sync(progress);
 
-    await db.remediationBatch.update({
-      where: { id: batchId },
-      data: {
-        status: progress.phase === 'cancelled' ? 'cancelled' : 'done',
-        findings: JSON.parse(JSON.stringify(progress.findings)),
-        fixed: progress.fixed,
-        skipped: progress.skipped,
-        failed: progress.failed,
-      },
-    });
+    await persistProgress(batchId, progress, progress.phase === 'cancelled' ? 'cancelled' : 'done');
 
     return {
       success: true,
