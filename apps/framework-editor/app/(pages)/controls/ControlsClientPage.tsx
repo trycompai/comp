@@ -159,11 +159,16 @@ export function ControlsClientPage({ initialControls, emptyMessage, frameworkId 
   } = useChangeTracking(initialGridData, mutations);
 
   const families = useMemo(() => {
-    const familyMap = new Map<string, Array<{ id: string; name: string | null }>>();
+    const familyMap = new Map<string, Array<{ id: string; name: string | null; frameworks: string[] }>>();
     for (const row of data) {
       if (row.controlFamily) {
         const controls = familyMap.get(row.controlFamily) ?? [];
-        controls.push({ id: row.id, name: row.name });
+        const frameworks = [...new Set(
+          row.requirements
+            .map((r) => r.sublabel)
+            .filter((s): s is string => s != null && s !== ''),
+        )];
+        controls.push({ id: row.id, name: row.name, frameworks });
         familyMap.set(row.controlFamily, controls);
       }
     }

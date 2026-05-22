@@ -12,7 +12,7 @@ import { useCallback, useMemo, useState } from 'react';
 
 export interface FamilyInfo {
   name: string;
-  controls: Array<{ id: string; name: string | null }>;
+  controls: Array<{ id: string; name: string | null; frameworks: string[] }>;
 }
 
 interface ManageFamiliesDialogProps {
@@ -203,10 +203,15 @@ function FamilyRow({
           Remove &ldquo;{family.name}&rdquo; from {family.controls.length} control
           {family.controls.length !== 1 ? 's' : ''}?
         </p>
-        <ul className="mt-1.5 max-h-24 space-y-0.5 overflow-y-auto">
+        <ul className="mt-1.5 max-h-32 space-y-1 overflow-y-auto">
           {family.controls.map((c) => (
-            <li key={c.id} className="text-muted-foreground text-xs">
-              {c.name || 'Unnamed control'}
+            <li key={c.id} className="text-xs">
+              <span className="text-foreground">{c.name || 'Unnamed control'}</span>
+              {c.frameworks.length > 0 && (
+                <span className="text-muted-foreground ml-1">
+                  ({c.frameworks.join(', ')})
+                </span>
+              )}
             </li>
           ))}
         </ul>
