@@ -67,6 +67,12 @@ function makeNoSuchEntityError(): Error {
   return error;
 }
 
+function makeAccessDeniedError(): Error {
+  const error = new Error('Not authorized to call iam:GetLoginProfile');
+  error.name = 'AccessDeniedException';
+  return error;
+}
+
 describe('IamAdapter', () => {
   afterEach(() => {
     jest.restoreAllMocks();
@@ -144,6 +150,71 @@ describe('IamAdapter', () => {
     );
     expect(findings.map((finding) => finding.id)).not.toContain(
       'iam-no-mfa-api-only-user',
+    );
+  });
+
+  it('continues MFA checks when the console-access probe fails unexpectedly', async () => {
+    const mfaCheckedUsers: string[] = [];
+    jest
+      .spyOn(IAMClient.prototype, 'send')
+      .mockImplementation(async (command) => {
+        if (command instanceof GetAccountPasswordPolicyCommand) {
+          return {
+            PasswordPolicy: {
+              MinimumPasswordLength: 14,
+              RequireUppercaseCharacters: true,
+              RequireLowercaseCharacters: true,
+              RequireNumbers: true,
+              RequireSymbols: true,
+            },
+          };
+        }
+
+        if (command instanceof ListUsersCommand) {
+          return {
+            Users: [
+              {
+                UserName: 'console-probe-error-user',
+                Arn: 'arn:aws:iam::123456789012:user/console-probe-error-user',
+              },
+            ],
+          };
+        }
+
+        if (command instanceof GetLoginProfileCommand) {
+          throw makeAccessDeniedError();
+        }
+
+        if (command instanceof ListMFADevicesCommand) {
+          if (command.input.UserName)
+            mfaCheckedUsers.push(command.input.UserName);
+          return { MFADevices: [] };
+        }
+
+        if (command instanceof ListAccessKeysCommand) {
+          return { AccessKeyMetadata: [] };
+        }
+
+        if (command instanceof GenerateCredentialReportCommand) return {};
+        if (command instanceof GetCredentialReportCommand) {
+          return { Content: Buffer.from(CREDENTIAL_REPORT, 'utf-8') };
+        }
+
+        return {};
+      });
+
+    const findings = await new IamAdapter().scan({
+      credentials: {
+        accessKeyId: 'key',
+        secretAccessKey: 'secret',
+      },
+      region: 'us-east-1',
+      accountId: '123456789012',
+    });
+
+    expect(mfaCheckedUsers).toEqual(['console-probe-error-user']);
+    expect(findings.map((finding) => finding.id)).toContain(
+      'iam-no-mfa-console-probe-error-user',
     );
   });
 });
