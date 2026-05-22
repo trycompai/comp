@@ -85,7 +85,7 @@ export function ManageFamiliesDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent size="lg">
+      <DialogContent size="lg" showCloseButton={false}>
         <DialogHeader>
           <DialogTitle>Manage Control Families</DialogTitle>
           <DialogDescription>
