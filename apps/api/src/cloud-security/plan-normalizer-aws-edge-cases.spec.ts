@@ -97,6 +97,36 @@ describe('normalizeFixPlan — AWS remediation edge cases', () => {
     expect(result.rollbackSteps[0].params.GroupId).toBe('sg-0123abc');
   });
 
+  it('backfills GroupId on EC2 security-group egress commands from the finding resource id', () => {
+    const ipPermissions = [
+      {
+        IpProtocol: '-1',
+        IpRanges: [{ CidrIp: '0.0.0.0/0' }],
+      },
+    ];
+    const plan = makePlan({
+      fixSteps: [
+        makeStep({
+          service: 'ec2',
+          command: 'RevokeSecurityGroupEgressCommand',
+          params: { IpPermissions: ipPermissions },
+        }),
+      ],
+      rollbackSteps: [
+        makeStep({
+          service: 'ec2',
+          command: 'AuthorizeSecurityGroupEgressCommand',
+          params: { IpPermissions: ipPermissions },
+        }),
+      ],
+    });
+
+    const result = normalizeFixPlan(plan, { resourceId: 'sg-0123abc' });
+
+    expect(result.fixSteps[0].params.GroupId).toBe('sg-0123abc');
+    expect(result.rollbackSteps[0].params.GroupId).toBe('sg-0123abc');
+  });
+
   it('does not overwrite an explicit security-group GroupName', () => {
     const plan = makePlan({
       fixSteps: [
