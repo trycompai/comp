@@ -16,6 +16,7 @@ export function DeleteFamilyConfirmation({
   onCancel: () => void;
 }) {
   const [showDetails, setShowDetails] = useState(false);
+  const [confirmedOnce, setConfirmedOnce] = useState(false);
   const count = family.controls.length;
 
   const affectedFrameworks = useMemo(() => {
@@ -75,20 +76,42 @@ export function DeleteFamilyConfirmation({
       )}
 
       <div className="flex items-center gap-2">
-        <button
-          type="button"
-          onClick={onConfirm}
-          className="bg-destructive text-destructive-foreground rounded px-3 py-1.5 text-xs font-medium transition-colors hover:opacity-90"
-        >
-          Remove family
-        </button>
-        <button
-          type="button"
-          onClick={onCancel}
-          className="text-muted-foreground hover:text-foreground rounded px-3 py-1.5 text-xs transition-colors"
-        >
-          Cancel
-        </button>
+        {confirmedOnce ? (
+          <>
+            <span className="text-destructive text-xs font-medium">Are you sure?</span>
+            <button
+              type="button"
+              onClick={onConfirm}
+              className="bg-destructive text-destructive-foreground rounded px-3 py-1.5 text-xs font-medium transition-colors hover:opacity-90"
+            >
+              Yes, remove
+            </button>
+            <button
+              type="button"
+              onClick={() => setConfirmedOnce(false)}
+              className="text-muted-foreground hover:text-foreground rounded px-3 py-1.5 text-xs transition-colors"
+            >
+              No
+            </button>
+          </>
+        ) : (
+          <>
+            <button
+              type="button"
+              onClick={() => setConfirmedOnce(true)}
+              className="bg-destructive text-destructive-foreground rounded px-3 py-1.5 text-xs font-medium transition-colors hover:opacity-90"
+            >
+              Remove family
+            </button>
+            <button
+              type="button"
+              onClick={onCancel}
+              className="text-muted-foreground hover:text-foreground rounded px-3 py-1.5 text-xs transition-colors"
+            >
+              Cancel
+            </button>
+          </>
+        )}
       </div>
     </div>
   );
