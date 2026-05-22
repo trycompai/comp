@@ -1,3 +1,10 @@
+## [3.63.2](https://github.com/trycompai/comp/compare/v3.63.1...v3.63.2) (2026-05-22)
+
+
+### Bug Fixes
+
+* **cloud-tests:** render nested JSON in manual remediation steps correctly ([014c4ab](https://github.com/trycompai/comp/commit/014c4ab273d0263aeb2de0032108af13a45f7ddb))
+
 ## [3.63.1](https://github.com/trycompai/comp/compare/v3.63.0...v3.63.1) (2026-05-22)
 
 
