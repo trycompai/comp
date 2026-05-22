@@ -21,9 +21,6 @@ export type FrameworkInstanceWithControls = FrameworkInstance & {
       formType: string;
       isNotRelevant?: boolean;
     }>;
-    controlTemplate?: {
-      controlFamily: string | null;
-    };
   })[];
 };
 

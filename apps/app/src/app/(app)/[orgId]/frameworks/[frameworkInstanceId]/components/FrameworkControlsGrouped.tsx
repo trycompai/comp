@@ -39,7 +39,7 @@ function groupByFamily(items: ControlItem[]): FamilyGroup[] {
   const otherItems: ControlItem[] = [];
 
   for (const item of items) {
-    const family = item.control.controlTemplate?.controlFamily;
+    const family = item.control.controlFamily;
     if (family) {
       const existing = familyMap.get(family);
       if (existing) {

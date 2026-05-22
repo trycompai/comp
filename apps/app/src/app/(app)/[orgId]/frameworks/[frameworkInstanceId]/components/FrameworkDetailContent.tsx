@@ -79,8 +79,7 @@ export function FrameworkDetailContent({
   const hasControlFamilies = useMemo(
     () =>
       frameworkInstanceWithControls.controls.some(
-        (c: { controlTemplate?: { controlFamily?: unknown } }) =>
-          c.controlTemplate?.controlFamily,
+        (c: { controlFamily?: string | null }) => c.controlFamily,
       ),
     [frameworkInstanceWithControls.controls],
   );
