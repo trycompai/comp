@@ -1,13 +1,34 @@
 import { beforeEach, describe, expect, it, vi, type Mock } from 'vitest';
 
-vi.mock('@db/server', () => ({
-  db: {
-    remediationBatch: {
-      findUnique: vi.fn(),
-      update: vi.fn(),
+vi.mock('@db/server', () => {
+  const remediationBatch = {
+    findUnique: vi.fn(),
+    update: vi.fn(),
+  };
+
+  class PrismaClientKnownRequestError extends Error {
+    code: string;
+
+    constructor(message: string, options: { code: string }) {
+      super(message);
+      this.code = options.code;
+    }
+  }
+
+  return {
+    Prisma: {
+      PrismaClientKnownRequestError,
+      TransactionIsolationLevel: { Serializable: 'Serializable' },
     },
-  },
-}));
+    db: {
+      remediationBatch,
+      $transaction: vi.fn(
+        (callback: (tx: { remediationBatch: typeof remediationBatch }) => unknown) =>
+          callback({ remediationBatch }),
+      ),
+    },
+  };
+});
 
 vi.mock('@trigger.dev/sdk', () => ({
   metadata: { set: vi.fn() },
@@ -17,7 +38,7 @@ vi.mock('./api-response', () => ({
   postCloudSecurityApi: vi.fn(),
 }));
 
-import { db } from '@db/server';
+import { Prisma, db } from '@db/server';
 import {
   persistProgress,
   type BatchProgress,
@@ -29,8 +50,13 @@ type MockRemediationBatch = {
   update: Mock;
 };
 
-const remediationBatch = (db as unknown as { remediationBatch: MockRemediationBatch })
-  .remediationBatch;
+type MockDb = {
+  remediationBatch: MockRemediationBatch;
+  $transaction: Mock;
+};
+
+const mockedDb = db as unknown as MockDb;
+const remediationBatch = mockedDb.remediationBatch;
 
 function finding(overrides: Partial<FindingProgress>): FindingProgress {
   return {
@@ -81,6 +107,10 @@ describe('persistProgress', () => {
 
     await persistProgress('batch-1', batchProgress, 'done');
 
+    expect(mockedDb.$transaction).toHaveBeenCalledWith(expect.any(Function), {
+      isolationLevel: 'Serializable',
+    });
+
     expect(batchProgress.findings[1]).toMatchObject({
       id: 'check-2',
       status: 'cancelled',
@@ -101,6 +131,45 @@ describe('persistProgress', () => {
         findings: expect.arrayContaining([
           expect.objectContaining({ id: 'check-2', status: 'cancelled' }),
         ]),
+      }),
+    });
+  });
+
+  it('retries after a serializable transaction conflict and re-reads cancellations', async () => {
+    const conflict = new Prisma.PrismaClientKnownRequestError('write conflict', {
+      code: 'P2034',
+      clientVersion: 'test',
+    });
+
+    mockedDb.$transaction
+      .mockRejectedValueOnce(conflict)
+      .mockImplementationOnce(
+        (callback: (tx: { remediationBatch: MockRemediationBatch }) => unknown) =>
+          callback({ remediationBatch }),
+      );
+    remediationBatch.findUnique.mockResolvedValue({
+      findings: [finding({ id: 'check-1', status: 'cancelled', error: 'Removed during retry' })],
+    });
+    remediationBatch.update.mockResolvedValue({});
+
+    const batchProgress = progress([finding({ id: 'check-1', status: 'fixed' })]);
+
+    await persistProgress('batch-1', batchProgress, 'done');
+
+    expect(mockedDb.$transaction).toHaveBeenCalledTimes(2);
+    expect(remediationBatch.findUnique).toHaveBeenCalledTimes(1);
+    expect(batchProgress.findings[0]).toMatchObject({
+      id: 'check-1',
+      status: 'cancelled',
+      error: 'Removed during retry',
+    });
+    expect(remediationBatch.update).toHaveBeenCalledWith({
+      where: { id: 'batch-1' },
+      data: expect.objectContaining({
+        status: 'done',
+        fixed: 0,
+        skipped: 1,
+        failed: 0,
       }),
     });
   });

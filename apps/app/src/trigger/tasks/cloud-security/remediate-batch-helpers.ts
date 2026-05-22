@@ -1,4 +1,4 @@
-import { db } from '@db/server';
+import { Prisma, db } from '@db/server';
 import { metadata } from '@trigger.dev/sdk';
 import { postCloudSecurityApi } from './api-response';
 import { classifyExecuteResult } from './execute-result';
@@ -36,6 +36,8 @@ export interface BatchProgress {
 }
 
 export type BatchTerminalStatus = 'cancelled' | 'done';
+
+const MAX_PERSIST_PROGRESS_ATTEMPTS = 3;
 
 interface PreviewResult {
   guidedOnly?: boolean;
@@ -162,32 +164,52 @@ function recalculateProgressCounts(progress: BatchProgress): void {
   ).length;
 }
 
+function isSerializableTransactionConflict(error: unknown): boolean {
+  return error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2034';
+}
+
 export async function persistProgress(
   batchId: string,
   progress: BatchProgress,
   status?: BatchTerminalStatus,
 ) {
-  const current = await db.remediationBatch.findUnique({
-    where: { id: batchId },
-    select: { findings: true },
-  });
+  for (let attempt = 1; attempt <= MAX_PERSIST_PROGRESS_ATTEMPTS; attempt++) {
+    try {
+      // Per-finding skips update the same JSON field; serializable isolation turns
+      // stale read/write windows into P2034 conflicts that we can retry safely.
+      await db.$transaction(
+        async (tx) => {
+          const current = await tx.remediationBatch.findUnique({
+            where: { id: batchId },
+            select: { findings: true },
+          });
 
-  if (current) {
-    preservePersistedCancellations({
-      progress,
-      persistedFindings: current.findings as unknown as FindingProgress[],
-    });
-    recalculateProgressCounts(progress);
+          if (current) {
+            preservePersistedCancellations({
+              progress,
+              persistedFindings: current.findings as unknown as FindingProgress[],
+            });
+            recalculateProgressCounts(progress);
+          }
+
+          await tx.remediationBatch.update({
+            where: { id: batchId },
+            data: {
+              ...(status && { status }),
+              findings: JSON.parse(JSON.stringify(progress.findings)),
+              fixed: progress.fixed,
+              skipped: progress.skipped,
+              failed: progress.failed,
+            },
+          });
+        },
+        { isolationLevel: Prisma.TransactionIsolationLevel.Serializable },
+      );
+      return;
+    } catch (error) {
+      if (!isSerializableTransactionConflict(error) || attempt === MAX_PERSIST_PROGRESS_ATTEMPTS) {
+        throw error;
+      }
+    }
   }
-
-  await db.remediationBatch.update({
-    where: { id: batchId },
-    data: {
-      ...(status && { status }),
-      findings: JSON.parse(JSON.stringify(progress.findings)),
-      fixed: progress.fixed,
-      skipped: progress.skipped,
-      failed: progress.failed,
-    },
-  });
 }
