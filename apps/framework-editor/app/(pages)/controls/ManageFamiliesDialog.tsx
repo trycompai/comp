@@ -1,11 +1,18 @@
 'use client';
 
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '@trycompai/design-system';
 import { Check, Pencil, Search, Trash2, X } from 'lucide-react';
 import { useCallback, useMemo, useState } from 'react';
 
 interface ManageFamiliesDialogProps {
   open: boolean;
-  onClose: () => void;
+  onOpenChange: (open: boolean) => void;
   families: Array<{ name: string; count: number }>;
   onRename: (oldName: string, newName: string) => void;
   onDelete: (familyName: string) => void;
@@ -13,7 +20,7 @@ interface ManageFamiliesDialogProps {
 
 export function ManageFamiliesDialog({
   open,
-  onClose,
+  onOpenChange,
   families,
   onRename,
   onDelete,
@@ -76,24 +83,18 @@ export function ManageFamiliesDialog({
     [handleConfirmEdit, handleCancelEdit],
   );
 
-  if (!open) return null;
-
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-      <div className="bg-popover border-border w-full max-w-lg rounded-lg border p-5 shadow-xl">
-        <div className="mb-3 flex items-center justify-between">
-          <h2 className="text-sm font-semibold">Manage Control Families</h2>
-          <button
-            type="button"
-            onClick={onClose}
-            className="text-muted-foreground hover:text-foreground rounded p-1 transition-colors"
-          >
-            <X className="h-4 w-4" />
-          </button>
-        </div>
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent size="lg">
+        <DialogHeader>
+          <DialogTitle>Manage Control Families</DialogTitle>
+          <DialogDescription>
+            Rename or remove control families. Changes apply to all controls using that family.
+          </DialogDescription>
+        </DialogHeader>
 
-        <div className="border-border flex items-center border-b px-2 py-1.5">
-          <Search className="text-muted-foreground mr-2 h-3.5 w-3.5 shrink-0" />
+        <div className="border-border flex items-center rounded-md border px-3 py-2">
+          <Search className="text-muted-foreground mr-2 h-4 w-4 shrink-0" />
           <input
             type="text"
             value={searchTerm}
@@ -103,7 +104,7 @@ export function ManageFamiliesDialog({
           />
         </div>
 
-        <div className="max-h-72 space-y-1 overflow-y-auto py-1">
+        <div className="max-h-80 space-y-1 overflow-y-auto">
           {filteredFamilies.map((family) => (
             <FamilyRow
               key={family.name}
@@ -122,13 +123,13 @@ export function ManageFamiliesDialog({
             />
           ))}
           {filteredFamilies.length === 0 && (
-            <p className="text-muted-foreground py-4 text-center text-sm">
+            <p className="text-muted-foreground py-6 text-center text-sm">
               {families.length === 0 ? 'No control families found.' : 'No matching families.'}
             </p>
           )}
         </div>
-      </div>
-    </div>
+      </DialogContent>
+    </Dialog>
   );
 }
 

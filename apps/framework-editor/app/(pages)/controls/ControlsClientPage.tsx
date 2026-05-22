@@ -484,7 +484,7 @@ export function ControlsClientPage({ initialControls, emptyMessage, frameworkId 
 
       <ManageFamiliesDialog
         open={manageFamiliesOpen}
-        onClose={() => setManageFamiliesOpen(false)}
+        onOpenChange={setManageFamiliesOpen}
         families={families}
         onRename={handleRenameFamily}
         onDelete={handleDeleteFamily}
