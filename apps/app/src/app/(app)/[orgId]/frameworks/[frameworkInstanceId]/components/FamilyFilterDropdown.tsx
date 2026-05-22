@@ -23,10 +23,14 @@ export function FamilyFilterDropdown({
   onClear,
 }: FamilyFilterDropdownProps) {
   const [open, setOpen] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
   const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (!open) return;
+    if (!open) {
+      setSearchTerm('');
+      return;
+    }
 
     const handleClickOutside = (e: MouseEvent) => {
       if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
@@ -40,6 +44,10 @@ export function FamilyFilterDropdown({
 
   const hasFilter = selectedFamilies.size > 0;
   const label = hasFilter ? `Families (${selectedFamilies.size})` : 'Families';
+
+  const filteredFamilies = allFamilyNames.filter((f) =>
+    f.toLowerCase().includes(searchTerm.toLowerCase()),
+  );
 
   return (
     <div ref={containerRef} className="relative">
@@ -61,8 +69,16 @@ export function FamilyFilterDropdown({
 
       {open && (
         <div className="absolute left-0 top-full z-50 mt-1 w-64 rounded-md border bg-background shadow-lg">
+          <input
+            type="text"
+            placeholder="Search families..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full border-b border-border bg-transparent px-3 py-1.5 text-sm outline-none"
+            autoFocus
+          />
           <div className="max-h-64 overflow-y-auto p-1">
-            {allFamilyNames.map((family) => {
+            {filteredFamilies.map((family) => {
               const isSelected = selectedFamilies.has(family);
               const Icon = isSelected ? CheckboxCheckedFilled : Checkbox;
 
