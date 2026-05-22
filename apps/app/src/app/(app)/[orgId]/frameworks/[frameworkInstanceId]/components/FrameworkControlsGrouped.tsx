@@ -255,7 +255,7 @@ function FamilySection({
 
   return (
     <>
-      <TableRow className="bg-muted/60 hover:bg-muted/80">
+      <TableRow className="bg-secondary hover:bg-secondary/80">
         <TableCell colSpan={COLUMN_COUNT}>
           <button
             type="button"
