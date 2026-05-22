@@ -885,11 +885,59 @@ export class GCPSecurityService {
     accessToken: string,
     organizationId: string,
   ): Promise<Array<{ id: string; name: string; number: string }>> {
-    const folderIds = await this.listFoldersUnderOrg(
+    const { folderIds, forbidden } = await this.listFoldersUnderOrg(
       accessToken,
       organizationId,
     );
-    if (folderIds.length === 0) return [];
+
+    // Verified in production logs (customer Propper, org 43356919874):
+    // the `cloudresourcemanager.folders.list` endpoint returns
+    // `403 PERMISSION_DENIED` for some OAuth grants even when the
+    // user has `roles/owner` + `roles/resourcemanager.folderAdmin`
+    // at the org level. When that happens, folder enumeration
+    // returns an empty list and the precise per-folder query would
+    // silently skip every folder-nested project — exactly the bug
+    // Greg reported (propperai-prod, propperai-demo invisible in
+    // the picker).
+    //
+    // The fallback below ONLY fires when enumeration was actually
+    // forbidden, not when an org legitimately has zero folders.
+    // (cubic P2 on PR #2916: the previous always-on fallback could
+    // leak folder-nested projects from OTHER orgs in a multi-org
+    // tenant whose selected org simply had no folders.)
+    //
+    // Forbidden case → broad `parent.type:folder` query catches
+    // every folder-nested project the OAuth user can `projects.get`.
+    // For single-org tenants this delivers the right set. For
+    // multi-org tenants whose v3/folders is forbidden the fallback
+    // may include projects from other accessible orgs — acceptable
+    // because the picker is selection-based and the alternative is a
+    // silently empty picker.
+    if (folderIds.length === 0 && forbidden) {
+      this.logger.warn(
+        `GCP folder enumeration was forbidden for org ${organizationId}; falling back to broad parent.type:folder query`,
+      );
+      const fallback = await this.listProjectsPaginated(
+        accessToken,
+        'lifecycleState:ACTIVE AND parent.type:folder',
+      ).catch((err) => {
+        this.logger.warn(
+          `GCP broad folder-projects fallback failed: ${err instanceof Error ? err.message : String(err)}`,
+        );
+        return [];
+      });
+      this.logger.log(
+        `GCP folder fallback for org ${organizationId}: ${fallback.length} project(s) via broad parent.type:folder query`,
+      );
+      return fallback;
+    }
+
+    if (folderIds.length === 0) {
+      // No folders exist for this org AND no permission errors were
+      // observed — return empty so a multi-org user doesn't see
+      // folder-nested projects from unrelated orgs.
+      return [];
+    }
 
     // Bound the fan-out: an unbounded `Promise.all(folderIds.map(...))`
     // can trigger GCP rate limiting (`429 Too Many Requests`) on
@@ -925,20 +973,25 @@ export class GCPSecurityService {
   private async listFoldersUnderOrg(
     accessToken: string,
     organizationId: string,
-  ): Promise<string[]> {
+  ): Promise<{ folderIds: string[]; forbidden: boolean }> {
     const SAFE_MAX_FOLDERS = 500;
 
     const collected: string[] = [];
     const seenParents = new Set<string>();
     const queue: string[] = [`organizations/${organizationId}`];
+    // Tracks whether ANY page in the BFS hit a 403 PERMISSION_DENIED.
+    // Only true forbiddens trigger the broad-query fallback in the
+    // caller; "no folders exist" must NOT trigger it.
+    let forbidden = false;
 
     while (queue.length > 0 && collected.length < SAFE_MAX_FOLDERS) {
       const parent = queue.shift();
       if (!parent || seenParents.has(parent)) continue;
       seenParents.add(parent);
 
-      const children = await this.listChildFolders(accessToken, parent);
-      for (const folderId of children) {
+      const result = await this.listChildFolders(accessToken, parent);
+      if (result.forbidden) forbidden = true;
+      for (const folderId of result.folderIds) {
         if (collected.includes(folderId)) continue;
         collected.push(folderId);
         queue.push(`folders/${folderId}`);
@@ -951,22 +1004,33 @@ export class GCPSecurityService {
       }
     }
 
-    return collected;
+    return { folderIds: collected, forbidden };
   }
 
   /**
-   * One paginated call to `v2/folders?parent=<parent>` returning the
+   * One paginated call to `v3/folders?parent=<parent>` returning the
    * immediate child folder IDs (stripped of the "folders/" prefix).
+   *
+   * v3 was chosen over v2 because v2 is deprecated and was observed
+   * returning `403 PERMISSION_DENIED` for OAuth grants that
+   * legitimately had org-level folder permissions (verified in prod
+   * logs against customer Propper). v3 is the current API and
+   * accepts the same `parent`/`pageSize`/`pageToken` query params,
+   * so this swap is purely defensive — the response shape is
+   * identical.
+   *
    * Errors are non-fatal — log and return what we collected so far so
-   * one bad page doesn't kill the whole tree walk.
+   * one bad page doesn't kill the whole tree walk; the caller has a
+   * broad-query fallback when enumeration comes back empty.
    */
   private async listChildFolders(
     accessToken: string,
     parent: string,
-  ): Promise<string[]> {
+  ): Promise<{ folderIds: string[]; forbidden: boolean }> {
     const PAGE_SIZE = 100;
     const collected: string[] = [];
     let pageToken: string | undefined;
+    let forbidden = false;
 
     do {
       const params = new URLSearchParams({
@@ -976,7 +1040,7 @@ export class GCPSecurityService {
       if (pageToken) params.set('pageToken', pageToken);
 
       const response = await fetch(
-        `https://cloudresourcemanager.googleapis.com/v2/folders?${params.toString()}`,
+        `https://cloudresourcemanager.googleapis.com/v3/folders?${params.toString()}`,
         {
           headers: {
             Authorization: `Bearer ${accessToken}`,
@@ -986,10 +1050,14 @@ export class GCPSecurityService {
       );
 
       if (!response.ok) {
+        // Distinguish "forbidden" (the caller should fall back to a
+        // broader query) from "transient / no folders" (the caller
+        // should NOT broaden — empty results are the correct answer).
+        if (response.status === 403) forbidden = true;
         this.logger.warn(
-          `Failed to list child folders of ${parent}: ${await response.text()}`,
+          `Failed to list child folders of ${parent} (HTTP ${response.status}): ${await response.text()}`,
         );
-        return collected;
+        return { folderIds: collected, forbidden };
       }
 
       const data = (await response.json()) as {
@@ -1005,7 +1073,7 @@ export class GCPSecurityService {
       pageToken = data.nextPageToken;
     } while (pageToken);
 
-    return collected;
+    return { folderIds: collected, forbidden };
   }
 
   /**
