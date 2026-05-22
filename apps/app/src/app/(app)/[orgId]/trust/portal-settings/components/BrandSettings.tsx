@@ -1,29 +1,50 @@
 'use client';
 
-import { useDebounce } from '@/hooks/useDebounce';
 import { usePermissions } from '@/hooks/use-permissions';
 import { useTrustPortalSettings } from '@/hooks/use-trust-portal-settings';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle, Input } from '@trycompai/design-system';
-import { Form, FormControl, FormField, FormItem, FormLabel } from '@trycompai/ui/form';
+import { useDebounce } from '@/hooks/useDebounce';
 import { zodResolver } from '@hookform/resolvers/zod';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+  Field,
+  FieldLabel,
+  Input,
+} from '@trycompai/design-system';
+import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { useForm } from 'react-hook-form';
+import { Controller, useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import { z } from 'zod';
 
+const DEFAULT_PRIMARY_COLOR = '#000000';
+const HEX_COLOR_PATTERN = /^#[0-9a-fA-F]{6}$/;
+
 const trustSettingsSchema = z.object({
-  primaryColor: z.string().optional(),
+  primaryColor: z.string().regex(HEX_COLOR_PATTERN, 'Enter a valid hex color').optional(),
 });
 
 interface BrandSettingsProps {
-  orgId: string;
+  enabled?: boolean;
   primaryColor: string | null;
+  onPrimaryColorChange?: (primaryColor: string | null) => void;
+}
+
+function normalizePrimaryColor(value: unknown): string | null {
+  if (typeof value !== 'string' || value.length === 0) return null;
+  if (!HEX_COLOR_PATTERN.test(value)) return null;
+  return value.toUpperCase();
 }
 
 export function BrandSettings({
-  orgId,
+  enabled = true,
   primaryColor,
+  onPrimaryColorChange,
 }: BrandSettingsProps) {
+  const router = useRouter();
   const { hasPermission } = usePermissions();
   const canUpdate = hasPermission('trust', 'update');
   const { updateToggleSettings } = useTrustPortalSettings();
@@ -36,7 +57,7 @@ export function BrandSettings({
   });
 
   const lastSaved = useRef<{ [key: string]: string | null }>({
-    primaryColor: primaryColor ?? null,
+    primaryColor: normalizePrimaryColor(primaryColor),
   });
 
   const savingRef = useRef<{ [key: string]: boolean }>({
@@ -49,16 +70,25 @@ export function BrandSettings({
         return;
       }
 
-      if (lastSaved.current[field] !== value) {
+      const nextPrimaryColor = normalizePrimaryColor(value);
+      if (!nextPrimaryColor) {
+        return;
+      }
+
+      if (lastSaved.current[field] !== nextPrimaryColor) {
         savingRef.current[field] = true;
         try {
           await updateToggleSettings({
-            enabled: true,
+            enabled,
             primaryColor:
-              field === 'primaryColor' ? (value as string) : (form.getValues('primaryColor') ?? undefined),
+              field === 'primaryColor'
+                ? nextPrimaryColor
+                : (form.getValues('primaryColor') ?? undefined),
           });
           toast.success('Brand settings updated');
-          lastSaved.current[field] = value as string | null;
+          lastSaved.current[field] = nextPrimaryColor;
+          onPrimaryColorChange?.(nextPrimaryColor);
+          router.refresh();
         } catch {
           toast.error('Failed to update brand settings');
         } finally {
@@ -66,30 +96,43 @@ export function BrandSettings({
         }
       }
     },
-    [form, updateToggleSettings],
+    [enabled, form, onPrimaryColorChange, router, updateToggleSettings],
   );
 
   const [primaryColorValue, setPrimaryColorValue] = useState(form.getValues('primaryColor') || '');
   const debouncedPrimaryColor = useDebounce(primaryColorValue, 800);
 
   useEffect(() => {
+    const normalizedPrimaryColor = normalizePrimaryColor(primaryColor);
+    form.reset({ primaryColor: normalizedPrimaryColor ?? undefined });
+    setPrimaryColorValue(normalizedPrimaryColor ?? '');
+    lastSaved.current.primaryColor = normalizedPrimaryColor;
+  }, [form, primaryColor]);
+
+  useEffect(() => {
     if (
       debouncedPrimaryColor !== undefined &&
-      debouncedPrimaryColor !== lastSaved.current.primaryColor &&
+      normalizePrimaryColor(debouncedPrimaryColor) !== lastSaved.current.primaryColor &&
       !savingRef.current.primaryColor
     ) {
-      form.setValue('primaryColor', debouncedPrimaryColor || undefined);
-      void autoSave('primaryColor', debouncedPrimaryColor || null);
+      const normalizedPrimaryColor = normalizePrimaryColor(debouncedPrimaryColor);
+      if (normalizedPrimaryColor) {
+        form.setValue('primaryColor', normalizedPrimaryColor);
+        void autoSave('primaryColor', normalizedPrimaryColor);
+      }
     }
   }, [debouncedPrimaryColor, autoSave, form]);
 
   const handlePrimaryColorBlur = useCallback(
     (e: React.FocusEvent<HTMLInputElement>) => {
-      const value = e.target.value;
-      if (value) {
-        form.setValue('primaryColor', value);
+      const value = normalizePrimaryColor(e.target.value);
+      if (!value) {
+        toast.error('Enter a valid hex color');
+        return;
       }
-      void autoSave('primaryColor', value || null);
+      form.setValue('primaryColor', value);
+      setPrimaryColorValue(value);
+      void autoSave('primaryColor', value);
     },
     [form, autoSave],
   );
@@ -101,69 +144,68 @@ export function BrandSettings({
         <CardDescription>Customize the appearance of your trust portal</CardDescription>
       </CardHeader>
       <CardContent>
-        <Form {...form}>
-          <div className="space-y-4">
-            <FormField
-              control={form.control}
-              name="primaryColor"
-              render={({ field }) => (
-                <FormItem className="w-full">
-                  <FormLabel>Brand Color</FormLabel>
-                  <FormControl>
+        <div className="space-y-4">
+          <Controller
+            control={form.control}
+            name="primaryColor"
+            render={({ field }) => (
+              <Field>
+                <FieldLabel htmlFor="color-picker">Brand Color</FieldLabel>
+                <div className="relative">
+                  <div className="flex items-center gap-2">
                     <div className="relative">
-                      <div className="flex items-center gap-2">
-                        <div className="relative">
-                          <input
-                            {...field}
-                            value={primaryColorValue ?? '#000000'}
-                            onChange={(e) => {
-                              field.onChange(e);
-                              setPrimaryColorValue(e.target.value);
-                            }}
-                            onBlur={handlePrimaryColorBlur}
-                            type="color"
-                            className="sr-only"
-                            id="color-picker"
-                            disabled={!canUpdate}
-                          />
-                          <label
-                            htmlFor="color-picker"
-                            className="flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center rounded-lg border-2 border-border shadow-sm transition-all hover:scale-105 hover:shadow-md"
-                            style={{ backgroundColor: primaryColorValue || '#000000' }}
-                          >
-                            <span className="sr-only">Pick a color</span>
-                          </label>
-                        </div>
-                        <div className="flex-1">
-                          <div className="font-mono">
-                            <Input
-                              value={primaryColorValue?.toUpperCase() || '#000000'}
-                              onChange={(e) => {
-                                let value = e.target.value;
-                                if (!value.startsWith('#')) {
-                                  value = '#' + value;
-                                }
-                                field.onChange(value);
-                                setPrimaryColorValue(value);
-                              }}
-                              onBlur={handlePrimaryColorBlur}
-                              placeholder="#000000"
-                              maxLength={7}
-                              disabled={!canUpdate}
-                            />
-                          </div>
-                        </div>
+                      <input
+                        {...field}
+                        value={normalizePrimaryColor(primaryColorValue) ?? DEFAULT_PRIMARY_COLOR}
+                        onChange={(e) => {
+                          field.onChange(e);
+                          setPrimaryColorValue(e.target.value);
+                        }}
+                        onBlur={handlePrimaryColorBlur}
+                        type="color"
+                        className="sr-only"
+                        id="color-picker"
+                        disabled={!canUpdate}
+                      />
+                      <label
+                        htmlFor="color-picker"
+                        className="flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center rounded-lg border-2 border-border shadow-sm transition-all hover:scale-105 hover:shadow-md"
+                        style={{
+                          backgroundColor:
+                            normalizePrimaryColor(primaryColorValue) ?? DEFAULT_PRIMARY_COLOR,
+                        }}
+                      >
+                        <span className="sr-only">Pick a color</span>
+                      </label>
+                    </div>
+                    <div className="flex-1">
+                      <div className="font-mono">
+                        <Input
+                          value={primaryColorValue?.toUpperCase() || DEFAULT_PRIMARY_COLOR}
+                          onChange={(e) => {
+                            let value = e.target.value;
+                            if (value.length > 0 && !value.startsWith('#')) {
+                              value = '#' + value;
+                            }
+                            field.onChange(value);
+                            setPrimaryColorValue(value);
+                          }}
+                          onBlur={handlePrimaryColorBlur}
+                          placeholder="#000000"
+                          maxLength={7}
+                          disabled={!canUpdate}
+                        />
                       </div>
                     </div>
-                  </FormControl>
-                </FormItem>
-              )}
-            />
-            <p className="text-xs text-muted-foreground">
-              Used for branding across your trust portal
-            </p>
-          </div>
-        </Form>
+                  </div>
+                </div>
+              </Field>
+            )}
+          />
+          <p className="text-xs text-muted-foreground">
+            Used for branding across your trust portal
+          </p>
+        </div>
       </CardContent>
     </Card>
   );
