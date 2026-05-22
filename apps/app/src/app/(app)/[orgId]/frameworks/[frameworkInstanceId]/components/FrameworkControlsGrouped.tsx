@@ -194,7 +194,7 @@ export function FrameworkControlsGrouped({
           onClear={handleClearFamilyFilter}
         />
         {!isSearching && (
-          <Button variant="secondary" onClick={handleToggleAll}>
+          <Button variant="ghost" onClick={handleToggleAll}>
             {allExpanded ? 'Collapse All' : 'Expand All'}
           </Button>
         )}
