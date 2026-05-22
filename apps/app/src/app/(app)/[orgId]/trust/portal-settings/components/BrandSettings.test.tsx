@@ -106,4 +106,23 @@ describe('BrandSettings permission gating', () => {
     expect(handlePrimaryColorChange).toHaveBeenCalledWith('#00FF00');
     expect(navigationMock.refresh).toHaveBeenCalled();
   });
+
+  it('persists an empty brand color as a reset to default branding', async () => {
+    setMockPermissions(ADMIN_PERMISSIONS);
+    const handlePrimaryColorChange = vi.fn();
+
+    render(<BrandSettings {...defaultProps} onPrimaryColorChange={handlePrimaryColorChange} />);
+
+    const textInput = screen.getByRole('textbox');
+    fireEvent.change(textInput, { target: { value: '' } });
+
+    await waitFor(() => {
+      expect(trustPortalSettingsMock.updateToggleSettings).toHaveBeenCalledWith({
+        enabled: true,
+        primaryColor: '',
+      });
+    });
+    expect(handlePrimaryColorChange).toHaveBeenCalledWith(null);
+    expect(navigationMock.refresh).toHaveBeenCalled();
+  });
 });
