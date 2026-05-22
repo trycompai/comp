@@ -93,6 +93,7 @@ describe('EmployeeBackgroundCheck — V1 two-paths', () => {
     expect(screen.getByText('Order a new check')).toBeInTheDocument();
     expect(screen.getByText('Attach an existing report')).toBeInTheDocument();
     expect(screen.getByText('Mark as exempt')).toBeInTheDocument();
+    expect(screen.queryByText('Logs a compliance exception')).not.toBeInTheDocument();
 
     const orderCard = screen.getByRole('radio', { name: /Order a new check/i });
     expect(orderCard).toHaveAttribute('aria-checked', 'true');
