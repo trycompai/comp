@@ -35,6 +35,8 @@ const IAM_LIKE_SERVICES = new Set(['iam', 'sts']);
 const EC2_SECURITY_GROUP_COMMANDS = new Set([
   'AuthorizeSecurityGroupIngressCommand',
   'RevokeSecurityGroupIngressCommand',
+  'AuthorizeSecurityGroupEgressCommand',
+  'RevokeSecurityGroupEgressCommand',
 ]);
 const S3_ACL_COMMANDS = new Set(['PutBucketAclCommand']);
 const S3_ACL_PERMISSIONS = new Set(['s3:PutBucketAcl']);
