@@ -1,3 +1,11 @@
+## [3.63.1](https://github.com/trycompai/comp/compare/v3.63.0...v3.63.1) (2026-05-22)
+
+
+### Bug Fixes
+
+* **cloud-tests:** only fire GCP broad fallback when folder list was forbidden ([173b031](https://github.com/trycompai/comp/commit/173b031c47ed9ababe0559fc93d31015c2c20677)), closes [#2916](https://github.com/trycompai/comp/issues/2916) [#2916](https://github.com/trycompai/comp/issues/2916)
+* **cloud-tests:** unblock GCP picker when folder enumeration is forbidden ([7fdc871](https://github.com/trycompai/comp/commit/7fdc8715fec2ca06733119510b579f005ed78adc))
+
 # [3.63.0](https://github.com/trycompai/comp/compare/v3.62.2...v3.63.0) (2026-05-22)
 
 
