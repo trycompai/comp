@@ -32,6 +32,18 @@ export const AWS_SERVICE_LINKED_ROLE_PRINCIPAL: Record<string, string> = {
 
 const SLR_COMMAND = 'CreateServiceLinkedRoleCommand';
 const IAM_LIKE_SERVICES = new Set(['iam', 'sts']);
+const EC2_SECURITY_GROUP_COMMANDS = new Set([
+  'AuthorizeSecurityGroupIngressCommand',
+  'RevokeSecurityGroupIngressCommand',
+  'AuthorizeSecurityGroupEgressCommand',
+  'RevokeSecurityGroupEgressCommand',
+]);
+const S3_ACL_COMMANDS = new Set(['PutBucketAclCommand']);
+const S3_ACL_PERMISSIONS = new Set(['s3:PutBucketAcl']);
+
+export interface NormalizeFixPlanContext {
+  resourceId?: string | null;
+}
 
 /**
  * Deterministic post-processing for an AI-generated fix plan. Runs after
@@ -42,12 +54,75 @@ const IAM_LIKE_SERVICES = new Set(['iam', 'sts']);
  *
  * Pure, idempotent, and a no-op when the plan is already well-formed.
  */
-export function normalizeFixPlan(plan: FixPlan): FixPlan {
+export function normalizeFixPlan(
+  plan: FixPlan,
+  context: NormalizeFixPlanContext = {},
+): FixPlan {
+  const securityGroupId = extractSecurityGroupId(context.resourceId);
   return {
     ...plan,
-    fixSteps: backfillServiceLinkedRoleParams(plan.fixSteps),
-    rollbackSteps: backfillServiceLinkedRoleParams(plan.rollbackSteps),
+    requiredPermissions: removeS3AclPermissions(plan.requiredPermissions),
+    readSteps: normalizeStepList(plan.readSteps, securityGroupId),
+    fixSteps: normalizeStepList(plan.fixSteps, securityGroupId),
+    rollbackSteps: normalizeStepList(plan.rollbackSteps, securityGroupId),
   };
+}
+
+function normalizeStepList(
+  steps: AwsCommandStep[],
+  securityGroupId: string | null,
+): AwsCommandStep[] {
+  return backfillSecurityGroupParams(
+    removeUnsupportedS3AclSteps(backfillServiceLinkedRoleParams(steps)),
+    securityGroupId,
+  );
+}
+
+function removeS3AclPermissions(permissions: string[]): string[] {
+  return permissions.filter(
+    (permission) => !S3_ACL_PERMISSIONS.has(permission),
+  );
+}
+
+function removeUnsupportedS3AclSteps(
+  steps: AwsCommandStep[],
+): AwsCommandStep[] {
+  return steps.filter(
+    (step) => !(step.service === 's3' && S3_ACL_COMMANDS.has(step.command)),
+  );
+}
+
+function backfillSecurityGroupParams(
+  steps: AwsCommandStep[],
+  securityGroupId: string | null,
+): AwsCommandStep[] {
+  if (!securityGroupId) return steps;
+
+  return steps.map((step) => {
+    if (
+      step.service !== 'ec2' ||
+      !EC2_SECURITY_GROUP_COMMANDS.has(step.command) ||
+      step.params?.GroupId ||
+      step.params?.GroupName
+    ) {
+      return step;
+    }
+
+    return {
+      ...step,
+      params: { ...(step.params ?? {}), GroupId: securityGroupId },
+    };
+  });
+}
+
+function extractSecurityGroupId(resourceId?: string | null): string | null {
+  if (!resourceId) return null;
+
+  const directMatch = resourceId.match(/^sg-[a-z0-9]+$/i);
+  if (directMatch) return directMatch[0];
+
+  const arnMatch = resourceId.match(/security-group\/(sg-[a-z0-9]+)/i);
+  return arnMatch?.[1] ?? null;
 }
 
 function backfillServiceLinkedRoleParams(
