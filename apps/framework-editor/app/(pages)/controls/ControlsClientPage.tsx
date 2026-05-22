@@ -159,14 +159,16 @@ export function ControlsClientPage({ initialControls, emptyMessage, frameworkId 
   } = useChangeTracking(initialGridData, mutations);
 
   const families = useMemo(() => {
-    const familyMap = new Map<string, number>();
+    const familyMap = new Map<string, Array<{ id: string; name: string | null }>>();
     for (const row of data) {
       if (row.controlFamily) {
-        familyMap.set(row.controlFamily, (familyMap.get(row.controlFamily) ?? 0) + 1);
+        const controls = familyMap.get(row.controlFamily) ?? [];
+        controls.push({ id: row.id, name: row.name });
+        familyMap.set(row.controlFamily, controls);
       }
     }
     return [...familyMap.entries()]
-      .map(([name, count]) => ({ name, count }))
+      .map(([name, controls]) => ({ name, controls }))
       .sort((a, b) => a.name.localeCompare(b.name));
   }, [data]);
 

@@ -10,10 +10,15 @@ import {
 import { Check, Pencil, Search, Trash2, X } from 'lucide-react';
 import { useCallback, useMemo, useState } from 'react';
 
+export interface FamilyInfo {
+  name: string;
+  controls: Array<{ id: string; name: string | null }>;
+}
+
 interface ManageFamiliesDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  families: Array<{ name: string; count: number }>;
+  families: FamilyInfo[];
   onRename: (oldName: string, newName: string) => void;
   onDelete: (familyName: string) => void;
 }
@@ -134,7 +139,7 @@ export function ManageFamiliesDialog({
 }
 
 interface FamilyRowProps {
-  family: { name: string; count: number };
+  family: FamilyInfo;
   isEditing: boolean;
   isDeleting: boolean;
   editValue: string;
@@ -193,22 +198,30 @@ function FamilyRow({
 
   if (isDeleting) {
     return (
-      <div className="flex items-center justify-between rounded px-2 py-1.5">
-        <span className="text-destructive text-sm">
-          Remove from {family.count} control{family.count !== 1 ? 's' : ''}?
-        </span>
-        <div className="flex items-center gap-1">
+      <div className="rounded border border-destructive/30 bg-destructive/5 px-3 py-2">
+        <p className="text-destructive text-sm font-medium">
+          Remove &ldquo;{family.name}&rdquo; from {family.controls.length} control
+          {family.controls.length !== 1 ? 's' : ''}?
+        </p>
+        <ul className="mt-1.5 max-h-24 space-y-0.5 overflow-y-auto">
+          {family.controls.map((c) => (
+            <li key={c.id} className="text-muted-foreground text-xs">
+              {c.name || 'Unnamed control'}
+            </li>
+          ))}
+        </ul>
+        <div className="mt-2 flex items-center gap-2">
           <button
             type="button"
             onClick={onConfirmDelete}
-            className="bg-destructive text-destructive-foreground rounded px-2 py-0.5 text-xs transition-colors hover:opacity-90"
+            className="bg-destructive text-destructive-foreground rounded px-2.5 py-1 text-xs transition-colors hover:opacity-90"
           >
-            Confirm
+            Remove
           </button>
           <button
             type="button"
             onClick={onCancelDelete}
-            className="text-muted-foreground hover:text-foreground rounded px-2 py-0.5 text-xs transition-colors"
+            className="text-muted-foreground hover:text-foreground rounded px-2.5 py-1 text-xs transition-colors"
           >
             Cancel
           </button>
@@ -222,7 +235,7 @@ function FamilyRow({
       <div className="min-w-0 flex-1">
         <span className="text-sm">{family.name}</span>
         <span className="text-muted-foreground ml-2 text-xs">
-          Used by {family.count} control{family.count !== 1 ? 's' : ''}
+          Used by {family.controls.length} control{family.controls.length !== 1 ? 's' : ''}
         </span>
       </div>
       <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100">
