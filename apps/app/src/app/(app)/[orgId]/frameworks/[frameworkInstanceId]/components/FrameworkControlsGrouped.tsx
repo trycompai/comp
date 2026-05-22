@@ -18,7 +18,8 @@ import {
   Text,
 } from '@trycompai/design-system';
 import { ChevronDown, ChevronRight, Search } from '@trycompai/design-system/icons';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import { FamilyFilterDropdown } from './FamilyFilterDropdown';
 import {
   buildControlItems,
   buildRequirementMap,
@@ -83,6 +84,8 @@ export function FrameworkControlsGrouped({
 }) {
   const [searchTerm, setSearchTerm] = useState('');
   const [expandedFamilies, setExpandedFamilies] = useState<Set<string>>(new Set());
+  const [initialized, setInitialized] = useState(false);
+  const [selectedFamilyFilter, setSelectedFamilyFilter] = useState<Set<string>>(new Set());
 
   const requirementMap = useMemo(
     () => buildRequirementMap(requirementDefinitions),
@@ -107,11 +110,24 @@ export function FrameworkControlsGrouped({
     );
   }, [allItems, searchTerm]);
 
-  const groups = useMemo(() => groupByFamily(filteredItems), [filteredItems]);
+  const allGroups = useMemo(() => groupByFamily(filteredItems), [filteredItems]);
+
+  const groups = useMemo(() => {
+    if (selectedFamilyFilter.size === 0) return allGroups;
+    return allGroups.filter((g) => selectedFamilyFilter.has(g.family));
+  }, [allGroups, selectedFamilyFilter]);
+
+  const allFamilyNames = useMemo(() => allGroups.map((g) => g.family), [allGroups]);
+
+  useEffect(() => {
+    if (!initialized && allFamilyNames.length > 0) {
+      setExpandedFamilies(new Set(allFamilyNames));
+      setInitialized(true);
+    }
+  }, [initialized, allFamilyNames]);
 
   const isSearching = searchTerm.trim().length > 0;
-  const allFamilyNames = useMemo(() => groups.map((g) => g.family), [groups]);
-  const hasAnyExpanded = isSearching || expandedFamilies.size > 0;
+  const allExpanded = groups.length > 0 && groups.every((g) => expandedFamilies.has(g.family));
 
   const handleToggleFamily = (family: string) => {
     setExpandedFamilies((prev) => {
@@ -126,7 +142,7 @@ export function FrameworkControlsGrouped({
   };
 
   const handleToggleAll = () => {
-    if (hasAnyExpanded && !isSearching) {
+    if (allExpanded) {
       setExpandedFamilies(new Set());
     } else {
       setExpandedFamilies(new Set(allFamilyNames));
@@ -134,11 +150,23 @@ export function FrameworkControlsGrouped({
   };
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value;
-    setSearchTerm(value);
-    if (!value.trim()) {
-      setExpandedFamilies(new Set());
-    }
+    setSearchTerm(e.target.value);
+  };
+
+  const handleToggleFamilyFilter = (family: string) => {
+    setSelectedFamilyFilter((prev) => {
+      const next = new Set(prev);
+      if (next.has(family)) {
+        next.delete(family);
+      } else {
+        next.add(family);
+      }
+      return next;
+    });
+  };
+
+  const handleClearFamilyFilter = () => {
+    setSelectedFamilyFilter(new Set());
   };
 
   const isFamilyExpanded = (family: string) => isSearching || expandedFamilies.has(family);
@@ -159,9 +187,15 @@ export function FrameworkControlsGrouped({
             />
           </InputGroup>
         </div>
+        <FamilyFilterDropdown
+          allFamilyNames={allFamilyNames}
+          selectedFamilies={selectedFamilyFilter}
+          onToggleFamily={handleToggleFamilyFilter}
+          onClear={handleClearFamilyFilter}
+        />
         {!isSearching && (
           <Button variant="secondary" size="sm" onClick={handleToggleAll}>
-            {hasAnyExpanded ? 'Collapse All' : 'Expand All'}
+            {allExpanded ? 'Collapse All' : 'Expand All'}
           </Button>
         )}
       </div>
