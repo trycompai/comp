@@ -2,17 +2,31 @@
 
 import { usePermissions } from '@/hooks/use-permissions';
 import { useTrustPortalSettings } from '@/hooks/use-trust-portal-settings';
-import { Button, Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@trycompai/design-system';
+import {
+  Button,
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from '@trycompai/design-system';
 import { Add, TrashCan } from '@trycompai/design-system/icons';
 import Image from 'next/image';
-import { useCallback, useRef, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
 
 interface UpdateTrustFaviconProps {
   currentFaviconUrl: string | null;
+  onFaviconChange?: (faviconUrl: string | null) => void;
 }
 
-export function UpdateTrustFavicon({ currentFaviconUrl }: UpdateTrustFaviconProps) {
+export function UpdateTrustFavicon({
+  currentFaviconUrl,
+  onFaviconChange,
+}: UpdateTrustFaviconProps) {
+  const router = useRouter();
   const { hasPermission } = usePermissions();
   const canUpdatePortal = hasPermission('trust', 'update');
   const { uploadFavicon, removeFavicon } = useTrustPortalSettings();
@@ -21,24 +35,29 @@ export function UpdateTrustFavicon({ currentFaviconUrl }: UpdateTrustFaviconProp
   const [isRemoving, setIsRemoving] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  useEffect(() => {
+    setPreviewUrl(currentFaviconUrl);
+  }, [currentFaviconUrl]);
+
   const handleUpload = useCallback(
     async (fileName: string, fileType: string, fileData: string) => {
       setIsUploading(true);
       try {
         const result = await uploadFavicon(fileName, fileType, fileData);
-        if (result && typeof result === 'object' && 'faviconUrl' in result) {
-          setPreviewUrl((result as { faviconUrl: string }).faviconUrl);
+        if (!result?.faviconUrl) {
+          throw new Error('Unexpected API response');
         }
+        setPreviewUrl(result.faviconUrl);
+        onFaviconChange?.(result.faviconUrl);
+        router.refresh();
         toast.success('Favicon updated');
       } catch (error) {
-        toast.error(
-          error instanceof Error ? error.message : 'Failed to upload favicon',
-        );
+        toast.error(error instanceof Error ? error.message : 'Failed to upload favicon');
       } finally {
         setIsUploading(false);
       }
     },
-    [uploadFavicon],
+    [onFaviconChange, router, uploadFavicon],
   );
 
   const handleRemove = useCallback(async () => {
@@ -46,13 +65,15 @@ export function UpdateTrustFavicon({ currentFaviconUrl }: UpdateTrustFaviconProp
     try {
       await removeFavicon();
       setPreviewUrl(null);
+      onFaviconChange?.(null);
+      router.refresh();
       toast.success('Favicon removed');
     } catch {
       toast.error('Failed to remove favicon');
     } finally {
       setIsRemoving(false);
     }
-  }, [removeFavicon]);
+  }, [onFaviconChange, removeFavicon, router]);
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -154,7 +175,8 @@ export function UpdateTrustFavicon({ currentFaviconUrl }: UpdateTrustFaviconProp
       </CardContent>
       <CardFooter>
         <div className="text-muted-foreground text-xs">
-          Recommended: Square image (16x16, 32x32, or 180x180px). Formats: .ico, .png, or .svg. Max 100KB.
+          Recommended: Square image (16x16, 32x32, or 180x180px). Formats: .ico, .png, or .svg. Max
+          100KB.
         </div>
       </CardFooter>
     </Card>
