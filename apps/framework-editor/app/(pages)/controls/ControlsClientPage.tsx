@@ -10,12 +10,13 @@ import {
   type SortingState,
 } from '@tanstack/react-table';
 import { Button } from '@trycompai/ui';
-import { ArrowDown, ArrowUp, ArrowUpDown, Link, Plus, Trash2 } from 'lucide-react';
+import { ArrowDown, ArrowUp, ArrowUpDown, Link, Plus, Settings, Trash2 } from 'lucide-react';
 import { useCallback, useMemo, useState } from 'react';
 import {
   AddExistingItemDialog,
   type ExistingItemRaw,
 } from '../../components/AddExistingItemDialog';
+import { ManageFamiliesDialog } from './ManageFamiliesDialog';
 import {
   ComboboxCell,
   DateCell,
@@ -156,6 +157,42 @@ export function ControlsClientPage({ initialControls, emptyMessage, frameworkId 
     createdIds,
     changesSummary,
   } = useChangeTracking(initialGridData, mutations);
+
+  const families = useMemo(() => {
+    const familyMap = new Map<string, number>();
+    for (const row of data) {
+      if (row.controlFamily) {
+        familyMap.set(row.controlFamily, (familyMap.get(row.controlFamily) ?? 0) + 1);
+      }
+    }
+    return [...familyMap.entries()]
+      .map(([name, count]) => ({ name, count }))
+      .sort((a, b) => a.name.localeCompare(b.name));
+  }, [data]);
+
+  const [manageFamiliesOpen, setManageFamiliesOpen] = useState(false);
+
+  const handleRenameFamily = useCallback(
+    (oldName: string, newName: string) => {
+      for (const row of data) {
+        if (row.controlFamily === oldName) {
+          updateCell(row.id, 'controlFamily', newName);
+        }
+      }
+    },
+    [data, updateCell],
+  );
+
+  const handleDeleteFamily = useCallback(
+    (familyName: string) => {
+      for (const row of data) {
+        if (row.controlFamily === familyName) {
+          updateCell(row.id, 'controlFamily', '');
+        }
+      }
+    },
+    [data, updateCell],
+  );
 
   const handleDocumentTypesUpdate = useCallback(
     (rowId: string, values: string[]) => {
@@ -405,6 +442,17 @@ export function ControlsClientPage({ initialControls, emptyMessage, frameworkId 
           )}
         </div>
         <div className="flex items-center gap-2">
+          {families.length > 0 && (
+            <Button
+              variant="outline"
+              onClick={() => setManageFamiliesOpen(true)}
+              size="sm"
+              className="rounded-xs"
+            >
+              <Settings className="mr-1 h-4 w-4" />
+              Manage Families
+            </Button>
+          )}
           {frameworkId && (
             <Button
               variant="outline"
@@ -433,6 +481,14 @@ export function ControlsClientPage({ initialControls, emptyMessage, frameworkId 
           fetchAllItems={fetchAllControlsForDialog}
         />
       )}
+
+      <ManageFamiliesDialog
+        open={manageFamiliesOpen}
+        onClose={() => setManageFamiliesOpen(false)}
+        families={families}
+        onRename={handleRenameFamily}
+        onDelete={handleDeleteFamily}
+      />
 
       <div className="scrollbar-primary border-border min-h-0 flex-1 overflow-auto rounded-xs border">
         <table className="w-full border-collapse">
