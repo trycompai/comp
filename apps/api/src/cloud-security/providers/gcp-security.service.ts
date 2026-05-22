@@ -889,7 +889,44 @@ export class GCPSecurityService {
       accessToken,
       organizationId,
     );
-    if (folderIds.length === 0) return [];
+
+    // Verified in production logs (customer Propper, org 43356919874):
+    // the `cloudresourcemanager.folders.list` endpoint returns
+    // `403 PERMISSION_DENIED` for some OAuth grants even when the
+    // user has `roles/owner` + `roles/resourcemanager.folderAdmin`
+    // at the org level. When that happens, folder enumeration
+    // returns an empty list and the precise per-folder query would
+    // silently skip every folder-nested project — exactly the bug
+    // Greg reported (propperai-prod, propperai-demo invisible in
+    // the picker).
+    //
+    // Fall back to the broader `parent.type:folder` query — it
+    // returns all folder-nested projects the OAuth user can `get`.
+    // For single-org tenants (the common case) this delivers the
+    // right set. For multi-org tenants it may include folder-nested
+    // projects from other orgs the user happens to have access to,
+    // which is acceptable because:
+    //   - the picker is selection-based (user chooses what to monitor),
+    //   - the alternative is a silently empty picker,
+    //   - the user already authorized those projects via IAM.
+    if (folderIds.length === 0) {
+      this.logger.warn(
+        `GCP folder enumeration returned 0 folders for org ${organizationId}; falling back to broad parent.type:folder query`,
+      );
+      const fallback = await this.listProjectsPaginated(
+        accessToken,
+        'lifecycleState:ACTIVE AND parent.type:folder',
+      ).catch((err) => {
+        this.logger.warn(
+          `GCP broad folder-projects fallback failed: ${err instanceof Error ? err.message : String(err)}`,
+        );
+        return [];
+      });
+      this.logger.log(
+        `GCP folder fallback for org ${organizationId}: ${fallback.length} project(s) via broad parent.type:folder query`,
+      );
+      return fallback;
+    }
 
     // Bound the fan-out: an unbounded `Promise.all(folderIds.map(...))`
     // can trigger GCP rate limiting (`429 Too Many Requests`) on
@@ -955,10 +992,20 @@ export class GCPSecurityService {
   }
 
   /**
-   * One paginated call to `v2/folders?parent=<parent>` returning the
+   * One paginated call to `v3/folders?parent=<parent>` returning the
    * immediate child folder IDs (stripped of the "folders/" prefix).
+   *
+   * v3 was chosen over v2 because v2 is deprecated and was observed
+   * returning `403 PERMISSION_DENIED` for OAuth grants that
+   * legitimately had org-level folder permissions (verified in prod
+   * logs against customer Propper). v3 is the current API and
+   * accepts the same `parent`/`pageSize`/`pageToken` query params,
+   * so this swap is purely defensive — the response shape is
+   * identical.
+   *
    * Errors are non-fatal — log and return what we collected so far so
-   * one bad page doesn't kill the whole tree walk.
+   * one bad page doesn't kill the whole tree walk; the caller has a
+   * broad-query fallback when enumeration comes back empty.
    */
   private async listChildFolders(
     accessToken: string,
@@ -976,7 +1023,7 @@ export class GCPSecurityService {
       if (pageToken) params.set('pageToken', pageToken);
 
       const response = await fetch(
-        `https://cloudresourcemanager.googleapis.com/v2/folders?${params.toString()}`,
+        `https://cloudresourcemanager.googleapis.com/v3/folders?${params.toString()}`,
         {
           headers: {
             Authorization: `Bearer ${accessToken}`,
