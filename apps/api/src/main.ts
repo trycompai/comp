@@ -8,6 +8,7 @@ import * as express from 'express';
 import helmet from 'helmet';
 import path from 'path';
 import { AppModule } from './app.module';
+import { initTracing, shutdownTracing } from './inference-tracing';
 import {
   applyPublicOpenApiMetadata,
   PUBLIC_OPENAPI_DESCRIPTION,
@@ -34,6 +35,10 @@ function describeServer(baseUrl: string): string {
 }
 
 async function bootstrap(): Promise<void> {
+  // Catalyst tracing must initialize before the AI SDK is first used
+  // (assistant-chat controller passes experimental_telemetry on streamText).
+  await initTracing();
+
   // Disable body parser - required for better-auth NestJS integration
   // The library will re-add body parsers after handling auth routes
   app = await NestFactory.create(AppModule, {
@@ -216,6 +221,7 @@ async function shutdown(signal: string): Promise<void> {
     await app.close();
     console.log('Application closed');
   }
+  await shutdownTracing();
   process.exit(0);
 }
 

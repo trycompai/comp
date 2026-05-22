@@ -1,4 +1,5 @@
 import { auth } from '@/utils/auth';
+import { getAITelemetry } from '@/lib/inference-tracing';
 import { anthropic } from '@ai-sdk/anthropic';
 import { db } from '@db/server';
 import { convertToModelMessages, streamText, stepCountIs, type UIMessage } from 'ai';
@@ -194,6 +195,7 @@ You MUST produce the policy by starting from the <current_policy> text above and
       toolChoice: 'auto',
       stopWhen: stepCountIs(5),
       tools: getPolicyTools({ currentPolicyId: policyId, cookieHeader: cookieStr }),
+      experimental_telemetry: getAITelemetry('policy-editor'),
     });
 
     return result.toUIMessageStreamResponse();

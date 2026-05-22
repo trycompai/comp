@@ -40,6 +40,7 @@ import { buildTools } from './assistant-chat-tools';
 import type { AssistantChatMessage } from './assistant-chat.types';
 import { RolesService } from '../roles/roles.service';
 import { ASSISTANT_OPENAI_PROVIDER_OPTIONS } from './openai-options';
+import { getAITelemetry } from '../inference-tracing';
 
 @ApiTags('Assistant Chat')
 @Controller({ path: 'assistant-chat', version: '1' })
@@ -132,6 +133,7 @@ Important:
         tools,
         providerOptions: ASSISTANT_OPENAI_PROVIDER_OPTIONS,
         stopWhen: stepCountIs(5),
+        experimental_telemetry: getAITelemetry('grc-assistant'),
       });
 
       const webResponse = result.toUIMessageStreamResponse({
