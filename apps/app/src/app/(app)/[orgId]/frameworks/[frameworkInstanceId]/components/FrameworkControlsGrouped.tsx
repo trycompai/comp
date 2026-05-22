@@ -256,7 +256,7 @@ function FamilySection({
 
   return (
     <>
-      <tr className="bg-secondary hover:bg-secondary/80">
+      <TableRow data-state="selected">
         <TableCell colSpan={COLUMN_COUNT}>
           <button
             type="button"
@@ -277,7 +277,7 @@ function FamilySection({
             </span>
           </button>
         </TableCell>
-      </tr>
+      </TableRow>
       {expanded &&
         group.items.map(({ control, requirements }) => (
           <GroupedControlRow
