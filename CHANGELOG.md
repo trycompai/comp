@@ -1,3 +1,19 @@
+# [3.63.0](https://github.com/trycompai/comp/compare/v3.62.2...v3.63.0) (2026-05-22)
+
+
+### Bug Fixes
+
+* **cloud-tests:** graceful manual-step fallback for AWS auto-remediation ([4325340](https://github.com/trycompai/comp/commit/43253401d3f38780f1b31f45c381e22716a88a7c))
+* **people:** remove background check exception label ([ddb4b72](https://github.com/trycompai/comp/commit/ddb4b725230df49cd6a9987d23aba385609cfdde))
+* **trust:** allow clearing brand color ([e89b189](https://github.com/trycompai/comp/commit/e89b189c18b147b7b89fa3e8a6f67495a04960c2))
+* **trust:** persist portal branding settings ([2b21d1c](https://github.com/trycompai/comp/commit/2b21d1cff71f3f95c839470272a6e41e83a8da3c))
+
+
+### Features
+
+* **cloud-tests:** manual-steps generator + broader auto-fix pattern coverage ([ebce8a3](https://github.com/trycompai/comp/commit/ebce8a3e6662627ee043a4ed6766d74ece84a724))
+* **cloud-tests:** surface manual-step fallback through trigger + dialog ([c883aee](https://github.com/trycompai/comp/commit/c883aee2f39915dc5193504333e16c85611136a8))
+
 ## [3.62.2](https://github.com/trycompai/comp/compare/v3.62.1...v3.62.2) (2026-05-22)
 
 
