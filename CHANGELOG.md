@@ -1,3 +1,10 @@
+## [3.62.2](https://github.com/trycompai/comp/compare/v3.62.1...v3.62.2) (2026-05-22)
+
+
+### Bug Fixes
+
+* **integrations:** honor google sync exclusions for members ([feb92ed](https://github.com/trycompai/comp/commit/feb92ed37276ec1035706f57f04a76cabe1b157a))
+
 ## [3.62.1](https://github.com/trycompai/comp/compare/v3.62.0...v3.62.1) (2026-05-22)
 
 
