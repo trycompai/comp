@@ -120,6 +120,7 @@ export function FrameworkControlsGrouped({
   }, [allGroups, selectedFamilyFilter]);
 
   const allFamilyNames = useMemo(() => allGroups.map((g) => g.family), [allGroups]);
+  const familyCounts = useMemo(() => new Map(allGroups.map((g) => [g.family, g.items.length])), [allGroups]);
 
   const isSearching = searchTerm.trim().length > 0;
   const allCollapsed = groups.length > 0 && groups.every((g) => collapsedFamilies.has(g.family));
@@ -182,6 +183,7 @@ export function FrameworkControlsGrouped({
         </div>
         <FamilyFilterDropdown
           allFamilyNames={allFamilyNames}
+          familyCounts={familyCounts}
           selectedFamilies={selectedFamilyFilter}
           onToggleFamily={handleToggleFamilyFilter}
           onClear={handleClearFamilyFilter}

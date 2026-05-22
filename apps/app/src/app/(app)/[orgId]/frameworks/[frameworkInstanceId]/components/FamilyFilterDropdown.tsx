@@ -11,6 +11,7 @@ import { useEffect, useRef, useState } from 'react';
 
 interface FamilyFilterDropdownProps {
   allFamilyNames: string[];
+  familyCounts: Map<string, number>;
   selectedFamilies: Set<string>;
   onToggleFamily: (family: string) => void;
   onClear: () => void;
@@ -18,6 +19,7 @@ interface FamilyFilterDropdownProps {
 
 export function FamilyFilterDropdown({
   allFamilyNames,
+  familyCounts,
   selectedFamilies,
   onToggleFamily,
   onClear,
@@ -90,7 +92,8 @@ export function FamilyFilterDropdown({
                   onClick={() => onToggleFamily(family)}
                 >
                   <Icon size={16} className={isSelected ? 'text-primary' : 'text-muted-foreground'} />
-                  <Text size="sm">{family}</Text>
+                  <span className="flex-1 truncate text-sm">{family}</span>
+                  <span className="text-xs text-muted-foreground tabular-nums">{familyCounts.get(family) ?? 0}</span>
                 </button>
               );
             })}
