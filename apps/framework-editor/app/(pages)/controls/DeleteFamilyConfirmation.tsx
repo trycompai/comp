@@ -4,7 +4,7 @@ import { ChevronDown, ChevronRight } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import type { FamilyInfo } from './ManageFamiliesDialog';
 
-const PREVIEW_LIMIT = 5;
+const PREVIEW_LIMIT = 10;
 
 export function DeleteFamilyConfirmation({
   family,
@@ -30,55 +30,62 @@ export function DeleteFamilyConfirmation({
   const remaining = count - PREVIEW_LIMIT;
 
   return (
-    <div className="rounded border border-destructive/30 bg-destructive/5 px-3 py-2">
-      <p className="text-destructive text-sm font-medium">
-        Remove &ldquo;{family.name}&rdquo; from {count} control
-        {count !== 1 ? 's' : ''}?
-      </p>
-      {affectedFrameworks.length > 0 && (
-        <p className="text-muted-foreground mt-0.5 text-xs">
-          Across {affectedFrameworks.join(', ')}
+    <div className="space-y-3 rounded-lg border border-destructive/20 bg-destructive/5 p-4">
+      <div>
+        <p className="text-destructive text-sm font-medium">
+          Remove &ldquo;{family.name}&rdquo;?
         </p>
-      )}
-      <button
-        type="button"
-        className="text-muted-foreground hover:text-foreground mt-1.5 flex items-center gap-1 text-xs"
-        onClick={() => setShowDetails((prev) => !prev)}
-      >
-        {showDetails ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
-        {showDetails ? 'Hide' : 'Show'} affected controls
-      </button>
-      {showDetails && (
-        <ul className="mt-1 max-h-40 space-y-0.5 overflow-y-auto">
-          {preview.map((c) => (
-            <li key={c.id} className="text-xs">
-              <span className="text-foreground">{c.name || 'Unnamed control'}</span>
-              {c.frameworks.length > 0 && (
-                <span className="text-muted-foreground ml-1">
-                  ({c.frameworks.join(', ')})
-                </span>
-              )}
-            </li>
-          ))}
-          {remaining > 0 && (
-            <li className="text-muted-foreground text-xs italic">
-              and {remaining} more...
-            </li>
+        <p className="text-muted-foreground mt-1 text-xs">
+          This will ungroup {count} control{count !== 1 ? 's' : ''}.
+          {affectedFrameworks.length > 0 && (
+            <> Affects {affectedFrameworks.join(', ')}.</>
           )}
-        </ul>
+        </p>
+      </div>
+
+      {count > 0 && (
+        <div>
+          <button
+            type="button"
+            className="text-muted-foreground hover:text-foreground flex items-center gap-1 text-xs"
+            onClick={() => setShowDetails((prev) => !prev)}
+          >
+            {showDetails ? (
+              <ChevronDown className="h-3 w-3" />
+            ) : (
+              <ChevronRight className="h-3 w-3" />
+            )}
+            {count} affected control{count !== 1 ? 's' : ''}
+          </button>
+          {showDetails && (
+            <ul className="mt-1.5 max-h-36 space-y-px overflow-y-auto rounded border border-border bg-background px-3 py-2">
+              {preview.map((c) => (
+                <li key={c.id} className="text-muted-foreground truncate text-xs">
+                  {c.name || 'Unnamed control'}
+                </li>
+              ))}
+              {remaining > 0 && (
+                <li className="text-muted-foreground/60 mt-0.5 text-xs">
+                  + {remaining} more
+                </li>
+              )}
+            </ul>
+          )}
+        </div>
       )}
-      <div className="mt-2 flex items-center gap-2">
+
+      <div className="flex items-center gap-2">
         <button
           type="button"
           onClick={onConfirm}
-          className="bg-destructive text-destructive-foreground rounded px-2.5 py-1 text-xs transition-colors hover:opacity-90"
+          className="bg-destructive text-destructive-foreground rounded px-3 py-1.5 text-xs font-medium transition-colors hover:opacity-90"
         >
-          Remove
+          Remove family
         </button>
         <button
           type="button"
           onClick={onCancel}
-          className="text-muted-foreground hover:text-foreground rounded px-2.5 py-1 text-xs transition-colors"
+          className="text-muted-foreground hover:text-foreground rounded px-3 py-1.5 text-xs transition-colors"
         >
           Cancel
         </button>
