@@ -250,8 +250,9 @@ function normaliseInputParams(
 
   // Rule 2: S3 CreateBucket needs LocationConstraint for non-us-east-1
   if (command === 'CreateBucketCommand') {
-    if (input.Bucket) {
-      input.Bucket = String(input.Bucket).toLowerCase().replace(/_/g, '-');
+    const bucket = input.Bucket;
+    if (typeof bucket === 'string' || typeof bucket === 'number') {
+      input.Bucket = String(bucket).toLowerCase().replace(/_/g, '-');
     }
     if (region !== 'us-east-1' && !input.CreateBucketConfiguration) {
       input.CreateBucketConfiguration = { LocationConstraint: region };

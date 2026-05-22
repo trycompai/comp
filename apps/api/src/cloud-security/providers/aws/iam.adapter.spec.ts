@@ -80,60 +80,58 @@ describe('IamAdapter', () => {
 
   it('does not raise MFA findings for IAM users without console access', async () => {
     const mfaCheckedUsers: string[] = [];
-    jest
-      .spyOn(IAMClient.prototype, 'send')
-      .mockImplementation(async (command) => {
-        if (command instanceof GetAccountPasswordPolicyCommand) {
-          return {
-            PasswordPolicy: {
-              MinimumPasswordLength: 14,
-              RequireUppercaseCharacters: true,
-              RequireLowercaseCharacters: true,
-              RequireNumbers: true,
-              RequireSymbols: true,
+    jest.spyOn(IAMClient.prototype, 'send').mockImplementation((command) => {
+      if (command instanceof GetAccountPasswordPolicyCommand) {
+        return {
+          PasswordPolicy: {
+            MinimumPasswordLength: 14,
+            RequireUppercaseCharacters: true,
+            RequireLowercaseCharacters: true,
+            RequireNumbers: true,
+            RequireSymbols: true,
+          },
+        };
+      }
+
+      if (command instanceof ListUsersCommand) {
+        return {
+          Users: [
+            {
+              UserName: 'console-user',
+              Arn: 'arn:aws:iam::123456789012:user/console-user',
             },
-          };
-        }
+            {
+              UserName: 'api-only-user',
+              Arn: 'arn:aws:iam::123456789012:user/api-only-user',
+            },
+          ],
+        };
+      }
 
-        if (command instanceof ListUsersCommand) {
-          return {
-            Users: [
-              {
-                UserName: 'console-user',
-                Arn: 'arn:aws:iam::123456789012:user/console-user',
-              },
-              {
-                UserName: 'api-only-user',
-                Arn: 'arn:aws:iam::123456789012:user/api-only-user',
-              },
-            ],
-          };
+      if (command instanceof GetLoginProfileCommand) {
+        if (command.input.UserName === 'api-only-user') {
+          throw makeNoSuchEntityError();
         }
+        return { LoginProfile: { UserName: command.input.UserName } };
+      }
 
-        if (command instanceof GetLoginProfileCommand) {
-          if (command.input.UserName === 'api-only-user') {
-            throw makeNoSuchEntityError();
-          }
-          return { LoginProfile: { UserName: command.input.UserName } };
-        }
+      if (command instanceof ListMFADevicesCommand) {
+        if (command.input.UserName)
+          mfaCheckedUsers.push(command.input.UserName);
+        return { MFADevices: [] };
+      }
 
-        if (command instanceof ListMFADevicesCommand) {
-          if (command.input.UserName)
-            mfaCheckedUsers.push(command.input.UserName);
-          return { MFADevices: [] };
-        }
+      if (command instanceof ListAccessKeysCommand) {
+        return { AccessKeyMetadata: [] };
+      }
 
-        if (command instanceof ListAccessKeysCommand) {
-          return { AccessKeyMetadata: [] };
-        }
+      if (command instanceof GenerateCredentialReportCommand) return {};
+      if (command instanceof GetCredentialReportCommand) {
+        return { Content: Buffer.from(CREDENTIAL_REPORT, 'utf-8') };
+      }
 
-        if (command instanceof GenerateCredentialReportCommand) return {};
-        if (command instanceof GetCredentialReportCommand) {
-          return { Content: Buffer.from(CREDENTIAL_REPORT, 'utf-8') };
-        }
-
-        return {};
-      });
+      return {};
+    });
 
     const findings = await new IamAdapter().scan({
       credentials: {
@@ -155,53 +153,51 @@ describe('IamAdapter', () => {
 
   it('continues MFA checks when the console-access probe fails unexpectedly', async () => {
     const mfaCheckedUsers: string[] = [];
-    jest
-      .spyOn(IAMClient.prototype, 'send')
-      .mockImplementation(async (command) => {
-        if (command instanceof GetAccountPasswordPolicyCommand) {
-          return {
-            PasswordPolicy: {
-              MinimumPasswordLength: 14,
-              RequireUppercaseCharacters: true,
-              RequireLowercaseCharacters: true,
-              RequireNumbers: true,
-              RequireSymbols: true,
+    jest.spyOn(IAMClient.prototype, 'send').mockImplementation((command) => {
+      if (command instanceof GetAccountPasswordPolicyCommand) {
+        return {
+          PasswordPolicy: {
+            MinimumPasswordLength: 14,
+            RequireUppercaseCharacters: true,
+            RequireLowercaseCharacters: true,
+            RequireNumbers: true,
+            RequireSymbols: true,
+          },
+        };
+      }
+
+      if (command instanceof ListUsersCommand) {
+        return {
+          Users: [
+            {
+              UserName: 'console-probe-error-user',
+              Arn: 'arn:aws:iam::123456789012:user/console-probe-error-user',
             },
-          };
-        }
+          ],
+        };
+      }
 
-        if (command instanceof ListUsersCommand) {
-          return {
-            Users: [
-              {
-                UserName: 'console-probe-error-user',
-                Arn: 'arn:aws:iam::123456789012:user/console-probe-error-user',
-              },
-            ],
-          };
-        }
+      if (command instanceof GetLoginProfileCommand) {
+        throw makeAccessDeniedError();
+      }
 
-        if (command instanceof GetLoginProfileCommand) {
-          throw makeAccessDeniedError();
-        }
+      if (command instanceof ListMFADevicesCommand) {
+        if (command.input.UserName)
+          mfaCheckedUsers.push(command.input.UserName);
+        return { MFADevices: [] };
+      }
 
-        if (command instanceof ListMFADevicesCommand) {
-          if (command.input.UserName)
-            mfaCheckedUsers.push(command.input.UserName);
-          return { MFADevices: [] };
-        }
+      if (command instanceof ListAccessKeysCommand) {
+        return { AccessKeyMetadata: [] };
+      }
 
-        if (command instanceof ListAccessKeysCommand) {
-          return { AccessKeyMetadata: [] };
-        }
+      if (command instanceof GenerateCredentialReportCommand) return {};
+      if (command instanceof GetCredentialReportCommand) {
+        return { Content: Buffer.from(CREDENTIAL_REPORT, 'utf-8') };
+      }
 
-        if (command instanceof GenerateCredentialReportCommand) return {};
-        if (command instanceof GetCredentialReportCommand) {
-          return { Content: Buffer.from(CREDENTIAL_REPORT, 'utf-8') };
-        }
-
-        return {};
-      });
+      return {};
+    });
 
     const findings = await new IamAdapter().scan({
       credentials: {
