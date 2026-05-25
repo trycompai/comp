@@ -22,12 +22,12 @@ import {
   DateCell,
   EditableCell,
   MultiSelectCell,
-  type MultiSelectOption,
   RelationalCell,
   type RelationalItem,
 } from '../../components/table';
 import { DOCUMENT_TYPE_OPTIONS } from './document-type-options';
 import { simpleUUID, useChangeTracking, type ControlMutations } from './hooks/useChangeTracking';
+import { useFamiliesManagement } from './hooks/useFamiliesManagement';
 import type { ControlsPageGridData, FrameworkEditorControlTemplateWithRelatedData } from './types';
 
 interface RequirementApiItem {
@@ -158,58 +158,14 @@ export function ControlsClientPage({ initialControls, emptyMessage, frameworkId 
     changesSummary,
   } = useChangeTracking(initialGridData, mutations);
 
-  const families = useMemo(() => {
-    const familyMap = new Map<string, Array<{ id: string; name: string | null; frameworks: string[] }>>();
-    for (const row of data) {
-      if (row.controlFamily) {
-        const controls = familyMap.get(row.controlFamily) ?? [];
-        const frameworks = [...new Set(
-          row.requirements
-            .map((r) => r.sublabel)
-            .filter((s): s is string => s != null && s !== ''),
-        )];
-        controls.push({ id: row.id, name: row.name, frameworks });
-        familyMap.set(row.controlFamily, controls);
-      }
-    }
-    return [...familyMap.entries()]
-      .map(([name, controls]) => ({ name, controls }))
-      .sort((a, b) => a.name.localeCompare(b.name));
-  }, [data]);
-
-  const [manageFamiliesOpen, setManageFamiliesOpen] = useState(false);
-
-  const handleRenameFamily = useCallback(
-    (oldName: string, newName: string) => {
-      for (const row of data) {
-        if (row.controlFamily === oldName) {
-          updateCell(row.id, 'controlFamily', newName);
-        }
-      }
-    },
-    [data, updateCell],
-  );
-
-  const handleDeleteFamily = useCallback(
-    (familyName: string) => {
-      for (const row of data) {
-        if (row.controlFamily === familyName) {
-          updateCell(row.id, 'controlFamily', '');
-        }
-      }
-    },
-    [data, updateCell],
-  );
-
-  const uniqueFamilies = useMemo(
-    () =>
-      [...new Set(
-        data
-          .map((r) => r.controlFamily)
-          .filter((f): f is string => f != null && f !== ''),
-      )].sort(),
-    [data],
-  );
+  const {
+    families,
+    uniqueFamilies,
+    manageFamiliesOpen,
+    setManageFamiliesOpen,
+    handleRenameFamily,
+    handleDeleteFamily,
+  } = useFamiliesManagement({ data, updateCell });
 
   const handleDocumentTypesUpdate = useCallback(
     (rowId: string, values: string[]) => {
