@@ -82,13 +82,13 @@ export function groupByFamily(items: ControlItem[]): FamilyGroup[] {
 
   const groups: FamilyGroup[] = sortedFamilies.map(([family, items]) => ({
     family,
-    items: items.sort((a, b) => a.control.name.localeCompare(b.control.name)),
+    items: items.sort((a, b) => a.control.name.localeCompare(b.control.name, undefined, { numeric: true })),
   }));
 
   if (otherItems.length > 0) {
     groups.push({
       family: UNCATEGORIZED_FAMILY,
-      items: otherItems.sort((a, b) => a.control.name.localeCompare(b.control.name)),
+      items: otherItems.sort((a, b) => a.control.name.localeCompare(b.control.name, undefined, { numeric: true })),
     });
   }
 

@@ -327,8 +327,10 @@ async function replayUndo(
       });
     }
     for (const entry of ctx.undo.controlFamilies.deleted) {
-      await tx.frameworkControlFamily.create({
-        data: { frameworkInstanceId: entry.frameworkInstanceId, controlId: entry.controlId, controlFamily: entry.prevFamily },
+      await tx.frameworkControlFamily.upsert({
+        where: { frameworkInstanceId_controlId: { frameworkInstanceId: entry.frameworkInstanceId, controlId: entry.controlId } },
+        create: { frameworkInstanceId: entry.frameworkInstanceId, controlId: entry.controlId, controlFamily: entry.prevFamily },
+        update: { controlFamily: entry.prevFamily },
       });
     }
   }
