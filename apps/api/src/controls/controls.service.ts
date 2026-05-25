@@ -477,6 +477,14 @@ export class ControlsService {
         });
       }
 
+      if (scopedRequirementMappings.length > 0) {
+        await syncDirectLinksToCustomFrameworks({
+          controlId: control.id,
+          organizationId,
+          client: tx,
+        });
+      }
+
       return control;
     });
   }

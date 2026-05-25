@@ -789,6 +789,17 @@ export class PoliciesController {
       },
     });
 
+    await db.frameworkControlPolicyLink.deleteMany({
+      where: {
+        controlId,
+        policyId: id,
+        frameworkInstance: {
+          organizationId,
+          customFrameworkId: { not: null },
+        },
+      },
+    });
+
     return {
       success: true,
       authType: authContext.authType,

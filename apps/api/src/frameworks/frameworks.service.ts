@@ -202,6 +202,11 @@ export class FrameworksService {
             include: {
               control: {
                 include: {
+                  policies: {
+                    where: { archivedAt: null },
+                    select: { id: true, name: true, status: true },
+                  },
+                  controlDocumentTypes: true,
                   frameworkPolicyLinks: {
                     where: { policy: { archivedAt: null } },
                     include: {
@@ -228,35 +233,29 @@ export class FrameworksService {
       await this.getNotRelevantFormTypes(organizationId);
 
     const frameworksWithControls = frameworkInstances.map((fi: any) => {
+      const isCustomFramework = fi.customFrameworkId !== null;
       const controlsMap = new Map<string, any>();
       for (const rm of fi.requirementsMapped || []) {
         if (rm.control && !controlsMap.has(rm.control.id)) {
-          const {
-            requirementsMapped: _,
-            frameworkPolicyLinks,
-            frameworkDocumentLinks,
-            ...controlData
-          } = rm.control;
-          const policyLinks = rm.control.frameworkPolicyLinks.filter(
-            (link: { frameworkInstanceId: string }) =>
-              link.frameworkInstanceId === fi.id,
-          );
-          const documentLinks = rm.control.frameworkDocumentLinks.filter(
-            (link: { frameworkInstanceId: string }) =>
-              link.frameworkInstanceId === fi.id,
-          );
+          const { requirementsMapped: _reqs, ...controlForMerge } = rm.control;
+          const scopedControl = {
+            ...controlForMerge,
+            frameworkPolicyLinks: controlForMerge.frameworkPolicyLinks.filter(
+              (link: { frameworkInstanceId: string }) =>
+                link.frameworkInstanceId === fi.id,
+            ),
+            frameworkDocumentLinks: controlForMerge.frameworkDocumentLinks.filter(
+              (link: { frameworkInstanceId: string }) =>
+                link.frameworkInstanceId === fi.id,
+            ),
+          };
+          const merged = mergeControlLinks(scopedControl, {
+            isCustomFramework,
+            frameworkInstanceId: fi.id,
+            notRelevantFormTypes,
+          });
           controlsMap.set(rm.control.id, {
-            ...controlData,
-            policies: policyLinks.map(
-              (link: { policy: { id: string; name: string; status: string } }) =>
-                link.policy,
-            ),
-            controlDocumentTypes: documentLinks.map(
-              (documentType: { formType: EvidenceFormType }) => ({
-                ...documentType,
-                isNotRelevant: notRelevantFormTypes.has(documentType.formType),
-              }),
-            ),
+            ...merged,
             requirementsMapped: rm.control.requirementsMapped || [],
           });
         }
@@ -269,41 +268,90 @@ export class FrameworksService {
       return frameworksWithControls;
     }
 
-    const [tasks, evidenceSubmissions] = await Promise.all([
-      db.task.findMany({
-        where: {
-          organizationId,
-          archivedAt: null,
-          frameworkControlLinks: {
-            some: { frameworkInstance: { organizationId } },
-          },
-        },
-        include: {
-          frameworkControlLinks: {
-            where: { frameworkInstance: { organizationId } },
-            include: { control: true },
-          },
-        },
-      }),
-      db.evidenceSubmission.findMany({
-        where: { organizationId },
-        select: { formType: true, submittedAt: true },
-      }),
-    ]);
+    const hasCustomFrameworks = frameworkInstances.some(
+      (fi: any) => fi.customFrameworkId !== null,
+    );
+    const allControlIds = hasCustomFrameworks
+      ? [
+          ...new Set(
+            frameworksWithControls.flatMap((fw: any) =>
+              fw.controls.map((c: any) => c.id),
+            ),
+          ),
+        ]
+      : [];
 
-    return frameworksWithControls.map((fw: any) => ({
-      ...fw,
-      complianceScore: computeFrameworkComplianceScore(
-        fw,
-        tasks.map(({ frameworkControlLinks, ...task }) => ({
+    const [frameworkTasks, directTasks, evidenceSubmissions] = await Promise.all(
+      [
+        db.task.findMany({
+          where: {
+            organizationId,
+            archivedAt: null,
+            frameworkControlLinks: {
+              some: { frameworkInstance: { organizationId } },
+            },
+          },
+          include: {
+            frameworkControlLinks: {
+              where: { frameworkInstance: { organizationId } },
+              include: { control: true },
+            },
+          },
+        }),
+        hasCustomFrameworks && allControlIds.length > 0
+          ? db.task.findMany({
+              where: {
+                organizationId,
+                archivedAt: null,
+                controls: {
+                  some: { id: { in: allControlIds as string[] } },
+                },
+              },
+              include: {
+                controls: {
+                  where: { id: { in: allControlIds as string[] } },
+                },
+              },
+            })
+          : Promise.resolve([]),
+        db.evidenceSubmission.findMany({
+          where: { organizationId },
+          select: { formType: true, submittedAt: true },
+        }),
+      ],
+    );
+
+    return frameworksWithControls.map((fw: any) => {
+      const isCustomFw = fw.customFrameworkId !== null;
+      const fwControlIds = new Set(fw.controls.map((c: any) => c.id));
+      const mappedFrameworkTasks = frameworkTasks.map(
+        ({ frameworkControlLinks, ...task }) => ({
           ...task,
           controls: frameworkControlLinks
             .filter((link) => link.frameworkInstanceId === fw.id)
             .map((link) => link.control),
-        })),
-        evidenceSubmissions,
-      ),
-    }));
+        }),
+      );
+      const mappedDirectTasks = isCustomFw
+        ? directTasks.map(({ controls, ...task }: (typeof directTasks)[number]) => ({
+            ...task,
+            controls: (controls as any[]).filter((c) => fwControlIds.has(c.id)),
+          }))
+        : [];
+      const allTasks = deduplicateById([
+        ...mappedFrameworkTasks,
+        ...mappedDirectTasks,
+      ]).filter((t) => t.controls.length > 0);
+
+      return {
+        ...fw,
+        complianceScore: computeFrameworkComplianceScore(
+          fw,
+          allTasks,
+          evidenceSubmissions,
+        ),
+      };
+    });
   }
 
   async findOne(frameworkInstanceId: string, organizationId: string) {
