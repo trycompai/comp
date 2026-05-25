@@ -356,6 +356,7 @@ export class SOAController {
     @Body() dto: EnsureSOASetupDto,
     @OrganizationId() organizationId: string,
   ) {
+    dto.organizationId = organizationId;
     return this.soaService.getSetup(dto);
   }
 
