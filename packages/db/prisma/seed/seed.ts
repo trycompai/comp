@@ -189,6 +189,56 @@ async function seedJsonFiles(subDirectory: string) {
   }
 }
 
+async function backfillFrameworkScopedLinks() {
+  const fis = await prisma.frameworkInstance.findMany({ select: { id: true } });
+  for (const fi of fis) {
+    await prisma.$executeRawUnsafe(`
+      INSERT INTO "FrameworkControlPolicyLink" ("frameworkInstanceId", "controlId", "policyId")
+      SELECT DISTINCT $1, cp."A", cp."B"
+      FROM "_ControlToPolicy" cp
+      WHERE cp."A" IN (
+        SELECT DISTINCT "controlId" FROM "RequirementMap"
+        WHERE "frameworkInstanceId" = $1 AND "archivedAt" IS NULL
+      )
+      AND NOT EXISTS (
+        SELECT 1 FROM "FrameworkControlPolicyLink" fpl
+        WHERE fpl."frameworkInstanceId" = $1
+          AND fpl."controlId" = cp."A" AND fpl."policyId" = cp."B"
+      )
+    `, fi.id);
+
+    await prisma.$executeRawUnsafe(`
+      INSERT INTO "FrameworkControlTaskLink" ("frameworkInstanceId", "controlId", "taskId")
+      SELECT DISTINCT $1, ct."A", ct."B"
+      FROM "_ControlToTask" ct
+      WHERE ct."A" IN (
+        SELECT DISTINCT "controlId" FROM "RequirementMap"
+        WHERE "frameworkInstanceId" = $1 AND "archivedAt" IS NULL
+      )
+      AND NOT EXISTS (
+        SELECT 1 FROM "FrameworkControlTaskLink" ftl
+        WHERE ftl."frameworkInstanceId" = $1
+          AND ftl."controlId" = ct."A" AND ftl."taskId" = ct."B"
+      )
+    `, fi.id);
+
+    await prisma.$executeRawUnsafe(`
+      INSERT INTO "FrameworkControlDocumentTypeLink" ("frameworkInstanceId", "controlId", "formType")
+      SELECT DISTINCT $1, cdt."controlId", cdt."formType"
+      FROM "ControlDocumentType" cdt
+      WHERE cdt."controlId" IN (
+        SELECT DISTINCT "controlId" FROM "RequirementMap"
+        WHERE "frameworkInstanceId" = $1 AND "archivedAt" IS NULL
+      )
+      AND NOT EXISTS (
+        SELECT 1 FROM "FrameworkControlDocumentTypeLink" fdl
+        WHERE fdl."frameworkInstanceId" = $1
+          AND fdl."controlId" = cdt."controlId" AND fdl."formType" = cdt."formType"
+      )
+    `, fi.id);
+  }
+}
+
 async function main() {
   try {
     await seedJsonFiles('primitives');
@@ -202,6 +252,10 @@ async function main() {
     );
     const result = await backfillFrameworkVersions();
     console.log('FrameworkVersion backfill:', result);
+
+    await backfillFrameworkScopedLinks();
+    console.log('Framework-scoped link backfill complete.');
+
     await prisma.$disconnect();
     console.log('Seeding completed successfully for primitives and relations.');
   } catch (error: unknown) {

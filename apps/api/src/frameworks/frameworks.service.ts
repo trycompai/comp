@@ -216,6 +216,9 @@ export class FrameworksService {
                     },
                   },
                   frameworkDocumentLinks: true,
+                  frameworkControlFamilies: {
+                    select: { frameworkInstanceId: true, controlFamily: true },
+                  },
                   requirementsMapped: { where: { archivedAt: null } },
                 },
               },
@@ -237,7 +240,11 @@ export class FrameworksService {
       const controlsMap = new Map<string, any>();
       for (const rm of fi.requirementsMapped || []) {
         if (rm.control && !controlsMap.has(rm.control.id)) {
-          const { requirementsMapped: _reqs, ...controlForMerge } = rm.control;
+          const {
+            requirementsMapped: _reqs,
+            frameworkControlFamilies,
+            ...controlForMerge
+          } = rm.control;
           const scopedControl = {
             ...controlForMerge,
             frameworkPolicyLinks: controlForMerge.frameworkPolicyLinks.filter(
@@ -254,8 +261,13 @@ export class FrameworksService {
             frameworkInstanceId: fi.id,
             notRelevantFormTypes,
           });
+          const familyEntry = (frameworkControlFamilies ?? []).find(
+            (f: { frameworkInstanceId: string }) =>
+              f.frameworkInstanceId === fi.id,
+          );
           controlsMap.set(rm.control.id, {
             ...merged,
+            controlFamily: familyEntry?.controlFamily ?? null,
             requirementsMapped: rm.control.requirementsMapped || [],
           });
         }
@@ -385,6 +397,11 @@ export class FrameworksService {
                 frameworkDocumentLinks: {
                   where: { frameworkInstanceId },
                 },
+                frameworkControlFamilies: {
+                  where: { frameworkInstanceId },
+                  select: { controlFamily: true },
+                  take: 1,
+                },
               },
             },
           },
@@ -404,10 +421,15 @@ export class FrameworksService {
     const controlsMap = new Map<string, any>();
     for (const rm of fi.requirementsMapped) {
       if (rm.control && !controlsMap.has(rm.control.id)) {
-        const { requirementsMapped: _reqs, ...controlForMerge } = rm.control;
+        const {
+          requirementsMapped: _reqs,
+          frameworkControlFamilies,
+          ...controlForMerge
+        } = rm.control;
         const merged = mergeControlLinks(controlForMerge, mergeOpts);
         controlsMap.set(rm.control.id, {
           ...merged,
+          controlFamily: frameworkControlFamilies?.[0]?.controlFamily ?? null,
           requirementsMapped: rm.control.requirementsMapped || [],
         });
       }
@@ -934,6 +956,11 @@ export class FrameworksService {
                 frameworkDocumentLinks: {
                   where: { frameworkInstanceId },
                 },
+                frameworkControlFamilies: {
+                  where: { frameworkInstanceId },
+                  select: { controlFamily: true },
+                  take: 1,
+                },
               },
             },
           },
@@ -970,10 +997,18 @@ export class FrameworksService {
         : [];
 
     const mergeOpts = { isCustomFramework, frameworkInstanceId, notRelevantFormTypes };
-    const mappedRelatedControls = relatedControls.map((relatedControl) => ({
-      ...relatedControl,
-      control: mergeControlLinks(relatedControl.control, mergeOpts),
-    }));
+    const mappedRelatedControls = relatedControls.map((relatedControl) => {
+      const { frameworkControlFamilies, ...controlForMerge } =
+        relatedControl.control;
+      return {
+        ...relatedControl,
+        control: {
+          ...mergeControlLinks(controlForMerge, mergeOpts),
+          controlFamily:
+            frameworkControlFamilies?.[0]?.controlFamily ?? null,
+        },
+      };
+    });
 
     const formTypes = new Set<EvidenceFormType>();
     for (const rc of mappedRelatedControls) {

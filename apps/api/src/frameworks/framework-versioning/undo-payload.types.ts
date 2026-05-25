@@ -15,6 +15,8 @@ export interface UndoPayload {
   frameworkControlPolicyLinks?: ImplicitEdgeBucket;
   frameworkControlTaskLinks?: ImplicitEdgeBucket;
   frameworkControlDocumentTypeLinks?: ImplicitEdgeBucket;
+  // Per-instance control family assignments. Older syncs may not have this bucket.
+  controlFamilies?: ControlFamilyUndoBucket;
 }
 
 export interface EntityUndoBucket<Content> {
@@ -73,6 +75,17 @@ export interface ControlDocumentTypeUndoBucket {
 export interface ImplicitEdgeBucket {
   connected: Array<{ controlId: string; otherId: string }>;
   disconnected: Array<{ controlId: string; otherId: string }>;
+}
+
+/**
+ * Tracks FrameworkControlFamily changes so rollback can restore prior state.
+ * `created` entries are deleted on rollback; `updated` entries are restored to
+ * prevFamily; `deleted` entries are recreated with prevFamily.
+ */
+export interface ControlFamilyUndoBucket {
+  created: Array<{ frameworkInstanceId: string; controlId: string }>;
+  updated: Array<{ frameworkInstanceId: string; controlId: string; prevFamily: string }>;
+  deleted: Array<{ frameworkInstanceId: string; controlId: string; prevFamily: string }>;
 }
 
 export interface SyncSummary {

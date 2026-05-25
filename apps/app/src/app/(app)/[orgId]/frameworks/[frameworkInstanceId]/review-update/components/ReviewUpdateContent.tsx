@@ -37,6 +37,7 @@ interface ChangeRow {
   identifier?: string;
   name: string;
   description?: string | null;
+  changeSummary?: string | null;
   kind: ChangeKind;
 }
 
@@ -323,6 +324,11 @@ function ItemRow({ row }: { row: ChangeRow }) {
               {row.name}
             </Text>
           </HStack>
+          {row.changeSummary && (
+            <Text size="sm" variant="muted">
+              {row.changeSummary}
+            </Text>
+          )}
           {row.description && (
             <Text size="sm" variant="muted">
               {row.description}
@@ -502,6 +508,27 @@ function LinkRowItem({ row }: { row: LinkRow }) {
   );
 }
 
+export function describeControlChanges(
+  from: UpdatePreview['controls']['updatedApplied'][number]['manifestFrom'],
+  to: UpdatePreview['controls']['updatedApplied'][number]['manifestTo'],
+): string {
+  const changes: string[] = [];
+  if (from.name !== to.name) changes.push('Name updated');
+  if (from.description !== to.description) changes.push('Description updated');
+  const fromFamily = from.controlFamily ?? null;
+  const toFamily = to.controlFamily ?? null;
+  if (fromFamily !== toFamily) {
+    if (!fromFamily && toFamily) {
+      changes.push(`Control family set to "${toFamily}"`);
+    } else if (fromFamily && !toFamily) {
+      changes.push('Control family removed');
+    } else {
+      changes.push(`Control family changed from "${fromFamily}" to "${toFamily}"`);
+    }
+  }
+  return changes.join('. ') || 'Modified';
+}
+
 function buildGroups(preview: UpdatePreview): ChangeGroup[] {
   const out: ChangeGroup[] = [];
 
@@ -625,10 +652,11 @@ function buildGroups(preview: UpdatePreview): ChangeGroup[] {
     out.push({
       title: 'MODIFIED CONTROLS',
       kind: 'modified',
-      rows: preview.controls.updatedApplied.map(({ instance, manifestTo }) => ({
+      rows: preview.controls.updatedApplied.map(({ instance, manifestFrom, manifestTo }) => ({
         key: `ctl-mod-${instance.id}`,
         name: manifestTo.name,
         description: manifestTo.description,
+        changeSummary: describeControlChanges(manifestFrom, manifestTo),
         kind: 'modified' as const,
       })),
     });
