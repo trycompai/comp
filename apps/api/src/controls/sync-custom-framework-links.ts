@@ -13,6 +13,11 @@ export async function syncDirectLinksToCustomFrameworks({
 }) {
   const prisma = client ?? db;
 
+  const hasCustomFrameworks = await prisma.frameworkInstance.count({
+    where: { organizationId, customFrameworkId: { not: null } },
+  });
+  if (hasCustomFrameworks === 0) return;
+
   const customFiIds = await prisma.requirementMap.findMany({
     where: {
       controlId,

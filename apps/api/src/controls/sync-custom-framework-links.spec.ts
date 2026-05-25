@@ -1,6 +1,7 @@
 import { syncDirectLinksToCustomFrameworks } from './sync-custom-framework-links';
 
 const mockDb = {
+  frameworkInstance: { count: jest.fn() },
   requirementMap: { findMany: jest.fn() },
   control: { findUnique: jest.fn() },
   frameworkControlPolicyLink: { createMany: jest.fn() },
@@ -23,7 +24,20 @@ jest.mock('@db', () => ({
 describe('syncDirectLinksToCustomFrameworks', () => {
   beforeEach(() => jest.clearAllMocks());
 
+  it('should skip entirely when org has no custom frameworks', async () => {
+    mockDb.frameworkInstance.count.mockResolvedValue(0);
+
+    await syncDirectLinksToCustomFrameworks({
+      controlId: 'ctrl_1',
+      organizationId: 'org_1',
+    });
+
+    expect(mockDb.requirementMap.findMany).not.toHaveBeenCalled();
+    expect(mockDb.control.findUnique).not.toHaveBeenCalled();
+  });
+
   it('should do nothing when control is not mapped to any custom framework', async () => {
+    mockDb.frameworkInstance.count.mockResolvedValue(1);
     mockDb.requirementMap.findMany.mockResolvedValue([]);
 
     await syncDirectLinksToCustomFrameworks({
@@ -35,6 +49,7 @@ describe('syncDirectLinksToCustomFrameworks', () => {
   });
 
   it('should create framework-scoped links for all custom FIs', async () => {
+    mockDb.frameworkInstance.count.mockResolvedValue(2);
     mockDb.requirementMap.findMany.mockResolvedValue([
       { frameworkInstanceId: 'fi_1' },
       { frameworkInstanceId: 'fi_2' },
@@ -112,6 +127,7 @@ describe('syncDirectLinksToCustomFrameworks', () => {
   });
 
   it('should skip empty direct relationships', async () => {
+    mockDb.frameworkInstance.count.mockResolvedValue(1);
     mockDb.requirementMap.findMany.mockResolvedValue([
       { frameworkInstanceId: 'fi_1' },
     ]);
