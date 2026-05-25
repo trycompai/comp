@@ -5,21 +5,13 @@ import {
 } from '@nestjs/common';
 import { db, EvidenceFormType, Prisma } from '@db';
 import { CreateControlDto } from './dto/create-control.dto';
+import { deduplicateById } from '../utils/deduplicate';
 
 // A CustomRequirement is valid for a given FrameworkInstance when its parent
 // matches: either it lives on the FI's CustomFramework, or it was attached
 // directly to the FI itself (per-instance custom requirement on a platform
 // framework). The CustomRequirement schema's CHECK enforces that exactly one
 // of customFrameworkId / frameworkInstanceId is set.
-function deduplicateById<T extends { id: string }>(items: T[]): T[] {
-  const seen = new Set<string>();
-  return items.filter((item) => {
-    if (seen.has(item.id)) return false;
-    seen.add(item.id);
-    return true;
-  });
-}
-
 function isCustomReqOnInstance(
   req: {
     customFrameworkId: string | null;
@@ -214,7 +206,8 @@ export class ControlsService {
     organizationId: string,
     frameworkInstanceId: string,
   ) {
-    await this.ensureFrameworkInstance(frameworkInstanceId, organizationId);
+    const fi = await this.ensureFrameworkInstance(frameworkInstanceId, organizationId);
+    const isCustomFramework = fi.customFrameworkId !== null;
     const control = await db.control.findUnique({
       where: { id: controlId, organizationId },
       include: {
@@ -256,8 +249,10 @@ export class ControlsService {
 
     const frameworkPolicies = control.frameworkPolicyLinks.map((link) => link.policy);
     const frameworkTasks = control.frameworkTaskLinks.map((link) => link.task);
-    const policies = deduplicateById([...frameworkPolicies, ...control.policies]);
-    const tasks = deduplicateById([...frameworkTasks, ...control.tasks]);
+    const directPolicies = isCustomFramework ? (control.policies ?? []) : [];
+    const directTasks = isCustomFramework ? (control.tasks ?? []) : [];
+    const policies = deduplicateById([...frameworkPolicies, ...directPolicies]);
+    const tasks = deduplicateById([...frameworkTasks, ...directTasks]);
     const controlDocumentTypes = control.frameworkDocumentLinks;
     const formTypes = controlDocumentTypes.map((d) => d.formType);
     const notRelevantSettings =
@@ -625,7 +620,7 @@ export class ControlsService {
   ) {
     const frameworkInstance = await db.frameworkInstance.findUnique({
       where: { id: frameworkInstanceId, organizationId },
-      select: { id: true },
+      select: { id: true, customFrameworkId: true },
     });
     if (!frameworkInstance) {
       throw new NotFoundException('Framework instance not found');

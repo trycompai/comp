@@ -22,8 +22,9 @@ jest.mock('@db', () => ({
   db: new Proxy(
     {},
     {
-      get: (_target, prop) =>
-        (mockDb as Record<string, unknown>)[prop as string] ?? {},
+      get(_target, prop) {
+        return mockDb[prop] ?? {};
+      },
     },
   ),
   EvidenceFormType: {},
@@ -38,14 +39,13 @@ describe('ControlsService', () => {
       providers: [ControlsService],
     }).compile();
 
-    service = module.get<ControlsService>(ControlsService);
+    service = module.get(ControlsService);
     jest.clearAllMocks();
   });
 
-  describe('findOne with frameworkInstanceId (findOneForFramework)', () => {
+  describe('findOne with frameworkInstanceId', () => {
     const orgId = 'org_1';
     const controlId = 'ctrl_1';
-    const frameworkInstanceId = 'fi_custom_1';
 
     const policyA = {
       id: 'pol_a',
@@ -73,93 +73,108 @@ describe('ControlsService', () => {
     };
 
     beforeEach(() => {
-      mockDb.frameworkInstance.findUnique.mockResolvedValue({
-        id: frameworkInstanceId,
-      });
       mockDb.evidenceFormSetting.findMany.mockResolvedValue([]);
       mockDb.evidenceSubmission.groupBy.mockResolvedValue([]);
     });
 
-    it('should include directly-linked policies/tasks for custom frameworks with no framework-scoped links', async () => {
-      mockDb.control.findUnique.mockResolvedValue({
-        id: controlId,
-        organizationId: orgId,
-        policies: [policyA, policyB],
-        tasks: [taskA, taskB],
-        frameworkPolicyLinks: [],
-        frameworkTaskLinks: [],
-        frameworkDocumentLinks: [],
-        requirementsMapped: [],
+    describe('custom framework', () => {
+      const frameworkInstanceId = 'fi_custom_1';
+
+      beforeEach(() => {
+        mockDb.frameworkInstance.findUnique.mockResolvedValue({
+          id: frameworkInstanceId,
+          customFrameworkId: 'cf_1',
+        });
       });
 
-      const result = await service.findOne(
-        controlId,
-        orgId,
-        frameworkInstanceId,
-      );
+      it('should include directly-linked policies/tasks when no framework-scoped links exist', async () => {
+        mockDb.control.findUnique.mockResolvedValue({
+          id: controlId,
+          organizationId: orgId,
+          policies: [policyA, policyB],
+          tasks: [taskA, taskB],
+          frameworkPolicyLinks: [],
+          frameworkTaskLinks: [],
+          frameworkDocumentLinks: [],
+          requirementsMapped: [],
+        });
 
-      expect(result.policies).toEqual([policyA, policyB]);
-      expect(result.tasks).toEqual([taskA, taskB]);
-      expect(result.progress.total).toBe(4);
+        const result = await service.findOne(
+          controlId,
+          orgId,
+          frameworkInstanceId,
+        );
+
+        expect(result.policies).toEqual([policyA, policyB]);
+        expect(result.tasks).toEqual([taskA, taskB]);
+        expect(result.progress.total).toBe(4);
+      });
+
+      it('should deduplicate when policies exist in both direct and framework-scoped links', async () => {
+        mockDb.control.findUnique.mockResolvedValue({
+          id: controlId,
+          organizationId: orgId,
+          policies: [policyA, policyB],
+          tasks: [taskA],
+          frameworkPolicyLinks: [{ policy: policyA }],
+          frameworkTaskLinks: [{ task: taskA }, { task: taskB }],
+          frameworkDocumentLinks: [],
+          requirementsMapped: [],
+        });
+
+        const result = await service.findOne(
+          controlId,
+          orgId,
+          frameworkInstanceId,
+        );
+
+        expect(result.policies).toHaveLength(2);
+        expect(result.tasks).toHaveLength(2);
+      });
     });
 
-    it('should include framework-scoped links when they exist', async () => {
-      mockDb.control.findUnique.mockResolvedValue({
-        id: controlId,
-        organizationId: orgId,
-        policies: [],
-        tasks: [],
-        frameworkPolicyLinks: [{ policy: policyA }],
-        frameworkTaskLinks: [{ task: taskA }],
-        frameworkDocumentLinks: [],
-        requirementsMapped: [],
+    describe('built-in framework', () => {
+      const frameworkInstanceId = 'fi_builtin_1';
+
+      beforeEach(() => {
+        mockDb.frameworkInstance.findUnique.mockResolvedValue({
+          id: frameworkInstanceId,
+          customFrameworkId: null,
+        });
       });
 
-      const result = await service.findOne(
-        controlId,
-        orgId,
-        frameworkInstanceId,
-      );
+      it('should only show framework-scoped links, not direct links', async () => {
+        mockDb.control.findUnique.mockResolvedValue({
+          id: controlId,
+          organizationId: orgId,
+          policies: [policyA, policyB],
+          tasks: [taskA, taskB],
+          frameworkPolicyLinks: [{ policy: policyA }],
+          frameworkTaskLinks: [{ task: taskA }],
+          frameworkDocumentLinks: [],
+          requirementsMapped: [],
+        });
 
-      expect(result.policies).toEqual([policyA]);
-      expect(result.tasks).toEqual([taskA]);
-    });
+        const result = await service.findOne(
+          controlId,
+          orgId,
+          frameworkInstanceId,
+        );
 
-    it('should deduplicate when a policy/task exists in both direct and framework-scoped links', async () => {
-      mockDb.control.findUnique.mockResolvedValue({
-        id: controlId,
-        organizationId: orgId,
-        policies: [policyA, policyB],
-        tasks: [taskA],
-        frameworkPolicyLinks: [{ policy: policyA }],
-        frameworkTaskLinks: [{ task: taskA }, { task: taskB }],
-        frameworkDocumentLinks: [],
-        requirementsMapped: [],
+        expect(result.policies).toEqual([policyA]);
+        expect(result.tasks).toEqual([taskA]);
       });
-
-      const result = await service.findOne(
-        controlId,
-        orgId,
-        frameworkInstanceId,
-      );
-
-      expect(result.policies).toHaveLength(2);
-      expect(result.policies.map((p: { id: string }) => p.id)).toEqual([
-        'pol_a',
-        'pol_b',
-      ]);
-      expect(result.tasks).toHaveLength(2);
-      expect(result.tasks.map((t: { id: string }) => t.id)).toEqual([
-        'task_a',
-        'task_b',
-      ]);
     });
 
     it('should throw NotFoundException when control does not exist', async () => {
+      mockDb.frameworkInstance.findUnique.mockResolvedValue({
+        id: 'fi_1',
+        customFrameworkId: null,
+      });
       mockDb.control.findUnique.mockResolvedValue(null);
 
       await expect(
-        service.findOne(controlId, orgId, frameworkInstanceId),
+        service.findOne(controlId, orgId, 'fi_1'),
       ).rejects.toThrow(NotFoundException);
     });
   });

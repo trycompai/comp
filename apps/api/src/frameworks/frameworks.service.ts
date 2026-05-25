@@ -5,6 +5,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { db, type EvidenceFormType } from '@db';
+import { deduplicateById } from '../utils/deduplicate';
 
 import { tasks } from '@trigger.dev/sdk';
 import {
@@ -765,6 +766,7 @@ export class FrameworksService {
       throw new NotFoundException('Framework instance not found');
     }
 
+    const isCustomFramework = fi.customFrameworkId !== null;
     const allReqDefs = await this.loadRequirementDefinitions(fi);
     const requirement = allReqDefs.find((r) => r.id === requirementKey);
     if (!requirement) {
@@ -783,6 +785,10 @@ export class FrameworksService {
         include: {
           control: {
             include: {
+              policies: {
+                where: { archivedAt: null },
+                select: { id: true, name: true, status: true },
+              },
               frameworkPolicyLinks: {
                 where: {
                   frameworkInstanceId,
@@ -849,11 +855,14 @@ export class FrameworksService {
           const {
             frameworkPolicyLinks,
             frameworkDocumentLinks,
+            policies: directPolicies,
             ...control
           } = relatedControl.control;
+          const frameworkPolicies = frameworkPolicyLinks.map((link) => link.policy);
+          const extraPolicies = isCustomFramework ? directPolicies : [];
           return {
             ...control,
-            policies: frameworkPolicyLinks.map((link) => link.policy),
+            policies: deduplicateById([...frameworkPolicies, ...extraPolicies]),
             controlDocumentTypes: frameworkDocumentLinks.map(
               (documentType) => ({
                 ...documentType,
