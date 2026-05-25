@@ -80,6 +80,12 @@ class ImportControlTemplateDto {
   @MaxLength(5000)
   description: string;
 
+  @ApiPropertyOptional({ example: 'AC - Access Control' })
+  @IsString()
+  @IsOptional()
+  @MaxLength(255)
+  controlFamily?: string;
+
   @ApiPropertyOptional()
   @IsArray()
   @ArrayMaxSize(50)

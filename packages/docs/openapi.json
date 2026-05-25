@@ -18610,6 +18610,139 @@
         }
       }
     },
+    "/v1/roles/built-in/{name}/obligations": {
+      "get": {
+        "description": "Returns the effective obligations for a built-in role (owner, admin, auditor, employee, contractor) — DB override if present, else the hardcoded default.",
+        "operationId": "RolesController_getBuiltInObligations_v1",
+        "parameters": [
+          {
+            "name": "name",
+            "required": true,
+            "in": "path",
+            "description": "Built-in role name",
+            "schema": {
+              "example": "owner",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Effective obligations for the built-in role",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "name": {
+                      "type": "string"
+                    },
+                    "obligations": {
+                      "type": "object",
+                      "properties": {
+                        "compliance": {
+                          "type": "boolean"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Get obligations for a built-in role",
+        "tags": [
+          "Roles"
+        ],
+        "x-mint": {
+          "metadata": {
+            "title": "Get obligations for a built-in role | Comp AI API",
+            "sidebarTitle": "Get obligations for a built-in role",
+            "description": "Returns the effective obligations for a built-in role (owner, admin, auditor, employee, contractor) — DB override if present, else the hardcoded default.",
+            "og:title": "Get obligations for a built-in role | Comp AI API",
+            "og:description": "Returns the effective obligations for a built-in role (owner, admin, auditor, employee, contractor) — DB override if present, else the hardcoded default."
+          }
+        }
+      },
+      "patch": {
+        "description": "Override the obligations for a built-in role (e.g., turn off the compliance obligation for owners). Permissions stay sourced from the hardcoded defaults.",
+        "operationId": "RolesController_updateBuiltInObligations_v1",
+        "parameters": [
+          {
+            "name": "name",
+            "required": true,
+            "in": "path",
+            "description": "Built-in role name",
+            "schema": {
+              "example": "owner",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateBuiltInObligationsDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Obligations updated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "name": {
+                      "type": "string"
+                    },
+                    "obligations": {
+                      "type": "object",
+                      "properties": {
+                        "compliance": {
+                          "type": "boolean"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Not a built-in role"
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Update obligations for a built-in role",
+        "tags": [
+          "Roles"
+        ],
+        "x-mint": {
+          "metadata": {
+            "title": "Update obligations for a built-in role | Comp AI API",
+            "sidebarTitle": "Update obligations for a built-in role",
+            "description": "Override the obligations for a built-in role (e.g., turn off the compliance obligation for owners). Permissions stay sourced from the hardcoded defaults.",
+            "og:title": "Update obligations for a built-in role | Comp AI API",
+            "og:description": "Override the obligations for a built-in role (e.g., turn off the compliance obligation for owners). Permissions stay sourced from the hardcoded defaults."
+          }
+        }
+      }
+    },
     "/v1/roles/{roleId}": {
       "get": {
         "description": "Get a role by ID in Comp AI. Create custom roles and resolve permission sets for organization-level access control.",
@@ -25861,6 +25994,35 @@
         "required": [
           "name",
           "permissions"
+        ]
+      },
+      "BuiltInObligationsBody": {
+        "type": "object",
+        "properties": {
+          "compliance": {
+            "type": "boolean",
+            "description": "Whether the role must complete compliance tasks.",
+            "example": false
+          }
+        }
+      },
+      "UpdateBuiltInObligationsDto": {
+        "type": "object",
+        "properties": {
+          "obligations": {
+            "description": "Obligations override for the built-in role.",
+            "example": {
+              "compliance": false
+            },
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/BuiltInObligationsBody"
+              }
+            ]
+          }
+        },
+        "required": [
+          "obligations"
         ]
       },
       "UpdateRoleDto": {
