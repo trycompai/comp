@@ -20,6 +20,7 @@ export interface ManifestControl {
   id: string;
   name: string;
   description: string;
+  controlFamily?: string | null;
   requirementIds: string[];
   policyIds: string[];
   taskIds: string[];

@@ -1,3 +1,4 @@
+export { ComboboxCell } from './ComboboxCell';
 export { DateCell } from './DateCell';
 export { EditableCell } from './EditableCell';
 export { MarkdownCell } from './MarkdownCell';
