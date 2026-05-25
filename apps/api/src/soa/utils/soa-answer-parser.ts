@@ -174,7 +174,10 @@ export function parseAndProcessSOAAnswer(
   }
 
   // Trim and normalise the LLM-provided justification.
-  const llmJustification = parsedAnswer.justification?.trim() || null;
+  const llmJustification =
+    typeof parsedAnswer.justification === 'string'
+      ? parsedAnswer.justification.trim() || null
+      : null;
 
   // For NO: keep the LLM's exclusion justification (may be null and edited later).
   // For YES: keep the LLM's inclusion justification, or fall back to the family default

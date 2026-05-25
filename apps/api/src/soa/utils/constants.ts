@@ -99,7 +99,9 @@ export function getInclusionJustification(
   }
 
   const family = CLOSURE_TO_FAMILY[closure];
-  return family ? INCLUSION_JUSTIFICATIONS[family] : null;
+  return family
+    ? INCLUSION_JUSTIFICATIONS[family]
+    : 'Applicable because this control is within our ISMS scope and requires documented implementation and rationale.';
 }
 
 // System prompt for SOA RAG generation
