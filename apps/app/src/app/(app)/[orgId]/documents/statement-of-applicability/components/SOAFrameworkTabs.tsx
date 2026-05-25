@@ -5,7 +5,8 @@ import { useState, useTransition } from 'react';
 import { toast } from 'sonner';
 import { Loader2, ShieldCheck } from 'lucide-react';
 import { SOAFrameworkTable } from './SOAFrameworkTable';
-import { ensureSOASetup } from '../hooks/useSOADocument';
+import { ensureSOASetup, getSOASetup } from '../hooks/useSOADocument';
+import { usePermissions } from '@/hooks/use-permissions';
 import type { FrameworkWithSOAData } from '../types';
 
 interface SOAFrameworkTabsProps {
@@ -23,6 +24,8 @@ export function SOAFrameworkTabs({ frameworksWithSOAData, organizationId }: SOAF
   const [frameworkData, setFrameworkData] = useState<Map<string, typeof frameworksWithSOAData[0]>>(
     new Map(frameworksWithSOAData.map((fw) => [fw.frameworkId, fw]))
   );
+  const { hasPermission } = usePermissions();
+  const canCreateSetup = hasPermission('audit', 'create');
 
   // Set active tab to first supported framework with data, or first framework
   const getInitialTab = () => {
@@ -55,7 +58,9 @@ export function SOAFrameworkTabs({ frameworksWithSOAData, organizationId }: SOAF
 
     startTransition(async () => {
       try {
-        const result = await ensureSOASetup({ frameworkId, organizationId });
+        const result = canCreateSetup
+          ? await ensureSOASetup({ frameworkId, organizationId })
+          : await getSOASetup({ frameworkId, organizationId });
 
         if (result.error) {
           toast.error(result.error);
