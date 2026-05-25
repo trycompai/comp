@@ -84,7 +84,7 @@ export function FrameworkControlsGrouped({
   evidenceSubmissions?: EvidenceSubmissionInfo[];
 }) {
   const [searchTerm, setSearchTerm] = useQueryState('q', parseAsString.withDefault('').withOptions({ shallow: true, throttleMs: 300 }));
-  const [familyFilterParam, setFamilyFilterParam] = useQueryState('families', parseAsArrayOf(parseAsString, ',').withDefault([]).withOptions({ shallow: true }));
+  const [familyFilterParam, setFamilyFilterParam] = useQueryState('families', parseAsArrayOf(parseAsString, '|').withDefault([]).withOptions({ shallow: true }));
   const [collapsedFamilies, setCollapsedFamilies] = useState<Set<string>>(new Set());
 
   const selectedFamilyFilter = useMemo(() => new Set(familyFilterParam), [familyFilterParam]);
