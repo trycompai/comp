@@ -1,6 +1,7 @@
 import {
   isInsufficientDataAnswer,
   FULLY_REMOTE_JUSTIFICATION,
+  getInclusionJustification,
 } from './constants';
 
 export interface SOAQuestionResult {
@@ -35,19 +36,24 @@ export type SOAStreamSender = (data: {
 }) => void;
 
 /**
- * Creates a default YES result (used when insufficient data)
+ * Creates a default YES result (used when insufficient data).
+ * Populates a family-appropriate inclusion justification so ISO 27001's
+ * requirement of a justification for every control is satisfied.
  */
 export function createDefaultYesResult(
   questionId: string,
   index: number,
   send: SOAStreamSender,
+  closure?: string | null,
 ): SOAQuestionResult {
+  const justification = getInclusionJustification(closure);
+
   send({
     type: 'answer',
     questionId,
     questionIndex: index,
     isApplicable: true,
-    justification: null,
+    justification,
     success: true,
     insufficientData: false,
   });
@@ -55,7 +61,7 @@ export function createDefaultYesResult(
   return {
     questionId,
     isApplicable: true,
-    justification: null,
+    justification,
     success: true,
     insufficientData: false,
   };
@@ -104,6 +110,7 @@ export function parseAndProcessSOAAnswer(
   index: number,
   answerText: string,
   send: SOAStreamSender,
+  closure?: string | null,
 ): SOAQuestionResult {
   // Parse JSON response
   let parsedAnswer: {
@@ -119,7 +126,7 @@ export function parseAndProcessSOAAnswer(
 
     // Check for insufficient data indicators - if insufficient, default to YES
     if (isInsufficientDataAnswer(trimmedAnswer)) {
-      return createDefaultYesResult(questionId, index, send);
+      return createDefaultYesResult(questionId, index, send, closure);
     }
 
     // Try to extract YES/NO and justification from text
@@ -145,7 +152,7 @@ export function parseAndProcessSOAAnswer(
     parsedAnswer.isApplicable === 'INSUFFICIENT_DATA' ||
     parsedAnswer.isApplicable.toUpperCase().includes('INSUFFICIENT')
   ) {
-    return createDefaultYesResult(questionId, index, send);
+    return createDefaultYesResult(questionId, index, send, closure);
   }
 
   // Parse isApplicable
@@ -163,12 +170,19 @@ export function parseAndProcessSOAAnswer(
     finalIsApplicable = false;
   } else {
     // Can't determine YES/NO - default to YES
-    return createDefaultYesResult(questionId, index, send);
+    return createDefaultYesResult(questionId, index, send, closure);
   }
 
-  // Get justification (only if NO)
+  // Trim and normalise the LLM-provided justification.
+  const llmJustification = parsedAnswer.justification?.trim() || null;
+
+  // For NO: keep the LLM's exclusion justification (may be null and edited later).
+  // For YES: keep the LLM's inclusion justification, or fall back to the family default
+  // so ISO 27001's "justify every control" requirement is always satisfied.
   const justification =
-    finalIsApplicable === false ? parsedAnswer.justification || null : null;
+    finalIsApplicable === false
+      ? llmJustification
+      : llmJustification || getInclusionJustification(closure);
 
   send({
     type: 'answer',
