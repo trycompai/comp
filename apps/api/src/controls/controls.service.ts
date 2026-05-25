@@ -5,7 +5,8 @@ import {
 } from '@nestjs/common';
 import { db, EvidenceFormType, Prisma } from '@db';
 import { CreateControlDto } from './dto/create-control.dto';
-import { deduplicateById } from '../utils/deduplicate';
+import { deduplicateById, deduplicateByFormType } from '../utils/deduplicate';
+import { syncDirectLinksToCustomFrameworks } from './sync-custom-framework-links';
 
 // A CustomRequirement is valid for a given FrameworkInstance when its parent
 // matches: either it lives on the FI's CustomFramework, or it was attached
@@ -213,6 +214,7 @@ export class ControlsService {
       include: {
         policies: { where: { archivedAt: null } },
         tasks: { where: { archivedAt: null } },
+        controlDocumentTypes: true,
         frameworkPolicyLinks: {
           where: {
             frameworkInstanceId,
@@ -253,7 +255,11 @@ export class ControlsService {
     const directTasks = isCustomFramework ? (control.tasks ?? []) : [];
     const policies = deduplicateById([...frameworkPolicies, ...directPolicies]);
     const tasks = deduplicateById([...frameworkTasks, ...directTasks]);
-    const controlDocumentTypes = control.frameworkDocumentLinks;
+    const directDocTypes = isCustomFramework ? control.controlDocumentTypes : [];
+    const controlDocumentTypes = deduplicateByFormType([
+      ...control.frameworkDocumentLinks,
+      ...directDocTypes,
+    ]);
     const formTypes = controlDocumentTypes.map((d) => d.formType);
     const notRelevantSettings =
       formTypes.length > 0
@@ -295,8 +301,9 @@ export class ControlsService {
       frameworkPolicyLinks,
       frameworkTaskLinks,
       frameworkDocumentLinks,
-      policies: _directPolicies,
-      tasks: _directTasks,
+      policies: _policies,
+      tasks: _tasks,
+      controlDocumentTypes: _controlDocumentTypes,
       ...controlData
     } = control;
 
@@ -659,6 +666,7 @@ export class ControlsService {
         where: { id: controlId },
         data: { policies: { connect: policies.map((p) => ({ id: p.id })) } },
       });
+      await syncDirectLinksToCustomFrameworks({ controlId, organizationId });
     }
 
     return { count: policies.length };
@@ -695,6 +703,7 @@ export class ControlsService {
         where: { id: controlId },
         data: { tasks: { connect: tasks.map((t) => ({ id: t.id })) } },
       });
+      await syncDirectLinksToCustomFrameworks({ controlId, organizationId });
     }
 
     return { count: tasks.length };
@@ -820,6 +829,7 @@ export class ControlsService {
       data: formTypes.map((formType) => ({ controlId, formType })),
       skipDuplicates: true,
     });
+    await syncDirectLinksToCustomFrameworks({ controlId, organizationId });
     return { count: result.count };
   }
 

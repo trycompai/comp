@@ -1,8 +1,22 @@
-export function deduplicateById<T extends { id: string }>(items: T[]): T[] {
+export function deduplicateBy<T>(
+  items: T[],
+  key: (item: T) => string,
+): T[] {
   const seen = new Set<string>();
   return items.filter((item) => {
-    if (seen.has(item.id)) return false;
-    seen.add(item.id);
+    const k = key(item);
+    if (seen.has(k)) return false;
+    seen.add(k);
     return true;
   });
+}
+
+export function deduplicateById<T extends { id: string }>(items: T[]): T[] {
+  return deduplicateBy(items, (item) => item.id);
+}
+
+export function deduplicateByFormType<T extends { formType: string }>(
+  items: T[],
+): T[] {
+  return deduplicateBy(items, (item) => item.formType);
 }
