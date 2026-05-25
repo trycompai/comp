@@ -60,6 +60,7 @@ export async function applySync(
     frameworkControlPolicyLinks: { connected: [], disconnected: [] },
     frameworkControlTaskLinks: { connected: [], disconnected: [] },
     frameworkControlDocumentTypeLinks: { connected: [], disconnected: [] },
+    controlFamilies: { created: [], updated: [], deleted: [] },
   };
   const summary: SyncSummary = {
     controlsAdded: 0, controlsArchived: 0, controlsUpdatedApplied: 0, controlsUpdatedPreserved: 0,
@@ -92,6 +93,10 @@ export async function applySync(
           controlFamily: targetControl.controlFamily,
         },
       });
+      undo.controlFamilies!.created.push({
+        frameworkInstanceId: ctx.instance.id,
+        controlId: created.id,
+      });
     }
   }
   for (const removed of diff.controls.removed) {
@@ -113,15 +118,36 @@ export async function applySync(
     undo.controls.contentUpdated.push({ id: inst.id, prevContent: { name: inst.name, description: inst.description } });
     await tx.control.update({ where: { id: inst.id }, data: { name: u.to.name, description: u.to.description } });
     // Upsert the per-instance family if the template changed it
+    const existingFamily = await tx.frameworkControlFamily.findUnique({
+      where: { frameworkInstanceId_controlId: { frameworkInstanceId: ctx.instance.id, controlId: inst.id } },
+      select: { controlFamily: true },
+    });
     if (u.to.controlFamily) {
       await tx.frameworkControlFamily.upsert({
         where: { frameworkInstanceId_controlId: { frameworkInstanceId: ctx.instance.id, controlId: inst.id } },
         create: { frameworkInstanceId: ctx.instance.id, controlId: inst.id, controlFamily: u.to.controlFamily },
         update: { controlFamily: u.to.controlFamily },
       });
-    } else {
+      if (existingFamily) {
+        undo.controlFamilies!.updated.push({
+          frameworkInstanceId: ctx.instance.id,
+          controlId: inst.id,
+          prevFamily: existingFamily.controlFamily,
+        });
+      } else {
+        undo.controlFamilies!.created.push({
+          frameworkInstanceId: ctx.instance.id,
+          controlId: inst.id,
+        });
+      }
+    } else if (existingFamily) {
       await tx.frameworkControlFamily.deleteMany({
         where: { frameworkInstanceId: ctx.instance.id, controlId: inst.id },
+      });
+      undo.controlFamilies!.deleted.push({
+        frameworkInstanceId: ctx.instance.id,
+        controlId: inst.id,
+        prevFamily: existingFamily.controlFamily,
       });
     }
     summary.controlsUpdatedApplied += 1;

@@ -311,6 +311,28 @@ async function replayUndo(
     });
   }
 
+  // Restore control families — guarded so older undo payloads without
+  // this bucket don't break rollback.
+  if (ctx.undo.controlFamilies) {
+    for (const entry of ctx.undo.controlFamilies.created) {
+      await tx.frameworkControlFamily.deleteMany({
+        where: { frameworkInstanceId: entry.frameworkInstanceId, controlId: entry.controlId },
+      });
+    }
+    for (const entry of ctx.undo.controlFamilies.updated) {
+      await tx.frameworkControlFamily.upsert({
+        where: { frameworkInstanceId_controlId: { frameworkInstanceId: entry.frameworkInstanceId, controlId: entry.controlId } },
+        create: { frameworkInstanceId: entry.frameworkInstanceId, controlId: entry.controlId, controlFamily: entry.prevFamily },
+        update: { controlFamily: entry.prevFamily },
+      });
+    }
+    for (const entry of ctx.undo.controlFamilies.deleted) {
+      await tx.frameworkControlFamily.create({
+        data: { frameworkInstanceId: entry.frameworkInstanceId, controlId: entry.controlId, controlFamily: entry.prevFamily },
+      });
+    }
+  }
+
   // Revert framework instance version pointer
   await tx.frameworkInstance.update({
     where: { id: ctx.syncOp.frameworkInstanceId },
