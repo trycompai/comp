@@ -850,6 +850,29 @@ export class ControlsService {
     await db.controlDocumentType.deleteMany({
       where: { controlId, formType },
     });
+    const customFiIds = await db.requirementMap.findMany({
+      where: {
+        controlId,
+        archivedAt: null,
+        frameworkInstance: {
+          organizationId,
+          customFrameworkId: { not: null },
+        },
+      },
+      select: { frameworkInstanceId: true },
+      distinct: ['frameworkInstanceId'],
+    });
+    if (customFiIds.length > 0) {
+      await db.frameworkControlDocumentTypeLink.deleteMany({
+        where: {
+          controlId,
+          formType,
+          frameworkInstanceId: {
+            in: customFiIds.map((r) => r.frameworkInstanceId),
+          },
+        },
+      });
+    }
     return { success: true };
   }
 
