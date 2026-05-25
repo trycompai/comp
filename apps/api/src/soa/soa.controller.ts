@@ -329,7 +329,7 @@ export class SOAController {
 
   @Post('ensure-setup')
   @HttpCode(HttpStatus.OK)
-  @RequirePermission('audit', 'create')
+  @RequirePermission('audit', 'read')
   @ApiOperation({ summary: 'Ensure SOA configuration and document exist' })
   @ApiConsumes('application/json')
   @ApiOkResponse({
