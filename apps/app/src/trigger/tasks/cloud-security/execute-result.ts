@@ -10,6 +10,11 @@ type ExecuteClassification =
       error: string;
       permissionError: PermissionError;
     }
+  | {
+      type: 'manual';
+      reason: string;
+      guidedSteps: string[];
+    }
   | { type: 'failed'; error: string };
 
 export function classifyExecuteResult(value: unknown): ExecuteClassification {
@@ -27,6 +32,20 @@ export function classifyExecuteResult(value: unknown): ExecuteClassification {
       type: 'needs_permissions',
       error: error ?? 'Missing permissions',
       permissionError,
+    };
+  }
+
+  // Manual-steps fallback: the API decided auto-fix can't proceed and
+  // is returning real, customer-actionable instructions. Surface them
+  // verbatim so the dialog can render them instead of a raw error.
+  const guidedSteps = parseGuidedSteps(record.guidedSteps);
+  if (record.guidedOnly === true && guidedSteps && guidedSteps.length > 0) {
+    return {
+      type: 'manual',
+      reason:
+        error ??
+        'Automatic fix could not be applied — follow the guided steps.',
+      guidedSteps,
     };
   }
 
@@ -52,6 +71,14 @@ export function classifyExecuteResult(value: unknown): ExecuteClassification {
     type: 'failed',
     error: 'API returned an invalid remediation response',
   };
+}
+
+function parseGuidedSteps(value: unknown): string[] | undefined {
+  if (!Array.isArray(value)) return undefined;
+  const steps = value.filter(
+    (step): step is string => typeof step === 'string' && step.trim().length > 0,
+  );
+  return steps.length > 0 ? steps : undefined;
 }
 
 function parsePermissionError(value: unknown): PermissionError | undefined {

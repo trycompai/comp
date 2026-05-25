@@ -7,10 +7,11 @@ import {
 import { classifyExecuteResult } from './execute-result';
 
 interface SingleFixProgress {
-  phase: 'executing' | 'success' | 'failed' | 'needs_permissions';
+  phase: 'executing' | 'success' | 'failed' | 'needs_permissions' | 'manual';
   error?: string;
   actionId?: string;
   permissionError?: { missingActions: string[]; fixScript?: string };
+  guidedSteps?: string[];
 }
 
 function sync(progress: SingleFixProgress) {
@@ -83,6 +84,22 @@ export const remediateSingle = task({
           success: false,
           needsPermissions: true,
           permissionError: result.permissionError,
+        };
+      }
+
+      if (result.type === 'manual') {
+        progress.phase = 'manual';
+        progress.error = result.reason;
+        progress.guidedSteps = result.guidedSteps;
+        sync(progress);
+        logger.info(
+          `Single fix fell back to manual steps: ${result.guidedSteps.length} step(s)`,
+        );
+        return {
+          success: false,
+          manual: true,
+          guidedSteps: result.guidedSteps,
+          reason: result.reason,
         };
       }
 
