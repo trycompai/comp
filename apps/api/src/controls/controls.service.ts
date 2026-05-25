@@ -11,6 +11,15 @@ import { CreateControlDto } from './dto/create-control.dto';
 // directly to the FI itself (per-instance custom requirement on a platform
 // framework). The CustomRequirement schema's CHECK enforces that exactly one
 // of customFrameworkId / frameworkInstanceId is set.
+function deduplicateById<T extends { id: string }>(items: T[]): T[] {
+  const seen = new Set<string>();
+  return items.filter((item) => {
+    if (seen.has(item.id)) return false;
+    seen.add(item.id);
+    return true;
+  });
+}
+
 function isCustomReqOnInstance(
   req: {
     customFrameworkId: string | null;
@@ -209,6 +218,8 @@ export class ControlsService {
     const control = await db.control.findUnique({
       where: { id: controlId, organizationId },
       include: {
+        policies: { where: { archivedAt: null } },
+        tasks: { where: { archivedAt: null } },
         frameworkPolicyLinks: {
           where: {
             frameworkInstanceId,
@@ -243,8 +254,10 @@ export class ControlsService {
       throw new NotFoundException('Control not found');
     }
 
-    const policies = control.frameworkPolicyLinks.map((link) => link.policy);
-    const tasks = control.frameworkTaskLinks.map((link) => link.task);
+    const frameworkPolicies = control.frameworkPolicyLinks.map((link) => link.policy);
+    const frameworkTasks = control.frameworkTaskLinks.map((link) => link.task);
+    const policies = deduplicateById([...frameworkPolicies, ...control.policies]);
+    const tasks = deduplicateById([...frameworkTasks, ...control.tasks]);
     const controlDocumentTypes = control.frameworkDocumentLinks;
     const formTypes = controlDocumentTypes.map((d) => d.formType);
     const notRelevantSettings =
@@ -287,6 +300,8 @@ export class ControlsService {
       frameworkPolicyLinks,
       frameworkTaskLinks,
       frameworkDocumentLinks,
+      policies: _directPolicies,
+      tasks: _directTasks,
       ...controlData
     } = control;
 
