@@ -329,7 +329,7 @@ export class SOAController {
 
   @Post('ensure-setup')
   @HttpCode(HttpStatus.OK)
-  @RequirePermission('audit', 'read')
+  @RequirePermission('audit', 'create')
   @ApiOperation({ summary: 'Ensure SOA configuration and document exist' })
   @ApiConsumes('application/json')
   @ApiOkResponse({
@@ -340,6 +340,23 @@ export class SOAController {
     @OrganizationId() organizationId: string,
   ) {
     return this.soaService.ensureSetup(dto);
+  }
+
+  @Post('get-setup')
+  @HttpCode(HttpStatus.OK)
+  @RequirePermission('audit', 'read')
+  @ApiOperation({
+    summary: 'Read SOA configuration and document without creating either',
+  })
+  @ApiConsumes('application/json')
+  @ApiOkResponse({
+    description: 'Setup returned (configuration/document may be null)',
+  })
+  async getSetup(
+    @Body() dto: EnsureSOASetupDto,
+    @OrganizationId() organizationId: string,
+  ) {
+    return this.soaService.getSetup(dto);
   }
 
   @Post('approve')
