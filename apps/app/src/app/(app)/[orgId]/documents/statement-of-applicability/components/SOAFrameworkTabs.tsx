@@ -165,8 +165,15 @@ export function SOAFrameworkTabs({ frameworksWithSOAData, organizationId }: SOAF
                 organizationId={organizationId}
               />
             ) : (
-              <div className="flex items-center justify-center py-12">
-                <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+              <div className="flex flex-col items-center justify-center gap-2 py-12 text-center rounded-lg border">
+                <p className="text-muted-foreground">
+                  Statement of Applicability has not been set up yet.
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  {canCreateSetup
+                    ? 'Switch tabs or refresh to retry creating the setup.'
+                    : 'Ask an admin to start the Statement of Applicability for this framework.'}
+                </p>
               </div>
             )}
           </TabsContent>
