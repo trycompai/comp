@@ -847,9 +847,10 @@ export class ControlsService {
       });
       return { success: true };
     }
-    await db.controlDocumentType.deleteMany({
+    const deleted = await db.controlDocumentType.deleteMany({
       where: { controlId, formType },
     });
+    if (deleted.count === 0) return { success: true };
     const customFiIds = await db.requirementMap.findMany({
       where: {
         controlId,
