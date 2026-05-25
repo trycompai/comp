@@ -25,53 +25,13 @@ import { FamilyFilterDropdown } from './FamilyFilterDropdown';
 import {
   buildControlItems,
   buildRequirementMap,
+  groupByFamily,
   type ControlItem,
+  type FamilyGroup,
 } from './framework-controls-shared';
 import { GroupedControlRow } from './GroupedControlRow';
 
 const COLUMN_COUNT = 7;
-
-interface FamilyGroup {
-  family: string;
-  items: ControlItem[];
-}
-
-function groupByFamily(items: ControlItem[]): FamilyGroup[] {
-  const familyMap = new Map<string, ControlItem[]>();
-  const otherItems: ControlItem[] = [];
-
-  for (const item of items) {
-    const family = item.control.controlFamily;
-    if (family) {
-      const existing = familyMap.get(family);
-      if (existing) {
-        existing.push(item);
-      } else {
-        familyMap.set(family, [item]);
-      }
-    } else {
-      otherItems.push(item);
-    }
-  }
-
-  const sortedFamilies = Array.from(familyMap.entries()).sort(([a], [b]) =>
-    a.localeCompare(b),
-  );
-
-  const groups: FamilyGroup[] = sortedFamilies.map(([family, items]) => ({
-    family,
-    items: items.sort((a, b) => a.control.name.localeCompare(b.control.name)),
-  }));
-
-  if (otherItems.length > 0) {
-    groups.push({
-      family: 'Other',
-      items: otherItems.sort((a, b) => a.control.name.localeCompare(b.control.name)),
-    });
-  }
-
-  return groups;
-}
 
 export function FrameworkControlsGrouped({
   frameworkInstanceWithControls,

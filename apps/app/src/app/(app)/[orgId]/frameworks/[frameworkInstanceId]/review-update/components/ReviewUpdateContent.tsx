@@ -502,7 +502,7 @@ function LinkRowItem({ row }: { row: LinkRow }) {
   );
 }
 
-function describeControlChanges(
+export function describeControlChanges(
   from: UpdatePreview['controls']['updatedApplied'][number]['manifestFrom'],
   to: UpdatePreview['controls']['updatedApplied'][number]['manifestTo'],
 ): string {
