@@ -15,6 +15,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import { startPreview, startSingleFix } from '../actions/single-fix';
 import { AcknowledgmentPanel } from './AcknowledgmentPanel';
+import { extractJsonSegments } from './extract-json-segments';
 import { PermissionErrorPanel } from './PermissionErrorPanel';
 
 interface PreviewProgress {
@@ -177,19 +178,22 @@ function TextSegment({ text }: { text: string }) {
 }
 
 function TextWithInlineCode({ text }: { text: string }) {
-  const jsonSplit = text.split(/(\{[^{}]*"(?:Version|Effect|Statement)"[^{}]*(?:\{[^{}]*\}[^{}]*)*\})/g);
-  const elements: React.ReactNode[] = [];
-  for (let i = 0; i < jsonSplit.length; i++) {
-    const segment = jsonSplit[i] ?? '';
-    if (segment.startsWith('{') && (segment.includes('"Version"') || segment.includes('"Effect"'))) {
-      try {
-        elements.push(<CodeBlock key={`json${i}`} code={JSON.stringify(JSON.parse(segment), null, 2)} />);
-      } catch { elements.push(<CodeBlock key={`json${i}`} code={segment} />); }
-    } else if (segment.trim()) {
-      elements.push(<TextSegment key={`seg${i}`} text={segment} />);
-    }
-  }
-  return <>{elements}</>;
+  // Brace-balanced scan via `extractJsonSegments`. Replaces the
+  // previous regex which only handled one level of nesting and
+  // mis-split policies with both Principal:{...} and
+  // Condition.StringEquals:{...}. See extract-json-segments.test.ts.
+  const segments = extractJsonSegments(text);
+  return (
+    <>
+      {segments.map((segment, i) => {
+        if (segment.type === 'json') {
+          return <CodeBlock key={`json${i}`} code={segment.pretty} />;
+        }
+        if (!segment.value.trim()) return null;
+        return <TextSegment key={`seg${i}`} text={segment.value} />;
+      })}
+    </>
+  );
 }
 
 function StepContent({ text }: { text: string }) {
