@@ -89,9 +89,10 @@ model FrameworkEditorTaskTemplate {
 }
 
 model FrameworkEditorControlTemplate {
-  id          String @id @default(dbgenerated("generate_prefixed_cuid('frk_ct'::text)"))
-  name        String
-  description String
+  id            String  @id @default(dbgenerated("generate_prefixed_cuid('frk_ct'::text)"))
+  name          String
+  description   String
+  controlFamily String?
 
   policyTemplates        FrameworkEditorPolicyTemplate[]
   requirements           FrameworkEditorRequirement[]

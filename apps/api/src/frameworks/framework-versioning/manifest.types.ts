@@ -26,6 +26,7 @@ export interface ManifestControl {
   id: string; // frk_ct_*
   name: string;
   description: string;
+  controlFamily?: string | null;
   requirementIds: string[];
   policyIds: string[];
   taskIds: string[];

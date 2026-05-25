@@ -30,6 +30,7 @@ export type ControlsPageGridData = {
   id: string;
   name: string | null;
   description: string | null;
+  controlFamily: string | null;
   policyTemplates: ItemWithName[];
   requirements: RequirementGridItem[];
   taskTemplates: ItemWithName[];

@@ -76,6 +76,12 @@ export function VersionDiffView({ diff, linkChanges }: VersionDiffViewProps) {
         removed={diff.controls.removed}
         updated={diff.controls.updated}
         renderRow={(c: DiffControl) => <span>{c.name}</span>}
+        renderUpdatedRow={(u) => (
+          <span>
+            {u.to.name}
+            <ControlChangeDetail from={u.from} to={u.to} />
+          </span>
+        )}
       />
       <DiffDetailSection
         title="Policies"
@@ -165,6 +171,7 @@ interface DiffDetailSectionProps<T extends { id: string }> {
   removed: T[];
   updated: Array<{ id: string; from: T; to: T }>;
   renderRow: (item: T) => React.ReactNode;
+  renderUpdatedRow?: (u: { id: string; from: T; to: T }) => React.ReactNode;
 }
 
 function DiffDetailSection<T extends { id: string }>({
@@ -173,6 +180,7 @@ function DiffDetailSection<T extends { id: string }>({
   removed,
   updated,
   renderRow,
+  renderUpdatedRow,
 }: DiffDetailSectionProps<T>) {
   if (added.length === 0 && removed.length === 0 && updated.length === 0) return null;
   return (
@@ -193,11 +201,34 @@ function DiffDetailSection<T extends { id: string }>({
         ))}
         {updated.map((u) => (
           <DiffRow key={`u-${u.id}`} kind="modified">
-            {renderRow(u.to)}
+            {renderUpdatedRow ? renderUpdatedRow(u) : renderRow(u.to)}
           </DiffRow>
         ))}
       </div>
     </div>
+  );
+}
+
+function ControlChangeDetail({ from, to }: { from: DiffControl; to: DiffControl }) {
+  const changes: string[] = [];
+  if (from.name !== to.name) changes.push('name');
+  if (from.description !== to.description) changes.push('description');
+  const fromFamily = from.controlFamily ?? null;
+  const toFamily = to.controlFamily ?? null;
+  if (fromFamily !== toFamily) {
+    if (!fromFamily && toFamily) {
+      changes.push(`family set to "${toFamily}"`);
+    } else if (fromFamily && !toFamily) {
+      changes.push('family removed');
+    } else {
+      changes.push(`family: "${fromFamily}" → "${toFamily}"`);
+    }
+  }
+  if (changes.length === 0) return null;
+  return (
+    <span className="text-muted-foreground ml-2 text-xs">
+      ({changes.join(', ')})
+    </span>
   );
 }
 

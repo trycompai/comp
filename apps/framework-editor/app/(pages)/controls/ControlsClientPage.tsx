@@ -10,22 +10,24 @@ import {
   type SortingState,
 } from '@tanstack/react-table';
 import { Button } from '@trycompai/ui';
-import { ArrowDown, ArrowUp, ArrowUpDown, Link, Plus, Trash2 } from 'lucide-react';
+import { ArrowDown, ArrowUp, ArrowUpDown, Link, Plus, Settings, Trash2 } from 'lucide-react';
 import { useCallback, useMemo, useState } from 'react';
 import {
   AddExistingItemDialog,
   type ExistingItemRaw,
 } from '../../components/AddExistingItemDialog';
+import { ManageFamiliesDialog } from './ManageFamiliesDialog';
 import {
+  ComboboxCell,
   DateCell,
   EditableCell,
   MultiSelectCell,
-  type MultiSelectOption,
   RelationalCell,
   type RelationalItem,
 } from '../../components/table';
 import { DOCUMENT_TYPE_OPTIONS } from './document-type-options';
 import { simpleUUID, useChangeTracking, type ControlMutations } from './hooks/useChangeTracking';
+import { useFamiliesManagement } from './hooks/useFamiliesManagement';
 import type { ControlsPageGridData, FrameworkEditorControlTemplateWithRelatedData } from './types';
 
 interface RequirementApiItem {
@@ -94,6 +96,7 @@ export function ControlsClientPage({ initialControls, emptyMessage, frameworkId 
       createControl: (data: {
         name: string | null;
         description: string | null;
+        controlFamily: string | null;
         documentTypes: string[];
       }) =>
         apiClient<{ id: string }>('/control-template', {
@@ -102,7 +105,7 @@ export function ControlsClientPage({ initialControls, emptyMessage, frameworkId 
         }),
       updateControl: (
         id: string,
-        data: { name: string; description: string; documentTypes: string[] },
+        data: { name: string; description: string; controlFamily: string | null; documentTypes: string[] },
       ) =>
         apiClient(`/control-template/${id}`, {
           method: 'PATCH',
@@ -121,6 +124,7 @@ export function ControlsClientPage({ initialControls, emptyMessage, frameworkId 
         id: control.id || simpleUUID(),
         name: control.name ?? null,
         description: control.description ?? null,
+        controlFamily: control.controlFamily ?? null,
         policyTemplates: control.policyTemplates?.map((pt) => ({ id: pt.id, name: pt.name })) ?? [],
         requirements:
           control.requirements?.map((r) => ({
@@ -143,6 +147,7 @@ export function ControlsClientPage({ initialControls, emptyMessage, frameworkId 
   const {
     data,
     updateCell,
+    batchUpdateCells,
     updateRelational,
     addRow,
     deleteRow,
@@ -153,6 +158,15 @@ export function ControlsClientPage({ initialControls, emptyMessage, frameworkId 
     createdIds,
     changesSummary,
   } = useChangeTracking(initialGridData, mutations);
+
+  const {
+    families,
+    uniqueFamilies,
+    manageFamiliesOpen,
+    setManageFamiliesOpen,
+    handleRenameFamily,
+    handleDeleteFamily,
+  } = useFamiliesManagement({ data, batchUpdateCells });
 
   const handleDocumentTypesUpdate = useCallback(
     (rowId: string, values: string[]) => {
@@ -185,6 +199,20 @@ export function ControlsClientPage({ initialControls, emptyMessage, frameworkId 
             rowId={row.original.id}
             columnId="description"
             onUpdate={updateCell}
+          />
+        ),
+      }),
+      columnHelper.accessor('controlFamily', {
+        header: 'Control Family',
+        size: 200,
+        cell: ({ row, getValue }) => (
+          <ComboboxCell
+            value={getValue()}
+            rowId={row.original.id}
+            columnId="controlFamily"
+            options={uniqueFamilies}
+            onUpdate={updateCell}
+            placeholder="Select family..."
           />
         ),
       }),
@@ -318,7 +346,7 @@ export function ControlsClientPage({ initialControls, emptyMessage, frameworkId 
         ),
       }),
     ],
-    [updateCell, updateRelational, deleteRow, createdIds, handleDocumentTypesUpdate, frameworkId],
+    [uniqueFamilies, updateCell, updateRelational, deleteRow, createdIds, handleDocumentTypesUpdate, frameworkId],
   );
 
   const [sorting, setSorting] = useState<SortingState>([]);
@@ -350,6 +378,7 @@ export function ControlsClientPage({ initialControls, emptyMessage, frameworkId 
       id: simpleUUID(),
       name: 'New Control',
       description: '',
+      controlFamily: null,
       policyTemplates: [],
       requirements: [],
       taskTemplates: [],
@@ -380,6 +409,17 @@ export function ControlsClientPage({ initialControls, emptyMessage, frameworkId 
           )}
         </div>
         <div className="flex items-center gap-2">
+          {families.length > 0 && (
+            <Button
+              variant="outline"
+              onClick={() => setManageFamiliesOpen(true)}
+              size="sm"
+              className="rounded-xs"
+            >
+              <Settings className="mr-1 h-4 w-4" />
+              Manage Families
+            </Button>
+          )}
           {frameworkId && (
             <Button
               variant="outline"
@@ -408,6 +448,14 @@ export function ControlsClientPage({ initialControls, emptyMessage, frameworkId 
           fetchAllItems={fetchAllControlsForDialog}
         />
       )}
+
+      <ManageFamiliesDialog
+        open={manageFamiliesOpen}
+        onOpenChange={setManageFamiliesOpen}
+        families={families}
+        onRename={handleRenameFamily}
+        onDelete={handleDeleteFamily}
+      />
 
       <div className="scrollbar-primary border-border min-h-0 flex-1 overflow-auto rounded-xs border">
         <table className="w-full border-collapse">
