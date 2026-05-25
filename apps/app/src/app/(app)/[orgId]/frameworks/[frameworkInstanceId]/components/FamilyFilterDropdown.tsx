@@ -97,6 +97,9 @@ export function FamilyFilterDropdown({
                 </button>
               );
             })}
+            {filteredFamilies.length === 0 && (
+              <p className="text-muted-foreground py-3 text-center text-xs">No matching families.</p>
+            )}
           </div>
         </div>
       )}
