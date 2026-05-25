@@ -18,8 +18,9 @@ import {
   Text,
 } from '@trycompai/design-system';
 import { ChevronDown, ChevronRight, Search } from '@trycompai/design-system/icons';
+import { useParams, useRouter } from 'next/navigation';
 import { parseAsArrayOf, parseAsString, useQueryState } from 'nuqs';
-import { useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { FamilyFilterDropdown } from './FamilyFilterDropdown';
 import {
   buildControlItems,
@@ -83,6 +84,16 @@ export function FrameworkControlsGrouped({
   tasks: (Task & { controls: Control[] })[];
   evidenceSubmissions?: EvidenceSubmissionInfo[];
 }) {
+  const { orgId, frameworkInstanceId } = useParams<{ orgId: string; frameworkInstanceId: string }>();
+  const router = useRouter();
+
+  const handleRowClick = useCallback(
+    (controlId: string) => {
+      router.push(`/${orgId}/frameworks/${frameworkInstanceId}/controls/${controlId}`);
+    },
+    [orgId, frameworkInstanceId, router],
+  );
+
   const [searchTerm, setSearchTerm] = useQueryState('q', parseAsString.withDefault('').withOptions({ shallow: true, throttleMs: 300 }));
   const [familyFilterParam, setFamilyFilterParam] = useQueryState('families', parseAsArrayOf(parseAsString, '|').withDefault([]).withOptions({ shallow: true }));
   const [collapsedFamilies, setCollapsedFamilies] = useState<Set<string>>(new Set());
@@ -224,6 +235,9 @@ export function FrameworkControlsGrouped({
                 onToggle={() => handleToggleFamily(group.family)}
                 tasks={tasks}
                 evidenceSubmissions={evidenceSubmissions}
+                orgId={orgId}
+                frameworkInstanceId={frameworkInstanceId}
+                onRowClick={handleRowClick}
               />
             ))
           )}
@@ -239,12 +253,18 @@ function FamilySection({
   onToggle,
   tasks,
   evidenceSubmissions,
+  orgId,
+  frameworkInstanceId,
+  onRowClick,
 }: {
   group: FamilyGroup;
   expanded: boolean;
   onToggle: () => void;
   tasks: (Task & { controls: Control[] })[];
   evidenceSubmissions: EvidenceSubmissionInfo[];
+  orgId: string;
+  frameworkInstanceId: string;
+  onRowClick: (controlId: string) => void;
 }) {
   const ChevronIcon = expanded ? ChevronDown : ChevronRight;
 
@@ -280,6 +300,9 @@ function FamilySection({
             requirements={requirements}
             tasks={tasks}
             evidenceSubmissions={evidenceSubmissions}
+            orgId={orgId}
+            frameworkInstanceId={frameworkInstanceId}
+            onRowClick={onRowClick}
           />
         ))}
     </>

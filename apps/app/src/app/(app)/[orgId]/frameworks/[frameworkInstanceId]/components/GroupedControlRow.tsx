@@ -9,7 +9,6 @@ import type { Control, Task } from '@db';
 import { Badge, TableCell, TableRow, Text } from '@trycompai/design-system';
 import { Launch } from '@trycompai/design-system/icons';
 import Link from 'next/link';
-import { useParams, useRouter } from 'next/navigation';
 import { getStatusBadge } from './framework-controls-shared';
 
 export function GroupedControlRow({
@@ -17,18 +16,18 @@ export function GroupedControlRow({
   requirements,
   tasks,
   evidenceSubmissions,
+  orgId,
+  frameworkInstanceId,
+  onRowClick,
 }: {
   control: FrameworkInstanceWithControls['controls'][number];
   requirements: Array<{ id: string; name: string; identifier: string }>;
   tasks: (Task & { controls: Control[] })[];
   evidenceSubmissions: EvidenceSubmissionInfo[];
+  orgId: string;
+  frameworkInstanceId: string;
+  onRowClick: (controlId: string) => void;
 }) {
-  const { orgId, frameworkInstanceId } = useParams<{
-    orgId: string;
-    frameworkInstanceId: string;
-  }>();
-  const router = useRouter();
-
   const policies = control.policies ?? [];
   const documentTypes = control.controlDocumentTypes ?? [];
   const counts = getRequirementArtifactCounts([control], tasks, evidenceSubmissions);
@@ -45,7 +44,7 @@ export function GroupedControlRow({
   const controlHref = `/${orgId}/frameworks/${frameworkInstanceId}/controls/${control.id}`;
 
   const handleRowClick = () => {
-    router.push(controlHref);
+    onRowClick(control.id);
   };
 
   const reqLabel =

@@ -24,7 +24,7 @@ import {
 } from '@trycompai/ui/dropdown-menu';
 import Link from 'next/link';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
-import { useCallback, useMemo, useState } from 'react';
+import { Suspense, useCallback, useMemo, useState } from 'react';
 import { AddCustomRequirementSheet } from './AddCustomRequirementSheet';
 import { FrameworkControls } from './FrameworkControls';
 import { FrameworkControlsGrouped } from './FrameworkControlsGrouped';
@@ -204,12 +204,14 @@ export function FrameworkDetailContent({
 
         <TabsContent value="controls">
           {hasControlFamilies ? (
-            <FrameworkControlsGrouped
-              frameworkInstanceWithControls={frameworkInstanceWithControls}
-              requirementDefinitions={requirementDefinitions}
-              tasks={tasks}
-              evidenceSubmissions={evidenceSubmissions}
-            />
+            <Suspense>
+              <FrameworkControlsGrouped
+                frameworkInstanceWithControls={frameworkInstanceWithControls}
+                requirementDefinitions={requirementDefinitions}
+                tasks={tasks}
+                evidenceSubmissions={evidenceSubmissions}
+              />
+            </Suspense>
           ) : (
             <FrameworkControls
               frameworkInstanceWithControls={frameworkInstanceWithControls}
