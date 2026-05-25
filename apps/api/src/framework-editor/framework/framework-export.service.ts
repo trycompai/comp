@@ -24,6 +24,7 @@ export interface ExportedFramework {
   controlTemplates: Array<{
     name: string;
     description: string;
+    controlFamily: string | null;
     documentTypes: string[];
     requirementIndices: number[];
     policyTemplateIndices: number[];
@@ -131,6 +132,7 @@ export class FrameworkExportService {
       controlTemplates: controlTemplates.map((ct) => ({
         name: ct.name,
         description: ct.description,
+        controlFamily: ct.controlFamily ?? null,
         documentTypes: ct.frameworkDocumentLinks.map((link) => link.formType),
         requirementIndices: ct.requirements
           .map((r) => reqIdToIndex.get(r.id))
@@ -225,6 +227,7 @@ export class FrameworkExportService {
             data: {
               name: ct.name,
               description: ct.description,
+              controlFamily: ct.controlFamily ?? null,
               requirements: {
                 connect: (ct.requirementIndices ?? []).map((i) => ({
                   id: createdRequirements[i].id,
