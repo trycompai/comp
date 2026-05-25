@@ -351,9 +351,9 @@ export class FrameworksService {
           }))
         : [];
       const allTasks = deduplicateById([
-        ...mappedFrameworkTasks,
         ...mappedDirectTasks,
-      ]).filter((t) => t.controls.length > 0);
+        ...mappedFrameworkTasks,
+      ].filter((t) => t.controls.length > 0));
 
       return {
         ...fw,
