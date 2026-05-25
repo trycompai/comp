@@ -96,8 +96,8 @@ Extracted from `FrameworkControls.tsx` so both views reuse them:
 
 #### Sort Within Families (CS-390)
 
-- Controls within each family sorted by name (contains identifier: "AC-1", "AC-2", etc.)
-- This gives natural identifier ordering since names start with the identifier
+- Controls within each family sorted by name using numeric-aware comparison (`localeCompare` with `{ numeric: true }`)
+- This gives natural identifier ordering: AC-2 before AC-10
 
 #### Expand All / Collapse All (CS-392)
 

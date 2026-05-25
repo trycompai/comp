@@ -6,6 +6,7 @@ import {
   buildRequirementMap,
   getStatusBadge,
   groupByFamily,
+  UNCATEGORIZED_FAMILY,
   type ControlItem,
 } from './framework-controls-shared';
 
@@ -230,7 +231,7 @@ describe('groupByFamily', () => {
 
     expect(groups).toHaveLength(2);
     expect(groups[0].family).toBe('Audit');
-    expect(groups[1].family).toBe('Other');
+    expect(groups[1].family).toBe(UNCATEGORIZED_FAMILY);
     expect(groups[1].items).toHaveLength(2);
   });
 
@@ -259,7 +260,7 @@ describe('groupByFamily', () => {
     const groups = groupByFamily(items);
 
     expect(groups).toHaveLength(1);
-    expect(groups[0].family).toBe('Other');
+    expect(groups[0].family).toBe(UNCATEGORIZED_FAMILY);
     expect(groups[0].items).toHaveLength(2);
   });
 });
