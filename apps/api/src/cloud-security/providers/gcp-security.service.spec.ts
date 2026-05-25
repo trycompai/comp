@@ -170,7 +170,8 @@ describe('GCPSecurityService — project detection', () => {
   // ─── detectProjectsForOrg: org direct + folder-tree projects ──────────
 
   /**
-   * Build a Response-like for the v2/folders endpoint.
+   * Build a Response-like for the v3/folders endpoint (response shape
+   * is identical to the legacy v2/folders endpoint).
    */
   function foldersPage(opts: {
     folders: string[]; // folder IDs (numeric)
@@ -203,11 +204,11 @@ describe('GCPSecurityService — project detection', () => {
       const seenFolderIdsQueried: string[] = [];
       fetchMock.mockImplementation(async (url: string) => {
         // Folder enumeration: top-level folders under the org.
-        if (url.includes('v2/folders') && url.includes('organizations%2F43356919874')) {
+        if (url.includes('v3/folders') && url.includes('organizations%2F43356919874')) {
           return foldersPage({ folders: ['9724350536'] });
         }
         // Folder enumeration: sub-folders (none in this tree).
-        if (url.includes('v2/folders') && url.includes('folders%2F9724350536')) {
+        if (url.includes('v3/folders') && url.includes('folders%2F9724350536')) {
           return foldersPage({ folders: [] });
         }
         // Direct org children projects.
@@ -250,13 +251,13 @@ describe('GCPSecurityService — project detection', () => {
       //           └── folder 3000 (nested)
       //                 └── project deep-prod
       fetchMock.mockImplementation(async (url: string) => {
-        if (url.includes('v2/folders') && url.includes('organizations%2F1000')) {
+        if (url.includes('v3/folders') && url.includes('organizations%2F1000')) {
           return foldersPage({ folders: ['2000'] });
         }
-        if (url.includes('v2/folders') && url.includes('folders%2F2000')) {
+        if (url.includes('v3/folders') && url.includes('folders%2F2000')) {
           return foldersPage({ folders: ['3000'] });
         }
-        if (url.includes('v2/folders') && url.includes('folders%2F3000')) {
+        if (url.includes('v3/folders') && url.includes('folders%2F3000')) {
           return foldersPage({ folders: [] });
         }
         if (url.includes('v1/projects') && url.includes('parent.id%3A1000')) {
@@ -281,10 +282,10 @@ describe('GCPSecurityService — project detection', () => {
 
     it('dedupes when the same project would appear in both arms', async () => {
       fetchMock.mockImplementation(async (url: string) => {
-        if (url.includes('v2/folders') && url.includes('organizations%2F123')) {
+        if (url.includes('v3/folders') && url.includes('organizations%2F123')) {
           return foldersPage({ folders: ['folder-a'] });
         }
-        if (url.includes('v2/folders') && url.includes('folders%2Ffolder-a')) {
+        if (url.includes('v3/folders') && url.includes('folders%2Ffolder-a')) {
           return foldersPage({ folders: [] });
         }
         if (url.includes('v1/projects') && url.includes('parent.id%3A123')) {
@@ -302,9 +303,10 @@ describe('GCPSecurityService — project detection', () => {
       expect(result.map((p) => p.id)).toEqual(['proj-shared', 'proj-unique']);
     });
 
-    it('returns empty array when the org has no direct projects and no folders', async () => {
+    it('returns empty array when both arms (and the broad-query fallback) come back empty', async () => {
       fetchMock.mockImplementation(async (url: string) => {
-        if (url.includes('v2/folders')) return foldersPage({ folders: [] });
+        if (url.includes('v3/folders')) return foldersPage({ folders: [] });
+        // Catches both the direct arm AND the broad-query fallback.
         if (url.includes('v1/projects')) return gcpPage({ projects: [] });
         throw new Error(`Unexpected URL: ${url}`);
       });
@@ -313,13 +315,172 @@ describe('GCPSecurityService — project detection', () => {
       expect(result).toEqual([]);
     });
 
+    it('falls back to broad parent.type:folder query when v3/folders returns 403 PERMISSION_DENIED (customer Propper regression)', async () => {
+      // Exact production failure mode: v3/folders returns
+      // `403 PERMISSION_DENIED` for some OAuth grants despite the
+      // user having org-level folder roles. The fallback MUST fire
+      // ONLY for true forbiddens — cubic P2 on PR #2916 noted that
+      // an unconditional fallback on "empty folders" would leak
+      // cross-org projects for multi-org users whose selected org
+      // simply has no folders. See the next test for that case.
+      const broadQueryHits: string[] = [];
+      fetchMock.mockImplementation(async (url: string) => {
+        if (url.includes('v3/folders')) {
+          // Real 403 PERMISSION_DENIED body that GCP returns.
+          return {
+            ok: false,
+            status: 403,
+            text: async () =>
+              JSON.stringify({
+                error: {
+                  code: 403,
+                  message: 'The caller does not have permission',
+                  status: 'PERMISSION_DENIED',
+                },
+              }),
+          };
+        }
+        if (
+          url.includes('v1/projects') &&
+          url.includes('parent.id%3A43356919874')
+        ) {
+          return gcpPage({
+            projects: [
+              { projectId: 'direct-1', name: 'Direct One', projectNumber: '100' },
+            ],
+          });
+        }
+        if (
+          url.includes('v1/projects') &&
+          url.includes('parent.type%3Afolder') &&
+          !/parent\.id%3A/.test(url)
+        ) {
+          broadQueryHits.push(url);
+          return gcpPage({
+            projects: [
+              { projectId: 'propperai-prod', name: 'Propper Prod', projectNumber: '200' },
+              { projectId: 'propperai-demo', name: 'Propper Demo', projectNumber: '300' },
+            ],
+          });
+        }
+        throw new Error(`Unexpected URL: ${url}`);
+      });
+
+      const result = await service.detectProjectsForOrg('token', '43356919874');
+
+      const ids = result.map((p) => p.id).sort();
+      expect(ids).toEqual(['direct-1', 'propperai-demo', 'propperai-prod']);
+      expect(broadQueryHits).toHaveLength(1);
+    });
+
+    it('does NOT fall back to the broad query when the org simply has no folders (cubic P2 fix)', async () => {
+      // The previous PR (#2916) fired the broad fallback for ANY
+      // empty enumeration result. That meant a multi-org user whose
+      // selected org legitimately had no folders would see folder-
+      // nested projects from OTHER orgs they had IAM access to —
+      // because the broad query is not org-scoped.
+      //
+      // This test locks in the cubic P2 fix: enumeration returns
+      // empty WITHOUT a 403 → no fallback → folder arm returns []
+      // and the picker shows only the org's direct children.
+      const broadQueryHits: string[] = [];
+      fetchMock.mockImplementation(async (url: string) => {
+        if (url.includes('v3/folders')) {
+          // 200 OK + empty list. NOT a 403. The org just has no
+          // folders. Common shape for small single-org tenants too.
+          return foldersPage({ folders: [] });
+        }
+        if (
+          url.includes('v1/projects') &&
+          url.includes('parent.id%3Aflat-org')
+        ) {
+          return gcpPage({
+            projects: [
+              {
+                projectId: 'only-direct',
+                name: 'Only Direct',
+                projectNumber: '900',
+              },
+            ],
+          });
+        }
+        if (
+          url.includes('v1/projects') &&
+          url.includes('parent.type%3Afolder') &&
+          !/parent\.id%3A/.test(url)
+        ) {
+          // Would return cross-org projects if the fallback ever
+          // fires. Track hits — must be zero.
+          broadQueryHits.push(url);
+          return gcpPage({
+            projects: [
+              {
+                projectId: 'should-not-appear',
+                name: 'Other Org Folder Project',
+                projectNumber: '999',
+              },
+            ],
+          });
+        }
+        throw new Error(`Unexpected URL: ${url}`);
+      });
+
+      const result = await service.detectProjectsForOrg('token', 'flat-org');
+
+      expect(result.map((p) => p.id)).toEqual(['only-direct']);
+      // The broad fallback must NOT fire. Cubic P2.
+      expect(broadQueryHits).toHaveLength(0);
+    });
+
+    it('does NOT fire the broad-query fallback when folder enumeration succeeds (precise scoping preserved)', async () => {
+      // Multi-org safety: when v3/folders works as expected, we stick
+      // with the precise per-folder query so customers in multiple
+      // orgs do not see projects from orgs other than the one they
+      // selected (the original cubic P2 concern from PR #2899).
+      let broadFallbackFired = false;
+      fetchMock.mockImplementation(async (url: string) => {
+        if (url.includes('v3/folders') && url.includes('organizations%2Fhealthy-org')) {
+          return foldersPage({ folders: ['healthy-folder'] });
+        }
+        if (url.includes('v3/folders')) {
+          return foldersPage({ folders: [] }); // no sub-folders
+        }
+        if (url.includes('parent.id%3Ahealthy-org') && !url.includes('parent.type%3Afolder')) {
+          return gcpPage({ projects: [] });
+        }
+        if (
+          url.includes('parent.type%3Afolder') &&
+          url.includes('parent.id%3Ahealthy-folder')
+        ) {
+          return gcpPage({
+            projects: [
+              { projectId: 'scoped-prod', name: 'Scoped', projectNumber: '500' },
+            ],
+          });
+        }
+        // Catch-all: if the broad fallback fires, the test fails.
+        if (
+          url.includes('parent.type%3Afolder') &&
+          !/parent\.id%3A/.test(url)
+        ) {
+          broadFallbackFired = true;
+          return gcpPage({ projects: [] });
+        }
+        throw new Error(`Unexpected URL: ${url}`);
+      });
+
+      const result = await service.detectProjectsForOrg('token', 'healthy-org');
+      expect(result.map((p) => p.id)).toEqual(['scoped-prod']);
+      expect(broadFallbackFired).toBe(false);
+    });
+
     it('still returns direct-arm projects when the folder arm throws entirely (no-regression guarantee)', async () => {
-      // If GCP's v2/folders endpoint throws or returns 4xx, the folder
+      // If GCP's v3/folders endpoint throws or returns 4xx, the folder
       // arm collapses to [] gracefully — the direct arm still works
       // and we are at minimum no worse than prod.
       fetchMock.mockImplementation(async (url: string) => {
-        if (url.includes('v2/folders')) {
-          throw new Error('simulated v2/folders network failure');
+        if (url.includes('v3/folders')) {
+          throw new Error('simulated v3/folders network failure');
         }
         if (url.includes('parent.id%3A555')) {
           return gcpPage({
@@ -342,10 +503,10 @@ describe('GCPSecurityService — project detection', () => {
         if (url.includes('v1/projects') && url.includes('parent.id%3A666') && !url.includes('parent.type%3Afolder')) {
           throw new Error('simulated direct-arm failure');
         }
-        if (url.includes('v2/folders') && url.includes('organizations%2F666')) {
+        if (url.includes('v3/folders') && url.includes('organizations%2F666')) {
           return foldersPage({ folders: ['folder-x'] });
         }
-        if (url.includes('v2/folders')) return foldersPage({ folders: [] });
+        if (url.includes('v3/folders')) return foldersPage({ folders: [] });
         if (url.includes('v1/projects') && url.includes('parent.id%3Afolder-x')) {
           return gcpPage({
             projects: [
@@ -379,12 +540,12 @@ describe('GCPSecurityService — project detection', () => {
 
       fetchMock.mockImplementation((url: string) => {
         if (
-          url.includes('v2/folders') &&
+          url.includes('v3/folders') &&
           url.includes('organizations%2Fbig-org')
         ) {
           return Promise.resolve(foldersPage({ folders: folderIds }));
         }
-        if (url.includes('v2/folders')) {
+        if (url.includes('v3/folders')) {
           return Promise.resolve(foldersPage({ folders: [] })); // no sub-folders
         }
         if (
@@ -453,10 +614,10 @@ describe('GCPSecurityService — project detection', () => {
       // Two folders, the first one's project list throws. The second
       // one should still return its projects.
       fetchMock.mockImplementation(async (url: string) => {
-        if (url.includes('v2/folders') && url.includes('organizations%2F777')) {
+        if (url.includes('v3/folders') && url.includes('organizations%2F777')) {
           return foldersPage({ folders: ['bad-folder', 'good-folder'] });
         }
-        if (url.includes('v2/folders')) return foldersPage({ folders: [] });
+        if (url.includes('v3/folders')) return foldersPage({ folders: [] });
         if (url.includes('v1/projects') && url.includes('parent.id%3A777') && !url.includes('parent.type%3Afolder')) {
           return gcpPage({ projects: [] });
         }

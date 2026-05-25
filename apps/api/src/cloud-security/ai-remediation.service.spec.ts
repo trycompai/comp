@@ -399,3 +399,112 @@ describe('AiRemediationService.refineStepFromError', () => {
     expect(callArgs.temperature).toBe(0);
   });
 });
+
+describe('AiRemediationService.generateManualSteps', () => {
+  const generateObjectMock = generateObject as unknown as jest.Mock;
+
+  const finding = {
+    title: 'No CloudTrail trails configured',
+    description: 'Account has no active CloudTrail trails.',
+    severity: 'high',
+    resourceType: 'AwsAccount',
+    resourceId: 'account-level',
+    remediation: 'Create a multi-region trail with log file validation.',
+    findingKey: 'cloudtrail-no-trails',
+    evidence: { awsAccountId: '123456789012', region: 'us-east-1' },
+  };
+
+  beforeEach(() => {
+    generateObjectMock.mockReset();
+  });
+
+  it('returns AI-generated guidedSteps + reason in the happy path', async () => {
+    generateObjectMock.mockResolvedValueOnce({
+      object: {
+        guidedSteps: [
+          'Open AWS Console → CloudTrail → Trails.',
+          'Click "Create trail" and name it compai-cloudtrail.',
+          'Enable multi-region and log file validation, then Save.',
+        ],
+        reason:
+          'Auto-fix could not generate valid create-trail params for this account.',
+      },
+    });
+
+    const result = await new AiRemediationService().generateManualSteps({
+      finding,
+      failureReason: 'Required param "S3BucketName" is missing or empty',
+    });
+
+    expect(result.guidedSteps).toHaveLength(3);
+    expect(result.guidedSteps[0]).toMatch(/CloudTrail/);
+    expect(result.reason).toMatch(/Auto-fix could not/);
+  });
+
+  it('falls back to the adapter remediation text when the AI call throws', async () => {
+    // Hard guarantee: even if the AI is down, the customer must see
+    // SOMETHING actionable instead of a raw error.
+    generateObjectMock.mockRejectedValueOnce(new Error('AI provider down'));
+
+    const result = await new AiRemediationService().generateManualSteps({
+      finding,
+      failureReason: 'anything',
+    });
+
+    expect(result.guidedSteps).toEqual([
+      'Create a multi-region trail with log file validation.',
+    ]);
+    expect(result.reason).toMatch(/Automatic fix is not available/i);
+  });
+
+  it('falls back to a generic step when there is no adapter remediation text either', async () => {
+    generateObjectMock.mockRejectedValueOnce(new Error('AI down'));
+
+    const result = await new AiRemediationService().generateManualSteps({
+      finding: { ...finding, remediation: null },
+      failureReason: 'x',
+    });
+
+    expect(result.guidedSteps).toHaveLength(1);
+    expect(result.guidedSteps[0]).toMatch(/AWS Console/i);
+  });
+
+  it('passes failing-step context to the model so manual steps reference the same resources', async () => {
+    generateObjectMock.mockResolvedValueOnce({
+      object: { guidedSteps: ['x'], reason: 'y' },
+    });
+
+    await new AiRemediationService().generateManualSteps({
+      finding,
+      failedPlan: {
+        canAutoFix: true,
+        risk: 'low',
+        description: 'd',
+        currentState: {},
+        proposedState: {},
+        requiredPermissions: [],
+        readSteps: [],
+        fixSteps: [
+          {
+            service: 's3',
+            command: 'CreateBucketCommand',
+            params: { Bucket: '' },
+            purpose: 'create log bucket',
+          },
+        ],
+        rollbackSteps: [],
+        rollbackSupported: false,
+        requiresAcknowledgment: false,
+      },
+      failureReason: 'Required param "Bucket" is missing or empty',
+    });
+
+    const callArgs = generateObjectMock.mock.calls[0][0];
+    // The prompt must include both the failing reason AND the original
+    // command so the model can translate it into a real manual step,
+    // not just regurgitate the finding text.
+    expect(callArgs.prompt).toContain('Required param "Bucket" is missing');
+    expect(callArgs.prompt).toContain('s3:CreateBucketCommand');
+    expect(callArgs.prompt).toContain('account-level');
+  });
+});

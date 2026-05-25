@@ -3,7 +3,10 @@ import { db, Prisma } from '@db';
 import { CredentialVaultService } from '../integration-platform/services/credential-vault.service';
 import { parseAwsPermissionError } from './remediation-error.utils';
 import { AWSSecurityService } from './providers/aws-security.service';
-import { AiRemediationService } from './ai-remediation.service';
+import {
+  AiRemediationService,
+  type FindingContext,
+} from './ai-remediation.service';
 import { GcpRemediationService } from './gcp-remediation.service';
 import { AzureRemediationService } from './azure-remediation.service';
 import {
@@ -498,11 +501,34 @@ export class RemediationService {
       },
     });
 
+    // Build the finding context once — reused by refineFixPlan, the
+    // step-repair callback, and the manual-steps fallback path.
+    const evidence = (finding.evidence ?? {}) as Record<string, unknown>;
+    const findingCtx: FindingContext = {
+      title: finding.title ?? 'Unknown',
+      description: finding.description,
+      severity: finding.severity,
+      resourceType: finding.resourceType,
+      resourceId: finding.resourceId,
+      remediation: finding.remediation,
+      findingKey: evidence.findingKey as string,
+      evidence,
+    };
+
     try {
       // Validate read steps first
       const readErrors = validatePlanSteps(plan.readSteps);
       if (readErrors.length > 0) {
-        throw new Error(`Invalid read steps: ${readErrors.join('; ')}`);
+        // Read step validation rarely fails (Get*/Describe* commands are
+        // simple), so don't attempt repair here — fall straight to
+        // manual steps using the original plan for context.
+        return await this.respondWithManualSteps({
+          actionId: action.id,
+          finding: findingCtx,
+          failedPlan: plan,
+          failureReason: `Read steps invalid: ${readErrors.join('; ')}`,
+          resourceId: finding.resourceId,
+        });
       }
 
       const remediationCreds =
@@ -523,18 +549,8 @@ export class RemediationService {
       );
 
       // Phase 2: Send real AWS state back to AI to generate EXACT fix steps
-      const evidence = (finding.evidence ?? {}) as Record<string, unknown>;
       const refinedPlan = await this.aiRemediationService.refineFixPlan({
-        finding: {
-          title: finding.title ?? 'Unknown',
-          description: finding.description,
-          severity: finding.severity,
-          resourceType: finding.resourceType,
-          resourceId: finding.resourceId,
-          remediation: finding.remediation,
-          findingKey: evidence.findingKey as string,
-          evidence,
-        },
+        finding: findingCtx,
         originalPlan: plan,
         realAwsState: previousState,
       });
@@ -561,11 +577,45 @@ export class RemediationService {
 
       // Validate refined fix steps
       if (!refinedPlan.fixSteps || refinedPlan.fixSteps.length === 0) {
-        throw new Error('AI refined plan has no fix steps. Cannot proceed.');
+        return await this.respondWithManualSteps({
+          actionId: action.id,
+          finding: findingCtx,
+          failedPlan: refinedPlan,
+          failureReason: 'AI refined plan produced no executable fix steps.',
+          resourceId: finding.resourceId,
+        });
       }
-      const fixErrors = validatePlanSteps(refinedPlan.fixSteps);
+
+      // First validation pass over the refined plan. If anything fails,
+      // attempt a single AI repair pass on the offending steps and
+      // re-validate — many "missing required param" cases the AI's
+      // first refinement misses are recoverable when given the exact
+      // error back as context. If repair still doesn't satisfy the
+      // validator, fall back to real manual steps so the customer
+      // never sees a raw "Invalid fix steps" error.
+      let plannedFix = refinedPlan;
+      let fixErrors = validatePlanSteps(plannedFix.fixSteps);
       if (fixErrors.length > 0) {
-        throw new Error(`Invalid fix steps: ${fixErrors.join('; ')}`);
+        this.logger.warn(
+          `Refined plan failed validation (${fixErrors.length} error(s)); attempting AI repair before falling back to manual.`,
+        );
+        plannedFix = await this.repairInvalidSteps({
+          plan: plannedFix,
+          validationErrors: fixErrors,
+          finding: findingCtx,
+          syntheticErrorPrefix:
+            'Pre-execution validator rejected this step:',
+        });
+        fixErrors = validatePlanSteps(plannedFix.fixSteps);
+      }
+      if (fixErrors.length > 0) {
+        return await this.respondWithManualSteps({
+          actionId: action.id,
+          finding: findingCtx,
+          failedPlan: plannedFix,
+          failureReason: `Even after AI repair the plan still has invalid steps: ${fixErrors.join('; ')}`,
+          resourceId: finding.resourceId,
+        });
       }
 
       // Phase 3: Execute the refined fix steps (now with REAL values).
@@ -575,27 +625,18 @@ export class RemediationService {
       // we give up — universal fix for "AI omitted a required param"
       // bugs that no per-command map can fully cover.
       const fixResult = await executePlanSteps({
-        steps: refinedPlan.fixSteps,
+        steps: plannedFix.fixSteps,
         credentials: remediationCreds,
         region,
-        autoRollbackSteps: refinedPlan.rollbackSteps,
+        autoRollbackSteps: plannedFix.rollbackSteps,
         repairStep: async ({ step, awsError }) =>
           this.aiRemediationService.refineStepFromError({
             step,
             awsError,
-            finding: {
-              title: finding.title ?? 'Unknown',
-              description: finding.description,
-              severity: finding.severity,
-              resourceType: finding.resourceType,
-              resourceId: finding.resourceId,
-              remediation: finding.remediation,
-              findingKey: evidence.findingKey as string,
-              evidence,
-            },
+            finding: findingCtx,
             planContext: {
-              fixSteps: refinedPlan.fixSteps,
-              readSteps: refinedPlan.readSteps,
+              fixSteps: plannedFix.fixSteps,
+              readSteps: plannedFix.readSteps,
             },
           }),
       });
@@ -607,7 +648,21 @@ export class RemediationService {
         this.logger.error(
           `Step params: ${JSON.stringify(fixResult.error.step.params).slice(0, 500)}`,
         );
-        throw new Error(fixResult.error.message);
+        // Permission errors still flow through the catch block below
+        // (parseAwsPermissionError produces the polished `fixScript`
+        // payload). For all OTHER unrecoverable execution errors fall
+        // back to manual steps so the customer sees real instructions
+        // rather than the raw AWS message.
+        if (parseAwsPermissionError(fixResult.error.message).isPermissionError) {
+          throw new Error(fixResult.error.message);
+        }
+        return await this.respondWithManualSteps({
+          actionId: action.id,
+          finding: findingCtx,
+          failedPlan: plannedFix,
+          failureReason: `Step ${fixResult.error.stepIndex + 1} (${fixResult.error.step.service}:${fixResult.error.step.command}) was rejected by AWS: ${fixResult.error.message}`,
+          resourceId: finding.resourceId,
+        });
       }
 
       const appliedState = {
@@ -615,7 +670,7 @@ export class RemediationService {
           command: `${r.step.service}:${r.step.command}`,
           output: r.output,
         })),
-        rollbackSteps: refinedPlan.rollbackSteps,
+        rollbackSteps: plannedFix.rollbackSteps,
       };
 
       await db.remediationAction.update({
@@ -1067,5 +1122,105 @@ export class RemediationService {
       .replace(':Delete', ':DeleteBucket');
     if (withBucket !== required && existing.has(withBucket)) return true;
     return false;
+  }
+
+  /**
+   * Best-effort AI repair pass over fix steps that failed validation.
+   * Parses step indices from the error strings (format
+   * "Step N (Command): ..."), then asks `refineStepFromError` to
+   * regenerate just those steps. If repair returns a new step, replace
+   * it; otherwise leave it alone for the caller to re-validate.
+   *
+   * Why this exists: `validatePlanSteps` runs BEFORE the executor, so
+   * the executor's own AI repair never gets a chance to fix
+   * empty-required-param plans. Without this pass, customers would see
+   * raw "Invalid fix steps" errors. With it, every plan gets one shot
+   * at AI repair before we fall back to manual guidance.
+   */
+  private async repairInvalidSteps(args: {
+    plan: FixPlan;
+    validationErrors: string[];
+    finding: FindingContext;
+    syntheticErrorPrefix: string;
+  }): Promise<FixPlan> {
+    const failingIndices = new Set<number>();
+    for (const err of args.validationErrors) {
+      const m = err.match(/^Step (\d+)\s*\(/);
+      if (m) failingIndices.add(Number(m[1]) - 1);
+    }
+    if (failingIndices.size === 0) return args.plan;
+
+    const newSteps = [...args.plan.fixSteps];
+    let anyRepaired = false;
+    for (const idx of failingIndices) {
+      const step = newSteps[idx];
+      if (!step) continue;
+      // Group the validator's complaints for THIS step into a synthetic
+      // "AWS error" the repair prompt can reason about.
+      const stepErrors = args.validationErrors
+        .filter((e) => e.startsWith(`Step ${idx + 1} `))
+        .join('; ');
+      const awsError = `${args.syntheticErrorPrefix} ${stepErrors}`;
+      const repaired = await this.aiRemediationService.refineStepFromError({
+        step,
+        awsError,
+        finding: args.finding,
+        planContext: {
+          fixSteps: args.plan.fixSteps,
+          readSteps: args.plan.readSteps,
+        },
+      });
+      if (repaired) {
+        newSteps[idx] = repaired;
+        anyRepaired = true;
+      }
+    }
+    return anyRepaired ? { ...args.plan, fixSteps: newSteps } : args.plan;
+  }
+
+  /**
+   * Universal "graceful fallback to manual steps" path. Called when an
+   * auto-fix attempt cannot succeed (validation rejects after repair,
+   * executor returns an unrecoverable error, plan has no usable steps).
+   *
+   * Persists the action as failed, generates real customer-facing
+   * manual instructions via the AI, and returns the same shape the
+   * frontend already renders for `canAutoFix: false` plans — so the
+   * customer sees clear steps instead of a raw error.
+   */
+  private async respondWithManualSteps(args: {
+    actionId: string;
+    finding: FindingContext;
+    failedPlan?: FixPlan;
+    failureReason: string;
+    resourceId: string;
+  }) {
+    const { guidedSteps, reason } =
+      await this.aiRemediationService.generateManualSteps({
+        finding: args.finding,
+        failedPlan: args.failedPlan,
+        failureReason: args.failureReason,
+      });
+
+    await db.remediationAction.update({
+      where: { id: args.actionId },
+      data: {
+        status: 'failed',
+        errorMessage: reason,
+      },
+    });
+
+    this.logger.warn(
+      `Manual-steps fallback for action ${args.actionId}: ${args.failureReason}`,
+    );
+
+    return {
+      actionId: args.actionId,
+      status: 'failed' as const,
+      resourceId: args.resourceId,
+      error: reason,
+      guidedSteps,
+      guidedOnly: true,
+    };
   }
 }

@@ -1,3 +1,34 @@
+## [3.63.2](https://github.com/trycompai/comp/compare/v3.63.1...v3.63.2) (2026-05-22)
+
+
+### Bug Fixes
+
+* **cloud-tests:** render nested JSON in manual remediation steps correctly ([014c4ab](https://github.com/trycompai/comp/commit/014c4ab273d0263aeb2de0032108af13a45f7ddb))
+
+## [3.63.1](https://github.com/trycompai/comp/compare/v3.63.0...v3.63.1) (2026-05-22)
+
+
+### Bug Fixes
+
+* **cloud-tests:** only fire GCP broad fallback when folder list was forbidden ([173b031](https://github.com/trycompai/comp/commit/173b031c47ed9ababe0559fc93d31015c2c20677)), closes [#2916](https://github.com/trycompai/comp/issues/2916) [#2916](https://github.com/trycompai/comp/issues/2916)
+* **cloud-tests:** unblock GCP picker when folder enumeration is forbidden ([7fdc871](https://github.com/trycompai/comp/commit/7fdc8715fec2ca06733119510b579f005ed78adc))
+
+# [3.63.0](https://github.com/trycompai/comp/compare/v3.62.2...v3.63.0) (2026-05-22)
+
+
+### Bug Fixes
+
+* **cloud-tests:** graceful manual-step fallback for AWS auto-remediation ([4325340](https://github.com/trycompai/comp/commit/43253401d3f38780f1b31f45c381e22716a88a7c))
+* **people:** remove background check exception label ([ddb4b72](https://github.com/trycompai/comp/commit/ddb4b725230df49cd6a9987d23aba385609cfdde))
+* **trust:** allow clearing brand color ([e89b189](https://github.com/trycompai/comp/commit/e89b189c18b147b7b89fa3e8a6f67495a04960c2))
+* **trust:** persist portal branding settings ([2b21d1c](https://github.com/trycompai/comp/commit/2b21d1cff71f3f95c839470272a6e41e83a8da3c))
+
+
+### Features
+
+* **cloud-tests:** manual-steps generator + broader auto-fix pattern coverage ([ebce8a3](https://github.com/trycompai/comp/commit/ebce8a3e6662627ee043a4ed6766d74ece84a724))
+* **cloud-tests:** surface manual-step fallback through trigger + dialog ([c883aee](https://github.com/trycompai/comp/commit/c883aee2f39915dc5193504333e16c85611136a8))
+
 ## [3.62.2](https://github.com/trycompai/comp/compare/v3.62.1...v3.62.2) (2026-05-22)
 
 

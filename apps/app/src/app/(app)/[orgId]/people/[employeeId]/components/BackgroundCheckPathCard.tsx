@@ -13,7 +13,7 @@ export interface PathCardProps {
   iconTone?: 'default' | 'warning';
   title: string;
   description: string;
-  meta: ReactNode;
+  meta?: ReactNode;
   disabled?: boolean;
 }
 
@@ -57,9 +57,7 @@ export function BackgroundCheckPathCard({
       className={cn(
         'group relative rounded-[var(--radius)] border px-4 py-3.5 transition-colors duration-200 ease-out',
         'outline-none focus-visible:ring-[3px] focus-visible:ring-primary/20',
-        disabled
-          ? 'cursor-not-allowed opacity-60'
-          : 'cursor-pointer hover:border-muted-foreground',
+        disabled ? 'cursor-not-allowed opacity-60' : 'cursor-pointer hover:border-muted-foreground',
         selected
           ? 'border-primary bg-[oklch(0.985_0.012_167)] shadow-[inset_0_0_0_1px_var(--primary)]'
           : 'border-border bg-background',
@@ -81,7 +79,7 @@ export function BackgroundCheckPathCard({
       </div>
       <div className="mb-[3px] text-sm font-normal text-foreground">{title}</div>
       <div className="mb-2 text-[13px] leading-[1.4] text-muted-foreground">{description}</div>
-      <div className="font-mono text-xs">{meta}</div>
+      {meta ? <div className="font-mono text-xs">{meta}</div> : null}
     </div>
   );
 }

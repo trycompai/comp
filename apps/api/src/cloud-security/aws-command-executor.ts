@@ -428,7 +428,11 @@ export function looksLikeValidationError(message: string): boolean {
     lower.includes('must be a valid') ||
     lower.includes('is required') ||
     lower.includes('missing required') ||
-    lower.includes('must contain')
+    lower.includes('must contain') ||
+    lower.includes('missingparameter') ||
+    lower.includes('missing parameter') ||
+    lower.includes('parameter is required') ||
+    lower.includes('must specify')
   );
 }
 
