@@ -59,8 +59,11 @@ export function ComboboxCell({
   const showCreateOption = trimmedSearch !== '' && !exactMatchExists;
 
   const handleSelect = (selected: string) => {
-    const newValue = selected === value ? '' : selected;
-    onUpdate(rowId, columnId, newValue);
+    if (selected === value) {
+      setIsOpen(false);
+      return;
+    }
+    onUpdate(rowId, columnId, selected);
     setIsOpen(false);
     setSearch('');
   };
