@@ -147,6 +147,7 @@ export function ControlsClientPage({ initialControls, emptyMessage, frameworkId 
   const {
     data,
     updateCell,
+    batchUpdateCells,
     updateRelational,
     addRow,
     deleteRow,
@@ -165,7 +166,7 @@ export function ControlsClientPage({ initialControls, emptyMessage, frameworkId 
     setManageFamiliesOpen,
     handleRenameFamily,
     handleDeleteFamily,
-  } = useFamiliesManagement({ data, updateCell });
+  } = useFamiliesManagement({ data, batchUpdateCells });
 
   const handleDocumentTypesUpdate = useCallback(
     (rowId: string, values: string[]) => {

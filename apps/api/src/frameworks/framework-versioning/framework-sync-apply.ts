@@ -111,13 +111,9 @@ export async function applySync(
   for (const u of diff.controls.updated) {
     const inst = ctlByTemplate.get(u.id);
     if (!inst) continue;
-    if (isControlEdited(inst, u.from)) {
-      summary.controlsUpdatedPreserved += 1;
-      continue;
-    }
-    undo.controls.contentUpdated.push({ id: inst.id, prevContent: { name: inst.name, description: inst.description } });
-    await tx.control.update({ where: { id: inst.id }, data: { name: u.to.name, description: u.to.description } });
-    // Upsert the per-instance family if the template changed it
+
+    // Sync family assignment regardless of whether the control content was edited.
+    // Family is structural metadata, not user-authored content.
     const existingFamily = await tx.frameworkControlFamily.findUnique({
       where: { frameworkInstanceId_controlId: { frameworkInstanceId: ctx.instance.id, controlId: inst.id } },
       select: { controlFamily: true },
@@ -150,6 +146,13 @@ export async function applySync(
         prevFamily: existingFamily.controlFamily,
       });
     }
+
+    if (isControlEdited(inst, u.from)) {
+      summary.controlsUpdatedPreserved += 1;
+      continue;
+    }
+    undo.controls.contentUpdated.push({ id: inst.id, prevContent: { name: inst.name, description: inst.description } });
+    await tx.control.update({ where: { id: inst.id }, data: { name: u.to.name, description: u.to.description } });
     summary.controlsUpdatedApplied += 1;
   }
 

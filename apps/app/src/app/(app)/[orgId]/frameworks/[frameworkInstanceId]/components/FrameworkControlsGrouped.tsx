@@ -25,6 +25,7 @@ import { FamilyFilterDropdown } from './FamilyFilterDropdown';
 import {
   buildControlItems,
   buildRequirementMap,
+  getFamilyDisplayLabel,
   groupByFamily,
   type ControlItem,
   type FamilyGroup,
@@ -245,7 +246,7 @@ function FamilySection({
             aria-expanded={expanded}
           >
             <ChevronIcon size={16} />
-            <span>{group.family}</span>
+            <span>{getFamilyDisplayLabel(group.family)}</span>
             <span className="text-muted-foreground text-sm font-normal">
               ({group.items.length})
             </span>

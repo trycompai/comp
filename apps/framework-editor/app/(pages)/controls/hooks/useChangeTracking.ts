@@ -39,7 +39,7 @@ export const useChangeTracking = (
   }, [initialData]);
 
   const updateCell = useCallback(
-    (rowId: string, columnId: string, value: string | string[]) => {
+    (rowId: string, columnId: string, value: string | string[] | null) => {
       if (isCommitting) return;
       setData((prev) =>
         prev.map((row) => {
@@ -56,6 +56,39 @@ export const useChangeTracking = (
         if (createdIds.has(rowId)) return prev;
         const next = new Set(prev);
         next.add(rowId);
+        return next;
+      });
+    },
+    [createdIds, isCommitting],
+  );
+
+  const batchUpdateCells = useCallback(
+    (updates: Array<{ rowId: string; columnId: string; value: string | string[] | null }>) => {
+      if (isCommitting || updates.length === 0) return;
+
+      const updatesByRow = new Map<string, Record<string, unknown>>();
+      for (const { rowId, columnId, value } of updates) {
+        const patch = updatesByRow.get(rowId) ?? {};
+        patch[columnId] = value;
+        if (Array.isArray(value)) {
+          patch[`${columnId}Length`] = value.length;
+        }
+        updatesByRow.set(rowId, patch);
+      }
+
+      setData((prev) =>
+        prev.map((row) => {
+          const patch = updatesByRow.get(row.id);
+          if (!patch) return row;
+          return { ...row, ...patch, updatedAt: new Date() };
+        }),
+      );
+
+      setUpdatedIds((prev) => {
+        const next = new Set(prev);
+        for (const { rowId } of updates) {
+          if (!createdIds.has(rowId)) next.add(rowId);
+        }
         return next;
       });
     },
@@ -269,6 +302,7 @@ export const useChangeTracking = (
   return {
     data,
     updateCell,
+    batchUpdateCells,
     updateRelational,
     addRow,
     deleteRow,

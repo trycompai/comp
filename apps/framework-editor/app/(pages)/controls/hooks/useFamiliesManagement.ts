@@ -14,7 +14,7 @@ interface Family {
 
 interface UseFamiliesManagementParams {
   data: ControlsPageGridData[];
-  updateCell: (rowId: string, columnId: string, value: string | string[]) => void;
+  batchUpdateCells: (updates: Array<{ rowId: string; columnId: string; value: string | string[] | null }>) => void;
 }
 
 interface UseFamiliesManagementReturn {
@@ -28,7 +28,7 @@ interface UseFamiliesManagementReturn {
 
 export function useFamiliesManagement({
   data,
-  updateCell,
+  batchUpdateCells,
 }: UseFamiliesManagementParams): UseFamiliesManagementReturn {
   const [manageFamiliesOpen, setManageFamiliesOpen] = useState(false);
 
@@ -67,24 +67,22 @@ export function useFamiliesManagement({
 
   const handleRenameFamily = useCallback(
     (oldName: string, newName: string) => {
-      for (const row of data) {
-        if (row.controlFamily === oldName) {
-          updateCell(row.id, 'controlFamily', newName);
-        }
-      }
+      const updates = data
+        .filter((row) => row.controlFamily === oldName)
+        .map((row) => ({ rowId: row.id, columnId: 'controlFamily', value: newName }));
+      batchUpdateCells(updates);
     },
-    [data, updateCell],
+    [data, batchUpdateCells],
   );
 
   const handleDeleteFamily = useCallback(
     (familyName: string) => {
-      for (const row of data) {
-        if (row.controlFamily === familyName) {
-          updateCell(row.id, 'controlFamily', '');
-        }
-      }
+      const updates = data
+        .filter((row) => row.controlFamily === familyName)
+        .map((row) => ({ rowId: row.id, columnId: 'controlFamily', value: null as null }));
+      batchUpdateCells(updates);
     },
-    [data, updateCell],
+    [data, batchUpdateCells],
   );
 
   return {

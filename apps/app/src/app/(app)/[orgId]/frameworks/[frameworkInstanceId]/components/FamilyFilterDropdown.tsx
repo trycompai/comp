@@ -8,6 +8,7 @@ import {
   Filter,
 } from '@trycompai/design-system/icons';
 import { useEffect, useRef, useState } from 'react';
+import { getFamilyDisplayLabel } from './framework-controls-shared';
 
 interface FamilyFilterDropdownProps {
   allFamilyNames: string[];
@@ -48,7 +49,7 @@ export function FamilyFilterDropdown({
   const label = hasFilter ? `Families (${selectedFamilies.size})` : 'Families';
 
   const filteredFamilies = allFamilyNames.filter((f) =>
-    f.toLowerCase().includes(searchTerm.toLowerCase()),
+    getFamilyDisplayLabel(f).toLowerCase().includes(searchTerm.toLowerCase()),
   );
 
   return (
@@ -92,7 +93,7 @@ export function FamilyFilterDropdown({
                   onClick={() => onToggleFamily(family)}
                 >
                   <Icon size={16} className={isSelected ? 'text-primary' : 'text-muted-foreground'} />
-                  <span className="flex-1 truncate text-sm">{family}</span>
+                  <span className="flex-1 truncate text-sm">{getFamilyDisplayLabel(family)}</span>
                   <span className="text-xs text-muted-foreground tabular-nums">{familyCounts.get(family) ?? 0}</span>
                 </button>
               );

@@ -37,6 +37,7 @@ interface ChangeRow {
   identifier?: string;
   name: string;
   description?: string | null;
+  changeSummary?: string | null;
   kind: ChangeKind;
 }
 
@@ -323,6 +324,11 @@ function ItemRow({ row }: { row: ChangeRow }) {
               {row.name}
             </Text>
           </HStack>
+          {row.changeSummary && (
+            <Text size="sm" variant="muted">
+              {row.changeSummary}
+            </Text>
+          )}
           {row.description && (
             <Text size="sm" variant="muted">
               {row.description}
@@ -649,7 +655,8 @@ function buildGroups(preview: UpdatePreview): ChangeGroup[] {
       rows: preview.controls.updatedApplied.map(({ instance, manifestFrom, manifestTo }) => ({
         key: `ctl-mod-${instance.id}`,
         name: manifestTo.name,
-        description: describeControlChanges(manifestFrom, manifestTo),
+        description: manifestTo.description,
+        changeSummary: describeControlChanges(manifestFrom, manifestTo),
         kind: 'modified' as const,
       })),
     });

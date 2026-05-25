@@ -47,6 +47,12 @@ export function buildControlItems(
   });
 }
 
+/** Sentinel value for uncategorized controls — avoids collision with a real family named "Other". */
+export const UNCATEGORIZED_FAMILY = '__uncategorized__';
+
+/** Display label for the uncategorized family group. */
+export const UNCATEGORIZED_FAMILY_LABEL = 'Other';
+
 export interface FamilyGroup {
   family: string;
   items: ControlItem[];
@@ -81,10 +87,15 @@ export function groupByFamily(items: ControlItem[]): FamilyGroup[] {
 
   if (otherItems.length > 0) {
     groups.push({
-      family: 'Other',
+      family: UNCATEGORIZED_FAMILY,
       items: otherItems.sort((a, b) => a.control.name.localeCompare(b.control.name)),
     });
   }
 
   return groups;
+}
+
+/** Returns the display label for a family key (handles the uncategorized sentinel). */
+export function getFamilyDisplayLabel(family: string): string {
+  return family === UNCATEGORIZED_FAMILY ? UNCATEGORIZED_FAMILY_LABEL : family;
 }
