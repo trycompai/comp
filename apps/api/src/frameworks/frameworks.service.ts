@@ -165,6 +165,9 @@ export class FrameworksService {
                     },
                   },
                   frameworkDocumentLinks: true,
+                  frameworkControlFamilies: {
+                    select: { frameworkInstanceId: true, controlFamily: true },
+                  },
                   requirementsMapped: { where: { archivedAt: null } },
                 },
               },
@@ -189,6 +192,7 @@ export class FrameworksService {
             requirementsMapped: _,
             frameworkPolicyLinks,
             frameworkDocumentLinks,
+            frameworkControlFamilies,
             ...controlData
           } = rm.control;
           const policyLinks = rm.control.frameworkPolicyLinks.filter(
@@ -199,8 +203,13 @@ export class FrameworksService {
             (link: { frameworkInstanceId: string }) =>
               link.frameworkInstanceId === fi.id,
           );
+          const familyEntry = (frameworkControlFamilies ?? []).find(
+            (f: { frameworkInstanceId: string }) =>
+              f.frameworkInstanceId === fi.id,
+          );
           controlsMap.set(rm.control.id, {
             ...controlData,
+            controlFamily: familyEntry?.controlFamily ?? null,
             policies: policyLinks.map(
               (link: { policy: { id: string; name: string; status: string } }) =>
                 link.policy,
@@ -286,6 +295,11 @@ export class FrameworksService {
                 frameworkDocumentLinks: {
                   where: { frameworkInstanceId },
                 },
+                frameworkControlFamilies: {
+                  where: { frameworkInstanceId },
+                  select: { controlFamily: true },
+                  take: 1,
+                },
               },
             },
           },
@@ -307,10 +321,12 @@ export class FrameworksService {
           requirementsMapped: _,
           frameworkPolicyLinks,
           frameworkDocumentLinks,
+          frameworkControlFamilies,
           ...controlData
         } = rm.control;
         controlsMap.set(rm.control.id, {
           ...controlData,
+          controlFamily: frameworkControlFamilies?.[0]?.controlFamily ?? null,
           policies:
             rm.control.frameworkPolicyLinks?.map((link) => link.policy) || [],
           requirementsMapped: rm.control.requirementsMapped || [],
@@ -797,6 +813,11 @@ export class FrameworksService {
               frameworkDocumentLinks: {
                 where: { frameworkInstanceId },
               },
+              frameworkControlFamilies: {
+                where: { frameworkInstanceId },
+                select: { controlFamily: true },
+                take: 1,
+              },
             },
           },
         },
@@ -849,10 +870,12 @@ export class FrameworksService {
           const {
             frameworkPolicyLinks,
             frameworkDocumentLinks,
+            frameworkControlFamilies,
             ...control
           } = relatedControl.control;
           return {
             ...control,
+            controlFamily: frameworkControlFamilies?.[0]?.controlFamily ?? null,
             policies: frameworkPolicyLinks.map((link) => link.policy),
             controlDocumentTypes: frameworkDocumentLinks.map(
               (documentType) => ({
@@ -1066,7 +1089,6 @@ export class FrameworksService {
         controlTemplateId: c.controlTemplateId,
         name: c.name,
         description: c.description,
-        controlFamily: c.controlFamily,
       })),
       instanceTasks: instanceTasks.map((t) => ({
         id: t.id,

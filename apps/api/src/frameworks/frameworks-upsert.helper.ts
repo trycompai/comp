@@ -137,7 +137,6 @@ export async function upsertOrgFrameworkStructure({
       data: controlsToCreate.map((ct) => ({
         name: ct.name,
         description: ct.description,
-        controlFamily: ct.controlFamily ?? null,
         organizationId,
         controlTemplateId: ct.id,
       })),
@@ -286,6 +285,7 @@ export async function upsertOrgFrameworkStructure({
   const frameworkControlPolicyEntries: Prisma.FrameworkControlPolicyLinkCreateManyInput[] = [];
   const frameworkControlTaskEntries: Prisma.FrameworkControlTaskLinkCreateManyInput[] = [];
   const frameworkControlDocumentTypeEntries: Prisma.FrameworkControlDocumentTypeLinkCreateManyInput[] = [];
+  const frameworkControlFamilyEntries: Prisma.FrameworkControlFamilyCreateManyInput[] = [];
   const controlTemplateById = new Map(controlTemplates.map((c) => [c.id, c]));
 
   for (const relation of groupedRelations) {
@@ -361,6 +361,16 @@ export async function upsertOrgFrameworkStructure({
         formType,
       });
     }
+
+    // FrameworkControlFamily: per-instance family grouping from the template.
+    const template = controlTemplateById.get(relation.controlTemplateId);
+    if (template?.controlFamily) {
+      frameworkControlFamilyEntries.push({
+        frameworkInstanceId,
+        controlId,
+        controlFamily: template.controlFamily,
+      });
+    }
   }
 
   if (requirementMapEntries.length > 0) {
@@ -394,6 +404,13 @@ export async function upsertOrgFrameworkStructure({
   if (frameworkControlDocumentTypeEntries.length > 0) {
     await tx.frameworkControlDocumentTypeLink.createMany({
       data: frameworkControlDocumentTypeEntries,
+      skipDuplicates: true,
+    });
+  }
+
+  if (frameworkControlFamilyEntries.length > 0) {
+    await tx.frameworkControlFamily.createMany({
+      data: frameworkControlFamilyEntries,
       skipDuplicates: true,
     });
   }

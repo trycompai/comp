@@ -78,12 +78,21 @@ export async function applySync(
         controlTemplateId: targetControl.id,
         name: targetControl.name,
         description: targetControl.description,
-        controlFamily: targetControl.controlFamily ?? null,
       },
     });
     ctlByTemplate.set(targetControl.id, created);
     undo.controls.created.push(created.id);
     summary.controlsAdded += 1;
+    // Per-instance family entry for the new control
+    if (targetControl.controlFamily) {
+      await tx.frameworkControlFamily.create({
+        data: {
+          frameworkInstanceId: ctx.instance.id,
+          controlId: created.id,
+          controlFamily: targetControl.controlFamily,
+        },
+      });
+    }
   }
   for (const removed of diff.controls.removed) {
     const inst = ctlByTemplate.get(removed.id);
@@ -101,8 +110,20 @@ export async function applySync(
       summary.controlsUpdatedPreserved += 1;
       continue;
     }
-    undo.controls.contentUpdated.push({ id: inst.id, prevContent: { name: inst.name, description: inst.description, controlFamily: inst.controlFamily } });
-    await tx.control.update({ where: { id: inst.id }, data: { name: u.to.name, description: u.to.description, controlFamily: u.to.controlFamily ?? null } });
+    undo.controls.contentUpdated.push({ id: inst.id, prevContent: { name: inst.name, description: inst.description } });
+    await tx.control.update({ where: { id: inst.id }, data: { name: u.to.name, description: u.to.description } });
+    // Upsert the per-instance family if the template changed it
+    if (u.to.controlFamily) {
+      await tx.frameworkControlFamily.upsert({
+        where: { frameworkInstanceId_controlId: { frameworkInstanceId: ctx.instance.id, controlId: inst.id } },
+        create: { frameworkInstanceId: ctx.instance.id, controlId: inst.id, controlFamily: u.to.controlFamily },
+        update: { controlFamily: u.to.controlFamily },
+      });
+    } else {
+      await tx.frameworkControlFamily.deleteMany({
+        where: { frameworkInstanceId: ctx.instance.id, controlId: inst.id },
+      });
+    }
     summary.controlsUpdatedApplied += 1;
   }
 
