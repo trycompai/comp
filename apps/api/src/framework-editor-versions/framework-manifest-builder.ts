@@ -60,6 +60,7 @@ export async function buildManifestForFramework(frameworkId: string): Promise<Fr
           id: ct.id,
           name: ct.name,
           description: ct.description,
+          controlFamily: ct.controlFamily || null,
           requirementIds: ct.requirements
             .map((r) => r.id)
             .filter((id) => ownRequirementIds.has(id)),
