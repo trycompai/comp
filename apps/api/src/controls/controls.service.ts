@@ -855,34 +855,36 @@ export class ControlsService {
       });
       return { success: true };
     }
-    const deleted = await db.controlDocumentType.deleteMany({
-      where: { controlId, formType },
-    });
-    if (deleted.count === 0) return { success: true };
-    const customFiIds = await db.requirementMap.findMany({
-      where: {
-        controlId,
-        archivedAt: null,
-        frameworkInstance: {
-          organizationId,
-          customFrameworkId: { not: null },
-        },
-      },
-      select: { frameworkInstanceId: true },
-      distinct: ['frameworkInstanceId'],
-    });
-    if (customFiIds.length > 0) {
-      await db.frameworkControlDocumentTypeLink.deleteMany({
+    return db.$transaction(async (tx) => {
+      const deleted = await tx.controlDocumentType.deleteMany({
+        where: { controlId, formType },
+      });
+      if (deleted.count === 0) return { success: true };
+      const customFiIds = await tx.requirementMap.findMany({
         where: {
           controlId,
-          formType,
-          frameworkInstanceId: {
-            in: customFiIds.map((r) => r.frameworkInstanceId),
+          archivedAt: null,
+          frameworkInstance: {
+            organizationId,
+            customFrameworkId: { not: null },
           },
         },
+        select: { frameworkInstanceId: true },
+        distinct: ['frameworkInstanceId'],
       });
-    }
-    return { success: true };
+      if (customFiIds.length > 0) {
+        await tx.frameworkControlDocumentTypeLink.deleteMany({
+          where: {
+            controlId,
+            formType,
+            frameworkInstanceId: {
+              in: customFiIds.map((r) => r.frameworkInstanceId),
+            },
+          },
+        });
+      }
+      return { success: true };
+    });
   }
 
   async delete(controlId: string, organizationId: string) {
