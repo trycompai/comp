@@ -5,6 +5,8 @@ import {
 } from '@nestjs/common';
 import { db, EvidenceFormType, Prisma } from '@db';
 import { CreateControlDto } from './dto/create-control.dto';
+import { deduplicateById, deduplicateByFormType } from '../utils/deduplicate';
+import { syncDirectLinksToCustomFrameworks } from './sync-custom-framework-links';
 
 // A CustomRequirement is valid for a given FrameworkInstance when its parent
 // matches: either it lives on the FI's CustomFramework, or it was attached
@@ -205,10 +207,14 @@ export class ControlsService {
     organizationId: string,
     frameworkInstanceId: string,
   ) {
-    await this.ensureFrameworkInstance(frameworkInstanceId, organizationId);
+    const fi = await this.ensureFrameworkInstance(frameworkInstanceId, organizationId);
+    const isCustomFramework = fi.customFrameworkId !== null;
     const control = await db.control.findUnique({
       where: { id: controlId, organizationId },
       include: {
+        policies: { where: { archivedAt: null } },
+        tasks: { where: { archivedAt: null } },
+        controlDocumentTypes: true,
         frameworkPolicyLinks: {
           where: {
             frameworkInstanceId,
@@ -243,9 +249,17 @@ export class ControlsService {
       throw new NotFoundException('Control not found');
     }
 
-    const policies = control.frameworkPolicyLinks.map((link) => link.policy);
-    const tasks = control.frameworkTaskLinks.map((link) => link.task);
-    const controlDocumentTypes = control.frameworkDocumentLinks;
+    const frameworkPolicies = control.frameworkPolicyLinks.map((link) => link.policy);
+    const frameworkTasks = control.frameworkTaskLinks.map((link) => link.task);
+    const directPolicies = isCustomFramework ? (control.policies ?? []) : [];
+    const directTasks = isCustomFramework ? (control.tasks ?? []) : [];
+    const policies = deduplicateById([...frameworkPolicies, ...directPolicies]);
+    const tasks = deduplicateById([...frameworkTasks, ...directTasks]);
+    const directDocTypes = isCustomFramework ? control.controlDocumentTypes : [];
+    const controlDocumentTypes = deduplicateByFormType([
+      ...control.frameworkDocumentLinks,
+      ...directDocTypes,
+    ]);
     const formTypes = controlDocumentTypes.map((d) => d.formType);
     const notRelevantSettings =
       formTypes.length > 0
@@ -287,6 +301,9 @@ export class ControlsService {
       frameworkPolicyLinks,
       frameworkTaskLinks,
       frameworkDocumentLinks,
+      policies: _policies,
+      tasks: _tasks,
+      controlDocumentTypes: _controlDocumentTypes,
       ...controlData
     } = control;
 
@@ -460,6 +477,14 @@ export class ControlsService {
         });
       }
 
+      if (scopedRequirementMappings.length > 0) {
+        await syncDirectLinksToCustomFrameworks({
+          controlId: control.id,
+          organizationId,
+          client: tx,
+        });
+      }
+
       return control;
     });
   }
@@ -610,7 +635,7 @@ export class ControlsService {
   ) {
     const frameworkInstance = await db.frameworkInstance.findUnique({
       where: { id: frameworkInstanceId, organizationId },
-      select: { id: true },
+      select: { id: true, customFrameworkId: true },
     });
     if (!frameworkInstance) {
       throw new NotFoundException('Framework instance not found');
@@ -649,6 +674,7 @@ export class ControlsService {
         where: { id: controlId },
         data: { policies: { connect: policies.map((p) => ({ id: p.id })) } },
       });
+      await syncDirectLinksToCustomFrameworks({ controlId, organizationId });
     }
 
     return { count: policies.length };
@@ -685,6 +711,7 @@ export class ControlsService {
         where: { id: controlId },
         data: { tasks: { connect: tasks.map((t) => ({ id: t.id })) } },
       });
+      await syncDirectLinksToCustomFrameworks({ controlId, organizationId });
     }
 
     return { count: tasks.length };
@@ -810,6 +837,7 @@ export class ControlsService {
       data: formTypes.map((formType) => ({ controlId, formType })),
       skipDuplicates: true,
     });
+    await syncDirectLinksToCustomFrameworks({ controlId, organizationId });
     return { count: result.count };
   }
 
@@ -827,10 +855,36 @@ export class ControlsService {
       });
       return { success: true };
     }
-    await db.controlDocumentType.deleteMany({
-      where: { controlId, formType },
+    return db.$transaction(async (tx) => {
+      const deleted = await tx.controlDocumentType.deleteMany({
+        where: { controlId, formType },
+      });
+      if (deleted.count === 0) return { success: true };
+      const customFiIds = await tx.requirementMap.findMany({
+        where: {
+          controlId,
+          archivedAt: null,
+          frameworkInstance: {
+            organizationId,
+            customFrameworkId: { not: null },
+          },
+        },
+        select: { frameworkInstanceId: true },
+        distinct: ['frameworkInstanceId'],
+      });
+      if (customFiIds.length > 0) {
+        await tx.frameworkControlDocumentTypeLink.deleteMany({
+          where: {
+            controlId,
+            formType,
+            frameworkInstanceId: {
+              in: customFiIds.map((r) => r.frameworkInstanceId),
+            },
+          },
+        });
+      }
+      return { success: true };
     });
-    return { success: true };
   }
 
   async delete(controlId: string, organizationId: string) {
