@@ -132,7 +132,7 @@ export function useRequirementChangeTracking(
             name: row.name,
             identifier: row.identifier ?? '',
             description: row.description ?? '',
-            requirementFamily: row.requirementFamily || undefined,
+            requirementFamily: row.requirementFamily ?? undefined,
           }),
         });
         results.successes.push(`Created: ${row.name}`);
@@ -158,7 +158,7 @@ export function useRequirementChangeTracking(
             name: row.name,
             identifier: row.identifier ?? '',
             description: row.description ?? '',
-            requirementFamily: row.requirementFamily || undefined,
+            requirementFamily: row.requirementFamily ?? null,
           }),
         });
         results.successes.push(`Updated: ${row.name}`);

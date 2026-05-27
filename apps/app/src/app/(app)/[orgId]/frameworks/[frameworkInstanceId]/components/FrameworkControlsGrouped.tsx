@@ -109,11 +109,21 @@ export function FrameworkControlsGrouped({
     });
   };
 
+  const visibleFamilyNames = useMemo(() => groups.map((g) => g.family), [groups]);
+
   const handleToggleAll = () => {
     if (allCollapsed) {
-      setCollapsedFamilies(new Set());
+      setCollapsedFamilies((prev) => {
+        const next = new Set(prev);
+        for (const name of visibleFamilyNames) next.delete(name);
+        return next;
+      });
     } else {
-      setCollapsedFamilies(new Set(allFamilyNames));
+      setCollapsedFamilies((prev) => {
+        const next = new Set(prev);
+        for (const name of visibleFamilyNames) next.add(name);
+        return next;
+      });
     }
   };
 
