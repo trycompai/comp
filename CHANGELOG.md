@@ -1,3 +1,19 @@
+# [3.64.0](https://github.com/trycompai/comp/compare/v3.63.2...v3.64.0) (2026-05-27)
+
+
+### Bug Fixes
+
+* **api:** add batch update endpoint for requirements to avoid rate limiting ([8ce8b3c](https://github.com/trycompai/comp/commit/8ce8b3c42dbbe90af8730b6d99fbeab481c7ac0b))
+* **api:** wrap custom framework link sync in transaction ([#2931](https://github.com/trycompai/comp/issues/2931)) ([094eec1](https://github.com/trycompai/comp/commit/094eec1ff70aea140484a882a8ad86c0e5337530))
+* **controls:** include direct policy/task links in custom framework view ([a32ec37](https://github.com/trycompai/comp/commit/a32ec3798f30d42306cf340ef1802e25a24cd30a))
+* **framework-editor:** flip ComboboxCell dropdown upward when near viewport bottom ([c4b50c6](https://github.com/trycompai/comp/commit/c4b50c69096fde69b7fd533447ffd7375f244314))
+
+
+### Features
+
+* Add control families for nist readiness ([edc5b1a](https://github.com/trycompai/comp/commit/edc5b1a49ceeadbf92474f7128cc0b8767025476))
+* add requirement family grouping to frameworks ([#2929](https://github.com/trycompai/comp/issues/2929)) ([65230df](https://github.com/trycompai/comp/commit/65230df7da6bac9acbb31d45e16a0cc9b6e770b1))
+
 ## [3.63.2](https://github.com/trycompai/comp/compare/v3.63.1...v3.63.2) (2026-05-22)
 
 
