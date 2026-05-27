@@ -23,52 +23,50 @@ import { parseAsArrayOf, parseAsString, useQueryState } from 'nuqs';
 import { useCallback, useMemo, useState } from 'react';
 import { FamilyFilterDropdown } from './FamilyFilterDropdown';
 import {
-  buildControlItems,
-  buildRequirementMap,
+  buildRequirementItems,
   getFamilyDisplayLabel,
-  groupByFamily,
-  type ControlItem,
-  type FamilyGroup,
+  groupRequirementsByFamily,
+  type RequirementFamilyGroup,
 } from './framework-controls-shared';
-import { GroupedControlRow } from './GroupedControlRow';
+import { GroupedRequirementRow } from './GroupedRequirementRow';
 
-const COLUMN_COUNT = 7;
+const COLUMN_COUNT = 9;
 
-export function FrameworkControlsGrouped({
-  frameworkInstanceWithControls,
+export function FrameworkRequirementsGrouped({
   requirementDefinitions,
+  frameworkInstanceWithControls,
   tasks,
   evidenceSubmissions = [],
 }: {
-  frameworkInstanceWithControls: FrameworkInstanceWithControls;
   requirementDefinitions: FrameworkEditorRequirement[];
-  tasks: (Task & { controls: Control[] })[];
+  frameworkInstanceWithControls: FrameworkInstanceWithControls;
+  tasks?: (Task & { controls: Control[] })[];
   evidenceSubmissions?: EvidenceSubmissionInfo[];
 }) {
   const { orgId, frameworkInstanceId } = useParams<{ orgId: string; frameworkInstanceId: string }>();
   const router = useRouter();
 
   const handleRowClick = useCallback(
-    (controlId: string) => {
-      router.push(`/${orgId}/frameworks/${frameworkInstanceId}/controls/${controlId}`);
+    (requirementId: string) => {
+      router.push(`/${orgId}/frameworks/${frameworkInstanceId}/requirements/${requirementId}`);
     },
     [orgId, frameworkInstanceId, router],
   );
 
-  const [searchTerm, setSearchTerm] = useQueryState('q', parseAsString.withDefault('').withOptions({ shallow: true, throttleMs: 300 }));
-  const [familyFilterParam, setFamilyFilterParam] = useQueryState('families', parseAsArrayOf(parseAsString, '|').withDefault([]).withOptions({ shallow: true }));
+  const [searchTerm, setSearchTerm] = useQueryState('rq', parseAsString.withDefault('').withOptions({ shallow: true, throttleMs: 300 }));
+  const [familyFilterParam, setFamilyFilterParam] = useQueryState('rfamilies', parseAsArrayOf(parseAsString, '|').withDefault([]).withOptions({ shallow: true }));
   const [collapsedFamilies, setCollapsedFamilies] = useState<Set<string>>(new Set());
 
   const selectedFamilyFilter = useMemo(() => new Set(familyFilterParam), [familyFilterParam]);
 
-  const requirementMap = useMemo(
-    () => buildRequirementMap(requirementDefinitions),
-    [requirementDefinitions],
-  );
-
   const allItems = useMemo(
-    () => buildControlItems(frameworkInstanceWithControls.controls, requirementMap),
-    [frameworkInstanceWithControls.controls, requirementMap],
+    () => buildRequirementItems(
+      requirementDefinitions,
+      frameworkInstanceWithControls.controls,
+      tasks ?? [],
+      evidenceSubmissions,
+    ),
+    [requirementDefinitions, frameworkInstanceWithControls.controls, tasks, evidenceSubmissions],
   );
 
   const filteredItems = useMemo(() => {
@@ -76,15 +74,13 @@ export function FrameworkControlsGrouped({
     const lower = searchTerm.toLowerCase();
     return allItems.filter(
       (item) =>
-        item.control.name.toLowerCase().includes(lower) ||
-        item.control.description?.toLowerCase().includes(lower) ||
-        item.requirements.some(
-          (r) => r.name.toLowerCase().includes(lower) || r.identifier.toLowerCase().includes(lower),
-        ),
+        item.name.toLowerCase().includes(lower) ||
+        item.identifier?.toLowerCase().includes(lower) ||
+        item.description?.toLowerCase().includes(lower),
     );
   }, [allItems, searchTerm]);
 
-  const allGroups = useMemo(() => groupByFamily(filteredItems), [filteredItems]);
+  const allGroups = useMemo(() => groupRequirementsByFamily(filteredItems), [filteredItems]);
 
   const groups = useMemo(() => {
     if (selectedFamilyFilter.size === 0) return allGroups;
@@ -100,31 +96,15 @@ export function FrameworkControlsGrouped({
   const handleToggleFamily = (family: string) => {
     setCollapsedFamilies((prev) => {
       const next = new Set(prev);
-      if (next.has(family)) {
-        next.delete(family);
-      } else {
-        next.add(family);
-      }
+      if (next.has(family)) next.delete(family);
+      else next.add(family);
       return next;
     });
   };
 
-  const visibleFamilyNames = useMemo(() => groups.map((g) => g.family), [groups]);
-
   const handleToggleAll = () => {
-    if (allCollapsed) {
-      setCollapsedFamilies((prev) => {
-        const next = new Set(prev);
-        for (const name of visibleFamilyNames) next.delete(name);
-        return next;
-      });
-    } else {
-      setCollapsedFamilies((prev) => {
-        const next = new Set(prev);
-        for (const name of visibleFamilyNames) next.add(name);
-        return next;
-      });
-    }
+    if (allCollapsed) setCollapsedFamilies(new Set());
+    else setCollapsedFamilies(new Set(allFamilyNames));
   };
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -133,11 +113,8 @@ export function FrameworkControlsGrouped({
 
   const handleToggleFamilyFilter = (family: string) => {
     const next = new Set(selectedFamilyFilter);
-    if (next.has(family)) {
-      next.delete(family);
-    } else {
-      next.add(family);
-    }
+    if (next.has(family)) next.delete(family);
+    else next.add(family);
     setFamilyFilterParam(next.size > 0 ? [...next].sort() : null);
   };
 
@@ -149,7 +126,7 @@ export function FrameworkControlsGrouped({
 
   return (
     <div className="space-y-4">
-      <Heading level="2">Controls ({filteredItems.length})</Heading>
+      <Heading level="2">Requirements ({filteredItems.length})</Heading>
       <div className="flex items-center gap-3">
         <div className="w-full max-w-sm">
           <InputGroup>
@@ -157,7 +134,7 @@ export function FrameworkControlsGrouped({
               <Search size={16} />
             </InputGroupAddon>
             <InputGroupInput
-              placeholder="Search controls..."
+              placeholder="Search requirements..."
               value={searchTerm}
               onChange={handleSearchChange}
             />
@@ -179,10 +156,12 @@ export function FrameworkControlsGrouped({
       <Table variant="bordered">
         <TableHeader>
           <TableRow>
+            <TableHead>Identifier</TableHead>
             <TableHead>Name</TableHead>
-            <TableHead>Requirement</TableHead>
+            <TableHead>Description</TableHead>
             <TableHead>Compliance</TableHead>
             <TableHead>Status</TableHead>
+            <TableHead>Controls</TableHead>
             <TableHead>Policies</TableHead>
             <TableHead>Tasks</TableHead>
             <TableHead>Documents</TableHead>
@@ -193,19 +172,17 @@ export function FrameworkControlsGrouped({
             <TableRow>
               <TableCell colSpan={COLUMN_COUNT}>
                 <Text size="sm" variant="muted">
-                  No controls found.
+                  No requirements found.
                 </Text>
               </TableCell>
             </TableRow>
           ) : (
             groups.map((group) => (
-              <FamilySection
+              <RequirementFamilySection
                 key={group.family}
                 group={group}
                 expanded={isFamilyExpanded(group.family)}
                 onToggle={() => handleToggleFamily(group.family)}
-                tasks={tasks}
-                evidenceSubmissions={evidenceSubmissions}
                 orgId={orgId}
                 frameworkInstanceId={frameworkInstanceId}
                 onRowClick={handleRowClick}
@@ -218,24 +195,20 @@ export function FrameworkControlsGrouped({
   );
 }
 
-function FamilySection({
+function RequirementFamilySection({
   group,
   expanded,
   onToggle,
-  tasks,
-  evidenceSubmissions,
   orgId,
   frameworkInstanceId,
   onRowClick,
 }: {
-  group: FamilyGroup;
+  group: RequirementFamilyGroup;
   expanded: boolean;
   onToggle: () => void;
-  tasks: (Task & { controls: Control[] })[];
-  evidenceSubmissions: EvidenceSubmissionInfo[];
   orgId: string;
   frameworkInstanceId: string;
-  onRowClick: (controlId: string) => void;
+  onRowClick: (requirementId: string) => void;
 }) {
   const ChevronIcon = expanded ? ChevronDown : ChevronRight;
 
@@ -264,13 +237,10 @@ function FamilySection({
         </TableCell>
       </TableRow>
       {expanded &&
-        group.items.map(({ control, requirements }) => (
-          <GroupedControlRow
-            key={control.id}
-            control={control}
-            requirements={requirements}
-            tasks={tasks}
-            evidenceSubmissions={evidenceSubmissions}
+        group.items.map((item) => (
+          <GroupedRequirementRow
+            key={item.id}
+            item={item}
             orgId={orgId}
             frameworkInstanceId={frameworkInstanceId}
             onRowClick={onRowClick}

@@ -107,6 +107,7 @@ export async function buildManifestForFramework(frameworkId: string): Promise<Fr
       identifier: r.identifier,
       name: r.name,
       description: r.description,
+      requirementFamily: r.requirementFamily || null,
     })),
     controls: [...controlsMap.values()],
     policies: [...policiesMap.values()],

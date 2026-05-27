@@ -17,7 +17,7 @@ import {
 } from './framework-controls-shared';
 import {
   Badge,
-  Heading,
+
   InputGroup,
   InputGroupAddon,
   InputGroupInput,
@@ -98,7 +98,6 @@ export function FrameworkControls({
 
   return (
     <div className="space-y-4">
-      <Heading level="2">Controls ({filteredItems.length})</Heading>
       <div className="w-full max-w-sm">
         <InputGroup>
           <InputGroupAddon>

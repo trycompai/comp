@@ -20,6 +20,7 @@ export interface ManifestRequirement {
   identifier: string; // e.g. "CC6.1"
   name: string;
   description: string | null;
+  requirementFamily?: string | null;
 }
 
 export interface ManifestControl {

@@ -65,6 +65,12 @@ class ImportRequirementDto {
   @IsNotEmpty()
   @MaxLength(5000)
   description: string;
+
+  @ApiPropertyOptional()
+  @IsString()
+  @IsOptional()
+  @MaxLength(255)
+  requirementFamily?: string;
 }
 
 class ImportControlTemplateDto {
