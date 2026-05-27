@@ -24,11 +24,9 @@ type RequirementDef = {
   name: string;
   identifier: string;
   description: string;
+  requirementFamily?: string | null;
   frameworkId: string | null;
   customFrameworkId: string | null;
-  // Discriminator that survives the per-instance custom case (where both
-  // frameworkId and customFrameworkId are null on the def). Used by callers
-  // to decide which RequirementMap FK column to filter on.
   kind: 'platform' | 'custom';
 };
 
@@ -107,6 +105,7 @@ export class FrameworksService {
               name: r.name,
               identifier: r.identifier,
               description: r.description ?? '',
+              requirementFamily: r.requirementFamily ?? null,
               frameworkId: fi.frameworkId,
               customFrameworkId: null,
               kind: 'platform',
@@ -127,6 +126,7 @@ export class FrameworksService {
         name: r.name,
         identifier: r.identifier,
         description: r.description,
+        requirementFamily: r.requirementFamily ?? null,
         frameworkId: r.frameworkId,
         customFrameworkId: null,
         kind: 'platform',

@@ -1,6 +1,14 @@
 import type { StatusType } from '@/components/status-indicator';
+import {
+  type EvidenceSubmissionInfo,
+  type RequirementArtifactCounts,
+  getControlProgressPercent,
+  getControlStatus,
+  getRequirementArtifactCounts,
+  getRequirementCompliancePercent,
+} from '@/lib/control-compliance';
 import type { FrameworkInstanceWithControls } from '@/lib/types/framework';
-import type { FrameworkEditorRequirement } from '@db';
+import type { Control, FrameworkEditorRequirement, Task } from '@db';
 
 export const PAGE_SIZE_OPTIONS = [10, 25, 50, 100];
 
@@ -98,4 +106,93 @@ export function groupByFamily(items: ControlItem[]): FamilyGroup[] {
 /** Returns the display label for a family key (handles the uncategorized sentinel). */
 export function getFamilyDisplayLabel(family: string): string {
   return family === UNCATEGORIZED_FAMILY ? UNCATEGORIZED_FAMILY_LABEL : family;
+}
+
+// ---------------------------------------------------------------------------
+// Requirement grouping
+// ---------------------------------------------------------------------------
+
+export interface RequirementItem extends FrameworkEditorRequirement {
+  mappedControlsCount: number;
+  satisfiedControlsCount: number;
+  compliancePercent: number;
+  controlStatuses: StatusType[];
+  artifactCounts: RequirementArtifactCounts;
+}
+
+export interface RequirementFamilyGroup {
+  family: string;
+  items: RequirementItem[];
+}
+
+export function groupRequirementsByFamily(items: RequirementItem[]): RequirementFamilyGroup[] {
+  const familyMap = new Map<string, RequirementItem[]>();
+  const otherItems: RequirementItem[] = [];
+
+  for (const item of items) {
+    const family = item.requirementFamily;
+    if (family) {
+      const existing = familyMap.get(family);
+      if (existing) {
+        existing.push(item);
+      } else {
+        familyMap.set(family, [item]);
+      }
+    } else {
+      otherItems.push(item);
+    }
+  }
+
+  const sortedFamilies = Array.from(familyMap.entries()).sort(([a], [b]) =>
+    a.localeCompare(b),
+  );
+
+  const sortItems = (a: RequirementItem, b: RequirementItem) =>
+    (a.identifier ?? a.name).localeCompare(b.identifier ?? b.name, undefined, { numeric: true });
+
+  const groups: RequirementFamilyGroup[] = sortedFamilies.map(([family, familyItems]) => ({
+    family,
+    items: familyItems.sort(sortItems),
+  }));
+
+  if (otherItems.length > 0) {
+    groups.push({
+      family: UNCATEGORIZED_FAMILY,
+      items: otherItems.sort(sortItems),
+    });
+  }
+
+  return groups;
+}
+
+export function buildRequirementItems(
+  requirementDefinitions: FrameworkEditorRequirement[],
+  controls: FrameworkInstanceWithControls['controls'],
+  tasks: (Task & { controls: Control[] })[],
+  evidenceSubmissions: EvidenceSubmissionInfo[],
+): RequirementItem[] {
+  return requirementDefinitions.map((def) => {
+    const mappedControls = controls.filter(
+      (control) =>
+        control.requirementsMapped?.some((rm) => rm.requirementId === def.id) ?? false,
+    );
+
+    const controlStatuses = mappedControls.map((c) =>
+      getControlStatus(c.policies, tasks, c.id, c.controlDocumentTypes, evidenceSubmissions),
+    );
+    const satisfiedControlsCount = controlStatuses.filter((s) => s === 'completed').length;
+
+    const progressPercents = mappedControls.map((c) =>
+      getControlProgressPercent(c.policies, tasks, c.id, c.controlDocumentTypes, evidenceSubmissions),
+    );
+
+    return {
+      ...def,
+      mappedControlsCount: mappedControls.length,
+      satisfiedControlsCount,
+      compliancePercent: getRequirementCompliancePercent(progressPercents),
+      controlStatuses,
+      artifactCounts: getRequirementArtifactCounts(mappedControls, tasks, evidenceSubmissions),
+    };
+  });
 }
