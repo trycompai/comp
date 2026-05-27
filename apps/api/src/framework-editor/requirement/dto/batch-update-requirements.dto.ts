@@ -2,6 +2,7 @@ import { ApiProperty } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 import {
   IsArray,
+  IsNotEmpty,
   IsString,
   IsOptional,
   MaxLength,
@@ -11,6 +12,7 @@ import {
 class BatchUpdateRequirementItem {
   @ApiProperty()
   @IsString()
+  @IsNotEmpty()
   id: string;
 
   @ApiProperty()
