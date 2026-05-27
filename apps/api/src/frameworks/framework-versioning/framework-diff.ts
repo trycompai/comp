@@ -174,7 +174,10 @@ function controlEqual(a: ManifestControl, b: ManifestControl): boolean {
 
 function requirementEqual(a: ManifestRequirement, b: ManifestRequirement): boolean {
   return (
-    a.identifier === b.identifier && a.name === b.name && a.description === b.description
+    a.identifier === b.identifier &&
+    a.name === b.name &&
+    a.description === b.description &&
+    (a.requirementFamily ?? null) === (b.requirementFamily ?? null)
   );
 }
 

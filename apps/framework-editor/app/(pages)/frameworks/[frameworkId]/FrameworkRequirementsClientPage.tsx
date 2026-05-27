@@ -14,7 +14,7 @@ import { ArrowDown, ArrowUp, ArrowUpDown, Download, PencilIcon, Plus, Trash2 } f
 import { useRouter } from 'next/navigation';
 import { useCallback, useMemo, useState } from 'react';
 import { toast } from 'sonner';
-import { DateCell, EditableCell, RelationalCell } from '../../../components/table';
+import { ComboboxCell, DateCell, EditableCell, RelationalCell } from '../../../components/table';
 import { EditFrameworkDialog } from './components/EditFrameworkDialog';
 import { DeleteFrameworkDialog } from './components/DeleteFrameworkDialog';
 import {
@@ -36,6 +36,7 @@ interface RequirementInput {
   name: string;
   identifier: string;
   description: string;
+  requirementFamily?: string | null;
   frameworkId: string;
   createdAt: string | Date;
   updatedAt: string | Date;
@@ -80,6 +81,7 @@ export function FrameworkRequirementsClientPage({
         name: r.name ?? null,
         identifier: r.identifier ?? null,
         description: r.description ?? null,
+        requirementFamily: r.requirementFamily ?? null,
         controlTemplates: r.controlTemplates ?? [],
         controlTemplatesLength: r.controlTemplates?.length ?? 0,
         createdAt: r.createdAt ? new Date(r.createdAt) : null,
@@ -102,8 +104,29 @@ export function FrameworkRequirementsClientPage({
     changesSummary,
   } = useRequirementChangeTracking(initialGridData, frameworkDetails.id);
 
+  const uniqueFamilies = useMemo(() => {
+    const families = new Set<string>();
+    for (const row of data) {
+      if (row.requirementFamily) families.add(row.requirementFamily);
+    }
+    return [...families].sort();
+  }, [data]);
+
   const columns = useMemo(
     () => [
+      columnHelper.accessor('requirementFamily', {
+        header: 'Family',
+        size: 200,
+        cell: ({ row, getValue }) => (
+          <ComboboxCell
+            value={getValue()}
+            rowId={row.original.id}
+            columnId="requirementFamily"
+            options={uniqueFamilies}
+            onUpdate={updateCell}
+          />
+        ),
+      }),
       columnHelper.accessor('identifier', {
         header: 'Identifier',
         size: 140,
@@ -189,7 +212,7 @@ export function FrameworkRequirementsClientPage({
         ),
       }),
     ],
-    [updateCell, updateRelational, deleteRow, createdIds],
+    [uniqueFamilies, updateCell, updateRelational, deleteRow, createdIds],
   );
 
   const [sorting, setSorting] = useState<SortingState>([]);
@@ -210,6 +233,7 @@ export function FrameworkRequirementsClientPage({
       name: 'New Requirement',
       identifier: '',
       description: '',
+      requirementFamily: null,
       controlTemplates: [],
       controlTemplatesLength: 0,
       createdAt: new Date(),
