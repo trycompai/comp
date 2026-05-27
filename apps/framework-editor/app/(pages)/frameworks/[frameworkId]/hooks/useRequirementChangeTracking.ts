@@ -7,6 +7,7 @@ export interface RequirementGridRow {
   name: string | null;
   identifier: string | null;
   description: string | null;
+  requirementFamily: string | null;
   controlTemplates: Array<{ id: string; name: string }>;
   controlTemplatesLength: number;
   createdAt: Date | null;
@@ -131,6 +132,7 @@ export function useRequirementChangeTracking(
             name: row.name,
             identifier: row.identifier ?? '',
             description: row.description ?? '',
+            requirementFamily: row.requirementFamily ?? undefined,
           }),
         });
         results.successes.push(`Created: ${row.name}`);
@@ -156,6 +158,7 @@ export function useRequirementChangeTracking(
             name: row.name,
             identifier: row.identifier ?? '',
             description: row.description ?? '',
+            requirementFamily: row.requirementFamily ?? null,
           }),
         });
         results.successes.push(`Updated: ${row.name}`);

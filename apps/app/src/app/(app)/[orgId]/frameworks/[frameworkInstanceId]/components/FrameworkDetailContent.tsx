@@ -31,6 +31,7 @@ import { FrameworkControlsGrouped } from './FrameworkControlsGrouped';
 import { FrameworkDeleteDialog } from './FrameworkDeleteDialog';
 import { FrameworkProgress } from './FrameworkProgress';
 import { FrameworkRequirements } from './FrameworkRequirements';
+import { FrameworkRequirementsGrouped } from './FrameworkRequirementsGrouped';
 import { FrameworkTimeline } from './FrameworkTimeline';
 import { FrameworkVersioningSection } from './FrameworkVersioningSection';
 import { LinkRequirementSheet } from './LinkRequirementSheet';
@@ -82,6 +83,14 @@ export function FrameworkDetailContent({
         (c: { controlFamily?: string | null }) => c.controlFamily,
       ),
     [frameworkInstanceWithControls.controls],
+  );
+
+  const hasRequirementFamilies = useMemo(
+    () =>
+      requirementDefinitions.some(
+        (r: { requirementFamily?: string | null }) => r.requirementFamily,
+      ),
+    [requirementDefinitions],
   );
 
   // Tab state synced to ?tab=
@@ -223,12 +232,23 @@ export function FrameworkDetailContent({
         </TabsContent>
 
         <TabsContent value="requirements">
-          <FrameworkRequirements
-            requirementDefinitions={requirementDefinitions}
-            frameworkInstanceWithControls={frameworkInstanceWithControls}
-            tasks={tasks}
-            evidenceSubmissions={evidenceSubmissions}
-          />
+          {hasRequirementFamilies ? (
+            <Suspense>
+              <FrameworkRequirementsGrouped
+                requirementDefinitions={requirementDefinitions}
+                frameworkInstanceWithControls={frameworkInstanceWithControls}
+                tasks={tasks}
+                evidenceSubmissions={evidenceSubmissions}
+              />
+            </Suspense>
+          ) : (
+            <FrameworkRequirements
+              requirementDefinitions={requirementDefinitions}
+              frameworkInstanceWithControls={frameworkInstanceWithControls}
+              tasks={tasks}
+              evidenceSubmissions={evidenceSubmissions}
+            />
+          )}
         </TabsContent>
 
         <TabsContent value="history">
