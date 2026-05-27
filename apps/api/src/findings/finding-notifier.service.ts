@@ -76,6 +76,11 @@ const STATUS_LABELS: Record<FindingStatus, string> = {
 const TYPE_LABELS: Record<FindingType, string> = {
   [FindingType.soc2]: 'SOC 2',
   [FindingType.iso27001]: 'ISO 27001',
+  [FindingType.pci_dss]: 'PCI DSS',
+  [FindingType.hipaa]: 'HIPAA',
+  [FindingType.gdpr]: 'GDPR',
+  [FindingType.iso9001]: 'ISO 9001',
+  [FindingType.iso42001]: 'ISO 42001',
 };
 
 function truncate(s: string, n: number) {
