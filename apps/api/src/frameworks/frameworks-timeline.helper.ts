@@ -22,6 +22,11 @@ const FRAMEWORK_TO_FINDING_TYPE: Record<string, FindingType> = {
   SOC2: FindingType.soc2,
   SOC2V1: FindingType.soc2,
   ISO27001: FindingType.iso27001,
+  ISO42001: FindingType.iso42001,
+  ISO9001: FindingType.iso9001,
+  PCIDSS: FindingType.pci_dss,
+  HIPAA: FindingType.hipaa,
+  GDPR: FindingType.gdpr,
 };
 
 function getFindingTypeForFrameworkName(
