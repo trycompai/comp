@@ -7,6 +7,7 @@ export interface DiffControl {
   id: string;
   name: string;
   description?: string;
+  controlFamily?: string | null;
 }
 
 export interface DiffRequirement {
@@ -14,6 +15,7 @@ export interface DiffRequirement {
   name: string;
   identifier: string;
   description?: string | null;
+  requirementFamily?: string | null;
 }
 
 export interface DiffPolicy {

@@ -19,6 +19,12 @@ export class CreateControlTemplateDto {
   @MaxLength(5000)
   description: string;
 
+  @ApiPropertyOptional({ example: 'AC - Access Control' })
+  @IsString()
+  @IsOptional()
+  @MaxLength(255)
+  controlFamily?: string;
+
   @ApiPropertyOptional({ example: ['penetration-test', 'rbac-matrix'] })
   @IsArray()
   @IsString({ each: true })

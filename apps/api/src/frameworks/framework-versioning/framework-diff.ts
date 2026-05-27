@@ -169,12 +169,15 @@ function edgesFromControls<E>(
 }
 
 function controlEqual(a: ManifestControl, b: ManifestControl): boolean {
-  return a.name === b.name && a.description === b.description;
+  return a.name === b.name && a.description === b.description && (a.controlFamily ?? null) === (b.controlFamily ?? null);
 }
 
 function requirementEqual(a: ManifestRequirement, b: ManifestRequirement): boolean {
   return (
-    a.identifier === b.identifier && a.name === b.name && a.description === b.description
+    a.identifier === b.identifier &&
+    a.name === b.name &&
+    a.description === b.description &&
+    (a.requirementFamily ?? null) === (b.requirementFamily ?? null)
   );
 }
 

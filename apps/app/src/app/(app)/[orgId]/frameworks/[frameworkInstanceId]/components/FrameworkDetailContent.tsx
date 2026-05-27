@@ -24,12 +24,14 @@ import {
 } from '@trycompai/ui/dropdown-menu';
 import Link from 'next/link';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
-import { useCallback, useState } from 'react';
+import { Suspense, useCallback, useMemo, useState } from 'react';
 import { AddCustomRequirementSheet } from './AddCustomRequirementSheet';
 import { FrameworkControls } from './FrameworkControls';
+import { FrameworkControlsGrouped } from './FrameworkControlsGrouped';
 import { FrameworkDeleteDialog } from './FrameworkDeleteDialog';
 import { FrameworkProgress } from './FrameworkProgress';
 import { FrameworkRequirements } from './FrameworkRequirements';
+import { FrameworkRequirementsGrouped } from './FrameworkRequirementsGrouped';
 import { FrameworkTimeline } from './FrameworkTimeline';
 import { FrameworkVersioningSection } from './FrameworkVersioningSection';
 import { LinkRequirementSheet } from './LinkRequirementSheet';
@@ -74,6 +76,22 @@ export function FrameworkDetailContent({
   const tasks = framework.tasks || [];
   const evidenceSubmissions = framework.evidenceSubmissions || [];
   const requirementDefinitions = framework.requirementDefinitions || [];
+
+  const hasControlFamilies = useMemo(
+    () =>
+      frameworkInstanceWithControls.controls.some(
+        (c: { controlFamily?: string | null }) => c.controlFamily,
+      ),
+    [frameworkInstanceWithControls.controls],
+  );
+
+  const hasRequirementFamilies = useMemo(
+    () =>
+      requirementDefinitions.some(
+        (r: { requirementFamily?: string | null }) => r.requirementFamily,
+      ),
+    [requirementDefinitions],
+  );
 
   // Tab state synced to ?tab=
   // Progress tab only exists when the compliance timeline flag is on — when
@@ -194,21 +212,43 @@ export function FrameworkDetailContent({
         )}
 
         <TabsContent value="controls">
-          <FrameworkControls
-            frameworkInstanceWithControls={frameworkInstanceWithControls}
-            requirementDefinitions={requirementDefinitions}
-            tasks={tasks}
-            evidenceSubmissions={evidenceSubmissions}
-          />
+          {hasControlFamilies ? (
+            <Suspense>
+              <FrameworkControlsGrouped
+                frameworkInstanceWithControls={frameworkInstanceWithControls}
+                requirementDefinitions={requirementDefinitions}
+                tasks={tasks}
+                evidenceSubmissions={evidenceSubmissions}
+              />
+            </Suspense>
+          ) : (
+            <FrameworkControls
+              frameworkInstanceWithControls={frameworkInstanceWithControls}
+              requirementDefinitions={requirementDefinitions}
+              tasks={tasks}
+              evidenceSubmissions={evidenceSubmissions}
+            />
+          )}
         </TabsContent>
 
         <TabsContent value="requirements">
-          <FrameworkRequirements
-            requirementDefinitions={requirementDefinitions}
-            frameworkInstanceWithControls={frameworkInstanceWithControls}
-            tasks={tasks}
-            evidenceSubmissions={evidenceSubmissions}
-          />
+          {hasRequirementFamilies ? (
+            <Suspense>
+              <FrameworkRequirementsGrouped
+                requirementDefinitions={requirementDefinitions}
+                frameworkInstanceWithControls={frameworkInstanceWithControls}
+                tasks={tasks}
+                evidenceSubmissions={evidenceSubmissions}
+              />
+            </Suspense>
+          ) : (
+            <FrameworkRequirements
+              requirementDefinitions={requirementDefinitions}
+              frameworkInstanceWithControls={frameworkInstanceWithControls}
+              tasks={tasks}
+              evidenceSubmissions={evidenceSubmissions}
+            />
+          )}
         </TabsContent>
 
         <TabsContent value="history">

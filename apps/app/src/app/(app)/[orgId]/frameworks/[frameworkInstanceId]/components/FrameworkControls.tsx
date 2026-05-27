@@ -1,6 +1,5 @@
 'use client';
 
-import type { StatusType } from '@/components/status-indicator';
 import {
   type EvidenceSubmissionInfo,
   getControlProgressPercent,
@@ -10,8 +9,15 @@ import {
 import type { FrameworkInstanceWithControls } from '@/lib/types/framework';
 import type { Control, FrameworkEditorRequirement, Task } from '@db';
 import {
+  buildControlItems,
+  buildRequirementMap,
+  type ControlItem,
+  getStatusBadge,
+  PAGE_SIZE_OPTIONS,
+} from './framework-controls-shared';
+import {
   Badge,
-  Heading,
+
   InputGroup,
   InputGroupAddon,
   InputGroupInput,
@@ -27,29 +33,6 @@ import { Launch, Search } from '@trycompai/design-system/icons';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { useEffect, useMemo, useState } from 'react';
-
-const PAGE_SIZE_OPTIONS = [10, 25, 50, 100];
-
-function getStatusBadge(status: StatusType): {
-  label: string;
-  variant: 'default' | 'secondary' | 'destructive';
-} {
-  switch (status) {
-    case 'completed':
-      return { label: 'Satisfied', variant: 'default' };
-    case 'in_progress':
-      return { label: 'In Progress', variant: 'secondary' };
-    case 'not_relevant':
-      return { label: 'Not Relevant', variant: 'secondary' };
-    default:
-      return { label: 'Not Started', variant: 'destructive' };
-  }
-}
-
-interface ControlItem {
-  control: FrameworkInstanceWithControls['controls'][number];
-  requirements: Array<{ id: string; name: string; identifier: string }>;
-}
 
 export function FrameworkControls({
   frameworkInstanceWithControls,
@@ -71,23 +54,15 @@ export function FrameworkControls({
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(25);
 
-  const requirementMap = useMemo(() => {
-    const map = new Map<string, { id: string; name: string; identifier: string }>();
-    for (const req of requirementDefinitions) {
-      map.set(req.id, { id: req.id, name: req.name, identifier: req.identifier ?? '' });
-    }
-    return map;
-  }, [requirementDefinitions]);
+  const requirementMap = useMemo(
+    () => buildRequirementMap(requirementDefinitions),
+    [requirementDefinitions],
+  );
 
-  const items: ControlItem[] = useMemo(() => {
-    return frameworkInstanceWithControls.controls.map((control) => {
-      const requirements = (control.requirementsMapped ?? [])
-        .map((rm) => (rm.requirementId ? requirementMap.get(rm.requirementId) : undefined))
-        .filter((r): r is { id: string; name: string; identifier: string } => r != null);
-
-      return { control, requirements };
-    });
-  }, [frameworkInstanceWithControls.controls, requirementMap]);
+  const items: ControlItem[] = useMemo(
+    () => buildControlItems(frameworkInstanceWithControls.controls, requirementMap),
+    [frameworkInstanceWithControls.controls, requirementMap],
+  );
 
   const filteredItems = useMemo(() => {
     if (!searchTerm.trim()) return items;
@@ -123,7 +98,6 @@ export function FrameworkControls({
 
   return (
     <div className="space-y-4">
-      <Heading level="2">Controls ({filteredItems.length})</Heading>
       <div className="w-full max-w-sm">
         <InputGroup>
           <InputGroupAddon>

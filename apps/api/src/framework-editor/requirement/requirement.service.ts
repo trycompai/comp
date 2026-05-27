@@ -42,6 +42,7 @@ export class RequirementService {
         name: dto.name,
         identifier: dto.identifier ?? '',
         description: dto.description ?? '',
+        requirementFamily: dto.requirementFamily || null,
       },
     });
     this.logger.log(`Created requirement: ${req.name} (${req.id})`);
@@ -58,10 +59,46 @@ export class RequirementService {
 
     const updated = await db.frameworkEditorRequirement.update({
       where: { id },
-      data: dto,
+      data: {
+        ...dto,
+        ...(dto.requirementFamily !== undefined && {
+          requirementFamily: dto.requirementFamily || null,
+        }),
+      },
     });
     this.logger.log(`Updated requirement: ${updated.name} (${id})`);
     return updated;
+  }
+
+  async batchUpdate(
+    updates: Array<{
+      id: string;
+      name?: string;
+      identifier?: string;
+      description?: string;
+      requirementFamily?: string;
+    }>,
+  ) {
+    return db.$transaction(
+      updates.map((update) => {
+        const { id, ...data } = update;
+        return db.frameworkEditorRequirement.update({
+          where: { id },
+          data: {
+            ...(data.name !== undefined && { name: data.name }),
+            ...(data.identifier !== undefined && {
+              identifier: data.identifier,
+            }),
+            ...(data.description !== undefined && {
+              description: data.description,
+            }),
+            ...(data.requirementFamily !== undefined && {
+              requirementFamily: data.requirementFamily || null,
+            }),
+          },
+        });
+      }),
+    );
   }
 
   async delete(id: string) {
