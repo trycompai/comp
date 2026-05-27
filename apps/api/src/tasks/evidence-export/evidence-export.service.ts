@@ -33,6 +33,30 @@ const safeStringify = configureStringify({
   deterministic: false,
 });
 
+function buildExportInfo(
+  info:
+    | { kind: 'task'; taskId: string }
+    | {
+        kind: 'organization';
+        organizationName: string;
+        organizationId: string;
+        taskCount: number;
+      },
+): string {
+  const lines = [
+    'Evidence export',
+    `Started at: ${new Date().toISOString()}`,
+  ];
+  if (info.kind === 'task') {
+    lines.push(`Task ID: ${info.taskId}`);
+  } else {
+    lines.push(`Organization: ${info.organizationName}`);
+    lines.push(`Organization ID: ${info.organizationId}`);
+    lines.push(`Tasks included: ${info.taskCount}`);
+  }
+  return lines.join('\n') + '\n';
+}
+
 @Injectable()
 export class EvidenceExportService {
   private readonly logger = new Logger(EvidenceExportService.name);
@@ -196,6 +220,17 @@ export class EvidenceExportService {
   }): Promise<void> {
     const { archive, organizationId, taskId, folderName, options } = params;
 
+    // Force the archiver to emit a real ZIP byte immediately, before the
+    // per-task data load runs. Combined with res.flushHeaders() upstream this
+    // keeps the response visibly alive through any proxy idle timer.
+    archive.append(
+      Buffer.from(
+        buildExportInfo({ kind: 'task', taskId }),
+        'utf-8',
+      ),
+      { name: `${folderName}/EXPORT_INFO.txt` },
+    );
+
     const [headers, attachments] = await Promise.all([
       getAutomationHeaders({ organizationId, taskId }),
       getTaskAttachments(organizationId, taskId),
@@ -336,6 +371,21 @@ export class EvidenceExportService {
       taskIds,
       options,
     } = params;
+
+    // Push the first ZIP byte out immediately so proxies see a live stream
+    // before the slow per-task loop begins. See populateTaskArchive note.
+    archive.append(
+      Buffer.from(
+        buildExportInfo({
+          kind: 'organization',
+          organizationName,
+          organizationId,
+          taskCount: taskIds.length,
+        }),
+        'utf-8',
+      ),
+      { name: `${orgFolder}/EXPORT_INFO.txt` },
+    );
 
     const manifestEntries: Array<{
       id: string;
