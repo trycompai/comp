@@ -18,7 +18,15 @@ jest.mock('@db', () => ({
     needs_revision: 'needs_revision',
     closed: 'closed',
   },
-  FindingType: { soc2: 'soc2', iso27001: 'iso27001' },
+  FindingType: {
+    soc2: 'soc2',
+    iso27001: 'iso27001',
+    pci_dss: 'pci_dss',
+    hipaa: 'hipaa',
+    gdpr: 'gdpr',
+    iso9001: 'iso9001',
+    iso42001: 'iso42001',
+  },
 }));
 
 jest.mock('@trycompai/email', () => ({

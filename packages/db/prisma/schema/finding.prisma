@@ -1,6 +1,11 @@
 enum FindingType {
   soc2
   iso27001
+  pci_dss
+  hipaa
+  gdpr
+  iso9001
+  iso42001
 }
 
 enum FindingStatus {
