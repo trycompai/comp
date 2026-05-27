@@ -114,6 +114,19 @@ export function FrameworkRequirementsClientPage({
 
   const columns = useMemo(
     () => [
+      columnHelper.accessor('requirementFamily', {
+        header: 'Family',
+        size: 200,
+        cell: ({ row, getValue }) => (
+          <ComboboxCell
+            value={getValue()}
+            rowId={row.original.id}
+            columnId="requirementFamily"
+            options={uniqueFamilies}
+            onUpdate={updateCell}
+          />
+        ),
+      }),
       columnHelper.accessor('identifier', {
         header: 'Identifier',
         size: 140,
@@ -147,19 +160,6 @@ export function FrameworkRequirementsClientPage({
             value={getValue()}
             rowId={row.original.id}
             columnId="description"
-            onUpdate={updateCell}
-          />
-        ),
-      }),
-      columnHelper.accessor('requirementFamily', {
-        header: 'Family',
-        size: 200,
-        cell: ({ row, getValue }) => (
-          <ComboboxCell
-            value={getValue()}
-            rowId={row.original.id}
-            columnId="requirementFamily"
-            options={uniqueFamilies}
             onUpdate={updateCell}
           />
         ),
