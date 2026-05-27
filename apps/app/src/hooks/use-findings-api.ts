@@ -3,12 +3,8 @@
 import { useApi } from '@/hooks/use-api';
 import { useApiSWR, UseApiSWROptions } from '@/hooks/use-api-swr';
 import type { EvidenceFormType } from '@trycompai/company';
-import type {
-  FindingArea,
-  FindingSeverity,
-  FindingStatus,
-  FindingType,
-} from '@db';
+import { FindingType } from '@db';
+import type { FindingArea, FindingSeverity, FindingStatus } from '@db';
 import { useCallback } from 'react';
 
 // ---------------------------------------------------------------------------
@@ -313,7 +309,64 @@ export const FINDING_TYPE_FRAMEWORK_OPTIONS = [
 export const FINDING_TYPE_LABELS: Record<FindingType, string> = {
   soc2: 'SOC 2',
   iso27001: 'ISO 27001',
+  pci_dss: 'PCI DSS',
+  hipaa: 'HIPAA',
+  gdpr: 'GDPR',
+  iso9001: 'ISO 9001',
+  iso42001: 'ISO 42001',
 };
+
+/**
+ * Maps a FrameworkEditorFramework `name` to the matching FindingType. Order
+ * matters only as a tiebreaker — patterns are mutually exclusive on the canonical
+ * platform names ("SOC 2", "ISO 27001", "PCI DSS", "HIPAA", "GDPR", "ISO 9001",
+ * "ISO 42001"). Kept lenient on whitespace so versioned/locale variants still
+ * match (e.g. "ISO/IEC 27001:2022").
+ */
+const FRAMEWORK_NAME_MATCHERS: { pattern: RegExp; type: FindingType }[] = [
+  { pattern: /iso\s*\/?\s*(?:iec\s*)?27001/i, type: FindingType.iso27001 },
+  { pattern: /iso\s*\/?\s*(?:iec\s*)?42001/i, type: FindingType.iso42001 },
+  { pattern: /iso\s*\/?\s*(?:iec\s*)?9001/i, type: FindingType.iso9001 },
+  { pattern: /pci[\s_-]*dss/i, type: FindingType.pci_dss },
+  { pattern: /hipaa/i, type: FindingType.hipaa },
+  { pattern: /gdpr/i, type: FindingType.gdpr },
+  { pattern: /soc\s*2/i, type: FindingType.soc2 },
+];
+
+/**
+ * Unwraps the `/v1/frameworks` response shape. SWR wraps it as
+ * `{ data: <api> }`, and the list endpoint returns `{ data: [...], count, ... }`,
+ * so the items can sit one or two envelopes deep.
+ */
+function unwrapFrameworksList(payload: unknown): unknown[] {
+  const root = (payload as { data?: unknown })?.data;
+  if (Array.isArray(root)) return root;
+  const inner = (root as { data?: unknown })?.data;
+  if (Array.isArray(inner)) return inner;
+  return [];
+}
+
+/**
+ * Derive the list of FindingTypes an org can log against, based on the
+ * `/v1/frameworks` response. Pure (no React/SWR coupling) so it can be unit-
+ * tested directly. Unknown framework names are ignored.
+ */
+export function extractOrgFrameworkTypes(payload: unknown): FindingType[] {
+  const types = new Set<FindingType>();
+  for (const raw of unwrapFrameworksList(payload)) {
+    const item = raw as Record<string, unknown>;
+    // FrameworkInstance rows nest the platform framework under `framework`;
+    // custom/platform-direct rows have `name` at the root.
+    const fw = (item.framework ?? item) as { name?: unknown } | undefined;
+    const name = typeof fw?.name === 'string' ? fw.name : '';
+    if (!name) continue;
+    const match = FRAMEWORK_NAME_MATCHERS.find(({ pattern }) =>
+      pattern.test(name),
+    );
+    if (match) types.add(match.type);
+  }
+  return Array.from(types);
+}
 
 export const DEFAULT_FINDING_TEMPLATES: FindingTemplate[] = [
   {
