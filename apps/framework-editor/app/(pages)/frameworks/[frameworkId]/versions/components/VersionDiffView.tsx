@@ -69,6 +69,13 @@ export function VersionDiffView({ diff, linkChanges }: VersionDiffViewProps) {
             {r.name}
           </span>
         )}
+        renderUpdatedRow={(u) => (
+          <span>
+            <span className="font-mono text-muted-foreground mr-2">{u.to.identifier}</span>
+            {u.to.name}
+            <RequirementChangeDetail from={u.from} to={u.to} />
+          </span>
+        )}
       />
       <DiffDetailSection
         title="Controls"
@@ -215,6 +222,30 @@ function ControlChangeDetail({ from, to }: { from: DiffControl; to: DiffControl 
   if (from.description !== to.description) changes.push('description');
   const fromFamily = from.controlFamily ?? null;
   const toFamily = to.controlFamily ?? null;
+  if (fromFamily !== toFamily) {
+    if (!fromFamily && toFamily) {
+      changes.push(`family set to "${toFamily}"`);
+    } else if (fromFamily && !toFamily) {
+      changes.push('family removed');
+    } else {
+      changes.push(`family: "${fromFamily}" → "${toFamily}"`);
+    }
+  }
+  if (changes.length === 0) return null;
+  return (
+    <span className="text-muted-foreground ml-2 text-xs">
+      ({changes.join(', ')})
+    </span>
+  );
+}
+
+function RequirementChangeDetail({ from, to }: { from: DiffRequirement; to: DiffRequirement }) {
+  const changes: string[] = [];
+  if (from.name !== to.name) changes.push('name');
+  if (from.identifier !== to.identifier) changes.push('identifier');
+  if (from.description !== to.description) changes.push('description');
+  const fromFamily = from.requirementFamily ?? null;
+  const toFamily = to.requirementFamily ?? null;
   if (fromFamily !== toFamily) {
     if (!fromFamily && toFamily) {
       changes.push(`family set to "${toFamily}"`);
