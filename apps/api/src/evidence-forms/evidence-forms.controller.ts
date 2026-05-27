@@ -1,10 +1,15 @@
+import { ActingUserResolver } from '@/auth/acting-user.service';
 import { AuthContext, OrganizationId } from '@/auth/auth-context.decorator';
 import { HybridAuthGuard } from '@/auth/hybrid-auth.guard';
 import { PermissionGuard } from '@/auth/permission.guard';
 import { RequirePermission } from '@/auth/require-permission.decorator';
-import type { AuthContext as AuthContextType } from '@/auth/types';
+import type {
+  AuthContext as AuthContextType,
+  AuthenticatedRequest,
+} from '@/auth/types';
 import { AuditRead } from '@/audit/skip-audit-log.decorator';
 import {
+  BadRequestException,
   Body,
   Controller,
   Delete,
@@ -14,6 +19,7 @@ import {
   Patch,
   Post,
   Query,
+  Req,
   Res,
   UseGuards,
 } from '@nestjs/common';
@@ -32,7 +38,10 @@ import { EvidenceFormsService } from './evidence-forms.service';
   required: false,
 })
 export class EvidenceFormsController {
-  constructor(private readonly evidenceFormsService: EvidenceFormsService) {}
+  constructor(
+    private readonly evidenceFormsService: EvidenceFormsService,
+    private readonly actingUser: ActingUserResolver,
+  ) {}
 
   @Get()
   @RequirePermission('evidence', 'read')
@@ -213,18 +222,25 @@ export class EvidenceFormsController {
   @ApiOperation({
     summary: 'Upload a file as an evidence submission',
     description:
-      'Upload a PDF or image file and create a submission for the given form type, bypassing form-specific validation',
+      'Upload a PDF or image file and create a submission for the given form type, bypassing form-specific validation. ' +
+      "Accepts session, API key, or service token auth. For API key / service token callers without an explicit user attribution, the submission is attributed to the org's oldest owner.",
   })
   async uploadSubmission(
     @OrganizationId() organizationId: string,
-    @AuthContext() authContext: AuthContextType,
     @Param('formType') formType: string,
     @Body() body: unknown,
+    @Req() req: AuthenticatedRequest,
   ) {
+    const acting = await this.actingUser.resolve(req, organizationId);
+    if (!acting.userId) {
+      throw new BadRequestException(
+        'Cannot attribute this submission — your organization must have at least one user with the "owner" role.',
+      );
+    }
     return this.evidenceFormsService.uploadSubmission({
       organizationId,
       formType,
-      authContext,
+      userId: acting.userId,
       payload: body,
     });
   }
