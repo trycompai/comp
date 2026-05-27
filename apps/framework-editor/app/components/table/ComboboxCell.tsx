@@ -24,6 +24,7 @@ export function ComboboxCell({
 }: ComboboxCellProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [search, setSearch] = useState('');
+  const [dropUp, setDropUp] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -41,6 +42,11 @@ export function ComboboxCell({
   }, [isOpen]);
 
   useEffect(() => {
+    if (isOpen && containerRef.current) {
+      const rect = containerRef.current.getBoundingClientRect();
+      const spaceBelow = window.innerHeight - rect.bottom;
+      setDropUp(spaceBelow < 260);
+    }
     if (isOpen && inputRef.current) {
       inputRef.current.focus();
     }
@@ -82,6 +88,10 @@ export function ComboboxCell({
     );
   }
 
+  const dropdownPosition = dropUp
+    ? 'bottom-full mb-1'
+    : 'top-full mt-1';
+
   return (
     <div ref={containerRef} className="relative">
       <div
@@ -97,7 +107,7 @@ export function ComboboxCell({
       </div>
 
       {isOpen && (
-        <div className="bg-popover border-border absolute left-0 top-full z-50 mt-1 min-w-[220px] rounded-xs border shadow-lg">
+        <div className={`bg-popover border-border absolute left-0 ${dropdownPosition} z-50 min-w-[220px] rounded-xs border shadow-lg`}>
           <div className="border-border flex items-center border-b px-3 py-1.5">
             <Search className="text-muted-foreground mr-2 h-3.5 w-3.5 shrink-0" />
             <input

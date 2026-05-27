@@ -87,6 +87,18 @@ jest.mock('@db', () => ({
 jest.mock('./evidence-pdf-generator', () => ({
   generateTaskSummaryPDF: jest.fn(() => Buffer.from('SUMMARY-PDF')),
   generateAutomationPDF: jest.fn(() => Buffer.from('AUTOMATION-PDF')),
+  generateAutomationPDFFromStream: jest.fn(
+    async (
+      _header: unknown,
+      _context: unknown,
+      runBatches: AsyncIterable<unknown>,
+    ) => {
+      for await (const _batch of runBatches) {
+        /* drain so underlying DB queries execute */
+      }
+      return Buffer.from('AUTOMATION-PDF');
+    },
+  ),
   sanitizeFilename: (name: string) =>
     name
       .toLowerCase()

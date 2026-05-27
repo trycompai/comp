@@ -11,10 +11,11 @@ import type {
 } from './evidence-export.types';
 import {
   generateAutomationPDF,
+  generateAutomationPDFFromStream,
   generateTaskSummaryPDF,
   sanitizeFilename,
 } from './evidence-pdf-generator';
-import { buildAutomationJson } from './evidence-json-builder';
+import { buildAutomationJson, buildAutomationJsonStream } from './evidence-json-builder';
 import {
   appendAttachmentToArchive,
   createFilenameTracker,
@@ -24,6 +25,7 @@ import {
 import {
   getAutomationHeaders,
   loadFullAutomation,
+  streamAutomationRuns,
   findTasksWithEvidence,
 } from './evidence-data-loader';
 
@@ -256,7 +258,8 @@ export class EvidenceExportService {
     });
   }
 
-  // Loads each automation's runs individually so peak memory ≈ one automation, not all combined.
+  // Streams each automation's runs through PDF/JSON generation so peak memory
+  // is bounded by one batch of runs (~50) instead of the full automation.
   private async appendTaskContents(params: {
     archive: Archiver;
     headers: TaskEvidenceSummary;
@@ -292,15 +295,10 @@ export class EvidenceExportService {
     }
 
     for (const automationHeader of headers.automations) {
-      const automation = await loadFullAutomation({
-        taskId: headers.taskId,
-        header: automationHeader,
-      });
-
-      this.appendAutomationToArchive({
+      await this.appendAutomationStreaming({
         archive,
         headers,
-        automation,
+        automationHeader,
         folderName,
         options,
         perAutomationSubfolders,
@@ -308,50 +306,70 @@ export class EvidenceExportService {
     }
   }
 
-  private appendAutomationToArchive(params: {
+  private async appendAutomationStreaming(params: {
     archive: Archiver;
     headers: TaskEvidenceSummary;
-    automation: NormalizedAutomation;
+    automationHeader: NormalizedAutomation;
     folderName: string;
     options: { includeRawJson?: boolean };
     perAutomationSubfolders: boolean;
-  }): void {
+  }): Promise<void> {
     const {
       archive,
       headers,
-      automation,
+      automationHeader,
       folderName,
       options,
       perAutomationSubfolders,
     } = params;
 
     const typePrefix =
-      automation.type === 'app_automation' ? 'app' : 'custom';
-    const automationName = sanitizeFilename(automation.name);
-    const idSuffix = automation.id.slice(-8);
-
-    const pdfBuffer = generateAutomationPDF(automation, {
-      organizationName: headers.organizationName,
-      taskTitle: headers.taskTitle,
-    });
-
+      automationHeader.type === 'app_automation' ? 'app' : 'custom';
+    const automationName = sanitizeFilename(automationHeader.name);
+    const idSuffix = automationHeader.id.slice(-8);
     const basePath = perAutomationSubfolders
       ? `${folderName}/${typePrefix}-${automationName}-${idSuffix}`
       : folderName;
-    const pdfName = perAutomationSubfolders
-      ? `${basePath}/evidence.pdf`
-      : `${basePath}/${typePrefix}-${automationName}-${idSuffix}.pdf`;
+    const filePrefix = perAutomationSubfolders
+      ? `${basePath}/evidence`
+      : `${basePath}/${typePrefix}-${automationName}-${idSuffix}`;
 
-    archive.append(pdfBuffer, { name: pdfName });
+    const context = {
+      organizationName: headers.organizationName,
+      taskTitle: headers.taskTitle,
+    };
 
     if (options.includeRawJson) {
-      const jsonName = perAutomationSubfolders
-        ? `${basePath}/evidence.json`
-        : `${basePath}/${typePrefix}-${automationName}-${idSuffix}.json`;
-      archive.append(
-        Buffer.from(buildAutomationJson(headers, automation), 'utf-8'),
-        { name: jsonName },
+      // Two independent DB cursors so neither PDF nor JSON buffers the full run set.
+      const pdfBuffer = await generateAutomationPDFFromStream(
+        automationHeader,
+        context,
+        streamAutomationRuns({
+          taskId: headers.taskId,
+          header: automationHeader,
+        }),
       );
+      archive.append(pdfBuffer, { name: `${filePrefix}.pdf` });
+
+      const jsonStream = buildAutomationJsonStream({
+        summary: headers,
+        header: automationHeader,
+        runBatches: streamAutomationRuns({
+          taskId: headers.taskId,
+          header: automationHeader,
+        }),
+      });
+      archive.append(jsonStream, { name: `${filePrefix}.json` });
+    } else {
+      const pdfBuffer = await generateAutomationPDFFromStream(
+        automationHeader,
+        context,
+        streamAutomationRuns({
+          taskId: headers.taskId,
+          header: automationHeader,
+        }),
+      );
+      archive.append(pdfBuffer, { name: `${filePrefix}.pdf` });
     }
   }
 
