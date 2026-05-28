@@ -16,7 +16,7 @@ export const tool$cloudSecurityCloudSecurityControllerUpdateAwsScanModeV1:
     description:
       `Switch the AWS scan engine for a connection (Comp AI scanners ↔ Security Hub)
 
-Switch the AWS scan engine for a connection (Comp AI scanners ↔ Security Hub) in Comp AI. Run AWS, Azure, and GCP cloud security scans, detect enabled services, review findings, and connect cloud posture results to compliance work.`,
+Accepts session, API key, or service token auth. For API key / service token callers without an explicit user attribution, the action is attributed to the org's owner.`,
     annotations: {
       "title": "",
       "destructiveHint": false,

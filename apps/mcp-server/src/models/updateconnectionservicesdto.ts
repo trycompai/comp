@@ -4,11 +4,17 @@
 
 import * as z from "zod";
 
-export type UpdateConnectionServicesDto = { services: Array<string> };
+export type UpdateConnectionServicesDto = {
+  organizationId?: string | undefined;
+  services: Array<string>;
+};
 
 export const UpdateConnectionServicesDto$zodSchema: z.ZodType<
   UpdateConnectionServicesDto
 > = z.object({
+  organizationId: z.string().optional().describe(
+    "Auto-resolved from your API key / session. You can omit this; it is ignored by the server.",
+  ),
   services: z.array(z.string()).describe(
     "Service IDs to enable on this connection. Any service IDs from the provider's manifest that are NOT in this list become disabled. Pass an empty array to disable all services.",
   ),
