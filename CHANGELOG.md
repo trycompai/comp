@@ -1,3 +1,10 @@
+## [3.64.4](https://github.com/trycompai/comp/compare/v3.64.3...v3.64.4) (2026-05-28)
+
+
+### Bug Fixes
+
+* **policies:** accept multipart file uploads on POST /policies/:id/pdf ([55ebdc4](https://github.com/trycompai/comp/commit/55ebdc474ffef227d42b7ff3f13d4151d09fb7c7))
+
 ## [3.64.3](https://github.com/trycompai/comp/compare/v3.64.2...v3.64.3) (2026-05-28)
 
 
