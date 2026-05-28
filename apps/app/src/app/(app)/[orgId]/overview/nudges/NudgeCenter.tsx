@@ -29,7 +29,7 @@ export function NudgeCenter({
       type="button"
       onClick={onToggle}
       aria-expanded={expanded}
-      className={`flex items-center gap-1.5 rounded-full bg-foreground px-3 py-1 text-xs font-medium text-background shadow-lg transition-colors hover:bg-foreground/90 ${positionClass}`}
+      className={`flex items-center gap-1.5 rounded-full border border-border bg-card px-3 py-1 text-xs font-medium text-foreground shadow-lg transition-colors hover:bg-accent ${positionClass}`}
     >
       {expanded ? (
         <>
@@ -67,7 +67,7 @@ export function NudgeCenter({
             <div
               key={depth}
               aria-hidden
-              className="pointer-events-none absolute top-0 h-full rounded-lg border border-blue-200 bg-blue-50 shadow-md dark:border-blue-800 dark:bg-blue-950/50"
+              className="pointer-events-none absolute top-0 h-full rounded-lg border border-border bg-secondary shadow-md"
               style={{
                 // Each card behind is a little narrower than the one above it.
                 left: depth * 8,

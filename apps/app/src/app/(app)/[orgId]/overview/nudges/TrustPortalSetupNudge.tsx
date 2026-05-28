@@ -57,7 +57,7 @@ function TrustPortalSetupNudgeView({
           type="button"
           onClick={onDismiss}
           aria-label="Dismiss"
-          className="rounded-md p-1 text-blue-600 transition-colors hover:text-blue-800"
+          className="rounded-md p-1 opacity-70 transition-opacity hover:opacity-100"
         >
           <Close size={16} />
         </button>
