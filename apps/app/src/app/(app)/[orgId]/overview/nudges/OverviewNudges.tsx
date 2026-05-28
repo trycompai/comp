@@ -1,7 +1,7 @@
 'use client';
 
-import { ChevronDown, ChevronUp } from '@trycompai/design-system/icons';
 import { useEffect, useState } from 'react';
+import { NudgeCenter } from './NudgeCenter';
 import { useOffboardingNudge } from './OffboardingNudge';
 import { useTrustPortalSetupNudge } from './TrustPortalSetupNudge';
 import type { NudgeState, ServerNudgeData } from './types';
@@ -57,73 +57,26 @@ export function OverviewNudges({
     setDismissed((prev) => new Set(prev).add(nudge.id));
   };
 
-  // Single nudge: render it plainly, no stack chrome.
+  // Single nudge: render it plainly, no tray chrome.
   if (visible.length === 1) {
     return <>{visible[0].render(dismiss(visible[0]))}</>;
   }
 
-  // Expanded: every waiting nudge, with a control to collapse back.
-  if (expanded) {
-    return (
-      <div className="flex flex-col gap-3">
-        {visible.map((nudge) => (
-          <div key={nudge.id}>{nudge.render(dismiss(nudge))}</div>
-        ))}
-        <StackToggle
-          expanded
-          count={visible.length}
-          onClick={() => setExpanded(false)}
-        />
-      </div>
-    );
-  }
+  // Only honor `expanded` while there's actually more than one to show, so a
+  // dismissal that drops the count to 1 (then a new one later) can't surprise-
+  // expand the tray.
+  const isExpanded = expanded && visible.length > 1;
+  const shown = isExpanded ? visible : visible.slice(0, 1);
 
-  // Collapsed: the top nudge over a faux "stack" edge, plus an expand control.
-  const top = visible[0];
   return (
-    <div className="flex flex-col gap-1">
-      <div className="relative">
-        <div
-          aria-hidden
-          className="pointer-events-none absolute inset-x-3 top-2 -z-10 h-full rounded-lg border border-border bg-card"
-        />
-        {top.render(dismiss(top))}
-      </div>
-      <StackToggle
-        expanded={false}
-        count={visible.length}
-        onClick={() => setExpanded(true)}
-      />
-    </div>
-  );
-}
-
-function StackToggle({
-  expanded,
-  count,
-  onClick,
-}: {
-  expanded: boolean;
-  count: number;
-  onClick: () => void;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className="flex items-center gap-1 self-start rounded-md px-1.5 py-0.5 text-xs font-medium text-muted-foreground transition-colors hover:text-foreground"
+    <NudgeCenter
+      count={visible.length}
+      expanded={isExpanded}
+      onToggle={() => setExpanded((prev) => !prev)}
     >
-      {expanded ? (
-        <>
-          Show less
-          <ChevronUp size={14} />
-        </>
-      ) : (
-        <>
-          Show {count} notifications
-          <ChevronDown size={14} />
-        </>
-      )}
-    </button>
+      {shown.map((nudge) => (
+        <div key={nudge.id}>{nudge.render(dismiss(nudge))}</div>
+      ))}
+    </NudgeCenter>
   );
 }
