@@ -131,7 +131,7 @@
         "rehype-sanitize": "^6.0.0",
         "remark-gfm": "^4.0.1",
         "remark-parse": "^11.0.0",
-        "resend": "^4.4.1",
+        "resend": "^6.12.3",
         "shiki": "^4.0.1",
         "sonner": "^2.0.5",
         "streamdown": "^2.3.0",
