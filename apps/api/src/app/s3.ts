@@ -167,3 +167,31 @@ export async function getFleetAgent({
   const response = await s3Client.send(getFleetAgentCommand);
   return response.Body;
 }
+
+/**
+ * Fetch an S3 object's full contents as a Buffer.
+ *
+ * Used by the presigned-upload pattern: after a client uploads a file directly
+ * to S3 (via a presigned URL), a feature service reads the bytes back here by
+ * key — so the binary never has to travel through the request body (or an LLM
+ * tool call). See `UploadsService` for the upload-URL side of this flow.
+ */
+export async function getObjectAsBuffer(
+  bucket: string,
+  key: string,
+): Promise<Buffer> {
+  if (!s3Client) {
+    throw new Error('S3 client not configured');
+  }
+
+  const response = await s3Client.send(
+    new GetObjectCommand({ Bucket: bucket, Key: key }),
+  );
+
+  if (!response.Body) {
+    throw new Error(`S3 object ${key} has no body`);
+  }
+
+  const bytes = await response.Body.transformToByteArray();
+  return Buffer.from(bytes);
+}

@@ -1,0 +1,18 @@
+workflowVersion: 1.0.0
+speakeasyVersion: latest
+sources:
+    Comp AI API:
+        inputs:
+            - location: ../../packages/docs/openapi.json
+        overlays:
+            - location: ./.speakeasy/mcp-uploads-overlay.yaml
+        output: .speakeasy/out.openapi.yaml
+        registry:
+            location: registry.speakeasyapi.dev/comp-ai-ntv/comp-ai/comp-ai-api
+targets:
+    comp-ai:
+        target: mcp-typescript
+        source: Comp AI API
+        publish:
+            npm:
+                token: $npm_token

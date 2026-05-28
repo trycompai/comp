@@ -19,6 +19,7 @@ import {
 import type { GetTaskItemQueryDto } from './dto/get-task-item-query.dto';
 import { TaskItemAssignmentNotifierService } from './task-item-assignment-notifier.service';
 import { TaskItemMentionNotifierService } from './task-item-mention-notifier.service';
+import { TaskItemAuditService } from './task-item-audit.service';
 import { extractMentionedUserIds } from './utils/extract-mentions';
 
 @Injectable()
@@ -27,7 +28,62 @@ export class TaskManagementService {
   constructor(
     private readonly notifier: TaskItemAssignmentNotifierService,
     private readonly mentionNotifier: TaskItemMentionNotifierService,
+    private readonly taskItemAudit: TaskItemAuditService,
   ) {}
+
+  /**
+   * Resolve the member to attribute a task-item mutation to. Session callers use
+   * their own membership. API-key callers have no user, so fall back to an
+   * active org owner (then admin) — the operation is still attributed to a real
+   * member for the FK, and the audit log records that it was done via API key.
+   */
+  private async resolveActorMember(
+    organizationId: string,
+    authContext: AuthContextType,
+  ): Promise<{ memberId: string; userId: string; viaApiKey: boolean }> {
+    if (authContext.isApiKey) {
+      for (const roleNeedle of ['owner', 'admin']) {
+        const member = await db.member.findFirst({
+          where: {
+            organizationId,
+            isActive: true,
+            deactivated: false,
+            role: { contains: roleNeedle },
+          },
+          select: { id: true, userId: true },
+          orderBy: { createdAt: 'asc' },
+        });
+        if (member?.userId) {
+          return { memberId: member.id, userId: member.userId, viaApiKey: true };
+        }
+      }
+      throw new BadRequestException(
+        'Cannot determine an actor: the organization has no active owner or admin to attribute this action to.',
+      );
+    }
+
+    if (!authContext.userId) {
+      throw new BadRequestException('User ID is required');
+    }
+    const member = await db.member.findFirst({
+      where: {
+        userId: authContext.userId,
+        organizationId,
+        deactivated: false,
+      },
+      select: { id: true, userId: true },
+    });
+    if (!member) {
+      throw new BadRequestException(
+        'User is not a member of this organization',
+      );
+    }
+    return {
+      memberId: member.id,
+      userId: member.userId ?? authContext.userId,
+      viaApiKey: false,
+    };
+  }
 
   /**
    * Get task items overview/stats for an entity
@@ -240,30 +296,8 @@ export class TaskManagementService {
     createTaskItemDto: CreateTaskItemDto,
   ): Promise<TaskItemResponseDto> {
     try {
-      // Option A: Do not allow API key auth for creating task items (requires a user actor for audit + notifications)
-      if (authContext.isApiKey) {
-        throw new BadRequestException(
-          'Task item creation is not supported with API key authentication',
-        );
-      }
-
-      if (!authContext.userId) {
-        throw new BadRequestException('User ID is required');
-      }
-
-      const member = await db.member.findFirst({
-        where: {
-          userId: authContext.userId,
-          organizationId,
-          deactivated: false,
-        },
-      });
-
-      if (!member) {
-        throw new BadRequestException(
-          'User is not a member of this organization',
-        );
-      }
+      // Resolve the actor: session user, or an org owner fallback for API keys.
+      const actor = await this.resolveActorMember(organizationId, authContext);
 
       if (createTaskItemDto.assigneeId) {
         const assigneeMember = await db.member.findFirst({
@@ -284,7 +318,7 @@ export class TaskManagementService {
           ...(createTaskItemDto.assigneeId && {
             assigneeId: createTaskItemDto.assigneeId,
           }),
-          createdById: member.id,
+          createdById: actor.memberId,
         },
         include: {
           assignee: {
@@ -306,8 +340,24 @@ export class TaskManagementService {
       });
 
       this.logger.log(
-        `Created task item: ${taskItem.id} for organization ${organizationId} by ${member.id}`,
+        `Created task item: ${taskItem.id} for organization ${organizationId} by ${actor.memberId}`,
       );
+
+      // API-key actions are skipped by the global audit interceptor (no user),
+      // so record an explicit, truthful "via API key" entry. Session auth keeps
+      // using the interceptor — no double logging.
+      if (actor.viaApiKey) {
+        await this.taskItemAudit.logTaskItemCreated({
+          taskItemId: taskItem.id,
+          organizationId,
+          userId: actor.userId,
+          memberId: actor.memberId,
+          taskTitle: taskItem.title,
+          entityType: taskItem.entityType,
+          entityId: taskItem.entityId,
+          viaApiKey: true,
+        });
+      }
 
       if (createTaskItemDto.assigneeId && authContext.userId) {
         this.logger.log(
@@ -418,16 +468,8 @@ export class TaskManagementService {
     updateTaskItemDto: UpdateTaskItemDto,
   ): Promise<TaskItemResponseDto> {
     try {
-      // Option A: Do not allow API key auth for updating task items (requires a user actor for audit + notifications)
-      if (authContext.isApiKey) {
-        throw new BadRequestException(
-          'Task item updates are not supported with API key authentication',
-        );
-      }
-
-      if (!authContext.userId) {
-        throw new BadRequestException('User ID is required');
-      }
+      // Resolve the actor: session user, or an org owner fallback for API keys.
+      const actor = await this.resolveActorMember(organizationId, authContext);
 
       // Verify task item exists and belongs to organization
       const existingTaskItem = await db.taskItem.findFirst({
@@ -441,21 +483,6 @@ export class TaskManagementService {
         throw new NotFoundException('Task item not found');
       }
 
-      // Get member for updatedById
-      const member = await db.member.findFirst({
-        where: {
-          userId: authContext.userId,
-          organizationId,
-          deactivated: false,
-        },
-      });
-
-      if (!member) {
-        throw new BadRequestException(
-          'User is not a member of this organization',
-        );
-      }
-
       // Prepare update data
       const updateData: {
         title?: string;
@@ -465,7 +492,7 @@ export class TaskManagementService {
         assigneeId?: string | null;
         updatedById: string;
       } = {
-        updatedById: member.id,
+        updatedById: actor.memberId,
       };
 
       if (updateTaskItemDto.title !== undefined) {
@@ -517,7 +544,40 @@ export class TaskManagementService {
         },
       });
 
-      this.logger.log(`Updated task item: ${taskItem.id} by ${member.id}`);
+      this.logger.log(`Updated task item: ${taskItem.id} by ${actor.memberId}`);
+
+      // API-key actions are skipped by the global audit interceptor (no user),
+      // so record an explicit, truthful "via API key" entry. Session auth keeps
+      // using the interceptor — no double logging.
+      if (actor.viaApiKey) {
+        const changes: string[] = [];
+        if (updateTaskItemDto.status !== undefined) {
+          changes.push(`set status to ${updateTaskItemDto.status}`);
+        }
+        if (updateTaskItemDto.priority !== undefined) {
+          changes.push(`set priority to ${updateTaskItemDto.priority}`);
+        }
+        if (updateTaskItemDto.title !== undefined) {
+          changes.push('updated the title');
+        }
+        if (updateTaskItemDto.description !== undefined) {
+          changes.push('updated the description');
+        }
+        if (updateTaskItemDto.assigneeId !== undefined) {
+          changes.push('changed the assignee');
+        }
+        await this.taskItemAudit.logTaskItemUpdated({
+          taskItemId: taskItem.id,
+          organizationId,
+          userId: actor.userId,
+          memberId: actor.memberId,
+          taskTitle: taskItem.title,
+          changes,
+          entityType: taskItem.entityType,
+          entityId: taskItem.entityId,
+          viaApiKey: true,
+        });
+      }
 
       // Notify assignee only when assignee changes
       const assigneeChanged =
@@ -640,6 +700,7 @@ export class TaskManagementService {
   async deleteTaskItem(
     taskItemId: string,
     organizationId: string,
+    authContext: AuthContextType,
   ): Promise<void> {
     try {
       // Verify task item exists and belongs to organization
@@ -654,11 +715,32 @@ export class TaskManagementService {
         throw new NotFoundException('Task item not found');
       }
 
+      // For API keys, resolve the audit actor (org owner fallback) before
+      // deleting so a missing actor fails cleanly without removing the item.
+      const apiKeyActor = authContext.isApiKey
+        ? await this.resolveActorMember(organizationId, authContext)
+        : null;
+
       await db.taskItem.delete({
         where: { id: taskItemId },
       });
 
       this.logger.log(`Deleted task item: ${taskItemId}`);
+
+      // API-key actions are skipped by the global audit interceptor (no user),
+      // so record an explicit, truthful "via API key" entry.
+      if (apiKeyActor) {
+        await this.taskItemAudit.logTaskItemDeleted({
+          taskItemId,
+          organizationId,
+          userId: apiKeyActor.userId,
+          memberId: apiKeyActor.memberId,
+          taskTitle: existingTaskItem.title,
+          entityType: existingTaskItem.entityType,
+          entityId: existingTaskItem.entityId,
+          viaApiKey: true,
+        });
+      }
     } catch (error) {
       this.logger.error('Error deleting task item:', error);
 

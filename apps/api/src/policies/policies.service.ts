@@ -5,12 +5,22 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { db, Frequency, PolicyStatus, Prisma } from '@db';
+import {
+  HeadObjectCommand,
+  PutObjectCommand,
+} from '@aws-sdk/client-s3';
 import { PDFDocument, rgb, StandardFonts } from 'pdf-lib';
 import { AttachmentsService } from '../attachments/attachments.service';
 import { PolicyPdfRendererService } from '../trust-portal/policy-pdf-renderer.service';
 import { filterComplianceMembers } from '../utils/compliance-filters';
+import { BUCKET_NAME, getSignedUrl, s3Client } from '../app/s3';
 import type { CreatePolicyDto } from './dto/create-policy.dto';
 import type { UpdatePolicyDto } from './dto/update-policy.dto';
+import type {
+  ConfirmPolicyPdfUploadedDto,
+  PolicyPdfUploadUrlResponseDto,
+  RequestPolicyPdfUploadUrlDto,
+} from './dto/policy-pdf-upload-url.dto';
 import type {
   CreateVersionDto,
   PublishVersionDto,
@@ -19,6 +29,30 @@ import type {
 } from './dto/version.dto';
 import { checkAutoCompletePhases } from '../frameworks/frameworks-timeline.helper';
 import { TimelinesService } from '../timelines/timelines.service';
+
+// Fields returned by updateById in both the standard and auto-publish paths.
+const POLICY_UPDATE_SELECT = {
+  id: true,
+  name: true,
+  description: true,
+  status: true,
+  content: true,
+  frequency: true,
+  department: true,
+  isRequiredToSign: true,
+  signedBy: true,
+  reviewDate: true,
+  isArchived: true,
+  createdAt: true,
+  updatedAt: true,
+  lastArchivedAt: true,
+  lastPublishedAt: true,
+  organizationId: true,
+  assigneeId: true,
+  approverId: true,
+  policyTemplateId: true,
+  currentVersionId: true,
+} as const;
 
 function computeNextReviewDate(frequency: Frequency | null | undefined): Date {
   const now = new Date();
@@ -45,7 +79,10 @@ export class PoliciesService {
     private readonly timelinesService: TimelinesService,
   ) {}
 
-  async findAll(organizationId: string) {
+  async findAll(
+    organizationId: string,
+    options?: { excludeContent?: boolean },
+  ) {
     try {
       const policies = await db.policy.findMany({
         where: { organizationId, isArchived: false, archivedAt: null },
@@ -54,8 +91,9 @@ export class PoliciesService {
           name: true,
           description: true,
           status: true,
-          content: true,
-          draftContent: true,
+          ...(options?.excludeContent
+            ? {}
+            : { content: true, draftContent: true }),
           frequency: true,
           department: true,
           isRequiredToSign: true,
@@ -89,7 +127,8 @@ export class PoliciesService {
       });
 
       this.logger.log(
-        `Retrieved ${policies.length} policies for organization ${organizationId}`,
+        `Retrieved ${policies.length} policies for organization ${organizationId}` +
+          (options?.excludeContent ? ' (content excluded)' : ''),
       );
       return policies;
     } catch (error) {
@@ -362,20 +401,93 @@ export class PoliciesService {
         // Check existence and status inside the transaction
         const existingPolicy = await tx.policy.findFirst({
           where: { id, organizationId },
-          select: { id: true, status: true },
+          select: {
+            id: true,
+            status: true,
+            pendingVersionId: true,
+            approverId: true,
+            frequency: true,
+            pdfUrl: true,
+          },
         });
 
         if (!existingPolicy) {
           throw new NotFoundException(`Policy with ID ${id} not found`);
         }
 
-        // Cannot update content unless policy is in draft status
-        // This covers both 'published' and 'needs_review' states
-        if (contentValue && existingPolicy.status !== 'draft') {
+        // Auto-route content updates on non-draft policies through the
+        // version workflow. Callers (UI, MCP, API consumers) get a single
+        // simple operation — "update the policy" — and the API handles the
+        // create-version + publish mechanics internally. The explicit
+        // version endpoints remain available for advanced flows.
+        //
+        // We only auto-route when:
+        //   - content is being changed, AND
+        //   - the policy is currently non-draft (published or needs_review), AND
+        //   - the caller isn't explicitly changing status to anything other
+        //     than 'published' in the same call (status=undefined or 'published').
+        const isContentUpdateOnNonDraft =
+          contentValue !== null && existingPolicy.status !== 'draft';
+        const shouldAutoPublishNewVersion =
+          isContentUpdateOnNonDraft &&
+          (updateData.status === undefined ||
+            updateData.status === 'published');
+
+        // Mixed intent (e.g., demote-to-draft while changing content) is
+        // ambiguous and historically blocked — keep blocking it.
+        if (isContentUpdateOnNonDraft && !shouldAutoPublishNewVersion) {
           throw new BadRequestException(
-            'Cannot update content of a published policy. Create a new version to make changes.',
+            'Cannot update content of a published policy when also changing its status. Either keep status as published, or update status without content.',
           );
         }
+
+        if (shouldAutoPublishNewVersion) {
+          if (existingPolicy.pendingVersionId && existingPolicy.approverId) {
+            throw new BadRequestException(
+              'Cannot update content directly while an approval is pending. Either accept or reject the pending changes first.',
+            );
+          }
+
+          const latestVersion = await tx.policyVersion.findFirst({
+            where: { policyId: id },
+            orderBy: { version: 'desc' },
+            select: { version: true },
+          });
+          const nextVersion = (latestVersion?.version ?? 0) + 1;
+
+          const newVersion = await tx.policyVersion.create({
+            data: {
+              policyId: id,
+              version: nextVersion,
+              content: contentValue,
+              pdfUrl: existingPolicy.pdfUrl,
+            },
+          });
+
+          // Sync Policy state to the newly-published version. Override any
+          // conflicting values the caller passed (status, currentVersionId).
+          return tx.policy.update({
+            where: { id },
+            data: {
+              ...updatePayload,
+              content: contentValue,
+              draftContent: contentValue,
+              currentVersionId: newVersion.id,
+              status: 'published',
+              lastPublishedAt: new Date(),
+              reviewDate: computeNextReviewDate(existingPolicy.frequency),
+              pendingVersionId: null,
+              approverId: null,
+              // Clear signatures — employees must re-acknowledge new content
+              signedBy: [],
+            },
+            select: POLICY_UPDATE_SELECT,
+          });
+        }
+
+        // Existing path: drafts, or non-content updates on any status.
+        // The original throw for content-on-non-draft is now unreachable
+        // because the auto-route branch above covers that case.
 
         // Only clear signatures when actually transitioning to published.
         // Re-sending the full object for an already-published policy must not wipe acknowledgments.
@@ -390,28 +502,7 @@ export class PoliciesService {
         const policy = await tx.policy.update({
           where: { id },
           data: updatePayload,
-          select: {
-            id: true,
-            name: true,
-            description: true,
-            status: true,
-            content: true,
-            frequency: true,
-            department: true,
-            isRequiredToSign: true,
-            signedBy: true,
-            reviewDate: true,
-            isArchived: true,
-            createdAt: true,
-            updatedAt: true,
-            lastArchivedAt: true,
-            lastPublishedAt: true,
-            organizationId: true,
-            assigneeId: true,
-            approverId: true,
-            policyTemplateId: true,
-            currentVersionId: true,
-          },
+          select: POLICY_UPDATE_SELECT,
         });
 
         // Keep current version content in sync with policy content
@@ -863,6 +954,78 @@ export class PoliciesService {
       );
     }
 
+    // When a specific versionId is provided, publish THAT existing version in place —
+    // set it as the current/active version without creating a duplicate. This mirrors
+    // the UI's accept-changes / set-active behavior (which the UI uses to publish a
+    // specific version) and is the correct flow for API/MCP consumers that explicitly
+    // created a draft via create-policy-version and edited it / attached a PDF.
+    if (dto.versionId) {
+      const sourceVersion = await db.policyVersion.findUnique({
+        where: { id: dto.versionId },
+        select: {
+          id: true,
+          policyId: true,
+          content: true,
+          version: true,
+          pdfUrl: true,
+        },
+      });
+
+      if (!sourceVersion || sourceVersion.policyId !== policyId) {
+        throw new NotFoundException(
+          `Version ${dto.versionId} not found for policy ${policyId}`,
+        );
+      }
+
+      const content = sourceVersion.content as Prisma.InputJsonValue[];
+      if (!content || content.length === 0) {
+        throw new BadRequestException('No content to publish');
+      }
+
+      await db.$transaction(async (tx) => {
+        await tx.policyVersion.update({
+          where: { id: sourceVersion.id },
+          data: { publishedById: memberId },
+        });
+
+        await tx.policy.update({
+          where: { id: policyId },
+          data: {
+            // Activate the existing version — no new version is created.
+            currentVersionId: sourceVersion.id,
+            content,
+            draftContent: content,
+            // Propagate the version's PDF so the published policy shows the
+            // document attached to the version being published.
+            pdfUrl: sourceVersion.pdfUrl,
+            displayFormat: sourceVersion.pdfUrl ? 'PDF' : 'EDITOR',
+            status: 'published',
+            lastPublishedAt: new Date(),
+            reviewDate: computeNextReviewDate(policy.frequency),
+            pendingVersionId: null,
+            approverId: null,
+            // Clear signatures — employees must re-acknowledge new content
+            signedBy: [],
+          },
+        });
+      });
+
+      checkAutoCompletePhases({
+        organizationId,
+        timelinesService: this.timelinesService,
+      }).catch((err) => {
+        this.logger.warn('timeline auto-complete check failed', err);
+      });
+
+      return {
+        versionId: sourceVersion.id,
+        version: sourceVersion.version,
+      };
+    }
+
+    // No versionId: snapshot whatever is staged in draftContent into a NEW version.
+    // (falling back to content if no draft is staged). This is the working-draft
+    // publish path for callers that edited Policy.draftContent directly.
     const contentToPublish = (
       policy.draftContent && policy.draftContent.length > 0
         ? policy.draftContent
@@ -1561,6 +1724,166 @@ export class PoliciesService {
       name: `${organizationName} - All Policies`,
       downloadUrl,
       policyCount: policies.length,
+    };
+  }
+
+  /**
+   * Generate a presigned S3 PUT URL the caller can upload a PDF to directly.
+   * No file bytes flow through the API or the LLM — caller PUTs straight to S3.
+   * Used by the MCP flow where streaming base64 through the LLM is impractical.
+   */
+  async generatePolicyPdfUploadUrl(
+    policyId: string,
+    organizationId: string,
+    body: RequestPolicyPdfUploadUrlDto,
+  ): Promise<PolicyPdfUploadUrlResponseDto> {
+    if (!s3Client || !BUCKET_NAME) {
+      throw new BadRequestException('File storage is not configured');
+    }
+
+    if (body.fileType !== 'application/pdf') {
+      throw new BadRequestException(
+        'fileType must be "application/pdf" — only PDF uploads are supported',
+      );
+    }
+
+    const policy = await db.policy.findFirst({
+      where: { id: policyId, organizationId, archivedAt: null },
+      select: {
+        id: true,
+        status: true,
+        currentVersionId: true,
+        pendingVersionId: true,
+      },
+    });
+    if (!policy) throw new NotFoundException('Policy not found');
+
+    if (policy.status === 'published' && !body.versionId) {
+      throw new BadRequestException(
+        'Cannot attach a PDF directly to a published policy. Published policies are immutable — create a new draft version via create-policy-version, then call this endpoint again with the new versionId.',
+      );
+    }
+
+    let versionNumber: number | undefined;
+    if (body.versionId) {
+      const version = await db.policyVersion.findFirst({
+        where: { id: body.versionId, policyId },
+        select: { id: true, version: true },
+      });
+      if (!version) throw new NotFoundException('Version not found');
+      if (
+        version.id === policy.currentVersionId &&
+        policy.status !== 'draft'
+      ) {
+        throw new BadRequestException(
+          'Cannot upload PDF to the published version',
+        );
+      }
+      if (version.id === policy.pendingVersionId) {
+        throw new BadRequestException(
+          'Cannot upload PDF to a version pending approval',
+        );
+      }
+      versionNumber = version.version;
+    }
+
+    const sanitizedFileName = body.fileName.replace(/[^a-zA-Z0-9.-]/g, '_');
+    const versionPrefix =
+      versionNumber !== undefined ? `v${versionNumber}-` : '';
+    const s3Key = `${organizationId}/policies/${policyId}/${versionPrefix}${Date.now()}-${sanitizedFileName}`;
+
+    const command = new PutObjectCommand({
+      Bucket: BUCKET_NAME,
+      Key: s3Key,
+      ContentType: 'application/pdf',
+    });
+
+    const expiresIn = 900; // 15 minutes
+    const uploadUrl = await getSignedUrl(s3Client, command, { expiresIn });
+
+    return { uploadUrl, s3Key, expiresIn };
+  }
+
+  /**
+   * Confirm a previously presigned upload completed and link the S3 object to
+   * the policy (or specific version). Verifies the file actually exists in S3
+   * and that the key belongs to this org+policy before persisting.
+   */
+  async confirmPolicyPdfUploaded(
+    policyId: string,
+    organizationId: string,
+    body: ConfirmPolicyPdfUploadedDto,
+  ) {
+    if (!s3Client || !BUCKET_NAME) {
+      throw new BadRequestException('File storage is not configured');
+    }
+
+    const expectedPrefix = `${organizationId}/policies/${policyId}/`;
+    if (!body.s3Key.startsWith(expectedPrefix)) {
+      throw new BadRequestException(
+        's3Key does not belong to this policy. Pass the exact s3Key returned by the upload-url endpoint.',
+      );
+    }
+
+    const policy = await db.policy.findFirst({
+      where: { id: policyId, organizationId, archivedAt: null },
+      select: {
+        id: true,
+        status: true,
+        pdfUrl: true,
+        currentVersionId: true,
+      },
+    });
+    if (!policy) throw new NotFoundException('Policy not found');
+
+    if (policy.status === 'published' && !body.versionId) {
+      throw new BadRequestException(
+        'Cannot finalize a policy-level PDF upload on a published policy. Published policies are immutable — create a new draft version via create-policy-version, upload the PDF with the new versionId, then confirm.',
+      );
+    }
+
+    try {
+      await s3Client.send(
+        new HeadObjectCommand({ Bucket: BUCKET_NAME, Key: body.s3Key }),
+      );
+    } catch (error) {
+      this.logger.warn(
+        `Confirm called for missing S3 object ${body.s3Key}: ${
+          error instanceof Error ? error.message : 'unknown error'
+        }`,
+      );
+      throw new BadRequestException(
+        'No file found at the given s3Key — upload it via the presigned URL first.',
+      );
+    }
+
+    if (body.versionId) {
+      const version = await db.policyVersion.findFirst({
+        where: { id: body.versionId, policyId },
+        select: { id: true, pdfUrl: true },
+      });
+      if (!version) throw new NotFoundException('Version not found');
+
+      await db.policyVersion.update({
+        where: { id: body.versionId },
+        data: { pdfUrl: body.s3Key },
+      });
+
+      return {
+        success: true,
+        pdfUrl: body.s3Key,
+        versionId: body.versionId,
+      };
+    }
+
+    await db.policy.update({
+      where: { id: policyId },
+      data: { pdfUrl: body.s3Key, displayFormat: 'PDF' },
+    });
+
+    return {
+      success: true,
+      pdfUrl: body.s3Key,
     };
   }
 

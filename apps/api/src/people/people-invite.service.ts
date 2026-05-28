@@ -36,13 +36,38 @@ export class PeopleInviteService {
     invites: InviteItemDto[];
     callerUserId: string;
     callerRole: string;
+    isApiKey?: boolean;
+    apiKeyScopes?: string[];
   }): Promise<InviteResult[]> {
-    const { organizationId, invites, callerUserId, callerRole } = params;
+    const {
+      organizationId,
+      invites,
+      callerUserId,
+      callerRole,
+      isApiKey,
+      apiKeyScopes,
+    } = params;
 
     const callerMemberActions = await this.resolveCallerMemberActions(
       callerRole,
       organizationId,
+      { isApiKey, apiKeyScopes },
     );
+
+    // Invitation records require a valid inviter user (FK to User). API-key auth
+    // has no caller user, so fall back to an org owner/admin — but only resolve
+    // it lazily, when an invitation is actually created and after the role check
+    // passes, so role errors aren't masked by inviter-resolution errors.
+    let cachedInviterId: string | undefined;
+    const getInviterId = async (): Promise<string> => {
+      if (cachedInviterId === undefined) {
+        cachedInviterId = await this.resolveInviterUserId(
+          organizationId,
+          callerUserId,
+        );
+      }
+      return cachedInviterId;
+    };
 
     const results: InviteResult[] = [];
 
@@ -88,7 +113,7 @@ export class PeopleInviteService {
             email,
             roles: invite.roles,
             organizationId,
-            currentUserId: callerUserId,
+            currentUserId: await getInviterId(),
             sendPortalEmail: shouldSendPortalEmail,
             sendAppEmail: shouldSendAppEmail,
           });
@@ -531,10 +556,62 @@ export class PeopleInviteService {
     return null;
   }
 
+  /**
+   * Resolve the user to attribute an invitation to. Session callers use their
+   * own userId. API-key callers have no user, so fall back to an active org
+   * owner (then admin). Invitation.inviterId is a required FK, so this must
+   * return a valid user id.
+   */
+  private async resolveInviterUserId(
+    organizationId: string,
+    callerUserId: string,
+  ): Promise<string> {
+    if (callerUserId) return callerUserId;
+
+    for (const roleNeedle of ['owner', 'admin']) {
+      const member = await db.member.findFirst({
+        where: {
+          organizationId,
+          isActive: true,
+          deactivated: false,
+          role: { contains: roleNeedle },
+        },
+        select: { userId: true },
+        orderBy: { createdAt: 'asc' },
+      });
+      if (member?.userId) return member.userId;
+    }
+
+    throw new BadRequestException(
+      'Cannot determine an inviter: the organization has no active owner or admin to attribute the invitation to.',
+    );
+  }
+
   private async resolveCallerMemberActions(
     callerRole: string,
     organizationId: string,
+    apiKey?: { isApiKey?: boolean; apiKeyScopes?: string[] },
   ): Promise<Set<string>> {
+    // API key auth has no member role — derive member actions from the key's
+    // scopes instead. This mirrors the PermissionGuard's scope model so a key
+    // with full member management (or legacy full-access) can assign any role,
+    // while a key scoped to only `member:create` stays restricted.
+    if (apiKey?.isApiKey) {
+      const scopes = apiKey.apiKeyScopes;
+      // Legacy keys (empty scopes) = full access.
+      if (!scopes || scopes.length === 0) {
+        return new Set(['create', 'read', 'update', 'delete']);
+      }
+      const apiKeyActions = new Set<string>();
+      for (const scope of scopes) {
+        const [resource, action] = scope.split(':');
+        if (resource === 'member' && action) {
+          apiKeyActions.add(action);
+        }
+      }
+      return apiKeyActions;
+    }
+
     const roles = callerRole.split(',').map((r) => r.trim());
     const actions = new Set<string>();
     const customRoleNames: string[] = [];
