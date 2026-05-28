@@ -1,5 +1,10 @@
 // Mocks must be declared before any SUT import so guards' transitive deps
 // (Prisma, better-auth) don't instantiate in Jest.
+const mockTrigger = jest.fn();
+jest.mock('@trigger.dev/sdk', () => ({
+  tasks: { trigger: mockTrigger },
+}));
+
 jest.mock('@db', () => ({
   ...jest.requireActual('@prisma/client'),
   db: {},
@@ -223,18 +228,15 @@ describe('EvidenceExportController', () => {
 
 describe('AuditorEvidenceExportController', () => {
   let controller: AuditorEvidenceExportController;
-  let service: jest.Mocked<
-    Pick<EvidenceExportService, 'streamOrganizationEvidenceZip'>
-  >;
 
   beforeEach(async () => {
-    service = {
-      streamOrganizationEvidenceZip: jest.fn(),
-    };
+    mockTrigger.mockReset().mockResolvedValue({
+      id: 'run_123',
+      publicAccessToken: 'tok_abc',
+    });
 
     const moduleRef = await Test.createTestingModule({
       controllers: [AuditorEvidenceExportController],
-      providers: [{ provide: EvidenceExportService, useValue: service }],
     })
       .overrideGuard(HybridAuthGuard)
       .useValue({ canActivate: () => true })
@@ -245,34 +247,16 @@ describe('AuditorEvidenceExportController', () => {
     controller = moduleRef.get(AuditorEvidenceExportController);
   });
 
-  it('pipes the org-wide archive to response with correct headers', async () => {
-    const archive = makeFakeArchive();
-    service.streamOrganizationEvidenceZip.mockResolvedValue({
-      archive: archive as unknown as import('archiver').Archiver,
-      filename: 'acme_all-evidence_2026-04-22.zip',
+  it('triggers a background task and returns runId + token', async () => {
+    const result = await controller.exportAllEvidence('org_1', 'true');
+
+    expect(mockTrigger).toHaveBeenCalledWith(
+      'export-organization-evidence',
+      { organizationId: 'org_1', includeJson: true },
+    );
+    expect(result).toEqual({
+      runId: 'run_123',
+      publicAccessToken: 'tok_abc',
     });
-    const req = makeFakeRequest();
-    const res = makeFakeResponse();
-
-    await controller.exportAllEvidence(
-      'org_1',
-      'true',
-      req as unknown as import('express').Request,
-      res as unknown as import('express').Response,
-    );
-
-    expect(service.streamOrganizationEvidenceZip).toHaveBeenCalledWith(
-      'org_1',
-      { includeRawJson: true },
-    );
-    expect(res.setHeader).toHaveBeenCalledWith(
-      'Content-Type',
-      'application/zip',
-    );
-    expect(res.setHeader).toHaveBeenCalledWith(
-      'Content-Disposition',
-      `attachment; filename="acme_all-evidence_2026-04-22.zip"`,
-    );
-    expect(archive.pipe).toHaveBeenCalledWith(res);
   });
 });

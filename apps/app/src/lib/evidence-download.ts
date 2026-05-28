@@ -45,24 +45,28 @@ export async function downloadTaskEvidenceZip({
 }
 
 /**
- * Download all evidence for the organization (auditor only)
+ * Trigger bulk evidence export as a background job.
+ * Returns a run ID and access token for tracking progress via Trigger.dev realtime.
  */
-export async function downloadAllEvidenceZip({
-  organizationName,
+export async function triggerBulkEvidenceExport({
   includeJson = false,
 }: {
-  organizationName?: string;
   includeJson?: boolean;
-}): Promise<void> {
+}): Promise<{ runId: string; publicAccessToken: string }> {
   const baseUrl = env.NEXT_PUBLIC_API_URL || 'http://localhost:3333';
   const endpoint = `/v1/evidence-export/all?includeJson=${includeJson}`;
 
-  await downloadFile(baseUrl + endpoint, {
-    fallbackBaseName: organizationName
-      ? `${organizationName}-all-evidence`
-      : 'all-evidence',
-    fallbackExtension: 'zip',
+  const response = await fetch(baseUrl + endpoint, {
+    method: 'POST',
+    credentials: 'include',
   });
+
+  if (!response.ok) {
+    const error = await response.text();
+    throw new Error(error || `Failed to start export: ${response.statusText}`);
+  }
+
+  return response.json();
 }
 
 /**
