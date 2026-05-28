@@ -64,17 +64,18 @@ interface FindingDetailSheetProps {
 function allowedStatusOptions({
   current,
   isAuditor,
+  isClient,
   isPlatformAdmin,
 }: {
   current: FindingStatus;
   isAuditor: boolean;
+  isClient: boolean;
   isPlatformAdmin: boolean;
 }): FindingStatus[] {
   const canSetRestricted = isAuditor || isPlatformAdmin;
-  const options: FindingStatus[] = [
-    FindingStatus.open,
-    FindingStatus.ready_for_review,
-  ];
+  const canSetReadyForReview = !isAuditor || isClient || isPlatformAdmin;
+  const options: FindingStatus[] = [FindingStatus.open];
+  if (canSetReadyForReview) options.push(FindingStatus.ready_for_review);
   if (canSetRestricted) {
     options.push(FindingStatus.needs_revision, FindingStatus.closed);
   }
@@ -164,6 +165,7 @@ export function FindingDetailSheet({
   // findings.service.ts). A custom role granting `finding:create` does NOT
   // count as auditor on the server, so we can't proxy via permissions here.
   const isAuditor = roles.includes('auditor');
+  const isClient = roles.includes('admin') || roles.includes('owner');
   const isPlatformAdmin = session?.user?.role === 'admin';
   // Only auditors can rewrite a finding's content; owners/admins can still
   // move the status forward but the audit narrative belongs to the auditor.
@@ -354,6 +356,7 @@ export function FindingDetailSheet({
                     {allowedStatusOptions({
                       current: status,
                       isAuditor,
+                      isClient,
                       isPlatformAdmin,
                     }).map((s) => (
                       <SelectItem key={s} value={s}>

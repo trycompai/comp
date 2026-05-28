@@ -188,20 +188,9 @@ describe('FindingsService.update (status transition rules)', () => {
     });
   });
 
-  it('allows any role to set ready_for_review', async () => {
-    for (const roles of [['admin'], ['owner'], ['auditor'], ['admin', 'auditor']]) {
-      jest.clearAllMocks();
-      mockDb.finding.findFirst.mockResolvedValue(existingFinding);
-      mockDb.finding.update.mockResolvedValue({
-        ...existingFinding,
-        createdBy: null,
-        createdByAdmin: null,
-      });
-      mockDb.user.findUnique.mockResolvedValue({
-        name: 'Test User',
-        email: 'test@example.com',
-      });
-
+  it.each([['admin'], ['owner'], ['admin', 'auditor'], ['owner', 'auditor']])(
+    'allows %s to set ready_for_review',
+    async (roles) => {
       await svc.update(
         'org_1',
         'fnd_1',
@@ -212,7 +201,21 @@ describe('FindingsService.update (status transition rules)', () => {
         'mem_1',
       );
       expect(mockDb.finding.update).toHaveBeenCalled();
-    }
+    },
+  );
+
+  it('blocks pure auditor from setting ready_for_review', async () => {
+    await expect(
+      svc.update(
+        'org_1',
+        'fnd_1',
+        { status: 'ready_for_review' as never },
+        ['auditor'],
+        false,
+        'usr_1',
+        'mem_1',
+      ),
+    ).rejects.toBeInstanceOf(ForbiddenException);
   });
 
   it('blocks non-auditor non-admin from setting needs_revision', async () => {
