@@ -569,7 +569,14 @@ export class PoliciesController {
       sanitizedFileName = file.originalname.replace(/[^a-zA-Z0-9.-]/g, '_');
       fileType = file.mimetype;
     } else if (body.fileData && body.fileName && body.fileType) {
-      fileBuffer = Buffer.from(body.fileData, 'base64');
+      const stripped = body.fileData.replace(/\s/g, '');
+      if (!/^[A-Za-z0-9+/]*={0,2}$/.test(stripped) || stripped.length % 4 !== 0) {
+        throw new BadRequestException('fileData must be valid base64-encoded content');
+      }
+      fileBuffer = Buffer.from(stripped, 'base64');
+      if (fileBuffer.length === 0) {
+        throw new BadRequestException('fileData must be valid base64-encoded content');
+      }
       sanitizedFileName = body.fileName.replace(/[^a-zA-Z0-9.-]/g, '_');
       fileType = body.fileType;
     } else {
