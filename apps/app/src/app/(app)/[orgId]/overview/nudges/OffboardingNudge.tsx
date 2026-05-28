@@ -60,7 +60,7 @@ function OffboardingNudgeView({
       </AlertTitle>
       <div className="col-start-2 pt-1">
         <Button variant="outline" render={<Link href={link} />}>
-          View details
+          <span className="text-foreground">View details</span>
         </Button>
       </div>
       <AlertAction>
