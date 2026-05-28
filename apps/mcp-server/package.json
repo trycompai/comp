@@ -4,6 +4,11 @@
   "author": "Comp AI",
   "type": "module",
   "sideEffects": false,
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/trycompai/comp.git",
+    "directory": "apps/mcp-server"
+  },
   "bin": {
     "@trycompai/mcp-server": "bin/mcp-server.js",
     "mcp": "bin/mcp-server.js"

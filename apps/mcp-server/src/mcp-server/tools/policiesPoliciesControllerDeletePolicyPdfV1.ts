@@ -14,9 +14,9 @@ export const tool$policiesPoliciesControllerDeletePolicyPdfV1: ToolDefinition<
   typeof args
 > = {
   name: "delete-policy-pdf",
-  description: `Delete a policy PDF
+  description: `Delete a policy version PDF
 
-Delete a policy PDF in Comp AI. Create, version, publish, export, map, and improve compliance policies with AI-assisted drafting and approval workflows.`,
+Deletes the PDF from a specific policy version. If no versionId is provided, deletes from the latest draft version. Cannot delete PDFs from published or pending-approval versions.`,
   annotations: {
     "title": "",
     "destructiveHint": false,

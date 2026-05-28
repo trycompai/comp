@@ -26,10 +26,10 @@ import { APICall, APIPromise } from "../types/async.js";
 import { Result } from "../types/fp.js";
 
 /**
- * Upload a PDF to a policy or version (base64, UI-only)
+ * Upload a PDF to a policy version (UI-only)
  *
  * @remarks
- * Accepts a base64-encoded PDF. Used by the web UI where the browser supplies the file. NOT recommended for MCP/AI clients — base64 of large files through an LLM is extremely slow. AI clients should use POST /v1/policies/{id}/pdf/upload-url.
+ * Uploads a PDF via multipart `file` or base64 `fileData` JSON. Defaults to the latest draft if no `versionId`; 400 if no draft is available. UI-only — AI clients should use the presigned `/pdf/upload-url` + `/pdf/confirm` flow.
  *
  * If set, this operation will use {@link Security.apikey} from the global security.
  */

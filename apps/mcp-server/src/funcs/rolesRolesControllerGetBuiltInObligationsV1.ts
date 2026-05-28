@@ -3,7 +3,7 @@
  */
 
 import { CompAiCore } from "../core.js";
-import { encodeFormQuery, encodeSimple } from "../lib/encodings.js";
+import { encodeSimple } from "../lib/encodings.js";
 import { compactMap } from "../lib/primitives.js";
 import { safeParse } from "../lib/schemas.js";
 import { RequestOptions } from "../lib/sdks.js";
@@ -19,23 +19,23 @@ import {
 } from "../models/errors/httpclienterrors.js";
 import { SDKValidationError } from "../models/errors/sdkvalidationerror.js";
 import {
-  PoliciesControllerDeletePolicyPdfV1Request,
-  PoliciesControllerDeletePolicyPdfV1Request$zodSchema,
-} from "../models/policiescontrollerdeletepolicypdfv1op.js";
+  RolesControllerGetBuiltInObligationsV1Request,
+  RolesControllerGetBuiltInObligationsV1Request$zodSchema,
+} from "../models/rolescontrollergetbuiltinobligationsv1op.js";
 import { APICall, APIPromise } from "../types/async.js";
 import { Result } from "../types/fp.js";
 
 /**
- * Delete a policy version PDF
+ * Get obligations for a built-in role
  *
  * @remarks
- * Deletes the PDF from a specific policy version. If no versionId is provided, deletes from the latest draft version. Cannot delete PDFs from published or pending-approval versions.
+ * Returns the effective obligations for a built-in role (owner, admin, auditor, employee, contractor) — DB override if present, else the hardcoded default.
  *
  * If set, this operation will use {@link Security.apikey} from the global security.
  */
-export function policiesPoliciesControllerDeletePolicyPdfV1(
+export function rolesRolesControllerGetBuiltInObligationsV1(
   client$: CompAiCore,
-  request: PoliciesControllerDeletePolicyPdfV1Request,
+  request: RolesControllerGetBuiltInObligationsV1Request,
   options?: RequestOptions,
 ): APIPromise<
   Result<
@@ -58,7 +58,7 @@ export function policiesPoliciesControllerDeletePolicyPdfV1(
 
 async function $do(
   client$: CompAiCore,
-  request: PoliciesControllerDeletePolicyPdfV1Request,
+  request: RolesControllerGetBuiltInObligationsV1Request,
   options?: RequestOptions,
 ): Promise<
   [
@@ -78,7 +78,7 @@ async function $do(
   const parsed$ = safeParse(
     request,
     (value$) =>
-      PoliciesControllerDeletePolicyPdfV1Request$zodSchema.parse(value$),
+      RolesControllerGetBuiltInObligationsV1Request$zodSchema.parse(value$),
     "Input validation failed",
   );
   if (!parsed$.ok) {
@@ -88,25 +88,17 @@ async function $do(
   const body$ = null;
 
   const pathParams$ = {
-    id: encodeSimple("id", payload$.id, {
+    name: encodeSimple("name", payload$.name, {
       explode: false,
       charEncoding: "percent",
     }),
   };
-  const path$ = pathToFunc("/v1/policies/{id}/pdf")(
+  const path$ = pathToFunc("/v1/roles/built-in/{name}/obligations")(
     pathParams$,
   );
-  const query$ = encodeFormQuery({
-    "versionId": payload$.versionId,
-  });
 
   const headers$ = new Headers(compactMap({
-    Accept: "*/*",
-    "X-Organization-Id": encodeSimple(
-      "X-Organization-Id",
-      payload$.xOrganizationId,
-      { explode: false, charEncoding: "none" },
-    ),
+    Accept: "application/json",
   }));
   const securityInput = await extractSecurity(client$._options.security);
   const requestSecurity = resolveGlobalSecurity(securityInput, [0]);
@@ -114,7 +106,7 @@ async function $do(
   const context = {
     options: client$._options,
     baseURL: options?.serverURL ?? client$._baseURL ?? "",
-    operationID: "PoliciesController_deletePolicyPdf_v1",
+    operationID: "RolesController_getBuiltInObligations_v1",
     oAuth2Scopes: null,
     resolvedSecurity: requestSecurity,
     securitySource: client$._options.security,
@@ -132,11 +124,10 @@ async function $do(
 
   const requestRes = client$._createRequest(context, {
     security: requestSecurity,
-    method: "DELETE",
+    method: "GET",
     baseURL: options?.serverURL,
     path: path$,
     headers: headers$,
-    query: query$,
     body: body$,
     userAgent: client$._options.userAgent,
     timeoutMs: options?.timeoutMs || client$._options.timeoutMs

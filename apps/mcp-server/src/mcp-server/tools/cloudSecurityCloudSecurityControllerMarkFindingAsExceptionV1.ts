@@ -16,7 +16,7 @@ export const tool$cloudSecurityCloudSecurityControllerMarkFindingAsExceptionV1:
     description:
       `Mark a finding as an exception so it no longer appears in the active Scan Results list
 
-Mark a finding as an exception so it no longer appears in the active Scan Results list in Comp AI. Run AWS, Azure, and GCP cloud security scans, detect enabled services, review findings, and connect cloud posture results to compliance work.`,
+Accepts session, API key, or service token auth. For API key / service token callers without an explicit user attribution, the action is attributed to the org's owner and the audit log description records the calling key/service name.`,
     annotations: {
       "title": "",
       "destructiveHint": false,

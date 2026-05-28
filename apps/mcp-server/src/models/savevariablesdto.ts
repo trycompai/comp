@@ -4,12 +4,18 @@
 
 import * as z from "zod";
 
-export type SaveVariablesDto = { variables: { [k: string]: any } };
+export type SaveVariablesDto = {
+  organizationId?: string | undefined;
+  variables: { [k: string]: any };
+};
 
 export const SaveVariablesDto$zodSchema: z.ZodType<SaveVariablesDto> = z.object(
   {
+    organizationId: z.string().optional().describe(
+      "Auto-resolved from your API key / session. You can omit this; it is ignored by the server.",
+    ),
     variables: z.record(z.string(), z.any()).describe(
-      "Map of variable id → value to persist for this connection. Values can be string, number, boolean, or string[] (the shape is provider-defined — call list-variables to see what each connection accepts). Pass only the variables you want to set; existing ones not included are left untouched.",
+      "Map of variable id → value to persist for this connection. Values can be string, number, boolean, or string[] (the shape is provider-defined — call get-connection-variables to see what each connection accepts). Pass only the variables you want to set; existing ones not included are left untouched.",
     ),
   },
 );

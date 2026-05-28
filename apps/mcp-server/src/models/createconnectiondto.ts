@@ -5,6 +5,7 @@
 import * as z from "zod";
 
 export type CreateConnectionDto = {
+  organizationId?: string | undefined;
   providerSlug: string;
   credentials?: { [k: string]: any } | undefined;
 };
@@ -13,6 +14,9 @@ export const CreateConnectionDto$zodSchema: z.ZodType<CreateConnectionDto> = z
   .object({
     credentials: z.record(z.string(), z.any()).optional().describe(
       "Provider-specific credential fields. Keys differ by provider — call get-provider-details for the exact shape. For AWS (Cloud Tests) the fields are: connectionName (display name), awsType ('aws-commercial' or 'aws-govcloud'), roleArn (auditor role), externalId (typically your org id), regions (string array), and optionally remediationRoleArn and awsScanMode ('comp_scanners' or 'security_hub'). Omit credentials for OAuth providers — use POST /v1/integrations/oauth/start instead.",
+    ),
+    organizationId: z.string().optional().describe(
+      "Auto-resolved from your API key / session. You can omit this; it is ignored by the server.",
     ),
     providerSlug: z.string().describe(
       "Provider slug for the integration. Call list-providers first to see the available slugs (e.g. 'aws', 'gcp', 'azure', 'github').",
