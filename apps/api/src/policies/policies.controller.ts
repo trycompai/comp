@@ -692,9 +692,19 @@ export class PoliciesController {
 
   @Delete(':id/pdf')
   @RequirePermission('policy', 'update')
-  @ApiOperation({ summary: 'Delete a policy PDF' })
+  @ApiOperation({
+    summary: 'Delete a policy version PDF',
+    description:
+      'Deletes the PDF from a specific policy version. ' +
+      'If no versionId is provided, deletes from the latest draft version. ' +
+      'Cannot delete PDFs from published or pending-approval versions.',
+  })
   @ApiParam(POLICY_PARAMS.policyId)
-  @ApiQuery({ name: 'versionId', required: false })
+  @ApiQuery({
+    name: 'versionId',
+    required: false,
+    description: 'Target version ID. If omitted, targets the latest draft version.',
+  })
   async deletePolicyPdf(
     @Param('id') id: string,
     @OrganizationId() organizationId: string,
@@ -709,44 +719,68 @@ export class PoliciesController {
 
     const s3 = new S3Client({ region: process.env.AWS_REGION || 'us-east-1' });
 
-    if (versionId) {
-      const version = await db.policyVersion.findFirst({
-        where: { id: versionId, policy: { id, organizationId } },
-        select: { id: true, pdfUrl: true },
-      });
-      if (!version) throw new NotFoundException('Version not found');
-      if (version.pdfUrl) {
-        try {
-          await s3.send(
-            new DeleteObjectCommand({
-              Bucket: bucketName,
-              Key: version.pdfUrl,
-            }),
-          );
-        } catch {
-          /* ignore */
-        }
-        await db.policyVersion.update({
-          where: { id: versionId },
+    const policy = await db.policy.findFirst({
+      where: { id, organizationId, archivedAt: null },
+      select: { id: true, status: true, pdfUrl: true, currentVersionId: true, pendingVersionId: true },
+    });
+    if (!policy) throw new NotFoundException('Policy not found');
+
+    let targetVersionId = versionId;
+    if (!targetVersionId) {
+      const excludeIds = [policy.currentVersionId, policy.pendingVersionId].filter(
+        (v): v is string => v != null,
+      );
+      const draftVersion = excludeIds.length > 0
+        ? await db.policyVersion.findFirst({
+            where: { policyId: id, id: { notIn: excludeIds } },
+            orderBy: { version: 'desc' },
+            select: { id: true },
+          })
+        : null;
+      targetVersionId =
+        draftVersion?.id ??
+        (policy.status === 'draft' ? policy.currentVersionId ?? undefined : undefined);
+      if (!targetVersionId) {
+        throw new BadRequestException(
+          'No draft version available to delete PDF from.',
+        );
+      }
+    }
+
+    const version = await db.policyVersion.findFirst({
+      where: { id: targetVersionId, policyId: id },
+      select: { id: true, pdfUrl: true },
+    });
+    if (!version) throw new NotFoundException('Version not found');
+    if (version.id === policy.currentVersionId && policy.status !== 'draft') {
+      throw new BadRequestException(
+        'Cannot delete PDF from the published version',
+      );
+    }
+    if (version.id === policy.pendingVersionId) {
+      throw new BadRequestException(
+        'Cannot delete PDF from a version pending approval',
+      );
+    }
+
+    if (version.pdfUrl) {
+      try {
+        await s3.send(
+          new DeleteObjectCommand({ Bucket: bucketName, Key: version.pdfUrl }),
+        );
+      } catch {
+        /* ignore */
+      }
+      await db.$transaction([
+        db.policyVersion.update({
+          where: { id: version.id },
           data: { pdfUrl: null },
-        });
-      }
-    } else {
-      const policy = await db.policy.findFirst({
-        where: { id, organizationId, archivedAt: null },
-        select: { id: true, pdfUrl: true },
-      });
-      if (!policy) throw new NotFoundException('Policy not found');
-      if (policy.pdfUrl) {
-        try {
-          await s3.send(
-            new DeleteObjectCommand({ Bucket: bucketName, Key: policy.pdfUrl }),
-          );
-        } catch {
-          /* ignore */
-        }
-        await db.policy.update({ where: { id }, data: { pdfUrl: null } });
-      }
+        }),
+        db.policy.update({
+          where: { id },
+          data: { pdfUrl: null, displayFormat: 'EDITOR' },
+        }),
+      ]);
     }
 
     return {
