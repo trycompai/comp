@@ -14,10 +14,14 @@ import {
   Query,
   Req,
   Res,
+  UploadedFile,
   UseGuards,
+  UseInterceptors,
 } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
 import {
   ApiBody,
+  ApiConsumes,
   ApiHeader,
   ApiOperation,
   ApiParam,
@@ -513,20 +517,67 @@ export class PoliciesController {
 
   @Post(':id/pdf')
   @RequirePermission('policy', 'update')
+  @UseInterceptors(FileInterceptor('file'))
   @ApiOperation({ summary: 'Upload a PDF to a policy or version' })
+  @ApiConsumes('multipart/form-data', 'application/json')
   @ApiParam(POLICY_PARAMS.policyId)
+  @ApiBody({
+    schema: {
+      oneOf: [
+        {
+          description: 'Multipart file upload (recommended)',
+          type: 'object',
+          properties: {
+            file: { type: 'string', format: 'binary' },
+            versionId: { type: 'string', description: 'Target version ID (optional)' },
+          },
+          required: ['file'],
+        },
+        {
+          description: 'JSON with base64-encoded file data',
+          type: 'object',
+          properties: {
+            fileName: { type: 'string' },
+            fileType: { type: 'string' },
+            fileData: { type: 'string', description: 'Base64-encoded file content' },
+            versionId: { type: 'string' },
+          },
+          required: ['fileName', 'fileType', 'fileData'],
+        },
+      ],
+    },
+  })
   async uploadPolicyPdf(
     @Param('id') id: string,
+    @UploadedFile() file: Express.Multer.File | undefined,
     @Body()
     body: {
       versionId?: string;
-      fileName: string;
-      fileType: string;
-      fileData: string;
+      fileName?: string;
+      fileType?: string;
+      fileData?: string;
     },
     @OrganizationId() organizationId: string,
     @AuthContext() authContext: AuthContextType,
   ) {
+    let fileBuffer: Buffer;
+    let sanitizedFileName: string;
+    let fileType: string;
+
+    if (file) {
+      fileBuffer = file.buffer;
+      sanitizedFileName = file.originalname.replace(/[^a-zA-Z0-9.-]/g, '_');
+      fileType = file.mimetype;
+    } else if (body.fileData && body.fileName && body.fileType) {
+      fileBuffer = Buffer.from(body.fileData, 'base64');
+      sanitizedFileName = body.fileName.replace(/[^a-zA-Z0-9.-]/g, '_');
+      fileType = body.fileType;
+    } else {
+      throw new BadRequestException(
+        'Upload a file via multipart/form-data or provide fileName, fileType, and fileData in JSON',
+      );
+    }
+
     const { S3Client, PutObjectCommand, DeleteObjectCommand } =
       await import('@aws-sdk/client-s3');
     const bucketName = process.env.APP_AWS_BUCKET_NAME;
@@ -546,9 +597,6 @@ export class PoliciesController {
       },
     });
     if (!policy) throw new NotFoundException('Policy not found');
-
-    const sanitizedFileName = body.fileName.replace(/[^a-zA-Z0-9.-]/g, '_');
-    const fileBuffer = Buffer.from(body.fileData, 'base64');
 
     if (body.versionId) {
       const version = await db.policyVersion.findFirst({
@@ -573,7 +621,7 @@ export class PoliciesController {
           Bucket: bucketName,
           Key: s3Key,
           Body: fileBuffer,
-          ContentType: body.fileType,
+          ContentType: fileType,
         }),
       );
       const oldPdfUrl = version.pdfUrl;
@@ -602,7 +650,7 @@ export class PoliciesController {
         Bucket: bucketName,
         Key: s3Key,
         Body: fileBuffer,
-        ContentType: body.fileType,
+        ContentType: fileType,
       }),
     );
     const oldPdfUrl = policy.pdfUrl;
