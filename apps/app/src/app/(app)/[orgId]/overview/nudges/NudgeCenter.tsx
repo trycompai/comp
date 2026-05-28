@@ -39,18 +39,18 @@ export function NudgeCenter({
                 <div
                   key={depth}
                   aria-hidden
-                  className="pointer-events-none absolute top-0 h-full rounded-lg border border-border bg-card shadow-md"
+                  className="pointer-events-none absolute top-0 h-full rounded-lg border border-blue-200 bg-blue-50 shadow-md dark:border-blue-800 dark:bg-blue-950/50"
                   style={{
-                    // Slightly narrower than the card above (a few px each side).
-                    left: depth * 4,
-                    right: depth * 4,
+                    // Each card behind is a little narrower than the one above it.
+                    left: depth * 8,
+                    right: depth * 8,
                     transform: `translateY(${depth * 12}px)`,
                     zIndex: MAX_PEEK_LAYERS - depth + 1,
                   }}
                 />
               );
             })}
-            <div className="relative z-10">{children}</div>
+            <div className="relative z-10 rounded-lg shadow-lg">{children}</div>
           </div>
         </div>
       )}
@@ -58,17 +58,17 @@ export function NudgeCenter({
         type="button"
         onClick={onToggle}
         aria-expanded={expanded}
-        className="flex items-center gap-1 self-start rounded-md px-1.5 py-1 text-xs font-medium text-muted-foreground transition-colors hover:text-foreground"
+        className="flex items-center gap-1.5 self-center rounded-full border border-border bg-card px-3 py-1 text-xs font-medium text-muted-foreground shadow-sm transition-colors hover:bg-muted hover:text-foreground"
       >
         {expanded ? (
           <>
-            Show less
             <ChevronUp size={14} />
+            Show less
           </>
         ) : (
           <>
-            Show {count} notifications
             <ChevronDown size={14} />
+            {count} notifications
           </>
         )}
       </button>

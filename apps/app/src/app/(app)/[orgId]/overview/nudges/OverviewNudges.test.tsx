@@ -85,26 +85,26 @@ describe('OverviewNudges', () => {
     expect(screen.getByText(/offboarding completion/)).toBeInTheDocument();
     expect(screen.queryByText('Showcase your security posture')).not.toBeInTheDocument();
     // The user is told more are waiting.
-    expect(screen.getByText('Show 2 notifications')).toBeInTheDocument();
+    expect(screen.getByText('2 notifications')).toBeInTheDocument();
   });
 
   it('expands the stack to reveal every waiting nudge, then collapses', () => {
     setOffboarding([{ memberId: 'm1', name: 'Jo' }]);
     render(<OverviewNudges orgId="org_123" server={server()} />);
 
-    fireEvent.click(screen.getByText('Show 2 notifications'));
+    fireEvent.click(screen.getByText('2 notifications'));
     expect(screen.getByText(/offboarding completion/)).toBeInTheDocument();
     expect(screen.getByText('Showcase your security posture')).toBeInTheDocument();
 
     fireEvent.click(screen.getByText('Show less'));
     expect(screen.queryByText('Showcase your security posture')).not.toBeInTheDocument();
-    expect(screen.getByText('Show 2 notifications')).toBeInTheDocument();
+    expect(screen.getByText('2 notifications')).toBeInTheDocument();
   });
 
   it('shows no stack control when only one nudge applies', () => {
     render(<OverviewNudges orgId="org_123" server={server()} />);
     expect(screen.getByText('Showcase your security posture')).toBeInTheDocument();
-    expect(screen.queryByText(/Show \d+ notifications/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/\d+ notifications/)).not.toBeInTheDocument();
   });
 
   it('dismissing the trust nudge hides it and persists', () => {
