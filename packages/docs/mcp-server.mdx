@@ -1,0 +1,247 @@
+---
+title: 'MCP Server'
+description: 'Drive your Comp AI compliance program from any AI assistant — Claude Desktop, Cursor, ChatGPT, Codex, Gemini, VS Code, Windsurf — using just your Comp AI API key.'
+---
+
+The Comp AI MCP server lets you and your team operate your entire compliance program from inside any modern AI assistant. Ask in plain language; the AI uses real Comp AI tools to read evidence, manage tasks, generate questionnaire answers, connect cloud accounts, and more — all under your existing API key and permissions.
+
+> Built on the [Model Context Protocol](https://modelcontextprotocol.io/) — an open standard that lets AI clients talk to external tools. The Comp AI MCP server publishes hundreds of tools spanning evidence, policies, integrations, frameworks, cloud security, vendors, risks, people, and tasks.
+
+## Why use it
+
+Compliance work is full of repetitive, multi-step actions: gathering evidence, answering questionnaires, reviewing tasks, connecting cloud accounts. The MCP server collapses those into one-line natural-language requests. Examples your team can run today:
+
+- *"Show me my open SOC 2 controls and tell me which ones are missing evidence."*
+- *"Upload this vendor security questionnaire and generate the answers from our policies."*
+- *"Connect our production AWS account for monitoring."*
+- *"List employees who haven't completed offboarding yet."*
+- *"Mark the AWS audit task on Sarah's account as done."*
+- *"Export our SOC 2 evidence bundle for the upcoming audit."*
+
+The AI assistant figures out which tools to call. Your team types the request and reviews the result.
+
+## Get an API key
+
+1. Sign in to [Comp AI](https://app.trycomp.ai).
+2. Open **Settings → API Keys**.
+3. Click **Create new key**. Scope it to the actions the AI assistant should be allowed to take.
+4. Copy the key (it starts with `comp_…`) — you will paste it into your AI client's config once.
+
+The API key carries your existing RBAC and permissions. The AI assistant can only do what *your* role can do in the dashboard.
+
+## Install per AI client
+
+Pick the client your team uses. Every install is one configuration paste — no Comp AI hosting, no extra setup.
+
+<AccordionGroup>
+
+<Accordion title="Claude Desktop" icon="message">
+
+Open Claude Desktop → **Settings → Developer → Edit Config** and add:
+
+```json
+{
+  "mcpServers": {
+    "comp-ai": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@trycompai/mcp-server",
+        "start",
+        "--apikey",
+        "comp_…your_key_here…"
+      ]
+    }
+  }
+}
+```
+
+Fully quit and reopen Claude Desktop. The Comp AI tools will be available in any conversation.
+
+</Accordion>
+
+<Accordion title="Cursor" icon="code">
+
+Open **Cursor → Settings → Tools and Integrations → New MCP Server** and paste:
+
+```json
+{
+  "command": "npx",
+  "args": [
+    "-y",
+    "@trycompai/mcp-server",
+    "start",
+    "--apikey",
+    "comp_…your_key_here…"
+  ]
+}
+```
+
+Save and reload Cursor.
+
+</Accordion>
+
+<Accordion title="ChatGPT / Codex" icon="robot">
+
+ChatGPT and Codex consume MCP servers through their respective MCP integrations. Point them at the same `npx @trycompai/mcp-server` command with your API key.
+
+For Codex CLI:
+
+```bash
+codex mcp add comp-ai -- npx -y @trycompai/mcp-server start --apikey comp_…your_key_here…
+```
+
+For ChatGPT, follow OpenAI's MCP server registration docs and use the same `command` + `args` shape shown for Cursor above.
+
+</Accordion>
+
+<Accordion title="Claude Code (CLI)" icon="terminal">
+
+```bash
+claude mcp add CompAI -- npx -y @trycompai/mcp-server start --apikey comp_…your_key_here…
+```
+
+</Accordion>
+
+<Accordion title="Gemini" icon="sparkles">
+
+```bash
+gemini mcp add CompAI -- npx -y @trycompai/mcp-server start --apikey comp_…your_key_here…
+```
+
+</Accordion>
+
+<Accordion title="Windsurf" icon="wind">
+
+Open **Windsurf → Settings → Cascade → Manage MCPs → View raw config** and paste:
+
+```json
+{
+  "command": "npx",
+  "args": [
+    "-y",
+    "@trycompai/mcp-server",
+    "start",
+    "--apikey",
+    "comp_…your_key_here…"
+  ]
+}
+```
+
+</Accordion>
+
+<Accordion title="VS Code" icon="vscode">
+
+Open **Command Palette → MCP: Open User Configuration** and paste:
+
+```json
+{
+  "command": "npx",
+  "args": [
+    "-y",
+    "@trycompai/mcp-server",
+    "start",
+    "--apikey",
+    "comp_…your_key_here…"
+  ]
+}
+```
+
+</Accordion>
+
+</AccordionGroup>
+
+That's it. The first time you start a chat in your AI client after install, the assistant will discover the Comp AI tools and start using them.
+
+## What your AI assistant can do
+
+The MCP server publishes tools across the Comp AI surface:
+
+| Area | Examples |
+| --- | --- |
+| **Evidence and tasks** | List tasks, upload evidence, complete checklist items, export audit bundles |
+| **Policies** | List policies, generate drafts, publish versions, attach PDFs |
+| **Security questionnaires** | Upload, parse questions, generate answers, export reviewer-ready files |
+| **Frameworks and controls** | Inspect SOC 2 / ISO 27001 / HIPAA / GDPR coverage and missing evidence |
+| **Integrations and cloud security** | Connect AWS, Azure, GCP and other providers; run checks; review findings |
+| **Vendors and risks** | List vendors, manage assessments, track risk and remediation |
+| **People and devices** | Invite members, manage offboarding, inspect device compliance |
+| **Trust Center** | Review and approve Trust Access requests, manage shared documents |
+
+Some endpoints are intentionally **not** exposed to AI clients for security or compatibility reasons — for example, anything that rotates raw credentials, and a small number of long-lived streaming endpoints that don't fit the request/response shape AI clients expect. The web UI continues to support those flows directly.
+
+## Common workflows
+
+<CardGroup cols={2}>
+  <Card title="Generate questionnaire answers" icon="file-question" href="/security-questionnaire">
+    Ask your AI to upload a vendor questionnaire and produce answers grounded in your policies.
+  </Card>
+
+  <Card title="Connect a cloud account" icon="cloud" href="/cloud-tests">
+    Ask the AI to connect AWS, Azure, or GCP — you provide the auditor role ARN; the AI handles the rest.
+  </Card>
+
+  <Card title="Run integration checks" icon="circle-check" href="/integrations">
+    Trigger and inspect compliance checks across your connected providers in plain language.
+  </Card>
+
+  <Card title="Manage tasks and evidence" icon="clipboard-check" href="/automated-evidence">
+    Pull open tasks, attach evidence, and mark items complete from inside your AI assistant.
+  </Card>
+</CardGroup>
+
+## Security
+
+- **Your API key, your scope.** The MCP server runs locally on your machine and authenticates to the Comp AI API using the key you paste. It carries the same permissions you configured for that key — no escalation.
+- **Multi-tenant safety.** Every request is scoped to the organization the API key belongs to. The AI cannot read or modify data belonging to other Comp AI organizations.
+- **Secrets stay on your machine.** Your API key lives in your AI client's local config file. It is never sent to Comp AI, npm, or any third party except your own AI client's vendor.
+- **Sensitive endpoints are hidden.** Endpoints that handle raw secrets (credential rotation, vault material) are deliberately excluded from the MCP tool surface. They remain available in the Comp AI web UI for human operators only.
+- **All actions are logged.** Mutations performed through the MCP server appear in your Comp AI audit log marked with API-key authentication, so you can review who did what.
+
+## When to use the MCP server vs the API
+
+| If you want to… | Use |
+| --- | --- |
+| Operate your compliance program day-to-day with help from an AI assistant | **MCP server** |
+| Build a custom internal tool, dashboard, or one-off automation | **[Comp AI API](/api-reference/overview)** directly |
+| Pipe Comp AI data into your data warehouse on a schedule | **API** directly |
+| Onboard a new auditor or external reviewer to your Trust Center | **Comp AI web UI** |
+
+The MCP server and the public API hit the same endpoints with the same RBAC — the only difference is the consumer (an AI assistant vs your own code).
+
+## FAQ
+
+<AccordionGroup>
+
+<Accordion title="Do I need to host the MCP server?">
+No. The server runs locally on each user's machine via `npx`. Comp AI hosts nothing on your behalf, and you do not need to deploy or maintain any infrastructure.
+</Accordion>
+
+<Accordion title="Does the MCP server work offline?">
+No. The server is a thin translator between your AI client and the Comp AI API at `https://api.trycomp.ai`. An internet connection is required.
+</Accordion>
+
+<Accordion title="Can multiple teammates use it at the same time?">
+Yes. Each teammate installs the MCP server on their own machine with their own Comp AI API key. Their actions are independently authenticated and audit-logged.
+</Accordion>
+
+<Accordion title="What if my AI client doesn't support MCP yet?">
+You can still use the [Comp AI API](/api-reference/overview) directly. The MCP server is an additional way to interact with the same endpoints — it doesn't replace anything.
+</Accordion>
+
+<Accordion title="How do new features show up?">
+New tools and improvements ship with each Comp AI release. Because `npx -y` always pulls the latest published version, your AI client picks up new tools automatically the next time it starts the MCP server.
+</Accordion>
+
+<Accordion title="Where can I report an issue?">
+Open an issue at [github.com/trycompai/comp/issues](https://github.com/trycompai/comp/issues) or email [hello@trycomp.ai](mailto:hello@trycomp.ai).
+</Accordion>
+
+</AccordionGroup>
+
+## Resources
+
+- **npm package:** [`@trycompai/mcp-server`](https://www.npmjs.com/package/@trycompai/mcp-server)
+- **Source:** [github.com/trycompai/comp](https://github.com/trycompai/comp/tree/main/apps/mcp-server)
+- **Direct API reference:** [Comp AI API](/api-reference/overview)
+- **Model Context Protocol overview:** [modelcontextprotocol.io](https://modelcontextprotocol.io/)
