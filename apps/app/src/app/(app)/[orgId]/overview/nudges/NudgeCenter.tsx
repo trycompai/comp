@@ -29,7 +29,7 @@ export function NudgeCenter({
       type="button"
       onClick={onToggle}
       aria-expanded={expanded}
-      className={`flex items-center gap-1.5 rounded-full border border-border bg-card px-3 py-1 text-xs font-medium text-muted-foreground shadow-sm transition-colors hover:bg-muted hover:text-foreground ${positionClass}`}
+      className={`flex items-center gap-1.5 rounded-full bg-foreground px-3 py-1 text-xs font-medium text-background shadow-lg transition-colors hover:bg-foreground/90 ${positionClass}`}
     >
       {expanded ? (
         <>
@@ -57,7 +57,7 @@ export function NudgeCenter({
   // Collapsed: top nudge on a pile, with the toggle chip overlaid on the
   // bottom-center edge. Padding reserves room for the peeks + the chip overhang.
   return (
-    <div style={{ paddingBottom: Math.max(peekLayers * 12, 14) + 8 }}>
+    <div style={{ paddingBottom: Math.max(peekLayers * 12, 16) + 12 }}>
       {/* `isolate` keeps the stack's own stacking context so the peek layers
           sit just behind the top card (not behind an ancestor background). */}
       <div className="relative isolate">
@@ -80,7 +80,7 @@ export function NudgeCenter({
         })}
         <div className="relative z-10 rounded-lg shadow-lg">{children}</div>
         {toggle(
-          'absolute bottom-0 left-1/2 z-20 -translate-x-1/2 translate-y-1/2',
+          'absolute bottom-0 left-1/2 z-20 -translate-x-1/2 translate-y-[65%]',
         )}
       </div>
     </div>

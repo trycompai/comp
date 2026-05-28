@@ -42,13 +42,16 @@ export function OverviewNudges({
     setDismissed(next);
   }, [orgId, persistableIds]);
 
-  if (!mounted) return null;
-
   const visible = candidates
     .filter((c) => c.ready && c.eligible && !dismissed.has(c.id))
     .sort((a, b) => a.priority - b.priority);
 
-  if (visible.length === 0) return null;
+  // Collapse the tray whenever there's no longer more than one to fan out.
+  useEffect(() => {
+    if (visible.length <= 1 && expanded) setExpanded(false);
+  }, [visible.length, expanded]);
+
+  if (!mounted || visible.length === 0) return null;
 
   const dismiss = (nudge: NudgeState) => () => {
     if (nudge.persistDismissal) {
@@ -57,26 +60,21 @@ export function OverviewNudges({
     setDismissed((prev) => new Set(prev).add(nudge.id));
   };
 
-  // Single nudge: render it plainly, no tray chrome.
-  if (visible.length === 1) {
-    return <>{visible[0].render(dismiss(visible[0]))}</>;
-  }
+  const body =
+    visible.length === 1 ? (
+      visible[0].render(dismiss(visible[0]))
+    ) : (
+      <NudgeCenter
+        count={visible.length}
+        expanded={expanded}
+        onToggle={() => setExpanded((prev) => !prev)}
+      >
+        {(expanded ? visible : visible.slice(0, 1)).map((nudge) => (
+          <div key={nudge.id}>{nudge.render(dismiss(nudge))}</div>
+        ))}
+      </NudgeCenter>
+    );
 
-  // Only honor `expanded` while there's actually more than one to show, so a
-  // dismissal that drops the count to 1 (then a new one later) can't surprise-
-  // expand the tray.
-  const isExpanded = expanded && visible.length > 1;
-  const shown = isExpanded ? visible : visible.slice(0, 1);
-
-  return (
-    <NudgeCenter
-      count={visible.length}
-      expanded={isExpanded}
-      onToggle={() => setExpanded((prev) => !prev)}
-    >
-      {shown.map((nudge) => (
-        <div key={nudge.id}>{nudge.render(dismiss(nudge))}</div>
-      ))}
-    </NudgeCenter>
-  );
+  // Match the page's centered content width so nudges align with everything else.
+  return <div className="mx-auto w-full max-w-[1200px] pb-6">{body}</div>;
 }
