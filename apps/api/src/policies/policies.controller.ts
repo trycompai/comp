@@ -518,7 +518,13 @@ export class PoliciesController {
   @Post(':id/pdf')
   @RequirePermission('policy', 'update')
   @UseInterceptors(FileInterceptor('file'))
-  @ApiOperation({ summary: 'Upload a PDF to a policy or version' })
+  @ApiOperation({
+    summary: 'Upload a PDF to a policy version',
+    description:
+      'Uploads a PDF file to a specific policy version. ' +
+      'If no versionId is provided, the PDF is uploaded to the latest draft version. ' +
+      'Returns 400 if no draft version is available (e.g. all versions are published or pending approval).',
+  })
   @ApiConsumes('multipart/form-data', 'application/json')
   @ApiParam(POLICY_PARAMS.policyId)
   @ApiBody({
@@ -529,7 +535,10 @@ export class PoliciesController {
           type: 'object',
           properties: {
             file: { type: 'string', format: 'binary' },
-            versionId: { type: 'string', description: 'Target version ID (optional)' },
+            versionId: {
+              type: 'string',
+              description: 'Target version ID. If omitted, uploads to the latest draft version.',
+            },
           },
           required: ['file'],
         },
@@ -540,7 +549,10 @@ export class PoliciesController {
             fileName: { type: 'string' },
             fileType: { type: 'string' },
             fileData: { type: 'string', description: 'Base64-encoded file content' },
-            versionId: { type: 'string' },
+            versionId: {
+              type: 'string',
+              description: 'Target version ID. If omitted, uploads to the latest draft version.',
+            },
           },
           required: ['fileName', 'fileType', 'fileData'],
         },
@@ -605,53 +617,46 @@ export class PoliciesController {
     });
     if (!policy) throw new NotFoundException('Policy not found');
 
-    if (body.versionId) {
-      const version = await db.policyVersion.findFirst({
-        where: { id: body.versionId, policyId: id },
-        select: { id: true, pdfUrl: true, version: true },
-      });
-      if (!version) throw new NotFoundException('Version not found');
-      if (version.id === policy.currentVersionId && policy.status !== 'draft') {
-        throw new BadRequestException(
-          'Cannot upload PDF to the published version',
-        );
-      }
-      if (version.id === policy.pendingVersionId) {
-        throw new BadRequestException(
-          'Cannot upload PDF to a version pending approval',
-        );
-      }
-
-      const s3Key = `${organizationId}/policies/${id}/v${version.version}-${Date.now()}-${sanitizedFileName}`;
-      await s3.send(
-        new PutObjectCommand({
-          Bucket: bucketName,
-          Key: s3Key,
-          Body: fileBuffer,
-          ContentType: fileType,
-        }),
+    let targetVersionId: string = body.versionId ?? '';
+    if (!targetVersionId) {
+      // Default to the latest draft version (not published, not pending approval)
+      const excludeIds = [policy.currentVersionId, policy.pendingVersionId].filter(
+        (v): v is string => v != null,
       );
-      const oldPdfUrl = version.pdfUrl;
-      await db.policyVersion.update({
-        where: { id: body.versionId },
-        data: { pdfUrl: s3Key },
-      });
-
-      if (oldPdfUrl && oldPdfUrl !== s3Key) {
-        try {
-          await s3.send(
-            new DeleteObjectCommand({ Bucket: bucketName, Key: oldPdfUrl }),
-          );
-        } catch {
-          /* ignore */
-        }
+      const draftVersion = excludeIds.length > 0
+        ? await db.policyVersion.findFirst({
+            where: { policyId: id, id: { notIn: excludeIds } },
+            orderBy: { version: 'desc' },
+            select: { id: true },
+          })
+        : null;
+      targetVersionId =
+        draftVersion?.id ??
+        (policy.status === 'draft' ? policy.currentVersionId ?? '' : '');
+      if (!targetVersionId) {
+        throw new BadRequestException(
+          'No draft version available. Create a new version before uploading a PDF.',
+        );
       }
-
-      return { data: { s3Key }, authType: authContext.authType };
     }
 
-    // Legacy: upload to policy level
-    const s3Key = `${organizationId}/policies/${id}/${Date.now()}-${sanitizedFileName}`;
+    const version = await db.policyVersion.findFirst({
+      where: { id: targetVersionId, policyId: id },
+      select: { id: true, pdfUrl: true, version: true },
+    });
+    if (!version) throw new NotFoundException('Version not found');
+    if (version.id === policy.currentVersionId && policy.status !== 'draft') {
+      throw new BadRequestException(
+        'Cannot upload PDF to the published version',
+      );
+    }
+    if (version.id === policy.pendingVersionId) {
+      throw new BadRequestException(
+        'Cannot upload PDF to a version pending approval',
+      );
+    }
+
+    const s3Key = `${organizationId}/policies/${id}/v${version.version}-${Date.now()}-${sanitizedFileName}`;
     await s3.send(
       new PutObjectCommand({
         Bucket: bucketName,
@@ -660,11 +665,17 @@ export class PoliciesController {
         ContentType: fileType,
       }),
     );
-    const oldPdfUrl = policy.pdfUrl;
-    await db.policy.update({
-      where: { id },
-      data: { pdfUrl: s3Key, displayFormat: 'PDF' },
-    });
+    const oldPdfUrl = version.pdfUrl;
+    await db.$transaction([
+      db.policyVersion.update({
+        where: { id: version.id },
+        data: { pdfUrl: s3Key },
+      }),
+      db.policy.update({
+        where: { id },
+        data: { pdfUrl: s3Key, displayFormat: 'PDF' },
+      }),
+    ]);
 
     if (oldPdfUrl && oldPdfUrl !== s3Key) {
       try {
@@ -681,9 +692,19 @@ export class PoliciesController {
 
   @Delete(':id/pdf')
   @RequirePermission('policy', 'update')
-  @ApiOperation({ summary: 'Delete a policy PDF' })
+  @ApiOperation({
+    summary: 'Delete a policy version PDF',
+    description:
+      'Deletes the PDF from a specific policy version. ' +
+      'If no versionId is provided, deletes from the latest draft version. ' +
+      'Cannot delete PDFs from published or pending-approval versions.',
+  })
   @ApiParam(POLICY_PARAMS.policyId)
-  @ApiQuery({ name: 'versionId', required: false })
+  @ApiQuery({
+    name: 'versionId',
+    required: false,
+    description: 'Target version ID. If omitted, targets the latest draft version.',
+  })
   async deletePolicyPdf(
     @Param('id') id: string,
     @OrganizationId() organizationId: string,
@@ -698,44 +719,68 @@ export class PoliciesController {
 
     const s3 = new S3Client({ region: process.env.AWS_REGION || 'us-east-1' });
 
-    if (versionId) {
-      const version = await db.policyVersion.findFirst({
-        where: { id: versionId, policy: { id, organizationId } },
-        select: { id: true, pdfUrl: true },
-      });
-      if (!version) throw new NotFoundException('Version not found');
-      if (version.pdfUrl) {
-        try {
-          await s3.send(
-            new DeleteObjectCommand({
-              Bucket: bucketName,
-              Key: version.pdfUrl,
-            }),
-          );
-        } catch {
-          /* ignore */
-        }
-        await db.policyVersion.update({
-          where: { id: versionId },
+    const policy = await db.policy.findFirst({
+      where: { id, organizationId, archivedAt: null },
+      select: { id: true, status: true, pdfUrl: true, currentVersionId: true, pendingVersionId: true },
+    });
+    if (!policy) throw new NotFoundException('Policy not found');
+
+    let targetVersionId = versionId;
+    if (!targetVersionId) {
+      const excludeIds = [policy.currentVersionId, policy.pendingVersionId].filter(
+        (v): v is string => v != null,
+      );
+      const draftVersion = excludeIds.length > 0
+        ? await db.policyVersion.findFirst({
+            where: { policyId: id, id: { notIn: excludeIds } },
+            orderBy: { version: 'desc' },
+            select: { id: true },
+          })
+        : null;
+      targetVersionId =
+        draftVersion?.id ??
+        (policy.status === 'draft' ? policy.currentVersionId ?? undefined : undefined);
+      if (!targetVersionId) {
+        throw new BadRequestException(
+          'No draft version available to delete PDF from.',
+        );
+      }
+    }
+
+    const version = await db.policyVersion.findFirst({
+      where: { id: targetVersionId, policyId: id },
+      select: { id: true, pdfUrl: true },
+    });
+    if (!version) throw new NotFoundException('Version not found');
+    if (version.id === policy.currentVersionId && policy.status !== 'draft') {
+      throw new BadRequestException(
+        'Cannot delete PDF from the published version',
+      );
+    }
+    if (version.id === policy.pendingVersionId) {
+      throw new BadRequestException(
+        'Cannot delete PDF from a version pending approval',
+      );
+    }
+
+    if (version.pdfUrl) {
+      try {
+        await s3.send(
+          new DeleteObjectCommand({ Bucket: bucketName, Key: version.pdfUrl }),
+        );
+      } catch {
+        /* ignore */
+      }
+      await db.$transaction([
+        db.policyVersion.update({
+          where: { id: version.id },
           data: { pdfUrl: null },
-        });
-      }
-    } else {
-      const policy = await db.policy.findFirst({
-        where: { id, organizationId, archivedAt: null },
-        select: { id: true, pdfUrl: true },
-      });
-      if (!policy) throw new NotFoundException('Policy not found');
-      if (policy.pdfUrl) {
-        try {
-          await s3.send(
-            new DeleteObjectCommand({ Bucket: bucketName, Key: policy.pdfUrl }),
-          );
-        } catch {
-          /* ignore */
-        }
-        await db.policy.update({ where: { id }, data: { pdfUrl: null } });
-      }
+        }),
+        db.policy.update({
+          where: { id },
+          data: { pdfUrl: null, displayFormat: 'EDITOR' },
+        }),
+      ]);
     }
 
     return {
