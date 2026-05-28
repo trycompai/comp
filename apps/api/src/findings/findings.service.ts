@@ -375,10 +375,8 @@ export class FindingsService {
     const previousContent = finding.content;
 
     if (updateDto.status) {
-      const isAuditor = userRoles.includes('auditor');
-      const isClient =
-        userRoles.includes('admin') || userRoles.includes('owner');
-      const canSetRestrictedStatus = isPlatformAdmin || isAuditor;
+      const canSetRestrictedStatus =
+        isPlatformAdmin || userRoles.includes('auditor');
 
       if (
         (updateDto.status === FindingStatus.needs_revision ||
@@ -387,17 +385,6 @@ export class FindingsService {
       ) {
         throw new ForbiddenException(
           `Only auditors or platform admins can set status to '${updateDto.status}'`,
-        );
-      }
-
-      if (
-        updateDto.status === FindingStatus.ready_for_review &&
-        isAuditor &&
-        !isClient &&
-        !isPlatformAdmin
-      ) {
-        throw new ForbiddenException(
-          `Auditors cannot set status to 'ready_for_review'. This status is for clients to signal readiness.`,
         );
       }
     }

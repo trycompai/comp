@@ -188,7 +188,7 @@ describe('FindingsService.update (status transition rules)', () => {
     });
   });
 
-  it.each([['admin'], ['owner'], ['admin', 'auditor'], ['owner', 'auditor']])(
+  it.each([['admin'], ['owner'], ['auditor'], ['admin', 'auditor']])(
     'allows %s to set ready_for_review',
     async (roles) => {
       await svc.update(
@@ -203,20 +203,6 @@ describe('FindingsService.update (status transition rules)', () => {
       expect(mockDb.finding.update).toHaveBeenCalled();
     },
   );
-
-  it('blocks pure auditor from setting ready_for_review', async () => {
-    await expect(
-      svc.update(
-        'org_1',
-        'fnd_1',
-        { status: 'ready_for_review' as never },
-        ['auditor'],
-        false,
-        'usr_1',
-        'mem_1',
-      ),
-    ).rejects.toBeInstanceOf(ForbiddenException);
-  });
 
   it('blocks non-auditor non-admin from setting needs_revision', async () => {
     await expect(
