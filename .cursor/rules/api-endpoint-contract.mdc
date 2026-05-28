@@ -1,5 +1,6 @@
 ---
 description: Use when writing/editing NestJS API endpoints, DTOs, or @Body() params under apps/api/src/. Ensures every endpoint is correct for OpenAPI, the MCP server (@trycompai/mcp-server), and the ValidationPipe.
+globs: apps/api/src/**/*.controller.ts,apps/api/src/**/*.dto.ts
 alwaysApply: false
 ---
 
