@@ -33,6 +33,8 @@ vi.mock('@trycompai/design-system', () => ({
 vi.mock('@trycompai/design-system/icons', () => ({
   Close: () => <span>x</span>,
   WarningAlt: () => <span>!</span>,
+  ChevronDown: () => <span>v</span>,
+  ChevronUp: () => <span>^</span>,
 }));
 
 import { OverviewNudges } from './OverviewNudges';
@@ -76,11 +78,33 @@ describe('OverviewNudges', () => {
     expect(screen.queryByText('Showcase your security posture')).not.toBeInTheDocument();
   });
 
-  it('shows offboarding ahead of the trust nudge when both apply', () => {
+  it('collapses to the top nudge with a stack control when several apply', () => {
     setOffboarding([{ memberId: 'm1', name: 'Jo' }]);
     render(<OverviewNudges orgId="org_123" server={server()} />);
+    // Offboarding (priority 10) is shown; trust waits behind the stack.
     expect(screen.getByText(/offboarding completion/)).toBeInTheDocument();
     expect(screen.queryByText('Showcase your security posture')).not.toBeInTheDocument();
+    // The user is told more are waiting.
+    expect(screen.getByText('Show 2 notifications')).toBeInTheDocument();
+  });
+
+  it('expands the stack to reveal every waiting nudge, then collapses', () => {
+    setOffboarding([{ memberId: 'm1', name: 'Jo' }]);
+    render(<OverviewNudges orgId="org_123" server={server()} />);
+
+    fireEvent.click(screen.getByText('Show 2 notifications'));
+    expect(screen.getByText(/offboarding completion/)).toBeInTheDocument();
+    expect(screen.getByText('Showcase your security posture')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByText('Show less'));
+    expect(screen.queryByText('Showcase your security posture')).not.toBeInTheDocument();
+    expect(screen.getByText('Show 2 notifications')).toBeInTheDocument();
+  });
+
+  it('shows no stack control when only one nudge applies', () => {
+    render(<OverviewNudges orgId="org_123" server={server()} />);
+    expect(screen.getByText('Showcase your security posture')).toBeInTheDocument();
+    expect(screen.queryByText(/Show \d+ notifications/)).not.toBeInTheDocument();
   });
 
   it('dismissing the trust nudge hides it and persists', () => {
