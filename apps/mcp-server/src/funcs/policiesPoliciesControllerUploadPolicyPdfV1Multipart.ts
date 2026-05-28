@@ -3,7 +3,7 @@
  */
 
 import { CompAiCore } from "../core.js";
-import { encodeFormQuery, encodeSimple } from "../lib/encodings.js";
+import { encodeSimple } from "../lib/encodings.js";
 import { compactMap } from "../lib/primitives.js";
 import { safeParse } from "../lib/schemas.js";
 import { RequestOptions } from "../lib/sdks.js";
@@ -19,23 +19,23 @@ import {
 } from "../models/errors/httpclienterrors.js";
 import { SDKValidationError } from "../models/errors/sdkvalidationerror.js";
 import {
-  PoliciesControllerDeletePolicyPdfV1Request,
-  PoliciesControllerDeletePolicyPdfV1Request$zodSchema,
-} from "../models/policiescontrollerdeletepolicypdfv1op.js";
+  PoliciesControllerUploadPolicyPdfV1MultipartRequest,
+  PoliciesControllerUploadPolicyPdfV1MultipartRequest$zodSchema,
+} from "../models/policiescontrolleruploadpolicypdfv1multipartop.js";
 import { APICall, APIPromise } from "../types/async.js";
 import { Result } from "../types/fp.js";
 
 /**
- * Delete a policy version PDF
+ * Upload a PDF to a policy version (UI-only)
  *
  * @remarks
- * Deletes the PDF from a specific policy version. If no versionId is provided, deletes from the latest draft version. Cannot delete PDFs from published or pending-approval versions.
+ * Uploads a PDF via multipart `file` or base64 `fileData` JSON. Defaults to the latest draft if no `versionId`; 400 if no draft is available. UI-only — AI clients should use the presigned `/pdf/upload-url` + `/pdf/confirm` flow.
  *
  * If set, this operation will use {@link Security.apikey} from the global security.
  */
-export function policiesPoliciesControllerDeletePolicyPdfV1(
+export function policiesPoliciesControllerUploadPolicyPdfV1Multipart(
   client$: CompAiCore,
-  request: PoliciesControllerDeletePolicyPdfV1Request,
+  request: PoliciesControllerUploadPolicyPdfV1MultipartRequest,
   options?: RequestOptions,
 ): APIPromise<
   Result<
@@ -58,7 +58,7 @@ export function policiesPoliciesControllerDeletePolicyPdfV1(
 
 async function $do(
   client$: CompAiCore,
-  request: PoliciesControllerDeletePolicyPdfV1Request,
+  request: PoliciesControllerUploadPolicyPdfV1MultipartRequest,
   options?: RequestOptions,
 ): Promise<
   [
@@ -78,14 +78,16 @@ async function $do(
   const parsed$ = safeParse(
     request,
     (value$) =>
-      PoliciesControllerDeletePolicyPdfV1Request$zodSchema.parse(value$),
+      PoliciesControllerUploadPolicyPdfV1MultipartRequest$zodSchema.parse(
+        value$,
+      ),
     "Input validation failed",
   );
   if (!parsed$.ok) {
     return [parsed$, { status: "invalid" }];
   }
   const payload$ = parsed$.value;
-  const body$ = null;
+  const body$ = new FormData();
 
   const pathParams$ = {
     id: encodeSimple("id", payload$.id, {
@@ -96,9 +98,6 @@ async function $do(
   const path$ = pathToFunc("/v1/policies/{id}/pdf")(
     pathParams$,
   );
-  const query$ = encodeFormQuery({
-    "versionId": payload$.versionId,
-  });
 
   const headers$ = new Headers(compactMap({
     Accept: "*/*",
@@ -114,7 +113,7 @@ async function $do(
   const context = {
     options: client$._options,
     baseURL: options?.serverURL ?? client$._baseURL ?? "",
-    operationID: "PoliciesController_deletePolicyPdf_v1",
+    operationID: "PoliciesController_uploadPolicyPdf_v1_multipart",
     oAuth2Scopes: null,
     resolvedSecurity: requestSecurity,
     securitySource: client$._options.security,
@@ -132,11 +131,10 @@ async function $do(
 
   const requestRes = client$._createRequest(context, {
     security: requestSecurity,
-    method: "DELETE",
+    method: "POST",
     baseURL: options?.serverURL,
     path: path$,
     headers: headers$,
-    query: query$,
     body: body$,
     userAgent: client$._options.userAgent,
     timeoutMs: options?.timeoutMs || client$._options.timeoutMs

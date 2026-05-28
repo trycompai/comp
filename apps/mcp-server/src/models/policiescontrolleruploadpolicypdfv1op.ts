@@ -3,21 +3,71 @@
  */
 
 import * as z from "zod";
-import {
-  UploadPolicyPdfDto,
-  UploadPolicyPdfDto$zodSchema,
-} from "./uploadpolicypdfdto.js";
+import * as b64$ from "../lib/base64.js";
+
+/**
+ * JSON with base64-encoded file data
+ */
+export type PoliciesControllerUploadPolicyPdfV1RequestBody2 = {
+  fileName: string;
+  fileType: string;
+  fileData: string;
+  versionId?: string | undefined;
+};
+
+export const PoliciesControllerUploadPolicyPdfV1RequestBody2$zodSchema:
+  z.ZodType<PoliciesControllerUploadPolicyPdfV1RequestBody2> = z.object({
+    fileData: z.string().describe("Base64-encoded file content"),
+    fileName: z.string(),
+    fileType: z.string(),
+    versionId: z.string().optional().describe(
+      "Target version ID. If omitted, uploads to the latest draft version.",
+    ),
+  }).describe("JSON with base64-encoded file data");
+
+/**
+ * Multipart file upload (recommended)
+ */
+export type PoliciesControllerUploadPolicyPdfV1RequestBody1 = {
+  file: Uint8Array | string;
+  versionId?: string | undefined;
+};
+
+export const PoliciesControllerUploadPolicyPdfV1RequestBody1$zodSchema:
+  z.ZodType<PoliciesControllerUploadPolicyPdfV1RequestBody1> = z.object({
+    file: z.string().describe("Base64-encoded binary content").transform(
+      b64$.bytesFromBase64,
+    ),
+    versionId: z.string().optional().describe(
+      "Target version ID. If omitted, uploads to the latest draft version.",
+    ),
+  }).describe("Multipart file upload (recommended)");
+
+export type PoliciesControllerUploadPolicyPdfV1RequestBody =
+  | PoliciesControllerUploadPolicyPdfV1RequestBody2
+  | PoliciesControllerUploadPolicyPdfV1RequestBody1;
+
+export const PoliciesControllerUploadPolicyPdfV1RequestBody$zodSchema:
+  z.ZodType<PoliciesControllerUploadPolicyPdfV1RequestBody> = z.union([
+    z.lazy(() => PoliciesControllerUploadPolicyPdfV1RequestBody2$zodSchema),
+    z.lazy(() => PoliciesControllerUploadPolicyPdfV1RequestBody1$zodSchema),
+  ]);
 
 export type PoliciesControllerUploadPolicyPdfV1Request = {
   xOrganizationId?: string | undefined;
   id: string;
-  body: UploadPolicyPdfDto;
+  body:
+    | PoliciesControllerUploadPolicyPdfV1RequestBody2
+    | PoliciesControllerUploadPolicyPdfV1RequestBody1;
 };
 
 export const PoliciesControllerUploadPolicyPdfV1Request$zodSchema: z.ZodType<
   PoliciesControllerUploadPolicyPdfV1Request
 > = z.object({
-  body: UploadPolicyPdfDto$zodSchema,
+  body: z.union([
+    z.lazy(() => PoliciesControllerUploadPolicyPdfV1RequestBody2$zodSchema),
+    z.lazy(() => PoliciesControllerUploadPolicyPdfV1RequestBody1$zodSchema),
+  ]),
   id: z.string().describe("Policy ID"),
   xOrganizationId: z.string().describe(
     "Organization ID (required for session auth, optional for API key auth)",

@@ -14,7 +14,9 @@ export const PoliciesControllerDeletePolicyPdfV1Request$zodSchema: z.ZodType<
   PoliciesControllerDeletePolicyPdfV1Request
 > = z.object({
   id: z.string().describe("Policy ID"),
-  versionId: z.string().optional(),
+  versionId: z.string().describe(
+    "Target version ID. If omitted, targets the latest draft version.",
+  ).optional(),
   xOrganizationId: z.string().describe(
     "Organization ID (required for session auth, optional for API key auth)",
   ).optional(),

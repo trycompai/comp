@@ -32,6 +32,11 @@ export const UpdateFindingDtoStatus$zodSchema = z.enum([
 export const UpdateFindingDtoType = {
   Soc2: "soc2",
   Iso27001: "iso27001",
+  PciDss: "pci_dss",
+  Hipaa: "hipaa",
+  Gdpr: "gdpr",
+  Iso9001: "iso9001",
+  Iso42001: "iso42001",
 } as const;
 /**
  * Finding type
@@ -41,6 +46,11 @@ export type UpdateFindingDtoType = ClosedEnum<typeof UpdateFindingDtoType>;
 export const UpdateFindingDtoType$zodSchema = z.enum([
   "soc2",
   "iso27001",
+  "pci_dss",
+  "hipaa",
+  "gdpr",
+  "iso9001",
+  "iso42001",
 ]).describe("Finding type");
 
 /**

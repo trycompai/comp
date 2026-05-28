@@ -4,7 +4,11 @@
 
 import * as z from "zod";
 
-export type RunCheckForTaskDto = { connectionId: string; checkId: string };
+export type RunCheckForTaskDto = {
+  organizationId?: string | undefined;
+  connectionId: string;
+  checkId: string;
+};
 
 export const RunCheckForTaskDto$zodSchema: z.ZodType<RunCheckForTaskDto> = z
   .object({
@@ -13,5 +17,8 @@ export const RunCheckForTaskDto$zodSchema: z.ZodType<RunCheckForTaskDto> = z
     ),
     connectionId: z.string().describe(
       "ID of the integration connection that owns the check (call list-connections to find it).",
+    ),
+    organizationId: z.string().optional().describe(
+      "Auto-resolved from your API key / session. You can omit this; it is ignored by the server.",
     ),
   });

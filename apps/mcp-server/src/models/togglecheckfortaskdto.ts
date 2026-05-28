@@ -4,12 +4,19 @@
 
 import * as z from "zod";
 
-export type ToggleCheckForTaskDto = { connectionId: string; checkId: string };
+export type ToggleCheckForTaskDto = {
+  organizationId?: string | undefined;
+  connectionId: string;
+  checkId: string;
+};
 
 export const ToggleCheckForTaskDto$zodSchema: z.ZodType<ToggleCheckForTaskDto> =
   z.object({
     checkId: z.string().describe("ID of the integration check being toggled."),
     connectionId: z.string().describe(
       "ID of the integration connection whose check is being disconnected from / reconnected to this task.",
+    ),
+    organizationId: z.string().optional().describe(
+      "Auto-resolved from your API key / session. You can omit this; it is ignored by the server.",
     ),
   });
