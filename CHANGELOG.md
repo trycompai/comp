@@ -1,3 +1,31 @@
+## [3.64.4](https://github.com/trycompai/comp/compare/v3.64.3...v3.64.4) (2026-05-28)
+
+
+### Bug Fixes
+
+* **policies:** accept multipart file uploads on POST /policies/:id/pdf ([55ebdc4](https://github.com/trycompai/comp/commit/55ebdc474ffef227d42b7ff3f13d4151d09fb7c7))
+
+## [3.64.3](https://github.com/trycompai/comp/compare/v3.64.2...v3.64.3) (2026-05-28)
+
+
+### Bug Fixes
+
+* **findings:** allow admins/owners to set ready_for_review status ([559c67b](https://github.com/trycompai/comp/commit/559c67bcc4c23a400df56ce8049b8bf2fbf23664))
+
+## [3.64.2](https://github.com/trycompai/comp/compare/v3.64.1...v3.64.2) (2026-05-27)
+
+
+### Bug Fixes
+
+* **findings:** allow logging against all enabled frameworks ([c59c5d0](https://github.com/trycompai/comp/commit/c59c5d0108a009d34fe86ffd9a78fe86e11c7a48))
+
+## [3.64.1](https://github.com/trycompai/comp/compare/v3.64.0...v3.64.1) (2026-05-27)
+
+
+### Bug Fixes
+
+* **evidence-export:** stream runs to prevent OOM on bulk export ([468d894](https://github.com/trycompai/comp/commit/468d89458abebc7a8daba26e4c37540a32f35667))
+
 # [3.64.0](https://github.com/trycompai/comp/compare/v3.63.2...v3.64.0) (2026-05-27)
 
 

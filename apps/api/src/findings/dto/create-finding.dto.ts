@@ -80,11 +80,16 @@ export class CreateFindingDto {
   area?: FindingArea;
 
   @ApiProperty({
-    description: 'Type of finding (SOC 2 or ISO 27001)',
+    description:
+      'Framework this finding is attributed to (must match a framework the organization has enabled)',
     enum: FindingType,
     default: FindingType.soc2,
   })
-  @IsEnum(FindingType)
+  // Use an explicit string list instead of @IsEnum(FindingType). The Prisma-
+  // generated enum is captured at decorator-eval time, so a dev server started
+  // before `prisma generate` picked up new enum values keeps rejecting them
+  // (see the same workaround on `area` above).
+  @IsIn(['soc2', 'iso27001', 'pci_dss', 'hipaa', 'gdpr', 'iso9001', 'iso42001'])
   @IsOptional()
   type?: FindingType;
 
