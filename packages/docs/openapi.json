@@ -7596,7 +7596,7 @@
     },
     "/v1/policies/{id}/pdf": {
       "post": {
-        "description": "Accepts either a multipart file upload or a base64-encoded JSON body. Used by the web UI where the browser supplies the file directly. NOT recommended for MCP/AI clients — base64 of large files through an LLM is extremely slow, and the.",
+        "description": "Uploads a PDF via multipart `file` or base64 `fileData` JSON. Defaults to the latest draft if no `versionId`; 400 if no draft is available. UI-only — AI clients should use the presigned `/pdf/upload-url` + `/pdf/confirm` flow.",
         "operationId": "PoliciesController_uploadPolicyPdf_v1",
         "parameters": [
           {
@@ -7635,7 +7635,7 @@
                       },
                       "versionId": {
                         "type": "string",
-                        "description": "Target version ID (optional)"
+                        "description": "Target version ID. If omitted, uploads to the latest draft version."
                       }
                     },
                     "required": [
@@ -7657,7 +7657,8 @@
                         "description": "Base64-encoded file content"
                       },
                       "versionId": {
-                        "type": "string"
+                        "type": "string",
+                        "description": "Target version ID. If omitted, uploads to the latest draft version."
                       }
                     },
                     "required": [
@@ -7682,7 +7683,7 @@
                       },
                       "versionId": {
                         "type": "string",
-                        "description": "Target version ID (optional)"
+                        "description": "Target version ID. If omitted, uploads to the latest draft version."
                       }
                     },
                     "required": [
@@ -7704,7 +7705,8 @@
                         "description": "Base64-encoded file content"
                       },
                       "versionId": {
-                        "type": "string"
+                        "type": "string",
+                        "description": "Target version ID. If omitted, uploads to the latest draft version."
                       }
                     },
                     "required": [
@@ -7728,7 +7730,7 @@
             "apikey": []
           }
         ],
-        "summary": "Upload a PDF to a policy or version (UI-only)",
+        "summary": "Upload a PDF to a policy version (UI-only)",
         "tags": [
           "Policies"
         ],
@@ -7737,15 +7739,16 @@
         },
         "x-mint": {
           "metadata": {
-            "title": "Upload a PDF to a policy or version (UI-only) | Comp AI API",
-            "sidebarTitle": "Upload a PDF to a policy or version (UI-only)",
-            "description": "Accepts either a multipart file upload or a base64-encoded JSON body. Used by the web UI where the browser supplies the file directly. NOT recommended.",
-            "og:title": "Upload a PDF to a policy or version (UI-only) | Comp AI API",
-            "og:description": "Accepts either a multipart file upload or a base64-encoded JSON body. Used by the web UI where the browser supplies the file directly. NOT recommended."
+            "title": "Upload a PDF to a policy version (UI-only) | Comp AI API",
+            "sidebarTitle": "Upload a PDF to a policy version (UI-only)",
+            "description": "Uploads a PDF via multipart `file` or base64 `fileData` JSON. Defaults to the latest draft if no `versionId`; 400 if no draft is available. UI-only — AI.",
+            "og:title": "Upload a PDF to a policy version (UI-only) | Comp AI API",
+            "og:description": "Uploads a PDF via multipart `file` or base64 `fileData` JSON. Defaults to the latest draft if no `versionId`; 400 if no draft is available. UI-only — AI."
           }
         }
       },
       "delete": {
+        "description": "Deletes the PDF from a specific policy version. If no versionId is provided, deletes from the latest draft version. Cannot delete PDFs from published or pending-approval versions.",
         "operationId": "PoliciesController_deletePolicyPdf_v1",
         "parameters": [
           {
@@ -7771,6 +7774,7 @@
             "name": "versionId",
             "required": false,
             "in": "query",
+            "description": "Target version ID. If omitted, targets the latest draft version.",
             "schema": {
               "type": "string"
             }
@@ -7786,18 +7790,17 @@
             "apikey": []
           }
         ],
-        "summary": "Delete a policy PDF",
+        "summary": "Delete a policy version PDF",
         "tags": [
           "Policies"
         ],
-        "description": "Delete a policy PDF in Comp AI. Create, version, publish, export, map, and improve compliance policies with AI-assisted drafting and approval workflows.",
         "x-mint": {
           "metadata": {
-            "title": "Delete a policy PDF | Comp AI API",
-            "sidebarTitle": "Delete a policy PDF",
-            "description": "Delete a policy PDF in Comp AI. Create, version, publish, export, map, and improve compliance policies with AI-assisted drafting and approval workflows.",
-            "og:title": "Delete a policy PDF | Comp AI API",
-            "og:description": "Delete a policy PDF in Comp AI. Create, version, publish, export, map, and improve compliance policies with AI-assisted drafting and approval workflows."
+            "title": "Delete a policy version PDF | Comp AI API",
+            "sidebarTitle": "Delete a policy version PDF",
+            "description": "Deletes the PDF from a specific policy version. If no versionId is provided, deletes from the latest draft version. Cannot delete PDFs from published.",
+            "og:title": "Delete a policy version PDF | Comp AI API",
+            "og:description": "Deletes the PDF from a specific policy version. If no versionId is provided, deletes from the latest draft version. Cannot delete PDFs from published."
           }
         },
         "x-speakeasy-mcp": {
