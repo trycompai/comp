@@ -198,7 +198,7 @@ aws iam put-role-policy --role-name "$ROLE_NAME" --policy-name CompAI-CostExplor
   --policy-document '{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Action":"ce:GetCostAndUsage","Resource":"*"}]}'
 
 aws iam put-role-policy --role-name "$ROLE_NAME" --policy-name CompAI-ExtraReadAccess \\
-  --policy-document '{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Action":["ssm:GetDocument","ssm:DescribeDocument","ssm:ListDocuments"],"Resource":"*"}]}'
+  --policy-document '{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Action":["ssm:GetDocument","ssm:DescribeDocument","ssm:ListDocuments","iam:GetLoginProfile"],"Resource":"*"}]}'
 
 echo ""
 echo "============================================"

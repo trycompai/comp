@@ -24,20 +24,19 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from '@trycompai/design-system';
+import { CertificateCheck, Download, Upload, View } from '@trycompai/design-system/icons';
 import { Form } from '@trycompai/ui/form';
-import { Download, Eye, FileCheck2, Upload } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import { z } from 'zod';
-import { BrandSettings } from './BrandSettings';
 import {
+  CCPA,
+  CCPAInProgress,
   GDPR,
   GDPRInProgress,
   HIPAA,
   HIPAAInProgress,
-  CCPA,
-  CCPAInProgress,
   ISO27001,
   ISO27001InProgress,
   ISO42001,
@@ -61,11 +60,11 @@ import {
   TrustPortalAdditionalDocumentsSection,
   type TrustPortalDocument,
 } from './TrustPortalAdditionalDocumentsSection';
+import { TrustPortalBrandingSettings } from './TrustPortalBrandingSettings';
 import { TrustPortalCustomLinks } from './TrustPortalCustomLinks';
 import { TrustPortalFaqBuilder } from './TrustPortalFaqBuilder';
 import { TrustPortalOverview } from './TrustPortalOverview';
 import { TrustPortalVendors } from './TrustPortalVendors';
-import { UpdateTrustFavicon } from './UpdateTrustFavicon';
 
 // Client-side form schema (includes all fields for form state)
 const trustPortalSwitchSchema = z.object({
@@ -149,15 +148,7 @@ type TrustCustomLink = {
 };
 
 type ComplianceBadge = {
-  type:
-    | 'soc2'
-    | 'iso27001'
-    | 'iso42001'
-    | 'gdpr'
-    | 'hipaa'
-    | 'pci_dss'
-    | 'nen7510'
-    | 'iso9001';
+  type: 'soc2' | 'iso27001' | 'iso42001' | 'gdpr' | 'hipaa' | 'pci_dss' | 'nen7510' | 'iso9001';
   verified: boolean;
 };
 
@@ -1022,9 +1013,12 @@ export function TrustPortalSwitch({
 
           {/* Branding Tab */}
           <TabsContent value="branding">
-            <div className="pt-6 space-y-6">
-              <UpdateTrustFavicon currentFaviconUrl={faviconUrl ?? null} />
-              <BrandSettings orgId={orgId} primaryColor={primaryColor ?? null} />
+            <div className="pt-6">
+              <TrustPortalBrandingSettings
+                enabled={enabled}
+                primaryColor={primaryColor ?? null}
+                faviconUrl={faviconUrl ?? null}
+              />
             </div>
           </TabsContent>
 
@@ -1340,7 +1334,7 @@ function ComplianceFramework({
                 <div className="rounded-lg bg-muted/40 border border-border/50 p-4 space-y-3">
                   <div className="flex items-center gap-3 animate-in fade-in-0 slide-in-from-top-1 duration-200">
                     <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/10">
-                      <FileCheck2 className="h-5 w-5 text-primary" />
+                      <CertificateCheck className="h-5 w-5 text-primary" />
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium text-foreground truncate">{fileName}</p>
@@ -1367,7 +1361,7 @@ function ComplianceFramework({
                             />
                           }
                         >
-                          <Eye className="h-3.5 w-3.5" />
+                          <View className="h-3.5 w-3.5" />
                           View
                         </TooltipTrigger>
                         <TooltipContent>Open certificate in new tab</TooltipContent>

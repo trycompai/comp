@@ -190,6 +190,7 @@ export function OffboardingChecklistItem({
 
   const handleFileDrop = async (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
+    if (isProcessing) return;
     const file = e.dataTransfer.files[0];
     if (!file) return;
     await handleFileUpload(file);
@@ -198,8 +199,11 @@ export function OffboardingChecklistItem({
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    await handleFileUpload(file);
-    if (dropzoneInputRef.current) dropzoneInputRef.current.value = '';
+    try {
+      await handleFileUpload(file);
+    } finally {
+      if (dropzoneInputRef.current) dropzoneInputRef.current.value = '';
+    }
   };
 
   const handleFileUpload = async (file: File) => {
@@ -220,7 +224,7 @@ export function OffboardingChecklistItem({
     item.isAccessRevocation || item.evidenceRequired || canEdit;
 
   return (
-    <Collapsible open={isOpen} onOpenChange={setIsOpen}>
+    <Collapsible open={isExpandable ? isOpen : false} onOpenChange={isExpandable ? setIsOpen : undefined}>
       <div className="overflow-hidden rounded-lg border bg-background">
         <CollapsibleTrigger className="flex w-full items-center gap-2 px-3.5 py-3 text-left transition-colors hover:bg-muted/50">
           <ChecklistStatusCircle item={item} memberId={memberId} />
@@ -370,8 +374,8 @@ function EvidenceContent({
         <div
           onDrop={onFileDrop}
           onDragOver={(e) => e.preventDefault()}
-          onClick={() => dropzoneInputRef.current?.click()}
-          className="flex cursor-pointer flex-col items-center gap-2 rounded-md border-2 border-dashed border-muted-foreground/25 px-4 py-6 text-center transition hover:border-muted-foreground/50 hover:bg-muted/25"
+          onClick={() => !isProcessing && dropzoneInputRef.current?.click()}
+          className={`flex cursor-pointer flex-col items-center gap-2 rounded-md border-2 border-dashed border-muted-foreground/25 px-4 py-6 text-center transition hover:border-muted-foreground/50 hover:bg-muted/25${isProcessing ? ' pointer-events-none opacity-50' : ''}`}
         >
           <Upload size={20} className="text-muted-foreground" />
           <div>

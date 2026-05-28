@@ -24,10 +24,11 @@ export function usePermissions() {
   const roleString = activeMember?.role ?? null;
 
   // Resolve built-in roles synchronously
-  const { permissions: builtInPerms, customRoleNames } =
-    resolveBuiltInPermissions(roleString);
+  const { permissions: builtInPerms } = resolveBuiltInPermissions(roleString);
 
-  // Resolve built-in obligations synchronously
+  // Resolve built-in obligations synchronously — used as the initial value
+  // until the server returns the effective obligations (which include any
+  // per-organization overrides on the built-in roles).
   const roleNames = parseRolesString(roleString);
   const builtInObligations: Record<string, boolean> = {};
   for (const name of roleNames) {
@@ -41,14 +42,13 @@ export function usePermissions() {
     }
   }
 
-  // Fetch custom role permissions (and obligations) if needed (SWR-cached)
+  // Query the resolver for all role names — custom roles contribute
+  // permissions, and built-in roles may carry a per-org obligation override.
   const { data: customData } = useSWR(
-    customRoleNames.length > 0
-      ? ['/v1/roles/permissions', ...customRoleNames]
-      : null,
+    roleNames.length > 0 ? ['/v1/roles/permissions', ...roleNames] : null,
     async () => {
       const res = await apiClient.get<CustomRolePermissionsResponse>(
-        `/v1/roles/permissions?roles=${customRoleNames.join(',')}`,
+        `/v1/roles/permissions?roles=${roleNames.join(',')}`,
       );
       return {
         permissions: res.data?.permissions ?? {},
@@ -68,13 +68,15 @@ export function usePermissions() {
     mergePermissions(permissions, customData.permissions);
   }
 
-  // Merge built-in + custom obligations
-  const obligations: Record<string, boolean> = { ...builtInObligations };
-  if (customData?.obligations) {
-    for (const [key, val] of Object.entries(customData.obligations)) {
-      if (val) obligations[key] = true;
-    }
-  }
+  // Once the server response arrives it represents the effective obligations
+  // (defaults merged with any overrides). Before it arrives, fall back to the
+  // synchronous built-in defaults so initial render is correct for the common
+  // case (no overrides).
+  const obligations: Record<string, boolean> = customData?.obligations
+    ? Object.fromEntries(
+        Object.entries(customData.obligations).filter(([, val]) => val),
+      )
+    : { ...builtInObligations };
 
   // CS-189: separate "did a custom role grant this permission" from the
   // merged permissions, so the Auditor View visibility check can distinguish

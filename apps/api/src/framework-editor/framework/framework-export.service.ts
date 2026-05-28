@@ -20,10 +20,12 @@ export interface ExportedFramework {
     name: string;
     identifier: string;
     description: string;
+    requirementFamily?: string | null;
   }>;
   controlTemplates: Array<{
     name: string;
     description: string;
+    controlFamily: string | null;
     documentTypes: string[];
     requirementIndices: number[];
     policyTemplateIndices: number[];
@@ -127,10 +129,12 @@ export class FrameworkExportService {
         name: r.name,
         identifier: r.identifier,
         description: r.description,
+        requirementFamily: r.requirementFamily || null,
       })),
       controlTemplates: controlTemplates.map((ct) => ({
         name: ct.name,
         description: ct.description,
+        controlFamily: ct.controlFamily ?? null,
         documentTypes: ct.frameworkDocumentLinks.map((link) => link.formType),
         requirementIndices: ct.requirements
           .map((r) => reqIdToIndex.get(r.id))
@@ -186,6 +190,7 @@ export class FrameworkExportService {
               name: r.name,
               identifier: r.identifier ?? '',
               description: r.description,
+              requirementFamily: r.requirementFamily || null,
             },
           }),
         ),
@@ -225,6 +230,7 @@ export class FrameworkExportService {
             data: {
               name: ct.name,
               description: ct.description,
+              controlFamily: ct.controlFamily ?? null,
               requirements: {
                 connect: (ct.requirementIndices ?? []).map((i) => ({
                   id: createdRequirements[i].id,

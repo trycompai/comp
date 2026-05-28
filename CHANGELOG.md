@@ -1,3 +1,170 @@
+## [3.64.4](https://github.com/trycompai/comp/compare/v3.64.3...v3.64.4) (2026-05-28)
+
+
+### Bug Fixes
+
+* **policies:** accept multipart file uploads on POST /policies/:id/pdf ([55ebdc4](https://github.com/trycompai/comp/commit/55ebdc474ffef227d42b7ff3f13d4151d09fb7c7))
+
+## [3.64.3](https://github.com/trycompai/comp/compare/v3.64.2...v3.64.3) (2026-05-28)
+
+
+### Bug Fixes
+
+* **findings:** allow admins/owners to set ready_for_review status ([559c67b](https://github.com/trycompai/comp/commit/559c67bcc4c23a400df56ce8049b8bf2fbf23664))
+
+## [3.64.2](https://github.com/trycompai/comp/compare/v3.64.1...v3.64.2) (2026-05-27)
+
+
+### Bug Fixes
+
+* **findings:** allow logging against all enabled frameworks ([c59c5d0](https://github.com/trycompai/comp/commit/c59c5d0108a009d34fe86ffd9a78fe86e11c7a48))
+
+## [3.64.1](https://github.com/trycompai/comp/compare/v3.64.0...v3.64.1) (2026-05-27)
+
+
+### Bug Fixes
+
+* **evidence-export:** stream runs to prevent OOM on bulk export ([468d894](https://github.com/trycompai/comp/commit/468d89458abebc7a8daba26e4c37540a32f35667))
+
+# [3.64.0](https://github.com/trycompai/comp/compare/v3.63.2...v3.64.0) (2026-05-27)
+
+
+### Bug Fixes
+
+* **api:** add batch update endpoint for requirements to avoid rate limiting ([8ce8b3c](https://github.com/trycompai/comp/commit/8ce8b3c42dbbe90af8730b6d99fbeab481c7ac0b))
+* **api:** wrap custom framework link sync in transaction ([#2931](https://github.com/trycompai/comp/issues/2931)) ([094eec1](https://github.com/trycompai/comp/commit/094eec1ff70aea140484a882a8ad86c0e5337530))
+* **controls:** include direct policy/task links in custom framework view ([a32ec37](https://github.com/trycompai/comp/commit/a32ec3798f30d42306cf340ef1802e25a24cd30a))
+* **framework-editor:** flip ComboboxCell dropdown upward when near viewport bottom ([c4b50c6](https://github.com/trycompai/comp/commit/c4b50c69096fde69b7fd533447ffd7375f244314))
+
+
+### Features
+
+* Add control families for nist readiness ([edc5b1a](https://github.com/trycompai/comp/commit/edc5b1a49ceeadbf92474f7128cc0b8767025476))
+* add requirement family grouping to frameworks ([#2929](https://github.com/trycompai/comp/issues/2929)) ([65230df](https://github.com/trycompai/comp/commit/65230df7da6bac9acbb31d45e16a0cc9b6e770b1))
+
+## [3.63.2](https://github.com/trycompai/comp/compare/v3.63.1...v3.63.2) (2026-05-22)
+
+
+### Bug Fixes
+
+* **cloud-tests:** render nested JSON in manual remediation steps correctly ([014c4ab](https://github.com/trycompai/comp/commit/014c4ab273d0263aeb2de0032108af13a45f7ddb))
+
+## [3.63.1](https://github.com/trycompai/comp/compare/v3.63.0...v3.63.1) (2026-05-22)
+
+
+### Bug Fixes
+
+* **cloud-tests:** only fire GCP broad fallback when folder list was forbidden ([173b031](https://github.com/trycompai/comp/commit/173b031c47ed9ababe0559fc93d31015c2c20677)), closes [#2916](https://github.com/trycompai/comp/issues/2916) [#2916](https://github.com/trycompai/comp/issues/2916)
+* **cloud-tests:** unblock GCP picker when folder enumeration is forbidden ([7fdc871](https://github.com/trycompai/comp/commit/7fdc8715fec2ca06733119510b579f005ed78adc))
+
+# [3.63.0](https://github.com/trycompai/comp/compare/v3.62.2...v3.63.0) (2026-05-22)
+
+
+### Bug Fixes
+
+* **cloud-tests:** graceful manual-step fallback for AWS auto-remediation ([4325340](https://github.com/trycompai/comp/commit/43253401d3f38780f1b31f45c381e22716a88a7c))
+* **people:** remove background check exception label ([ddb4b72](https://github.com/trycompai/comp/commit/ddb4b725230df49cd6a9987d23aba385609cfdde))
+* **trust:** allow clearing brand color ([e89b189](https://github.com/trycompai/comp/commit/e89b189c18b147b7b89fa3e8a6f67495a04960c2))
+* **trust:** persist portal branding settings ([2b21d1c](https://github.com/trycompai/comp/commit/2b21d1cff71f3f95c839470272a6e41e83a8da3c))
+
+
+### Features
+
+* **cloud-tests:** manual-steps generator + broader auto-fix pattern coverage ([ebce8a3](https://github.com/trycompai/comp/commit/ebce8a3e6662627ee043a4ed6766d74ece84a724))
+* **cloud-tests:** surface manual-step fallback through trigger + dialog ([c883aee](https://github.com/trycompai/comp/commit/c883aee2f39915dc5193504333e16c85611136a8))
+
+## [3.62.2](https://github.com/trycompai/comp/compare/v3.62.1...v3.62.2) (2026-05-22)
+
+
+### Bug Fixes
+
+* **integrations:** honor google sync exclusions for members ([feb92ed](https://github.com/trycompai/comp/commit/feb92ed37276ec1035706f57f04a76cabe1b157a))
+
+## [3.62.1](https://github.com/trycompai/comp/compare/v3.62.0...v3.62.1) (2026-05-22)
+
+
+### Bug Fixes
+
+* **cloud-tests:** address release remediation review ([1b3b84a](https://github.com/trycompai/comp/commit/1b3b84a77f810c539b3805819623ed718571999b))
+* **cloud-tests:** address remediation review gaps ([eaced08](https://github.com/trycompai/comp/commit/eaced0807194335cce2333ea479620f9f6bcba54))
+* **cloud-tests:** backfill egress security group ids ([816ba5c](https://github.com/trycompai/comp/commit/816ba5cdc696a987134be863dbb5c0bf2ebb487e))
+* **cloud-tests:** harden aws validation paths ([c903201](https://github.com/trycompai/comp/commit/c903201dc41bed2757ec47eaf4005f6fe14db883))
+* **cloud-tests:** preserve batch finding cancellations ([ddcf466](https://github.com/trycompai/comp/commit/ddcf466c2aaaf424913d8a22c880b474949c03a5))
+* **cloud-tests:** retry batch progress conflicts ([199dfc3](https://github.com/trycompai/comp/commit/199dfc388ccb298e9b2cb74a75cc52aec30b8c41))
+* harden cloud remediation and chat ([af3402d](https://github.com/trycompai/comp/commit/af3402dce919f6426d7bfe58b2806ed0d3c29a05))
+
+# [3.62.0](https://github.com/trycompai/comp/compare/v3.61.1...v3.62.0) (2026-05-21)
+
+
+### Bug Fixes
+
+* **rbac:** exclude override rows from role count + safer obligation fallback ([3fb0080](https://github.com/trycompai/comp/commit/3fb0080f1b4e3dcec67a817c18ebc07e484ec30e))
+* **rbac:** sync digest BUILT_IN_ROLE_OBLIGATIONS snapshot with auth package ([5fab22f](https://github.com/trycompai/comp/commit/5fab22f6a51f92b17a3bd67ca25d7d0e10a41e53))
+* **rbac:** sync system role obligations state on prop change ([32c3353](https://github.com/trycompai/comp/commit/32c335334fde304ee6d56c96225096680ba9b5aa))
+* **rbac:** tighten obligation DTO + resync state on role navigation ([6b0fa6c](https://github.com/trycompai/comp/commit/6b0fa6cf2e275d14f31493d7ca5d6460b2392d40))
+* **rbac:** unify obligation fallback across read paths ([ba889ca](https://github.com/trycompai/comp/commit/ba889ca6740da9f43d544ebed2207695f2e90fea))
+
+
+### Features
+
+* **rbac:** allow toggling employee compliance obligation on built-in roles ([013061c](https://github.com/trycompai/comp/commit/013061c0919d93ccb66279d55f8a14417543b816))
+
+## [3.61.1](https://github.com/trycompai/comp/compare/v3.61.0...v3.61.1) (2026-05-21)
+
+
+### Bug Fixes
+
+* **cloud-tests:** cap concurrency for GCP folder→projects fan-out ([d333f59](https://github.com/trycompai/comp/commit/d333f59bab11494009e8c1f78f6489a26ed6ea76))
+* **cloud-tests:** isolate folder arm failures from direct arm in GCP picker ([22a441f](https://github.com/trycompai/comp/commit/22a441f9e9c2f6a8e998e9b371cacc8af97d7d8b))
+* **cloud-tests:** properly scope folder-nested GCP projects to the target org ([39d233f](https://github.com/trycompai/comp/commit/39d233fb810dcf09bdd024c6cf14eac8e6090de3))
+* **cloud-tests:** show folder-nested GCP projects in connection picker ([b90775d](https://github.com/trycompai/comp/commit/b90775d8944a15d663e96dc4ef0e71d74e454da8))
+
+# [3.61.0](https://github.com/trycompai/comp/compare/v3.60.0...v3.61.0) (2026-05-21)
+
+
+### Bug Fixes
+
+* **api:** add isDirectorySource flag to SyncDefinition to skip member deactivation ([2e0c6f9](https://github.com/trycompai/comp/commit/2e0c6f9521af27326261b7eb2aed9ce7154576cf))
+* **api:** change default value of isDirectorySource ([47ba323](https://github.com/trycompai/comp/commit/47ba323b645bd831b24ace16a2e4d9c83e8fab12))
+* **integration-platform:** change default value of isDirectorySource ([932f275](https://github.com/trycompai/comp/commit/932f2759c23ddebacb47d69ff9f8fb0823096d90))
+
+
+### Features
+
+* **integration-platform:** declare isDirectorySource on code-based authoritative manifests ([410f378](https://github.com/trycompai/comp/commit/410f37809b389327fba02e34b59e9904d19bb7e3))
+
+# [3.60.0](https://github.com/trycompai/comp/compare/v3.59.2...v3.60.0) (2026-05-21)
+
+
+### Bug Fixes
+
+* **cloud-tests:** show meaningful Auto-Remediate diff for configure-only plans ([90c95f6](https://github.com/trycompai/comp/commit/90c95f66fba7f8ca281386b417ebcf018f53f0e9))
+* **evidence-export:** load automations one at a time to prevent OOM ([07f02e4](https://github.com/trycompai/comp/commit/07f02e4783649ba710fc1fcace6c6009bd498bd7))
+* **people:** address cubic review findings for offboarding feature ([#2884](https://github.com/trycompai/comp/issues/2884)) ([9d43a6b](https://github.com/trycompai/comp/commit/9d43a6b7453748cd0b50783f5c157d02a6bea9f6))
+* **people:** address fifth round of cubic review findings ([#2893](https://github.com/trycompai/comp/issues/2893)) ([dbc364c](https://github.com/trycompai/comp/commit/dbc364cd3a7a8893c77b97727b340007db08b053))
+* **people:** address fourth round of cubic review findings ([#2892](https://github.com/trycompai/comp/issues/2892)) ([ca9d9a5](https://github.com/trycompai/comp/commit/ca9d9a59ca2a4c822f635ef1080752f3801b731b))
+* **people:** address remaining cubic review findings for offboarding ([#2890](https://github.com/trycompai/comp/issues/2890)) ([8026352](https://github.com/trycompai/comp/commit/802635274921ed9ad07e6a0d9d75c97c9fcc4492))
+* **people:** address third round of cubic review findings ([#2891](https://github.com/trycompai/comp/issues/2891)) ([8ec5214](https://github.com/trycompai/comp/commit/8ec52148625e29c08c84fa4f18284bf270c780a0))
+* **people:** ds component compatibility fixes for offboarding UI ([200b112](https://github.com/trycompai/comp/commit/200b11207fa3aabf7868d582ac36551643c355e9))
+* **ui:** close MultipleSelector dropdown on blur so it stops blocking sibling form controls ([b9d08c8](https://github.com/trycompai/comp/commit/b9d08c8ad608442a8c80c47db08bb1dfd6a62e18))
+
+
+### Features
+
+* **api:** unblock cloud-tests mutations for API key + service token callers ([26e53da](https://github.com/trycompai/comp/commit/26e53dae1bead19de84f27562f52b41cb40c4238))
+* **cloud-tests:** add deterministic AWS plan normalizer for SLR params ([e0ec0f7](https://github.com/trycompai/comp/commit/e0ec0f712bcbb203a5a3b634e7bfa003a7a059b8))
+* **cloud-tests:** fail fast on missing required AWS command params ([5f2d342](https://github.com/trycompai/comp/commit/5f2d342fc6489d69fcae96917b50f24fb181f15e))
+* **cloud-tests:** universal AI step-repair on AWS validation errors ([8adf505](https://github.com/trycompai/comp/commit/8adf505f26ccc4b6b0ca96516d3bc3a1513aecff))
+* **frameworks:** show controls as default tab with requirement column ([e41365d](https://github.com/trycompai/comp/commit/e41365d07049735e0ede7fac11d282df0628f614))
+* **people:** add employment events tracking and offboarding checklist ([5e15a73](https://github.com/trycompai/comp/commit/5e15a7368fab5c68d3f314b8daeb1d5afd861832))
+
+## [3.59.2](https://github.com/trycompai/comp/compare/v3.59.1...v3.59.2) (2026-05-21)
+
+
+### Bug Fixes
+
+* **ui:** close MultipleSelector dropdown on blur so it stops blocking sibling form controls ([3d7fc3f](https://github.com/trycompai/comp/commit/3d7fc3f68c3e21b552c8d4eefb44d29aac2d4aa0)), closes [#2886](https://github.com/trycompai/comp/issues/2886)
+
 ## [3.59.1](https://github.com/trycompai/comp/compare/v3.59.0...v3.59.1) (2026-05-19)
 
 

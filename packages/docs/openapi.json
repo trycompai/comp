@@ -18553,6 +18553,7 @@
     },
     "/v1/cloud-security/findings/{findingId}/exception": {
       "post": {
+        "description": "Accepts session, API key, or service token auth. For API key / service token callers without an explicit user attribution, the action is attributed to the org's owner and the audit log description records the calling key/service name.",
         "operationId": "CloudSecurityController_markFindingAsException_v1",
         "parameters": [
           {
@@ -18583,14 +18584,13 @@
         "tags": [
           "CloudSecurity"
         ],
-        "description": "Mark a finding as an exception so it no longer appears in the active Scan Results list in Comp AI. Run AWS, Azure, and GCP cloud security scans, detect enabled services, review findings, and connect cloud posture results to compliance work.",
         "x-mint": {
           "metadata": {
             "title": "Mark a finding as an exception so it no | Comp AI API",
             "sidebarTitle": "Mark a finding as an exception so it no longer appears in the active Scan Results list",
-            "description": "Mark a finding as an exception so it no longer appears in the active Scan Results list in Comp AI. Run AWS, Azure, and GCP cloud security scans, detect.",
+            "description": "Accepts session, API key, or service token auth. For API key / service token callers without an explicit user attribution, the action is attributed to the.",
             "og:title": "Mark a finding as an exception so it no | Comp AI API",
-            "og:description": "Mark a finding as an exception so it no longer appears in the active Scan Results list in Comp AI. Run AWS, Azure, and GCP cloud security scans, detect."
+            "og:description": "Accepts session, API key, or service token auth. For API key / service token callers without an explicit user attribution, the action is attributed to the."
           }
         },
         "x-speakeasy-mcp": {
@@ -18600,6 +18600,7 @@
     },
     "/v1/cloud-security/connections/{connectionId}/scan-mode": {
       "patch": {
+        "description": "Accepts session, API key, or service token auth. For API key / service token callers without an explicit user attribution, the action is attributed to the org's owner.",
         "operationId": "CloudSecurityController_updateAwsScanMode_v1",
         "parameters": [
           {
@@ -18630,14 +18631,13 @@
         "tags": [
           "CloudSecurity"
         ],
-        "description": "Switch the AWS scan engine for a connection (Comp AI scanners ↔ Security Hub) in Comp AI. Run AWS, Azure, and GCP cloud security scans, detect enabled services, review findings, and connect cloud posture results to compliance work.",
         "x-mint": {
           "metadata": {
             "title": "Switch the AWS scan engine for a connection | Comp AI API",
             "sidebarTitle": "Switch the AWS scan engine for a connection (Comp AI scanners ↔ Security Hub)",
-            "description": "Switch the AWS scan engine for a connection (Comp AI scanners ↔ Security Hub) in Comp AI. Run AWS, Azure, and GCP cloud security scans, detect enabled.",
+            "description": "Accepts session, API key, or service token auth. For API key / service token callers without an explicit user attribution, the action is attributed to the.",
             "og:title": "Switch the AWS scan engine for a connection | Comp AI API",
-            "og:description": "Switch the AWS scan engine for a connection (Comp AI scanners ↔ Security Hub) in Comp AI. Run AWS, Azure, and GCP cloud security scans, detect enabled."
+            "og:description": "Accepts session, API key, or service token auth. For API key / service token callers without an explicit user attribution, the action is attributed to the."
           }
         },
         "x-speakeasy-mcp": {
@@ -18647,6 +18647,7 @@
     },
     "/v1/cloud-security/exceptions/{exceptionId}": {
       "delete": {
+        "description": "Accepts session, API key, or service token auth. For API key / service token callers without an explicit user attribution, the action is attributed to the org's owner.",
         "operationId": "CloudSecurityController_revokeException_v1",
         "parameters": [
           {
@@ -18667,14 +18668,13 @@
         "tags": [
           "CloudSecurity"
         ],
-        "description": "Revoke an exception, reopening the finding in Comp AI. Run AWS, Azure, and GCP cloud security scans, detect enabled services, review findings, and connect cloud posture results to compliance work.",
         "x-mint": {
           "metadata": {
             "title": "Revoke an exception, reopening the finding | Comp AI API",
             "sidebarTitle": "Revoke an exception, reopening the finding",
-            "description": "Revoke an exception, reopening the finding in Comp AI. Run AWS, Azure, and GCP cloud security scans, detect enabled services, review findings, and connect.",
+            "description": "Accepts session, API key, or service token auth. For API key / service token callers without an explicit user attribution, the action is attributed to the.",
             "og:title": "Revoke an exception, reopening the finding | Comp AI API",
-            "og:description": "Revoke an exception, reopening the finding in Comp AI. Run AWS, Azure, and GCP cloud security scans, detect enabled services, review findings, and connect."
+            "og:description": "Accepts session, API key, or service token auth. For API key / service token callers without an explicit user attribution, the action is attributed to the."
           }
         },
         "x-speakeasy-mcp": {
@@ -19916,6 +19916,139 @@
         },
         "x-speakeasy-mcp": {
           "name": "get-permissions-for-roles"
+        }
+      }
+    },
+    "/v1/roles/built-in/{name}/obligations": {
+      "get": {
+        "description": "Returns the effective obligations for a built-in role (owner, admin, auditor, employee, contractor) — DB override if present, else the hardcoded default.",
+        "operationId": "RolesController_getBuiltInObligations_v1",
+        "parameters": [
+          {
+            "name": "name",
+            "required": true,
+            "in": "path",
+            "description": "Built-in role name",
+            "schema": {
+              "example": "owner",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Effective obligations for the built-in role",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "name": {
+                      "type": "string"
+                    },
+                    "obligations": {
+                      "type": "object",
+                      "properties": {
+                        "compliance": {
+                          "type": "boolean"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Get obligations for a built-in role",
+        "tags": [
+          "Roles"
+        ],
+        "x-mint": {
+          "metadata": {
+            "title": "Get obligations for a built-in role | Comp AI API",
+            "sidebarTitle": "Get obligations for a built-in role",
+            "description": "Returns the effective obligations for a built-in role (owner, admin, auditor, employee, contractor) — DB override if present, else the hardcoded default.",
+            "og:title": "Get obligations for a built-in role | Comp AI API",
+            "og:description": "Returns the effective obligations for a built-in role (owner, admin, auditor, employee, contractor) — DB override if present, else the hardcoded default."
+          }
+        }
+      },
+      "patch": {
+        "description": "Override the obligations for a built-in role (e.g., turn off the compliance obligation for owners). Permissions stay sourced from the hardcoded defaults.",
+        "operationId": "RolesController_updateBuiltInObligations_v1",
+        "parameters": [
+          {
+            "name": "name",
+            "required": true,
+            "in": "path",
+            "description": "Built-in role name",
+            "schema": {
+              "example": "owner",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateBuiltInObligationsDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Obligations updated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "name": {
+                      "type": "string"
+                    },
+                    "obligations": {
+                      "type": "object",
+                      "properties": {
+                        "compliance": {
+                          "type": "boolean"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Not a built-in role"
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Update obligations for a built-in role",
+        "tags": [
+          "Roles"
+        ],
+        "x-mint": {
+          "metadata": {
+            "title": "Update obligations for a built-in role | Comp AI API",
+            "sidebarTitle": "Update obligations for a built-in role",
+            "description": "Override the obligations for a built-in role (e.g., turn off the compliance obligation for owners). Permissions stay sourced from the hardcoded defaults.",
+            "og:title": "Update obligations for a built-in role | Comp AI API",
+            "og:description": "Override the obligations for a built-in role (e.g., turn off the compliance obligation for owners). Permissions stay sourced from the hardcoded defaults."
+          }
         }
       }
     },
@@ -27875,6 +28008,35 @@
         "required": [
           "name",
           "permissions"
+        ]
+      },
+      "BuiltInObligationsBody": {
+        "type": "object",
+        "properties": {
+          "compliance": {
+            "type": "boolean",
+            "description": "Whether the role must complete compliance tasks.",
+            "example": false
+          }
+        }
+      },
+      "UpdateBuiltInObligationsDto": {
+        "type": "object",
+        "properties": {
+          "obligations": {
+            "description": "Obligations override for the built-in role.",
+            "example": {
+              "compliance": false
+            },
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/BuiltInObligationsBody"
+              }
+            ]
+          }
+        },
+        "required": [
+          "obligations"
         ]
       },
       "UpdateRoleDto": {

@@ -33,6 +33,17 @@ export interface ProcessEmployeesOptions {
   protectedRoles?: string[];
   /** Provider slug for deactivation reason messages. */
   providerName?: string;
+  /**
+   * Whether the provider is authoritative for "who works here" (directory of record).
+   *
+   * When false (default), Phase 2 is skipped entirely: members absent from the sync
+   * payload are left alone. Set true only for HRIS / identity providers whose user
+   * list = the employee list (Google Workspace, Rippling, JumpCloud, Okta, Entra).
+   *
+   * This prevents feature-licensed tools (Confluence, Slack, etc.) from silently
+   * deactivating active employees when their API returns a partial member list.
+   */
+  isDirectorySource?: boolean;
 }
 
 const DEFAULT_PROTECTED_ROLES = ['owner', 'admin', 'auditor'];
@@ -76,6 +87,7 @@ export class GenericEmployeeSyncService {
     const allowReactivation = options.allowReactivation ?? false;
     const protectedRoles = options.protectedRoles ?? DEFAULT_PROTECTED_ROLES;
     const providerName = options.providerName ?? 'provider';
+    const isDirectorySource = options.isDirectorySource ?? false;
 
     // Build the set of role identifiers we'll accept on this sync. Anything
     // outside this set is dropped (e.g. a Microsoft DSL that mis-maps
@@ -189,13 +201,15 @@ export class GenericEmployeeSyncService {
             !existingMember.onboardDate && employee.startDate;
 
           if (existingMember.deactivated && allowReactivation) {
+            const parsedStartDate = employee.startDate ? new Date(employee.startDate) : null;
             await db.member.update({
               where: { id: existingMember.id },
               data: {
                 deactivated: false,
                 isActive: true,
+                offboardDate: null,
                 ...(needsHeal ? { role: healedRole } : {}),
-                ...(needsOnboardDate ? { onboardDate: new Date(employee.startDate!) } : {}),
+                ...(needsOnboardDate && parsedStartDate && !isNaN(parsedStartDate.getTime()) ? { onboardDate: parsedStartDate } : {}),
               },
             });
             results.reactivated++;
@@ -204,12 +218,14 @@ export class GenericEmployeeSyncService {
               status: 'reactivated',
             });
           } else {
-            if (needsHeal || needsOnboardDate) {
+            const parsedStartDate = employee.startDate ? new Date(employee.startDate) : null;
+            const validStartDate = parsedStartDate && !isNaN(parsedStartDate.getTime()) ? parsedStartDate : null;
+            if (needsHeal || (needsOnboardDate && validStartDate)) {
               await db.member.update({
                 where: { id: existingMember.id },
                 data: {
                   ...(needsHeal ? { role: healedRole } : {}),
-                  ...(needsOnboardDate ? { onboardDate: new Date(employee.startDate!) } : {}),
+                  ...(needsOnboardDate && validStartDate ? { onboardDate: validStartDate } : {}),
                 },
               });
             }
@@ -232,13 +248,14 @@ export class GenericEmployeeSyncService {
             `[GenericSync] Provider "${providerName}" sent unrecognized role "${employee.role}" for ${normalizedEmail}; falling back to "${sanitizedRole}"`,
           );
         }
+        const newMemberStartDate = employee.startDate ? new Date(employee.startDate) : null;
         await db.member.create({
           data: {
             organizationId,
             userId: existingUser.id,
             role: sanitizedRole,
             isActive: true,
-            ...(employee.startDate ? { onboardDate: new Date(employee.startDate) } : {}),
+            ...(newMemberStartDate && !isNaN(newMemberStartDate.getTime()) ? { onboardDate: newMemberStartDate } : {}),
           },
         });
 
@@ -266,7 +283,20 @@ export class GenericEmployeeSyncService {
 
     // ====================================================================
     // Phase 2: Deactivate members no longer in provider
+    //
+    // Only runs when the provider is a directory of record. Feature-licensed
+    // tools (Confluence, Slack, etc.) only know who has product access — they
+    // must not be allowed to deactivate employees who didn't appear in their
+    // response, since "absent from this product" ≠ "no longer employed".
     // ====================================================================
+    if (!isDirectorySource) {
+      this.logger.log(
+        `[GenericSync] Phase 2 skipped for "${providerName}": isDirectorySource=false. Members absent from the sync payload were left alone.`,
+      );
+      results.success = results.errors === 0;
+      return results;
+    }
+
     const allOrgMembers = await db.member.findMany({
       where: {
         organizationId,

@@ -31,6 +31,12 @@ export class OffboardingExportService {
     output: NodeJS.WritableStream;
   }) {
     const archive = archiver('zip', { zlib: { level: 9 } });
+    archive.on('error', (err) => {
+      archive.abort();
+      if ('destroy' in output && typeof (output as { destroy?: unknown }).destroy === 'function') {
+        (output as { destroy: (err: Error) => void }).destroy(err);
+      }
+    });
     archive.pipe(output);
 
     const checklist =
@@ -111,8 +117,9 @@ export class OffboardingExportService {
       for (const file of vendor.evidence) {
         const buffer = await this.getAttachmentBuffer(organizationId, file.id);
         if (!buffer) continue;
+        const safeName = sanitizeFileName(file.name);
         archive.append(buffer, {
-          name: `${prefix}vendor-access-revocations/evidence/${file.name}`,
+          name: `${prefix}vendor-access-revocations/evidence/${file.id}-${safeName}`,
         });
       }
     }
@@ -135,8 +142,9 @@ export class OffboardingExportService {
       for (const file of item.evidence) {
         const buffer = await this.getAttachmentBuffer(organizationId, file.id);
         if (!buffer) continue;
+        const safeName = sanitizeFileName(file.name);
         archive.append(buffer, {
-          name: `${prefix}checklist-items/${folderNum}-${folderName}/${file.name}`,
+          name: `${prefix}checklist-items/${folderNum}-${folderName}/${file.id}-${safeName}`,
         });
       }
     }
@@ -150,34 +158,50 @@ export class OffboardingExportService {
     output: NodeJS.WritableStream;
   }) {
     const archive = archiver('zip', { zlib: { level: 9 } });
+    archive.on('error', (err) => {
+      archive.abort();
+      if ('destroy' in output && typeof (output as { destroy?: unknown }).destroy === 'function') {
+        (output as { destroy: (err: Error) => void }).destroy(err);
+      }
+    });
     archive.pipe(output);
 
-    const members = await db.member.findMany({
-      where: { organizationId, offboardDate: { not: null }, deactivated: true },
-      include: { user: { select: { name: true, email: true } } },
-      orderBy: { offboardDate: 'desc' },
-    });
+    const BATCH_SIZE = 50;
+    let cursor: string | undefined;
 
-    for (const member of members) {
-      const safeName = (member.user.name ?? 'member')
-        .replace(/[^a-zA-Z0-9 ]/g, '')
-        .replace(/\s+/g, '-')
-        .toLowerCase();
-      const prefix = `offboarded-employees/${safeName}/`;
+    while (true) {
+      const batch = await db.member.findMany({
+        where: { organizationId, offboardDate: { not: null }, deactivated: true },
+        include: { user: { select: { name: true, email: true } } },
+        orderBy: [{ offboardDate: 'desc' }, { id: 'asc' }],
+        take: BATCH_SIZE,
+        ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
+      });
 
-      const checklist = await this.offboardingChecklistService.getMemberChecklist(
-        organizationId,
-        member.id,
-      );
-      const revocations = await this.accessRevocationService.getAccessRevocations(
-        organizationId,
-        member.id,
-      );
+      for (const member of batch) {
+        const safeName = (member.user.name ?? 'member')
+          .replace(/[^a-zA-Z0-9 ]/g, '')
+          .replace(/\s+/g, '-')
+          .toLowerCase();
+        const prefix = `offboarded-employees/${safeName}-${member.id}/`;
 
-      this.appendSummaryCsv(archive, checklist.items, prefix);
-      this.appendVendorRevocationsCsv(archive, revocations.vendors, prefix);
-      await this.appendVendorEvidence(archive, organizationId, revocations.vendors, prefix);
-      await this.appendChecklistEvidence(archive, organizationId, checklist.items, prefix);
+        const checklist = await this.offboardingChecklistService.getMemberChecklist(
+          organizationId,
+          member.id,
+        );
+        const revocations = await this.accessRevocationService.getAccessRevocations(
+          organizationId,
+          member.id,
+        );
+
+        this.appendSummaryCsv(archive, checklist.items, prefix);
+        this.appendVendorRevocationsCsv(archive, revocations.vendors, prefix);
+        await this.appendVendorEvidence(archive, organizationId, revocations.vendors, prefix);
+        await this.appendChecklistEvidence(archive, organizationId, checklist.items, prefix);
+      }
+
+      if (batch.length < BATCH_SIZE) break;
+      cursor = batch[batch.length - 1]!.id;
     }
 
     await archive.finalize();
@@ -199,6 +223,14 @@ export class OffboardingExportService {
   }
 }
 
+function sanitizeFileName(name: string): string {
+  return name.replace(/.*[/\\]/, '').replace(/[/\\]/g, '_') || 'file';
+}
+
 function escapeCsvField(value: string): string {
-  return value.replace(/"/g, '""');
+  const escaped = value.replace(/"/g, '""');
+  if (/^[=+\-@\t\r]/.test(escaped)) {
+    return `'${escaped}`;
+  }
+  return escaped;
 }

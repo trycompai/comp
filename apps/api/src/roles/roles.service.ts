@@ -23,6 +23,40 @@ const VALID_RESOURCES: Record<string, string[]> = Object.fromEntries(
 // Built-in roles that cannot be modified or deleted
 const BUILT_IN_ROLES = Object.keys(allRoles);
 
+// Subset of built-in roles whose obligations the customer can override. Today
+// only owner and admin — the others keep their hardcoded defaults to avoid
+// changing behavior for roles the request didn't cover.
+const EDITABLE_BUILT_IN_OBLIGATION_ROLES = new Set(['owner', 'admin']);
+
+function parseObligationsField(value: unknown): RoleObligations {
+  if (typeof value === 'string') {
+    try {
+      return JSON.parse(value) as RoleObligations;
+    } catch {
+      return {};
+    }
+  }
+  return (value as RoleObligations) || {};
+}
+
+/**
+ * Resolve the effective obligations for a single role, given an optional DB
+ * override row. Centralized so every read path applies the same fallback
+ * rule: a DB row only wins when it explicitly sets `compliance`, otherwise
+ * we fall back to the hardcoded built-in default. Prevents the UI and the
+ * enforcement layer from diverging when a row exists with `{}` obligations.
+ */
+function resolveEffectiveObligations(
+  roleName: string,
+  override: RoleObligations | null,
+): RoleObligations {
+  if (override && 'compliance' in override) return override;
+  if (BUILT_IN_ROLES.includes(roleName)) {
+    return BUILT_IN_ROLE_OBLIGATIONS[roleName] ?? {};
+  }
+  return override ?? {};
+}
+
 @Injectable()
 export class RolesService {
   /**
@@ -194,9 +228,11 @@ export class RolesService {
       throw new BadRequestException(`Role '${dto.name}' already exists`);
     }
 
-    // Check max roles limit
+    // Check max roles limit — exclude rows that exist solely as obligation
+    // overrides for built-in roles, since those don't count against the
+    // customer's 20-custom-role budget.
     const roleCount = await db.organizationRole.count({
-      where: { organizationId },
+      where: { organizationId, name: { notIn: BUILT_IN_ROLES } },
     });
 
     if (roleCount >= 20) {
@@ -226,10 +262,19 @@ export class RolesService {
    * List all roles for an organization (built-in + custom)
    */
   async listRoles(organizationId: string) {
-    // Get custom roles
-    const customRoles = await db.organizationRole.findMany({
+    // Get all organization_role rows; rows named after a built-in role are
+    // obligation overrides, not custom roles.
+    const allRows = await db.organizationRole.findMany({
       where: { organizationId },
       orderBy: { createdAt: 'desc' },
+    });
+    const overrideByName = new Map<string, (typeof allRows)[number]>();
+    const customRoles = allRows.filter((r) => {
+      if (BUILT_IN_ROLES.includes(r.name)) {
+        overrideByName.set(r.name, r);
+        return false;
+      }
+      return true;
     });
 
     // Get member counts for custom roles
@@ -243,12 +288,17 @@ export class RolesService {
     );
     const countMap = new Map(memberCounts.map((mc) => [mc.roleId, mc.count]));
 
-    // Include built-in roles info
-    const builtInRoles = BUILT_IN_ROLES.map((name) => ({
-      name,
-      isBuiltIn: true,
-      description: this.getBuiltInRoleDescription(name),
-    }));
+    // Include built-in roles info (with effective obligations: override or default)
+    const builtInRoles = BUILT_IN_ROLES.map((name) => {
+      const override = overrideByName.get(name);
+      const parsed = override ? parseObligationsField(override.obligations) : null;
+      return {
+        name,
+        isBuiltIn: true,
+        description: this.getBuiltInRoleDescription(name),
+        obligations: resolveEffectiveObligations(name, parsed),
+      };
+    });
 
     return {
       builtInRoles,
@@ -533,8 +583,11 @@ export class RolesService {
   }
 
   /**
-   * Get merged obligations for a list of custom role names.
-   * Used by the frontend to resolve effective obligations for custom roles.
+   * Get merged obligations for a list of role names (custom + built-in).
+   *
+   * Built-in roles default to `BUILT_IN_ROLE_OBLIGATIONS[name]`, but an
+   * organization can override by storing an `organization_role` row with the
+   * built-in name — the DB row wins when present.
    */
   async getObligationsForRoles(
     organizationId: string,
@@ -542,21 +595,85 @@ export class RolesService {
   ): Promise<RoleObligations> {
     if (roleNames.length === 0) return {};
 
-    const customRoles = await db.organizationRole.findMany({
+    const dbRoles = await db.organizationRole.findMany({
       where: { organizationId, name: { in: roleNames } },
       select: { name: true, obligations: true },
     });
+    const overrideByName = new Map<string, RoleObligations>();
+    for (const role of dbRoles) {
+      overrideByName.set(role.name, parseObligationsField(role.obligations));
+    }
 
     const combined: RoleObligations = {};
-    for (const role of customRoles) {
-      const obligations =
-        typeof role.obligations === 'string'
-          ? JSON.parse(role.obligations)
-          : role.obligations || {};
-      if (obligations.compliance) combined.compliance = true;
+    for (const name of roleNames) {
+      const fromDb = overrideByName.get(name) ?? null;
+      const effective = resolveEffectiveObligations(name, fromDb);
+      if (effective.compliance) combined.compliance = true;
     }
 
     return combined;
+  }
+
+  /**
+   * Upsert an obligation override for a built-in role. The `organization_role`
+   * row stores only the obligations JSON; permissions stay sourced from the
+   * hardcoded `BUILT_IN_ROLE_PERMISSIONS` map.
+   *
+   * Only owner and admin obligations are user-overridable today (matches the
+   * customer request); the other built-in roles keep their hardcoded defaults.
+   */
+  async updateBuiltInObligations(
+    organizationId: string,
+    roleName: string,
+    obligations: RoleObligations,
+  ) {
+    if (!BUILT_IN_ROLES.includes(roleName)) {
+      throw new BadRequestException(`Not a built-in role: ${roleName}`);
+    }
+    if (!EDITABLE_BUILT_IN_OBLIGATION_ROLES.has(roleName)) {
+      throw new BadRequestException(
+        `Obligations are not editable for role: ${roleName}`,
+      );
+    }
+
+    const permissions = JSON.stringify(BUILT_IN_ROLE_PERMISSIONS[roleName] ?? {});
+    const obligationsJson = JSON.stringify(obligations);
+
+    const role = await db.organizationRole.upsert({
+      where: { organizationId_name: { organizationId, name: roleName } },
+      create: {
+        organizationId,
+        name: roleName,
+        permissions,
+        obligations: obligationsJson,
+      },
+      update: { obligations: obligationsJson },
+    });
+
+    return {
+      name: role.name,
+      obligations: JSON.parse(role.obligations) as RoleObligations,
+    };
+  }
+
+  /**
+   * Read the obligations for a single built-in role for this organization —
+   * DB override if present, else the hardcoded default.
+   */
+  async getBuiltInObligations(
+    organizationId: string,
+    roleName: string,
+  ): Promise<RoleObligations> {
+    if (!BUILT_IN_ROLES.includes(roleName)) {
+      throw new BadRequestException(`Not a built-in role: ${roleName}`);
+    }
+
+    const override = await db.organizationRole.findFirst({
+      where: { organizationId, name: roleName },
+      select: { obligations: true },
+    });
+    const parsed = override ? parseObligationsField(override.obligations) : null;
+    return resolveEffectiveObligations(roleName, parsed);
   }
 
   /**

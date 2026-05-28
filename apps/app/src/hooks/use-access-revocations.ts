@@ -2,6 +2,7 @@
 
 import { useApi } from '@/hooks/use-api';
 import { useApiSWR } from '@/hooks/use-api-swr';
+import { fileToBase64 } from '@/lib/file-utils';
 import { useCallback } from 'react';
 
 interface RevokedBy {
@@ -83,16 +84,4 @@ export function useAccessRevocations(memberId: string) {
     undoRevocation,
     revokeAll,
   };
-}
-
-function fileToBase64(file: File): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => {
-      const result = reader.result as string;
-      resolve(result.split(',')[1]);
-    };
-    reader.onerror = () => reject(new Error('Failed to read file'));
-    reader.readAsDataURL(file);
-  });
 }

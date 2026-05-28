@@ -14,10 +14,14 @@ import {
   Query,
   Req,
   Res,
+  UploadedFile,
   UseGuards,
+  UseInterceptors,
 } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
 import {
   ApiBody,
+  ApiConsumes,
   ApiExtension,
   ApiHeader,
   ApiOperation,
@@ -43,7 +47,6 @@ import type { AuthContext as AuthContextType } from '../auth/types';
 import { CreatePolicyDto } from './dto/create-policy.dto';
 import { UpdatePolicyDto } from './dto/update-policy.dto';
 import { AISuggestPolicyRequestDto } from './dto/ai-suggest-policy.dto';
-import { UploadPolicyPdfDto } from './dto/upload-policy-pdf.dto';
 import {
   ConfirmPolicyPdfUploadedDto,
   PolicyPdfUploadUrlResponseDto,
@@ -540,20 +543,81 @@ export class PoliciesController {
 
   @Post(':id/pdf')
   @RequirePermission('policy', 'update')
+  @UseInterceptors(FileInterceptor('file'))
   @ApiOperation({
-    summary: 'Upload a PDF to a policy or version (base64, UI-only)',
+    summary: 'Upload a PDF to a policy or version (UI-only)',
     description:
-      'Accepts a base64-encoded PDF. Used by the web UI where the browser supplies the file. NOT recommended for MCP/AI clients — base64 of large files through an LLM is extremely slow. AI clients should use POST /v1/policies/{id}/pdf/upload-url + POST /v1/policies/{id}/pdf/confirm instead.',
+      'Accepts either a multipart file upload or a base64-encoded JSON body. Used by the web UI where the browser supplies the file directly. NOT recommended for MCP/AI clients — base64 of large files through an LLM is extremely slow, and the multipart variant is awkward to drive from a JSON-RPC tool. AI clients should use POST /v1/policies/{id}/pdf/upload-url + POST /v1/policies/{id}/pdf/confirm instead.',
   })
+  @ApiConsumes('multipart/form-data', 'application/json')
   @ApiParam(POLICY_PARAMS.policyId)
-  @ApiBody({ type: UploadPolicyPdfDto })
+  @ApiBody({
+    schema: {
+      oneOf: [
+        {
+          description: 'Multipart file upload (recommended)',
+          type: 'object',
+          properties: {
+            file: { type: 'string', format: 'binary' },
+            versionId: { type: 'string', description: 'Target version ID (optional)' },
+          },
+          required: ['file'],
+        },
+        {
+          description: 'JSON with base64-encoded file data',
+          type: 'object',
+          properties: {
+            fileName: { type: 'string' },
+            fileType: { type: 'string' },
+            fileData: { type: 'string', description: 'Base64-encoded file content' },
+            versionId: { type: 'string' },
+          },
+          required: ['fileName', 'fileType', 'fileData'],
+        },
+      ],
+    },
+  })
+  // Hidden from MCP so AI clients use the presigned /pdf/upload-url + /pdf/confirm flow.
+  // The HTTP endpoint stays live for the web UI / direct API callers.
   @ApiExtension('x-speakeasy-mcp', { disabled: true })
   async uploadPolicyPdf(
     @Param('id') id: string,
-    @Body() body: UploadPolicyPdfDto,
+    @UploadedFile() file: Express.Multer.File | undefined,
+    @Body()
+    body: {
+      versionId?: string;
+      fileName?: string;
+      fileType?: string;
+      fileData?: string;
+    },
     @OrganizationId() organizationId: string,
     @AuthContext() authContext: AuthContextType,
   ) {
+    let fileBuffer: Buffer;
+    let sanitizedFileName: string;
+    let fileType: string;
+
+    if (file) {
+      fileBuffer = file.buffer;
+      sanitizedFileName = file.originalname.replace(/[^a-zA-Z0-9.-]/g, '_');
+      fileType = file.mimetype;
+    } else if (body.fileData && body.fileName && body.fileType) {
+      const stripped = body.fileData.replace(/\s/g, '');
+      if (!/^[A-Za-z0-9+/\-_]*={0,2}$/.test(stripped)) {
+        throw new BadRequestException('fileData must be valid base64-encoded content');
+      }
+      fileBuffer = Buffer.from(stripped, 'base64');
+      if (fileBuffer.length === 0) {
+        throw new BadRequestException('fileData must be valid base64-encoded content');
+      }
+      sanitizedFileName = body.fileName.replace(/[^a-zA-Z0-9.-]/g, '_');
+      fileType = body.fileType;
+    } else {
+      throw new BadRequestException(
+        'Upload a file via multipart/form-data or provide fileName, fileType, and fileData in JSON',
+      );
+    }
+
     const { S3Client, PutObjectCommand, DeleteObjectCommand } =
       await import('@aws-sdk/client-s3');
     const bucketName = process.env.APP_AWS_BUCKET_NAME;
@@ -573,9 +637,6 @@ export class PoliciesController {
       },
     });
     if (!policy) throw new NotFoundException('Policy not found');
-
-    const sanitizedFileName = body.fileName.replace(/[^a-zA-Z0-9.-]/g, '_');
-    const fileBuffer = Buffer.from(body.fileData, 'base64');
 
     if (body.versionId) {
       const version = await db.policyVersion.findFirst({
@@ -600,7 +661,7 @@ export class PoliciesController {
           Bucket: bucketName,
           Key: s3Key,
           Body: fileBuffer,
-          ContentType: body.fileType,
+          ContentType: fileType,
         }),
       );
       const oldPdfUrl = version.pdfUrl;
@@ -629,7 +690,7 @@ export class PoliciesController {
         Bucket: bucketName,
         Key: s3Key,
         Body: fileBuffer,
-        ContentType: body.fileType,
+        ContentType: fileType,
       }),
     );
     const oldPdfUrl = policy.pdfUrl;
@@ -883,13 +944,29 @@ export class PoliciesController {
     @OrganizationId() organizationId: string,
     @AuthContext() authContext: AuthContextType,
   ) {
-    await db.policy.update({
-      where: { id, organizationId },
-      data: {
-        controls: {
-          disconnect: { id: controlId },
+    await db.$transaction(async (tx) => {
+      const before = await tx.policy.findUnique({
+        where: { id, organizationId },
+        select: {
+          controls: { where: { id: controlId }, select: { id: true } },
         },
-      },
+      });
+      await tx.policy.update({
+        where: { id, organizationId },
+        data: { controls: { disconnect: { id: controlId } } },
+      });
+      if (before?.controls.length) {
+        await tx.frameworkControlPolicyLink.deleteMany({
+          where: {
+            controlId,
+            policyId: id,
+            frameworkInstance: {
+              organizationId,
+              customFrameworkId: { not: null },
+            },
+          },
+        });
+      }
     });
 
     return {

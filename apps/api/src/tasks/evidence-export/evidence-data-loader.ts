@@ -126,10 +126,14 @@ export async function getAutomationHeaders({
     throw new NotFoundException('Task not found');
   }
 
-  const [appRuns, customRuns] = await Promise.all([
-    db.integrationCheckRun.findMany({
+  const HEADER_BATCH = 500;
+  const appRuns: AppRunHeader[] = [];
+  let appCursor: string | undefined;
+  while (true) {
+    const batch = await db.integrationCheckRun.findMany({
       where: { taskId },
       select: {
+        id: true,
         checkId: true,
         checkName: true,
         status: true,
@@ -140,21 +144,37 @@ export async function getAutomationHeaders({
         },
       },
       orderBy: { createdAt: 'desc' },
-    }),
-    db.evidenceAutomationRun.findMany({
+      take: HEADER_BATCH,
+      ...(appCursor ? { cursor: { id: appCursor }, skip: 1 } : {}),
+    });
+    appRuns.push(...batch);
+    if (batch.length < HEADER_BATCH) break;
+    appCursor = batch[batch.length - 1]!.id;
+  }
+
+  const customRuns: CustomRunHeader[] = [];
+  let customCursor: string | undefined;
+  while (true) {
+    const batch = await db.evidenceAutomationRun.findMany({
       where: {
         evidenceAutomation: { taskId },
         version: { not: null },
       },
       select: {
+        id: true,
         status: true,
         evaluationStatus: true,
         createdAt: true,
         evidenceAutomation: { select: { id: true, name: true } },
       },
       orderBy: { createdAt: 'desc' },
-    }),
-  ]);
+      take: HEADER_BATCH,
+      ...(customCursor ? { cursor: { id: customCursor }, skip: 1 } : {}),
+    });
+    customRuns.push(...batch);
+    if (batch.length < HEADER_BATCH) break;
+    customCursor = batch[batch.length - 1]!.id;
+  }
 
   return {
     taskId: task.id,
@@ -177,22 +197,38 @@ export async function loadFullAutomation({
   taskId: string;
   header: NormalizedAutomation;
 }): Promise<NormalizedAutomation> {
-  if (header.type === 'app_automation' && header.checkId) {
-    return loadAppAutomationRuns(taskId, header);
+  const runs: NormalizedEvidenceRun[] = [];
+  for await (const batch of streamAutomationRuns({ taskId, header })) {
+    runs.push(...batch);
   }
-  return loadCustomAutomationRuns(taskId, header);
+  return { ...header, runs };
 }
 
-async function loadAppAutomationRuns(
+// Yields runs in batches so callers can process incrementally without
+// accumulating all runs in memory. Each batch is GC-eligible after processing.
+export async function* streamAutomationRuns({
+  taskId,
+  header,
+}: {
+  taskId: string;
+  header: NormalizedAutomation;
+}): AsyncGenerator<NormalizedEvidenceRun[]> {
+  if (header.type === 'app_automation' && header.checkId) {
+    yield* streamAppRuns(taskId, header.checkId);
+  } else {
+    yield* streamCustomRuns(taskId, header.id);
+  }
+}
+
+async function* streamAppRuns(
   taskId: string,
-  header: NormalizedAutomation,
-): Promise<NormalizedAutomation> {
-  const runs: NormalizedEvidenceRun[] = [];
+  checkId: string,
+): AsyncGenerator<NormalizedEvidenceRun[]> {
   let cursor: { id: string } | undefined;
 
   for (;;) {
     const batch = await db.integrationCheckRun.findMany({
-      where: { taskId, checkId: header.checkId },
+      where: { taskId, checkId },
       include: {
         results: true,
         connection: { include: { provider: true } },
@@ -204,28 +240,25 @@ async function loadAppAutomationRuns(
 
     if (batch.length === 0) break;
 
-    for (const run of batch) {
-      runs.push(normalizeAppAutomationRun(toAppAutomationRun(run)));
-    }
+    yield batch.map((run) =>
+      normalizeAppAutomationRun(toAppAutomationRun(run)),
+    );
 
     if (batch.length < RUN_BATCH_SIZE) break;
     cursor = { id: batch[batch.length - 1].id };
   }
-
-  return { ...header, runs };
 }
 
-async function loadCustomAutomationRuns(
+async function* streamCustomRuns(
   taskId: string,
-  header: NormalizedAutomation,
-): Promise<NormalizedAutomation> {
-  const runs: NormalizedEvidenceRun[] = [];
+  automationId: string,
+): AsyncGenerator<NormalizedEvidenceRun[]> {
   let cursor: { id: string } | undefined;
 
   for (;;) {
     const batch = await db.evidenceAutomationRun.findMany({
       where: {
-        evidenceAutomation: { id: header.id, taskId },
+        evidenceAutomation: { id: automationId, taskId },
         version: { not: null },
       },
       include: {
@@ -238,15 +271,13 @@ async function loadCustomAutomationRuns(
 
     if (batch.length === 0) break;
 
-    for (const run of batch) {
-      runs.push(normalizeCustomAutomationRun(toCustomAutomationRun(run)));
-    }
+    yield batch.map((run) =>
+      normalizeCustomAutomationRun(toCustomAutomationRun(run)),
+    );
 
     if (batch.length < RUN_BATCH_SIZE) break;
     cursor = { id: batch[batch.length - 1].id };
   }
-
-  return { ...header, runs };
 }
 
 // Prisma result → normalizer interface mappers (single source of truth).

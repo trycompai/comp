@@ -127,16 +127,43 @@ export class OffboardingChecklistService {
       completions.map((c) => [c.templateItemId, c]),
     );
 
+    const completionIds = completions.map((c) => c.id);
+
+    const allAttachments =
+      completionIds.length > 0
+        ? await db.attachment.findMany({
+            where: {
+              organizationId,
+              entityId: { in: completionIds },
+              entityType: AttachmentEntityType.offboarding_checklist,
+            },
+            orderBy: { createdAt: 'asc' },
+          })
+        : [];
+
+    const attachmentsByCompletion = new Map<string, typeof allAttachments>();
+    for (const attachment of allAttachments) {
+      const existing = attachmentsByCompletion.get(attachment.entityId) ?? [];
+      existing.push(attachment);
+      attachmentsByCompletion.set(attachment.entityId, existing);
+    }
+
     const items = await Promise.all(
       templateItems.map(async (template) => {
         const completion = completionMap.get(template.id);
-        const evidence = completion
-          ? await this.attachmentsService.getAttachments(
-              organizationId,
-              completion.id,
-              AttachmentEntityType.offboarding_checklist,
-            )
+        const rawAttachments = completion
+          ? (attachmentsByCompletion.get(completion.id) ?? [])
           : [];
+
+        const evidence = await Promise.all(
+          rawAttachments.map(async (attachment) => ({
+            id: attachment.id,
+            name: attachment.name,
+            type: attachment.type,
+            downloadUrl: await this.attachmentsService.getPresignedDownloadUrl(attachment.url),
+            createdAt: attachment.createdAt,
+          })),
+        );
 
         return {
           ...template,
@@ -184,6 +211,10 @@ export class OffboardingChecklistService {
       throw new NotFoundException('Template item not found');
     }
 
+    if (template.evidenceRequired && (!dto.fileData || !dto.fileName || !dto.fileType)) {
+      throw new BadRequestException('Evidence is required to complete this item');
+    }
+
     const completion = await db.offboardingChecklistCompletion.create({
       data: {
         organizationId,
@@ -195,17 +226,24 @@ export class OffboardingChecklistService {
     });
 
     if (dto.fileName && dto.fileData && dto.fileType) {
-      await this.attachmentsService.uploadAttachment(
-        organizationId,
-        completion.id,
-        AttachmentEntityType.offboarding_checklist,
-        {
-          fileName: dto.fileName,
-          fileData: dto.fileData,
-          fileType: dto.fileType,
-        },
-        completedById,
-      );
+      try {
+        await this.attachmentsService.uploadAttachment(
+          organizationId,
+          completion.id,
+          AttachmentEntityType.offboarding_checklist,
+          {
+            fileName: dto.fileName,
+            fileData: dto.fileData,
+            fileType: dto.fileType,
+          },
+          completedById,
+        );
+      } catch (err) {
+        await db.offboardingChecklistCompletion.delete({
+          where: { id: completion.id },
+        });
+        throw err;
+      }
     }
 
     return completion;
@@ -327,7 +365,12 @@ export class OffboardingChecklistService {
       },
       include: {
         user: { select: { id: true, name: true, email: true, image: true } },
-        offboardingChecklistCompletions: { select: { id: true } },
+        offboardingChecklistCompletions: {
+          where: {
+            templateItem: { organizationId, isEnabled: true },
+          },
+          select: { id: true },
+        },
       },
       orderBy: { offboardDate: 'desc' },
     });
@@ -356,17 +399,33 @@ export class OffboardingChecklistService {
       return;
     }
 
-    await db.offboardingChecklistTemplate.createMany({
-      data: DEFAULT_OFFBOARDING_CHECKLIST_ITEMS.map((item) => ({
-        organizationId,
-        title: item.title,
-        description: item.description,
-        evidenceRequired: item.evidenceRequired,
-        isAccessRevocation: item.isAccessRevocation,
-        sortOrder: item.sortOrder,
-        isDefault: true,
-        isEnabled: true,
-      })),
-    });
+    try {
+      await db.$transaction(async (tx) => {
+        const recheck = await tx.offboardingChecklistTemplate.count({
+          where: { organizationId },
+        });
+
+        if (recheck > 0) {
+          return;
+        }
+
+        await tx.offboardingChecklistTemplate.createMany({
+          data: DEFAULT_OFFBOARDING_CHECKLIST_ITEMS.map((item) => ({
+            organizationId,
+            title: item.title,
+            description: item.description,
+            evidenceRequired: item.evidenceRequired,
+          isAccessRevocation: item.isAccessRevocation,
+          sortOrder: item.sortOrder,
+          isDefault: true,
+          isEnabled: true,
+        })),
+        });
+      });
+    } catch (err) {
+      const isPrismaConflict =
+        err instanceof Error && 'code' in err && (err as { code: string }).code === 'P2002';
+      if (!isPrismaConflict) throw err;
+    }
   }
 }

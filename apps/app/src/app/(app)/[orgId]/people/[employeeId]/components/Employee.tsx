@@ -74,7 +74,15 @@ export function Employee({
   const pathname = usePathname();
   const router = useRouter();
 
-  const VALID_TABS: EmployeeTab[] = ['details', 'policies', 'training', 'hipaa', 'device', 'offboarding', 'background-check'];
+  const availableTabs: EmployeeTab[] = [
+    'details',
+    'policies',
+    'training',
+    ...(hasHipaaFramework ? (['hipaa'] as EmployeeTab[]) : []),
+    'device',
+    ...(backgroundCheckStepEnabled ? (['background-check'] as EmployeeTab[]) : []),
+    ...(employee.offboardDate ? (['offboarding'] as EmployeeTab[]) : []),
+  ];
 
   const resolveTab = (): EmployeeTab => {
     if (
@@ -84,7 +92,7 @@ export function Employee({
       return 'background-check';
     }
     const tabParam = searchParams.get('tab');
-    if (tabParam && VALID_TABS.includes(tabParam as EmployeeTab)) {
+    if (tabParam && availableTabs.includes(tabParam as EmployeeTab)) {
       return tabParam as EmployeeTab;
     }
     return 'details';

@@ -241,4 +241,91 @@ describe('GenericEmployeeSyncService role validation', () => {
       });
     });
   });
+
+  describe('Phase 2 deactivation gating (isDirectorySource)', () => {
+    const existingOrgMember = {
+      id: 'mem_existing',
+      role: 'employee',
+      offboardDate: null,
+      user: { email: 'still-here@example.com' },
+    };
+
+    beforeEach(() => {
+      // Returned employee already has a member row → goes to Phase 1 skip path
+      mockUserFindUnique.mockResolvedValue({
+        id: 'user_returned',
+        email: 'returned@example.com',
+      });
+      mockMemberFindFirst.mockResolvedValue({
+        id: 'mem_returned',
+        role: 'employee',
+        deactivated: false,
+      });
+
+      // Phase 2 will see one other member in the same domain who was NOT returned
+      mockMemberFindMany.mockResolvedValue([existingOrgMember]);
+    });
+
+    it('skips Phase 2 by default (isDirectorySource omitted)', async () => {
+      const result = await service.processEmployees({
+        organizationId: 'org_1',
+        employees: [baseEmployee({ email: 'returned@example.com' })],
+        options: { providerName: 'Confluence' },
+      });
+
+      expect(mockMemberFindMany).not.toHaveBeenCalled();
+      expect(mockMemberUpdate).not.toHaveBeenCalled();
+      expect(result.deactivated).toBe(0);
+    });
+
+    it('skips Phase 2 when isDirectorySource is explicitly false', async () => {
+      const result = await service.processEmployees({
+        organizationId: 'org_1',
+        employees: [baseEmployee({ email: 'returned@example.com' })],
+        options: { providerName: 'Confluence', isDirectorySource: false },
+      });
+
+      expect(mockMemberFindMany).not.toHaveBeenCalled();
+      expect(mockMemberUpdate).not.toHaveBeenCalled();
+      expect(result.deactivated).toBe(0);
+    });
+
+    it('runs Phase 2 when isDirectorySource is true and deactivates absent members', async () => {
+      const result = await service.processEmployees({
+        organizationId: 'org_1',
+        employees: [baseEmployee({ email: 'returned@example.com' })],
+        options: { providerName: 'Google Workspace', isDirectorySource: true },
+      });
+
+      expect(mockMemberFindMany).toHaveBeenCalled();
+      expect(mockMemberUpdate).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { id: 'mem_existing' },
+          data: expect.objectContaining({
+            deactivated: true,
+            isActive: false,
+          }),
+        }),
+      );
+      expect(result.deactivated).toBe(1);
+    });
+
+    it('does not deactivate when isDirectorySource is true but the absent member is in a different domain', async () => {
+      mockMemberFindMany.mockResolvedValue([
+        {
+          ...existingOrgMember,
+          user: { email: 'someone@other-domain.com' },
+        },
+      ]);
+
+      const result = await service.processEmployees({
+        organizationId: 'org_1',
+        employees: [baseEmployee({ email: 'returned@example.com' })],
+        options: { providerName: 'Google Workspace', isDirectorySource: true },
+      });
+
+      expect(mockMemberUpdate).not.toHaveBeenCalled();
+      expect(result.deactivated).toBe(0);
+    });
+  });
 });

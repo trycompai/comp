@@ -24,4 +24,10 @@ export class CreateRequirementDto {
   @IsString()
   @MaxLength(5000)
   description: string;
+
+  @ApiPropertyOptional({ example: 'Access Control' })
+  @IsString()
+  @IsOptional()
+  @MaxLength(255)
+  requirementFamily?: string;
 }

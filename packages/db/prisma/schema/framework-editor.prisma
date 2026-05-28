@@ -38,9 +38,10 @@ model FrameworkEditorRequirement {
   frameworkId String
   framework   FrameworkEditorFramework @relation(fields: [frameworkId], references: [id])
 
-  name        String // Original requirement ID within that framework, e.g., "Privacy"
-  identifier  String @default("") // Unique identifier for the requirement, e.g., "cc1-1"
-  description String
+  name              String // Original requirement ID within that framework, e.g., "Privacy"
+  identifier        String @default("") // Unique identifier for the requirement, e.g., "cc1-1"
+  description       String
+  requirementFamily String?
 
   controlTemplates FrameworkEditorControlTemplate[]
   requirementMaps  RequirementMap[]
@@ -89,9 +90,10 @@ model FrameworkEditorTaskTemplate {
 }
 
 model FrameworkEditorControlTemplate {
-  id          String @id @default(dbgenerated("generate_prefixed_cuid('frk_ct'::text)"))
-  name        String
-  description String
+  id            String  @id @default(dbgenerated("generate_prefixed_cuid('frk_ct'::text)"))
+  name          String
+  description   String
+  controlFamily String?
 
   policyTemplates        FrameworkEditorPolicyTemplate[]
   requirements           FrameworkEditorRequirement[]

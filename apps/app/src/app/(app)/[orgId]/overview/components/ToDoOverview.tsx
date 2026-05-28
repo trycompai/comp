@@ -19,7 +19,7 @@ import {
 import { usePermissions } from '@/hooks/use-permissions';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import { ConfirmActionDialog } from './ConfirmActionDialog';
 
@@ -62,11 +62,22 @@ export function ToDoOverview({
   const { hasPermission } = usePermissions();
   const [isConfirmDialogOpen, setIsConfirmDialogOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-
-  const { data: pendingData } = useApiSWR<PendingOffboardingResponse>(
-    '/v1/offboarding-checklist/pending',
+  const [activeTab, setActiveTab] = useState(
+    unpublishedPolicies.length === 0 ? 'tasks' : 'policies',
   );
+
+  const {
+    data: pendingData,
+    isLoading: isPendingLoading,
+    error: pendingError,
+  } = useApiSWR<PendingOffboardingResponse>('/v1/offboarding-checklist/pending');
   const pendingOffboardings = pendingData?.data?.members ?? [];
+
+  useEffect(() => {
+    if (!isPendingLoading && pendingOffboardings.length > 0) {
+      setActiveTab('offboarding');
+    }
+  }, [isPendingLoading, pendingOffboardings.length]);
 
   const isOnboardingInProgress = !!onboardingTriggerJobId;
 
@@ -133,16 +144,7 @@ export function ToDoOverview({
         </div>
       </CardHeader>
       <CardContent className="flex flex-col gap-4">
-        <Tabs
-          defaultValue={
-            pendingOffboardings.length > 0
-              ? 'offboarding'
-              : unpublishedPolicies.length === 0
-                ? 'tasks'
-                : 'policies'
-          }
-          className="w-full"
-        >
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger
               value="policies"
@@ -279,7 +281,19 @@ export function ToDoOverview({
           </TabsContent>
 
           <TabsContent value="offboarding" className="mt-4">
-            {pendingOffboardings.length === 0 ? (
+            {isPendingLoading ? (
+              <div className="flex items-center justify-center gap-2 rounded-lg bg-accent p-3">
+                <span className="text-sm text-muted-foreground">
+                  Loading offboardings...
+                </span>
+              </div>
+            ) : pendingError ? (
+              <div className="flex items-center justify-center gap-2 rounded-lg bg-accent p-3">
+                <span className="text-sm text-destructive">
+                  Failed to load offboardings
+                </span>
+              </div>
+            ) : pendingOffboardings.length === 0 ? (
               <div className="flex items-center justify-center gap-2 rounded-lg bg-accent p-3">
                 <CheckCircle2 className="h-4 w-4 text-primary" />
                 <span className="text-sm text-primary">
