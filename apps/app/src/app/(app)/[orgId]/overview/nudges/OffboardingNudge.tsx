@@ -52,9 +52,11 @@ function OffboardingNudgeView({
   return (
     <Alert variant="warning">
       <AlertTitle>
-        {`${members.length} employee${members.length !== 1 ? 's' : ''} require${
-          members.length === 1 ? 's' : ''
-        } offboarding completion`}
+        <span className="text-foreground">
+          {`${members.length} employee${members.length !== 1 ? 's' : ''} require${
+            members.length === 1 ? 's' : ''
+          } offboarding completion`}
+        </span>
       </AlertTitle>
       <div className="col-start-2 pt-1">
         <Button variant="outline" render={<Link href={link} />}>

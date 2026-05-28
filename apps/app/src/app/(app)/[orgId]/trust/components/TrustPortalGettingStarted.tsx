@@ -11,17 +11,21 @@ const STEPS = [
 export function TrustPortalGettingStarted({ portalUrl }: { portalUrl: string }) {
   return (
     <Alert variant="info">
-      <AlertTitle>Finish setting up your Trust Portal</AlertTitle>
+      <AlertTitle>
+        <span className="text-foreground">Finish setting up your Trust Portal</span>
+      </AlertTitle>
       <AlertDescription>
-        Your Trust Portal is already live at{' '}
-        <Link href={portalUrl} target="_blank" rel="noopener noreferrer">
-          {portalUrl}
-        </Link>
-        , but it&apos;s still on the defaults. Complete these to make it yours:
+        <span className="text-foreground">
+          Your Trust Portal is already live at{' '}
+          <Link href={portalUrl} target="_blank" rel="noopener noreferrer">
+            {portalUrl}
+          </Link>
+          , but it&apos;s still on the defaults. Complete these to make it yours:
+        </span>
       </AlertDescription>
       {/* variant="info" renders an icon, so Alert is a 2-col grid; place the
           list in the text column like the title/description slots above. */}
-      <ul className="col-start-2 flex list-disc flex-col gap-1 pl-5 text-sm">
+      <ul className="col-start-2 flex list-disc flex-col gap-1 pl-5 text-sm text-foreground">
         {STEPS.map((step) => (
           <li key={step}>{step}</li>
         ))}
