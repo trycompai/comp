@@ -1,8 +1,20 @@
-import { BadRequestException, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ForbiddenException,
+  NotFoundException,
+} from '@nestjs/common';
 
 jest.mock('@trycompai/company', () => ({
   toDbEvidenceFormType: (v: string) => v,
   toExternalEvidenceFormType: (v: string | null) => v,
+}));
+
+jest.mock('../timelines/timelines.service', () => ({
+  TimelinesService: jest.fn(),
+}));
+
+jest.mock('../frameworks/frameworks-timeline.helper', () => ({
+  checkAutoCompletePhases: jest.fn().mockResolvedValue(undefined),
 }));
 
 const mockDb = {
@@ -13,6 +25,7 @@ const mockDb = {
   risk: { findFirst: jest.fn() },
   member: { findFirst: jest.fn(), findUnique: jest.fn() },
   device: { findFirst: jest.fn(), findUnique: jest.fn() },
+  user: { findUnique: jest.fn() },
   findingTemplate: { findUnique: jest.fn() },
   finding: {
     findFirst: jest.fn(),
@@ -124,5 +137,121 @@ describe('FindingsService.create (target validator)', () => {
     const createArgs = mockDb.finding.create.mock.calls[0][0];
     expect(createArgs.data.area).toBe('people');
     expect(createArgs.data.taskId).toBeNull();
+  });
+});
+
+describe('FindingsService.update (status transition rules)', () => {
+  const auditService = {
+    logFindingStatusChanged: jest.fn(),
+    logFindingContentChanged: jest.fn(),
+    logFindingTypeChanged: jest.fn(),
+  };
+  const notifier = {
+    notifyFindingCreated: jest.fn(),
+    notifyStatusChanged: jest.fn(),
+  };
+  const svc = new FindingsService(auditService as never, notifier as never);
+  const existingFinding = {
+    id: 'fnd_1',
+    organizationId: 'org_1',
+    content: 'Test finding',
+    status: 'open',
+    type: 'soc2',
+    severity: 'medium',
+    revisionNote: null,
+    area: null,
+    taskId: null,
+    policyId: null,
+    vendorId: null,
+    riskId: null,
+    memberId: null,
+    deviceId: null,
+    evidenceSubmissionId: null,
+    evidenceFormType: null,
+    createdBy: null,
+    createdByAdmin: null,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  };
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    mockDb.finding.findFirst.mockResolvedValue(existingFinding);
+    mockDb.finding.update.mockResolvedValue({
+      ...existingFinding,
+      createdBy: null,
+      createdByAdmin: null,
+    });
+    mockDb.user.findUnique.mockResolvedValue({
+      name: 'Test User',
+      email: 'test@example.com',
+    });
+  });
+
+  it('allows any role to set ready_for_review', async () => {
+    for (const roles of [['admin'], ['owner'], ['auditor'], ['admin', 'auditor']]) {
+      jest.clearAllMocks();
+      mockDb.finding.findFirst.mockResolvedValue(existingFinding);
+      mockDb.finding.update.mockResolvedValue({
+        ...existingFinding,
+        createdBy: null,
+        createdByAdmin: null,
+      });
+      mockDb.user.findUnique.mockResolvedValue({
+        name: 'Test User',
+        email: 'test@example.com',
+      });
+
+      await svc.update(
+        'org_1',
+        'fnd_1',
+        { status: 'ready_for_review' as never },
+        roles,
+        false,
+        'usr_1',
+        'mem_1',
+      );
+      expect(mockDb.finding.update).toHaveBeenCalled();
+    }
+  });
+
+  it('blocks non-auditor non-admin from setting needs_revision', async () => {
+    await expect(
+      svc.update(
+        'org_1',
+        'fnd_1',
+        { status: 'needs_revision' as never },
+        ['employee'],
+        false,
+        'usr_1',
+        'mem_1',
+      ),
+    ).rejects.toBeInstanceOf(ForbiddenException);
+  });
+
+  it('allows auditor to set needs_revision', async () => {
+    await svc.update(
+      'org_1',
+      'fnd_1',
+      { status: 'needs_revision' as never },
+      ['auditor'],
+      false,
+      'usr_1',
+      'mem_1',
+    );
+    expect(mockDb.finding.update).toHaveBeenCalled();
+  });
+
+  it('allows platform admin to set any status', async () => {
+    await svc.update(
+      'org_1',
+      'fnd_1',
+      { status: 'ready_for_review' as never },
+      ['auditor'],
+      true,
+      'usr_1',
+      'mem_1',
+    );
+    expect(mockDb.finding.update).toHaveBeenCalled();
   });
 });

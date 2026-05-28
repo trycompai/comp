@@ -71,9 +71,10 @@ function allowedStatusOptions({
   isPlatformAdmin: boolean;
 }): FindingStatus[] {
   const canSetRestricted = isAuditor || isPlatformAdmin;
-  const canSetReadyForReview = !isAuditor || isPlatformAdmin;
-  const options: FindingStatus[] = [FindingStatus.open];
-  if (canSetReadyForReview) options.push(FindingStatus.ready_for_review);
+  const options: FindingStatus[] = [
+    FindingStatus.open,
+    FindingStatus.ready_for_review,
+  ];
   if (canSetRestricted) {
     options.push(FindingStatus.needs_revision, FindingStatus.closed);
   }
