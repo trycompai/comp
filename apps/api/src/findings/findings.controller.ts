@@ -11,7 +11,6 @@ import {
   UsePipes,
   ValidationPipe,
   BadRequestException,
-  ForbiddenException,
 } from '@nestjs/common';
 import {
   ApiBody,
@@ -207,15 +206,6 @@ export class FindingsController {
       throw new BadRequestException('User ID is required');
     }
 
-    const isAuditor = authContext.userRoles?.includes('auditor');
-    const isPlatformAdmin = await this.checkPlatformAdmin(authContext.userId);
-
-    if (!isAuditor && !isPlatformAdmin) {
-      throw new ForbiddenException(
-        'Only auditors or platform admins can create findings',
-      );
-    }
-
     const member = await db.member.findFirst({
       where: {
         userId: authContext.userId,
@@ -307,15 +297,6 @@ export class FindingsController {
   ) {
     if (!authContext.userId) {
       throw new BadRequestException('User ID is required');
-    }
-
-    const isAuditor = authContext.userRoles?.includes('auditor');
-    const isPlatformAdmin = await this.checkPlatformAdmin(authContext.userId);
-
-    if (!isAuditor && !isPlatformAdmin) {
-      throw new ForbiddenException(
-        'Only auditors or platform admins can delete findings',
-      );
     }
 
     const member = await db.member.findFirst({
