@@ -143,7 +143,10 @@
             "label": "Get organization profile",
             "source": "curl --request GET --url \"https://api.trycomp.ai/v1/organization\" --header \"X-API-Key: $COMP_AI_API_KEY\""
           }
-        ]
+        ],
+        "x-speakeasy-mcp": {
+          "name": "get-organization"
+        }
       },
       "patch": {
         "description": "Partially updates the authenticated organization. Only provided fields will be updated.",
@@ -206,6 +209,16 @@
                     "type": "string",
                     "description": "Organization primary color in hex format",
                     "example": "#3B82F6"
+                  },
+                  "advancedModeEnabled": {
+                    "type": "boolean",
+                    "description": "Whether advanced mode is enabled for the organization",
+                    "example": false
+                  },
+                  "backgroundCheckStepEnabled": {
+                    "type": "boolean",
+                    "description": "Whether the background-check step is required during member onboarding. Set to false to turn off the \"Require background checks\" setting; true to require it.",
+                    "example": true
                   }
                 },
                 "additionalProperties": false
@@ -365,6 +378,9 @@
             "og:title": "Update organization | Comp AI API",
             "og:description": "Partially updates the authenticated organization. Only provided fields will be updated."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "update-organization"
         }
       },
       "delete": {
@@ -462,6 +478,9 @@
             "og:title": "Delete organization | Comp AI API",
             "og:description": "Permanently deletes the authenticated organization. This action cannot be undone."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "delete-organization"
         }
       }
     },
@@ -492,6 +511,9 @@
             "og:title": "Get organization onboarding status | Comp AI API",
             "og:description": "Get organization onboarding status in Comp AI. Manage organization profile data, API keys, logos, ownership, role notifications, and access approval settings."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "get-onboarding"
         }
       }
     },
@@ -623,6 +645,9 @@
             "og:title": "Transfer organization ownership | Comp AI API",
             "og:description": "Transfers organization ownership to another member. The current owner will become an admin and keep all other roles. The new owner will receive the owner."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "transfer-ownership"
         }
       }
     },
@@ -706,6 +731,9 @@
             "og:title": "Update role notification settings | Comp AI API",
             "og:description": "Update role notification settings in Comp AI. Manage organization profile data, API keys, logos, ownership, role notifications, and access approval settings."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "update-role-notifications"
         }
       },
       "get": {
@@ -734,6 +762,9 @@
             "og:title": "Get role notification settings | Comp AI API",
             "og:description": "Get role notification settings in Comp AI. Manage organization profile data, API keys, logos, ownership, role notifications, and access approval settings."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "get-role-notifications"
         }
       }
     },
@@ -764,6 +795,9 @@
             "og:title": "List API keys | Comp AI API",
             "og:description": "List active API keys for an organization so administrators can audit automation access and rotate credentials safely."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "list-api-keys"
         }
       },
       "post": {
@@ -792,6 +826,9 @@
             "og:title": "Create API key | Comp AI API",
             "og:description": "Create a scoped API key for server-side compliance automation such as evidence sync, policy workflows, or security questionnaire tooling."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "create-api-key"
         }
       }
     },
@@ -822,6 +859,9 @@
             "og:title": "List API key scopes | Comp AI API",
             "og:description": "Retrieve available API key scopes and permissions before creating credentials for a specific compliance automation workflow."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "get-available-scopes"
         }
       }
     },
@@ -917,6 +957,9 @@
             "og:title": "Get organization brand color | Comp AI API",
             "og:description": "Retrieve the organization primary brand color used for Trust Center theming, portals, and API-driven embedded experiences."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "get-primary-color"
         }
       }
     },
@@ -947,6 +990,9 @@
             "og:title": "Upload organization logo | Comp AI API",
             "og:description": "Upload organization logo in Comp AI. Manage organization profile data, API keys, logos, ownership, role notifications, and access approval settings."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "upload-logo"
         }
       },
       "delete": {
@@ -975,6 +1021,9 @@
             "og:title": "Remove organization logo | Comp AI API",
             "og:description": "Remove organization logo in Comp AI. Manage organization profile data, API keys, logos, ownership, role notifications, and access approval settings."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "remove-logo"
         }
       }
     },
@@ -1005,6 +1054,9 @@
             "og:title": "Revoke API key | Comp AI API",
             "og:description": "Revoke an organization API key when an integration is retired, credentials rotate, or access should be removed."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "revoke-api-key"
         }
       }
     },
@@ -1030,11 +1082,15 @@
             "og:title": "Auto-approve organization access via domain | Comp AI API",
             "og:description": "Grants hasAccess on the active organization if the requesting user is an internal trycomp.ai user, the deployment is self-hosted, or the user email domain."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "auto-approve"
         }
       }
     },
     "/v1/people/invite": {
       "post": {
+        "description": "Invite employees or contractors to complete portal tasks, training, device setup, and compliance evidence requirements.",
         "operationId": "PeopleController_inviteMembers_v1",
         "parameters": [],
         "requestBody": {
@@ -1061,7 +1117,9 @@
         "tags": [
           "People"
         ],
-        "description": "Invite employees or contractors to complete portal tasks, training, device setup, and compliance evidence requirements.",
+        "x-speakeasy-mcp": {
+          "name": "invite-members"
+        },
         "x-mint": {
           "metadata": {
             "title": "Invite workforce members | Comp AI API",
@@ -1254,6 +1312,9 @@
         "tags": [
           "People"
         ],
+        "x-speakeasy-mcp": {
+          "name": "list-members"
+        },
         "x-mint": {
           "metadata": {
             "title": "List workforce members | Comp AI API",
@@ -1384,6 +1445,9 @@
         "tags": [
           "People"
         ],
+        "x-speakeasy-mcp": {
+          "name": "create-member"
+        },
         "x-mint": {
           "metadata": {
             "title": "Create a new member | Comp AI API",
@@ -1422,6 +1486,9 @@
             "og:title": "Get all employee devices with fleet | Comp AI API",
             "og:description": "Get all employee devices with fleet compliance data in Comp AI. Invite and manage workforce members, training status, device compliance, email preferences."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "get-devices"
         }
       }
     },
@@ -1452,6 +1519,9 @@
             "og:title": "Get integration test statistics grouped by | Comp AI API",
             "og:description": "Get integration test statistics grouped by assignee in Comp AI. Invite and manage workforce members, training status, device compliance, email preferences."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "get-test-stats-by-assignee"
         }
       }
     },
@@ -1681,6 +1751,9 @@
             "og:title": "Add multiple members to organization | Comp AI API",
             "og:description": "Bulk adds multiple members to the authenticated organization. Each member must have a valid user ID that exists in the system. Members who already exist in."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "bulk-create-members"
         }
       }
     },
@@ -1720,6 +1793,9 @@
             "og:title": "Get members who can read a specific resource | Comp AI API",
             "og:description": "Get members who can read a specific resource type in Comp AI. Invite and manage workforce members, training status, device compliance, email preferences."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "get-mentionable-members"
         }
       }
     },
@@ -1752,6 +1828,9 @@
         "tags": [
           "People"
         ],
+        "x-speakeasy-mcp": {
+          "name": "reactivate-member"
+        },
         "description": "Reactivate a deactivated member in Comp AI. Invite and manage workforce members, training status, device compliance, email preferences, and employee evidence records.",
         "x-mint": {
           "metadata": {
@@ -1869,6 +1948,9 @@
         "tags": [
           "People"
         ],
+        "x-speakeasy-mcp": {
+          "name": "get-member"
+        },
         "x-mint": {
           "metadata": {
             "title": "Get person by ID | Comp AI API",
@@ -2010,6 +2092,9 @@
         "tags": [
           "People"
         ],
+        "x-speakeasy-mcp": {
+          "name": "update-member"
+        },
         "x-mint": {
           "metadata": {
             "title": "Update workforce member | Comp AI API",
@@ -2139,6 +2224,9 @@
         "tags": [
           "People"
         ],
+        "x-speakeasy-mcp": {
+          "name": "delete-member"
+        },
         "x-mint": {
           "metadata": {
             "title": "Delete member | Comp AI API",
@@ -2188,6 +2276,9 @@
             "og:title": "Get training video completions for a member | Comp AI API",
             "og:description": "Get training video completions for a member in Comp AI. Invite and manage workforce members, training status, device compliance, email preferences."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "get-training-videos"
         }
       }
     },
@@ -2229,6 +2320,9 @@
             "og:title": "Get fleet compliance | Comp AI API",
             "og:description": "Retrieve Fleet device compliance status so endpoint security findings can support people-security controls and audit evidence."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "get-fleet-compliance"
         }
       }
     },
@@ -2350,6 +2444,9 @@
             "og:title": "Remove host (device) from Fleet | Comp AI API",
             "og:description": "Removes a single host (device) from FleetDM by host ID. Only organization owners can perform this action. Validates that the organization exists and the."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "remove-host"
         }
       }
     },
@@ -2391,6 +2488,9 @@
             "og:title": "Resend portal invite email to a member | Comp AI API",
             "og:description": "Resend portal invite email to a member in Comp AI. Invite and manage workforce members, training status, device compliance, email preferences, and employee."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "resend-portal-invite"
         }
       }
     },
@@ -2523,6 +2623,9 @@
             "og:title": "Unlink device from member | Comp AI API",
             "og:description": "Resets the fleetDmLabelId for a member, effectively unlinking their device from FleetDM. This will disconnect the device from the organization."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "unlink-device"
         }
       }
     },
@@ -2576,6 +2679,9 @@
             "og:title": "Get employment evidence attachments | Comp AI API",
             "og:description": "Get employment evidence attachments in Comp AI. Invite and manage workforce members, training status, device compliance, email preferences, and employee."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "get-employment-evidence"
         }
       },
       "post": {
@@ -2637,6 +2743,9 @@
             "og:title": "Upload employment evidence | Comp AI API",
             "og:description": "Upload employment evidence in Comp AI. Invite and manage workforce members, training status, device compliance, email preferences, and employee evidence."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "upload-employment-evidence"
         }
       }
     },
@@ -2699,6 +2808,9 @@
             "og:title": "Delete employment evidence | Comp AI API",
             "og:description": "Delete employment evidence in Comp AI. Invite and manage workforce members, training status, device compliance, email preferences, and employee evidence."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "delete-employment-evidence"
         }
       }
     },
@@ -2729,6 +2841,9 @@
             "og:title": "Get current user email notification | Comp AI API",
             "og:description": "Get current user email notification preferences in Comp AI. Invite and manage workforce members, training status, device compliance, email preferences."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "get-email-preferences"
         }
       },
       "put": {
@@ -2767,6 +2882,91 @@
             "og:title": "Update current user email notification | Comp AI API",
             "og:description": "Update current user email notification preferences in Comp AI. Invite and manage workforce members, training status, device compliance, email preferences."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "update-email-preferences"
+        }
+      }
+    },
+    "/v1/attachments": {
+      "post": {
+        "description": "Upload a base64-encoded file and attach it to a task, vendor, risk, comment, or other supported entity type. The file is uploaded to S3 and a database record is created.",
+        "operationId": "AttachmentsController_createAttachment_v1",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateAttachmentDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Attachment uploaded successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AttachmentResponseDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid file data, unsupported file type, or file too large",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "example": "File size exceeds maximum allowed size of 100MB"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized - Invalid authentication",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "example": "Unauthorized"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Upload an attachment to any supported entity",
+        "tags": [
+          "Attachments"
+        ],
+        "x-mint": {
+          "metadata": {
+            "title": "Upload an attachment to any supported entity | Comp AI API",
+            "sidebarTitle": "Upload an attachment to any supported entity",
+            "description": "Upload a base64-encoded file and attach it to a task, vendor, risk, comment, or other supported entity type. The file is uploaded to S3 and a database.",
+            "og:title": "Upload an attachment to any supported entity | Comp AI API",
+            "og:description": "Upload a base64-encoded file and attach it to a task, vendor, risk, comment, or other supported entity type. The file is uploaded to S3 and a database."
+          }
+        },
+        "x-speakeasy-mcp": {
+          "name": "create-attachment"
         }
       }
     },
@@ -2827,6 +3027,9 @@
             "og:title": "Get shared attachment download URL | Comp AI API",
             "og:description": "Generate a signed download URL for a shared attachment linked to comments, evidence records, or compliance workflow reviews."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "get-attachment-download-url"
         }
       }
     },
@@ -2857,6 +3060,9 @@
             "og:title": "List timelines for the organization | Comp AI API",
             "og:description": "List timelines for the organization in Comp AI. Track audit and compliance readiness timelines, phases, and review milestones for an organization."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "find-all"
         }
       }
     },
@@ -2896,6 +3102,9 @@
             "og:title": "Get a single timeline instance with phases | Comp AI API",
             "og:description": "Get a single timeline instance with phases in Comp AI. Track audit and compliance readiness timelines, phases, and review milestones for an organization."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "find-one"
         }
       }
     },
@@ -2943,6 +3152,9 @@
             "og:title": "Mark a phase as ready for review | Comp AI API",
             "og:description": "Mark a phase as ready for review in Comp AI. Track audit and compliance readiness timelines, phases, and review milestones for an organization."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "mark-ready-for-review"
         }
       }
     },
@@ -3285,6 +3497,9 @@
             "og:title": "List organization risks | Comp AI API",
             "og:description": "List organization risks with owners, departments, severity, mitigation status, and evidence for risk management reporting."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "get-all-risks"
         }
       },
       "post": {
@@ -3568,6 +3783,9 @@
             "og:title": "Create organization risk | Comp AI API",
             "og:description": "Create a risk record with ownership and context so compliance teams can track mitigation and remediation work."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "create-risk"
         }
       }
     },
@@ -3598,6 +3816,9 @@
             "og:title": "Get risk statistics grouped by assignee | Comp AI API",
             "og:description": "Get risk statistics grouped by assignee in Comp AI. Create, update, and report on organizational risks with ownership, departments, and compliance."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "get-stats-by-assignee"
         }
       }
     },
@@ -3628,6 +3849,9 @@
             "og:title": "Get risk counts grouped by department | Comp AI API",
             "og:description": "Get risk counts grouped by department in Comp AI. Create, update, and report on organizational risks with ownership, departments, and compliance remediation."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "get-stats-by-department"
         }
       }
     },
@@ -3898,6 +4122,9 @@
             "og:title": "Get organization risk | Comp AI API",
             "og:description": "Retrieve one organization risk with owner, department, likelihood, impact, mitigation, and remediation context."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "get-risk-by-id"
         }
       },
       "patch": {
@@ -4192,6 +4419,9 @@
             "og:title": "Update organization risk | Comp AI API",
             "og:description": "Update a risk record as mitigation work progresses so compliance reports reflect the current risk posture."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "update-risk"
         }
       },
       "delete": {
@@ -4329,6 +4559,9 @@
             "og:title": "Delete organization risk | Comp AI API",
             "og:description": "Delete an organization risk that no longer needs active tracking in the risk register or compliance program."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "delete-risk"
         }
       }
     },
@@ -4369,6 +4602,9 @@
             "og:title": "Search global vendors | Comp AI API",
             "og:description": "Search global vendor records to prefill vendor profiles and speed up third-party risk assessment workflows."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "search-global-vendors"
         }
       }
     },
@@ -4594,6 +4830,9 @@
             "og:title": "List vendors | Comp AI API",
             "og:description": "List third-party vendors with risk level, owner, assessment status, and Trust Center visibility for vendor risk management."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "get-all-vendors"
         }
       },
       "post": {
@@ -4851,6 +5090,9 @@
             "og:title": "Create vendor | Comp AI API",
             "og:description": "Create a vendor record so teams can track third-party risk, assessment evidence, owner, category, and compliance status."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "create-vendor"
         }
       }
     },
@@ -5078,6 +5320,9 @@
             "og:title": "Get vendor details | Comp AI API",
             "og:description": "Retrieve one vendor record with ownership, review status, risk context, and third-party compliance metadata."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "get-vendor-by-id"
         }
       },
       "patch": {
@@ -5346,6 +5591,9 @@
             "og:title": "Update vendor record | Comp AI API",
             "og:description": "Update vendor ownership, risk attributes, review metadata, and third-party compliance context for an organization."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "update-vendor"
         }
       },
       "delete": {
@@ -5483,6 +5731,9 @@
             "og:title": "Delete vendor | Comp AI API",
             "og:description": "Permanently removes a vendor from the organization. This action cannot be undone."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "delete-vendor"
         }
       }
     },
@@ -5524,6 +5775,9 @@
             "og:title": "Trigger vendor risk assessment | Comp AI API",
             "og:description": "Trigger a vendor risk assessment so Comp AI can update third-party risk evidence and vendor security review status."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "trigger-assessment"
         }
       }
     },
@@ -5738,6 +5992,9 @@
             "og:title": "List organization context | Comp AI API",
             "og:description": "List organization context entries used as approved source material for evidence, questionnaires, policies, and AI workflows."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "get-all-context"
         }
       },
       "post": {
@@ -5961,6 +6218,9 @@
             "og:title": "Create a new context entry | Comp AI API",
             "og:description": "Creates a new context entry for the authenticated organization. All required fields must be provided."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "create-context"
         }
       }
     },
@@ -6135,6 +6395,9 @@
             "og:title": "Get organization context | Comp AI API",
             "og:description": "Retrieve one organization context entry with source details and approved content for compliance automation workflows."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "get-context-by-id"
         }
       },
       "patch": {
@@ -6270,6 +6533,9 @@
             "og:title": "Update organization context | Comp AI API",
             "og:description": "Update an organization context entry so approved business details stay current for evidence and questionnaire automation."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "update-context"
         }
       },
       "delete": {
@@ -6416,6 +6682,9 @@
             "og:title": "Delete context entry | Comp AI API",
             "og:description": "Permanently removes a context entry from the organization. This action cannot be undone."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "delete-context"
         }
       }
     },
@@ -6537,6 +6806,9 @@
             "og:title": "List managed devices | Comp AI API",
             "og:description": "List managed employee devices with endpoint compliance status, ownership, and security check results for workforce controls."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "get-all-devices"
         }
       }
     },
@@ -6620,6 +6892,9 @@
             "og:title": "Get devices by member ID | Comp AI API",
             "og:description": "Returns all devices assigned to a specific member within the authenticated organization. Devices are fetched from FleetDM using the member's dedicated."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "get-devices-by-member"
         }
       }
     },
@@ -6667,12 +6942,15 @@
             "og:title": "Delete device | Comp AI API",
             "og:description": "Delete device in Comp AI. Read and manage employee device inventory and Fleet compliance data used for endpoint security controls."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "delete-device"
         }
       }
     },
     "/v1/policies": {
       "get": {
-        "description": "List compliance policies for an organization, including drafts and published policies used for SOC 2, ISO 27001, HIPAA, and GDPR workflows.",
+        "description": "Lists compliance policies for the organization. Use this to find a policy by name, look up a policy ID, browse drafts, or get an overview of all policies for SOC 2, ISO 27001, HIPAA, and GDPR workflows. Returns id, name, status, department, and other metadata for each policy. Pass excludeContent=true to skip the heavy TipTap content fields — recommended when you only need to identify a policy. To read or edit a single policy in detail, fetch it by ID via get-compliance-policy.",
         "operationId": "PoliciesController_getAllPolicies_v1",
         "parameters": [
           {
@@ -6682,6 +6960,15 @@
             "required": false,
             "schema": {
               "type": "string"
+            }
+          },
+          {
+            "name": "excludeContent",
+            "required": false,
+            "in": "query",
+            "description": "When true, omits `content` and `draftContent` from each policy in the response. Use this when listing policies to find one by name/ID — fetch the full content via GET /v1/policies/{id} after.",
+            "schema": {
+              "type": "boolean"
             }
           }
         ],
@@ -6802,13 +7089,16 @@
         "tags": [
           "Policies"
         ],
+        "x-speakeasy-mcp": {
+          "name": "list-policies"
+        },
         "x-mint": {
           "metadata": {
             "title": "List compliance policies | Comp AI API",
             "sidebarTitle": "List compliance policies",
-            "description": "List compliance policies for an organization, including drafts and published policies used for SOC 2, ISO 27001, HIPAA, and GDPR workflows.",
+            "description": "Lists compliance policies for the organization. Use this to find a policy by name, look up a policy ID, browse drafts, or get an overview of all policies.",
             "og:title": "List compliance policies | Comp AI API",
-            "og:description": "List compliance policies for an organization, including drafts and published policies used for SOC 2, ISO 27001, HIPAA, and GDPR workflows."
+            "og:description": "Lists compliance policies for the organization. Use this to find a policy by name, look up a policy ID, browse drafts, or get an overview of all policies."
           }
         },
         "x-codeSamples": [
@@ -6816,6 +7106,11 @@
             "lang": "bash",
             "label": "List policies",
             "source": "curl --request GET --url \"https://api.trycomp.ai/v1/policies\" --header \"X-API-Key: $COMP_AI_API_KEY\""
+          },
+          {
+            "lang": "bash",
+            "label": "List policies (lightweight, no content)",
+            "source": "curl --request GET --url \"https://api.trycomp.ai/v1/policies?excludeContent=true\" --header \"X-API-Key: $COMP_AI_API_KEY\""
           }
         ]
       },
@@ -6933,6 +7228,9 @@
             "og:title": "Create compliance policy | Comp AI API",
             "og:description": "Create a policy record that can be reviewed, versioned, published, linked to controls, and used as source evidence for questionnaires."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "create-policy"
         }
       }
     },
@@ -6973,6 +7271,9 @@
             "og:title": "Publish all draft policies | Comp AI API",
             "og:description": "Publish draft policies in bulk so approved policy content can power Trust Center sharing, questionnaire answers, and audit evidence."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "publish-all-policies"
         }
       }
     },
@@ -7016,6 +7317,9 @@
             "og:title": "Download all published policies | Comp AI API",
             "og:description": "Generate a single PDF bundle of published compliance policies for auditors, customer security reviews, and Trust Center workflows."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "download-all-policies"
         }
       }
     },
@@ -7066,6 +7370,9 @@
             "og:title": "Get mapped and all controls for a policy | Comp AI API",
             "og:description": "Get mapped and all controls for a policy in Comp AI. Create, version, publish, export, map, and improve compliance policies with AI-assisted drafting."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "get-policy-controls"
         }
       },
       "post": {
@@ -7114,6 +7421,9 @@
             "og:title": "Map controls to a policy | Comp AI API",
             "og:description": "Map controls to a policy in Comp AI. Create, version, publish, export, map, and improve compliance policies with AI-assisted drafting and approval workflows."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "add-policy-controls"
         }
       }
     },
@@ -7164,6 +7474,9 @@
             "og:title": "Get tasks that serve as evidence for a | Comp AI API",
             "og:description": "Get tasks that serve as evidence for a policy, grouped by control in Comp AI. Create, version, publish, export, map, and improve compliance policies."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "get-policy-evidence-tasks"
         }
       }
     },
@@ -7214,6 +7527,9 @@
             "og:title": "Regenerate policy with AI | Comp AI API",
             "og:description": "Regenerate policy content using Comp AI while keeping the result reviewable before it is published or used as compliance evidence."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "regenerate-policy"
         }
       }
     },
@@ -7272,11 +7588,15 @@
             "og:title": "Get a signed URL for the policy PDF | Comp AI API",
             "og:description": "Get a signed URL for the policy PDF in Comp AI. Create, version, publish, export, map, and improve compliance policies with AI-assisted drafting."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "get-pdf-signed-url"
         }
       }
     },
     "/v1/policies/{id}/pdf": {
       "post": {
+        "description": "Accepts a base64-encoded PDF. Used by the web UI where the browser supplies the file. NOT recommended for MCP/AI clients — base64 of large files through an LLM is extremely slow. AI clients should use POST /v1/policies/{id}/pdf/upload-url.",
         "operationId": "PoliciesController_uploadPolicyPdf_v1",
         "parameters": [
           {
@@ -7299,6 +7619,16 @@
             }
           }
         ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UploadPolicyPdfDto"
+              }
+            }
+          }
+        },
         "responses": {
           "201": {
             "description": ""
@@ -7309,18 +7639,20 @@
             "apikey": []
           }
         ],
-        "summary": "Upload a PDF to a policy or version",
+        "summary": "Upload a PDF to a policy or version (base64, UI-only)",
         "tags": [
           "Policies"
         ],
-        "description": "Upload a PDF to a policy or version in Comp AI. Create, version, publish, export, map, and improve compliance policies with AI-assisted drafting and approval workflows.",
+        "x-speakeasy-mcp": {
+          "disabled": true
+        },
         "x-mint": {
           "metadata": {
-            "title": "Upload a PDF to a policy or version | Comp AI API",
-            "sidebarTitle": "Upload a PDF to a policy or version",
-            "description": "Upload a PDF to a policy or version in Comp AI. Create, version, publish, export, map, and improve compliance policies with AI-assisted drafting.",
-            "og:title": "Upload a PDF to a policy or version | Comp AI API",
-            "og:description": "Upload a PDF to a policy or version in Comp AI. Create, version, publish, export, map, and improve compliance policies with AI-assisted drafting."
+            "title": "Upload a PDF to a policy or version (base64 | Comp AI API",
+            "sidebarTitle": "Upload a PDF to a policy or version (base64, UI-only)",
+            "description": "Accepts a base64-encoded PDF. Used by the web UI where the browser supplies the file. NOT recommended for MCP/AI clients — base64 of large files through an.",
+            "og:title": "Upload a PDF to a policy or version (base64 | Comp AI API",
+            "og:description": "Accepts a base64-encoded PDF. Used by the web UI where the browser supplies the file. NOT recommended for MCP/AI clients — base64 of large files through an."
           }
         }
       },
@@ -7377,6 +7709,142 @@
             "description": "Delete a policy PDF in Comp AI. Create, version, publish, export, map, and improve compliance policies with AI-assisted drafting and approval workflows.",
             "og:title": "Delete a policy PDF | Comp AI API",
             "og:description": "Delete a policy PDF in Comp AI. Create, version, publish, export, map, and improve compliance policies with AI-assisted drafting and approval workflows."
+          }
+        },
+        "x-speakeasy-mcp": {
+          "name": "delete-policy-pdf"
+        }
+      }
+    },
+    "/v1/policies/{id}/pdf/upload-url": {
+      "post": {
+        "description": "Generates a presigned S3 URL for uploading a policy PDF directly to storage. Use this when attaching a PDF to a compliance policy — the file bytes are uploaded straight to S3 without passing through the API. Requires the policy ID; if you only know the policy name, look it up first via the list-compliance-policies tool. After uploading the file to the returned URL, finalize the attachment by calling confirm-policy-pdf-uploaded with the same s3Key.",
+        "operationId": "PoliciesController_requestPolicyPdfUploadUrl_v1",
+        "parameters": [
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "description": "Organization ID (required for session auth, optional for API key auth)",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "description": "Policy ID",
+            "schema": {
+              "example": "pol_abc123def456",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RequestPolicyPdfUploadUrlDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PolicyPdfUploadUrlResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Request a presigned URL to upload a policy PDF",
+        "tags": [
+          "Policies"
+        ],
+        "x-speakeasy-mcp": {
+          "name": "request-policy-pdf-upload-url"
+        },
+        "x-mint": {
+          "metadata": {
+            "title": "Request a presigned URL to upload a policy PDF | Comp AI API",
+            "sidebarTitle": "Request a presigned URL to upload a policy PDF",
+            "description": "Generates a presigned S3 URL for uploading a policy PDF directly to storage. Use this when attaching a PDF to a compliance policy — the file bytes are.",
+            "og:title": "Request a presigned URL to upload a policy PDF | Comp AI API",
+            "og:description": "Generates a presigned S3 URL for uploading a policy PDF directly to storage. Use this when attaching a PDF to a compliance policy — the file bytes are."
+          }
+        }
+      }
+    },
+    "/v1/policies/{id}/pdf/confirm": {
+      "post": {
+        "description": "Links an uploaded PDF to a compliance policy after the file has been PUT to a presigned S3 URL. Call this after request-policy-pdf-upload-url returned an s3Key and you successfully uploaded the file bytes to that URL. The endpoint verifies the file exists in S3 before linking it to the policy or version.",
+        "operationId": "PoliciesController_confirmPolicyPdfUploaded_v1",
+        "parameters": [
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "description": "Organization ID (required for session auth, optional for API key auth)",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "description": "Policy ID",
+            "schema": {
+              "example": "pol_abc123def456",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ConfirmPolicyPdfUploadedDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Confirm a policy PDF upload completed",
+        "tags": [
+          "Policies"
+        ],
+        "x-speakeasy-mcp": {
+          "name": "confirm-policy-pdf-uploaded"
+        },
+        "x-mint": {
+          "metadata": {
+            "title": "Confirm a policy PDF upload completed | Comp AI API",
+            "sidebarTitle": "Confirm a policy PDF upload completed",
+            "description": "Links an uploaded PDF to a compliance policy after the file has been PUT to a presigned S3 URL. Call this after request-policy-pdf-upload-url returned an.",
+            "og:title": "Confirm a policy PDF upload completed | Comp AI API",
+            "og:description": "Links an uploaded PDF to a compliance policy after the file has been PUT to a presigned S3 URL. Call this after request-policy-pdf-upload-url returned an."
           }
         }
       }
@@ -7436,6 +7904,9 @@
             "og:title": "Get signed URL for policy PDF (alternate path) | Comp AI API",
             "og:description": "Get signed URL for policy PDF (alternate path) in Comp AI. Create, version, publish, export, map, and improve compliance policies with AI-assisted drafting."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "get-pdf-url"
         }
       }
     },
@@ -7494,12 +7965,15 @@
             "og:title": "Remove a control mapping from a policy | Comp AI API",
             "og:description": "Remove a control mapping from a policy in Comp AI. Create, version, publish, export, map, and improve compliance policies with AI-assisted drafting."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "remove-policy-control"
         }
       }
     },
     "/v1/policies/{id}": {
       "get": {
-        "description": "Retrieve one compliance policy with its current content, review status, framework links, and audit-ready metadata.",
+        "description": "Retrieve a single compliance policy by its ID, including current content, draft content, review status, framework links, and audit metadata. Use this to read or inspect one policy in detail. If you only have a policy name, find its ID first by listing compliance policies.",
         "operationId": "PoliciesController_getPolicy_v1",
         "parameters": [
           {
@@ -7596,13 +8070,16 @@
         "tags": [
           "Policies"
         ],
+        "x-speakeasy-mcp": {
+          "name": "get-policy"
+        },
         "x-mint": {
           "metadata": {
             "title": "Get compliance policy | Comp AI API",
             "sidebarTitle": "Get compliance policy",
-            "description": "Retrieve one compliance policy with its current content, review status, framework links, and audit-ready metadata.",
+            "description": "Retrieve a single compliance policy by its ID, including current content, draft content, review status, framework links, and audit metadata. Use this.",
             "og:title": "Get compliance policy | Comp AI API",
-            "og:description": "Retrieve one compliance policy with its current content, review status, framework links, and audit-ready metadata."
+            "og:description": "Retrieve a single compliance policy by its ID, including current content, draft content, review status, framework links, and audit metadata. Use this."
           }
         }
       },
@@ -7751,6 +8228,9 @@
             "og:title": "Update compliance policy | Comp AI API",
             "og:description": "Update compliance policy details or content while keeping policy workflows connected to controls, tasks, and approvals."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "update-policy"
         }
       },
       "delete": {
@@ -7868,6 +8348,9 @@
             "og:title": "Delete compliance policy | Comp AI API",
             "og:description": "Delete a compliance policy that is no longer part of the organization evidence library or control program."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "delete-policy"
         }
       }
     },
@@ -7965,6 +8448,9 @@
         "tags": [
           "Policies"
         ],
+        "x-speakeasy-mcp": {
+          "name": "list-policy-versions"
+        },
         "x-mint": {
           "metadata": {
             "title": "Get policy versions | Comp AI API",
@@ -7976,7 +8462,7 @@
         }
       },
       "post": {
-        "description": "Create policy version in Comp AI. Create, version, publish, export, map, and improve compliance policies with AI-assisted drafting and approval workflows.",
+        "description": "Creates a new draft version of a policy, cloned from the current published version (or a specified source version). Use this when you need to make any change to a published policy — content edits, PDF attachments, anything. Published.",
         "operationId": "PoliciesController_createPolicyVersion_v1",
         "parameters": [
           {
@@ -8087,13 +8573,16 @@
         "tags": [
           "Policies"
         ],
+        "x-speakeasy-mcp": {
+          "name": "create-policy-version"
+        },
         "x-mint": {
           "metadata": {
             "title": "Create policy version | Comp AI API",
             "sidebarTitle": "Create policy version",
-            "description": "Create policy version in Comp AI. Create, version, publish, export, map, and improve compliance policies with AI-assisted drafting and approval workflows.",
+            "description": "Creates a new draft version of a policy, cloned from the current published version (or a specified source version). Use this when you need to make any.",
             "og:title": "Create policy version | Comp AI API",
-            "og:description": "Create policy version in Comp AI. Create, version, publish, export, map, and improve compliance policies with AI-assisted drafting and approval workflows."
+            "og:description": "Creates a new draft version of a policy, cloned from the current published version (or a specified source version). Use this when you need to make any."
           }
         }
       }
@@ -8199,6 +8688,9 @@
         "tags": [
           "Policies"
         ],
+        "x-speakeasy-mcp": {
+          "name": "get-policy-version"
+        },
         "x-mint": {
           "metadata": {
             "title": "Get policy version by ID | Comp AI API",
@@ -8328,6 +8820,9 @@
         "tags": [
           "Policies"
         ],
+        "x-speakeasy-mcp": {
+          "name": "update-policy-version-content"
+        },
         "x-mint": {
           "metadata": {
             "title": "Update version content | Comp AI API",
@@ -8454,12 +8949,15 @@
             "og:title": "Delete policy version | Comp AI API",
             "og:description": "Delete policy version in Comp AI. Create, version, publish, export, map, and improve compliance policies with AI-assisted drafting and approval workflows."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "delete-policy-version"
         }
       }
     },
     "/v1/policies/{id}/versions/publish": {
       "post": {
-        "description": "Publish new policy version in Comp AI. Create, version, publish, export, map, and improve compliance policies with AI-assisted drafting and approval workflows.",
+        "description": "Publishes a draft policy version, making it the active/current version of the policy. Pass the versionId of the draft you want to publish — for example one created via create-policy-version and then edited.",
         "operationId": "PoliciesController_publishPolicyVersion_v1",
         "parameters": [
           {
@@ -8566,17 +9064,20 @@
             "apikey": []
           }
         ],
-        "summary": "Publish new policy version",
+        "summary": "Publish policy version",
         "tags": [
           "Policies"
         ],
+        "x-speakeasy-mcp": {
+          "name": "publish-policy-version"
+        },
         "x-mint": {
           "metadata": {
-            "title": "Publish new policy version | Comp AI API",
-            "sidebarTitle": "Publish new policy version",
-            "description": "Publish new policy version in Comp AI. Create, version, publish, export, map, and improve compliance policies with AI-assisted drafting and approval.",
-            "og:title": "Publish new policy version | Comp AI API",
-            "og:description": "Publish new policy version in Comp AI. Create, version, publish, export, map, and improve compliance policies with AI-assisted drafting and approval."
+            "title": "Publish policy version | Comp AI API",
+            "sidebarTitle": "Publish policy version",
+            "description": "Publishes a draft policy version, making it the active/current version of the policy. Pass the versionId of the draft you want to publish — for example one.",
+            "og:title": "Publish policy version | Comp AI API",
+            "og:description": "Publishes a draft policy version, making it the active/current version of the policy. Pass the versionId of the draft you want to publish — for example one."
           }
         }
       }
@@ -8701,6 +9202,9 @@
             "og:title": "Set active policy version | Comp AI API",
             "og:description": "Set active policy version in Comp AI. Create, version, publish, export, map, and improve compliance policies with AI-assisted drafting and approval workflows."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "set-active-policy-version"
         }
       }
     },
@@ -8827,6 +9331,9 @@
         "tags": [
           "Policies"
         ],
+        "x-speakeasy-mcp": {
+          "name": "submit-policy-version-for-approval"
+        },
         "x-mint": {
           "metadata": {
             "title": "Submit version for approval | Comp AI API",
@@ -8876,6 +9383,9 @@
         "tags": [
           "Policies"
         ],
+        "x-speakeasy-mcp": {
+          "name": "accept-policy-changes"
+        },
         "description": "Accept pending policy changes and publish the version in Comp AI. Create, version, publish, export, map, and improve compliance policies with AI-assisted drafting and approval workflows.",
         "x-mint": {
           "metadata": {
@@ -8935,6 +9445,9 @@
             "og:title": "Deny pending policy changes | Comp AI API",
             "og:description": "Deny pending policy changes in Comp AI. Create, version, publish, export, map, and improve compliance policies with AI-assisted drafting and approval."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "deny-policy-changes"
         }
       }
     },
@@ -9008,6 +9521,9 @@
             "og:title": "Chat with AI about a policy | Comp AI API",
             "og:description": "Ask policy-specific questions and request draft improvements while preserving human review before policy changes are applied."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "ai-chat-policy"
         }
       }
     },
@@ -9043,6 +9559,9 @@
             "og:title": "Exchange an auth code for device credentials | Comp AI API",
             "og:description": "Exchange an auth code for device credentials in Comp AI. Register employee devices, submit device compliance check-ins, download agent builds, and manage."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "exchange-code"
         }
       }
     },
@@ -9077,6 +9596,9 @@
             "og:title": "Download a device-agent update | Comp AI API",
             "og:description": "Download a device-agent update in Comp AI. Register employee devices, submit device compliance check-ins, download agent builds, and manage endpoint."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "get-update-file"
         }
       },
       "head": {
@@ -9109,6 +9631,9 @@
             "og:title": "Check a device-agent update's metadata | Comp AI API",
             "og:description": "Check a device-agent update's metadata in Comp AI. Register employee devices, submit device compliance check-ins, download agent builds, and manage endpoint."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "head-update-file"
         }
       }
     },
@@ -9144,6 +9669,9 @@
             "og:title": "Create a device-agent auth code | Comp AI API",
             "og:description": "Create a device-agent auth code in Comp AI. Register employee devices, submit device compliance check-ins, download agent builds, and manage endpoint."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "generate-auth-code"
         }
       }
     },
@@ -9169,6 +9697,9 @@
             "og:title": "List organizations for the current device | Comp AI API",
             "og:description": "List organizations for the current device in Comp AI. Register employee devices, submit device compliance check-ins, download agent builds, and manage."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "get-my-organizations"
         }
       }
     },
@@ -9204,6 +9735,9 @@
             "og:title": "Register device agent | Comp AI API",
             "og:description": "Register a Comp AI Device Agent installation so employee endpoint checks can report into compliance tasks and device inventory."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "register-device"
         }
       }
     },
@@ -9239,6 +9773,9 @@
             "og:title": "Submit device compliance check-in | Comp AI API",
             "og:description": "Submit device security check results for encryption, antivirus, password policy, screen lock, and other endpoint controls."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "check-in"
         }
       }
     },
@@ -9281,6 +9818,9 @@
             "og:title": "Get device-agent status | Comp AI API",
             "og:description": "Get device-agent status in Comp AI. Register employee devices, submit device compliance check-ins, download agent builds, and manage endpoint security status."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "get-device-status"
         }
       }
     },
@@ -9336,6 +9876,9 @@
             "og:title": "Download macOS Device Agent | Comp AI API",
             "og:description": "Downloads the Comp AI Device Agent installer for macOS as a DMG file. The agent helps monitor device compliance and security policies."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "download-mac-agent"
         }
       }
     },
@@ -9391,6 +9934,9 @@
             "og:title": "Download Windows Device Agent ZIP | Comp AI API",
             "og:description": "Downloads a ZIP package containing the Comp AI Device Agent installer for Windows, along with setup scripts and instructions. The package includes an MSI."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "download-windows-agent"
         }
       }
     },
@@ -9425,6 +9971,69 @@
             "og:title": "Revoke a device agent session | Comp AI API",
             "og:description": "Revoke a device agent session in Comp AI. Register employee devices, submit device compliance check-ins, download agent builds, and manage endpoint security."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "revoke-agent-access"
+        }
+      }
+    },
+    "/v1/uploads/presign": {
+      "post": {
+        "description": "Returns a presigned S3 URL plus the s3Key the file lands at. PUT the raw file bytes to that URL, then call the feature tool (e.g. upload-and-parse) with the s3Key instead of sending file data. Bytes never pass through the LLM.",
+        "operationId": "UploadsController_createUploadUrl_v1",
+        "parameters": [
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "description": "Organization ID (required for session auth, optional for API key auth)",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateUploadUrlDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UploadUrlResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Get a presigned URL to upload a file",
+        "tags": [
+          "Uploads"
+        ],
+        "x-mint": {
+          "metadata": {
+            "title": "Get a presigned URL to upload a file | Comp AI API",
+            "sidebarTitle": "Get a presigned URL to upload a file",
+            "description": "Returns a presigned S3 URL plus the s3Key the file lands at. PUT the raw file bytes to that URL, then call the feature tool (e.g. upload-and-parse) with the.",
+            "og:title": "Get a presigned URL to upload a file | Comp AI API",
+            "og:description": "Returns a presigned S3 URL plus the s3Key the file lands at. PUT the raw file bytes to that URL, then call the feature tool (e.g. upload-and-parse) with the."
+          }
+        },
+        "x-speakeasy-mcp": {
+          "name": "create-upload-url"
         }
       }
     },
@@ -9508,7 +10117,10 @@
             "label": "List tasks",
             "source": "curl --request GET --url \"https://api.trycomp.ai/v1/tasks\" --header \"X-API-Key: $COMP_AI_API_KEY\""
           }
-        ]
+        ],
+        "x-speakeasy-mcp": {
+          "name": "get-tasks"
+        }
       },
       "post": {
         "description": "Create a compliance task for evidence collection, remediation, review, or recurring control work inside an organization.",
@@ -9621,6 +10233,9 @@
             "og:title": "Create compliance task | Comp AI API",
             "og:description": "Create a compliance task for evidence collection, remediation, review, or recurring control work inside an organization."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "create-task"
         }
       }
     },
@@ -9661,6 +10276,9 @@
             "og:title": "Get task templates | Comp AI API",
             "og:description": "Get task templates in Comp AI. Manage compliance task lifecycle, assignments, review approvals, evidence uploads, policy links, and activity history."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "get-task-templates"
         }
       }
     },
@@ -9756,6 +10374,9 @@
             "og:title": "Update status for multiple tasks | Comp AI API",
             "og:description": "Update status for multiple tasks in Comp AI. Manage compliance task lifecycle, assignments, review approvals, evidence uploads, policy links, and activity."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "update-tasks-status"
         }
       },
       "delete": {
@@ -9825,6 +10446,9 @@
             "og:title": "Delete multiple tasks | Comp AI API",
             "og:description": "Delete multiple tasks in Comp AI. Manage compliance task lifecycle, assignments, review approvals, evidence uploads, policy links, and activity history."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "delete-tasks"
         }
       }
     },
@@ -9902,6 +10526,9 @@
             "og:title": "Update assignee for multiple tasks | Comp AI API",
             "og:description": "Update assignee for multiple tasks in Comp AI. Manage compliance task lifecycle, assignments, review approvals, evidence uploads, policy links, and activity."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "update-tasks-assignee"
         }
       }
     },
@@ -9980,6 +10607,9 @@
             "og:title": "Reorder tasks | Comp AI API",
             "og:description": "Reorder tasks in Comp AI. Manage compliance task lifecycle, assignments, review approvals, evidence uploads, policy links, and activity history."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "reorder-tasks"
         }
       }
     },
@@ -10044,6 +10674,9 @@
             "og:title": "Bulk submit tasks for review | Comp AI API",
             "og:description": "Bulk submit tasks for review in Comp AI. Manage compliance task lifecycle, assignments, review approvals, evidence uploads, policy links, and activity."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "bulk-submit-for-review"
         }
       }
     },
@@ -10074,6 +10707,9 @@
             "og:title": "Get page options for tasks overview | Comp AI API",
             "og:description": "Get page options for tasks overview in Comp AI. Manage compliance task lifecycle, assignments, review approvals, evidence uploads, policy links."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "get-task-options"
         }
       }
     },
@@ -10149,6 +10785,9 @@
             "og:title": "Get task by ID | Comp AI API",
             "og:description": "Get task by ID in Comp AI. Manage compliance task lifecycle, assignments, review approvals, evidence uploads, policy links, and activity history."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "get-task"
         }
       },
       "patch": {
@@ -10293,6 +10932,9 @@
             "og:title": "Update a task | Comp AI API",
             "og:description": "Update a task in Comp AI. Manage compliance task lifecycle, assignments, review approvals, evidence uploads, policy links, and activity history."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "update-task"
         }
       },
       "delete": {
@@ -10352,6 +10994,9 @@
             "og:title": "Delete a task | Comp AI API",
             "og:description": "Delete a task in Comp AI. Manage compliance task lifecycle, assignments, review approvals, evidence uploads, policy links, and activity history."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "delete-task"
         }
       }
     },
@@ -10393,6 +11038,9 @@
             "og:title": "Get policies that reference a task via shared | Comp AI API",
             "og:description": "Get policies that reference a task via shared controls in Comp AI. Manage compliance task lifecycle, assignments, review approvals, evidence uploads, policy."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "get-task-policies"
         }
       }
     },
@@ -10453,6 +11101,9 @@
             "og:title": "Get task activity | Comp AI API",
             "og:description": "Get task activity in Comp AI. Manage compliance task lifecycle, assignments, review approvals, evidence uploads, policy links, and activity history."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "get-task-activity"
         }
       }
     },
@@ -10500,6 +11151,9 @@
             "og:title": "Regenerate task from template | Comp AI API",
             "og:description": "Regenerate task from template in Comp AI. Manage compliance task lifecycle, assignments, review approvals, evidence uploads, policy links, and activity."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "regenerate-task"
         }
       }
     },
@@ -10564,6 +11218,9 @@
             "og:title": "Submit task for review | Comp AI API",
             "og:description": "Submit task for review in Comp AI. Manage compliance task lifecycle, assignments, review approvals, evidence uploads, policy links, and activity history."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "submit-for-review"
         }
       }
     },
@@ -10611,6 +11268,9 @@
             "og:title": "Approve a task | Comp AI API",
             "og:description": "Approve a task that is in review. Only the assigned approver can approve. Moves status to done and creates an audit comment."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "approve-task"
         }
       }
     },
@@ -10658,6 +11318,9 @@
             "og:title": "Reject a task review | Comp AI API",
             "og:description": "Reject a task that is in review. Only the assigned approver can reject. Reverts status to the previous status and creates an audit comment."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "reject-task"
         }
       }
     },
@@ -10751,6 +11414,9 @@
             "og:title": "Get task attachments | Comp AI API",
             "og:description": "Get task attachments in Comp AI. Manage compliance task lifecycle, assignments, review approvals, evidence uploads, policy links, and activity history."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "get-task-attachments"
         }
       },
       "post": {
@@ -10865,6 +11531,9 @@
             "og:title": "Upload task evidence | Comp AI API",
             "og:description": "Upload an evidence attachment to a task so auditors and reviewers can trace completion back to source documentation."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "upload-task-attachment"
         }
       }
     },
@@ -10967,6 +11636,9 @@
             "og:title": "Get task attachment download URL | Comp AI API",
             "og:description": "Generate a signed download URL for an attachment on a compliance task so reviewers can access uploaded evidence."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "get-task-attachment-download-url"
         }
       }
     },
@@ -11071,6 +11743,9 @@
             "og:title": "Delete task attachment | Comp AI API",
             "og:description": "Delete task attachment in Comp AI. Manage compliance task lifecycle, assignments, review approvals, evidence uploads, policy links, and activity history."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "delete-task-attachment"
         }
       }
     },
@@ -11112,6 +11787,9 @@
             "og:title": "Get all automations for a task | Comp AI API",
             "og:description": "Get all automations for a task in Comp AI. Create, version, run, and inspect automated evidence collection workflows attached to compliance tasks."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "get-task-automations"
         }
       },
       "post": {
@@ -11225,6 +11903,9 @@
             "og:title": "Create evidence automation | Comp AI API",
             "og:description": "Create an automated evidence workflow attached to a task so Comp AI can collect recurring proof from connected systems."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "create-automation"
         }
       }
     },
@@ -11276,6 +11957,9 @@
             "og:title": "Get automation details | Comp AI API",
             "og:description": "Get automation details in Comp AI. Create, version, run, and inspect automated evidence collection workflows attached to compliance tasks."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "get-automation"
         }
       },
       "patch": {
@@ -11413,6 +12097,9 @@
             "og:title": "Update an existing automation | Comp AI API",
             "og:description": "Update an existing automation in Comp AI. Create, version, run, and inspect automated evidence collection workflows attached to compliance tasks."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "update-automation"
         }
       },
       "delete": {
@@ -11462,6 +12149,9 @@
             "og:title": "Delete an automation | Comp AI API",
             "og:description": "Delete an automation in Comp AI. Create, version, run, and inspect automated evidence collection workflows attached to compliance tasks."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "delete-automation"
         }
       }
     },
@@ -11511,6 +12201,9 @@
             "og:title": "Get all runs for a specific automation | Comp AI API",
             "og:description": "Get all runs for a specific automation in Comp AI. Create, version, run, and inspect automated evidence collection workflows attached to compliance tasks."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "get-automation-runs"
         }
       }
     },
@@ -11617,6 +12310,9 @@
             "og:title": "Get all versions for an automation | Comp AI API",
             "og:description": "Get all versions for an automation in Comp AI. Create, version, run, and inspect automated evidence collection workflows attached to compliance tasks."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "get-automation-versions"
         }
       },
       "post": {
@@ -11664,6 +12360,9 @@
             "og:title": "Create a published version record for an | Comp AI API",
             "og:description": "Create a published version record for an automation in Comp AI. Create, version, run, and inspect automated evidence collection workflows attached."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "create-version"
         }
       }
     },
@@ -11751,6 +12450,9 @@
             "og:title": "Get all automation runs for a task | Comp AI API",
             "og:description": "Get all automation runs for a task in Comp AI. Create, version, run, and inspect automated evidence collection workflows attached to compliance tasks."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "get-task-automation-runs"
         }
       }
     },
@@ -11795,6 +12497,9 @@
             "og:title": "Get task evidence summary | Comp AI API",
             "og:description": "Get task evidence summary in Comp AI. Export task evidence, automation evidence, and reviewer-ready evidence bundles as PDF or ZIP files."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "get-task-evidence-summary"
         }
       }
     },
@@ -11850,6 +12555,9 @@
             "og:title": "Export automation evidence as PDF | Comp AI API",
             "og:description": "Export automation evidence as PDF in Comp AI. Export task evidence, automation evidence, and reviewer-ready evidence bundles as PDF or ZIP files."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "export-automation-pdf"
         }
       }
     },
@@ -11905,6 +12613,9 @@
             "og:title": "Export task evidence as ZIP | Comp AI API",
             "og:description": "Download a ZIP package containing task evidence and automation results for auditor review or customer security requests."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "export-task-evidence-zip"
         }
       }
     },
@@ -11951,6 +12662,9 @@
             "og:title": "Export all organization evidence as ZIP | Comp AI API",
             "og:description": "Export all organization evidence as ZIP (Auditor only) in Comp AI. Export all organization evidence for an auditor review package."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "export-all-evidence"
         }
       }
     },
@@ -12018,6 +12732,9 @@
             "og:title": "Get comments for an entity | Comp AI API",
             "og:description": "Get comments for an entity in Comp AI. Create and manage collaboration comments on compliance entities such as tasks, policies, risks, vendors, and findings."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "get-comments"
         }
       },
       "post": {
@@ -12063,6 +12780,9 @@
             "og:title": "Create a new comment | Comp AI API",
             "og:description": "Create a new comment in Comp AI. Create and manage collaboration comments on compliance entities such as tasks, policies, risks, vendors, and findings."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "create-comment"
         }
       }
     },
@@ -12121,6 +12841,9 @@
             "og:title": "Update a comment | Comp AI API",
             "og:description": "Update a comment in Comp AI. Create and manage collaboration comments on compliance entities such as tasks, policies, risks, vendors, and findings."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "update-comment"
         }
       },
       "delete": {
@@ -12231,6 +12954,9 @@
             "og:title": "Delete a comment | Comp AI API",
             "og:description": "Delete a comment in Comp AI. Create and manage collaboration comments on compliance entities such as tasks, policies, risks, vendors, and findings."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "delete-comment"
         }
       }
     },
@@ -12261,6 +12987,9 @@
             "og:title": "Get Trust Center settings | Comp AI API",
             "og:description": "Retrieve Trust Center settings used to configure public status, custom domains, framework visibility, resources, FAQs, and access rules."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "get-settings"
         }
       }
     },
@@ -12291,6 +13020,9 @@
             "og:title": "Upload a favicon for the trust portal | Comp AI API",
             "og:description": "Upload a favicon for the trust portal in Comp AI. Configure the live Trust Center, custom domain, public overview, FAQs, compliance resources, documents."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "upload-favicon"
         }
       },
       "delete": {
@@ -12319,6 +13051,9 @@
             "og:title": "Remove the trust portal favicon | Comp AI API",
             "og:description": "Remove the trust portal favicon in Comp AI. Configure the live Trust Center, custom domain, public overview, FAQs, compliance resources, documents, links."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "remove-favicon"
         }
       }
     },
@@ -12373,6 +13108,9 @@
             "og:title": "Get domain verification status | Comp AI API",
             "og:description": "Get domain verification status in Comp AI. Configure the live Trust Center, custom domain, public overview, FAQs, compliance resources, documents, links."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "get-domain-status"
         }
       }
     },
@@ -12423,6 +13161,9 @@
             "og:title": "Upload compliance certificate | Comp AI API",
             "og:description": "Upload or replace a compliance certificate PDF such as SOC 2, ISO 27001, HIPAA, or GDPR evidence for Trust Center sharing."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "upload-compliance-resource"
         }
       }
     },
@@ -12470,6 +13211,9 @@
             "og:title": "Generate a temporary signed URL for a | Comp AI API",
             "og:description": "Generate a temporary signed URL for a compliance certificate in Comp AI. Configure the live Trust Center, custom domain, public overview, FAQs, compliance."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "get-compliance-resource-url"
         }
       }
     },
@@ -12520,6 +13264,9 @@
             "og:title": "List uploaded compliance certificates for the | Comp AI API",
             "og:description": "List uploaded compliance certificates for the organization in Comp AI. Configure the live Trust Center, custom domain, public overview, FAQs, compliance."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "list-compliance-resources"
         }
       }
     },
@@ -12567,6 +13314,9 @@
             "og:title": "Upload an additional trust portal document | Comp AI API",
             "og:description": "Upload an additional trust portal document in Comp AI. Configure the live Trust Center, custom domain, public overview, FAQs, compliance resources."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "upload-trust-document"
         }
       }
     },
@@ -12617,6 +13367,9 @@
             "og:title": "List additional trust portal documents for | Comp AI API",
             "og:description": "List additional trust portal documents for the organization in Comp AI. Configure the live Trust Center, custom domain, public overview, FAQs, compliance."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "list-trust-documents"
         }
       }
     },
@@ -12673,6 +13426,9 @@
             "og:title": "Generate a temporary signed URL for a trust | Comp AI API",
             "og:description": "Generate a temporary signed URL for a trust portal document in Comp AI. Configure the live Trust Center, custom domain, public overview, FAQs, compliance."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "get-trust-document-url"
         }
       }
     },
@@ -12734,6 +13490,9 @@
             "og:title": "Delete (deactivate) a trust portal document | Comp AI API",
             "og:description": "Delete (deactivate) a trust portal document in Comp AI. Configure the live Trust Center, custom domain, public overview, FAQs, compliance resources."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "delete-trust-document"
         }
       }
     },
@@ -12764,6 +13523,9 @@
             "og:title": "Enable or disable the trust portal | Comp AI API",
             "og:description": "Enable or disable the trust portal in Comp AI. Configure the live Trust Center, custom domain, public overview, FAQs, compliance resources, documents."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "toggle-portal"
         }
       }
     },
@@ -12794,6 +13556,9 @@
             "og:title": "Add or update a custom domain for the trust | Comp AI API",
             "og:description": "Add or update a custom domain for the trust portal in Comp AI. Configure the live Trust Center, custom domain, public overview, FAQs, compliance resources."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "add-custom-domain"
         }
       }
     },
@@ -12824,6 +13589,9 @@
             "og:title": "Check DNS records for a custom domain | Comp AI API",
             "og:description": "Check DNS records for a custom domain in Comp AI. Configure the live Trust Center, custom domain, public overview, FAQs, compliance resources, documents."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "check-dns-records"
         }
       }
     },
@@ -12854,6 +13622,9 @@
             "og:title": "Update trust portal FAQs | Comp AI API",
             "og:description": "Update trust portal FAQs in Comp AI. Configure the live Trust Center, custom domain, public overview, FAQs, compliance resources, documents, links."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "update-faqs"
         }
       }
     },
@@ -12884,6 +13655,9 @@
             "og:title": "Update allowed domains for the trust portal | Comp AI API",
             "og:description": "Update allowed domains for the trust portal in Comp AI. Configure the live Trust Center, custom domain, public overview, FAQs, compliance resources."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "update-allowed-domains"
         }
       }
     },
@@ -12914,6 +13688,9 @@
             "og:title": "Update trust portal framework settings | Comp AI API",
             "og:description": "Update trust portal framework settings in Comp AI. Configure the live Trust Center, custom domain, public overview, FAQs, compliance resources, documents."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "update-frameworks"
         }
       }
     },
@@ -12944,6 +13721,9 @@
             "og:title": "Update Trust Center overview | Comp AI API",
             "og:description": "Update the public Trust Center overview content that explains security posture and compliance status to prospects and customers."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "update-overview"
         }
       },
       "get": {
@@ -12981,6 +13761,9 @@
             "og:title": "Get trust portal overview | Comp AI API",
             "og:description": "Get trust portal overview in Comp AI. Configure the live Trust Center, custom domain, public overview, FAQs, compliance resources, documents, links."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "get-overview"
         }
       }
     },
@@ -13011,6 +13794,9 @@
             "og:title": "Create a custom link for trust portal | Comp AI API",
             "og:description": "Create a custom link for trust portal in Comp AI. Configure the live Trust Center, custom domain, public overview, FAQs, compliance resources, documents."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "create-custom-link"
         }
       },
       "get": {
@@ -13048,6 +13834,9 @@
             "og:title": "List custom links for trust portal | Comp AI API",
             "og:description": "List custom links for trust portal in Comp AI. Configure the live Trust Center, custom domain, public overview, FAQs, compliance resources, documents."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "list-custom-links"
         }
       }
     },
@@ -13087,6 +13876,9 @@
             "og:title": "Update a custom link | Comp AI API",
             "og:description": "Update a custom link in Comp AI. Configure the live Trust Center, custom domain, public overview, FAQs, compliance resources, documents, links, and vendor."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "update-custom-link"
         }
       }
     },
@@ -13126,6 +13918,9 @@
             "og:title": "Delete a custom link | Comp AI API",
             "og:description": "Delete a custom link in Comp AI. Configure the live Trust Center, custom domain, public overview, FAQs, compliance resources, documents, links, and vendor."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "delete-custom-link"
         }
       }
     },
@@ -13156,6 +13951,9 @@
             "og:title": "Reorder custom links | Comp AI API",
             "og:description": "Reorder custom links in Comp AI. Configure the live Trust Center, custom domain, public overview, FAQs, compliance resources, documents, links, and vendor."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "reorder-custom-links"
         }
       }
     },
@@ -13195,6 +13993,9 @@
             "og:title": "Update vendor trust portal settings | Comp AI API",
             "og:description": "Update vendor trust portal settings in Comp AI. Configure the live Trust Center, custom domain, public overview, FAQs, compliance resources, documents."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "update-vendor-trust-settings"
         }
       }
     },
@@ -13235,6 +14036,9 @@
             "og:title": "List vendors configured for trust portal | Comp AI API",
             "og:description": "List vendors configured for trust portal in Comp AI. Configure the live Trust Center, custom domain, public overview, FAQs, compliance resources, documents."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "list-vendors"
         }
       }
     },
@@ -13280,6 +14084,9 @@
             "og:title": "Submit Trust Access request | Comp AI API",
             "og:description": "Submit a Trust Center access request with requester details, company context, and review reason for administrator approval."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "create-access-request"
         }
       }
     },
@@ -13325,6 +14132,9 @@
             "og:title": "List Trust Access requests | Comp AI API",
             "og:description": "List pending and completed Trust Center access requests so teams can review customer security inquiries through the API."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "list-access-requests"
         }
       }
     },
@@ -13364,6 +14174,9 @@
             "og:title": "Get Trust Access request | Comp AI API",
             "og:description": "Retrieve one Trust Center access request with requester context, status, review metadata, and audit details."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "get-access-request"
         }
       }
     },
@@ -13413,6 +14226,9 @@
             "og:title": "Approve Trust Access request | Comp AI API",
             "og:description": "Approve a Trust Center access request, configure the grant window, and start the NDA or access email workflow."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "approve-request"
         }
       }
     },
@@ -13462,6 +14278,9 @@
             "og:title": "Deny Trust Access request | Comp AI API",
             "og:description": "Reject a Trust Center access request with a review reason so customer security access decisions stay auditable."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "deny-request"
         }
       }
     },
@@ -13492,6 +14311,9 @@
             "og:title": "List Trust Access grants | Comp AI API",
             "og:description": "List active, expired, and revoked Trust Access grants for customer security reviews and shared compliance resources."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "list-grants"
         }
       }
     },
@@ -13541,6 +14363,9 @@
             "og:title": "Revoke Trust Access grant | Comp AI API",
             "og:description": "Immediately revoke a Trust Access grant when a customer review ends or shared compliance access should be removed."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "revoke-grant"
         }
       }
     },
@@ -13580,6 +14405,9 @@
             "og:title": "Resend Trust Access email | Comp AI API",
             "og:description": "Resend the access email for an active Trust Access grant so approved reviewers can reopen shared resources."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "resend-access-email"
         }
       }
     },
@@ -13619,6 +14447,9 @@
             "og:title": "Resend Trust Access NDA | Comp AI API",
             "og:description": "Resend an NDA signing email for a Trust Access request that still requires reviewer signature."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "resend-nda"
         }
       }
     },
@@ -13658,6 +14489,9 @@
             "og:title": "Preview Trust Access NDA | Comp AI API",
             "og:description": "Generate a preview NDA PDF for a Trust Access request before the reviewer signs and receives access."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "preview-nda"
         }
       }
     },
@@ -13713,6 +14547,9 @@
             "og:title": "Reclaim Trust Access link | Comp AI API",
             "og:description": "Request a fresh Trust Access link for a reviewer who already has an active grant on a published Trust Center."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "reclaim-access"
         }
       }
     },
@@ -13781,6 +14618,9 @@
             "og:title": "Get Trust Center FAQs | Comp AI API",
             "og:description": "Retrieve published Trust Center FAQs for an organization so public trust pages can show customer security answers."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "get-faqs"
         }
       }
     },
@@ -13816,6 +14656,9 @@
             "og:title": "Get Trust Center overview | Comp AI API",
             "og:description": "Retrieve the published Trust Center overview for an organization, including public security posture messaging."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "get-public-overview"
         }
       }
     },
@@ -13851,6 +14694,9 @@
             "og:title": "List Trust Center custom links | Comp AI API",
             "og:description": "List published custom links shown on an organization Trust Center for customer security and compliance reviews."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "get-public-custom-links"
         }
       }
     },
@@ -13900,6 +14746,9 @@
             "og:title": "Get Trust Center favicon | Comp AI API",
             "og:description": "Retrieve the favicon URL used by a published Trust Center so embedded or mirrored experiences can match branding."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "get-public-favicon"
         }
       }
     },
@@ -13935,6 +14784,9 @@
             "og:title": "List Trust Center vendors | Comp AI API",
             "og:description": "List published vendors and subprocessors for an organization Trust Center so reviewers can inspect third-party posture."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "get-public-vendors"
         }
       }
     },
@@ -14089,6 +14941,9 @@
             "og:title": "List audit findings | Comp AI API",
             "og:description": "List audit findings with status, severity, owner, history, and remediation context for compliance review workflows."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "list-findings"
         }
       },
       "post": {
@@ -14127,6 +14982,9 @@
             "og:title": "Create audit finding | Comp AI API",
             "og:description": "Create an audit finding so teams can track issue ownership, remediation activity, severity, and supporting evidence."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "create-finding"
         }
       }
     },
@@ -14172,6 +15030,9 @@
             "og:title": "List all findings for the organization | Comp AI API",
             "og:description": "List all findings for the organization in Comp AI. Create, review, update, and track audit findings, remediation activity, and finding history for an."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "get-organization-findings"
         }
       }
     },
@@ -14212,6 +15073,9 @@
             "og:title": "Get finding by ID | Comp AI API",
             "og:description": "Get finding by ID in Comp AI. Create, review, update, and track audit findings, remediation activity, and finding history for an organization."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "get-finding-by-id"
         }
       },
       "patch": {
@@ -14260,6 +15124,9 @@
             "og:title": "Update a finding (status transition rules | Comp AI API",
             "og:description": "Update a finding (status transition rules apply) in Comp AI. Create, review, update, and track audit findings, remediation activity, and finding history."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "update-finding"
         }
       },
       "delete": {
@@ -14298,6 +15165,9 @@
             "og:title": "Delete a finding (auditor or platform admin | Comp AI API",
             "og:description": "Delete a finding (auditor or platform admin only) in Comp AI. Create, review, update, and track audit findings, remediation activity, and finding history."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "delete-finding"
         }
       }
     },
@@ -14338,6 +15208,9 @@
             "og:title": "Get activity history for a finding | Comp AI API",
             "og:description": "Get activity history for a finding in Comp AI. Create, review, update, and track audit findings, remediation activity, and finding history for an."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "get-finding-history"
         }
       }
     },
@@ -14369,6 +15242,9 @@
             "og:title": "List security questionnaires | Comp AI API",
             "og:description": "List saved security questionnaires for an organization so teams can track customer reviews, answer status, and response history."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "questionnaire-find-all"
         }
       }
     },
@@ -14409,6 +15285,9 @@
             "og:title": "Get security questionnaire details | Comp AI API",
             "og:description": "Retrieve one saved security questionnaire, including extracted questions, generated answers, and review context for the requesting client."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "find-by-id"
         }
       },
       "delete": {
@@ -14446,6 +15325,58 @@
             "description": "Delete a saved security questionnaire when a customer review or vendor assessment no longer needs to be retained.",
             "og:title": "Delete a security questionnaire | Comp AI API",
             "og:description": "Delete a saved security questionnaire when a customer review or vendor assessment no longer needs to be retained."
+          }
+        },
+        "x-speakeasy-mcp": {
+          "name": "delete-by-id"
+        }
+      }
+    },
+    "/v1/questionnaire/{id}/auto-answer": {
+      "post": {
+        "description": "Starts background answer generation for an already-parsed questionnaire and returns a run handle immediately. Poll GET /v1/questionnaire/:id until answeredQuestions equals totalQuestions, then read the answers from its questions.",
+        "operationId": "QuestionnaireController_triggerAutoAnswer_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TriggerAutoAnswerResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Generate answers for a questionnaire",
+        "tags": [
+          "Questionnaire"
+        ],
+        "x-speakeasy-mcp": {
+          "name": "generate-questionnaire-answers"
+        },
+        "x-mint": {
+          "metadata": {
+            "title": "Generate answers for a questionnaire | Comp AI API",
+            "sidebarTitle": "Generate answers for a questionnaire",
+            "description": "Starts background answer generation for an already-parsed questionnaire and returns a run handle immediately. Poll GET /v1/questionnaire/:id until.",
+            "og:title": "Generate answers for a questionnaire | Comp AI API",
+            "og:description": "Starts background answer generation for an already-parsed questionnaire and returns a run handle immediately. Poll GET /v1/questionnaire/:id until."
           }
         }
       }
@@ -14495,6 +15426,9 @@
             "og:title": "Parse questionnaire content | Comp AI API",
             "og:description": "Parse questionnaire content from a submitted payload so teams can extract security questions before generating or reviewing answers."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "parse-questionnaire"
         }
       }
     },
@@ -14573,6 +15507,9 @@
             "og:title": "Answer one questionnaire question | Comp AI API",
             "og:description": "Generate an answer for one security questionnaire item using the organization evidence library and return source references for review."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "answer-single-question"
         }
       }
     },
@@ -14630,6 +15567,9 @@
             "og:title": "Save questionnaire answer | Comp AI API",
             "og:description": "Save a manual or AI-generated security questionnaire answer for later review, export, and audit tracking."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "save-answer"
         }
       }
     },
@@ -14687,6 +15627,9 @@
             "og:title": "Delete questionnaire answer | Comp AI API",
             "og:description": "Delete a stored questionnaire answer when it should be removed from the active response set."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "delete-answer"
         }
       }
     },
@@ -14728,6 +15671,9 @@
             "og:title": "Export a security questionnaire | Comp AI API",
             "og:description": "Export a saved security questionnaire response package as PDF, CSV, or XLSX for customer and vendor security reviews."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "export-by-id"
         }
       }
     },
@@ -14784,6 +15730,9 @@
             "og:title": "Start questionnaire parsing | Comp AI API",
             "og:description": "Upload a questionnaire payload and start asynchronous parsing, returning a run ID for real-time progress tracking."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "upload-and-parse"
         }
       }
     },
@@ -14864,6 +15813,9 @@
             "og:title": "Upload and parse questionnaire file | Comp AI API",
             "og:description": "Upload a security questionnaire file, extract questions, save the parsed questionnaire, and return its identifier and question count."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "upload-and-parse-upload"
         }
       }
     },
@@ -14939,6 +15891,9 @@
             "og:title": "Auto-answer uploaded questionnaire | Comp AI API",
             "og:description": "Upload a questionnaire file and generate answer exports from approved organization evidence in PDF, CSV, or XLSX format."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "parse-questionnaire-upload"
         }
       }
     },
@@ -14980,6 +15935,9 @@
             "og:title": "Export generated questionnaire answers | Comp AI API",
             "og:description": "Generate and export questionnaire answers from a submitted payload using approved organization evidence."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "auto-answer-and-export"
         }
       }
     },
@@ -15046,6 +16004,9 @@
             "og:title": "Upload and export generated answers | Comp AI API",
             "og:description": "Upload a questionnaire file and return generated answer exports in PDF, CSV, or XLSX format."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "auto-answer-and-export-upload"
         }
       }
     },
@@ -15087,6 +16048,9 @@
             "og:title": "Stream generated questionnaire answers | Comp AI API",
             "og:description": "Stream generated questionnaire answers over server-sent events so clients can show progress while answers are produced."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "auto-answer"
         }
       }
     },
@@ -15117,6 +16081,9 @@
             "og:title": "List knowledge base documents | Comp AI API",
             "og:description": "List uploaded knowledge base documents that Comp AI can use as approved source material for answers, policies, and reviews."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "list-documents"
         }
       }
     },
@@ -15147,6 +16114,9 @@
             "og:title": "List all manual answers for an organization | Comp AI API",
             "og:description": "List all manual answers for an organization in Comp AI. Upload source documents, process them for retrieval, and manage reusable manual answers that power."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "list-manual-answers"
         }
       },
       "post": {
@@ -15185,6 +16155,9 @@
             "og:title": "Save reusable manual answer | Comp AI API",
             "og:description": "Save or update a reusable manual answer for security questionnaires that need approved, consistent response language."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "save-manual-answer"
         }
       }
     },
@@ -15225,6 +16198,9 @@
             "og:title": "Upload knowledge base document | Comp AI API",
             "og:description": "Upload supporting documentation so Comp AI can process approved source material for questionnaire answers and policy workflows."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "upload-document"
         }
       }
     },
@@ -15264,6 +16240,9 @@
             "og:title": "Get a signed download URL for a document | Comp AI API",
             "og:description": "Get a signed download URL for a document in Comp AI. Upload source documents, process them for retrieval, and manage reusable manual answers that power."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "get-download-url"
         }
       }
     },
@@ -15303,6 +16282,9 @@
             "og:title": "Get a signed view URL for a document | Comp AI API",
             "og:description": "Get a signed view URL for a document in Comp AI. Upload source documents, process them for retrieval, and manage reusable manual answers that power."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "get-view-url"
         }
       }
     },
@@ -15342,6 +16324,9 @@
             "og:title": "Delete a knowledge base document | Comp AI API",
             "og:description": "Delete a knowledge base document in Comp AI. Upload source documents, process them for retrieval, and manage reusable manual answers that power."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "delete-document"
         }
       }
     },
@@ -15382,6 +16367,9 @@
             "og:title": "Process knowledge base documents | Comp AI API",
             "og:description": "Start document processing so uploaded knowledge base files become searchable source material for AI-assisted compliance workflows."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "process-documents"
         }
       }
     },
@@ -15421,6 +16409,9 @@
             "og:title": "Create a public access token for a run | Comp AI API",
             "og:description": "Create a public access token for a run in Comp AI. Upload source documents, process them for retrieval, and manage reusable manual answers that power."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "create-run-token"
         }
       }
     },
@@ -15470,6 +16461,9 @@
             "og:title": "Delete a manual answer | Comp AI API",
             "og:description": "Delete a manual answer in Comp AI. Upload source documents, process them for retrieval, and manage reusable manual answers that power questionnaires and AI."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "delete-manual-answer"
         }
       }
     },
@@ -15510,6 +16504,9 @@
             "og:title": "Delete all manual answers for an organization | Comp AI API",
             "og:description": "Delete all manual answers for an organization in Comp AI. Upload source documents, process them for retrieval, and manage reusable manual answers that power."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "delete-all-manual-answers"
         }
       }
     },
@@ -15562,6 +16559,9 @@
             "og:title": "Save a SOA answer | Comp AI API",
             "og:description": "Save a SOA answer in Comp AI. Create, auto-fill, review, approve, and export ISO 27001 Statement of Applicability documents."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "soa-save-answer"
         }
       }
     },
@@ -15602,6 +16602,9 @@
             "og:title": "Auto-fill ISO 27001 SOA | Comp AI API",
             "og:description": "Auto-fill a Statement of Applicability draft using organization context and framework mappings for ISO 27001 review."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "auto-fill"
         }
       }
     },
@@ -15642,6 +16645,9 @@
             "og:title": "Create a new SOA document | Comp AI API",
             "og:description": "Create a new SOA document in Comp AI. Create, auto-fill, review, approve, and export ISO 27001 Statement of Applicability documents."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "create-document"
         }
       }
     },
@@ -15682,6 +16688,9 @@
             "og:title": "Ensure SOA configuration and document exist | Comp AI API",
             "og:description": "Ensure SOA configuration and document exist in Comp AI. Create, auto-fill, review, approve, and export ISO 27001 Statement of Applicability documents."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "ensure-setup"
         }
       }
     },
@@ -15722,6 +16731,9 @@
             "og:title": "Approve a SOA document | Comp AI API",
             "og:description": "Approve a SOA document in Comp AI. Create, auto-fill, review, approve, and export ISO 27001 Statement of Applicability documents."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "approve-document"
         }
       }
     },
@@ -15762,6 +16774,9 @@
             "og:title": "Decline a SOA document | Comp AI API",
             "og:description": "Decline a SOA document in Comp AI. Create, auto-fill, review, approve, and export ISO 27001 Statement of Applicability documents."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "decline-document"
         }
       }
     },
@@ -15802,6 +16817,9 @@
             "og:title": "Submit SOA document for approval | Comp AI API",
             "og:description": "Submit SOA document for approval in Comp AI. Create, auto-fill, review, approve, and export ISO 27001 Statement of Applicability documents."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "submit-for-approval"
         }
       }
     },
@@ -15842,6 +16860,9 @@
             "og:title": "Export ISO 27001 SOA | Comp AI API",
             "og:description": "Export the approved Statement of Applicability document for ISO 27001 auditors, customer reviews, and internal records."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "export-document"
         }
       }
     },
@@ -15881,6 +16902,9 @@
             "og:title": "List integration providers | Comp AI API",
             "og:description": "List available integration providers that can connect to the organization for automated evidence collection and compliance checks."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "list-providers"
         }
       }
     },
@@ -15920,6 +16944,9 @@
             "og:title": "Get an integration provider by slug | Comp AI API",
             "og:description": "Get an integration provider by slug in Comp AI. Connect vendor systems, configure OAuth apps, run compliance checks, sync employees, manage variables."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "get-provider"
         }
       }
     },
@@ -15950,11 +16977,24 @@
             "og:title": "List integration connections | Comp AI API",
             "og:description": "List integration connections in Comp AI. Connect vendor systems, configure OAuth apps, run compliance checks, sync employees, manage variables, and collect."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "list-connections"
         }
       },
       "post": {
         "operationId": "ConnectionsController_createConnection_v1",
         "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateConnectionDto"
+              }
+            }
+          }
+        },
         "responses": {
           "201": {
             "description": ""
@@ -15978,6 +17018,9 @@
             "og:title": "Create integration connection | Comp AI API",
             "og:description": "Create an integration connection so Comp AI can collect evidence, run checks, or sync data from a connected provider."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "create-connection"
         }
       }
     },
@@ -16017,6 +17060,9 @@
             "og:title": "Get an integration connection by ID | Comp AI API",
             "og:description": "Get an integration connection by ID in Comp AI. Connect vendor systems, configure OAuth apps, run compliance checks, sync employees, manage variables."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "get-connection"
         }
       },
       "delete": {
@@ -16054,6 +17100,9 @@
             "og:title": "Delete an integration connection | Comp AI API",
             "og:description": "Delete an integration connection in Comp AI. Connect vendor systems, configure OAuth apps, run compliance checks, sync employees, manage variables."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "delete-connection"
         }
       },
       "patch": {
@@ -16068,6 +17117,16 @@
             }
           }
         ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateConnectionDto"
+              }
+            }
+          }
+        },
         "responses": {
           "200": {
             "description": ""
@@ -16091,6 +17150,9 @@
             "og:title": "Update an integration connection | Comp AI API",
             "og:description": "Update an integration connection in Comp AI. Connect vendor systems, configure OAuth apps, run compliance checks, sync employees, manage variables."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "update-connection"
         }
       }
     },
@@ -16130,6 +17192,9 @@
             "og:title": "Test an integration connection | Comp AI API",
             "og:description": "Test an integration connection in Comp AI. Connect vendor systems, configure OAuth apps, run compliance checks, sync employees, manage variables."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "test-connection"
         }
       }
     },
@@ -16169,6 +17234,9 @@
             "og:title": "Pause an integration connection | Comp AI API",
             "og:description": "Pause an integration connection in Comp AI. Connect vendor systems, configure OAuth apps, run compliance checks, sync employees, manage variables."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "pause-connection"
         }
       }
     },
@@ -16208,6 +17276,9 @@
             "og:title": "Resume an integration connection | Comp AI API",
             "og:description": "Resume an integration connection in Comp AI. Connect vendor systems, configure OAuth apps, run compliance checks, sync employees, manage variables."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "resume-connection"
         }
       }
     },
@@ -16247,6 +17318,9 @@
             "og:title": "Disconnect an integration | Comp AI API",
             "og:description": "Disconnect an integration in Comp AI. Connect vendor systems, configure OAuth apps, run compliance checks, sync employees, manage variables, and collect."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "disconnect-connection"
         }
       }
     },
@@ -16263,6 +17337,16 @@
             }
           }
         ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateConnectionServicesDto"
+              }
+            }
+          }
+        },
         "responses": {
           "200": {
             "description": ""
@@ -16286,6 +17370,9 @@
             "og:title": "Set services enabled on a connection | Comp AI API",
             "og:description": "Set services enabled on a connection in Comp AI. Connect vendor systems, configure OAuth apps, run compliance checks, sync employees, manage variables."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "update-connection-services"
         }
       },
       "get": {
@@ -16323,6 +17410,9 @@
             "og:title": "List services enabled on a connection | Comp AI API",
             "og:description": "List services enabled on a connection in Comp AI. Connect vendor systems, configure OAuth apps, run compliance checks, sync employees, manage variables."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "get-connection-services"
         }
       }
     },
@@ -16362,6 +17452,9 @@
             "og:title": "List check definitions for a provider | Comp AI API",
             "og:description": "List check definitions for a provider in Comp AI. Connect vendor systems, configure OAuth apps, run compliance checks, sync employees, manage variables."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "list-provider-checks"
         }
       }
     },
@@ -16401,6 +17494,9 @@
             "og:title": "List checks for a connection | Comp AI API",
             "og:description": "List checks for a connection in Comp AI. Connect vendor systems, configure OAuth apps, run compliance checks, sync employees, manage variables, and collect."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "list-connection-checks"
         }
       }
     },
@@ -16417,6 +17513,16 @@
             }
           }
         ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RunChecksDto"
+              }
+            }
+          }
+        },
         "responses": {
           "201": {
             "description": ""
@@ -16440,6 +17546,9 @@
             "og:title": "Run integration checks | Comp AI API",
             "og:description": "Run all compliance checks for an integration connection and capture results as automated evidence."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "run-connection-checks"
         }
       }
     },
@@ -16487,6 +17596,9 @@
             "og:title": "Run a single check on a connection | Comp AI API",
             "og:description": "Run a single check on a connection in Comp AI. Connect vendor systems, configure OAuth apps, run compliance checks, sync employees, manage variables."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "run-single-check"
         }
       }
     },
@@ -16526,6 +17638,9 @@
             "og:title": "List variable definitions for a provider | Comp AI API",
             "og:description": "List variable definitions for a provider in Comp AI. Connect vendor systems, configure OAuth apps, run compliance checks, sync employees, manage variables."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "get-provider-variables"
         }
       }
     },
@@ -16565,6 +17680,9 @@
             "og:title": "List connection variables | Comp AI API",
             "og:description": "List connection variables in Comp AI. Connect vendor systems, configure OAuth apps, run compliance checks, sync employees, manage variables, and collect."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "get-connection-variables"
         }
       },
       "post": {
@@ -16579,6 +17697,16 @@
             }
           }
         ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SaveVariablesDto"
+              }
+            }
+          }
+        },
         "responses": {
           "201": {
             "description": ""
@@ -16602,6 +17730,9 @@
             "og:title": "Update connection variables | Comp AI API",
             "og:description": "Update connection variables in Comp AI. Connect vendor systems, configure OAuth apps, run compliance checks, sync employees, manage variables, and collect."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "save-connection-variables"
         }
       }
     },
@@ -16649,6 +17780,9 @@
             "og:title": "Get options for a connection variable | Comp AI API",
             "og:description": "Get options for a connection variable in Comp AI. Connect vendor systems, configure OAuth apps, run compliance checks, sync employees, manage variables."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "fetch-variable-options"
         }
       }
     },
@@ -16688,6 +17822,9 @@
             "og:title": "List checks for a task template | Comp AI API",
             "og:description": "List checks for a task template in Comp AI. Connect vendor systems, configure OAuth apps, run compliance checks, sync employees, manage variables."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "get-checks-for-task-template"
         }
       }
     },
@@ -16727,6 +17864,9 @@
             "og:title": "List checks attached to a task | Comp AI API",
             "og:description": "List checks attached to a task in Comp AI. Connect vendor systems, configure OAuth apps, run compliance checks, sync employees, manage variables."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "get-checks-for-task"
         }
       }
     },
@@ -16743,6 +17883,16 @@
             }
           }
         ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RunCheckForTaskDto"
+              }
+            }
+          }
+        },
         "responses": {
           "201": {
             "description": ""
@@ -16766,6 +17916,9 @@
             "og:title": "Run a check for a task | Comp AI API",
             "og:description": "Run a check for a task in Comp AI. Connect vendor systems, configure OAuth apps, run compliance checks, sync employees, manage variables, and collect."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "run-check-for-task"
         }
       }
     },
@@ -16782,6 +17935,16 @@
             }
           }
         ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ToggleCheckForTaskDto"
+              }
+            }
+          }
+        },
         "responses": {
           "201": {
             "description": ""
@@ -16805,6 +17968,9 @@
             "og:title": "Disconnect checks from a task | Comp AI API",
             "og:description": "Disconnect checks from a task in Comp AI. Connect vendor systems, configure OAuth apps, run compliance checks, sync employees, manage variables, and collect."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "disconnect-check-from-task"
         }
       }
     },
@@ -16821,6 +17987,16 @@
             }
           }
         ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ToggleCheckForTaskDto"
+              }
+            }
+          }
+        },
         "responses": {
           "201": {
             "description": ""
@@ -16844,6 +18020,9 @@
             "og:title": "Reconnect checks to a task | Comp AI API",
             "og:description": "Reconnect checks to a task in Comp AI. Connect vendor systems, configure OAuth apps, run compliance checks, sync employees, manage variables, and collect."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "reconnect-check-to-task"
         }
       }
     },
@@ -16891,6 +18070,9 @@
             "og:title": "List check runs for a task | Comp AI API",
             "og:description": "List check runs for a task in Comp AI. Connect vendor systems, configure OAuth apps, run compliance checks, sync employees, manage variables, and collect."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "get-task-check-runs"
         }
       }
     },
@@ -16930,6 +18112,9 @@
             "og:title": "Sync Google Workspace employees | Comp AI API",
             "og:description": "Sync Google Workspace employees in Comp AI. Connect vendor systems, configure OAuth apps, run compliance checks, sync employees, manage variables."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "sync-google-workspace-employees"
         }
       }
     },
@@ -16960,6 +18145,9 @@
             "og:title": "Get Google Workspace sync status | Comp AI API",
             "og:description": "Get Google Workspace sync status in Comp AI. Connect vendor systems, configure OAuth apps, run compliance checks, sync employees, manage variables."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "get-google-workspace-status"
         }
       }
     },
@@ -16999,6 +18187,9 @@
             "og:title": "Sync Rippling employees | Comp AI API",
             "og:description": "Sync Rippling employees in Comp AI. Connect vendor systems, configure OAuth apps, run compliance checks, sync employees, manage variables, and collect."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "sync-rippling-employees"
         }
       }
     },
@@ -17029,6 +18220,9 @@
             "og:title": "Get Rippling sync status | Comp AI API",
             "og:description": "Get Rippling sync status in Comp AI. Connect vendor systems, configure OAuth apps, run compliance checks, sync employees, manage variables, and collect."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "get-rippling-status"
         }
       }
     },
@@ -17068,6 +18262,9 @@
             "og:title": "Sync JumpCloud employees | Comp AI API",
             "og:description": "Sync JumpCloud employees in Comp AI. Connect vendor systems, configure OAuth apps, run compliance checks, sync employees, manage variables, and collect."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "sync-jump-cloud-employees"
         }
       }
     },
@@ -17098,6 +18295,9 @@
             "og:title": "Get JumpCloud sync status | Comp AI API",
             "og:description": "Get JumpCloud sync status in Comp AI. Connect vendor systems, configure OAuth apps, run compliance checks, sync employees, manage variables, and collect."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "get-jump-cloud-status"
         }
       }
     },
@@ -17128,11 +18328,24 @@
             "og:title": "Get the currently configured employee sync | Comp AI API",
             "og:description": "Get the currently configured employee sync provider in Comp AI. Connect vendor systems, configure OAuth apps, run compliance checks, sync employees, manage."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "get-employee-sync-provider"
         }
       },
       "post": {
         "operationId": "SyncController_setEmployeeSyncProvider_v1",
         "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetEmployeeSyncProviderDto"
+              }
+            }
+          }
+        },
         "responses": {
           "201": {
             "description": ""
@@ -17156,6 +18369,9 @@
             "og:title": "Set the employee sync provider | Comp AI API",
             "og:description": "Set the employee sync provider in Comp AI. Connect vendor systems, configure OAuth apps, run compliance checks, sync employees, manage variables."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "set-employee-sync-provider"
         }
       }
     },
@@ -17186,6 +18402,9 @@
             "og:title": "List employee sync providers available to the | Comp AI API",
             "og:description": "List employee sync providers available to the org in Comp AI. Connect vendor systems, configure OAuth apps, run compliance checks, sync employees, manage."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "get-available-sync-providers"
         }
       }
     },
@@ -17233,6 +18452,9 @@
             "og:title": "Sync employees for a dynamic provider | Comp AI API",
             "og:description": "Sync employees for a dynamic provider in Comp AI. Connect vendor systems, configure OAuth apps, run compliance checks, sync employees, manage variables."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "sync-dynamic-provider-employees"
         }
       }
     },
@@ -17267,6 +18489,9 @@
             "og:title": "List recent cloud security activity | Comp AI API",
             "og:description": "List recent cloud security activity in Comp AI. Run AWS, Azure, and GCP cloud security scans, detect enabled services, review findings, and connect cloud."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "get-activity"
         }
       }
     },
@@ -17292,6 +18517,9 @@
             "og:title": "List supported cloud providers | Comp AI API",
             "og:description": "List supported cloud providers in Comp AI. Run AWS, Azure, and GCP cloud security scans, detect enabled services, review findings, and connect cloud posture."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "get-providers"
         }
       }
     },
@@ -17317,6 +18545,9 @@
             "og:title": "List cloud security findings | Comp AI API",
             "og:description": "List cloud security findings discovered by scans so teams can prioritize remediation before issues become audit findings."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "get-findings"
         }
       }
     },
@@ -17361,6 +18592,9 @@
             "og:title": "Mark a finding as an exception so it no | Comp AI API",
             "og:description": "Mark a finding as an exception so it no longer appears in the active Scan Results list in Comp AI. Run AWS, Azure, and GCP cloud security scans, detect."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "mark-finding-as-exception"
         }
       }
     },
@@ -17405,6 +18639,9 @@
             "og:title": "Switch the AWS scan engine for a connection | Comp AI API",
             "og:description": "Switch the AWS scan engine for a connection (Comp AI scanners ↔ Security Hub) in Comp AI. Run AWS, Azure, and GCP cloud security scans, detect enabled."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "update-aws-scan-mode"
         }
       }
     },
@@ -17439,6 +18676,9 @@
             "og:title": "Revoke an exception, reopening the finding | Comp AI API",
             "og:description": "Revoke an exception, reopening the finding in Comp AI. Run AWS, Azure, and GCP cloud security scans, detect enabled services, review findings, and connect."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "revoke-exception"
         }
       }
     },
@@ -17473,6 +18713,9 @@
             "og:title": "List resolution, exception, and regression | Comp AI API",
             "og:description": "List resolution, exception, and regression history for a connection in Comp AI. Run AWS, Azure, and GCP cloud security scans, detect enabled services."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "get-history"
         }
       }
     },
@@ -17507,6 +18750,9 @@
             "og:title": "Resolve the \"About this check\" description | Comp AI API",
             "og:description": "Resolve the \"About this check\" description for a finding (AI-cached for AWS; provider-derived for GCP/Azure) in Comp AI. Run AWS, Azure, and GCP cloud."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "get-check-definition"
         }
       }
     },
@@ -17541,6 +18787,9 @@
             "og:title": "Run cloud security scan | Comp AI API",
             "og:description": "Trigger a cloud security scan for a connected AWS, Azure, or GCP account and collect findings for compliance remediation."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "scan"
         }
       }
     },
@@ -17575,6 +18824,9 @@
             "og:title": "Detect available cloud services for a | Comp AI API",
             "og:description": "Detect available cloud services for a connection in Comp AI. Run AWS, Azure, and GCP cloud security scans, detect enabled services, review findings."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "detect-services"
         }
       }
     },
@@ -17609,6 +18861,9 @@
             "og:title": "Detect the GCP organization for a connection | Comp AI API",
             "og:description": "Detect the GCP organization for a connection in Comp AI. Run AWS, Azure, and GCP cloud security scans, detect enabled services, review findings, and connect."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "detect-gcp-org"
         }
       }
     },
@@ -17643,6 +18898,9 @@
             "og:title": "Select GCP projects for a connection | Comp AI API",
             "og:description": "Select GCP projects for a connection in Comp AI. Run AWS, Azure, and GCP cloud security scans, detect enabled services, review findings, and connect cloud."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "select-gcp-projects"
         }
       }
     },
@@ -17677,6 +18935,9 @@
             "og:title": "Set up GCP for a connection | Comp AI API",
             "og:description": "Set up GCP for a connection in Comp AI. Run AWS, Azure, and GCP cloud security scans, detect enabled services, review findings, and connect cloud posture."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "setup-gcp"
         }
       }
     },
@@ -17711,6 +18972,9 @@
             "og:title": "Resolve a GCP setup step | Comp AI API",
             "og:description": "Resolve a GCP setup step in Comp AI. Run AWS, Azure, and GCP cloud security scans, detect enabled services, review findings, and connect cloud posture."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "resolve-gcp-setup-step"
         }
       }
     },
@@ -17745,6 +19009,9 @@
             "og:title": "Set up Azure for a connection | Comp AI API",
             "og:description": "Set up Azure for a connection in Comp AI. Run AWS, Azure, and GCP cloud security scans, detect enabled services, review findings, and connect cloud posture."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "setup-azure"
         }
       }
     },
@@ -17779,6 +19046,9 @@
             "og:title": "Validate Azure credentials for a connection | Comp AI API",
             "og:description": "Validate Azure credentials for a connection in Comp AI. Run AWS, Azure, and GCP cloud security scans, detect enabled services, review findings, and connect."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "validate-azure"
         }
       }
     },
@@ -17813,6 +19083,9 @@
             "og:title": "Trigger a cloud security run for a connection | Comp AI API",
             "og:description": "Trigger a cloud security run for a connection in Comp AI. Run AWS, Azure, and GCP cloud security scans, detect enabled services, review findings."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "trigger-scan"
         }
       }
     },
@@ -17855,6 +19128,9 @@
             "og:title": "Get a cloud security scan run by ID | Comp AI API",
             "og:description": "Get a cloud security scan run by ID in Comp AI. Run AWS, Azure, and GCP cloud security scans, detect enabled services, review findings, and connect cloud."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "get-run-status"
         }
       }
     },
@@ -17941,6 +19217,9 @@
             "og:title": "Get task items statistics for an entity | Comp AI API",
             "og:description": "Get task items statistics for an entity in Comp AI. Manage task items and attachments linked to operational entities such as risks and vendors."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "get-task-items-stats"
         }
       }
     },
@@ -18104,6 +19383,9 @@
             "og:title": "Get task items for an entity | Comp AI API",
             "og:description": "Get task items for an entity in Comp AI. Manage task items and attachments linked to operational entities such as risks and vendors."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "get-task-items"
         }
       },
       "post": {
@@ -18149,6 +19431,9 @@
             "og:title": "Create a new task item | Comp AI API",
             "og:description": "Create a new task item in Comp AI. Manage task items and attachments linked to operational entities such as risks and vendors."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "create-task-item"
         }
       }
     },
@@ -18207,6 +19492,9 @@
             "og:title": "Update a task item | Comp AI API",
             "og:description": "Update a task item in Comp AI. Manage task items and attachments linked to operational entities such as risks and vendors."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "update-task-item"
         }
       },
       "delete": {
@@ -18246,6 +19534,9 @@
             "og:title": "Delete a task item | Comp AI API",
             "og:description": "Delete a task item in Comp AI. Manage task items and attachments linked to operational entities such as risks and vendors."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "delete-task-item"
         }
       }
     },
@@ -18293,6 +19584,9 @@
             "og:title": "Upload attachment to task item | Comp AI API",
             "og:description": "Upload a file attachment for a task item with proper S3 path structure: org_{orgId}/attachments/task-item/{entityType}/{entityId}/files."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "upload-task-item-attachment"
         }
       }
     },
@@ -18334,6 +19628,9 @@
             "og:title": "Delete attachment from task item | Comp AI API",
             "og:description": "Delete attachment from task item in Comp AI. Manage task items and attachments linked to operational entities such as risks and vendors."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "delete-task-item-attachment"
         }
       }
     },
@@ -18375,6 +19672,9 @@
             "og:title": "Get task item activity log | Comp AI API",
             "og:description": "Get task item activity log in Comp AI. Manage task items and attachments linked to operational entities such as risks and vendors."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "get-task-item-activity"
         }
       }
     },
@@ -18462,6 +19762,9 @@
             "og:title": "Create a custom role | Comp AI API",
             "og:description": "Create a custom role in Comp AI. Create custom roles and resolve permission sets for organization-level access control."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "create-role"
         }
       },
       "get": {
@@ -18547,6 +19850,9 @@
             "og:title": "List all roles | Comp AI API",
             "og:description": "List all roles in Comp AI. Create custom roles and resolve permission sets for organization-level access control."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "list-roles"
         }
       }
     },
@@ -18607,6 +19913,9 @@
             "og:title": "Resolve permissions for custom roles | Comp AI API",
             "og:description": "Returns the merged permissions for the given custom role names. Used by the frontend to resolve effective permissions for users with custom roles."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "get-permissions-for-roles"
         }
       }
     },
@@ -18683,6 +19992,9 @@
             "og:title": "Get a role by ID | Comp AI API",
             "og:description": "Get a role by ID in Comp AI. Create custom roles and resolve permission sets for organization-level access control."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "get-role"
         }
       },
       "patch": {
@@ -18773,6 +20085,9 @@
             "og:title": "Update a custom role | Comp AI API",
             "og:description": "Update a custom role in Comp AI. Create custom roles and resolve permission sets for organization-level access control."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "update-role"
         }
       },
       "delete": {
@@ -18836,6 +20151,9 @@
             "og:title": "Delete a custom role | Comp AI API",
             "og:description": "Delete a custom role in Comp AI. Create custom roles and resolve permission sets for organization-level access control."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "delete-role"
         }
       }
     },
@@ -18866,6 +20184,9 @@
             "og:title": "List training completions | Comp AI API",
             "og:description": "List security awareness and HIPAA training completion records for workforce compliance tracking and audit evidence."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "get-completions"
         }
       }
     },
@@ -18905,6 +20226,9 @@
             "og:title": "Mark a training video as complete | Comp AI API",
             "og:description": "Marks a specific training video as completed for the authenticated member. Triggers completion email if all training is now done."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "mark-video-complete"
         }
       }
     },
@@ -18952,6 +20276,9 @@
             "og:title": "Send training completion email with | Comp AI API",
             "og:description": "Send training completion email with certificate in Comp AI. Record security awareness and HIPAA training completion status and generate completion."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "send-training-completion-email"
         }
       }
     },
@@ -18995,6 +20322,9 @@
             "og:title": "Generate training certificate | Comp AI API",
             "og:description": "Generate a training completion certificate that can be shared with auditors or attached as workforce security evidence."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "generate-certificate"
         }
       }
     },
@@ -19038,6 +20368,9 @@
             "og:title": "Generate HIPAA training certificate PDF | Comp AI API",
             "og:description": "Generate HIPAA training certificate PDF in Comp AI. Record security awareness and HIPAA training completion status and generate completion certificates."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "generate-hipaa-certificate"
         }
       }
     },
@@ -19078,6 +20411,9 @@
             "og:title": "Get the organization chart | Comp AI API",
             "og:description": "Get the organization chart in Comp AI. Manage organization chart metadata and evidence used for governance, accountability, and audit readiness."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "get-org-chart"
         }
       },
       "put": {
@@ -19116,6 +20452,9 @@
             "og:title": "Create or update an interactive organization | Comp AI API",
             "og:description": "Create or update an interactive organization chart in Comp AI. Manage organization chart metadata and evidence used for governance, accountability."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "upsert-org-chart"
         }
       },
       "delete": {
@@ -19154,6 +20493,9 @@
             "og:title": "Delete the organization chart | Comp AI API",
             "og:description": "Delete the organization chart in Comp AI. Manage organization chart metadata and evidence used for governance, accountability, and audit readiness."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "delete-org-chart"
         }
       }
     },
@@ -19204,6 +20546,9 @@
             "og:title": "Upload an image as the organization chart | Comp AI API",
             "og:description": "Upload an image as the organization chart in Comp AI. Manage organization chart metadata and evidence used for governance, accountability, and audit."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "upload-org-chart"
         }
       }
     },
@@ -19244,6 +20589,9 @@
             "og:title": "List evidence forms | Comp AI API",
             "og:description": "List structured evidence forms that collect recurring submissions for security, HR, IT, finance, and compliance workflows."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "list-forms"
         }
       }
     },
@@ -19284,6 +20632,9 @@
             "og:title": "Get submission statuses for all forms | Comp AI API",
             "og:description": "Get submission statuses for all forms in Comp AI. Collect, review, upload, and export structured evidence submissions for compliance tasks and document."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "get-form-statuses"
         }
       }
     },
@@ -19324,6 +20675,9 @@
             "og:title": "Get document relevance settings | Comp AI API",
             "og:description": "Get document relevance settings in Comp AI. Collect, review, upload, and export structured evidence submissions for compliance tasks and document."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "get-form-settings"
         }
       }
     },
@@ -19372,6 +20726,9 @@
             "og:title": "Update document relevance setting | Comp AI API",
             "og:description": "Update document relevance setting in Comp AI. Collect, review, upload, and export structured evidence submissions for compliance tasks and document."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "update-form-setting"
         }
       }
     },
@@ -19420,6 +20777,9 @@
             "og:title": "Get current user submissions | Comp AI API",
             "og:description": "Get current user submissions in Comp AI. Collect, review, upload, and export structured evidence submissions for compliance tasks and document requirements."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "get-my-submissions"
         }
       }
     },
@@ -19460,6 +20820,9 @@
             "og:title": "Get pending submission count for current user | Comp AI API",
             "og:description": "Get pending submission count for current user in Comp AI. Collect, review, upload, and export structured evidence submissions for compliance tasks."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "get-pending-submission-count"
         }
       }
     },
@@ -19532,6 +20895,9 @@
             "og:title": "Get form definition and submissions | Comp AI API",
             "og:description": "Get form definition and submissions in Comp AI. Collect, review, upload, and export structured evidence submissions for compliance tasks and document."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "get-form-with-submissions"
         }
       }
     },
@@ -19588,6 +20954,9 @@
             "og:title": "Get a single submission | Comp AI API",
             "og:description": "Get a single submission in Comp AI. Collect, review, upload, and export structured evidence submissions for compliance tasks and document requirements."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "get-submission"
         }
       },
       "delete": {
@@ -19642,6 +21011,9 @@
             "og:title": "Delete a submission | Comp AI API",
             "og:description": "Delete a submission in Comp AI. Collect, review, upload, and export structured evidence submissions for compliance tasks and document requirements."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "delete-submission"
         }
       }
     },
@@ -19690,6 +21062,9 @@
             "og:title": "Submit evidence form | Comp AI API",
             "og:description": "Submit structured evidence responses and attachments for review against a compliance task or document requirement."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "submit-form"
         }
       }
     },
@@ -19738,6 +21113,9 @@
             "og:title": "Upload a file as an evidence submission | Comp AI API",
             "og:description": "Upload a file as an evidence submission in Comp AI. Collect, review, upload, and export structured evidence submissions for compliance tasks and document."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "upload-submission"
         }
       }
     },
@@ -19794,6 +21172,9 @@
             "og:title": "Review evidence submission | Comp AI API",
             "og:description": "Approve or reject a submitted evidence form so task status and audit readiness reflect the latest review decision."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "review-submission"
         }
       }
     },
@@ -19834,6 +21215,9 @@
             "og:title": "Upload evidence form file | Comp AI API",
             "og:description": "Upload evidence form file in Comp AI. Collect, review, upload, and export structured evidence submissions for compliance tasks and document requirements."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "upload-file"
         }
       }
     },
@@ -19882,6 +21266,9 @@
             "og:title": "Export evidence submissions | Comp AI API",
             "og:description": "Export evidence form submissions as CSV for auditor requests, offline review, or internal compliance reporting."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "export-csv"
         }
       }
     },
@@ -19929,6 +21316,9 @@
             "og:title": "List compliance frameworks | Comp AI API",
             "og:description": "List active SOC 2, ISO 27001, HIPAA, GDPR, and custom compliance frameworks with implementation status and progress data."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "frameworks-find-all"
         }
       },
       "post": {
@@ -19967,6 +21357,9 @@
             "og:title": "Add compliance frameworks | Comp AI API",
             "og:description": "Add one or more compliance frameworks to an organization so tasks, controls, evidence, and readiness tracking can be generated."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "add-frameworks"
         }
       }
     },
@@ -19997,6 +21390,9 @@
             "og:title": "List available frameworks | Comp AI API",
             "og:description": "List frameworks available for activation before starting a new compliance program or expanding into another standard."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "find-available"
         }
       }
     },
@@ -20027,6 +21423,9 @@
             "og:title": "Get framework readiness scores | Comp AI API",
             "og:description": "Retrieve framework readiness scores so teams can report progress toward audit readiness across active compliance standards."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "get-scores"
         }
       }
     },
@@ -20057,6 +21456,9 @@
             "og:title": "Get update statuses for all framework | Comp AI API",
             "og:description": "Get update statuses for all framework instances in Comp AI. Manage SOC 2, ISO 27001, HIPAA, GDPR, and custom framework instances, requirements, scores."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "get-all-update-statuses"
         }
       }
     },
@@ -20096,6 +21498,9 @@
             "og:title": "Get a single framework instance with full | Comp AI API",
             "og:description": "Get a single framework instance with full detail in Comp AI. Manage SOC 2, ISO 27001, HIPAA, GDPR, and custom framework instances, requirements, scores."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "frameworks-find-one"
         }
       },
       "delete": {
@@ -20133,6 +21538,9 @@
             "og:title": "Delete a framework instance | Comp AI API",
             "og:description": "Delete a framework instance in Comp AI. Manage SOC 2, ISO 27001, HIPAA, GDPR, and custom framework instances, requirements, scores, and sync history."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "delete"
         }
       }
     },
@@ -20180,6 +21588,9 @@
             "og:title": "Get a specific requirement with related | Comp AI API",
             "og:description": "Get a specific requirement with related controls in Comp AI. Manage SOC 2, ISO 27001, HIPAA, GDPR, and custom framework instances, requirements, scores."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "find-requirement"
         }
       }
     },
@@ -20220,6 +21631,9 @@
             "og:title": "Create a custom framework for this | Comp AI API",
             "og:description": "Create a custom framework for this organization in Comp AI. Manage SOC 2, ISO 27001, HIPAA, GDPR, and custom framework instances, requirements, scores."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "create-custom"
         }
       }
     },
@@ -20269,6 +21683,9 @@
             "og:title": "Add a custom requirement to a framework | Comp AI API",
             "og:description": "Add a custom requirement to a framework instance in Comp AI. Manage SOC 2, ISO 27001, HIPAA, GDPR, and custom framework instances, requirements, scores."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "create-requirement"
         }
       }
     },
@@ -20318,6 +21735,9 @@
             "og:title": "Link (clone) existing requirements from | Comp AI API",
             "og:description": "Link (clone) existing requirements from another framework into this one in Comp AI. Manage SOC 2, ISO 27001, HIPAA, GDPR, and custom framework instances."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "link-requirements"
         }
       }
     },
@@ -20375,6 +21795,9 @@
             "og:title": "Link existing org controls to a requirement | Comp AI API",
             "og:description": "Link existing org controls to a requirement in Comp AI. Manage SOC 2, ISO 27001, HIPAA, GDPR, and custom framework instances, requirements, scores, and sync."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "link-controls"
         }
       }
     },
@@ -20414,6 +21837,9 @@
             "og:title": "Get the update status for a framework instance | Comp AI API",
             "og:description": "Get the update status for a framework instance in Comp AI. Manage SOC 2, ISO 27001, HIPAA, GDPR, and custom framework instances, requirements, scores."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "get-update-status"
         }
       }
     },
@@ -20453,6 +21879,9 @@
             "og:title": "Preview changes from updating a framework | Comp AI API",
             "og:description": "Preview changes from updating a framework instance in Comp AI. Manage SOC 2, ISO 27001, HIPAA, GDPR, and custom framework instances, requirements, scores."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "get-update-preview"
         }
       }
     },
@@ -20502,6 +21931,9 @@
             "og:title": "Sync framework requirements | Comp AI API",
             "og:description": "Sync framework requirements, controls, and tasks after framework content changes so compliance tracking remains current."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "sync-framework"
         }
       }
     },
@@ -20551,6 +21983,9 @@
             "og:title": "Roll back a framework sync operation | Comp AI API",
             "og:description": "Roll back a framework sync operation in Comp AI. Manage SOC 2, ISO 27001, HIPAA, GDPR, and custom framework instances, requirements, scores, and sync history."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "rollback-framework"
         }
       }
     },
@@ -20590,6 +22025,9 @@
             "og:title": "Get sync history for a framework instance | Comp AI API",
             "og:description": "Get sync history for a framework instance in Comp AI. Manage SOC 2, ISO 27001, HIPAA, GDPR, and custom framework instances, requirements, scores, and sync."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "get-sync-history"
         }
       }
     },
@@ -20657,6 +22095,9 @@
             "og:title": "List audit logs | Comp AI API",
             "og:description": "List organization audit logs for compliance activity, access changes, evidence updates, and customer-facing review events."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "get-audit-logs"
         }
       }
     },
@@ -20731,6 +22172,9 @@
             "og:title": "List compliance controls | Comp AI API",
             "og:description": "List controls with linked policies, tasks, requirements, and document types for SOC 2, ISO 27001, HIPAA, and GDPR programs."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "controls-find-all"
         }
       },
       "post": {
@@ -20769,6 +22213,9 @@
             "og:title": "Create compliance control | Comp AI API",
             "og:description": "Create a custom compliance control and connect it to framework requirements, policies, tasks, and evidence expectations."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "create"
         }
       }
     },
@@ -20799,6 +22246,9 @@
             "og:title": "Get dropdown options for creating controls | Comp AI API",
             "og:description": "Get dropdown options for creating controls in Comp AI. Manage controls, map them to policies, tasks, framework requirements, and evidence document types."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "get-options"
         }
       }
     },
@@ -20846,6 +22296,9 @@
             "og:title": "Get control detail with progress | Comp AI API",
             "og:description": "Get control detail with progress in Comp AI. Manage controls, map them to policies, tasks, framework requirements, and evidence document types, and track."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "controls-find-one"
         }
       },
       "delete": {
@@ -20883,6 +22336,9 @@
             "og:title": "Delete a control | Comp AI API",
             "og:description": "Delete a control in Comp AI. Manage controls, map them to policies, tasks, framework requirements, and evidence document types, and track implementation."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "controls-delete"
         }
       }
     },
@@ -20940,6 +22396,9 @@
             "og:title": "Link policies to control | Comp AI API",
             "og:description": "Link policies to a control so auditors and reviewers can trace control implementation back to approved policy evidence."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "link-policies"
         }
       }
     },
@@ -20997,6 +22456,9 @@
             "og:title": "Link tasks to control | Comp AI API",
             "og:description": "Link compliance tasks to a control so implementation work, evidence collection, and review status stay connected."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "link-tasks"
         }
       }
     },
@@ -21046,6 +22508,9 @@
             "og:title": "Link existing requirements to a control | Comp AI API",
             "og:description": "Link existing requirements to a control in Comp AI. Manage controls, map them to policies, tasks, framework requirements, and evidence document types."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "controls-link-requirements"
         }
       }
     },
@@ -21103,6 +22568,9 @@
             "og:title": "Link required document types to a control | Comp AI API",
             "og:description": "Link required document types to a control in Comp AI. Manage controls, map them to policies, tasks, framework requirements, and evidence document types."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "link-document-types"
         }
       }
     },
@@ -21114,7 +22582,9 @@
             "name": "id",
             "required": true,
             "in": "path",
+            "description": "Unique control identifier",
             "schema": {
+              "example": "ctl_abc123def456",
               "type": "string"
             }
           },
@@ -21122,7 +22592,22 @@
             "name": "formType",
             "required": true,
             "in": "path",
+            "description": "Evidence form type to unlink from the control",
             "schema": {
+              "enum": [
+                "board_meeting",
+                "it_leadership_meeting",
+                "risk_committee_meeting",
+                "meeting",
+                "access_request",
+                "whistleblower_report",
+                "penetration_test",
+                "rbac_matrix",
+                "infrastructure_inventory",
+                "employee_performance_evaluation",
+                "network_diagram",
+                "tabletop_exercise"
+              ],
               "type": "string"
             }
           },
@@ -21158,6 +22643,9 @@
             "og:title": "Remove a required document type from a control | Comp AI API",
             "og:description": "Remove a required document type from a control in Comp AI. Manage controls, map them to policies, tasks, framework requirements, and evidence document."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "unlink-document-type"
         }
       }
     },
@@ -21198,6 +22686,9 @@
             "og:title": "List penetration test runs | Comp AI API",
             "og:description": "List penetration test runs in Comp AI. Create AI-powered penetration test runs, track progress, inspect findings and events, and download markdown or PDF."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "list"
         }
       },
       "post": {
@@ -21249,6 +22740,9 @@
             "og:title": "Create penetration test | Comp AI API",
             "og:description": "Create an AI-powered penetration test run for an approved target and track the resulting findings and report artifacts."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "security-penetration-tests-create"
         }
       }
     },
@@ -21300,6 +22794,9 @@
             "og:title": "Get penetration test status | Comp AI API",
             "og:description": "Get penetration test status in Comp AI. Create AI-powered penetration test runs, track progress, inspect findings and events, and download markdown or PDF."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "get-by-id"
         }
       }
     },
@@ -21348,6 +22845,9 @@
             "og:title": "Get penetration test progress | Comp AI API",
             "og:description": "Get penetration test progress in Comp AI. Create AI-powered penetration test runs, track progress, inspect findings and events, and download markdown or PDF."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "get-progress"
         }
       }
     },
@@ -21396,6 +22896,9 @@
             "og:title": "Get penetration test issues | Comp AI API",
             "og:description": "Returns the structured findings discovered during the run. Grows over time during a live scan as agents discover more issues."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "get-issues"
         }
       }
     },
@@ -21444,6 +22947,9 @@
             "og:title": "Get penetration test agent events | Comp AI API",
             "og:description": "Returns the real-time agent activity log emitted during a run (tool calls, observations, etc.). Noisy — meant for activity feeds and debugging."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "get-events"
         }
       }
     },
@@ -21492,6 +22998,9 @@
             "og:title": "Get penetration test output | Comp AI API",
             "og:description": "Get penetration test output in Comp AI. Create AI-powered penetration test runs, track progress, inspect findings and events, and download markdown or PDF."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "get-report"
         }
       }
     },
@@ -21540,6 +23049,9 @@
             "og:title": "Get penetration test PDF | Comp AI API",
             "og:description": "Get penetration test PDF in Comp AI. Create AI-powered penetration test runs, track progress, inspect findings and events, and download markdown or PDF."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "get-pdf"
         }
       }
     },
@@ -21570,6 +23082,9 @@
             "og:title": "Get members with pending offboarding | Comp AI API",
             "og:description": "Get members with pending offboarding checklists in Comp AI."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "get-pending-offboardings"
         }
       }
     },
@@ -21589,7 +23104,10 @@
         ],
         "tags": [
           "Offboarding Checklist"
-        ]
+        ],
+        "x-speakeasy-mcp": {
+          "name": "get-template"
+        }
       },
       "post": {
         "operationId": "OffboardingChecklistController_createTemplateItem_v1",
@@ -21616,7 +23134,10 @@
         ],
         "tags": [
           "Offboarding Checklist"
-        ]
+        ],
+        "x-speakeasy-mcp": {
+          "name": "create-template-item"
+        }
       }
     },
     "/v1/offboarding-checklist/template/{id}": {
@@ -21654,7 +23175,10 @@
         ],
         "tags": [
           "Offboarding Checklist"
-        ]
+        ],
+        "x-speakeasy-mcp": {
+          "name": "update-template-item"
+        }
       },
       "delete": {
         "operationId": "OffboardingChecklistController_deleteTemplateItem_v1",
@@ -21680,7 +23204,10 @@
         ],
         "tags": [
           "Offboarding Checklist"
-        ]
+        ],
+        "x-speakeasy-mcp": {
+          "name": "delete-template-item"
+        }
       }
     },
     "/v1/offboarding-checklist/member/{memberId}": {
@@ -21708,7 +23235,10 @@
         ],
         "tags": [
           "Offboarding Checklist"
-        ]
+        ],
+        "x-speakeasy-mcp": {
+          "name": "get-member-checklist"
+        }
       }
     },
     "/v1/offboarding-checklist/export-all": {
@@ -21738,6 +23268,9 @@
             "og:title": "Export all offboarding evidence as a zip file | Comp AI API",
             "og:description": "Export all offboarding evidence as a zip file in Comp AI."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "offboarding-checklist-export-all-evidence"
         }
       }
     },
@@ -21778,6 +23311,9 @@
             "og:title": "Export offboarding evidence as a zip file | Comp AI API",
             "og:description": "Export offboarding evidence as a zip file in Comp AI."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "export-evidence"
         }
       }
     },
@@ -21824,7 +23360,10 @@
         ],
         "tags": [
           "Offboarding Checklist"
-        ]
+        ],
+        "x-speakeasy-mcp": {
+          "name": "complete-item"
+        }
       },
       "delete": {
         "operationId": "OffboardingChecklistController_uncompleteItem_v1",
@@ -21858,7 +23397,10 @@
         ],
         "tags": [
           "Offboarding Checklist"
-        ]
+        ],
+        "x-speakeasy-mcp": {
+          "name": "uncomplete-item"
+        }
       }
     },
     "/v1/offboarding-checklist/member/{memberId}/item/{templateItemId}/evidence": {
@@ -21904,7 +23446,10 @@
         ],
         "tags": [
           "Offboarding Checklist"
-        ]
+        ],
+        "x-speakeasy-mcp": {
+          "name": "upload-evidence"
+        }
       }
     },
     "/v1/offboarding-checklist/member/{memberId}/access-revocations": {
@@ -21944,6 +23489,9 @@
             "og:title": "Get vendor access revocation status for a | Comp AI API",
             "og:description": "Get vendor access revocation status for a member in Comp AI."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "get-access-revocations"
         }
       }
     },
@@ -21984,6 +23532,9 @@
             "og:title": "Confirm all vendor access as revoked | Comp AI API",
             "og:description": "Confirm all vendor access as revoked in Comp AI."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "revoke-all-vendor-access"
         }
       }
     },
@@ -22033,6 +23584,9 @@
             "og:title": "Mark vendor access as revoked | Comp AI API",
             "og:description": "Mark vendor access as revoked in Comp AI."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "revoke-vendor-access"
         }
       },
       "delete": {
@@ -22080,6 +23634,9 @@
             "og:title": "Undo vendor access revocation | Comp AI API",
             "og:description": "Undo vendor access revocation in Comp AI."
           }
+        },
+        "x-speakeasy-mcp": {
+          "name": "undo-vendor-revocation"
         }
       }
     }
@@ -22219,6 +23776,9 @@
     {
       "name": "Trust Portal",
       "description": "Configure the live Trust Center, custom domain, public overview, FAQs, compliance resources, documents, links, and vendor disclosures."
+    },
+    {
+      "name": "Uploads"
     },
     {
       "name": "Vendors",
@@ -22715,6 +24275,119 @@
         },
         "required": [
           "preferences"
+        ]
+      },
+      "AttachmentEntityType": {
+        "type": "string",
+        "enum": [
+          "task",
+          "vendor",
+          "risk",
+          "comment",
+          "trust_nda",
+          "task_item",
+          "background_check",
+          "employment_onboard",
+          "employment_offboard",
+          "offboarding_checklist"
+        ],
+        "description": "Type of entity the attachment belongs to"
+      },
+      "CreateAttachmentDto": {
+        "type": "object",
+        "properties": {
+          "fileName": {
+            "type": "string",
+            "description": "Name of the file",
+            "example": "document.pdf",
+            "maxLength": 255
+          },
+          "fileType": {
+            "type": "string",
+            "description": "MIME type of the file",
+            "example": "application/pdf"
+          },
+          "fileData": {
+            "type": "string",
+            "description": "Base64 encoded file data",
+            "example": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8/5+hHgAHggJ/PchI7wAAAABJRU5ErkJggg=="
+          },
+          "description": {
+            "type": "string",
+            "description": "Description of the attachment",
+            "example": "Meeting notes from Q4 planning session",
+            "maxLength": 500
+          },
+          "userId": {
+            "type": "string",
+            "description": "User ID of the user uploading the attachment (required for API key auth, ignored for JWT auth)",
+            "example": "usr_abc123def456"
+          },
+          "entityId": {
+            "type": "string",
+            "description": "ID of the entity to attach the file to",
+            "example": "tsk_abc123def456"
+          },
+          "entityType": {
+            "description": "Type of entity the attachment belongs to",
+            "example": "task",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/AttachmentEntityType"
+              }
+            ]
+          }
+        },
+        "required": [
+          "fileName",
+          "fileType",
+          "fileData",
+          "entityId",
+          "entityType"
+        ]
+      },
+      "AttachmentResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Unique identifier for the attachment",
+            "example": "att_abc123def456"
+          },
+          "name": {
+            "type": "string",
+            "description": "Original filename",
+            "example": "document.pdf"
+          },
+          "type": {
+            "type": "string",
+            "description": "File type/MIME type",
+            "example": "application/pdf"
+          },
+          "size": {
+            "type": "number",
+            "description": "File size in bytes",
+            "example": 1024000
+          },
+          "downloadUrl": {
+            "type": "string",
+            "description": "Signed URL for downloading the file (temporary)",
+            "example": "https://bucket.s3.amazonaws.com/path/to/file.pdf?signature=..."
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string",
+            "description": "Upload timestamp",
+            "example": "2024-01-15T10:30:00Z"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "type",
+          "size",
+          "downloadUrl",
+          "createdAt"
         ]
       },
       "CreateRiskDto": {
@@ -24082,6 +25755,103 @@
           "policyTemplateId"
         ]
       },
+      "UploadPolicyPdfDto": {
+        "type": "object",
+        "properties": {
+          "versionId": {
+            "type": "string",
+            "description": "Optional version ID to attach the PDF to. Omit to attach the PDF at the policy level (legacy path).",
+            "example": "pv_abc123def456"
+          },
+          "fileName": {
+            "type": "string",
+            "description": "Filename of the PDF (e.g., \"policy-v1.pdf\"). Non-alphanumeric characters will be replaced with underscores when storing in S3.",
+            "example": "acceptable-use-v1.pdf"
+          },
+          "fileType": {
+            "type": "string",
+            "description": "MIME type of the file (e.g., \"application/pdf\").",
+            "example": "application/pdf"
+          },
+          "fileData": {
+            "type": "string",
+            "description": "Base64-encoded PDF file contents (no `data:` URI prefix). Truncated example shown.",
+            "example": "JVBERi0xLjQKJ..."
+          }
+        },
+        "required": [
+          "fileName",
+          "fileType",
+          "fileData"
+        ]
+      },
+      "RequestPolicyPdfUploadUrlDto": {
+        "type": "object",
+        "properties": {
+          "versionId": {
+            "type": "string",
+            "description": "Optional version ID to attach the PDF to. Omit to attach the PDF at the policy level (legacy path).",
+            "example": "pv_abc123def456"
+          },
+          "fileName": {
+            "type": "string",
+            "description": "Filename of the PDF (e.g., \"policy-v1.pdf\"). Non-alphanumeric characters will be replaced with underscores when storing in S3.",
+            "example": "acceptable-use-v1.pdf"
+          },
+          "fileType": {
+            "type": "string",
+            "description": "MIME type of the file. Must be \"application/pdf\" — the presigned URL enforces this at upload time.",
+            "example": "application/pdf"
+          }
+        },
+        "required": [
+          "fileName",
+          "fileType"
+        ]
+      },
+      "PolicyPdfUploadUrlResponseDto": {
+        "type": "object",
+        "properties": {
+          "uploadUrl": {
+            "type": "string",
+            "description": "Presigned S3 URL. PUT the raw file bytes to this URL with header `Content-Type: application/pdf`. No auth headers required — the signature is in the URL.",
+            "example": "https://bucket.s3.us-east-1.amazonaws.com/org_xxx/policies/pol_xxx/...?X-Amz-Signature=..."
+          },
+          "s3Key": {
+            "type": "string",
+            "description": "The S3 key the file will land at. Pass this back to the confirm endpoint after a successful upload.",
+            "example": "org_abc/policies/pol_xyz/1735000000-acceptable-use-v1.pdf"
+          },
+          "expiresIn": {
+            "type": "number",
+            "description": "Seconds until the presigned URL expires.",
+            "example": 900
+          }
+        },
+        "required": [
+          "uploadUrl",
+          "s3Key",
+          "expiresIn"
+        ]
+      },
+      "ConfirmPolicyPdfUploadedDto": {
+        "type": "object",
+        "properties": {
+          "s3Key": {
+            "type": "string",
+            "description": "The exact s3Key returned by the upload-url endpoint.",
+            "example": "org_abc/policies/pol_xyz/1735000000-acceptable-use-v1.pdf"
+          },
+          "versionId": {
+            "type": "string",
+            "description": "Optional version ID — must match the versionId passed to the upload-url endpoint. Omit if attaching at the policy level.",
+            "example": "pv_abc123def456"
+          }
+        },
+        "required": [
+          "s3Key"
+        ]
+      },
       "CreatePolicyDto": {
         "type": "object",
         "properties": {
@@ -24389,6 +26159,11 @@
       "PublishVersionDto": {
         "type": "object",
         "properties": {
+          "versionId": {
+            "type": "string",
+            "description": "Version ID to publish. PASS THIS after update-version to publish your edits — omitting it publishes stale draftContent (loses your changes).",
+            "example": "pv_abc123def456"
+          },
           "setAsActive": {
             "type": "boolean",
             "description": "Whether to set this version as the active version",
@@ -24472,6 +26247,63 @@
         "type": "object",
         "properties": {}
       },
+      "CreateUploadUrlDto": {
+        "type": "object",
+        "properties": {
+          "purpose": {
+            "type": "string",
+            "enum": [
+              "questionnaire",
+              "policy_pdf",
+              "evidence",
+              "attachment",
+              "general"
+            ],
+            "description": "What the file is for. Controls where the file is stored and which feature is expected to consume the returned s3Key.",
+            "example": "questionnaire"
+          },
+          "fileName": {
+            "type": "string",
+            "description": "Original filename, used for the stored object name. Non-alphanumeric characters are replaced with underscores.",
+            "example": "vendor-security-questionnaire.xlsx"
+          },
+          "fileType": {
+            "type": "string",
+            "description": "MIME type of the file (e.g. application/pdf, text/csv). Recorded as metadata and passed to the feature endpoint; the PUT itself is content-type agnostic, so the upload never fails on a header mismatch.",
+            "example": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+          }
+        },
+        "required": [
+          "purpose",
+          "fileName",
+          "fileType"
+        ]
+      },
+      "UploadUrlResponseDto": {
+        "type": "object",
+        "properties": {
+          "uploadUrl": {
+            "type": "string",
+            "description": "Presigned S3 URL. Send the raw file bytes with a plain HTTP PUT to this URL — no Content-Type or auth headers are required (the signature is in the URL). Then call the feature endpoint with the s3Key below.",
+            "example": "https://bucket.s3.us-east-1.amazonaws.com/org_x/uploads/...?X-Amz-Signature=..."
+          },
+          "s3Key": {
+            "type": "string",
+            "description": "The S3 key the file will land at. Pass this to the feature endpoint (e.g. questionnaire upload-and-parse) instead of base64 file data.",
+            "example": "org_abc/uploads/questionnaire/1735000000-questionnaire.xlsx"
+          },
+          "expiresIn": {
+            "type": "number",
+            "description": "Seconds until the presigned URL expires.",
+            "example": 900
+          }
+        },
+        "required": [
+          "uploadUrl",
+          "s3Key",
+          "expiresIn"
+        ]
+      },
       "TaskResponseDto": {
         "type": "object",
         "properties": {
@@ -24544,50 +26376,6 @@
           "createdAt",
           "updatedAt",
           "integrationScheduleFrequency"
-        ]
-      },
-      "AttachmentResponseDto": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "string",
-            "description": "Unique identifier for the attachment",
-            "example": "att_abc123def456"
-          },
-          "name": {
-            "type": "string",
-            "description": "Original filename",
-            "example": "document.pdf"
-          },
-          "type": {
-            "type": "string",
-            "description": "File type/MIME type",
-            "example": "application/pdf"
-          },
-          "size": {
-            "type": "number",
-            "description": "File size in bytes",
-            "example": 1024000
-          },
-          "downloadUrl": {
-            "type": "string",
-            "description": "Signed URL for downloading the file (temporary)",
-            "example": "https://bucket.s3.amazonaws.com/path/to/file.pdf?signature=..."
-          },
-          "createdAt": {
-            "format": "date-time",
-            "type": "string",
-            "description": "Upload timestamp",
-            "example": "2024-01-15T10:30:00Z"
-          }
-        },
-        "required": [
-          "id",
-          "name",
-          "type",
-          "size",
-          "downloadUrl",
-          "createdAt"
         ]
       },
       "UpdateAutomationDto": {
@@ -25342,6 +27130,55 @@
           }
         }
       },
+      "TriggerAutoAnswerResponseDto": {
+        "type": "object",
+        "properties": {
+          "questionnaireId": {
+            "type": "string",
+            "description": "The questionnaire whose answers are being generated.",
+            "example": "qst_6a179d26c4ad2c1c816ee16d"
+          },
+          "runId": {
+            "type": "string",
+            "description": "Background run identifier for the generation job (Trigger.dev run id).",
+            "example": "run_cmpotsz153eac0ultc1ya87f5"
+          },
+          "publicAccessToken": {
+            "type": "string",
+            "description": "Token for tracking the run via Trigger.dev realtime. Optional — MCP/agent clients should poll GET /v1/questionnaire/:id instead.",
+            "example": "pat_..."
+          },
+          "status": {
+            "type": "string",
+            "description": "Always 'generating' on a successful trigger. Poll GET /v1/questionnaire/:id; answers are ready once answeredQuestions equals totalQuestions.",
+            "example": "generating"
+          },
+          "totalQuestions": {
+            "type": "number",
+            "description": "Total number of questions in the questionnaire.",
+            "example": 23
+          },
+          "answeredQuestions": {
+            "type": "number",
+            "description": "Questions already answered at the moment generation was triggered (answers without a value are (re)generated).",
+            "example": 0
+          },
+          "message": {
+            "type": "string",
+            "description": "Human-readable summary of what to do next.",
+            "example": "Generating answers for 23 questions. Poll GET /v1/questionnaire/qst_... until answeredQuestions reaches totalQuestions."
+          }
+        },
+        "required": [
+          "questionnaireId",
+          "runId",
+          "publicAccessToken",
+          "status",
+          "totalQuestions",
+          "answeredQuestions",
+          "message"
+        ]
+      },
       "ParseQuestionnaireDto": {
         "type": "object",
         "properties": {}
@@ -25364,7 +27201,37 @@
       },
       "UploadAndParseDto": {
         "type": "object",
-        "properties": {}
+        "properties": {
+          "organizationId": {
+            "type": "string",
+            "description": "Organization ID (set automatically from auth context).",
+            "example": "org_abc123"
+          },
+          "fileName": {
+            "type": "string",
+            "description": "Name of the questionnaire file.",
+            "example": "vendor-security-questionnaire.xlsx"
+          },
+          "fileType": {
+            "type": "string",
+            "description": "MIME type of the file (PDF, image, XLSX, CSV, TXT).",
+            "example": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+          },
+          "fileData": {
+            "type": "string",
+            "description": "Base64-encoded file contents. For the web UI / direct callers. AI/MCP clients should instead upload via /v1/uploads/presign and pass `s3Key` — base64 through an LLM is impractically slow. Provide exactly one of fileData or s3Key."
+          },
+          "s3Key": {
+            "type": "string",
+            "description": "Key of a file already uploaded via /v1/uploads/presign (purpose=questionnaire). The server fetches the bytes from storage — no base64 needed. Provide exactly one of fileData or s3Key.",
+            "example": "org_abc/uploads/questionnaire/1735000000-questionnaire.xlsx"
+          }
+        },
+        "required": [
+          "organizationId",
+          "fileName",
+          "fileType"
+        ]
       },
       "ExportQuestionnaireDto": {
         "type": "object",
@@ -25425,6 +27292,153 @@
       "ExportSOADocumentDto": {
         "type": "object",
         "properties": {}
+      },
+      "CreateConnectionDto": {
+        "type": "object",
+        "properties": {
+          "providerSlug": {
+            "type": "string",
+            "description": "Provider slug for the integration. Call list-providers first to see the available slugs (e.g. 'aws', 'gcp', 'azure', 'github').",
+            "example": "aws"
+          },
+          "credentials": {
+            "type": "object",
+            "description": "Provider-specific credential fields. Keys differ by provider — call get-provider-details for the exact shape. For AWS (Cloud Tests) the fields are: connectionName (display name), awsType ('aws-commercial' or 'aws-govcloud'), roleArn (auditor role), externalId (typically your org id), regions (string array), and optionally remediationRoleArn and awsScanMode ('comp_scanners' or 'security_hub'). Omit credentials for OAuth providers — use POST /v1/integrations/oauth/start instead.",
+            "additionalProperties": true,
+            "example": {
+              "connectionName": "Production AWS",
+              "awsType": "aws-commercial",
+              "roleArn": "arn:aws:iam::123456789012:role/CompAI-Auditor",
+              "externalId": "org_abc123",
+              "regions": [
+                "us-east-1",
+                "us-west-2"
+              ],
+              "remediationRoleArn": "arn:aws:iam::123456789012:role/CompAI-Remediator",
+              "awsScanMode": "comp_scanners"
+            }
+          }
+        },
+        "required": [
+          "providerSlug"
+        ]
+      },
+      "UpdateConnectionDto": {
+        "type": "object",
+        "properties": {
+          "metadata": {
+            "type": "object",
+            "description": "Connection metadata to merge into the existing record. Common AWS keys: connectionName, regions (string array), awsScanMode ('comp_scanners' or 'security_hub'). The server shallow-merges this with the existing metadata, so include only the keys you want to change.",
+            "additionalProperties": true,
+            "example": {
+              "connectionName": "Production AWS (renamed)",
+              "regions": [
+                "us-east-1",
+                "us-west-2"
+              ]
+            }
+          }
+        }
+      },
+      "UpdateConnectionServicesDto": {
+        "type": "object",
+        "properties": {
+          "services": {
+            "type": "array",
+            "description": "Service IDs to enable on this connection. Any service IDs from the provider's manifest that are NOT in this list become disabled. Pass an empty array to disable all services.",
+            "items": {
+              "type": "string"
+            },
+            "example": [
+              "s3",
+              "iam",
+              "cloudtrail"
+            ]
+          }
+        },
+        "required": [
+          "services"
+        ]
+      },
+      "RunChecksDto": {
+        "type": "object",
+        "properties": {
+          "checkId": {
+            "type": "string",
+            "description": "Specific check ID to run. Omit to run ALL available checks for the connection (matches the provider manifest).",
+            "example": "aws-s3-bucket-public-access"
+          }
+        }
+      },
+      "SaveVariablesDto": {
+        "type": "object",
+        "properties": {
+          "variables": {
+            "type": "object",
+            "description": "Map of variable id → value to persist for this connection. Values can be string, number, boolean, or string[] (the shape is provider-defined — call list-variables to see what each connection accepts). Pass only the variables you want to set; existing ones not included are left untouched.",
+            "additionalProperties": true,
+            "example": {
+              "scan-interval-hours": 24,
+              "enabled-regions": [
+                "us-east-1",
+                "us-west-2"
+              ],
+              "strict-mode": true
+            }
+          }
+        },
+        "required": [
+          "variables"
+        ]
+      },
+      "RunCheckForTaskDto": {
+        "type": "object",
+        "properties": {
+          "connectionId": {
+            "type": "string",
+            "description": "ID of the integration connection that owns the check (call list-connections to find it).",
+            "example": "conn_abc123"
+          },
+          "checkId": {
+            "type": "string",
+            "description": "ID of the integration check to run (from the provider manifest — call list-checks-for-task to find available ones).",
+            "example": "aws-s3-bucket-public-access"
+          }
+        },
+        "required": [
+          "connectionId",
+          "checkId"
+        ]
+      },
+      "ToggleCheckForTaskDto": {
+        "type": "object",
+        "properties": {
+          "connectionId": {
+            "type": "string",
+            "description": "ID of the integration connection whose check is being disconnected from / reconnected to this task.",
+            "example": "conn_abc123"
+          },
+          "checkId": {
+            "type": "string",
+            "description": "ID of the integration check being toggled.",
+            "example": "aws-s3-bucket-public-access"
+          }
+        },
+        "required": [
+          "connectionId",
+          "checkId"
+        ]
+      },
+      "SetEmployeeSyncProviderDto": {
+        "type": "object",
+        "properties": {
+          "provider": {
+            "type": "object",
+            "description": "Provider slug to use for employee sync (must have the \"sync\" capability in its manifest — call list-providers to see options). Pass null or omit the field to disable employee sync for this org.",
+            "example": "google-workspace",
+            "nullable": true
+          }
+        }
       },
       "MarkExceptionDto": {
         "type": "object",

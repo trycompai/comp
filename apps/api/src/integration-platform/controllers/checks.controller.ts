@@ -9,7 +9,14 @@ import {
   Logger,
   UseGuards,
 } from '@nestjs/common';
-import { ApiTags, ApiSecurity, ApiOperation } from '@nestjs/swagger';
+import {
+  ApiBody,
+  ApiOperation,
+  ApiPropertyOptional,
+  ApiSecurity,
+  ApiTags,
+} from '@nestjs/swagger';
+import { IsOptional, IsString } from 'class-validator';
 import type { Prisma } from '@db';
 import { HybridAuthGuard } from '../../auth/hybrid-auth.guard';
 import { PermissionGuard } from '../../auth/permission.guard';
@@ -27,7 +34,16 @@ import { ProviderRepository } from '../repositories/provider.repository';
 import { CheckRunRepository } from '../repositories/check-run.repository';
 import { getStringValue, toStringCredentials } from '../utils/credential-utils';
 
-interface RunChecksDto {
+// Class (not interface) so @nestjs/swagger emits a body schema, plus a
+// class-validator decorator so the ValidationPipe whitelist accepts the field.
+class RunChecksDto {
+  @ApiPropertyOptional({
+    description:
+      'Specific check ID to run. Omit to run ALL available checks for the connection (matches the provider manifest).',
+    example: 'aws-s3-bucket-public-access',
+  })
+  @IsOptional()
+  @IsString()
   checkId?: string;
 }
 
@@ -116,6 +132,7 @@ export class ChecksController {
    */
   @Post('connections/:connectionId/run')
   @ApiOperation({ summary: 'Run all checks for a connection' })
+  @ApiBody({ type: RunChecksDto })
   @RequirePermission('integration', 'update')
   async runConnectionChecks(
     @Param('connectionId') connectionId: string,

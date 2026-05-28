@@ -5,6 +5,7 @@ import { APP_GUARD } from '@nestjs/core';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { AttachmentsModule } from './attachments/attachments.module';
+import { UploadsModule } from './uploads/uploads.module';
 import { AuthModule } from './auth/auth.module';
 import { CommentsModule } from './comments/comments.module';
 import { PeopleModule } from './people/people.module';
@@ -85,6 +86,7 @@ import { OffboardingChecklistModule } from './offboarding-checklist/offboarding-
     PoliciesModule,
     DeviceAgentModule,
     AttachmentsModule,
+    UploadsModule,
     TasksModule,
     EvidenceExportModule,
     CommentsModule,

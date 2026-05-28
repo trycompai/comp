@@ -10,7 +10,14 @@ import {
   Logger,
   UseGuards,
 } from '@nestjs/common';
-import { ApiTags, ApiSecurity, ApiOperation } from '@nestjs/swagger';
+import {
+  ApiBody,
+  ApiOperation,
+  ApiProperty,
+  ApiSecurity,
+  ApiTags,
+} from '@nestjs/swagger';
+import { IsString } from 'class-validator';
 import { HybridAuthGuard } from '../../auth/hybrid-auth.guard';
 import { PermissionGuard } from '../../auth/permission.guard';
 import { RequirePermission } from '../../auth/require-permission.decorator';
@@ -54,14 +61,42 @@ interface TaskIntegrationCheck {
   oauthConfigured?: boolean;
 }
 
-interface RunCheckForTaskDto {
-  connectionId: string;
-  checkId: string;
+// Classes (not interfaces) so @nestjs/swagger can emit a body schema. Both
+// carry class-validator decorators so the global ValidationPipe doesn't reject
+// the body with "property X should not exist" (whitelist + forbidNonWhitelisted).
+class RunCheckForTaskDto {
+  @ApiProperty({
+    description:
+      'ID of the integration connection that owns the check (call list-connections to find it).',
+    example: 'conn_abc123',
+  })
+  @IsString()
+  connectionId!: string;
+
+  @ApiProperty({
+    description:
+      'ID of the integration check to run (from the provider manifest — call list-checks-for-task to find available ones).',
+    example: 'aws-s3-bucket-public-access',
+  })
+  @IsString()
+  checkId!: string;
 }
 
-interface ToggleCheckForTaskDto {
-  connectionId: string;
-  checkId: string;
+class ToggleCheckForTaskDto {
+  @ApiProperty({
+    description:
+      'ID of the integration connection whose check is being disconnected from / reconnected to this task.',
+    example: 'conn_abc123',
+  })
+  @IsString()
+  connectionId!: string;
+
+  @ApiProperty({
+    description: 'ID of the integration check being toggled.',
+    example: 'aws-s3-bucket-public-access',
+  })
+  @IsString()
+  checkId!: string;
 }
 
 @Controller({ path: 'integrations/tasks', version: '1' })
@@ -228,6 +263,7 @@ export class TaskIntegrationsController {
    */
   @Post(':taskId/run-check')
   @ApiOperation({ summary: 'Run a check for a task' })
+  @ApiBody({ type: RunCheckForTaskDto })
   @RequirePermission('integration', 'update')
   async runCheckForTask(
     @Param('taskId') taskId: string,
@@ -533,6 +569,7 @@ export class TaskIntegrationsController {
    */
   @Post(':taskId/checks/disconnect')
   @ApiOperation({ summary: 'Disconnect checks from a task' })
+  @ApiBody({ type: ToggleCheckForTaskDto })
   @RequirePermission('integration', 'update')
   async disconnectCheckFromTask(
     @Param('taskId') taskId: string,
@@ -554,6 +591,7 @@ export class TaskIntegrationsController {
    */
   @Post(':taskId/checks/reconnect')
   @ApiOperation({ summary: 'Reconnect checks to a task' })
+  @ApiBody({ type: ToggleCheckForTaskDto })
   @RequirePermission('integration', 'update')
   async reconnectCheckToTask(
     @Param('taskId') taskId: string,

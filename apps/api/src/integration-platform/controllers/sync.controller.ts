@@ -10,7 +10,14 @@ import {
   Logger,
   UseGuards,
 } from '@nestjs/common';
-import { ApiTags, ApiSecurity, ApiOperation } from '@nestjs/swagger';
+import {
+  ApiBody,
+  ApiOperation,
+  ApiPropertyOptional,
+  ApiSecurity,
+  ApiTags,
+} from '@nestjs/swagger';
+import { IsOptional, IsString } from 'class-validator';
 import { HybridAuthGuard } from '../../auth/hybrid-auth.guard';
 import { PermissionGuard } from '../../auth/permission.guard';
 import { RequirePermission } from '../../auth/require-permission.decorator';
@@ -60,6 +67,21 @@ type GoogleWorkspaceSyncFilterMode = 'all' | 'exclude' | 'include';
 
 const GOOGLE_WORKSPACE_SYNC_FILTER_MODES =
   new Set<GoogleWorkspaceSyncFilterMode>(['all', 'exclude', 'include']);
+
+// Body for POST /v1/integrations/sync/employee-sync-provider. Pass a provider
+// slug to set it as the org's employee-sync provider, or null/omit to clear it.
+// Class (not inline type) so swagger + the ValidationPipe whitelist accept it.
+class SetEmployeeSyncProviderDto {
+  @ApiPropertyOptional({
+    description:
+      'Provider slug to use for employee sync (must have the "sync" capability in its manifest — call list-providers to see options). Pass null or omit the field to disable employee sync for this org.',
+    example: 'google-workspace',
+    nullable: true,
+  })
+  @IsOptional()
+  @IsString()
+  provider?: string | null;
+}
 
 @Controller({ path: 'integrations/sync', version: '1' })
 @ApiTags('Integrations')
@@ -1544,10 +1566,11 @@ export class SyncController {
    */
   @Post('employee-sync-provider')
   @ApiOperation({ summary: 'Set the employee sync provider' })
+  @ApiBody({ type: SetEmployeeSyncProviderDto })
   @RequirePermission('integration', 'update')
   async setEmployeeSyncProvider(
     @OrganizationId() organizationId: string,
-    @Body() body: { provider: string | null },
+    @Body() body: SetEmployeeSyncProviderDto,
   ) {
     const { provider } = body;
 

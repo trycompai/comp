@@ -9,7 +9,14 @@ import {
   Logger,
   UseGuards,
 } from '@nestjs/common';
-import { ApiTags, ApiSecurity, ApiOperation } from '@nestjs/swagger';
+import {
+  ApiBody,
+  ApiOperation,
+  ApiProperty,
+  ApiSecurity,
+  ApiTags,
+} from '@nestjs/swagger';
+import { IsObject } from 'class-validator';
 import { HybridAuthGuard } from '../../auth/hybrid-auth.guard';
 import { PermissionGuard } from '../../auth/permission.guard';
 import { RequirePermission } from '../../auth/require-permission.decorator';
@@ -24,8 +31,22 @@ import { ProviderRepository } from '../repositories/provider.repository';
 import { CredentialVaultService } from '../services/credential-vault.service';
 import { AutoCheckRunnerService } from '../services/auto-check-runner.service';
 
-interface SaveVariablesDto {
-  variables: Record<string, string | number | boolean | string[]>;
+// Class (not interface) so @nestjs/swagger emits a body schema, with a
+// class-validator decorator so the ValidationPipe whitelist accepts `variables`.
+class SaveVariablesDto {
+  @ApiProperty({
+    description:
+      "Map of variable id → value to persist for this connection. Values can be string, number, boolean, or string[] (the shape is provider-defined — call get-connection-variables to see what each connection accepts). Pass only the variables you want to set; existing ones not included are left untouched.",
+    type: 'object',
+    additionalProperties: true,
+    example: {
+      'scan-interval-hours': 24,
+      'enabled-regions': ['us-east-1', 'us-west-2'],
+      'strict-mode': true,
+    },
+  })
+  @IsObject()
+  variables!: Record<string, string | number | boolean | string[]>;
 }
 
 interface VariableOption {
@@ -406,6 +427,7 @@ export class VariablesController {
    */
   @Post('connections/:connectionId')
   @ApiOperation({ summary: 'Update connection variables' })
+  @ApiBody({ type: SaveVariablesDto })
   @RequirePermission('integration', 'update')
   async saveConnectionVariables(
     @Param('connectionId') connectionId: string,

@@ -16,6 +16,7 @@ import {
 } from '@nestjs/common';
 import {
   ApiBody,
+  ApiExtension,
   ApiExtraModels,
   ApiOperation,
   ApiParam,
@@ -75,7 +76,12 @@ export class PeopleController {
 
   @Post('invite')
   @RequirePermission('member', 'create')
-  @ApiOperation({ summary: 'Invite members to the organization' })
+  @ApiOperation({
+    summary: 'Invite members to the organization',
+    description:
+      'Invite one or more people to the organization by email and assign them roles (e.g. admin, employee). Use this to add a teammate or send someone an invitation. Each invite takes an email and an array of role names.',
+  })
+  @ApiExtension('x-speakeasy-mcp', { name: 'invite-members' })
   async inviteMembers(
     @Body() inviteData: InvitePeopleDto,
     @OrganizationId() organizationId: string,
@@ -84,8 +90,10 @@ export class PeopleController {
     const results = await this.peopleInviteService.inviteMembers({
       organizationId,
       invites: inviteData.invites,
-      callerUserId: authContext.userId!,
+      callerUserId: authContext.userId ?? '',
       callerRole: authContext.userRoles?.join(',') ?? '',
+      isApiKey: authContext.isApiKey,
+      apiKeyScopes: authContext.apiKeyScopes,
     });
 
     return {
@@ -104,6 +112,7 @@ export class PeopleController {
   @Get()
   @RequirePermission('member', 'read')
   @ApiOperation(PEOPLE_OPERATIONS.getAllPeople)
+  @ApiExtension('x-speakeasy-mcp', { name: 'list-members' })
   @ApiResponse(GET_ALL_PEOPLE_RESPONSES[200])
   @ApiResponse(GET_ALL_PEOPLE_RESPONSES[401])
   @ApiResponse(GET_ALL_PEOPLE_RESPONSES[404])
@@ -199,6 +208,7 @@ export class PeopleController {
   @RequirePermission('member', 'create')
   @ApiOperation(PEOPLE_OPERATIONS.createMember)
   @ApiBody(PEOPLE_BODIES.createMember)
+  @ApiExtension('x-speakeasy-mcp', { name: 'create-member' })
   @ApiResponse(CREATE_MEMBER_RESPONSES[201])
   @ApiResponse(CREATE_MEMBER_RESPONSES[400])
   @ApiResponse(CREATE_MEMBER_RESPONSES[401])
@@ -300,6 +310,7 @@ export class PeopleController {
   @RequirePermission('member', 'update')
   @ApiOperation({ summary: 'Reactivate a deactivated member' })
   @ApiParam(PEOPLE_PARAMS.memberId)
+  @ApiExtension('x-speakeasy-mcp', { name: 'reactivate-member' })
   async reactivateMember(
     @Param('id') memberId: string,
     @OrganizationId() organizationId: string,
@@ -328,6 +339,7 @@ export class PeopleController {
   @RequirePermission('member', 'read')
   @ApiOperation(PEOPLE_OPERATIONS.getPersonById)
   @ApiParam(PEOPLE_PARAMS.memberId)
+  @ApiExtension('x-speakeasy-mcp', { name: 'get-member' })
   @ApiResponse(GET_PERSON_BY_ID_RESPONSES[200])
   @ApiResponse(GET_PERSON_BY_ID_RESPONSES[401])
   @ApiResponse(GET_PERSON_BY_ID_RESPONSES[404])
@@ -411,6 +423,7 @@ export class PeopleController {
   @ApiOperation(PEOPLE_OPERATIONS.updateMember)
   @ApiParam(PEOPLE_PARAMS.memberId)
   @ApiBody(PEOPLE_BODIES.updateMember)
+  @ApiExtension('x-speakeasy-mcp', { name: 'update-member' })
   @ApiResponse(UPDATE_MEMBER_RESPONSES[200])
   @ApiResponse(UPDATE_MEMBER_RESPONSES[400])
   @ApiResponse(UPDATE_MEMBER_RESPONSES[401])
@@ -495,6 +508,7 @@ export class PeopleController {
   @RequirePermission('member', 'delete')
   @ApiOperation(PEOPLE_OPERATIONS.deleteMember)
   @ApiParam(PEOPLE_PARAMS.memberId)
+  @ApiExtension('x-speakeasy-mcp', { name: 'delete-member' })
   @ApiResponse(DELETE_MEMBER_RESPONSES[200])
   @ApiResponse(DELETE_MEMBER_RESPONSES[401])
   @ApiResponse(DELETE_MEMBER_RESPONSES[404])

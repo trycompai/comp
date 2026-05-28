@@ -13,7 +13,15 @@ import {
   Logger,
   UseGuards,
 } from '@nestjs/common';
-import { ApiTags, ApiSecurity, ApiOperation } from '@nestjs/swagger';
+import {
+  ApiBody,
+  ApiOperation,
+  ApiProperty,
+  ApiPropertyOptional,
+  ApiSecurity,
+  ApiTags,
+} from '@nestjs/swagger';
+import { IsArray, IsObject, IsOptional, IsString } from 'class-validator';
 import { db } from '@db';
 import {
   AssumeRoleCommand,
@@ -48,9 +56,93 @@ import {
   validateAwsPartitionConfig,
 } from '../../cloud-security/aws-partition.utils';
 
-interface CreateConnectionDto {
-  providerSlug: string;
+// Class (not interface) so @nestjs/swagger can introspect it — interfaces are
+// erased at runtime and produce an empty OpenAPI body schema, which means MCP
+// tools have no input fields and agents have to blind-guess the body.
+//
+// IMPORTANT: every property also carries class-validator decorators
+// (@IsString / @IsOptional / @IsObject). The global ValidationPipe runs with
+// `whitelist: true, forbidNonWhitelisted: true`, so a class with @ApiProperty
+// but no class-validator metadata would have zero "known" properties — the
+// pipe would reject the body with "property X should not exist". Keep both
+// decorator stacks in sync when you add fields here.
+class CreateConnectionDto {
+  @ApiProperty({
+    description:
+      "Provider slug for the integration. Call list-providers first to see the available slugs (e.g. 'aws', 'gcp', 'azure', 'github').",
+    example: 'aws',
+  })
+  @IsString()
+  providerSlug!: string;
+
+  @ApiPropertyOptional({
+    description:
+      "Provider-specific credential fields. Keys differ by provider — call get-provider-details for the exact shape. For AWS (Cloud Tests) the fields are: connectionName (display name), awsType ('aws-commercial' or 'aws-govcloud'), roleArn (auditor role), externalId (typically your org id), regions (string array), and optionally remediationRoleArn and awsScanMode ('comp_scanners' or 'security_hub'). Omit credentials for OAuth providers — use POST /v1/integrations/oauth/start instead.",
+    type: 'object',
+    additionalProperties: true,
+    example: {
+      connectionName: 'Production AWS',
+      awsType: 'aws-commercial',
+      roleArn: 'arn:aws:iam::123456789012:role/CompAI-Auditor',
+      externalId: 'org_abc123',
+      regions: ['us-east-1', 'us-west-2'],
+      remediationRoleArn: 'arn:aws:iam::123456789012:role/CompAI-Remediator',
+      awsScanMode: 'comp_scanners',
+    },
+  })
+  @IsOptional()
+  @IsObject()
   credentials?: Record<string, string | string[]>;
+}
+
+// Body for PATCH /v1/integrations/connections/:id (update connection metadata).
+// Same dual-decorator pattern as CreateConnectionDto: @ApiProperty drives the
+// MCP/docs schema, class-validator decorators keep the ValidationPipe happy.
+class UpdateConnectionDto {
+  @ApiPropertyOptional({
+    description:
+      "Connection metadata to merge into the existing record. Common AWS keys: connectionName, regions (string array), awsScanMode ('comp_scanners' or 'security_hub'). The server shallow-merges this with the existing metadata, so include only the keys you want to change.",
+    type: 'object',
+    additionalProperties: true,
+    example: {
+      connectionName: 'Production AWS (renamed)',
+      regions: ['us-east-1', 'us-west-2'],
+    },
+  })
+  @IsOptional()
+  @IsObject()
+  metadata?: Record<string, unknown>;
+}
+
+// Body for PUT /v1/integrations/connections/:id/services (set enabled services).
+class UpdateConnectionServicesDto {
+  @ApiProperty({
+    description:
+      "Service IDs to enable on this connection. Any service IDs from the provider's manifest that are NOT in this list become disabled. Pass an empty array to disable all services.",
+    type: 'array',
+    items: { type: 'string' },
+    example: ['s3', 'iam', 'cloudtrail'],
+  })
+  @IsArray()
+  @IsString({ each: true })
+  services!: string[];
+}
+
+// Body for PUT /v1/integrations/connections/:id/credentials (rotate credentials
+// on a connection that's already established).
+class UpdateConnectionCredentialsDto {
+  @ApiProperty({
+    description:
+      "New credential fields for the connection. Keys match the provider's auth shape (same shape used when the connection was created — see create-connection for the AWS field list).",
+    type: 'object',
+    additionalProperties: true,
+    example: {
+      roleArn: 'arn:aws:iam::123456789012:role/CompAI-Auditor',
+      externalId: 'org_abc123',
+    },
+  })
+  @IsObject()
+  credentials!: Record<string, string | string[]>;
 }
 
 const hasCredentialValue = (value?: string | string[]): boolean => {
@@ -398,6 +490,7 @@ export class ConnectionsController {
    */
   @Post()
   @ApiOperation({ summary: 'Create an integration connection' })
+  @ApiBody({ type: CreateConnectionDto })
   @RequirePermission('integration', 'create')
   async createConnection(
     @OrganizationId() organizationId: string,
@@ -881,11 +974,12 @@ export class ConnectionsController {
    */
   @Patch(':id')
   @ApiOperation({ summary: 'Update an integration connection' })
+  @ApiBody({ type: UpdateConnectionDto })
   @RequirePermission('integration', 'update')
   async updateConnection(
     @Param('id') id: string,
     @OrganizationId() organizationId: string,
-    @Body() body: { metadata?: Record<string, unknown> },
+    @Body() body: UpdateConnectionDto,
   ) {
     const connection = await this.connectionService.getConnectionForOrg(
       id,
@@ -1078,10 +1172,11 @@ export class ConnectionsController {
    */
   @Put(':id/services')
   @ApiOperation({ summary: 'Set services enabled on a connection' })
+  @ApiBody({ type: UpdateConnectionServicesDto })
   @RequirePermission('integration', 'update')
   async updateConnectionServices(
     @Param('id') id: string,
-    @Body() body: { services: string[] },
+    @Body() body: UpdateConnectionServicesDto,
     @OrganizationId() organizationId: string,
   ) {
     if (!Array.isArray(body.services)) {
@@ -1147,11 +1242,12 @@ export class ConnectionsController {
    */
   @Put(':id/credentials')
   @ApiOperation({ summary: 'Update integration credentials' })
+  @ApiBody({ type: UpdateConnectionCredentialsDto })
   @RequirePermission('integration', 'update')
   async updateCredentials(
     @Param('id') id: string,
     @OrganizationId() organizationId: string,
-    @Body() body: { credentials: Record<string, string | string[]> },
+    @Body() body: UpdateConnectionCredentialsDto,
   ) {
     const connection = await this.connectionService.getConnectionForOrg(
       id,
