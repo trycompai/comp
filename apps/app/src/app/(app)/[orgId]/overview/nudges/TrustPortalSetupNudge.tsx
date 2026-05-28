@@ -43,7 +43,7 @@ function TrustPortalSetupNudgeView({
   onDismiss: () => void;
 }) {
   return (
-    <Alert variant="info">
+    <Alert variant="warning">
       <AlertTitle>Showcase your security posture</AlertTitle>
       <AlertDescription>
         Set up your Trust Portal to share your certifications, policies, and
