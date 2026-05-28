@@ -518,7 +518,13 @@ export class PoliciesController {
   @Post(':id/pdf')
   @RequirePermission('policy', 'update')
   @UseInterceptors(FileInterceptor('file'))
-  @ApiOperation({ summary: 'Upload a PDF to a policy or version' })
+  @ApiOperation({
+    summary: 'Upload a PDF to a policy version',
+    description:
+      'Uploads a PDF file to a specific policy version. ' +
+      'If no versionId is provided, the PDF is uploaded to the latest draft version. ' +
+      'Returns 400 if no draft version is available (e.g. all versions are published or pending approval).',
+  })
   @ApiConsumes('multipart/form-data', 'application/json')
   @ApiParam(POLICY_PARAMS.policyId)
   @ApiBody({
@@ -529,7 +535,10 @@ export class PoliciesController {
           type: 'object',
           properties: {
             file: { type: 'string', format: 'binary' },
-            versionId: { type: 'string', description: 'Target version ID (optional)' },
+            versionId: {
+              type: 'string',
+              description: 'Target version ID. If omitted, uploads to the latest draft version.',
+            },
           },
           required: ['file'],
         },
@@ -540,7 +549,10 @@ export class PoliciesController {
             fileName: { type: 'string' },
             fileType: { type: 'string' },
             fileData: { type: 'string', description: 'Base64-encoded file content' },
-            versionId: { type: 'string' },
+            versionId: {
+              type: 'string',
+              description: 'Target version ID. If omitted, uploads to the latest draft version.',
+            },
           },
           required: ['fileName', 'fileType', 'fileData'],
         },
