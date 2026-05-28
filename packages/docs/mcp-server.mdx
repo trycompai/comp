@@ -31,19 +31,29 @@ The API key carries your existing RBAC and permissions. The AI assistant can onl
 
 ## Install per AI client
 
-You don't manually download anything. The Comp AI MCP server is distributed as a public npm package — [`@trycompai/mcp-server`](https://www.npmjs.com/package/@trycompai/mcp-server) — and every install snippet below uses `npx -y` to fetch it on demand the first time your AI client starts a session. New versions are picked up automatically on the next session.
+You don't manually download anything. The Comp AI MCP server is distributed as a public npm package — [`@trycompai/mcp-server`](https://www.npmjs.com/package/@trycompai/mcp-server) — and every install path below uses `npx -y` (or a one-click button / drag-and-drop bundle) to fetch it on demand the first time your AI client starts a session. New versions are picked up automatically on the next session.
 
-Pick the client your team uses. Every install is one configuration paste — no Comp AI hosting, no extra setup, no terminals to run.
+Pick the tab for your client. Each tab shows the easiest install path first, with a manual JSON option below for advanced setups.
 
 <Note>
-The `npx -y @trycompai/mcp-server` command you'll see in every snippet below is what handles the download. Your AI client runs that command in the background when you start a chat; npm fetches the latest published version from [npmjs.com](https://www.npmjs.com/package/@trycompai/mcp-server) and caches it locally. Nothing for you to install manually.
+The `npx -y @trycompai/mcp-server` command you'll see throughout is what handles the download. Your AI client runs it in the background when you start a chat; npm fetches the latest published version from [npmjs.com](https://www.npmjs.com/package/@trycompai/mcp-server) and caches it locally. Nothing for you to install manually.
 </Note>
 
-<AccordionGroup>
+<Tabs>
 
-<Accordion title="Claude Desktop" icon="message">
+<Tab title="Claude Desktop">
 
-Open Claude Desktop → **Settings → Developer → Edit Config** and add:
+**Easiest path — drag-and-drop install:**
+
+1. Download the latest [`mcp-server.mcpb`](https://github.com/trycompai/comp/releases) bundle from our GitHub Releases page.
+2. Drag the `.mcpb` file directly onto the Claude Desktop window.
+3. Claude Desktop shows an install prompt — confirm, then paste your Comp AI API key in the extension settings.
+4. Restart any open chats. Comp AI tools are now available.
+
+No JSON editing required.
+
+<Accordion title="Advanced — manual JSON config">
+If you prefer to manage `claude_desktop_config.json` yourself, open **Settings → Developer → Edit Config** and merge:
 
 ```json
 {
@@ -62,12 +72,20 @@ Open Claude Desktop → **Settings → Developer → Edit Config** and add:
 }
 ```
 
-Fully quit and reopen Claude Desktop. The Comp AI tools will be available in any conversation.
-
+Fully quit and reopen Claude Desktop.
 </Accordion>
 
-<Accordion title="Cursor" icon="code">
+</Tab>
 
+<Tab title="Cursor">
+
+**Easiest path — one-click install:**
+
+[![Install in Cursor](https://cursor.com/deeplink/mcp-install-dark.svg)](cursor://anysphere.cursor-deeplink/mcp/install?name=CompAi&config=eyJjb21tYW5kIjoibnB4IiwiYXJncyI6WyJAdHJ5Y29tcGFpL21jcC1zZXJ2ZXIiLCJzdGFydCIsIi0tYXBpa2V5IiwiIl19)
+
+Click the button above, confirm in Cursor, then paste your Comp AI API key when prompted.
+
+<Accordion title="Advanced — manual JSON config">
 Open **Cursor → Settings → Tools and Integrations → New MCP Server** and paste:
 
 ```json
@@ -84,80 +102,139 @@ Open **Cursor → Settings → Tools and Integrations → New MCP Server** and p
 ```
 
 Save and reload Cursor.
-
 </Accordion>
 
-<Accordion title="ChatGPT / Codex" icon="robot">
+</Tab>
 
-ChatGPT and Codex consume MCP servers through their respective MCP integrations. Point them at the same `npx @trycompai/mcp-server` command with your API key.
+<Tab title="VS Code">
 
-For Codex CLI:
+**Easiest path — one-click install:**
 
-```bash
-codex mcp add comp-ai -- npx -y @trycompai/mcp-server start --apikey comp_…your_key_here…
+[![Install in VS Code](https://img.shields.io/badge/VS_Code-VS_Code?style=flat-square&label=Install%20CompAi%20MCP&color=0098FF)](vscode://ms-vscode.vscode-mcp/install?name=CompAi&config=eyJjb21tYW5kIjoibnB4IiwiYXJncyI6WyJAdHJ5Y29tcGFpL21jcC1zZXJ2ZXIiLCJzdGFydCIsIi0tYXBpa2V5IiwiIl19)
+
+Click the button above, confirm in VS Code, then paste your Comp AI API key when prompted.
+
+<Accordion title="Advanced — manual JSON config">
+Open the **Command Palette → MCP: Open User Configuration** and paste:
+
+```json
+{
+  "command": "npx",
+  "args": [
+    "-y",
+    "@trycompai/mcp-server",
+    "start",
+    "--apikey",
+    "comp_…your_key_here…"
+  ]
+}
 ```
-
-For ChatGPT, follow OpenAI's MCP server registration docs and use the same `command` + `args` shape shown for Cursor above.
-
 </Accordion>
 
-<Accordion title="Claude Code (CLI)" icon="terminal">
+</Tab>
+
+<Tab title="Claude Code (CLI)">
+
+Install with one command:
 
 ```bash
 claude mcp add CompAI -- npx -y @trycompai/mcp-server start --apikey comp_…your_key_here…
 ```
 
-</Accordion>
+Claude Code registers the server immediately — Comp AI tools become available in your next session.
 
-<Accordion title="Gemini" icon="sparkles">
+</Tab>
+
+<Tab title="Codex CLI">
+
+Install with one command:
+
+```bash
+codex mcp add comp-ai -- npx -y @trycompai/mcp-server start --apikey comp_…your_key_here…
+```
+
+Codex registers the server immediately — Comp AI tools become available in your next session.
+
+For ChatGPT desktop / web with MCP support, follow OpenAI's MCP integration docs and use the same `command` + `args` shape shown in the manual JSON sections of the other tabs.
+
+</Tab>
+
+<Tab title="Gemini CLI">
+
+Install with one command:
 
 ```bash
 gemini mcp add CompAI -- npx -y @trycompai/mcp-server start --apikey comp_…your_key_here…
 ```
 
-</Accordion>
+</Tab>
 
-<Accordion title="Windsurf" icon="wind">
+<Tab title="Windsurf">
 
 Open **Windsurf → Settings → Cascade → Manage MCPs → View raw config** and paste:
 
 ```json
 {
-  "command": "npx",
-  "args": [
-    "-y",
-    "@trycompai/mcp-server",
-    "start",
-    "--apikey",
-    "comp_…your_key_here…"
-  ]
+  "mcpServers": {
+    "comp-ai": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@trycompai/mcp-server",
+        "start",
+        "--apikey",
+        "comp_…your_key_here…"
+      ]
+    }
+  }
 }
 ```
 
+Save and reload Windsurf.
+
+</Tab>
+
+</Tabs>
+
+That's it. The first time you start a chat in your AI client after install, the assistant will discover the Comp AI tools and start using them.
+
+## Verify it worked
+
+Open a fresh chat in your AI client and ask:
+
+> *"List my open compliance tasks."*
+
+If the install succeeded, the AI will call Comp AI's `list-tasks` tool and return tasks from your organization. If you see no tool calls or an authentication error, jump to **Troubleshooting** below.
+
+## Troubleshooting
+
+<AccordionGroup>
+
+<Accordion title="The AI says it doesn't have Comp AI tools available">
+Most common causes:
+- You didn't fully quit and reopen your AI client after the install. Closing the window isn't enough — quit it from the menu / dock and reopen.
+- The JSON config has a syntax error. Mintlify can validate this if you paste it into any JSON linter.
+- For Claude Desktop: confirm `claude_desktop_config.json` was saved to the right path: `~/Library/Application Support/Claude/` on macOS, `%APPDATA%\Claude\` on Windows.
 </Accordion>
 
-<Accordion title="VS Code" icon="vscode">
+<Accordion title="401 / authentication error">
+- Confirm your API key starts with `comp_…` and you copied the full string (these keys are long).
+- Confirm the key hasn't been revoked in **Comp AI → Settings → API Keys**.
+- Confirm the key's role has permission for the action you're asking the AI to take.
+</Accordion>
 
-Open **Command Palette → MCP: Open User Configuration** and paste:
+<Accordion title="`npx` or `command not found`">
+The MCP server runs via [npm](https://npmjs.com) + [Node.js](https://nodejs.org). If your machine doesn't have Node 18+ installed, install it from [nodejs.org](https://nodejs.org/) and restart your AI client.
+</Accordion>
 
-```json
-{
-  "command": "npx",
-  "args": [
-    "-y",
-    "@trycompai/mcp-server",
-    "start",
-    "--apikey",
-    "comp_…your_key_here…"
-  ]
-}
-```
-
+<Accordion title="Tools show up but actions fail">
+Open Chrome / Safari DevTools (or your client's debug log) and inspect the network response. Common causes:
+- Your role lacks the permission for that endpoint (RBAC enforced server-side).
+- You're on a custom plan that doesn't include the feature being called.
+- The Comp AI API is briefly unavailable — try again in a moment or check status.
 </Accordion>
 
 </AccordionGroup>
-
-That's it. The first time you start a chat in your AI client after install, the assistant will discover the Comp AI tools and start using them.
 
 ## What your AI assistant can do
 
