@@ -11,7 +11,6 @@ import {
   UsePipes,
   ValidationPipe,
   BadRequestException,
-  ForbiddenException,
 } from '@nestjs/common';
 import {
   ApiBody,
@@ -34,6 +33,7 @@ import { PermissionGuard } from '../auth/permission.guard';
 import { RequirePermission } from '../auth/require-permission.decorator';
 import { AuthContext } from '../auth/auth-context.decorator';
 import type { AuthContext as AuthContextType } from '../auth/types';
+import { RolesService } from '../roles/roles.service';
 import { FindingsService } from './findings.service';
 import { CreateFindingDto } from './dto/create-finding.dto';
 import { UpdateFindingDto } from './dto/update-finding.dto';
@@ -46,7 +46,10 @@ import { evidenceFormTypeSchema } from '@/evidence-forms/evidence-forms.definiti
 @UseGuards(HybridAuthGuard)
 @ApiSecurity('apikey')
 export class FindingsController {
-  constructor(private readonly findingsService: FindingsService) {}
+  constructor(
+    private readonly findingsService: FindingsService,
+    private readonly rolesService: RolesService,
+  ) {}
 
   /**
    * List findings for the organization. Supports optional target/status filters.
@@ -203,15 +206,6 @@ export class FindingsController {
       throw new BadRequestException('User ID is required');
     }
 
-    const isAuditor = authContext.userRoles?.includes('auditor');
-    const isPlatformAdmin = await this.checkPlatformAdmin(authContext.userId);
-
-    if (!isAuditor && !isPlatformAdmin) {
-      throw new ForbiddenException(
-        'Only auditors or platform admins can create findings',
-      );
-    }
-
     const member = await db.member.findFirst({
       where: {
         userId: authContext.userId,
@@ -258,15 +252,20 @@ export class FindingsController {
       throw new BadRequestException('User ID is required');
     }
 
-    const isPlatformAdmin = await this.checkPlatformAdmin(authContext.userId);
-
-    const member = await db.member.findFirst({
-      where: {
-        userId: authContext.userId,
-        organizationId: authContext.organizationId,
-        deactivated: false,
-      },
-    });
+    const [isPlatformAdmin, member, permissions] = await Promise.all([
+      this.checkPlatformAdmin(authContext.userId),
+      db.member.findFirst({
+        where: {
+          userId: authContext.userId,
+          organizationId: authContext.organizationId,
+          deactivated: false,
+        },
+      }),
+      this.rolesService.resolvePermissions(
+        authContext.organizationId,
+        authContext.userRoles || [],
+      ),
+    ]);
 
     if (!member) {
       throw new BadRequestException(
@@ -274,11 +273,13 @@ export class FindingsController {
       );
     }
 
+    const canCreateFindings = permissions.finding?.includes('create') ?? false;
+
     return await this.findingsService.update(
       authContext.organizationId,
       id,
       updateDto,
-      authContext.userRoles || [],
+      canCreateFindings,
       isPlatformAdmin,
       authContext.userId,
       member.id,
@@ -296,15 +297,6 @@ export class FindingsController {
   ) {
     if (!authContext.userId) {
       throw new BadRequestException('User ID is required');
-    }
-
-    const isAuditor = authContext.userRoles?.includes('auditor');
-    const isPlatformAdmin = await this.checkPlatformAdmin(authContext.userId);
-
-    if (!isAuditor && !isPlatformAdmin) {
-      throw new ForbiddenException(
-        'Only auditors or platform admins can delete findings',
-      );
     }
 
     const member = await db.member.findFirst({
