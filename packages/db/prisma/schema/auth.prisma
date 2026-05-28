@@ -32,6 +32,10 @@ model User {
   offboardingChecklistCompletions OffboardingChecklistCompletion[] @relation("OffboardingChecklistCompletedBy")
   offboardingAccessRevocations    OffboardingAccessRevocation[]    @relation("AccessRevocationRevokedBy")
 
+  oauthApplications OauthApplication[]
+  oauthAccessTokens OauthAccessToken[]
+  oauthConsents     OauthConsent[]
+
   @@unique([email])
 }
 
@@ -93,6 +97,68 @@ model Verification {
   expiresAt  DateTime
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
+}
+
+// ── OAuth 2.0 / OIDC Provider — required by better-auth's mcp/oidcProvider plugin.
+// The MCP server is hosted on Speakeasy Gram; Gram obtains an OAuth access token
+// from this API (better-auth as the authorization server) so end users sign in
+// with Google instead of pasting an API key.
+// Field names MUST match better-auth's expected schema (clientId, redirectUrls, …).
+model OauthApplication {
+  id           String   @id @default(dbgenerated("generate_prefixed_cuid('oap'::text)"))
+  name         String
+  icon         String?
+  metadata     String?
+  clientId     String   @unique
+  clientSecret String?
+  redirectUrls String
+  type         String
+  disabled     Boolean? @default(false)
+  userId       String?
+  user         User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  accessTokens OauthAccessToken[]
+  consents     OauthConsent[]
+
+  @@index([userId])
+  @@map("oauth_application")
+}
+
+model OauthAccessToken {
+  id                    String           @id @default(dbgenerated("generate_prefixed_cuid('oat'::text)"))
+  accessToken           String           @unique
+  refreshToken          String           @unique
+  accessTokenExpiresAt  DateTime
+  refreshTokenExpiresAt DateTime
+  clientId              String
+  application           OauthApplication @relation(fields: [clientId], references: [clientId], onDelete: Cascade)
+  userId                String?
+  user                  User?            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  scopes                String
+  createdAt             DateTime         @default(now())
+  updatedAt             DateTime         @updatedAt
+
+  @@index([clientId])
+  @@index([userId])
+  @@map("oauth_access_token")
+}
+
+model OauthConsent {
+  id           String           @id @default(dbgenerated("generate_prefixed_cuid('oac'::text)"))
+  clientId     String
+  application  OauthApplication @relation(fields: [clientId], references: [clientId], onDelete: Cascade)
+  userId       String
+  user         User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  scopes       String
+  consentGiven Boolean
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
+
+  @@index([clientId])
+  @@index([userId])
+  @@map("oauth_consent")
 }
 
 // JWT Plugin - Required by Better Auth JWT plugin

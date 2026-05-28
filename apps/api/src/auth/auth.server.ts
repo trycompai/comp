@@ -10,6 +10,7 @@ import {
   bearer,
   emailOTP,
   magicLink,
+  mcp,
   multiSession,
   organization,
 } from 'better-auth/plugins';
@@ -187,6 +188,38 @@ if (
 }
 
 const cookieDomain = getCookieDomain();
+
+// ── Hosted MCP (Speakeasy Gram) OAuth ────────────────────────────────────────
+// The MCP server is hosted on Gram. Gram obtains an OAuth access token from this
+// API (better-auth as the authorization server) so users authenticate with
+// "Sign in with Google" instead of pasting an API key.
+//
+// Gram's OAuth Proxy registers as a single static client and handles Dynamic
+// Client Registration toward MCP clients on our behalf — so we keep public DCR
+// off for now and register Gram as a trusted client. Configured via env so the
+// secret isn't committed and the plugin is inert in envs where hosted MCP isn't
+// set up yet.
+const gramMcpClient =
+  process.env.GRAM_OAUTH_CLIENT_ID &&
+  process.env.GRAM_OAUTH_CLIENT_SECRET &&
+  process.env.GRAM_OAUTH_REDIRECT_URI
+    ? {
+        clientId: process.env.GRAM_OAUTH_CLIENT_ID,
+        clientSecret: process.env.GRAM_OAUTH_CLIENT_SECRET,
+        name: 'Comp AI MCP (Gram)',
+        type: 'web' as const,
+        disabled: false,
+        redirectUrls: [process.env.GRAM_OAUTH_REDIRECT_URI],
+        metadata: null,
+        skipConsent: false,
+      }
+    : null;
+
+// Where better-auth sends the user to authenticate during the OAuth flow.
+// Must point at the app's sign-in page. Override per environment via env.
+const mcpLoginPage =
+  process.env.MCP_OAUTH_LOGIN_PAGE ||
+  `${process.env.NEXT_PUBLIC_APP_URL ?? 'https://app.trycomp.ai'}/auth`;
 
 // =============================================================================
 // Security Validation
@@ -487,6 +520,20 @@ export const auth = betterAuth({
     bearer(),
     admin({
       defaultRole: 'user',
+    }),
+    // OAuth 2.0 / OIDC provider for hosted MCP (Gram). Wraps oidcProvider and
+    // exposes /api/auth/oauth2/* + /api/auth/.well-known/* and the
+    // auth.api.getMcpSession() helper used by HybridAuthGuard.
+    mcp({
+      loginPage: mcpLoginPage,
+      ...(process.env.MCP_RESOURCE_URL
+        ? { resource: process.env.MCP_RESOURCE_URL }
+        : {}),
+      oidcConfig: {
+        loginPage: mcpLoginPage,
+        allowDynamicClientRegistration: false,
+        ...(gramMcpClient ? { trustedClients: [gramMcpClient] } : {}),
+      },
     }),
   ],
   socialProviders,

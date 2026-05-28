@@ -169,6 +169,11 @@ export class HybridAuthGuard implements CanActivate {
       const session = await auth.api.getSession({ headers });
 
       if (!session) {
+        // Fallback: the hosted MCP server (Gram) sends an OAuth access token as a
+        // Bearer token, which getSession does not resolve. Try the MCP OAuth path.
+        if (await this.tryMcpOAuthAuth(request, headers, skipOrgCheck)) {
+          return true;
+        }
         throw new UnauthorizedException('Invalid or expired session');
       }
 
@@ -247,5 +252,84 @@ export class HybridAuthGuard implements CanActivate {
       console.error('[HybridAuthGuard] Session verification failed:', error);
       throw new UnauthorizedException('Invalid or expired session');
     }
+  }
+
+  /**
+   * Resolve a hosted-MCP OAuth access token (issued by better-auth's mcp/oidc
+   * provider and forwarded by the Gram-hosted MCP server). Populates the request
+   * context and returns true on success; returns false when the bearer token is
+   * not a valid MCP OAuth token (so the caller throws the generic 401). Throws
+   * when no organization can be resolved.
+   *
+   * The token carries the user identity only. The organization is resolved
+   * explicitly from the user's active memberships — the same approach as the
+   * device-agent (enumerate memberships, then bind to one), not a "most recent"
+   * guess. One org is used directly; multiple orgs fail closed because MCP org
+   * selection isn't supported yet (avoids silently acting on the wrong tenant).
+   * Roles come from the resolved member so the existing PermissionGuard enforces
+   * RBAC unchanged.
+   */
+  private async tryMcpOAuthAuth(
+    request: AuthenticatedRequest,
+    headers: Headers,
+    skipOrgCheck: boolean,
+  ): Promise<boolean> {
+    const token = await auth.api.getMcpSession({ headers }).catch(() => null);
+    if (!token?.userId) {
+      return false;
+    }
+
+    const userId = token.userId;
+    const user = await db.user.findUnique({
+      where: { id: userId },
+      select: { id: true, email: true, role: true },
+    });
+    if (!user) {
+      return false;
+    }
+
+    request.userId = user.id;
+    request.userEmail = user.email;
+    request.userRoles = null;
+    request.organizationId = '';
+    request.authType = 'session';
+    request.isApiKey = false;
+    request.isServiceToken = false;
+    request.isPlatformAdmin = user.role === 'admin';
+
+    if (skipOrgCheck) {
+      this.logger.log(`MCP OAuth token authenticated for user ${user.id}`);
+      return true;
+    }
+
+    // Bind the organization explicitly by enumerating active memberships,
+    // mirroring the device-agent's getMyOrganizations + explicit selection.
+    const memberships = await db.member.findMany({
+      where: { userId, deactivated: false },
+      select: { id: true, role: true, department: true, organizationId: true },
+    });
+
+    if (memberships.length === 0) {
+      throw new UnauthorizedException(
+        'No active organization for this MCP token.',
+      );
+    }
+    if (memberships.length > 1) {
+      throw new UnauthorizedException(
+        'This account belongs to multiple organizations. Selecting an ' +
+          'organization for MCP access is not supported yet.',
+      );
+    }
+
+    const member = memberships[0];
+    request.organizationId = member.organizationId;
+    request.memberId = member.id;
+    request.memberDepartment = member.department;
+    request.userRoles = member.role ? member.role.split(',') : null;
+
+    this.logger.log(
+      `MCP OAuth token authenticated for user ${user.id} (org ${member.organizationId})`,
+    );
+    return true;
   }
 }
