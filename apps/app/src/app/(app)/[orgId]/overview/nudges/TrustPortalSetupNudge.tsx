@@ -44,15 +44,13 @@ function TrustPortalSetupNudgeView({
 }) {
   return (
     <Alert variant="info">
-      <div className="col-start-2 flex flex-col items-start gap-2">
-        <AlertTitle>Showcase your security posture</AlertTitle>
-        <AlertDescription>
-          Set up your Trust Portal to share your certifications, policies, and
-          security documents with prospects in one place.
-        </AlertDescription>
-        <Button>
-          <Link href={`/${orgId}/trust`}>Set it up</Link>
-        </Button>
+      <AlertTitle>Showcase your security posture</AlertTitle>
+      <AlertDescription>
+        Set up your Trust Portal to share your certifications, policies, and
+        security documents with prospects in one place.
+      </AlertDescription>
+      <div className="col-start-2 pt-1">
+        <Button render={<Link href={`/${orgId}/trust`} />}>Set it up</Button>
       </div>
       <AlertAction>
         <button
