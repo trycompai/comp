@@ -70,6 +70,37 @@ export class RequirementService {
     return updated;
   }
 
+  async batchUpdate(
+    updates: Array<{
+      id: string;
+      name?: string;
+      identifier?: string;
+      description?: string;
+      requirementFamily?: string;
+    }>,
+  ) {
+    return db.$transaction(
+      updates.map((update) => {
+        const { id, ...data } = update;
+        return db.frameworkEditorRequirement.update({
+          where: { id },
+          data: {
+            ...(data.name !== undefined && { name: data.name }),
+            ...(data.identifier !== undefined && {
+              identifier: data.identifier,
+            }),
+            ...(data.description !== undefined && {
+              description: data.description,
+            }),
+            ...(data.requirementFamily !== undefined && {
+              requirementFamily: data.requirementFamily || null,
+            }),
+          },
+        });
+      }),
+    );
+  }
+
   async delete(id: string) {
     const existing = await db.frameworkEditorRequirement.findUnique({
       where: { id },

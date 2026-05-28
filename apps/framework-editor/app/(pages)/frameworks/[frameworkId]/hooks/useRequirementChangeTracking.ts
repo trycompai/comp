@@ -147,26 +147,41 @@ export function useRequirementChangeTracking(
       }
     }
 
+    const updatesToSend: Array<{
+      id: string;
+      name: string;
+      identifier: string;
+      description: string;
+      requirementFamily: string | null;
+    }> = [];
     for (const id of updatedIds) {
       if (createdIds.has(id) || deletedIds.has(id)) continue;
       const row = currentData.find((r) => r.id === id);
       if (!row?.name) continue;
+      updatesToSend.push({
+        id,
+        name: row.name,
+        identifier: row.identifier ?? '',
+        description: row.description ?? '',
+        requirementFamily: row.requirementFamily ?? null,
+      });
+    }
+    if (updatesToSend.length > 0) {
       try {
-        await apiClient(`/requirement/${id}`, {
+        await apiClient('/requirement/batch', {
           method: 'PATCH',
-          body: JSON.stringify({
-            name: row.name,
-            identifier: row.identifier ?? '',
-            description: row.description ?? '',
-            requirementFamily: row.requirementFamily ?? null,
-          }),
+          body: JSON.stringify({ updates: updatesToSend }),
         });
-        results.successes.push(`Updated: ${row.name}`);
-        okUpdated.add(id);
+        for (const u of updatesToSend) {
+          results.successes.push(`Updated: ${u.name}`);
+          okUpdated.add(u.id);
+        }
       } catch (error) {
-        results.errors.push(
-          `Failed to update ${row.name}: ${error instanceof Error ? error.message : 'Unknown error'}`,
-        );
+        for (const u of updatesToSend) {
+          results.errors.push(
+            `Failed to update ${u.name}: ${error instanceof Error ? error.message : 'Unknown error'}`,
+          );
+        }
       }
     }
 
