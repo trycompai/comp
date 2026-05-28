@@ -525,8 +525,9 @@ export const auth = betterAuth({
       defaultRole: 'user',
     }),
     // OAuth 2.0 / OIDC provider for hosted MCP (Gram). Wraps oidcProvider and
-    // exposes /api/auth/oauth2/* + /api/auth/.well-known/* and the
-    // auth.api.getMcpSession() helper used by HybridAuthGuard.
+    // exposes /api/auth/mcp/* (authorize, token, register) + the two
+    // /api/auth/.well-known/* discovery docs, plus the auth.api.getMcpSession()
+    // helper used by HybridAuthGuard. (Gram points its OAuth proxy at /mcp/*.)
     mcp({
       loginPage: mcpLoginPage,
       ...(process.env.MCP_RESOURCE_URL
