@@ -4,6 +4,7 @@ const mockMemberFindMany = jest.fn();
 const mockMemberFindFirst = jest.fn();
 const mockBindingFindUnique = jest.fn();
 const mockBindingUpsert = jest.fn();
+const mockOrgRoleFindMany = jest.fn();
 jest.mock('@db', () => ({
   db: {
     member: {
@@ -14,6 +15,19 @@ jest.mock('@db', () => ({
       findUnique: (...a: unknown[]) => mockBindingFindUnique(...a),
       upsert: (...a: unknown[]) => mockBindingUpsert(...a),
     },
+    organizationRole: {
+      findMany: (...a: unknown[]) => mockOrgRoleFindMany(...a),
+    },
+  },
+}));
+
+jest.mock('@trycompai/auth', () => ({
+  BUILT_IN_ROLE_PERMISSIONS: {
+    owner: { app: ['read'] },
+    admin: { app: ['read'] },
+    auditor: { app: ['read'] },
+    employee: { policy: ['read'], portal: ['read', 'update'] },
+    contractor: { policy: ['read'], portal: ['read', 'update'] },
   },
 }));
 
@@ -24,29 +38,32 @@ describe('McpService', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+    mockOrgRoleFindMany.mockResolvedValue([]);
     service = new McpService();
   });
 
   describe('getOrganizationSelection', () => {
-    it('returns the user orgs and the current valid selection', async () => {
+    it('returns only app-access orgs and the current selection', async () => {
       mockMemberFindMany.mockResolvedValue([
-        { organization: { id: 'org_a', name: 'Acme' } },
-        { organization: { id: 'org_b', name: 'Beta' } },
+        { role: 'owner', organization: { id: 'org_a', name: 'Acme' } },
+        // Portal-only — must be excluded.
+        { role: 'employee', organization: { id: 'org_b', name: 'Beta' } },
+        { role: 'admin', organization: { id: 'org_c', name: 'Gamma' } },
       ]);
-      mockBindingFindUnique.mockResolvedValue({ organizationId: 'org_b' });
+      mockBindingFindUnique.mockResolvedValue({ organizationId: 'org_c' });
 
       const result = await service.getOrganizationSelection('usr_1');
 
       expect(result.organizations).toEqual([
         { id: 'org_a', name: 'Acme' },
-        { id: 'org_b', name: 'Beta' },
+        { id: 'org_c', name: 'Gamma' },
       ]);
-      expect(result.selectedOrganizationId).toBe('org_b');
+      expect(result.selectedOrganizationId).toBe('org_c');
     });
 
-    it('drops a stale selection the user is no longer a member of', async () => {
+    it('drops a selection the user can no longer use', async () => {
       mockMemberFindMany.mockResolvedValue([
-        { organization: { id: 'org_a', name: 'Acme' } },
+        { role: 'owner', organization: { id: 'org_a', name: 'Acme' } },
       ]);
       mockBindingFindUnique.mockResolvedValue({ organizationId: 'org_gone' });
 
@@ -55,21 +72,22 @@ describe('McpService', () => {
       expect(result.selectedOrganizationId).toBeNull();
     });
 
-    it('returns null selection when none is set', async () => {
+    it('excludes Portal-only orgs entirely', async () => {
       mockMemberFindMany.mockResolvedValue([
-        { organization: { id: 'org_a', name: 'Acme' } },
+        { role: 'employee', organization: { id: 'org_b', name: 'Beta' } },
       ]);
       mockBindingFindUnique.mockResolvedValue(null);
 
       const result = await service.getOrganizationSelection('usr_1');
 
+      expect(result.organizations).toEqual([]);
       expect(result.selectedOrganizationId).toBeNull();
     });
   });
 
   describe('setOrganization', () => {
-    it('upserts the binding when the user is a member', async () => {
-      mockMemberFindFirst.mockResolvedValue({ id: 'mem_1' });
+    it('saves when the user is a member with app access', async () => {
+      mockMemberFindFirst.mockResolvedValue({ role: 'admin' });
       mockBindingUpsert.mockResolvedValue({});
 
       const result = await service.setOrganization('usr_1', 'org_a');
@@ -86,6 +104,15 @@ describe('McpService', () => {
       mockMemberFindFirst.mockResolvedValue(null);
 
       await expect(service.setOrganization('usr_1', 'org_x')).rejects.toThrow(
+        ForbiddenException,
+      );
+      expect(mockBindingUpsert).not.toHaveBeenCalled();
+    });
+
+    it('rejects a member whose role lacks app access', async () => {
+      mockMemberFindFirst.mockResolvedValue({ role: 'employee' });
+
+      await expect(service.setOrganization('usr_1', 'org_b')).rejects.toThrow(
         ForbiddenException,
       );
       expect(mockBindingUpsert).not.toHaveBeenCalled();

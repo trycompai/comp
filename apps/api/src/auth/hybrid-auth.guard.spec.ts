@@ -26,6 +26,7 @@ jest.mock('./auth.server', () => ({
 const mockUserFindUnique = jest.fn();
 const mockMemberFindMany = jest.fn();
 const mockMcpBindingFindUnique = jest.fn();
+const mockOrgRoleFindMany = jest.fn();
 jest.mock('@db', () => ({
   db: {
     user: { findUnique: (...args: unknown[]) => mockUserFindUnique(...args) },
@@ -33,11 +34,23 @@ jest.mock('@db', () => ({
     mcpOrgBinding: {
       findUnique: (...args: unknown[]) => mockMcpBindingFindUnique(...args),
     },
+    organizationRole: {
+      findMany: (...args: unknown[]) => mockOrgRoleFindMany(...args),
+    },
   },
 }));
 
-// Avoid ESM issues from the api-key.service import chain (it imports @trycompai/auth).
-jest.mock('@trycompai/auth', () => ({}));
+// Mock @trycompai/auth — the app-access gate reads BUILT_IN_ROLE_PERMISSIONS to
+// decide which roles grant app access. owner/admin/auditor do; employee does not.
+jest.mock('@trycompai/auth', () => ({
+  BUILT_IN_ROLE_PERMISSIONS: {
+    owner: { app: ['read'] },
+    admin: { app: ['read'] },
+    auditor: { app: ['read'] },
+    employee: { policy: ['read'], portal: ['read', 'update'] },
+    contractor: { policy: ['read'], portal: ['read', 'update'] },
+  },
+}));
 
 describe('HybridAuthGuard — MCP OAuth path', () => {
   let guard: HybridAuthGuard;
@@ -77,6 +90,8 @@ describe('HybridAuthGuard — MCP OAuth path', () => {
     mockGetSession.mockResolvedValue(null);
     // No org binding by default; individual tests override.
     mockMcpBindingFindUnique.mockResolvedValue(null);
+    // No custom roles by default (built-in roles resolve without a DB call).
+    mockOrgRoleFindMany.mockResolvedValue([]);
   });
 
   it('authenticates a single-org user (admin) and binds org + roles', async () => {
@@ -259,5 +274,69 @@ describe('HybridAuthGuard — MCP OAuth path', () => {
 
     await expect(guard.canActivate(context)).resolves.toBe(true);
     expect(request.isPlatformAdmin).toBe(true);
+  });
+
+  it('blocks a Portal-only role (employee) — no app access, no MCP', async () => {
+    mockGetMcpSession.mockResolvedValue({ userId: 'usr_e', scopes: 'openid' });
+    mockUserFindUnique.mockResolvedValue({
+      id: 'usr_e',
+      email: 'employee@acme.com',
+      role: 'user',
+    });
+    mockMemberFindMany.mockResolvedValue([
+      { id: 'mem_e', role: 'employee', department: 'none', organizationId: 'org_1' },
+    ]);
+
+    const { context, request } = createContext({
+      authorization: 'Bearer mcp_access_token',
+    });
+
+    await expect(guard.canActivate(context)).rejects.toThrow(ForbiddenException);
+    expect(request.organizationId).toBe('');
+  });
+
+  it('allows a custom role that grants app access', async () => {
+    mockGetMcpSession.mockResolvedValue({ userId: 'usr_c', scopes: 'openid' });
+    mockUserFindUnique.mockResolvedValue({
+      id: 'usr_c',
+      email: 'custom@acme.com',
+      role: 'user',
+    });
+    mockMemberFindMany.mockResolvedValue([
+      { id: 'mem_c', role: 'Compliance Lead', department: 'none', organizationId: 'org_1' },
+    ]);
+    // Custom role resolved from organization_role with app access granted.
+    mockOrgRoleFindMany.mockResolvedValue([
+      { permissions: JSON.stringify({ app: ['read'], control: ['read'] }) },
+    ]);
+
+    const { context, request } = createContext({
+      authorization: 'Bearer mcp_access_token',
+    });
+
+    await expect(guard.canActivate(context)).resolves.toBe(true);
+    expect(request.organizationId).toBe('org_1');
+    expect(request.userRoles).toEqual(['Compliance Lead']);
+  });
+
+  it('blocks a custom role that lacks app access', async () => {
+    mockGetMcpSession.mockResolvedValue({ userId: 'usr_d', scopes: 'openid' });
+    mockUserFindUnique.mockResolvedValue({
+      id: 'usr_d',
+      email: 'limited@acme.com',
+      role: 'user',
+    });
+    mockMemberFindMany.mockResolvedValue([
+      { id: 'mem_d', role: 'Read Only Portal', department: 'none', organizationId: 'org_1' },
+    ]);
+    mockOrgRoleFindMany.mockResolvedValue([
+      { permissions: JSON.stringify({ policy: ['read'], portal: ['read'] }) },
+    ]);
+
+    const { context } = createContext({
+      authorization: 'Bearer mcp_access_token',
+    });
+
+    await expect(guard.canActivate(context)).rejects.toThrow(ForbiddenException);
   });
 });

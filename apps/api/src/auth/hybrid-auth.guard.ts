@@ -10,6 +10,7 @@ import {
 import { Reflector } from '@nestjs/core';
 import { db } from '@db';
 import { ApiKeyService } from './api-key.service';
+import { hasAppAccess } from './app-access';
 import { auth } from './auth.server';
 import { IS_PUBLIC_KEY } from './public.decorator';
 import { SKIP_ORG_CHECK_KEY } from './skip-org-check.decorator';
@@ -173,7 +174,7 @@ export class HybridAuthGuard implements CanActivate {
       if (!session) {
         // Fallback: the hosted MCP server (Gram) sends an OAuth access token as a
         // Bearer token, which getSession does not resolve. Try the MCP OAuth path.
-        if (await this.tryMcpOAuthAuth(request, headers, skipOrgCheck)) {
+        if (await this.tryMcpOAuthAuth(request, headers)) {
           return true;
         }
         throw new UnauthorizedException('Invalid or expired session');
@@ -272,11 +273,16 @@ export class HybridAuthGuard implements CanActivate {
    * still a member; otherwise we ask them to choose rather than guess a tenant.
    * Roles come from the resolved member so the existing PermissionGuard enforces
    * RBAC unchanged.
+   *
+   * Two hard gates (both 403, never 401): the user must (1) be a member of an
+   * organization at all — strangers who merely completed sign-in are rejected —
+   * and (2) hold a role with app access (`app:read`) in the operative org, the
+   * same rule the web app uses. Portal-only roles (employee/contractor) cannot
+   * use the MCP.
    */
   private async tryMcpOAuthAuth(
     request: AuthenticatedRequest,
     headers: Headers,
-    skipOrgCheck: boolean,
   ): Promise<boolean> {
     const token = await auth.api.getMcpSession({ headers }).catch(() => null);
     if (!token?.userId) {
@@ -319,13 +325,6 @@ export class HybridAuthGuard implements CanActivate {
       );
     }
 
-    // The user has an org. Endpoints that don't need a *specific* one
-    // (onboarding lookups) can proceed now.
-    if (skipOrgCheck) {
-      this.logger.log(`MCP OAuth token authenticated for user ${user.id}`);
-      return true;
-    }
-
     let member = memberships[0];
     if (memberships.length > 1) {
       // Multi-org: use the org the user chose for MCP (set at connect time),
@@ -348,6 +347,17 @@ export class HybridAuthGuard implements CanActivate {
       }
       member = chosen;
     }
+
+    // App-access gate: MCP follows the same rule as the web app — only roles
+    // that grant app access (`app:read`) may use it. Portal-only roles
+    // (employee/contractor, or custom roles without app access) are rejected.
+    if (!(await hasAppAccess(member.organizationId, member.role))) {
+      throw new ForbiddenException(
+        "Your role doesn't have access to the app, so it can't use the MCP. " +
+          'Ask an organization admin for access.',
+      );
+    }
+
     request.organizationId = member.organizationId;
     request.memberId = member.id;
     request.memberDepartment = member.department;
