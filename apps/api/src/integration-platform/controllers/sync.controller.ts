@@ -27,11 +27,13 @@ import {
   matchesSyncFilterTerms,
   parseSyncFilterTerms,
   interpretDeclarativeSync,
+  SyncDeviceSchema,
   type OAuthConfig,
   type SyncDefinition,
 } from '@trycompai/integration-platform';
 import { IntegrationSyncLoggerService } from '../services/integration-sync-logger.service';
 import { GenericEmployeeSyncService } from '../services/generic-employee-sync.service';
+import { GenericDeviceSyncService } from '../services/generic-device-sync.service';
 import { DynamicIntegrationRepository } from '../repositories/dynamic-integration.repository';
 import { CheckRunRepository } from '../repositories/check-run.repository';
 import { createCheckContext } from '@trycompai/integration-platform';
@@ -74,6 +76,7 @@ export class SyncController {
     private readonly oauthCredentialsService: OAuthCredentialsService,
     private readonly syncLoggerService: IntegrationSyncLoggerService,
     private readonly genericSyncService: GenericEmployeeSyncService,
+    private readonly genericDeviceSyncService: GenericDeviceSyncService,
     private readonly dynamicIntegrationRepo: DynamicIntegrationRepository,
     private readonly checkRunRepo: CheckRunRepository,
   ) {}
@@ -1616,6 +1619,74 @@ export class SyncController {
     };
   }
 
+  /**
+   * Get the current device sync provider for an organization
+   */
+  @Get('device-sync-provider')
+  @ApiOperation({ summary: 'Get the currently configured device sync provider' })
+  @RequirePermission('integration', 'read')
+  async getDeviceSyncProvider(@OrganizationId() organizationId: string) {
+    const org = await db.organization.findUnique({
+      where: { id: organizationId },
+      select: { deviceSyncProvider: true },
+    });
+
+    if (!org) {
+      throw new HttpException('Organization not found', HttpStatus.NOT_FOUND);
+    }
+
+    return { provider: org.deviceSyncProvider };
+  }
+
+  /**
+   * Set the device sync provider for an organization
+   */
+  @Post('device-sync-provider')
+  @ApiOperation({ summary: 'Set the device sync provider' })
+  @RequirePermission('integration', 'update')
+  async setDeviceSyncProvider(
+    @OrganizationId() organizationId: string,
+    @Body() body: { provider: string | null },
+  ) {
+    const { provider } = body;
+
+    if (provider) {
+      const allManifests = registry.getActiveManifests();
+      const validProviders = allManifests
+        .filter((m) => m.capabilities?.includes('device_sync'))
+        .map((m) => m.id);
+      if (!validProviders.includes(provider)) {
+        throw new HttpException(
+          `Invalid device sync provider. Must be one of: ${validProviders.join(', ')}`,
+          HttpStatus.BAD_REQUEST,
+        );
+      }
+
+      const connection = await this.connectionRepository.findBySlugAndOrg(
+        provider,
+        organizationId,
+      );
+
+      if (!connection || connection.status !== 'active') {
+        throw new HttpException(
+          `Provider ${provider} is not connected`,
+          HttpStatus.BAD_REQUEST,
+        );
+      }
+    }
+
+    await db.organization.update({
+      where: { id: organizationId },
+      data: { deviceSyncProvider: provider },
+    });
+
+    this.logger.log(
+      `Set device sync provider to ${provider || 'none'} for org ${organizationId}`,
+    );
+
+    return { success: true, provider };
+  }
+
   // ============================================================================
   // Dynamic sync endpoints (for dynamic integrations with syncDefinition)
   // ============================================================================
@@ -1625,12 +1696,16 @@ export class SyncController {
    * Used by the frontend to render the provider selector dynamically.
    */
   @Get('available-providers')
-  @ApiOperation({ summary: 'List employee sync providers available to the org' })
+  @ApiOperation({ summary: 'List sync providers available to the org' })
   @RequirePermission('integration', 'read')
-  async getAvailableSyncProviders(@OrganizationId() organizationId: string) {
+  async getAvailableSyncProviders(
+    @OrganizationId() organizationId: string,
+    @Query('syncType') syncType?: 'employee' | 'device',
+  ) {
+    const capability = syncType === 'device' ? 'device_sync' : 'sync';
     const allManifests = registry.getActiveManifests();
     const syncProviders = allManifests.filter((m) =>
-      m.capabilities?.includes('sync'),
+      m.capabilities?.includes(capability),
     );
 
     const results = await Promise.all(
@@ -1886,6 +1961,242 @@ export class SyncController {
       throw new HttpException(
         {
           message: `Sync execution failed: ${errorMessage}`,
+          syncRunId: syncRun.id,
+        },
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  /**
+   * Generic device sync endpoint for dynamic integrations.
+   * Runs the deviceSyncDefinition (DSL/code steps) and processes the resulting devices.
+   */
+  @Post('dynamic/:providerSlug/devices')
+  @ApiOperation({ summary: 'Sync devices for a dynamic provider' })
+  @RequirePermission('integration', 'update')
+  async syncDynamicProviderDevices(
+    @OrganizationId() organizationId: string,
+    @Param('providerSlug') providerSlug: string,
+    @Query('connectionId') connectionId: string,
+  ) {
+    if (!connectionId) {
+      throw new HttpException(
+        'connectionId is required',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    this.logger.log(
+      `[DeviceSync] Starting sync for provider="${providerSlug}" connection="${connectionId}" org="${organizationId}"`,
+    );
+
+    // 1. Validate connection
+    const connection = await this.connectionRepository.findById(connectionId);
+    if (!connection || connection.organizationId !== organizationId) {
+      throw new HttpException('Connection not found', HttpStatus.NOT_FOUND);
+    }
+
+    // 2. Get manifest from registry — must have 'device_sync' capability
+    const manifest = getManifest(providerSlug);
+    if (!manifest) {
+      throw new HttpException(
+        `Integration "${providerSlug}" not found`,
+        HttpStatus.NOT_FOUND,
+      );
+    }
+    if (!manifest.capabilities?.includes('device_sync')) {
+      throw new HttpException(
+        `Integration "${providerSlug}" does not support device sync`,
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    // 3. Get dynamic integration — must have deviceSyncDefinition
+    const dynamicIntegration =
+      await this.dynamicIntegrationRepo.findBySlug(providerSlug);
+    if (!dynamicIntegration?.deviceSyncDefinition) {
+      throw new HttpException(
+        `Integration "${providerSlug}" has no device sync definition`,
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    // 4. Get & refresh credentials
+    let credentials =
+      await this.credentialVaultService.getDecryptedCredentials(connectionId);
+    if (!credentials) {
+      throw new HttpException(
+        'No valid credentials found. Please reconnect the integration.',
+        HttpStatus.UNAUTHORIZED,
+      );
+    }
+
+    // Try to refresh OAuth token if applicable
+    if (manifest.auth.type === 'oauth2' && credentials.refresh_token) {
+      const oauthConfig = manifest.auth.config;
+      try {
+        const oauthCredentials =
+          await this.oauthCredentialsService.getCredentials(
+            providerSlug,
+            organizationId,
+          );
+        if (oauthCredentials) {
+          const newToken = await this.credentialVaultService.refreshOAuthTokens(
+            connectionId,
+            {
+              tokenUrl: oauthConfig.tokenUrl,
+              refreshUrl: oauthConfig.refreshUrl,
+              clientId: oauthCredentials.clientId,
+              clientSecret: oauthCredentials.clientSecret,
+              clientAuthMethod: oauthConfig.clientAuthMethod,
+            },
+          );
+          if (newToken) {
+            credentials =
+              await this.credentialVaultService.getDecryptedCredentials(
+                connectionId,
+              );
+          }
+        }
+      } catch (refreshError) {
+        this.logger.warn(
+          `Token refresh failed for ${providerSlug}, trying with existing token: ${refreshError}`,
+        );
+      }
+    }
+
+    const accessToken = credentials?.access_token;
+    this.logger.log(
+      `[DeviceSync] Credentials ready for "${providerSlug}" (auth=${manifest.auth.type}, hasToken=${!!accessToken})`,
+    );
+
+    // 5. Create a sync run record
+    const syncRun = await this.checkRunRepo.create({
+      connectionId,
+      checkId: `device-sync:${providerSlug}`,
+      checkName: `Device Sync: ${manifest.name}`,
+    });
+
+    // 6. Create CheckContext with logging that captures to the run
+    const { ctx, getResults } = createCheckContext({
+      manifest,
+      accessToken: typeof accessToken === 'string' ? accessToken : undefined,
+      credentials: (credentials ?? {}) as Record<string, string>,
+      variables: ((connection.variables as Record<string, unknown>) ??
+        {}) as Record<string, string | boolean | number | string[]>,
+      connectionId,
+      organizationId,
+      metadata: (connection.metadata as Record<string, unknown>) ?? {},
+      logger: {
+        info: (msg, data) => this.logger.log(msg, data),
+        warn: (msg, data) => this.logger.warn(msg, data),
+        error: (msg, data) => this.logger.error(msg, data),
+      },
+    });
+
+    try {
+      // 7. Run device sync definition → get raw device data
+      const syncDefinition =
+        dynamicIntegration.deviceSyncDefinition as unknown as SyncDefinition;
+      const syncRunner = interpretDeclarativeSync({
+        definition: syncDefinition,
+      });
+
+      const rawDevices = await syncRunner.run(ctx);
+
+      const validDevices: import('@trycompai/integration-platform').SyncDevice[] = [];
+      for (const raw of rawDevices) {
+        const parsed = SyncDeviceSchema.safeParse(raw);
+        if (parsed.success) {
+          validDevices.push(parsed.data);
+        } else {
+          this.logger.warn(
+            `[DeviceSync] Skipping invalid device: ${JSON.stringify(parsed.error.issues)}`,
+          );
+        }
+      }
+
+      this.logger.log(
+        `[DeviceSync] Sync definition produced ${rawDevices.length} raw devices, ${validDevices.length} valid for "${providerSlug}"`,
+      );
+
+      // 8. Process devices via generic service
+      const result = await this.genericDeviceSyncService.processDevices({
+        organizationId,
+        connectionId,
+        devices: validDevices,
+        options: { providerName: manifest.name },
+      });
+
+      // 9. Persist execution logs + results to the run record
+      const executionLogs = getResults().logs.map((log) => ({
+        level: log.level,
+        message: log.message,
+        ...(log.data ? { data: log.data } : {}),
+        timestamp: log.timestamp.toISOString(),
+      }));
+
+      const startTime = syncRun.startedAt?.getTime() || Date.now();
+      await this.checkRunRepo.complete(syncRun.id, {
+        status: result.errors > 0 ? 'failed' : 'success',
+        durationMs: Date.now() - startTime,
+        totalChecked: result.totalFound,
+        passedCount: result.imported + result.updated,
+        failedCount: result.errors,
+        logs:
+          executionLogs.length > 0
+            ? (executionLogs as unknown as Prisma.InputJsonValue)
+            : undefined,
+      });
+
+      this.logger.log(
+        `[DeviceSync] Sync complete for "${providerSlug}": imported=${result.imported} updated=${result.updated} removed=${result.removed} skipped=${result.skipped} errors=${result.errors}`,
+      );
+
+      return {
+        ...result,
+        syncRunId: syncRun.id,
+      };
+    } catch (error) {
+      // Persist error + whatever logs were captured before the failure
+      const executionLogs = getResults().logs.map((log) => ({
+        level: log.level,
+        message: log.message,
+        ...(log.data ? { data: log.data } : {}),
+        timestamp: log.timestamp.toISOString(),
+      }));
+
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
+      const errorStack = error instanceof Error ? error.stack : undefined;
+
+      const startTime = syncRun.startedAt?.getTime() || Date.now();
+      await this.checkRunRepo.complete(syncRun.id, {
+        status: 'failed',
+        durationMs: Date.now() - startTime,
+        totalChecked: 0,
+        passedCount: 0,
+        failedCount: 0,
+        errorMessage,
+        logs: [
+          ...executionLogs,
+          {
+            level: 'error',
+            message: `Device sync execution failed: ${errorMessage}`,
+            ...(errorStack ? { data: { stack: errorStack } } : {}),
+            timestamp: new Date().toISOString(),
+          },
+        ] as unknown as Prisma.InputJsonValue,
+      });
+
+      this.logger.error(
+        `[DeviceSync] Sync failed for "${providerSlug}": ${errorMessage}`,
+      );
+
+      throw new HttpException(
+        {
+          message: `Device sync execution failed: ${errorMessage}`,
           syncRunId: syncRun.id,
         },
         HttpStatus.INTERNAL_SERVER_ERROR,

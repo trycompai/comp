@@ -309,6 +309,25 @@ export const SyncDefinitionSchema = z.object({
 export type SyncDefinition = z.infer<typeof SyncDefinitionSchema>;
 
 // ============================================================================
+// Sync Device Schema (for dynamic device sync)
+// ============================================================================
+
+export const SyncDeviceSchema = z.object({
+  name: z.string(),
+  platform: z.enum(['macos', 'windows', 'linux']),
+  serialNumber: z.string().optional(),
+  hostname: z.string().optional(),
+  osVersion: z.string().optional(),
+  hardwareModel: z.string().optional(),
+  userEmail: z.string(),
+  status: z.enum(['active', 'inactive']),
+  externalId: z.string().optional(),
+  metadata: z.record(z.string(), z.unknown()).optional(),
+});
+
+export type SyncDevice = z.infer<typeof SyncDeviceSchema>;
+
+// ============================================================================
 // Dynamic Integration Definition (full manifest + checks as JSON)
 // ============================================================================
 

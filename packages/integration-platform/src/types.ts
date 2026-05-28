@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import type { SyncDefinition } from './dsl/types';
 import type { TaskTemplateId } from './task-mappings';
 
 // ============================================================================
@@ -208,7 +209,7 @@ export type CredentialField = z.infer<typeof CredentialFieldSchema>;
 // Integration Capabilities
 // ============================================================================
 
-export type IntegrationCapability = 'checks' | 'webhook' | 'sync';
+export type IntegrationCapability = 'checks' | 'webhook' | 'sync' | 'device_sync';
 
 export const WebhookConfigSchema = z.object({
   /** Webhook endpoint path suffix */
@@ -850,6 +851,9 @@ export interface IntegrationManifest {
 
   /** Runtime handler for webhooks */
   handler?: IntegrationHandler;
+
+  /** Declarative device sync definition (same DSL as employee sync) */
+  deviceSyncDefinition?: SyncDefinition;
 
   /** Whether multiple connections per org are allowed */
   supportsMultipleConnections?: boolean;
