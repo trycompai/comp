@@ -1548,7 +1548,7 @@ export class TrustPortalService {
       favicon: trust.favicon,
       faqs: org.trustPortalFaqs,
       frameworkFlags: [
-        trust.soc2,
+        trust.soc2, // legacy column; folded into soc2type2 in the response but still a "configured" signal
         trust.soc2type1,
         trust.soc2type2,
         trust.soc3,
