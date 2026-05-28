@@ -20,25 +20,25 @@ export function OverviewNudges({
   const trust = useTrustPortalSetupNudge({ orgId, server });
   const candidates = [offboarding, trust];
 
+  // Stable across renders unless a persistable nudge is added/removed.
+  const persistableIds = candidates
+    .filter((c) => c.persistDismissal)
+    .map((c) => c.id)
+    .join(',');
+
   const [dismissed, setDismissed] = useState<Set<string>>(new Set());
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
     setMounted(true);
-    if (typeof window === 'undefined') return;
     const next = new Set<string>();
-    for (const c of candidates) {
-      if (
-        c.persistDismissal &&
-        window.localStorage.getItem(dismissKey(c.id, orgId)) === '1'
-      ) {
-        next.add(c.id);
+    for (const id of persistableIds.split(',').filter(Boolean)) {
+      if (window.localStorage.getItem(dismissKey(id, orgId)) === '1') {
+        next.add(id);
       }
     }
     setDismissed(next);
-    // candidates is rebuilt each render with stable ids; seed once per org.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [orgId]);
+  }, [orgId, persistableIds]);
 
   if (!mounted) return null;
 
@@ -49,7 +49,7 @@ export function OverviewNudges({
   if (!visible) return null;
 
   const handleDismiss = () => {
-    if (visible.persistDismissal && typeof window !== 'undefined') {
+    if (visible.persistDismissal) {
       window.localStorage.setItem(dismissKey(visible.id, orgId), '1');
     }
     setDismissed((prev) => new Set(prev).add(visible.id));

@@ -91,4 +91,32 @@ describe('OverviewNudges', () => {
     render(<OverviewNudges orgId="org_123" server={server()} />);
     expect(screen.queryByText('Showcase your security posture')).not.toBeInTheDocument();
   });
+
+  it('dismissing offboarding hides it for the session without persisting', () => {
+    setOffboarding([{ memberId: 'm1', name: 'Jo' }]);
+    // isConfigured: true so the trust nudge does not appear after offboarding is dismissed
+    const { unmount } = render(
+      <OverviewNudges orgId="org_123" server={server({ isConfigured: true })} />,
+    );
+    expect(screen.getByText(/offboarding completion/)).toBeInTheDocument();
+
+    fireEvent.click(screen.getByLabelText('Dismiss'));
+    expect(screen.queryByText(/offboarding completion/)).not.toBeInTheDocument();
+    expect(
+      window.localStorage.getItem('overview-nudge-dismissed:offboarding:org_123'),
+    ).toBeNull();
+
+    // Not persisted → reappears on remount.
+    unmount();
+    render(<OverviewNudges orgId="org_123" server={server({ isConfigured: true })} />);
+    expect(screen.getByText(/offboarding completion/)).toBeInTheDocument();
+  });
+
+  it('renders nothing while offboarding is loading and trust is ineligible', () => {
+    mockUseApiSWR.mockReturnValue({ data: undefined, error: undefined }); // SWR loading
+    const { container } = render(
+      <OverviewNudges orgId="org_123" server={server({ isConfigured: true })} />,
+    );
+    expect(container).toBeEmptyDOMElement();
+  });
 });
