@@ -197,12 +197,12 @@ export function ResultsView({
         <FindingsTable findings={sortedFindings} />
       ) : findings.length > 0 ? (
         <div className="text-muted-foreground rounded-xs border p-12 text-center">
-          <p className="text-lg">No findings match the selected filters</p>
+          <p className="text-lg">No results match the selected filters</p>
           <p className="mt-2 text-sm">Try adjusting your filters</p>
         </div>
       ) : (
         <div className="rounded-lg border-2 border-dashed p-12 text-center">
-          <p className="text-muted-foreground text-lg">No findings yet</p>
+          <p className="text-muted-foreground text-lg">No results yet</p>
           <p className="text-muted-foreground mt-2 text-sm">
             Click "Run Scan" above to check for security issues
           </p>

@@ -3,6 +3,7 @@ import {
   Post,
   Get,
   Delete,
+  Patch,
   Param,
   Query,
   Body,
@@ -24,6 +25,15 @@ import {
 } from './cloud-security.service';
 import { CloudSecurityQueryService } from './cloud-security-query.service';
 import { CloudSecurityLegacyService } from './cloud-security-legacy.service';
+import { CheckDefinitionService } from './check-definition.service';
+import { CloudExceptionService } from './exception.service';
+import { CloudHistoryService } from './history.service';
+import { CloudAwsScanModeService } from './aws-scan-mode.service';
+import { parseExceptionExpiry } from './exception-expiry.utils';
+import { MarkExceptionDto } from './dto/mark-exception.dto';
+import { UpdateAwsScanModeDto } from './dto/update-scan-mode.dto';
+import { ActingUserResolver } from '../auth/acting-user.service';
+import type { AuthenticatedRequest } from '../auth/types';
 import { logCloudSecurityActivity } from './cloud-security-audit';
 import { CloudSecurityActivityService } from './cloud-security-activity.service';
 import {
@@ -44,6 +54,11 @@ export class CloudSecurityController {
     private readonly activityService: CloudSecurityActivityService,
     private readonly gcpSecurityService: GCPSecurityService,
     private readonly azureSecurityService: AzureSecurityService,
+    private readonly checkDefinitionService: CheckDefinitionService,
+    private readonly exceptionService: CloudExceptionService,
+    private readonly historyService: CloudHistoryService,
+    private readonly scanModeService: CloudAwsScanModeService,
+    private readonly actingUser: ActingUserResolver,
   ) {}
 
   @Get('activity')
@@ -94,6 +109,149 @@ export class CloudSecurityController {
   async getFindings(@OrganizationId() organizationId: string) {
     const findings = await this.queryService.getFindings(organizationId);
     return { data: findings, count: findings.length };
+  }
+
+  @Post('findings/:findingId/exception')
+  @UseGuards(HybridAuthGuard, PermissionGuard)
+  @RequirePermission('integration', 'update')
+  @ApiOperation({
+    summary:
+      'Mark a finding as an exception so it no longer appears in the active Scan Results list',
+    description:
+      'Accepts session, API key, or service token auth. For API key / service token callers ' +
+      'without an explicit user attribution, the action is attributed to the org\'s owner and ' +
+      'the audit log description records the calling key/service name.',
+  })
+  async markFindingAsException(
+    @Param('findingId') findingId: string,
+    @Body() body: MarkExceptionDto,
+    @OrganizationId() organizationId: string,
+    @Req() req: AuthenticatedRequest,
+  ) {
+    const acting = await this.actingUser.resolve(req, organizationId);
+    if (!acting.userId) {
+      throw new HttpException(
+        'Cannot attribute this action — your organization must have at least one user with the "owner" role.',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+    const result = await this.exceptionService.markAsException({
+      findingId,
+      organizationId,
+      userId: acting.userId,
+      reason: body.reason,
+      reviewedBy: body.reviewedBy ?? null,
+      expiresAt: parseExceptionExpiry(body.expiresAt),
+      callerLabel: acting.callerLabel,
+    });
+    return { data: result };
+  }
+
+  @Patch('connections/:connectionId/scan-mode')
+  @UseGuards(HybridAuthGuard, PermissionGuard)
+  @RequirePermission('integration', 'update')
+  @ApiOperation({
+    summary:
+      'Switch the AWS scan engine for a connection (Comp AI scanners ↔ Security Hub)',
+    description:
+      'Accepts session, API key, or service token auth. For API key / service token callers ' +
+      'without an explicit user attribution, the action is attributed to the org\'s owner.',
+  })
+  async updateAwsScanMode(
+    @Param('connectionId') connectionId: string,
+    @Body() body: UpdateAwsScanModeDto,
+    @OrganizationId() organizationId: string,
+    @Req() req: AuthenticatedRequest,
+  ) {
+    const acting = await this.actingUser.resolve(req, organizationId);
+    if (!acting.userId) {
+      throw new HttpException(
+        'Cannot attribute this action — your organization must have at least one user with the "owner" role.',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+    const result = await this.scanModeService.updateMode({
+      connectionId,
+      organizationId,
+      userId: acting.userId,
+      mode: body.mode,
+      callerLabel: acting.callerLabel,
+    });
+    return { data: result };
+  }
+
+  @Delete('exceptions/:exceptionId')
+  @UseGuards(HybridAuthGuard, PermissionGuard)
+  @RequirePermission('integration', 'update')
+  @ApiOperation({
+    summary: 'Revoke an exception, reopening the finding',
+    description:
+      'Accepts session, API key, or service token auth. For API key / service token callers ' +
+      'without an explicit user attribution, the action is attributed to the org\'s owner.',
+  })
+  async revokeException(
+    @Param('exceptionId') exceptionId: string,
+    @OrganizationId() organizationId: string,
+    @Req() req: AuthenticatedRequest,
+  ) {
+    const acting = await this.actingUser.resolve(req, organizationId);
+    if (!acting.userId) {
+      throw new HttpException(
+        'Cannot attribute this action — your organization must have at least one user with the "owner" role.',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+    await this.exceptionService.revokeException({
+      exceptionId,
+      organizationId,
+      userId: acting.userId,
+      callerLabel: acting.callerLabel,
+    });
+    return { success: true };
+  }
+
+  @Get('history')
+  @SkipThrottle()
+  @UseGuards(HybridAuthGuard, PermissionGuard)
+  @RequirePermission('integration', 'read')
+  @ApiOperation({
+    summary:
+      'List resolution, exception, and regression history for a connection',
+  })
+  async getHistory(
+    @Query('connectionId') connectionId: string,
+    @OrganizationId() organizationId: string,
+  ) {
+    if (!connectionId) {
+      throw new HttpException(
+        'connectionId query parameter is required',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+    const history = await this.historyService.getHistory({
+      organizationId,
+      connectionId,
+    });
+    return { data: history };
+  }
+
+  @Get('findings/:findingId/check-definition')
+  @SkipThrottle()
+  @UseGuards(HybridAuthGuard, PermissionGuard)
+  @RequirePermission('integration', 'read')
+  @ApiOperation({
+    summary:
+      'Resolve the "About this check" description for a finding (AI-cached for AWS; provider-derived for GCP/Azure)',
+  })
+  async getCheckDefinition(
+    @Param('findingId') findingId: string,
+    @OrganizationId() organizationId: string,
+  ) {
+    const definition = await this.checkDefinitionService.getForFinding(
+      findingId,
+      organizationId,
+    );
+    return { data: definition };
   }
 
   @Post('scan/:connectionId')

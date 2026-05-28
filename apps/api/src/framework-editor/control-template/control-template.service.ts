@@ -105,6 +105,7 @@ export class ControlTemplateService {
         data: {
           name: dto.name,
           description: dto.description ?? '',
+          controlFamily: dto.controlFamily || null,
         },
       });
       this.logger.log(`Created control template: ${ct.name} (${ct.id})`);
@@ -120,6 +121,7 @@ export class ControlTemplateService {
         data: {
           name: dto.name,
           description: dto.description ?? '',
+          controlFamily: dto.controlFamily || null,
         },
       });
       await tx.frameworkEditorControlDocumentTypeLink.createMany({
@@ -144,6 +146,7 @@ export class ControlTemplateService {
         data: {
           ...(dto.name !== undefined && { name: dto.name }),
           ...(dto.description !== undefined && { description: dto.description }),
+          ...(dto.controlFamily !== undefined && { controlFamily: dto.controlFamily || null }),
         },
       });
       this.logger.log(`Updated control template: ${updated.name} (${id})`);
@@ -163,6 +166,7 @@ export class ControlTemplateService {
         data: {
           ...(dto.name !== undefined && { name: dto.name }),
           ...(dto.description !== undefined && { description: dto.description }),
+          ...(dto.controlFamily !== undefined && { controlFamily: dto.controlFamily || null }),
         },
       });
       await tx.frameworkEditorControlDocumentTypeLink.deleteMany({

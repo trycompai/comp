@@ -23,6 +23,7 @@ import { PermissionGuard } from '../auth/permission.guard';
 import { RequirePermission } from '../auth/require-permission.decorator';
 import type { AuthContext as AuthContextType } from '../auth/types';
 import { CreateRoleDto } from './dto/create-role.dto';
+import { UpdateBuiltInObligationsDto } from './dto/update-built-in-obligations.dto';
 import { UpdateRoleDto } from './dto/update-role.dto';
 import { RolesService } from './roles.service';
 
@@ -170,6 +171,75 @@ export class RolesController {
       roleNames,
     );
     return { permissions, obligations };
+  }
+
+  @Get('built-in/:name/obligations')
+  @RequirePermission('ac', 'read')
+  @ApiOperation({
+    summary: 'Get obligations for a built-in role',
+    description:
+      'Returns the effective obligations for a built-in role (owner, admin, auditor, employee, contractor) — DB override if present, else the hardcoded default.',
+  })
+  @ApiParam({ name: 'name', description: 'Built-in role name', example: 'owner' })
+  @ApiResponse({
+    status: 200,
+    description: 'Effective obligations for the built-in role',
+    schema: {
+      type: 'object',
+      properties: {
+        name: { type: 'string' },
+        obligations: {
+          type: 'object',
+          properties: { compliance: { type: 'boolean' } },
+        },
+      },
+    },
+  })
+  async getBuiltInObligations(
+    @OrganizationId() organizationId: string,
+    @Param('name') name: string,
+  ) {
+    const obligations = await this.rolesService.getBuiltInObligations(
+      organizationId,
+      name,
+    );
+    return { name, obligations };
+  }
+
+  @Patch('built-in/:name/obligations')
+  @RequirePermission('ac', 'update')
+  @ApiOperation({
+    summary: 'Update obligations for a built-in role',
+    description:
+      'Override the obligations for a built-in role (e.g., turn off the compliance obligation for owners). Permissions stay sourced from the hardcoded defaults.',
+  })
+  @ApiParam({ name: 'name', description: 'Built-in role name', example: 'owner' })
+  @ApiBody({ type: UpdateBuiltInObligationsDto })
+  @ApiResponse({
+    status: 200,
+    description: 'Obligations updated',
+    schema: {
+      type: 'object',
+      properties: {
+        name: { type: 'string' },
+        obligations: {
+          type: 'object',
+          properties: { compliance: { type: 'boolean' } },
+        },
+      },
+    },
+  })
+  @ApiResponse({ status: 400, description: 'Not a built-in role' })
+  async updateBuiltInObligations(
+    @OrganizationId() organizationId: string,
+    @Param('name') name: string,
+    @Body() dto: UpdateBuiltInObligationsDto,
+  ) {
+    return this.rolesService.updateBuiltInObligations(
+      organizationId,
+      name,
+      dto.obligations,
+    );
   }
 
   @Get(':roleId')

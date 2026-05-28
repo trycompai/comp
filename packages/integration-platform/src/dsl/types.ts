@@ -281,6 +281,7 @@ export const SyncEmployeeSchema = z.object({
   status: z.enum(['active', 'inactive', 'suspended']),
   role: z.string().optional(),
   department: z.string().optional(),
+  startDate: z.string().optional(),
   metadata: z.record(z.string(), z.unknown()).optional(),
 });
 
@@ -290,6 +291,19 @@ export const SyncDefinitionSchema = z.object({
   steps: z.array(DSLStepSchema),
   employeesPath: z.string().default('employees'),
   variables: z.array(VariableSchema).optional(),
+  /**
+   * Whether this provider is authoritative for "who works here" (directory of record).
+   *
+   * Set true ONLY for HRIS / identity providers (Google Workspace, Rippling, JumpCloud,
+   * Okta, Entra) whose user list equals the employee list. When true, the sync deactivates
+   * org members in this provider's email domain who were not returned by the sync.
+   *
+   * Default false — feature-licensed tools (Confluence, Slack, Notion, GitHub, Jira) only
+   * know "who has product access," not "who works here." Treating them as authoritative
+   * silently deactivates real employees whenever the API returns a partial list (privacy
+   * filters, scope gaps, paginated breaks, etc.).
+   */
+  isDirectorySource: z.boolean().optional().default(false),
 });
 
 export type SyncDefinition = z.infer<typeof SyncDefinitionSchema>;

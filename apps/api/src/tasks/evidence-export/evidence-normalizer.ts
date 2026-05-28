@@ -10,7 +10,7 @@ import type {
   TaskEvidenceSummary,
 } from './evidence-export.types';
 
-interface AppAutomationRun {
+export interface AppAutomationRun {
   id: string;
   checkId: string;
   checkName: string;
@@ -44,7 +44,7 @@ interface AppAutomationRun {
   }>;
 }
 
-interface CustomAutomationRun {
+export interface CustomAutomationRun {
   id: string;
   status: string;
   startedAt: Date | null;
@@ -160,7 +160,7 @@ function normalizeResult(result: {
 /**
  * Normalize status to unified format
  */
-function normalizeStatus(
+export function normalizeStatus(
   status: string,
 ): 'success' | 'failed' | 'running' | 'pending' | 'cancelled' {
   switch (status.toLowerCase()) {

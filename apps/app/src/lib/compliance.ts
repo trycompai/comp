@@ -82,24 +82,25 @@ export async function filterComplianceMembers<T extends MemberWithRole>(
   if (members.length === 0) return [];
 
   const builtInRoleNames = new Set(Object.keys(BUILT_IN_ROLE_OBLIGATIONS));
-  const allCustomRoleNames = new Set<string>();
+  const allRoleNames = new Set<string>();
 
   const memberRoles = members.map((member) => {
     const roleNames = parseRolesString(member.role);
-    const customNames = roleNames.filter((n) => !builtInRoleNames.has(n));
-    for (const name of customNames) allCustomRoleNames.add(name);
+    for (const name of roleNames) allRoleNames.add(name);
     return { member, roleNames };
   });
 
-  // Single DB query for custom role obligations
-  let customObligationMap: Record<string, Record<string, boolean>> = {};
-  if (allCustomRoleNames.size > 0) {
-    const customRoles = await db.organizationRole.findMany({
-      where: { organizationId, name: { in: [...allCustomRoleNames] } },
+  // Single DB query for role obligations (custom + built-in overrides).
+  // A row in organization_role named after a built-in role overrides the
+  // hardcoded default for that organization.
+  let obligationMap: Record<string, Record<string, boolean>> = {};
+  if (allRoleNames.size > 0) {
+    const dbRoles = await db.organizationRole.findMany({
+      where: { organizationId, name: { in: [...allRoleNames] } },
       select: { name: true, obligations: true },
     });
-    customObligationMap = Object.fromEntries(
-      customRoles.map((r) => {
+    obligationMap = Object.fromEntries(
+      dbRoles.map((r) => {
         const obligations = typeof r.obligations === 'string'
           ? JSON.parse(r.obligations)
           : (r.obligations || {});
@@ -113,10 +114,17 @@ export async function filterComplianceMembers<T extends MemberWithRole>(
       // Platform admins are excluded — they join customer orgs to debug
       if (member.user?.role === 'admin') return false;
       for (const name of roleNames) {
-        const builtIn = BUILT_IN_ROLE_OBLIGATIONS[name];
-        if (builtIn?.compliance) return true;
-        const custom = customObligationMap[name];
-        if (custom?.compliance) return true;
+        // DB override wins, but only if `compliance` is explicitly set —
+        // otherwise fall back to the hardcoded built-in default.
+        const override = obligationMap[name];
+        if (override && 'compliance' in override) {
+          if (override.compliance) return true;
+          continue;
+        }
+        if (builtInRoleNames.has(name)) {
+          const builtIn = BUILT_IN_ROLE_OBLIGATIONS[name];
+          if (builtIn?.compliance) return true;
+        }
       }
       return false;
     })

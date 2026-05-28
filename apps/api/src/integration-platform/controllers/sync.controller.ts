@@ -48,6 +48,7 @@ interface GoogleWorkspaceUser {
   isAdmin?: boolean;
   suspended?: boolean;
   orgUnitPath?: string;
+  creationTime?: string;
 }
 
 interface GoogleWorkspaceUsersResponse {
@@ -381,9 +382,16 @@ export class SyncController {
         });
 
         if (existingMember) {
-          // Never reactivate deactivated members — whether deactivated manually
-          // by an admin or by a previous sync, they should stay deactivated.
-          // Admins can reactivate manually if needed.
+          if (!existingMember.onboardDate && gwUser.creationTime) {
+            const parsed = new Date(gwUser.creationTime);
+            const onboardDate = isNaN(parsed.getTime()) ? undefined : parsed;
+            if (onboardDate) {
+              await db.member.update({
+                where: { id: existingMember.id },
+                data: { onboardDate },
+              });
+            }
+          }
           results.skipped++;
           results.details.push({
             email: normalizedEmail,
@@ -396,12 +404,15 @@ export class SyncController {
         }
 
         // Create member - always as employee, admins can be promoted manually
+        const gwParsed = gwUser.creationTime ? new Date(gwUser.creationTime) : null;
+        const gwOnboardDate = gwParsed && !isNaN(gwParsed.getTime()) ? gwParsed : undefined;
         await db.member.create({
           data: {
             organizationId,
             userId,
             role: 'employee',
             isActive: true,
+            ...(gwOnboardDate ? { onboardDate: gwOnboardDate } : {}),
           },
         });
 
@@ -433,18 +444,9 @@ export class SyncController {
       },
     });
 
-    const deactivationGwDomains =
-      effectiveSyncFilterMode === 'include'
-        ? new Set(
-            ouFilteredUsers.map((u) =>
-              u.primaryEmail.split('@')[1]?.toLowerCase(),
-            ),
-          )
-        : new Set(
-            filteredUsers.map((u) =>
-              u.primaryEmail.split('@')[1]?.toLowerCase(),
-            ),
-          );
+    const deactivationGwDomains = new Set(
+      ouFilteredUsers.map((u) => u.primaryEmail.split('@')[1]?.toLowerCase()),
+    );
     const deactivationSuspendedEmails =
       effectiveSyncFilterMode === 'include'
         ? allSuspendedEmails
@@ -475,12 +477,26 @@ export class SyncController {
         continue;
       }
 
-      // In exclude mode we keep excluded users unchanged and only stop syncing them.
-      if (
+      const isExcluded =
         effectiveSyncFilterMode === 'exclude' &&
         excludedTerms.length > 0 &&
-        matchesSyncFilterTerms(memberEmail, excludedTerms)
-      ) {
+        matchesSyncFilterTerms(memberEmail, excludedTerms);
+
+      if (isExcluded) {
+        try {
+          await db.member.update({
+            where: { id: member.id },
+            data: { deactivated: true, isActive: false },
+          });
+          results.deactivated++;
+          results.details.push({
+            email: member.user.email,
+            status: 'deactivated',
+            reason: 'User is excluded from Google Workspace sync',
+          });
+        } catch (error) {
+          this.logger.error(`Error deactivating excluded member: ${error}`);
+        }
         continue;
       }
 
@@ -839,6 +855,16 @@ export class SyncController {
         });
 
         if (existingMember) {
+          if (!existingMember.onboardDate && worker.start_date) {
+            const parsed = new Date(worker.start_date);
+            const onboardDate = isNaN(parsed.getTime()) ? undefined : parsed;
+            if (onboardDate) {
+              await db.member.update({
+                where: { id: existingMember.id },
+                data: { onboardDate },
+              });
+            }
+          }
           if (existingMember.deactivated) {
             await db.member.update({
               where: { id: existingMember.id },
@@ -859,12 +885,15 @@ export class SyncController {
             });
           }
         } else {
+          const ripplingParsed = worker.start_date ? new Date(worker.start_date) : null;
+          const ripplingOnboardDate = ripplingParsed && !isNaN(ripplingParsed.getTime()) ? ripplingParsed : undefined;
           await db.member.create({
             data: {
               organizationId,
               userId,
               role: 'employee',
               isActive: true,
+              ...(ripplingOnboardDate ? { onboardDate: ripplingOnboardDate } : {}),
             },
           });
           results.imported++;
@@ -1333,7 +1362,16 @@ export class SyncController {
         });
 
         if (existingMember) {
-          // If member was deactivated but is now active in JumpCloud, reactivate them
+          if (!existingMember.onboardDate && jcUser.created) {
+            const parsed = new Date(jcUser.created);
+            const onboardDate = isNaN(parsed.getTime()) ? undefined : parsed;
+            if (onboardDate) {
+              await db.member.update({
+                where: { id: existingMember.id },
+                data: { onboardDate },
+              });
+            }
+          }
           if (existingMember.deactivated) {
             await db.member.update({
               where: { id: existingMember.id },
@@ -1359,12 +1397,15 @@ export class SyncController {
         }
 
         // Create member - always as employee, admins can be promoted manually
+        const jcParsed = jcUser.created ? new Date(jcUser.created) : null;
+        const jcOnboardDate = jcParsed && !isNaN(jcParsed.getTime()) ? jcParsed : undefined;
         await db.member.create({
           data: {
             organizationId,
             userId,
             role: 'employee',
             isActive: true,
+            ...(jcOnboardDate ? { onboardDate: jcOnboardDate } : {}),
           },
         });
 
@@ -1773,6 +1814,7 @@ export class SyncController {
         employees,
         options: {
           providerName: manifest.name,
+          isDirectorySource: syncDefinition.isDirectorySource ?? false,
         },
       });
 

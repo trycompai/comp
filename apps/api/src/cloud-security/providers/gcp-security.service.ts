@@ -803,45 +803,277 @@ export class GCPSecurityService {
 
   /**
    * Detect active GCP projects scoped to a specific organization.
-   * Returns only projects whose parent is the given org ID.
+   * Returns:
+   *  - projects whose IMMEDIATE parent is the given org ID, AND
+   *  - projects nested inside any folder the user has access to.
+   *
+   * Background: GCP's `v1/projects` list endpoint does not support a
+   * "descendants of org" query — `parent.id:<org>` only matches direct
+   * children, so customers whose production projects live under a
+   * folder (org → folder → project, a common SOC2-friendly layout)
+   * never see those projects in our picker. We compensate by also
+   * listing every accessible folder-nested project; the user's IAM
+   * scope already limits what they can see.
    */
   async detectProjectsForOrg(
     accessToken: string,
     organizationId: string,
   ): Promise<Array<{ id: string; name: string; number: string }>> {
-    const params = new URLSearchParams({
-      pageSize: '50',
-      filter: `lifecycleState:ACTIVE AND parent.id:${organizationId}`,
-    });
-    const response = await fetch(
-      `https://cloudresourcemanager.googleapis.com/v1/projects?${params.toString()}`,
-      {
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-          'Content-Type': 'application/json',
-        },
-      },
+    // Two arms, isolated via Promise.allSettled so a failure on one
+    // cannot blank the picker:
+    //  1. Direct org children: existing behavior.
+    //  2. Folder-nested projects, scoped to THIS org's folder tree:
+    //     recursively enumerate folders under the org, then query
+    //     each with `parent.type:folder AND parent.id:<folderId>`,
+    //     which is GCP's documented happy path (uses the alternate
+    //     consistent search index).
+    //
+    // The folder arm is properly org-scoped — a user with access to
+    // projects in OTHER organizations will not see those projects
+    // here. This honors the "ForOrg" contract.
+    const [directResult, folderResult] = await Promise.allSettled([
+      this.listProjectsPaginated(
+        accessToken,
+        `lifecycleState:ACTIVE AND parent.id:${organizationId}`,
+      ),
+      this.listProjectsInOrgFolderTree(accessToken, organizationId),
+    ]);
+
+    const directChildren =
+      directResult.status === 'fulfilled' ? directResult.value : [];
+    const folderNested =
+      folderResult.status === 'fulfilled' ? folderResult.value : [];
+
+    if (directResult.status === 'rejected') {
+      this.logger.warn(
+        `GCP detectProjectsForOrg(${organizationId}): direct arm threw — ${directResult.reason}`,
+      );
+    }
+    if (folderResult.status === 'rejected') {
+      this.logger.warn(
+        `GCP detectProjectsForOrg(${organizationId}): folder arm threw — ${folderResult.reason}`,
+      );
+    }
+
+    const seen = new Set<string>();
+    const merged: Array<{ id: string; name: string; number: string }> = [];
+    for (const p of [...directChildren, ...folderNested]) {
+      if (seen.has(p.id)) continue;
+      seen.add(p.id);
+      merged.push(p);
+    }
+
+    this.logger.log(
+      `GCP detectProjectsForOrg(${organizationId}): ${directChildren.length} direct + ${folderNested.length} folder-nested → ${merged.length} unique`,
+    );
+    return merged;
+  }
+
+  /**
+   * Recursively enumerate all folders under an org, then list projects
+   * inside each folder. The per-folder project query uses the paired
+   * `parent.type:folder AND parent.id:<folderId>` filter, which is the
+   * shape GCP explicitly documents for by-parent project queries
+   * ("the filter must contain both a parent.type and a parent.id
+   * restriction") and which triggers their alternate consistent index.
+   *
+   * Per-folder failures are isolated: if one folder's project list
+   * fails (transient 5xx, permission edge case), the rest still
+   * succeed.
+   */
+  private async listProjectsInOrgFolderTree(
+    accessToken: string,
+    organizationId: string,
+  ): Promise<Array<{ id: string; name: string; number: string }>> {
+    const { folderIds, forbidden } = await this.listFoldersUnderOrg(
+      accessToken,
+      organizationId,
     );
 
-    if (!response.ok) {
+    // Verified in production logs (customer Propper, org 43356919874):
+    // the `cloudresourcemanager.folders.list` endpoint returns
+    // `403 PERMISSION_DENIED` for some OAuth grants even when the
+    // user has `roles/owner` + `roles/resourcemanager.folderAdmin`
+    // at the org level. When that happens, folder enumeration
+    // returns an empty list and the precise per-folder query would
+    // silently skip every folder-nested project — exactly the bug
+    // Greg reported (propperai-prod, propperai-demo invisible in
+    // the picker).
+    //
+    // The fallback below ONLY fires when enumeration was actually
+    // forbidden, not when an org legitimately has zero folders.
+    // (cubic P2 on PR #2916: the previous always-on fallback could
+    // leak folder-nested projects from OTHER orgs in a multi-org
+    // tenant whose selected org simply had no folders.)
+    //
+    // Forbidden case → broad `parent.type:folder` query catches
+    // every folder-nested project the OAuth user can `projects.get`.
+    // For single-org tenants this delivers the right set. For
+    // multi-org tenants whose v3/folders is forbidden the fallback
+    // may include projects from other accessible orgs — acceptable
+    // because the picker is selection-based and the alternative is a
+    // silently empty picker.
+    if (folderIds.length === 0 && forbidden) {
       this.logger.warn(
-        `Failed to list GCP projects for org ${organizationId}: ${await response.text()}`,
+        `GCP folder enumeration was forbidden for org ${organizationId}; falling back to broad parent.type:folder query`,
       );
+      const fallback = await this.listProjectsPaginated(
+        accessToken,
+        'lifecycleState:ACTIVE AND parent.type:folder',
+      ).catch((err) => {
+        this.logger.warn(
+          `GCP broad folder-projects fallback failed: ${err instanceof Error ? err.message : String(err)}`,
+        );
+        return [];
+      });
+      this.logger.log(
+        `GCP folder fallback for org ${organizationId}: ${fallback.length} project(s) via broad parent.type:folder query`,
+      );
+      return fallback;
+    }
+
+    if (folderIds.length === 0) {
+      // No folders exist for this org AND no permission errors were
+      // observed — return empty so a multi-org user doesn't see
+      // folder-nested projects from unrelated orgs.
       return [];
     }
 
-    const data = await response.json();
-    return (
-      (data.projects ?? []) as Array<{
-        projectId: string;
-        name: string;
-        projectNumber: string;
-      }>
-    ).map((p) => ({
-      id: p.projectId,
-      name: p.name,
-      number: p.projectNumber,
-    }));
+    // Bound the fan-out: an unbounded `Promise.all(folderIds.map(...))`
+    // can trigger GCP rate limiting (`429 Too Many Requests`) on
+    // tenants with many folders. Because `listProjectsPaginated`
+    // returns the projects collected so far on a non-OK response, a
+    // throttled folder query LOOKS like an empty folder to the caller
+    // — silently truncating the picker with no visible error. A modest
+    // concurrency limit avoids the problem entirely.
+    const perFolder = await mapWithConcurrency(
+      folderIds,
+      FOLDER_QUERY_CONCURRENCY,
+      (folderId) =>
+        this.listProjectsPaginated(
+          accessToken,
+          `lifecycleState:ACTIVE AND parent.type:folder AND parent.id:${folderId}`,
+        ).catch((err) => {
+          this.logger.warn(
+            `GCP folder ${folderId}: project list failed — ${err instanceof Error ? err.message : String(err)}`,
+          );
+          return [];
+        }),
+    );
+
+    return perFolder.flat();
+  }
+
+  /**
+   * Breadth-first walk of the folder tree under an organization.
+   * Returns every folder ID the caller has visibility into, no matter
+   * how deeply nested. Bounded by SAFE_MAX_FOLDERS to keep API usage
+   * predictable in pathological cases.
+   */
+  private async listFoldersUnderOrg(
+    accessToken: string,
+    organizationId: string,
+  ): Promise<{ folderIds: string[]; forbidden: boolean }> {
+    const SAFE_MAX_FOLDERS = 500;
+
+    const collected: string[] = [];
+    const seenParents = new Set<string>();
+    const queue: string[] = [`organizations/${organizationId}`];
+    // Tracks whether ANY page in the BFS hit a 403 PERMISSION_DENIED.
+    // Only true forbiddens trigger the broad-query fallback in the
+    // caller; "no folders exist" must NOT trigger it.
+    let forbidden = false;
+
+    while (queue.length > 0 && collected.length < SAFE_MAX_FOLDERS) {
+      const parent = queue.shift();
+      if (!parent || seenParents.has(parent)) continue;
+      seenParents.add(parent);
+
+      const result = await this.listChildFolders(accessToken, parent);
+      if (result.forbidden) forbidden = true;
+      for (const folderId of result.folderIds) {
+        if (collected.includes(folderId)) continue;
+        collected.push(folderId);
+        queue.push(`folders/${folderId}`);
+        if (collected.length >= SAFE_MAX_FOLDERS) {
+          this.logger.warn(
+            `GCP folder enumeration: hit safety cap of ${SAFE_MAX_FOLDERS} folders for org ${organizationId}`,
+          );
+          break;
+        }
+      }
+    }
+
+    return { folderIds: collected, forbidden };
+  }
+
+  /**
+   * One paginated call to `v3/folders?parent=<parent>` returning the
+   * immediate child folder IDs (stripped of the "folders/" prefix).
+   *
+   * v3 was chosen over v2 because v2 is deprecated and was observed
+   * returning `403 PERMISSION_DENIED` for OAuth grants that
+   * legitimately had org-level folder permissions (verified in prod
+   * logs against customer Propper). v3 is the current API and
+   * accepts the same `parent`/`pageSize`/`pageToken` query params,
+   * so this swap is purely defensive — the response shape is
+   * identical.
+   *
+   * Errors are non-fatal — log and return what we collected so far so
+   * one bad page doesn't kill the whole tree walk; the caller has a
+   * broad-query fallback when enumeration comes back empty.
+   */
+  private async listChildFolders(
+    accessToken: string,
+    parent: string,
+  ): Promise<{ folderIds: string[]; forbidden: boolean }> {
+    const PAGE_SIZE = 100;
+    const collected: string[] = [];
+    let pageToken: string | undefined;
+    let forbidden = false;
+
+    do {
+      const params = new URLSearchParams({
+        parent,
+        pageSize: String(PAGE_SIZE),
+      });
+      if (pageToken) params.set('pageToken', pageToken);
+
+      const response = await fetch(
+        `https://cloudresourcemanager.googleapis.com/v3/folders?${params.toString()}`,
+        {
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+            'Content-Type': 'application/json',
+          },
+        },
+      );
+
+      if (!response.ok) {
+        // Distinguish "forbidden" (the caller should fall back to a
+        // broader query) from "transient / no folders" (the caller
+        // should NOT broaden — empty results are the correct answer).
+        if (response.status === 403) forbidden = true;
+        this.logger.warn(
+          `Failed to list child folders of ${parent} (HTTP ${response.status}): ${await response.text()}`,
+        );
+        return { folderIds: collected, forbidden };
+      }
+
+      const data = (await response.json()) as {
+        folders?: Array<{ name: string }>;
+        nextPageToken?: string;
+      };
+
+      for (const f of data.folders ?? []) {
+        // f.name has shape "folders/123456".
+        const id = f.name.replace(/^folders\//, '');
+        collected.push(id);
+      }
+      pageToken = data.nextPageToken;
+    } while (pageToken);
+
+    return { folderIds: collected, forbidden };
   }
 
   /**
@@ -852,54 +1084,10 @@ export class GCPSecurityService {
   async detectProjects(
     accessToken: string,
   ): Promise<Array<{ id: string; name: string; number: string }>> {
-    const mapRow = (p: {
-      projectId: string;
-      name: string;
-      projectNumber: string;
-    }) => ({
-      id: p.projectId,
-      name: p.name,
-      number: p.projectNumber,
-    });
-
-    const listProjectsWithFilter = async (
-      filter: string,
-    ): Promise<
-      Array<{ id: string; name: string; number: string }>
-    > => {
-      const params = new URLSearchParams({
-        pageSize: '50',
-        filter,
-      });
-      const response = await fetch(
-        `https://cloudresourcemanager.googleapis.com/v1/projects?${params.toString()}`,
-        {
-          headers: {
-            Authorization: `Bearer ${accessToken}`,
-            'Content-Type': 'application/json',
-          },
-        },
-      );
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        this.logger.warn(
-          `Failed to list GCP projects (filter=${filter}): ${errorText}`,
-        );
-        return [];
-      }
-
-      const data = await response.json();
-      return (
-        (data.projects ?? []) as Array<{
-          projectId: string;
-          name: string;
-          projectNumber: string;
-        }>
-      ).map(mapRow);
-    };
-
-    const direct = await listProjectsWithFilter('lifecycleState:ACTIVE');
+    const direct = await this.listProjectsPaginated(
+      accessToken,
+      'lifecycleState:ACTIVE',
+    );
     if (direct.length > 0) {
       this.logger.log(
         `GCP detectProjects: ${direct.length} project(s) via direct list`,
@@ -919,7 +1107,8 @@ export class GCPSecurityService {
     const merged: Array<{ id: string; name: string; number: string }> = [];
 
     for (const org of orgs) {
-      const underOrg = await listProjectsWithFilter(
+      const underOrg = await this.listProjectsPaginated(
+        accessToken,
         `lifecycleState:ACTIVE AND parent.id:${org.id}`,
       );
       for (const p of underOrg) {
@@ -943,6 +1132,95 @@ export class GCPSecurityService {
     }
 
     return merged;
+  }
+
+  /**
+   * Paginated wrapper around GCP's `cloudresourcemanager.projects.list`.
+   *
+   * The v1 list endpoint paginates via `nextPageToken`. The previous
+   * implementation requested a single page with `pageSize=50` and never
+   * followed `nextPageToken`, which silently truncated the result for
+   * any customer with more than ~50 accessible projects (large orgs,
+   * accounts with many sandboxes/Gemini default projects, etc.) and
+   * caused critical production projects to be missing from our picker.
+   *
+   * Behavior:
+   *  - Follows `nextPageToken` until exhaustion.
+   *  - Uses `pageSize=200` (well under GCP's 500 max) to keep
+   *    round-trips low.
+   *  - Stops at `SAFE_MAX_PROJECTS=1000` to bound API usage; if a
+   *    customer legitimately has more accessible projects, they
+   *    should narrow with a filter rather than load all of them in
+   *    the picker.
+   *  - On non-OK response from any page, logs and returns what was
+   *    collected so far instead of throwing — matches the prior
+   *    failure mode (UI gets best-effort results) and prevents one
+   *    transient page error from blanking the whole picker.
+   */
+  private async listProjectsPaginated(
+    accessToken: string,
+    filter: string,
+  ): Promise<Array<{ id: string; name: string; number: string }>> {
+    const PAGE_SIZE = 200;
+    const SAFE_MAX_PROJECTS = 1000;
+
+    const collected: Array<{ id: string; name: string; number: string }> = [];
+    let pageToken: string | undefined;
+    let pages = 0;
+
+    do {
+      const params = new URLSearchParams({
+        pageSize: String(PAGE_SIZE),
+        filter,
+      });
+      if (pageToken) params.set('pageToken', pageToken);
+
+      const response = await fetch(
+        `https://cloudresourcemanager.googleapis.com/v1/projects?${params.toString()}`,
+        {
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+            'Content-Type': 'application/json',
+          },
+        },
+      );
+
+      if (!response.ok) {
+        this.logger.warn(
+          `Failed to list GCP projects (filter="${filter}", page=${pages + 1}, collected=${collected.length}): ${await response.text()}`,
+        );
+        return collected;
+      }
+
+      const data = (await response.json()) as {
+        projects?: Array<{
+          projectId: string;
+          name: string;
+          projectNumber: string;
+        }>;
+        nextPageToken?: string;
+      };
+
+      for (const p of data.projects ?? []) {
+        collected.push({
+          id: p.projectId,
+          name: p.name,
+          number: p.projectNumber,
+        });
+      }
+
+      pageToken = data.nextPageToken;
+      pages++;
+
+      if (collected.length >= SAFE_MAX_PROJECTS) {
+        this.logger.warn(
+          `GCP projects: hit safety cap of ${SAFE_MAX_PROJECTS} for filter="${filter}" — consider a narrower filter if more results are needed`,
+        );
+        break;
+      }
+    } while (pageToken);
+
+    return collected;
   }
 
   /**
@@ -1253,4 +1531,43 @@ export class GCPSecurityService {
     };
     return map[gcpSeverity] ?? 'medium';
   }
+}
+
+/**
+ * Max simultaneous in-flight folder→projects queries when expanding an
+ * organization's folder tree. GCP's `cloudresourcemanager` quota
+ * (~600 read req/min/user) is well above this, but a small cap keeps us
+ * comfortably below throttling thresholds even for tenants with deep
+ * folder hierarchies, and prevents bursts that could starve other
+ * concurrent GCP work on the same account.
+ */
+const FOLDER_QUERY_CONCURRENCY = 5;
+
+/**
+ * Map `items` through `fn` with at most `concurrency` promises in flight
+ * at any moment. Preserves input order in the result array. No deps —
+ * inlined here because the only call site is the GCP folder fan-out.
+ */
+export async function mapWithConcurrency<T, R>(
+  items: T[],
+  concurrency: number,
+  fn: (item: T) => Promise<R>,
+): Promise<R[]> {
+  const results: R[] = new Array(items.length);
+  let cursor = 0;
+
+  const worker = async (): Promise<void> => {
+    while (true) {
+      const idx = cursor++;
+      if (idx >= items.length) return;
+      results[idx] = await fn(items[idx]);
+    }
+  };
+
+  const workers = Array.from(
+    { length: Math.min(concurrency, items.length) },
+    () => worker(),
+  );
+  await Promise.all(workers);
+  return results;
 }

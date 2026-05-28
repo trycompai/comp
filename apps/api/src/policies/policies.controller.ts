@@ -780,13 +780,29 @@ export class PoliciesController {
     @OrganizationId() organizationId: string,
     @AuthContext() authContext: AuthContextType,
   ) {
-    await db.policy.update({
-      where: { id, organizationId },
-      data: {
-        controls: {
-          disconnect: { id: controlId },
+    await db.$transaction(async (tx) => {
+      const before = await tx.policy.findUnique({
+        where: { id, organizationId },
+        select: {
+          controls: { where: { id: controlId }, select: { id: true } },
         },
-      },
+      });
+      await tx.policy.update({
+        where: { id, organizationId },
+        data: { controls: { disconnect: { id: controlId } } },
+      });
+      if (before?.controls.length) {
+        await tx.frameworkControlPolicyLink.deleteMany({
+          where: {
+            controlId,
+            policyId: id,
+            frameworkInstance: {
+              organizationId,
+              customFrameworkId: { not: null },
+            },
+          },
+        });
+      }
     });
 
     return {

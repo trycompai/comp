@@ -55,6 +55,7 @@ import { AdminFeatureFlagsModule } from './admin-feature-flags/admin-feature-fla
 import { TimelinesModule } from './timelines/timelines.module';
 import { BackgroundChecksModule } from './background-checks/background-checks.module';
 import { BillingModule } from './billing/billing.module';
+import { OffboardingChecklistModule } from './offboarding-checklist/offboarding-checklist.module';
 
 @Module({
   imports: [
@@ -122,6 +123,7 @@ import { BillingModule } from './billing/billing.module';
     AdminOrganizationsModule,
     AdminFeatureFlagsModule,
     TimelinesModule,
+    OffboardingChecklistModule,
   ],
   controllers: [AppController],
   providers: [

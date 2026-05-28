@@ -36,6 +36,7 @@ describe('AdminFindingsController', () => {
     findByOrganizationId: jest.fn(),
     create: jest.fn(),
     update: jest.fn(),
+    delete: jest.fn(),
   };
 
   beforeEach(async () => {
@@ -120,6 +121,28 @@ describe('AdminFindingsController', () => {
         null,
       );
       expect(result).toEqual(updated);
+    });
+  });
+
+  describe('remove', () => {
+    it('should delete a finding as platform admin', async () => {
+      const deleted = {
+        message: 'Finding deleted successfully',
+        deletedFinding: { id: 'fnd_1' },
+      };
+      mockService.delete.mockResolvedValue(deleted);
+
+      const result = await controller.remove('org_1', 'fnd_1', {
+        userId: 'usr_admin',
+      });
+
+      expect(mockService.delete).toHaveBeenCalledWith(
+        'org_1',
+        'fnd_1',
+        'usr_admin',
+        null,
+      );
+      expect(result).toEqual(deleted);
     });
   });
 });

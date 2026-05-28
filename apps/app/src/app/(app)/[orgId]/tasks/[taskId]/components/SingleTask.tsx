@@ -31,6 +31,7 @@ import {
 import {
   Breadcrumb,
   HStack,
+  Label,
   PageLayout,
   Stack,
   Tabs,
@@ -357,6 +358,15 @@ export function SingleTask({
                 evidenceApprovalEnabled={evidenceApprovalEnabled}
                 onRequestApproval={handleRequestApproval}
               />
+              <Stack gap="sm">
+                <Label>Comments</Label>
+                <Comments
+                  entityId={task.id}
+                  entityType={CommentEntityType.task}
+                  mentionResource="evidence"
+                  organizationId={orgId}
+                />
+              </Stack>
               <TaskMainContent task={task} showComments={false} />
             </Stack>
           </TabsContent>

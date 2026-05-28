@@ -1,11 +1,11 @@
-import { render, screen } from '@testing-library/react';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
-  setMockPermissions,
   ADMIN_PERMISSIONS,
   AUDITOR_PERMISSIONS,
   mockHasPermission,
+  setMockPermissions,
 } from '@/test-utils/mocks/permissions';
+import { render, screen } from '@testing-library/react';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 vi.mock('@/hooks/use-permissions', () => ({
   usePermissions: () => ({
@@ -100,8 +100,12 @@ vi.mock('@dnd-kit/utilities', () => ({
 
 // Mock design system
 vi.mock('@trycompai/design-system', () => ({
-  Button: ({ children, onClick, disabled, iconLeft, iconRight, ...props }: any) => (
-    <button onClick={onClick} disabled={disabled} {...props}>{iconLeft}{children}{iconRight}</button>
+  Button: ({ children, onClick, disabled, iconLeft, iconRight, loading, ...props }: any) => (
+    <button onClick={onClick} disabled={disabled} {...props}>
+      {iconLeft}
+      {children}
+      {iconRight}
+    </button>
   ),
   Card: ({ children }: any) => <div>{children}</div>,
   CardContent: ({ children }: any) => <div>{children}</div>,
@@ -112,6 +116,8 @@ vi.mock('@trycompai/design-system', () => ({
   DropdownMenuContent: ({ children }: any) => <div>{children}</div>,
   DropdownMenuItem: ({ children, onClick }: any) => <button onClick={onClick}>{children}</button>,
   DropdownMenuTrigger: ({ children }: any) => <button>{children}</button>,
+  Field: ({ children }: any) => <div>{children}</div>,
+  FieldLabel: ({ children }: any) => <label>{children}</label>,
   Input: (props: any) => <input {...props} />,
   Select: ({ children, disabled }: any) => <div data-disabled={disabled}>{children}</div>,
   SelectContent: ({ children }: any) => <div>{children}</div>,
@@ -130,7 +136,11 @@ vi.mock('@trycompai/design-system', () => ({
   Tabs: ({ children }: any) => <div>{children}</div>,
   TabsContent: ({ children, value }: any) => <div data-value={value}>{children}</div>,
   TabsList: ({ children }: any) => <div role="tablist">{children}</div>,
-  TabsTrigger: ({ children, value }: any) => <button role="tab" data-value={value}>{children}</button>,
+  TabsTrigger: ({ children, value }: any) => (
+    <button role="tab" data-value={value}>
+      {children}
+    </button>
+  ),
   Textarea: (props: any) => <textarea {...props} />,
   Tooltip: ({ children }: any) => <div>{children}</div>,
   TooltipContent: ({ children }: any) => <div>{children}</div>,
@@ -139,46 +149,49 @@ vi.mock('@trycompai/design-system', () => ({
 
 vi.mock('@trycompai/design-system/icons', () => ({
   Add: () => <span />,
+  CertificateCheck: () => <span />,
   ChevronLeft: () => <span />,
   ChevronRight: () => <span />,
   Close: () => <span />,
+  Download: () => <span />,
   Edit: () => <span />,
   Link: () => <span />,
   OverflowMenuVertical: () => <span />,
   TrashCan: () => <span />,
+  Upload: () => <span />,
   View: () => <span />,
   ViewOff: () => <span />,
 }));
 
-vi.mock('lucide-react', () => ({
-  ChevronDown: () => <span />,
-  ChevronUp: () => <span />,
-  Download: () => <span />,
-  Eye: () => <span />,
-  FileCheck2: () => <span />,
-  FileText: () => <span />,
-  GripVertical: () => <span />,
-  Loader2: () => <span />,
-  Plus: () => <span />,
-  Save: () => <span />,
-  Trash2: () => <span />,
-  Upload: () => <span />,
-}));
-
 vi.mock('./logos', () => ({
+  CCPA: () => <span />,
+  CCPAInProgress: () => <span />,
   GDPR: () => <span />,
+  GDPRInProgress: () => <span />,
   HIPAA: () => <span />,
+  HIPAAInProgress: () => <span />,
   ISO27001: () => <span />,
+  ISO27001InProgress: () => <span />,
   ISO42001: () => <span />,
+  ISO42001InProgress: () => <span />,
   ISO9001: () => <span />,
+  ISO9001InProgress: () => <span />,
   NEN7510: () => <span />,
+  NEN7510InProgress: () => <span />,
   PCIDSS: () => <span />,
+  PCIDSSInProgress: () => <span />,
+  PIPEDA: () => <span />,
+  PIPEDAInProgress: () => <span />,
   SOC2Type1: () => <span />,
+  SOC2Type1InProgress: () => <span />,
   SOC2Type2: () => <span />,
+  SOC2Type2InProgress: () => <span />,
+  SOC3: () => <span />,
+  SOC3InProgress: () => <span />,
 }));
 
-vi.mock('./UpdateTrustFavicon', () => ({
-  UpdateTrustFavicon: () => <div data-testid="update-trust-favicon" />,
+vi.mock('./TrustPortalBrandingSettings', () => ({
+  TrustPortalBrandingSettings: () => <div data-testid="trust-portal-branding-settings" />,
 }));
 
 vi.mock('next/image', () => ({
@@ -218,6 +231,10 @@ describe('TrustPortalSwitch permission gating', () => {
     nen7510Status: 'started' as const,
     iso9001: false,
     iso9001Status: 'started' as const,
+    pipeda: false,
+    pipedaStatus: 'started' as const,
+    ccpa: false,
+    ccpaStatus: 'started' as const,
     faqs: [],
     additionalDocuments: [],
     overview: {

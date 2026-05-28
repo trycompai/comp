@@ -60,6 +60,7 @@ export async function applySync(
     frameworkControlPolicyLinks: { connected: [], disconnected: [] },
     frameworkControlTaskLinks: { connected: [], disconnected: [] },
     frameworkControlDocumentTypeLinks: { connected: [], disconnected: [] },
+    controlFamilies: { created: [], updated: [], deleted: [] },
   };
   const summary: SyncSummary = {
     controlsAdded: 0, controlsArchived: 0, controlsUpdatedApplied: 0, controlsUpdatedPreserved: 0,
@@ -83,6 +84,20 @@ export async function applySync(
     ctlByTemplate.set(targetControl.id, created);
     undo.controls.created.push(created.id);
     summary.controlsAdded += 1;
+    // Per-instance family entry for the new control
+    if (targetControl.controlFamily) {
+      await tx.frameworkControlFamily.create({
+        data: {
+          frameworkInstanceId: ctx.instance.id,
+          controlId: created.id,
+          controlFamily: targetControl.controlFamily,
+        },
+      });
+      undo.controlFamilies!.created.push({
+        frameworkInstanceId: ctx.instance.id,
+        controlId: created.id,
+      });
+    }
   }
   for (const removed of diff.controls.removed) {
     const inst = ctlByTemplate.get(removed.id);
@@ -96,6 +111,42 @@ export async function applySync(
   for (const u of diff.controls.updated) {
     const inst = ctlByTemplate.get(u.id);
     if (!inst) continue;
+
+    // Sync family assignment regardless of whether the control content was edited.
+    // Family is structural metadata, not user-authored content.
+    const existingFamily = await tx.frameworkControlFamily.findUnique({
+      where: { frameworkInstanceId_controlId: { frameworkInstanceId: ctx.instance.id, controlId: inst.id } },
+      select: { controlFamily: true },
+    });
+    if (u.to.controlFamily) {
+      await tx.frameworkControlFamily.upsert({
+        where: { frameworkInstanceId_controlId: { frameworkInstanceId: ctx.instance.id, controlId: inst.id } },
+        create: { frameworkInstanceId: ctx.instance.id, controlId: inst.id, controlFamily: u.to.controlFamily },
+        update: { controlFamily: u.to.controlFamily },
+      });
+      if (existingFamily) {
+        undo.controlFamilies!.updated.push({
+          frameworkInstanceId: ctx.instance.id,
+          controlId: inst.id,
+          prevFamily: existingFamily.controlFamily,
+        });
+      } else {
+        undo.controlFamilies!.created.push({
+          frameworkInstanceId: ctx.instance.id,
+          controlId: inst.id,
+        });
+      }
+    } else if (existingFamily) {
+      await tx.frameworkControlFamily.deleteMany({
+        where: { frameworkInstanceId: ctx.instance.id, controlId: inst.id },
+      });
+      undo.controlFamilies!.deleted.push({
+        frameworkInstanceId: ctx.instance.id,
+        controlId: inst.id,
+        prevFamily: existingFamily.controlFamily,
+      });
+    }
+
     if (isControlEdited(inst, u.from)) {
       summary.controlsUpdatedPreserved += 1;
       continue;

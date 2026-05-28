@@ -120,6 +120,14 @@ export class CommentsService {
         break;
       }
 
+      case CommentEntityType.finding: {
+        const finding = await db.finding.findFirst({
+          where: { id: entityId, organizationId },
+        });
+        entityExists = !!finding;
+        break;
+      }
+
       default:
         throw new BadRequestException(`Unsupported entity type: ${entityType}`);
     }
