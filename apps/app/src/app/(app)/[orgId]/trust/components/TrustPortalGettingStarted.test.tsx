@@ -27,4 +27,10 @@ describe('TrustPortalGettingStarted', () => {
       screen.getByText(/finish setting up your trust portal/i),
     ).toBeInTheDocument();
   });
+
+  it('renders the setup steps', () => {
+    render(<TrustPortalGettingStarted portalUrl="https://trust.inc/org_123" />);
+    expect(screen.getByText(/custom domain/i)).toBeInTheDocument();
+    expect(screen.getByText(/compliance certifications/i)).toBeInTheDocument();
+  });
 });
