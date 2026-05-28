@@ -8,7 +8,7 @@ import {
   AlertTitle,
   Button,
 } from '@trycompai/design-system';
-import { Close } from '@trycompai/design-system/icons';
+import { ArrowRight, Close } from '@trycompai/design-system/icons';
 import Link from 'next/link';
 import type { NudgeState, ServerNudgeData } from './types';
 
@@ -54,7 +54,9 @@ function TrustPortalSetupNudgeView({
         </span>
       </AlertDescription>
       <div className="col-start-2 pt-1">
-        <Button render={<Link href={`/${orgId}/trust`} />}>Set it up</Button>
+        <Button iconRight={<ArrowRight />} render={<Link href={`/${orgId}/trust`} />}>
+          Set it up
+        </Button>
       </div>
       <AlertAction>
         <button

@@ -2,7 +2,7 @@
 
 import { useApiSWR } from '@/hooks/use-api-swr';
 import { Alert, AlertAction, AlertTitle, Button } from '@trycompai/design-system';
-import { Close } from '@trycompai/design-system/icons';
+import { ArrowRight, Close } from '@trycompai/design-system/icons';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import type { NudgeState } from './types';
@@ -59,7 +59,9 @@ function OffboardingNudgeView({
         </span>
       </AlertTitle>
       <div className="col-start-2 pt-1">
-        <Button render={<Link href={link} />}>View details</Button>
+        <Button iconRight={<ArrowRight />} render={<Link href={link} />}>
+          View details
+        </Button>
       </div>
       <AlertAction>
         <button
