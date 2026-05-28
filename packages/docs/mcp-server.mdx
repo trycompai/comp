@@ -31,7 +31,13 @@ The API key carries your existing RBAC and permissions. The AI assistant can onl
 
 ## Install per AI client
 
-Pick the client your team uses. Every install is one configuration paste — no Comp AI hosting, no extra setup.
+You don't manually download anything. The Comp AI MCP server is distributed as a public npm package — [`@trycompai/mcp-server`](https://www.npmjs.com/package/@trycompai/mcp-server) — and every install snippet below uses `npx -y` to fetch it on demand the first time your AI client starts a session. New versions are picked up automatically on the next session.
+
+Pick the client your team uses. Every install is one configuration paste — no Comp AI hosting, no extra setup, no terminals to run.
+
+<Note>
+The `npx -y @trycompai/mcp-server` command you'll see in every snippet below is what handles the download. Your AI client runs that command in the background when you start a chat; npm fetches the latest published version from [npmjs.com](https://www.npmjs.com/package/@trycompai/mcp-server) and caches it locally. Nothing for you to install manually.
+</Note>
 
 <AccordionGroup>
 
