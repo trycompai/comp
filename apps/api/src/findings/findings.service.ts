@@ -364,7 +364,7 @@ export class FindingsService {
     organizationId: string,
     findingId: string,
     updateDto: UpdateFindingDto,
-    userRoles: string[],
+    canCreateFindings: boolean,
     isPlatformAdmin: boolean,
     userId: string,
     memberId: string | null,
@@ -375,13 +375,11 @@ export class FindingsService {
     const previousContent = finding.content;
 
     if (updateDto.status) {
-      const canSetRestrictedStatus =
-        isPlatformAdmin || userRoles.includes('auditor');
-
       if (
         (updateDto.status === FindingStatus.needs_revision ||
           updateDto.status === FindingStatus.closed) &&
-        !canSetRestrictedStatus
+        !canCreateFindings &&
+        !isPlatformAdmin
       ) {
         throw new ForbiddenException(
           `Only auditors or platform admins can set status to '${updateDto.status}'`,

@@ -62,6 +62,7 @@ describe('FindingsService.create (target validator)', () => {
   const svc = new FindingsService(
     auditService as never,
     notifier as never,
+    {} as never,
   );
   const baseDto = { content: 'Example finding' };
 
@@ -150,7 +151,7 @@ describe('FindingsService.update (status transition rules)', () => {
     notifyFindingCreated: jest.fn(),
     notifyStatusChanged: jest.fn(),
   };
-  const svc = new FindingsService(auditService as never, notifier as never);
+  const svc = new FindingsService(auditService as never, notifier as never, {} as never);
   const existingFinding = {
     id: 'fnd_1',
     organizationId: 'org_1',
@@ -188,59 +189,35 @@ describe('FindingsService.update (status transition rules)', () => {
     });
   });
 
-  it.each([['admin'], ['owner'], ['auditor'], ['admin', 'auditor']])(
-    'allows %s to set ready_for_review',
-    async (roles) => {
-      await svc.update(
-        'org_1',
-        'fnd_1',
-        { status: 'ready_for_review' as never },
-        roles,
-        false,
-        'usr_1',
-        'mem_1',
-      );
-      expect(mockDb.finding.update).toHaveBeenCalled();
-    },
-  );
+  it('allows ready_for_review regardless of canCreateFindings', async () => {
+    await svc.update('org_1', 'fnd_1', { status: 'ready_for_review' as never }, false, false, 'usr_1', 'mem_1');
+    expect(mockDb.finding.update).toHaveBeenCalled();
+  });
 
-  it('blocks non-auditor non-admin from setting needs_revision', async () => {
+  it('blocks needs_revision without canCreateFindings', async () => {
     await expect(
-      svc.update(
-        'org_1',
-        'fnd_1',
-        { status: 'needs_revision' as never },
-        ['employee'],
-        false,
-        'usr_1',
-        'mem_1',
-      ),
+      svc.update('org_1', 'fnd_1', { status: 'needs_revision' as never }, false, false, 'usr_1', 'mem_1'),
     ).rejects.toBeInstanceOf(ForbiddenException);
   });
 
-  it('allows auditor to set needs_revision', async () => {
-    await svc.update(
-      'org_1',
-      'fnd_1',
-      { status: 'needs_revision' as never },
-      ['auditor'],
-      false,
-      'usr_1',
-      'mem_1',
-    );
+  it('allows needs_revision with canCreateFindings', async () => {
+    await svc.update('org_1', 'fnd_1', { status: 'needs_revision' as never }, true, false, 'usr_1', 'mem_1');
+    expect(mockDb.finding.update).toHaveBeenCalled();
+  });
+
+  it('blocks closed without canCreateFindings', async () => {
+    await expect(
+      svc.update('org_1', 'fnd_1', { status: 'closed' as never }, false, false, 'usr_1', 'mem_1'),
+    ).rejects.toBeInstanceOf(ForbiddenException);
+  });
+
+  it('allows closed with canCreateFindings', async () => {
+    await svc.update('org_1', 'fnd_1', { status: 'closed' as never }, true, false, 'usr_1', 'mem_1');
     expect(mockDb.finding.update).toHaveBeenCalled();
   });
 
   it('allows platform admin to set any status', async () => {
-    await svc.update(
-      'org_1',
-      'fnd_1',
-      { status: 'ready_for_review' as never },
-      ['auditor'],
-      true,
-      'usr_1',
-      'mem_1',
-    );
+    await svc.update('org_1', 'fnd_1', { status: 'closed' as never }, false, true, 'usr_1', 'mem_1');
     expect(mockDb.finding.update).toHaveBeenCalled();
   });
 });
