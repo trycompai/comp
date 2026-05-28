@@ -37,6 +37,15 @@ import { getStringValue, toStringCredentials } from '../utils/credential-utils';
 // Class (not interface) so @nestjs/swagger emits a body schema, plus a
 // class-validator decorator so the ValidationPipe whitelist accepts the field.
 class RunChecksDto {
+  // UI sends organizationId in the body; ignored by the handler (derived from auth).
+  @ApiPropertyOptional({
+    description:
+      'Auto-resolved from your API key / session. You can omit this; it is ignored by the server.',
+  })
+  @IsOptional()
+  @IsString()
+  organizationId?: string;
+
   @ApiPropertyOptional({
     description:
       'Specific check ID to run. Omit to run ALL available checks for the connection (matches the provider manifest).',

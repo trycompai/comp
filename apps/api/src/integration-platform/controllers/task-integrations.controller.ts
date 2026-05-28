@@ -14,10 +14,11 @@ import {
   ApiBody,
   ApiOperation,
   ApiProperty,
+  ApiPropertyOptional,
   ApiSecurity,
   ApiTags,
 } from '@nestjs/swagger';
-import { IsString } from 'class-validator';
+import { IsOptional, IsString } from 'class-validator';
 import { HybridAuthGuard } from '../../auth/hybrid-auth.guard';
 import { PermissionGuard } from '../../auth/permission.guard';
 import { RequirePermission } from '../../auth/require-permission.decorator';
@@ -65,6 +66,15 @@ interface TaskIntegrationCheck {
 // carry class-validator decorators so the global ValidationPipe doesn't reject
 // the body with "property X should not exist" (whitelist + forbidNonWhitelisted).
 class RunCheckForTaskDto {
+  // UI sends organizationId in the body; ignored by the handler (derived from auth).
+  @ApiPropertyOptional({
+    description:
+      'Auto-resolved from your API key / session. You can omit this; it is ignored by the server.',
+  })
+  @IsOptional()
+  @IsString()
+  organizationId?: string;
+
   @ApiProperty({
     description:
       'ID of the integration connection that owns the check (call list-connections to find it).',
@@ -83,6 +93,15 @@ class RunCheckForTaskDto {
 }
 
 class ToggleCheckForTaskDto {
+  // UI sends organizationId in the body; ignored by the handler (derived from auth).
+  @ApiPropertyOptional({
+    description:
+      'Auto-resolved from your API key / session. You can omit this; it is ignored by the server.',
+  })
+  @IsOptional()
+  @IsString()
+  organizationId?: string;
+
   @ApiProperty({
     description:
       'ID of the integration connection whose check is being disconnected from / reconnected to this task.',

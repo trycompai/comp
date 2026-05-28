@@ -13,10 +13,11 @@ import {
   ApiBody,
   ApiOperation,
   ApiProperty,
+  ApiPropertyOptional,
   ApiSecurity,
   ApiTags,
 } from '@nestjs/swagger';
-import { IsObject } from 'class-validator';
+import { IsObject, IsOptional, IsString } from 'class-validator';
 import { HybridAuthGuard } from '../../auth/hybrid-auth.guard';
 import { PermissionGuard } from '../../auth/permission.guard';
 import { RequirePermission } from '../../auth/require-permission.decorator';
@@ -34,6 +35,15 @@ import { AutoCheckRunnerService } from '../services/auto-check-runner.service';
 // Class (not interface) so @nestjs/swagger emits a body schema, with a
 // class-validator decorator so the ValidationPipe whitelist accepts `variables`.
 class SaveVariablesDto {
+  // UI sends organizationId in the body; ignored by the handler (derived from auth).
+  @ApiPropertyOptional({
+    description:
+      'Auto-resolved from your API key / session. You can omit this; it is ignored by the server.',
+  })
+  @IsOptional()
+  @IsString()
+  organizationId?: string;
+
   @ApiProperty({
     description:
       "Map of variable id → value to persist for this connection. Values can be string, number, boolean, or string[] (the shape is provider-defined — call get-connection-variables to see what each connection accepts). Pass only the variables you want to set; existing ones not included are left untouched.",

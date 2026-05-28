@@ -67,6 +67,18 @@ import {
 // pipe would reject the body with "property X should not exist". Keep both
 // decorator stacks in sync when you add fields here.
 class CreateConnectionDto {
+  // The UI historically posts `organizationId` in the body even though the
+  // controller derives it from auth via @OrganizationId(). Accept it as
+  // optional so strict ValidationPipe (whitelist + forbidNonWhitelisted)
+  // doesn't 400 the request. Handler ignores this field.
+  @ApiPropertyOptional({
+    description:
+      'Auto-resolved from your API key / session. You can omit this; it is ignored by the server.',
+  })
+  @IsOptional()
+  @IsString()
+  organizationId?: string;
+
   @ApiProperty({
     description:
       "Provider slug for the integration. Call list-providers first to see the available slugs (e.g. 'aws', 'gcp', 'azure', 'github').",
@@ -99,6 +111,15 @@ class CreateConnectionDto {
 // Same dual-decorator pattern as CreateConnectionDto: @ApiProperty drives the
 // MCP/docs schema, class-validator decorators keep the ValidationPipe happy.
 class UpdateConnectionDto {
+  // UI sends organizationId in the body; ignored by the handler (derived from auth).
+  @ApiPropertyOptional({
+    description:
+      'Auto-resolved from your API key / session. You can omit this; it is ignored by the server.',
+  })
+  @IsOptional()
+  @IsString()
+  organizationId?: string;
+
   @ApiPropertyOptional({
     description:
       "Connection metadata to merge into the existing record. Common AWS keys: connectionName, regions (string array), awsScanMode ('comp_scanners' or 'security_hub'). The server shallow-merges this with the existing metadata, so include only the keys you want to change.",
@@ -116,6 +137,15 @@ class UpdateConnectionDto {
 
 // Body for PUT /v1/integrations/connections/:id/services (set enabled services).
 class UpdateConnectionServicesDto {
+  // UI sends organizationId in the body; ignored by the handler (derived from auth).
+  @ApiPropertyOptional({
+    description:
+      'Auto-resolved from your API key / session. You can omit this; it is ignored by the server.',
+  })
+  @IsOptional()
+  @IsString()
+  organizationId?: string;
+
   @ApiProperty({
     description:
       "Service IDs to enable on this connection. Any service IDs from the provider's manifest that are NOT in this list become disabled. Pass an empty array to disable all services.",
@@ -131,6 +161,15 @@ class UpdateConnectionServicesDto {
 // Body for PUT /v1/integrations/connections/:id/credentials (rotate credentials
 // on a connection that's already established).
 class UpdateConnectionCredentialsDto {
+  // UI sends organizationId in the body; ignored by the handler (derived from auth).
+  @ApiPropertyOptional({
+    description:
+      'Auto-resolved from your API key / session. You can omit this; it is ignored by the server.',
+  })
+  @IsOptional()
+  @IsString()
+  organizationId?: string;
+
   @ApiProperty({
     description:
       "New credential fields for the connection. Keys match the provider's auth shape (same shape used when the connection was created — see create-connection for the AWS field list).",

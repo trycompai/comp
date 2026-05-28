@@ -72,6 +72,15 @@ const GOOGLE_WORKSPACE_SYNC_FILTER_MODES =
 // slug to set it as the org's employee-sync provider, or null/omit to clear it.
 // Class (not inline type) so swagger + the ValidationPipe whitelist accept it.
 class SetEmployeeSyncProviderDto {
+  // UI sends organizationId in the body; ignored by the handler (derived from auth).
+  @ApiPropertyOptional({
+    description:
+      'Auto-resolved from your API key / session. You can omit this; it is ignored by the server.',
+  })
+  @IsOptional()
+  @IsString()
+  organizationId?: string;
+
   @ApiPropertyOptional({
     description:
       'Provider slug to use for employee sync (must have the "sync" capability in its manifest — call list-providers to see options). Pass null or omit the field to disable employee sync for this org.',
@@ -1837,7 +1846,13 @@ export class SyncController {
         employees,
         options: {
           providerName: manifest.name,
-          isDirectorySource: syncDefinition.isDirectorySource ?? false,
+          // `SyncDefinition` (from @trycompai/integration-platform) doesn't
+          // declare `isDirectorySource`, but the underlying Prisma JSON value
+          // may carry it. Structural cast lets us read the optional flag
+          // without an `as any`, with a safe `?? false` fallback.
+          isDirectorySource:
+            (syncDefinition as { isDirectorySource?: boolean })
+              .isDirectorySource ?? false,
         },
       });
 
