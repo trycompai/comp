@@ -29,23 +29,28 @@ export function NudgeCenter({
         <div className="flex flex-col gap-2">{children}</div>
       ) : (
         // Padding reserves room for the peeking edges that sit below the top card.
-        <div style={{ paddingBottom: peekLayers * 8 + 4 }}>
-          <div className="relative">
+        <div style={{ paddingBottom: peekLayers * 12 + 2 }}>
+          {/* `isolate` keeps the stack's own stacking context so the peek layers
+              sit just behind the top card (not behind an ancestor background). */}
+          <div className="relative isolate">
             {Array.from({ length: peekLayers }).map((_, i) => {
               const depth = i + 1;
               return (
                 <div
                   key={depth}
                   aria-hidden
-                  className="pointer-events-none absolute inset-0 rounded-lg border border-border bg-card shadow-sm"
+                  className="pointer-events-none absolute top-0 h-full rounded-lg border border-border bg-card shadow-md"
                   style={{
-                    transform: `translateY(${depth * 8}px) scaleX(${1 - depth * 0.05})`,
-                    zIndex: -depth,
+                    // Slightly narrower than the card above (a few px each side).
+                    left: depth * 4,
+                    right: depth * 4,
+                    transform: `translateY(${depth * 12}px)`,
+                    zIndex: MAX_PEEK_LAYERS - depth + 1,
                   }}
                 />
               );
             })}
-            {children}
+            <div className="relative z-10">{children}</div>
           </div>
         </div>
       )}
