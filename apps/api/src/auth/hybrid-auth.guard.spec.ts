@@ -1,5 +1,9 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { ExecutionContext, UnauthorizedException } from '@nestjs/common';
+import {
+  ExecutionContext,
+  ForbiddenException,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { HybridAuthGuard } from './hybrid-auth.guard';
 import { ApiKeyService } from './api-key.service';
@@ -144,9 +148,8 @@ describe('HybridAuthGuard — MCP OAuth path', () => {
       authorization: 'Bearer mcp_access_token',
     });
 
-    await expect(guard.canActivate(context)).rejects.toThrow(
-      'No active organization',
-    );
+    // 403 (authenticated, but no org) — not a 401 that would trigger re-auth.
+    await expect(guard.canActivate(context)).rejects.toThrow(ForbiddenException);
   });
 
   it('multi-org with no saved choice → asks them to pick (no silent tenant)', async () => {
@@ -166,9 +169,8 @@ describe('HybridAuthGuard — MCP OAuth path', () => {
       authorization: 'Bearer mcp_access_token',
     });
 
-    await expect(guard.canActivate(context)).rejects.toThrow(
-      'multiple organizations',
-    );
+    // 403 (token is valid — user just needs to pick an org), not a 401.
+    await expect(guard.canActivate(context)).rejects.toThrow(ForbiddenException);
     // No tenant must have been bound.
     expect(request.organizationId).toBe('');
   });
@@ -214,9 +216,8 @@ describe('HybridAuthGuard — MCP OAuth path', () => {
       authorization: 'Bearer mcp_access_token',
     });
 
-    await expect(guard.canActivate(context)).rejects.toThrow(
-      'multiple organizations',
-    );
+    // 403 (token is valid — user just needs to pick an org), not a 401.
+    await expect(guard.canActivate(context)).rejects.toThrow(ForbiddenException);
   });
 
   it('marks platform admins from the user role', async () => {

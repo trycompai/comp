@@ -1,6 +1,8 @@
 'use client';
 
 import {
+  Alert,
+  AlertDescription,
   Button,
   Section,
   Select,
@@ -63,23 +65,33 @@ export function McpOrganizationSelector({ initialData }: Props) {
         </Button>
       }
     >
-      <div className="max-w-sm">
-        <Select
-          value={selectedOrgId ?? ''}
-          onValueChange={setSelectedOrgId}
-          disabled={saving}
-        >
-          <SelectTrigger id="mcp-org-select">
-            <SelectValue placeholder="Select an organization" />
-          </SelectTrigger>
-          <SelectContent align="start">
-            {organizations.map((org) => (
-              <SelectItem key={org.id} value={org.id}>
-                {org.name}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+      <div className="space-y-3">
+        {!savedOrgId ? (
+          <Alert variant="warning">
+            <AlertDescription>
+              Pick an organization to start using your AI assistant. Until you
+              choose one, AI / MCP requests can&apos;t act on your data.
+            </AlertDescription>
+          </Alert>
+        ) : null}
+        <div className="max-w-sm">
+          <Select
+            value={selectedOrgId ?? ''}
+            onValueChange={setSelectedOrgId}
+            disabled={saving}
+          >
+            <SelectTrigger id="mcp-org-select">
+              <SelectValue placeholder="Select an organization" />
+            </SelectTrigger>
+            <SelectContent align="start">
+              {organizations.map((org) => (
+                <SelectItem key={org.id} value={org.id}>
+                  {org.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
       </div>
     </Section>
   );

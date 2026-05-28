@@ -1,6 +1,8 @@
 import {
   CanActivate,
   ExecutionContext,
+  ForbiddenException,
+  HttpException,
   Injectable,
   Logger,
   UnauthorizedException,
@@ -245,7 +247,9 @@ export class HybridAuthGuard implements CanActivate {
 
       return true;
     } catch (error) {
-      if (error instanceof UnauthorizedException) {
+      // Re-throw deliberate auth/permission errors as-is (e.g. the 403 from the
+      // MCP org-resolution path). Only unexpected failures collapse to a 401.
+      if (error instanceof HttpException) {
         throw error;
       }
 
@@ -310,9 +314,9 @@ export class HybridAuthGuard implements CanActivate {
     });
 
     if (memberships.length === 0) {
-      throw new UnauthorizedException(
-        'No active organization for this MCP token.',
-      );
+      // Authenticated, but the user has no organization — not an auth failure,
+      // so 403 (not 401) keeps the MCP client from looping on re-authentication.
+      throw new ForbiddenException('No active organization for this MCP token.');
     }
 
     let member = memberships[0];
@@ -328,9 +332,11 @@ export class HybridAuthGuard implements CanActivate {
         ? memberships.find((m) => m.organizationId === binding.organizationId)
         : undefined;
       if (!chosen) {
-        throw new UnauthorizedException(
+        // 403 (not 401): the token is valid — the user just needs to pick an
+        // org. A 401 would make the MCP client re-run sign-in in a loop.
+        throw new ForbiddenException(
           'This account belongs to multiple organizations. Choose your ' +
-            'organization for AI/MCP access in Comp AI settings, then reconnect.',
+            'organization for AI/MCP access in Comp AI settings, then try again.',
         );
       }
       member = chosen;
