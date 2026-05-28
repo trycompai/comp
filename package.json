@@ -85,10 +85,8 @@
     "typecheck:ci": "turbo typecheck --filter={apps/**} --filter={packages/**} --filter=!@trycompai/integrations --filter=!@trycompai/ui"
   },
   "workspaces": [
-    "apps/api",
-    "apps/app",
-    "apps/framework-editor",
-    "apps/portal",
+    "apps/*",
+    "!apps/mcp-server",
     "packages/*"
   ],
   "dependencies": {
