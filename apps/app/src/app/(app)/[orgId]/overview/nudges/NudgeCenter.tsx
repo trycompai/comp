@@ -39,7 +39,7 @@ export function NudgeCenter({
       ) : (
         <>
           <ChevronDown size={14} />
-          {count} notifications
+          {count} notices
         </>
       )}
     </button>
