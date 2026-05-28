@@ -29,7 +29,7 @@ describe('isTrustPortalConfigured', () => {
     ['faqs', { faqs: [{ question: 'q', answer: 'a', order: 0 }] }],
     ['a framework flag', { frameworkFlags: [false, true, false] }],
     ['a document', { documentCount: 1 }],
-    ['a framework cert', { resourceCount: 1 }],
+    ['a compliance resource (certificate)', { resourceCount: 1 }],
     ['a custom link', { customLinkCount: 1 }],
   ])('returns true when %s is set', (_label, override) => {
     expect(isTrustPortalConfigured({ ...DEFAULTS, ...override })).toBe(true);
@@ -37,5 +37,9 @@ describe('isTrustPortalConfigured', () => {
 
   it('ignores non-array faqs values', () => {
     expect(isTrustPortalConfigured({ ...DEFAULTS, faqs: 'not-an-array' })).toBe(false);
+  });
+
+  it('returns false when frameworkFlags is an empty array', () => {
+    expect(isTrustPortalConfigured({ ...DEFAULTS, frameworkFlags: [] })).toBe(false);
   });
 });
