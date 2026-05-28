@@ -650,7 +650,49 @@ export class PoliciesController {
       return { data: { s3Key }, authType: authContext.authType };
     }
 
-    // Legacy: upload to policy level
+    // No versionId provided — default to the current version so the UI shows it
+    if (policy.currentVersionId) {
+      const version = await db.policyVersion.findFirst({
+        where: { id: policy.currentVersionId, policyId: id },
+        select: { id: true, pdfUrl: true, version: true },
+      });
+      if (version) {
+        const s3Key = `${organizationId}/policies/${id}/v${version.version}-${Date.now()}-${sanitizedFileName}`;
+        await s3.send(
+          new PutObjectCommand({
+            Bucket: bucketName,
+            Key: s3Key,
+            Body: fileBuffer,
+            ContentType: fileType,
+          }),
+        );
+        const oldPdfUrl = version.pdfUrl;
+        await db.$transaction([
+          db.policyVersion.update({
+            where: { id: version.id },
+            data: { pdfUrl: s3Key },
+          }),
+          db.policy.update({
+            where: { id },
+            data: { pdfUrl: s3Key, displayFormat: 'PDF' },
+          }),
+        ]);
+
+        if (oldPdfUrl && oldPdfUrl !== s3Key) {
+          try {
+            await s3.send(
+              new DeleteObjectCommand({ Bucket: bucketName, Key: oldPdfUrl }),
+            );
+          } catch {
+            /* ignore */
+          }
+        }
+
+        return { data: { s3Key }, authType: authContext.authType };
+      }
+    }
+
+    // Fallback: policy has no current version (shouldn't happen normally)
     const s3Key = `${organizationId}/policies/${id}/${Date.now()}-${sanitizedFileName}`;
     await s3.send(
       new PutObjectCommand({
