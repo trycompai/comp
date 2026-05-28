@@ -35,6 +35,7 @@ model User {
   oauthApplications OauthApplication[]
   oauthAccessTokens OauthAccessToken[]
   oauthConsents     OauthConsent[]
+  mcpOrgBinding     McpOrgBinding?
 
   @@unique([email])
 }
@@ -159,6 +160,23 @@ model OauthConsent {
   @@index([clientId])
   @@index([userId])
   @@map("oauth_consent")
+}
+
+// Per-user organization selection for the hosted MCP. A user who belongs to
+// multiple orgs picks which one their MCP/OAuth token acts on (chosen at connect
+// time); HybridAuthGuard reads this for MCP OAuth requests. Single-org users
+// don't need a row — their one org is used automatically.
+model McpOrgBinding {
+  id             String       @id @default(dbgenerated("generate_prefixed_cuid('mob'::text)"))
+  userId         String       @unique
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  @@index([organizationId])
+  @@map("mcp_org_binding")
 }
 
 // JWT Plugin - Required by Better Auth JWT plugin

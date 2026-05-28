@@ -20,10 +20,14 @@ jest.mock('./auth.server', () => ({
 // (device-agent style) to bind the organization for the MCP OAuth path.
 const mockUserFindUnique = jest.fn();
 const mockMemberFindMany = jest.fn();
+const mockMcpBindingFindUnique = jest.fn();
 jest.mock('@db', () => ({
   db: {
     user: { findUnique: (...args: unknown[]) => mockUserFindUnique(...args) },
     member: { findMany: (...args: unknown[]) => mockMemberFindMany(...args) },
+    mcpOrgBinding: {
+      findUnique: (...args: unknown[]) => mockMcpBindingFindUnique(...args),
+    },
   },
 }));
 
@@ -66,6 +70,8 @@ describe('HybridAuthGuard — MCP OAuth path', () => {
     jest.spyOn(reflector, 'getAllAndOverride').mockReturnValue(false);
     // No cookie/regular session → forces the MCP OAuth fallback.
     mockGetSession.mockResolvedValue(null);
+    // No org binding by default; individual tests override.
+    mockMcpBindingFindUnique.mockResolvedValue(null);
   });
 
   it('authenticates a single-org user (admin) and binds org + roles', async () => {
@@ -143,7 +149,7 @@ describe('HybridAuthGuard — MCP OAuth path', () => {
     );
   });
 
-  it('fails closed for a multi-org user (no silent tenant selection)', async () => {
+  it('multi-org with no saved choice → asks them to pick (no silent tenant)', async () => {
     mockGetMcpSession.mockResolvedValue({ userId: 'usr_5', scopes: 'openid' });
     mockUserFindUnique.mockResolvedValue({
       id: 'usr_5',
@@ -154,6 +160,7 @@ describe('HybridAuthGuard — MCP OAuth path', () => {
       { id: 'mem_a', role: 'admin', department: 'none', organizationId: 'org_a' },
       { id: 'mem_b', role: 'owner', department: 'none', organizationId: 'org_b' },
     ]);
+    mockMcpBindingFindUnique.mockResolvedValue(null);
 
     const { context, request } = createContext({
       authorization: 'Bearer mcp_access_token',
@@ -164,6 +171,52 @@ describe('HybridAuthGuard — MCP OAuth path', () => {
     );
     // No tenant must have been bound.
     expect(request.organizationId).toBe('');
+  });
+
+  it('multi-org with a saved choice → binds the chosen org', async () => {
+    mockGetMcpSession.mockResolvedValue({ userId: 'usr_6', scopes: 'openid' });
+    mockUserFindUnique.mockResolvedValue({
+      id: 'usr_6',
+      email: 'consultant@acme.com',
+      role: 'user',
+    });
+    mockMemberFindMany.mockResolvedValue([
+      { id: 'mem_a', role: 'admin', department: 'none', organizationId: 'org_a' },
+      { id: 'mem_b', role: 'owner', department: 'it', organizationId: 'org_b' },
+    ]);
+    mockMcpBindingFindUnique.mockResolvedValue({ organizationId: 'org_b' });
+
+    const { context, request } = createContext({
+      authorization: 'Bearer mcp_access_token',
+    });
+
+    await expect(guard.canActivate(context)).resolves.toBe(true);
+    expect(request.organizationId).toBe('org_b');
+    expect(request.memberId).toBe('mem_b');
+    expect(request.userRoles).toEqual(['owner']);
+  });
+
+  it('multi-org with a stale choice (no longer a member) → asks them to pick', async () => {
+    mockGetMcpSession.mockResolvedValue({ userId: 'usr_7', scopes: 'openid' });
+    mockUserFindUnique.mockResolvedValue({
+      id: 'usr_7',
+      email: 'consultant@acme.com',
+      role: 'user',
+    });
+    mockMemberFindMany.mockResolvedValue([
+      { id: 'mem_a', role: 'admin', department: 'none', organizationId: 'org_a' },
+      { id: 'mem_b', role: 'owner', department: 'none', organizationId: 'org_b' },
+    ]);
+    // Bound to an org they were removed from.
+    mockMcpBindingFindUnique.mockResolvedValue({ organizationId: 'org_gone' });
+
+    const { context } = createContext({
+      authorization: 'Bearer mcp_access_token',
+    });
+
+    await expect(guard.canActivate(context)).rejects.toThrow(
+      'multiple organizations',
+    );
   });
 
   it('marks platform admins from the user role', async () => {

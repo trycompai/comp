@@ -262,10 +262,10 @@ export class HybridAuthGuard implements CanActivate {
    * when no organization can be resolved.
    *
    * The token carries the user identity only. The organization is resolved
-   * explicitly from the user's active memberships — the same approach as the
-   * device-agent (enumerate memberships, then bind to one), not a "most recent"
-   * guess. One org is used directly; multiple orgs fail closed because MCP org
-   * selection isn't supported yet (avoids silently acting on the wrong tenant).
+   * explicitly from the user's active memberships (device-agent style), never a
+   * "most recent" guess. One org → used directly. Multiple orgs → the org the
+   * user chose for MCP (McpOrgBinding, set at connect time) is used if they're
+   * still a member; otherwise we ask them to choose rather than guess a tenant.
    * Roles come from the resolved member so the existing PermissionGuard enforces
    * RBAC unchanged.
    */
@@ -314,14 +314,27 @@ export class HybridAuthGuard implements CanActivate {
         'No active organization for this MCP token.',
       );
     }
-    if (memberships.length > 1) {
-      throw new UnauthorizedException(
-        'This account belongs to multiple organizations. Selecting an ' +
-          'organization for MCP access is not supported yet.',
-      );
-    }
 
-    const member = memberships[0];
+    let member = memberships[0];
+    if (memberships.length > 1) {
+      // Multi-org: use the org the user chose for MCP (set at connect time),
+      // as long as they're still a member of it. No saved/valid choice → ask
+      // them to pick rather than guessing a tenant.
+      const binding = await db.mcpOrgBinding.findUnique({
+        where: { userId },
+        select: { organizationId: true },
+      });
+      const chosen = binding
+        ? memberships.find((m) => m.organizationId === binding.organizationId)
+        : undefined;
+      if (!chosen) {
+        throw new UnauthorizedException(
+          'This account belongs to multiple organizations. Choose your ' +
+            'organization for AI/MCP access in Comp AI settings, then reconnect.',
+        );
+      }
+      member = chosen;
+    }
     request.organizationId = member.organizationId;
     request.memberId = member.id;
     request.memberDepartment = member.department;
