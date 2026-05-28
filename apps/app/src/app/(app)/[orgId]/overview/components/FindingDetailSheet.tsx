@@ -64,18 +64,18 @@ interface FindingDetailSheetProps {
  */
 function allowedStatusOptions({
   current,
-  isAuditor,
+  canCreateFindings,
   isPlatformAdmin,
 }: {
   current: FindingStatus;
-  isAuditor: boolean;
+  canCreateFindings: boolean;
   isPlatformAdmin: boolean;
 }): FindingStatus[] {
-  const canSetRestricted = isAuditor || isPlatformAdmin;
-  const canSetReadyForReview = !isAuditor || isPlatformAdmin;
-  const options: FindingStatus[] = [FindingStatus.open];
-  if (canSetReadyForReview) options.push(FindingStatus.ready_for_review);
-  if (canSetRestricted) {
+  const options: FindingStatus[] = [
+    FindingStatus.open,
+    FindingStatus.ready_for_review,
+  ];
+  if (canCreateFindings || isPlatformAdmin) {
     options.push(FindingStatus.needs_revision, FindingStatus.closed);
   }
   if (!options.includes(current)) options.push(current);
@@ -156,18 +156,13 @@ export function FindingDetailSheet({
   onSaved,
   onDeleted,
 }: FindingDetailSheetProps) {
-  const { hasPermission, roles } = usePermissions();
+  const { hasPermission } = usePermissions();
   const { data: session } = useSession();
   const canUpdate = hasPermission('finding', 'update');
   const canDelete = hasPermission('finding', 'delete');
-  // Match the API's literal role check (`userRoles.includes('auditor')` in
-  // findings.service.ts). A custom role granting `finding:create` does NOT
-  // count as auditor on the server, so we can't proxy via permissions here.
-  const isAuditor = roles.includes('auditor');
+  const canCreateFindings = hasPermission('finding', 'create');
   const isPlatformAdmin = session?.user?.role === 'admin';
-  // Only auditors can rewrite a finding's content; owners/admins can still
-  // move the status forward but the audit narrative belongs to the auditor.
-  const canEditContent = canUpdate && isAuditor;
+  const canEditContent = canUpdate && canCreateFindings;
   const { updateFinding, deleteFinding } = useFindingActions();
   const { data: historyData } = useFindingHistory(finding?.id ?? null);
 
@@ -353,7 +348,7 @@ export function FindingDetailSheet({
                   <SelectContent>
                     {allowedStatusOptions({
                       current: status,
-                      isAuditor,
+                      canCreateFindings,
                       isPlatformAdmin,
                     }).map((s) => (
                       <SelectItem key={s} value={s}>

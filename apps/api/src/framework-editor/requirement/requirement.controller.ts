@@ -13,6 +13,7 @@ import {
 } from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { PlatformAdminGuard } from '../../auth/platform-admin.guard';
+import { BatchUpdateRequirementsDto } from './dto/batch-update-requirements.dto';
 import { CreateRequirementDto } from './dto/create-requirement.dto';
 import { UpdateRequirementDto } from './dto/update-requirement.dto';
 import { RequirementService } from './requirement.service';
@@ -36,6 +37,13 @@ export class RequirementController {
   @UsePipes(new ValidationPipe({ whitelist: true, transform: true }))
   async create(@Body() dto: CreateRequirementDto) {
     return this.service.create(dto);
+  }
+
+  @Patch('batch')
+  @ApiOperation({ summary: 'Batch update requirements' })
+  @UsePipes(new ValidationPipe({ whitelist: true, transform: true }))
+  async batchUpdate(@Body() dto: BatchUpdateRequirementsDto) {
+    return this.service.batchUpdate(dto.updates);
   }
 
   @Patch(':id')

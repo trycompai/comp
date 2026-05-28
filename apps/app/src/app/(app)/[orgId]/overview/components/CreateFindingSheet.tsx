@@ -3,6 +3,7 @@
 import { useApiSWR } from '@/hooks/use-api-swr';
 import {
   DEFAULT_FINDING_TEMPLATES,
+  extractOrgFrameworkTypes,
   FINDING_CATEGORY_LABELS,
   FINDING_TYPE_FRAMEWORK_OPTIONS,
   FINDING_TYPE_LABELS,
@@ -132,33 +133,18 @@ export function CreateFindingSheet({
   const { data: templatesData } = useFindingTemplates();
   const { createFinding } = useFindingActions();
 
-  // Detect which frameworks the org has enabled so we can auto-select the
-  // Framework dropdown when there's only one (common case: org has adopted
-  // SOC 2 only).
+  // Detect which frameworks the org has enabled. Used to (a) gate the Framework
+  // dropdown so an auditor can only attribute a finding to a framework the org
+  // actually subscribes to, and (b) auto-select sensible defaults below.
   const { data: frameworksData } = useApiSWR<unknown>(
     '/v1/frameworks?includeScores=false',
     { refreshInterval: 0 },
   );
-  const orgFrameworkTypes = useMemo<FindingType[]>(() => {
-    const payload = (frameworksData as { data?: unknown })?.data;
-    const list = Array.isArray(payload)
-      ? payload
-      : Array.isArray((payload as { data?: unknown })?.data)
-        ? ((payload as { data: unknown[] }).data)
-        : [];
-    const types = new Set<FindingType>();
-    for (const raw of list) {
-      const item = raw as Record<string, unknown>;
-      const fw = (item.framework ?? item) as { name?: unknown } | undefined;
-      const name = typeof fw?.name === 'string' ? fw.name.toLowerCase() : '';
-      if (name.includes('soc 2') || name.includes('soc2')) {
-        types.add(FindingType.soc2);
-      } else if (name.includes('27001') || name.includes('iso 27001')) {
-        types.add(FindingType.iso27001);
-      }
-    }
-    return Array.from(types);
-  }, [frameworksData]);
+  const frameworksLoaded = frameworksData !== undefined;
+  const orgFrameworkTypes = useMemo<FindingType[]>(
+    () => extractOrgFrameworkTypes(frameworksData),
+    [frameworksData],
+  );
 
   const form = useForm<FormValues>({
     resolver: zodResolver(createFindingSchema),
@@ -172,12 +158,14 @@ export function CreateFindingSheet({
     },
   });
 
-  // When the org has exactly one supported framework, default the Framework
-  // dropdown to it so the auditor doesn't have to pick.
+  // Once the org's frameworks are known, ensure the Framework dropdown is on a
+  // value the org actually subscribes to — the form defaults to SOC 2, which
+  // would be invalid for an ISO-only / HIPAA-only / PCI-only org.
   useEffect(() => {
-    if (orgFrameworkTypes.length === 1) {
-      const only = orgFrameworkTypes[0]!;
-      if (form.getValues('type') !== only) form.setValue('type', only);
+    if (orgFrameworkTypes.length === 0) return;
+    const current = form.getValues('type');
+    if (!orgFrameworkTypes.includes(current)) {
+      form.setValue('type', orgFrameworkTypes[0]!);
     }
   }, [orgFrameworkTypes, form]);
 
@@ -351,7 +339,14 @@ export function CreateFindingSheet({
                     <SelectItem
                       key={value}
                       value={value}
-                      disabled={!(value in FINDING_TYPE_LABELS)}
+                      // Gate by the org's enabled frameworks once they're
+                      // loaded. While loading (frameworksLoaded === false)
+                      // leave everything enabled so the dropdown doesn't
+                      // flicker into a fully-disabled state on first paint.
+                      disabled={
+                        frameworksLoaded &&
+                        !orgFrameworkTypes.includes(value as FindingType)
+                      }
                     >
                       {label}
                     </SelectItem>

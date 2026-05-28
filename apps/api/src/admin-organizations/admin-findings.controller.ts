@@ -87,7 +87,7 @@ export class AdminFindingsController {
       orgId,
       findingId,
       updateDto,
-      [],
+      true,
       true,
       req.userId,
       null,

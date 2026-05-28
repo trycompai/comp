@@ -3,7 +3,7 @@
 import type { Control, FrameworkEditorRequirement, Task } from '@db';
 import {
   Badge,
-  Heading,
+
   InputGroup,
   InputGroupAddon,
   InputGroupInput,
@@ -108,10 +108,17 @@ export function FrameworkRequirements({
     });
   }, [requirementDefinitions, frameworkInstanceWithControls.controls, tasks, evidenceSubmissions]);
 
+  const sortedItems = useMemo(
+    () => [...items].sort((a, b) =>
+      (a.identifier ?? '').localeCompare(b.identifier ?? '', undefined, { numeric: true }),
+    ),
+    [items],
+  );
+
   const filteredItems = useMemo(() => {
-    if (!searchTerm.trim()) return items;
+    if (!searchTerm.trim()) return sortedItems;
     const lowerSearch = searchTerm.toLowerCase();
-    return items.filter(
+    return sortedItems.filter(
       (item) =>
         item.name.toLowerCase().includes(lowerSearch) ||
         item.identifier?.toLowerCase().includes(lowerSearch) ||
@@ -136,7 +143,6 @@ export function FrameworkRequirements({
 
   return (
     <div className="space-y-4">
-      <Heading level="2">Requirements ({filteredItems.length})</Heading>
       <div className="w-full max-w-sm">
         <InputGroup>
           <InputGroupAddon>
