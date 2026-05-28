@@ -605,95 +605,28 @@ export class PoliciesController {
     });
     if (!policy) throw new NotFoundException('Policy not found');
 
-    if (body.versionId) {
-      const version = await db.policyVersion.findFirst({
-        where: { id: body.versionId, policyId: id },
-        select: { id: true, pdfUrl: true, version: true },
-      });
-      if (!version) throw new NotFoundException('Version not found');
-      if (version.id === policy.currentVersionId && policy.status !== 'draft') {
-        throw new BadRequestException(
-          'Cannot upload PDF to the published version',
-        );
-      }
-      if (version.id === policy.pendingVersionId) {
-        throw new BadRequestException(
-          'Cannot upload PDF to a version pending approval',
-        );
-      }
+    const targetVersionId = body.versionId ?? policy.currentVersionId;
+    if (!targetVersionId) {
+      throw new BadRequestException('Policy has no version to upload to');
+    }
 
-      const s3Key = `${organizationId}/policies/${id}/v${version.version}-${Date.now()}-${sanitizedFileName}`;
-      await s3.send(
-        new PutObjectCommand({
-          Bucket: bucketName,
-          Key: s3Key,
-          Body: fileBuffer,
-          ContentType: fileType,
-        }),
+    const version = await db.policyVersion.findFirst({
+      where: { id: targetVersionId, policyId: id },
+      select: { id: true, pdfUrl: true, version: true },
+    });
+    if (!version) throw new NotFoundException('Version not found');
+    if (version.id === policy.currentVersionId && policy.status !== 'draft') {
+      throw new BadRequestException(
+        'Cannot upload PDF to the published version',
       );
-      const oldPdfUrl = version.pdfUrl;
-      await db.policyVersion.update({
-        where: { id: body.versionId },
-        data: { pdfUrl: s3Key },
-      });
-
-      if (oldPdfUrl && oldPdfUrl !== s3Key) {
-        try {
-          await s3.send(
-            new DeleteObjectCommand({ Bucket: bucketName, Key: oldPdfUrl }),
-          );
-        } catch {
-          /* ignore */
-        }
-      }
-
-      return { data: { s3Key }, authType: authContext.authType };
+    }
+    if (version.id === policy.pendingVersionId) {
+      throw new BadRequestException(
+        'Cannot upload PDF to a version pending approval',
+      );
     }
 
-    // No versionId provided — default to the current version so the UI shows it
-    if (policy.currentVersionId) {
-      const version = await db.policyVersion.findFirst({
-        where: { id: policy.currentVersionId, policyId: id },
-        select: { id: true, pdfUrl: true, version: true },
-      });
-      if (version) {
-        const s3Key = `${organizationId}/policies/${id}/v${version.version}-${Date.now()}-${sanitizedFileName}`;
-        await s3.send(
-          new PutObjectCommand({
-            Bucket: bucketName,
-            Key: s3Key,
-            Body: fileBuffer,
-            ContentType: fileType,
-          }),
-        );
-        const oldPdfUrl = version.pdfUrl;
-        await db.$transaction([
-          db.policyVersion.update({
-            where: { id: version.id },
-            data: { pdfUrl: s3Key },
-          }),
-          db.policy.update({
-            where: { id },
-            data: { pdfUrl: s3Key, displayFormat: 'PDF' },
-          }),
-        ]);
-
-        if (oldPdfUrl && oldPdfUrl !== s3Key) {
-          try {
-            await s3.send(
-              new DeleteObjectCommand({ Bucket: bucketName, Key: oldPdfUrl }),
-            );
-          } catch {
-            /* ignore */
-          }
-        }
-
-        return { data: { s3Key }, authType: authContext.authType };
-      }
-    }
-
-    // Fallback: policy has no current version (shouldn't happen normally)
-    const s3Key = `${organizationId}/policies/${id}/${Date.now()}-${sanitizedFileName}`;
+    const s3Key = `${organizationId}/policies/${id}/v${version.version}-${Date.now()}-${sanitizedFileName}`;
     await s3.send(
       new PutObjectCommand({
         Bucket: bucketName,
@@ -702,11 +635,17 @@ export class PoliciesController {
         ContentType: fileType,
       }),
     );
-    const oldPdfUrl = policy.pdfUrl;
-    await db.policy.update({
-      where: { id },
-      data: { pdfUrl: s3Key, displayFormat: 'PDF' },
-    });
+    const oldPdfUrl = version.pdfUrl;
+    await db.$transaction([
+      db.policyVersion.update({
+        where: { id: version.id },
+        data: { pdfUrl: s3Key },
+      }),
+      db.policy.update({
+        where: { id },
+        data: { pdfUrl: s3Key, displayFormat: 'PDF' },
+      }),
+    ]);
 
     if (oldPdfUrl && oldPdfUrl !== s3Key) {
       try {
