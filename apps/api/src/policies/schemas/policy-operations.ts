@@ -4,7 +4,7 @@ export const POLICY_OPERATIONS: Record<string, ApiOperationOptions> = {
   getAllPolicies: {
     summary: 'Get all policies',
     description:
-      'Returns all policies for the authenticated organization. Supports both API key authentication (X-API-Key header) and session authentication (Bearer token or cookies).',
+      'Lists all policies. Pass excludeContent=true to skip the heavy content fields (recommended unless you need every policy fully). Fetch one policy via get-policy by ID when you need the full content to edit.',
   },
   getPolicyById: {
     summary: 'Get policy by ID',

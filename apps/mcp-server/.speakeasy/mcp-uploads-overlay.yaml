@@ -1,0 +1,81 @@
+overlay: 1.0.0
+info:
+  title: CompAI MCP — force presigned uploads
+  version: 1.0.0
+# =============================================================================
+# WHY THIS OVERLAY EXISTS (read before editing the questionnaire upload tools)
+# =============================================================================
+# Agent / LLM clients (our MCP server) must NEVER receive file bytes inline.
+# Sending a file as base64 in a tool argument forces the model to emit the whole
+# file token-by-token — catastrophically slow, token-expensive, and it overflows
+# the context window. (We hit this twice in testing.)
+#
+# This overlay strips every "hand me the raw file" input from the MCP tool
+# surface so the model is FORCED down the presigned-upload path:
+#
+#     create-upload-url(purpose=questionnaire)  ->  { uploadUrl, s3Key }
+#     PUT raw bytes to uploadUrl                 ->  (straight to S3)
+#     upload-and-parse(s3Key)                    ->  parse + answer
+#
+# IMPORTANT: this overlay is applied ONLY during Speakeasy generation (it is
+# wired into .speakeasy/workflow.yaml). The source spec
+# packages/docs/openapi.json is left untouched, so the public API docs and the
+# web UI keep their base64 / multipart upload paths — browsers handle binary
+# natively and should not be forced through presign.
+#
+# When a NEW feature starts accepting agent uploads, follow the same recipe:
+# remove its inline-file field here and add an `s3Key` to its DTO instead.
+# =============================================================================
+actions:
+  # 1. Drop the base64 `fileData` field from the questionnaire JSON upload tool,
+  #    leaving `s3Key` as the only way an MCP client can supply a file.
+  - target: "$.components.schemas.UploadAndParseDto.properties.fileData"
+    remove: true
+
+  # 1b. Rewrite the `s3Key` description for the MCP tool. The source description
+  #     references `fileData` ("provide exactly one of..."), which is correct for
+  #     the public API/docs but dangling here — MCP clients can't see fileData
+  #     (we removed it above). Give agents the explicit upload recipe instead.
+  - target: "$.components.schemas.UploadAndParseDto.properties.s3Key"
+    update:
+      description: >-
+        The questionnaire file to parse. First call create-upload-url with
+        purpose=questionnaire to get a presigned URL and s3Key, PUT the raw file
+        bytes to that URL, then pass the returned s3Key here. This is the only
+        way to supply a file — never send file contents inline.
+
+  # 2-4. Disable the multipart "/upload" tools for MCP. Each accepts a binary
+  #    `file` an agent could only populate by base64-ing it — the exact
+  #    anti-pattern above. They are redundant for agents: the presigned flow
+  #    plus their JSON siblings (which operate on an already-uploaded
+  #    questionnaire by id) cover the same capability. The HTTP endpoints stay
+  #    live for the web UI / direct callers; only the MCP tools are removed.
+  - target: "$.paths['/v1/questionnaire/upload-and-parse/upload'].post"
+    update:
+      x-speakeasy-mcp:
+        disabled: true
+  - target: "$.paths['/v1/questionnaire/parse/upload'].post"
+    update:
+      x-speakeasy-mcp:
+        disabled: true
+  - target: "$.paths['/v1/questionnaire/answers/export/upload'].post"
+    update:
+      x-speakeasy-mcp:
+        disabled: true
+
+  # 5-6. Disable the two answer-generation tools that can't work over MCP:
+  #   - /v1/questionnaire/auto-answer streams Server-Sent Events; a single
+  #     JSON-RPC tool call can't consume an SSE stream.
+  #   - /v1/questionnaire/answers/export returns a binary file (pdf/csv/xlsx);
+  #     an agent can't render that inline in chat.
+  #   Agents should instead use POST /v1/questionnaire/{id}/auto-answer (returns
+  #   JSON, runs in the background) and poll GET /v1/questionnaire/{id} for the
+  #   answers. Both HTTP endpoints stay live for the web UI.
+  - target: "$.paths['/v1/questionnaire/auto-answer'].post"
+    update:
+      x-speakeasy-mcp:
+        disabled: true
+  - target: "$.paths['/v1/questionnaire/answers/export'].post"
+    update:
+      x-speakeasy-mcp:
+        disabled: true

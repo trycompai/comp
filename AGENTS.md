@@ -68,6 +68,23 @@ When an operation requires multiple API calls (e.g., S3 upload + PATCH), create 
 - **Single resource endpoints**: `{ ...entity, authType, authenticatedUser }` → access via `response.data`
 - Both `apiClient` and `serverApi` wrap in `{ data, error, status }`
 
+## API Endpoint Contract (MCP-friendly)
+
+Every customer-facing endpoint in `apps/api/src/` flows into three systems: the OpenAPI spec (`packages/docs/openapi.json`), the MCP server published as `@trycompai/mcp-server` on npm, and the runtime `ValidationPipe`. The full contract is in [.claude/skills/api-endpoint-contract/SKILL.md](.claude/skills/api-endpoint-contract/SKILL.md) (auto-loaded by Claude) and [.cursor/rules/api-endpoint-contract.mdc](.cursor/rules/api-endpoint-contract.mdc) (auto-loaded by Cursor). The short version every body-accepting endpoint must follow:
+
+1. **DTOs are classes** — never interfaces, never inline `@Body() body: { ... }`. Interfaces are erased at runtime and produce empty MCP schemas.
+2. **Two decorator stacks per field** — `@ApiProperty` (or `@ApiPropertyOptional`) for the OpenAPI/MCP schema **and** class-validator (`@IsString`, `@IsOptional`, `@IsObject`, `@IsArray`, etc.) for the ValidationPipe. With only one stack, requests are rejected with *"property X should not exist"* or the MCP tool ships with empty input.
+3. **Add `@ApiBody({ type: DtoClass })`** on the endpoint — `@nestjs/swagger` does not reliably infer it from `@Body()` alone.
+4. **`@ApiOperation.description` ≤ 240 chars** — `apps/api/src/openapi/seo-text.ts` truncates at a word boundary; longer text loses its actionable instruction.
+5. **Override the MCP tool name** when the auto-derived name is ugly: `@ApiExtension('x-speakeasy-mcp', { name: 'kebab-name' })`.
+6. **No `SessionOnlyGuard`** on agent-callable endpoints — API-key callers get 403 and the MCP tool fails for customers.
+7. **Long-running ops are async** — return a run handle (`runId`, status, counts) and tell the agent the poll target in the description.
+8. **File uploads from agents use presigned URLs** — accept an `s3Key` field (read via `UploadsService.readUploadAsBase64`); never accept inline base64 from the MCP tool.
+9. **Sensitive paths (e.g. `/credentials`)** are deny-listed from public docs in `apps/api/src/openapi/public-docs-quality.ts` — that's intentional, don't fight it.
+10. **SSE / binary responses** can't be consumed by MCP — disable the tool in `apps/mcp-server/.speakeasy/mcp-uploads-overlay.yaml` while keeping the HTTP endpoint for the web UI.
+
+After adding an endpoint: `bun run --filter '@trycompai/api' dev` regenerates `packages/docs/openapi.json` on boot — **commit it with your PR**. The daily Speakeasy CI reads from that file; if it's stale, your endpoint never reaches MCP customers.
+
 ## RBAC
 
 ### Permissions Model

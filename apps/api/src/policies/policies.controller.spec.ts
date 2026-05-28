@@ -53,6 +53,13 @@ jest.mock('@db', () => ({
     draft: 'draft',
     published: 'published',
   },
+  BackgroundCheckStatus: {
+    pending: 'pending',
+    in_progress: 'in_progress',
+    completed: 'completed',
+    completed_with_flags: 'completed_with_flags',
+    failed: 'failed',
+  },
   FindingType: {
     soc2: 'soc2',
     iso27001: 'iso27001',
@@ -145,11 +152,33 @@ describe('PoliciesController', () => {
 
       const result = await controller.getAllPolicies(orgId, mockAuthContext);
 
-      expect(policiesService.findAll).toHaveBeenCalledWith(orgId);
+      expect(policiesService.findAll).toHaveBeenCalledWith(orgId, {
+        excludeContent: false,
+      });
       expect(result).toEqual({
         data: mockPolicies,
         authType: 'session',
         authenticatedUser: { id: 'usr_123', email: 'test@example.com' },
+      });
+    });
+
+    it('should pass excludeContent=true to service when query param is "true"', async () => {
+      mockPoliciesService.findAll.mockResolvedValue([]);
+
+      await controller.getAllPolicies(orgId, mockAuthContext, 'true');
+
+      expect(policiesService.findAll).toHaveBeenCalledWith(orgId, {
+        excludeContent: true,
+      });
+    });
+
+    it('should treat any non-"true" excludeContent value as false', async () => {
+      mockPoliciesService.findAll.mockResolvedValue([]);
+
+      await controller.getAllPolicies(orgId, mockAuthContext, 'false');
+
+      expect(policiesService.findAll).toHaveBeenCalledWith(orgId, {
+        excludeContent: false,
       });
     });
 

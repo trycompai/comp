@@ -167,6 +167,97 @@ describe('PeopleInviteService', () => {
       expect(results[0].error).toContain('privileged roles');
     });
 
+    it('allows an API key with full member CRUD scopes to assign admin (resolves an owner as inviter)', async () => {
+      (mockDb.user.findFirst as jest.Mock).mockResolvedValue(null);
+      // Owner fallback lookup for inviterId (API keys have no caller user)
+      (mockDb.member.findFirst as jest.Mock).mockResolvedValue({
+        userId: 'owner_user',
+      });
+      (mockDb.organization.findUnique as jest.Mock).mockResolvedValue({
+        name: 'Test Org',
+      });
+      (mockDb.invitation.create as jest.Mock).mockResolvedValue({ id: 'inv_1' });
+
+      const results = await service.inviteMembers({
+        ...baseParams,
+        callerUserId: '', // API-key auth has no caller user
+        callerRole: '', // API keys carry no member role
+        isApiKey: true,
+        apiKeyScopes: [
+          'member:create',
+          'member:read',
+          'member:update',
+          'member:delete',
+        ],
+        invites: [{ email: 'admin@example.com', roles: ['admin', 'employee'] }],
+      });
+
+      expect(results[0].success).toBe(true);
+      expect(results[0].error).toBeUndefined();
+      // The invitation was attributed to the resolved owner
+      expect(mockDb.invitation.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({ inviterId: 'owner_user' }),
+        }),
+      );
+    });
+
+    it('restricts an API key scoped to only member:create from assigning admin', async () => {
+      const results = await service.inviteMembers({
+        ...baseParams,
+        callerUserId: '',
+        callerRole: '',
+        isApiKey: true,
+        apiKeyScopes: ['member:create'],
+        invites: [{ email: 'admin@example.com', roles: ['admin'] }],
+      });
+
+      expect(results[0].success).toBe(false);
+      expect(results[0].error).toContain('privileged roles');
+      // Role check fails before any inviter resolution
+      expect(mockDb.invitation.create).not.toHaveBeenCalled();
+    });
+
+    it('allows a legacy API key (empty scopes = full access) to assign admin', async () => {
+      (mockDb.user.findFirst as jest.Mock).mockResolvedValue(null);
+      (mockDb.member.findFirst as jest.Mock).mockResolvedValue({
+        userId: 'owner_user',
+      });
+      (mockDb.organization.findUnique as jest.Mock).mockResolvedValue({
+        name: 'Test Org',
+      });
+      (mockDb.invitation.create as jest.Mock).mockResolvedValue({ id: 'inv_2' });
+
+      const results = await service.inviteMembers({
+        ...baseParams,
+        callerUserId: '',
+        callerRole: '',
+        isApiKey: true,
+        apiKeyScopes: [],
+        invites: [{ email: 'admin@example.com', roles: ['admin'] }],
+      });
+
+      expect(results[0].success).toBe(true);
+    });
+
+    it('fails clearly when an API key invite has no owner/admin to attribute as inviter', async () => {
+      (mockDb.user.findFirst as jest.Mock).mockResolvedValue(null);
+      // No owner or admin found
+      (mockDb.member.findFirst as jest.Mock).mockResolvedValue(null);
+
+      const results = await service.inviteMembers({
+        ...baseParams,
+        callerUserId: '',
+        callerRole: '',
+        isApiKey: true,
+        apiKeyScopes: ['member:create', 'member:read', 'member:update', 'member:delete'],
+        invites: [{ email: 'admin@example.com', roles: ['admin'] }],
+      });
+
+      expect(results[0].success).toBe(false);
+      expect(results[0].error).toContain('inviter');
+    });
+
     it('should allow auditors to invite restricted roles', async () => {
       (mockDb.organization.findUnique as jest.Mock).mockResolvedValue({
         name: 'Test Org',
