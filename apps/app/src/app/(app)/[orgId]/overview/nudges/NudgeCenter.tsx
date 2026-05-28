@@ -67,7 +67,7 @@ export function NudgeCenter({
             <div
               key={depth}
               aria-hidden
-              className="pointer-events-none absolute top-0 h-full rounded-lg border border-border bg-secondary shadow-md"
+              className="pointer-events-none absolute top-0 h-full rounded-lg border border-warning/30 bg-warning/15 shadow-md"
               style={{
                 // Each card behind is a little narrower than the one above it.
                 left: depth * 8,
