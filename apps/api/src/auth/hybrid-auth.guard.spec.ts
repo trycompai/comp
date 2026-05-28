@@ -7,6 +7,7 @@ import {
 import { Reflector } from '@nestjs/core';
 import { HybridAuthGuard } from './hybrid-auth.guard';
 import { ApiKeyService } from './api-key.service';
+import { SKIP_ORG_CHECK_KEY } from './skip-org-check.decorator';
 
 // Mock auth.server — only the two session resolvers the guard uses.
 const mockGetSession = jest.fn();
@@ -149,6 +150,27 @@ describe('HybridAuthGuard — MCP OAuth path', () => {
     });
 
     // 403 (authenticated, but no org) — not a 401 that would trigger re-auth.
+    await expect(guard.canActivate(context)).rejects.toThrow(ForbiddenException);
+  });
+
+  it('blocks an org-less user even on org-agnostic (skipOrgCheck) endpoints', async () => {
+    // skipOrgCheck = true for this request, but the user belongs to no org —
+    // a "foreign" user must not be able to use the MCP at all.
+    jest
+      .spyOn(reflector, 'getAllAndOverride')
+      .mockImplementation((key: unknown) => key === SKIP_ORG_CHECK_KEY);
+    mockGetMcpSession.mockResolvedValue({ userId: 'usr_x', scopes: 'openid' });
+    mockUserFindUnique.mockResolvedValue({
+      id: 'usr_x',
+      email: 'stranger@example.com',
+      role: 'user',
+    });
+    mockMemberFindMany.mockResolvedValue([]); // member of nothing
+
+    const { context } = createContext({
+      authorization: 'Bearer mcp_access_token',
+    });
+
     await expect(guard.canActivate(context)).rejects.toThrow(ForbiddenException);
   });
 

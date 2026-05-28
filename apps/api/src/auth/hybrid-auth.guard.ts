@@ -301,22 +301,29 @@ export class HybridAuthGuard implements CanActivate {
     request.isServiceToken = false;
     request.isPlatformAdmin = user.role === 'admin';
 
-    if (skipOrgCheck) {
-      this.logger.log(`MCP OAuth token authenticated for user ${user.id}`);
-      return true;
-    }
-
-    // Bind the organization explicitly by enumerating active memberships,
-    // mirroring the device-agent's getMyOrganizations + explicit selection.
+    // An MCP token is only usable by a member of at least one organization.
+    // Enumerate active memberships up front (device-agent style) so a user with
+    // none — e.g. someone who completed Google sign-in but was never invited to
+    // any org, or who was removed from all of them — is blocked from EVERY MCP
+    // tool, including the org-agnostic (skipOrgCheck) ones.
     const memberships = await db.member.findMany({
       where: { userId, deactivated: false },
       select: { id: true, role: true, department: true, organizationId: true },
     });
 
     if (memberships.length === 0) {
-      // Authenticated, but the user has no organization — not an auth failure,
-      // so 403 (not 401) keeps the MCP client from looping on re-authentication.
-      throw new ForbiddenException('No active organization for this MCP token.');
+      // Authenticated, but a member of nothing — not an auth failure, so 403
+      // (not 401) keeps the MCP client from looping on re-authentication.
+      throw new ForbiddenException(
+        'This account is not a member of any organization, so it cannot use the MCP.',
+      );
+    }
+
+    // The user has an org. Endpoints that don't need a *specific* one
+    // (onboarding lookups) can proceed now.
+    if (skipOrgCheck) {
+      this.logger.log(`MCP OAuth token authenticated for user ${user.id}`);
+      return true;
     }
 
     let member = memberships[0];
