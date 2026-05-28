@@ -605,9 +605,27 @@ export class PoliciesController {
     });
     if (!policy) throw new NotFoundException('Policy not found');
 
-    const targetVersionId = body.versionId ?? policy.currentVersionId;
+    let targetVersionId: string = body.versionId ?? '';
     if (!targetVersionId) {
-      throw new BadRequestException('Policy has no version to upload to');
+      // Default to the latest draft version (not published, not pending approval)
+      const excludeIds = [policy.currentVersionId, policy.pendingVersionId].filter(
+        (v): v is string => v != null,
+      );
+      const draftVersion = excludeIds.length > 0
+        ? await db.policyVersion.findFirst({
+            where: { policyId: id, id: { notIn: excludeIds } },
+            orderBy: { version: 'desc' },
+            select: { id: true },
+          })
+        : null;
+      targetVersionId =
+        draftVersion?.id ??
+        (policy.status === 'draft' ? policy.currentVersionId ?? '' : '');
+      if (!targetVersionId) {
+        throw new BadRequestException(
+          'No draft version available. Create a new version before uploading a PDF.',
+        );
+      }
     }
 
     const version = await db.policyVersion.findFirst({
