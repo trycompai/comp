@@ -211,7 +211,10 @@ const gramMcpClient =
         disabled: false,
         redirectUrls: [process.env.GRAM_OAUTH_REDIRECT_URI],
         metadata: null,
-        skipConsent: false,
+        // First-party client: Gram is Comp AI's own hosted MCP, so the user's
+        // login (Sign in with Google) IS the authorization — no separate consent
+        // screen is needed. This also avoids having to build a consent page UI.
+        skipConsent: true,
       }
     : null;
 
