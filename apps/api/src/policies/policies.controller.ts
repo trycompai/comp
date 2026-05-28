@@ -570,7 +570,7 @@ export class PoliciesController {
       fileType = file.mimetype;
     } else if (body.fileData && body.fileName && body.fileType) {
       const stripped = body.fileData.replace(/\s/g, '');
-      if (!/^[A-Za-z0-9+/]*={0,2}$/.test(stripped) || stripped.length % 4 !== 0) {
+      if (!/^[A-Za-z0-9+/\-_]*={0,2}$/.test(stripped)) {
         throw new BadRequestException('fileData must be valid base64-encoded content');
       }
       fileBuffer = Buffer.from(stripped, 'base64');
