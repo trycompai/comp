@@ -35,6 +35,7 @@ vi.mock('@trycompai/design-system/icons', () => ({
   WarningAlt: () => <span>!</span>,
   ChevronDown: () => <span>v</span>,
   ChevronUp: () => <span>^</span>,
+  ArrowRight: () => <span>→</span>,
 }));
 
 import { OverviewNudges } from './OverviewNudges';
