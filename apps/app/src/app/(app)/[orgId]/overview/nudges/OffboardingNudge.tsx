@@ -57,7 +57,7 @@ function OffboardingNudgeView({
         } offboarding completion`}
       </AlertTitle>
       <div className="col-start-2 pt-1">
-        <Button variant="secondary" render={<Link href={link} />}>
+        <Button variant="outline" render={<Link href={link} />}>
           View details
         </Button>
       </div>
