@@ -57,8 +57,11 @@ model IsmsDocument {
   updatedAt DateTime @updatedAt
 
   // Relationships
-  versions      IsmsDocumentVersion[]
-  contextIssues IsmsContextIssue[] // 4.1 register; other registers added with their sub-tickets
+  versions                    IsmsDocumentVersion[]
+  contextIssues               IsmsContextIssue[] // 4.1 register
+  interestedParties           IsmsInterestedParty[] // 4.2a register
+  interestedPartyRequirements IsmsInterestedPartyRequirement[] // 4.2b/c register
+  objectives                  IsmsObjective[] // 6.2 register
 
   @@unique([organizationId, frameworkId, type]) // one document per type per framework per org
   @@index([organizationId, type])
@@ -105,6 +108,8 @@ enum IsmsContextIssueKind {
   external
 }
 
+// Shared across every ISMS register: distinguishes auto-derived rows from
+// user-authored / overridden ones (the override is recorded by the flip to manual).
 enum IsmsContextSource {
   derived // auto-populated from platform data
   manual // user-authored, or a derived value the user overrode (override recorded)
@@ -127,4 +132,86 @@ model IsmsContextIssue {
   updatedAt DateTime @updatedAt
 
   @@index([documentId, kind])
+}
+
+// --- Register: Interested Parties (clause 4.2a) ---
+
+model IsmsInterestedParty {
+  id         String       @id @default(dbgenerated("generate_prefixed_cuid('isms_ip'::text)"))
+  documentId String
+  document   IsmsDocument @relation(fields: [documentId], references: [id], onDelete: Cascade)
+
+  name              String // the interested party, e.g. "Customers", "Regulators (GDPR)", "Acme Cloud Ltd"
+  category          String // grouping, e.g. "Customer", "Regulator", "Supplier", "Employee", "Shareholder"
+  needsExpectations String // the party's relevant needs and expectations (4.2a)
+
+  source      IsmsContextSource @default(derived)
+  derivedFrom String? // e.g. "vendor:<id>", "framework:iso27001", "members"
+
+  position  Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  requirements IsmsInterestedPartyRequirement[]
+
+  @@index([documentId])
+}
+
+// --- Register: Interested Parties Requirements & ISMS Treatment (clauses 4.2b, 4.2c) ---
+
+model IsmsInterestedPartyRequirement {
+  id         String       @id @default(dbgenerated("generate_prefixed_cuid('isms_ipr'::text)"))
+  documentId String
+  document   IsmsDocument @relation(fields: [documentId], references: [id], onDelete: Cascade)
+
+  // Optional link to a party from the Interested Parties Register. partyName is kept
+  // denormalized so this register reads standalone even if the party row changes.
+  interestedPartyId String?
+  interestedParty   IsmsInterestedParty? @relation(fields: [interestedPartyId], references: [id], onDelete: SetNull)
+  partyName         String
+
+  requirement String // the party's requirement (4.2b)
+  treatment   String // whether and how the ISMS addresses it (4.2c)
+
+  source      IsmsContextSource @default(derived)
+  derivedFrom String?
+
+  position  Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([documentId])
+  @@index([interestedPartyId])
+}
+
+// --- Register: Information Security Objectives (clause 6.2) ---
+
+enum IsmsObjectiveStatus {
+  not_started
+  on_track
+  at_risk
+  met
+}
+
+model IsmsObjective {
+  id         String       @id @default(dbgenerated("generate_prefixed_cuid('isms_obj'::text)"))
+  documentId String
+  document   IsmsDocument @relation(fields: [documentId], references: [id], onDelete: Cascade)
+
+  objective         String // what we are trying to achieve (6.2)
+  target            String? // measurable target / KPI
+  ownerMemberId     String? // responsible member (plain id, like IsmsDocumentVersion.publishedById)
+  cadence           String? // monitoring cadence, e.g. "Quarterly"
+  plan              String? // what will be done, with what resources, by when (6.2)
+  measurementMethod String? // how results are evaluated
+  status            IsmsObjectiveStatus @default(not_started)
+
+  source      IsmsContextSource @default(derived)
+  derivedFrom String?
+
+  position  Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([documentId])
 }
