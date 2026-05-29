@@ -1,7 +1,7 @@
 {
   "manifest_version": "0.3",
   "name": "@trycompai/mcp-server",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "",
   "long_description": "Comp AI API: Compliance automation API for SOC 2, ISO 27001, HIPAA, GDPR, evidence collection, policy workflows, Trust Access, security questionnaires, integrations, cloud checks, and device compliance.",
   "author": {
@@ -1322,63 +1322,63 @@
     },
     {
       "name": "get-pending-offboardings",
-      "description": "Get members with pending offboarding checklists\n\nGet members with pending offboarding checklists in Comp AI."
+      "description": "Get members with pending offboarding checklists\n\nLists members whose offboarding checklist is still incomplete, with their outstanding items, so you can track and finish departing-employee offboarding."
     },
     {
       "name": "get-template",
-      "description": ""
+      "description": "Get the offboarding checklist template\n\nReturns the organization's offboarding checklist template: the ordered set of items every departing member must complete during their offboarding."
     },
     {
       "name": "create-template-item",
-      "description": ""
+      "description": "Add an offboarding checklist template item\n\nCreates a new item in the organization's offboarding checklist template so it appears on every member's offboarding checklist from now on."
     },
     {
       "name": "update-template-item",
-      "description": ""
+      "description": "Update an offboarding checklist template item\n\nUpdates an existing offboarding checklist template item by id, changing its label, description, or settings on the organization's offboarding template."
     },
     {
       "name": "delete-template-item",
-      "description": ""
+      "description": "Delete an offboarding checklist template item\n\nRemoves an item from the organization's offboarding checklist template by id so it no longer appears on members' offboarding checklists."
     },
     {
       "name": "get-member-checklist",
-      "description": ""
+      "description": "Get a member's offboarding checklist\n\nReturns the offboarding checklist for a specific member, including each item and whether it has been completed, to track that person's offboarding progress."
     },
     {
       "name": "offboarding-checklist-export-all-evidence",
-      "description": "Export all offboarding evidence as a zip file\n\nExport all offboarding evidence as a zip file in Comp AI."
+      "description": "Export all offboarding evidence as a zip file\n\nExports a zip archive containing the offboarding checklist evidence for every member in the organization, for audits, handovers, or record-keeping."
     },
     {
       "name": "export-evidence",
-      "description": "Export offboarding evidence as a zip file\n\nExport offboarding evidence as a zip file in Comp AI."
+      "description": "Export offboarding evidence as a zip file\n\nExports a zip archive of the offboarding checklist evidence collected for a single member, for audit, handover, or record-keeping purposes."
     },
     {
       "name": "complete-item",
-      "description": ""
+      "description": "Complete an offboarding checklist item\n\nMarks a specific offboarding checklist item complete for a member, recording who completed it and when, as part of finishing that member's offboarding."
     },
     {
       "name": "uncomplete-item",
-      "description": ""
+      "description": "Reopen an offboarding checklist item\n\nReverts a previously completed offboarding checklist item back to incomplete for a member, in case the step was marked done by mistake."
     },
     {
       "name": "upload-evidence",
-      "description": ""
+      "description": "Upload evidence for an offboarding checklist item\n\nAttaches a supporting evidence file to a member's completed offboarding checklist item, documenting that the offboarding step was actually carried out."
     },
     {
       "name": "get-access-revocations",
-      "description": "Get vendor access revocation status for a member\n\nGet vendor access revocation status for a member in Comp AI."
+      "description": "Get vendor access revocation status for a member\n\nLists the vendors a departing member had access to and whether each has been revoked, so you can confirm all vendor access is removed during offboarding."
     },
     {
       "name": "revoke-all-vendor-access",
-      "description": "Confirm all vendor access as revoked\n\nConfirm all vendor access as revoked in Comp AI."
+      "description": "Confirm all vendor access as revoked\n\nMarks every vendor access record for a departing member as revoked in one step, recording who confirmed it, to complete access removal during offboarding."
     },
     {
       "name": "revoke-vendor-access",
-      "description": "Mark vendor access as revoked\n\nMark vendor access as revoked in Comp AI."
+      "description": "Mark vendor access as revoked\n\nMarks a single vendor's access for a departing member as revoked, optionally attaching evidence and notes, as part of offboarding access removal."
     },
     {
       "name": "undo-vendor-revocation",
-      "description": "Undo vendor access revocation\n\nUndo vendor access revocation in Comp AI."
+      "description": "Undo vendor access revocation\n\nReverses a vendor access revocation for a member, marking that vendor's access as not revoked again, in case it was confirmed by mistake during offboarding."
     }
   ]
 }

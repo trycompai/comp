@@ -26,6 +26,11 @@ import { APICall, APIPromise } from "../types/async.js";
 import { Result } from "../types/fp.js";
 
 /**
+ * Add an offboarding checklist template item
+ *
+ * @remarks
+ * Creates a new item in the organization's offboarding checklist template so it appears on every member's offboarding checklist from now on.
+ *
  * If set, this operation will use {@link Security.apikey} from the global security.
  */
 export function offboardingChecklistOffboardingChecklistControllerCreateTemplateItemV1(

@@ -47,6 +47,7 @@ import { FrameworkVersionsModule } from './framework-editor-versions/framework-v
 import { AuditModule } from './audit/audit.module';
 import { ControlsModule } from './controls/controls.module';
 import { RolesModule } from './roles/roles.module';
+import { McpModule } from './mcp/mcp.module';
 import { EmailModule } from './email/email.module';
 import { SecretsModule } from './secrets/secrets.module';
 import { SecurityPenetrationTestsModule } from './security-penetration-tests/security-penetration-tests.module';
@@ -126,6 +127,7 @@ import { OffboardingChecklistModule } from './offboarding-checklist/offboarding-
     AdminFeatureFlagsModule,
     TimelinesModule,
     OffboardingChecklistModule,
+    McpModule,
   ],
   controllers: [AppController],
   providers: [

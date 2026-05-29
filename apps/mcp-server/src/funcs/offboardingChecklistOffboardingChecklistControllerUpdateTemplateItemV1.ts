@@ -26,6 +26,11 @@ import { APICall, APIPromise } from "../types/async.js";
 import { Result } from "../types/fp.js";
 
 /**
+ * Update an offboarding checklist template item
+ *
+ * @remarks
+ * Updates an existing offboarding checklist template item by id, changing its label, description, or settings on the organization's offboarding template.
+ *
  * If set, this operation will use {@link Security.apikey} from the global security.
  */
 export function offboardingChecklistOffboardingChecklistControllerUpdateTemplateItemV1(

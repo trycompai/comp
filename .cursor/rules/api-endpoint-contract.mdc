@@ -1,5 +1,6 @@
 ---
 description: Use when writing/editing NestJS API endpoints, DTOs, or @Body() params under apps/api/src/. Ensures every endpoint is correct for OpenAPI, the MCP server (@trycompai/mcp-server), and the ValidationPipe.
+globs: apps/api/src/**/*.controller.ts,apps/api/src/**/*.dto.ts
 alwaysApply: false
 ---
 
@@ -7,7 +8,7 @@ alwaysApply: false
 
 Every customer-facing endpoint in `apps/api/src/` flows into three systems: the OpenAPI spec (`packages/docs/openapi.json`), the MCP server (`@trycompai/mcp-server` on npm), and the runtime `ValidationPipe`. If any one is wrong, the endpoint silently breaks for agents or fails validation at runtime.
 
-## The 10 rules
+## The 11 rules
 
 ### 1. DTOs MUST be classes — never interfaces, never inline types
 
@@ -98,6 +99,12 @@ SSE streams (`@ApiProduces('text/event-stream')`) and binary file responses cann
     x-speakeasy-mcp:
       disabled: true
 ```
+
+### 11. Every endpoint MUST have a meaningful summary + description — it powers MCP discovery
+
+`@ApiOperation({ summary, description })` is **not optional**. `openapi-docs.spec.ts` (via `collectPublicOpenApiIssues`) **fails CI** on empty `summary` (`missingSummaries`), missing `description`/metadata (`missingMetadata`), or SEO metadata outside 80–160 chars / title > 60 (`invalidSeo`).
+
+The hosted MCP (Gram) uses **dynamic toolsets**: with 300+ tools the agent semantic-`search`es over names + descriptions and only loads matches. A weak/missing description = the tool is **undiscoverable**. Write it for the agent deciding whether to call the tool: what it does + when to use it (≤ 240 chars, Rule 4).
 
 ## Checklist when adding a body endpoint
 

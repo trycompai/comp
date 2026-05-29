@@ -20,6 +20,7 @@ export interface AuthenticatedRequest extends Request {
   impersonatedBy?: string; // User ID of the admin who initiated impersonation (only set during impersonation sessions)
   sessionId?: string; // Session ID (only set for session auth)
   sessionDeviceAgent?: boolean; // Whether the session is a device-agent session (only set for session auth)
+  isMcpOAuth?: boolean; // True when authenticated via a hosted-MCP OAuth token (no real session). PermissionGuard checks RBAC from userRoles instead of better-auth's session-based hasPermission.
 }
 
 export interface AuthContext {

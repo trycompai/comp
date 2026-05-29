@@ -13,7 +13,9 @@ const args = {
 export const tool$offboardingChecklistOffboardingChecklistControllerCompleteItemV1:
   ToolDefinition<typeof args> = {
     name: "complete-item",
-    description: ``,
+    description: `Complete an offboarding checklist item
+
+Marks a specific offboarding checklist item complete for a member, recording who completed it and when, as part of finishing that member's offboarding.`,
     annotations: {
       "title": "",
       "destructiveHint": false,
