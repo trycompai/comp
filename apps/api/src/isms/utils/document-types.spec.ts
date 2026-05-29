@@ -1,7 +1,4 @@
-import {
-  ISMS_TYPE_DEFINITIONS,
-  matchRequirementId,
-} from './document-types';
+import { ISMS_TYPE_DEFINITIONS, matchRequirementId } from './document-types';
 
 describe('ISMS_TYPE_DEFINITIONS', () => {
   it('defines all six foundational document types with clauses', () => {
@@ -30,7 +27,11 @@ describe('ISMS_TYPE_DEFINITIONS', () => {
 
 describe('matchRequirementId', () => {
   const requirements = [
-    { id: 'req-41', name: '4.1 Understanding the organization', identifier: '4.1' },
+    {
+      id: 'req-41',
+      name: '4.1 Understanding the organization',
+      identifier: '4.1',
+    },
     { id: 'req-42', name: '4.2 Interested parties', identifier: '4.2' },
     { id: 'req-141', name: '14.1 Security in development', identifier: '14.1' },
   ];
@@ -64,7 +65,9 @@ describe('matchRequirementId', () => {
     expect(
       matchRequirementId({
         clause: '4.1',
-        requirements: [{ id: 'req-411', name: '4.11 Other', identifier: '4.11' }],
+        requirements: [
+          { id: 'req-411', name: '4.11 Other', identifier: '4.11' },
+        ],
       }),
     ).toBeNull();
   });

@@ -1,12 +1,12 @@
 import type { Prisma } from '@db';
-import type { ContextSourceSnapshot } from './context-derivation';
 
 const EMPTY_NARRATIVE: Prisma.InputJsonValue = {};
 
 /**
  * Persist the derived-data snapshot onto the document's latest version, creating
  * version 1 if none exists. The snapshot is the drift baseline. Serializing
- * through JSON keeps it a plain Prisma.InputJsonValue without unsafe casts.
+ * through JSON keeps it a plain Prisma.InputJsonValue without unsafe casts. The
+ * existing narrative is preserved (only sourceSnapshot is written).
  */
 export async function upsertLatestSnapshotVersion({
   tx,
@@ -15,7 +15,7 @@ export async function upsertLatestSnapshotVersion({
 }: {
   tx: Prisma.TransactionClient;
   documentId: string;
-  snapshot: ContextSourceSnapshot;
+  snapshot: unknown;
 }): Promise<void> {
   const sourceSnapshot: Prisma.InputJsonValue = JSON.parse(
     JSON.stringify(snapshot),

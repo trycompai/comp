@@ -4,9 +4,9 @@ import {
   DOCX_MIME_TYPE,
   metadataLines,
   type IsmsExportFormat,
-  type IsmsExportIssue,
   type IsmsExportMetadata,
   type IsmsExportResult,
+  type IsmsExportSection,
 } from './export-shared';
 
 export type {
@@ -14,14 +14,15 @@ export type {
   IsmsExportIssue,
   IsmsExportMetadata,
   IsmsExportResult,
+  IsmsExportSection,
 } from './export-shared';
 
 export async function generateIsmsExportFile({
-  issues,
+  sections,
   metadata,
   format,
 }: {
-  issues: IsmsExportIssue[];
+  sections: IsmsExportSection[];
   metadata: IsmsExportMetadata;
   format: IsmsExportFormat;
 }): Promise<IsmsExportResult> {
@@ -29,14 +30,14 @@ export async function generateIsmsExportFile({
 
   if (format === 'docx') {
     return {
-      fileBuffer: await renderIsmsDocx({ issues, metadata }),
+      fileBuffer: await renderIsmsDocx({ sections, metadata }),
       mimeType: DOCX_MIME_TYPE,
       filename: `${baseName}.docx`,
     };
   }
 
   return {
-    fileBuffer: generateIsmsPdf({ issues, metadata }),
+    fileBuffer: generateIsmsPdf({ sections, metadata }),
     mimeType: 'application/pdf',
     filename: `${baseName}.pdf`,
   };
@@ -54,10 +55,10 @@ function hexToRgb(hex: string | null): { r: number; g: number; b: number } {
 }
 
 function generateIsmsPdf({
-  issues,
+  sections,
   metadata,
 }: {
-  issues: IsmsExportIssue[];
+  sections: IsmsExportSection[];
   metadata: IsmsExportMetadata;
 }): Buffer {
   const pdf = new jsPDF();
@@ -79,7 +80,6 @@ function generateIsmsPdf({
     lines: string[],
     fontStyle: 'normal' | 'bold' = 'normal',
   ) => {
-    if (lines.length === 0) return;
     pdf.setFont('helvetica', fontStyle);
     for (const line of lines) {
       ensureSpace(lineHeight);
@@ -104,6 +104,7 @@ function generateIsmsPdf({
 
   pdf.setFont('helvetica', 'bold');
   pdf.setFontSize(16);
+  pdf.setTextColor(0, 0, 0);
   pdf.text(metadata.title, margin, y);
   y += lineHeight * 1.8;
 
@@ -116,46 +117,54 @@ function generateIsmsPdf({
   }
   y += lineHeight;
 
-  writeSection({
-    heading: 'External issues',
-    issues: issues.filter((issue) => issue.kind === 'external'),
-  });
-  writeSection({
-    heading: 'Internal issues',
-    issues: issues.filter((issue) => issue.kind === 'internal'),
-  });
+  for (const section of sections) {
+    writeSection(section);
+  }
 
-  function writeSection({
-    heading,
-    issues: sectionIssues,
-  }: {
-    heading: string;
-    issues: IsmsExportIssue[];
-  }) {
+  function writeSection(section: IsmsExportSection) {
     pdf.setTextColor(accent.r, accent.g, accent.b);
     pdf.setFontSize(13);
     ensureSpace(lineHeight * 1.5);
     pdf.setFont('helvetica', 'bold');
-    pdf.text(heading, margin, y);
+    pdf.text(section.heading, margin, y);
     y += lineHeight * 1.4;
     pdf.setTextColor(0, 0, 0);
     pdf.setFontSize(11);
 
-    if (sectionIssues.length === 0) {
-      writeLines(['No issues recorded.']);
+    const hasParagraphs = section.paragraphs && section.paragraphs.length > 0;
+    const hasTable = section.table && section.table.rows.length > 0;
+
+    if (!hasParagraphs && !hasTable) {
+      writeLines([section.emptyText ?? 'No entries recorded.']);
       y += lineHeight * 0.5;
       return;
     }
 
-    sectionIssues.forEach((issue, index) => {
-      const title = `${index + 1}. ${issue.description}`;
-      writeLines(pdf.splitTextToSize(title, contentWidth), 'bold');
+    for (const paragraph of section.paragraphs ?? []) {
+      const text = paragraph.label
+        ? `${paragraph.label}${paragraph.text}`
+        : paragraph.text;
       writeLines(
-        pdf.splitTextToSize(`Effect: ${issue.effect}`, contentWidth),
+        pdf.splitTextToSize(text, contentWidth),
+        paragraph.bold ? 'bold' : 'normal',
       );
-      ensureSpace(lineHeight * 0.5);
-      y += lineHeight * 0.5;
-    });
+    }
+
+    if (hasTable && section.table) {
+      writeTable(section.table);
+    }
+    y += lineHeight * 0.5;
+  }
+
+  function writeTable(table: NonNullable<IsmsExportSection['table']>) {
+    writeLines([table.headers.join('  |  ')], 'bold');
+    for (const row of table.rows) {
+      row.forEach((cell, index) => {
+        const text = `${table.headers[index] ?? ''}: ${cell}`;
+        writeLines(pdf.splitTextToSize(text, contentWidth));
+      });
+      y += lineHeight * 0.4;
+    }
   }
 
   return Buffer.from(pdf.output('arraybuffer'));

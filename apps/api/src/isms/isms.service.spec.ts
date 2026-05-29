@@ -1,7 +1,7 @@
 import { ForbiddenException, NotFoundException } from '@nestjs/common';
 import { db } from '@db';
 import { IsmsService } from './isms.service';
-import { collectContextData } from './utils/context-data-source';
+import { collectPlatformData } from './documents/data-source';
 import { upsertLatestSnapshotVersion } from './utils/version-snapshot';
 
 jest.mock('@db', () => ({
@@ -17,15 +17,15 @@ jest.mock('@db', () => ({
     $transaction: jest.fn(),
   },
 }));
-jest.mock('./utils/context-data-source', () => ({
-  collectContextData: jest.fn(),
+jest.mock('./documents/data-source', () => ({
+  collectPlatformData: jest.fn(),
 }));
 jest.mock('./utils/version-snapshot', () => ({
   upsertLatestSnapshotVersion: jest.fn(),
 }));
 
 const mockDb = jest.mocked(db);
-const mockCollect = jest.mocked(collectContextData);
+const mockCollect = jest.mocked(collectPlatformData);
 
 describe('IsmsService', () => {
   let service: IsmsService;
@@ -39,21 +39,21 @@ describe('IsmsService', () => {
     const dto = { organizationId: 'org_1', frameworkId: 'fw_1' };
 
     it('throws NotFoundException when framework not found', async () => {
-      (mockDb.frameworkEditorFramework.findUnique as jest.Mock).mockResolvedValue(
-        null,
-      );
+      (
+        mockDb.frameworkEditorFramework.findUnique as jest.Mock
+      ).mockResolvedValue(null);
       await expect(service.ensureSetup(dto)).rejects.toThrow(NotFoundException);
     });
 
     it('creates only missing document types and maps requirements', async () => {
-      (mockDb.frameworkEditorFramework.findUnique as jest.Mock).mockResolvedValue(
-        {
-          id: 'fw_1',
-          requirements: [
-            { id: 'req_41', name: '4.1 Context', identifier: '4.1' },
-          ],
-        },
-      );
+      (
+        mockDb.frameworkEditorFramework.findUnique as jest.Mock
+      ).mockResolvedValue({
+        id: 'fw_1',
+        requirements: [
+          { id: 'req_41', name: '4.1 Context', identifier: '4.1' },
+        ],
+      });
       // One existing type so only the other five are created.
       (mockDb.ismsDocument.findMany as jest.Mock)
         .mockResolvedValueOnce([{ type: 'context_of_organization' }])
@@ -81,9 +81,9 @@ describe('IsmsService', () => {
     });
 
     it('leaves requirementId null when no clause matches', async () => {
-      (mockDb.frameworkEditorFramework.findUnique as jest.Mock).mockResolvedValue(
-        { id: 'fw_1', requirements: [] },
-      );
+      (
+        mockDb.frameworkEditorFramework.findUnique as jest.Mock
+      ).mockResolvedValue({ id: 'fw_1', requirements: [] });
       (mockDb.ismsDocument.findMany as jest.Mock)
         .mockResolvedValueOnce([])
         .mockResolvedValueOnce([]);
@@ -193,13 +193,19 @@ describe('IsmsService', () => {
         })
         .mockResolvedValueOnce({ id: 'doc_1', status: 'approved' });
       mockCollect.mockResolvedValue({
+        organizationName: 'Acme',
         frameworkNames: ['ISO 27001'],
         vendorCount: 1,
         subProcessorCount: 0,
         vendorsByCategory: {},
+        subProcessorNames: [],
+        infraVendorNames: [],
         memberCount: 1,
         membersByDepartment: {},
         deviceCount: 0,
+        riskCount: 0,
+        highRiskCount: 0,
+        hasTrainingProgram: false,
       });
       const tx = {
         ismsDocument: { update: jest.fn().mockResolvedValue({}) },

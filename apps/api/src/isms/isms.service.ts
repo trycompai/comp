@@ -10,7 +10,7 @@ import {
   ISMS_TYPE_DEFINITIONS,
   matchRequirementId,
 } from './utils/document-types';
-import { collectContextData } from './utils/context-data-source';
+import { collectPlatformData } from './documents/data-source';
 import { upsertLatestSnapshotVersion } from './utils/version-snapshot';
 
 /**
@@ -90,6 +90,9 @@ export class IsmsService {
       include: {
         versions: { where: { isLatest: true }, take: 1 },
         contextIssues: { orderBy: { position: 'asc' } },
+        interestedParties: { orderBy: { position: 'asc' } },
+        interestedPartyRequirements: { orderBy: { position: 'asc' } },
+        objectives: { orderBy: { position: 'asc' } },
       },
     });
 
@@ -145,7 +148,7 @@ export class IsmsService {
       throw new ForbiddenException('Document is not pending your approval');
     }
 
-    const snapshot = await collectContextData({
+    const snapshot = await collectPlatformData({
       organizationId,
       frameworkId: document.frameworkId,
     });

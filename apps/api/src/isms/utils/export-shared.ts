@@ -27,6 +27,30 @@ export interface IsmsExportResult {
   filename: string;
 }
 
+/** A heading + a stack of paragraphs and/or tables. The unit of every export. */
+export interface IsmsExportSection {
+  heading: string;
+  /** Free-text paragraphs rendered under the heading, before any table. */
+  paragraphs?: IsmsExportParagraph[];
+  /** Optional tabular content (registers render as tables). */
+  table?: IsmsExportTable;
+  /** Shown (instead of paragraphs/table) when the section has no content. */
+  emptyText?: string;
+}
+
+export interface IsmsExportParagraph {
+  /** Optional bold lead-in label, e.g. "Effect: ". */
+  label?: string;
+  text: string;
+  /** Render the whole paragraph bold (used for numbered list titles). */
+  bold?: boolean;
+}
+
+export interface IsmsExportTable {
+  headers: string[];
+  rows: string[][];
+}
+
 export const DOCX_MIME_TYPE =
   'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
 

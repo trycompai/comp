@@ -1,28 +1,33 @@
-import {
-  BadRequestException,
-  Injectable,
-  NotFoundException,
-} from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { db } from '@db';
-import type { Prisma } from '@db';
 import { ExportIsmsDocumentDto } from './dto/export-isms-document.dto';
-import { collectContextData } from './utils/context-data-source';
+import { collectPlatformData } from './documents/data-source';
+import { runDerivation } from './documents/generate';
+import { buildExportSections } from './documents/registry';
 import {
-  deriveContextIssues,
-  diffSnapshots,
-  type ContextSourceSnapshot,
-} from './utils/context-derivation';
+  diffPlatformSnapshots,
+  parsePlatformSnapshot,
+} from './documents/snapshot';
+import type { DocumentExportInput } from './documents/types';
 import {
   generateIsmsExportFile,
-  type IsmsExportIssue,
   type IsmsExportResult,
 } from './utils/export-generator';
 import { upsertLatestSnapshotVersion } from './utils/version-snapshot';
 
+const DOCUMENT_INCLUDE = {
+  versions: { where: { isLatest: true }, take: 1 },
+  contextIssues: { orderBy: { position: 'asc' } },
+  interestedParties: { orderBy: { position: 'asc' } },
+  interestedPartyRequirements: { orderBy: { position: 'asc' } },
+  objectives: { orderBy: { position: 'asc' } },
+} as const;
+
 /**
- * Context-of-the-Organization (clause 4.1) derivation, drift detection and
- * export. Kept separate from IsmsService so each file stays focused; the lifecycle
- * (approve/decline/submit) lives in IsmsService.
+ * ISMS document derivation, drift detection and export. Dispatches by document
+ * type to the per-document handlers under ./documents. Document lifecycle
+ * (approve/decline/submit) lives in IsmsService; register CRUD in the register
+ * services.
  */
 @Injectable()
 export class IsmsContextService {
@@ -36,48 +41,28 @@ export class IsmsContextService {
     const document = await db.ismsDocument.findFirst({
       where: { id: documentId, organizationId },
     });
-
     if (!document) {
       throw new NotFoundException('ISMS document not found');
     }
 
-    if (document.type !== 'context_of_organization') {
-      throw new BadRequestException(
-        `Generation not yet implemented for type ${document.type}`,
-      );
-    }
-
-    const snapshot = await collectContextData({
+    const data = await collectPlatformData({
       organizationId,
       frameworkId: document.frameworkId,
     });
-    const derived = deriveContextIssues(snapshot);
 
     await db.$transaction(async (tx) => {
-      await tx.ismsContextIssue.deleteMany({
-        where: { documentId, source: 'derived' },
+      await runDerivation({
+        tx,
+        type: document.type,
+        documentId,
+        organizationId,
+        frameworkId: document.frameworkId,
+        data,
       });
-      // Manual rows are preserved; derived rows are appended after them.
-      const manualCount = await tx.ismsContextIssue.count({
-        where: { documentId, source: 'manual' },
-      });
-      if (derived.length > 0) {
-        await tx.ismsContextIssue.createMany({
-          data: derived.map((issue, index) => ({
-            documentId,
-            kind: issue.kind,
-            description: issue.description,
-            effect: issue.effect,
-            source: issue.source,
-            derivedFrom: issue.derivedFrom,
-            position: manualCount + index,
-          })),
-        });
-      }
-      await upsertLatestSnapshotVersion({ tx, documentId, snapshot });
+      await upsertLatestSnapshotVersion({ tx, documentId, snapshot: data });
     });
 
-    return this.getDocumentWithIssues({ documentId, organizationId });
+    return this.loadDocument({ documentId, organizationId });
   }
 
   async drift({
@@ -91,18 +76,19 @@ export class IsmsContextService {
       where: { id: documentId, organizationId },
       include: { versions: { where: { isLatest: true }, take: 1 } },
     });
-
     if (!document) {
       throw new NotFoundException('ISMS document not found');
     }
 
-    const current = await collectContextData({
+    const current = await collectPlatformData({
       organizationId,
       frameworkId: document.frameworkId,
     });
-    const previous = parseSnapshot(document.versions[0]?.sourceSnapshot);
+    const previous = parsePlatformSnapshot(
+      document.versions[0]?.sourceSnapshot,
+    );
 
-    return diffSnapshots({ previous, current });
+    return diffPlatformSnapshots({ type: document.type, previous, current });
   }
 
   async exportDocument({
@@ -120,23 +106,44 @@ export class IsmsContextService {
         framework: { select: { name: true } },
         organization: { select: { name: true, primaryColor: true } },
         approver: { select: { user: { select: { name: true, email: true } } } },
-        contextIssues: { orderBy: { position: 'asc' } },
-        versions: { where: { isLatest: true }, take: 1 },
+        ...DOCUMENT_INCLUDE,
       },
     });
-
     if (!document) {
       throw new NotFoundException('ISMS document not found');
     }
 
-    const issues: IsmsExportIssue[] = document.contextIssues.map((issue) => ({
-      kind: issue.kind,
-      description: issue.description,
-      effect: issue.effect,
-    }));
+    const input: DocumentExportInput = {
+      contextIssues: document.contextIssues.map((issue) => ({
+        kind: issue.kind,
+        description: issue.description,
+        effect: issue.effect,
+      })),
+      interestedParties: document.interestedParties.map((party) => ({
+        name: party.name,
+        category: party.category,
+        needsExpectations: party.needsExpectations,
+      })),
+      requirements: document.interestedPartyRequirements.map((row) => ({
+        partyName: row.partyName,
+        requirement: row.requirement,
+        treatment: row.treatment,
+      })),
+      objectives: document.objectives.map((objective) => ({
+        objective: objective.objective,
+        target: objective.target,
+        cadence: objective.cadence,
+        status: objective.status,
+        plan: objective.plan,
+        measurementMethod: objective.measurementMethod,
+      })),
+      narrative: document.versions[0]?.narrative ?? null,
+    };
+
+    const sections = buildExportSections({ type: document.type, input });
 
     return generateIsmsExportFile({
-      issues,
+      sections,
       format: dto.format,
       metadata: {
         title: document.title,
@@ -156,7 +163,7 @@ export class IsmsContextService {
     });
   }
 
-  private async getDocumentWithIssues({
+  private async loadDocument({
     documentId,
     organizationId,
   }: {
@@ -165,47 +172,7 @@ export class IsmsContextService {
   }) {
     return db.ismsDocument.findFirst({
       where: { id: documentId, organizationId },
-      include: {
-        versions: { where: { isLatest: true }, take: 1 },
-        contextIssues: { orderBy: { position: 'asc' } },
-      },
+      include: DOCUMENT_INCLUDE,
     });
   }
-}
-
-function parseSnapshot(
-  value: Prisma.JsonValue | null | undefined,
-): ContextSourceSnapshot | null {
-  if (!value || typeof value !== 'object' || Array.isArray(value)) {
-    return null;
-  }
-  const record = value as Record<string, unknown>;
-  return {
-    frameworkNames: toStringArray(record.frameworkNames),
-    vendorCount: toNumber(record.vendorCount),
-    subProcessorCount: toNumber(record.subProcessorCount),
-    vendorsByCategory: toNumberRecord(record.vendorsByCategory),
-    memberCount: toNumber(record.memberCount),
-    membersByDepartment: toNumberRecord(record.membersByDepartment),
-    deviceCount: toNumber(record.deviceCount),
-  };
-}
-
-function toNumber(value: unknown): number {
-  return typeof value === 'number' ? value : 0;
-}
-
-function toStringArray(value: unknown): string[] {
-  return Array.isArray(value)
-    ? value.filter((item): item is string => typeof item === 'string')
-    : [];
-}
-
-function toNumberRecord(value: unknown): Record<string, number> {
-  if (!value || typeof value !== 'object' || Array.isArray(value)) return {};
-  const result: Record<string, number> = {};
-  for (const [key, item] of Object.entries(value)) {
-    if (typeof item === 'number') result[key] = item;
-  }
-  return result;
 }

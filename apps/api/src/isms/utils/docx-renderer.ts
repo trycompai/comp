@@ -3,12 +3,17 @@ import {
   HeadingLevel,
   Packer,
   Paragraph,
+  Table,
+  TableCell,
+  TableRow,
   TextRun,
+  WidthType,
 } from 'docx';
 import {
   metadataLines,
-  type IsmsExportIssue,
   type IsmsExportMetadata,
+  type IsmsExportParagraph,
+  type IsmsExportSection,
 } from './export-shared';
 
 const DEFAULT_ACCENT = '004D3D';
@@ -28,57 +33,107 @@ function metadataParagraphs(metadata: IsmsExportMetadata): Paragraph[] {
   );
 }
 
-function sectionParagraphs({
-  heading,
-  issues,
+function paragraphRuns(paragraph: IsmsExportParagraph): TextRun[] {
+  const runs: TextRun[] = [];
+  if (paragraph.label) {
+    runs.push(new TextRun({ text: paragraph.label, bold: true }));
+  }
+  runs.push(new TextRun({ text: paragraph.text, bold: paragraph.bold }));
+  return runs;
+}
+
+function tableElement({
+  table,
   accent,
 }: {
-  heading: string;
-  issues: IsmsExportIssue[];
+  table: NonNullable<IsmsExportSection['table']>;
   accent: string;
-}): Paragraph[] {
-  const paragraphs: Paragraph[] = [
+}): Table {
+  const headerRow = new TableRow({
+    children: table.headers.map(
+      (header) =>
+        new TableCell({
+          children: [
+            new Paragraph({
+              children: [
+                new TextRun({ text: header, bold: true, color: accent }),
+              ],
+            }),
+          ],
+        }),
+    ),
+  });
+  const bodyRows = table.rows.map(
+    (row) =>
+      new TableRow({
+        children: row.map(
+          (cell) =>
+            new TableCell({
+              children: [
+                new Paragraph({ children: [new TextRun({ text: cell })] }),
+              ],
+            }),
+        ),
+      }),
+  );
+  return new Table({
+    width: { size: 100, type: WidthType.PERCENTAGE },
+    rows: [headerRow, ...bodyRows],
+  });
+}
+
+function sectionElements({
+  section,
+  accent,
+}: {
+  section: IsmsExportSection;
+  accent: string;
+}): Array<Paragraph | Table> {
+  const elements: Array<Paragraph | Table> = [
     new Paragraph({
       heading: HeadingLevel.HEADING_2,
       spacing: { before: 240, after: 120 },
-      children: [new TextRun({ text: heading, bold: true, color: accent })],
+      children: [
+        new TextRun({ text: section.heading, bold: true, color: accent }),
+      ],
     }),
   ];
 
-  if (issues.length === 0) {
-    paragraphs.push(
+  const hasParagraphs = section.paragraphs && section.paragraphs.length > 0;
+  const hasTable = section.table && section.table.rows.length > 0;
+
+  if (!hasParagraphs && !hasTable) {
+    elements.push(
       new Paragraph({
-        children: [new TextRun({ text: 'No issues recorded.' })],
+        children: [
+          new TextRun({ text: section.emptyText ?? 'No entries recorded.' }),
+        ],
       }),
     );
-    return paragraphs;
+    return elements;
   }
 
-  issues.forEach((issue, index) => {
-    paragraphs.push(
+  for (const paragraph of section.paragraphs ?? []) {
+    elements.push(
       new Paragraph({
-        spacing: { before: 120 },
-        children: [
-          new TextRun({ text: `${index + 1}. ${issue.description}`, bold: true }),
-        ],
-      }),
-      new Paragraph({
-        children: [
-          new TextRun({ text: 'Effect: ', bold: true }),
-          new TextRun({ text: issue.effect }),
-        ],
+        spacing: { before: 80 },
+        children: paragraphRuns(paragraph),
       }),
     );
-  });
+  }
 
-  return paragraphs;
+  if (hasTable && section.table) {
+    elements.push(tableElement({ table: section.table, accent }));
+  }
+
+  return elements;
 }
 
 export async function renderIsmsDocx({
-  issues,
+  sections,
   metadata,
 }: {
-  issues: IsmsExportIssue[];
+  sections: IsmsExportSection[];
   metadata: IsmsExportMetadata;
 }): Promise<Buffer> {
   const accent = normalizeHexColor(metadata.primaryColor);
@@ -106,23 +161,14 @@ export async function renderIsmsDocx({
     }),
   );
 
+  const body = sections.flatMap((section) =>
+    sectionElements({ section, accent }),
+  );
+
   const doc = new Document({
     sections: [
       {
-        children: [
-          ...header,
-          ...metadataParagraphs(metadata),
-          ...sectionParagraphs({
-            heading: 'External issues',
-            issues: issues.filter((issue) => issue.kind === 'external'),
-            accent,
-          }),
-          ...sectionParagraphs({
-            heading: 'Internal issues',
-            issues: issues.filter((issue) => issue.kind === 'internal'),
-            accent,
-          }),
-        ],
+        children: [...header, ...metadataParagraphs(metadata), ...body],
       },
     ],
   });

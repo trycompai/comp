@@ -38,9 +38,9 @@ export interface DerivedContextIssue {
 /** The snapshot persisted onto the version for later drift comparison. */
 export type ContextSourceSnapshot = ContextDerivationInput;
 
-function buildExternalIssues(input: ContextDerivationInput): Array<
-  Omit<DerivedContextIssue, 'position'>
-> {
+function buildExternalIssues(
+  input: ContextDerivationInput,
+): Array<Omit<DerivedContextIssue, 'position'>> {
   const issues: Array<Omit<DerivedContextIssue, 'position'>> = [];
 
   for (const name of input.frameworkNames) {
@@ -78,9 +78,9 @@ function buildExternalIssues(input: ContextDerivationInput): Array<
   return issues;
 }
 
-function buildInternalIssues(input: ContextDerivationInput): Array<
-  Omit<DerivedContextIssue, 'position'>
-> {
+function buildInternalIssues(
+  input: ContextDerivationInput,
+): Array<Omit<DerivedContextIssue, 'position'>> {
   const issues: Array<Omit<DerivedContextIssue, 'position'>> = [];
 
   if (input.memberCount > 0) {
@@ -88,9 +88,7 @@ function buildInternalIssues(input: ContextDerivationInput): Array<
       (dept) => dept !== 'none' && input.membersByDepartment[dept] > 0,
     );
     const departmentSummary =
-      departments.length > 0
-        ? ` spanning ${departments.join(', ')}`
-        : '';
+      departments.length > 0 ? ` spanning ${departments.join(', ')}` : '';
     issues.push({
       kind: 'internal',
       description: `A workforce of ${input.memberCount} member${input.memberCount === 1 ? '' : 's'}${departmentSummary}.`,

@@ -1,0 +1,89 @@
+import type { IsmsExportSection } from '../utils/export-shared';
+import type {
+  DerivedObjective,
+  DocumentExportInput,
+  IsmsPlatformData,
+} from './types';
+
+/**
+ * Derive a small set of default information-security objectives (6.2) from active
+ * frameworks, the risk register and the training programme. Deterministic so drift
+ * is a pure snapshot comparison. Manual rows are preserved by the caller.
+ */
+export function deriveObjectives(data: IsmsPlatformData): DerivedObjective[] {
+  const rows: Array<Omit<DerivedObjective, 'position'>> = [];
+
+  for (const framework of data.frameworkNames) {
+    rows.push({
+      objective: `Maintain ${framework} compliance`,
+      target: `Certified / conformant with ${framework}`,
+      cadence: 'Annual',
+      plan: `Operate the ISMS controls, complete internal audits and management reviews, and pass the ${framework} audit.`,
+      measurementMethod: 'Audit outcome and number of non-conformities.',
+      source: 'derived',
+      derivedFrom: `framework:${framework}`,
+    });
+  }
+
+  if (data.hasTrainingProgram || data.memberCount > 0) {
+    rows.push({
+      objective: 'Achieve high security-awareness training completion',
+      target: 'Training completion ≥ 95%',
+      cadence: 'Quarterly',
+      plan: 'Assign annual security-awareness training to all staff and track completion through the platform.',
+      measurementMethod: 'Percentage of staff who completed assigned training.',
+      source: 'derived',
+      derivedFrom: 'training',
+    });
+  }
+
+  if (data.riskCount > 0) {
+    rows.push({
+      objective: 'Resolve high and critical risks within SLA',
+      target:
+        data.highRiskCount > 0
+          ? `Remediate ${data.highRiskCount} high/critical risk${data.highRiskCount === 1 ? '' : 's'} within SLA`
+          : 'No high/critical risks open beyond SLA',
+      cadence: 'Monthly',
+      plan: 'Triage risks in the register, assign owners and treatment plans, and track residual scores to closure.',
+      measurementMethod: 'Number of high/critical risks open beyond their SLA.',
+      source: 'derived',
+      derivedFrom: 'risks',
+    });
+  }
+
+  if (data.vendorCount > 0) {
+    rows.push({
+      objective: 'Complete scheduled vendor security reviews',
+      target: '100% of in-scope vendors reviewed on schedule',
+      cadence: 'Annual',
+      plan: 'Maintain the vendor register, run periodic assessments and follow up on findings.',
+      measurementMethod:
+        'Percentage of vendors reviewed within the review window.',
+      source: 'derived',
+      derivedFrom: 'vendors',
+    });
+  }
+
+  return rows.map((row, index) => ({ ...row, position: index }));
+}
+
+export function buildObjectivesSections(
+  input: DocumentExportInput,
+): IsmsExportSection[] {
+  return [
+    {
+      heading: 'Information Security Objectives',
+      emptyText: 'No objectives recorded.',
+      table: {
+        headers: ['Objective', 'Target', 'Cadence', 'Status'],
+        rows: input.objectives.map((objective) => [
+          objective.objective,
+          objective.target ?? '—',
+          objective.cadence ?? '—',
+          objective.status,
+        ]),
+      },
+    },
+  ];
+}

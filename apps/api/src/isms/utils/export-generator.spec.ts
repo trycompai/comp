@@ -1,4 +1,8 @@
-import { generateIsmsExportFile, type IsmsExportMetadata } from './export-generator';
+import {
+  generateIsmsExportFile,
+  type IsmsExportMetadata,
+  type IsmsExportSection,
+} from './export-generator';
 import { renderIsmsDocx } from './docx-renderer';
 
 // docx is ESM-only; the renderer is exercised separately and mocked here so the
@@ -22,9 +26,29 @@ const metadata: IsmsExportMetadata = {
   primaryColor: '#123456',
 };
 
-const issues = [
-  { kind: 'external' as const, description: 'Pursuing ISO 27001', effect: 'Shapes scope' },
-  { kind: 'internal' as const, description: '12 workforce members', effect: 'Drives access mgmt' },
+const paragraphSections: IsmsExportSection[] = [
+  {
+    heading: 'External issues',
+    paragraphs: [
+      { text: '1. Pursuing ISO 27001', bold: true },
+      { label: 'Effect: ', text: 'Shapes scope' },
+    ],
+  },
+  {
+    heading: 'Internal issues',
+    paragraphs: [{ text: '1. 12 workforce members', bold: true }],
+  },
+];
+
+const tableSections: IsmsExportSection[] = [
+  {
+    heading: 'Interested Parties',
+    emptyText: 'No interested parties recorded.',
+    table: {
+      headers: ['Interested party', 'Category', 'Needs & expectations'],
+      rows: [['Customers', 'Customer', 'Confidentiality of their data']],
+    },
+  },
 ];
 
 describe('generateIsmsExportFile', () => {
@@ -32,7 +56,7 @@ describe('generateIsmsExportFile', () => {
 
   it('renders a real PDF buffer for format=pdf', async () => {
     const result = await generateIsmsExportFile({
-      issues,
+      sections: paragraphSections,
       metadata,
       format: 'pdf',
     });
@@ -41,21 +65,33 @@ describe('generateIsmsExportFile', () => {
     expect(result.filename).toBe('context-of-the-organization-v2.pdf');
     expect(result.fileBuffer).toBeInstanceOf(Buffer);
     expect(result.fileBuffer.length).toBeGreaterThan(0);
-    // PDF magic header.
     expect(result.fileBuffer.subarray(0, 4).toString()).toBe('%PDF');
     expect(mockRenderDocx).not.toHaveBeenCalled();
+  });
+
+  it('renders a PDF buffer for table-based sections', async () => {
+    const result = await generateIsmsExportFile({
+      sections: tableSections,
+      metadata,
+      format: 'pdf',
+    });
+    expect(result.fileBuffer.subarray(0, 4).toString()).toBe('%PDF');
+    expect(result.fileBuffer.length).toBeGreaterThan(0);
   });
 
   it('delegates to the docx renderer for format=docx', async () => {
     mockRenderDocx.mockResolvedValue(Buffer.from('docx-bytes'));
 
     const result = await generateIsmsExportFile({
-      issues,
+      sections: paragraphSections,
       metadata,
       format: 'docx',
     });
 
-    expect(mockRenderDocx).toHaveBeenCalledWith({ issues, metadata });
+    expect(mockRenderDocx).toHaveBeenCalledWith({
+      sections: paragraphSections,
+      metadata,
+    });
     expect(result.mimeType).toBe(
       'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
     );
@@ -63,9 +99,9 @@ describe('generateIsmsExportFile', () => {
     expect(result.fileBuffer).toBeInstanceOf(Buffer);
   });
 
-  it('handles an empty issue set without throwing', async () => {
+  it('handles an empty section set without throwing', async () => {
     const result = await generateIsmsExportFile({
-      issues: [],
+      sections: [],
       metadata,
       format: 'pdf',
     });
