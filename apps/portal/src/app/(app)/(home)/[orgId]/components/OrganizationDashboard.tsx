@@ -38,6 +38,11 @@ export async function OrganizationDashboard({
         organizationId: organizationId,
         isRequiredToSign: true,
         status: 'published',
+        // Hide policies archived by the user or by a framework version sync.
+        // A sync sets `archivedAt` but leaves `status: 'published'`, so both
+        // flags must be checked. See packages/db Policy schema.
+        isArchived: false,
+        archivedAt: null,
       },
       include: {
         currentVersion: {

@@ -8,7 +8,9 @@ import { formatResult, ToolDefinition } from "../tools.js";
 export const tool$offboardingChecklistOffboardingChecklistControllerGetTemplateV1:
   ToolDefinition = {
     name: "get-template",
-    description: ``,
+    description: `Get the offboarding checklist template
+
+Returns the organization's offboarding checklist template: the ordered set of items every departing member must complete during their offboarding.`,
     annotations: {
       "title": "",
       "destructiveHint": false,

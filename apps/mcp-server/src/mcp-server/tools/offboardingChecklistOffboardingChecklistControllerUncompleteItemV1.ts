@@ -13,7 +13,9 @@ const args = {
 export const tool$offboardingChecklistOffboardingChecklistControllerUncompleteItemV1:
   ToolDefinition<typeof args> = {
     name: "uncomplete-item",
-    description: ``,
+    description: `Reopen an offboarding checklist item
+
+Reverts a previously completed offboarding checklist item back to incomplete for a member, in case the step was marked done by mistake.`,
     annotations: {
       "title": "",
       "destructiveHint": false,
