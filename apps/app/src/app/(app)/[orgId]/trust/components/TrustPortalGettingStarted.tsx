@@ -2,10 +2,9 @@ import { Alert, AlertDescription, AlertTitle } from '@trycompai/design-system';
 import Link from 'next/link';
 
 const STEPS = [
-  'Connect a custom domain so the portal lives on your brand.',
-  'Add your compliance certifications (SOC 2, ISO 27001, …).',
-  'Upload supporting documents and policies.',
-  'Add FAQs and a contact email for prospects.',
+  'Enable the frameworks you’re working toward to show prospects and vendors your compliance progress — no certificate needed yet.',
+  'Your published policies show automatically — drafts and in-progress updates stay private.',
+  'Add a custom domain and contact email to make it your own.',
 ];
 
 export function TrustPortalGettingStarted({ portalUrl }: { portalUrl: string }) {
@@ -16,11 +15,11 @@ export function TrustPortalGettingStarted({ portalUrl }: { portalUrl: string }) 
       </AlertTitle>
       <AlertDescription>
         <span className="text-foreground">
-          Your Trust Portal is already live at{' '}
+          Your Trust Portal is at{' '}
           <Link href={portalUrl} target="_blank" rel="noopener noreferrer">
             {portalUrl}
           </Link>
-          , but it&apos;s still on the defaults. Complete these to make it yours:
+          . Put it to work so prospects and vendors can see where you stand:
         </span>
       </AlertDescription>
       {/* variant="info" renders an icon, so Alert is a 2-col grid; place the

@@ -49,8 +49,9 @@ function TrustPortalSetupNudgeView({
       </AlertTitle>
       <AlertDescription>
         <span className="text-foreground">
-          Set up your Trust Portal to share your certifications, policies, and
-          security documents with prospects in one place.
+          Show prospects and vendors your compliance progress — enable the
+          frameworks you’re working on and your published policies appear
+          automatically.
         </span>
       </AlertDescription>
       <div className="col-start-2 pt-1">
