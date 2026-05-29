@@ -305,6 +305,7 @@ export class HybridAuthGuard implements CanActivate {
     request.authType = 'session';
     request.isApiKey = false;
     request.isServiceToken = false;
+    request.isMcpOAuth = true;
     request.isPlatformAdmin = user.role === 'admin';
 
     // An MCP token is only usable by a member of at least one organization.

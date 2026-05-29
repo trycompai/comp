@@ -59,4 +59,18 @@ describe('hasAppAccess', () => {
     expect(await hasAppAccess('org_1', null)).toBe(false);
     expect(await hasAppAccess('org_1', '')).toBe(false);
   });
+
+  it('treats a role named like an Object prototype key (constructor) as custom', async () => {
+    // Must NOT be shadowed by Object.prototype.constructor — it's a custom role.
+    mockOrgRoleFindMany.mockResolvedValue([
+      { permissions: JSON.stringify({ app: ['read'] }) },
+    ]);
+    expect(await hasAppAccess('org_1', 'constructor')).toBe(true);
+    expect(mockOrgRoleFindMany).toHaveBeenCalled();
+  });
+
+  it('does not throw on malformed custom-role permissions', async () => {
+    mockOrgRoleFindMany.mockResolvedValue([{ permissions: '{not valid json' }]);
+    await expect(hasAppAccess('org_1', 'Broken Role')).resolves.toBe(false);
+  });
 });

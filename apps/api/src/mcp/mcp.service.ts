@@ -16,15 +16,17 @@ export class McpService {
       select: { role: true, organization: { select: { id: true, name: true } } },
     });
 
-    const organizations: Array<{ id: string; name: string }> = [];
-    for (const membership of memberships) {
-      if (await hasAppAccess(membership.organization.id, membership.role)) {
-        organizations.push({
+    // Resolve app-access for every membership concurrently (avoid serial N+1).
+    const checks = await Promise.all(
+      memberships.map(async (membership) => ({
+        org: {
           id: membership.organization.id,
           name: membership.organization.name,
-        });
-      }
-    }
+        },
+        allowed: await hasAppAccess(membership.organization.id, membership.role),
+      })),
+    );
+    const organizations = checks.filter((c) => c.allowed).map((c) => c.org);
 
     const binding = await db.mcpOrgBinding.findUnique({
       where: { userId },

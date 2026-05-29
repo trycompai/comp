@@ -4,6 +4,7 @@ import { UserId } from '../auth/auth-context.decorator';
 import { HybridAuthGuard } from '../auth/hybrid-auth.guard';
 import { PermissionGuard } from '../auth/permission.guard';
 import { RequirePermission } from '../auth/require-permission.decorator';
+import { SessionOnlyGuard } from '../auth/session-only.guard';
 import { SetMcpOrganizationDto } from './dto/set-mcp-organization.dto';
 import { McpService } from './mcp.service';
 
@@ -11,15 +12,16 @@ import { McpService } from './mcp.service';
  * MCP account-management endpoints (web app only — excluded from the public
  * OpenAPI spec / MCP tools via the deny-list in public-docs-quality.ts).
  *
- * Gated on app access (`app:read`) like the rest of the product: only roles that
- * can use the app may manage its MCP settings. Going through PermissionGuard +
- * @RequirePermission also enforces API-key scopes and records the mutation in
- * the audit log (the AuditLogInterceptor only logs when @RequirePermission is
- * present).
+ * Session-only (these are user self-management actions — `SessionOnlyGuard`
+ * rejects API keys / service tokens with a clean 403 instead of `@UserId()`
+ * throwing a 500), and gated on app access (`app:read`) like the rest of the
+ * product. Going through PermissionGuard + @RequirePermission also records the
+ * PUT mutation in the audit log (the AuditLogInterceptor only logs when
+ * @RequirePermission is present).
  */
 @ApiTags('MCP')
 @Controller({ path: 'mcp', version: '1' })
-@UseGuards(HybridAuthGuard, PermissionGuard)
+@UseGuards(HybridAuthGuard, SessionOnlyGuard, PermissionGuard)
 @ApiSecurity('apikey')
 export class McpController {
   constructor(private readonly mcpService: McpService) {}
