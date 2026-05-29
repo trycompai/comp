@@ -1,4 +1,5 @@
 import type { IsmsExportSection } from '../utils/export-shared';
+import { formatRegulatorLabel } from './wizard-helpers';
 import type {
   DerivedInterestedParty,
   DocumentExportInput,
@@ -110,7 +111,70 @@ export function deriveInterestedParties(
     });
   }
 
+  rows.push(...wizardDerivedParties(data));
+
   return rows.map((row, index) => ({ ...row, position: index }));
+}
+
+/**
+ * Interested parties contributed by the ISMS wizard answers (CS-438): insurer,
+ * sector regulators, contractors workforce and an appointed EU representative.
+ */
+function wizardDerivedParties(
+  data: IsmsPlatformData,
+): Array<Omit<DerivedInterestedParty, 'position'>> {
+  const answers = data.wizardAnswers;
+  const rows: Array<Omit<DerivedInterestedParty, 'position'>> = [];
+
+  if (answers.insurance?.has) {
+    const insurer = answers.insurance.insurerName?.trim();
+    rows.push({
+      name: insurer ? `Insurer (${insurer})` : 'Insurer',
+      category: 'Insurer',
+      needsExpectations:
+        'Demonstrable risk management, prompt incident notification and evidence of effective security controls to support coverage.',
+      source: 'derived',
+      derivedFrom: 'wizard:insurance',
+    });
+  }
+
+  for (const regulator of answers.sectorRegulators ?? []) {
+    const label = formatRegulatorLabel(regulator);
+    rows.push({
+      name: `Regulator (${label})`,
+      category: 'Regulator',
+      needsExpectations: `Conformance with the sector obligations arising from ${label}.`,
+      source: 'derived',
+      derivedFrom: 'wizard:regulator',
+    });
+  }
+
+  if (answers.hasContractors) {
+    rows.push({
+      name: 'Contractors',
+      category: 'Workforce',
+      needsExpectations:
+        'Clear acceptable-use rules, scoped access aligned to their engagement, and protection of any data they handle.',
+      source: 'derived',
+      derivedFrom: 'wizard:contractors',
+    });
+  }
+
+  if (answers.euRep?.status === 'appointed') {
+    const repName = answers.euRep.name?.trim();
+    rows.push({
+      name: repName
+        ? `EU representative (${repName})`
+        : 'EU representative (Art. 27 GDPR)',
+      category: 'Regulator',
+      needsExpectations:
+        'Acts as the local point of contact for EU data-protection authorities and data subjects on behalf of the organization.',
+      source: 'derived',
+      derivedFrom: 'wizard:eu_rep',
+    });
+  }
+
+  return rows;
 }
 
 export function buildInterestedPartiesSections(

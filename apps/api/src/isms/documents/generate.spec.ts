@@ -21,6 +21,7 @@ const data: IsmsPlatformData = {
   riskCount: 2,
   highRiskCount: 1,
   hasTrainingProgram: true,
+  wizardAnswers: {},
 };
 
 function registerTable() {
@@ -79,6 +80,26 @@ describe('runDerivation', () => {
     expect(tx.ismsInterestedParty.createMany).toHaveBeenCalled();
     const created = tx.ismsInterestedParty.createMany.mock.calls[0][0].data;
     expect(created[0].position).toBe(2);
+  });
+
+  it('threads wizard answers into the interested-parties register (CS-438)', async () => {
+    const tx = buildTx();
+    await runDerivation({
+      tx: asTx(tx),
+      type: 'interested_parties_register',
+      ...baseArgs,
+      data: {
+        ...data,
+        wizardAnswers: { insurance: { has: true, insurerName: 'Acme Cyber' } },
+      },
+    });
+    const created = tx.ismsInterestedParty.createMany.mock.calls[0][0].data;
+    expect(
+      created.some(
+        (row: { derivedFrom: string }) =>
+          row.derivedFrom === 'wizard:insurance',
+      ),
+    ).toBe(true);
   });
 
   it('reads the register doc to derive requirements', async () => {

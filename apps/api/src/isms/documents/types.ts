@@ -1,4 +1,5 @@
 import type { IsmsContextSource } from '@db';
+import type { PartialWizardAnswers } from '../wizard/wizard-schema';
 
 /**
  * Platform data shared by every ISMS document derivation. Collected once per
@@ -31,6 +32,12 @@ export interface IsmsPlatformData {
   highRiskCount: number;
   /** Whether the org has any training/awareness content configured. */
   hasTrainingProgram: boolean;
+  /**
+   * The org's saved ISMS wizard answers (CS-438) for this framework. Threaded
+   * into derivation so generated documents reflect the un-derivable inputs the
+   * customer supplied. Empty object when the wizard has not been filled in.
+   */
+  wizardAnswers: PartialWizardAnswers;
 }
 
 /** A row destined for one of the ISMS registers (interested parties, etc.). */

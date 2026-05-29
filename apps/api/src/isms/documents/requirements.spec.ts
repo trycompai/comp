@@ -15,6 +15,7 @@ const data: IsmsPlatformData = {
   riskCount: 2,
   highRiskCount: 0,
   hasTrainingProgram: true,
+  wizardAnswers: {},
 };
 
 describe('deriveRequirements', () => {
@@ -46,6 +47,26 @@ describe('deriveRequirements', () => {
   it('assigns sequential positions', () => {
     const rows = deriveRequirements({ parties: [], data });
     rows.forEach((row, index) => expect(row.position).toBe(index));
+  });
+
+  it('appends one requirement row per wizard sector regulator (CS-438)', () => {
+    const parties = [{ id: 'ip_1', name: 'Customers', category: 'Customer' }];
+    const rows = deriveRequirements({
+      parties,
+      data: {
+        ...data,
+        wizardAnswers: { sectorRegulators: ['FCA', 'custom:Local Authority'] },
+      },
+    });
+    const regulatorRows = rows.filter((r) => r.derivedFrom === 'wizard:regulator');
+    expect(regulatorRows).toHaveLength(2);
+    expect(regulatorRows.map((r) => r.partyName)).toEqual([
+      'Regulator (FCA)',
+      'Regulator (Local Authority)',
+    ]);
+    // Wizard rows come after the party rows and keep sequential positions.
+    expect(regulatorRows[0].position).toBe(parties.length);
+    expect(regulatorRows.every((r) => r.interestedPartyId === null)).toBe(true);
   });
 });
 

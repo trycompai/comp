@@ -18,6 +18,7 @@ const data: IsmsPlatformData = {
   riskCount: 3,
   highRiskCount: 1,
   hasTrainingProgram: true,
+  wizardAnswers: {},
 };
 
 describe('deriveInterestedParties', () => {
@@ -62,6 +63,68 @@ describe('deriveInterestedParties', () => {
   it('omits sub-processor row when none exist', () => {
     const rows = deriveInterestedParties({ ...data, subProcessorCount: 0 });
     expect(rows.some((r) => r.derivedFrom === 'subprocessors')).toBe(false);
+  });
+});
+
+describe('deriveInterestedParties — wizard answers (CS-438)', () => {
+  it('adds an insurer party when insurance.has', () => {
+    const rows = deriveInterestedParties({
+      ...data,
+      wizardAnswers: { insurance: { has: true, insurerName: 'Acme Cyber' } },
+    });
+    const insurer = rows.find((r) => r.derivedFrom === 'wizard:insurance');
+    expect(insurer).toBeDefined();
+    expect(insurer?.name).toContain('Acme Cyber');
+    expect(insurer?.category).toBe('Insurer');
+  });
+
+  it('omits insurer party when insurance.has is false', () => {
+    const rows = deriveInterestedParties({
+      ...data,
+      wizardAnswers: { insurance: { has: false, insurerName: '' } },
+    });
+    expect(rows.some((r) => r.derivedFrom === 'wizard:insurance')).toBe(false);
+  });
+
+  it('adds a regulator party per sectorRegulators entry (incl. custom:)', () => {
+    const rows = deriveInterestedParties({
+      ...data,
+      wizardAnswers: { sectorRegulators: ['FINMA', 'custom:My Regulator'] },
+    });
+    const regulators = rows.filter((r) => r.derivedFrom === 'wizard:regulator');
+    expect(regulators).toHaveLength(2);
+    expect(regulators.map((r) => r.name)).toEqual([
+      'Regulator (FINMA)',
+      'Regulator (My Regulator)',
+    ]);
+  });
+
+  it('adds a Contractors workforce party when hasContractors', () => {
+    const rows = deriveInterestedParties({
+      ...data,
+      wizardAnswers: { hasContractors: true },
+    });
+    const contractors = rows.find(
+      (r) => r.derivedFrom === 'wizard:contractors',
+    );
+    expect(contractors?.name).toBe('Contractors');
+    expect(contractors?.category).toBe('Workforce');
+  });
+
+  it('adds an EU-representative party only when status is appointed', () => {
+    const appointed = deriveInterestedParties({
+      ...data,
+      wizardAnswers: { euRep: { status: 'appointed', name: 'EU Rep Ltd' } },
+    });
+    expect(
+      appointed.find((r) => r.derivedFrom === 'wizard:eu_rep')?.name,
+    ).toContain('EU Rep Ltd');
+
+    const pending = deriveInterestedParties({
+      ...data,
+      wizardAnswers: { euRep: { status: 'pending', name: '' } },
+    });
+    expect(pending.some((r) => r.derivedFrom === 'wizard:eu_rep')).toBe(false);
   });
 });
 

@@ -11,6 +11,20 @@ import type {
  * is a pure snapshot comparison. Manual rows are preserved by the caller.
  */
 export function deriveObjectives(data: IsmsPlatformData): DerivedObjective[] {
+  const wizardObjectives = data.wizardAnswers.objectives ?? [];
+  if (wizardObjectives.length > 0) {
+    return wizardObjectives.map((objective, index) => ({
+      objective: objective.objective,
+      target: objective.target || null,
+      cadence: null,
+      plan: null,
+      measurementMethod: null,
+      source: 'derived',
+      derivedFrom: 'wizard:objective',
+      position: index,
+    }));
+  }
+
   const rows: Array<Omit<DerivedObjective, 'position'>> = [];
 
   for (const framework of data.frameworkNames) {

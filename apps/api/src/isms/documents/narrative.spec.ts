@@ -24,6 +24,7 @@ const data: IsmsPlatformData = {
   riskCount: 2,
   highRiskCount: 1,
   hasTrainingProgram: true,
+  wizardAnswers: {},
 };
 
 const emptyInput = (narrative: unknown): DocumentExportInput => ({
@@ -65,6 +66,43 @@ describe('scope narrative (4.3)', () => {
     const sections = buildScopeSections(emptyInput({ bogus: true }));
     expect(sections[0].emptyText).toBeDefined();
   });
+
+  it('uses the wizard certificate scope sentence when set (CS-438)', () => {
+    const narrative = deriveScopeNarrative({
+      ...data,
+      wizardAnswers: {
+        certificateScopeSentence: 'A bespoke, customer-confirmed scope.',
+      },
+    });
+    expect(narrative.certificateScopeSentence).toBe(
+      'A bespoke, customer-confirmed scope.',
+    );
+  });
+
+  it('threads cloudScopeSplit into interfaces/dependencies and capabilities into in-scope', () => {
+    const narrative = deriveScopeNarrative({
+      ...data,
+      wizardAnswers: {
+        capabilitiesInProduction: ['Payments API', 'Reporting'],
+        cloudScopeSplit: {
+          customer: ['Data', 'Databases'],
+          provider: ['Underlying infrastructure'],
+        },
+      },
+    });
+    expect(narrative.inScope).toContain('Payments API');
+    expect(narrative.interfaces).toEqual(
+      expect.arrayContaining([
+        'Underlying infrastructure — managed by the cloud provider.',
+      ]),
+    );
+    expect(narrative.dependencies).toEqual(
+      expect.arrayContaining([
+        'Data — managed by the organization.',
+        'Databases — managed by the organization.',
+      ]),
+    );
+  });
 });
 
 describe('leadership narrative (5.1)', () => {
@@ -90,5 +128,28 @@ describe('leadership narrative (5.1)', () => {
     );
     expect(sections[0].heading).toBe('Leadership and Commitment');
     expect(sections[0].paragraphs?.some((p) => p.label === '(a) ')).toBe(true);
+  });
+
+  it('references the Deputy SPO when appointed (CS-438)', () => {
+    const narrative = deriveLeadershipNarrative({
+      ...data,
+      wizardAnswers: { deputySpo: { memberId: 'mem_1', toBeNamed: false } },
+    });
+    const deputy = narrative.commitments.find((c) => c.key === 'i');
+    expect(deputy?.text).toContain('Deputy Security & Privacy Officer');
+  });
+
+  it('references the intent to name a Deputy SPO when toBeNamed', () => {
+    const narrative = deriveLeadershipNarrative({
+      ...data,
+      wizardAnswers: { deputySpo: { memberId: null, toBeNamed: true } },
+    });
+    const deputy = narrative.commitments.find((c) => c.key === 'i');
+    expect(deputy?.text).toContain('appoint a Deputy Security & Privacy Officer');
+  });
+
+  it('omits the Deputy SPO commitment when not provided', () => {
+    const narrative = deriveLeadershipNarrative(data);
+    expect(narrative.commitments.some((c) => c.key === 'i')).toBe(false);
   });
 });

@@ -1,4 +1,5 @@
 import { db } from '@db';
+import { parseStoredAnswers } from '../wizard/wizard-schema';
 import type { IsmsPlatformData } from './types';
 
 const CLOUD_CATEGORIES = ['cloud', 'infrastructure', 'software_as_a_service'];
@@ -28,6 +29,7 @@ export async function collectPlatformData({
     risks,
     trainingCompletionCount,
     ownFramework,
+    profile,
   ] = await Promise.all([
     db.organization.findUnique({
       where: { id: organizationId },
@@ -58,6 +60,10 @@ export async function collectPlatformData({
     db.frameworkEditorFramework.findUnique({
       where: { id: frameworkId },
       select: { name: true },
+    }),
+    db.ismsProfile.findUnique({
+      where: { organizationId_frameworkId: { organizationId, frameworkId } },
+      select: { answers: true },
     }),
   ]);
 
@@ -104,5 +110,6 @@ export async function collectPlatformData({
     riskCount: risks.length,
     highRiskCount,
     hasTrainingProgram: trainingCompletionCount > 0,
+    wizardAnswers: parseStoredAnswers(profile?.answers),
   };
 }

@@ -65,10 +65,39 @@ function commitmentsFor(
 export function deriveLeadershipNarrative(
   data: IsmsPlatformData,
 ): LeadershipNarrative {
+  const commitments = commitmentsFor(data.organizationName);
+  const deputy = deputySpoCommitment(data);
+  if (deputy) commitments.push(deputy);
+
   return {
     statement: `Top management of ${data.organizationName} is committed to the information security management system (ISMS) and demonstrates leadership and commitment with respect to the ISMS by:`,
-    commitments: commitmentsFor(data.organizationName),
+    commitments,
   };
+}
+
+/**
+ * Reference the Deputy Security & Privacy Officer (wizard answer) so leadership
+ * resourcing reflects the appointed deputy or the intent to name one.
+ */
+function deputySpoCommitment(
+  data: IsmsPlatformData,
+): LeadershipNarrative['commitments'][number] | null {
+  const deputy = data.wizardAnswers.deputySpo;
+  if (!deputy) return null;
+
+  if (deputy.toBeNamed) {
+    return {
+      key: 'i',
+      text: 'Committing to appoint a Deputy Security & Privacy Officer to support the SPO and ensure continuity of ISMS leadership.',
+    };
+  }
+  if (deputy.memberId) {
+    return {
+      key: 'i',
+      text: 'Appointing a Deputy Security & Privacy Officer to support the SPO and ensure continuity of ISMS leadership.',
+    };
+  }
+  return null;
 }
 
 export function buildLeadershipSections(

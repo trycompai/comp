@@ -1,5 +1,6 @@
 import type { IsmsExportSection } from '../utils/export-shared';
 import { deriveInterestedParties } from './interested-parties';
+import { formatRegulatorLabel } from './wizard-helpers';
 import type {
   DerivedInterestedParty,
   DerivedRequirement,
@@ -92,7 +93,7 @@ export function deriveRequirements({
           category: party.category,
         }));
 
-  return source.map((party, index) => {
+  const partyRows: DerivedRequirement[] = source.map((party, index) => {
     const mapped = requirementForParty(party);
     return {
       partyName: party.name,
@@ -104,6 +105,40 @@ export function deriveRequirements({
         : `party:${party.name}`,
       position: index,
       interestedPartyId: party.interestedPartyId,
+    };
+  });
+
+  const wizardRows = wizardRegulatorRequirements({
+    data,
+    startPosition: partyRows.length,
+  });
+
+  return [...partyRows, ...wizardRows];
+}
+
+/**
+ * One requirement + ISMS treatment row per sector regulator named in the wizard
+ * (CS-438). Sourced as derived with provenance `wizard:regulator`.
+ */
+function wizardRegulatorRequirements({
+  data,
+  startPosition,
+}: {
+  data: IsmsPlatformData;
+  startPosition: number;
+}): DerivedRequirement[] {
+  const regulators = data.wizardAnswers.sectorRegulators ?? [];
+
+  return regulators.map((regulator, index) => {
+    const label = formatRegulatorLabel(regulator);
+    return {
+      partyName: `Regulator (${label})`,
+      requirement: `Conformance with the sector obligations arising from ${label}.`,
+      treatment: `Addressed by the relevant ISMS policies and controls, the Statement of Applicability, and the compliance monitoring tracked for ${label}.`,
+      source: 'derived',
+      derivedFrom: 'wizard:regulator',
+      position: startPosition + index,
+      interestedPartyId: null,
     };
   });
 }

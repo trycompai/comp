@@ -206,6 +206,7 @@ describe('IsmsService', () => {
         riskCount: 0,
         highRiskCount: 0,
         hasTrainingProgram: false,
+        wizardAnswers: {},
       });
       const tx = {
         ismsDocument: { update: jest.fn().mockResolvedValue({}) },

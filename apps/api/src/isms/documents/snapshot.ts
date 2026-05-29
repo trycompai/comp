@@ -1,4 +1,5 @@
 import type { IsmsDocumentType, Prisma } from '@db';
+import { parseStoredAnswers } from '../wizard/wizard-schema';
 import type { IsmsPlatformData } from './types';
 
 /** Drift sources each document type derives from. Used to scope the diff. */
@@ -113,6 +114,7 @@ export function parsePlatformSnapshot(
     riskCount: toNum(record.riskCount),
     highRiskCount: toNum(record.highRiskCount),
     hasTrainingProgram: record.hasTrainingProgram === true,
+    wizardAnswers: parseStoredAnswers(record.wizardAnswers),
   };
 }
 

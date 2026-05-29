@@ -15,6 +15,7 @@ const data: IsmsPlatformData = {
   riskCount: 4,
   highRiskCount: 2,
   hasTrainingProgram: true,
+  wizardAnswers: {},
 };
 
 describe('deriveObjectives', () => {
@@ -48,6 +49,32 @@ describe('deriveObjectives', () => {
     const rows = deriveObjectives(data);
     rows.forEach((row, index) => expect(row.position).toBe(index));
     expect(deriveObjectives(data)).toEqual(rows);
+  });
+
+  it('uses wizard objectives when provided, overriding defaults (CS-438)', () => {
+    const rows = deriveObjectives({
+      ...data,
+      wizardAnswers: {
+        objectives: [
+          { objective: 'Reduce phishing click rate', target: '< 3%' },
+          { objective: 'Patch criticals in 7 days', target: '100%' },
+        ],
+      },
+    });
+    expect(rows).toHaveLength(2);
+    expect(rows.map((r) => r.objective)).toEqual([
+      'Reduce phishing click rate',
+      'Patch criticals in 7 days',
+    ]);
+    expect(rows[0].target).toBe('< 3%');
+    expect(rows.every((r) => r.derivedFrom === 'wizard:objective')).toBe(true);
+    expect(rows.every((r) => r.source === 'derived')).toBe(true);
+  });
+
+  it('falls back to defaults when wizard objectives is empty', () => {
+    const rows = deriveObjectives({ ...data, wizardAnswers: { objectives: [] } });
+    expect(rows.some((r) => r.derivedFrom === 'wizard:objective')).toBe(false);
+    expect(rows.some((r) => r.derivedFrom.startsWith('framework:'))).toBe(true);
   });
 });
 

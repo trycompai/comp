@@ -15,6 +15,7 @@ const base: IsmsPlatformData = {
   riskCount: 2,
   highRiskCount: 1,
   hasTrainingProgram: true,
+  wizardAnswers: {},
 };
 
 describe('diffPlatformSnapshots', () => {
