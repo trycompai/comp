@@ -16,7 +16,7 @@ export const tool$offboardingChecklistOffboardingChecklistControllerUndoVendorRe
     name: "undo-vendor-revocation",
     description: `Undo vendor access revocation
 
-Undo vendor access revocation in Comp AI.`,
+Reverses a vendor access revocation for a member, marking that vendor's access as not revoked again, in case it was confirmed by mistake during offboarding.`,
     annotations: {
       "title": "",
       "destructiveHint": false,

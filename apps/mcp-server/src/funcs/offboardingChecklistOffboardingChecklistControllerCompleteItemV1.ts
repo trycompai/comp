@@ -26,6 +26,11 @@ import { APICall, APIPromise } from "../types/async.js";
 import { Result } from "../types/fp.js";
 
 /**
+ * Complete an offboarding checklist item
+ *
+ * @remarks
+ * Marks a specific offboarding checklist item complete for a member, recording who completed it and when, as part of finishing that member's offboarding.
+ *
  * If set, this operation will use {@link Security.apikey} from the global security.
  */
 export function offboardingChecklistOffboardingChecklistControllerCompleteItemV1(

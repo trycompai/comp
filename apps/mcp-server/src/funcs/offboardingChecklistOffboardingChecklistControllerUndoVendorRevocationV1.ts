@@ -29,7 +29,7 @@ import { Result } from "../types/fp.js";
  * Undo vendor access revocation
  *
  * @remarks
- * Undo vendor access revocation in Comp AI.
+ * Reverses a vendor access revocation for a member, marking that vendor's access as not revoked again, in case it was confirmed by mistake during offboarding.
  *
  * If set, this operation will use {@link Security.apikey} from the global security.
  */

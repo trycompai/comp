@@ -29,7 +29,7 @@ import { Result } from "../types/fp.js";
  * Get vendor access revocation status for a member
  *
  * @remarks
- * Get vendor access revocation status for a member in Comp AI.
+ * Lists the vendors a departing member had access to and whether each has been revoked, so you can confirm all vendor access is removed during offboarding.
  *
  * If set, this operation will use {@link Security.apikey} from the global security.
  */

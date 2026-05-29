@@ -13,7 +13,9 @@ const args = {
 export const tool$offboardingChecklistOffboardingChecklistControllerUpdateTemplateItemV1:
   ToolDefinition<typeof args> = {
     name: "update-template-item",
-    description: ``,
+    description: `Update an offboarding checklist template item
+
+Updates an existing offboarding checklist template item by id, changing its label, description, or settings on the organization's offboarding template.`,
     annotations: {
       "title": "",
       "destructiveHint": false,

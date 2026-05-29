@@ -29,7 +29,7 @@ import { Result } from "../types/fp.js";
  * Confirm all vendor access as revoked
  *
  * @remarks
- * Confirm all vendor access as revoked in Comp AI.
+ * Marks every vendor access record for a departing member as revoked in one step, recording who confirmed it, to complete access removal during offboarding.
  *
  * If set, this operation will use {@link Security.apikey} from the global security.
  */
