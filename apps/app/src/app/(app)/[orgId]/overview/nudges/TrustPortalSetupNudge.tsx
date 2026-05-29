@@ -1,0 +1,59 @@
+'use client';
+
+import { usePermissions } from '@/hooks/use-permissions';
+import { Alert, AlertAction, AlertDescription, AlertTitle, Button } from '@trycompai/design-system';
+import { ArrowRight, Close } from '@trycompai/design-system/icons';
+import Link from 'next/link';
+import type { NudgeState, ServerNudgeData } from './types';
+
+export function useTrustPortalSetupNudge({
+  orgId,
+  server,
+}: {
+  orgId: string;
+  server: ServerNudgeData;
+}): NudgeState {
+  const { hasPermission } = usePermissions();
+  const canSetup = hasPermission('trust', 'update');
+  const { isTrustNdaEnabled, isConfigured } = server.trust;
+
+  return {
+    id: 'trust-portal-setup',
+    priority: 20,
+    persistDismissal: true,
+    ready: true, // server data already resolved
+    eligible: isTrustNdaEnabled && !isConfigured && canSetup,
+    render: (onDismiss) => <TrustPortalSetupNudgeView orgId={orgId} onDismiss={onDismiss} />,
+  };
+}
+
+function TrustPortalSetupNudgeView({ orgId, onDismiss }: { orgId: string; onDismiss: () => void }) {
+  return (
+    <Alert variant="warning">
+      <AlertTitle>
+        <span className="text-foreground">Set up your Trust Portal</span>
+      </AlertTitle>
+      <AlertDescription>
+        <span className="text-foreground">
+          Customize and publish your Trust Portal so prospects and vendors can view your compliance
+          progress.
+        </span>
+      </AlertDescription>
+      <div className="col-start-2 pt-1">
+        <Button iconRight={<ArrowRight />} render={<Link href={`/${orgId}/trust`} />}>
+          Set it up
+        </Button>
+      </div>
+      <AlertAction>
+        <button
+          type="button"
+          onClick={onDismiss}
+          aria-label="Dismiss"
+          className="rounded-md p-1 opacity-70 transition-opacity hover:opacity-100"
+        >
+          <Close size={16} />
+        </button>
+      </AlertAction>
+    </Alert>
+  );
+}

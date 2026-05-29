@@ -1,20 +1,20 @@
 lockVersion: 2.0.0
 id: f7130d09-dac4-4515-9162-6095782b6bb6
 management:
-  docChecksum: 4d14a84457854f6883f35052b65f6c2a
+  docChecksum: 168b4c41897b8f5abffdc17ff97a05a3
   docVersion: "1.0"
   speakeasyVersion: 1.768.2
   generationVersion: 2.889.1
-  releaseVersion: 0.0.1
-  configChecksum: ff38e76b5d4f6bbf312203110c17f67c
+  releaseVersion: 0.0.2
+  configChecksum: 7ddc47fd982c5d0d611eb9e1186a9181
   repoURL: https://github.com/trycompai/comp.git
   repoSubDirectory: apps/mcp-server
   installationURL: https://github.com/trycompai/comp
   published: true
 persistentEdits:
-  generation_id: ba406fcd-ff39-4968-a5a7-e967cc09372f
-  pristine_commit_hash: bdb358f648aaa9c5083a069fb7a348d2ac8ac63e
-  pristine_tree_hash: 6c5a288f7168e3bc498afc3f03de6e72ae436deb
+  generation_id: 2009b26c-98fa-47b6-8d1d-b5b0f7886d7b
+  pristine_commit_hash: 65444167cba8e031ff3673603bce6cc69b36ede4
+  pristine_tree_hash: 298662eb9f6395847372db6704ff73fa259798b4
 features:
   mcp-typescript:
     additionalDependencies: 0.1.0
@@ -50,12 +50,12 @@ trackedFiles:
     pristine_git_object: 4f9e60a9462fc4def738d60c3aaadf8232ef185f
   manifest.json:
     id: ca642a226869
-    last_write_checksum: sha1:3aba4051642022dc5ef027d2411666c4423373f7
-    pristine_git_object: f817bd1d5b71c57c626a0a0fe7206c1b9b34c7b6
+    last_write_checksum: sha1:beeffc0fe73dc4f29a043030a5b91fc05cd56415
+    pristine_git_object: 59e02e90e95927a75762c1c85a5af0de3d094453
   package.json:
     id: 7030d0b2f71b
-    last_write_checksum: sha1:47d89de4610d873c8acde6c05b107bd1f233ca8a
-    pristine_git_object: 71a260c59ee1825c767f052dfbae93c8104b0e4b
+    last_write_checksum: sha1:107e731390e35b922f5c42776966d853ab5d12ca
+    pristine_git_object: d0ea244896b9860d1cb116fde9ab646373022bed
   src/core.ts:
     id: f431fdbcd144
     last_write_checksum: sha1:3c1fe2275a0f345cf54298150f100299284b3f0e
@@ -638,64 +638,64 @@ trackedFiles:
     pristine_git_object: c34e72cb9e7f29a48eaec417d22553d4341e106e
   src/funcs/offboardingChecklistOffboardingChecklistControllerCompleteItemV1.ts:
     id: 8380dab05953
-    last_write_checksum: sha1:fce3f3a2445143a4ec6070aa032fa2545bf02b56
-    pristine_git_object: 67db73a2cf5711172bc1ccdd06ee267956a4b066
+    last_write_checksum: sha1:f6eea16d8635aa7a19a566fd4d7d7b344131fdef
+    pristine_git_object: 8102063b599adadd12cf50efe7908187a698e7a9
   src/funcs/offboardingChecklistOffboardingChecklistControllerCreateTemplateItemV1.ts:
     id: 4be5c1cc3983
-    last_write_checksum: sha1:a21bd223a88fd6220f507a452314ea15430a6b75
-    pristine_git_object: 6b0dd312fc1040d123d760fcb7682d612e1552e3
+    last_write_checksum: sha1:8d637b949365b3ca341cb065ab16a7d05ba199a4
+    pristine_git_object: c7bd5691a122d2abd265272dafedf52e1145e942
   src/funcs/offboardingChecklistOffboardingChecklistControllerDeleteTemplateItemV1.ts:
     id: eef94e38ef1e
-    last_write_checksum: sha1:a865f2eda070da9413ba7b1f99b2eeb8ee4eb3c4
-    pristine_git_object: a3d999c523e62ded6a04bb94e4bb1b236c1f6ef4
+    last_write_checksum: sha1:be6c16779c338c71e62a03a511582fd7a06fb0c3
+    pristine_git_object: 05ace31b2ebfdb6940266466c03744cd9058caa1
   src/funcs/offboardingChecklistOffboardingChecklistControllerExportAllEvidenceV1.ts:
     id: c8926ac9b0e3
-    last_write_checksum: sha1:d9f536a18046a10fb20c7d2d11ab939e4538c870
-    pristine_git_object: ef577d010143b408f938c5eb5275b5ff6f160f02
+    last_write_checksum: sha1:4296f21412fa1e6f3cebe595f4427ef66aa2cf82
+    pristine_git_object: 6003c47f4137efd03e4d8b5c122bb66c8b41f40b
   src/funcs/offboardingChecklistOffboardingChecklistControllerExportEvidenceV1.ts:
     id: ee3ffde03f06
-    last_write_checksum: sha1:4681961182ac490d8b8ae34e1637d1bcc7e25a9a
-    pristine_git_object: 7c9113b062e38263e3cd675b0481f5751acc886b
+    last_write_checksum: sha1:440936860c2643628787570990d34c93befce3b6
+    pristine_git_object: bf2e4fff14c95acd73781260b8507a8c9e7beebe
   src/funcs/offboardingChecklistOffboardingChecklistControllerGetAccessRevocationsV1.ts:
     id: b12607a85fda
-    last_write_checksum: sha1:d967fa4e5f8fedfe8fff6f267e7b9b4f505fe0b1
-    pristine_git_object: e68175e7cec357460fcfa450ec261566ecf96402
+    last_write_checksum: sha1:f604339432653c0cedff32a1a2a2d1ff25682e5a
+    pristine_git_object: a0459b0a7cee6a3bf3a5f023bf2e483f4a9ce9d6
   src/funcs/offboardingChecklistOffboardingChecklistControllerGetMemberChecklistV1.ts:
     id: e90c045384de
-    last_write_checksum: sha1:229493ae14fab8599ea90cf773e7ff07951fb137
-    pristine_git_object: ab91ca2d0857ea1a5f7f95233ebdf08fa9a6b511
+    last_write_checksum: sha1:f4180d03d730cdf31882386e7a567e0bc461e18f
+    pristine_git_object: f22d020b57bea13789de58f97cfe361dd4e45207
   src/funcs/offboardingChecklistOffboardingChecklistControllerGetPendingOffboardingsV1.ts:
     id: c19254ff4619
-    last_write_checksum: sha1:259d03426a7059094a1949bb277ae339e80fe829
-    pristine_git_object: bc70b083f2ab7271217325cdd3b2ba809f07c1ae
+    last_write_checksum: sha1:1547c4e838b5b35640d568108930ad287ce85419
+    pristine_git_object: d6b832efb1599673f9aa1d51edf038c6ae511e90
   src/funcs/offboardingChecklistOffboardingChecklistControllerGetTemplateV1.ts:
     id: aa73fa14b822
-    last_write_checksum: sha1:d99de302c3f053eb512ddf0b0b9c1fed1840a3fa
-    pristine_git_object: acb33aeacd663e0c60f165973cecf43dd0d766f5
+    last_write_checksum: sha1:8dfbfb01602b7ce36e4d3842b96759bcbfe8c60b
+    pristine_git_object: c868c96f2bc68c4e2f5bea44c2918a7c31123942
   src/funcs/offboardingChecklistOffboardingChecklistControllerRevokeAllVendorAccessV1.ts:
     id: d3dcba722c21
-    last_write_checksum: sha1:47fdc498c007d82e26a74870a50d777be11d4d53
-    pristine_git_object: ea003f2faff292dccdc86fd682e018f5f7c46cb3
+    last_write_checksum: sha1:7996b3498c4872360921ddf156e267aef79d10cb
+    pristine_git_object: f6e270a399592a6b9335b25e9fd06641a1063915
   src/funcs/offboardingChecklistOffboardingChecklistControllerRevokeVendorAccessV1.ts:
     id: 478df4904566
-    last_write_checksum: sha1:50edca92bfe14554e5237468b352b81f5e1e5c14
-    pristine_git_object: dfe5cbc7201a0ce8fc664885cf70382e8b18d44e
+    last_write_checksum: sha1:49c4555229aacefe4ab9f8a790be1092b5cb772b
+    pristine_git_object: f22502134c20a1ce32993bd915fdc350d4d55b14
   src/funcs/offboardingChecklistOffboardingChecklistControllerUncompleteItemV1.ts:
     id: 7629c301c3f8
-    last_write_checksum: sha1:74db7c80e11c5f2a7cd953853d7663a761026615
-    pristine_git_object: 6eac0cf6f9c5d335aff1e0eeb1a947a18452f231
+    last_write_checksum: sha1:8c2cb7903ed1070f94908815d302d47268173409
+    pristine_git_object: 74100e4dc240deff70bcd839b8260510a88b42f1
   src/funcs/offboardingChecklistOffboardingChecklistControllerUndoVendorRevocationV1.ts:
     id: 63ee97352da6
-    last_write_checksum: sha1:d312a0d58dd983ef6b2cb6569ce0c34cf842f3b4
-    pristine_git_object: 1d771bfb97020ff611aa5b1837d2ec37690d5900
+    last_write_checksum: sha1:692274e2651524a0cbe87027913e79c6d7cdd4ff
+    pristine_git_object: d62155e3d0b0bcbccd2f91fe8500b68ae21c2743
   src/funcs/offboardingChecklistOffboardingChecklistControllerUpdateTemplateItemV1.ts:
     id: 9b7ce2aa29be
-    last_write_checksum: sha1:14dab451c3f978dfde0ab3c2ff50c297db6b2cff
-    pristine_git_object: 1e231d8e4ba06d5b9938d4e54c8bde9907fdb6ed
+    last_write_checksum: sha1:655ce0d235bd9b33f7d3c9c76391784d55f2504b
+    pristine_git_object: d416545efda3a2f7132f6e859c9f57b710c887d9
   src/funcs/offboardingChecklistOffboardingChecklistControllerUploadEvidenceV1.ts:
     id: 69368c23fd44
-    last_write_checksum: sha1:82e0a8c40fd27339eb07dfe7ac29714c07cb5f0b
-    pristine_git_object: 08af3f08913d831ea801d89db65abed1b097f231
+    last_write_checksum: sha1:eb014a1a045c208b1c879b91def611fc00bb3990
+    pristine_git_object: 45808dd1526f28c7c045ae4e925f41e6234e34ee
   src/funcs/orgChartOrgChartControllerDeleteOrgChartV1.ts:
     id: f37dc9fdac40
     last_write_checksum: sha1:d9f725bfbb82df2105de5e9df81ee7a27b5ac73b
@@ -1550,24 +1550,24 @@ trackedFiles:
     pristine_git_object: d9e74540b5452becadb4a8bfeddf18b16c087493
   src/hooks/hooks.ts:
     id: a2463fc6f69b
-    last_write_checksum: sha1:141e45a4b047589e6ec69eef5da26fab909f44e9
-    pristine_git_object: a4220b5e2f8fc59c2862870fc6bf2c38bd8efcff
+    last_write_checksum: sha1:327ed0fa581be991d633155a30a13e502caa80ef
+    pristine_git_object: 7709c66d855a856043daf58e863129c4dd437b6f
   src/hooks/types.ts:
     id: 2a02d86ec24f
     last_write_checksum: sha1:27a3444c4839bec58ae89820fd8c2483edafc3f4
     pristine_git_object: 9c36bf01332084f735909a71036c3544cc4c7e3a
   src/landing-page.ts:
     id: ef64a6ee46d7
-    last_write_checksum: sha1:c5b437c9b91afb147a29f27c9842a0355f75933f
-    pristine_git_object: 1546d49129f6ba454d8b20fd5e8f9ac782b850b0
+    last_write_checksum: sha1:978345d7e4e9068faff49cd8e2b66021db5fcf93
+    pristine_git_object: c1835e9b058d0fb49496f8da3644be6fcdcf20a3
   src/lib/base64.ts:
     id: "598522066688"
     last_write_checksum: sha1:e9f04a037018040361043104960982f7c22db52d
     pristine_git_object: d4bd8b341290e7a828a171d840bd0b0fff7c7cd7
   src/lib/config.ts:
     id: 320761608fb3
-    last_write_checksum: sha1:c2aa01b346abec7fad7eac5297f68db2205ae93e
-    pristine_git_object: a5273b8d557ddf1575b8e01cfa1a7b6d6e72a6cb
+    last_write_checksum: sha1:d6fe284ea05ca965ad72da95792d91dbdd1e9665
+    pristine_git_object: 447fe5655b5546b1f9faf47766a9794e1a048496
   src/lib/dlv.ts:
     id: b1988214835a
     last_write_checksum: sha1:1dd3e3fbb4550c4bf31f5ef997faff355d6f3250
@@ -1662,8 +1662,8 @@ trackedFiles:
     pristine_git_object: 35c8713b6f8c7f17e2545423d3e74401ff77d04b
   src/mcp-server/mcp-server.ts:
     id: aabbc4ab07c1
-    last_write_checksum: sha1:6d4719e3e2a858d323dd23b113461625af60962a
-    pristine_git_object: 5cbc4d82567cd17b91a0f3ed3d944b448523c69a
+    last_write_checksum: sha1:48b132d86040a131b63f6ca93ceb876a51f46635
+    pristine_git_object: a97bfc6bd1c6b011bd88e1dbbf52d380a0daf7e2
   src/mcp-server/prompts.ts:
     id: 26f3d73cbf31
     last_write_checksum: sha1:cadb036e04534a6d9d765809eebb266d188c499b
@@ -1678,8 +1678,8 @@ trackedFiles:
     pristine_git_object: c25696d4c4f70e081fa5d87ad6891874c509a577
   src/mcp-server/server.ts:
     id: 2784dd48e82a
-    last_write_checksum: sha1:8d0699a5be45cd61f4d48e76c8b40816da337703
-    pristine_git_object: 6eb7f4371bb9f2b544d3f6c0fa9f529ac360dea4
+    last_write_checksum: sha1:14e81bd043d72b24e458dcb860972e7f39534cad
+    pristine_git_object: 892d8599ded0ddc69230d26ac36930458c909970
   src/mcp-server/shared.ts:
     id: 074e80d4be1e
     last_write_checksum: sha1:19c9034032819a14f15c430de4350c8aba99d725
@@ -2158,64 +2158,64 @@ trackedFiles:
     pristine_git_object: 92999204af8f4e89eef3ec93acaed727830c3fd2
   src/mcp-server/tools/offboardingChecklistOffboardingChecklistControllerCompleteItemV1.ts:
     id: ea90e963cb19
-    last_write_checksum: sha1:ff6eebdd24e0f55ad3e22494d50c0120c880b7a0
-    pristine_git_object: 7d594b0f04736f44f02c1aba11e51b64127ae1fa
+    last_write_checksum: sha1:c2ac527d90760274e3d280355c9b276f75bb15b8
+    pristine_git_object: d92ca3d7799492dd5a41e7bfb0fcc704f534e4da
   src/mcp-server/tools/offboardingChecklistOffboardingChecklistControllerCreateTemplateItemV1.ts:
     id: f206c8770390
-    last_write_checksum: sha1:ea1375eb7edb96cefbeb47a1cf286eda14fe0419
-    pristine_git_object: e6db09378e8c40021ac2849678918df496229241
+    last_write_checksum: sha1:69cb3bbef14bfdc06dcc05e19ba629983b025e50
+    pristine_git_object: 50f3b3546a54bd5ee039a327d1547207f720dc84
   src/mcp-server/tools/offboardingChecklistOffboardingChecklistControllerDeleteTemplateItemV1.ts:
     id: 8ca73a50db09
-    last_write_checksum: sha1:ecd72defe9adf9a17e1555d616d1c0a1ea42eb0b
-    pristine_git_object: 07f0e1d754cbd30ba7153558c11be1b3638bb75b
+    last_write_checksum: sha1:a26eebe09b6d39af9d533f1b6f8e4a91b7acd489
+    pristine_git_object: 2a8ca445f275594fca72b2e2e29503ceec558fbd
   src/mcp-server/tools/offboardingChecklistOffboardingChecklistControllerExportAllEvidenceV1.ts:
     id: 7ca2989ce2b4
-    last_write_checksum: sha1:564865de811b226373262141f89ed3b2a97d6f29
-    pristine_git_object: 704be8893608e1837e5ebea39901932a0e1a97d4
+    last_write_checksum: sha1:2c1c808a12d31613b3af5dd5cc71c77a2b4ec447
+    pristine_git_object: db107ec0dd87afdec72126061e356ef577ae57ae
   src/mcp-server/tools/offboardingChecklistOffboardingChecklistControllerExportEvidenceV1.ts:
     id: 305e216617e4
-    last_write_checksum: sha1:5794b181c234561b7c779d438eb67451425748c9
-    pristine_git_object: e7b274a53233f92d605d1cfb7cccef7a80b3b53c
+    last_write_checksum: sha1:8d12685818fc0664bb700eeb63d95863917b65c7
+    pristine_git_object: 387f72c6406bf4b3ab074d9ce3f6a3ee42b52b49
   src/mcp-server/tools/offboardingChecklistOffboardingChecklistControllerGetAccessRevocationsV1.ts:
     id: a0d7abf1778c
-    last_write_checksum: sha1:8a56346bf828927f5d7849ad859b7c355073050a
-    pristine_git_object: ec593e797d711c0bdb445ab1366ef47ebc227139
+    last_write_checksum: sha1:9b6f593cb1ed51157adfa4ee041023fd69fdc4bf
+    pristine_git_object: 5857c318b8e3fb54471bd0c255cb778173048560
   src/mcp-server/tools/offboardingChecklistOffboardingChecklistControllerGetMemberChecklistV1.ts:
     id: 1313a795c449
-    last_write_checksum: sha1:702a6f2fe326f2e0487f5a06bcb623a30d9275ef
-    pristine_git_object: 2d76e815a225c440b0255a72986454b47535f6af
+    last_write_checksum: sha1:78e356ab4ac05709863f2053ab5ed9d5afe21f34
+    pristine_git_object: b97797c04402c9df6c305b7511bdfc1abff4faa1
   src/mcp-server/tools/offboardingChecklistOffboardingChecklistControllerGetPendingOffboardingsV1.ts:
     id: 44e15d7f2c53
-    last_write_checksum: sha1:e196be79a7c6239d24d276af88153bd7bfb543f5
-    pristine_git_object: 3c9a5869d9bfbb2695fd104f9de6d64f596d35be
+    last_write_checksum: sha1:e618b60d184ec1b5520f81cc91942ed9373aab30
+    pristine_git_object: ceed27ad3a420008778318b79a07d56269dd3535
   src/mcp-server/tools/offboardingChecklistOffboardingChecklistControllerGetTemplateV1.ts:
     id: 8ca8b61daf16
-    last_write_checksum: sha1:0e3bdca3f6b1cd05fc566cc451c31145389a2e6a
-    pristine_git_object: 9e9ca385742fb43f8a69ef6a2dd6b7547b558ff6
+    last_write_checksum: sha1:039b936658cc5001bfbbeed99754f6af1a10009e
+    pristine_git_object: 34fb6a9290e837010f7304d6f2dcb32b88b5f9a7
   src/mcp-server/tools/offboardingChecklistOffboardingChecklistControllerRevokeAllVendorAccessV1.ts:
     id: c47cb2828a5d
-    last_write_checksum: sha1:c84ae736dabfabc178d29d9cdd23710047f1d97c
-    pristine_git_object: 0185052e4bd75e914b3f08ec487694f7698e0778
+    last_write_checksum: sha1:76f31e0532501d4551ac9f459011efb7a06e07fb
+    pristine_git_object: 6ead278774be42756d9c10296c064bdc62c6da50
   src/mcp-server/tools/offboardingChecklistOffboardingChecklistControllerRevokeVendorAccessV1.ts:
     id: 995de5ec0abe
-    last_write_checksum: sha1:8136d36a1f1d81959710befc0c508c808cc15cd8
-    pristine_git_object: 529d1e7c893aafd042c454ba7744cebfe6d0d9b3
+    last_write_checksum: sha1:31f1f4618c64f1172f617b155e6e9cc6760460cf
+    pristine_git_object: bbb00d734a4a9758a11cc977694ae8a30cc05993
   src/mcp-server/tools/offboardingChecklistOffboardingChecklistControllerUncompleteItemV1.ts:
     id: d5051500f7f3
-    last_write_checksum: sha1:60e42c6dd876b972af0d7a2e4d7459a896c07c6e
-    pristine_git_object: eef6ba2d914afb5c0e23eb3cd249036bebbbe70c
+    last_write_checksum: sha1:c2be7072f1be25cbf9a0fc66d305075edb86dedd
+    pristine_git_object: 8e438e7f5c3d86b050ef8428e6af5da88457482d
   src/mcp-server/tools/offboardingChecklistOffboardingChecklistControllerUndoVendorRevocationV1.ts:
     id: 26e442b5aeed
-    last_write_checksum: sha1:8a622fd43b442b0b4f0eb9ae020eab7d90f8714c
-    pristine_git_object: 88020d62b1bad62ca73928e7ae50a09762ac1e2a
+    last_write_checksum: sha1:a9e3696ff7035c20b4a1b92f9af8f3233ff1616d
+    pristine_git_object: d07d74b1c45f0df003c08cea1f0ad54fd4c332a5
   src/mcp-server/tools/offboardingChecklistOffboardingChecklistControllerUpdateTemplateItemV1.ts:
     id: 10d369c8f04c
-    last_write_checksum: sha1:29c747737da6ac30f73be55f987945ec37ce2855
-    pristine_git_object: 90168513887cf775a2a0d92c0cf5a3227d4e1887
+    last_write_checksum: sha1:e574e31bf896a836712dd9114476d9284d1d5819
+    pristine_git_object: aa0e9aded7ad50f311656c60052fb82df0e94bb3
   src/mcp-server/tools/offboardingChecklistOffboardingChecklistControllerUploadEvidenceV1.ts:
     id: 6abcacc63f2e
-    last_write_checksum: sha1:bdd174a8d87a69814d9559bbfd193baf3d507dd0
-    pristine_git_object: 0140406d9fc0257fc883d5a1b82a1efc33d1a9f5
+    last_write_checksum: sha1:0c5bfda7856e370ff365c0de8f4c7d315bfeb072
+    pristine_git_object: 7859c23ebe53c61921ac2c21bd4940b4c1ded9b4
   src/mcp-server/tools/orgChartOrgChartControllerDeleteOrgChartV1.ts:
     id: 32aeb43c6cca
     last_write_checksum: sha1:d58f72c45dbfa30e5a1188b433cb2e4696a555b9
@@ -3350,8 +3350,8 @@ trackedFiles:
     pristine_git_object: e6e7b767b88afe5e60a347e05c7274ee1737f8a0
   src/models/controlscontrollerunlinkdocumenttypev1op.ts:
     id: edc19b966a6a
-    last_write_checksum: sha1:87eb023cdee5984ada03fcb28dc2e08039e1d919
-    pristine_git_object: 06691eddbccd2e4d89075085a8d6ac803d34cbe3
+    last_write_checksum: sha1:34541c7a6990e2f83f09d98d6ed17720486d8eaa
+    pristine_git_object: c582816881750ec47ce97b15f1cb24aac2410ffd
   src/models/createaccessrequestdto.ts:
     id: c099827d5497
     last_write_checksum: sha1:06ccfeae9414d617517491bb34f55bba1e7251f1
@@ -4734,8 +4734,8 @@ trackedFiles:
     pristine_git_object: d89990b1a39878e9651513ee19fcba40b01670b4
   src/tool-names.ts:
     id: a9977280f9eb
-    last_write_checksum: sha1:dc699ef2f0e8765c035668fa6775d8f9ff8aec57
-    pristine_git_object: 20735d322c8207235a0423f7d80c89d98654aff6
+    last_write_checksum: sha1:ed627f1fd2552b15a24b48d2d0be0bff9e824cab
+    pristine_git_object: 0bdb58d6119cef6e0370f0195f450647554fc3b3
   src/types/async.ts:
     id: fac8da972f86
     last_write_checksum: sha1:3ff07b3feaf390ec1aeb18ff938e139c6c4a9585

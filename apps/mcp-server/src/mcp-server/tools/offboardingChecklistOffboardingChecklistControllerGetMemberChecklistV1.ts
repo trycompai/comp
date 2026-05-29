@@ -13,7 +13,9 @@ const args = {
 export const tool$offboardingChecklistOffboardingChecklistControllerGetMemberChecklistV1:
   ToolDefinition<typeof args> = {
     name: "get-member-checklist",
-    description: ``,
+    description: `Get a member's offboarding checklist
+
+Returns the offboarding checklist for a specific member, including each item and whether it has been completed, to track that person's offboarding progress.`,
     annotations: {
       "title": "",
       "destructiveHint": false,

@@ -15223,6 +15223,11 @@ paths:
           schema:
             example: "ctl_abc123def456"
             type: "string"
+        - name: "frameworkInstanceId"
+          required: true
+          in: "query"
+          schema:
+            type: "string"
         - name: "formType"
           required: true
           in: "path"
@@ -15241,11 +15246,6 @@ paths:
               - "employee_performance_evaluation"
               - "network_diagram"
               - "tabletop_exercise"
-            type: "string"
-        - name: "frameworkInstanceId"
-          required: true
-          in: "query"
-          schema:
             type: "string"
       responses:
         "200":
@@ -15530,6 +15530,7 @@ paths:
         name: "get-pdf"
   /v1/offboarding-checklist/pending:
     get:
+      description: "Lists members whose offboarding checklist is still incomplete, with their outstanding items, so you can track and finish departing-employee offboarding."
       operationId: "OffboardingChecklistController_getPendingOffboardings_v1"
       parameters: []
       responses:
@@ -15540,18 +15541,18 @@ paths:
       summary: "Get members with pending offboarding checklists"
       tags:
         - "Offboarding Checklist"
-      description: "Get members with pending offboarding checklists in Comp AI."
       x-mint:
         metadata:
           title: "Get members with pending offboarding | Comp AI API"
           sidebarTitle: "Get members with pending offboarding checklists"
-          description: "Get members with pending offboarding checklists in Comp AI."
+          description: "Lists members whose offboarding checklist is still incomplete, with their outstanding items, so you can track and finish departing-employee offboarding."
           og:title: "Get members with pending offboarding | Comp AI API"
-          og:description: "Get members with pending offboarding checklists in Comp AI."
+          og:description: "Lists members whose offboarding checklist is still incomplete, with their outstanding items, so you can track and finish departing-employee offboarding."
       x-speakeasy-mcp:
         name: "get-pending-offboardings"
   /v1/offboarding-checklist/template:
     get:
+      description: "Returns the organization's offboarding checklist template: the ordered set of items every departing member must complete during their offboarding."
       operationId: "OffboardingChecklistController_getTemplate_v1"
       parameters: []
       responses:
@@ -15559,11 +15560,20 @@ paths:
           description: ""
       security:
         - apikey: []
+      summary: "Get the offboarding checklist template"
       tags:
         - "Offboarding Checklist"
+      x-mint:
+        metadata:
+          title: "Get the offboarding checklist template | Comp AI API"
+          sidebarTitle: "Get the offboarding checklist template"
+          description: "Returns the organization's offboarding checklist template: the ordered set of items every departing member must complete during their offboarding."
+          og:title: "Get the offboarding checklist template | Comp AI API"
+          og:description: "Returns the organization's offboarding checklist template: the ordered set of items every departing member must complete during their offboarding."
       x-speakeasy-mcp:
         name: "get-template"
     post:
+      description: "Creates a new item in the organization's offboarding checklist template so it appears on every member's offboarding checklist from now on."
       operationId: "OffboardingChecklistController_createTemplateItem_v1"
       parameters: []
       requestBody:
@@ -15577,12 +15587,21 @@ paths:
           description: ""
       security:
         - apikey: []
+      summary: "Add an offboarding checklist template item"
       tags:
         - "Offboarding Checklist"
+      x-mint:
+        metadata:
+          title: "Add an offboarding checklist template item | Comp AI API"
+          sidebarTitle: "Add an offboarding checklist template item"
+          description: "Creates a new item in the organization's offboarding checklist template so it appears on every member's offboarding checklist from now on."
+          og:title: "Add an offboarding checklist template item | Comp AI API"
+          og:description: "Creates a new item in the organization's offboarding checklist template so it appears on every member's offboarding checklist from now on."
       x-speakeasy-mcp:
         name: "create-template-item"
   /v1/offboarding-checklist/template/{id}:
     patch:
+      description: "Updates an existing offboarding checklist template item by id, changing its label, description, or settings on the organization's offboarding template."
       operationId: "OffboardingChecklistController_updateTemplateItem_v1"
       parameters:
         - name: "id"
@@ -15601,11 +15620,20 @@ paths:
           description: ""
       security:
         - apikey: []
+      summary: "Update an offboarding checklist template item"
       tags:
         - "Offboarding Checklist"
+      x-mint:
+        metadata:
+          title: "Update an offboarding checklist template item | Comp AI API"
+          sidebarTitle: "Update an offboarding checklist template item"
+          description: "Updates an existing offboarding checklist template item by id, changing its label, description, or settings on the organization's offboarding template."
+          og:title: "Update an offboarding checklist template item | Comp AI API"
+          og:description: "Updates an existing offboarding checklist template item by id, changing its label, description, or settings on the organization's offboarding template."
       x-speakeasy-mcp:
         name: "update-template-item"
     delete:
+      description: "Removes an item from the organization's offboarding checklist template by id so it no longer appears on members' offboarding checklists."
       operationId: "OffboardingChecklistController_deleteTemplateItem_v1"
       parameters:
         - name: "id"
@@ -15618,12 +15646,21 @@ paths:
           description: ""
       security:
         - apikey: []
+      summary: "Delete an offboarding checklist template item"
       tags:
         - "Offboarding Checklist"
+      x-mint:
+        metadata:
+          title: "Delete an offboarding checklist template item | Comp AI API"
+          sidebarTitle: "Delete an offboarding checklist template item"
+          description: "Removes an item from the organization's offboarding checklist template by id so it no longer appears on members' offboarding checklists."
+          og:title: "Delete an offboarding checklist template item | Comp AI API"
+          og:description: "Removes an item from the organization's offboarding checklist template by id so it no longer appears on members' offboarding checklists."
       x-speakeasy-mcp:
         name: "delete-template-item"
   /v1/offboarding-checklist/member/{memberId}:
     get:
+      description: "Returns the offboarding checklist for a specific member, including each item and whether it has been completed, to track that person's offboarding progress."
       operationId: "OffboardingChecklistController_getMemberChecklist_v1"
       parameters:
         - name: "memberId"
@@ -15636,12 +15673,21 @@ paths:
           description: ""
       security:
         - apikey: []
+      summary: "Get a member's offboarding checklist"
       tags:
         - "Offboarding Checklist"
+      x-mint:
+        metadata:
+          title: "Get a member's offboarding checklist | Comp AI API"
+          sidebarTitle: "Get a member's offboarding checklist"
+          description: "Returns the offboarding checklist for a specific member, including each item and whether it has been completed, to track that person's offboarding progress."
+          og:title: "Get a member's offboarding checklist | Comp AI API"
+          og:description: "Returns the offboarding checklist for a specific member, including each item and whether it has been completed, to track that person's offboarding progress."
       x-speakeasy-mcp:
         name: "get-member-checklist"
   /v1/offboarding-checklist/export-all:
     get:
+      description: "Exports a zip archive containing the offboarding checklist evidence for every member in the organization, for audits, handovers, or record-keeping."
       operationId: "OffboardingChecklistController_exportAllEvidence_v1"
       parameters: []
       responses:
@@ -15652,18 +15698,18 @@ paths:
       summary: "Export all offboarding evidence as a zip file"
       tags:
         - "Offboarding Checklist"
-      description: "Export all offboarding evidence as a zip file in Comp AI."
       x-mint:
         metadata:
           title: "Export all offboarding evidence as a zip file | Comp AI API"
           sidebarTitle: "Export all offboarding evidence as a zip file"
-          description: "Export all offboarding evidence as a zip file in Comp AI."
+          description: "Exports a zip archive containing the offboarding checklist evidence for every member in the organization, for audits, handovers, or record-keeping."
           og:title: "Export all offboarding evidence as a zip file | Comp AI API"
-          og:description: "Export all offboarding evidence as a zip file in Comp AI."
+          og:description: "Exports a zip archive containing the offboarding checklist evidence for every member in the organization, for audits, handovers, or record-keeping."
       x-speakeasy-mcp:
         name: "offboarding-checklist-export-all-evidence"
   /v1/offboarding-checklist/member/{memberId}/export:
     get:
+      description: "Exports a zip archive of the offboarding checklist evidence collected for a single member, for audit, handover, or record-keeping purposes."
       operationId: "OffboardingChecklistController_exportEvidence_v1"
       parameters:
         - name: "memberId"
@@ -15680,18 +15726,18 @@ paths:
       summary: "Export offboarding evidence as a zip file"
       tags:
         - "Offboarding Checklist"
-      description: "Export offboarding evidence as a zip file in Comp AI."
       x-mint:
         metadata:
           title: "Export offboarding evidence as a zip file | Comp AI API"
           sidebarTitle: "Export offboarding evidence as a zip file"
-          description: "Export offboarding evidence as a zip file in Comp AI."
+          description: "Exports a zip archive of the offboarding checklist evidence collected for a single member, for audit, handover, or record-keeping purposes."
           og:title: "Export offboarding evidence as a zip file | Comp AI API"
-          og:description: "Export offboarding evidence as a zip file in Comp AI."
+          og:description: "Exports a zip archive of the offboarding checklist evidence collected for a single member, for audit, handover, or record-keeping purposes."
       x-speakeasy-mcp:
         name: "export-evidence"
   /v1/offboarding-checklist/member/{memberId}/item/{templateItemId}/complete:
     post:
+      description: "Marks a specific offboarding checklist item complete for a member, recording who completed it and when, as part of finishing that member's offboarding."
       operationId: "OffboardingChecklistController_completeItem_v1"
       parameters:
         - name: "memberId"
@@ -15715,11 +15761,20 @@ paths:
           description: ""
       security:
         - apikey: []
+      summary: "Complete an offboarding checklist item"
       tags:
         - "Offboarding Checklist"
+      x-mint:
+        metadata:
+          title: "Complete an offboarding checklist item | Comp AI API"
+          sidebarTitle: "Complete an offboarding checklist item"
+          description: "Marks a specific offboarding checklist item complete for a member, recording who completed it and when, as part of finishing that member's offboarding."
+          og:title: "Complete an offboarding checklist item | Comp AI API"
+          og:description: "Marks a specific offboarding checklist item complete for a member, recording who completed it and when, as part of finishing that member's offboarding."
       x-speakeasy-mcp:
         name: "complete-item"
     delete:
+      description: "Reverts a previously completed offboarding checklist item back to incomplete for a member, in case the step was marked done by mistake."
       operationId: "OffboardingChecklistController_uncompleteItem_v1"
       parameters:
         - name: "memberId"
@@ -15737,12 +15792,21 @@ paths:
           description: ""
       security:
         - apikey: []
+      summary: "Reopen an offboarding checklist item"
       tags:
         - "Offboarding Checklist"
+      x-mint:
+        metadata:
+          title: "Reopen an offboarding checklist item | Comp AI API"
+          sidebarTitle: "Reopen an offboarding checklist item"
+          description: "Reverts a previously completed offboarding checklist item back to incomplete for a member, in case the step was marked done by mistake."
+          og:title: "Reopen an offboarding checklist item | Comp AI API"
+          og:description: "Reverts a previously completed offboarding checklist item back to incomplete for a member, in case the step was marked done by mistake."
       x-speakeasy-mcp:
         name: "uncomplete-item"
   /v1/offboarding-checklist/member/{memberId}/item/{templateItemId}/evidence:
     post:
+      description: "Attaches a supporting evidence file to a member's completed offboarding checklist item, documenting that the offboarding step was actually carried out."
       operationId: "OffboardingChecklistController_uploadEvidence_v1"
       parameters:
         - name: "memberId"
@@ -15766,12 +15830,21 @@ paths:
           description: ""
       security:
         - apikey: []
+      summary: "Upload evidence for an offboarding checklist item"
       tags:
         - "Offboarding Checklist"
+      x-mint:
+        metadata:
+          title: "Upload evidence for an offboarding checklist | Comp AI API"
+          sidebarTitle: "Upload evidence for an offboarding checklist item"
+          description: "Attaches a supporting evidence file to a member's completed offboarding checklist item, documenting that the offboarding step was actually carried out."
+          og:title: "Upload evidence for an offboarding checklist | Comp AI API"
+          og:description: "Attaches a supporting evidence file to a member's completed offboarding checklist item, documenting that the offboarding step was actually carried out."
       x-speakeasy-mcp:
         name: "upload-evidence"
   /v1/offboarding-checklist/member/{memberId}/access-revocations:
     get:
+      description: "Lists the vendors a departing member had access to and whether each has been revoked, so you can confirm all vendor access is removed during offboarding."
       operationId: "OffboardingChecklistController_getAccessRevocations_v1"
       parameters:
         - name: "memberId"
@@ -15788,18 +15861,18 @@ paths:
       summary: "Get vendor access revocation status for a member"
       tags:
         - "Offboarding Checklist"
-      description: "Get vendor access revocation status for a member in Comp AI."
       x-mint:
         metadata:
           title: "Get vendor access revocation status for a | Comp AI API"
           sidebarTitle: "Get vendor access revocation status for a member"
-          description: "Get vendor access revocation status for a member in Comp AI."
+          description: "Lists the vendors a departing member had access to and whether each has been revoked, so you can confirm all vendor access is removed during offboarding."
           og:title: "Get vendor access revocation status for a | Comp AI API"
-          og:description: "Get vendor access revocation status for a member in Comp AI."
+          og:description: "Lists the vendors a departing member had access to and whether each has been revoked, so you can confirm all vendor access is removed during offboarding."
       x-speakeasy-mcp:
         name: "get-access-revocations"
   /v1/offboarding-checklist/member/{memberId}/access-revocations/confirm-all:
     post:
+      description: "Marks every vendor access record for a departing member as revoked in one step, recording who confirmed it, to complete access removal during offboarding."
       operationId: "OffboardingChecklistController_revokeAllVendorAccess_v1"
       parameters:
         - name: "memberId"
@@ -15816,18 +15889,18 @@ paths:
       summary: "Confirm all vendor access as revoked"
       tags:
         - "Offboarding Checklist"
-      description: "Confirm all vendor access as revoked in Comp AI."
       x-mint:
         metadata:
           title: "Confirm all vendor access as revoked | Comp AI API"
           sidebarTitle: "Confirm all vendor access as revoked"
-          description: "Confirm all vendor access as revoked in Comp AI."
+          description: "Marks every vendor access record for a departing member as revoked in one step, recording who confirmed it, to complete access removal during offboarding."
           og:title: "Confirm all vendor access as revoked | Comp AI API"
-          og:description: "Confirm all vendor access as revoked in Comp AI."
+          og:description: "Marks every vendor access record for a departing member as revoked in one step, recording who confirmed it, to complete access removal during offboarding."
       x-speakeasy-mcp:
         name: "revoke-all-vendor-access"
   /v1/offboarding-checklist/member/{memberId}/access-revocations/{vendorId}:
     post:
+      description: "Marks a single vendor's access for a departing member as revoked, optionally attaching evidence and notes, as part of offboarding access removal."
       operationId: "OffboardingChecklistController_revokeVendorAccess_v1"
       parameters:
         - name: "memberId"
@@ -15850,17 +15923,17 @@ paths:
       summary: "Mark vendor access as revoked"
       tags:
         - "Offboarding Checklist"
-      description: "Mark vendor access as revoked in Comp AI."
       x-mint:
         metadata:
           title: "Mark vendor access as revoked | Comp AI API"
           sidebarTitle: "Mark vendor access as revoked"
-          description: "Mark vendor access as revoked in Comp AI."
+          description: "Marks a single vendor's access for a departing member as revoked, optionally attaching evidence and notes, as part of offboarding access removal."
           og:title: "Mark vendor access as revoked | Comp AI API"
-          og:description: "Mark vendor access as revoked in Comp AI."
+          og:description: "Marks a single vendor's access for a departing member as revoked, optionally attaching evidence and notes, as part of offboarding access removal."
       x-speakeasy-mcp:
         name: "revoke-vendor-access"
     delete:
+      description: "Reverses a vendor access revocation for a member, marking that vendor's access as not revoked again, in case it was confirmed by mistake during offboarding."
       operationId: "OffboardingChecklistController_undoVendorRevocation_v1"
       parameters:
         - name: "memberId"
@@ -15883,14 +15956,13 @@ paths:
       summary: "Undo vendor access revocation"
       tags:
         - "Offboarding Checklist"
-      description: "Undo vendor access revocation in Comp AI."
       x-mint:
         metadata:
           title: "Undo vendor access revocation | Comp AI API"
           sidebarTitle: "Undo vendor access revocation"
-          description: "Undo vendor access revocation in Comp AI."
+          description: "Reverses a vendor access revocation for a member, marking that vendor's access as not revoked again, in case it was confirmed by mistake during offboarding."
           og:title: "Undo vendor access revocation | Comp AI API"
-          og:description: "Undo vendor access revocation in Comp AI."
+          og:description: "Reverses a vendor access revocation for a member, marking that vendor's access as not revoked again, in case it was confirmed by mistake during offboarding."
       x-speakeasy-mcp:
         name: "undo-vendor-revocation"
 info:
