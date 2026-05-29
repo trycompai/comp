@@ -47,10 +47,9 @@ export function useMcpOrganization(options?: UseMcpOrganizationOptions) {
       if (response.error) throw new Error(response.error);
       await mutate();
     } catch (err) {
-      // Roll back to the last known good value.
-      if (previous) {
-        await mutate(previous, false);
-      }
+      // Revalidate from the server rather than restoring a possibly-stale
+      // snapshot (another tab/request may have changed the selection).
+      await mutate();
       throw err;
     }
   };

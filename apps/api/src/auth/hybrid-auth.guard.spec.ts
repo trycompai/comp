@@ -276,6 +276,28 @@ describe('HybridAuthGuard — MCP OAuth path', () => {
     expect(request.isPlatformAdmin).toBe(true);
   });
 
+  it('lets a platform admin through even with a non-app-access member role', async () => {
+    // Platform admin (user.role='admin') who is only an employee in the org —
+    // should bypass the app-access gate, consistent with PermissionGuard.
+    mockGetMcpSession.mockResolvedValue({ userId: 'usr_pa', scopes: 'openid' });
+    mockUserFindUnique.mockResolvedValue({
+      id: 'usr_pa',
+      email: 'staff@trycomp.ai',
+      role: 'admin',
+    });
+    mockMemberFindMany.mockResolvedValue([
+      { id: 'mem_pa', role: 'employee', department: 'none', organizationId: 'org_1' },
+    ]);
+
+    const { context, request } = createContext({
+      authorization: 'Bearer mcp_access_token',
+    });
+
+    await expect(guard.canActivate(context)).resolves.toBe(true);
+    expect(request.organizationId).toBe('org_1');
+    expect(request.isPlatformAdmin).toBe(true);
+  });
+
   it('blocks a Portal-only role (employee) — no app access, no MCP', async () => {
     mockGetMcpSession.mockResolvedValue({ userId: 'usr_e', scopes: 'openid' });
     mockUserFindUnique.mockResolvedValue({

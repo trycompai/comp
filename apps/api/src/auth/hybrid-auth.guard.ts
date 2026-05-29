@@ -352,7 +352,12 @@ export class HybridAuthGuard implements CanActivate {
     // App-access gate: MCP follows the same rule as the web app — only roles
     // that grant app access (`app:read`) may use it. Portal-only roles
     // (employee/contractor, or custom roles without app access) are rejected.
-    if (!(await hasAppAccess(member.organizationId, member.role))) {
+    // Platform admins bypass this, consistent with PermissionGuard's own
+    // isPlatformAdmin bypass on the normal session path.
+    if (
+      !request.isPlatformAdmin &&
+      !(await hasAppAccess(member.organizationId, member.role))
+    ) {
       throw new ForbiddenException(
         "Your role doesn't have access to the app, so it can't use the MCP. " +
           'Ask an organization admin for access.',
