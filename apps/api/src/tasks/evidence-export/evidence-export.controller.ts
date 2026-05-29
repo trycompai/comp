@@ -188,6 +188,11 @@ export class EvidenceExportController {
       'Content-Disposition',
       `attachment; filename="${filename}"`,
     );
+    // Push the response status line + headers to the wire immediately so
+    // upstream proxies (Cloudflare, ALB, etc.) don't apply their idle-timeout
+    // while we assemble the first archive entry — a TTFB > ~60s on a large
+    // org otherwise surfaces in the browser as `TypeError: Failed to fetch`.
+    res.flushHeaders();
 
     pipeArchiveToResponse({
       archive,
@@ -261,6 +266,9 @@ export class AuditorEvidenceExportController {
       'Content-Disposition',
       `attachment; filename="${filename}"`,
     );
+    // See note on the task variant above — flush early so a slow first task
+    // doesn't blow past the proxy idle timeout for large orgs.
+    res.flushHeaders();
 
     pipeArchiveToResponse({
       archive,
