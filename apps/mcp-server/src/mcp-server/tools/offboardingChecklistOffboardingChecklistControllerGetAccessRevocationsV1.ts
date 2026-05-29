@@ -16,7 +16,7 @@ export const tool$offboardingChecklistOffboardingChecklistControllerGetAccessRev
     name: "get-access-revocations",
     description: `Get vendor access revocation status for a member
 
-Get vendor access revocation status for a member in Comp AI.`,
+Lists the vendors a departing member had access to and whether each has been revoked, so you can confirm all vendor access is removed during offboarding.`,
     annotations: {
       "title": "",
       "destructiveHint": false,

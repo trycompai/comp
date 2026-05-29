@@ -29,7 +29,7 @@ import { Result } from "../types/fp.js";
  * Export offboarding evidence as a zip file
  *
  * @remarks
- * Export offboarding evidence as a zip file in Comp AI.
+ * Exports a zip archive of the offboarding checklist evidence collected for a single member, for audit, handover, or record-keeping purposes.
  *
  * If set, this operation will use {@link Security.apikey} from the global security.
  */

@@ -20,6 +20,11 @@ import { APICall, APIPromise } from "../types/async.js";
 import { Result } from "../types/fp.js";
 
 /**
+ * Get the offboarding checklist template
+ *
+ * @remarks
+ * Returns the organization's offboarding checklist template: the ordered set of items every departing member must complete during their offboarding.
+ *
  * If set, this operation will use {@link Security.apikey} from the global security.
  */
 export function offboardingChecklistOffboardingChecklistControllerGetTemplateV1(

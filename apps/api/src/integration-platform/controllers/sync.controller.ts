@@ -572,6 +572,13 @@ export class SyncController {
       `Google Workspace sync complete: ${results.imported} imported, ${results.reactivated} reactivated, ${results.deactivated} deactivated, ${results.skipped} skipped, ${results.errors} errors`,
     );
 
+    // Record that an employee sync ran. The People page reads
+    // connection.lastSyncAt as "Last sync"; without this it would only ever
+    // reflect the last check run, making a working daily sync look stuck.
+    await this.connectionRepository.update(connectionId, {
+      lastSyncAt: new Date(),
+    });
+
     return {
       success: true,
       totalFound: activeUsers.length,

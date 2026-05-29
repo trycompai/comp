@@ -10,7 +10,7 @@ export const tool$offboardingChecklistOffboardingChecklistControllerGetPendingOf
     name: "get-pending-offboardings",
     description: `Get members with pending offboarding checklists
 
-Get members with pending offboarding checklists in Comp AI.`,
+Lists members whose offboarding checklist is still incomplete, with their outstanding items, so you can track and finish departing-employee offboarding.`,
     annotations: {
       "title": "",
       "destructiveHint": false,
