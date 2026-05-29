@@ -12,6 +12,10 @@ on:
       - "gram.json"
   workflow_dispatch:
 
+# Least privilege: this workflow only reads the repo to checkout + push the spec.
+permissions:
+  contents: read
+
 jobs:
   push:
     runs-on: ubuntu-latest
