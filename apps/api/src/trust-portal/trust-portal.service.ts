@@ -36,6 +36,7 @@ import {
   TrustDocumentUrlResponseDto,
   UploadTrustDocumentDto,
 } from './dto/trust-document.dto';
+import { isTrustPortalConfigured } from './is-trust-portal-configured';
 
 interface VercelDomainVerification {
   type: string;
@@ -1533,8 +1534,42 @@ export class TrustPortalService {
       defaultOverviewContent = missionContext?.answer ?? null;
     }
 
+    const [trustDocumentCount, trustResourceCount, trustCustomLinkCount] =
+      await Promise.all([
+        db.trustDocument.count({ where: { organizationId } }),
+        db.trustResource.count({ where: { organizationId } }),
+        db.trustCustomLink.count({ where: { organizationId } }),
+      ]);
+
+    const isConfigured = isTrustPortalConfigured({
+      domain: trust.domain,
+      contactEmail: trust.contactEmail,
+      overviewContent: trust.overviewContent, // raw column, not the Context fallback
+      favicon: trust.favicon,
+      faqs: org.trustPortalFaqs,
+      frameworkFlags: [
+        trust.soc2, // legacy column; folded into soc2type2 in the response but still a "configured" signal
+        trust.soc2type1,
+        trust.soc2type2,
+        trust.soc3,
+        trust.iso27001,
+        trust.iso42001,
+        trust.nen7510,
+        trust.gdpr,
+        trust.hipaa,
+        trust.pci_dss,
+        trust.iso9001,
+        trust.pipeda,
+        trust.ccpa,
+      ],
+      documentCount: trustDocumentCount,
+      resourceCount: trustResourceCount,
+      customLinkCount: trustCustomLinkCount,
+    });
+
     return {
       enabled: trust.status === 'published',
+      isConfigured,
       friendlyUrl: trust.friendlyUrl,
       domain: trust.domain ?? '',
       domainVerified: trust.domainVerified ?? false,
