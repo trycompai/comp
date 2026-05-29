@@ -29,6 +29,11 @@
             "types": "./dist/ssl-config.d.ts",
             "import": "./dist/ssl-config.js",
             "default": "./dist/ssl-config.js"
+        },
+        "./trust": {
+            "types": "./src/trust/ensure-friendly-url.ts",
+            "import": "./src/trust/ensure-friendly-url.ts",
+            "default": "./src/trust/ensure-friendly-url.ts"
         }
     },
     "bin": {

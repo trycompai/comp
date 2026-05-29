@@ -8,6 +8,7 @@ import { onboardOrganization as onboardOrganizationTask } from '@/trigger/tasks/
 import { auth } from '@/utils/auth';
 import { db } from '@db/server';
 import { tasks } from '@trigger.dev/sdk';
+import { ensureTrustForOrganization } from '@trycompai/db/trust';
 import { revalidatePath } from 'next/cache';
 import { cookies, headers } from 'next/headers';
 import { companyDetailsSchema, steps } from '../lib/constants';
@@ -78,6 +79,18 @@ export const createOrganization = authActionClientWithoutOrg
       });
 
       const orgId = newOrg.id;
+
+      // Auto-publish the trust portal so trust.inc/{slug} is live immediately,
+      // even while empty. Non-fatal: onboarding + job triggers must still run.
+      try {
+        await ensureTrustForOrganization({
+          db,
+          organizationId: orgId,
+          organizationName: parsedInput.organizationName,
+        });
+      } catch (trustError) {
+        console.error('Non-critical: failed to auto-create trust portal:', trustError);
+      }
 
       // Get the member that was created with the organization (the owner)
       const ownerMember = await db.member.findFirst({
