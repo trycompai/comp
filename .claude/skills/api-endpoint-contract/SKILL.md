@@ -13,7 +13,7 @@ Every customer-facing endpoint in `apps/api/src/` ends up in three places:
 
 If any one of these three is wrong, the endpoint either silently breaks for agents (Claude Desktop, Cursor, Codex, etc.) or fails validation at runtime. **Follow this contract on every body-accepting endpoint.**
 
-## The 10 rules
+## The 11 rules
 
 ### 1. DTOs MUST be classes — never interfaces, never inline types
 
@@ -156,10 +156,30 @@ SSE streams (`@ApiProduces('text/event-stream')`) and binary file responses (`@R
       disabled: true
 ```
 
+### 11. Every endpoint MUST have a meaningful summary + description — it powers MCP discovery
+
+`@ApiOperation({ summary, description })` is **not optional**. `openapi-docs.spec.ts` (via `collectPublicOpenApiIssues` in `apps/api/src/openapi/public-docs-quality.ts`) **fails CI** if any non-excluded operation has:
+- an empty `summary` → `missingSummaries`
+- a missing `description` or SEO metadata → `missingMetadata`
+- SEO metadata outside 80–160 chars, or a title > 60 chars → `invalidSeo`
+
+This matters more now that the hosted MCP (Gram) uses **dynamic toolsets**: with 300+ tools the agent never sees them all — it runs a semantic `search` over tool **names + descriptions** and only loads matches. A tool with a weak or missing description is effectively **undiscoverable**. The description is the tool's only chance of being found.
+
+```ts
+@ApiOperation({
+  summary: 'List compliance policies', // concise tool title
+  description:
+    "Returns the organization's compliance policies (SOC 2, ISO 27001, …) " +
+    'with status and owner. Use to review or audit policy coverage.', // what it does + when to use it
+})
+```
+
+Write the description for the agent deciding *whether to call this tool*: state what it does and when to use it. (Keep it ≤ 240 chars — see Rule 4.)
+
 ## Workflow checklist when adding a body endpoint
 
 1. Define a `class` DTO. Two decorator stacks on every field. Add `@ApiBody({ type: DtoClass })` on the endpoint.
-2. Keep `@ApiOperation.description` ≤ 240 chars.
+2. Give the endpoint a meaningful `@ApiOperation({ summary, description })` — both required, CI-enforced by `openapi-docs.spec.ts`, and they power MCP dynamic-toolset discovery (Rule 11). Keep the description ≤ 240 chars (Rule 4).
 3. If the auto-derived MCP tool name is ugly, set `@ApiExtension('x-speakeasy-mcp', { name: '...' })`.
 4. If the endpoint requires session auth, decide: remove `SessionOnlyGuard`, or disable it for MCP via the overlay.
 5. For long-running work, return a run handle and document the poll target.
@@ -186,5 +206,6 @@ Every bug below was a real customer-visible MCP failure caught during the May 20
 | Agent uploads stuck for 15+ min on base64 encoding | Tool accepted `fileData` as the only file input | Rule 8 |
 | Agent calls SSE auto-answer and hangs | Tool was generated from `@ApiProduces('text/event-stream')` | Rule 10 |
 | Agent tries to start OAuth and gets 403 | Endpoint was behind `SessionOnlyGuard` but generated as MCP tool | Rule 6 |
+| Agent can't find a tool that exists (dynamic toolsets) | Endpoint had a missing/weak description → invisible to semantic search | Rule 11 |
 
 Follow the 10 rules and you avoid every one of these.

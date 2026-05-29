@@ -82,6 +82,7 @@ Every customer-facing endpoint in `apps/api/src/` flows into three systems: the 
 8. **File uploads from agents use presigned URLs** — accept an `s3Key` field (read via `UploadsService.readUploadAsBase64`); never accept inline base64 from the MCP tool.
 9. **Sensitive paths (e.g. `/credentials`)** are deny-listed from public docs in `apps/api/src/openapi/public-docs-quality.ts` — that's intentional, don't fight it.
 10. **SSE / binary responses** can't be consumed by MCP — disable the tool in `apps/mcp-server/.speakeasy/mcp-uploads-overlay.yaml` while keeping the HTTP endpoint for the web UI.
+11. **Every endpoint needs a meaningful `@ApiOperation({ summary, description })`** — required and **CI-enforced** (`openapi-docs.spec.ts` fails the build if a public op is missing one). The hosted MCP uses **dynamic toolsets**: the agent finds a tool by semantic-searching names + descriptions, so a missing/weak description makes the tool effectively undiscoverable. Write the description for the agent deciding whether to call the tool — what it does + when to use it.
 
 After adding an endpoint: `bun run --filter '@trycompai/api' dev` regenerates `packages/docs/openapi.json` on boot — **commit it with your PR**. The daily Speakeasy CI reads from that file; if it's stale, your endpoint never reaches MCP customers.
 
