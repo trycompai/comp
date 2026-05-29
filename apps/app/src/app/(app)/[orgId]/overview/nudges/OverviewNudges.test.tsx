@@ -12,8 +12,18 @@ vi.mock('@/hooks/use-api-swr', () => ({
   useApiSWR: () => mockUseApiSWR(),
 }));
 
+const mockUseFrameworkUpdateStatuses = vi.fn();
+vi.mock('@/hooks/use-framework-update-statuses', () => ({
+  useFrameworkUpdateStatuses: () => mockUseFrameworkUpdateStatuses(),
+}));
+
+vi.mock('../components/FrameworkUpdatesCard', () => ({
+  FrameworkUpdatesCard: () => <div>framework updates available</div>,
+}));
+
 vi.mock('next/navigation', () => ({
   useParams: () => ({ orgId: 'org_123' }),
+  useRouter: () => ({ push: vi.fn() }),
 }));
 
 vi.mock('next/link', () => ({
@@ -46,11 +56,16 @@ function setOffboarding(members: { memberId: string; name: string }[]) {
   mockUseApiSWR.mockReturnValue({ data: { data: { members } }, error: undefined });
 }
 
+function setFrameworkUpdates(items: { frameworkInstanceId: string }[]) {
+  mockUseFrameworkUpdateStatuses.mockReturnValue({ data: items, error: undefined });
+}
+
 describe('OverviewNudges', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     window.localStorage.clear();
     setOffboarding([]); // default: no offboarding
+    setFrameworkUpdates([]); // default: no framework updates
     setMockPermissions(TRUST_PERMS);
   });
 
@@ -143,5 +158,39 @@ describe('OverviewNudges', () => {
       <OverviewNudges orgId="org_123" server={server({ isConfigured: true })} />,
     );
     expect(container).toBeEmptyDOMElement();
+  });
+
+  it('shows the framework updates nudge when it is the only one eligible', () => {
+    setFrameworkUpdates([{ frameworkInstanceId: 'fi_1' }]);
+    // isConfigured: true → trust off; no offboarding → framework is the only nudge.
+    render(<OverviewNudges orgId="org_123" server={server({ isConfigured: true })} />);
+    expect(screen.getByText('framework updates available')).toBeInTheDocument();
+    expect(screen.queryByText(/\d+ notices/)).not.toBeInTheDocument();
+  });
+
+  it('orders framework updates between offboarding and trust in the stack', () => {
+    setOffboarding([{ memberId: 'm1', name: 'Jo' }]);
+    setFrameworkUpdates([{ frameworkInstanceId: 'fi_1' }]);
+    render(<OverviewNudges orgId="org_123" server={server()} />);
+
+    // Collapsed: only offboarding (priority 10) on top; the other two wait.
+    expect(screen.getByText(/offboarding completion/)).toBeInTheDocument();
+    expect(screen.queryByText('framework updates available')).not.toBeInTheDocument();
+    expect(screen.queryByText('Showcase your security posture')).not.toBeInTheDocument();
+    expect(screen.getByText('3 notices')).toBeInTheDocument();
+
+    // Expanded: all three are shown.
+    fireEvent.click(screen.getByText('3 notices'));
+    expect(screen.getByText(/offboarding completion/)).toBeInTheDocument();
+    expect(screen.getByText('framework updates available')).toBeInTheDocument();
+    expect(screen.getByText('Showcase your security posture')).toBeInTheDocument();
+  });
+
+  it('excludes framework updates from the count while its data is loading', () => {
+    setOffboarding([{ memberId: 'm1', name: 'Jo' }]);
+    mockUseFrameworkUpdateStatuses.mockReturnValue({ data: undefined, error: undefined });
+    render(<OverviewNudges orgId="org_123" server={server()} />);
+    // offboarding + trust = 2; framework not ready, so it doesn't inflate the count.
+    expect(screen.getByText('2 notices')).toBeInTheDocument();
   });
 });

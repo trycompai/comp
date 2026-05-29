@@ -4,7 +4,6 @@ import { auth } from '@/utils/auth';
 import type { FrameworkEditorFramework, Policy, Task } from '@db';
 import { PageHeader, PageLayout } from '@trycompai/design-system';
 import { headers } from 'next/headers';
-import { FrameworkUpdatesBanner } from './components/FrameworkUpdatesBanner';
 import { Overview } from './components/Overview';
 import { OverviewTabs } from './components/OverviewTabs';
 import { OverviewNudges } from './nudges/OverviewNudges';
@@ -74,7 +73,6 @@ export default async function OverviewPage({ params }: { params: Promise<{ orgId
 
   return (
     <>
-      <FrameworkUpdatesBanner />
       <OverviewNudges
         orgId={organizationId}
         server={{ trust: { isTrustNdaEnabled, isConfigured: isTrustConfigured } }}

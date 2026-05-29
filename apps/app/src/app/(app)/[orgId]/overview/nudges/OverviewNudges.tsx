@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useFrameworkUpdatesNudge } from './FrameworkUpdatesNudge';
 import { NudgeCenter } from './NudgeCenter';
 import { useOffboardingNudge } from './OffboardingNudge';
 import { useTrustPortalSetupNudge } from './TrustPortalSetupNudge';
@@ -18,8 +19,9 @@ export function OverviewNudges({
 }) {
   // Hooks called unconditionally, in stable priority order.
   const offboarding = useOffboardingNudge();
+  const frameworkUpdates = useFrameworkUpdatesNudge();
   const trust = useTrustPortalSetupNudge({ orgId, server });
-  const candidates = [offboarding, trust];
+  const candidates = [offboarding, frameworkUpdates, trust];
 
   // Stable across renders unless a persistable nudge is added/removed.
   const persistableIds = candidates
