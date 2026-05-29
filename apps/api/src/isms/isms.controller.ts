@@ -46,7 +46,7 @@ export class IsmsController {
 
   @Post('ensure-setup')
   @HttpCode(HttpStatus.OK)
-  @RequirePermission('audit', 'create')
+  @RequirePermission('evidence', 'read')
   @ApiOperation({ summary: 'Ensure ISMS foundational documents exist' })
   @ApiConsumes('application/json')
   @ApiOkResponse({ description: 'Setup ensured' })
@@ -55,7 +55,7 @@ export class IsmsController {
   }
 
   @Get('documents/:id')
-  @RequirePermission('audit', 'read')
+  @RequirePermission('evidence', 'read')
   @ApiOperation({ summary: 'Get an ISMS document with its latest version' })
   @ApiOkResponse({ description: 'ISMS document' })
   async getDocument(
@@ -67,7 +67,7 @@ export class IsmsController {
 
   @Post('documents/:id/generate')
   @HttpCode(HttpStatus.OK)
-  @RequirePermission('audit', 'update')
+  @RequirePermission('evidence', 'update')
   @ApiOperation({ summary: 'Derive Context-of-the-Organization issues' })
   @ApiConsumes('application/json')
   @ApiOkResponse({ description: 'Document with derived issues' })
@@ -80,7 +80,7 @@ export class IsmsController {
 
   @Post('documents/:id/context-issues')
   @HttpCode(HttpStatus.CREATED)
-  @RequirePermission('audit', 'update')
+  @RequirePermission('evidence', 'update')
   @ApiOperation({ summary: 'Create a manual context issue' })
   @ApiConsumes('application/json')
   @ApiOkResponse({ description: 'Context issue created' })
@@ -98,7 +98,7 @@ export class IsmsController {
 
   @Post('context-issues/:issueId')
   @HttpCode(HttpStatus.OK)
-  @RequirePermission('audit', 'update')
+  @RequirePermission('evidence', 'update')
   @ApiOperation({ summary: 'Update a context issue' })
   @ApiConsumes('application/json')
   @ApiOkResponse({ description: 'Context issue updated' })
@@ -112,7 +112,7 @@ export class IsmsController {
 
   @Delete('context-issues/:issueId')
   @HttpCode(HttpStatus.OK)
-  @RequirePermission('audit', 'update')
+  @RequirePermission('evidence', 'update')
   @ApiOperation({ summary: 'Delete a context issue' })
   @ApiOkResponse({ description: 'Context issue deleted' })
   async deleteContextIssue(
@@ -124,7 +124,7 @@ export class IsmsController {
 
   @Post('documents/:id/submit-for-approval')
   @HttpCode(HttpStatus.OK)
-  @RequirePermission('audit', 'update')
+  @RequirePermission('evidence', 'update')
   @ApiOperation({ summary: 'Submit an ISMS document for approval' })
   @ApiConsumes('application/json')
   @ApiOkResponse({ description: 'Document submitted for approval' })
@@ -142,7 +142,7 @@ export class IsmsController {
 
   @Post('documents/:id/approve')
   @HttpCode(HttpStatus.OK)
-  @RequirePermission('audit', 'update')
+  @RequirePermission('evidence', 'update')
   @ApiOperation({ summary: 'Approve an ISMS document' })
   @ApiConsumes('application/json')
   @ApiOkResponse({ description: 'Document approved' })
@@ -160,7 +160,7 @@ export class IsmsController {
 
   @Post('documents/:id/decline')
   @HttpCode(HttpStatus.OK)
-  @RequirePermission('audit', 'update')
+  @RequirePermission('evidence', 'update')
   @ApiOperation({ summary: 'Decline an ISMS document' })
   @ApiConsumes('application/json')
   @ApiOkResponse({ description: 'Document declined' })
@@ -172,7 +172,7 @@ export class IsmsController {
   }
 
   @Get('documents/:id/drift')
-  @RequirePermission('audit', 'read')
+  @RequirePermission('evidence', 'read')
   @ApiOperation({ summary: 'Detect drift against the approved snapshot' })
   @ApiOkResponse({ description: 'Drift status' })
   async drift(
@@ -183,7 +183,7 @@ export class IsmsController {
   }
 
   @Post('documents/:id/export')
-  @RequirePermission('audit', 'read')
+  @RequirePermission('evidence', 'read')
   @ApiOperation({ summary: 'Export an ISMS document as PDF or DOCX' })
   @ApiConsumes('application/json')
   @ApiProduces('application/pdf')

@@ -180,13 +180,13 @@ describe('ContextOfOrganizationClient', () => {
     expect(screen.getAllByText('Auto-derived').length).toBeGreaterThan(0);
   });
 
-  it('allows editing (shows mutating controls) for a user with audit:update', () => {
+  it('allows editing (shows mutating controls) for a user with evidence:update', () => {
     setMockPermissions(ADMIN_PERMISSIONS);
     render(<ContextOfOrganizationClient {...baseProps} />);
 
     expect(screen.getByText('Generate from platform data')).toBeInTheDocument();
     expect(screen.getAllByText(/Add internal issue|Add external issue/).length).toBe(2);
-    expect(mockHasPermission).toHaveBeenCalledWith('audit', 'update');
+    expect(mockHasPermission).toHaveBeenCalledWith('evidence', 'update');
   });
 
   it('hides mutating controls for a read-only user but keeps export', () => {

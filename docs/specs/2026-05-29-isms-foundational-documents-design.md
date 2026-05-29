@@ -58,7 +58,7 @@ Compliance → Documents
 
 - Route stays `/[orgId]/documents`, gated `evidence:read` (same `requireRoutePermission('documents', orgId)` as today, same as SOA).
 - Tabs rendered as **one tab per active framework that has a doc-pack** (today: ISO 27001) + Company Forms + Settings. Built to scale to N framework tabs; only ISO 27001 is populated now.
-- The `ISO 27001 (ISMS)` tab and its cards are framework-conditional (visible iff ISO 27001 `FrameworkInstance` exists) **and** behind a rollout flag (§9).
+- The `ISO 27001 (ISMS)` tab and its cards are **framework-conditional** (visible iff ISO 27001 is active for the org). No runtime feature flag — release is gated by merge (§9).
 
 ### 3.3 Framework linkage is canonical, not bolted on
 
@@ -191,7 +191,7 @@ model IsmsContextIssue {
 | `GET /isms/documents/:id/drift` | `evidence:read` | Compare `sourceSnapshot` vs current derived data → per-section stale flags. |
 | `POST /isms/documents/:id/export` `{ format: 'pdf' \| 'docx' }` | `evidence:read` | Render branded artifact; store `pdfUrl`/`docxUrl`. |
 
-- **Permissions decision:** reuse the existing **`evidence`** resource (the `documents` route + SOA already sit on it). Avoids minting an `isms` resource now; revisit if/when the broader ISMS area (B–L) becomes its own section. `AuditLogInterceptor` logs automatically given `@RequirePermission`.
+- **Permissions decision:** gate on the existing **`evidence`** resource — the same resource the `documents` route already uses (`requireRoutePermission('documents')` → `evidence:read`). Reads → `evidence:read` (incl. `ensure-setup`, which is an idempotent get-or-init the overview calls, so it must be callable by any viewer); mutations → `evidence:update`. This gives the right personas: owner/admin author + sign off (full `evidence` CRUD), **auditor read-only** (`evidence:['read']` — reviews + exports, cannot author), employees/contractors excluded. NB: the sibling SOA *API* happens to use the `audit` resource even though its route is `evidence:read`; we deliberately use `evidence` for both route and API so they're internally consistent. Defers minting a dedicated `isms` resource until the broader ISMS area (B–L) becomes its own section. `AuditLogInterceptor` logs automatically given `@RequirePermission`.
 - Class-transformer gotcha: for endpoints receiving complex nested JSON, read `req.body` directly (per repo gotcha), don't rely on `ValidationPipe transform:true` for the narrative blob.
 
 ## 7. Export pipeline
@@ -206,21 +206,21 @@ model IsmsContextIssue {
 - **Document detail:** `documents/isms/[type]/page.tsx` — server-fetch + `useIsmsDocument` SWR hook (fallbackData, `revalidateOnMount:!initialData`, guarded `mutate`). Editable register table with inline override, narrative fields (RHF + Zod), drift banner, submit-for-approval/approve UI (reuse SOA `SubmitApprovalDialog`/`SOAPendingApprovalAlert` patterns), PDF + DOCX export buttons.
 - **Design system:** `PageLayout`/`PageHeader`/`Tabs`/`Stack`/`Card` from `@trycompai/design-system`; Carbon icons. Run `audit-design-system` after edits.
 
-## 9. Release strategy — all-or-nothing, flag-gated
+## 9. Release strategy — all-or-nothing, gated by merge
 
-- Build **slice-first** (de-risk), but the `ISO 27001 (ISMS)` tab stays **off in production** behind an `isIsmsEnabled`-style flag resolved in `[orgId]/layout.tsx` (same pattern as `isQuestionnaireEnabled`/`isSecurityEnabled`) until **all six docs + wizard + PDF/DOCX** are complete.
+- Build **slice-first** (de-risk), but keep the work on the **unmerged feature branch** until **all six docs + wizard + PDF/DOCX** are complete — the branch *is* the release gate. No runtime feature flag (per maintainer: "ship the full thing once it's ready").
+- The `ISO 27001 (ISMS)` tab is **framework-conditional only**: it appears when ISO 27001 is active for the org (principle #5). Before merge it's visible solely on the feature branch.
 - Rationale: DoD requires all six exportable in one session; a partial management-system pack is an **audit liability**, not a partial win; project defines Release 1 as the whole foundational pack.
-- Framework-conditional visibility (ISO 27001 active) applies on top of the flag.
 
 ## 10. Build sequence
 
 1. **Spec** (this doc). ✅
 2. **Substrate slice:** `IsmsDocument`/`IsmsDocumentVersion` + `IsmsContextIssue` models + migration; ISMS API module (ensure-setup, generate, get, override, sign-off, drift, export) with RBAC + Jest tests; **DOCX renderer**.
-3. **IA:** framework-grouped `DocumentsPageTabs` + `ISO 27001 (ISMS)` tab (flagged) + move SOA card.
+3. **IA:** framework-grouped `DocumentsPageTabs` + framework-conditional `ISO 27001 (ISMS)` tab + move SOA card.
 4. **Context of the Organization (4.1) E2E:** detail page, hooks, generate/edit/override/drift/sign-off/export; Vitest tests (admin write vs read-only).
 5. **Fast-follow (sub-tickets):** 4.2a, 4.2b/c, 4.3, 5.1, 6.2 registers + detail pages on the proven rail.
 6. **Wizard (CS-438):** shared ~15-question component feeding un-derivable inputs.
-7. **Flip the flag** when the pack is complete.
+7. **Merge & ship** the full pack once complete.
 
 ## 11. Testing
 

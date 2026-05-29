@@ -33,7 +33,7 @@ export function ContextOfOrganizationClient({
   approverOptions,
 }: ContextOfOrganizationClientProps) {
   const { hasPermission } = usePermissions();
-  const canManage = hasPermission('audit', 'update');
+  const canManage = hasPermission('evidence', 'update');
 
   const {
     document,

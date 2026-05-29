@@ -11,9 +11,10 @@ import {
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import type { ReactNode } from 'react';
 import { useCallback } from 'react';
+import { useIso27001FrameworkId } from '../isms/hooks/useIso27001FrameworkId';
 
 interface DocumentsPageTabsProps {
-  isIsmsEnabled: boolean;
+  organizationId: string;
   ismsContent: ReactNode;
   companyFormsContent: ReactNode;
   settingsContent: ReactNode;
@@ -26,18 +27,18 @@ const DEFAULT_TAB = COMPANY_FORMS_TAB;
 
 function tabParamToInternal({
   tabParam,
-  isIsmsEnabled,
+  showIsmsTab,
 }: {
   tabParam: string | null;
-  isIsmsEnabled: boolean;
+  showIsmsTab: boolean;
 }): string {
   if (tabParam === SETTINGS_TAB) return SETTINGS_TAB;
-  if (tabParam === ISMS_TAB && isIsmsEnabled) return ISMS_TAB;
+  if (tabParam === ISMS_TAB && showIsmsTab) return ISMS_TAB;
   return DEFAULT_TAB;
 }
 
 export function DocumentsPageTabs({
-  isIsmsEnabled,
+  organizationId,
   ismsContent,
   companyFormsContent,
   settingsContent,
@@ -45,7 +46,10 @@ export function DocumentsPageTabs({
   const pathname = usePathname();
   const router = useRouter();
   const searchParams = useSearchParams();
-  const activeTab = tabParamToInternal({ tabParam: searchParams.get('tab'), isIsmsEnabled });
+  // The ISO 27001 (ISMS) tab is framework-conditional: it appears only when the
+  // organization has ISO 27001 active (the same detection the SOA card uses).
+  const showIsmsTab = !!useIso27001FrameworkId(organizationId);
+  const activeTab = tabParamToInternal({ tabParam: searchParams.get('tab'), showIsmsTab });
 
   const handleTabChange = useCallback(
     (value: string) => {
@@ -61,8 +65,8 @@ export function DocumentsPageTabs({
     [pathname, router, searchParams],
   );
 
-  // When ISMS is off the IA is unchanged: a single "Overview" tab plus Settings.
-  const companyFormsLabel = isIsmsEnabled ? 'Company Forms' : 'Overview';
+  // When ISO 27001 is not active the IA is unchanged: a single "Overview" tab plus Settings.
+  const companyFormsLabel = showIsmsTab ? 'Company Forms' : 'Overview';
 
   return (
     <Tabs value={activeTab} onValueChange={handleTabChange}>
@@ -72,9 +76,7 @@ export function DocumentsPageTabs({
             title="Documents"
             tabs={
               <TabsList variant="underline">
-                {isIsmsEnabled && (
-                  <TabsTrigger value={ISMS_TAB}>ISO 27001 (ISMS)</TabsTrigger>
-                )}
+                {showIsmsTab && <TabsTrigger value={ISMS_TAB}>ISO 27001 (ISMS)</TabsTrigger>}
                 <TabsTrigger value={COMPANY_FORMS_TAB}>{companyFormsLabel}</TabsTrigger>
                 <TabsTrigger value={SETTINGS_TAB}>Settings</TabsTrigger>
               </TabsList>
@@ -82,7 +84,7 @@ export function DocumentsPageTabs({
           />
         }
       >
-        {isIsmsEnabled && <TabsContent value={ISMS_TAB}>{ismsContent}</TabsContent>}
+        {showIsmsTab && <TabsContent value={ISMS_TAB}>{ismsContent}</TabsContent>}
         <TabsContent value={COMPANY_FORMS_TAB}>{companyFormsContent}</TabsContent>
         <TabsContent value={SETTINGS_TAB}>{settingsContent}</TabsContent>
       </PageLayout>

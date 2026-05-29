@@ -18,8 +18,6 @@ import Link from 'next/link';
 import { useMemo } from 'react';
 import useSWR from 'swr';
 import { evidenceFormDefinitionList, meetingSubTypeValues } from '../forms';
-import { useIso27001FrameworkId } from '../isms/hooks/useIso27001FrameworkId';
-import { SOAOverviewCard } from './SOAOverviewCard';
 
 type FormStatuses = Record<string, { lastSubmittedAt: string | null; isNotRelevant?: boolean }>;
 
@@ -106,18 +104,8 @@ function StatusBadge({
   );
 }
 
-export function CompanyOverviewCards({
-  organizationId,
-  isIsmsEnabled = false,
-}: {
-  organizationId: string;
-  isIsmsEnabled?: boolean;
-}) {
+export function CompanyOverviewCards({ organizationId }: { organizationId: string }) {
   const swrKey: readonly [string, string] = ['/v1/evidence-forms/statuses', organizationId];
-
-  // When ISMS is on, the SOA card lives in the ISO 27001 (ISMS) tab instead.
-  const iso27001FrameworkId = useIso27001FrameworkId(organizationId);
-  const showSoaCard = !isIsmsEnabled && !!iso27001FrameworkId;
 
   const { data: statuses } = useSWR<FormStatuses>(
     swrKey,
@@ -168,12 +156,6 @@ export function CompanyOverviewCards({
 
   return (
     <Stack gap="6">
-      {showSoaCard && iso27001FrameworkId && (
-        <SOAOverviewCard
-          organizationId={organizationId}
-          iso27001FrameworkId={iso27001FrameworkId}
-        />
-      )}
       {Array.from(categories.entries()).map(([category, forms]) => (
         <div key={category} className="space-y-3">
           <div className="flex items-center gap-2">

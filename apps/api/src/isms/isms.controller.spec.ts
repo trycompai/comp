@@ -230,25 +230,25 @@ describe('IsmsController', () => {
     const permissionsFor = (method: keyof IsmsController) =>
       reflector.get(PERMISSIONS_KEY, IsmsController.prototype[method]);
 
-    it('gates ensure-setup with audit:create', () => {
+    it('gates ensure-setup with evidence:read', () => {
       expect(permissionsFor('ensureSetup')).toEqual([
-        { resource: 'audit', actions: ['create'] },
+        { resource: 'evidence', actions: ['read'] },
       ]);
     });
 
-    it('gates read endpoints with audit:read', () => {
+    it('gates read endpoints with evidence:read', () => {
       expect(permissionsFor('getDocument')).toEqual([
-        { resource: 'audit', actions: ['read'] },
+        { resource: 'evidence', actions: ['read'] },
       ]);
       expect(permissionsFor('drift')).toEqual([
-        { resource: 'audit', actions: ['read'] },
+        { resource: 'evidence', actions: ['read'] },
       ]);
       expect(permissionsFor('exportDocument')).toEqual([
-        { resource: 'audit', actions: ['read'] },
+        { resource: 'evidence', actions: ['read'] },
       ]);
     });
 
-    it('gates mutation endpoints with audit:update', () => {
+    it('gates mutation endpoints with evidence:update', () => {
       for (const method of [
         'generate',
         'createContextIssue',
@@ -259,7 +259,7 @@ describe('IsmsController', () => {
         'decline',
       ] as const) {
         expect(permissionsFor(method)).toEqual([
-          { resource: 'audit', actions: ['update'] },
+          { resource: 'evidence', actions: ['update'] },
         ]);
       }
     });
