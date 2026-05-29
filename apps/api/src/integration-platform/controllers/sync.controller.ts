@@ -426,7 +426,7 @@ export class SyncController {
           if (existingMember.deactivated) {
             await db.member.update({
               where: { id: existingMember.id },
-              data: { deactivated: false, isActive: true },
+              data: { deactivated: false, isActive: true, offboardDate: null },
             });
             results.reactivated++;
             results.details.push({
@@ -917,7 +917,7 @@ export class SyncController {
           if (existingMember.deactivated) {
             await db.member.update({
               where: { id: existingMember.id },
-              data: { deactivated: false, isActive: true },
+              data: { deactivated: false, isActive: true, offboardDate: null },
             });
             results.reactivated++;
             results.details.push({
@@ -1424,7 +1424,7 @@ export class SyncController {
           if (existingMember.deactivated) {
             await db.member.update({
               where: { id: existingMember.id },
-              data: { deactivated: false, isActive: true },
+              data: { deactivated: false, isActive: true, offboardDate: null },
             });
             results.reactivated++;
             results.details.push({
