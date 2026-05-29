@@ -15,17 +15,20 @@ on:
 jobs:
   push:
     runs-on: ubuntu-latest
+    env:
+      # Org + project slugs are NOT secret — they appear in the Gram dashboard URL
+      # (app.getgram.ai/<org>/projects/<project>). Only the API key is a secret.
+      GRAM_ORG: comp-ai-f041
+      GRAM_PROJECT: default
+      GRAM_API_KEY: ${{ secrets.GRAM_API_KEY }}
     steps:
       - uses: actions/checkout@v4
 
       - name: Install Gram CLI
-        run: |
-          curl -fsSL https://go.getgram.ai/cli.sh | bash
-          # The installer puts the binary under ~/.gram; expose it on PATH.
-          echo "$HOME/.gram/bin" >> "$GITHUB_PATH"
+        # Installs to /usr/local/bin (already on PATH on GitHub runners).
+        run: curl -fsSL https://go.getgram.ai/cli.sh | bash
 
       - name: Push OpenAPI source to Gram
-        run: gram push --api-key "$GRAM_API_KEY" --project "$GRAM_PROJECT" --config gram.json
-        env:
-          GRAM_API_KEY: ${{ secrets.GRAM_API_KEY }}
-          GRAM_PROJECT: ${{ secrets.GRAM_PROJECT }}
+        # api-key/org/project are read from the env vars above; --method defaults
+        # to "merge" (updates the existing source in place by slug).
+        run: gram push --config gram.json
