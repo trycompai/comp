@@ -100,9 +100,13 @@ describe('IsmsOverview', () => {
     expect(contextLink).toBeDefined();
   });
 
-  it('marks the not-yet-implemented documents as Coming soon', () => {
+  it('links all six foundational documents to their detail pages', () => {
     render(<IsmsOverview organizationId="org-1" />);
-    // Five of the six cards are not implemented yet.
-    expect(screen.getAllByText('Coming soon')).toHaveLength(5);
+    // All six foundational documents are now implemented — none are "Coming soon".
+    expect(screen.queryByText('Coming soon')).not.toBeInTheDocument();
+    const ismsDetailLinks = screen
+      .getAllByRole('link')
+      .filter((link) => link.getAttribute('href')?.includes('/documents/isms/'));
+    expect(ismsDetailLinks).toHaveLength(6);
   });
 });

@@ -1,7 +1,7 @@
 /**
  * Shared client-side types + constants for the ISMS Foundational Documents
  * feature (CS-437). Mirrors the NestJS `/v1/isms` contract and the Prisma
- * IsmsDocument / IsmsContextIssue models.
+ * IsmsDocument / register models.
  */
 
 export type IsmsDocumentType =
@@ -22,7 +22,9 @@ export type IsmsDocumentStatus =
 export type IsmsContextIssueKind = 'internal' | 'external';
 export type IsmsContextSource = 'derived' | 'manual';
 export type IsmsExportFormat = 'pdf' | 'docx';
+export type IsmsObjectiveStatus = 'not_started' | 'on_track' | 'at_risk' | 'met';
 
+/** Register: Context of the Organization (clause 4.1). */
 export interface IsmsContextIssue {
   id: string;
   kind: IsmsContextIssueKind;
@@ -31,6 +33,75 @@ export interface IsmsContextIssue {
   source: IsmsContextSource;
   derivedFrom: string | null;
   position: number;
+}
+
+/** Register: Interested Parties (clause 4.2a). */
+export interface IsmsInterestedParty {
+  id: string;
+  name: string;
+  category: string;
+  needsExpectations: string;
+  source: IsmsContextSource;
+  derivedFrom: string | null;
+  position: number;
+}
+
+/** Register: Interested Parties Requirements & Treatment (clauses 4.2b/c). */
+export interface IsmsInterestedPartyRequirement {
+  id: string;
+  interestedPartyId: string | null;
+  partyName: string;
+  requirement: string;
+  treatment: string;
+  source: IsmsContextSource;
+  derivedFrom: string | null;
+  position: number;
+}
+
+/** Register: Information Security Objectives (clause 6.2). */
+export interface IsmsObjective {
+  id: string;
+  objective: string;
+  target: string | null;
+  ownerMemberId: string | null;
+  cadence: string | null;
+  plan: string | null;
+  measurementMethod: string | null;
+  status: IsmsObjectiveStatus;
+  source: IsmsContextSource;
+  derivedFrom: string | null;
+  position: number;
+}
+
+/** Narrative shape for the ISMS Scope singleton (clause 4.3). */
+export interface IsmsScopeNarrative {
+  certificateScopeSentence: string;
+  inScope: string;
+  interfaces: string[];
+  dependencies: string[];
+  exclusions: string[];
+  justification?: string;
+}
+
+/** A single leadership commitment line (clause 5.1 (a)-(h)). */
+export interface IsmsLeadershipCommitment {
+  key: string;
+  text: string;
+}
+
+/** Narrative shape for the Leadership and Commitment singleton (clause 5.1). */
+export interface IsmsLeadershipNarrative {
+  statement: string;
+  commitments: IsmsLeadershipCommitment[];
+}
+
+/** Latest version row included on the fetched document. */
+export interface IsmsDocumentVersion {
+  id: string;
+  version: number;
+  isLatest: boolean;
+  /** Per-type narrative payload (scope / leadership); null for register-only docs. */
+  narrative: IsmsScopeNarrative | IsmsLeadershipNarrative | Record<string, unknown> | null;
 }
 
 /** Summary row returned by `ensure-setup`. */
@@ -47,7 +118,11 @@ export interface IsmsEnsureSetupResponse {
   documents: IsmsSetupDocument[];
 }
 
-/** Full document returned by `GET /v1/isms/documents/:id`. */
+/**
+ * Full document returned by `GET /v1/isms/documents/:id`. Every register array is
+ * always present (empty when the document type does not use that register), and
+ * `versions[0]` (when present) carries the singleton narrative.
+ */
 export interface IsmsDocument {
   id: string;
   type: IsmsDocumentType;
@@ -57,6 +132,10 @@ export interface IsmsDocument {
   approvedAt: string | null;
   declinedAt: string | null;
   contextIssues: IsmsContextIssue[];
+  interestedParties: IsmsInterestedParty[];
+  interestedPartyRequirements: IsmsInterestedPartyRequirement[];
+  objectives: IsmsObjective[];
+  versions: IsmsDocumentVersion[];
 }
 
 export interface IsmsDriftResult {
@@ -70,7 +149,7 @@ export interface IsmsTypeMeta {
   clause: string;
   title: string;
   description: string;
-  /** Only Context of the Organization (4.1) links to a working detail page. */
+  /** Whether this type has a working detail page (all six are enabled in CS-437). */
   detailRouteEnabled: boolean;
 }
 
@@ -88,51 +167,64 @@ export const ISMS_TYPE_META: IsmsTypeMeta[] = [
     clause: '4.2',
     title: 'Interested Parties Register',
     description: 'The interested parties relevant to the information security management system.',
-    detailRouteEnabled: false,
+    detailRouteEnabled: true,
   },
   {
     type: 'interested_parties_requirements',
     clause: '4.2',
     title: 'Interested Parties Requirements',
     description: 'Requirements of interested parties relevant to information security.',
-    detailRouteEnabled: false,
+    detailRouteEnabled: true,
   },
   {
     type: 'isms_scope',
     clause: '4.3',
     title: 'ISMS Scope',
     description: 'The boundaries and applicability of the information security management system.',
-    detailRouteEnabled: false,
+    detailRouteEnabled: true,
   },
   {
     type: 'leadership_commitment',
     clause: '5.1',
     title: 'Leadership and Commitment',
     description: 'Evidence of top-management leadership and commitment to the ISMS.',
-    detailRouteEnabled: false,
+    detailRouteEnabled: true,
   },
   {
     type: 'objectives_plan',
     clause: '6.2',
     title: 'Information Security Objectives and Plan',
     description: 'Information security objectives and the plans to achieve them.',
-    detailRouteEnabled: false,
+    detailRouteEnabled: true,
   },
 ];
 
 /** Map a URL slug (e.g. "context-of-organization") to the canonical type. */
 export const ISMS_SLUG_TO_TYPE: Record<string, IsmsDocumentType> = {
   'context-of-organization': 'context_of_organization',
-  'interested-parties-register': 'interested_parties_register',
-  'interested-parties-requirements': 'interested_parties_requirements',
-  'isms-scope': 'isms_scope',
-  'leadership-commitment': 'leadership_commitment',
-  'objectives-plan': 'objectives_plan',
+  'interested-parties': 'interested_parties_register',
+  requirements: 'interested_parties_requirements',
+  scope: 'isms_scope',
+  leadership: 'leadership_commitment',
+  objectives: 'objectives_plan',
 };
 
+/** Inverse of ISMS_SLUG_TO_TYPE for fast type -> slug lookup. */
+const ISMS_TYPE_TO_SLUG: Record<IsmsDocumentType, string> = {
+  context_of_organization: 'context-of-organization',
+  interested_parties_register: 'interested-parties',
+  interested_parties_requirements: 'requirements',
+  isms_scope: 'scope',
+  leadership_commitment: 'leadership',
+  objectives_plan: 'objectives',
+};
+
+export function slugToType(slug: string): IsmsDocumentType | undefined {
+  return ISMS_SLUG_TO_TYPE[slug];
+}
+
 export function ismsTypeToSlug(type: IsmsDocumentType): string {
-  const entry = Object.entries(ISMS_SLUG_TO_TYPE).find(([, value]) => value === type);
-  return entry ? entry[0] : type.replace(/_/g, '-');
+  return ISMS_TYPE_TO_SLUG[type];
 }
 
 export const ISO27001_NAMES = ['ISO 27001', 'iso27001', 'ISO27001'];

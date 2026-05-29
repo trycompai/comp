@@ -6,7 +6,11 @@ import {
   AUDITOR_PERMISSIONS,
   mockHasPermission,
 } from '@/test-utils/mocks/permissions';
-import type { IsmsContextIssue, IsmsDocument, IsmsDriftResult } from '../isms-types';
+import type {
+  IsmsDocument,
+  IsmsDriftResult,
+  IsmsInterestedPartyRequirement,
+} from '../isms-types';
 
 // ─── Mock usePermissions ─────────────────────────────────────
 vi.mock('@/hooks/use-permissions', () => ({
@@ -23,9 +27,9 @@ const hookState: {
 };
 
 const mockGenerate = vi.fn().mockResolvedValue(undefined);
-const mockCreateIssue = vi.fn().mockResolvedValue(undefined);
-const mockUpdateIssue = vi.fn().mockResolvedValue(undefined);
-const mockDeleteIssue = vi.fn().mockResolvedValue(undefined);
+const mockCreateRow = vi.fn().mockResolvedValue(undefined);
+const mockUpdateRow = vi.fn().mockResolvedValue(undefined);
+const mockDeleteRow = vi.fn().mockResolvedValue(undefined);
 const mockHandleExport = vi.fn().mockResolvedValue(undefined);
 
 vi.mock('../hooks/useIsmsDocument', () => ({
@@ -33,9 +37,9 @@ vi.mock('../hooks/useIsmsDocument', () => ({
     document: hookState.document,
     isExporting: false,
     generate: mockGenerate,
-    createIssue: mockCreateIssue,
-    updateIssue: mockUpdateIssue,
-    deleteIssue: mockDeleteIssue,
+    createRow: mockCreateRow,
+    updateRow: mockUpdateRow,
+    deleteRow: mockDeleteRow,
     submitForApproval: vi.fn().mockResolvedValue(undefined),
     approve: vi.fn().mockResolvedValue(undefined),
     decline: vi.fn().mockResolvedValue(undefined),
@@ -80,6 +84,7 @@ vi.mock('@trycompai/design-system', () => ({
   DialogFooter: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
   DialogHeader: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
   DialogTitle: ({ children }: { children: React.ReactNode }) => <h2>{children}</h2>,
+  Input: (props: React.ComponentProps<'input'>) => <input {...props} />,
   PageHeader: ({ title, actions }: { title: React.ReactNode; actions?: React.ReactNode }) => (
     <div data-testid="page-header">
       <h1>{title}</h1>
@@ -117,25 +122,27 @@ vi.mock('sonner', () => ({
   toast: { success: vi.fn(), error: vi.fn() },
 }));
 
-import { ContextOfOrganizationClient } from './ContextOfOrganizationClient';
+import { RequirementsClient } from './RequirementsClient';
 
-const ISSUES: IsmsContextIssue[] = [
+const REQUIREMENTS: IsmsInterestedPartyRequirement[] = [
   {
-    id: 'i1',
-    kind: 'internal',
-    description: 'Derived internal issue',
-    effect: 'Internal effect',
+    id: 'r1',
+    interestedPartyId: 'ip1',
+    partyName: 'Customers',
+    requirement: 'Derived customer requirement',
+    treatment: 'Encrypt data at rest',
     source: 'derived',
-    derivedFrom: 'member:hr',
+    derivedFrom: 'framework:ISO 27001',
     position: 0,
   },
   {
-    id: 'i2',
-    kind: 'external',
-    description: 'Derived external issue',
-    effect: 'External effect',
-    source: 'derived',
-    derivedFrom: 'framework:ISO 27001',
+    id: 'r2',
+    interestedPartyId: null,
+    partyName: 'Regulators',
+    requirement: 'Manual regulator requirement',
+    treatment: 'Maintain breach notification process',
+    source: 'manual',
+    derivedFrom: null,
     position: 1,
   },
 ];
@@ -143,15 +150,15 @@ const ISSUES: IsmsContextIssue[] = [
 function makeDocument(overrides: Partial<IsmsDocument> = {}): IsmsDocument {
   return {
     id: 'd1',
-    type: 'context_of_organization',
+    type: 'interested_parties_requirements',
     status: 'draft',
-    title: 'Context of the Organization',
+    title: 'Interested Parties Requirements',
     approverId: null,
     approvedAt: null,
     declinedAt: null,
-    contextIssues: ISSUES,
+    contextIssues: [],
     interestedParties: [],
-    interestedPartyRequirements: [],
+    interestedPartyRequirements: REQUIREMENTS,
     objectives: [],
     versions: [],
     ...overrides,
@@ -166,42 +173,45 @@ const baseProps = {
   approverOptions: [{ id: 'm2', name: 'Approver Two' }],
 };
 
-describe('ContextOfOrganizationClient', () => {
+describe('RequirementsClient', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     hookState.document = makeDocument();
     hookState.drift = { isStale: false, changedSources: [] };
   });
 
-  it('renders derived issues with provenance', () => {
+  it('renders derived and edited requirements with provenance', () => {
     setMockPermissions(ADMIN_PERMISSIONS);
-    render(<ContextOfOrganizationClient {...baseProps} />);
+    render(<RequirementsClient {...baseProps} />);
 
-    expect(screen.getByDisplayValue('Derived internal issue')).toBeInTheDocument();
-    expect(screen.getByDisplayValue('Derived external issue')).toBeInTheDocument();
+    expect(screen.getByDisplayValue('Derived customer requirement')).toBeInTheDocument();
+    expect(screen.getByDisplayValue('Encrypt data at rest')).toBeInTheDocument();
     expect(screen.getByText('framework:ISO 27001')).toBeInTheDocument();
-    // Derived rows are labelled "Auto-derived".
+    // Derived rows are labelled "Auto-derived"; manual rows are "Edited".
     expect(screen.getAllByText('Auto-derived').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('Edited').length).toBeGreaterThan(0);
   });
 
   it('allows editing (shows mutating controls) for a user with evidence:update', () => {
     setMockPermissions(ADMIN_PERMISSIONS);
-    render(<ContextOfOrganizationClient {...baseProps} />);
+    render(<RequirementsClient {...baseProps} />);
 
     expect(screen.getByText('Generate from platform data')).toBeInTheDocument();
-    expect(screen.getAllByText(/Add internal issue|Add external issue/).length).toBe(2);
+    expect(screen.getByText('Add requirement')).toBeInTheDocument();
+    expect(screen.getAllByLabelText('Delete requirement').length).toBe(REQUIREMENTS.length);
     expect(mockHasPermission).toHaveBeenCalledWith('evidence', 'update');
   });
 
   it('hides mutating controls for a read-only user but keeps export', () => {
     setMockPermissions(AUDITOR_PERMISSIONS);
-    render(<ContextOfOrganizationClient {...baseProps} />);
+    render(<RequirementsClient {...baseProps} />);
 
     expect(screen.queryByText('Generate from platform data')).not.toBeInTheDocument();
-    expect(screen.queryByText(/Add internal issue/)).not.toBeInTheDocument();
-    // Read-only users see plain text, not editable textareas.
-    expect(screen.queryByDisplayValue('Derived internal issue')).not.toBeInTheDocument();
-    expect(screen.getByText('Derived internal issue')).toBeInTheDocument();
+    expect(screen.queryByText('Add requirement')).not.toBeInTheDocument();
+    expect(screen.queryByLabelText('Delete requirement')).not.toBeInTheDocument();
+    // Read-only users see plain text, not editable inputs.
+    expect(screen.queryByDisplayValue('Derived customer requirement')).not.toBeInTheDocument();
+    expect(screen.getByText('Derived customer requirement')).toBeInTheDocument();
     // Export remains available to readers.
     expect(screen.getByText('Export PDF')).toBeInTheDocument();
     expect(screen.getByText('Export DOCX')).toBeInTheDocument();
@@ -209,8 +219,8 @@ describe('ContextOfOrganizationClient', () => {
 
   it('shows the drift banner when the document is stale', async () => {
     setMockPermissions(ADMIN_PERMISSIONS);
-    hookState.drift = { isStale: true, changedSources: ['vendorCount', 'memberCount'] };
-    render(<ContextOfOrganizationClient {...baseProps} />);
+    hookState.drift = { isStale: true, changedSources: ['vendorCount', 'frameworks'] };
+    render(<RequirementsClient {...baseProps} />);
 
     await waitFor(() => {
       expect(screen.getByText('Out of date')).toBeInTheDocument();

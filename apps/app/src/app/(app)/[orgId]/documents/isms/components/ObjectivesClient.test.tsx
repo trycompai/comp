@@ -6,7 +6,7 @@ import {
   AUDITOR_PERMISSIONS,
   mockHasPermission,
 } from '@/test-utils/mocks/permissions';
-import type { IsmsContextIssue, IsmsDocument, IsmsDriftResult } from '../isms-types';
+import type { IsmsDocument, IsmsDriftResult, IsmsObjective } from '../isms-types';
 
 // ─── Mock usePermissions ─────────────────────────────────────
 vi.mock('@/hooks/use-permissions', () => ({
@@ -23,9 +23,9 @@ const hookState: {
 };
 
 const mockGenerate = vi.fn().mockResolvedValue(undefined);
-const mockCreateIssue = vi.fn().mockResolvedValue(undefined);
-const mockUpdateIssue = vi.fn().mockResolvedValue(undefined);
-const mockDeleteIssue = vi.fn().mockResolvedValue(undefined);
+const mockCreateRow = vi.fn().mockResolvedValue(undefined);
+const mockUpdateRow = vi.fn().mockResolvedValue(undefined);
+const mockDeleteRow = vi.fn().mockResolvedValue(undefined);
 const mockHandleExport = vi.fn().mockResolvedValue(undefined);
 
 vi.mock('../hooks/useIsmsDocument', () => ({
@@ -33,9 +33,9 @@ vi.mock('../hooks/useIsmsDocument', () => ({
     document: hookState.document,
     isExporting: false,
     generate: mockGenerate,
-    createIssue: mockCreateIssue,
-    updateIssue: mockUpdateIssue,
-    deleteIssue: mockDeleteIssue,
+    createRow: mockCreateRow,
+    updateRow: mockUpdateRow,
+    deleteRow: mockDeleteRow,
     submitForApproval: vi.fn().mockResolvedValue(undefined),
     approve: vi.fn().mockResolvedValue(undefined),
     decline: vi.fn().mockResolvedValue(undefined),
@@ -80,6 +80,7 @@ vi.mock('@trycompai/design-system', () => ({
   DialogFooter: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
   DialogHeader: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
   DialogTitle: ({ children }: { children: React.ReactNode }) => <h2>{children}</h2>,
+  Input: (props: React.ComponentProps<'input'>) => <input {...props} />,
   PageHeader: ({ title, actions }: { title: React.ReactNode; actions?: React.ReactNode }) => (
     <div data-testid="page-header">
       <h1>{title}</h1>
@@ -117,25 +118,33 @@ vi.mock('sonner', () => ({
   toast: { success: vi.fn(), error: vi.fn() },
 }));
 
-import { ContextOfOrganizationClient } from './ContextOfOrganizationClient';
+import { ObjectivesClient } from './ObjectivesClient';
 
-const ISSUES: IsmsContextIssue[] = [
+const OBJECTIVES: IsmsObjective[] = [
   {
-    id: 'i1',
-    kind: 'internal',
-    description: 'Derived internal issue',
-    effect: 'Internal effect',
+    id: 'o1',
+    objective: 'Reduce phishing click rate',
+    target: 'Below 3%',
+    ownerMemberId: 'm2',
+    cadence: 'Quarterly',
+    plan: 'Run quarterly phishing simulations',
+    measurementMethod: 'Simulation results',
+    status: 'on_track',
     source: 'derived',
-    derivedFrom: 'member:hr',
+    derivedFrom: 'framework:ISO 27001',
     position: 0,
   },
   {
-    id: 'i2',
-    kind: 'external',
-    description: 'Derived external issue',
-    effect: 'External effect',
-    source: 'derived',
-    derivedFrom: 'framework:ISO 27001',
+    id: 'o2',
+    objective: 'Patch critical vulnerabilities within SLA',
+    target: '100%',
+    ownerMemberId: null,
+    cadence: 'Monthly',
+    plan: 'Track via vulnerability scanner',
+    measurementMethod: 'Scanner report',
+    status: 'at_risk',
+    source: 'manual',
+    derivedFrom: null,
     position: 1,
   },
 ];
@@ -143,16 +152,16 @@ const ISSUES: IsmsContextIssue[] = [
 function makeDocument(overrides: Partial<IsmsDocument> = {}): IsmsDocument {
   return {
     id: 'd1',
-    type: 'context_of_organization',
+    type: 'objectives_plan',
     status: 'draft',
-    title: 'Context of the Organization',
+    title: 'Information Security Objectives and Plan',
     approverId: null,
     approvedAt: null,
     declinedAt: null,
-    contextIssues: ISSUES,
+    contextIssues: [],
     interestedParties: [],
     interestedPartyRequirements: [],
-    objectives: [],
+    objectives: OBJECTIVES,
     versions: [],
     ...overrides,
   };
@@ -166,42 +175,45 @@ const baseProps = {
   approverOptions: [{ id: 'm2', name: 'Approver Two' }],
 };
 
-describe('ContextOfOrganizationClient', () => {
+describe('ObjectivesClient', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     hookState.document = makeDocument();
     hookState.drift = { isStale: false, changedSources: [] };
   });
 
-  it('renders derived issues with provenance', () => {
+  it('renders the objectives register with provenance', () => {
     setMockPermissions(ADMIN_PERMISSIONS);
-    render(<ContextOfOrganizationClient {...baseProps} />);
+    render(<ObjectivesClient {...baseProps} />);
 
-    expect(screen.getByDisplayValue('Derived internal issue')).toBeInTheDocument();
-    expect(screen.getByDisplayValue('Derived external issue')).toBeInTheDocument();
+    expect(screen.getByDisplayValue('Reduce phishing click rate')).toBeInTheDocument();
+    expect(
+      screen.getByDisplayValue('Patch critical vulnerabilities within SLA'),
+    ).toBeInTheDocument();
     expect(screen.getByText('framework:ISO 27001')).toBeInTheDocument();
-    // Derived rows are labelled "Auto-derived".
+    // Derived rows are labelled "Auto-derived"; manual rows are "Edited".
     expect(screen.getAllByText('Auto-derived').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('Edited').length).toBeGreaterThan(0);
   });
 
   it('allows editing (shows mutating controls) for a user with evidence:update', () => {
     setMockPermissions(ADMIN_PERMISSIONS);
-    render(<ContextOfOrganizationClient {...baseProps} />);
+    render(<ObjectivesClient {...baseProps} />);
 
     expect(screen.getByText('Generate from platform data')).toBeInTheDocument();
-    expect(screen.getAllByText(/Add internal issue|Add external issue/).length).toBe(2);
+    expect(screen.getByText('Add objective')).toBeInTheDocument();
     expect(mockHasPermission).toHaveBeenCalledWith('evidence', 'update');
   });
 
   it('hides mutating controls for a read-only user but keeps export', () => {
     setMockPermissions(AUDITOR_PERMISSIONS);
-    render(<ContextOfOrganizationClient {...baseProps} />);
+    render(<ObjectivesClient {...baseProps} />);
 
     expect(screen.queryByText('Generate from platform data')).not.toBeInTheDocument();
-    expect(screen.queryByText(/Add internal issue/)).not.toBeInTheDocument();
-    // Read-only users see plain text, not editable textareas.
-    expect(screen.queryByDisplayValue('Derived internal issue')).not.toBeInTheDocument();
-    expect(screen.getByText('Derived internal issue')).toBeInTheDocument();
+    expect(screen.queryByText('Add objective')).not.toBeInTheDocument();
+    // Read-only users see plain text, not editable inputs.
+    expect(screen.queryByDisplayValue('Reduce phishing click rate')).not.toBeInTheDocument();
+    expect(screen.getByText('Reduce phishing click rate')).toBeInTheDocument();
     // Export remains available to readers.
     expect(screen.getByText('Export PDF')).toBeInTheDocument();
     expect(screen.getByText('Export DOCX')).toBeInTheDocument();
@@ -210,7 +222,7 @@ describe('ContextOfOrganizationClient', () => {
   it('shows the drift banner when the document is stale', async () => {
     setMockPermissions(ADMIN_PERMISSIONS);
     hookState.drift = { isStale: true, changedSources: ['vendorCount', 'memberCount'] };
-    render(<ContextOfOrganizationClient {...baseProps} />);
+    render(<ObjectivesClient {...baseProps} />);
 
     await waitFor(() => {
       expect(screen.getByText('Out of date')).toBeInTheDocument();

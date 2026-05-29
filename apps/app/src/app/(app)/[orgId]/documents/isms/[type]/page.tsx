@@ -6,14 +6,41 @@ import { serverApi } from '@/lib/api-server';
 import { parseRolesString } from '@/lib/permissions';
 import { auth } from '@/utils/auth';
 import { ContextOfOrganizationClient } from '../components/ContextOfOrganizationClient';
+import { InterestedPartiesClient } from '../components/InterestedPartiesClient';
 import type { ApproverOption } from '../components/IsmsApprovalSection';
+import { LeadershipClient } from '../components/LeadershipClient';
+import { ObjectivesClient } from '../components/ObjectivesClient';
+import { RequirementsClient } from '../components/RequirementsClient';
+import { ScopeClient } from '../components/ScopeClient';
 import {
   ISMS_SLUG_TO_TYPE,
   ISMS_TYPE_META,
   ISO27001_NAMES,
   type IsmsDocument as IsmsDocumentData,
+  type IsmsDocumentType,
   type IsmsEnsureSetupResponse,
 } from '../isms-types';
+
+/** Shared props every ISMS detail client receives. */
+interface IsmsDetailClientProps {
+  organizationId: string;
+  documentId: string;
+  fallbackData: IsmsDocumentData | null;
+  currentMemberId: string | null;
+  approverOptions: ApproverOption[];
+}
+
+const ISMS_DETAIL_CLIENTS: Record<
+  IsmsDocumentType,
+  (props: IsmsDetailClientProps) => React.JSX.Element
+> = {
+  context_of_organization: ContextOfOrganizationClient,
+  interested_parties_register: InterestedPartiesClient,
+  interested_parties_requirements: RequirementsClient,
+  objectives_plan: ObjectivesClient,
+  isms_scope: ScopeClient,
+  leadership_commitment: LeadershipClient,
+};
 
 interface FrameworkApiResponse {
   data: Array<{ id: string; frameworkId: string; framework: { id: string; name: string } }>;
@@ -53,17 +80,6 @@ export default async function IsmsDocumentPage({
       ]}
     />
   );
-
-  if (!meta.detailRouteEnabled) {
-    return (
-      <PageLayout>
-        {breadcrumb}
-        <div className="flex items-center justify-center rounded-lg border py-12">
-          <Text variant="muted">{meta.title} is coming soon.</Text>
-        </div>
-      </PageLayout>
-    );
-  }
 
   const session = await auth.api.getSession({ headers: await headers() });
   if (!session?.user?.id) notFound();
@@ -125,10 +141,12 @@ export default async function IsmsDocumentPage({
     .map((p) => ({ id: p.id, name: p.user?.name ?? p.user?.email ?? 'Unknown' }))
     .sort((a, b) => a.name.localeCompare(b.name));
 
+  const DetailClient = ISMS_DETAIL_CLIENTS[documentType];
+
   return (
     <PageLayout>
       {breadcrumb}
-      <ContextOfOrganizationClient
+      <DetailClient
         organizationId={organizationId}
         documentId={setupDoc.id}
         fallbackData={fallbackData}

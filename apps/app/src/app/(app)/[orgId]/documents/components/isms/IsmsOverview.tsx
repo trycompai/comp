@@ -44,30 +44,20 @@ function FoundationalDocumentCard({
   const status: IsmsDocumentStatus | null = setupDoc?.status ?? null;
   const title = `${meta.clause} ${meta.title}`;
 
-  const cardBody = (
-    <Card>
-      <CardHeader>
-        <CardTitle>{title}</CardTitle>
-        <div className="line-clamp-1">
-          <CardDescription>{meta.description}</CardDescription>
-        </div>
-      </CardHeader>
-      <CardContent>
-        {meta.detailRouteEnabled ? (
-          <IsmsStatusBadge status={status} isStale={isStale} />
-        ) : (
-          <Badge variant="outline">Coming soon</Badge>
-        )}
-      </CardContent>
-    </Card>
-  );
-
-  if (!meta.detailRouteEnabled) {
-    return <div className="opacity-60">{cardBody}</div>;
-  }
-
   return (
-    <Link href={`/${organizationId}/documents/isms/${ismsTypeToSlug(type)}`}>{cardBody}</Link>
+    <Link href={`/${organizationId}/documents/isms/${ismsTypeToSlug(type)}`}>
+      <Card>
+        <CardHeader>
+          <CardTitle>{title}</CardTitle>
+          <div className="line-clamp-1">
+            <CardDescription>{meta.description}</CardDescription>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <IsmsStatusBadge status={status} isStale={isStale} />
+        </CardContent>
+      </Card>
+    </Link>
   );
 }
 

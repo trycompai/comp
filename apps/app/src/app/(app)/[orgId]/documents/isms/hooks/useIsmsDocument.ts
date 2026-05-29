@@ -18,6 +18,19 @@ interface UseIsmsDocumentOptions {
   fallbackData?: IsmsDocument | null;
 }
 
+/**
+ * Register identifiers shared across every ISMS document type. The endpoint
+ * segment is identical for create / update / delete:
+ *   POST   /v1/isms/documents/:id/<segment>
+ *   POST   /v1/isms/<segment>/:rowId
+ *   DELETE /v1/isms/<segment>/:rowId
+ */
+export type IsmsRegister =
+  | 'context-issues'
+  | 'interested-parties'
+  | 'requirements'
+  | 'objectives';
+
 interface IssueInput {
   kind: IsmsContextIssueKind;
   description: string;
@@ -53,7 +66,8 @@ export function useIsmsDocument({
   const [isExporting, setIsExporting] = useState(false);
   const { data, error, isLoading, mutate } = useSWR<IsmsDocument | null>(
     buildKey(documentId),
-    async (key: string) => unwrap<IsmsDocument>(api.get<IsmsDocument>(key), 'Failed to load document'),
+    async (key: string) =>
+      unwrap<IsmsDocument>(api.get<IsmsDocument>(key), 'Failed to load document'),
     {
       fallbackData: fallbackData ?? undefined,
       revalidateOnMount: !fallbackData,
@@ -85,13 +99,63 @@ export function useIsmsDocument({
     return result;
   };
 
-  const createIssue = async (input: IssueInput): Promise<void> => {
+  // --- Generic register row CRUD (works for every register) ---
+
+  const createRow = async ({
+    register,
+    data: rowData,
+  }: {
+    register: IsmsRegister;
+    data: Record<string, unknown>;
+  }): Promise<void> => {
     if (!documentId) throw new Error('No document ID');
     await unwrap(
-      api.post(`/v1/isms/documents/${documentId}/context-issues`, input),
-      'Failed to add issue',
+      api.post(`/v1/isms/documents/${documentId}/${register}`, rowData),
+      'Failed to add row',
     );
     await mutate();
+  };
+
+  const updateRow = async ({
+    register,
+    id,
+    data: rowData,
+  }: {
+    register: IsmsRegister;
+    id: string;
+    data: Record<string, unknown>;
+  }): Promise<void> => {
+    await unwrap(api.post(`/v1/isms/${register}/${id}`, rowData), 'Failed to update row');
+    await mutate();
+  };
+
+  const deleteRow = async ({
+    register,
+    id,
+  }: {
+    register: IsmsRegister;
+    id: string;
+  }): Promise<void> => {
+    const response = await api.delete(`/v1/isms/${register}/${id}`);
+    if (response.error) throw new Error(response.error);
+    await mutate();
+  };
+
+  // --- Singleton narrative (scope 4.3, leadership 5.1) ---
+
+  const saveNarrative = async (narrative: Record<string, unknown>): Promise<void> => {
+    if (!documentId) throw new Error('No document ID');
+    await unwrap(
+      api.post(`/v1/isms/documents/${documentId}/narrative`, { narrative }),
+      'Failed to save document',
+    );
+    await mutate();
+  };
+
+  // --- Context-issue wrappers (kept for ContextOfOrganizationClient) ---
+
+  const createIssue = async (input: IssueInput): Promise<void> => {
+    await createRow({ register: 'context-issues', data: { ...input } });
   };
 
   const updateIssue = async ({
@@ -101,14 +165,11 @@ export function useIsmsDocument({
     issueId: string;
     input: IssueUpdateInput;
   }): Promise<void> => {
-    await unwrap(api.post(`/v1/isms/context-issues/${issueId}`, input), 'Failed to update issue');
-    await mutate();
+    await updateRow({ register: 'context-issues', id: issueId, data: { ...input } });
   };
 
   const deleteIssue = async (issueId: string): Promise<void> => {
-    const response = await api.delete(`/v1/isms/context-issues/${issueId}`);
-    if (response.error) throw new Error(response.error);
-    await mutate();
+    await deleteRow({ register: 'context-issues', id: issueId });
   };
 
   const submitForApproval = async (approverId: string): Promise<void> => {
@@ -204,6 +265,10 @@ export function useIsmsDocument({
     mutate,
     refresh,
     generate,
+    createRow,
+    updateRow,
+    deleteRow,
+    saveNarrative,
     createIssue,
     updateIssue,
     deleteIssue,

@@ -6,7 +6,7 @@ import {
   AUDITOR_PERMISSIONS,
   mockHasPermission,
 } from '@/test-utils/mocks/permissions';
-import type { IsmsContextIssue, IsmsDocument, IsmsDriftResult } from '../isms-types';
+import type { IsmsDocument, IsmsDriftResult, IsmsLeadershipNarrative } from '../isms-types';
 
 // ─── Mock usePermissions ─────────────────────────────────────
 vi.mock('@/hooks/use-permissions', () => ({
@@ -23,9 +23,7 @@ const hookState: {
 };
 
 const mockGenerate = vi.fn().mockResolvedValue(undefined);
-const mockCreateIssue = vi.fn().mockResolvedValue(undefined);
-const mockUpdateIssue = vi.fn().mockResolvedValue(undefined);
-const mockDeleteIssue = vi.fn().mockResolvedValue(undefined);
+const mockSaveNarrative = vi.fn().mockResolvedValue(undefined);
 const mockHandleExport = vi.fn().mockResolvedValue(undefined);
 
 vi.mock('../hooks/useIsmsDocument', () => ({
@@ -33,9 +31,7 @@ vi.mock('../hooks/useIsmsDocument', () => ({
     document: hookState.document,
     isExporting: false,
     generate: mockGenerate,
-    createIssue: mockCreateIssue,
-    updateIssue: mockUpdateIssue,
-    deleteIssue: mockDeleteIssue,
+    saveNarrative: mockSaveNarrative,
     submitForApproval: vi.fn().mockResolvedValue(undefined),
     approve: vi.fn().mockResolvedValue(undefined),
     decline: vi.fn().mockResolvedValue(undefined),
@@ -64,13 +60,14 @@ vi.mock('@trycompai/design-system', () => ({
   AlertTitle: ({ children }: { children: React.ReactNode }) => <strong>{children}</strong>,
   AlertDescription: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
   Badge: ({ children }: { children: React.ReactNode }) => <span>{children}</span>,
-  Button: ({ children, onClick, disabled, 'aria-label': ariaLabel }: {
+  Button: ({ children, onClick, disabled, type, 'aria-label': ariaLabel }: {
     children?: React.ReactNode;
     onClick?: () => void;
     disabled?: boolean;
+    type?: 'button' | 'submit' | 'reset';
     'aria-label'?: string;
   }) => (
-    <button onClick={onClick} disabled={disabled} aria-label={ariaLabel}>
+    <button onClick={onClick} disabled={disabled} type={type} aria-label={ariaLabel}>
       {children}
     </button>
   ),
@@ -80,6 +77,9 @@ vi.mock('@trycompai/design-system', () => ({
   DialogFooter: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
   DialogHeader: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
   DialogTitle: ({ children }: { children: React.ReactNode }) => <h2>{children}</h2>,
+  Label: ({ children, htmlFor }: { children: React.ReactNode; htmlFor?: string }) => (
+    <label htmlFor={htmlFor}>{children}</label>
+  ),
   PageHeader: ({ title, actions }: { title: React.ReactNode; actions?: React.ReactNode }) => (
     <div data-testid="page-header">
       <h1>{title}</h1>
@@ -102,14 +102,13 @@ vi.mock('@trycompai/design-system', () => ({
 }));
 
 vi.mock('@trycompai/design-system/icons', () => ({
-  Add: () => <span data-testid="add-icon" />,
   Checkmark: () => <span />,
   CloseOutline: () => <span />,
   Document: () => <span />,
   Download: () => <span />,
   MachineLearningModel: () => <span />,
   Renew: () => <span />,
-  TrashCan: () => <span />,
+  Save: () => <span />,
   WarningAlt: () => <span />,
 }));
 
@@ -117,43 +116,36 @@ vi.mock('sonner', () => ({
   toast: { success: vi.fn(), error: vi.fn() },
 }));
 
-import { ContextOfOrganizationClient } from './ContextOfOrganizationClient';
+import { LeadershipClient } from './LeadershipClient';
 
-const ISSUES: IsmsContextIssue[] = [
-  {
-    id: 'i1',
-    kind: 'internal',
-    description: 'Derived internal issue',
-    effect: 'Internal effect',
-    source: 'derived',
-    derivedFrom: 'member:hr',
-    position: 0,
-  },
-  {
-    id: 'i2',
-    kind: 'external',
-    description: 'Derived external issue',
-    effect: 'External effect',
-    source: 'derived',
-    derivedFrom: 'framework:ISO 27001',
-    position: 1,
-  },
-];
+const NARRATIVE: IsmsLeadershipNarrative = {
+  statement: 'Top management is fully committed to the ISMS.',
+  commitments: [
+    { key: 'a', text: 'Policy aligned to strategy commitment.' },
+    { key: 'b', text: 'ISMS integrated into business processes commitment.' },
+    { key: 'c', text: 'Resources made available commitment.' },
+    { key: 'd', text: 'Importance of security communicated commitment.' },
+    { key: 'e', text: 'ISMS achieves intended outcomes commitment.' },
+    { key: 'f', text: 'Persons directed and supported commitment.' },
+    { key: 'g', text: 'Continual improvement promoted commitment.' },
+    { key: 'h', text: 'Other management roles supported commitment.' },
+  ],
+};
 
 function makeDocument(overrides: Partial<IsmsDocument> = {}): IsmsDocument {
   return {
     id: 'd1',
-    type: 'context_of_organization',
+    type: 'leadership_commitment',
     status: 'draft',
-    title: 'Context of the Organization',
+    title: 'Leadership and Commitment',
     approverId: null,
     approvedAt: null,
     declinedAt: null,
-    contextIssues: ISSUES,
+    contextIssues: [],
     interestedParties: [],
     interestedPartyRequirements: [],
     objectives: [],
-    versions: [],
+    versions: [{ id: 'v1', version: 1, isLatest: true, narrative: NARRATIVE }],
     ...overrides,
   };
 }
@@ -166,42 +158,56 @@ const baseProps = {
   approverOptions: [{ id: 'm2', name: 'Approver Two' }],
 };
 
-describe('ContextOfOrganizationClient', () => {
+describe('LeadershipClient', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     hookState.document = makeDocument();
     hookState.drift = { isStale: false, changedSources: [] };
   });
 
-  it('renders derived issues with provenance', () => {
+  it('renders the narrative statement and (a)-(h) commitment content', () => {
     setMockPermissions(ADMIN_PERMISSIONS);
-    render(<ContextOfOrganizationClient {...baseProps} />);
+    render(<LeadershipClient {...baseProps} />);
 
-    expect(screen.getByDisplayValue('Derived internal issue')).toBeInTheDocument();
-    expect(screen.getByDisplayValue('Derived external issue')).toBeInTheDocument();
-    expect(screen.getByText('framework:ISO 27001')).toBeInTheDocument();
-    // Derived rows are labelled "Auto-derived".
-    expect(screen.getAllByText('Auto-derived').length).toBeGreaterThan(0);
+    expect(screen.getByText('5.1 Leadership and Commitment')).toBeInTheDocument();
+    // Overall statement + every commitment is shown as an editable value.
+    expect(
+      screen.getByDisplayValue('Top management is fully committed to the ISMS.'),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByDisplayValue('Policy aligned to strategy commitment.'),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByDisplayValue('Other management roles supported commitment.'),
+    ).toBeInTheDocument();
+    // All eight clause labels render.
+    expect(screen.getByText('5.1 (a)')).toBeInTheDocument();
+    expect(screen.getByText('5.1 (h)')).toBeInTheDocument();
   });
 
-  it('allows editing (shows mutating controls) for a user with evidence:update', () => {
+  it('shows mutating controls for a user with evidence:update', () => {
     setMockPermissions(ADMIN_PERMISSIONS);
-    render(<ContextOfOrganizationClient {...baseProps} />);
+    render(<LeadershipClient {...baseProps} />);
 
     expect(screen.getByText('Generate from platform data')).toBeInTheDocument();
-    expect(screen.getAllByText(/Add internal issue|Add external issue/).length).toBe(2);
+    expect(screen.getByText('Save document')).toBeInTheDocument();
     expect(mockHasPermission).toHaveBeenCalledWith('evidence', 'update');
   });
 
   it('hides mutating controls for a read-only user but keeps export', () => {
     setMockPermissions(AUDITOR_PERMISSIONS);
-    render(<ContextOfOrganizationClient {...baseProps} />);
+    render(<LeadershipClient {...baseProps} />);
 
     expect(screen.queryByText('Generate from platform data')).not.toBeInTheDocument();
-    expect(screen.queryByText(/Add internal issue/)).not.toBeInTheDocument();
+    expect(screen.queryByText('Save document')).not.toBeInTheDocument();
     // Read-only users see plain text, not editable textareas.
-    expect(screen.queryByDisplayValue('Derived internal issue')).not.toBeInTheDocument();
-    expect(screen.getByText('Derived internal issue')).toBeInTheDocument();
+    expect(
+      screen.queryByDisplayValue('Top management is fully committed to the ISMS.'),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.getByText('Top management is fully committed to the ISMS.'),
+    ).toBeInTheDocument();
+    expect(screen.getByText('Policy aligned to strategy commitment.')).toBeInTheDocument();
     // Export remains available to readers.
     expect(screen.getByText('Export PDF')).toBeInTheDocument();
     expect(screen.getByText('Export DOCX')).toBeInTheDocument();
@@ -209,8 +215,8 @@ describe('ContextOfOrganizationClient', () => {
 
   it('shows the drift banner when the document is stale', async () => {
     setMockPermissions(ADMIN_PERMISSIONS);
-    hookState.drift = { isStale: true, changedSources: ['vendorCount', 'memberCount'] };
-    render(<ContextOfOrganizationClient {...baseProps} />);
+    hookState.drift = { isStale: true, changedSources: ['memberCount', 'policyCount'] };
+    render(<LeadershipClient {...baseProps} />);
 
     await waitFor(() => {
       expect(screen.getByText('Out of date')).toBeInTheDocument();
