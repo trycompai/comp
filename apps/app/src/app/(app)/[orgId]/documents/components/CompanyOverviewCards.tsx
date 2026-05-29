@@ -18,24 +18,12 @@ import Link from 'next/link';
 import { useMemo } from 'react';
 import useSWR from 'swr';
 import { evidenceFormDefinitionList, meetingSubTypeValues } from '../forms';
+import { useIso27001FrameworkId } from '../isms/hooks/useIso27001FrameworkId';
 import { SOAOverviewCard } from './SOAOverviewCard';
 
 type FormStatuses = Record<string, { lastSubmittedAt: string | null; isNotRelevant?: boolean }>;
-type FrameworkListResponse = {
-  data: Array<{
-    id: string;
-    frameworkId: string;
-    framework: {
-      id: string;
-      name: string;
-      description: string | null;
-      visible: boolean;
-    };
-  }>;
-};
 
 const SIX_MONTHS_MS = 6 * 30 * 24 * 60 * 60 * 1000;
-const ISO27001_NAMES = ['ISO 27001', 'iso27001', 'ISO27001'];
 
 const MEETING_SUB_TYPES = meetingSubTypeValues;
 const MEETING_ALL_TYPES = new Set<string>([...MEETING_SUB_TYPES, 'meeting']);
@@ -118,8 +106,18 @@ function StatusBadge({
   );
 }
 
-export function CompanyOverviewCards({ organizationId }: { organizationId: string }) {
+export function CompanyOverviewCards({
+  organizationId,
+  isIsmsEnabled = false,
+}: {
+  organizationId: string;
+  isIsmsEnabled?: boolean;
+}) {
   const swrKey: readonly [string, string] = ['/v1/evidence-forms/statuses', organizationId];
+
+  // When ISMS is on, the SOA card lives in the ISO 27001 (ISMS) tab instead.
+  const iso27001FrameworkId = useIso27001FrameworkId(organizationId);
+  const showSoaCard = !isIsmsEnabled && !!iso27001FrameworkId;
 
   const { data: statuses } = useSWR<FormStatuses>(
     swrKey,
@@ -133,16 +131,6 @@ export function CompanyOverviewCards({ organizationId }: { organizationId: strin
   );
 
   const { data: findingsResponse } = useOrganizationFindings();
-  const { data: frameworksResponse } = useSWR<FrameworkListResponse>(
-    ['/v1/frameworks', organizationId] as const,
-    async ([endpoint, orgId]: readonly [string, string]) => {
-      const response = await apiClient.get<FrameworkListResponse>(endpoint, orgId);
-      if (response.error || !response.data) {
-        throw new Error(response.error ?? 'Failed to load frameworks');
-      }
-      return response.data;
-    },
-  );
 
   const activeIssueCounts = useMemo(() => {
     const counts: Record<string, number> = {};
@@ -178,19 +166,9 @@ export function CompanyOverviewCards({ organizationId }: { organizationId: strin
     return map;
   }, [visibleForms]);
 
-  const iso27001Framework = useMemo(() => {
-    const frameworks = frameworksResponse?.data ?? [];
-    return frameworks.find(
-      (frameworkInstance) =>
-        !!frameworkInstance.framework?.name &&
-        ISO27001_NAMES.includes(frameworkInstance.framework.name),
-    );
-  }, [frameworksResponse]);
-  const iso27001FrameworkId = iso27001Framework?.frameworkId ?? null;
-
   return (
     <Stack gap="6">
-      {iso27001FrameworkId && (
+      {showSoaCard && iso27001FrameworkId && (
         <SOAOverviewCard
           organizationId={organizationId}
           iso27001FrameworkId={iso27001FrameworkId}
