@@ -1,0 +1,38 @@
+name: Sync MCP source to Gram
+
+# Keeps the hosted MCP (Speakeasy Gram) in sync with the clean public OpenAPI
+# spec. Runs whenever the spec (or the Gram deployment config) changes on main,
+# and can be triggered manually. No manual uploads — the source is pushed
+# declaratively from gram.json via the Gram CLI.
+on:
+  push:
+    branches: [main]
+    paths:
+      - "packages/docs/openapi.json"
+      - "gram.json"
+  workflow_dispatch:
+
+# Least privilege: this workflow only reads the repo to checkout + push the spec.
+permissions:
+  contents: read
+
+jobs:
+  push:
+    runs-on: ubuntu-latest
+    env:
+      # Org + project slugs are NOT secret — they appear in the Gram dashboard URL
+      # (app.getgram.ai/<org>/projects/<project>). Only the API key is a secret.
+      GRAM_ORG: comp-ai-f041
+      GRAM_PROJECT: default
+      GRAM_API_KEY: ${{ secrets.GRAM_API_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Gram CLI
+        # Installs to /usr/local/bin (already on PATH on GitHub runners).
+        run: curl -fsSL https://go.getgram.ai/cli.sh | bash
+
+      - name: Push OpenAPI source to Gram
+        # api-key/org/project are read from the env vars above; --method defaults
+        # to "merge" (updates the existing source in place by slug).
+        run: gram push --config gram.json
