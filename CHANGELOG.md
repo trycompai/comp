@@ -1,3 +1,24 @@
+## [3.65.1](https://github.com/trycompai/comp/compare/v3.65.0...v3.65.1) (2026-05-28)
+
+
+### Bug Fixes
+
+* **monorepo:** exclude apps/mcp-server from bun workspaces ([4d723bf](https://github.com/trycompai/comp/commit/4d723bfaa21f3bc02f014125d0877bd016ea2300))
+* **monorepo:** use glob+negation for workspaces (unbreak Docker build) ([7b9dd15](https://github.com/trycompai/comp/commit/7b9dd150236720ccd446967395addcb5bd621946)), closes [#2950](https://github.com/trycompai/comp/issues/2950) [#2950](https://github.com/trycompai/comp/issues/2950)
+
+# [3.65.0](https://github.com/trycompai/comp/compare/v3.64.4...v3.65.0) (2026-05-28)
+
+
+### Bug Fixes
+
+* **docs:** update API documentation for PDF upload and delete endpoints ([984ae37](https://github.com/trycompai/comp/commit/984ae376bc8cb435ad091d9f8bef5529d65b5bfd))
+
+
+### Features
+
+* **compai-mcp:** add createAttachment endpoint for file uploads ([6ab41f6](https://github.com/trycompai/comp/commit/6ab41f6090902bbc1e1f5a3321845197b863b832))
+* **integration-platform:** add optional organizationId to multiple DTOs ([10a3775](https://github.com/trycompai/comp/commit/10a37757f329b106610a5a0ce34674972de45755))
+
 ## [3.64.4](https://github.com/trycompai/comp/compare/v3.64.3...v3.64.4) (2026-05-28)
 
 

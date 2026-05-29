@@ -201,4 +201,60 @@ describe('OpenAPI document', () => {
       );
     });
   });
+
+  describe('MCP OAuth security', () => {
+    it('declares an oauth2 authorization-code scheme pointed at the Comp AI auth server', () => {
+      const scheme = document.components?.securitySchemes?.oauth2 as
+        | {
+            type?: string;
+            flows?: {
+              authorizationCode?: {
+                authorizationUrl?: string;
+                tokenUrl?: string;
+                scopes?: Record<string, string>;
+              };
+            };
+          }
+        | undefined;
+
+      expect(scheme?.type).toBe('oauth2');
+      expect(scheme?.flows?.authorizationCode?.authorizationUrl).toBe(
+        `${PUBLIC_SERVER_URL}/api/auth/mcp/authorize`,
+      );
+      expect(scheme?.flows?.authorizationCode?.tokenUrl).toBe(
+        `${PUBLIC_SERVER_URL}/api/auth/mcp/token`,
+      );
+    });
+
+    it('offers oauth2 alongside the API key on every authenticated operation', () => {
+      const operations = Object.values(document.paths).flatMap((methods) =>
+        Object.values(methods as Record<string, { security?: unknown }>),
+      );
+
+      const hasReq = (security: unknown, scheme: string): boolean =>
+        Array.isArray(security) &&
+        security.some((req) => req && typeof req === 'object' && scheme in req);
+
+      const apiKeyOps = operations.filter((op) =>
+        hasReq(op?.security, 'apikey'),
+      );
+
+      // Sanity: the spec really does gate operations behind the API key.
+      expect(apiKeyOps.length).toBeGreaterThan(0);
+
+      // Every API-key operation must also accept oauth2 (OR semantics) so MCP
+      // callers authenticate per-user instead of via a shared key.
+      const missingOAuth = apiKeyOps.filter(
+        (op) => !hasReq(op?.security, 'oauth2'),
+      );
+      expect(missingOAuth).toHaveLength(0);
+
+      // And oauth2 is never offered on an endpoint that isn't API-key gated.
+      const oauthWithoutApiKey = operations.filter(
+        (op) =>
+          hasReq(op?.security, 'oauth2') && !hasReq(op?.security, 'apikey'),
+      );
+      expect(oauthWithoutApiKey).toHaveLength(0);
+    });
+  });
 });

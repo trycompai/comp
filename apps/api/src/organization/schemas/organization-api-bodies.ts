@@ -55,6 +55,17 @@ export const UPDATE_ORGANIZATION_BODY: ApiBodyOptions = {
         description: 'Organization primary color in hex format',
         example: '#3B82F6',
       },
+      advancedModeEnabled: {
+        type: 'boolean',
+        description: 'Whether advanced mode is enabled for the organization',
+        example: false,
+      },
+      backgroundCheckStepEnabled: {
+        type: 'boolean',
+        description:
+          'Whether the background-check step is required during member onboarding. Set to false to turn off the "Require background checks" setting; true to require it.',
+        example: true,
+      },
     },
     additionalProperties: false,
   },
