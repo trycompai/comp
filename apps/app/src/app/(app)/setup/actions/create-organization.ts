@@ -2,13 +2,13 @@
 
 import { initializeOrganization } from '@/actions/organization/lib/initialize-organization';
 import { authActionClientWithoutOrg } from '@/actions/safe-action';
+import { serverApi } from '@/lib/api-server';
 import { createTrainingVideoEntries } from '@/lib/db/employee';
 import { createFleetLabelForOrg } from '@/trigger/tasks/device/create-fleet-label-for-org';
 import { onboardOrganization as onboardOrganizationTask } from '@/trigger/tasks/onboarding/onboard-organization';
 import { auth } from '@/utils/auth';
 import { db } from '@db/server';
 import { tasks } from '@trigger.dev/sdk';
-import { ensureTrustForOrganization } from '@trycompai/db/trust';
 import { revalidatePath } from 'next/cache';
 import { cookies, headers } from 'next/headers';
 import { companyDetailsSchema, steps } from '../lib/constants';
@@ -80,18 +80,6 @@ export const createOrganization = authActionClientWithoutOrg
 
       const orgId = newOrg.id;
 
-      // Auto-publish the trust portal so trust.inc/{slug} is live immediately,
-      // even while empty. Non-fatal: onboarding + job triggers must still run.
-      try {
-        await ensureTrustForOrganization({
-          db,
-          organizationId: orgId,
-          organizationName: parsedInput.organizationName,
-        });
-      } catch (trustError) {
-        console.error('Non-critical: failed to auto-create trust portal:', trustError);
-      }
-
       // Get the member that was created with the organization (the owner)
       const ownerMember = await db.member.findFirst({
         where: {
@@ -128,6 +116,15 @@ export const createOrganization = authActionClientWithoutOrg
           organizationId: orgId,
         },
       });
+
+      // Publish the trust portal so trust.inc/{slug} is live immediately, even
+      // while empty. Goes through the guarded API (GET settings lazily creates a
+      // published Trust row with a slug). Non-fatal — onboarding must still run.
+      try {
+        await serverApi.get('/v1/trust-portal/settings');
+      } catch (trustError) {
+        console.error('Non-critical: failed to publish trust portal:', trustError);
+      }
 
       const userOrgs = await db.member.findMany({
         where: {

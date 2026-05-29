@@ -3,10 +3,10 @@
 import { initializeOrganization } from '@/actions/organization/lib/initialize-organization';
 import { authActionClientWithoutOrg } from '@/actions/safe-action';
 import { env } from '@/env.mjs';
+import { serverApi } from '@/lib/api-server';
 import { createTrainingVideoEntries } from '@/lib/db/employee';
 import { auth } from '@/utils/auth';
 import { db } from '@db/server';
-import { ensureTrustForOrganization } from '@trycompai/db/trust';
 import { revalidatePath } from 'next/cache';
 import { headers } from 'next/headers';
 import { z } from 'zod';
@@ -96,17 +96,6 @@ export const createOrganizationMinimal = authActionClientWithoutOrg
           }
         }
 
-        // Ensure the trust portal exists for the reused org too (non-fatal).
-        try {
-          await ensureTrustForOrganization({
-            db,
-            organizationId: existingOrg.id,
-            organizationName: existingOrg.name,
-          });
-        } catch (trustError) {
-          console.error('Non-critical: failed to auto-create trust portal:', trustError);
-        }
-
         // Ensure this org is set as the active one
         await auth.api.setActiveOrganization({
           headers: await headers(),
@@ -114,6 +103,13 @@ export const createOrganizationMinimal = authActionClientWithoutOrg
             organizationId: existingOrg.id,
           },
         });
+
+        // Publish the trust portal via the guarded API (non-fatal).
+        try {
+          await serverApi.get('/v1/trust-portal/settings');
+        } catch (trustError) {
+          console.error('Non-critical: failed to publish trust portal:', trustError);
+        }
 
         return {
           success: true,
@@ -169,18 +165,6 @@ export const createOrganizationMinimal = authActionClientWithoutOrg
       const orgId = newOrg.id;
       createdOrgId = orgId;
 
-      // Auto-publish the trust portal so trust.inc/{slug} is live immediately,
-      // even while empty. Non-fatal: org creation must not depend on this.
-      try {
-        await ensureTrustForOrganization({
-          db,
-          organizationId: orgId,
-          organizationName: parsedInput.organizationName,
-        });
-      } catch (trustError) {
-        console.error('Non-critical: failed to auto-create trust portal:', trustError);
-      }
-
       // Get the member that was created with the organization (the owner)
       const ownerMember = await db.member.findFirst({
         where: {
@@ -219,6 +203,15 @@ export const createOrganizationMinimal = authActionClientWithoutOrg
         },
       });
       createdOrgId = undefined; // Org is fully initialized, disable cleanup
+
+      // Publish the trust portal so trust.inc/{slug} is live immediately, even
+      // while empty. Goes through the guarded API (GET settings lazily creates a
+      // published Trust row with a slug). Non-fatal — org creation must not depend on it.
+      try {
+        await serverApi.get('/v1/trust-portal/settings');
+      } catch (trustError) {
+        console.error('Non-critical: failed to publish trust portal:', trustError);
+      }
 
       // Revalidate paths (non-critical, don't let failures kill the flow)
       try {
