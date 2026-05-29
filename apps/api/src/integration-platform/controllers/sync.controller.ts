@@ -423,14 +423,25 @@ export class SyncController {
               });
             }
           }
-          results.skipped++;
-          results.details.push({
-            email: normalizedEmail,
-            status: 'skipped',
-            reason: existingMember.deactivated
-              ? 'Member is deactivated'
-              : 'Already a member',
-          });
+          if (existingMember.deactivated) {
+            await db.member.update({
+              where: { id: existingMember.id },
+              data: { deactivated: false, isActive: true },
+            });
+            results.reactivated++;
+            results.details.push({
+              email: normalizedEmail,
+              status: 'reactivated',
+              reason: 'User is active again in Google Workspace',
+            });
+          } else {
+            results.skipped++;
+            results.details.push({
+              email: normalizedEmail,
+              status: 'skipped',
+              reason: 'Already a member',
+            });
+          }
           continue;
         }
 

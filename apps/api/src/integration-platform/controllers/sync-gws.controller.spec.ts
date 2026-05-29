@@ -271,19 +271,26 @@ describe('SyncController - Google Workspace employees', () => {
     });
   });
 
-  // ── Deactivated members must NOT be reactivated ────────────────
+  // ── Deactivated members get reactivated when they reappear in GWS ──
+  // Mirrors the JumpCloud + Rippling sync behavior so a user
+  // un-suspended in Google Workspace returns to the People tab on the
+  // next sync instead of staying invisible forever. Trade-off: a member
+  // manually deactivated by an admin will also be reactivated if they
+  // are still an active GWS user — admins must remove the user from
+  // GWS (or add them to `sync_excluded_emails`) to keep them deactivated.
 
-  describe('deactivated member handling (no reactivation)', () => {
-    it('should NOT reactivate a member deactivated manually by an admin', async () => {
-      setupSync({ gwUsers: [makeGwUser('manual@example.com')] });
+  describe('reactivation of deactivated members', () => {
+    it('should reactivate a deactivated member who is active in GWS', async () => {
+      setupSync({ gwUsers: [makeGwUser('back@example.com')] });
 
       (mockedDb.user.findUnique as jest.Mock).mockResolvedValue({
-        id: 'user_manual',
-        email: 'manual@example.com',
+        id: 'user_back',
+        email: 'back@example.com',
       });
       (mockedDb.member.findFirst as jest.Mock).mockResolvedValue(
-        makeMember('manual@example.com', {
-          userId: 'user_manual',
+        makeMember('back@example.com', {
+          id: 'mem_back',
+          userId: 'user_back',
           deactivated: true,
         }),
       );
@@ -294,49 +301,24 @@ describe('SyncController - Google Workspace employees', () => {
         connectionId,
       );
 
-      expect(result.reactivated).toBe(0);
-      expect(result.skipped).toBe(1);
-      expect(mockedDb.member.update).not.toHaveBeenCalledWith(
-        expect.objectContaining({
-          data: expect.objectContaining({ deactivated: false }),
-        }),
-      );
+      expect(result.reactivated).toBe(1);
+      expect(result.skipped).toBe(0);
+      expect(mockedDb.member.update).toHaveBeenCalledWith({
+        where: { id: 'mem_back' },
+        data: { deactivated: false, isActive: true },
+      });
     });
 
-    it('should NOT reactivate a member previously deactivated by sync', async () => {
-      setupSync({ gwUsers: [makeGwUser('synced@example.com')] });
+    it('should report the reactivation in details with a clear reason', async () => {
+      setupSync({ gwUsers: [makeGwUser('back@example.com')] });
 
       (mockedDb.user.findUnique as jest.Mock).mockResolvedValue({
-        id: 'user_synced',
-        email: 'synced@example.com',
+        id: 'user_back',
+        email: 'back@example.com',
       });
       (mockedDb.member.findFirst as jest.Mock).mockResolvedValue(
-        makeMember('synced@example.com', {
-          userId: 'user_synced',
-          deactivated: true,
-        }),
-      );
-      (mockedDb.member.findMany as jest.Mock).mockResolvedValue([]);
-
-      const result = await controller.syncGoogleWorkspaceEmployees(
-        orgId,
-        connectionId,
-      );
-
-      expect(result.reactivated).toBe(0);
-      expect(result.skipped).toBe(1);
-    });
-
-    it('should report correct skip reason for deactivated members', async () => {
-      setupSync({ gwUsers: [makeGwUser('deact@example.com')] });
-
-      (mockedDb.user.findUnique as jest.Mock).mockResolvedValue({
-        id: 'user_deact',
-        email: 'deact@example.com',
-      });
-      (mockedDb.member.findFirst as jest.Mock).mockResolvedValue(
-        makeMember('deact@example.com', {
-          userId: 'user_deact',
+        makeMember('back@example.com', {
+          userId: 'user_back',
           deactivated: true,
         }),
       );
@@ -348,12 +330,12 @@ describe('SyncController - Google Workspace employees', () => {
       );
 
       const detail = result.details.find(
-        (d) => d.email === 'deact@example.com',
+        (d) => d.email === 'back@example.com',
       );
       expect(detail).toEqual({
-        email: 'deact@example.com',
-        status: 'skipped',
-        reason: 'Member is deactivated',
+        email: 'back@example.com',
+        status: 'reactivated',
+        reason: 'User is active again in Google Workspace',
       });
     });
 
@@ -748,8 +730,8 @@ describe('SyncController - Google Workspace employees', () => {
       );
 
       expect(result.imported).toBe(1); // new@example.com
-      expect(result.skipped).toBe(2); // active + deactivated
-      expect(result.reactivated).toBe(0); // deactivated stays deactivated
+      expect(result.skipped).toBe(1); // active@example.com
+      expect(result.reactivated).toBe(1); // deactivated@example.com comes back
       expect(result.deactivated).toBe(1); // suspended@example.com
     });
   });
