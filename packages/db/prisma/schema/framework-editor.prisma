@@ -22,6 +22,7 @@ model FrameworkEditorFramework {
   frameworkInstances   FrameworkInstance[]
   soaConfigurations    SOAFrameworkConfiguration[] // Multiple SOA config versions per framework
   soaDocuments         SOADocument[] // SOA documents from organizations
+  ismsDocuments        IsmsDocument[] // ISMS foundational documents from organizations
   timelineTemplates    TimelineTemplate[]
   versions             FrameworkVersion[]
   controlPolicyLinks   FrameworkEditorControlPolicyTemplateLink[]
@@ -45,6 +46,7 @@ model FrameworkEditorRequirement {
 
   controlTemplates FrameworkEditorControlTemplate[]
   requirementMaps  RequirementMap[]
+  ismsDocuments    IsmsDocument[] // ISMS foundational documents mapped to this clause requirement
 
   // Dates
   createdAt DateTime @default(now())

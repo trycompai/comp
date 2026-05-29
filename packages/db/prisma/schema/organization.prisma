@@ -55,6 +55,7 @@ model Organization {
   questionnaires                     Questionnaire[]
   securityQuestionnaireManualAnswers SecurityQuestionnaireManualAnswer[]
   soaDocuments                       SOADocument[]
+  ismsDocuments                      IsmsDocument[]
   primaryColor                       String?
   trustPortalFaqs                    Json? // Array of { question: string, answer: string, order: number }
 
