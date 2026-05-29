@@ -1,3 +1,11 @@
+## [3.65.1](https://github.com/trycompai/comp/compare/v3.65.0...v3.65.1) (2026-05-28)
+
+
+### Bug Fixes
+
+* **monorepo:** exclude apps/mcp-server from bun workspaces ([4d723bf](https://github.com/trycompai/comp/commit/4d723bfaa21f3bc02f014125d0877bd016ea2300))
+* **monorepo:** use glob+negation for workspaces (unbreak Docker build) ([7b9dd15](https://github.com/trycompai/comp/commit/7b9dd150236720ccd446967395addcb5bd621946)), closes [#2950](https://github.com/trycompai/comp/issues/2950) [#2950](https://github.com/trycompai/comp/issues/2950)
+
 # [3.65.0](https://github.com/trycompai/comp/compare/v3.64.4...v3.65.0) (2026-05-28)
 
 

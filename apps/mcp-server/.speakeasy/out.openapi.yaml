@@ -5227,7 +5227,7 @@ paths:
         name: "get-pdf-signed-url"
   /v1/policies/{id}/pdf:
     post:
-      description: "Accepts a base64-encoded PDF. Used by the web UI where the browser supplies the file. NOT recommended for MCP/AI clients — base64 of large files through an LLM is extremely slow. AI clients should use POST /v1/policies/{id}/pdf/upload-url."
+      description: "Uploads a PDF via multipart `file` or base64 `fileData` JSON. Defaults to the latest draft if no `versionId`; 400 if no draft is available. UI-only — AI clients should use the presigned `/pdf/upload-url` + `/pdf/confirm` flow."
       operationId: "PoliciesController_uploadPolicyPdf_v1"
       parameters:
         - name: "X-Organization-Id"
@@ -5246,27 +5246,87 @@ paths:
       requestBody:
         required: true
         content:
+          multipart/form-data:
+            schema:
+              oneOf:
+                - description: "Multipart file upload (recommended)"
+                  type: "object"
+                  properties:
+                    file:
+                      type: "string"
+                      format: "binary"
+                    versionId:
+                      type: "string"
+                      description: "Target version ID. If omitted, uploads to the latest draft version."
+                  required:
+                    - "file"
+                - description: "JSON with base64-encoded file data"
+                  type: "object"
+                  properties:
+                    fileName:
+                      type: "string"
+                    fileType:
+                      type: "string"
+                    fileData:
+                      type: "string"
+                      description: "Base64-encoded file content"
+                    versionId:
+                      type: "string"
+                      description: "Target version ID. If omitted, uploads to the latest draft version."
+                  required:
+                    - "fileName"
+                    - "fileType"
+                    - "fileData"
           application/json:
             schema:
-              $ref: "#/components/schemas/UploadPolicyPdfDto"
+              oneOf:
+                - description: "Multipart file upload (recommended)"
+                  type: "object"
+                  properties:
+                    file:
+                      type: "string"
+                      format: "binary"
+                    versionId:
+                      type: "string"
+                      description: "Target version ID. If omitted, uploads to the latest draft version."
+                  required:
+                    - "file"
+                - description: "JSON with base64-encoded file data"
+                  type: "object"
+                  properties:
+                    fileName:
+                      type: "string"
+                    fileType:
+                      type: "string"
+                    fileData:
+                      type: "string"
+                      description: "Base64-encoded file content"
+                    versionId:
+                      type: "string"
+                      description: "Target version ID. If omitted, uploads to the latest draft version."
+                  required:
+                    - "fileName"
+                    - "fileType"
+                    - "fileData"
       responses:
         "201":
           description: ""
       security:
         - apikey: []
-      summary: "Upload a PDF to a policy or version (base64, UI-only)"
+      summary: "Upload a PDF to a policy version (UI-only)"
       tags:
         - "Policies"
       x-speakeasy-mcp:
         disabled: true
       x-mint:
         metadata:
-          title: "Upload a PDF to a policy or version (base64 | Comp AI API"
-          sidebarTitle: "Upload a PDF to a policy or version (base64, UI-only)"
-          description: "Accepts a base64-encoded PDF. Used by the web UI where the browser supplies the file. NOT recommended for MCP/AI clients — base64 of large files through an."
-          og:title: "Upload a PDF to a policy or version (base64 | Comp AI API"
-          og:description: "Accepts a base64-encoded PDF. Used by the web UI where the browser supplies the file. NOT recommended for MCP/AI clients — base64 of large files through an."
+          title: "Upload a PDF to a policy version (UI-only) | Comp AI API"
+          sidebarTitle: "Upload a PDF to a policy version (UI-only)"
+          description: "Uploads a PDF via multipart `file` or base64 `fileData` JSON. Defaults to the latest draft if no `versionId`; 400 if no draft is available. UI-only — AI."
+          og:title: "Upload a PDF to a policy version (UI-only) | Comp AI API"
+          og:description: "Uploads a PDF via multipart `file` or base64 `fileData` JSON. Defaults to the latest draft if no `versionId`; 400 if no draft is available. UI-only — AI."
     delete:
+      description: "Deletes the PDF from a specific policy version. If no versionId is provided, deletes from the latest draft version. Cannot delete PDFs from published or pending-approval versions."
       operationId: "PoliciesController_deletePolicyPdf_v1"
       parameters:
         - name: "X-Organization-Id"
@@ -5285,6 +5345,7 @@ paths:
         - name: "versionId"
           required: false
           in: "query"
+          description: "Target version ID. If omitted, targets the latest draft version."
           schema:
             type: "string"
       responses:
@@ -5292,17 +5353,16 @@ paths:
           description: ""
       security:
         - apikey: []
-      summary: "Delete a policy PDF"
+      summary: "Delete a policy version PDF"
       tags:
         - "Policies"
-      description: "Delete a policy PDF in Comp AI. Create, version, publish, export, map, and improve compliance policies with AI-assisted drafting and approval workflows."
       x-mint:
         metadata:
-          title: "Delete a policy PDF | Comp AI API"
-          sidebarTitle: "Delete a policy PDF"
-          description: "Delete a policy PDF in Comp AI. Create, version, publish, export, map, and improve compliance policies with AI-assisted drafting and approval workflows."
-          og:title: "Delete a policy PDF | Comp AI API"
-          og:description: "Delete a policy PDF in Comp AI. Create, version, publish, export, map, and improve compliance policies with AI-assisted drafting and approval workflows."
+          title: "Delete a policy version PDF | Comp AI API"
+          sidebarTitle: "Delete a policy version PDF"
+          description: "Deletes the PDF from a specific policy version. If no versionId is provided, deletes from the latest draft version. Cannot delete PDFs from published."
+          og:title: "Delete a policy version PDF | Comp AI API"
+          og:description: "Deletes the PDF from a specific policy version. If no versionId is provided, deletes from the latest draft version. Cannot delete PDFs from published."
       x-speakeasy-mcp:
         name: "delete-policy-pdf"
   /v1/policies/{id}/pdf/upload-url:
@@ -10249,6 +10309,409 @@ paths:
           og:description: "Get activity history for a finding in Comp AI. Create, review, update, and track audit findings, remediation activity, and finding history for an."
       x-speakeasy-mcp:
         name: "get-finding-history"
+  /v1/roles:
+    post:
+      description: "Create a custom role in Comp AI. Create custom roles and resolve permission sets for organization-level access control."
+      operationId: "RolesController_createRole_v1"
+      parameters: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateRoleDto"
+      responses:
+        "201":
+          description: "Role created successfully"
+          content:
+            application/json:
+              schema:
+                type: "object"
+                properties:
+                  id:
+                    type: "string"
+                    example: "rol_abc123"
+                  name:
+                    type: "string"
+                    example: "compliance-lead"
+                  permissions:
+                    type: "object"
+                    additionalProperties:
+                      type: "array"
+                      items:
+                        type: "string"
+                  isBuiltIn:
+                    type: "boolean"
+                    example: false
+                  createdAt:
+                    type: "string"
+                    format: "date-time"
+                  updatedAt:
+                    type: "string"
+                    format: "date-time"
+        "400":
+          description: "Invalid role data or role already exists"
+        "401":
+          description: "Unauthorized"
+        "403":
+          description: "Forbidden - cannot grant permissions you do not have"
+      security:
+        - apikey: []
+      summary: "Create a custom role"
+      tags:
+        - "Roles"
+      x-mint:
+        metadata:
+          title: "Create a custom role | Comp AI API"
+          sidebarTitle: "Create a custom role"
+          description: "Create a custom role in Comp AI. Create custom roles and resolve permission sets for organization-level access control."
+          og:title: "Create a custom role | Comp AI API"
+          og:description: "Create a custom role in Comp AI. Create custom roles and resolve permission sets for organization-level access control."
+      x-speakeasy-mcp:
+        name: "create-role"
+    get:
+      description: "List all roles in Comp AI. Create custom roles and resolve permission sets for organization-level access control."
+      operationId: "RolesController_listRoles_v1"
+      parameters: []
+      responses:
+        "200":
+          description: "List of roles"
+          content:
+            application/json:
+              schema:
+                type: "object"
+                properties:
+                  builtInRoles:
+                    type: "array"
+                    items:
+                      type: "object"
+                      properties:
+                        name:
+                          type: "string"
+                        isBuiltIn:
+                          type: "boolean"
+                        description:
+                          type: "string"
+                  customRoles:
+                    type: "array"
+                    items:
+                      type: "object"
+                      properties:
+                        id:
+                          type: "string"
+                        name:
+                          type: "string"
+                        permissions:
+                          type: "object"
+                        isBuiltIn:
+                          type: "boolean"
+                        createdAt:
+                          type: "string"
+                          format: "date-time"
+                        updatedAt:
+                          type: "string"
+                          format: "date-time"
+        "401":
+          description: "Unauthorized"
+      security:
+        - apikey: []
+      summary: "List all roles"
+      tags:
+        - "Roles"
+      x-mint:
+        metadata:
+          title: "List all roles | Comp AI API"
+          sidebarTitle: "List all roles"
+          description: "List all roles in Comp AI. Create custom roles and resolve permission sets for organization-level access control."
+          og:title: "List all roles | Comp AI API"
+          og:description: "List all roles in Comp AI. Create custom roles and resolve permission sets for organization-level access control."
+      x-speakeasy-mcp:
+        name: "list-roles"
+  /v1/roles/permissions:
+    get:
+      description: "Returns the merged permissions for the given custom role names. Used by the frontend to resolve effective permissions for users with custom roles."
+      operationId: "RolesController_getPermissionsForRoles_v1"
+      parameters:
+        - name: "roles"
+          required: true
+          in: "query"
+          schema:
+            type: "string"
+      responses:
+        "200":
+          description: "Merged permissions for the requested roles"
+          content:
+            application/json:
+              schema:
+                type: "object"
+                properties:
+                  permissions:
+                    type: "object"
+                    additionalProperties:
+                      type: "array"
+                      items:
+                        type: "string"
+        "401":
+          description: "Unauthorized"
+      security:
+        - apikey: []
+      summary: "Resolve permissions for custom roles"
+      tags:
+        - "Roles"
+      x-mint:
+        metadata:
+          title: "Resolve permissions for custom roles | Comp AI API"
+          sidebarTitle: "Resolve permissions for custom roles"
+          description: "Returns the merged permissions for the given custom role names. Used by the frontend to resolve effective permissions for users with custom roles."
+          og:title: "Resolve permissions for custom roles | Comp AI API"
+          og:description: "Returns the merged permissions for the given custom role names. Used by the frontend to resolve effective permissions for users with custom roles."
+      x-speakeasy-mcp:
+        name: "get-permissions-for-roles"
+  /v1/roles/built-in/{name}/obligations:
+    get:
+      description: "Returns the effective obligations for a built-in role (owner, admin, auditor, employee, contractor) — DB override if present, else the hardcoded default."
+      operationId: "RolesController_getBuiltInObligations_v1"
+      parameters:
+        - name: "name"
+          required: true
+          in: "path"
+          description: "Built-in role name"
+          schema:
+            example: "owner"
+            type: "string"
+      responses:
+        "200":
+          description: "Effective obligations for the built-in role"
+          content:
+            application/json:
+              schema:
+                type: "object"
+                properties:
+                  name:
+                    type: "string"
+                  obligations:
+                    type: "object"
+                    properties:
+                      compliance:
+                        type: "boolean"
+      security:
+        - apikey: []
+      summary: "Get obligations for a built-in role"
+      tags:
+        - "Roles"
+      x-mint:
+        metadata:
+          title: "Get obligations for a built-in role | Comp AI API"
+          sidebarTitle: "Get obligations for a built-in role"
+          description: "Returns the effective obligations for a built-in role (owner, admin, auditor, employee, contractor) — DB override if present, else the hardcoded default."
+          og:title: "Get obligations for a built-in role | Comp AI API"
+          og:description: "Returns the effective obligations for a built-in role (owner, admin, auditor, employee, contractor) — DB override if present, else the hardcoded default."
+      x-speakeasy-mcp:
+        name: "get-built-in-obligations"
+    patch:
+      description: "Override the obligations for a built-in role (e.g., turn off the compliance obligation for owners). Permissions stay sourced from the hardcoded defaults."
+      operationId: "RolesController_updateBuiltInObligations_v1"
+      parameters:
+        - name: "name"
+          required: true
+          in: "path"
+          description: "Built-in role name"
+          schema:
+            example: "owner"
+            type: "string"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateBuiltInObligationsDto"
+      responses:
+        "200":
+          description: "Obligations updated"
+          content:
+            application/json:
+              schema:
+                type: "object"
+                properties:
+                  name:
+                    type: "string"
+                  obligations:
+                    type: "object"
+                    properties:
+                      compliance:
+                        type: "boolean"
+        "400":
+          description: "Not a built-in role"
+      security:
+        - apikey: []
+      summary: "Update obligations for a built-in role"
+      tags:
+        - "Roles"
+      x-mint:
+        metadata:
+          title: "Update obligations for a built-in role | Comp AI API"
+          sidebarTitle: "Update obligations for a built-in role"
+          description: "Override the obligations for a built-in role (e.g., turn off the compliance obligation for owners). Permissions stay sourced from the hardcoded defaults."
+          og:title: "Update obligations for a built-in role | Comp AI API"
+          og:description: "Override the obligations for a built-in role (e.g., turn off the compliance obligation for owners). Permissions stay sourced from the hardcoded defaults."
+      x-speakeasy-mcp:
+        name: "update-built-in-obligations"
+  /v1/roles/{roleId}:
+    get:
+      description: "Get a role by ID in Comp AI. Create custom roles and resolve permission sets for organization-level access control."
+      operationId: "RolesController_getRole_v1"
+      parameters:
+        - name: "roleId"
+          required: true
+          in: "path"
+          description: "Role ID"
+          schema:
+            example: "rol_abc123"
+            type: "string"
+      responses:
+        "200":
+          description: "Role details"
+          content:
+            application/json:
+              schema:
+                type: "object"
+                properties:
+                  id:
+                    type: "string"
+                  name:
+                    type: "string"
+                  permissions:
+                    type: "object"
+                  isBuiltIn:
+                    type: "boolean"
+                  createdAt:
+                    type: "string"
+                    format: "date-time"
+                  updatedAt:
+                    type: "string"
+                    format: "date-time"
+        "401":
+          description: "Unauthorized"
+        "404":
+          description: "Role not found"
+      security:
+        - apikey: []
+      summary: "Get a role by ID"
+      tags:
+        - "Roles"
+      x-mint:
+        metadata:
+          title: "Get a role by ID | Comp AI API"
+          sidebarTitle: "Get a role by ID"
+          description: "Get a role by ID in Comp AI. Create custom roles and resolve permission sets for organization-level access control."
+          og:title: "Get a role by ID | Comp AI API"
+          og:description: "Get a role by ID in Comp AI. Create custom roles and resolve permission sets for organization-level access control."
+      x-speakeasy-mcp:
+        name: "get-role"
+    patch:
+      description: "Update a custom role in Comp AI. Create custom roles and resolve permission sets for organization-level access control."
+      operationId: "RolesController_updateRole_v1"
+      parameters:
+        - name: "roleId"
+          required: true
+          in: "path"
+          description: "Role ID"
+          schema:
+            example: "rol_abc123"
+            type: "string"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateRoleDto"
+      responses:
+        "200":
+          description: "Role updated successfully"
+          content:
+            application/json:
+              schema:
+                type: "object"
+                properties:
+                  id:
+                    type: "string"
+                  name:
+                    type: "string"
+                  permissions:
+                    type: "object"
+                  isBuiltIn:
+                    type: "boolean"
+                  createdAt:
+                    type: "string"
+                    format: "date-time"
+                  updatedAt:
+                    type: "string"
+                    format: "date-time"
+        "400":
+          description: "Invalid role data"
+        "401":
+          description: "Unauthorized"
+        "403":
+          description: "Forbidden - cannot grant permissions you do not have"
+        "404":
+          description: "Role not found"
+      security:
+        - apikey: []
+      summary: "Update a custom role"
+      tags:
+        - "Roles"
+      x-mint:
+        metadata:
+          title: "Update a custom role | Comp AI API"
+          sidebarTitle: "Update a custom role"
+          description: "Update a custom role in Comp AI. Create custom roles and resolve permission sets for organization-level access control."
+          og:title: "Update a custom role | Comp AI API"
+          og:description: "Update a custom role in Comp AI. Create custom roles and resolve permission sets for organization-level access control."
+      x-speakeasy-mcp:
+        name: "update-role"
+    delete:
+      description: "Delete a custom role in Comp AI. Create custom roles and resolve permission sets for organization-level access control."
+      operationId: "RolesController_deleteRole_v1"
+      parameters:
+        - name: "roleId"
+          required: true
+          in: "path"
+          description: "Role ID"
+          schema:
+            example: "rol_abc123"
+            type: "string"
+      responses:
+        "200":
+          description: "Role deleted successfully"
+          content:
+            application/json:
+              schema:
+                type: "object"
+                properties:
+                  success:
+                    type: "boolean"
+                  message:
+                    type: "string"
+        "400":
+          description: "Cannot delete - members assigned to role"
+        "401":
+          description: "Unauthorized"
+        "404":
+          description: "Role not found"
+      security:
+        - apikey: []
+      summary: "Delete a custom role"
+      tags:
+        - "Roles"
+      x-mint:
+        metadata:
+          title: "Delete a custom role | Comp AI API"
+          sidebarTitle: "Delete a custom role"
+          description: "Delete a custom role in Comp AI. Create custom roles and resolve permission sets for organization-level access control."
+          og:title: "Delete a custom role | Comp AI API"
+          og:description: "Delete a custom role in Comp AI. Create custom roles and resolve permission sets for organization-level access control."
+      x-speakeasy-mcp:
+        name: "delete-role"
   /v1/questionnaire:
     get:
       operationId: "QuestionnaireController_findAll_v1"
@@ -12432,6 +12895,7 @@ paths:
         name: "get-findings"
   /v1/cloud-security/findings/{findingId}/exception:
     post:
+      description: "Accepts session, API key, or service token auth. For API key / service token callers without an explicit user attribution, the action is attributed to the org's owner and the audit log description records the calling key/service name."
       operationId: "CloudSecurityController_markFindingAsException_v1"
       parameters:
         - name: "findingId"
@@ -12451,18 +12915,18 @@ paths:
       summary: "Mark a finding as an exception so it no longer appears in the active Scan Results list"
       tags:
         - "CloudSecurity"
-      description: "Mark a finding as an exception so it no longer appears in the active Scan Results list in Comp AI. Run AWS, Azure, and GCP cloud security scans, detect enabled services, review findings, and connect cloud posture results to compliance work."
       x-mint:
         metadata:
           title: "Mark a finding as an exception so it no | Comp AI API"
           sidebarTitle: "Mark a finding as an exception so it no longer appears in the active Scan Results list"
-          description: "Mark a finding as an exception so it no longer appears in the active Scan Results list in Comp AI. Run AWS, Azure, and GCP cloud security scans, detect."
+          description: "Accepts session, API key, or service token auth. For API key / service token callers without an explicit user attribution, the action is attributed to the."
           og:title: "Mark a finding as an exception so it no | Comp AI API"
-          og:description: "Mark a finding as an exception so it no longer appears in the active Scan Results list in Comp AI. Run AWS, Azure, and GCP cloud security scans, detect."
+          og:description: "Accepts session, API key, or service token auth. For API key / service token callers without an explicit user attribution, the action is attributed to the."
       x-speakeasy-mcp:
         name: "mark-finding-as-exception"
   /v1/cloud-security/connections/{connectionId}/scan-mode:
     patch:
+      description: "Accepts session, API key, or service token auth. For API key / service token callers without an explicit user attribution, the action is attributed to the org's owner."
       operationId: "CloudSecurityController_updateAwsScanMode_v1"
       parameters:
         - name: "connectionId"
@@ -12482,18 +12946,18 @@ paths:
       summary: "Switch the AWS scan engine for a connection (Comp AI scanners ↔ Security Hub)"
       tags:
         - "CloudSecurity"
-      description: "Switch the AWS scan engine for a connection (Comp AI scanners ↔ Security Hub) in Comp AI. Run AWS, Azure, and GCP cloud security scans, detect enabled services, review findings, and connect cloud posture results to compliance work."
       x-mint:
         metadata:
           title: "Switch the AWS scan engine for a connection | Comp AI API"
           sidebarTitle: "Switch the AWS scan engine for a connection (Comp AI scanners ↔ Security Hub)"
-          description: "Switch the AWS scan engine for a connection (Comp AI scanners ↔ Security Hub) in Comp AI. Run AWS, Azure, and GCP cloud security scans, detect enabled."
+          description: "Accepts session, API key, or service token auth. For API key / service token callers without an explicit user attribution, the action is attributed to the."
           og:title: "Switch the AWS scan engine for a connection | Comp AI API"
-          og:description: "Switch the AWS scan engine for a connection (Comp AI scanners ↔ Security Hub) in Comp AI. Run AWS, Azure, and GCP cloud security scans, detect enabled."
+          og:description: "Accepts session, API key, or service token auth. For API key / service token callers without an explicit user attribution, the action is attributed to the."
       x-speakeasy-mcp:
         name: "update-aws-scan-mode"
   /v1/cloud-security/exceptions/{exceptionId}:
     delete:
+      description: "Accepts session, API key, or service token auth. For API key / service token callers without an explicit user attribution, the action is attributed to the org's owner."
       operationId: "CloudSecurityController_revokeException_v1"
       parameters:
         - name: "exceptionId"
@@ -12507,14 +12971,13 @@ paths:
       summary: "Revoke an exception, reopening the finding"
       tags:
         - "CloudSecurity"
-      description: "Revoke an exception, reopening the finding in Comp AI. Run AWS, Azure, and GCP cloud security scans, detect enabled services, review findings, and connect cloud posture results to compliance work."
       x-mint:
         metadata:
           title: "Revoke an exception, reopening the finding | Comp AI API"
           sidebarTitle: "Revoke an exception, reopening the finding"
-          description: "Revoke an exception, reopening the finding in Comp AI. Run AWS, Azure, and GCP cloud security scans, detect enabled services, review findings, and connect."
+          description: "Accepts session, API key, or service token auth. For API key / service token callers without an explicit user attribution, the action is attributed to the."
           og:title: "Revoke an exception, reopening the finding | Comp AI API"
-          og:description: "Revoke an exception, reopening the finding in Comp AI. Run AWS, Azure, and GCP cloud security scans, detect enabled services, review findings, and connect."
+          og:description: "Accepts session, API key, or service token auth. For API key / service token callers without an explicit user attribution, the action is attributed to the."
       x-speakeasy-mcp:
         name: "revoke-exception"
   /v1/cloud-security/history:
@@ -13187,320 +13650,6 @@ paths:
           og:description: "Get task item activity log in Comp AI. Manage task items and attachments linked to operational entities such as risks and vendors."
       x-speakeasy-mcp:
         name: "get-task-item-activity"
-  /v1/roles:
-    post:
-      description: "Create a custom role in Comp AI. Create custom roles and resolve permission sets for organization-level access control."
-      operationId: "RolesController_createRole_v1"
-      parameters: []
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/CreateRoleDto"
-      responses:
-        "201":
-          description: "Role created successfully"
-          content:
-            application/json:
-              schema:
-                type: "object"
-                properties:
-                  id:
-                    type: "string"
-                    example: "rol_abc123"
-                  name:
-                    type: "string"
-                    example: "compliance-lead"
-                  permissions:
-                    type: "object"
-                    additionalProperties:
-                      type: "array"
-                      items:
-                        type: "string"
-                  isBuiltIn:
-                    type: "boolean"
-                    example: false
-                  createdAt:
-                    type: "string"
-                    format: "date-time"
-                  updatedAt:
-                    type: "string"
-                    format: "date-time"
-        "400":
-          description: "Invalid role data or role already exists"
-        "401":
-          description: "Unauthorized"
-        "403":
-          description: "Forbidden - cannot grant permissions you do not have"
-      security:
-        - apikey: []
-      summary: "Create a custom role"
-      tags:
-        - "Roles"
-      x-mint:
-        metadata:
-          title: "Create a custom role | Comp AI API"
-          sidebarTitle: "Create a custom role"
-          description: "Create a custom role in Comp AI. Create custom roles and resolve permission sets for organization-level access control."
-          og:title: "Create a custom role | Comp AI API"
-          og:description: "Create a custom role in Comp AI. Create custom roles and resolve permission sets for organization-level access control."
-      x-speakeasy-mcp:
-        name: "create-role"
-    get:
-      description: "List all roles in Comp AI. Create custom roles and resolve permission sets for organization-level access control."
-      operationId: "RolesController_listRoles_v1"
-      parameters: []
-      responses:
-        "200":
-          description: "List of roles"
-          content:
-            application/json:
-              schema:
-                type: "object"
-                properties:
-                  builtInRoles:
-                    type: "array"
-                    items:
-                      type: "object"
-                      properties:
-                        name:
-                          type: "string"
-                        isBuiltIn:
-                          type: "boolean"
-                        description:
-                          type: "string"
-                  customRoles:
-                    type: "array"
-                    items:
-                      type: "object"
-                      properties:
-                        id:
-                          type: "string"
-                        name:
-                          type: "string"
-                        permissions:
-                          type: "object"
-                        isBuiltIn:
-                          type: "boolean"
-                        createdAt:
-                          type: "string"
-                          format: "date-time"
-                        updatedAt:
-                          type: "string"
-                          format: "date-time"
-        "401":
-          description: "Unauthorized"
-      security:
-        - apikey: []
-      summary: "List all roles"
-      tags:
-        - "Roles"
-      x-mint:
-        metadata:
-          title: "List all roles | Comp AI API"
-          sidebarTitle: "List all roles"
-          description: "List all roles in Comp AI. Create custom roles and resolve permission sets for organization-level access control."
-          og:title: "List all roles | Comp AI API"
-          og:description: "List all roles in Comp AI. Create custom roles and resolve permission sets for organization-level access control."
-      x-speakeasy-mcp:
-        name: "list-roles"
-  /v1/roles/permissions:
-    get:
-      description: "Returns the merged permissions for the given custom role names. Used by the frontend to resolve effective permissions for users with custom roles."
-      operationId: "RolesController_getPermissionsForRoles_v1"
-      parameters:
-        - name: "roles"
-          required: true
-          in: "query"
-          schema:
-            type: "string"
-      responses:
-        "200":
-          description: "Merged permissions for the requested roles"
-          content:
-            application/json:
-              schema:
-                type: "object"
-                properties:
-                  permissions:
-                    type: "object"
-                    additionalProperties:
-                      type: "array"
-                      items:
-                        type: "string"
-        "401":
-          description: "Unauthorized"
-      security:
-        - apikey: []
-      summary: "Resolve permissions for custom roles"
-      tags:
-        - "Roles"
-      x-mint:
-        metadata:
-          title: "Resolve permissions for custom roles | Comp AI API"
-          sidebarTitle: "Resolve permissions for custom roles"
-          description: "Returns the merged permissions for the given custom role names. Used by the frontend to resolve effective permissions for users with custom roles."
-          og:title: "Resolve permissions for custom roles | Comp AI API"
-          og:description: "Returns the merged permissions for the given custom role names. Used by the frontend to resolve effective permissions for users with custom roles."
-      x-speakeasy-mcp:
-        name: "get-permissions-for-roles"
-  /v1/roles/{roleId}:
-    get:
-      description: "Get a role by ID in Comp AI. Create custom roles and resolve permission sets for organization-level access control."
-      operationId: "RolesController_getRole_v1"
-      parameters:
-        - name: "roleId"
-          required: true
-          in: "path"
-          description: "Role ID"
-          schema:
-            example: "rol_abc123"
-            type: "string"
-      responses:
-        "200":
-          description: "Role details"
-          content:
-            application/json:
-              schema:
-                type: "object"
-                properties:
-                  id:
-                    type: "string"
-                  name:
-                    type: "string"
-                  permissions:
-                    type: "object"
-                  isBuiltIn:
-                    type: "boolean"
-                  createdAt:
-                    type: "string"
-                    format: "date-time"
-                  updatedAt:
-                    type: "string"
-                    format: "date-time"
-        "401":
-          description: "Unauthorized"
-        "404":
-          description: "Role not found"
-      security:
-        - apikey: []
-      summary: "Get a role by ID"
-      tags:
-        - "Roles"
-      x-mint:
-        metadata:
-          title: "Get a role by ID | Comp AI API"
-          sidebarTitle: "Get a role by ID"
-          description: "Get a role by ID in Comp AI. Create custom roles and resolve permission sets for organization-level access control."
-          og:title: "Get a role by ID | Comp AI API"
-          og:description: "Get a role by ID in Comp AI. Create custom roles and resolve permission sets for organization-level access control."
-      x-speakeasy-mcp:
-        name: "get-role"
-    patch:
-      description: "Update a custom role in Comp AI. Create custom roles and resolve permission sets for organization-level access control."
-      operationId: "RolesController_updateRole_v1"
-      parameters:
-        - name: "roleId"
-          required: true
-          in: "path"
-          description: "Role ID"
-          schema:
-            example: "rol_abc123"
-            type: "string"
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/UpdateRoleDto"
-      responses:
-        "200":
-          description: "Role updated successfully"
-          content:
-            application/json:
-              schema:
-                type: "object"
-                properties:
-                  id:
-                    type: "string"
-                  name:
-                    type: "string"
-                  permissions:
-                    type: "object"
-                  isBuiltIn:
-                    type: "boolean"
-                  createdAt:
-                    type: "string"
-                    format: "date-time"
-                  updatedAt:
-                    type: "string"
-                    format: "date-time"
-        "400":
-          description: "Invalid role data"
-        "401":
-          description: "Unauthorized"
-        "403":
-          description: "Forbidden - cannot grant permissions you do not have"
-        "404":
-          description: "Role not found"
-      security:
-        - apikey: []
-      summary: "Update a custom role"
-      tags:
-        - "Roles"
-      x-mint:
-        metadata:
-          title: "Update a custom role | Comp AI API"
-          sidebarTitle: "Update a custom role"
-          description: "Update a custom role in Comp AI. Create custom roles and resolve permission sets for organization-level access control."
-          og:title: "Update a custom role | Comp AI API"
-          og:description: "Update a custom role in Comp AI. Create custom roles and resolve permission sets for organization-level access control."
-      x-speakeasy-mcp:
-        name: "update-role"
-    delete:
-      description: "Delete a custom role in Comp AI. Create custom roles and resolve permission sets for organization-level access control."
-      operationId: "RolesController_deleteRole_v1"
-      parameters:
-        - name: "roleId"
-          required: true
-          in: "path"
-          description: "Role ID"
-          schema:
-            example: "rol_abc123"
-            type: "string"
-      responses:
-        "200":
-          description: "Role deleted successfully"
-          content:
-            application/json:
-              schema:
-                type: "object"
-                properties:
-                  success:
-                    type: "boolean"
-                  message:
-                    type: "string"
-        "400":
-          description: "Cannot delete - members assigned to role"
-        "401":
-          description: "Unauthorized"
-        "404":
-          description: "Role not found"
-      security:
-        - apikey: []
-      summary: "Delete a custom role"
-      tags:
-        - "Roles"
-      x-mint:
-        metadata:
-          title: "Delete a custom role | Comp AI API"
-          sidebarTitle: "Delete a custom role"
-          description: "Delete a custom role in Comp AI. Create custom roles and resolve permission sets for organization-level access control."
-          og:title: "Delete a custom role | Comp AI API"
-          og:description: "Delete a custom role in Comp AI. Create custom roles and resolve permission sets for organization-level access control."
-      x-speakeasy-mcp:
-        name: "delete-role"
   /v1/training/completions:
     get:
       description: "List security awareness and HIPAA training completion records for workforce compliance tracking and audit evidence."
@@ -17386,29 +17535,6 @@ components:
         - "assigneeId"
         - "approverId"
         - "policyTemplateId"
-    UploadPolicyPdfDto:
-      type: "object"
-      properties:
-        versionId:
-          type: "string"
-          description: "Optional version ID to attach the PDF to. Omit to attach the PDF at the policy level (legacy path)."
-          example: "pv_abc123def456"
-        fileName:
-          type: "string"
-          description: "Filename of the PDF (e.g., \"policy-v1.pdf\"). Non-alphanumeric characters will be replaced with underscores when storing in S3."
-          example: "acceptable-use-v1.pdf"
-        fileType:
-          type: "string"
-          description: "MIME type of the file (e.g., \"application/pdf\")."
-          example: "application/pdf"
-        fileData:
-          type: "string"
-          description: "Base64-encoded PDF file contents (no `data:` URI prefix). Truncated example shown."
-          example: "JVBERi0xLjQKJ..."
-      required:
-        - "fileName"
-        - "fileType"
-        - "fileData"
     RequestPolicyPdfUploadUrlDto:
       type: "object"
       properties:
@@ -18358,10 +18484,15 @@ components:
             - "other"
         type:
           type: "string"
-          description: "Type of finding (SOC 2 or ISO 27001)"
+          description: "Framework this finding is attributed to (must match a framework the organization has enabled)"
           enum:
             - "soc2"
             - "iso27001"
+            - "pci_dss"
+            - "hipaa"
+            - "gdpr"
+            - "iso9001"
+            - "iso42001"
           default: "soc2"
         severity:
           type: "string"
@@ -18396,6 +18527,11 @@ components:
           enum:
             - "soc2"
             - "iso27001"
+            - "pci_dss"
+            - "hipaa"
+            - "gdpr"
+            - "iso9001"
+            - "iso42001"
         severity:
           type: "string"
           description: "Severity"
@@ -18413,6 +18549,82 @@ components:
           description: "Auditor note when requesting revision"
           maxLength: 2000
           nullable: true
+    CreateRoleDto:
+      type: "object"
+      properties:
+        name:
+          type: "string"
+          description: "Name of the custom role"
+          example: "Compliance Lead"
+          minLength: 2
+          maxLength: 50
+        permissions:
+          type: "object"
+          description: "Permissions for the role. Keys are resource names, values are arrays of allowed actions."
+          example:
+            control:
+              - "read"
+              - "update"
+            policy:
+              - "read"
+              - "update"
+            risk:
+              - "read"
+        obligations:
+          type: "object"
+          description: "Obligations for the role. Boolean flags for requirements like compliance."
+          example:
+            compliance: true
+      required:
+        - "name"
+        - "permissions"
+    BuiltInObligationsBody:
+      type: "object"
+      properties:
+        compliance:
+          type: "boolean"
+          description: "Whether the role must complete compliance tasks."
+          example: false
+    UpdateBuiltInObligationsDto:
+      type: "object"
+      properties:
+        obligations:
+          description: "Obligations override for the built-in role."
+          example:
+            compliance: false
+          allOf:
+            - $ref: "#/components/schemas/BuiltInObligationsBody"
+      required:
+        - "obligations"
+    UpdateRoleDto:
+      type: "object"
+      properties:
+        name:
+          type: "string"
+          description: "New name for the custom role"
+          example: "Compliance Manager"
+          minLength: 2
+          maxLength: 50
+        permissions:
+          type: "object"
+          description: "Updated permissions for the role. Keys are resource names, values are arrays of allowed actions."
+          example:
+            control:
+              - "read"
+              - "update"
+              - "delete"
+            policy:
+              - "read"
+              - "update"
+              - "delete"
+            risk:
+              - "read"
+              - "update"
+        obligations:
+          type: "object"
+          description: "Updated obligations for the role."
+          example:
+            compliance: true
     TriggerAutoAnswerResponseDto:
       type: "object"
       properties:
@@ -18538,6 +18750,9 @@ components:
     CreateConnectionDto:
       type: "object"
       properties:
+        organizationId:
+          type: "string"
+          description: "Auto-resolved from your API key / session. You can omit this; it is ignored by the server."
         providerSlug:
           type: "string"
           description: "Provider slug for the integration. Call list-providers first to see the available slugs (e.g. 'aws', 'gcp', 'azure', 'github')."
@@ -18561,6 +18776,9 @@ components:
     UpdateConnectionDto:
       type: "object"
       properties:
+        organizationId:
+          type: "string"
+          description: "Auto-resolved from your API key / session. You can omit this; it is ignored by the server."
         metadata:
           type: "object"
           description: "Connection metadata to merge into the existing record. Common AWS keys: connectionName, regions (string array), awsScanMode ('comp_scanners' or 'security_hub'). The server shallow-merges this with the existing metadata, so include only the keys you want to change."
@@ -18573,6 +18791,9 @@ components:
     UpdateConnectionServicesDto:
       type: "object"
       properties:
+        organizationId:
+          type: "string"
+          description: "Auto-resolved from your API key / session. You can omit this; it is ignored by the server."
         services:
           type: "array"
           description: "Service IDs to enable on this connection. Any service IDs from the provider's manifest that are NOT in this list become disabled. Pass an empty array to disable all services."
@@ -18587,6 +18808,9 @@ components:
     RunChecksDto:
       type: "object"
       properties:
+        organizationId:
+          type: "string"
+          description: "Auto-resolved from your API key / session. You can omit this; it is ignored by the server."
         checkId:
           type: "string"
           description: "Specific check ID to run. Omit to run ALL available checks for the connection (matches the provider manifest)."
@@ -18594,9 +18818,12 @@ components:
     SaveVariablesDto:
       type: "object"
       properties:
+        organizationId:
+          type: "string"
+          description: "Auto-resolved from your API key / session. You can omit this; it is ignored by the server."
         variables:
           type: "object"
-          description: "Map of variable id → value to persist for this connection. Values can be string, number, boolean, or string[] (the shape is provider-defined — call list-variables to see what each connection accepts). Pass only the variables you want to set; existing ones not included are left untouched."
+          description: "Map of variable id → value to persist for this connection. Values can be string, number, boolean, or string[] (the shape is provider-defined — call get-connection-variables to see what each connection accepts). Pass only the variables you want to set; existing ones not included are left untouched."
           additionalProperties: true
           example:
             scan-interval-hours: 24
@@ -18609,6 +18836,9 @@ components:
     RunCheckForTaskDto:
       type: "object"
       properties:
+        organizationId:
+          type: "string"
+          description: "Auto-resolved from your API key / session. You can omit this; it is ignored by the server."
         connectionId:
           type: "string"
           description: "ID of the integration connection that owns the check (call list-connections to find it)."
@@ -18623,6 +18853,9 @@ components:
     ToggleCheckForTaskDto:
       type: "object"
       properties:
+        organizationId:
+          type: "string"
+          description: "Auto-resolved from your API key / session. You can omit this; it is ignored by the server."
         connectionId:
           type: "string"
           description: "ID of the integration connection whose check is being disconnected from / reconnected to this task."
@@ -18637,6 +18870,9 @@ components:
     SetEmployeeSyncProviderDto:
       type: "object"
       properties:
+        organizationId:
+          type: "string"
+          description: "Auto-resolved from your API key / session. You can omit this; it is ignored by the server."
         provider:
           type: "object"
           description: "Provider slug to use for employee sync (must have the \"sync\" capability in its manifest — call list-providers to see options). Pass null or omit the field to disable employee sync for this org."
@@ -18937,64 +19173,6 @@ components:
         - "fileData"
         - "entityType"
         - "entityId"
-    CreateRoleDto:
-      type: "object"
-      properties:
-        name:
-          type: "string"
-          description: "Name of the custom role"
-          example: "Compliance Lead"
-          minLength: 2
-          maxLength: 50
-        permissions:
-          type: "object"
-          description: "Permissions for the role. Keys are resource names, values are arrays of allowed actions."
-          example:
-            control:
-              - "read"
-              - "update"
-            policy:
-              - "read"
-              - "update"
-            risk:
-              - "read"
-        obligations:
-          type: "object"
-          description: "Obligations for the role. Boolean flags for requirements like compliance."
-          example:
-            compliance: true
-      required:
-        - "name"
-        - "permissions"
-    UpdateRoleDto:
-      type: "object"
-      properties:
-        name:
-          type: "string"
-          description: "New name for the custom role"
-          example: "Compliance Manager"
-          minLength: 2
-          maxLength: 50
-        permissions:
-          type: "object"
-          description: "Updated permissions for the role. Keys are resource names, values are arrays of allowed actions."
-          example:
-            control:
-              - "read"
-              - "update"
-              - "delete"
-            policy:
-              - "read"
-              - "update"
-              - "delete"
-            risk:
-              - "read"
-              - "update"
-        obligations:
-          type: "object"
-          description: "Updated obligations for the role."
-          example:
-            compliance: true
     SendTrainingCompletionDto:
       type: "object"
       properties:

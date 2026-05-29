@@ -5,6 +5,7 @@
 import * as z from "zod";
 
 export type UpdateConnectionDto = {
+  organizationId?: string | undefined;
   metadata?: { [k: string]: any } | undefined;
 };
 
@@ -12,5 +13,8 @@ export const UpdateConnectionDto$zodSchema: z.ZodType<UpdateConnectionDto> = z
   .object({
     metadata: z.record(z.string(), z.any()).optional().describe(
       "Connection metadata to merge into the existing record. Common AWS keys: connectionName, regions (string array), awsScanMode ('comp_scanners' or 'security_hub'). The server shallow-merges this with the existing metadata, so include only the keys you want to change.",
+    ),
+    organizationId: z.string().optional().describe(
+      "Auto-resolved from your API key / session. You can omit this; it is ignored by the server.",
     ),
   });

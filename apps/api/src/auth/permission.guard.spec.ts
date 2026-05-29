@@ -19,6 +19,20 @@ jest.mock('@trycompai/auth', () => ({
   PRIVILEGED_ROLES: ['owner', 'admin', 'auditor'],
 }));
 
+// Mock ./app-access (used to authorize MCP OAuth requests). Mocked here so the
+// spec doesn't pull in @db via the real module; permissionsGrant uses the real
+// (trivial) logic so only resolveRolePermissions needs stubbing.
+const mockResolveRolePermissions = jest.fn();
+jest.mock('./app-access', () => ({
+  resolveRolePermissions: (...args: unknown[]) =>
+    mockResolveRolePermissions(...args),
+  permissionsGrant: (
+    perms: Record<string, string[]>,
+    resource: string,
+    action: string,
+  ) => perms?.[resource]?.includes(action) ?? false,
+}));
+
 describe('PermissionGuard', () => {
   let guard: PermissionGuard;
   let reflector: Reflector;
@@ -26,6 +40,8 @@ describe('PermissionGuard', () => {
   const createMockExecutionContext = (
     request: Partial<{
       isApiKey: boolean;
+      isMcpOAuth: boolean;
+      isPlatformAdmin: boolean;
       apiKeyScopes: string[] | undefined;
       userRoles: string[] | null;
       headers: Record<string, string>;
@@ -60,6 +76,48 @@ describe('PermissionGuard', () => {
     guard = module.get<PermissionGuard>(PermissionGuard);
     reflector = module.get<Reflector>(Reflector);
     mockHasPermission.mockReset();
+    mockResolveRolePermissions.mockReset();
+  });
+
+  describe('MCP OAuth authorization', () => {
+    it('authorizes via resolved roles, not session hasPermission', async () => {
+      jest
+        .spyOn(reflector, 'getAllAndOverride')
+        .mockReturnValue([{ resource: 'control', actions: ['read'] }]);
+      mockResolveRolePermissions.mockResolvedValue({
+        control: ['read', 'create'],
+      });
+
+      const context = createMockExecutionContext({
+        isMcpOAuth: true,
+        userRoles: ['admin'],
+        organizationId: 'org_1',
+      });
+
+      await expect(guard.canActivate(context)).resolves.toBe(true);
+      // Session-based hasPermission must NOT be used for MCP OAuth tokens.
+      expect(mockHasPermission).not.toHaveBeenCalled();
+      expect(mockResolveRolePermissions).toHaveBeenCalledWith('org_1', [
+        'admin',
+      ]);
+    });
+
+    it('denies MCP OAuth when resolved roles lack the permission', async () => {
+      jest
+        .spyOn(reflector, 'getAllAndOverride')
+        .mockReturnValue([{ resource: 'control', actions: ['delete'] }]);
+      mockResolveRolePermissions.mockResolvedValue({ control: ['read'] });
+
+      const context = createMockExecutionContext({
+        isMcpOAuth: true,
+        userRoles: ['auditor'],
+        organizationId: 'org_1',
+      });
+
+      await expect(guard.canActivate(context)).rejects.toThrow(
+        ForbiddenException,
+      );
+    });
   });
 
   describe('canActivate', () => {

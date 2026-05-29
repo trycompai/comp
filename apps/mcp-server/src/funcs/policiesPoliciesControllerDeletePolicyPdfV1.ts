@@ -26,10 +26,10 @@ import { APICall, APIPromise } from "../types/async.js";
 import { Result } from "../types/fp.js";
 
 /**
- * Delete a policy PDF
+ * Delete a policy version PDF
  *
  * @remarks
- * Delete a policy PDF in Comp AI. Create, version, publish, export, map, and improve compliance policies with AI-assisted drafting and approval workflows.
+ * Deletes the PDF from a specific policy version. If no versionId is provided, deletes from the latest draft version. Cannot delete PDFs from published or pending-approval versions.
  *
  * If set, this operation will use {@link Security.apikey} from the global security.
  */

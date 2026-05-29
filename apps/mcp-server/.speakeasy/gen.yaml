@@ -38,6 +38,7 @@ mcp-typescript:
     peerDependencies: {}
   advancedFlags: []
   author: Comp AI
+  baseErrorName: CompAiError
   cloudflareEnabled: false
   envVarPrefix: COMPAI
   fixEnumNameSanitization: false

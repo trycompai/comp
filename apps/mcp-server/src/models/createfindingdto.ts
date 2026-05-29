@@ -70,21 +70,33 @@ export const Area$zodSchema = z.enum([
 ]).describe("Broad area when the finding is not tied to a specific item");
 
 /**
- * Type of finding (SOC 2 or ISO 27001)
+ * Framework this finding is attributed to (must match a framework the organization has enabled)
  */
 export const CreateFindingDtoType = {
   Soc2: "soc2",
   Iso27001: "iso27001",
+  PciDss: "pci_dss",
+  Hipaa: "hipaa",
+  Gdpr: "gdpr",
+  Iso9001: "iso9001",
+  Iso42001: "iso42001",
 } as const;
 /**
- * Type of finding (SOC 2 or ISO 27001)
+ * Framework this finding is attributed to (must match a framework the organization has enabled)
  */
 export type CreateFindingDtoType = ClosedEnum<typeof CreateFindingDtoType>;
 
 export const CreateFindingDtoType$zodSchema = z.enum([
   "soc2",
   "iso27001",
-]).describe("Type of finding (SOC 2 or ISO 27001)");
+  "pci_dss",
+  "hipaa",
+  "gdpr",
+  "iso9001",
+  "iso42001",
+]).describe(
+  "Framework this finding is attributed to (must match a framework the organization has enabled)",
+);
 
 /**
  * Severity
@@ -147,7 +159,7 @@ export const CreateFindingDto$zodSchema: z.ZodType<CreateFindingDto> = z.object(
     ),
     taskId: z.string().optional().describe("Task ID"),
     type: CreateFindingDtoType$zodSchema.default("soc2").describe(
-      "Type of finding (SOC 2 or ISO 27001)",
+      "Framework this finding is attributed to (must match a framework the organization has enabled)",
     ),
     vendorId: z.string().optional().describe("Vendor ID"),
   },

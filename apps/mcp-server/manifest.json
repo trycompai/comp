@@ -318,7 +318,7 @@
     },
     {
       "name": "delete-policy-pdf",
-      "description": "Delete a policy PDF\n\nDelete a policy PDF in Comp AI. Create, version, publish, export, map, and improve compliance policies with AI-assisted drafting and approval workflows."
+      "description": "Delete a policy version PDF\n\nDeletes the PDF from a specific policy version. If no versionId is provided, deletes from the latest draft version. Cannot delete PDFs from published or pending-approval versions."
     },
     {
       "name": "request-policy-pdf-upload-url",
@@ -793,6 +793,38 @@
       "description": "Get activity history for a finding\n\nGet activity history for a finding in Comp AI. Create, review, update, and track audit findings, remediation activity, and finding history for an organization."
     },
     {
+      "name": "create-role",
+      "description": "Create a custom role\n\nCreate a custom role in Comp AI. Create custom roles and resolve permission sets for organization-level access control."
+    },
+    {
+      "name": "list-roles",
+      "description": "List all roles\n\nList all roles in Comp AI. Create custom roles and resolve permission sets for organization-level access control."
+    },
+    {
+      "name": "get-permissions-for-roles",
+      "description": "Resolve permissions for custom roles\n\nReturns the merged permissions for the given custom role names. Used by the frontend to resolve effective permissions for users with custom roles."
+    },
+    {
+      "name": "get-built-in-obligations",
+      "description": "Get obligations for a built-in role\n\nReturns the effective obligations for a built-in role (owner, admin, auditor, employee, contractor) — DB override if present, else the hardcoded default."
+    },
+    {
+      "name": "update-built-in-obligations",
+      "description": "Update obligations for a built-in role\n\nOverride the obligations for a built-in role (e.g., turn off the compliance obligation for owners). Permissions stay sourced from the hardcoded defaults."
+    },
+    {
+      "name": "get-role",
+      "description": "Get a role by ID\n\nGet a role by ID in Comp AI. Create custom roles and resolve permission sets for organization-level access control."
+    },
+    {
+      "name": "update-role",
+      "description": "Update a custom role\n\nUpdate a custom role in Comp AI. Create custom roles and resolve permission sets for organization-level access control."
+    },
+    {
+      "name": "delete-role",
+      "description": "Delete a custom role\n\nDelete a custom role in Comp AI. Create custom roles and resolve permission sets for organization-level access control."
+    },
+    {
       "name": "questionnaire-find-all",
       "description": "List security questionnaires\n\nList saved security questionnaires for an organization so teams can track customer reviews, answer status, and response history."
     },
@@ -1070,15 +1102,15 @@
     },
     {
       "name": "mark-finding-as-exception",
-      "description": "Mark a finding as an exception so it no longer appears in the active Scan Results list\n\nMark a finding as an exception so it no longer appears in the active Scan Results list in Comp AI. Run AWS, Azure, and GCP cloud security scans, detect enabled services, review findings, and connect cloud posture results to compliance work."
+      "description": "Mark a finding as an exception so it no longer appears in the active Scan Results list\n\nAccepts session, API key, or service token auth. For API key / service token callers without an explicit user attribution, the action is attributed to the org's owner and the audit log description records the calling key/service name."
     },
     {
       "name": "update-aws-scan-mode",
-      "description": "Switch the AWS scan engine for a connection (Comp AI scanners ↔ Security Hub)\n\nSwitch the AWS scan engine for a connection (Comp AI scanners ↔ Security Hub) in Comp AI. Run AWS, Azure, and GCP cloud security scans, detect enabled services, review findings, and connect cloud posture results to compliance work."
+      "description": "Switch the AWS scan engine for a connection (Comp AI scanners ↔ Security Hub)\n\nAccepts session, API key, or service token auth. For API key / service token callers without an explicit user attribution, the action is attributed to the org's owner."
     },
     {
       "name": "revoke-exception",
-      "description": "Revoke an exception, reopening the finding\n\nRevoke an exception, reopening the finding in Comp AI. Run AWS, Azure, and GCP cloud security scans, detect enabled services, review findings, and connect cloud posture results to compliance work."
+      "description": "Revoke an exception, reopening the finding\n\nAccepts session, API key, or service token auth. For API key / service token callers without an explicit user attribution, the action is attributed to the org's owner."
     },
     {
       "name": "get-history",
@@ -1159,30 +1191,6 @@
     {
       "name": "get-task-item-activity",
       "description": "Get task item activity log\n\nGet task item activity log in Comp AI. Manage task items and attachments linked to operational entities such as risks and vendors."
-    },
-    {
-      "name": "create-role",
-      "description": "Create a custom role\n\nCreate a custom role in Comp AI. Create custom roles and resolve permission sets for organization-level access control."
-    },
-    {
-      "name": "list-roles",
-      "description": "List all roles\n\nList all roles in Comp AI. Create custom roles and resolve permission sets for organization-level access control."
-    },
-    {
-      "name": "get-permissions-for-roles",
-      "description": "Resolve permissions for custom roles\n\nReturns the merged permissions for the given custom role names. Used by the frontend to resolve effective permissions for users with custom roles."
-    },
-    {
-      "name": "get-role",
-      "description": "Get a role by ID\n\nGet a role by ID in Comp AI. Create custom roles and resolve permission sets for organization-level access control."
-    },
-    {
-      "name": "update-role",
-      "description": "Update a custom role\n\nUpdate a custom role in Comp AI. Create custom roles and resolve permission sets for organization-level access control."
-    },
-    {
-      "name": "delete-role",
-      "description": "Delete a custom role\n\nDelete a custom role in Comp AI. Create custom roles and resolve permission sets for organization-level access control."
     },
     {
       "name": "get-completions",

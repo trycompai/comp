@@ -14,12 +14,16 @@ export const Provider$zodSchema: z.ZodType<Provider> = z.object({}).describe(
 );
 
 export type SetEmployeeSyncProviderDto = {
+  organizationId?: string | undefined;
   provider?: Provider | null | undefined;
 };
 
 export const SetEmployeeSyncProviderDto$zodSchema: z.ZodType<
   SetEmployeeSyncProviderDto
 > = z.object({
+  organizationId: z.string().optional().describe(
+    "Auto-resolved from your API key / session. You can omit this; it is ignored by the server.",
+  ),
   provider: z.lazy(() => Provider$zodSchema).nullable().optional().describe(
     "Provider slug to use for employee sync (must have the \"sync\" capability in its manifest — call list-providers to see options). Pass null or omit the field to disable employee sync for this org.",
   ),
