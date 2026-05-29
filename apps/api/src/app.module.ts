@@ -34,6 +34,7 @@ import { QuestionnaireModule } from './questionnaire/questionnaire.module';
 import { VectorStoreModule } from './vector-store/vector-store.module';
 import { KnowledgeBaseModule } from './knowledge-base/knowledge-base.module';
 import { SOAModule } from './soa/soa.module';
+import { IsmsModule } from './isms/isms.module';
 import { IntegrationPlatformModule } from './integration-platform/integration-platform.module';
 import { CloudSecurityModule } from './cloud-security/cloud-security.module';
 import { BrowserbaseModule } from './browserbase/browserbase.module';
@@ -104,6 +105,7 @@ import { OffboardingChecklistModule } from './offboarding-checklist/offboarding-
     VectorStoreModule,
     KnowledgeBaseModule,
     SOAModule,
+    IsmsModule,
     IntegrationPlatformModule,
     CloudSecurityModule,
     BrowserbaseModule,

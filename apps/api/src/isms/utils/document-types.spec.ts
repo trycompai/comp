@@ -1,0 +1,71 @@
+import {
+  ISMS_TYPE_DEFINITIONS,
+  matchRequirementId,
+} from './document-types';
+
+describe('ISMS_TYPE_DEFINITIONS', () => {
+  it('defines all six foundational document types with clauses', () => {
+    expect(ISMS_TYPE_DEFINITIONS).toHaveLength(6);
+    const types = ISMS_TYPE_DEFINITIONS.map((d) => d.type);
+    expect(types).toEqual(
+      expect.arrayContaining([
+        'context_of_organization',
+        'interested_parties_register',
+        'interested_parties_requirements',
+        'isms_scope',
+        'leadership_commitment',
+        'objectives_plan',
+      ]),
+    );
+  });
+
+  it('maps 4.2 to both interested-parties documents', () => {
+    const clause42 = ISMS_TYPE_DEFINITIONS.filter((d) => d.clause === '4.2');
+    expect(clause42.map((d) => d.type)).toEqual([
+      'interested_parties_register',
+      'interested_parties_requirements',
+    ]);
+  });
+});
+
+describe('matchRequirementId', () => {
+  const requirements = [
+    { id: 'req-41', name: '4.1 Understanding the organization', identifier: '4.1' },
+    { id: 'req-42', name: '4.2 Interested parties', identifier: '4.2' },
+    { id: 'req-141', name: '14.1 Security in development', identifier: '14.1' },
+  ];
+
+  it('matches an exact clause identifier', () => {
+    expect(matchRequirementId({ clause: '4.1', requirements })).toBe('req-41');
+  });
+
+  it('does not confuse 4.1 with 14.1', () => {
+    expect(matchRequirementId({ clause: '4.1', requirements })).not.toBe(
+      'req-141',
+    );
+  });
+
+  it('matches via the name when identifier is empty', () => {
+    expect(
+      matchRequirementId({
+        clause: '5.1',
+        requirements: [
+          { id: 'req-51', name: '5.1 Leadership', identifier: '' },
+        ],
+      }),
+    ).toBe('req-51');
+  });
+
+  it('returns null when no requirement matches', () => {
+    expect(matchRequirementId({ clause: '6.2', requirements })).toBeNull();
+  });
+
+  it('does not match a clause that is a prefix of another (4.1 vs 4.11)', () => {
+    expect(
+      matchRequirementId({
+        clause: '4.1',
+        requirements: [{ id: 'req-411', name: '4.11 Other', identifier: '4.11' }],
+      }),
+    ).toBeNull();
+  });
+});

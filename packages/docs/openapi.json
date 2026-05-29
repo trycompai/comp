@@ -18218,6 +18218,540 @@
         }
       }
     },
+    "/v1/isms/ensure-setup": {
+      "post": {
+        "operationId": "IsmsController_ensureSetup_v1",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EnsureIsmsSetupDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Setup ensured"
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          },
+          {
+            "oauth2": []
+          }
+        ],
+        "summary": "Ensure ISMS foundational documents exist",
+        "tags": [
+          "ISMS"
+        ],
+        "description": "Ensure ISMS foundational documents exist in Comp AI.",
+        "x-mint": {
+          "metadata": {
+            "title": "Ensure ISMS foundational documents exist | Comp AI API",
+            "sidebarTitle": "Ensure ISMS foundational documents exist",
+            "description": "Ensure ISMS foundational documents exist in Comp AI.",
+            "og:title": "Ensure ISMS foundational documents exist | Comp AI API",
+            "og:description": "Ensure ISMS foundational documents exist in Comp AI."
+          }
+        },
+        "x-speakeasy-mcp": {
+          "name": "isms-ensure-setup"
+        }
+      }
+    },
+    "/v1/isms/documents/{id}": {
+      "get": {
+        "operationId": "IsmsController_getDocument_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "ISMS document"
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          },
+          {
+            "oauth2": []
+          }
+        ],
+        "summary": "Get an ISMS document with its latest version",
+        "tags": [
+          "ISMS"
+        ],
+        "description": "Get an ISMS document with its latest version in Comp AI.",
+        "x-mint": {
+          "metadata": {
+            "title": "Get an ISMS document with its latest version | Comp AI API",
+            "sidebarTitle": "Get an ISMS document with its latest version",
+            "description": "Get an ISMS document with its latest version in Comp AI.",
+            "og:title": "Get an ISMS document with its latest version | Comp AI API",
+            "og:description": "Get an ISMS document with its latest version in Comp AI."
+          }
+        },
+        "x-speakeasy-mcp": {
+          "name": "get-document"
+        }
+      }
+    },
+    "/v1/isms/documents/{id}/generate": {
+      "post": {
+        "operationId": "IsmsController_generate_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Document with derived issues"
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          },
+          {
+            "oauth2": []
+          }
+        ],
+        "summary": "Derive Context-of-the-Organization issues",
+        "tags": [
+          "ISMS"
+        ],
+        "description": "Derive Context-of-the-Organization issues in Comp AI.",
+        "x-mint": {
+          "metadata": {
+            "title": "Derive Context-of-the-Organization issues | Comp AI API",
+            "sidebarTitle": "Derive Context-of-the-Organization issues",
+            "description": "Derive Context-of-the-Organization issues in Comp AI.",
+            "og:title": "Derive Context-of-the-Organization issues | Comp AI API",
+            "og:description": "Derive Context-of-the-Organization issues in Comp AI."
+          }
+        },
+        "x-speakeasy-mcp": {
+          "name": "generate"
+        }
+      }
+    },
+    "/v1/isms/documents/{id}/context-issues": {
+      "post": {
+        "operationId": "IsmsController_createContextIssue_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateContextIssueDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Context issue created"
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          },
+          {
+            "oauth2": []
+          }
+        ],
+        "summary": "Create a manual context issue",
+        "tags": [
+          "ISMS"
+        ],
+        "description": "Create a manual context issue in Comp AI.",
+        "x-mint": {
+          "metadata": {
+            "title": "Create a manual context issue | Comp AI API",
+            "sidebarTitle": "Create a manual context issue",
+            "description": "Create a manual context issue in Comp AI.",
+            "og:title": "Create a manual context issue | Comp AI API",
+            "og:description": "Create a manual context issue in Comp AI."
+          }
+        },
+        "x-speakeasy-mcp": {
+          "name": "create-context-issue"
+        }
+      }
+    },
+    "/v1/isms/context-issues/{issueId}": {
+      "post": {
+        "operationId": "IsmsController_updateContextIssue_v1",
+        "parameters": [
+          {
+            "name": "issueId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateContextIssueDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Context issue updated"
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          },
+          {
+            "oauth2": []
+          }
+        ],
+        "summary": "Update a context issue",
+        "tags": [
+          "ISMS"
+        ],
+        "description": "Update a context issue in Comp AI.",
+        "x-mint": {
+          "metadata": {
+            "title": "Update a context issue | Comp AI API",
+            "sidebarTitle": "Update a context issue",
+            "description": "Update a context issue in Comp AI.",
+            "og:title": "Update a context issue | Comp AI API",
+            "og:description": "Update a context issue in Comp AI."
+          }
+        },
+        "x-speakeasy-mcp": {
+          "name": "update-context-issue"
+        }
+      },
+      "delete": {
+        "operationId": "IsmsController_deleteContextIssue_v1",
+        "parameters": [
+          {
+            "name": "issueId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Context issue deleted"
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          },
+          {
+            "oauth2": []
+          }
+        ],
+        "summary": "Delete a context issue",
+        "tags": [
+          "ISMS"
+        ],
+        "description": "Delete a context issue in Comp AI.",
+        "x-mint": {
+          "metadata": {
+            "title": "Delete a context issue | Comp AI API",
+            "sidebarTitle": "Delete a context issue",
+            "description": "Delete a context issue in Comp AI.",
+            "og:title": "Delete a context issue | Comp AI API",
+            "og:description": "Delete a context issue in Comp AI."
+          }
+        },
+        "x-speakeasy-mcp": {
+          "name": "delete-context-issue"
+        }
+      }
+    },
+    "/v1/isms/documents/{id}/submit-for-approval": {
+      "post": {
+        "operationId": "IsmsController_submitForApproval_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SubmitIsmsForApprovalDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Document submitted for approval"
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          },
+          {
+            "oauth2": []
+          }
+        ],
+        "summary": "Submit an ISMS document for approval",
+        "tags": [
+          "ISMS"
+        ],
+        "description": "Submit an ISMS document for approval in Comp AI.",
+        "x-mint": {
+          "metadata": {
+            "title": "Submit an ISMS document for approval | Comp AI API",
+            "sidebarTitle": "Submit an ISMS document for approval",
+            "description": "Submit an ISMS document for approval in Comp AI.",
+            "og:title": "Submit an ISMS document for approval | Comp AI API",
+            "og:description": "Submit an ISMS document for approval in Comp AI."
+          }
+        },
+        "x-speakeasy-mcp": {
+          "name": "isms-submit-for-approval"
+        }
+      }
+    },
+    "/v1/isms/documents/{id}/approve": {
+      "post": {
+        "operationId": "IsmsController_approve_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Document approved"
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          },
+          {
+            "oauth2": []
+          }
+        ],
+        "summary": "Approve an ISMS document",
+        "tags": [
+          "ISMS"
+        ],
+        "description": "Approve an ISMS document in Comp AI.",
+        "x-mint": {
+          "metadata": {
+            "title": "Approve an ISMS document | Comp AI API",
+            "sidebarTitle": "Approve an ISMS document",
+            "description": "Approve an ISMS document in Comp AI.",
+            "og:title": "Approve an ISMS document | Comp AI API",
+            "og:description": "Approve an ISMS document in Comp AI."
+          }
+        },
+        "x-speakeasy-mcp": {
+          "name": "approve"
+        }
+      }
+    },
+    "/v1/isms/documents/{id}/decline": {
+      "post": {
+        "operationId": "IsmsController_decline_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Document declined"
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          },
+          {
+            "oauth2": []
+          }
+        ],
+        "summary": "Decline an ISMS document",
+        "tags": [
+          "ISMS"
+        ],
+        "description": "Decline an ISMS document in Comp AI.",
+        "x-mint": {
+          "metadata": {
+            "title": "Decline an ISMS document | Comp AI API",
+            "sidebarTitle": "Decline an ISMS document",
+            "description": "Decline an ISMS document in Comp AI.",
+            "og:title": "Decline an ISMS document | Comp AI API",
+            "og:description": "Decline an ISMS document in Comp AI."
+          }
+        },
+        "x-speakeasy-mcp": {
+          "name": "decline"
+        }
+      }
+    },
+    "/v1/isms/documents/{id}/drift": {
+      "get": {
+        "operationId": "IsmsController_drift_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Drift status"
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          },
+          {
+            "oauth2": []
+          }
+        ],
+        "summary": "Detect drift against the approved snapshot",
+        "tags": [
+          "ISMS"
+        ],
+        "description": "Detect drift against the approved snapshot in Comp AI.",
+        "x-mint": {
+          "metadata": {
+            "title": "Detect drift against the approved snapshot | Comp AI API",
+            "sidebarTitle": "Detect drift against the approved snapshot",
+            "description": "Detect drift against the approved snapshot in Comp AI.",
+            "og:title": "Detect drift against the approved snapshot | Comp AI API",
+            "og:description": "Detect drift against the approved snapshot in Comp AI."
+          }
+        },
+        "x-speakeasy-mcp": {
+          "name": "drift"
+        }
+      }
+    },
+    "/v1/isms/documents/{id}/export": {
+      "post": {
+        "operationId": "IsmsController_exportDocument_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ExportIsmsDocumentDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Rendered document"
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          },
+          {
+            "oauth2": []
+          }
+        ],
+        "summary": "Export an ISMS document as PDF or DOCX",
+        "tags": [
+          "ISMS"
+        ],
+        "description": "Export an ISMS document as PDF or DOCX in Comp AI.",
+        "x-mint": {
+          "metadata": {
+            "title": "Export an ISMS document as PDF or DOCX | Comp AI API",
+            "sidebarTitle": "Export an ISMS document as PDF or DOCX",
+            "description": "Export an ISMS document as PDF or DOCX in Comp AI.",
+            "og:title": "Export an ISMS document as PDF or DOCX | Comp AI API",
+            "og:description": "Export an ISMS document as PDF or DOCX in Comp AI."
+          }
+        },
+        "x-speakeasy-mcp": {
+          "name": "isms-export-document"
+        }
+      }
+    },
     "/v1/integrations/connections/providers": {
       "get": {
         "operationId": "ConnectionsController_listProviders_v1",
@@ -23669,14 +24203,6 @@
             }
           },
           {
-            "name": "frameworkInstanceId",
-            "required": true,
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
             "name": "formType",
             "required": true,
             "in": "path",
@@ -23696,6 +24222,14 @@
                 "network_diagram",
                 "tabletop_exercise"
               ],
+              "type": "string"
+            }
+          },
+          {
+            "name": "frameworkInstanceId",
+            "required": true,
+            "in": "query",
+            "schema": {
               "type": "string"
             }
           }
@@ -24937,6 +25471,9 @@
     {
       "name": "Frameworks",
       "description": "Manage SOC 2, ISO 27001, HIPAA, GDPR, and custom framework instances, requirements, scores, and sync history."
+    },
+    {
+      "name": "ISMS"
     },
     {
       "name": "Integrations",
@@ -28632,6 +29169,26 @@
         "properties": {}
       },
       "ExportSOADocumentDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "EnsureIsmsSetupDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "CreateContextIssueDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "UpdateContextIssueDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "SubmitIsmsForApprovalDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "ExportIsmsDocumentDto": {
         "type": "object",
         "properties": {}
       },
