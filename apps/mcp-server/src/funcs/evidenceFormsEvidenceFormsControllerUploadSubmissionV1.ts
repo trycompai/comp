@@ -7,7 +7,7 @@ import { encodeSimple } from "../lib/encodings.js";
 import { compactMap } from "../lib/primitives.js";
 import { safeParse } from "../lib/schemas.js";
 import { RequestOptions } from "../lib/sdks.js";
-import { extractSecurity, resolveGlobalSecurity } from "../lib/security.js";
+import { resolveSecurity } from "../lib/security.js";
 import { pathToFunc } from "../lib/url.js";
 import { APIError } from "../models/errors/apierror.js";
 import {
@@ -21,6 +21,7 @@ import { SDKValidationError } from "../models/errors/sdkvalidationerror.js";
 import {
   EvidenceFormsControllerUploadSubmissionV1Request,
   EvidenceFormsControllerUploadSubmissionV1Request$zodSchema,
+  EvidenceFormsControllerUploadSubmissionV1Security,
 } from "../models/evidenceformscontrolleruploadsubmissionv1op.js";
 import { APICall, APIPromise } from "../types/async.js";
 import { Result } from "../types/fp.js";
@@ -30,11 +31,10 @@ import { Result } from "../types/fp.js";
  *
  * @remarks
  * Upload a file as an evidence submission in Comp AI. Collect, review, upload, and export structured evidence submissions for compliance tasks and document requirements.
- *
- * If set, this operation will use {@link Security.apikey} from the global security.
  */
 export function evidenceFormsEvidenceFormsControllerUploadSubmissionV1(
   client$: CompAiCore,
+  security: EvidenceFormsControllerUploadSubmissionV1Security,
   request: EvidenceFormsControllerUploadSubmissionV1Request,
   options?: RequestOptions,
 ): APIPromise<
@@ -51,6 +51,7 @@ export function evidenceFormsEvidenceFormsControllerUploadSubmissionV1(
 > {
   return new APIPromise($do(
     client$,
+    security,
     request,
     options,
   ));
@@ -58,6 +59,7 @@ export function evidenceFormsEvidenceFormsControllerUploadSubmissionV1(
 
 async function $do(
   client$: CompAiCore,
+  security: EvidenceFormsControllerUploadSubmissionV1Security,
   request: EvidenceFormsControllerUploadSubmissionV1Request,
   options?: RequestOptions,
 ): Promise<
@@ -105,8 +107,23 @@ async function $do(
       { explode: false, charEncoding: "none" },
     ),
   }));
-  const securityInput = await extractSecurity(client$._options.security);
-  const requestSecurity = resolveGlobalSecurity(securityInput, [0]);
+
+  const requestSecurity = resolveSecurity(
+    [
+      {
+        fieldName: "X-API-Key",
+        type: "apiKey:header",
+        value: security?.apikey,
+      },
+    ],
+    [
+      {
+        fieldName: "Authorization",
+        type: "oauth2",
+        value: security?.oauth2,
+      },
+    ],
+  );
 
   const context = {
     options: client$._options,
@@ -114,7 +131,7 @@ async function $do(
     operationID: "EvidenceFormsController_uploadSubmission_v1",
     oAuth2Scopes: null,
     resolvedSecurity: requestSecurity,
-    securitySource: client$._options.security,
+    securitySource: security,
     retryConfig: options?.retries
       || client$._options.retryConfig
       || { strategy: "none" },

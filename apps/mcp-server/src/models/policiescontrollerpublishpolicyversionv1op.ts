@@ -8,6 +8,19 @@ import {
   PublishVersionDto$zodSchema,
 } from "./publishversiondto.js";
 
+export type PoliciesControllerPublishPolicyVersionV1Security = {
+  apikey?: string | undefined;
+  oauth2?: string | undefined;
+};
+
+export const PoliciesControllerPublishPolicyVersionV1Security$zodSchema:
+  z.ZodType<PoliciesControllerPublishPolicyVersionV1Security> = z.object({
+    apikey: z.string().describe("API key for authentication").optional(),
+    oauth2: z.string().describe(
+      "OAuth 2.1 authorization code flow. Sign in with your Comp AI account — tokens are issued by the Comp AI authorization server and scoped to your organization, role, and permissions.",
+    ).optional(),
+  });
+
 export type PoliciesControllerPublishPolicyVersionV1Request = {
   xOrganizationId?: string | undefined;
   id: string;
