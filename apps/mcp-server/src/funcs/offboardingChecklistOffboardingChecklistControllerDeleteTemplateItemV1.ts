@@ -26,6 +26,11 @@ import { APICall, APIPromise } from "../types/async.js";
 import { Result } from "../types/fp.js";
 
 /**
+ * Delete an offboarding checklist template item
+ *
+ * @remarks
+ * Removes an item from the organization's offboarding checklist template by id so it no longer appears on members' offboarding checklists.
+ *
  * If set, this operation will use {@link Security.apikey} from the global security.
  */
 export function offboardingChecklistOffboardingChecklistControllerDeleteTemplateItemV1(
