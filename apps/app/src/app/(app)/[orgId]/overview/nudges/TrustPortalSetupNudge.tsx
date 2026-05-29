@@ -1,13 +1,7 @@
 'use client';
 
 import { usePermissions } from '@/hooks/use-permissions';
-import {
-  Alert,
-  AlertAction,
-  AlertDescription,
-  AlertTitle,
-  Button,
-} from '@trycompai/design-system';
+import { Alert, AlertAction, AlertDescription, AlertTitle, Button } from '@trycompai/design-system';
 import { ArrowRight, Close } from '@trycompai/design-system/icons';
 import Link from 'next/link';
 import type { NudgeState, ServerNudgeData } from './types';
@@ -29,29 +23,20 @@ export function useTrustPortalSetupNudge({
     persistDismissal: true,
     ready: true, // server data already resolved
     eligible: isTrustNdaEnabled && !isConfigured && canSetup,
-    render: (onDismiss) => (
-      <TrustPortalSetupNudgeView orgId={orgId} onDismiss={onDismiss} />
-    ),
+    render: (onDismiss) => <TrustPortalSetupNudgeView orgId={orgId} onDismiss={onDismiss} />,
   };
 }
 
-function TrustPortalSetupNudgeView({
-  orgId,
-  onDismiss,
-}: {
-  orgId: string;
-  onDismiss: () => void;
-}) {
+function TrustPortalSetupNudgeView({ orgId, onDismiss }: { orgId: string; onDismiss: () => void }) {
   return (
     <Alert variant="warning">
       <AlertTitle>
-        <span className="text-foreground">Showcase your security posture</span>
+        <span className="text-foreground">Set up your Trust Portal</span>
       </AlertTitle>
       <AlertDescription>
         <span className="text-foreground">
-          Show prospects and vendors your compliance progress — enable the
-          frameworks you’re working on and your published policies appear
-          automatically.
+          Customize and publish your Trust Portal so prospects and vendors can view your compliance
+          progress.
         </span>
       </AlertDescription>
       <div className="col-start-2 pt-1">
