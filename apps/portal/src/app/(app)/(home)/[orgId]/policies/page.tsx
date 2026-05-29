@@ -49,6 +49,7 @@ export default async function SignedPoliciesPage({
         status: 'published',
         isRequiredToSign: true,
         isArchived: false,
+        archivedAt: null,
         signedBy: { has: member.id },
       },
       select: {
