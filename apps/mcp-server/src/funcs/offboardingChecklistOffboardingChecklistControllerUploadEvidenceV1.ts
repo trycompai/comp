@@ -26,6 +26,11 @@ import { APICall, APIPromise } from "../types/async.js";
 import { Result } from "../types/fp.js";
 
 /**
+ * Upload evidence for an offboarding checklist item
+ *
+ * @remarks
+ * Attaches a supporting evidence file to a member's completed offboarding checklist item, documenting that the offboarding step was actually carried out.
+ *
  * If set, this operation will use {@link Security.apikey} from the global security.
  */
 export function offboardingChecklistOffboardingChecklistControllerUploadEvidenceV1(

@@ -15,7 +15,7 @@ export const tool$offboardingChecklistOffboardingChecklistControllerRevokeVendor
     name: "revoke-vendor-access",
     description: `Mark vendor access as revoked
 
-Mark vendor access as revoked in Comp AI.`,
+Marks a single vendor's access for a departing member as revoked, optionally attaching evidence and notes, as part of offboarding access removal.`,
     annotations: {
       "title": "",
       "destructiveHint": false,

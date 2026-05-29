@@ -13,7 +13,9 @@ const args = {
 export const tool$offboardingChecklistOffboardingChecklistControllerUploadEvidenceV1:
   ToolDefinition<typeof args> = {
     name: "upload-evidence",
-    description: ``,
+    description: `Upload evidence for an offboarding checklist item
+
+Attaches a supporting evidence file to a member's completed offboarding checklist item, documenting that the offboarding step was actually carried out.`,
     annotations: {
       "title": "",
       "destructiveHint": false,

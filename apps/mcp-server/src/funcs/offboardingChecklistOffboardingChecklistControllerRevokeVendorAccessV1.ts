@@ -29,7 +29,7 @@ import { Result } from "../types/fp.js";
  * Mark vendor access as revoked
  *
  * @remarks
- * Mark vendor access as revoked in Comp AI.
+ * Marks a single vendor's access for a departing member as revoked, optionally attaching evidence and notes, as part of offboarding access removal.
  *
  * If set, this operation will use {@link Security.apikey} from the global security.
  */

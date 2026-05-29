@@ -13,7 +13,9 @@ const args = {
 export const tool$offboardingChecklistOffboardingChecklistControllerDeleteTemplateItemV1:
   ToolDefinition<typeof args> = {
     name: "delete-template-item",
-    description: ``,
+    description: `Delete an offboarding checklist template item
+
+Removes an item from the organization's offboarding checklist template by id so it no longer appears on members' offboarding checklists.`,
     annotations: {
       "title": "",
       "destructiveHint": false,
