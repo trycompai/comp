@@ -134,6 +134,27 @@ model IsmsContextIssue {
   @@index([documentId, kind])
 }
 
+// --- ISMS wizard inputs (CS-438): the ~12 un-derivable answers that feed
+// document generation. One profile per org + framework. Stored as a single
+// Zod-validated JSON blob (configuration, not register rows). ---
+
+model IsmsProfile {
+  id             String                   @id @default(dbgenerated("generate_prefixed_cuid('isms_pf'::text)"))
+  organizationId String
+  organization   Organization             @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  frameworkId    String
+  framework      FrameworkEditorFramework @relation(fields: [frameworkId], references: [id], onDelete: Cascade)
+
+  answers     Json // validated against the shared wizard Zod schema on read/write
+  completedAt DateTime? // set when the customer finishes the wizard
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([organizationId, frameworkId])
+  @@index([organizationId])
+}
+
 // --- Register: Interested Parties (clause 4.2a) ---
 
 model IsmsInterestedParty {

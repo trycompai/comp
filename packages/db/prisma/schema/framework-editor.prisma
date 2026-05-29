@@ -23,6 +23,7 @@ model FrameworkEditorFramework {
   soaConfigurations    SOAFrameworkConfiguration[] // Multiple SOA config versions per framework
   soaDocuments         SOADocument[] // SOA documents from organizations
   ismsDocuments        IsmsDocument[] // ISMS foundational documents from organizations
+  ismsProfiles         IsmsProfile[] // ISMS wizard profiles from organizations
   timelineTemplates    TimelineTemplate[]
   versions             FrameworkVersion[]
   controlPolicyLinks   FrameworkEditorControlPolicyTemplateLink[]
