@@ -4,7 +4,6 @@ import { FrameworkEditorFramework, Policy, Task } from '@db';
 import type { FrameworkInstanceWithControls } from '@/lib/types/framework';
 import { ComplianceOverview } from './ComplianceOverview';
 import { FrameworksOverview } from './FrameworksOverview';
-import { OffboardingBanner } from './OffboardingBanner';
 import { ToDoOverview } from './ToDoOverview';
 import { FrameworkInstanceWithComplianceScore } from './types';
 
@@ -71,7 +70,6 @@ export const Overview = ({
 
   return (
     <div className="flex flex-col gap-6">
-      <OffboardingBanner />
       <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
         <ComplianceOverview
           organizationId={organizationId}

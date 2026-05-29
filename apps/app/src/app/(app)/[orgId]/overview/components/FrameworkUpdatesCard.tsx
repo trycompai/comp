@@ -15,7 +15,12 @@ import { ChevronUp, Upgrade } from '@trycompai/design-system/icons';
 import { useParams, useRouter } from 'next/navigation';
 import { useState } from 'react';
 
-export function FrameworkUpdatesBanner() {
+/**
+ * The framework-updates card, with NO outer layout wrapper — the host (e.g. the
+ * Overview nudge stack) owns width/spacing. Returns null when there are no
+ * updates, so it's safe to mount unconditionally.
+ */
+export function FrameworkUpdatesCard() {
   const { data: statuses } = useFrameworkUpdateStatuses();
   const { hasPermission } = usePermissions();
   const router = useRouter();
@@ -29,7 +34,6 @@ export function FrameworkUpdatesBanner() {
   const count = statuses.length;
 
   return (
-    <div className="mx-auto w-full max-w-[1200px] pb-8">
     <Collapsible open={open} onOpenChange={setOpen}>
       <div className="rounded-lg border bg-card">
         <div className="flex items-center justify-between rounded-t-lg bg-secondary px-4 py-3">
@@ -88,6 +92,5 @@ export function FrameworkUpdatesBanner() {
         </CollapsibleContent>
       </div>
     </Collapsible>
-    </div>
   );
 }
