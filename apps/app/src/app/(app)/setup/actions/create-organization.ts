@@ -120,10 +120,9 @@ export const createOrganization = authActionClientWithoutOrg
       // Publish the trust portal so trust.inc/{slug} is live immediately, even
       // while empty. Goes through the guarded API (GET settings lazily creates a
       // published Trust row with a slug). Non-fatal — onboarding must still run.
-      try {
-        await serverApi.get('/v1/trust-portal/settings');
-      } catch (trustError) {
-        console.error('Non-critical: failed to publish trust portal:', trustError);
+      const trustPortalResponse = await serverApi.get('/v1/trust-portal/settings');
+      if (trustPortalResponse.error) {
+        console.error('Non-critical: failed to publish trust portal:', trustPortalResponse.error);
       }
 
       const userOrgs = await db.member.findMany({
