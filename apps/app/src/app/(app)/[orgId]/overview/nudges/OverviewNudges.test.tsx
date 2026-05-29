@@ -168,7 +168,7 @@ describe('OverviewNudges', () => {
     expect(screen.queryByText(/\d+ notices/)).not.toBeInTheDocument();
   });
 
-  it('orders framework updates between offboarding and trust in the stack', () => {
+  it('orders framework updates last in the stack (offboarding, trust, framework)', () => {
     setOffboarding([{ memberId: 'm1', name: 'Jo' }]);
     setFrameworkUpdates([{ frameworkInstanceId: 'fi_1' }]);
     render(<OverviewNudges orgId="org_123" server={server()} />);
@@ -179,11 +179,15 @@ describe('OverviewNudges', () => {
     expect(screen.queryByText('Showcase your security posture')).not.toBeInTheDocument();
     expect(screen.getByText('3 notices')).toBeInTheDocument();
 
-    // Expanded: all three are shown.
+    // Expanded: all three shown, framework updates rendered after the trust nudge.
     fireEvent.click(screen.getByText('3 notices'));
     expect(screen.getByText(/offboarding completion/)).toBeInTheDocument();
-    expect(screen.getByText('framework updates available')).toBeInTheDocument();
-    expect(screen.getByText('Showcase your security posture')).toBeInTheDocument();
+    const trustEl = screen.getByText('Showcase your security posture');
+    const frameworkEl = screen.getByText('framework updates available');
+    expect(
+      trustEl.compareDocumentPosition(frameworkEl) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
   });
 
   it('excludes framework updates from the count while its data is loading', () => {

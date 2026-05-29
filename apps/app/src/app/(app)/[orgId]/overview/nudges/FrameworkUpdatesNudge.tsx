@@ -9,8 +9,8 @@ export function useFrameworkUpdatesNudge(): NudgeState {
 
   return {
     id: 'framework-updates',
-    // Between offboarding (10, time-sensitive) and trust-portal-setup (20, growth).
-    priority: 15,
+    // Last: after offboarding (10) and trust-portal-setup (20) — least urgent.
+    priority: 30,
     // The card has no dismiss control; keep false so the id stays out of the
     // host's persistableIds (no spurious localStorage read for an undismissable nudge).
     persistDismissal: false,
