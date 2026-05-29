@@ -2,6 +2,7 @@
 
 import {
   Badge,
+  Button,
   Card,
   CardContent,
   CardDescription,
@@ -10,10 +11,12 @@ import {
   Stack,
   Text,
 } from '@trycompai/design-system';
+import { MagicWand } from '@trycompai/design-system/icons';
 import Link from 'next/link';
 import { useMemo } from 'react';
 import useSWR from 'swr';
 import { api } from '@/lib/api-client';
+import { usePermissions } from '@/hooks/use-permissions';
 import { useIso27001FrameworkId } from '../../isms/hooks/useIso27001FrameworkId';
 import {
   ISMS_TYPE_META,
@@ -63,6 +66,8 @@ function FoundationalDocumentCard({
 
 export function IsmsOverview({ organizationId }: { organizationId: string }) {
   const iso27001FrameworkId = useIso27001FrameworkId(organizationId);
+  const { hasPermission } = usePermissions();
+  const canRunWizard = hasPermission('evidence', 'update');
 
   const { data: setupResponse } = useSWR<IsmsEnsureSetupResponse>(
     iso27001FrameworkId
@@ -111,11 +116,20 @@ export function IsmsOverview({ organizationId }: { organizationId: string }) {
   return (
     <Stack gap="6">
       <div className="space-y-3">
-        <div className="flex items-center gap-2">
-          <Text size="lg" weight="semibold">
-            Foundational Documents
-          </Text>
-          <Badge variant="secondary">{ISMS_TYPE_META.length}</Badge>
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2">
+            <Text size="lg" weight="semibold">
+              Foundational Documents
+            </Text>
+            <Badge variant="secondary">{ISMS_TYPE_META.length}</Badge>
+          </div>
+          {canRunWizard && (
+            <Link href={`/${organizationId}/documents/isms/wizard`}>
+              <Button type="button" variant="secondary" iconLeft={<MagicWand size={16} />}>
+                Run setup wizard
+              </Button>
+            </Link>
+          )}
         </div>
         <div className="grid gap-4 lg:grid-cols-2">
           {ISMS_TYPE_META.map((meta) => {
