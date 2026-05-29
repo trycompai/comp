@@ -10,7 +10,7 @@ export const tool$offboardingChecklistOffboardingChecklistControllerExportAllEvi
     name: "offboarding-checklist-export-all-evidence",
     description: `Export all offboarding evidence as a zip file
 
-Export all offboarding evidence as a zip file in Comp AI.`,
+Exports a zip archive containing the offboarding checklist evidence for every member in the organization, for audits, handovers, or record-keeping.`,
     annotations: {
       "title": "",
       "destructiveHint": false,

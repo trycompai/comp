@@ -81,6 +81,7 @@ describe('SyncController - Google Workspace employees', () => {
     mockConnectionRepo = {
       findById: jest.fn(),
       findBySlugAndOrg: jest.fn(),
+      update: jest.fn(),
     } as unknown as jest.Mocked<ConnectionRepository>;
 
     mockCredentialVault = {
@@ -778,6 +779,42 @@ describe('SyncController - Google Workspace employees', () => {
           errors: 0,
           details: [],
         }),
+      );
+    });
+  });
+
+  // ── lastSyncAt bookkeeping ─────────────────────────────────────
+
+  describe('lastSyncAt update', () => {
+    it('should record lastSyncAt on the connection after a successful sync', async () => {
+      setupSync({ gwUsers: [makeGwUser('new@example.com')] });
+
+      (mockedDb.user.findUnique as jest.Mock).mockResolvedValue(null);
+      (mockedDb.user.create as jest.Mock).mockResolvedValue({
+        id: 'user_new',
+        email: 'new@example.com',
+      });
+      (mockedDb.member.findFirst as jest.Mock).mockResolvedValue(null);
+      (mockedDb.member.create as jest.Mock).mockResolvedValue({ id: 'mem_new' });
+      (mockedDb.member.findMany as jest.Mock).mockResolvedValue([]);
+
+      await controller.syncGoogleWorkspaceEmployees(orgId, connectionId);
+
+      expect(mockConnectionRepo.update).toHaveBeenCalledWith(
+        connectionId,
+        expect.objectContaining({ lastSyncAt: expect.any(Date) }),
+      );
+    });
+
+    it('should record lastSyncAt even when the sync finds zero users', async () => {
+      setupSync({ gwUsers: [] });
+      (mockedDb.member.findMany as jest.Mock).mockResolvedValue([]);
+
+      await controller.syncGoogleWorkspaceEmployees(orgId, connectionId);
+
+      expect(mockConnectionRepo.update).toHaveBeenCalledWith(
+        connectionId,
+        expect.objectContaining({ lastSyncAt: expect.any(Date) }),
       );
     });
   });

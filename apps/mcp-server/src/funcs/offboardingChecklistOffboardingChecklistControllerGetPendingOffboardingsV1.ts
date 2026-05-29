@@ -23,7 +23,7 @@ import { Result } from "../types/fp.js";
  * Get members with pending offboarding checklists
  *
  * @remarks
- * Get members with pending offboarding checklists in Comp AI.
+ * Lists members whose offboarding checklist is still incomplete, with their outstanding items, so you can track and finish departing-employee offboarding.
  *
  * If set, this operation will use {@link Security.apikey} from the global security.
  */

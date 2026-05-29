@@ -16,7 +16,7 @@ export const tool$offboardingChecklistOffboardingChecklistControllerRevokeAllVen
     name: "revoke-all-vendor-access",
     description: `Confirm all vendor access as revoked
 
-Confirm all vendor access as revoked in Comp AI.`,
+Marks every vendor access record for a departing member as revoked in one step, recording who confirmed it, to complete access removal during offboarding.`,
     annotations: {
       "title": "",
       "destructiveHint": false,

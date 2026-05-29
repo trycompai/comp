@@ -1,6 +1,6 @@
 {
   "name": "@trycompai/mcp-server",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "author": "Comp AI",
   "type": "module",
   "sideEffects": false,

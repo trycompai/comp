@@ -26,6 +26,11 @@ import { APICall, APIPromise } from "../types/async.js";
 import { Result } from "../types/fp.js";
 
 /**
+ * Get a member's offboarding checklist
+ *
+ * @remarks
+ * Returns the offboarding checklist for a specific member, including each item and whether it has been completed, to track that person's offboarding progress.
+ *
  * If set, this operation will use {@link Security.apikey} from the global security.
  */
 export function offboardingChecklistOffboardingChecklistControllerGetMemberChecklistV1(
