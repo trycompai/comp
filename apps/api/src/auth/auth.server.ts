@@ -536,6 +536,19 @@ export const auth = betterAuth({
       oidcConfig: {
         loginPage: mcpLoginPage,
         allowDynamicClientRegistration: false,
+        // OAuth secrets at rest — DO NOT enable better-auth's
+        // `storeClientSecret: 'encrypted' | 'hashed'`. better-auth verifies every
+        // confidential client (including config `trustedClients`) through the same
+        // decrypt/hash path, but a trusted client's secret is the *plaintext*
+        // GRAM_OAUTH_CLIENT_SECRET from config — decrypting/hashing it would fail
+        // verification and break the Gram token exchange. There is also nothing to
+        // protect in `oauth_application`: the Gram client is config-only and DCR is
+        // disabled, so no client secrets are persisted to the DB.
+        //
+        // `accessToken`/`refreshToken` in `oauth_access_token` are generated and
+        // looked up by raw value by better-auth's oidcProvider, so they can't be
+        // hashed/encrypted at our layer without breaking validation; they rely on
+        // database encryption-at-rest and short access-token TTLs.
         ...(gramMcpClient ? { trustedClients: [gramMcpClient] } : {}),
       },
     }),
