@@ -67,13 +67,17 @@ export function NudgeCenter({
             <div
               key={depth}
               aria-hidden
-              className="pointer-events-none absolute top-0 h-full rounded-lg border border-warning/30 bg-warning/15 shadow-md"
+              className="pointer-events-none absolute top-0 h-full rounded-lg border shadow-md"
               style={{
                 // Each card behind is a little narrower than the one above it.
                 left: depth * 8,
                 right: depth * 8,
                 transform: `translateY(${depth * 12}px)`,
                 zIndex: MAX_PEEK_LAYERS - depth + 1,
+                // Opaque amber (warning mixed into the solid card color) so the
+                // stacked peeks read as solid cards, not translucent slivers.
+                backgroundColor: 'color-mix(in oklab, var(--warning) 25%, var(--card))',
+                borderColor: 'color-mix(in oklab, var(--warning) 45%, var(--card))',
               }}
             />
           );
