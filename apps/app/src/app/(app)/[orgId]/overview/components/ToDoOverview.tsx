@@ -1,11 +1,12 @@
 'use client';
 
 import { useApiSWR } from '@/hooks/use-api-swr';
+import { usePermissions } from '@/hooks/use-permissions';
+import { Policy, Task } from '@db';
 import { Button } from '@trycompai/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@trycompai/ui/card';
 import { ScrollArea } from '@trycompai/ui/scroll-area';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@trycompai/ui/tabs';
-import { Policy, Task } from '@db';
 import {
   ArrowRight,
   CheckCircle2,
@@ -16,25 +17,14 @@ import {
   Upload,
   UserMinus,
 } from 'lucide-react';
-import { usePermissions } from '@/hooks/use-permissions';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
-import { useEffect, useMemo, useState } from 'react';
-import { toast } from 'sonner';
-import { ConfirmActionDialog } from './ConfirmActionDialog';
-
-interface PendingOffboardingMember {
-  memberId: string;
-  name: string;
-  email: string;
-  offboardDate: string;
-  completedItems: number;
-  totalItems: number;
-}
-
-interface PendingOffboardingResponse {
-  members: PendingOffboardingMember[];
-}
+import { useEffect, useState } from 'react';
+import {
+  formatQuickActionStatus,
+  getQuickActionProgressWidth,
+  type PendingOffboardingResponse,
+  usePublishAllPoliciesAction,
+} from './overview-quick-actions';
 
 export function ToDoOverview({
   totalPolicies,
@@ -60,8 +50,6 @@ export function ToDoOverview({
   onboardingTriggerJobId: string | null;
 }) {
   const { hasPermission } = usePermissions();
-  const [isConfirmDialogOpen, setIsConfirmDialogOpen] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
   const [activeTab, setActiveTab] = useState(
     unpublishedPolicies.length === 0 ? 'tasks' : 'policies',
   );
@@ -81,57 +69,22 @@ export function ToDoOverview({
 
   const isOnboardingInProgress = !!onboardingTriggerJobId;
 
-  const formatStatus = (status: string) => {
-    return status.replace('_', ' ').replace(/\b\w/g, (l) => l.toUpperCase());
-  };
-
-  const router = useRouter();
   const canPublishPolicies = hasPermission('policy', 'update');
-
-  const handleConfirmAction = async () => {
-    setIsLoading(true);
-    try {
-      const response = await fetch('/api/policies/publish-all', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to publish policies');
-      }
-
-      toast.success('All policies published!');
-      router.refresh();
-    } catch {
-      toast.error('Failed to publish policies.');
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const width = useMemo(() => {
-    return totalPolicies + totalTasks === 0
-      ? 0
-      : ((totalPolicies +
-          totalTasks -
-          (unpublishedPolicies.length + incompleteTasks.length)) /
-          (totalPolicies + totalTasks)) *
-          100;
-  }, [
+  const { handlePublishAllClick, publishAllPoliciesDialog } = usePublishAllPoliciesAction({
+    unpublishedPolicies,
+  });
+  const width = getQuickActionProgressWidth({
     totalPolicies,
     totalTasks,
-    unpublishedPolicies.length,
-    incompleteTasks.length,
-  ]);
+    unpublishedPolicies: unpublishedPolicies.length,
+    incompleteTasks: incompleteTasks.length,
+  });
 
   return (
     <Card className="flex flex-col h-full">
       <CardHeader className="pb-2">
         <div className="flex items-center justify-between">
-          <CardTitle className="flex items-center gap-2">
-            {'Quick Actions'}
-          </CardTitle>
+          <CardTitle className="flex items-center gap-2">{'Quick Actions'}</CardTitle>
         </div>
 
         <div className="bg-secondary/50 relative mt-2 h-1 w-full overflow-hidden rounded-full">
@@ -146,10 +99,7 @@ export function ToDoOverview({
       <CardContent className="flex flex-col gap-4">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsList className="grid w-full grid-cols-3">
-            <TabsTrigger
-              value="policies"
-              className="flex items-center gap-2"
-            >
+            <TabsTrigger value="policies" className="flex items-center gap-2">
               <FileText className="h-3 w-3" />
               Policies ({remainingPolicies})
             </TabsTrigger>
@@ -157,10 +107,7 @@ export function ToDoOverview({
               <Upload className="h-3 w-3" />
               Tasks ({remainingTasks})
             </TabsTrigger>
-            <TabsTrigger
-              value="offboarding"
-              className="flex items-center gap-2"
-            >
+            <TabsTrigger value="offboarding" className="flex items-center gap-2">
               <UserMinus className="h-3 w-3" />
               Offboarding ({pendingOffboardings.length})
             </TabsTrigger>
@@ -172,19 +119,15 @@ export function ToDoOverview({
                 <Button
                   size="sm"
                   variant="outline"
-                  onClick={() => setIsConfirmDialogOpen(true)}
+                  onClick={handlePublishAllClick}
                   className="flex items-center gap-2 w-full"
                   disabled={isOnboardingInProgress}
                   title={
-                    isOnboardingInProgress
-                      ? 'Please wait for onboarding to complete'
-                      : undefined
+                    isOnboardingInProgress ? 'Please wait for onboarding to complete' : undefined
                   }
                 >
                   <Play className="h-3 w-3" />
-                  {isOnboardingInProgress
-                    ? 'Onboarding in progress...'
-                    : 'Publish All Policies'}
+                  {isOnboardingInProgress ? 'Onboarding in progress...' : 'Publish All Policies'}
                 </Button>
               </div>
             )}
@@ -210,14 +153,12 @@ export function ToDoOverview({
                                 {policy.name}
                               </span>
                               <span className="text-xs text-muted-foreground capitalize">
-                                Status: {formatStatus(policy.status)}
+                                Status: {formatQuickActionStatus(policy.status)}
                               </span>
                             </div>
                           </div>
                           <Button asChild size="icon" variant="outline">
-                            <Link
-                              href={`/${organizationId}/policies/${policy.id}`}
-                            >
+                            <Link href={`/${organizationId}/policies/${policy.id}`}>
                               <ArrowRight className="h-3 w-3" />
                             </Link>
                           </Button>
@@ -237,9 +178,7 @@ export function ToDoOverview({
             {incompleteTasks.length === 0 ? (
               <div className="flex items-center justify-center gap-2 rounded-lg bg-accent p-3">
                 <CheckCircle2 className="h-4 w-4 text-primary" />
-                <span className="text-sm text-primary">
-                  All tasks are completed!
-                </span>
+                <span className="text-sm text-primary">All tasks are completed!</span>
               </div>
             ) : (
               <div className="h-[300px]">
@@ -257,14 +196,12 @@ export function ToDoOverview({
                                 {task.title}
                               </span>
                               <span className="text-xs text-muted-foreground capitalize">
-                                Status: {formatStatus(task.status)}
+                                Status: {formatQuickActionStatus(task.status)}
                               </span>
                             </div>
                           </div>
                           <Button asChild size="icon" variant="outline">
-                            <Link
-                              href={`/${organizationId}/tasks/${task.id}`}
-                            >
+                            <Link href={`/${organizationId}/tasks/${task.id}`}>
                               <ArrowRight className="h-3 w-3" />
                             </Link>
                           </Button>
@@ -283,22 +220,16 @@ export function ToDoOverview({
           <TabsContent value="offboarding" className="mt-4">
             {isPendingLoading ? (
               <div className="flex items-center justify-center gap-2 rounded-lg bg-accent p-3">
-                <span className="text-sm text-muted-foreground">
-                  Loading offboardings...
-                </span>
+                <span className="text-sm text-muted-foreground">Loading offboardings...</span>
               </div>
             ) : pendingError ? (
               <div className="flex items-center justify-center gap-2 rounded-lg bg-accent p-3">
-                <span className="text-sm text-destructive">
-                  Failed to load offboardings
-                </span>
+                <span className="text-sm text-destructive">Failed to load offboardings</span>
               </div>
             ) : pendingOffboardings.length === 0 ? (
               <div className="flex items-center justify-center gap-2 rounded-lg bg-accent p-3">
                 <CheckCircle2 className="h-4 w-4 text-primary" />
-                <span className="text-sm text-primary">
-                  No pending offboardings
-                </span>
+                <span className="text-sm text-primary">No pending offboardings</span>
               </div>
             ) : (
               <div className="h-[300px]">
@@ -316,8 +247,7 @@ export function ToDoOverview({
                                 Complete offboarding for {member.name}
                               </span>
                               <span className="text-xs text-muted-foreground">
-                                {member.completedItems}/{member.totalItems}{' '}
-                                tasks done
+                                {member.completedItems}/{member.totalItems} tasks done
                               </span>
                             </div>
                           </div>
@@ -342,16 +272,7 @@ export function ToDoOverview({
         </Tabs>
       </CardContent>
 
-      <ConfirmActionDialog
-        isOpen={isConfirmDialogOpen}
-        onClose={() => setIsConfirmDialogOpen(false)}
-        onConfirm={handleConfirmAction}
-        title="Are you sure you want to publish all policies?"
-        description="This will automatically publish all policies that are in draft status. This action cannot be undone."
-        confirmText="Publish Policies"
-        cancelText="Cancel"
-        isLoading={isLoading}
-      />
+      {publishAllPoliciesDialog}
     </Card>
   );
 }
