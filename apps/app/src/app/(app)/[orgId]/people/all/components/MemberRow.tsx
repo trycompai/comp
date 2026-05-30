@@ -149,6 +149,7 @@ export function MemberRow({
   const currentRoles = parseRoles(member.role);
 
   const isOwner = currentRoles.includes('owner');
+  const isAuditorOnly = currentRoles.length > 0 && currentRoles.every((role) => role === 'auditor');
   const isPlatformAdmin = member.user.role === 'admin';
   const canRemove = !isOwner;
   const isDeactivated = member.deactivated || !member.isActive;
@@ -190,7 +191,7 @@ export function MemberRow({
     });
   }
 
-  if (shouldShowTaskRequirements && backgroundCheckStepEnabled && !memberExempt) {
+  if (shouldShowTaskRequirements && backgroundCheckStepEnabled && !memberExempt && !isAuditorOnly) {
     taskItems.push({
       label: 'Background check',
       completed: hasCompletedBackgroundCheck ? 1 : 0,

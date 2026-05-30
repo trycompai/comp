@@ -22,6 +22,12 @@ import { parseAsArrayOf, parseAsString, useQueryState } from 'nuqs';
 import { useCallback, useMemo, useState } from 'react';
 import { FamilyFilterDropdown } from './FamilyFilterDropdown';
 import {
+  areAllFamiliesExpanded,
+  isFamilyExpanded,
+  toggleAllFamilyExpansion,
+  toggleFamilyExpansion,
+} from './family-expansion-state';
+import {
   buildRequirementItems,
   getFamilyDisplayLabel,
   groupRequirementsByFamily,
@@ -54,7 +60,7 @@ export function FrameworkRequirementsGrouped({
 
   const [searchTerm, setSearchTerm] = useQueryState('rq', parseAsString.withDefault('').withOptions({ shallow: true, throttleMs: 300 }));
   const [familyFilterParam, setFamilyFilterParam] = useQueryState('rfamilies', parseAsArrayOf(parseAsString, '|').withDefault([]).withOptions({ shallow: true }));
-  const [collapsedFamilies, setCollapsedFamilies] = useState<Set<string>>(new Set());
+  const [expandedFamilies, setExpandedFamilies] = useState<Set<string>>(new Set());
 
   const selectedFamilyFilter = useMemo(() => new Set(familyFilterParam), [familyFilterParam]);
 
@@ -90,20 +96,26 @@ export function FrameworkRequirementsGrouped({
   const familyCounts = useMemo(() => new Map(allGroups.map((g) => [g.family, g.items.length])), [allGroups]);
 
   const isSearching = searchTerm.trim().length > 0;
-  const allCollapsed = groups.length > 0 && groups.every((g) => collapsedFamilies.has(g.family));
+  const visibleFamilyNames = useMemo(() => groups.map((g) => g.family), [groups]);
+  const allExpanded = areAllFamiliesExpanded({
+    expandedFamilies,
+    familyNames: visibleFamilyNames,
+  });
 
   const handleToggleFamily = (family: string) => {
-    setCollapsedFamilies((prev) => {
-      const next = new Set(prev);
-      if (next.has(family)) next.delete(family);
-      else next.add(family);
-      return next;
-    });
+    setExpandedFamilies((prev) =>
+      toggleFamilyExpansion({ expandedFamilies: prev, family }),
+    );
   };
 
   const handleToggleAll = () => {
-    if (allCollapsed) setCollapsedFamilies(new Set());
-    else setCollapsedFamilies(new Set(allFamilyNames));
+    setExpandedFamilies((prev) =>
+      toggleAllFamilyExpansion({
+        expandedFamilies: prev,
+        familyNames: visibleFamilyNames,
+        shouldExpand: !allExpanded,
+      }),
+    );
   };
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -121,7 +133,8 @@ export function FrameworkRequirementsGrouped({
     setFamilyFilterParam(null);
   };
 
-  const isFamilyExpanded = (family: string) => isSearching || !collapsedFamilies.has(family);
+  const getIsFamilyExpanded = (family: string) =>
+    isFamilyExpanded({ expandedFamilies, family, isSearching });
 
   return (
     <div className="space-y-4">
@@ -147,7 +160,7 @@ export function FrameworkRequirementsGrouped({
         />
         {!isSearching && (
           <Button variant="ghost" onClick={handleToggleAll}>
-            {allCollapsed ? 'Expand All' : 'Collapse All'}
+            {allExpanded ? 'Collapse All' : 'Expand All'}
           </Button>
         )}
       </div>
@@ -179,7 +192,7 @@ export function FrameworkRequirementsGrouped({
               <RequirementFamilySection
                 key={group.family}
                 group={group}
-                expanded={isFamilyExpanded(group.family)}
+                expanded={getIsFamilyExpanded(group.family)}
                 onToggle={() => handleToggleFamily(group.family)}
                 orgId={orgId}
                 frameworkInstanceId={frameworkInstanceId}
