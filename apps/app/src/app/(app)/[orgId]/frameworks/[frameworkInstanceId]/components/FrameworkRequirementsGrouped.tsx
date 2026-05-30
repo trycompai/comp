@@ -5,7 +5,6 @@ import type { FrameworkInstanceWithControls } from '@/lib/types/framework';
 import type { Control, FrameworkEditorRequirement, Task } from '@db';
 import {
   Button,
-  Heading,
   InputGroup,
   InputGroupAddon,
   InputGroupInput,
@@ -126,7 +125,6 @@ export function FrameworkRequirementsGrouped({
 
   return (
     <div className="space-y-4">
-      <Heading level="2">Requirements ({filteredItems.length})</Heading>
       <div className="flex items-center gap-3">
         <div className="w-full max-w-sm">
           <InputGroup>
