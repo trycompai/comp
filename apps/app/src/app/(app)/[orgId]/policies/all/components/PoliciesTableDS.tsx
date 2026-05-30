@@ -17,6 +17,7 @@ import {
 import { ArrowDown, ArrowUp, ArrowsVertical, Launch } from '@trycompai/design-system/icons';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
+import { isArchivedPolicy } from '../../lib/policy-archive-state';
 import { usePolicyTailoringStatus, type PolicyTailoringStatus } from './policy-tailoring-context';
 
 type SortColumn = 'name' | 'status' | 'updatedAt';
@@ -223,7 +224,7 @@ function PolicyStatusCell({ policy, status, isTailoring }: PolicyStatusCellProps
     );
   }
 
-  if (policy.isArchived) {
+  if (isArchivedPolicy(policy)) {
     return <StatusIndicator status="archived" />;
   }
 

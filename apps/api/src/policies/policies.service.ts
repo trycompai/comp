@@ -43,6 +43,7 @@ const POLICY_UPDATE_SELECT = {
   signedBy: true,
   reviewDate: true,
   isArchived: true,
+  archivedAt: true,
   createdAt: true,
   updatedAt: true,
   lastArchivedAt: true,
@@ -79,19 +80,26 @@ export class PoliciesService {
     private readonly timelinesService: TimelinesService,
   ) {}
 
-  async findAll(
-    organizationId: string,
-    options?: { excludeContent?: boolean },
-  ) {
+  async findAll({
+    organizationId,
+    excludeContent,
+    includeArchived,
+  }: {
+    organizationId: string;
+    excludeContent?: boolean;
+    includeArchived?: boolean;
+  }) {
     try {
       const policies = await db.policy.findMany({
-        where: { organizationId, isArchived: false, archivedAt: null },
+        where: includeArchived
+          ? { organizationId }
+          : { organizationId, isArchived: false, archivedAt: null },
         select: {
           id: true,
           name: true,
           description: true,
           status: true,
-          ...(options?.excludeContent
+          ...(excludeContent
             ? {}
             : { content: true, draftContent: true }),
           frequency: true,
@@ -100,6 +108,7 @@ export class PoliciesService {
           signedBy: true,
           reviewDate: true,
           isArchived: true,
+          archivedAt: true,
           createdAt: true,
           updatedAt: true,
           lastArchivedAt: true,
@@ -128,7 +137,8 @@ export class PoliciesService {
 
       this.logger.log(
         `Retrieved ${policies.length} policies for organization ${organizationId}` +
-          (options?.excludeContent ? ' (content excluded)' : ''),
+          (excludeContent ? ' (content excluded)' : '') +
+          (includeArchived ? ' (archived included)' : ''),
       );
       return policies;
     } catch (error) {
@@ -240,6 +250,7 @@ export class PoliciesService {
           signedBy: true,
           reviewDate: true,
           isArchived: true,
+          archivedAt: true,
           createdAt: true,
           updatedAt: true,
           lastArchivedAt: true,
@@ -338,6 +349,7 @@ export class PoliciesService {
             signedBy: true,
             reviewDate: true,
             isArchived: true,
+            archivedAt: true,
             createdAt: true,
             updatedAt: true,
             lastArchivedAt: true,
