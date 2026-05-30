@@ -11,8 +11,6 @@ import {
   Table,
   TableBody,
   TableCell,
-  TableHead,
-  TableHeader,
   TableRow,
   Text,
 } from '@trycompai/design-system';
@@ -20,13 +18,13 @@ import { ChevronDown, ChevronRight, Search } from '@trycompai/design-system/icon
 import { useParams, useRouter } from 'next/navigation';
 import { parseAsArrayOf, parseAsString, useQueryState } from 'nuqs';
 import { useCallback, useMemo, useState } from 'react';
-import { FamilyFilterDropdown } from './FamilyFilterDropdown';
 import {
   areAllFamiliesExpanded,
   isFamilyExpanded,
   toggleAllFamilyExpansion,
   toggleFamilyExpansion,
 } from './family-expansion-state';
+import { FamilyFilterDropdown } from './FamilyFilterDropdown';
 import {
   buildRequirementItems,
   getFamilyDisplayLabel,
@@ -34,8 +32,12 @@ import {
   type RequirementFamilyGroup,
 } from './framework-controls-shared';
 import { GroupedRequirementRow } from './GroupedRequirementRow';
-
-const COLUMN_COUNT = 9;
+import {
+  REQUIREMENTS_TABLE_COLUMN_COUNT,
+  REQUIREMENTS_TABLE_STYLE,
+  RequirementsTableColumnGroup,
+  RequirementsTableHeader,
+} from './requirements-table-layout';
 
 export function FrameworkRequirementsGrouped({
   requirementDefinitions,
@@ -48,7 +50,10 @@ export function FrameworkRequirementsGrouped({
   tasks?: (Task & { controls: Control[] })[];
   evidenceSubmissions?: EvidenceSubmissionInfo[];
 }) {
-  const { orgId, frameworkInstanceId } = useParams<{ orgId: string; frameworkInstanceId: string }>();
+  const { orgId, frameworkInstanceId } = useParams<{
+    orgId: string;
+    frameworkInstanceId: string;
+  }>();
   const router = useRouter();
 
   const handleRowClick = useCallback(
@@ -58,19 +63,26 @@ export function FrameworkRequirementsGrouped({
     [orgId, frameworkInstanceId, router],
   );
 
-  const [searchTerm, setSearchTerm] = useQueryState('rq', parseAsString.withDefault('').withOptions({ shallow: true, throttleMs: 300 }));
-  const [familyFilterParam, setFamilyFilterParam] = useQueryState('rfamilies', parseAsArrayOf(parseAsString, '|').withDefault([]).withOptions({ shallow: true }));
+  const [searchTerm, setSearchTerm] = useQueryState(
+    'rq',
+    parseAsString.withDefault('').withOptions({ shallow: true, throttleMs: 300 }),
+  );
+  const [familyFilterParam, setFamilyFilterParam] = useQueryState(
+    'rfamilies',
+    parseAsArrayOf(parseAsString, '|').withDefault([]).withOptions({ shallow: true }),
+  );
   const [expandedFamilies, setExpandedFamilies] = useState<Set<string>>(new Set());
 
   const selectedFamilyFilter = useMemo(() => new Set(familyFilterParam), [familyFilterParam]);
 
   const allItems = useMemo(
-    () => buildRequirementItems(
-      requirementDefinitions,
-      frameworkInstanceWithControls.controls,
-      tasks ?? [],
-      evidenceSubmissions,
-    ),
+    () =>
+      buildRequirementItems(
+        requirementDefinitions,
+        frameworkInstanceWithControls.controls,
+        tasks ?? [],
+        evidenceSubmissions,
+      ),
     [requirementDefinitions, frameworkInstanceWithControls.controls, tasks, evidenceSubmissions],
   );
 
@@ -93,7 +105,10 @@ export function FrameworkRequirementsGrouped({
   }, [allGroups, selectedFamilyFilter]);
 
   const allFamilyNames = useMemo(() => allGroups.map((g) => g.family), [allGroups]);
-  const familyCounts = useMemo(() => new Map(allGroups.map((g) => [g.family, g.items.length])), [allGroups]);
+  const familyCounts = useMemo(
+    () => new Map(allGroups.map((g) => [g.family, g.items.length])),
+    [allGroups],
+  );
 
   const isSearching = searchTerm.trim().length > 0;
   const visibleFamilyNames = useMemo(() => groups.map((g) => g.family), [groups]);
@@ -103,9 +118,7 @@ export function FrameworkRequirementsGrouped({
   });
 
   const handleToggleFamily = (family: string) => {
-    setExpandedFamilies((prev) =>
-      toggleFamilyExpansion({ expandedFamilies: prev, family }),
-    );
+    setExpandedFamilies((prev) => toggleFamilyExpansion({ expandedFamilies: prev, family }));
   };
 
   const handleToggleAll = () => {
@@ -164,24 +177,13 @@ export function FrameworkRequirementsGrouped({
           </Button>
         )}
       </div>
-      <Table variant="bordered">
-        <TableHeader>
-          <TableRow>
-            <TableHead>Identifier</TableHead>
-            <TableHead>Name</TableHead>
-            <TableHead>Description</TableHead>
-            <TableHead>Compliance</TableHead>
-            <TableHead>Status</TableHead>
-            <TableHead>Controls</TableHead>
-            <TableHead>Policies</TableHead>
-            <TableHead>Tasks</TableHead>
-            <TableHead>Documents</TableHead>
-          </TableRow>
-        </TableHeader>
+      <Table variant="bordered" style={REQUIREMENTS_TABLE_STYLE}>
+        <RequirementsTableColumnGroup />
+        <RequirementsTableHeader />
         <TableBody>
           {groups.length === 0 ? (
             <TableRow>
-              <TableCell colSpan={COLUMN_COUNT}>
+              <TableCell colSpan={REQUIREMENTS_TABLE_COLUMN_COUNT}>
                 <Text size="sm" variant="muted">
                   No requirements found.
                 </Text>
@@ -226,7 +228,7 @@ function RequirementFamilySection({
   return (
     <>
       <TableRow data-state="selected">
-        <TableCell colSpan={COLUMN_COUNT}>
+        <TableCell colSpan={REQUIREMENTS_TABLE_COLUMN_COUNT}>
           <button
             type="button"
             className="flex w-full items-center gap-2 py-1 text-left font-medium cursor-pointer"
