@@ -1,8 +1,14 @@
-export function matchesIntegrationSearch(searchText: string, searchQuery: string): boolean {
+const normalizeSearchText = (value: string) =>
+  value
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, ' ')
+    .trim();
+
+export function matchesIntegrationNameSearch(name: string, searchQuery: string): boolean {
   const terms = searchQuery.toLowerCase().match(/[a-z0-9]+/g) ?? [];
   if (terms.length === 0) return true;
 
-  const tokens = searchText.toLowerCase().match(/[a-z0-9]+/g) ?? [];
+  const normalizedName = normalizeSearchText(name);
 
-  return terms.every((term) => tokens.some((token) => token.startsWith(term)));
+  return terms.every((term) => normalizedName.includes(term));
 }

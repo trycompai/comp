@@ -38,7 +38,7 @@ import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import { CATEGORIES, type Integration, type IntegrationCategory } from '../data/integrations';
-import { matchesIntegrationSearch } from './integration-search';
+import { matchesIntegrationNameSearch } from './integration-search';
 import { SearchInput } from './SearchInput';
 import { TaskCard, TaskCardSkeleton } from './TaskCard';
 
@@ -292,12 +292,9 @@ export function PlatformIntegrations({ className, taskTemplates }: PlatformInteg
       const query = searchQuery.trim();
 
       filtered = filtered.filter((item) => {
-        const searchText =
-          item.type === 'platform'
-            ? `${item.provider.name} ${item.provider.description} ${item.provider.category}`
-            : `${item.integration.name} ${item.integration.description} ${item.integration.category} ${item.integration.examplePrompts.join(' ')}`;
+        const name = item.type === 'platform' ? item.provider.name : item.integration.name;
 
-        return matchesIntegrationSearch(searchText, query);
+        return matchesIntegrationNameSearch(name, query);
       });
     }
 
