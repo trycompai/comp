@@ -6,7 +6,7 @@ import {
 } from '@/components/policies/PolicyAcknowledgmentInvalidationDialog';
 import type { Policy } from '@db';
 import { useRouter } from 'next/navigation';
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
 
 export interface PendingOffboardingMember {
@@ -21,6 +21,8 @@ export interface PendingOffboardingMember {
 export interface PendingOffboardingResponse {
   members: PendingOffboardingMember[];
 }
+
+type PublishablePolicy = Pick<Policy, 'signedBy'>;
 
 export function formatQuickActionStatus(status: string) {
   return status.replace('_', ' ').replace(/\b\w/g, (letter) => letter.toUpperCase());
@@ -51,17 +53,23 @@ export function getQuickActionProgressWidth({
 export function usePublishAllPoliciesAction({
   unpublishedPolicies,
 }: {
-  unpublishedPolicies: Policy[];
+  unpublishedPolicies: PublishablePolicy[];
 }) {
   const router = useRouter();
   const [isConfirmDialogOpen, setIsConfirmDialogOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const isPublishingRef = useRef(false);
   const bulkAcknowledgmentInvalidations = useMemo(
     () => getPolicyAcknowledgmentTotal(unpublishedPolicies),
     [unpublishedPolicies],
   );
 
   const handlePublishAllPolicies = async () => {
+    if (isPublishingRef.current) {
+      return;
+    }
+
+    isPublishingRef.current = true;
     setIsLoading(true);
     try {
       const response = await fetch('/api/policies/publish-all', {
@@ -80,11 +88,16 @@ export function usePublishAllPoliciesAction({
     } catch {
       toast.error('Failed to publish policies.');
     } finally {
+      isPublishingRef.current = false;
       setIsLoading(false);
     }
   };
 
   const handlePublishAllClick = () => {
+    if (isPublishingRef.current) {
+      return;
+    }
+
     if (bulkAcknowledgmentInvalidations === 0) {
       void handlePublishAllPolicies();
       return;
@@ -107,6 +120,7 @@ export function usePublishAllPoliciesAction({
 
   return {
     handlePublishAllClick,
+    isPublishing: isLoading,
     publishAllPoliciesDialog,
   };
 }

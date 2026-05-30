@@ -70,9 +70,10 @@ export function ToDoOverview({
   const isOnboardingInProgress = !!onboardingTriggerJobId;
 
   const canPublishPolicies = hasPermission('policy', 'update');
-  const { handlePublishAllClick, publishAllPoliciesDialog } = usePublishAllPoliciesAction({
-    unpublishedPolicies,
-  });
+  const { handlePublishAllClick, isPublishing, publishAllPoliciesDialog } =
+    usePublishAllPoliciesAction({
+      unpublishedPolicies,
+    });
   const width = getQuickActionProgressWidth({
     totalPolicies,
     totalTasks,
@@ -121,7 +122,7 @@ export function ToDoOverview({
                   variant="outline"
                   onClick={handlePublishAllClick}
                   className="flex items-center gap-2 w-full"
-                  disabled={isOnboardingInProgress}
+                  disabled={isOnboardingInProgress || isPublishing}
                   title={
                     isOnboardingInProgress ? 'Please wait for onboarding to complete' : undefined
                   }
