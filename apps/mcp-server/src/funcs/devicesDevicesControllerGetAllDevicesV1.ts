@@ -5,8 +5,9 @@
 import { CompAiCore } from "../core.js";
 import { compactMap } from "../lib/primitives.js";
 import { RequestOptions } from "../lib/sdks.js";
-import { extractSecurity, resolveGlobalSecurity } from "../lib/security.js";
+import { resolveSecurity } from "../lib/security.js";
 import { pathToFunc } from "../lib/url.js";
+import { DevicesControllerGetAllDevicesV1Security } from "../models/devicescontrollergetalldevicesv1op.js";
 import { APIError } from "../models/errors/apierror.js";
 import {
   ConnectionError,
@@ -24,11 +25,10 @@ import { Result } from "../types/fp.js";
  *
  * @remarks
  * List managed employee devices with endpoint compliance status, ownership, and security check results for workforce controls.
- *
- * If set, this operation will use {@link Security.apikey} from the global security.
  */
 export function devicesDevicesControllerGetAllDevicesV1(
   client$: CompAiCore,
+  security: DevicesControllerGetAllDevicesV1Security,
   options?: RequestOptions,
 ): APIPromise<
   Result<
@@ -44,12 +44,14 @@ export function devicesDevicesControllerGetAllDevicesV1(
 > {
   return new APIPromise($do(
     client$,
+    security,
     options,
   ));
 }
 
 async function $do(
   client$: CompAiCore,
+  security: DevicesControllerGetAllDevicesV1Security,
   options?: RequestOptions,
 ): Promise<
   [
@@ -71,8 +73,23 @@ async function $do(
   const headers$ = new Headers(compactMap({
     Accept: "application/json",
   }));
-  const securityInput = await extractSecurity(client$._options.security);
-  const requestSecurity = resolveGlobalSecurity(securityInput, [0]);
+
+  const requestSecurity = resolveSecurity(
+    [
+      {
+        fieldName: "X-API-Key",
+        type: "apiKey:header",
+        value: security?.apikey,
+      },
+    ],
+    [
+      {
+        fieldName: "Authorization",
+        type: "oauth2",
+        value: security?.oauth2,
+      },
+    ],
+  );
 
   const context = {
     options: client$._options,
@@ -80,7 +97,7 @@ async function $do(
     operationID: "DevicesController_getAllDevices_v1",
     oAuth2Scopes: null,
     resolvedSecurity: requestSecurity,
-    securitySource: client$._options.security,
+    securitySource: security,
     retryConfig: options?.retries
       || client$._options.retryConfig
       || { strategy: "none" },

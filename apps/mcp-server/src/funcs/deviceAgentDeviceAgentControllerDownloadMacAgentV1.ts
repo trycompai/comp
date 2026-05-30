@@ -5,8 +5,9 @@
 import { CompAiCore } from "../core.js";
 import { compactMap } from "../lib/primitives.js";
 import { RequestOptions } from "../lib/sdks.js";
-import { extractSecurity, resolveGlobalSecurity } from "../lib/security.js";
+import { resolveSecurity } from "../lib/security.js";
 import { pathToFunc } from "../lib/url.js";
+import { DeviceAgentControllerDownloadMacAgentV1Security } from "../models/deviceagentcontrollerdownloadmacagentv1op.js";
 import { APIError } from "../models/errors/apierror.js";
 import {
   ConnectionError,
@@ -24,11 +25,10 @@ import { Result } from "../types/fp.js";
  *
  * @remarks
  * Downloads the Comp AI Device Agent installer for macOS as a DMG file. The agent helps monitor device compliance and security policies.
- *
- * If set, this operation will use {@link Security.apikey} from the global security.
  */
 export function deviceAgentDeviceAgentControllerDownloadMacAgentV1(
   client$: CompAiCore,
+  security: DeviceAgentControllerDownloadMacAgentV1Security,
   options?: RequestOptions,
 ): APIPromise<
   Result<
@@ -44,12 +44,14 @@ export function deviceAgentDeviceAgentControllerDownloadMacAgentV1(
 > {
   return new APIPromise($do(
     client$,
+    security,
     options,
   ));
 }
 
 async function $do(
   client$: CompAiCore,
+  security: DeviceAgentControllerDownloadMacAgentV1Security,
   options?: RequestOptions,
 ): Promise<
   [
@@ -71,8 +73,23 @@ async function $do(
   const headers$ = new Headers(compactMap({
     Accept: "application/x-apple-diskimage",
   }));
-  const securityInput = await extractSecurity(client$._options.security);
-  const requestSecurity = resolveGlobalSecurity(securityInput, [0]);
+
+  const requestSecurity = resolveSecurity(
+    [
+      {
+        fieldName: "X-API-Key",
+        type: "apiKey:header",
+        value: security?.apikey,
+      },
+    ],
+    [
+      {
+        fieldName: "Authorization",
+        type: "oauth2",
+        value: security?.oauth2,
+      },
+    ],
+  );
 
   const context = {
     options: client$._options,
@@ -80,7 +97,7 @@ async function $do(
     operationID: "DeviceAgentController_downloadMacAgent_v1",
     oAuth2Scopes: null,
     resolvedSecurity: requestSecurity,
-    securitySource: client$._options.security,
+    securitySource: security,
     retryConfig: options?.retries
       || client$._options.retryConfig
       || { strategy: "none" },

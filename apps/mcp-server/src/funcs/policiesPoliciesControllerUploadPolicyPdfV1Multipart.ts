@@ -7,7 +7,7 @@ import { encodeSimple } from "../lib/encodings.js";
 import { compactMap } from "../lib/primitives.js";
 import { safeParse } from "../lib/schemas.js";
 import { RequestOptions } from "../lib/sdks.js";
-import { extractSecurity, resolveGlobalSecurity } from "../lib/security.js";
+import { resolveSecurity } from "../lib/security.js";
 import { pathToFunc } from "../lib/url.js";
 import { APIError } from "../models/errors/apierror.js";
 import {
@@ -21,6 +21,7 @@ import { SDKValidationError } from "../models/errors/sdkvalidationerror.js";
 import {
   PoliciesControllerUploadPolicyPdfV1MultipartRequest,
   PoliciesControllerUploadPolicyPdfV1MultipartRequest$zodSchema,
+  PoliciesControllerUploadPolicyPdfV1MultipartSecurity,
 } from "../models/policiescontrolleruploadpolicypdfv1multipartop.js";
 import { APICall, APIPromise } from "../types/async.js";
 import { Result } from "../types/fp.js";
@@ -30,11 +31,10 @@ import { Result } from "../types/fp.js";
  *
  * @remarks
  * Uploads a PDF via multipart `file` or base64 `fileData` JSON. Defaults to the latest draft if no `versionId`; 400 if no draft is available. UI-only — AI clients should use the presigned `/pdf/upload-url` + `/pdf/confirm` flow.
- *
- * If set, this operation will use {@link Security.apikey} from the global security.
  */
 export function policiesPoliciesControllerUploadPolicyPdfV1Multipart(
   client$: CompAiCore,
+  security: PoliciesControllerUploadPolicyPdfV1MultipartSecurity,
   request: PoliciesControllerUploadPolicyPdfV1MultipartRequest,
   options?: RequestOptions,
 ): APIPromise<
@@ -51,6 +51,7 @@ export function policiesPoliciesControllerUploadPolicyPdfV1Multipart(
 > {
   return new APIPromise($do(
     client$,
+    security,
     request,
     options,
   ));
@@ -58,6 +59,7 @@ export function policiesPoliciesControllerUploadPolicyPdfV1Multipart(
 
 async function $do(
   client$: CompAiCore,
+  security: PoliciesControllerUploadPolicyPdfV1MultipartSecurity,
   request: PoliciesControllerUploadPolicyPdfV1MultipartRequest,
   options?: RequestOptions,
 ): Promise<
@@ -107,8 +109,23 @@ async function $do(
       { explode: false, charEncoding: "none" },
     ),
   }));
-  const securityInput = await extractSecurity(client$._options.security);
-  const requestSecurity = resolveGlobalSecurity(securityInput, [0]);
+
+  const requestSecurity = resolveSecurity(
+    [
+      {
+        fieldName: "X-API-Key",
+        type: "apiKey:header",
+        value: security?.apikey,
+      },
+    ],
+    [
+      {
+        fieldName: "Authorization",
+        type: "oauth2",
+        value: security?.oauth2,
+      },
+    ],
+  );
 
   const context = {
     options: client$._options,
@@ -116,7 +133,7 @@ async function $do(
     operationID: "PoliciesController_uploadPolicyPdf_v1_multipart",
     oAuth2Scopes: null,
     resolvedSecurity: requestSecurity,
-    securitySource: client$._options.security,
+    securitySource: security,
     retryConfig: options?.retries
       || client$._options.retryConfig
       || { strategy: "none" },
