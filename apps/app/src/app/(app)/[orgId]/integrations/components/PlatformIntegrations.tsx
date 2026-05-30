@@ -38,6 +38,7 @@ import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import { CATEGORIES, type Integration, type IntegrationCategory } from '../data/integrations';
+import { matchesIntegrationSearch } from './integration-search';
 import { SearchInput } from './SearchInput';
 import { TaskCard, TaskCardSkeleton } from './TaskCard';
 
@@ -288,18 +289,15 @@ export function PlatformIntegrations({ className, taskTemplates }: PlatformInteg
 
     // Search filter
     if (searchQuery.trim()) {
-      const query = searchQuery.toLowerCase().trim();
-      const terms = query.split(' ').filter(Boolean);
+      const query = searchQuery.trim();
 
       filtered = filtered.filter((item) => {
-        if (item.type === 'platform') {
-          const searchText =
-            `${item.provider.name} ${item.provider.description} ${item.provider.category}`.toLowerCase();
-          return terms.every((term) => searchText.includes(term));
-        }
         const searchText =
-          `${item.integration.name} ${item.integration.description} ${item.integration.category} ${item.integration.examplePrompts.join(' ')}`.toLowerCase();
-        return terms.every((term) => searchText.includes(term));
+          item.type === 'platform'
+            ? `${item.provider.name} ${item.provider.description} ${item.provider.category}`
+            : `${item.integration.name} ${item.integration.description} ${item.integration.category} ${item.integration.examplePrompts.join(' ')}`;
+
+        return matchesIntegrationSearch(searchText, query);
       });
     }
 
