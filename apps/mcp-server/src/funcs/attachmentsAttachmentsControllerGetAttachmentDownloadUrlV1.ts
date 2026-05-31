@@ -7,11 +7,12 @@ import { encodeSimple } from "../lib/encodings.js";
 import { compactMap } from "../lib/primitives.js";
 import { safeParse } from "../lib/schemas.js";
 import { RequestOptions } from "../lib/sdks.js";
-import { extractSecurity, resolveGlobalSecurity } from "../lib/security.js";
+import { resolveSecurity } from "../lib/security.js";
 import { pathToFunc } from "../lib/url.js";
 import {
   AttachmentsControllerGetAttachmentDownloadUrlV1Request,
   AttachmentsControllerGetAttachmentDownloadUrlV1Request$zodSchema,
+  AttachmentsControllerGetAttachmentDownloadUrlV1Security,
 } from "../models/attachmentscontrollergetattachmentdownloadurlv1op.js";
 import { APIError } from "../models/errors/apierror.js";
 import {
@@ -30,11 +31,10 @@ import { Result } from "../types/fp.js";
  *
  * @remarks
  * Generate a signed download URL for a shared attachment linked to comments, evidence records, or compliance workflow reviews.
- *
- * If set, this operation will use {@link Security.apikey} from the global security.
  */
 export function attachmentsAttachmentsControllerGetAttachmentDownloadUrlV1(
   client$: CompAiCore,
+  security: AttachmentsControllerGetAttachmentDownloadUrlV1Security,
   request: AttachmentsControllerGetAttachmentDownloadUrlV1Request,
   options?: RequestOptions,
 ): APIPromise<
@@ -51,6 +51,7 @@ export function attachmentsAttachmentsControllerGetAttachmentDownloadUrlV1(
 > {
   return new APIPromise($do(
     client$,
+    security,
     request,
     options,
   ));
@@ -58,6 +59,7 @@ export function attachmentsAttachmentsControllerGetAttachmentDownloadUrlV1(
 
 async function $do(
   client$: CompAiCore,
+  security: AttachmentsControllerGetAttachmentDownloadUrlV1Security,
   request: AttachmentsControllerGetAttachmentDownloadUrlV1Request,
   options?: RequestOptions,
 ): Promise<
@@ -102,8 +104,23 @@ async function $do(
   const headers$ = new Headers(compactMap({
     Accept: "application/json",
   }));
-  const securityInput = await extractSecurity(client$._options.security);
-  const requestSecurity = resolveGlobalSecurity(securityInput, [0]);
+
+  const requestSecurity = resolveSecurity(
+    [
+      {
+        fieldName: "X-API-Key",
+        type: "apiKey:header",
+        value: security?.apikey,
+      },
+    ],
+    [
+      {
+        fieldName: "Authorization",
+        type: "oauth2",
+        value: security?.oauth2,
+      },
+    ],
+  );
 
   const context = {
     options: client$._options,
@@ -111,7 +128,7 @@ async function $do(
     operationID: "AttachmentsController_getAttachmentDownloadUrl_v1",
     oAuth2Scopes: null,
     resolvedSecurity: requestSecurity,
-    securitySource: client$._options.security,
+    securitySource: security,
     retryConfig: options?.retries
       || client$._options.retryConfig
       || { strategy: "none" },

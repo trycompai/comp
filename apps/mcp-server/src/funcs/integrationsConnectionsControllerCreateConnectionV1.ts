@@ -7,8 +7,9 @@ import { encodeJSON } from "../lib/encodings.js";
 import { compactMap } from "../lib/primitives.js";
 import { safeParse } from "../lib/schemas.js";
 import { RequestOptions } from "../lib/sdks.js";
-import { extractSecurity, resolveGlobalSecurity } from "../lib/security.js";
+import { resolveSecurity } from "../lib/security.js";
 import { pathToFunc } from "../lib/url.js";
+import { ConnectionsControllerCreateConnectionV1Security } from "../models/connectionscontrollercreateconnectionv1op.js";
 import {
   CreateConnectionDto,
   CreateConnectionDto$zodSchema,
@@ -30,11 +31,10 @@ import { Result } from "../types/fp.js";
  *
  * @remarks
  * Create an integration connection so Comp AI can collect evidence, run checks, or sync data from a connected provider.
- *
- * If set, this operation will use {@link Security.apikey} from the global security.
  */
 export function integrationsConnectionsControllerCreateConnectionV1(
   client$: CompAiCore,
+  security: ConnectionsControllerCreateConnectionV1Security,
   request: CreateConnectionDto,
   options?: RequestOptions,
 ): APIPromise<
@@ -51,6 +51,7 @@ export function integrationsConnectionsControllerCreateConnectionV1(
 > {
   return new APIPromise($do(
     client$,
+    security,
     request,
     options,
   ));
@@ -58,6 +59,7 @@ export function integrationsConnectionsControllerCreateConnectionV1(
 
 async function $do(
   client$: CompAiCore,
+  security: ConnectionsControllerCreateConnectionV1Security,
   request: CreateConnectionDto,
   options?: RequestOptions,
 ): Promise<
@@ -91,8 +93,23 @@ async function $do(
     "Content-Type": "application/json",
     Accept: "*/*",
   }));
-  const securityInput = await extractSecurity(client$._options.security);
-  const requestSecurity = resolveGlobalSecurity(securityInput, [0]);
+
+  const requestSecurity = resolveSecurity(
+    [
+      {
+        fieldName: "X-API-Key",
+        type: "apiKey:header",
+        value: security?.apikey,
+      },
+    ],
+    [
+      {
+        fieldName: "Authorization",
+        type: "oauth2",
+        value: security?.oauth2,
+      },
+    ],
+  );
 
   const context = {
     options: client$._options,
@@ -100,7 +117,7 @@ async function $do(
     operationID: "ConnectionsController_createConnection_v1",
     oAuth2Scopes: null,
     resolvedSecurity: requestSecurity,
-    securitySource: client$._options.security,
+    securitySource: security,
     retryConfig: options?.retries
       || client$._options.retryConfig
       || { strategy: "none" },
