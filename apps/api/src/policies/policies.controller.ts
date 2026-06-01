@@ -22,6 +22,7 @@ import { FileInterceptor } from '@nestjs/platform-express';
 import {
   ApiBody,
   ApiConsumes,
+  ApiExtension,
   ApiHeader,
   ApiOperation,
   ApiParam,
@@ -46,6 +47,11 @@ import type { AuthContext as AuthContextType } from '../auth/types';
 import { CreatePolicyDto } from './dto/create-policy.dto';
 import { UpdatePolicyDto } from './dto/update-policy.dto';
 import { AISuggestPolicyRequestDto } from './dto/ai-suggest-policy.dto';
+import {
+  ConfirmPolicyPdfUploadedDto,
+  PolicyPdfUploadUrlResponseDto,
+  RequestPolicyPdfUploadUrlDto,
+} from './dto/policy-pdf-upload-url.dto';
 import {
   CreateVersionDto,
   PublishVersionDto,
@@ -109,13 +115,34 @@ export class PoliciesController {
   @Get()
   @RequirePermission('policy', 'read')
   @ApiOperation(POLICY_OPERATIONS.getAllPolicies)
+  @ApiQuery({
+    name: 'excludeContent',
+    required: false,
+    type: Boolean,
+    description:
+      'When true, omits `content` and `draftContent` from each policy in the response. Use this when listing policies to find one by name/ID — fetch the full content via GET /v1/policies/{id} after.',
+  })
+  @ApiQuery({
+    name: 'includeArchived',
+    required: false,
+    type: Boolean,
+    description:
+      'When true, includes user-archived and framework-sync-archived policies in the response. Defaults to false.',
+  })
+  @ApiExtension('x-speakeasy-mcp', { name: 'list-policies' })
   @ApiResponse(GET_ALL_POLICIES_RESPONSES[200])
   @ApiResponse(GET_ALL_POLICIES_RESPONSES[401])
   async getAllPolicies(
     @OrganizationId() organizationId: string,
     @AuthContext() authContext: AuthContextType,
+    @Query('excludeContent') excludeContent?: string,
+    @Query('includeArchived') includeArchived?: string,
   ) {
-    const policies = await this.policiesService.findAll(organizationId);
+    const policies = await this.policiesService.findAll({
+      organizationId,
+      excludeContent: excludeContent === 'true',
+      includeArchived: includeArchived === 'true',
+    });
 
     return {
       data: policies,
@@ -500,7 +527,16 @@ export class PoliciesController {
     }
 
     const s3 = new S3Client({ region: process.env.AWS_REGION || 'us-east-1' });
-    const command = new GetObjectCommand({ Bucket: bucketName, Key: pdfUrl });
+    // Force inline PDF rendering regardless of the object's stored Content-Type.
+    // Files uploaded via presigned URLs can land with the wrong type (e.g. the
+    // uploader's HTTP client defaults to application/x-www-form-urlencoded),
+    // which makes browsers download instead of preview.
+    const command = new GetObjectCommand({
+      Bucket: bucketName,
+      Key: pdfUrl,
+      ResponseContentType: 'application/pdf',
+      ResponseContentDisposition: 'inline',
+    });
     const url = await getSignedUrl(s3, command, { expiresIn: 900 });
 
     return {
@@ -518,7 +554,11 @@ export class PoliciesController {
   @Post(':id/pdf')
   @RequirePermission('policy', 'update')
   @UseInterceptors(FileInterceptor('file'))
-  @ApiOperation({ summary: 'Upload a PDF to a policy or version' })
+  @ApiOperation({
+    summary: 'Upload a PDF to a policy version (UI-only)',
+    description:
+      'Uploads a PDF via multipart `file` or base64 `fileData` JSON. Defaults to the latest draft if no `versionId`; 400 if no draft is available. UI-only — AI clients should use the presigned `/pdf/upload-url` + `/pdf/confirm` flow.',
+  })
   @ApiConsumes('multipart/form-data', 'application/json')
   @ApiParam(POLICY_PARAMS.policyId)
   @ApiBody({
@@ -529,7 +569,10 @@ export class PoliciesController {
           type: 'object',
           properties: {
             file: { type: 'string', format: 'binary' },
-            versionId: { type: 'string', description: 'Target version ID (optional)' },
+            versionId: {
+              type: 'string',
+              description: 'Target version ID. If omitted, uploads to the latest draft version.',
+            },
           },
           required: ['file'],
         },
@@ -540,13 +583,19 @@ export class PoliciesController {
             fileName: { type: 'string' },
             fileType: { type: 'string' },
             fileData: { type: 'string', description: 'Base64-encoded file content' },
-            versionId: { type: 'string' },
+            versionId: {
+              type: 'string',
+              description: 'Target version ID. If omitted, uploads to the latest draft version.',
+            },
           },
           required: ['fileName', 'fileType', 'fileData'],
         },
       ],
     },
   })
+  // Hidden from MCP so AI clients use the presigned /pdf/upload-url + /pdf/confirm flow.
+  // The HTTP endpoint stays live for the web UI / direct API callers.
+  @ApiExtension('x-speakeasy-mcp', { disabled: true })
   async uploadPolicyPdf(
     @Param('id') id: string,
     @UploadedFile() file: Express.Multer.File | undefined,
@@ -605,53 +654,46 @@ export class PoliciesController {
     });
     if (!policy) throw new NotFoundException('Policy not found');
 
-    if (body.versionId) {
-      const version = await db.policyVersion.findFirst({
-        where: { id: body.versionId, policyId: id },
-        select: { id: true, pdfUrl: true, version: true },
-      });
-      if (!version) throw new NotFoundException('Version not found');
-      if (version.id === policy.currentVersionId && policy.status !== 'draft') {
-        throw new BadRequestException(
-          'Cannot upload PDF to the published version',
-        );
-      }
-      if (version.id === policy.pendingVersionId) {
-        throw new BadRequestException(
-          'Cannot upload PDF to a version pending approval',
-        );
-      }
-
-      const s3Key = `${organizationId}/policies/${id}/v${version.version}-${Date.now()}-${sanitizedFileName}`;
-      await s3.send(
-        new PutObjectCommand({
-          Bucket: bucketName,
-          Key: s3Key,
-          Body: fileBuffer,
-          ContentType: fileType,
-        }),
+    let targetVersionId: string = body.versionId ?? '';
+    if (!targetVersionId) {
+      // Default to the latest draft version (not published, not pending approval)
+      const excludeIds = [policy.currentVersionId, policy.pendingVersionId].filter(
+        (v): v is string => v != null,
       );
-      const oldPdfUrl = version.pdfUrl;
-      await db.policyVersion.update({
-        where: { id: body.versionId },
-        data: { pdfUrl: s3Key },
-      });
-
-      if (oldPdfUrl && oldPdfUrl !== s3Key) {
-        try {
-          await s3.send(
-            new DeleteObjectCommand({ Bucket: bucketName, Key: oldPdfUrl }),
-          );
-        } catch {
-          /* ignore */
-        }
+      const draftVersion = excludeIds.length > 0
+        ? await db.policyVersion.findFirst({
+            where: { policyId: id, id: { notIn: excludeIds } },
+            orderBy: { version: 'desc' },
+            select: { id: true },
+          })
+        : null;
+      targetVersionId =
+        draftVersion?.id ??
+        (policy.status === 'draft' ? policy.currentVersionId ?? '' : '');
+      if (!targetVersionId) {
+        throw new BadRequestException(
+          'No draft version available. Create a new version before uploading a PDF.',
+        );
       }
-
-      return { data: { s3Key }, authType: authContext.authType };
     }
 
-    // Legacy: upload to policy level
-    const s3Key = `${organizationId}/policies/${id}/${Date.now()}-${sanitizedFileName}`;
+    const version = await db.policyVersion.findFirst({
+      where: { id: targetVersionId, policyId: id },
+      select: { id: true, pdfUrl: true, version: true },
+    });
+    if (!version) throw new NotFoundException('Version not found');
+    if (version.id === policy.currentVersionId && policy.status !== 'draft') {
+      throw new BadRequestException(
+        'Cannot upload PDF to the published version',
+      );
+    }
+    if (version.id === policy.pendingVersionId) {
+      throw new BadRequestException(
+        'Cannot upload PDF to a version pending approval',
+      );
+    }
+
+    const s3Key = `${organizationId}/policies/${id}/v${version.version}-${Date.now()}-${sanitizedFileName}`;
     await s3.send(
       new PutObjectCommand({
         Bucket: bucketName,
@@ -660,11 +702,17 @@ export class PoliciesController {
         ContentType: fileType,
       }),
     );
-    const oldPdfUrl = policy.pdfUrl;
-    await db.policy.update({
-      where: { id },
-      data: { pdfUrl: s3Key, displayFormat: 'PDF' },
-    });
+    const oldPdfUrl = version.pdfUrl;
+    await db.$transaction([
+      db.policyVersion.update({
+        where: { id: version.id },
+        data: { pdfUrl: s3Key },
+      }),
+      db.policy.update({
+        where: { id },
+        data: { pdfUrl: s3Key, displayFormat: 'PDF' },
+      }),
+    ]);
 
     if (oldPdfUrl && oldPdfUrl !== s3Key) {
       try {
@@ -679,11 +727,90 @@ export class PoliciesController {
     return { data: { s3Key }, authType: authContext.authType };
   }
 
+  @Post(':id/pdf/upload-url')
+  @RequirePermission('policy', 'update')
+  @ApiOperation({
+    summary: 'Request a presigned S3 URL to upload a policy PDF',
+    description:
+      'Step 1 of the upload flow for MCP/AI clients. Returns a presigned URL the caller PUTs the file bytes to directly (no base64, no LLM tokens). After upload, call POST /v1/policies/{id}/pdf/confirm with the returned s3Key.',
+  })
+  @ApiParam(POLICY_PARAMS.policyId)
+  @ApiBody({ type: RequestPolicyPdfUploadUrlDto })
+  @ApiExtension('x-speakeasy-mcp', { name: 'request-policy-pdf-upload-url' })
+  @ApiResponse({ status: 201, type: PolicyPdfUploadUrlResponseDto })
+  async requestPolicyPdfUploadUrl(
+    @Param('id') id: string,
+    @Body() body: RequestPolicyPdfUploadUrlDto,
+    @OrganizationId() organizationId: string,
+    @AuthContext() authContext: AuthContextType,
+  ) {
+    const data = await this.policiesService.generatePolicyPdfUploadUrl(
+      id,
+      organizationId,
+      body,
+    );
+
+    return {
+      ...data,
+      authType: authContext.authType,
+      ...(authContext.userId && {
+        authenticatedUser: {
+          id: authContext.userId,
+          email: authContext.userEmail,
+        },
+      }),
+    };
+  }
+
+  @Post(':id/pdf/confirm')
+  @RequirePermission('policy', 'update')
+  @ApiOperation({
+    summary: 'Confirm a presigned PDF upload completed',
+    description:
+      'Step 2 of the upload flow. Pass the exact s3Key returned by the upload-url endpoint after PUTing the file to the presigned URL. Verifies the file exists in S3 and links it to the policy (or version).',
+  })
+  @ApiParam(POLICY_PARAMS.policyId)
+  @ApiBody({ type: ConfirmPolicyPdfUploadedDto })
+  @ApiExtension('x-speakeasy-mcp', { name: 'confirm-policy-pdf-uploaded' })
+  async confirmPolicyPdfUploaded(
+    @Param('id') id: string,
+    @Body() body: ConfirmPolicyPdfUploadedDto,
+    @OrganizationId() organizationId: string,
+    @AuthContext() authContext: AuthContextType,
+  ) {
+    const data = await this.policiesService.confirmPolicyPdfUploaded(
+      id,
+      organizationId,
+      body,
+    );
+
+    return {
+      ...data,
+      authType: authContext.authType,
+      ...(authContext.userId && {
+        authenticatedUser: {
+          id: authContext.userId,
+          email: authContext.userEmail,
+        },
+      }),
+    };
+  }
+
   @Delete(':id/pdf')
   @RequirePermission('policy', 'update')
-  @ApiOperation({ summary: 'Delete a policy PDF' })
+  @ApiOperation({
+    summary: 'Delete a policy version PDF',
+    description:
+      'Deletes the PDF from a specific policy version. ' +
+      'If no versionId is provided, deletes from the latest draft version. ' +
+      'Cannot delete PDFs from published or pending-approval versions.',
+  })
   @ApiParam(POLICY_PARAMS.policyId)
-  @ApiQuery({ name: 'versionId', required: false })
+  @ApiQuery({
+    name: 'versionId',
+    required: false,
+    description: 'Target version ID. If omitted, targets the latest draft version.',
+  })
   async deletePolicyPdf(
     @Param('id') id: string,
     @OrganizationId() organizationId: string,
@@ -698,44 +825,68 @@ export class PoliciesController {
 
     const s3 = new S3Client({ region: process.env.AWS_REGION || 'us-east-1' });
 
-    if (versionId) {
-      const version = await db.policyVersion.findFirst({
-        where: { id: versionId, policy: { id, organizationId } },
-        select: { id: true, pdfUrl: true },
-      });
-      if (!version) throw new NotFoundException('Version not found');
-      if (version.pdfUrl) {
-        try {
-          await s3.send(
-            new DeleteObjectCommand({
-              Bucket: bucketName,
-              Key: version.pdfUrl,
-            }),
-          );
-        } catch {
-          /* ignore */
-        }
-        await db.policyVersion.update({
-          where: { id: versionId },
+    const policy = await db.policy.findFirst({
+      where: { id, organizationId, archivedAt: null },
+      select: { id: true, status: true, pdfUrl: true, currentVersionId: true, pendingVersionId: true },
+    });
+    if (!policy) throw new NotFoundException('Policy not found');
+
+    let targetVersionId = versionId;
+    if (!targetVersionId) {
+      const excludeIds = [policy.currentVersionId, policy.pendingVersionId].filter(
+        (v): v is string => v != null,
+      );
+      const draftVersion = excludeIds.length > 0
+        ? await db.policyVersion.findFirst({
+            where: { policyId: id, id: { notIn: excludeIds } },
+            orderBy: { version: 'desc' },
+            select: { id: true },
+          })
+        : null;
+      targetVersionId =
+        draftVersion?.id ??
+        (policy.status === 'draft' ? policy.currentVersionId ?? undefined : undefined);
+      if (!targetVersionId) {
+        throw new BadRequestException(
+          'No draft version available to delete PDF from.',
+        );
+      }
+    }
+
+    const version = await db.policyVersion.findFirst({
+      where: { id: targetVersionId, policyId: id },
+      select: { id: true, pdfUrl: true },
+    });
+    if (!version) throw new NotFoundException('Version not found');
+    if (version.id === policy.currentVersionId && policy.status !== 'draft') {
+      throw new BadRequestException(
+        'Cannot delete PDF from the published version',
+      );
+    }
+    if (version.id === policy.pendingVersionId) {
+      throw new BadRequestException(
+        'Cannot delete PDF from a version pending approval',
+      );
+    }
+
+    if (version.pdfUrl) {
+      try {
+        await s3.send(
+          new DeleteObjectCommand({ Bucket: bucketName, Key: version.pdfUrl }),
+        );
+      } catch {
+        /* ignore */
+      }
+      await db.$transaction([
+        db.policyVersion.update({
+          where: { id: version.id },
           data: { pdfUrl: null },
-        });
-      }
-    } else {
-      const policy = await db.policy.findFirst({
-        where: { id, organizationId, archivedAt: null },
-        select: { id: true, pdfUrl: true },
-      });
-      if (!policy) throw new NotFoundException('Policy not found');
-      if (policy.pdfUrl) {
-        try {
-          await s3.send(
-            new DeleteObjectCommand({ Bucket: bucketName, Key: policy.pdfUrl }),
-          );
-        } catch {
-          /* ignore */
-        }
-        await db.policy.update({ where: { id }, data: { pdfUrl: null } });
-      }
+        }),
+        db.policy.update({
+          where: { id },
+          data: { pdfUrl: null, displayFormat: 'EDITOR' },
+        }),
+      ]);
     }
 
     return {
@@ -785,9 +936,16 @@ export class PoliciesController {
     if (!bucketName) return { url: null };
 
     const s3 = new S3Client({ region: process.env.AWS_REGION || 'us-east-1' });
+    // Force inline PDF rendering regardless of the object's stored Content-Type
+    // so the browser previews the document instead of downloading it.
     const url = await getSignedUrl(
       s3,
-      new GetObjectCommand({ Bucket: bucketName, Key: pdfUrl }),
+      new GetObjectCommand({
+        Bucket: bucketName,
+        Key: pdfUrl,
+        ResponseContentType: 'application/pdf',
+        ResponseContentDisposition: 'inline',
+      }),
       { expiresIn: 900 },
     );
 
@@ -876,6 +1034,7 @@ export class PoliciesController {
   @RequirePermission('policy', 'read')
   @ApiOperation(POLICY_OPERATIONS.getPolicyById)
   @ApiParam(POLICY_PARAMS.policyId)
+  @ApiExtension('x-speakeasy-mcp', { name: 'get-policy' })
   @ApiResponse(GET_POLICY_BY_ID_RESPONSES[200])
   @ApiResponse(GET_POLICY_BY_ID_RESPONSES[401])
   @ApiResponse(GET_POLICY_BY_ID_RESPONSES[404])
@@ -990,6 +1149,7 @@ export class PoliciesController {
   @RequirePermission('policy', 'read')
   @ApiOperation(VERSION_OPERATIONS.getPolicyVersions)
   @ApiParam(VERSION_PARAMS.policyId)
+  @ApiExtension('x-speakeasy-mcp', { name: 'list-policy-versions' })
   @ApiResponse(GET_POLICY_VERSIONS_RESPONSES[200])
   @ApiResponse(GET_POLICY_VERSIONS_RESPONSES[401])
   @ApiResponse(GET_POLICY_VERSIONS_RESPONSES[404])
@@ -1017,6 +1177,7 @@ export class PoliciesController {
   @ApiOperation(VERSION_OPERATIONS.getPolicyVersionById)
   @ApiParam(VERSION_PARAMS.policyId)
   @ApiParam(VERSION_PARAMS.versionId)
+  @ApiExtension('x-speakeasy-mcp', { name: 'get-policy-version' })
   @ApiResponse(GET_POLICY_VERSION_BY_ID_RESPONSES[200])
   @ApiResponse(GET_POLICY_VERSION_BY_ID_RESPONSES[401])
   @ApiResponse(GET_POLICY_VERSION_BY_ID_RESPONSES[404])
@@ -1049,6 +1210,7 @@ export class PoliciesController {
   @ApiOperation(VERSION_OPERATIONS.createPolicyVersion)
   @ApiParam(VERSION_PARAMS.policyId)
   @ApiBody(VERSION_BODIES.createVersion)
+  @ApiExtension('x-speakeasy-mcp', { name: 'create-policy-version' })
   @ApiResponse(CREATE_POLICY_VERSION_RESPONSES[201])
   @ApiResponse(CREATE_POLICY_VERSION_RESPONSES[400])
   @ApiResponse(CREATE_POLICY_VERSION_RESPONSES[401])
@@ -1084,6 +1246,7 @@ export class PoliciesController {
   @ApiParam(VERSION_PARAMS.policyId)
   @ApiParam(VERSION_PARAMS.versionId)
   @ApiBody(VERSION_BODIES.updateVersionContent)
+  @ApiExtension('x-speakeasy-mcp', { name: 'update-policy-version-content' })
   @ApiResponse(UPDATE_VERSION_CONTENT_RESPONSES[200])
   @ApiResponse(UPDATE_VERSION_CONTENT_RESPONSES[400])
   @ApiResponse(UPDATE_VERSION_CONTENT_RESPONSES[401])
@@ -1153,6 +1316,7 @@ export class PoliciesController {
   @ApiOperation(VERSION_OPERATIONS.publishPolicyVersion)
   @ApiParam(VERSION_PARAMS.policyId)
   @ApiBody(VERSION_BODIES.publishVersion)
+  @ApiExtension('x-speakeasy-mcp', { name: 'publish-policy-version' })
   @ApiResponse(PUBLISH_VERSION_RESPONSES[200])
   @ApiResponse(PUBLISH_VERSION_RESPONSES[400])
   @ApiResponse(PUBLISH_VERSION_RESPONSES[401])
@@ -1221,6 +1385,7 @@ export class PoliciesController {
   @ApiParam(VERSION_PARAMS.policyId)
   @ApiParam(VERSION_PARAMS.versionId)
   @ApiBody(VERSION_BODIES.submitForApproval)
+  @ApiExtension('x-speakeasy-mcp', { name: 'submit-policy-version-for-approval' })
   @ApiResponse(SUBMIT_VERSION_FOR_APPROVAL_RESPONSES[200])
   @ApiResponse(SUBMIT_VERSION_FOR_APPROVAL_RESPONSES[400])
   @ApiResponse(SUBMIT_VERSION_FOR_APPROVAL_RESPONSES[401])
@@ -1257,6 +1422,7 @@ export class PoliciesController {
     summary: 'Accept pending policy changes and publish the version',
   })
   @ApiParam(POLICY_PARAMS.policyId)
+  @ApiExtension('x-speakeasy-mcp', { name: 'accept-policy-changes' })
   async acceptPolicyChanges(
     @Param('id') id: string,
     @Body() body: { approverId: string; comment?: string },

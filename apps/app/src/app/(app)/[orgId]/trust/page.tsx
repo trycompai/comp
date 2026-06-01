@@ -3,6 +3,7 @@ import { Button, PageHeader, PageLayout } from '@trycompai/design-system';
 import { Launch } from '@trycompai/design-system/icons';
 import type { Metadata } from 'next';
 import Link from 'next/link';
+import { TrustPortalGettingStarted } from './components/TrustPortalGettingStarted';
 import { TrustPortalSwitch } from './portal-settings/components/TrustPortalSwitch';
 
 export default async function TrustPage({
@@ -26,6 +27,7 @@ export default async function TrustPage({
     ]);
 
   const settings = settingsRes.data as any;
+  const isTrustConfigured = settings?.isConfigured ?? true;
   const customLinks = Array.isArray(customLinksRes.data)
     ? customLinksRes.data
     : [];
@@ -96,6 +98,7 @@ export default async function TrustPage({
         />
       }
     >
+      {!isTrustConfigured && <TrustPortalGettingStarted portalUrl={portalUrl} />}
       <TrustPortalSwitch
         orgId={orgId}
         enabled={settings?.enabled ?? false}

@@ -13,6 +13,7 @@ import {
   ApiTags,
   ApiBearerAuth,
   ApiOperation,
+  ApiParam,
   ApiQuery,
 } from '@nestjs/swagger';
 import { HybridAuthGuard } from '../auth/hybrid-auth.guard';
@@ -168,6 +169,16 @@ export class ControlsController {
   @Delete(':id/document-types/:formType')
   @RequirePermission('control', 'update')
   @ApiOperation({ summary: 'Remove a required document type from a control' })
+  @ApiParam({
+    name: 'id',
+    description: 'Unique control identifier',
+    example: 'ctl_abc123def456',
+  })
+  @ApiParam({
+    name: 'formType',
+    description: 'Evidence form type to unlink from the control',
+    enum: EvidenceFormType,
+  })
   async unlinkDocumentType(
     @OrganizationId() organizationId: string,
     @Param('id') id: string,

@@ -7,6 +7,7 @@ import {
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { RESTRICTED_ROLES, PRIVILEGED_ROLES } from '@trycompai/auth';
+import { permissionsGrant, resolveRolePermissions } from './app-access';
 import { auth } from './auth.server';
 import { resolveServiceByName } from './service-token.config';
 import { AuthenticatedRequest } from './types';
@@ -127,6 +128,27 @@ export class PermissionGuard implements CanActivate {
       permissionBody[perm.resource] = existing
         ? [...new Set([...existing, ...perm.actions])]
         : perm.actions;
+    }
+
+    // MCP OAuth tokens are not better-auth sessions, so `hasPermission` (which
+    // resolves a session + active org) can't authorize them. Check the required
+    // permissions against the roles HybridAuthGuard already resolved for the
+    // bound org. (Mirrors better-auth's union-of-roles semantics.)
+    if (request.isMcpOAuth) {
+      const perms = await resolveRolePermissions(
+        request.organizationId,
+        request.userRoles ?? [],
+      );
+      const granted = Object.entries(permissionBody).every(([resource, actions]) =>
+        actions.every((action) => permissionsGrant(perms, resource, action)),
+      );
+      if (!granted) {
+        this.logger.warn(
+          `[PermissionGuard] MCP OAuth access denied for ${request.method} ${request.url}. Required: ${JSON.stringify(permissionBody)}`,
+        );
+        throw new ForbiddenException('Access denied');
+      }
+      return true;
     }
 
     try {
