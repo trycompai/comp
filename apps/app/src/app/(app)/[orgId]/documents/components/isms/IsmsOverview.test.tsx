@@ -45,16 +45,57 @@ vi.mock('swr', () => ({
 }));
 
 // ─── Mock design system ──────────────────────────────────────
+type Kids = { children?: React.ReactNode };
 vi.mock('@trycompai/design-system', () => ({
-  Badge: ({ children }: { children: React.ReactNode }) => <span>{children}</span>,
-  Card: ({ children }: { children: React.ReactNode }) => <div data-testid="card">{children}</div>,
-  CardContent: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
-  CardDescription: ({ children }: { children: React.ReactNode }) => <p>{children}</p>,
-  CardHeader: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
-  CardTitle: ({ children }: { children: React.ReactNode }) => <h3>{children}</h3>,
-  Stack: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
-  Text: ({ children }: { children: React.ReactNode }) => <span>{children}</span>,
+  Badge: ({ children }: Kids) => <span>{children}</span>,
+  Button: ({ children }: Kids) => <button type="button">{children}</button>,
+  Card: ({ children }: Kids) => <div data-testid="card">{children}</div>,
+  CardContent: ({ children }: Kids) => <div>{children}</div>,
+  CardDescription: ({ children }: Kids) => <p>{children}</p>,
+  CardHeader: ({ children }: Kids) => <div>{children}</div>,
+  CardTitle: ({ children }: Kids) => <h3>{children}</h3>,
+  Grid: ({ children }: Kids) => <div>{children}</div>,
+  Heading: ({ children }: Kids) => <h2>{children}</h2>,
+  HStack: ({ children }: Kids) => <div>{children}</div>,
+  Stack: ({ children }: Kids) => <div>{children}</div>,
+  Section: ({ title, description, actions, children }: Kids & {
+    title?: string;
+    description?: string;
+    actions?: React.ReactNode;
+  }) => (
+    <section>
+      {title ? <h3>{title}</h3> : null}
+      {description ? <p>{description}</p> : null}
+      {actions}
+      {children}
+    </section>
+  ),
+  Text: ({ children }: Kids) => <span>{children}</span>,
+  Empty: ({ children }: Kids) => <div>{children}</div>,
+  EmptyContent: ({ children }: Kids) => <div>{children}</div>,
+  EmptyDescription: ({ children }: Kids) => <p>{children}</p>,
+  EmptyHeader: ({ children }: Kids) => <div>{children}</div>,
+  EmptyMedia: ({ children }: Kids) => <div>{children}</div>,
+  EmptyTitle: ({ children }: Kids) => <h3>{children}</h3>,
 }));
+
+// ─── Mock design-system icons ────────────────────────────────
+vi.mock('@trycompai/design-system/icons', () => {
+  const Icon = () => <svg />;
+  return {
+    ArrowLeft: Icon,
+    ArrowRight: Icon,
+    CheckmarkFilled: Icon,
+    CircleDash: Icon,
+    DocumentMultiple_01: Icon,
+    Edit: Icon,
+    Incomplete: Icon,
+    MagicWand: Icon,
+    Misuse: Icon,
+    Time: Icon,
+    WarningAltFilled: Icon,
+  };
+});
 
 // ─── Mock next/link ──────────────────────────────────────────
 vi.mock('next/link', () => ({

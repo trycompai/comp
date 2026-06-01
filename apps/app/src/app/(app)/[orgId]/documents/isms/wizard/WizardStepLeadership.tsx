@@ -1,6 +1,8 @@
 'use client';
 
 import {
+  HStack,
+  Section,
   Select,
   SelectContent,
   SelectItem,
@@ -34,7 +36,11 @@ export function WizardStepLeadership({ control, members }: WizardStepLeadershipP
   const memberOptions = Array.isArray(members) ? members : [];
 
   return (
-    <div className="flex flex-col gap-8">
+    <Section
+      title="Leadership & accountability"
+      description="Who backs up your security & privacy decisions, and how you will run internal audits."
+      gap="8"
+    >
       <Controller
         control={control}
         name="deputySpo"
@@ -71,7 +77,7 @@ export function WizardStepLeadership({ control, members }: WizardStepLeadershipP
                   ))}
                 </SelectContent>
               </Select>
-              <div className="flex items-center gap-2">
+              <HStack gap="2" align="center">
                 <Switch
                   checked={value.toBeNamed}
                   onCheckedChange={(checked) =>
@@ -82,8 +88,10 @@ export function WizardStepLeadership({ control, members }: WizardStepLeadershipP
                   }
                   aria-label="Deputy to be named"
                 />
-                <Text variant="muted">To be named later</Text>
-              </div>
+                <Text size="sm" variant="muted">
+                  To be named later
+                </Text>
+              </HStack>
             </WizardField>
           );
         }}
@@ -115,6 +123,6 @@ export function WizardStepLeadership({ control, members }: WizardStepLeadershipP
           </WizardField>
         )}
       />
-    </div>
+    </Section>
   );
 }

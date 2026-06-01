@@ -1,9 +1,9 @@
 'use client';
 
-import { Badge, Button, TableCell, TableRow, Textarea } from '@trycompai/design-system';
-import { TrashCan } from '@trycompai/design-system/icons';
+import { TableCell, TableRow, Text, Textarea } from '@trycompai/design-system';
 import { useState } from 'react';
 import type { IsmsContextIssue } from '../isms-types';
+import { IsmsRowActions, IsmsSourceBadge } from './shared';
 
 interface IssueRowProps {
   issue: IsmsContextIssue;
@@ -41,14 +41,7 @@ export function IssueRow({ issue, canEdit, onSave, onDelete }: IssueRowProps) {
   return (
     <TableRow>
       <TableCell>
-        <Badge variant={issue.source === 'derived' ? 'secondary' : 'outline'}>
-          {issue.source === 'derived' ? 'Auto-derived' : 'Edited'}
-        </Badge>
-        {issue.derivedFrom && (
-          <div className="mt-1">
-            <span className="text-[10px] text-muted-foreground">{issue.derivedFrom}</span>
-          </div>
-        )}
+        <IsmsSourceBadge source={issue.source} derivedFrom={issue.derivedFrom} />
       </TableCell>
       <TableCell>
         {canEdit ? (
@@ -59,7 +52,7 @@ export function IssueRow({ issue, canEdit, onSave, onDelete }: IssueRowProps) {
             aria-label="Issue description"
           />
         ) : (
-          <span className="text-sm">{issue.description}</span>
+          <Text size="sm">{issue.description}</Text>
         )}
       </TableCell>
       <TableCell>
@@ -71,33 +64,19 @@ export function IssueRow({ issue, canEdit, onSave, onDelete }: IssueRowProps) {
             aria-label="Issue effect"
           />
         ) : (
-          <span className="text-sm">{issue.effect}</span>
+          <Text size="sm">{issue.effect}</Text>
         )}
       </TableCell>
       {canEdit && (
         <TableCell>
-          <div className="flex items-center gap-2">
-            <Button
-              type="button"
-              size="sm"
-              variant="secondary"
-              onClick={handleSave}
-              disabled={!isDirty || isSaving || isDeleting}
-              loading={isSaving}
-            >
-              Save
-            </Button>
-            <Button
-              type="button"
-              size="sm"
-              variant="ghost"
-              onClick={handleDelete}
-              disabled={isSaving || isDeleting}
-              loading={isDeleting}
-              iconLeft={<TrashCan size={16} />}
-              aria-label="Delete issue"
-            />
-          </div>
+          <IsmsRowActions
+            onSave={handleSave}
+            onDelete={handleDelete}
+            isDirty={isDirty}
+            isSaving={isSaving}
+            isDeleting={isDeleting}
+            deleteLabel="Delete issue"
+          />
         </TableCell>
       )}
     </TableRow>

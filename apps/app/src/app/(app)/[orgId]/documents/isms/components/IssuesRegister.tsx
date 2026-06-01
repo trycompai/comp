@@ -6,9 +6,10 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-  Text,
 } from '@trycompai/design-system';
+import { WarningAlt } from '@trycompai/design-system/icons';
 import type { IsmsContextIssue, IsmsContextIssueKind } from '../isms-types';
+import { IsmsRegisterShell } from './shared';
 import { AddIssueForm } from './AddIssueForm';
 import { IssueRow } from './IssueRow';
 
@@ -42,46 +43,45 @@ function KindSection({
   const rows = issues.filter((issue) => issue.kind === kind);
 
   return (
-    <div className="flex flex-col gap-3">
-      <Text size="base" weight="semibold">
-        {title}
-      </Text>
-      {rows.length === 0 ? (
-        <div className="rounded-md border border-dashed py-6 text-center">
-          <Text variant="muted">No {kind} issues yet.</Text>
-        </div>
-      ) : (
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Source</TableHead>
-              <TableHead>Issue</TableHead>
-              <TableHead>Effect on ISMS</TableHead>
-              {canEdit && <TableHead>Actions</TableHead>}
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {rows.map((issue) => (
-              <IssueRow
-                key={issue.id}
-                issue={issue}
-                canEdit={canEdit}
-                onSave={({ description, effect }) =>
-                  onUpdate({ issueId: issue.id, input: { description, effect } })
-                }
-                onDelete={() => onDelete(issue.id)}
-              />
-            ))}
-          </TableBody>
-        </Table>
-      )}
-      {canEdit && (
-        <AddIssueForm
-          kind={kind}
-          onAdd={({ description, effect }) => onCreate({ kind, description, effect })}
-        />
-      )}
-    </div>
+    <IsmsRegisterShell
+      title={title}
+      count={rows.length}
+      emptyIcon={WarningAlt}
+      emptyTitle={`No ${kind} issues yet`}
+      emptyDescription={`Capture the ${kind} issues relevant to your ISMS and how each affects its objectives.`}
+      footer={
+        canEdit ? (
+          <AddIssueForm
+            kind={kind}
+            onAdd={({ description, effect }) => onCreate({ kind, description, effect })}
+          />
+        ) : undefined
+      }
+    >
+      <Table variant="bordered">
+        <TableHeader>
+          <TableRow>
+            <TableHead>Source</TableHead>
+            <TableHead>Issue</TableHead>
+            <TableHead>Effect on ISMS</TableHead>
+            {canEdit && <TableHead>Actions</TableHead>}
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {rows.map((issue) => (
+            <IssueRow
+              key={issue.id}
+              issue={issue}
+              canEdit={canEdit}
+              onSave={({ description, effect }) =>
+                onUpdate({ issueId: issue.id, input: { description, effect } })
+              }
+              onDelete={() => onDelete(issue.id)}
+            />
+          ))}
+        </TableBody>
+      </Table>
+    </IsmsRegisterShell>
   );
 }
 
@@ -95,7 +95,7 @@ export function IssuesRegister({
   const safeIssues = Array.isArray(issues) ? issues : [];
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex flex-col gap-8">
       <KindSection
         kind="internal"
         title="Internal Issues"

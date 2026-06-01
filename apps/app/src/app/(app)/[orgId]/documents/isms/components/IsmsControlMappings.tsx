@@ -10,31 +10,32 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
+  Button,
   buttonVariants,
   Command,
   CommandEmpty,
   CommandInput,
-  CommandItem,
   CommandList,
+  CommandItem,
+  Item,
+  ItemActions,
+  ItemContent,
+  ItemGroup,
+  ItemMedia,
+  ItemTitle,
   Popover,
   PopoverContent,
   PopoverTrigger,
   Section,
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-  Text,
 } from '@trycompai/design-system';
-import { Add, Launch, Unlink } from '@trycompai/design-system/icons';
+import { Add, Launch, Rule, Unlink } from '@trycompai/design-system/icons';
 import Link from 'next/link';
 import { useState } from 'react';
 import { toast } from 'sonner';
 import useSWR from 'swr';
 import { useIsmsDocument } from '../hooks/useIsmsDocument';
 import type { IsmsControlLink, IsmsDocument } from '../isms-types';
+import { IsmsEmptyState } from './shared';
 
 interface SelectableControl {
   id: string;
@@ -126,7 +127,7 @@ export function IsmsControlMappings({
               disabled={loading}
               className={buttonVariants({ variant: 'outline', size: 'sm' })}
             >
-              <Add size={14} />
+              <Add size={16} />
               Link control
             </PopoverTrigger>
             <PopoverContent align="end" sideOffset={8}>
@@ -148,57 +149,60 @@ export function IsmsControlMappings({
       }
     >
       {linkedControls.length === 0 ? (
-        <Text size="sm" variant="muted">
-          No controls linked yet.
-        </Text>
+        <IsmsEmptyState
+          icon={Rule}
+          title="No controls linked"
+          description="No controls linked yet."
+        />
       ) : (
-        <Table variant="bordered">
-          <TableHeader>
-            <TableRow>
-              <TableHead>Name</TableHead>
-              {canManage && <TableHead style={{ width: 48 }} />}
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {linkedControls.map((link) => (
-              <TableRow key={link.id}>
-                <TableCell>
-                  <Link
-                    href={`/${organizationId}/controls/${link.controlId}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    onClick={(e) => e.stopPropagation()}
-                    className="group flex items-center justify-between gap-2"
+        <ItemGroup>
+          {linkedControls.map((link) => (
+            <Item
+              key={link.id}
+              variant="outline"
+              size="sm"
+              render={
+                <Link
+                  href={`/${organizationId}/controls/${link.controlId}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={(e) => e.stopPropagation()}
+                />
+              }
+            >
+              <ItemMedia variant="icon">
+                <Rule size={16} />
+              </ItemMedia>
+              <ItemContent>
+                <ItemTitle>
+                  {link.control.name}
+                  <Launch
+                    size={14}
+                    className="shrink-0 text-muted-foreground transition-colors group-hover/item:text-foreground"
+                  />
+                </ItemTitle>
+              </ItemContent>
+              {canManage && (
+                <ItemActions>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon-sm"
+                    aria-label={`Unlink ${link.control.name}`}
+                    title="Unlink control"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      setToRemove({ id: link.controlId, name: link.control.name });
+                    }}
                   >
-                    <Text size="sm" weight="medium">
-                      {link.control.name}
-                    </Text>
-                    <Launch
-                      size={14}
-                      className="shrink-0 text-muted-foreground transition-colors group-hover:text-foreground"
-                    />
-                  </Link>
-                </TableCell>
-                {canManage && (
-                  <TableCell style={{ width: 48 }}>
-                    <button
-                      type="button"
-                      aria-label={`Unlink ${link.control.name}`}
-                      title="Unlink control"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setToRemove({ id: link.controlId, name: link.control.name });
-                      }}
-                      className="inline-flex h-7 w-7 items-center justify-center rounded text-destructive hover:bg-destructive/10"
-                    >
-                      <Unlink size={14} />
-                    </button>
-                  </TableCell>
-                )}
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+                    <Unlink size={16} />
+                  </Button>
+                </ItemActions>
+              )}
+            </Item>
+          ))}
+        </ItemGroup>
       )}
 
       <AlertDialog

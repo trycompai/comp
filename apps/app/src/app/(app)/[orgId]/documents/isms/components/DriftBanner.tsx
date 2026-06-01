@@ -1,6 +1,6 @@
 'use client';
 
-import { Alert, AlertDescription, AlertTitle, Button } from '@trycompai/design-system';
+import { Alert, AlertDescription, AlertTitle, Button, Text } from '@trycompai/design-system';
 import { Renew, WarningAlt } from '@trycompai/design-system/icons';
 
 interface DriftBannerProps {
@@ -17,24 +17,29 @@ export function DriftBanner({
   onRegenerate,
 }: DriftBannerProps) {
   return (
-    <Alert variant="default" icon={<WarningAlt />}>
+    <Alert variant="warning" icon={<WarningAlt />}>
       <AlertTitle>Out of date</AlertTitle>
       <AlertDescription>
-        <div className="flex flex-col gap-2">
+        <div className="flex flex-col gap-3">
           <div>
             The platform data behind this document has changed since it was last generated.
             {changedSources.length > 0 && (
-              <span>
+              <>
                 {' '}
-                Changed sources: <span className="font-semibold">{changedSources.join(', ')}</span>.
-              </span>
+                Changed sources:{' '}
+                <Text as="span" size="sm" weight="medium">
+                  {changedSources.join(', ')}
+                </Text>
+                .
+              </>
             )}
           </div>
           {canRegenerate && (
-            <div className="mt-1 flex items-center gap-2">
+            <div className="flex">
               <Button
                 type="button"
                 size="sm"
+                variant="outline"
                 onClick={onRegenerate}
                 disabled={isRegenerating}
                 loading={isRegenerating}

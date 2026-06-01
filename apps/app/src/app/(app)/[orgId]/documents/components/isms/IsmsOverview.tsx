@@ -1,68 +1,32 @@
 'use client';
 
+import { Button, Grid, Section, Stack } from '@trycompai/design-system';
 import {
-  Badge,
-  Button,
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-  Stack,
-  Text,
-} from '@trycompai/design-system';
-import { MagicWand } from '@trycompai/design-system/icons';
+  CheckmarkFilled,
+  DocumentMultiple_01,
+  Incomplete,
+  MagicWand,
+  WarningAltFilled,
+} from '@trycompai/design-system/icons';
 import Link from 'next/link';
 import { useMemo } from 'react';
 import useSWR from 'swr';
-import { api } from '@/lib/api-client';
 import { usePermissions } from '@/hooks/use-permissions';
+import { api } from '@/lib/api-client';
 import { useIso27001FrameworkId } from '../../isms/hooks/useIso27001FrameworkId';
 import {
   ISMS_TYPE_META,
   ismsTypeToSlug,
-  type IsmsDocumentStatus,
-  type IsmsDocumentType,
   type IsmsDriftResult,
   type IsmsEnsureSetupResponse,
-  type IsmsSetupDocument,
 } from '../../isms/isms-types';
+import {
+  IsmsDocumentCard,
+  IsmsEmptyState,
+  IsmsSummaryRow,
+  type IsmsSummaryStat,
+} from '../../isms/components/shared';
 import { SOAOverviewCard } from '../SOAOverviewCard';
-import { IsmsStatusBadge } from './IsmsStatusBadge';
-
-function FoundationalDocumentCard({
-  organizationId,
-  type,
-  setupDoc,
-  isStale,
-}: {
-  organizationId: string;
-  type: IsmsDocumentType;
-  setupDoc: IsmsSetupDocument | undefined;
-  isStale: boolean;
-}) {
-  const meta = ISMS_TYPE_META.find((entry) => entry.type === type);
-  if (!meta) return null;
-
-  const status: IsmsDocumentStatus | null = setupDoc?.status ?? null;
-  const title = `${meta.clause} ${meta.title}`;
-
-  return (
-    <Link href={`/${organizationId}/documents/isms/${ismsTypeToSlug(type)}`}>
-      <Card>
-        <CardHeader>
-          <CardTitle>{title}</CardTitle>
-          <div className="line-clamp-1">
-            <CardDescription>{meta.description}</CardDescription>
-          </div>
-        </CardHeader>
-        <CardContent>
-          <IsmsStatusBadge status={status} isStale={isStale} />
-        </CardContent>
-      </Card>
-    </Link>
-  );
-}
 
 export function IsmsOverview({ organizationId }: { organizationId: string }) {
   const iso27001FrameworkId = useIso27001FrameworkId(organizationId);
@@ -103,53 +67,78 @@ export function IsmsOverview({ organizationId }: { organizationId: string }) {
     },
   );
 
+  const isContextStale = !!contextDrift?.isStale;
+
+  const summary = useMemo<IsmsSummaryStat[]>(() => {
+    const total = ISMS_TYPE_META.length;
+    const approved = documents.filter((doc) => doc.status === 'approved').length;
+    const outstanding = total - approved;
+    const needsReview = isContextStale ? 1 : 0;
+    return [
+      { label: 'Documents', value: total, icon: DocumentMultiple_01 },
+      { label: 'Approved', value: approved, icon: CheckmarkFilled, tone: 'success' },
+      { label: 'Outstanding', value: outstanding, icon: Incomplete },
+      {
+        label: 'Needs review',
+        value: needsReview,
+        icon: WarningAltFilled,
+        tone: needsReview > 0 ? 'warning' : 'default',
+      },
+    ];
+  }, [documents, isContextStale]);
+
   if (!iso27001FrameworkId) {
     return (
-      <div className="flex items-center justify-center rounded-lg border py-12">
-        <Text variant="muted">
-          Add the ISO 27001 framework to your organization to manage ISMS foundational documents.
-        </Text>
-      </div>
+      <IsmsEmptyState
+        icon={DocumentMultiple_01}
+        title="ISO 27001 isn't active yet"
+        description="Add the ISO 27001 framework to your organization to manage your ISMS foundational documents and Statement of Applicability."
+      />
     );
   }
 
+  const wizardAction = canRunWizard ? (
+    <Link href={`/${organizationId}/documents/isms/wizard`}>
+      <Button type="button" iconLeft={<MagicWand size={16} />}>
+        Run setup wizard
+      </Button>
+    </Link>
+  ) : undefined;
+
   return (
-    <Stack gap="6">
-      <div className="space-y-3">
-        <div className="flex items-center justify-between gap-2">
-          <div className="flex items-center gap-2">
-            <Text size="lg" weight="semibold">
-              Foundational Documents
-            </Text>
-            <Badge variant="secondary">{ISMS_TYPE_META.length}</Badge>
-          </div>
-          {canRunWizard && (
-            <Link href={`/${organizationId}/documents/isms/wizard`}>
-              <Button type="button" variant="secondary" iconLeft={<MagicWand size={16} />}>
-                Run setup wizard
-              </Button>
-            </Link>
-          )}
-        </div>
-        <div className="grid gap-4 lg:grid-cols-2">
+    <Stack gap="8">
+      <IsmsSummaryRow stats={summary} />
+
+      <Section
+        title="Foundational Documents"
+        description="The ISO 27001 clause 4–6 documents that establish your information security management system."
+        actions={wizardAction}
+      >
+        <Grid cols={{ base: '1', md: '2', xl: '3' }} gap="4">
           {ISMS_TYPE_META.map((meta) => {
             const setupDoc = documents.find((doc) => doc.type === meta.type);
-            const isStale =
-              meta.type === 'context_of_organization' ? !!contextDrift?.isStale : false;
+            const isStale = meta.type === 'context_of_organization' ? isContextStale : false;
             return (
-              <FoundationalDocumentCard
+              <IsmsDocumentCard
                 key={meta.type}
-                organizationId={organizationId}
-                type={meta.type}
-                setupDoc={setupDoc}
+                href={`/${organizationId}/documents/isms/${ismsTypeToSlug(meta.type)}`}
+                clauseLabel={`Clause ${meta.clause}`}
+                title={meta.title}
+                description={meta.description}
+                status={setupDoc?.status ?? null}
                 isStale={isStale}
               />
             );
           })}
-        </div>
-      </div>
+        </Grid>
+      </Section>
 
-      <SOAOverviewCard organizationId={organizationId} iso27001FrameworkId={iso27001FrameworkId} />
+      <Section
+        title="Statement of Applicability"
+        description="The Annex A controls you apply, with justification for inclusions and exclusions."
+      >
+        <SOAOverviewCard organizationId={organizationId} iso27001FrameworkId={iso27001FrameworkId} />
+      </Section>
     </Stack>
   );
 }

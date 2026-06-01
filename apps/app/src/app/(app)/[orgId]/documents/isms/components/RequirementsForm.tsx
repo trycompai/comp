@@ -1,7 +1,7 @@
 'use client';
 
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Button, Input, Textarea } from '@trycompai/design-system';
+import { Button, Field, FieldError, HStack, Input, Textarea } from '@trycompai/design-system';
 import { Add } from '@trycompai/design-system/icons';
 import { Controller, useForm } from 'react-hook-form';
 import { z } from 'zod';
@@ -36,9 +36,12 @@ export function RequirementsForm({ onAdd }: RequirementsFormProps) {
   });
 
   return (
-    <form onSubmit={handleAdd} className="flex flex-col gap-2 rounded-md border p-3">
-      <div className="grid gap-2 md:grid-cols-2">
-        <div className="flex flex-col gap-1">
+    <form
+      onSubmit={handleAdd}
+      className="flex flex-col gap-3 rounded-md border border-border bg-muted/30 p-4"
+    >
+      <div className="grid gap-3 md:grid-cols-2">
+        <Field>
           <Controller
             control={control}
             name="partyName"
@@ -46,11 +49,9 @@ export function RequirementsForm({ onAdd }: RequirementsFormProps) {
               <Input {...field} placeholder="Interested party" aria-label="New requirement party" />
             )}
           />
-          {errors.partyName && (
-            <span className="text-xs text-destructive">{errors.partyName.message}</span>
-          )}
-        </div>
-        <div className="flex flex-col gap-1">
+          <FieldError>{errors.partyName?.message}</FieldError>
+        </Field>
+        <Field>
           <Controller
             control={control}
             name="interestedPartyId"
@@ -62,10 +63,10 @@ export function RequirementsForm({ onAdd }: RequirementsFormProps) {
               />
             )}
           />
-        </div>
+        </Field>
       </div>
-      <div className="grid gap-2 md:grid-cols-2">
-        <div className="flex flex-col gap-1">
+      <div className="grid gap-3 md:grid-cols-2">
+        <Field>
           <Controller
             control={control}
             name="requirement"
@@ -78,11 +79,9 @@ export function RequirementsForm({ onAdd }: RequirementsFormProps) {
               />
             )}
           />
-          {errors.requirement && (
-            <span className="text-xs text-destructive">{errors.requirement.message}</span>
-          )}
-        </div>
-        <div className="flex flex-col gap-1">
+          <FieldError>{errors.requirement?.message}</FieldError>
+        </Field>
+        <Field>
           <Controller
             control={control}
             name="treatment"
@@ -95,12 +94,10 @@ export function RequirementsForm({ onAdd }: RequirementsFormProps) {
               />
             )}
           />
-          {errors.treatment && (
-            <span className="text-xs text-destructive">{errors.treatment.message}</span>
-          )}
-        </div>
+          <FieldError>{errors.treatment?.message}</FieldError>
+        </Field>
       </div>
-      <div className="flex justify-end">
+      <HStack justify="end">
         <Button
           type="submit"
           size="sm"
@@ -111,7 +108,7 @@ export function RequirementsForm({ onAdd }: RequirementsFormProps) {
         >
           Add requirement
         </Button>
-      </div>
+      </HStack>
     </form>
   );
 }

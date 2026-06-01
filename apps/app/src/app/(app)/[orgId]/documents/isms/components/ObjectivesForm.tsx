@@ -3,6 +3,9 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import {
   Button,
+  Field,
+  FieldError,
+  HStack,
   Input,
   Select,
   SelectContent,
@@ -69,9 +72,12 @@ export function ObjectivesForm({ ownerOptions, onAdd }: ObjectivesFormProps) {
   });
 
   return (
-    <form onSubmit={handleAdd} className="flex flex-col gap-3 rounded-md border p-3">
+    <form
+      onSubmit={handleAdd}
+      className="flex flex-col gap-3 rounded-md border border-border bg-muted/30 p-4"
+    >
       <div className="grid gap-3 md:grid-cols-2">
-        <div className="flex flex-col gap-1">
+        <Field>
           <Controller
             control={control}
             name="objective"
@@ -79,11 +85,9 @@ export function ObjectivesForm({ ownerOptions, onAdd }: ObjectivesFormProps) {
               <Textarea {...field} rows={2} placeholder="Objective" aria-label="New objective" />
             )}
           />
-          {errors.objective && (
-            <span className="text-xs text-destructive">{errors.objective.message}</span>
-          )}
-        </div>
-        <div className="flex flex-col gap-1">
+          <FieldError>{errors.objective?.message}</FieldError>
+        </Field>
+        <Field>
           <Controller
             control={control}
             name="target"
@@ -91,8 +95,8 @@ export function ObjectivesForm({ ownerOptions, onAdd }: ObjectivesFormProps) {
               <Input {...field} placeholder="Target (e.g. 99.9%)" aria-label="New objective target" />
             )}
           />
-        </div>
-        <div className="flex flex-col gap-1">
+        </Field>
+        <Field>
           <Controller
             control={control}
             name="ownerMemberId"
@@ -120,8 +124,8 @@ export function ObjectivesForm({ ownerOptions, onAdd }: ObjectivesFormProps) {
               )
             }
           />
-        </div>
-        <div className="flex flex-col gap-1">
+        </Field>
+        <Field>
           <Controller
             control={control}
             name="cadence"
@@ -129,8 +133,8 @@ export function ObjectivesForm({ ownerOptions, onAdd }: ObjectivesFormProps) {
               <Input {...field} placeholder="Cadence (e.g. Quarterly)" aria-label="New objective cadence" />
             )}
           />
-        </div>
-        <div className="flex flex-col gap-1">
+        </Field>
+        <Field>
           <Controller
             control={control}
             name="measurementMethod"
@@ -142,8 +146,8 @@ export function ObjectivesForm({ ownerOptions, onAdd }: ObjectivesFormProps) {
               />
             )}
           />
-        </div>
-        <div className="flex flex-col gap-1">
+        </Field>
+        <Field>
           <Controller
             control={control}
             name="status"
@@ -162,18 +166,20 @@ export function ObjectivesForm({ ownerOptions, onAdd }: ObjectivesFormProps) {
               </Select>
             )}
           />
-        </div>
-        <div className="flex flex-col gap-1 md:col-span-2">
-          <Controller
-            control={control}
-            name="plan"
-            render={({ field: { ref: _ref, ...field } }) => (
-              <Textarea {...field} rows={2} placeholder="Plan to achieve" aria-label="New objective plan" />
-            )}
-          />
+        </Field>
+        <div className="md:col-span-2">
+          <Field>
+            <Controller
+              control={control}
+              name="plan"
+              render={({ field: { ref: _ref, ...field } }) => (
+                <Textarea {...field} rows={2} placeholder="Plan to achieve" aria-label="New objective plan" />
+              )}
+            />
+          </Field>
         </div>
       </div>
-      <div className="flex justify-end">
+      <HStack justify="end">
         <Button
           type="submit"
           size="sm"
@@ -184,7 +190,7 @@ export function ObjectivesForm({ ownerOptions, onAdd }: ObjectivesFormProps) {
         >
           Add objective
         </Button>
-      </div>
+      </HStack>
     </form>
   );
 }

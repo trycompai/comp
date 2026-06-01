@@ -1,6 +1,6 @@
 'use client';
 
-import { Button, Input, Label, Text } from '@trycompai/design-system';
+import { Button, Input, Label, Stack, Text } from '@trycompai/design-system';
 import { Add, TrashCan } from '@trycompai/design-system/icons';
 
 export interface WizardObjective {
@@ -42,15 +42,17 @@ export function WizardObjectivesEditor({ items, onChange }: WizardObjectivesEdit
   };
 
   return (
-    <div className="flex flex-col gap-3">
+    <Stack gap="3">
       {rows.length === 0 ? (
-        <div className="rounded-md border border-dashed py-4 text-center">
-          <Text variant="muted">No objectives yet. Add at least one.</Text>
+        <div className="rounded-md border border-dashed border-border py-4 text-center">
+          <Text size="sm" variant="muted">
+            No objectives yet. Add at least one.
+          </Text>
         </div>
       ) : (
         <ul className="flex flex-col gap-3">
           {rows.map((row, index) => (
-            <li key={index} className="flex flex-col gap-2 rounded-md border p-3">
+            <li key={index} className="flex flex-col gap-2 rounded-md border border-border bg-card p-3">
               <div className="flex flex-col gap-1">
                 <Label htmlFor={`objective-${index}`}>Objective</Label>
                 <Input
@@ -103,6 +105,6 @@ export function WizardObjectivesEditor({ items, onChange }: WizardObjectivesEdit
           Add objective
         </Button>
       </div>
-    </div>
+    </Stack>
   );
 }

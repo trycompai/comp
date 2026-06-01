@@ -7,6 +7,7 @@ import {
   mockHasPermission,
 } from '@/test-utils/mocks/permissions';
 import type { IsmsDocument, IsmsDriftResult, IsmsObjective } from '../isms-types';
+import { ismsDesignSystemMock, ismsIconsMock, ismsSharedMock } from './__test-helpers__/dsMocks';
 
 // ─── Mock usePermissions ─────────────────────────────────────
 vi.mock('@/hooks/use-permissions', () => ({
@@ -53,66 +54,10 @@ vi.mock('swr', () => ({
   default: () => ({ data: hookState.drift, mutate: vi.fn().mockResolvedValue(undefined) }),
 }));
 
-// ─── Mock design system ──────────────────────────────────────
-vi.mock('@trycompai/design-system', () => ({
-  Alert: ({ children, title }: { children?: React.ReactNode; title?: React.ReactNode }) => (
-    <div role="alert">
-      {title}
-      {children}
-    </div>
-  ),
-  AlertTitle: ({ children }: { children: React.ReactNode }) => <strong>{children}</strong>,
-  AlertDescription: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
-  Badge: ({ children }: { children: React.ReactNode }) => <span>{children}</span>,
-  Button: ({ children, onClick, disabled, 'aria-label': ariaLabel }: {
-    children?: React.ReactNode;
-    onClick?: () => void;
-    disabled?: boolean;
-    'aria-label'?: string;
-  }) => (
-    <button onClick={onClick} disabled={disabled} aria-label={ariaLabel}>
-      {children}
-    </button>
-  ),
-  Dialog: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
-  DialogContent: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
-  DialogDescription: ({ children }: { children: React.ReactNode }) => <p>{children}</p>,
-  DialogFooter: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
-  DialogHeader: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
-  DialogTitle: ({ children }: { children: React.ReactNode }) => <h2>{children}</h2>,
-  Input: (props: React.ComponentProps<'input'>) => <input {...props} />,
-  PageHeader: ({ title, actions }: { title: React.ReactNode; actions?: React.ReactNode }) => (
-    <div data-testid="page-header">
-      <h1>{title}</h1>
-      {actions}
-    </div>
-  ),
-  Select: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
-  SelectContent: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
-  SelectItem: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
-  SelectTrigger: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
-  SelectValue: () => <span />,
-  Table: ({ children }: { children: React.ReactNode }) => <table>{children}</table>,
-  TableBody: ({ children }: { children: React.ReactNode }) => <tbody>{children}</tbody>,
-  TableCell: ({ children }: { children: React.ReactNode }) => <td>{children}</td>,
-  TableHead: ({ children }: { children: React.ReactNode }) => <th>{children}</th>,
-  TableHeader: ({ children }: { children: React.ReactNode }) => <thead>{children}</thead>,
-  TableRow: ({ children }: { children: React.ReactNode }) => <tr>{children}</tr>,
-  Text: ({ children }: { children: React.ReactNode }) => <span>{children}</span>,
-  Textarea: (props: React.ComponentProps<'textarea'>) => <textarea {...props} />,
-}));
-
-vi.mock('@trycompai/design-system/icons', () => ({
-  Add: () => <span data-testid="add-icon" />,
-  Checkmark: () => <span />,
-  CloseOutline: () => <span />,
-  Document: () => <span />,
-  Download: () => <span />,
-  MachineLearningModel: () => <span />,
-  Renew: () => <span />,
-  TrashCan: () => <span />,
-  WarningAlt: () => <span />,
-}));
+// ─── Mock design system + icons + shared components ──────────
+vi.mock('@trycompai/design-system', () => ismsDesignSystemMock());
+vi.mock('@trycompai/design-system/icons', () => ismsIconsMock());
+vi.mock('./shared', () => ismsSharedMock());
 
 vi.mock('sonner', () => ({
   toast: { success: vi.fn(), error: vi.fn() },

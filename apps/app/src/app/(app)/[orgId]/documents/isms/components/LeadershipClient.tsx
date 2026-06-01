@@ -1,6 +1,6 @@
 'use client';
 
-import { Button, PageHeader, Text } from '@trycompai/design-system';
+import { Button, Section, Stack } from '@trycompai/design-system';
 import { Document, Download, MachineLearningModel } from '@trycompai/design-system/icons';
 import { useState } from 'react';
 import { toast } from 'sonner';
@@ -16,6 +16,7 @@ import type {
 import { DriftBanner } from './DriftBanner';
 import { IsmsControlMappings } from './IsmsControlMappings';
 import { IsmsApprovalSection, type ApproverOption } from './IsmsApprovalSection';
+import { IsmsPageHeader } from './shared';
 import { LeadershipForm } from './LeadershipForm';
 import type { LeadershipNarrativeValues } from './leadership-schema';
 
@@ -122,11 +123,16 @@ export function LeadershipClient({
   const narrative = extractNarrative(document);
 
   return (
-    <div className="flex flex-col gap-8">
-      <PageHeader
-        title="5.1 Leadership and Commitment"
+    <Stack gap="8">
+      <IsmsPageHeader
+        clause="5.1"
+        title="Leadership and Commitment"
+        description="Record evidence of top-management leadership and commitment to the ISMS (ISO 27001 clause 5.1). Generate from your platform data, then edit the overall statement and each (a)–(h) commitment as needed."
+        status={document?.status ?? null}
+        isStale={drift?.isStale}
+        backHref={`/${organizationId}/documents`}
         actions={
-          <div className="flex items-center gap-2">
+          <>
             {canManage && (
               <Button
                 type="button"
@@ -157,16 +163,9 @@ export function LeadershipClient({
             >
               Export DOCX
             </Button>
-          </div>
+          </>
         }
       />
-      <div className="line-clamp-2">
-        <Text variant="muted">
-          Record evidence of top-management leadership and commitment to the ISMS (ISO 27001 clause
-          5.1). Generate from your platform data, then edit the overall statement and each (a)–(h)
-          commitment as needed.
-        </Text>
-      </div>
 
       {drift?.isStale && (
         <DriftBanner
@@ -197,7 +196,12 @@ export function LeadershipClient({
         />
       )}
 
-      <LeadershipForm narrative={narrative} canEdit={canManage} onSave={handleSaveNarrative} />
-    </div>
+      <Section
+        title="Leadership commitment"
+        description="The overall leadership statement and each clause 5.1 (a)–(h) commitment."
+      >
+        <LeadershipForm narrative={narrative} canEdit={canManage} onSave={handleSaveNarrative} />
+      </Section>
+    </Stack>
   );
 }

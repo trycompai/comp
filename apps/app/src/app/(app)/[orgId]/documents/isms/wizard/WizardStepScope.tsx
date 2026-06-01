@@ -1,6 +1,6 @@
 'use client';
 
-import { Switch, Text } from '@trycompai/design-system';
+import { HStack, Section, Stack, Switch, Text } from '@trycompai/design-system';
 import { Controller, type Control } from 'react-hook-form';
 import { WizardCheckboxList } from './WizardCheckboxList';
 import { WizardEditableList } from './WizardEditableList';
@@ -24,7 +24,11 @@ export function WizardStepScope({ control, defaults }: WizardStepScopeProps) {
     : [];
 
   return (
-    <div className="flex flex-col gap-8">
+    <Section
+      title="Workforce & scope"
+      description="Who is in scope and which capabilities and cloud layers your ISMS actually covers."
+      gap="8"
+    >
       <Controller
         control={control}
         name="hasContractors"
@@ -33,16 +37,16 @@ export function WizardStepScope({ control, defaults }: WizardStepScopeProps) {
             label="Contractors engaged alongside employees?"
             helper="If you use contractors, your workforce becomes a relevant interested party."
           >
-            <div className="flex items-center gap-2">
+            <HStack gap="2" align="center">
               <Switch
                 checked={!!field.value}
                 onCheckedChange={(checked) => field.onChange(checked)}
                 aria-label="Has contractors"
               />
-              <Text variant="muted">
+              <Text size="sm" variant="muted">
                 {field.value ? 'Yes, we engage contractors' : 'No, employees only'}
               </Text>
-            </div>
+            </HStack>
           </WizardField>
         )}
       />
@@ -77,7 +81,7 @@ export function WizardStepScope({ control, defaults }: WizardStepScopeProps) {
               label="Cloud hosting scope split"
               helper="What you are responsible for vs. what your hosting provider covers."
             >
-              <div className="flex flex-col gap-6">
+              <Stack gap="6">
                 <WizardEditableList
                   label="Your responsibility"
                   helper="Layers your organization manages (e.g. data, databases, application configuration)."
@@ -108,11 +112,11 @@ export function WizardStepScope({ control, defaults }: WizardStepScopeProps) {
                     })
                   }
                 />
-              </div>
+              </Stack>
             </WizardField>
           );
         }}
       />
-    </div>
+    </Section>
   );
 }

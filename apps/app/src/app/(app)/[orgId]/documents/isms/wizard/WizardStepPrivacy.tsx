@@ -1,6 +1,6 @@
 'use client';
 
-import { Input, RadioGroup, RadioGroupItem } from '@trycompai/design-system';
+import { HStack, Input, Label, RadioGroup, RadioGroupItem, Section } from '@trycompai/design-system';
 import { Controller, type Control } from 'react-hook-form';
 import { WizardField } from './WizardField';
 import { EU_REP_LABELS, EU_REP_STATUSES, type WizardFormValues } from './wizard-types';
@@ -16,7 +16,11 @@ interface WizardStepPrivacyProps {
  */
 export function WizardStepPrivacy({ control }: WizardStepPrivacyProps) {
   return (
-    <div className="flex flex-col gap-8">
+    <Section
+      title="Privacy & data"
+      description="Whether you need an EU representative under GDPR, and who it is."
+      gap="8"
+    >
       <Controller
         control={control}
         name="euRep"
@@ -39,12 +43,10 @@ export function WizardStepPrivacy({ control }: WizardStepPrivacyProps) {
                 {EU_REP_STATUSES.map((status) => {
                   const id = `eu-rep-${status}`;
                   return (
-                    <div key={status} className="flex items-center gap-2">
+                    <HStack key={status} gap="2" align="center">
                       <RadioGroupItem value={status} id={id} aria-label={EU_REP_LABELS[status]} />
-                      <label htmlFor={id} className="text-sm">
-                        {EU_REP_LABELS[status]}
-                      </label>
-                    </div>
+                      <Label htmlFor={id}>{EU_REP_LABELS[status]}</Label>
+                    </HStack>
                   );
                 })}
               </RadioGroup>
@@ -62,6 +64,6 @@ export function WizardStepPrivacy({ control }: WizardStepPrivacyProps) {
           );
         }}
       />
-    </div>
+    </Section>
   );
 }

@@ -1,6 +1,6 @@
 'use client';
 
-import { Input, Switch, Text } from '@trycompai/design-system';
+import { HStack, Input, Section, Switch, Text } from '@trycompai/design-system';
 import { Controller, type Control } from 'react-hook-form';
 import { WizardField } from './WizardField';
 import { WizardRegulatorSelect } from './WizardRegulatorSelect';
@@ -23,7 +23,11 @@ export function WizardStepCommitments({ control, regulatorOptions }: WizardStepC
   const options = Array.isArray(regulatorOptions) ? regulatorOptions : [];
 
   return (
-    <div className="flex flex-col gap-8">
+    <Section
+      title="External commitments"
+      description="The obligations and parties your certification, insurance, and contracts pull in."
+      gap="8"
+    >
       <Controller
         control={control}
         name="certificationBody"
@@ -57,7 +61,7 @@ export function WizardStepCommitments({ control, regulatorOptions }: WizardStepC
               label="Cyber / professional-indemnity insurance"
               helper="Do you hold cyber or professional-indemnity insurance? If so, name the insurer — they become an interested party."
             >
-              <div className="flex items-center gap-2">
+              <HStack gap="2" align="center">
                 <Switch
                   checked={value.has}
                   onCheckedChange={(checked) =>
@@ -68,8 +72,10 @@ export function WizardStepCommitments({ control, regulatorOptions }: WizardStepC
                   }
                   aria-label="Has insurance"
                 />
-                <Text variant="muted">{value.has ? 'Yes, we hold insurance' : 'No insurance'}</Text>
-              </div>
+                <Text size="sm" variant="muted">
+                  {value.has ? 'Yes, we hold insurance' : 'No insurance'}
+                </Text>
+              </HStack>
               {value.has && (
                 <Input
                   value={value.insurerName}
@@ -101,6 +107,6 @@ export function WizardStepCommitments({ control, regulatorOptions }: WizardStepC
           </WizardField>
         )}
       />
-    </div>
+    </Section>
   );
 }

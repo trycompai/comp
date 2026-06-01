@@ -1,6 +1,6 @@
 'use client';
 
-import { Button, PageHeader, Text } from '@trycompai/design-system';
+import { Button, Section, Stack } from '@trycompai/design-system';
 import { Document, Download, MachineLearningModel } from '@trycompai/design-system/icons';
 import { useState } from 'react';
 import { toast } from 'sonner';
@@ -13,6 +13,7 @@ import { DriftBanner } from './DriftBanner';
 import { InterestedPartiesTable } from './InterestedPartiesTable';
 import { IsmsControlMappings } from './IsmsControlMappings';
 import { IsmsApprovalSection, type ApproverOption } from './IsmsApprovalSection';
+import { IsmsPageHeader } from './shared';
 
 interface InterestedPartiesClientProps {
   organizationId: string;
@@ -139,11 +140,16 @@ export function InterestedPartiesClient({
   const parties = Array.isArray(document?.interestedParties) ? document.interestedParties : [];
 
   return (
-    <div className="flex flex-col gap-8">
-      <PageHeader
-        title="4.2 Interested Parties Register"
+    <Stack gap="8">
+      <IsmsPageHeader
+        clause="4.2"
+        title="Interested Parties Register"
+        description="Capture the interested parties relevant to the ISMS and their needs and expectations (ISO 27001 clause 4.2a). Generate from your platform data, then edit or add parties as needed."
+        status={document?.status ?? null}
+        isStale={drift?.isStale}
+        backHref={`/${organizationId}/documents`}
         actions={
-          <div className="flex items-center gap-2">
+          <>
             {canManage && (
               <Button
                 type="button"
@@ -174,15 +180,9 @@ export function InterestedPartiesClient({
             >
               Export DOCX
             </Button>
-          </div>
+          </>
         }
       />
-      <div className="line-clamp-2">
-        <Text variant="muted">
-          Capture the interested parties relevant to the ISMS and their needs and expectations (ISO
-          27001 clause 4.2a). Generate from your platform data, then edit or add parties as needed.
-        </Text>
-      </div>
 
       {drift?.isStale && (
         <DriftBanner
@@ -213,13 +213,18 @@ export function InterestedPartiesClient({
         />
       )}
 
-      <InterestedPartiesTable
-        parties={parties}
-        canEdit={canManage}
-        onCreate={handleCreateParty}
-        onUpdate={handleUpdateParty}
-        onDelete={handleDeleteParty}
-      />
-    </div>
+      <Section
+        title="Interested parties"
+        description="Parties with a stake in the ISMS and their information-security needs and expectations."
+      >
+        <InterestedPartiesTable
+          parties={parties}
+          canEdit={canManage}
+          onCreate={handleCreateParty}
+          onUpdate={handleUpdateParty}
+          onDelete={handleDeleteParty}
+        />
+      </Section>
+    </Stack>
   );
 }

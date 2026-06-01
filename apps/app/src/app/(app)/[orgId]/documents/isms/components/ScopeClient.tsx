@@ -1,6 +1,6 @@
 'use client';
 
-import { Button, PageHeader, Text } from '@trycompai/design-system';
+import { Button, Section, Stack } from '@trycompai/design-system';
 import { Document, Download, MachineLearningModel } from '@trycompai/design-system/icons';
 import { useState } from 'react';
 import { toast } from 'sonner';
@@ -16,6 +16,7 @@ import type {
 import { DriftBanner } from './DriftBanner';
 import { IsmsControlMappings } from './IsmsControlMappings';
 import { IsmsApprovalSection, type ApproverOption } from './IsmsApprovalSection';
+import { IsmsPageHeader } from './shared';
 import { ScopeForm, type ScopeNarrativeValues } from './ScopeForm';
 
 interface ScopeClientProps {
@@ -139,11 +140,16 @@ export function ScopeClient({
   const narrative = toScopeNarrative(versions[0]?.narrative);
 
   return (
-    <div className="flex flex-col gap-8">
-      <PageHeader
-        title="4.3 ISMS Scope"
+    <Stack gap="8">
+      <IsmsPageHeader
+        clause="4.3"
+        title="ISMS Scope"
+        description="Define the boundaries and applicability of the information security management system (ISO 27001 clause 4.3). Generate from your platform data, then refine the certificate scope, interfaces, dependencies, and exclusions."
+        status={document?.status ?? null}
+        isStale={drift?.isStale}
+        backHref={`/${organizationId}/documents`}
         actions={
-          <div className="flex items-center gap-2">
+          <>
             {canManage && (
               <Button
                 type="button"
@@ -174,16 +180,9 @@ export function ScopeClient({
             >
               Export DOCX
             </Button>
-          </div>
+          </>
         }
       />
-      <div className="line-clamp-2">
-        <Text variant="muted">
-          Define the boundaries and applicability of the information security management system (ISO
-          27001 clause 4.3). Generate from your platform data, then refine the certificate scope,
-          interfaces, dependencies, and exclusions.
-        </Text>
-      </div>
 
       {drift?.isStale && (
         <DriftBanner
@@ -214,12 +213,17 @@ export function ScopeClient({
         />
       )}
 
-      <ScopeForm
-        key={`${narrative.certificateScopeSentence}|${versions[0]?.id ?? 'none'}`}
-        narrative={narrative}
-        canEdit={canManage}
-        onSave={handleSaveNarrative}
-      />
-    </div>
+      <Section
+        title="Scope narrative"
+        description="The certificate scope statement, interfaces, dependencies, and exclusions."
+      >
+        <ScopeForm
+          key={`${narrative.certificateScopeSentence}|${versions[0]?.id ?? 'none'}`}
+          narrative={narrative}
+          canEdit={canManage}
+          onSave={handleSaveNarrative}
+        />
+      </Section>
+    </Stack>
   );
 }

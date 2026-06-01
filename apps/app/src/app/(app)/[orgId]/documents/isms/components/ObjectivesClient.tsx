@@ -1,6 +1,6 @@
 'use client';
 
-import { Button, PageHeader, Text } from '@trycompai/design-system';
+import { Button, Section, Stack } from '@trycompai/design-system';
 import { Document, Download, MachineLearningModel } from '@trycompai/design-system/icons';
 import { useState } from 'react';
 import { toast } from 'sonner';
@@ -12,6 +12,7 @@ import type { IsmsDocument as IsmsDocumentData, IsmsDriftResult } from '../isms-
 import { DriftBanner } from './DriftBanner';
 import { IsmsControlMappings } from './IsmsControlMappings';
 import { IsmsApprovalSection, type ApproverOption } from './IsmsApprovalSection';
+import { IsmsPageHeader } from './shared';
 import { ObjectivesTable } from './ObjectivesTable';
 import type { ObjectiveFormValues } from './ObjectivesForm';
 import type { ObjectiveRowUpdate } from './ObjectivesRow';
@@ -138,11 +139,16 @@ export function ObjectivesClient({
   const objectives = Array.isArray(document?.objectives) ? document.objectives : [];
 
   return (
-    <div className="flex flex-col gap-8">
-      <PageHeader
-        title="6.2 Information Security Objectives and Plan"
+    <Stack gap="8">
+      <IsmsPageHeader
+        clause="6.2"
+        title="Information Security Objectives and Plan"
+        description="Define the information security objectives and the plans to achieve them (ISO 27001 clause 6.2). Generate from your platform data, then edit owners, targets, cadence and status as needed."
+        status={document?.status ?? null}
+        isStale={drift?.isStale}
+        backHref={`/${organizationId}/documents`}
         actions={
-          <div className="flex items-center gap-2">
+          <>
             {canManage && (
               <Button
                 type="button"
@@ -173,16 +179,9 @@ export function ObjectivesClient({
             >
               Export DOCX
             </Button>
-          </div>
+          </>
         }
       />
-      <div className="line-clamp-2">
-        <Text variant="muted">
-          Define the information security objectives and the plans to achieve them (ISO 27001 clause
-          6.2). Generate from your platform data, then edit owners, targets, cadence and status as
-          needed.
-        </Text>
-      </div>
 
       {drift?.isStale && (
         <DriftBanner
@@ -213,14 +212,19 @@ export function ObjectivesClient({
         />
       )}
 
-      <ObjectivesTable
-        objectives={objectives}
-        canEdit={canManage}
-        ownerOptions={approverOptions}
-        onCreate={handleCreate}
-        onUpdate={handleUpdate}
-        onDelete={handleDelete}
-      />
-    </div>
+      <Section
+        title="Objectives & plan"
+        description="Measurable information-security objectives with owners, targets, and review cadence."
+      >
+        <ObjectivesTable
+          objectives={objectives}
+          canEdit={canManage}
+          ownerOptions={approverOptions}
+          onCreate={handleCreate}
+          onUpdate={handleUpdate}
+          onDelete={handleDelete}
+        />
+      </Section>
+    </Stack>
   );
 }

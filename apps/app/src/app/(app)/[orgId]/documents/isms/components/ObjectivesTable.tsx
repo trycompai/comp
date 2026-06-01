@@ -6,10 +6,11 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-  Text,
 } from '@trycompai/design-system';
+import { Flag } from '@trycompai/design-system/icons';
 import type { IsmsObjective } from '../isms-types';
 import type { ApproverOption } from './IsmsApprovalSection';
+import { IsmsRegisterShell } from './shared';
 import { ObjectivesForm, type ObjectiveFormValues } from './ObjectivesForm';
 import { ObjectivesRow, type ObjectiveRowUpdate } from './ObjectivesRow';
 
@@ -33,44 +34,41 @@ export function ObjectivesTable({
   const rows = Array.isArray(objectives) ? objectives : [];
 
   return (
-    <div className="flex flex-col gap-3">
-      <Text size="base" weight="semibold">
-        Objectives
-      </Text>
-      {rows.length === 0 ? (
-        <div className="rounded-md border border-dashed py-6 text-center">
-          <Text variant="muted">No objectives yet.</Text>
-        </div>
-      ) : (
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Source</TableHead>
-              <TableHead>Objective</TableHead>
-              <TableHead>Target</TableHead>
-              <TableHead>Owner</TableHead>
-              <TableHead>Cadence</TableHead>
-              <TableHead>Measurement</TableHead>
-              <TableHead>Plan</TableHead>
-              <TableHead>Status</TableHead>
-              {canEdit && <TableHead>Actions</TableHead>}
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {rows.map((objective) => (
-              <ObjectivesRow
-                key={objective.id}
-                objective={objective}
-                canEdit={canEdit}
-                ownerOptions={ownerOptions}
-                onSave={(update) => onUpdate({ objectiveId: objective.id, update })}
-                onDelete={() => onDelete(objective.id)}
-              />
-            ))}
-          </TableBody>
-        </Table>
-      )}
-      {canEdit && <ObjectivesForm ownerOptions={ownerOptions} onAdd={onCreate} />}
-    </div>
+    <IsmsRegisterShell
+      title="Objectives"
+      count={rows.length}
+      emptyIcon={Flag}
+      emptyTitle="No objectives yet"
+      emptyDescription="Define measurable information-security objectives, assign owners, and track progress toward each target."
+      footer={canEdit ? <ObjectivesForm ownerOptions={ownerOptions} onAdd={onCreate} /> : undefined}
+    >
+      <Table variant="bordered">
+        <TableHeader>
+          <TableRow>
+            <TableHead>Source</TableHead>
+            <TableHead>Objective</TableHead>
+            <TableHead>Target</TableHead>
+            <TableHead>Owner</TableHead>
+            <TableHead>Cadence</TableHead>
+            <TableHead>Measurement</TableHead>
+            <TableHead>Plan</TableHead>
+            <TableHead>Status</TableHead>
+            {canEdit && <TableHead>Actions</TableHead>}
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {rows.map((objective) => (
+            <ObjectivesRow
+              key={objective.id}
+              objective={objective}
+              canEdit={canEdit}
+              ownerOptions={ownerOptions}
+              onSave={(update) => onUpdate({ objectiveId: objective.id, update })}
+              onDelete={() => onDelete(objective.id)}
+            />
+          ))}
+        </TableBody>
+      </Table>
+    </IsmsRegisterShell>
   );
 }

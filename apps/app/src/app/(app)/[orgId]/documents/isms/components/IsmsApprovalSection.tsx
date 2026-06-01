@@ -4,6 +4,7 @@ import {
   Alert,
   AlertDescription,
   AlertTitle,
+  ApprovalBanner,
   Button,
   Dialog,
   DialogContent,
@@ -16,8 +17,9 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
+  Text,
 } from '@trycompai/design-system';
-import { Checkmark, CloseOutline, WarningAlt } from '@trycompai/design-system/icons';
+import { Time } from '@trycompai/design-system/icons';
 import { useState } from 'react';
 import type { IsmsDocument } from '../isms-types';
 
@@ -48,8 +50,6 @@ export function IsmsApprovalSection({
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [selectedApproverId, setSelectedApproverId] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isApproving, setIsApproving] = useState(false);
-  const [isDeclining, setIsDeclining] = useState(false);
 
   const isPending = document.status === 'needs_review';
   const canCurrentUserApprove =
@@ -69,66 +69,29 @@ export function IsmsApprovalSection({
     }
   };
 
-  const handleApprove = async () => {
-    setIsApproving(true);
-    try {
-      await onApprove();
-    } finally {
-      setIsApproving(false);
-    }
-  };
-
-  const handleDecline = async () => {
-    setIsDeclining(true);
-    try {
-      await onDecline();
-    } finally {
-      setIsDeclining(false);
-    }
-  };
-
   return (
     <div className="flex flex-col gap-3">
-      {isPending && (
-        <Alert variant="default" icon={<WarningAlt />}>
-          <AlertTitle>
-            {canCurrentUserApprove ? 'Action Required by You' : 'Pending Approval'}
-          </AlertTitle>
+      {canCurrentUserApprove && (
+        <ApprovalBanner
+          variant="warning"
+          title="Action required by you"
+          description="This document is awaiting your approval."
+          approveText="Approve"
+          rejectText="Decline"
+          onApprove={onApprove}
+          onReject={onDecline}
+        />
+      )}
+
+      {isPending && !canCurrentUserApprove && (
+        <Alert variant="warning" icon={<Time />}>
+          <AlertTitle>Pending approval</AlertTitle>
           <AlertDescription>
-            <div className="flex flex-col gap-2">
-              <div>
-                This document is awaiting approval from{' '}
-                <span className="font-semibold">
-                  {document.approverId === currentMemberId ? 'you' : approverName}
-                </span>
-                .
-              </div>
-              {canCurrentUserApprove && (
-                <div className="mt-2 flex items-center gap-2">
-                  <Button
-                    type="button"
-                    size="sm"
-                    onClick={handleApprove}
-                    disabled={isApproving || isDeclining}
-                    loading={isApproving}
-                    iconLeft={<Checkmark size={16} />}
-                  >
-                    {isApproving ? 'Approving...' : 'Approve'}
-                  </Button>
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant="destructive"
-                    onClick={handleDecline}
-                    disabled={isApproving || isDeclining}
-                    loading={isDeclining}
-                    iconLeft={<CloseOutline size={16} />}
-                  >
-                    {isDeclining ? 'Declining...' : 'Decline'}
-                  </Button>
-                </div>
-              )}
-            </div>
+            This document is awaiting approval from{' '}
+            <Text as="span" size="sm" weight="medium">
+              {approverName}
+            </Text>
+            .
           </AlertDescription>
         </Alert>
       )}

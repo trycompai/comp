@@ -2,7 +2,6 @@
 
 import {
   Badge,
-  Button,
   Input,
   Select,
   SelectContent,
@@ -11,15 +10,23 @@ import {
   SelectValue,
   TableCell,
   TableRow,
+  Text,
   Textarea,
 } from '@trycompai/design-system';
-import { TrashCan } from '@trycompai/design-system/icons';
 import { useState } from 'react';
 import type { IsmsObjective, IsmsObjectiveStatus } from '../isms-types';
 import type { ApproverOption } from './IsmsApprovalSection';
+import { IsmsRowActions, IsmsSourceBadge } from './shared';
 import { OBJECTIVE_STATUS_LABELS } from './ObjectivesForm';
 
 const OBJECTIVE_STATUSES: IsmsObjectiveStatus[] = ['not_started', 'on_track', 'at_risk', 'met'];
+
+const STATUS_VARIANT: Record<IsmsObjectiveStatus, 'outline' | 'secondary' | 'accent' | 'destructive'> = {
+  not_started: 'outline',
+  on_track: 'secondary',
+  at_risk: 'destructive',
+  met: 'accent',
+};
 
 function isObjectiveStatus(value: string | null): value is IsmsObjectiveStatus {
   return value !== null && OBJECTIVE_STATUSES.includes(value as IsmsObjectiveStatus);
@@ -105,37 +112,32 @@ export function ObjectivesRow({
     return (
       <TableRow>
         <TableCell>
-          <Badge variant={objective.source === 'derived' ? 'secondary' : 'outline'}>
-            {objective.source === 'derived' ? 'Auto-derived' : 'Edited'}
-          </Badge>
-          {objective.derivedFrom && (
-            <div className="mt-1">
-              <span className="text-[10px] text-muted-foreground">{objective.derivedFrom}</span>
-            </div>
-          )}
+          <IsmsSourceBadge source={objective.source} derivedFrom={objective.derivedFrom} />
         </TableCell>
         <TableCell>
-          <span className="text-sm">{objective.objective}</span>
+          <Text size="sm">{objective.objective}</Text>
         </TableCell>
         <TableCell>
-          <span className="text-sm">{objective.target ?? '—'}</span>
+          <Text size="sm">{objective.target ?? '—'}</Text>
         </TableCell>
         <TableCell>
-          <span className="text-sm">
+          <Text size="sm">
             {ownerDisplay({ ownerMemberId: objective.ownerMemberId, ownerOptions })}
-          </span>
+          </Text>
         </TableCell>
         <TableCell>
-          <span className="text-sm">{objective.cadence ?? '—'}</span>
+          <Text size="sm">{objective.cadence ?? '—'}</Text>
         </TableCell>
         <TableCell>
-          <span className="text-sm">{objective.measurementMethod ?? '—'}</span>
+          <Text size="sm">{objective.measurementMethod ?? '—'}</Text>
         </TableCell>
         <TableCell>
-          <span className="text-sm">{objective.plan ?? '—'}</span>
+          <Text size="sm">{objective.plan ?? '—'}</Text>
         </TableCell>
         <TableCell>
-          <span className="text-sm">{OBJECTIVE_STATUS_LABELS[objective.status]}</span>
+          <Badge variant={STATUS_VARIANT[objective.status]}>
+            {OBJECTIVE_STATUS_LABELS[objective.status]}
+          </Badge>
         </TableCell>
       </TableRow>
     );
@@ -144,14 +146,7 @@ export function ObjectivesRow({
   return (
     <TableRow>
       <TableCell>
-        <Badge variant={objective.source === 'derived' ? 'secondary' : 'outline'}>
-          {objective.source === 'derived' ? 'Auto-derived' : 'Edited'}
-        </Badge>
-        {objective.derivedFrom && (
-          <div className="mt-1">
-            <span className="text-[10px] text-muted-foreground">{objective.derivedFrom}</span>
-          </div>
-        )}
+        <IsmsSourceBadge source={objective.source} derivedFrom={objective.derivedFrom} />
       </TableCell>
       <TableCell>
         <Textarea
@@ -243,28 +238,14 @@ export function ObjectivesRow({
         </Select>
       </TableCell>
       <TableCell>
-        <div className="flex items-center gap-2">
-          <Button
-            type="button"
-            size="sm"
-            variant="secondary"
-            onClick={handleSave}
-            disabled={!isDirty || isSaving || isDeleting}
-            loading={isSaving}
-          >
-            Save
-          </Button>
-          <Button
-            type="button"
-            size="sm"
-            variant="ghost"
-            onClick={handleDelete}
-            disabled={isSaving || isDeleting}
-            loading={isDeleting}
-            iconLeft={<TrashCan size={16} />}
-            aria-label="Delete objective"
-          />
-        </div>
+        <IsmsRowActions
+          onSave={handleSave}
+          onDelete={handleDelete}
+          isDirty={isDirty}
+          isSaving={isSaving}
+          isDeleting={isDeleting}
+          deleteLabel="Delete objective"
+        />
       </TableCell>
     </TableRow>
   );

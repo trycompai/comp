@@ -1,6 +1,6 @@
 'use client';
 
-import { Checkbox, Text } from '@trycompai/design-system';
+import { Checkbox, Label, Text } from '@trycompai/design-system';
 
 interface WizardCheckboxListProps {
   /** The full set of options to tick (e.g. all detected capabilities). */
@@ -35,14 +35,16 @@ export function WizardCheckboxList({
 
   if (safeOptions.length === 0) {
     return (
-      <div className="rounded-md border border-dashed py-4 text-center">
-        <Text variant="muted">{emptyText}</Text>
+      <div className="rounded-md border border-dashed border-border py-4 text-center">
+        <Text size="sm" variant="muted">
+          {emptyText}
+        </Text>
       </div>
     );
   }
 
   return (
-    <ul className="flex flex-col gap-2">
+    <ul className="flex flex-col gap-2.5">
       {safeOptions.map((option) => {
         const id = `capability-${option}`;
         return (
@@ -53,9 +55,7 @@ export function WizardCheckboxList({
               onCheckedChange={(next) => handleToggle({ option, isChecked: next })}
               aria-label={option}
             />
-            <label htmlFor={id} className="text-sm">
-              {option}
-            </label>
+            <Label htmlFor={id}>{option}</Label>
           </li>
         );
       })}

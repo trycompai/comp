@@ -32,6 +32,30 @@ vi.mock('next/navigation', () => ({
 // ─── Mock design system ──────────────────────────────────────
 vi.mock('@trycompai/design-system', () => ({
   Badge: ({ children }: { children: React.ReactNode }) => <span>{children}</span>,
+  Card: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+  Field: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+  FieldDescription: ({ children }: { children: React.ReactNode }) => <p>{children}</p>,
+  FieldError: ({ children }: { children: React.ReactNode }) => <div role="alert">{children}</div>,
+  FieldLabel: ({ children }: { children: React.ReactNode }) => <span>{children}</span>,
+  Heading: ({ children }: { children: React.ReactNode }) => <h2>{children}</h2>,
+  HStack: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+  Section: ({
+    title,
+    description,
+    children,
+  }: {
+    title?: React.ReactNode;
+    description?: React.ReactNode;
+    children: React.ReactNode;
+  }) => (
+    <section>
+      {title && <h3>{title}</h3>}
+      {description && <p>{description}</p>}
+      {children}
+    </section>
+  ),
+  Spinner: () => <span role="status" />,
+  Stack: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
   Button: ({
     children,
     onClick,
@@ -121,6 +145,7 @@ vi.mock('@trycompai/design-system/icons', () => ({
   ArrowRight: () => <span />,
   Certificate: () => <span />,
   Checkmark: () => <span />,
+  MagicWand: () => <span />,
   Save: () => <span />,
   TrashCan: () => <span />,
 }));

@@ -1,6 +1,6 @@
 'use client';
 
-import { Button, PageHeader, Text } from '@trycompai/design-system';
+import { Button, Section, Stack } from '@trycompai/design-system';
 import { Document, Download, MachineLearningModel } from '@trycompai/design-system/icons';
 import { useState } from 'react';
 import { toast } from 'sonner';
@@ -12,6 +12,7 @@ import type { IsmsDocument as IsmsDocumentData, IsmsDriftResult } from '../isms-
 import { DriftBanner } from './DriftBanner';
 import { IsmsControlMappings } from './IsmsControlMappings';
 import { IsmsApprovalSection, type ApproverOption } from './IsmsApprovalSection';
+import { IsmsPageHeader } from './shared';
 import { RequirementsTable } from './RequirementsTable';
 import type { RequirementFormValues } from './RequirementsForm';
 import type { RequirementRowValues } from './RequirementsRow';
@@ -143,11 +144,16 @@ export function RequirementsClient({
     : [];
 
   return (
-    <div className="flex flex-col gap-8">
-      <PageHeader
-        title="4.2 Interested Parties Requirements & ISMS Treatment"
+    <Stack gap="8">
+      <IsmsPageHeader
+        clause="4.2"
+        title="Interested Parties Requirements & ISMS Treatment"
+        description="Capture the requirements of interested parties relevant to information security and how the ISMS addresses each one (ISO 27001 clauses 4.2b and 4.2c). Generate from your platform data, then edit or add requirements as needed."
+        status={document?.status ?? null}
+        isStale={drift?.isStale}
+        backHref={`/${organizationId}/documents`}
         actions={
-          <div className="flex items-center gap-2">
+          <>
             {canManage && (
               <Button
                 type="button"
@@ -178,16 +184,9 @@ export function RequirementsClient({
             >
               Export DOCX
             </Button>
-          </div>
+          </>
         }
       />
-      <div className="line-clamp-2">
-        <Text variant="muted">
-          Capture the requirements of interested parties relevant to information security and how
-          the ISMS addresses each one (ISO 27001 clauses 4.2b and 4.2c). Generate from your platform
-          data, then edit or add requirements as needed.
-        </Text>
-      </div>
 
       {drift?.isStale && (
         <DriftBanner
@@ -218,13 +217,18 @@ export function RequirementsClient({
         />
       )}
 
-      <RequirementsTable
-        requirements={requirements}
-        canEdit={canManage}
-        onCreate={handleCreate}
-        onUpdate={handleUpdate}
-        onDelete={handleDelete}
-      />
-    </div>
+      <Section
+        title="Requirements & treatment"
+        description="Each interested-party requirement and how the ISMS treats it."
+      >
+        <RequirementsTable
+          requirements={requirements}
+          canEdit={canManage}
+          onCreate={handleCreate}
+          onUpdate={handleUpdate}
+          onDelete={handleDelete}
+        />
+      </Section>
+    </Stack>
   );
 }

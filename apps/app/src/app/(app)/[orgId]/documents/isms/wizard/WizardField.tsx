@@ -1,6 +1,6 @@
 'use client';
 
-import { Text } from '@trycompai/design-system';
+import { Field, FieldDescription, FieldError, FieldLabel } from '@trycompai/design-system';
 import type { ReactNode } from 'react';
 
 interface WizardFieldProps {
@@ -11,22 +11,17 @@ interface WizardFieldProps {
 }
 
 /**
- * Shared question wrapper for wizard steps: a bold label, optional helper text,
- * the control, and an inline validation error. Keeps each step component small.
+ * Shared question wrapper for wizard steps: a DS Field with a label, optional
+ * helper description, the control, and an inline validation error. Built on the
+ * design-system Field primitives so every question is spaced identically.
  */
 export function WizardField({ label, helper, error, children }: WizardFieldProps) {
   return (
-    <div className="flex flex-col gap-2">
-      <Text size="base" weight="semibold">
-        {label}
-      </Text>
-      {helper && (
-        <div className="text-muted-foreground">
-          <Text variant="muted">{helper}</Text>
-        </div>
-      )}
+    <Field>
+      <FieldLabel>{label}</FieldLabel>
+      {helper && <FieldDescription>{helper}</FieldDescription>}
       {children}
-      {error && <span className="text-xs text-destructive">{error}</span>}
-    </div>
+      {error && <FieldError>{error}</FieldError>}
+    </Field>
   );
 }

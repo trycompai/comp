@@ -1,8 +1,8 @@
 'use client';
 
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Button, PageHeader, Text } from '@trycompai/design-system';
-import { ArrowLeft, ArrowRight, Checkmark, Save } from '@trycompai/design-system/icons';
+import { Button, Card, Heading, Spinner, Stack, Text } from '@trycompai/design-system';
+import { ArrowLeft, ArrowRight, Checkmark, MagicWand, Save } from '@trycompai/design-system/icons';
 import { useRouter } from 'next/navigation';
 import { useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
@@ -23,6 +23,28 @@ interface WizardClientProps {
   organizationId: string;
   frameworkId: string;
   fallbackData: WizardProfileResponse | null;
+}
+
+/** Calm full-bleed transition shown while documents are generated. */
+function WizardGenerating() {
+  return (
+    <div className="flex min-h-80 items-center justify-center">
+      <Stack gap="4" align="center">
+        <div className="flex size-12 items-center justify-center rounded-full bg-primary/10 text-primary">
+          <Spinner />
+        </div>
+        <Stack gap="1" align="center">
+          <Heading level="2">Generating your ISMS</Heading>
+          <div className="max-w-md text-center">
+            <Text size="sm" variant="muted">
+              We are saving your answers and regenerating your six foundational documents. This only
+              takes a moment.
+            </Text>
+          </div>
+        </Stack>
+      </Stack>
+    </div>
+  );
 }
 
 /**
@@ -109,7 +131,6 @@ export function WizardClient({ organizationId, frameworkId, fallbackData }: Wiza
       router.push(`/${organizationId}/documents?tab=iso-27001`);
     } catch (caught) {
       toast.error(caught instanceof Error ? caught.message : 'Failed to finish setup');
-    } finally {
       setIsFinishing(false);
     }
   };
@@ -117,70 +138,88 @@ export function WizardClient({ organizationId, frameworkId, fallbackData }: Wiza
   const busy = isSaving || isFinishing;
 
   return (
-    <div className="flex flex-col gap-8">
-      <PageHeader title="ISMS setup wizard" />
-      <div className="line-clamp-2">
-        <Text variant="muted">
-          Confirm or edit a handful of answers we cannot derive automatically. Most fields are
-          pre-filled — this usually takes 10–15 minutes. We will regenerate your foundational
-          documents when you finish.
-        </Text>
-      </div>
-
-      <WizardProgress steps={WIZARD_STEPS} currentStep={stepIndex} />
-
-      <WizardStepContent
-        stepId={step.id}
-        control={control}
-        errors={formState.errors}
-        members={members}
-        defaults={profileDefaults}
-      />
-
-      <div className="flex items-center justify-between">
-        <Button
-          type="button"
-          variant="outline"
-          onClick={handleBack}
-          disabled={stepIndex === 0 || busy}
-          iconLeft={<ArrowLeft size={16} />}
-        >
-          Back
-        </Button>
-        <div className="flex items-center gap-2">
-          <Button
-            type="button"
-            variant="secondary"
-            onClick={handleSaveProgress}
-            disabled={busy}
-            loading={isSaving}
-            iconLeft={<Save size={16} />}
-          >
-            Save progress
-          </Button>
-          {isLastStep ? (
-            <Button
-              type="button"
-              onClick={handleFinish}
-              disabled={busy}
-              loading={isFinishing}
-              iconLeft={<Checkmark size={16} />}
-            >
-              {isFinishing ? 'Finishing…' : 'Finish & generate'}
-            </Button>
-          ) : (
-            <Button
-              type="button"
-              onClick={handleNext}
-              disabled={busy}
-              loading={isSaving}
-              iconRight={<ArrowRight size={16} />}
-            >
-              Next
-            </Button>
-          )}
+    <Stack gap="8">
+      <Stack gap="2">
+        <div className="flex items-center gap-2 text-primary">
+          <MagicWand size={18} />
+          <Text size="sm" weight="semibold" variant="primary">
+            ISMS setup wizard
+          </Text>
         </div>
-      </div>
-    </div>
+        <Heading level="1">Set up your ISMS</Heading>
+        <div className="max-w-2xl">
+          <Text size="sm" variant="muted">
+            Confirm or edit a handful of answers we cannot derive automatically. Most fields are
+            pre-filled — this usually takes 10–15 minutes. We will regenerate your foundational
+            documents when you finish.
+          </Text>
+        </div>
+      </Stack>
+
+      {isFinishing ? (
+        <Card>
+          <WizardGenerating />
+        </Card>
+      ) : (
+        <>
+          <WizardProgress steps={WIZARD_STEPS} currentStep={stepIndex} />
+
+          <Card>
+            <WizardStepContent
+              stepId={step.id}
+              control={control}
+              errors={formState.errors}
+              members={members}
+              defaults={profileDefaults}
+            />
+          </Card>
+
+          <div className="flex items-center justify-between gap-3">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={handleBack}
+              disabled={stepIndex === 0 || busy}
+              iconLeft={<ArrowLeft size={16} />}
+            >
+              Back
+            </Button>
+            <div className="flex items-center gap-2">
+              <Button
+                type="button"
+                variant="ghost"
+                onClick={handleSaveProgress}
+                disabled={busy}
+                loading={isSaving}
+                iconLeft={<Save size={16} />}
+              >
+                Save progress
+              </Button>
+              {isLastStep ? (
+                <Button
+                  type="button"
+                  onClick={handleFinish}
+                  disabled={busy}
+                  loading={isFinishing}
+                  iconLeft={<Checkmark size={16} />}
+                >
+                  Finish & generate
+                </Button>
+              ) : (
+                <Button
+                  type="button"
+                  onClick={handleNext}
+                  disabled={busy}
+                  loading={isSaving}
+                  iconRight={<ArrowRight size={16} />}
+                >
+                  Next
+                </Button>
+              )}
+            </div>
+          </div>
+        </>
+      )}
+    </Stack>
   );
 }

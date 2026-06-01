@@ -1,6 +1,6 @@
 'use client';
 
-import { Button, Input, Text } from '@trycompai/design-system';
+import { Button, Input, Label, Stack, Text } from '@trycompai/design-system';
 import { Add, TrashCan } from '@trycompai/design-system/icons';
 import { useState } from 'react';
 
@@ -43,28 +43,28 @@ export function WizardEditableList({
   };
 
   return (
-    <div className="flex flex-col gap-2">
-      <Text size="base" weight="semibold">
-        {label}
-      </Text>
+    <Stack gap="2">
+      <Label>{label}</Label>
       {helper && (
-        <div className="text-muted-foreground">
-          <Text variant="muted">{helper}</Text>
-        </div>
+        <Text size="sm" variant="muted">
+          {helper}
+        </Text>
       )}
 
       {safeItems.length === 0 ? (
-        <div className="rounded-md border border-dashed py-4 text-center">
-          <Text variant="muted">{emptyText}</Text>
+        <div className="rounded-md border border-dashed border-border py-4 text-center">
+          <Text size="sm" variant="muted">
+            {emptyText}
+          </Text>
         </div>
       ) : (
         <ul className="flex flex-col gap-2">
           {safeItems.map((item, index) => (
             <li
               key={`${item}-${index}`}
-              className="flex items-center justify-between gap-2 rounded-md border px-3 py-2"
+              className="flex items-center justify-between gap-2 rounded-md border border-border bg-card px-3 py-2"
             >
-              <span className="text-sm">{item}</span>
+              <Text size="sm">{item}</Text>
               <Button
                 type="button"
                 size="sm"
@@ -97,6 +97,6 @@ export function WizardEditableList({
           Add
         </Button>
       </div>
-    </div>
+    </Stack>
   );
 }

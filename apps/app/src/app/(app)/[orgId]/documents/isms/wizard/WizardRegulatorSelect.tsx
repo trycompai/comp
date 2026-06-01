@@ -1,6 +1,6 @@
 'use client';
 
-import { Badge, Button, Checkbox, Input, Text } from '@trycompai/design-system';
+import { Badge, Button, Checkbox, Input, Label, Stack, Text } from '@trycompai/design-system';
 import { Add, TrashCan } from '@trycompai/design-system/icons';
 import { useState } from 'react';
 import {
@@ -69,8 +69,8 @@ export function WizardRegulatorSelect({ options, value, onChange }: WizardRegula
   };
 
   return (
-    <div className="flex flex-col gap-3">
-      <ul className="flex flex-col gap-2">
+    <Stack gap="3">
+      <ul className="flex flex-col gap-2.5">
         {options.map((option) => {
           const checked = selected.includes(option);
           const id = `regulator-${option}`;
@@ -82,9 +82,7 @@ export function WizardRegulatorSelect({ options, value, onChange }: WizardRegula
                 onCheckedChange={(next) => handleToggle({ option, checked: next })}
                 aria-label={regulatorLabel(option)}
               />
-              <label htmlFor={id} className="text-sm">
-                {regulatorLabel(option)}
-              </label>
+              <Label htmlFor={id}>{regulatorLabel(option)}</Label>
             </li>
           );
         })}
@@ -95,11 +93,11 @@ export function WizardRegulatorSelect({ options, value, onChange }: WizardRegula
           {customSelections.map((entry) => (
             <li
               key={entry}
-              className="flex items-center justify-between gap-2 rounded-md border px-3 py-2"
+              className="flex items-center justify-between gap-2 rounded-md border border-border bg-card px-3 py-2"
             >
               <div className="flex items-center gap-2">
                 <Badge variant="secondary">Custom</Badge>
-                <span className="text-sm">{customLabel(entry)}</span>
+                <Text size="sm">{customLabel(entry)}</Text>
               </div>
               <Button
                 type="button"
@@ -114,10 +112,10 @@ export function WizardRegulatorSelect({ options, value, onChange }: WizardRegula
         </ul>
       )}
 
-      <div className="flex flex-col gap-1">
-        <div className="text-muted-foreground">
-          <Text variant="muted">Add another regulator not listed above.</Text>
-        </div>
+      <div className="flex flex-col gap-1.5">
+        <Text size="sm" variant="muted">
+          Add another regulator not listed above.
+        </Text>
         <div className="flex items-center gap-2">
           <Input
             value={draft}
@@ -138,6 +136,6 @@ export function WizardRegulatorSelect({ options, value, onChange }: WizardRegula
           </Button>
         </div>
       </div>
-    </div>
+    </Stack>
   );
 }

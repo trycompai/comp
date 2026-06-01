@@ -1,7 +1,7 @@
 'use client';
 
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Button, Textarea } from '@trycompai/design-system';
+import { Button, Field, FieldError, HStack, Textarea } from '@trycompai/design-system';
 import { Add } from '@trycompai/design-system/icons';
 import { Controller, useForm } from 'react-hook-form';
 import { z } from 'zod';
@@ -36,9 +36,12 @@ export function AddIssueForm({ kind, onAdd }: AddIssueFormProps) {
   });
 
   return (
-    <form onSubmit={handleAdd} className="flex flex-col gap-2 rounded-md border p-3">
-      <div className="grid gap-2 md:grid-cols-2">
-        <div className="flex flex-col gap-1">
+    <form
+      onSubmit={handleAdd}
+      className="flex flex-col gap-3 rounded-md border border-border bg-muted/30 p-4"
+    >
+      <div className="grid gap-3 md:grid-cols-2">
+        <Field>
           <Controller
             control={control}
             name="description"
@@ -51,11 +54,9 @@ export function AddIssueForm({ kind, onAdd }: AddIssueFormProps) {
               />
             )}
           />
-          {errors.description && (
-            <span className="text-xs text-destructive">{errors.description.message}</span>
-          )}
-        </div>
-        <div className="flex flex-col gap-1">
+          <FieldError>{errors.description?.message}</FieldError>
+        </Field>
+        <Field>
           <Controller
             control={control}
             name="effect"
@@ -68,12 +69,10 @@ export function AddIssueForm({ kind, onAdd }: AddIssueFormProps) {
               />
             )}
           />
-          {errors.effect && (
-            <span className="text-xs text-destructive">{errors.effect.message}</span>
-          )}
-        </div>
+          <FieldError>{errors.effect?.message}</FieldError>
+        </Field>
       </div>
-      <div className="flex justify-end">
+      <HStack justify="end">
         <Button
           type="submit"
           size="sm"
@@ -84,7 +83,7 @@ export function AddIssueForm({ kind, onAdd }: AddIssueFormProps) {
         >
           Add {kind} issue
         </Button>
-      </div>
+      </HStack>
     </form>
   );
 }

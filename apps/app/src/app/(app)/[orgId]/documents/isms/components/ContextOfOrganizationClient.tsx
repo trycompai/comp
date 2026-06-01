@@ -1,6 +1,6 @@
 'use client';
 
-import { Button, PageHeader, Text } from '@trycompai/design-system';
+import { Button, Section, Stack } from '@trycompai/design-system';
 import { Document, Download, MachineLearningModel } from '@trycompai/design-system/icons';
 import { useState } from 'react';
 import { toast } from 'sonner';
@@ -17,6 +17,7 @@ import { DriftBanner } from './DriftBanner';
 import { IsmsControlMappings } from './IsmsControlMappings';
 import { IssuesRegister } from './IssuesRegister';
 import { IsmsApprovalSection, type ApproverOption } from './IsmsApprovalSection';
+import { IsmsPageHeader } from './shared';
 
 interface ContextOfOrganizationClientProps {
   organizationId: string;
@@ -139,11 +140,16 @@ export function ContextOfOrganizationClient({
   const issues = Array.isArray(document?.contextIssues) ? document.contextIssues : [];
 
   return (
-    <div className="flex flex-col gap-8">
-      <PageHeader
-        title="4.1 Context of the Organization"
+    <Stack gap="8">
+      <IsmsPageHeader
+        clause="4.1"
+        title="Context of the Organization"
+        description="Capture the internal and external issues relevant to the ISMS and their effect on its objectives (ISO 27001 clause 4.1). Generate from your platform data, then edit or add issues as needed."
+        status={document?.status ?? null}
+        isStale={drift?.isStale}
+        backHref={`/${organizationId}/documents`}
         actions={
-          <div className="flex items-center gap-2">
+          <>
             {canManage && (
               <Button
                 type="button"
@@ -174,16 +180,9 @@ export function ContextOfOrganizationClient({
             >
               Export DOCX
             </Button>
-          </div>
+          </>
         }
       />
-      <div className="line-clamp-2">
-        <Text variant="muted">
-          Capture the internal and external issues relevant to the ISMS and their effect on its
-          objectives (ISO 27001 clause 4.1). Generate from your platform data, then edit or add
-          issues as needed.
-        </Text>
-      </div>
 
       {drift?.isStale && (
         <DriftBanner
@@ -214,13 +213,18 @@ export function ContextOfOrganizationClient({
         />
       )}
 
-      <IssuesRegister
-        issues={issues}
-        canEdit={canManage}
-        onCreate={handleCreateIssue}
-        onUpdate={handleUpdateIssue}
-        onDelete={handleDeleteIssue}
-      />
-    </div>
+      <Section
+        title="Issues register"
+        description="Internal and external issues that affect the ISMS, grouped by origin."
+      >
+        <IssuesRegister
+          issues={issues}
+          canEdit={canManage}
+          onCreate={handleCreateIssue}
+          onUpdate={handleUpdateIssue}
+          onDelete={handleDeleteIssue}
+        />
+      </Section>
+    </Stack>
   );
 }

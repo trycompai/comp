@@ -1,5 +1,6 @@
 'use client';
 
+import { Section } from '@trycompai/design-system';
 import { Controller, type Control } from 'react-hook-form';
 import { WizardEditableList } from './WizardEditableList';
 import { WizardField } from './WizardField';
@@ -17,7 +18,11 @@ interface WizardStepOutcomesProps {
  */
 export function WizardStepOutcomes({ control }: WizardStepOutcomesProps) {
   return (
-    <div className="flex flex-col gap-8">
+    <Section
+      title="Targets & outcomes"
+      description="The measurable objectives and intended outcomes your ISMS is built to achieve."
+      gap="8"
+    >
       <Controller
         control={control}
         name="objectives"
@@ -52,6 +57,6 @@ export function WizardStepOutcomes({ control }: WizardStepOutcomesProps) {
           );
         }}
       />
-    </div>
+    </Section>
   );
 }

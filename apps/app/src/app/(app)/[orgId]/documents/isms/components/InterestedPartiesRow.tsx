@@ -1,9 +1,9 @@
 'use client';
 
-import { Badge, Button, Input, TableCell, TableRow, Textarea } from '@trycompai/design-system';
-import { TrashCan } from '@trycompai/design-system/icons';
+import { Input, TableCell, TableRow, Text, Textarea } from '@trycompai/design-system';
 import { useState } from 'react';
 import type { IsmsInterestedParty } from '../isms-types';
+import { IsmsRowActions, IsmsSourceBadge } from './shared';
 
 interface InterestedPartiesRowProps {
   party: IsmsInterestedParty;
@@ -49,14 +49,7 @@ export function InterestedPartiesRow({ party, canEdit, onSave, onDelete }: Inter
   return (
     <TableRow>
       <TableCell>
-        <Badge variant={party.source === 'derived' ? 'secondary' : 'outline'}>
-          {party.source === 'derived' ? 'Auto-derived' : 'Edited'}
-        </Badge>
-        {party.derivedFrom && (
-          <div className="mt-1">
-            <span className="text-[10px] text-muted-foreground">{party.derivedFrom}</span>
-          </div>
-        )}
+        <IsmsSourceBadge source={party.source} derivedFrom={party.derivedFrom} />
       </TableCell>
       <TableCell>
         {canEdit ? (
@@ -66,7 +59,7 @@ export function InterestedPartiesRow({ party, canEdit, onSave, onDelete }: Inter
             aria-label="Interested party name"
           />
         ) : (
-          <span className="text-sm">{party.name}</span>
+          <Text size="sm">{party.name}</Text>
         )}
       </TableCell>
       <TableCell>
@@ -77,7 +70,7 @@ export function InterestedPartiesRow({ party, canEdit, onSave, onDelete }: Inter
             aria-label="Interested party category"
           />
         ) : (
-          <span className="text-sm">{party.category}</span>
+          <Text size="sm">{party.category}</Text>
         )}
       </TableCell>
       <TableCell>
@@ -89,33 +82,19 @@ export function InterestedPartiesRow({ party, canEdit, onSave, onDelete }: Inter
             aria-label="Interested party needs and expectations"
           />
         ) : (
-          <span className="text-sm">{party.needsExpectations}</span>
+          <Text size="sm">{party.needsExpectations}</Text>
         )}
       </TableCell>
       {canEdit && (
         <TableCell>
-          <div className="flex items-center gap-2">
-            <Button
-              type="button"
-              size="sm"
-              variant="secondary"
-              onClick={handleSave}
-              disabled={!isDirty || isSaving || isDeleting}
-              loading={isSaving}
-            >
-              Save
-            </Button>
-            <Button
-              type="button"
-              size="sm"
-              variant="ghost"
-              onClick={handleDelete}
-              disabled={isSaving || isDeleting}
-              loading={isDeleting}
-              iconLeft={<TrashCan size={16} />}
-              aria-label="Delete interested party"
-            />
-          </div>
+          <IsmsRowActions
+            onSave={handleSave}
+            onDelete={handleDelete}
+            isDirty={isDirty}
+            isSaving={isSaving}
+            isDeleting={isDeleting}
+            deleteLabel="Delete interested party"
+          />
         </TableCell>
       )}
     </TableRow>

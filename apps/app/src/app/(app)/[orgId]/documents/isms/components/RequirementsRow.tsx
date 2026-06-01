@@ -1,9 +1,9 @@
 'use client';
 
-import { Badge, Button, Input, TableCell, TableRow, Textarea } from '@trycompai/design-system';
-import { TrashCan } from '@trycompai/design-system/icons';
+import { Input, Stack, TableCell, TableRow, Text, Textarea } from '@trycompai/design-system';
 import { useState } from 'react';
 import type { IsmsInterestedPartyRequirement } from '../isms-types';
+import { IsmsRowActions, IsmsSourceBadge } from './shared';
 
 export interface RequirementRowValues {
   partyName: string;
@@ -54,18 +54,11 @@ export function RequirementsRow({ requirement, canEdit, onSave, onDelete }: Requ
   return (
     <TableRow>
       <TableCell>
-        <Badge variant={requirement.source === 'derived' ? 'secondary' : 'outline'}>
-          {requirement.source === 'derived' ? 'Auto-derived' : 'Edited'}
-        </Badge>
-        {requirement.derivedFrom && (
-          <div className="mt-1">
-            <span className="text-[10px] text-muted-foreground">{requirement.derivedFrom}</span>
-          </div>
-        )}
+        <IsmsSourceBadge source={requirement.source} derivedFrom={requirement.derivedFrom} />
       </TableCell>
       <TableCell>
         {canEdit ? (
-          <div className="flex flex-col gap-1">
+          <Stack gap="1">
             <Input
               value={partyName}
               onChange={(event) => setPartyName(event.target.value)}
@@ -77,9 +70,9 @@ export function RequirementsRow({ requirement, canEdit, onSave, onDelete }: Requ
               placeholder="Linked party ID (optional)"
               aria-label="Requirement party ID"
             />
-          </div>
+          </Stack>
         ) : (
-          <span className="text-sm">{requirement.partyName}</span>
+          <Text size="sm">{requirement.partyName}</Text>
         )}
       </TableCell>
       <TableCell>
@@ -91,7 +84,7 @@ export function RequirementsRow({ requirement, canEdit, onSave, onDelete }: Requ
             aria-label="Requirement description"
           />
         ) : (
-          <span className="text-sm">{requirement.requirement}</span>
+          <Text size="sm">{requirement.requirement}</Text>
         )}
       </TableCell>
       <TableCell>
@@ -103,33 +96,19 @@ export function RequirementsRow({ requirement, canEdit, onSave, onDelete }: Requ
             aria-label="Requirement treatment"
           />
         ) : (
-          <span className="text-sm">{requirement.treatment}</span>
+          <Text size="sm">{requirement.treatment}</Text>
         )}
       </TableCell>
       {canEdit && (
         <TableCell>
-          <div className="flex items-center gap-2">
-            <Button
-              type="button"
-              size="sm"
-              variant="secondary"
-              onClick={handleSave}
-              disabled={!isDirty || isSaving || isDeleting}
-              loading={isSaving}
-            >
-              Save
-            </Button>
-            <Button
-              type="button"
-              size="sm"
-              variant="ghost"
-              onClick={handleDelete}
-              disabled={isSaving || isDeleting}
-              loading={isDeleting}
-              iconLeft={<TrashCan size={16} />}
-              aria-label="Delete requirement"
-            />
-          </div>
+          <IsmsRowActions
+            onSave={handleSave}
+            onDelete={handleDelete}
+            isDirty={isDirty}
+            isSaving={isSaving}
+            isDeleting={isDeleting}
+            deleteLabel="Delete requirement"
+          />
         </TableCell>
       )}
     </TableRow>

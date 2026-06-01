@@ -80,12 +80,13 @@ vi.mock('@trycompai/design-system', () => ({
   Label: ({ children, htmlFor }: { children: React.ReactNode; htmlFor?: string }) => (
     <label htmlFor={htmlFor}>{children}</label>
   ),
-  PageHeader: ({ title, actions }: { title: React.ReactNode; actions?: React.ReactNode }) => (
-    <div data-testid="page-header">
-      <h1>{title}</h1>
-      {actions}
-    </div>
+  Section: ({ title, children }: { title?: React.ReactNode; children: React.ReactNode }) => (
+    <section>
+      {title ? <h2>{title}</h2> : null}
+      {children}
+    </section>
   ),
+  Stack: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
   Select: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
   SelectContent: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
   SelectItem: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
@@ -118,6 +119,23 @@ vi.mock('sonner', () => ({
 
 vi.mock('./IsmsControlMappings', () => ({
   IsmsControlMappings: () => <div data-testid="isms-control-mappings" />,
+}));
+
+vi.mock('./shared', () => ({
+  IsmsPageHeader: ({
+    clause,
+    title,
+    actions,
+  }: {
+    clause: string;
+    title: string;
+    actions?: React.ReactNode;
+  }) => (
+    <div data-testid="page-header">
+      <h1>{`${clause} ${title}`}</h1>
+      {actions}
+    </div>
+  ),
 }));
 
 import { LeadershipClient } from './LeadershipClient';

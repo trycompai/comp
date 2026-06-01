@@ -58,6 +58,38 @@ vi.mock('@trycompai/design-system', () => ({
     </section>
   ),
   buttonVariants: () => 'btn',
+  Button: ({
+    children,
+    onClick,
+    'aria-label': ariaLabel,
+  }: {
+    children?: React.ReactNode;
+    onClick?: (e: React.MouseEvent) => void;
+    'aria-label'?: string;
+  }) => (
+    <button type="button" aria-label={ariaLabel} onClick={onClick}>
+      {children}
+    </button>
+  ),
+  ItemGroup: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+  Item: ({
+    children,
+    render,
+  }: {
+    children: React.ReactNode;
+    render?: React.ReactElement;
+  }) =>
+    render ? <div>{render}{children}</div> : <div>{children}</div>,
+  ItemMedia: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+  ItemContent: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+  ItemTitle: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+  ItemActions: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+  Empty: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+  EmptyHeader: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+  EmptyMedia: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+  EmptyTitle: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+  EmptyDescription: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+  EmptyContent: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
   Popover: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
   PopoverTrigger: ({
     children,
@@ -127,7 +159,16 @@ vi.mock('@trycompai/design-system', () => ({
 vi.mock('@trycompai/design-system/icons', () => ({
   Add: () => <span data-testid="add-icon" />,
   Launch: () => <span data-testid="launch-icon" />,
+  Rule: () => <span data-testid="rule-icon" />,
   Unlink: () => <span data-testid="unlink-icon" />,
+  // Status-badge icons pulled in via the shared barrel (IsmsStatusBadge).
+  ArrowRight: () => <span />,
+  CircleDash: () => <span />,
+  Edit: () => <span />,
+  CheckmarkFilled: () => <span />,
+  Misuse: () => <span />,
+  Time: () => <span />,
+  WarningAltFilled: () => <span />,
 }));
 
 import { IsmsControlMappings } from './IsmsControlMappings';

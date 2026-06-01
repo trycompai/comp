@@ -1,7 +1,7 @@
 'use client';
 
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Button, Input, Textarea } from '@trycompai/design-system';
+import { Button, Field, FieldError, HStack, Input, Textarea } from '@trycompai/design-system';
 import { Add } from '@trycompai/design-system/icons';
 import { Controller, useForm } from 'react-hook-form';
 import { z } from 'zod';
@@ -35,9 +35,12 @@ export function InterestedPartiesForm({ onAdd }: InterestedPartiesFormProps) {
   });
 
   return (
-    <form onSubmit={handleAdd} className="flex flex-col gap-2 rounded-md border p-3">
-      <div className="grid gap-2 md:grid-cols-3">
-        <div className="flex flex-col gap-1">
+    <form
+      onSubmit={handleAdd}
+      className="flex flex-col gap-3 rounded-md border border-border bg-muted/30 p-4"
+    >
+      <div className="grid gap-3 md:grid-cols-3">
+        <Field>
           <Controller
             control={control}
             name="name"
@@ -45,9 +48,9 @@ export function InterestedPartiesForm({ onAdd }: InterestedPartiesFormProps) {
               <Input {...field} placeholder="Party name" aria-label="New interested party name" />
             )}
           />
-          {errors.name && <span className="text-xs text-destructive">{errors.name.message}</span>}
-        </div>
-        <div className="flex flex-col gap-1">
+          <FieldError>{errors.name?.message}</FieldError>
+        </Field>
+        <Field>
           <Controller
             control={control}
             name="category"
@@ -59,11 +62,9 @@ export function InterestedPartiesForm({ onAdd }: InterestedPartiesFormProps) {
               />
             )}
           />
-          {errors.category && (
-            <span className="text-xs text-destructive">{errors.category.message}</span>
-          )}
-        </div>
-        <div className="flex flex-col gap-1">
+          <FieldError>{errors.category?.message}</FieldError>
+        </Field>
+        <Field>
           <Controller
             control={control}
             name="needsExpectations"
@@ -76,12 +77,10 @@ export function InterestedPartiesForm({ onAdd }: InterestedPartiesFormProps) {
               />
             )}
           />
-          {errors.needsExpectations && (
-            <span className="text-xs text-destructive">{errors.needsExpectations.message}</span>
-          )}
-        </div>
+          <FieldError>{errors.needsExpectations?.message}</FieldError>
+        </Field>
       </div>
-      <div className="flex justify-end">
+      <HStack justify="end">
         <Button
           type="submit"
           size="sm"
@@ -92,7 +91,7 @@ export function InterestedPartiesForm({ onAdd }: InterestedPartiesFormProps) {
         >
           Add interested party
         </Button>
-      </div>
+      </HStack>
     </form>
   );
 }
