@@ -122,6 +122,29 @@ describe('ActingUserResolver', () => {
       );
     });
 
+    it('filters out deactivated / inactive members so uploads cannot be attributed to offboarded owners', async () => {
+      // Regression guard — without these filters, the oldest "owner"-role
+      // Member would win even if the user has been deactivated/offboarded,
+      // attributing API-driven mutations to someone who no longer has access.
+      mockDb.member.findFirst.mockResolvedValueOnce({ userId: 'usr_owner' });
+      const req = makeReq({
+        userId: undefined,
+        isApiKey: true,
+        apiKeyName: 'X',
+      });
+
+      await resolver.resolve(req, 'org_1');
+
+      expect(mockDb.member.findFirst).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({
+            deactivated: false,
+            isActive: true,
+          }),
+        }),
+      );
+    });
+
     it('picks the OLDEST owner deterministically (orderBy createdAt asc)', async () => {
       // Determinism matters — re-running the same automation should always
       // attribute to the same user, even if newer owners are added/removed.
