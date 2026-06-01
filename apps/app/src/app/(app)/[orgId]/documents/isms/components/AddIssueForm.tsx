@@ -6,6 +6,7 @@ import { Add } from '@trycompai/design-system/icons';
 import { Controller, useForm } from 'react-hook-form';
 import { z } from 'zod';
 import type { IsmsContextIssueKind } from '../isms-types';
+import { IsmsAddCard } from './shared';
 
 const addIssueSchema = z.object({
   description: z.string().min(1, 'Description is required'),
@@ -20,6 +21,18 @@ interface AddIssueFormProps {
 }
 
 export function AddIssueForm({ kind, onAdd }: AddIssueFormProps) {
+  return (
+    <IsmsAddCard addLabel={`Add ${kind} issue`} formTitle={`New ${kind} issue`}>
+      {({ close }) => <AddIssueFields kind={kind} onAdd={onAdd} onClose={close} />}
+    </IsmsAddCard>
+  );
+}
+
+function AddIssueFields({
+  kind,
+  onAdd,
+  onClose,
+}: AddIssueFormProps & { onClose: () => void }) {
   const {
     control,
     handleSubmit,
@@ -33,13 +46,11 @@ export function AddIssueForm({ kind, onAdd }: AddIssueFormProps) {
   const handleAdd = handleSubmit(async (values) => {
     await onAdd(values);
     reset({ description: '', effect: '' });
+    onClose();
   });
 
   return (
-    <form
-      onSubmit={handleAdd}
-      className="flex flex-col gap-3 rounded-md border border-border bg-muted/30 p-4"
-    >
+    <form onSubmit={handleAdd} className="flex flex-col gap-3">
       <div className="grid gap-3 md:grid-cols-2">
         <Field>
           <Controller

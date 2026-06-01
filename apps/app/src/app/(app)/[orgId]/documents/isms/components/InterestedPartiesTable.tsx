@@ -1,12 +1,6 @@
 'use client';
 
-import {
-  Table,
-  TableBody,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@trycompai/design-system';
+import { Stack } from '@trycompai/design-system';
 import { UserMultiple } from '@trycompai/design-system/icons';
 import type { IsmsInterestedParty } from '../isms-types';
 import { IsmsRegisterShell } from './shared';
@@ -46,33 +40,22 @@ export function InterestedPartiesTable({
       emptyDescription="List the parties relevant to your ISMS and the needs and expectations you must meet for each."
       footer={canEdit ? <InterestedPartiesForm onAdd={onCreate} /> : undefined}
     >
-      <Table variant="bordered">
-        <TableHeader>
-          <TableRow>
-            <TableHead>Source</TableHead>
-            <TableHead>Name</TableHead>
-            <TableHead>Category</TableHead>
-            <TableHead>Needs &amp; Expectations</TableHead>
-            {canEdit && <TableHead>Actions</TableHead>}
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {safeParties.map((party) => (
-            <InterestedPartiesRow
-              key={party.id}
-              party={party}
-              canEdit={canEdit}
-              onSave={({ name, category, needsExpectations }) =>
-                onUpdate({
-                  partyId: party.id,
-                  input: { name, category, needsExpectations },
-                })
-              }
-              onDelete={() => onDelete(party.id)}
-            />
-          ))}
-        </TableBody>
-      </Table>
+      <Stack gap="3">
+        {safeParties.map((party) => (
+          <InterestedPartiesRow
+            key={party.id}
+            party={party}
+            canEdit={canEdit}
+            onSave={({ name, category, needsExpectations }) =>
+              onUpdate({
+                partyId: party.id,
+                input: { name, category, needsExpectations },
+              })
+            }
+            onDelete={() => onDelete(party.id)}
+          />
+        ))}
+      </Stack>
     </IsmsRegisterShell>
   );
 }

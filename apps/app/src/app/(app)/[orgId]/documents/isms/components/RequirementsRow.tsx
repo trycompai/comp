@@ -1,9 +1,15 @@
 'use client';
 
-import { Input, Stack, TableCell, TableRow, Text, Textarea } from '@trycompai/design-system';
+import { Heading, Input, Stack, Textarea } from '@trycompai/design-system';
 import { useState } from 'react';
 import type { IsmsInterestedPartyRequirement } from '../isms-types';
-import { IsmsRowActions, IsmsSourceBadge } from './shared';
+import {
+  IsmsCardActions,
+  IsmsFieldLabel,
+  IsmsRegisterCard,
+  IsmsRegisterField,
+  IsmsSourceBadge,
+} from './shared';
 
 export interface RequirementRowValues {
   partyName: string;
@@ -20,6 +26,7 @@ interface RequirementsRowProps {
 }
 
 export function RequirementsRow({ requirement, canEdit, onSave, onDelete }: RequirementsRowProps) {
+  const [isEditing, setIsEditing] = useState(false);
   const [partyName, setPartyName] = useState(requirement.partyName);
   const [interestedPartyId, setInterestedPartyId] = useState(requirement.interestedPartyId ?? '');
   const [requirementText, setRequirementText] = useState(requirement.requirement);
@@ -33,10 +40,19 @@ export function RequirementsRow({ requirement, canEdit, onSave, onDelete }: Requ
     requirementText !== requirement.requirement ||
     treatment !== requirement.treatment;
 
+  const handleCancel = () => {
+    setPartyName(requirement.partyName);
+    setInterestedPartyId(requirement.interestedPartyId ?? '');
+    setRequirementText(requirement.requirement);
+    setTreatment(requirement.treatment);
+    setIsEditing(false);
+  };
+
   const handleSave = async () => {
     setIsSaving(true);
     try {
       await onSave({ partyName, interestedPartyId, requirement: requirementText, treatment });
+      setIsEditing(false);
     } finally {
       setIsSaving(false);
     }
@@ -51,66 +67,80 @@ export function RequirementsRow({ requirement, canEdit, onSave, onDelete }: Requ
     }
   };
 
+  const actions = canEdit ? (
+    <IsmsCardActions
+      isEditing={isEditing}
+      onEdit={() => setIsEditing(true)}
+      onSave={handleSave}
+      onCancel={handleCancel}
+      onDelete={handleDelete}
+      isDirty={isDirty}
+      isSaving={isSaving}
+      isDeleting={isDeleting}
+      editLabel="Edit requirement"
+      deleteLabel="Delete requirement"
+    />
+  ) : undefined;
+
+  if (isEditing) {
+    return (
+      <IsmsRegisterCard
+        header={<IsmsSourceBadge source={requirement.source} derivedFrom={requirement.derivedFrom} />}
+        headerEnd={actions}
+      >
+        <Stack gap="3">
+          <div className="grid gap-3 md:grid-cols-2">
+            <IsmsFieldLabel label="Interested party">
+              <Input
+                value={partyName}
+                onChange={(event) => setPartyName(event.target.value)}
+                aria-label="Requirement party"
+              />
+            </IsmsFieldLabel>
+            <IsmsFieldLabel label="Linked party ID (optional)">
+              <Input
+                value={interestedPartyId}
+                onChange={(event) => setInterestedPartyId(event.target.value)}
+                placeholder="Linked party ID (optional)"
+                aria-label="Requirement party ID"
+              />
+            </IsmsFieldLabel>
+          </div>
+          <IsmsFieldLabel label="Requirement">
+            <Textarea
+              value={requirementText}
+              onChange={(event) => setRequirementText(event.target.value)}
+              rows={3}
+              aria-label="Requirement description"
+            />
+          </IsmsFieldLabel>
+          <IsmsFieldLabel label="ISMS treatment">
+            <Textarea
+              value={treatment}
+              onChange={(event) => setTreatment(event.target.value)}
+              rows={3}
+              aria-label="Requirement treatment"
+            />
+          </IsmsFieldLabel>
+        </Stack>
+      </IsmsRegisterCard>
+    );
+  }
+
   return (
-    <TableRow>
-      <TableCell>
-        <IsmsSourceBadge source={requirement.source} derivedFrom={requirement.derivedFrom} />
-      </TableCell>
-      <TableCell>
-        {canEdit ? (
-          <Stack gap="1">
-            <Input
-              value={partyName}
-              onChange={(event) => setPartyName(event.target.value)}
-              aria-label="Requirement party"
-            />
-            <Input
-              value={interestedPartyId}
-              onChange={(event) => setInterestedPartyId(event.target.value)}
-              placeholder="Linked party ID (optional)"
-              aria-label="Requirement party ID"
-            />
-          </Stack>
-        ) : (
-          <Text size="sm">{requirement.partyName}</Text>
-        )}
-      </TableCell>
-      <TableCell>
-        {canEdit ? (
-          <Textarea
-            value={requirementText}
-            onChange={(event) => setRequirementText(event.target.value)}
-            rows={3}
-            aria-label="Requirement description"
-          />
-        ) : (
-          <Text size="sm">{requirement.requirement}</Text>
-        )}
-      </TableCell>
-      <TableCell>
-        {canEdit ? (
-          <Textarea
-            value={treatment}
-            onChange={(event) => setTreatment(event.target.value)}
-            rows={3}
-            aria-label="Requirement treatment"
-          />
-        ) : (
-          <Text size="sm">{requirement.treatment}</Text>
-        )}
-      </TableCell>
-      {canEdit && (
-        <TableCell>
-          <IsmsRowActions
-            onSave={handleSave}
-            onDelete={handleDelete}
-            isDirty={isDirty}
-            isSaving={isSaving}
-            isDeleting={isDeleting}
-            deleteLabel="Delete requirement"
-          />
-        </TableCell>
-      )}
-    </TableRow>
+    <IsmsRegisterCard
+      header={
+        <Stack gap="2">
+          <IsmsSourceBadge source={requirement.source} derivedFrom={requirement.derivedFrom} />
+          <Heading level="4">{requirement.requirement}</Heading>
+        </Stack>
+      }
+      headerEnd={actions}
+    >
+      <Stack gap="3">
+        <IsmsRegisterField label="Interested party">{requirement.partyName}</IsmsRegisterField>
+        <IsmsRegisterField label="ISMS treatment">{requirement.treatment}</IsmsRegisterField>
+      </Stack>
+    </IsmsRegisterCard>
   );
 }

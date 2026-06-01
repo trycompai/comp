@@ -33,6 +33,8 @@ export function ismsDesignSystemMock() {
         {children}
       </button>
     ),
+    Grid: ({ children }: { children: ReactNode }) => <div>{children}</div>,
+    Heading: ({ children }: { children: ReactNode }) => <h4>{children}</h4>,
     Dialog: ({ children }: { children: ReactNode }) => <div>{children}</div>,
     DialogContent: ({ children }: { children: ReactNode }) => <div>{children}</div>,
     DialogDescription: ({ children }: { children: ReactNode }) => <p>{children}</p>,
@@ -74,6 +76,7 @@ export function ismsIconsMock() {
     CloseOutline: Icon,
     Document: Icon,
     Download: Icon,
+    Edit: Icon,
     Flag: Icon,
     ListChecked: Icon,
     MachineLearningModel: Icon,
@@ -158,6 +161,72 @@ export function ismsSharedMock() {
           Save
         </button>
         <button type="button" aria-label={deleteLabel} onClick={onDelete} />
+      </div>
+    ),
+    IsmsRegisterCard: ({
+      header,
+      headerEnd,
+      children,
+    }: {
+      header: ReactNode;
+      headerEnd?: ReactNode;
+      children: ReactNode;
+    }) => (
+      <div>
+        {header}
+        {headerEnd}
+        {children}
+      </div>
+    ),
+    IsmsRegisterField: ({ label, children }: { label: string; children: ReactNode }) => (
+      <div>
+        <span>{label}</span>
+        <span>{children}</span>
+      </div>
+    ),
+    IsmsFieldLabel: ({ label, children }: { label: string; children: ReactNode }) => (
+      <div>
+        <span>{label}</span>
+        {children}
+      </div>
+    ),
+    IsmsCardActions: ({
+      isEditing,
+      onEdit,
+      onSave,
+      onCancel,
+      onDelete,
+      editLabel,
+      deleteLabel,
+    }: {
+      isEditing: boolean;
+      onEdit: () => void;
+      onSave: () => void;
+      onCancel: () => void;
+      onDelete: () => void;
+      editLabel: string;
+      deleteLabel: string;
+    }) =>
+      isEditing ? (
+        <div>
+          <button type="button" onClick={onCancel}>
+            Cancel
+          </button>
+          <button type="button" onClick={onSave}>
+            Save
+          </button>
+        </div>
+      ) : (
+        <div>
+          <button type="button" aria-label={editLabel} onClick={onEdit}>
+            Edit
+          </button>
+          <button type="button" aria-label={deleteLabel} onClick={onDelete} />
+        </div>
+      ),
+    IsmsAddCard: ({ addLabel }: { addLabel: string; children: unknown }) => (
+      <div>
+        <button type="button">{addLabel}</button>
       </div>
     ),
   };

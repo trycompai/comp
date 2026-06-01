@@ -1,9 +1,15 @@
 'use client';
 
-import { Input, TableCell, TableRow, Text, Textarea } from '@trycompai/design-system';
+import { Badge, Heading, HStack, Input, Stack, Textarea } from '@trycompai/design-system';
 import { useState } from 'react';
 import type { IsmsInterestedParty } from '../isms-types';
-import { IsmsRowActions, IsmsSourceBadge } from './shared';
+import {
+  IsmsCardActions,
+  IsmsFieldLabel,
+  IsmsRegisterCard,
+  IsmsRegisterField,
+  IsmsSourceBadge,
+} from './shared';
 
 interface InterestedPartiesRowProps {
   party: IsmsInterestedParty;
@@ -16,7 +22,13 @@ interface InterestedPartiesRowProps {
   onDelete: () => Promise<void>;
 }
 
-export function InterestedPartiesRow({ party, canEdit, onSave, onDelete }: InterestedPartiesRowProps) {
+export function InterestedPartiesRow({
+  party,
+  canEdit,
+  onSave,
+  onDelete,
+}: InterestedPartiesRowProps) {
+  const [isEditing, setIsEditing] = useState(false);
   const [name, setName] = useState(party.name);
   const [category, setCategory] = useState(party.category);
   const [needsExpectations, setNeedsExpectations] = useState(party.needsExpectations);
@@ -28,10 +40,18 @@ export function InterestedPartiesRow({ party, canEdit, onSave, onDelete }: Inter
     category !== party.category ||
     needsExpectations !== party.needsExpectations;
 
+  const handleCancel = () => {
+    setName(party.name);
+    setCategory(party.category);
+    setNeedsExpectations(party.needsExpectations);
+    setIsEditing(false);
+  };
+
   const handleSave = async () => {
     setIsSaving(true);
     try {
       await onSave({ name, category, needsExpectations });
+      setIsEditing(false);
     } finally {
       setIsSaving(false);
     }
@@ -46,57 +66,73 @@ export function InterestedPartiesRow({ party, canEdit, onSave, onDelete }: Inter
     }
   };
 
+  const actions = canEdit ? (
+    <IsmsCardActions
+      isEditing={isEditing}
+      onEdit={() => setIsEditing(true)}
+      onSave={handleSave}
+      onCancel={handleCancel}
+      onDelete={handleDelete}
+      isDirty={isDirty}
+      isSaving={isSaving}
+      isDeleting={isDeleting}
+      editLabel="Edit interested party"
+      deleteLabel="Delete interested party"
+    />
+  ) : undefined;
+
+  if (isEditing) {
+    return (
+      <IsmsRegisterCard
+        header={<IsmsSourceBadge source={party.source} derivedFrom={party.derivedFrom} />}
+        headerEnd={actions}
+      >
+        <Stack gap="3">
+          <div className="grid gap-3 md:grid-cols-2">
+            <IsmsFieldLabel label="Name">
+              <Input
+                value={name}
+                onChange={(event) => setName(event.target.value)}
+                aria-label="Interested party name"
+              />
+            </IsmsFieldLabel>
+            <IsmsFieldLabel label="Category">
+              <Input
+                value={category}
+                onChange={(event) => setCategory(event.target.value)}
+                aria-label="Interested party category"
+              />
+            </IsmsFieldLabel>
+          </div>
+          <IsmsFieldLabel label="Needs & expectations">
+            <Textarea
+              value={needsExpectations}
+              onChange={(event) => setNeedsExpectations(event.target.value)}
+              rows={3}
+              aria-label="Interested party needs and expectations"
+            />
+          </IsmsFieldLabel>
+        </Stack>
+      </IsmsRegisterCard>
+    );
+  }
+
   return (
-    <TableRow>
-      <TableCell>
-        <IsmsSourceBadge source={party.source} derivedFrom={party.derivedFrom} />
-      </TableCell>
-      <TableCell>
-        {canEdit ? (
-          <Input
-            value={name}
-            onChange={(event) => setName(event.target.value)}
-            aria-label="Interested party name"
-          />
-        ) : (
-          <Text size="sm">{party.name}</Text>
-        )}
-      </TableCell>
-      <TableCell>
-        {canEdit ? (
-          <Input
-            value={category}
-            onChange={(event) => setCategory(event.target.value)}
-            aria-label="Interested party category"
-          />
-        ) : (
-          <Text size="sm">{party.category}</Text>
-        )}
-      </TableCell>
-      <TableCell>
-        {canEdit ? (
-          <Textarea
-            value={needsExpectations}
-            onChange={(event) => setNeedsExpectations(event.target.value)}
-            rows={3}
-            aria-label="Interested party needs and expectations"
-          />
-        ) : (
-          <Text size="sm">{party.needsExpectations}</Text>
-        )}
-      </TableCell>
-      {canEdit && (
-        <TableCell>
-          <IsmsRowActions
-            onSave={handleSave}
-            onDelete={handleDelete}
-            isDirty={isDirty}
-            isSaving={isSaving}
-            isDeleting={isDeleting}
-            deleteLabel="Delete interested party"
-          />
-        </TableCell>
-      )}
-    </TableRow>
+    <IsmsRegisterCard
+      header={
+        <Stack gap="2">
+          <IsmsSourceBadge source={party.source} derivedFrom={party.derivedFrom} />
+          <Heading level="4">{party.name}</Heading>
+        </Stack>
+      }
+      headerEnd={
+        <HStack align="center" gap="2">
+          {party.category && <Badge variant="secondary">{party.category}</Badge>}
+          {actions}
+        </HStack>
+      }
+    >
+      <IsmsRegisterField label="Needs & expectations">{party.needsExpectations}</IsmsRegisterField>
+    </IsmsRegisterCard>
   );
 }

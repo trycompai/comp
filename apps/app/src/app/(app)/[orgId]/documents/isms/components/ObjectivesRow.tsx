@@ -1,36 +1,25 @@
 'use client';
 
-import {
-  Badge,
-  Input,
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-  TableCell,
-  TableRow,
-  Text,
-  Textarea,
-} from '@trycompai/design-system';
+import { Badge, Grid, Heading, HStack, Stack } from '@trycompai/design-system';
 import { useState } from 'react';
 import type { IsmsObjective, IsmsObjectiveStatus } from '../isms-types';
 import type { ApproverOption } from './IsmsApprovalSection';
-import { IsmsRowActions, IsmsSourceBadge } from './shared';
-import { OBJECTIVE_STATUS_LABELS } from './ObjectivesForm';
+import {
+  IsmsCardActions,
+  IsmsRegisterCard,
+  IsmsRegisterField,
+  IsmsSourceBadge,
+} from './shared';
+import { OBJECTIVE_STATUS_LABELS } from './objectives-status';
+import { ObjectivesRowEditor } from './ObjectivesRowEditor';
 
-const OBJECTIVE_STATUSES: IsmsObjectiveStatus[] = ['not_started', 'on_track', 'at_risk', 'met'];
-
-const STATUS_VARIANT: Record<IsmsObjectiveStatus, 'outline' | 'secondary' | 'accent' | 'destructive'> = {
-  not_started: 'outline',
-  on_track: 'secondary',
-  at_risk: 'destructive',
-  met: 'accent',
-};
-
-function isObjectiveStatus(value: string | null): value is IsmsObjectiveStatus {
-  return value !== null && OBJECTIVE_STATUSES.includes(value as IsmsObjectiveStatus);
-}
+const STATUS_VARIANT: Record<IsmsObjectiveStatus, 'outline' | 'secondary' | 'accent' | 'destructive'> =
+  {
+    not_started: 'outline',
+    on_track: 'secondary',
+    at_risk: 'destructive',
+    met: 'accent',
+  };
 
 export interface ObjectiveRowUpdate {
   objective: string;
@@ -61,14 +50,8 @@ function ownerDisplay({
   return ownerOptions.find((option) => option.id === ownerMemberId)?.name ?? ownerMemberId;
 }
 
-export function ObjectivesRow({
-  objective,
-  canEdit,
-  ownerOptions,
-  onSave,
-  onDelete,
-}: ObjectivesRowProps) {
-  const [draft, setDraft] = useState<ObjectiveRowUpdate>({
+function toDraft(objective: IsmsObjective): ObjectiveRowUpdate {
+  return {
     objective: objective.objective,
     target: objective.target ?? '',
     ownerMemberId: objective.ownerMemberId ?? '',
@@ -76,11 +59,21 @@ export function ObjectivesRow({
     plan: objective.plan ?? '',
     measurementMethod: objective.measurementMethod ?? '',
     status: objective.status,
-  });
+  };
+}
+
+export function ObjectivesRow({
+  objective,
+  canEdit,
+  ownerOptions,
+  onSave,
+  onDelete,
+}: ObjectivesRowProps) {
+  const [isEditing, setIsEditing] = useState(false);
+  const [draft, setDraft] = useState<ObjectiveRowUpdate>(toDraft(objective));
   const [isSaving, setIsSaving] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
 
-  const hasOwnerOptions = ownerOptions.length > 0;
   const isDirty =
     draft.objective !== objective.objective ||
     draft.target !== (objective.target ?? '') ||
@@ -90,10 +83,16 @@ export function ObjectivesRow({
     draft.measurementMethod !== (objective.measurementMethod ?? '') ||
     draft.status !== objective.status;
 
+  const handleCancel = () => {
+    setDraft(toDraft(objective));
+    setIsEditing(false);
+  };
+
   const handleSave = async () => {
     setIsSaving(true);
     try {
       await onSave(draft);
+      setIsEditing(false);
     } finally {
       setIsSaving(false);
     }
@@ -108,145 +107,60 @@ export function ObjectivesRow({
     }
   };
 
-  if (!canEdit) {
+  const actions = canEdit ? (
+    <IsmsCardActions
+      isEditing={isEditing}
+      onEdit={() => setIsEditing(true)}
+      onSave={handleSave}
+      onCancel={handleCancel}
+      onDelete={handleDelete}
+      isDirty={isDirty}
+      isSaving={isSaving}
+      isDeleting={isDeleting}
+      editLabel="Edit objective"
+      deleteLabel="Delete objective"
+    />
+  ) : undefined;
+
+  if (isEditing) {
     return (
-      <TableRow>
-        <TableCell>
-          <IsmsSourceBadge source={objective.source} derivedFrom={objective.derivedFrom} />
-        </TableCell>
-        <TableCell>
-          <Text size="sm">{objective.objective}</Text>
-        </TableCell>
-        <TableCell>
-          <Text size="sm">{objective.target ?? '—'}</Text>
-        </TableCell>
-        <TableCell>
-          <Text size="sm">
-            {ownerDisplay({ ownerMemberId: objective.ownerMemberId, ownerOptions })}
-          </Text>
-        </TableCell>
-        <TableCell>
-          <Text size="sm">{objective.cadence ?? '—'}</Text>
-        </TableCell>
-        <TableCell>
-          <Text size="sm">{objective.measurementMethod ?? '—'}</Text>
-        </TableCell>
-        <TableCell>
-          <Text size="sm">{objective.plan ?? '—'}</Text>
-        </TableCell>
-        <TableCell>
-          <Badge variant={STATUS_VARIANT[objective.status]}>
-            {OBJECTIVE_STATUS_LABELS[objective.status]}
-          </Badge>
-        </TableCell>
-      </TableRow>
+      <IsmsRegisterCard
+        header={<IsmsSourceBadge source={objective.source} derivedFrom={objective.derivedFrom} />}
+        headerEnd={actions}
+      >
+        <ObjectivesRowEditor draft={draft} onChange={setDraft} ownerOptions={ownerOptions} />
+      </IsmsRegisterCard>
     );
   }
 
   return (
-    <TableRow>
-      <TableCell>
-        <IsmsSourceBadge source={objective.source} derivedFrom={objective.derivedFrom} />
-      </TableCell>
-      <TableCell>
-        <Textarea
-          value={draft.objective}
-          onChange={(event) => setDraft((prev) => ({ ...prev, objective: event.target.value }))}
-          rows={3}
-          aria-label="Objective"
-        />
-      </TableCell>
-      <TableCell>
-        <Input
-          value={draft.target}
-          onChange={(event) => setDraft((prev) => ({ ...prev, target: event.target.value }))}
-          aria-label="Objective target"
-        />
-      </TableCell>
-      <TableCell>
-        {hasOwnerOptions ? (
-          <Select
-            value={draft.ownerMemberId || undefined}
-            onValueChange={(value) =>
-              setDraft((prev) => ({ ...prev, ownerMemberId: value ?? '' }))
-            }
-          >
-            <SelectTrigger aria-label="Objective owner">
-              <SelectValue placeholder="Owner" />
-            </SelectTrigger>
-            <SelectContent>
-              {ownerOptions.map((option) => (
-                <SelectItem key={option.id} value={option.id}>
-                  {option.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        ) : (
-          <Input
-            value={draft.ownerMemberId}
-            onChange={(event) =>
-              setDraft((prev) => ({ ...prev, ownerMemberId: event.target.value }))
-            }
-            aria-label="Objective owner"
-          />
-        )}
-      </TableCell>
-      <TableCell>
-        <Input
-          value={draft.cadence}
-          onChange={(event) => setDraft((prev) => ({ ...prev, cadence: event.target.value }))}
-          aria-label="Objective cadence"
-        />
-      </TableCell>
-      <TableCell>
-        <Input
-          value={draft.measurementMethod}
-          onChange={(event) =>
-            setDraft((prev) => ({ ...prev, measurementMethod: event.target.value }))
-          }
-          aria-label="Objective measurement method"
-        />
-      </TableCell>
-      <TableCell>
-        <Textarea
-          value={draft.plan}
-          onChange={(event) => setDraft((prev) => ({ ...prev, plan: event.target.value }))}
-          rows={3}
-          aria-label="Objective plan"
-        />
-      </TableCell>
-      <TableCell>
-        <Select
-          value={draft.status}
-          onValueChange={(value) => {
-            if (isObjectiveStatus(value)) {
-              setDraft((prev) => ({ ...prev, status: value }));
-            }
-          }}
-        >
-          <SelectTrigger aria-label="Objective status">
-            <SelectValue placeholder="Status" />
-          </SelectTrigger>
-          <SelectContent>
-            {OBJECTIVE_STATUSES.map((status) => (
-              <SelectItem key={status} value={status}>
-                {OBJECTIVE_STATUS_LABELS[status]}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </TableCell>
-      <TableCell>
-        <IsmsRowActions
-          onSave={handleSave}
-          onDelete={handleDelete}
-          isDirty={isDirty}
-          isSaving={isSaving}
-          isDeleting={isDeleting}
-          deleteLabel="Delete objective"
-        />
-      </TableCell>
-    </TableRow>
+    <IsmsRegisterCard
+      header={
+        <Stack gap="2">
+          <IsmsSourceBadge source={objective.source} derivedFrom={objective.derivedFrom} />
+          <Heading level="4">{objective.objective}</Heading>
+        </Stack>
+      }
+      headerEnd={
+        <HStack align="center" gap="2">
+          <Badge variant={STATUS_VARIANT[objective.status]}>
+            {OBJECTIVE_STATUS_LABELS[objective.status]}
+          </Badge>
+          {actions}
+        </HStack>
+      }
+    >
+      <Grid cols={{ base: '1', md: '2' }} gap="3">
+        <IsmsRegisterField label="Target">{objective.target ?? '—'}</IsmsRegisterField>
+        <IsmsRegisterField label="Owner">
+          {ownerDisplay({ ownerMemberId: objective.ownerMemberId, ownerOptions })}
+        </IsmsRegisterField>
+        <IsmsRegisterField label="Cadence">{objective.cadence ?? '—'}</IsmsRegisterField>
+        <IsmsRegisterField label="Measurement">
+          {objective.measurementMethod ?? '—'}
+        </IsmsRegisterField>
+        <IsmsRegisterField label="Plan">{objective.plan ?? '—'}</IsmsRegisterField>
+      </Grid>
+    </IsmsRegisterCard>
   );
 }

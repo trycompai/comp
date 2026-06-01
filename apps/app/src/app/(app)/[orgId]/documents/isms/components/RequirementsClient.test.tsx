@@ -134,8 +134,9 @@ describe('RequirementsClient', () => {
     setMockPermissions(ADMIN_PERMISSIONS);
     render(<RequirementsClient {...baseProps} />);
 
-    expect(screen.getByDisplayValue('Derived customer requirement')).toBeInTheDocument();
-    expect(screen.getByDisplayValue('Encrypt data at rest')).toBeInTheDocument();
+    // Read-first cards show the requirement + treatment as text, not always-on inputs.
+    expect(screen.getByText('Derived customer requirement')).toBeInTheDocument();
+    expect(screen.getByText('Encrypt data at rest')).toBeInTheDocument();
     expect(screen.getByText('framework:ISO 27001')).toBeInTheDocument();
     // Derived rows are labelled "Auto-derived"; manual rows are "Manual".
     expect(screen.getAllByText('Auto-derived').length).toBeGreaterThan(0);
@@ -148,6 +149,7 @@ describe('RequirementsClient', () => {
 
     expect(screen.getByText('Generate from platform data')).toBeInTheDocument();
     expect(screen.getByText('Add requirement')).toBeInTheDocument();
+    expect(screen.getAllByLabelText('Edit requirement').length).toBe(REQUIREMENTS.length);
     expect(screen.getAllByLabelText('Delete requirement').length).toBe(REQUIREMENTS.length);
     expect(mockHasPermission).toHaveBeenCalledWith('evidence', 'update');
   });
@@ -158,6 +160,7 @@ describe('RequirementsClient', () => {
 
     expect(screen.queryByText('Generate from platform data')).not.toBeInTheDocument();
     expect(screen.queryByText('Add requirement')).not.toBeInTheDocument();
+    expect(screen.queryByLabelText('Edit requirement')).not.toBeInTheDocument();
     expect(screen.queryByLabelText('Delete requirement')).not.toBeInTheDocument();
     // Read-only users see plain text, not editable inputs.
     expect(screen.queryByDisplayValue('Derived customer requirement')).not.toBeInTheDocument();

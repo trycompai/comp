@@ -128,9 +128,10 @@ describe('InterestedPartiesClient', () => {
     setMockPermissions(ADMIN_PERMISSIONS);
     render(<InterestedPartiesClient {...baseProps} />);
 
-    expect(screen.getByDisplayValue('Customers')).toBeInTheDocument();
-    expect(screen.getByDisplayValue('Data Protection Authority')).toBeInTheDocument();
-    expect(screen.getByDisplayValue('Confidentiality of their data')).toBeInTheDocument();
+    // Read-first cards show the party name + needs as text, not always-on inputs.
+    expect(screen.getByText('Customers')).toBeInTheDocument();
+    expect(screen.getByText('Data Protection Authority')).toBeInTheDocument();
+    expect(screen.getByText('Confidentiality of their data')).toBeInTheDocument();
     expect(screen.getByText('vendor:customers')).toBeInTheDocument();
     // Derived rows are labelled "Auto-derived", manual rows "Manual".
     expect(screen.getAllByText('Auto-derived').length).toBeGreaterThan(0);
@@ -143,6 +144,9 @@ describe('InterestedPartiesClient', () => {
 
     expect(screen.getByText('Generate from platform data')).toBeInTheDocument();
     expect(screen.getByText('Add interested party')).toBeInTheDocument();
+    // Each card exposes an Edit affordance instead of always-on inputs.
+    expect(screen.getAllByLabelText('Edit interested party').length).toBe(2);
+    expect(screen.getAllByLabelText('Delete interested party').length).toBe(2);
     expect(mockHasPermission).toHaveBeenCalledWith('evidence', 'update');
   });
 
@@ -152,6 +156,7 @@ describe('InterestedPartiesClient', () => {
 
     expect(screen.queryByText('Generate from platform data')).not.toBeInTheDocument();
     expect(screen.queryByText('Add interested party')).not.toBeInTheDocument();
+    expect(screen.queryByLabelText('Edit interested party')).not.toBeInTheDocument();
     // Read-only users see plain text, not editable inputs.
     expect(screen.queryByDisplayValue('Customers')).not.toBeInTheDocument();
     expect(screen.getByText('Customers')).toBeInTheDocument();

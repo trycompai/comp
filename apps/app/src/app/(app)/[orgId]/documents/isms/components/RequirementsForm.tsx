@@ -5,6 +5,7 @@ import { Button, Field, FieldError, HStack, Input, Textarea } from '@trycompai/d
 import { Add } from '@trycompai/design-system/icons';
 import { Controller, useForm } from 'react-hook-form';
 import { z } from 'zod';
+import { IsmsAddCard } from './shared';
 
 const requirementSchema = z.object({
   partyName: z.string().min(1, 'Interested party is required'),
@@ -20,6 +21,17 @@ interface RequirementsFormProps {
 }
 
 export function RequirementsForm({ onAdd }: RequirementsFormProps) {
+  return (
+    <IsmsAddCard addLabel="Add requirement" formTitle="New requirement">
+      {({ close }) => <RequirementsFields onAdd={onAdd} onClose={close} />}
+    </IsmsAddCard>
+  );
+}
+
+function RequirementsFields({
+  onAdd,
+  onClose,
+}: RequirementsFormProps & { onClose: () => void }) {
   const {
     control,
     handleSubmit,
@@ -33,13 +45,11 @@ export function RequirementsForm({ onAdd }: RequirementsFormProps) {
   const handleAdd = handleSubmit(async (values) => {
     await onAdd(values);
     reset({ partyName: '', interestedPartyId: '', requirement: '', treatment: '' });
+    onClose();
   });
 
   return (
-    <form
-      onSubmit={handleAdd}
-      className="flex flex-col gap-3 rounded-md border border-border bg-muted/30 p-4"
-    >
+    <form onSubmit={handleAdd} className="flex flex-col gap-3">
       <div className="grid gap-3 md:grid-cols-2">
         <Field>
           <Controller

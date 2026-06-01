@@ -5,6 +5,7 @@ import { Button, Field, FieldError, HStack, Input, Textarea } from '@trycompai/d
 import { Add } from '@trycompai/design-system/icons';
 import { Controller, useForm } from 'react-hook-form';
 import { z } from 'zod';
+import { IsmsAddCard } from './shared';
 
 const addPartySchema = z.object({
   name: z.string().min(1, 'Name is required'),
@@ -19,6 +20,17 @@ interface InterestedPartiesFormProps {
 }
 
 export function InterestedPartiesForm({ onAdd }: InterestedPartiesFormProps) {
+  return (
+    <IsmsAddCard addLabel="Add interested party" formTitle="New interested party">
+      {({ close }) => <InterestedPartiesFields onAdd={onAdd} onClose={close} />}
+    </IsmsAddCard>
+  );
+}
+
+function InterestedPartiesFields({
+  onAdd,
+  onClose,
+}: InterestedPartiesFormProps & { onClose: () => void }) {
   const {
     control,
     handleSubmit,
@@ -32,13 +44,11 @@ export function InterestedPartiesForm({ onAdd }: InterestedPartiesFormProps) {
   const handleAdd = handleSubmit(async (values) => {
     await onAdd(values);
     reset({ name: '', category: '', needsExpectations: '' });
+    onClose();
   });
 
   return (
-    <form
-      onSubmit={handleAdd}
-      className="flex flex-col gap-3 rounded-md border border-border bg-muted/30 p-4"
-    >
+    <form onSubmit={handleAdd} className="flex flex-col gap-3">
       <div className="grid gap-3 md:grid-cols-3">
         <Field>
           <Controller

@@ -1,12 +1,6 @@
 'use client';
 
-import {
-  Table,
-  TableBody,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@trycompai/design-system';
+import { Stack } from '@trycompai/design-system';
 import { ListChecked } from '@trycompai/design-system/icons';
 import type { IsmsInterestedPartyRequirement } from '../isms-types';
 import { IsmsRegisterShell } from './shared';
@@ -39,28 +33,17 @@ export function RequirementsTable({
       emptyDescription="Record the information-security requirements of your interested parties and how the ISMS addresses each."
       footer={canEdit ? <RequirementsForm onAdd={onCreate} /> : undefined}
     >
-      <Table variant="bordered">
-        <TableHeader>
-          <TableRow>
-            <TableHead>Source</TableHead>
-            <TableHead>Interested party</TableHead>
-            <TableHead>Requirement</TableHead>
-            <TableHead>ISMS treatment</TableHead>
-            {canEdit && <TableHead>Actions</TableHead>}
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {rows.map((requirement) => (
-            <RequirementsRow
-              key={requirement.id}
-              requirement={requirement}
-              canEdit={canEdit}
-              onSave={(values) => onUpdate({ id: requirement.id, values })}
-              onDelete={() => onDelete(requirement.id)}
-            />
-          ))}
-        </TableBody>
-      </Table>
+      <Stack gap="3">
+        {rows.map((requirement) => (
+          <RequirementsRow
+            key={requirement.id}
+            requirement={requirement}
+            canEdit={canEdit}
+            onSave={(values) => onUpdate({ id: requirement.id, values })}
+            onDelete={() => onDelete(requirement.id)}
+          />
+        ))}
+      </Stack>
     </IsmsRegisterShell>
   );
 }

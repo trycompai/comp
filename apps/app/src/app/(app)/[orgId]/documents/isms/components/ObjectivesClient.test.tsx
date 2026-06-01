@@ -136,11 +136,13 @@ describe('ObjectivesClient', () => {
     setMockPermissions(ADMIN_PERMISSIONS);
     render(<ObjectivesClient {...baseProps} />);
 
-    expect(screen.getByDisplayValue('Reduce phishing click rate')).toBeInTheDocument();
-    expect(
-      screen.getByDisplayValue('Patch critical vulnerabilities within SLA'),
-    ).toBeInTheDocument();
+    // Read-first cards show the objective text + status, not always-on inputs.
+    expect(screen.getByText('Reduce phishing click rate')).toBeInTheDocument();
+    expect(screen.getByText('Patch critical vulnerabilities within SLA')).toBeInTheDocument();
     expect(screen.getByText('framework:ISO 27001')).toBeInTheDocument();
+    // Status renders through the shared badge vocabulary.
+    expect(screen.getByText('On track')).toBeInTheDocument();
+    expect(screen.getByText('At risk')).toBeInTheDocument();
     // Derived rows are labelled "Auto-derived"; manual rows are "Manual".
     expect(screen.getAllByText('Auto-derived').length).toBeGreaterThan(0);
     expect(screen.getAllByText('Manual').length).toBeGreaterThan(0);
@@ -152,6 +154,8 @@ describe('ObjectivesClient', () => {
 
     expect(screen.getByText('Generate from platform data')).toBeInTheDocument();
     expect(screen.getByText('Add objective')).toBeInTheDocument();
+    expect(screen.getAllByLabelText('Edit objective').length).toBe(OBJECTIVES.length);
+    expect(screen.getAllByLabelText('Delete objective').length).toBe(OBJECTIVES.length);
     expect(mockHasPermission).toHaveBeenCalledWith('evidence', 'update');
   });
 
@@ -161,6 +165,7 @@ describe('ObjectivesClient', () => {
 
     expect(screen.queryByText('Generate from platform data')).not.toBeInTheDocument();
     expect(screen.queryByText('Add objective')).not.toBeInTheDocument();
+    expect(screen.queryByLabelText('Edit objective')).not.toBeInTheDocument();
     // Read-only users see plain text, not editable inputs.
     expect(screen.queryByDisplayValue('Reduce phishing click rate')).not.toBeInTheDocument();
     expect(screen.getByText('Reduce phishing click rate')).toBeInTheDocument();

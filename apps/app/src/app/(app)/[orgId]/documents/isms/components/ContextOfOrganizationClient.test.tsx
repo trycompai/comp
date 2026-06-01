@@ -128,8 +128,9 @@ describe('ContextOfOrganizationClient', () => {
     setMockPermissions(ADMIN_PERMISSIONS);
     render(<ContextOfOrganizationClient {...baseProps} />);
 
-    expect(screen.getByDisplayValue('Derived internal issue')).toBeInTheDocument();
-    expect(screen.getByDisplayValue('Derived external issue')).toBeInTheDocument();
+    // Read-first cards show the issue text, not always-on textareas.
+    expect(screen.getByText('Derived internal issue')).toBeInTheDocument();
+    expect(screen.getByText('Derived external issue')).toBeInTheDocument();
     expect(screen.getByText('framework:ISO 27001')).toBeInTheDocument();
     // Derived rows are labelled "Auto-derived".
     expect(screen.getAllByText('Auto-derived').length).toBeGreaterThan(0);
@@ -140,7 +141,11 @@ describe('ContextOfOrganizationClient', () => {
     render(<ContextOfOrganizationClient {...baseProps} />);
 
     expect(screen.getByText('Generate from platform data')).toBeInTheDocument();
+    // One collapsed "Add … issue" trigger per kind section.
     expect(screen.getAllByText(/Add internal issue|Add external issue/).length).toBe(2);
+    // Each card exposes an Edit affordance instead of always-on inputs.
+    expect(screen.getAllByLabelText('Edit issue').length).toBe(2);
+    expect(screen.getAllByLabelText('Delete issue').length).toBe(2);
     expect(mockHasPermission).toHaveBeenCalledWith('evidence', 'update');
   });
 
@@ -150,6 +155,7 @@ describe('ContextOfOrganizationClient', () => {
 
     expect(screen.queryByText('Generate from platform data')).not.toBeInTheDocument();
     expect(screen.queryByText(/Add internal issue/)).not.toBeInTheDocument();
+    expect(screen.queryByLabelText('Edit issue')).not.toBeInTheDocument();
     // Read-only users see plain text, not editable textareas.
     expect(screen.queryByDisplayValue('Derived internal issue')).not.toBeInTheDocument();
     expect(screen.getByText('Derived internal issue')).toBeInTheDocument();

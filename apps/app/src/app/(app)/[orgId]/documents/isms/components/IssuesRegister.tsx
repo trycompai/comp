@@ -1,12 +1,6 @@
 'use client';
 
-import {
-  Table,
-  TableBody,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@trycompai/design-system';
+import { Stack } from '@trycompai/design-system';
 import { WarningAlt } from '@trycompai/design-system/icons';
 import type { IsmsContextIssue, IsmsContextIssueKind } from '../isms-types';
 import { IsmsRegisterShell } from './shared';
@@ -58,29 +52,19 @@ function KindSection({
         ) : undefined
       }
     >
-      <Table variant="bordered">
-        <TableHeader>
-          <TableRow>
-            <TableHead>Source</TableHead>
-            <TableHead>Issue</TableHead>
-            <TableHead>Effect on ISMS</TableHead>
-            {canEdit && <TableHead>Actions</TableHead>}
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {rows.map((issue) => (
-            <IssueRow
-              key={issue.id}
-              issue={issue}
-              canEdit={canEdit}
-              onSave={({ description, effect }) =>
-                onUpdate({ issueId: issue.id, input: { description, effect } })
-              }
-              onDelete={() => onDelete(issue.id)}
-            />
-          ))}
-        </TableBody>
-      </Table>
+      <Stack gap="3">
+        {rows.map((issue) => (
+          <IssueRow
+            key={issue.id}
+            issue={issue}
+            canEdit={canEdit}
+            onSave={({ description, effect }) =>
+              onUpdate({ issueId: issue.id, input: { description, effect } })
+            }
+            onDelete={() => onDelete(issue.id)}
+          />
+        ))}
+      </Stack>
     </IsmsRegisterShell>
   );
 }
@@ -95,7 +79,7 @@ export function IssuesRegister({
   const safeIssues = Array.isArray(issues) ? issues : [];
 
   return (
-    <div className="flex flex-col gap-8">
+    <Stack gap="8">
       <KindSection
         kind="internal"
         title="Internal Issues"
@@ -114,6 +98,6 @@ export function IssuesRegister({
         onUpdate={onUpdate}
         onDelete={onDelete}
       />
-    </div>
+    </Stack>
   );
 }

@@ -1,12 +1,6 @@
 'use client';
 
-import {
-  Table,
-  TableBody,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@trycompai/design-system';
+import { Stack } from '@trycompai/design-system';
 import { Flag } from '@trycompai/design-system/icons';
 import type { IsmsObjective } from '../isms-types';
 import type { ApproverOption } from './IsmsApprovalSection';
@@ -42,33 +36,18 @@ export function ObjectivesTable({
       emptyDescription="Define measurable information-security objectives, assign owners, and track progress toward each target."
       footer={canEdit ? <ObjectivesForm ownerOptions={ownerOptions} onAdd={onCreate} /> : undefined}
     >
-      <Table variant="bordered">
-        <TableHeader>
-          <TableRow>
-            <TableHead>Source</TableHead>
-            <TableHead>Objective</TableHead>
-            <TableHead>Target</TableHead>
-            <TableHead>Owner</TableHead>
-            <TableHead>Cadence</TableHead>
-            <TableHead>Measurement</TableHead>
-            <TableHead>Plan</TableHead>
-            <TableHead>Status</TableHead>
-            {canEdit && <TableHead>Actions</TableHead>}
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {rows.map((objective) => (
-            <ObjectivesRow
-              key={objective.id}
-              objective={objective}
-              canEdit={canEdit}
-              ownerOptions={ownerOptions}
-              onSave={(update) => onUpdate({ objectiveId: objective.id, update })}
-              onDelete={() => onDelete(objective.id)}
-            />
-          ))}
-        </TableBody>
-      </Table>
+      <Stack gap="3">
+        {rows.map((objective) => (
+          <ObjectivesRow
+            key={objective.id}
+            objective={objective}
+            canEdit={canEdit}
+            ownerOptions={ownerOptions}
+            onSave={(update) => onUpdate({ objectiveId: objective.id, update })}
+            onDelete={() => onDelete(objective.id)}
+          />
+        ))}
+      </Stack>
     </IsmsRegisterShell>
   );
 }
