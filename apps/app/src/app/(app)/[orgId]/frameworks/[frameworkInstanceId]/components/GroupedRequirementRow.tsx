@@ -37,21 +37,18 @@ export function GroupedRequirementRow({
         </Link>
       </TableCell>
       <TableCell>
-        <span className="block max-w-[280px] truncate text-sm" title={item.name}>
+        <span className="block truncate text-sm" title={item.name}>
           {item.name}
         </span>
       </TableCell>
       <TableCell>
-        <span
-          className="block max-w-[240px] truncate text-sm"
-          title={item.description || ''}
-        >
+        <span className="block truncate text-sm" title={item.description || ''}>
           {item.description || '—'}
         </span>
       </TableCell>
       <TableCell>
-        <div className="flex items-center gap-2 min-w-[100px]">
-          <div className="flex-1 rounded-full bg-muted/50 h-1.5">
+        <div className="flex min-w-0 items-center gap-2">
+          <div className="h-1.5 min-w-0 flex-1 rounded-full bg-muted/50">
             <div
               className="h-full rounded-full bg-primary transition-all duration-300"
               style={{ width: `${item.compliancePercent}%` }}

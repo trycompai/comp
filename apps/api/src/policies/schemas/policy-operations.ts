@@ -4,7 +4,7 @@ export const POLICY_OPERATIONS: Record<string, ApiOperationOptions> = {
   getAllPolicies: {
     summary: 'Get all policies',
     description:
-      'Lists all policies. Pass excludeContent=true to skip the heavy content fields (recommended unless you need every policy fully). Fetch one policy via get-policy by ID when you need the full content to edit.',
+      'Lists active policies by default. Pass includeArchived=true to include archived rows and excludeContent=true to skip heavy content fields. Fetch one policy by ID for full content.',
   },
   getPolicyById: {
     summary: 'Get policy by ID',
