@@ -42,6 +42,10 @@ model IsmsDocument {
   requirementId String?
   requirement   FrameworkEditorRequirement? @relation(fields: [requirementId], references: [id], onDelete: SetNull)
 
+  // Framework-editor template this document was instantiated from (CS-437).
+  templateId String?
+  template   FrameworkEditorIsmsDocumentTemplate? @relation(fields: [templateId], references: [id], onDelete: SetNull)
+
   type   IsmsDocumentType
   title  String
   status IsmsDocumentStatus @default(draft)
