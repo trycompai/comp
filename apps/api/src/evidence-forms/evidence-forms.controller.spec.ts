@@ -1,9 +1,16 @@
 import { Test, TestingModule } from '@nestjs/testing';
+import { BadRequestException } from '@nestjs/common';
 import { EvidenceFormsController } from './evidence-forms.controller';
 import { EvidenceFormsService } from './evidence-forms.service';
+import { ActingUserResolver } from '../auth/acting-user.service';
 import { HybridAuthGuard } from '../auth/hybrid-auth.guard';
 import { PermissionGuard } from '../auth/permission.guard';
-import type { AuthContext as AuthContextType } from '../auth/types';
+import type {
+  AuthContext as AuthContextType,
+  AuthenticatedRequest,
+} from '../auth/types';
+
+jest.mock('@db', () => ({ db: {} }));
 
 jest.mock('../auth/auth.server', () => ({
   auth: { api: { getSession: jest.fn() } },
@@ -61,10 +68,17 @@ describe('EvidenceFormsController', () => {
     userRoles: ['admin'],
   };
 
+  const mockActingUser = {
+    resolve: jest.fn(),
+  };
+
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       controllers: [EvidenceFormsController],
-      providers: [{ provide: EvidenceFormsService, useValue: mockService }],
+      providers: [
+        { provide: EvidenceFormsService, useValue: mockService },
+        { provide: ActingUserResolver, useValue: mockActingUser },
+      ],
     })
       .overrideGuard(HybridAuthGuard)
       .useValue(mockGuard)
@@ -298,25 +312,70 @@ describe('EvidenceFormsController', () => {
   });
 
   describe('uploadSubmission', () => {
-    it('should call service.uploadSubmission with correct params', async () => {
+    it('should call service.uploadSubmission with the session userId', async () => {
       const body = { fileUrl: 'https://example.com/file.pdf' };
       const mockResult = { id: 'sub_upload' };
       mockService.uploadSubmission.mockResolvedValue(mockResult);
+      mockActingUser.resolve.mockResolvedValue({
+        userId: 'user_1',
+        source: 'session',
+      });
 
+      const req = {} as AuthenticatedRequest;
       const result = await controller.uploadSubmission(
         'org_1',
-        mockAuthContext,
         'security-awareness',
         body,
+        req,
       );
 
       expect(result).toEqual(mockResult);
+      expect(mockActingUser.resolve).toHaveBeenCalledWith(req, 'org_1');
       expect(service.uploadSubmission).toHaveBeenCalledWith({
         organizationId: 'org_1',
         formType: 'security-awareness',
-        authContext: mockAuthContext,
+        userId: 'user_1',
         payload: body,
       });
+    });
+
+    it('should attribute to the org owner when called with API key auth', async () => {
+      const body = { fileUrl: 'https://example.com/file.pdf' };
+      const mockResult = { id: 'sub_upload' };
+      mockService.uploadSubmission.mockResolvedValue(mockResult);
+      mockActingUser.resolve.mockResolvedValue({
+        userId: 'owner_user',
+        source: 'org-owner-fallback',
+        callerLabel: 'via API key "CI"',
+      });
+
+      const req = {} as AuthenticatedRequest;
+      await controller.uploadSubmission('org_1', 'meeting', body, req);
+
+      expect(service.uploadSubmission).toHaveBeenCalledWith({
+        organizationId: 'org_1',
+        formType: 'meeting',
+        userId: 'owner_user',
+        payload: body,
+      });
+    });
+
+    it('should throw BadRequestException when no owner can be resolved', async () => {
+      mockActingUser.resolve.mockResolvedValue({
+        userId: null,
+        source: 'org-owner-fallback',
+        callerLabel: 'via API key',
+      });
+
+      await expect(
+        controller.uploadSubmission(
+          'org_1',
+          'meeting',
+          { fileUrl: 'x' },
+          {} as AuthenticatedRequest,
+        ),
+      ).rejects.toBeInstanceOf(BadRequestException);
+      expect(service.uploadSubmission).not.toHaveBeenCalled();
     });
   });
 
