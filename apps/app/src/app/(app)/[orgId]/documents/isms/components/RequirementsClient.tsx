@@ -197,6 +197,19 @@ export function RequirementsClient({
         />
       )}
 
+      <Section
+        title="Requirements & treatment"
+        description="Each interested-party requirement and how the ISMS treats it."
+      >
+        <RequirementsTable
+          requirements={requirements}
+          canEdit={canManage}
+          onCreate={handleCreate}
+          onUpdate={handleUpdate}
+          onDelete={handleDelete}
+        />
+      </Section>
+
       {document && (
         <IsmsControlMappings
           document={document}
@@ -216,19 +229,6 @@ export function RequirementsClient({
           onDecline={handleDecline}
         />
       )}
-
-      <Section
-        title="Requirements & treatment"
-        description="Each interested-party requirement and how the ISMS treats it."
-      >
-        <RequirementsTable
-          requirements={requirements}
-          canEdit={canManage}
-          onCreate={handleCreate}
-          onUpdate={handleUpdate}
-          onDelete={handleDelete}
-        />
-      </Section>
     </Stack>
   );
 }

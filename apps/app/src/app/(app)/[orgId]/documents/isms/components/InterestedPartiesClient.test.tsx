@@ -132,9 +132,9 @@ describe('InterestedPartiesClient', () => {
     expect(screen.getByDisplayValue('Data Protection Authority')).toBeInTheDocument();
     expect(screen.getByDisplayValue('Confidentiality of their data')).toBeInTheDocument();
     expect(screen.getByText('vendor:customers')).toBeInTheDocument();
-    // Derived rows are labelled "Auto-derived", manual rows "Edited".
+    // Derived rows are labelled "Auto-derived", manual rows "Manual".
     expect(screen.getAllByText('Auto-derived').length).toBeGreaterThan(0);
-    expect(screen.getAllByText('Edited').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('Manual').length).toBeGreaterThan(0);
   });
 
   it('allows editing (shows mutating controls) for a user with evidence:update', () => {

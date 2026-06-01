@@ -97,7 +97,7 @@ export async function collectPlatformData({
   ).length;
 
   return {
-    organizationName: organization?.name ?? 'The organization',
+    organizationName: organization?.name?.trim() || 'The organization',
     frameworkNames: Array.from(frameworkNames).sort(),
     vendorCount: vendors.length,
     subProcessorCount: subProcessorNames.length,

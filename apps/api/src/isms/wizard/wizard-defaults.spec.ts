@@ -83,4 +83,27 @@ describe('computeWizardDefaults', () => {
     const result = await computeWizardDefaults(args);
     expect(result.capabilitiesInProduction).toEqual([]);
   });
+
+  it('splits a prose paragraph answer into per-sentence capabilities', async () => {
+    (mockDb.context.findFirst as jest.Mock).mockResolvedValue({
+      answer:
+        'The company provides a payments API. It also offers a reporting dashboard. Its model includes a mobile app.',
+    });
+    const result = await computeWizardDefaults(args);
+    expect(result.capabilitiesInProduction).toEqual([
+      'The company provides a payments API.',
+      'It also offers a reporting dashboard.',
+      'Its model includes a mobile app.',
+    ]);
+  });
+
+  it('does not shred decimals or single-clause prose into fragments', async () => {
+    (mockDb.context.findFirst as jest.Mock).mockResolvedValue({
+      answer: 'A single hosted platform with 99.9% uptime for enterprise teams.',
+    });
+    const result = await computeWizardDefaults(args);
+    expect(result.capabilitiesInProduction).toEqual([
+      'A single hosted platform with 99.9% uptime for enterprise teams.',
+    ]);
+  });
 });

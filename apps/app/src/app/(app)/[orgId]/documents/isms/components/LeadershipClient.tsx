@@ -176,6 +176,13 @@ export function LeadershipClient({
         />
       )}
 
+      <Section
+        title="Leadership commitment"
+        description="The overall leadership statement and each clause 5.1 (a)–(h) commitment."
+      >
+        <LeadershipForm narrative={narrative} canEdit={canManage} onSave={handleSaveNarrative} />
+      </Section>
+
       {document && (
         <IsmsControlMappings
           document={document}
@@ -195,13 +202,6 @@ export function LeadershipClient({
           onDecline={handleDecline}
         />
       )}
-
-      <Section
-        title="Leadership commitment"
-        description="The overall leadership statement and each clause 5.1 (a)–(h) commitment."
-      >
-        <LeadershipForm narrative={narrative} canEdit={canManage} onSave={handleSaveNarrative} />
-      </Section>
     </Stack>
   );
 }

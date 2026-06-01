@@ -140,7 +140,7 @@ export function ismsSharedMock() {
       derivedFrom?: string | null;
     }) => (
       <div>
-        <span>{source === 'derived' ? 'Auto-derived' : 'Edited'}</span>
+        <span>{source === 'derived' ? 'Auto-derived' : 'Manual'}</span>
         {derivedFrom && <span>{derivedFrom}</span>}
       </div>
     ),

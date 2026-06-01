@@ -67,6 +67,27 @@ describe('scope narrative (4.3)', () => {
     expect(sections[0].emptyText).toBeDefined();
   });
 
+  it('collapses stray whitespace so the scope sentence has no double spaces (CS-437)', () => {
+    const narrative = deriveScopeNarrative({
+      ...data,
+      organizationName: 'Comp AI ',
+    });
+    expect(narrative.certificateScopeSentence).not.toMatch(/ {2,}/);
+    expect(narrative.certificateScopeSentence).toContain('of Comp AI covers');
+  });
+
+  it('normalizes a wizard-confirmed sentence that contains double spaces (CS-437)', () => {
+    const narrative = deriveScopeNarrative({
+      ...data,
+      wizardAnswers: {
+        certificateScopeSentence: 'The ISMS  covers  everything.',
+      },
+    });
+    expect(narrative.certificateScopeSentence).toBe(
+      'The ISMS covers everything.',
+    );
+  });
+
   it('uses the wizard certificate scope sentence when set (CS-438)', () => {
     const narrative = deriveScopeNarrative({
       ...data,

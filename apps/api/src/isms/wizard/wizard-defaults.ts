@@ -84,8 +84,30 @@ async function loadServicesFromContext({
   });
   if (!entry?.answer) return [];
 
-  return entry.answer
-    .split(/\r?\n|[•·;]/)
+  return splitServicesAnswer(entry.answer);
+}
+
+/**
+ * Split the services answer into individual capability items.
+ *
+ * The answer is usually one of two shapes: an explicitly delimited list (lines,
+ * bullets, semicolons) or a short prose paragraph (the AI-generated default is a
+ * ~60-word paragraph of declarative sentences). When explicit delimiters are
+ * present we honour them; otherwise we fall back to sentence boundaries so prose
+ * still renders as a real per-item tick-list rather than one lump (CS-437).
+ *
+ * Sentence splitting only fires on a period/!/? followed by whitespace and a
+ * capital letter, so decimals (`99.9%`) and lowercase abbreviations don't get
+ * shredded into garbage fragments. If even that yields a single item (a genuine
+ * one-clause blob), it stays as one item.
+ */
+function splitServicesAnswer(answer: string): string[] {
+  const hasExplicitDelimiters = /\r?\n|[•·;]/.test(answer);
+  const parts = hasExplicitDelimiters
+    ? answer.split(/\r?\n|[•·;]/)
+    : answer.split(/(?<=[.!?])\s+(?=[A-Z])/);
+
+  return parts
     .map((item) => item.replace(/^[\s\-*\d.)]+/, '').trim())
     .filter((item) => item.length > 0);
 }

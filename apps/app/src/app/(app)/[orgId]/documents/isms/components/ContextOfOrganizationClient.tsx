@@ -193,6 +193,19 @@ export function ContextOfOrganizationClient({
         />
       )}
 
+      <Section
+        title="Issues register"
+        description="Internal and external issues that affect the ISMS, grouped by origin."
+      >
+        <IssuesRegister
+          issues={issues}
+          canEdit={canManage}
+          onCreate={handleCreateIssue}
+          onUpdate={handleUpdateIssue}
+          onDelete={handleDeleteIssue}
+        />
+      </Section>
+
       {document && (
         <IsmsControlMappings
           document={document}
@@ -212,19 +225,6 @@ export function ContextOfOrganizationClient({
           onDecline={handleDecline}
         />
       )}
-
-      <Section
-        title="Issues register"
-        description="Internal and external issues that affect the ISMS, grouped by origin."
-      >
-        <IssuesRegister
-          issues={issues}
-          canEdit={canManage}
-          onCreate={handleCreateIssue}
-          onUpdate={handleUpdateIssue}
-          onDelete={handleDeleteIssue}
-        />
-      </Section>
     </Stack>
   );
 }

@@ -193,6 +193,19 @@ export function InterestedPartiesClient({
         />
       )}
 
+      <Section
+        title="Interested parties"
+        description="Parties with a stake in the ISMS and their information-security needs and expectations."
+      >
+        <InterestedPartiesTable
+          parties={parties}
+          canEdit={canManage}
+          onCreate={handleCreateParty}
+          onUpdate={handleUpdateParty}
+          onDelete={handleDeleteParty}
+        />
+      </Section>
+
       {document && (
         <IsmsControlMappings
           document={document}
@@ -212,19 +225,6 @@ export function InterestedPartiesClient({
           onDecline={handleDecline}
         />
       )}
-
-      <Section
-        title="Interested parties"
-        description="Parties with a stake in the ISMS and their information-security needs and expectations."
-      >
-        <InterestedPartiesTable
-          parties={parties}
-          canEdit={canManage}
-          onCreate={handleCreateParty}
-          onUpdate={handleUpdateParty}
-          onDelete={handleDeleteParty}
-        />
-      </Section>
     </Stack>
   );
 }

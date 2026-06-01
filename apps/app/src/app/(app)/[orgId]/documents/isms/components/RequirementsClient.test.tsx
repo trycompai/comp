@@ -137,9 +137,9 @@ describe('RequirementsClient', () => {
     expect(screen.getByDisplayValue('Derived customer requirement')).toBeInTheDocument();
     expect(screen.getByDisplayValue('Encrypt data at rest')).toBeInTheDocument();
     expect(screen.getByText('framework:ISO 27001')).toBeInTheDocument();
-    // Derived rows are labelled "Auto-derived"; manual rows are "Edited".
+    // Derived rows are labelled "Auto-derived"; manual rows are "Manual".
     expect(screen.getAllByText('Auto-derived').length).toBeGreaterThan(0);
-    expect(screen.getAllByText('Edited').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('Manual').length).toBeGreaterThan(0);
   });
 
   it('allows editing (shows mutating controls) for a user with evidence:update', () => {

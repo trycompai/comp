@@ -124,6 +124,7 @@ vi.mock('@trycompai/design-system', () => ({
   TableHead: ({ children }: { children: React.ReactNode }) => <th>{children}</th>,
   TableHeader: ({ children }: { children: React.ReactNode }) => <thead>{children}</thead>,
   TableRow: ({ children }: { children: React.ReactNode }) => <tr>{children}</tr>,
+  Stack: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
   Text: ({ children }: { children: React.ReactNode }) => <span>{children}</span>,
   AlertDialog: ({ open, children }: { open?: boolean; children: React.ReactNode }) =>
     open ? <div role="dialog">{children}</div> : null,

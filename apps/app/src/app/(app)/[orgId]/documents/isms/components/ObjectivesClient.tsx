@@ -192,6 +192,20 @@ export function ObjectivesClient({
         />
       )}
 
+      <Section
+        title="Objectives & plan"
+        description="Measurable information-security objectives with owners, targets, and review cadence."
+      >
+        <ObjectivesTable
+          objectives={objectives}
+          canEdit={canManage}
+          ownerOptions={approverOptions}
+          onCreate={handleCreate}
+          onUpdate={handleUpdate}
+          onDelete={handleDelete}
+        />
+      </Section>
+
       {document && (
         <IsmsControlMappings
           document={document}
@@ -211,20 +225,6 @@ export function ObjectivesClient({
           onDecline={handleDecline}
         />
       )}
-
-      <Section
-        title="Objectives & plan"
-        description="Measurable information-security objectives with owners, targets, and review cadence."
-      >
-        <ObjectivesTable
-          objectives={objectives}
-          canEdit={canManage}
-          ownerOptions={approverOptions}
-          onCreate={handleCreate}
-          onUpdate={handleUpdate}
-          onDelete={handleDelete}
-        />
-      </Section>
     </Stack>
   );
 }

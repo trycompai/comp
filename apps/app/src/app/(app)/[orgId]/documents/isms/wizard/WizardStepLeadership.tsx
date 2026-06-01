@@ -35,6 +35,17 @@ const TO_BE_NAMED = '__to_be_named__';
 export function WizardStepLeadership({ control, members }: WizardStepLeadershipProps) {
   const memberOptions = Array.isArray(members) ? members : [];
 
+  // `items` lets the closed Select resolve the human label (name / "To be named")
+  // instead of rendering the raw value (`mem_...`).
+  const deputyItems = [
+    { value: TO_BE_NAMED, label: 'To be named' },
+    ...memberOptions.map((member) => ({ value: member.id, label: member.name })),
+  ];
+  const auditItems = INTERNAL_AUDIT_APPROACHES.map((approach) => ({
+    value: approach,
+    label: INTERNAL_AUDIT_LABELS[approach],
+  }));
+
   return (
     <Section
       title="Leadership & accountability"
@@ -46,9 +57,9 @@ export function WizardStepLeadership({ control, members }: WizardStepLeadershipP
         name="deputySpo"
         render={({ field }) => {
           const value = field.value ?? { memberId: null, toBeNamed: false };
-          const selectValue = value.toBeNamed
-            ? TO_BE_NAMED
-            : value.memberId ?? undefined;
+          // Always a string so the Select is controlled from first render
+          // ('' = nothing picked → placeholder shows, no controlled/uncontrolled warning).
+          const selectValue = value.toBeNamed ? TO_BE_NAMED : value.memberId ?? '';
 
           return (
             <WizardField
@@ -56,6 +67,7 @@ export function WizardStepLeadership({ control, members }: WizardStepLeadershipP
               helper="The backup owner for security and privacy decisions. Pick a person, or mark it to be named later."
             >
               <Select
+                items={deputyItems}
                 value={selectValue}
                 onValueChange={(next) => {
                   if (next === TO_BE_NAMED) {
@@ -106,7 +118,8 @@ export function WizardStepLeadership({ control, members }: WizardStepLeadershipP
             helper="How you will run the internal ISMS audits required for certification."
           >
             <Select
-              value={field.value ?? undefined}
+              items={auditItems}
+              value={field.value ?? ''}
               onValueChange={(next) => field.onChange(next)}
             >
               <SelectTrigger aria-label="Internal audit approach">

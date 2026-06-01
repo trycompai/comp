@@ -150,6 +150,7 @@ export function IsmsControlMappings({
     >
       {linkedControls.length === 0 ? (
         <IsmsEmptyState
+          compact
           icon={Rule}
           title="No controls linked"
           description="No controls linked yet."

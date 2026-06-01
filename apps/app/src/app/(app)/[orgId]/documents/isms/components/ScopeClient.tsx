@@ -193,6 +193,18 @@ export function ScopeClient({
         />
       )}
 
+      <Section
+        title="Scope narrative"
+        description="The certificate scope statement, interfaces, dependencies, and exclusions."
+      >
+        <ScopeForm
+          key={`${narrative.certificateScopeSentence}|${versions[0]?.id ?? 'none'}`}
+          narrative={narrative}
+          canEdit={canManage}
+          onSave={handleSaveNarrative}
+        />
+      </Section>
+
       {document && (
         <IsmsControlMappings
           document={document}
@@ -212,18 +224,6 @@ export function ScopeClient({
           onDecline={handleDecline}
         />
       )}
-
-      <Section
-        title="Scope narrative"
-        description="The certificate scope statement, interfaces, dependencies, and exclusions."
-      >
-        <ScopeForm
-          key={`${narrative.certificateScopeSentence}|${versions[0]?.id ?? 'none'}`}
-          narrative={narrative}
-          canEdit={canManage}
-          onSave={handleSaveNarrative}
-        />
-      </Section>
     </Stack>
   );
 }

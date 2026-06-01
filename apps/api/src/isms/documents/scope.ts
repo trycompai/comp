@@ -15,6 +15,15 @@ export const ismsScopeNarrativeSchema = z.object({
 export type IsmsScopeNarrative = z.infer<typeof ismsScopeNarrativeSchema>;
 
 /**
+ * Collapse runs of whitespace to a single space and trim. Interpolated values
+ * (org name, framework list) can carry stray/trailing whitespace, which would
+ * otherwise produce double spaces in the assembled sentence (CS-437).
+ */
+function normalizeSentence(sentence: string): string {
+  return sentence.replace(/\s+/g, ' ').trim();
+}
+
+/**
  * Derive a default ISMS scope statement (4.3) from platform data. The certificate
  * scope sentence is templated from the org name + active frameworks; interfaces
  * come from vendors and dependencies from sub-processors + key infra vendors.
@@ -30,10 +39,11 @@ export function deriveScopeNarrative(
 
   // Wizard-confirmed certificate scope sentence wins over the generated default.
   const wizardSentence = answers.certificateScopeSentence?.trim();
-  const certificateScopeSentence =
+  const certificateScopeSentence = normalizeSentence(
     wizardSentence && wizardSentence.length > 0
       ? wizardSentence
-      : `The information security management system of ${data.organizationName} covers the people, processes and technology supporting the delivery and operation of its products and services, in accordance with ${frameworks}.`;
+      : `The information security management system of ${data.organizationName} covers the people, processes and technology supporting the delivery and operation of its products and services, in accordance with ${frameworks}.`,
+  );
 
   const inScope = deriveInScope(data);
   const interfaces = deriveInterfaces(data);

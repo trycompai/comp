@@ -4,7 +4,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { Button, Card, Heading, Spinner, Stack, Text } from '@trycompai/design-system';
 import { ArrowLeft, ArrowRight, Checkmark, MagicWand, Save } from '@trycompai/design-system/icons';
 import { useRouter } from 'next/navigation';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import { useIsmsWizard } from '../hooks/useIsmsWizard';
@@ -71,7 +71,7 @@ export function WizardClient({ organizationId, frameworkId, fallbackData }: Wiza
     [initialProfile],
   );
 
-  const { control, getValues, trigger, formState } = useForm<WizardFormValues>({
+  const { control, getValues, trigger, reset, formState } = useForm<WizardFormValues>({
     resolver: zodResolver(wizardFormSchema),
     defaultValues,
   });
@@ -79,6 +79,16 @@ export function WizardClient({ organizationId, frameworkId, fallbackData }: Wiza
   const [stepIndex, setStepIndex] = useState(0);
   const [isSaving, setIsSaving] = useState(false);
   const [isFinishing, setIsFinishing] = useState(false);
+
+  // Re-seed the form if the profile arrives after mount (e.g. SSR fallback was
+  // null and SWR resolved later). Only while the user hasn't edited anything, so
+  // in-progress answers are never clobbered.
+  const hasReseeded = useRef(false);
+  useEffect(() => {
+    if (hasReseeded.current || !profile || formState.isDirty) return;
+    hasReseeded.current = true;
+    reset(defaultValues);
+  }, [profile, defaultValues, formState.isDirty, reset]);
 
   const members = Array.isArray(initialProfile?.members) ? initialProfile.members : [];
   const profileDefaults = initialProfile?.defaults ?? EMPTY_WIZARD_DEFAULTS;
@@ -120,6 +130,14 @@ export function WizardClient({ organizationId, frameworkId, fallbackData }: Wiza
   const handleFinish = async () => {
     const valid = await trigger();
     if (!valid) {
+      const firstInvalid = WIZARD_STEPS.findIndex((wizardStep) =>
+        wizardStep.fields.some((fieldName) => formState.errors[fieldName] != null),
+      );
+      if (firstInvalid !== -1) {
+        setStepIndex(firstInvalid);
+        toast.error(`Please fix the highlighted answers in "${WIZARD_STEPS[firstInvalid].title}".`);
+        return;
+      }
       toast.error('Please complete every step before finishing.');
       return;
     }

@@ -38,6 +38,18 @@ interface IsmsApprovalSectionProps {
   onDecline: () => Promise<void>;
 }
 
+/** Format an ISO timestamp as a short human date, or null when unparseable. */
+function formatDate(value: string | null): string | null {
+  if (!value) return null;
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) return null;
+  return parsed.toLocaleDateString(undefined, {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+  });
+}
+
 export function IsmsApprovalSection({
   document,
   canManage,
@@ -51,11 +63,24 @@ export function IsmsApprovalSection({
   const [selectedApproverId, setSelectedApproverId] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const isPending = document.status === 'needs_review';
+  const { status } = document;
+  const isPending = status === 'needs_review';
+  const isApproved = status === 'approved';
+  const isDeclined = status === 'declined';
+  const isResolved = isApproved || isDeclined;
   const canCurrentUserApprove =
     isPending && !!document.approverId && document.approverId === currentMemberId;
   const approverName =
     approverOptions.find((option) => option.id === document.approverId)?.name ?? 'an approver';
+  const approvedDate = formatDate(document.approvedAt);
+  const declinedDate = formatDate(document.declinedAt);
+
+  // The plain submit button is only offered on un-submitted drafts. Pending and
+  // resolved (approved / declined) documents render their own state instead.
+  const showSubmitButton = canManage && !isPending && !isResolved;
+  // A declined document can be re-submitted, but via an explicit action that
+  // sits inside the declined state — never the bare "Submit for approval".
+  const showResubmitButton = canManage && isDeclined;
 
   const handleSubmit = async () => {
     if (!selectedApproverId) return;
@@ -71,6 +96,33 @@ export function IsmsApprovalSection({
 
   return (
     <div className="flex flex-col gap-3">
+      {isApproved && (
+        <Alert variant="success">
+          <AlertTitle>Approved</AlertTitle>
+          <AlertDescription>
+            This document was approved by{' '}
+            <Text as="span" size="sm" weight="medium">
+              {approverName}
+            </Text>
+            {approvedDate ? ` on ${approvedDate}` : ''}.
+          </AlertDescription>
+        </Alert>
+      )}
+
+      {isDeclined && (
+        <Alert variant="destructive">
+          <AlertTitle>Declined</AlertTitle>
+          <AlertDescription>
+            This document was declined by{' '}
+            <Text as="span" size="sm" weight="medium">
+              {approverName}
+            </Text>
+            {declinedDate ? ` on ${declinedDate}` : ''}.
+            {showResubmitButton ? ' You can submit it for approval again.' : ''}
+          </AlertDescription>
+        </Alert>
+      )}
+
       {canCurrentUserApprove && (
         <ApprovalBanner
           variant="warning"
@@ -96,10 +148,10 @@ export function IsmsApprovalSection({
         </Alert>
       )}
 
-      {canManage && !isPending && (
+      {(showSubmitButton || showResubmitButton) && (
         <div className="flex justify-start">
           <Button type="button" variant="secondary" onClick={() => setIsDialogOpen(true)}>
-            Submit for approval
+            {showResubmitButton ? 'Resubmit for approval' : 'Submit for approval'}
           </Button>
         </div>
       )}

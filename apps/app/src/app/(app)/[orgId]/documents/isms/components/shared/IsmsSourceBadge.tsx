@@ -12,9 +12,10 @@ export interface IsmsSourceBadgeProps {
 
 /**
  * The shared provenance badge for every ISMS register row. "Auto-derived" rows
- * are generated from platform data; "Edited" rows were authored or changed by a
- * person. This is the ONE place this derived-vs-edited language lives — never
- * hand-roll a coloured span for it.
+ * are generated from platform data; "Manual" rows were authored or overridden by
+ * a person (correct for both authored-new and overridden-derived rows). This is
+ * the ONE place this derived-vs-manual language lives — never hand-roll a
+ * coloured span for it.
  */
 export function IsmsSourceBadge({ source, derivedFrom }: IsmsSourceBadgeProps) {
   const isDerived = source === 'derived';
@@ -22,7 +23,7 @@ export function IsmsSourceBadge({ source, derivedFrom }: IsmsSourceBadgeProps) {
     <Stack gap="1">
       <Badge variant={isDerived ? 'secondary' : 'outline'}>
         {isDerived ? <MachineLearningModel size={10} /> : <UserData size={10} />}
-        {isDerived ? 'Auto-derived' : 'Edited'}
+        {isDerived ? 'Auto-derived' : 'Manual'}
       </Badge>
       {derivedFrom && (
         <Text size="xs" variant="muted">
