@@ -3,6 +3,7 @@
 import { initializeOrganization } from '@/actions/organization/lib/initialize-organization';
 import { authActionClientWithoutOrg } from '@/actions/safe-action';
 import { env } from '@/env.mjs';
+import { serverApi } from '@/lib/api-server';
 import { createTrainingVideoEntries } from '@/lib/db/employee';
 import { auth } from '@/utils/auth';
 import { db } from '@db/server';
@@ -103,6 +104,12 @@ export const createOrganizationMinimal = authActionClientWithoutOrg
           },
         });
 
+        // Publish the trust portal via the guarded API (non-fatal).
+        const trustPortalResponse = await serverApi.get('/v1/trust-portal/settings');
+        if (trustPortalResponse.error) {
+          console.error('Non-critical: failed to publish trust portal:', trustPortalResponse.error);
+        }
+
         return {
           success: true,
           organizationId: existingOrg.id,
@@ -195,6 +202,14 @@ export const createOrganizationMinimal = authActionClientWithoutOrg
         },
       });
       createdOrgId = undefined; // Org is fully initialized, disable cleanup
+
+      // Publish the trust portal so trust.inc/{slug} is live immediately, even
+      // while empty. Goes through the guarded API (GET settings lazily creates a
+      // published Trust row with a slug). Non-fatal — org creation must not depend on it.
+      const trustPortalResponse = await serverApi.get('/v1/trust-portal/settings');
+      if (trustPortalResponse.error) {
+        console.error('Non-critical: failed to publish trust portal:', trustPortalResponse.error);
+      }
 
       // Revalidate paths (non-critical, don't let failures kill the flow)
       try {

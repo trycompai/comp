@@ -423,14 +423,25 @@ export class SyncController {
               });
             }
           }
-          results.skipped++;
-          results.details.push({
-            email: normalizedEmail,
-            status: 'skipped',
-            reason: existingMember.deactivated
-              ? 'Member is deactivated'
-              : 'Already a member',
-          });
+          if (existingMember.deactivated) {
+            await db.member.update({
+              where: { id: existingMember.id },
+              data: { deactivated: false, isActive: true, offboardDate: null },
+            });
+            results.reactivated++;
+            results.details.push({
+              email: normalizedEmail,
+              status: 'reactivated',
+              reason: 'User is active again in Google Workspace',
+            });
+          } else {
+            results.skipped++;
+            results.details.push({
+              email: normalizedEmail,
+              status: 'skipped',
+              reason: 'Already a member',
+            });
+          }
           continue;
         }
 
@@ -560,6 +571,13 @@ export class SyncController {
     this.logger.log(
       `Google Workspace sync complete: ${results.imported} imported, ${results.reactivated} reactivated, ${results.deactivated} deactivated, ${results.skipped} skipped, ${results.errors} errors`,
     );
+
+    // Record that an employee sync ran. The People page reads
+    // connection.lastSyncAt as "Last sync"; without this it would only ever
+    // reflect the last check run, making a working daily sync look stuck.
+    await this.connectionRepository.update(connectionId, {
+      lastSyncAt: new Date(),
+    });
 
     return {
       success: true,
@@ -899,7 +917,7 @@ export class SyncController {
           if (existingMember.deactivated) {
             await db.member.update({
               where: { id: existingMember.id },
-              data: { deactivated: false, isActive: true },
+              data: { deactivated: false, isActive: true, offboardDate: null },
             });
             results.reactivated++;
             results.details.push({
@@ -1406,7 +1424,7 @@ export class SyncController {
           if (existingMember.deactivated) {
             await db.member.update({
               where: { id: existingMember.id },
-              data: { deactivated: false, isActive: true },
+              data: { deactivated: false, isActive: true, offboardDate: null },
             });
             results.reactivated++;
             results.details.push({

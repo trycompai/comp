@@ -5,6 +5,7 @@ import type { Metadata } from 'next';
 import { Suspense } from 'react';
 import { PolicyFilters } from '../all/components/PolicyFilters';
 import { PolicyPageActions } from '../all/components/PolicyPageActions';
+import { isArchivedPolicy } from '../lib/policy-archive-state';
 import { PolicyChartsClient } from './components/PolicyChartsClient';
 import { computePoliciesOverview } from './lib/compute-overview';
 import Loading from './loading';
@@ -25,7 +26,7 @@ export default async function PoliciesPage({ params }: PoliciesPageProps) {
   // policies…" status during first-run AI generation. Mirrors the pattern
   // used by the risks and vendors pages.
   const [policiesRes, onboardingRes] = await Promise.all([
-    serverApi.get<{ data: PolicyWithAssignee[] }>('/v1/policies'),
+    serverApi.get<{ data: PolicyWithAssignee[] }>('/v1/policies?includeArchived=true'),
     serverApi.get<{
       triggerJobId: string | null;
       triggerJobCompleted: boolean;
@@ -41,7 +42,7 @@ export default async function PoliciesPage({ params }: PoliciesPageProps) {
     policies.map((p) => ({
       id: p.id,
       status: p.status,
-      isArchived: p.isArchived,
+      isArchived: isArchivedPolicy(p),
       assigneeId: p.assigneeId,
       assignee: p.assignee,
     })),
@@ -52,7 +53,7 @@ export default async function PoliciesPage({ params }: PoliciesPageProps) {
       <Stack gap="md">
         <PageHeader
           title="Policies"
-          actions={<PolicyPageActions policies={policies.filter((p) => !p.isArchived)} />}
+          actions={<PolicyPageActions policies={policies.filter((p) => !isArchivedPolicy(p))} />}
         />
         <Suspense fallback={<Loading />}>
           <PolicyChartsClient organizationId={orgId} initialData={initialOverview} />

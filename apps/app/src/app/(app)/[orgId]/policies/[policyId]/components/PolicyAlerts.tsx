@@ -1,5 +1,10 @@
 'use client';
 
+import {
+  getPolicyAcknowledgmentCount,
+  PolicyAcknowledgmentInvalidationDialog,
+} from '@/components/policies/PolicyAcknowledgmentInvalidationDialog';
+import { usePermissions } from '@/hooks/use-permissions';
 import { authClient } from '@/utils/auth-client';
 import type { Member, Policy, User } from '@db';
 import {
@@ -16,7 +21,6 @@ import { format } from 'date-fns';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { useRef, useState } from 'react';
 import { toast } from 'sonner';
-import { usePermissions } from '@/hooks/use-permissions';
 import { usePolicy } from '../hooks/usePolicy';
 
 interface PolicyAlertsProps {
@@ -35,6 +39,8 @@ export function PolicyAlerts({ policy, isPendingApproval, onMutate }: PolicyAler
   const canUpdate = hasPermission('policy', 'update');
   const [isApproving, setIsApproving] = useState(false);
   const [isDenying, setIsDenying] = useState(false);
+  const [isInvalidationDialogOpen, setIsInvalidationDialogOpen] = useState(false);
+  const [pendingApproveComment, setPendingApproveComment] = useState<string | undefined>();
 
   const { acceptChanges, denyChanges } = usePolicy({
     policyId,
@@ -44,9 +50,8 @@ export function PolicyAlerts({ policy, isPendingApproval, onMutate }: PolicyAler
   const approveCommentRef = useRef<HTMLTextAreaElement>(null);
   const rejectCommentRef = useRef<HTMLTextAreaElement>(null);
 
-  const handleApprove = async () => {
+  const handleApprove = async (comment?: string) => {
     if (policy?.id && policy.approverId) {
-      const comment = approveCommentRef.current?.value?.trim() || undefined;
       setIsApproving(true);
       try {
         await acceptChanges({
@@ -54,6 +59,8 @@ export function PolicyAlerts({ policy, isPendingApproval, onMutate }: PolicyAler
           comment,
         });
         toast.success('Policy changes accepted and published!');
+        setIsInvalidationDialogOpen(false);
+        setPendingApproveComment(undefined);
         onMutate?.();
       } catch {
         toast.error('Failed to accept policy changes.');
@@ -61,6 +68,19 @@ export function PolicyAlerts({ policy, isPendingApproval, onMutate }: PolicyAler
         setIsApproving(false);
       }
     }
+  };
+
+  const handleApproveRequest = () => {
+    const comment = approveCommentRef.current?.value?.trim() || undefined;
+    const invalidationCount = getPolicyAcknowledgmentCount(policy);
+
+    if (invalidationCount === 0) {
+      void handleApprove(comment);
+      return;
+    }
+
+    setPendingApproveComment(comment);
+    setIsInvalidationDialogOpen(true);
   };
 
   const handleDeny = async () => {
@@ -108,7 +128,7 @@ export function PolicyAlerts({ policy, isPendingApproval, onMutate }: PolicyAler
           variant="warning"
           title="Your approval is required"
           description="Review this policy and approve or reject the pending changes."
-          onApprove={handleApprove}
+          onApprove={handleApproveRequest}
           onReject={handleDeny}
           approveLoading={isApproving}
           rejectLoading={isDenying}
@@ -146,6 +166,21 @@ export function PolicyAlerts({ policy, isPendingApproval, onMutate }: PolicyAler
             confirmText: 'Deny',
             cancelText: 'Cancel',
           }}
+        />
+      )}
+
+      {showPendingAlert && canCurrentUserApprove && (
+        <PolicyAcknowledgmentInvalidationDialog
+          acknowledgmentCount={getPolicyAcknowledgmentCount(policy)}
+          isLoading={isApproving}
+          onConfirm={() => void handleApprove(pendingApproveComment)}
+          onOpenChange={(open) => {
+            setIsInvalidationDialogOpen(open);
+            if (!open) {
+              setPendingApproveComment(undefined);
+            }
+          }}
+          open={isInvalidationDialogOpen}
         />
       )}
 

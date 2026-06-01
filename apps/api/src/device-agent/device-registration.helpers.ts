@@ -46,6 +46,33 @@ export async function registerWithSerial({
     });
   }
 
+  // Adopt any prior serial-less registration for the same physical device
+  // before creating a new row. The agent's serial extraction can return
+  // undefined on a cold boot (e.g. macOS `system_profiler` cache not yet
+  // built) and a real value on a subsequent boot — without this, the second
+  // registration creates a duplicate while the first row stays orphaned and
+  // never receives another check-in (frozen at its old compliance state).
+  const orphan = await db.device.findFirst({
+    where: {
+      hostname: dto.hostname,
+      memberId: member.id,
+      organizationId: dto.organizationId,
+      serialNumber: null,
+    },
+    select: { id: true },
+  });
+
+  if (orphan) {
+    return db.device.update({
+      where: { id: orphan.id },
+      data: {
+        ...updateData,
+        hostname: dto.hostname,
+        serialNumber: dto.serialNumber!,
+      },
+    });
+  }
+
   return db.device.create({
     data: {
       ...updateData,

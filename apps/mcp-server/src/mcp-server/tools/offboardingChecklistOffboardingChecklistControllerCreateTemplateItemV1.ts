@@ -13,7 +13,9 @@ const args = {
 export const tool$offboardingChecklistOffboardingChecklistControllerCreateTemplateItemV1:
   ToolDefinition<typeof args> = {
     name: "create-template-item",
-    description: ``,
+    description: `Add an offboarding checklist template item
+
+Creates a new item in the organization's offboarding checklist template so it appears on every member's offboarding checklist from now on.`,
     annotations: {
       "title": "",
       "destructiveHint": false,

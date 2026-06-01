@@ -26,6 +26,11 @@ import { APICall, APIPromise } from "../types/async.js";
 import { Result } from "../types/fp.js";
 
 /**
+ * Reopen an offboarding checklist item
+ *
+ * @remarks
+ * Reverts a previously completed offboarding checklist item back to incomplete for a member, in case the step was marked done by mistake.
+ *
  * If set, this operation will use {@link Security.apikey} from the global security.
  */
 export function offboardingChecklistOffboardingChecklistControllerUncompleteItemV1(
