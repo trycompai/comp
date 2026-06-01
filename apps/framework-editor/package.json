@@ -13,7 +13,7 @@
         "@trycompai/company": "workspace:*",
         "@trycompai/db": "workspace:*",
         "@trycompai/ui": "workspace:*",
-        "better-auth": "^1.4.22",
+        "better-auth": "^1.6.2",
         "framer-motion": "^12.23.9",
         "lucide-react": "^1.7.0",
         "next": "^16.2.0",
