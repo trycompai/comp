@@ -7,7 +7,6 @@ import {
   IsmsCardActions,
   IsmsFieldLabel,
   IsmsRegisterCard,
-  IsmsRegisterField,
   IsmsSourceBadge,
 } from './shared';
 
@@ -52,27 +51,28 @@ export function IssueRow({ issue, canEdit, onSave, onDelete }: IssueRowProps) {
     }
   };
 
-  return (
-    <IsmsRegisterCard
-      header={<IsmsSourceBadge source={issue.source} derivedFrom={issue.derivedFrom} />}
-      headerEnd={
-        canEdit ? (
-          <IsmsCardActions
-            isEditing={isEditing}
-            onEdit={() => setIsEditing(true)}
-            onSave={handleSave}
-            onCancel={handleCancel}
-            onDelete={handleDelete}
-            isDirty={isDirty}
-            isSaving={isSaving}
-            isDeleting={isDeleting}
-            editLabel="Edit issue"
-            deleteLabel="Delete issue"
-          />
-        ) : undefined
-      }
-    >
-      {isEditing ? (
+  const actions = canEdit ? (
+    <IsmsCardActions
+      isEditing={isEditing}
+      onEdit={() => setIsEditing(true)}
+      onSave={handleSave}
+      onCancel={handleCancel}
+      onDelete={handleDelete}
+      isDirty={isDirty}
+      isSaving={isSaving}
+      isDeleting={isDeleting}
+      editLabel="Edit issue"
+      deleteLabel="Delete issue"
+    />
+  ) : undefined;
+
+  // Edit mode keeps the roomier labelled form.
+  if (isEditing) {
+    return (
+      <IsmsRegisterCard
+        header={<IsmsSourceBadge source={issue.source} derivedFrom={issue.derivedFrom} />}
+        headerEnd={actions}
+      >
         <Stack gap="3">
           <IsmsFieldLabel label="Issue">
             <Textarea
@@ -91,14 +91,29 @@ export function IssueRow({ issue, canEdit, onSave, onDelete }: IssueRowProps) {
             />
           </IsmsFieldLabel>
         </Stack>
-      ) : (
-        <Stack gap="3">
-          <Text size="sm" weight="medium">
-            {issue.description}
-          </Text>
-          <IsmsRegisterField label="Effect on ISMS">{issue.effect}</IsmsRegisterField>
-        </Stack>
-      )}
-    </IsmsRegisterCard>
+      </IsmsRegisterCard>
+    );
+  }
+
+  // Read mode: dense two-line row (issue + effect), source chip + hover actions.
+  return (
+    <div className="group flex items-start justify-between gap-3 rounded-md border border-border bg-card px-3.5 py-2.5 transition-colors hover:border-foreground/20">
+      <div className="flex min-w-0 flex-1 flex-col gap-0.5">
+        <Text size="sm" weight="medium">
+          {issue.description}
+        </Text>
+        <Text size="xs" variant="muted">
+          {issue.effect}
+        </Text>
+      </div>
+      <div className="flex shrink-0 items-center gap-2">
+        <IsmsSourceBadge source={issue.source} derivedFrom={issue.derivedFrom} />
+        {actions && (
+          <div className="opacity-0 transition-opacity focus-within:opacity-100 group-hover:opacity-100">
+            {actions}
+          </div>
+        )}
+      </div>
+    </div>
   );
 }

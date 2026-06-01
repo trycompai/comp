@@ -52,7 +52,7 @@ function KindSection({
         ) : undefined
       }
     >
-      <Stack gap="3">
+      <Stack gap="2">
         {rows.map((issue) => (
           <IssueRow
             key={issue.id}
