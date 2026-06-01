@@ -1,0 +1,141 @@
+import { describe, expect, it } from 'bun:test';
+import { evaluateCloudTrail } from '../cloudtrail';
+import { evaluateSecurityGroups } from '../ec2';
+import { evaluateIamAccount } from '../iam';
+import { evaluateKmsRotation } from '../kms';
+import { evaluateRdsBackups, evaluateRdsEncryption } from '../rds';
+import { evaluateS3Encryption, evaluateS3PublicAccess } from '../s3';
+
+const kinds = (os: { kind: string }[]) => os.map((o) => o.kind);
+
+describe('AWS IAM account evaluator', () => {
+  it('fails on missing policy, root MFA off, and root keys present', () => {
+    const out = evaluateIamAccount({
+      passwordPolicy: null,
+      summary: { AccountMFAEnabled: 0, AccountAccessKeysPresent: 1 },
+    });
+    expect(out.filter((o) => o.kind === 'fail')).toHaveLength(3);
+  });
+
+  it('passes a hardened account', () => {
+    const out = evaluateIamAccount({
+      passwordPolicy: {
+        MinimumPasswordLength: 14,
+        RequireSymbols: true,
+        RequireNumbers: true,
+        RequireUppercaseCharacters: true,
+        RequireLowercaseCharacters: true,
+      },
+      summary: { AccountMFAEnabled: 1, AccountAccessKeysPresent: 0 },
+    });
+    expect(kinds(out)).toEqual(['pass', 'pass', 'pass']);
+  });
+});
+
+describe('AWS S3 evaluators', () => {
+  it('encryption: pass when encrypted, fail (high) when not', () => {
+    const out = evaluateS3Encryption([
+      { name: 'a', encrypted: true, publicAccessBlocked: false },
+      { name: 'b', encrypted: false, publicAccessBlocked: false },
+    ]);
+    expect(out[0]!.kind).toBe('pass');
+    expect(out[1]!.kind).toBe('fail');
+    expect(out[1]!.severity).toBe('high');
+  });
+
+  it('public access: pass when blocked, fail when not', () => {
+    const out = evaluateS3PublicAccess([
+      { name: 'a', encrypted: false, publicAccessBlocked: true },
+      { name: 'b', encrypted: false, publicAccessBlocked: false },
+    ]);
+    expect(kinds(out)).toEqual(['pass', 'fail']);
+  });
+});
+
+describe('AWS EC2 security-group evaluator', () => {
+  it('flags SSH (22) open to 0.0.0.0/0 as high', () => {
+    const out = evaluateSecurityGroups([
+      {
+        groupId: 'sg-1',
+        region: 'us-east-1',
+        permissions: [{ ipProtocol: 'tcp', fromPort: 22, toPort: 22, cidrs: ['0.0.0.0/0'] }],
+      },
+    ]);
+    expect(out).toHaveLength(1);
+    expect(out[0]!.kind).toBe('fail');
+    expect(out[0]!.severity).toBe('high');
+  });
+
+  it('flags all-protocols (-1) open as critical', () => {
+    const out = evaluateSecurityGroups([
+      { groupId: 'sg-2', region: 'us-east-1', permissions: [{ ipProtocol: '-1', cidrs: ['0.0.0.0/0'] }] },
+    ]);
+    expect(out[0]!.severity).toBe('critical');
+  });
+
+  it('passes a group with no internet-open sensitive ports', () => {
+    const out = evaluateSecurityGroups([
+      {
+        groupId: 'sg-3',
+        region: 'us-east-1',
+        permissions: [
+          { ipProtocol: 'tcp', fromPort: 443, toPort: 443, cidrs: ['0.0.0.0/0'] },
+          { ipProtocol: 'tcp', fromPort: 22, toPort: 22, cidrs: ['10.0.0.0/8'] },
+        ],
+      },
+    ]);
+    expect(out).toHaveLength(1);
+    expect(out[0]!.kind).toBe('pass');
+  });
+});
+
+describe('AWS RDS evaluators', () => {
+  it('encryption: pass when encrypted, fail (high) when not', () => {
+    const out = evaluateRdsEncryption([
+      { id: 'db1', region: 'us-east-1', encrypted: true, backupRetentionDays: 7 },
+      { id: 'db2', region: 'us-east-1', encrypted: false, backupRetentionDays: 7 },
+    ]);
+    expect(out[0]!.kind).toBe('pass');
+    expect(out[1]!.severity).toBe('high');
+  });
+
+  it('backups: pass when retention > 0, fail when 0', () => {
+    const out = evaluateRdsBackups([
+      { id: 'db1', region: 'us-east-1', encrypted: true, backupRetentionDays: 7 },
+      { id: 'db2', region: 'us-east-1', encrypted: true, backupRetentionDays: 0 },
+    ]);
+    expect(kinds(out)).toEqual(['pass', 'fail']);
+  });
+});
+
+describe('AWS KMS rotation evaluator', () => {
+  it('only evaluates customer-managed keys', () => {
+    const out = evaluateKmsRotation([
+      { keyId: 'k1', region: 'us-east-1', customerManaged: true, rotationEnabled: true },
+      { keyId: 'k2', region: 'us-east-1', customerManaged: true, rotationEnabled: false },
+      { keyId: 'aws-managed', region: 'us-east-1', customerManaged: false, rotationEnabled: false },
+    ]);
+    expect(out).toHaveLength(2); // aws-managed excluded
+    expect(out[0]!.kind).toBe('pass');
+    expect(out[1]!.kind).toBe('fail');
+  });
+});
+
+describe('AWS CloudTrail evaluator', () => {
+  it('passes when a multi-region trail with log validation exists', () => {
+    const out = evaluateCloudTrail([{ name: 't1', multiRegion: true, logValidation: true }]);
+    expect(out[0]!.kind).toBe('pass');
+  });
+
+  it('fails (high) when no trails exist', () => {
+    const out = evaluateCloudTrail([]);
+    expect(out[0]!.kind).toBe('fail');
+    expect(out[0]!.severity).toBe('high');
+  });
+
+  it('fails (medium) when a trail exists but is not multi-region + validated', () => {
+    const out = evaluateCloudTrail([{ name: 't1', multiRegion: false, logValidation: true }]);
+    expect(out[0]!.kind).toBe('fail');
+    expect(out[0]!.severity).toBe('medium');
+  });
+});
