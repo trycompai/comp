@@ -4,6 +4,7 @@ export const PUBLIC_DOCS_EXCLUDED_PREFIXES = [
   '/v1/auth',
   '/v1/admin',
   '/v1/internal',
+  '/v1/mcp',
   '/v1/framework-editor',
   '/v1/browserbase',
   '/v1/assistant-chat',

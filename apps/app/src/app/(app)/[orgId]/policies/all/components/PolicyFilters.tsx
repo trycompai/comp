@@ -12,11 +12,12 @@ import {
   SelectTrigger,
   SelectValue,
   Stack,
+  Spinner,
 } from '@trycompai/design-system';
 import { Search } from '@trycompai/design-system/icons';
-import { Loader2 } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { usePolicyOnboardingStatus } from '../../(overview)/hooks/use-policy-onboarding-status';
+import { isArchivedPolicy } from '../../lib/policy-archive-state';
 import { PoliciesTableDS } from './PoliciesTableDS';
 import { PolicyTailoringProvider } from './policy-tailoring-context';
 import { comparePoliciesByName } from './policy-name-sort';
@@ -70,9 +71,9 @@ export function PolicyFilters({ policies, onboardingRunId }: PolicyFiltersProps)
 
     // Status filter
     if (statusFilter === 'archived') {
-      result = result.filter((p) => p.isArchived);
+      result = result.filter((p) => isArchivedPolicy(p));
     } else {
-      result = result.filter((p) => !p.isArchived);
+      result = result.filter((p) => !isArchivedPolicy(p));
       if (statusFilter !== 'all') {
         result = result.filter((p) => p.status === statusFilter);
       }
@@ -170,7 +171,7 @@ export function PolicyFilters({ policies, onboardingRunId }: PolicyFiltersProps)
         {showTailoringBanner && progress !== null && (
           <div className="flex items-center gap-3 rounded-xl border border-primary/20 bg-linear-to-r from-primary/10 via-primary/5 to-transparent px-4 py-3">
             <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/15 text-primary">
-              <Loader2 className="h-5 w-5 animate-spin" />
+              <Spinner size={20} />
             </div>
             <div className="flex flex-col">
               <span className="text-sm font-medium text-primary">Tailoring your policies</span>

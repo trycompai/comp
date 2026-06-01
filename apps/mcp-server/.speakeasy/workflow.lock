@@ -1,0 +1,34 @@
+speakeasyVersion: 1.768.2
+sources:
+    Comp AI API:
+        sourceNamespace: comp-ai-api
+        sourceRevisionDigest: sha256:3678269f476c4d11c58ede057372813c93c98576bfbf500f1a1d8fd2cbb4ca87
+        sourceBlobDigest: sha256:c4762701cbb74fa26feb130e88dd5ef7354ca495d27e4c17dea71535b6c94f30
+        tags:
+            - latest
+            - "1.0"
+targets:
+    comp-ai:
+        source: Comp AI API
+        sourceNamespace: comp-ai-api
+        sourceRevisionDigest: sha256:3678269f476c4d11c58ede057372813c93c98576bfbf500f1a1d8fd2cbb4ca87
+        sourceBlobDigest: sha256:c4762701cbb74fa26feb130e88dd5ef7354ca495d27e4c17dea71535b6c94f30
+workflow:
+    workflowVersion: 1.0.0
+    speakeasyVersion: latest
+    sources:
+        Comp AI API:
+            inputs:
+                - location: ../../packages/docs/openapi.json
+            overlays:
+                - location: ./.speakeasy/mcp-uploads-overlay.yaml
+            output: .speakeasy/out.openapi.yaml
+            registry:
+                location: registry.speakeasyapi.dev/comp-ai-ntv/comp-ai/comp-ai-api
+    targets:
+        comp-ai:
+            target: mcp-typescript
+            source: Comp AI API
+            publish:
+                npm:
+                    token: $npm_token

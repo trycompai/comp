@@ -73,11 +73,19 @@ function getOSVersion(platform: DevicePlatform): string {
 function getSerialNumber(platform: DevicePlatform): string | undefined {
   try {
     if (platform === 'macos') {
+      // `$NF` (last field) handles both "Serial Number: ABC" (3 fields) and
+      // "Serial Number (system): ABC" (4 fields, newer macOS). The fixed
+      // `$4` we used before silently returned empty on the 3-field variant,
+      // which made the agent register without a serial and later create a
+      // duplicate row once `system_profiler`'s cache warmed up and produced
+      // the 4-field variant. `exit` stops after the first match so any
+      // sub-component "Serial Number" lines added by future hardware can't
+      // smuggle a second value into the output.
       return (
-        execSync("system_profiler SPHardwareDataType | awk '/Serial Number/{print $4}'", {
-          encoding: 'utf-8',
-          timeout: 5000,
-        }).trim() || undefined
+        execSync(
+          "system_profiler SPHardwareDataType | awk '/Serial Number/{print $NF; exit}'",
+          { encoding: 'utf-8', timeout: 5000 },
+        ).trim() || undefined
       );
     }
     if (platform === 'linux') {

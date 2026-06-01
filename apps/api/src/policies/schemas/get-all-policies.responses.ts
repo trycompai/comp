@@ -65,6 +65,7 @@ export const GET_ALL_POLICIES_RESPONSES: Record<string, ApiResponseOptions> = {
               signedBy: [],
               reviewDate: '2024-12-31T00:00:00.000Z',
               isArchived: false,
+              archivedAt: null,
               createdAt: '2024-01-01T00:00:00.000Z',
               updatedAt: '2024-01-15T00:00:00.000Z',
               lastArchivedAt: null,
