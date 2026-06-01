@@ -14,7 +14,7 @@ export const VERSION_OPERATIONS: Record<string, ApiOperationOptions> = {
   createPolicyVersion: {
     summary: 'Create policy version',
     description:
-      'Creates a new draft version based on the current published version (or a specified source version).',
+      'Creates a new draft version of a policy, cloned from the current published version (or a specified source version). Use this when you need to make any change to a published policy — content edits, PDF attachments, anything. Published policies are immutable, so changes always happen on a fresh draft version that you can later publish.',
   },
   updateVersionContent: {
     summary: 'Update version content',
@@ -27,9 +27,9 @@ export const VERSION_OPERATIONS: Record<string, ApiOperationOptions> = {
       'Deletes a non-published, non-pending version. Published and pending versions cannot be deleted.',
   },
   publishPolicyVersion: {
-    summary: 'Publish new policy version',
+    summary: 'Publish policy version',
     description:
-      'Publishes draft content as a new version and optionally sets it as active.',
+      'Publishes a draft policy version, making it the active/current version of the policy. Pass the versionId of the draft you want to publish — for example one created via create-policy-version and then edited with update-policy-version-content or given a PDF via the upload flow. Omitting versionId may publish stale draft content, so always pass the ID of the draft you actually changed.',
   },
   setActivePolicyVersion: {
     summary: 'Set active policy version',

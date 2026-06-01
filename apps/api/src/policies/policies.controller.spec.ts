@@ -25,6 +25,7 @@ jest.mock('@db', () => ({
   db: {
     policy: {
       findFirst: jest.fn(),
+      findUnique: jest.fn(),
       update: jest.fn(),
     },
     control: {
@@ -43,6 +44,10 @@ jest.mock('@db', () => ({
       findFirst: jest.fn(),
       update: jest.fn(),
     },
+    frameworkControlPolicyLink: {
+      deleteMany: jest.fn(),
+    },
+    $transaction: jest.fn(),
   },
   Frequency: {
     monthly: 'monthly',
@@ -52,6 +57,13 @@ jest.mock('@db', () => ({
   PolicyStatus: {
     draft: 'draft',
     published: 'published',
+  },
+  BackgroundCheckStatus: {
+    pending: 'pending',
+    in_progress: 'in_progress',
+    completed: 'completed',
+    completed_with_flags: 'completed_with_flags',
+    failed: 'failed',
   },
   FindingType: {
     soc2: 'soc2',
@@ -145,11 +157,51 @@ describe('PoliciesController', () => {
 
       const result = await controller.getAllPolicies(orgId, mockAuthContext);
 
-      expect(policiesService.findAll).toHaveBeenCalledWith(orgId);
+      expect(policiesService.findAll).toHaveBeenCalledWith({
+        organizationId: orgId,
+        excludeContent: false,
+        includeArchived: false,
+      });
       expect(result).toEqual({
         data: mockPolicies,
         authType: 'session',
         authenticatedUser: { id: 'usr_123', email: 'test@example.com' },
+      });
+    });
+
+    it('should pass excludeContent=true to service when query param is "true"', async () => {
+      mockPoliciesService.findAll.mockResolvedValue([]);
+
+      await controller.getAllPolicies(orgId, mockAuthContext, 'true');
+
+      expect(policiesService.findAll).toHaveBeenCalledWith({
+        organizationId: orgId,
+        excludeContent: true,
+        includeArchived: false,
+      });
+    });
+
+    it('should treat any non-"true" excludeContent value as false', async () => {
+      mockPoliciesService.findAll.mockResolvedValue([]);
+
+      await controller.getAllPolicies(orgId, mockAuthContext, 'false');
+
+      expect(policiesService.findAll).toHaveBeenCalledWith({
+        organizationId: orgId,
+        excludeContent: false,
+        includeArchived: false,
+      });
+    });
+
+    it('should pass includeArchived=true to service when query param is "true"', async () => {
+      mockPoliciesService.findAll.mockResolvedValue([]);
+
+      await controller.getAllPolicies(orgId, mockAuthContext, undefined, 'true');
+
+      expect(policiesService.findAll).toHaveBeenCalledWith({
+        organizationId: orgId,
+        excludeContent: false,
+        includeArchived: true,
       });
     });
 
@@ -592,7 +644,19 @@ describe('PoliciesController', () => {
   describe('removePolicyControl', () => {
     it('should disconnect control from policy and return success', async () => {
       const { db } = require('@db');
+      db.policy.findUnique.mockResolvedValue({ controls: [] });
       db.policy.update.mockResolvedValue({});
+      db.$transaction.mockImplementation(async (callback: (tx: unknown) => Promise<unknown>) =>
+        callback({
+          policy: {
+            findUnique: db.policy.findUnique,
+            update: db.policy.update,
+          },
+          frameworkControlPolicyLink: {
+            deleteMany: db.frameworkControlPolicyLink.deleteMany,
+          },
+        }),
+      );
 
       const result = await controller.removePolicyControl(
         'pol_1',

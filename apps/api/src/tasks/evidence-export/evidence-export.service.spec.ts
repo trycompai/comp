@@ -87,6 +87,18 @@ jest.mock('@db', () => ({
 jest.mock('./evidence-pdf-generator', () => ({
   generateTaskSummaryPDF: jest.fn(() => Buffer.from('SUMMARY-PDF')),
   generateAutomationPDF: jest.fn(() => Buffer.from('AUTOMATION-PDF')),
+  generateAutomationPDFFromStream: jest.fn(
+    async (
+      _header: unknown,
+      _context: unknown,
+      runBatches: AsyncIterable<unknown>,
+    ) => {
+      for await (const _batch of runBatches) {
+        /* drain so underlying DB queries execute */
+      }
+      return Buffer.from('AUTOMATION-PDF');
+    },
+  ),
   sanitizeFilename: (name: string) =>
     name
       .toLowerCase()
@@ -180,10 +192,15 @@ describe('EvidenceExportService — streaming ZIPs', () => {
       await mock.finalized;
 
       const paths = mock.appendCalls.map((c) => c.options.name);
+      // EXPORT_INFO.txt is appended first to flush a ZIP byte through proxies
+      // before the slow per-task data load runs.
       expect(paths[0]).toBe(
-        'acme-corp_soc-2-access-review_evidence/00-summary.pdf',
+        'acme-corp_soc-2-access-review_evidence/EXPORT_INFO.txt',
       );
       expect(paths[1]).toBe(
+        'acme-corp_soc-2-access-review_evidence/00-summary.pdf',
+      );
+      expect(paths[2]).toBe(
         'acme-corp_soc-2-access-review_evidence/01-attachments/contract.pdf',
       );
 
@@ -580,6 +597,7 @@ describe('EvidenceExportService — streaming ZIPs', () => {
 
       const paths = mock.appendCalls.map((c) => c.options.name);
       expect(paths).toEqual([
+        'acme-corp_soc-2-access-review_evidence/EXPORT_INFO.txt',
         'acme-corp_soc-2-access-review_evidence/00-summary.pdf',
       ]);
       expect(s3Client!.send).not.toHaveBeenCalled();

@@ -44,7 +44,11 @@ export class OffboardingChecklistController {
 
   @Get('pending')
   @RequirePermission('member', 'read')
-  @ApiOperation({ summary: 'Get members with pending offboarding checklists' })
+  @ApiOperation({
+    summary: 'Get members with pending offboarding checklists',
+    description:
+      'Lists members whose offboarding checklist is still incomplete, with their outstanding items, so you can track and finish departing-employee offboarding.',
+  })
   async getPendingOffboardings(
     @OrganizationId() organizationId: string,
   ) {
@@ -55,12 +59,22 @@ export class OffboardingChecklistController {
 
   @Get('template')
   @RequirePermission('member', 'read')
+  @ApiOperation({
+    summary: 'Get the offboarding checklist template',
+    description:
+      "Returns the organization's offboarding checklist template: the ordered set of items every departing member must complete during their offboarding.",
+  })
   async getTemplate(@OrganizationId() organizationId: string) {
     return this.offboardingChecklistService.getTemplate(organizationId);
   }
 
   @Post('template')
   @RequirePermission('member', 'update')
+  @ApiOperation({
+    summary: 'Add an offboarding checklist template item',
+    description:
+      "Creates a new item in the organization's offboarding checklist template so it appears on every member's offboarding checklist from now on.",
+  })
   async createTemplateItem(
     @OrganizationId() organizationId: string,
     @Body() dto: CreateTemplateItemDto,
@@ -73,6 +87,11 @@ export class OffboardingChecklistController {
 
   @Patch('template/:id')
   @RequirePermission('member', 'update')
+  @ApiOperation({
+    summary: 'Update an offboarding checklist template item',
+    description:
+      "Updates an existing offboarding checklist template item by id, changing its label, description, or settings on the organization's offboarding template.",
+  })
   async updateTemplateItem(
     @OrganizationId() organizationId: string,
     @Param('id') id: string,
@@ -87,6 +106,11 @@ export class OffboardingChecklistController {
 
   @Delete('template/:id')
   @RequirePermission('member', 'update')
+  @ApiOperation({
+    summary: 'Delete an offboarding checklist template item',
+    description:
+      "Removes an item from the organization's offboarding checklist template by id so it no longer appears on members' offboarding checklists.",
+  })
   async deleteTemplateItem(
     @OrganizationId() organizationId: string,
     @Param('id') id: string,
@@ -99,6 +123,11 @@ export class OffboardingChecklistController {
 
   @Get('member/:memberId')
   @RequirePermission('member', 'read')
+  @ApiOperation({
+    summary: "Get a member's offboarding checklist",
+    description:
+      'Returns the offboarding checklist for a specific member, including each item and whether it has been completed, to track that person\'s offboarding progress.',
+  })
   async getMemberChecklist(
     @OrganizationId() organizationId: string,
     @Param('memberId') memberId: string,
@@ -111,7 +140,11 @@ export class OffboardingChecklistController {
 
   @Get('export-all')
   @RequirePermission('member', 'read')
-  @ApiOperation({ summary: 'Export all offboarding evidence as a zip file' })
+  @ApiOperation({
+    summary: 'Export all offboarding evidence as a zip file',
+    description:
+      'Exports a zip archive containing the offboarding checklist evidence for every member in the organization, for audits, handovers, or record-keeping.',
+  })
   async exportAllEvidence(
     @OrganizationId() organizationId: string,
     @Res() res: Response,
@@ -134,7 +167,11 @@ export class OffboardingChecklistController {
 
   @Get('member/:memberId/export')
   @RequirePermission('member', 'read')
-  @ApiOperation({ summary: 'Export offboarding evidence as a zip file' })
+  @ApiOperation({
+    summary: 'Export offboarding evidence as a zip file',
+    description:
+      'Exports a zip archive of the offboarding checklist evidence collected for a single member, for audit, handover, or record-keeping purposes.',
+  })
   @ApiParam({ name: 'memberId', description: 'Member ID' })
   async exportEvidence(
     @Param('memberId') memberId: string,
@@ -166,6 +203,11 @@ export class OffboardingChecklistController {
 
   @Post('member/:memberId/item/:templateItemId/complete')
   @RequirePermission('member', 'update')
+  @ApiOperation({
+    summary: 'Complete an offboarding checklist item',
+    description:
+      "Marks a specific offboarding checklist item complete for a member, recording who completed it and when, as part of finishing that member's offboarding.",
+  })
   async completeItem(
     @OrganizationId() organizationId: string,
     @AuthContext() authContext: AuthContextType,
@@ -184,6 +226,11 @@ export class OffboardingChecklistController {
 
   @Delete('member/:memberId/item/:templateItemId/complete')
   @RequirePermission('member', 'update')
+  @ApiOperation({
+    summary: 'Reopen an offboarding checklist item',
+    description:
+      'Reverts a previously completed offboarding checklist item back to incomplete for a member, in case the step was marked done by mistake.',
+  })
   async uncompleteItem(
     @OrganizationId() organizationId: string,
     @Param('memberId') memberId: string,
@@ -198,6 +245,11 @@ export class OffboardingChecklistController {
 
   @Post('member/:memberId/item/:templateItemId/evidence')
   @RequirePermission('member', 'update')
+  @ApiOperation({
+    summary: 'Upload evidence for an offboarding checklist item',
+    description:
+      "Attaches a supporting evidence file to a member's completed offboarding checklist item, documenting that the offboarding step was actually carried out.",
+  })
   async uploadEvidence(
     @OrganizationId() organizationId: string,
     @AuthContext() authContext: AuthContextType,
@@ -218,6 +270,8 @@ export class OffboardingChecklistController {
   @RequirePermission('member', 'read')
   @ApiOperation({
     summary: 'Get vendor access revocation status for a member',
+    description:
+      'Lists the vendors a departing member had access to and whether each has been revoked, so you can confirm all vendor access is removed during offboarding.',
   })
   @ApiParam({ name: 'memberId', description: 'Member ID' })
   async getAccessRevocations(
@@ -232,7 +286,11 @@ export class OffboardingChecklistController {
 
   @Post('member/:memberId/access-revocations/confirm-all')
   @RequirePermission('member', 'update')
-  @ApiOperation({ summary: 'Confirm all vendor access as revoked' })
+  @ApiOperation({
+    summary: 'Confirm all vendor access as revoked',
+    description:
+      "Marks every vendor access record for a departing member as revoked in one step, recording who confirmed it, to complete access removal during offboarding.",
+  })
   @ApiParam({ name: 'memberId', description: 'Member ID' })
   async revokeAllVendorAccess(
     @OrganizationId() organizationId: string,
@@ -248,7 +306,11 @@ export class OffboardingChecklistController {
 
   @Post('member/:memberId/access-revocations/:vendorId')
   @RequirePermission('member', 'update')
-  @ApiOperation({ summary: 'Mark vendor access as revoked' })
+  @ApiOperation({
+    summary: 'Mark vendor access as revoked',
+    description:
+      "Marks a single vendor's access for a departing member as revoked, optionally attaching evidence and notes, as part of offboarding access removal.",
+  })
   @ApiParam({ name: 'memberId', description: 'Member ID' })
   @ApiParam({ name: 'vendorId', description: 'Vendor ID' })
   async revokeVendorAccess(
@@ -278,7 +340,11 @@ export class OffboardingChecklistController {
 
   @Delete('member/:memberId/access-revocations/:vendorId')
   @RequirePermission('member', 'update')
-  @ApiOperation({ summary: 'Undo vendor access revocation' })
+  @ApiOperation({
+    summary: 'Undo vendor access revocation',
+    description:
+      "Reverses a vendor access revocation for a member, marking that vendor's access as not revoked again, in case it was confirmed by mistake during offboarding.",
+  })
   @ApiParam({ name: 'memberId', description: 'Member ID' })
   @ApiParam({ name: 'vendorId', description: 'Vendor ID' })
   async undoVendorRevocation(

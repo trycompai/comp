@@ -86,6 +86,7 @@
   },
   "workspaces": [
     "apps/*",
+    "!apps/mcp-server",
     "packages/*"
   ],
   "dependencies": {

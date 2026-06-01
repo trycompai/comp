@@ -16,6 +16,7 @@ export class TaskItemAuditService {
     taskTitle: string;
     entityType: string;
     entityId: string;
+    viaApiKey?: boolean;
   }): Promise<void> {
     try {
       await db.auditLog.create({
@@ -25,13 +26,16 @@ export class TaskItemAuditService {
           memberId: params.memberId,
           entityType: 'task',
           entityId: params.taskItemId,
-          description: 'created this task',
+          description: params.viaApiKey
+            ? 'created this task (via API key)'
+            : 'created this task',
           data: {
             action: 'created',
             taskItemId: params.taskItemId,
             taskTitle: params.taskTitle,
             parentEntityType: params.entityType,
             parentEntityId: params.entityId,
+            ...(params.viaApiKey && { authType: 'api-key' }),
           },
         },
       });
@@ -53,12 +57,16 @@ export class TaskItemAuditService {
     changes: string[];
     entityType: string;
     entityId: string;
+    viaApiKey?: boolean;
   }): Promise<void> {
     try {
-      const changeDescription =
+      const baseDescription =
         params.changes.length > 0
           ? params.changes.join(', ')
           : 'updated the task';
+      const changeDescription = params.viaApiKey
+        ? `${baseDescription} (via API key)`
+        : baseDescription;
 
       await db.auditLog.create({
         data: {
@@ -75,11 +83,52 @@ export class TaskItemAuditService {
             changes: params.changes,
             parentEntityType: params.entityType,
             parentEntityId: params.entityId,
+            ...(params.viaApiKey && { authType: 'api-key' }),
           },
         },
       });
     } catch (error) {
       this.logger.error('Failed to log task item update:', error);
+      // Don't throw - audit log failures should not block operations
+    }
+  }
+
+  /**
+   * Log task item deletion
+   */
+  async logTaskItemDeleted(params: {
+    taskItemId: string;
+    organizationId: string;
+    userId: string;
+    memberId: string;
+    taskTitle: string;
+    entityType: string;
+    entityId: string;
+    viaApiKey?: boolean;
+  }): Promise<void> {
+    try {
+      await db.auditLog.create({
+        data: {
+          organizationId: params.organizationId,
+          userId: params.userId,
+          memberId: params.memberId,
+          entityType: 'task',
+          entityId: params.taskItemId,
+          description: params.viaApiKey
+            ? 'deleted this task (via API key)'
+            : 'deleted this task',
+          data: {
+            action: 'deleted',
+            taskItemId: params.taskItemId,
+            taskTitle: params.taskTitle,
+            parentEntityType: params.entityType,
+            parentEntityId: params.entityId,
+            ...(params.viaApiKey && { authType: 'api-key' }),
+          },
+        },
+      });
+    } catch (error) {
+      this.logger.error('Failed to log task item deletion:', error);
       // Don't throw - audit log failures should not block operations
     }
   }

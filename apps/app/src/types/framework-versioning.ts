@@ -14,6 +14,7 @@ export interface ManifestRequirement {
   identifier: string;
   name: string;
   description: string | null;
+  requirementFamily?: string | null;
 }
 
 export interface ManifestControl {

@@ -20,6 +20,7 @@ export interface ExportedFramework {
     name: string;
     identifier: string;
     description: string;
+    requirementFamily?: string | null;
   }>;
   controlTemplates: Array<{
     name: string;
@@ -128,6 +129,7 @@ export class FrameworkExportService {
         name: r.name,
         identifier: r.identifier,
         description: r.description,
+        requirementFamily: r.requirementFamily || null,
       })),
       controlTemplates: controlTemplates.map((ct) => ({
         name: ct.name,
@@ -188,6 +190,7 @@ export class FrameworkExportService {
               name: r.name,
               identifier: r.identifier ?? '',
               description: r.description,
+              requirementFamily: r.requirementFamily || null,
             },
           }),
         ),

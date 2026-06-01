@@ -3,12 +3,13 @@
 import { DataTableColumnHeader } from '@/components/data-table/data-table-column-header';
 import { StatusIndicator } from '@/components/status-indicator';
 import { formatDate } from '@/lib/format';
-import { Badge } from '@trycompai/ui/badge';
-import { Policy } from '@db';
+import type { Policy } from '@db';
 import { type ColumnDef, type Row } from '@tanstack/react-table';
-import { ExternalLink, Loader2 } from 'lucide-react';
+import { Badge, Spinner } from '@trycompai/design-system';
+import { Launch } from '@trycompai/design-system/icons';
 import Link from 'next/link';
 
+import { isArchivedPolicy } from '../../lib/policy-archive-state';
 import { usePolicyTailoringStatus } from './policy-tailoring-context';
 
 export type PolicyTailoringStatus = 'queued' | 'pending' | 'processing' | 'completed';
@@ -44,7 +45,7 @@ export function getPolicyColumns(orgId: string): ColumnDef<Policy>[] {
       header: ({ column }) => <DataTableColumnHeader column={column} title="Department" />,
       cell: ({ row }) => {
         return (
-          <Badge variant="marketing" className="w-fit uppercase">
+          <Badge variant="secondary">
             {row.original.department}
           </Badge>
         );
@@ -81,7 +82,9 @@ function PolicyNameCell({ row, orgId }: { row: Row<Policy>; orgId: string }) {
   if (isTailoring) {
     return (
       <div className="flex items-center gap-2 text-muted-foreground">
-        <Loader2 className="size-3 animate-spin text-primary" />
+        <span className="text-primary">
+          <Spinner size={12} />
+        </span>
         <span className="max-w-[31.25rem] truncate font-medium text-muted-foreground">
           {policyName}
         </span>
@@ -100,7 +103,7 @@ function PolicyNameCell({ row, orgId }: { row: Row<Policy>; orgId: string }) {
       <span className="max-w-[31.25rem] truncate font-medium group-hover:underline">
         {policyName}
       </span>
-      <ExternalLink className="size-4 shrink-0 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100" />
+      <Launch size={16} className="shrink-0 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100" />
     </Link>
   );
 }
@@ -119,13 +122,13 @@ function PolicyStatusCell({ row }: { row: Row<Policy> }) {
           : 'Preparing';
     return (
       <div className="flex items-center gap-2 text-sm text-primary">
-        <Loader2 className="h-4 w-4 animate-spin" />
+        <Spinner size={16} />
         {label}
       </div>
     );
   }
 
-  if (row.original.isArchived) {
+  if (isArchivedPolicy(row.original)) {
     return <StatusIndicator status="archived" />;
   }
 

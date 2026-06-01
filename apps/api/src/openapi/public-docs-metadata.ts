@@ -26,6 +26,15 @@ export const PUBLIC_OPENAPI_DESCRIPTION =
 
 export const PUBLIC_SERVER_URL = 'https://api.trycomp.ai';
 
+/**
+ * Name of the OAuth2 security scheme advertised in the public spec. MCP hosts
+ * (e.g. Speakeasy Gram) only surface "Sign in with Comp AI" + forward the
+ * caller's bearer token to the API when the spec declares an oauth2 scheme;
+ * with only the API key, every MCP user would hit the API as one shared
+ * identity, bypassing per-user RBAC.
+ */
+export const MCP_OAUTH_SECURITY_SCHEME = 'oauth2';
+
 function getVisibilityForOperation(
   operation: OpenApiOperation,
   metadata?: PublicOperationMetadata,
@@ -183,6 +192,158 @@ function removeExcludedPaths(paths: Record<string, unknown>): void {
   }
 }
 
+type SpeakeasyMcpExtension = {
+  name?: string;
+  disabled?: boolean;
+};
+
+function toKebabCase(input: string): string {
+  return input
+    .replace(/([a-z0-9])([A-Z])/g, '$1-$2')
+    .replace(/[_\s]+/g, '-')
+    .replace(/-+/g, '-')
+    .toLowerCase();
+}
+
+/**
+ * Derive a human/LLM-friendly tool name from a NestJS-generated operationId.
+ * e.g. "PeopleController_inviteMembers_v1" -> { resource: "People", method: "inviteMembers" }
+ */
+function splitOperationId(operationId: string): {
+  resource: string;
+  method: string;
+} {
+  const withoutVersion = operationId.replace(/_v\d+$/i, '');
+  const firstUnderscore = withoutVersion.indexOf('_');
+  if (firstUnderscore === -1) {
+    return { resource: '', method: withoutVersion };
+  }
+  const controller = withoutVersion.slice(0, firstUnderscore);
+  const method = withoutVersion.slice(firstUnderscore + 1);
+  return { resource: controller.replace(/Controller$/i, ''), method };
+}
+
+/**
+ * Assign a clean `x-speakeasy-mcp.name` to every MCP-exposed operation so the
+ * generated MCP tools have readable, searchable names (e.g. `invite-members`)
+ * instead of cryptic auto-generated ones (`people-people-controller-invite-members-v1`).
+ *
+ * - Operations with a manually-set name (via @ApiExtension) are preserved.
+ * - Operations marked disabled are left alone (they won't become tools).
+ * - Names are derived from the method name; collisions fall back to a
+ *   resource-prefixed name, then a numeric suffix, guaranteeing uniqueness.
+ *
+ * This does NOT touch operationId — only the Speakeasy-specific extension —
+ * so OpenAPI consumers and the docs site are unaffected.
+ */
+function applyMcpToolNames(
+  paths: Record<string, Record<string, OpenApiOperation>>,
+): void {
+  const used = new Set<string>();
+
+  // Reserve manually-assigned names first so auto-generated ones never clash.
+  for (const methods of Object.values(paths)) {
+    for (const operation of Object.values(methods)) {
+      const ext = operation?.['x-speakeasy-mcp'] as
+        | SpeakeasyMcpExtension
+        | undefined;
+      if (ext?.name) used.add(ext.name);
+    }
+  }
+
+  for (const methods of Object.values(paths)) {
+    for (const operation of Object.values(methods)) {
+      if (!operation || typeof operation !== 'object') continue;
+
+      const ext = operation['x-speakeasy-mcp'] as
+        | SpeakeasyMcpExtension
+        | undefined;
+      // Keep hand-picked names and skip disabled (non-tool) operations.
+      if (ext?.name || ext?.disabled) continue;
+
+      const operationId = operation.operationId;
+      if (!operationId) continue;
+
+      const { resource, method } = splitOperationId(operationId);
+      let candidate = toKebabCase(method);
+      if (!candidate || used.has(candidate)) {
+        candidate = toKebabCase(`${resource}-${method}`);
+      }
+
+      let finalName = candidate;
+      let suffix = 2;
+      while (used.has(finalName)) {
+        finalName = `${candidate}-${suffix}`;
+        suffix += 1;
+      }
+      used.add(finalName);
+
+      operation['x-speakeasy-mcp'] = { ...(ext ?? {}), name: finalName };
+    }
+  }
+}
+
+/**
+ * Declare the OAuth2 (authorization code) security scheme and offer it on every
+ * operation that already accepts the API key. The scheme points at the
+ * better-auth MCP authorization server; the per-operation `security` entries use
+ * OR semantics, so an API key OR a Comp AI OAuth token satisfies the request.
+ * This is what lets MCP hosts forward each user's bearer token to the API so the
+ * existing per-user/per-org RBAC applies, rather than a single shared key.
+ */
+function applyMcpOAuthSecurity(document: OpenAPIObject): void {
+  document.components ??= {};
+  document.components.securitySchemes ??= {};
+  document.components.securitySchemes[MCP_OAUTH_SECURITY_SCHEME] = {
+    type: 'oauth2',
+    description:
+      'OAuth 2.1 authorization code flow. Sign in with your Comp AI account — tokens are issued by the Comp AI authorization server and scoped to your organization, role, and permissions.',
+    flows: {
+      authorizationCode: {
+        authorizationUrl: `${PUBLIC_SERVER_URL}/api/auth/mcp/authorize`,
+        tokenUrl: `${PUBLIC_SERVER_URL}/api/auth/mcp/token`,
+        refreshUrl: `${PUBLIC_SERVER_URL}/api/auth/mcp/token`,
+        scopes: {
+          openid: 'OpenID Connect authentication',
+          profile: 'Basic profile information',
+          email: 'Email address',
+          offline_access: 'Maintain access via refresh tokens',
+        },
+      },
+    },
+  };
+
+  for (const methods of Object.values(document.paths)) {
+    for (const operation of Object.values(
+      methods as Record<string, OpenApiOperation>,
+    )) {
+      if (!operation || typeof operation !== 'object') {
+        continue;
+      }
+
+      const security = operation.security;
+      if (!Array.isArray(security)) {
+        continue;
+      }
+
+      const requirements = security as Array<Record<string, string[]>>;
+      const hasApiKey = requirements.some(
+        (req) => req && typeof req === 'object' && 'apikey' in req,
+      );
+      const hasOAuth = requirements.some(
+        (req) =>
+          req && typeof req === 'object' && MCP_OAUTH_SECURITY_SCHEME in req,
+      );
+
+      // Mirror OAuth onto API-key operations only — endpoints that are
+      // intentionally public (empty security) must stay unauthenticated.
+      if (hasApiKey && !hasOAuth) {
+        requirements.push({ [MCP_OAUTH_SECURITY_SCHEME]: [] });
+      }
+    }
+  }
+}
+
 export function applyPublicOpenApiMetadata(document: OpenAPIObject): void {
   document.info.title = PUBLIC_OPENAPI_TITLE;
   document.info.description = PUBLIC_OPENAPI_DESCRIPTION;
@@ -231,7 +392,13 @@ export function applyPublicOpenApiMetadata(document: OpenAPIObject): void {
     }
   }
 
+  // Assign clean MCP tool names to every remaining (public) operation.
+  applyMcpToolNames(paths);
+
   addTagMetadata(document);
   removeUnusedSchemas(document);
   sanitizePublicSchemas(document);
+
+  // Add OAuth last so its security scheme isn't touched by schema pruning.
+  applyMcpOAuthSecurity(document);
 }

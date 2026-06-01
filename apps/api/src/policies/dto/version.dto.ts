@@ -44,6 +44,16 @@ export class UpdateVersionContentDto {
 
 export class PublishVersionDto {
   @ApiProperty({
+    description:
+      'Version ID to publish. PASS THIS after update-version to publish your edits — omitting it publishes stale draftContent (loses your changes).',
+    required: false,
+    example: 'pv_abc123def456',
+  })
+  @IsOptional()
+  @IsString()
+  versionId?: string;
+
+  @ApiProperty({
     description: 'Whether to set this version as the active version',
     required: false,
     example: true,

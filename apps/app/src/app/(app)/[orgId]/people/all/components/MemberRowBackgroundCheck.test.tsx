@@ -46,12 +46,18 @@ const member = {
 
 const noop = vi.fn();
 
-function renderRow(backgroundCheckStatus?: 'completed' | 'completed_with_flags' | 'invited') {
+function renderRow({
+  backgroundCheckStatus,
+  role = 'employee',
+}: {
+  backgroundCheckStatus?: 'completed' | 'completed_with_flags' | 'invited';
+  role?: string;
+} = {}) {
   return render(
     <table>
       <tbody>
         <MemberRow
-          member={member}
+          member={{ ...member, role }}
           onRemove={noop}
           onRemoveDevice={noop}
           onUpdateRole={noop}
@@ -67,18 +73,23 @@ function renderRow(backgroundCheckStatus?: 'completed' | 'completed_with_flags' 
 
 describe('MemberRow background check status', () => {
   it('shows background check as incomplete in the tasks column', () => {
-    renderRow('invited');
+    renderRow({ backgroundCheckStatus: 'invited' });
     expect(screen.getByText('Background check 0/1')).toBeInTheDocument();
   });
 
   it('shows background check as complete in the tasks column', () => {
-    renderRow('completed_with_flags');
+    renderRow({ backgroundCheckStatus: 'completed_with_flags' });
     expect(screen.getByText('Background check 1/1')).toBeInTheDocument();
     expect(screen.getByLabelText('Employee has completed a background check')).toBeInTheDocument();
   });
 
   it('does not show the verified tick for incomplete checks', () => {
-    renderRow('invited');
+    renderRow({ backgroundCheckStatus: 'invited' });
     expect(screen.queryByLabelText('Employee has completed a background check')).not.toBeInTheDocument();
+  });
+
+  it('does not show background check tracking for auditor-only members', () => {
+    renderRow({ backgroundCheckStatus: 'invited', role: 'auditor' });
+    expect(screen.queryByText(/Background check/)).not.toBeInTheDocument();
   });
 });

@@ -15,6 +15,7 @@ export interface DiffRequirement {
   name: string;
   identifier: string;
   description?: string | null;
+  requirementFamily?: string | null;
 }
 
 export interface DiffPolicy {

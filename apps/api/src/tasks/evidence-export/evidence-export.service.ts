@@ -11,10 +11,11 @@ import type {
 } from './evidence-export.types';
 import {
   generateAutomationPDF,
+  generateAutomationPDFFromStream,
   generateTaskSummaryPDF,
   sanitizeFilename,
 } from './evidence-pdf-generator';
-import { buildAutomationJson } from './evidence-json-builder';
+import { buildAutomationJson, buildAutomationJsonStream } from './evidence-json-builder';
 import {
   appendAttachmentToArchive,
   createFilenameTracker,
@@ -24,6 +25,7 @@ import {
 import {
   getAutomationHeaders,
   loadFullAutomation,
+  streamAutomationRuns,
   findTasksWithEvidence,
 } from './evidence-data-loader';
 
@@ -32,6 +34,30 @@ const safeStringify = configureStringify({
   circularValue: '[Circular]',
   deterministic: false,
 });
+
+function buildExportInfo(
+  info:
+    | { kind: 'task'; taskId: string }
+    | {
+        kind: 'organization';
+        organizationName: string;
+        organizationId: string;
+        taskCount: number;
+      },
+): string {
+  const lines = [
+    'Evidence export',
+    `Started at: ${new Date().toISOString()}`,
+  ];
+  if (info.kind === 'task') {
+    lines.push(`Task ID: ${info.taskId}`);
+  } else {
+    lines.push(`Organization: ${info.organizationName}`);
+    lines.push(`Organization ID: ${info.organizationId}`);
+    lines.push(`Tasks included: ${info.taskCount}`);
+  }
+  return lines.join('\n') + '\n';
+}
 
 @Injectable()
 export class EvidenceExportService {
@@ -196,6 +222,17 @@ export class EvidenceExportService {
   }): Promise<void> {
     const { archive, organizationId, taskId, folderName, options } = params;
 
+    // Force the archiver to emit a real ZIP byte immediately, before the
+    // per-task data load runs. Combined with res.flushHeaders() upstream this
+    // keeps the response visibly alive through any proxy idle timer.
+    archive.append(
+      Buffer.from(
+        buildExportInfo({ kind: 'task', taskId }),
+        'utf-8',
+      ),
+      { name: `${folderName}/EXPORT_INFO.txt` },
+    );
+
     const [headers, attachments] = await Promise.all([
       getAutomationHeaders({ organizationId, taskId }),
       getTaskAttachments(organizationId, taskId),
@@ -221,7 +258,8 @@ export class EvidenceExportService {
     });
   }
 
-  // Loads each automation's runs individually so peak memory ≈ one automation, not all combined.
+  // Streams each automation's runs through PDF/JSON generation so peak memory
+  // is bounded by one batch of runs (~50) instead of the full automation.
   private async appendTaskContents(params: {
     archive: Archiver;
     headers: TaskEvidenceSummary;
@@ -257,15 +295,10 @@ export class EvidenceExportService {
     }
 
     for (const automationHeader of headers.automations) {
-      const automation = await loadFullAutomation({
-        taskId: headers.taskId,
-        header: automationHeader,
-      });
-
-      this.appendAutomationToArchive({
+      await this.appendAutomationStreaming({
         archive,
         headers,
-        automation,
+        automationHeader,
         folderName,
         options,
         perAutomationSubfolders,
@@ -273,50 +306,70 @@ export class EvidenceExportService {
     }
   }
 
-  private appendAutomationToArchive(params: {
+  private async appendAutomationStreaming(params: {
     archive: Archiver;
     headers: TaskEvidenceSummary;
-    automation: NormalizedAutomation;
+    automationHeader: NormalizedAutomation;
     folderName: string;
     options: { includeRawJson?: boolean };
     perAutomationSubfolders: boolean;
-  }): void {
+  }): Promise<void> {
     const {
       archive,
       headers,
-      automation,
+      automationHeader,
       folderName,
       options,
       perAutomationSubfolders,
     } = params;
 
     const typePrefix =
-      automation.type === 'app_automation' ? 'app' : 'custom';
-    const automationName = sanitizeFilename(automation.name);
-    const idSuffix = automation.id.slice(-8);
-
-    const pdfBuffer = generateAutomationPDF(automation, {
-      organizationName: headers.organizationName,
-      taskTitle: headers.taskTitle,
-    });
-
+      automationHeader.type === 'app_automation' ? 'app' : 'custom';
+    const automationName = sanitizeFilename(automationHeader.name);
+    const idSuffix = automationHeader.id.slice(-8);
     const basePath = perAutomationSubfolders
       ? `${folderName}/${typePrefix}-${automationName}-${idSuffix}`
       : folderName;
-    const pdfName = perAutomationSubfolders
-      ? `${basePath}/evidence.pdf`
-      : `${basePath}/${typePrefix}-${automationName}-${idSuffix}.pdf`;
+    const filePrefix = perAutomationSubfolders
+      ? `${basePath}/evidence`
+      : `${basePath}/${typePrefix}-${automationName}-${idSuffix}`;
 
-    archive.append(pdfBuffer, { name: pdfName });
+    const context = {
+      organizationName: headers.organizationName,
+      taskTitle: headers.taskTitle,
+    };
 
     if (options.includeRawJson) {
-      const jsonName = perAutomationSubfolders
-        ? `${basePath}/evidence.json`
-        : `${basePath}/${typePrefix}-${automationName}-${idSuffix}.json`;
-      archive.append(
-        Buffer.from(buildAutomationJson(headers, automation), 'utf-8'),
-        { name: jsonName },
+      // Two independent DB cursors so neither PDF nor JSON buffers the full run set.
+      const pdfBuffer = await generateAutomationPDFFromStream(
+        automationHeader,
+        context,
+        streamAutomationRuns({
+          taskId: headers.taskId,
+          header: automationHeader,
+        }),
       );
+      archive.append(pdfBuffer, { name: `${filePrefix}.pdf` });
+
+      const jsonStream = buildAutomationJsonStream({
+        summary: headers,
+        header: automationHeader,
+        runBatches: streamAutomationRuns({
+          taskId: headers.taskId,
+          header: automationHeader,
+        }),
+      });
+      archive.append(jsonStream, { name: `${filePrefix}.json` });
+    } else {
+      const pdfBuffer = await generateAutomationPDFFromStream(
+        automationHeader,
+        context,
+        streamAutomationRuns({
+          taskId: headers.taskId,
+          header: automationHeader,
+        }),
+      );
+      archive.append(pdfBuffer, { name: `${filePrefix}.pdf` });
     }
   }
 
@@ -336,6 +389,21 @@ export class EvidenceExportService {
       taskIds,
       options,
     } = params;
+
+    // Push the first ZIP byte out immediately so proxies see a live stream
+    // before the slow per-task loop begins. See populateTaskArchive note.
+    archive.append(
+      Buffer.from(
+        buildExportInfo({
+          kind: 'organization',
+          organizationName,
+          organizationId,
+          taskCount: taskIds.length,
+        }),
+        'utf-8',
+      ),
+      { name: `${orgFolder}/EXPORT_INFO.txt` },
+    );
 
     const manifestEntries: Array<{
       id: string;

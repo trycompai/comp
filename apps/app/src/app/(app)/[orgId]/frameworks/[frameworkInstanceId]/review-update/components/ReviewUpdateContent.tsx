@@ -508,6 +508,28 @@ function LinkRowItem({ row }: { row: LinkRow }) {
   );
 }
 
+export function describeRequirementChanges(
+  from: UpdatePreview['requirements']['updated'][number]['from'],
+  to: UpdatePreview['requirements']['updated'][number]['to'],
+): string {
+  const changes: string[] = [];
+  if (from.name !== to.name) changes.push('Name updated');
+  if (from.identifier !== to.identifier) changes.push('Identifier updated');
+  if (from.description !== to.description) changes.push('Description updated');
+  const fromFamily = from.requirementFamily ?? null;
+  const toFamily = to.requirementFamily ?? null;
+  if (fromFamily !== toFamily) {
+    if (!fromFamily && toFamily) {
+      changes.push(`Requirement family set to "${toFamily}"`);
+    } else if (fromFamily && !toFamily) {
+      changes.push('Requirement family removed');
+    } else {
+      changes.push(`Requirement family changed from "${fromFamily}" to "${toFamily}"`);
+    }
+  }
+  return changes.join('. ') || 'Modified';
+}
+
 export function describeControlChanges(
   from: UpdatePreview['controls']['updatedApplied'][number]['manifestFrom'],
   to: UpdatePreview['controls']['updatedApplied'][number]['manifestTo'],
@@ -639,11 +661,12 @@ function buildGroups(preview: UpdatePreview): ChangeGroup[] {
     out.push({
       title: 'MODIFIED REQUIREMENTS',
       kind: 'modified',
-      rows: preview.requirements.updated.map(({ to }) => ({
+      rows: preview.requirements.updated.map(({ from, to }) => ({
         key: `req-mod-${to.id}`,
         identifier: to.identifier,
         name: to.name,
         description: to.description,
+        changeSummary: describeRequirementChanges(from, to),
         kind: 'modified' as const,
       })),
     });
