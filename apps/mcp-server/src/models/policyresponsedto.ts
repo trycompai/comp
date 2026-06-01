@@ -88,6 +88,7 @@ export type PolicyResponseDto = {
   signedBy: Array<string>;
   reviewDate: string | null;
   isArchived: boolean;
+  archivedAt: string | null;
   createdAt: string;
   updatedAt: string;
   lastArchivedAt: string | null;
@@ -102,6 +103,9 @@ export const PolicyResponseDto$zodSchema: z.ZodType<PolicyResponseDto> = z
   .object({
     approverId: z.string().nullable().describe(
       "ID of the user who approved this policy",
+    ),
+    archivedAt: z.iso.datetime({ offset: true }).nullable().describe(
+      "When the policy was archived by framework sync",
     ),
     assigneeId: z.string().nullable().describe(
       "ID of the user assigned to this policy",
