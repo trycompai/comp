@@ -66,6 +66,7 @@ model IsmsDocument {
   interestedParties           IsmsInterestedParty[] // 4.2a register
   interestedPartyRequirements IsmsInterestedPartyRequirement[] // 4.2b/c register
   objectives                  IsmsObjective[] // 6.2 register
+  controlLinks                IsmsDocumentControlLink[] // CS-437: org controls this document maps to
 
   @@unique([organizationId, frameworkId, type]) // one document per type per framework per org
   @@index([organizationId, type])
@@ -239,4 +240,22 @@ model IsmsObjective {
   updatedAt DateTime @updatedAt
 
   @@index([documentId])
+}
+
+// --- Org-level link: an ISMS document maps to individual controls (CS-437) ---
+// Direct document<->control junction (both are org-scoped), mirroring how the
+// platform links documents to controls (cf. ControlDocumentType). The app doc
+// detail page manages these like Policy control mappings.
+model IsmsDocumentControlLink {
+  id             String       @id @default(dbgenerated("generate_prefixed_cuid('idc'::text)"))
+  ismsDocumentId String
+  ismsDocument   IsmsDocument @relation(fields: [ismsDocumentId], references: [id], onDelete: Cascade)
+  controlId      String
+  control        Control      @relation(fields: [controlId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@unique([ismsDocumentId, controlId])
+  @@index([ismsDocumentId])
+  @@index([controlId])
 }

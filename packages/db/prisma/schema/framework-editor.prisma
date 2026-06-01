@@ -25,6 +25,7 @@ model FrameworkEditorFramework {
   ismsDocuments        IsmsDocument[] // ISMS foundational documents from organizations
   ismsProfiles         IsmsProfile[] // ISMS wizard profiles from organizations
   ismsDocumentRequirementLinks FrameworkEditorIsmsDocumentRequirementLink[]
+  controlIsmsDocumentLinks FrameworkEditorControlIsmsDocumentLink[]
   timelineTemplates    TimelineTemplate[]
   versions             FrameworkVersion[]
   controlPolicyLinks   FrameworkEditorControlPolicyTemplateLink[]
@@ -70,6 +71,7 @@ model FrameworkEditorIsmsDocumentTemplate {
   sortOrder    Int              @default(0)
 
   requirementLinks FrameworkEditorIsmsDocumentRequirementLink[]
+  controlLinks     FrameworkEditorControlIsmsDocumentLink[]
   ismsDocuments    IsmsDocument[]
 
   createdAt DateTime @default(now())
@@ -92,6 +94,26 @@ model FrameworkEditorIsmsDocumentRequirementLink {
   @@unique([frameworkId, ismsDocumentTemplateId, requirementId])
   @@index([ismsDocumentTemplateId])
   @@index([requirementId])
+  @@index([frameworkId])
+}
+
+// Framework-scoped mapping of an ISMS document template to a control template
+// (editable in the Framework Editor) — mirrors FrameworkEditorControlPolicyTemplateLink
+// / FrameworkEditorControlDocumentTypeLink, i.e. how every other part links to controls.
+model FrameworkEditorControlIsmsDocumentLink {
+  id                     String                              @id @default(dbgenerated("generate_prefixed_cuid('fcid'::text)"))
+  frameworkId            String
+  framework              FrameworkEditorFramework            @relation(fields: [frameworkId], references: [id], onDelete: Cascade)
+  controlTemplateId      String
+  controlTemplate        FrameworkEditorControlTemplate      @relation(fields: [controlTemplateId], references: [id], onDelete: Cascade)
+  ismsDocumentTemplateId String
+  ismsDocumentTemplate   FrameworkEditorIsmsDocumentTemplate @relation(fields: [ismsDocumentTemplateId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@unique([frameworkId, controlTemplateId, ismsDocumentTemplateId])
+  @@index([controlTemplateId])
+  @@index([ismsDocumentTemplateId])
   @@index([frameworkId])
 }
 
@@ -146,6 +168,7 @@ model FrameworkEditorControlTemplate {
   frameworkPolicyLinks   FrameworkEditorControlPolicyTemplateLink[]
   frameworkTaskLinks     FrameworkEditorControlTaskTemplateLink[]
   frameworkDocumentLinks FrameworkEditorControlDocumentTypeLink[]
+  frameworkIsmsDocumentLinks FrameworkEditorControlIsmsDocumentLink[]
 
   // Dates
   createdAt DateTime @default(now())
