@@ -7,11 +7,12 @@ import { encodeSimple } from "../lib/encodings.js";
 import { compactMap } from "../lib/primitives.js";
 import { safeParse } from "../lib/schemas.js";
 import { RequestOptions } from "../lib/sdks.js";
-import { extractSecurity, resolveGlobalSecurity } from "../lib/security.js";
+import { resolveSecurity } from "../lib/security.js";
 import { pathToFunc } from "../lib/url.js";
 import {
   AutomationsControllerGetTaskAutomationsV1Request,
   AutomationsControllerGetTaskAutomationsV1Request$zodSchema,
+  AutomationsControllerGetTaskAutomationsV1Security,
 } from "../models/automationscontrollergettaskautomationsv1op.js";
 import { APIError } from "../models/errors/apierror.js";
 import {
@@ -30,11 +31,10 @@ import { Result } from "../types/fp.js";
  *
  * @remarks
  * Get all automations for a task in Comp AI. Create, version, run, and inspect automated evidence collection workflows attached to compliance tasks.
- *
- * If set, this operation will use {@link Security.apikey} from the global security.
  */
 export function taskAutomationsAutomationsControllerGetTaskAutomationsV1(
   client$: CompAiCore,
+  security: AutomationsControllerGetTaskAutomationsV1Security,
   request: AutomationsControllerGetTaskAutomationsV1Request,
   options?: RequestOptions,
 ): APIPromise<
@@ -51,6 +51,7 @@ export function taskAutomationsAutomationsControllerGetTaskAutomationsV1(
 > {
   return new APIPromise($do(
     client$,
+    security,
     request,
     options,
   ));
@@ -58,6 +59,7 @@ export function taskAutomationsAutomationsControllerGetTaskAutomationsV1(
 
 async function $do(
   client$: CompAiCore,
+  security: AutomationsControllerGetTaskAutomationsV1Security,
   request: AutomationsControllerGetTaskAutomationsV1Request,
   options?: RequestOptions,
 ): Promise<
@@ -100,8 +102,23 @@ async function $do(
   const headers$ = new Headers(compactMap({
     Accept: "*/*",
   }));
-  const securityInput = await extractSecurity(client$._options.security);
-  const requestSecurity = resolveGlobalSecurity(securityInput, [0]);
+
+  const requestSecurity = resolveSecurity(
+    [
+      {
+        fieldName: "X-API-Key",
+        type: "apiKey:header",
+        value: security?.apikey,
+      },
+    ],
+    [
+      {
+        fieldName: "Authorization",
+        type: "oauth2",
+        value: security?.oauth2,
+      },
+    ],
+  );
 
   const context = {
     options: client$._options,
@@ -109,7 +126,7 @@ async function $do(
     operationID: "AutomationsController_getTaskAutomations_v1",
     oAuth2Scopes: null,
     resolvedSecurity: requestSecurity,
-    securitySource: client$._options.security,
+    securitySource: security,
     retryConfig: options?.retries
       || client$._options.retryConfig
       || { strategy: "none" },

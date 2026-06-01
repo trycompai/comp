@@ -5,6 +5,19 @@
 import * as z from "zod";
 import * as b64$ from "../lib/base64.js";
 
+export type PoliciesControllerUploadPolicyPdfV1MultipartSecurity = {
+  apikey?: string | undefined;
+  oauth2?: string | undefined;
+};
+
+export const PoliciesControllerUploadPolicyPdfV1MultipartSecurity$zodSchema:
+  z.ZodType<PoliciesControllerUploadPolicyPdfV1MultipartSecurity> = z.object({
+    apikey: z.string().describe("API key for authentication").optional(),
+    oauth2: z.string().describe(
+      "OAuth 2.1 authorization code flow. Sign in with your Comp AI account — tokens are issued by the Comp AI authorization server and scoped to your organization, role, and permissions.",
+    ).optional(),
+  });
+
 /**
  * JSON with base64-encoded file data
  */

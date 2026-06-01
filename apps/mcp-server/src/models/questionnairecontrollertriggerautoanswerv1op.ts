@@ -4,6 +4,19 @@
 
 import * as z from "zod";
 
+export type QuestionnaireControllerTriggerAutoAnswerV1Security = {
+  apikey?: string | undefined;
+  oauth2?: string | undefined;
+};
+
+export const QuestionnaireControllerTriggerAutoAnswerV1Security$zodSchema:
+  z.ZodType<QuestionnaireControllerTriggerAutoAnswerV1Security> = z.object({
+    apikey: z.string().describe("API key for authentication").optional(),
+    oauth2: z.string().describe(
+      "OAuth 2.1 authorization code flow. Sign in with your Comp AI account — tokens are issued by the Comp AI authorization server and scoped to your organization, role, and permissions.",
+    ).optional(),
+  });
+
 export type QuestionnaireControllerTriggerAutoAnswerV1Request = { id: string };
 
 export const QuestionnaireControllerTriggerAutoAnswerV1Request$zodSchema:
