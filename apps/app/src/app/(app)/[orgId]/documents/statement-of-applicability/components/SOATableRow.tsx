@@ -77,9 +77,7 @@ export function SOATableRow({
     // Manual save overrides autofill processedResult so the table updates without a full reload
     displayIsApplicable = answerData.savedIsApplicable;
     justificationValue =
-      displayIsApplicable === false
-        ? (answerData.answer ?? question.columnMapping.justification ?? null)
-        : null;
+      answerData.answer ?? question.columnMapping.justification ?? null;
   } else {
     // Normal logic: processedResult / column mapping until user saves (then branch above)
     const isApplicableValue =
@@ -88,15 +86,12 @@ export function SOATableRow({
         : (question.columnMapping.isApplicable ?? true);
 
     justificationValue =
-      (isApplicableValue === false && processedResult?.justification) ||
-      (isApplicableValue === false && answerData?.answer) ||
-      (isApplicableValue === false && question.columnMapping.justification) ||
+      processedResult?.justification ||
+      answerData?.answer ||
+      question.columnMapping.justification ||
       null;
 
-    displayIsApplicable =
-      processedResult?.isApplicable !== null && processedResult?.isApplicable !== undefined
-        ? processedResult.isApplicable
-        : (question.columnMapping.isApplicable ?? true);
+    displayIsApplicable = isApplicableValue;
   }
 
   return (
@@ -150,19 +145,17 @@ export function SOATableRow({
                 />
               )
             ) : column.name === 'justification' ? (
-              // Justification is handled within EditableSOAFields when isApplicable is NO
+              // Show justification text for both Applicable and Not Applicable rows so ISO 27001's
+              // requirement of a justification for every control on the SoA is visible in the UI.
               isProcessing ? (
                 <div className="flex items-center gap-2">
                   <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
                   <span className="text-xs text-muted-foreground">Processing...</span>
                 </div>
-              ) : displayIsApplicable === false ? (
-                // Show justification text in this column when not editing
+              ) : (
                 <p className="text-sm leading-relaxed text-foreground whitespace-pre-wrap break-words">
                   {justificationValue || '—'}
                 </p>
-              ) : (
-                <span className="text-muted-foreground">—</span>
               )
             ) : (
               // For other columns (title, control_objective), show "Insufficient data" if question has insufficient data

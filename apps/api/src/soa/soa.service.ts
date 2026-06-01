@@ -557,12 +557,18 @@ export class SOAService {
     // Generate answer from pre-fetched content
     const soaResult = await generateSOAControlAnswer(question, similarContent);
 
-    // If no answer, default to YES
+    // If no answer, default to YES with a family-appropriate justification
     if (!soaResult.answer) {
-      return createDefaultYesResult(question.id, index, send);
+      return createDefaultYesResult(question.id, index, send, controlClosure);
     }
 
-    return parseAndProcessSOAAnswer(question.id, index, soaResult.answer, send);
+    return parseAndProcessSOAAnswer(
+      question.id,
+      index,
+      soaResult.answer,
+      send,
+      controlClosure,
+    );
   }
 
   async saveAnswersToDatabase(
