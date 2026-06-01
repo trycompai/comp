@@ -27,11 +27,13 @@ import { UserId } from '@/auth/auth-context.decorator';
 import { IsmsService } from './isms.service';
 import { IsmsContextService } from './isms-context.service';
 import { IsmsContextIssueService } from './isms-context-issue.service';
+import { IsmsDocumentControlService } from './isms-document-control.service';
 import { EnsureIsmsSetupDto } from './dto/ensure-isms-setup.dto';
 import { CreateContextIssueDto } from './dto/create-context-issue.dto';
 import { UpdateContextIssueDto } from './dto/update-context-issue.dto';
 import { SubmitIsmsForApprovalDto } from './dto/submit-isms-for-approval.dto';
 import { ExportIsmsDocumentDto } from './dto/export-isms-document.dto';
+import { LinkIsmsControlsDto } from './dto/link-isms-controls.dto';
 
 @ApiTags('ISMS')
 @Controller({ path: 'isms', version: '1' })
@@ -42,6 +44,7 @@ export class IsmsController {
     private readonly ismsService: IsmsService,
     private readonly contextService: IsmsContextService,
     private readonly contextIssueService: IsmsContextIssueService,
+    private readonly documentControlService: IsmsDocumentControlService,
   ) {}
 
   @Post('ensure-setup')
@@ -63,6 +66,41 @@ export class IsmsController {
     @OrganizationId() organizationId: string,
   ) {
     return this.ismsService.getDocument({ documentId: id, organizationId });
+  }
+
+  @Post('documents/:id/controls')
+  @HttpCode(HttpStatus.OK)
+  @RequirePermission('evidence', 'update')
+  @ApiOperation({ summary: 'Map organization controls to an ISMS document' })
+  @ApiConsumes('application/json')
+  @ApiOkResponse({ description: 'Controls linked' })
+  async addControls(
+    @Param('id') id: string,
+    @Body() dto: LinkIsmsControlsDto,
+    @OrganizationId() organizationId: string,
+  ) {
+    return this.documentControlService.addControls({
+      documentId: id,
+      organizationId,
+      controlIds: dto.controlIds,
+    });
+  }
+
+  @Delete('documents/:id/controls/:controlId')
+  @HttpCode(HttpStatus.OK)
+  @RequirePermission('evidence', 'update')
+  @ApiOperation({ summary: 'Remove a control mapping from an ISMS document' })
+  @ApiOkResponse({ description: 'Control unlinked' })
+  async removeControl(
+    @Param('id') id: string,
+    @Param('controlId') controlId: string,
+    @OrganizationId() organizationId: string,
+  ) {
+    return this.documentControlService.removeControl({
+      documentId: id,
+      organizationId,
+      controlId,
+    });
   }
 
   @Post('documents/:id/generate')

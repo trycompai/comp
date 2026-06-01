@@ -10,17 +10,10 @@ import {
 } from '@tanstack/react-table';
 import { ArrowDown, ArrowUp, ArrowUpDown } from 'lucide-react';
 import { useMemo, useState } from 'react';
+import { IsmsControlsCell } from './IsmsControlsCell';
 import { IsmsRequirementsCell } from './IsmsRequirementsCell';
-import type { IsmsDocumentTemplate, MappedRequirement } from './types';
-
-interface IsmsDocumentRow {
-  id: string;
-  name: string;
-  documentType: string;
-  clause: string | null;
-  requirements: MappedRequirement[];
-  requirementCount: number;
-}
+import type { IsmsDocumentTemplate } from './types';
+import { type IsmsDocumentRow, useIsmsDocumentRows } from './useIsmsDocumentRows';
 
 interface IsmsDocumentsClientPageProps {
   templates: IsmsDocumentTemplate[];
@@ -33,72 +26,13 @@ export function IsmsDocumentsClientPage({
   templates,
   frameworkId,
 }: IsmsDocumentsClientPageProps) {
-  const [templatesState, setTemplatesState] = useState(templates);
-
-  const data: IsmsDocumentRow[] = useMemo(
-    () =>
-      templatesState.map((template) => {
-        const requirements = template.requirementLinks.map((link) => ({
-          id: link.requirement.id,
-          name: link.requirement.identifier
-            ? `${link.requirement.identifier} - ${link.requirement.name}`
-            : link.requirement.name,
-        }));
-        return {
-          id: template.id,
-          name: template.name,
-          documentType: template.documentType,
-          clause: template.clause,
-          requirements,
-          requirementCount: requirements.length,
-        };
-      }),
-    [templatesState],
-  );
-
-  const handleRequirementLinked = (
-    templateId: string,
-    requirement: MappedRequirement,
-  ) => {
-    setTemplatesState((prev) =>
-      prev.map((template) =>
-        template.id === templateId
-          ? {
-              ...template,
-              requirementLinks: [
-                ...template.requirementLinks,
-                {
-                  id: `local_${requirement.id}`,
-                  frameworkId,
-                  requirementId: requirement.id,
-                  requirement: {
-                    id: requirement.id,
-                    name: requirement.name,
-                    identifier: '',
-                    framework: { id: frameworkId, name: '' },
-                  },
-                },
-              ],
-            }
-          : template,
-      ),
-    );
-  };
-
-  const handleRequirementUnlinked = (templateId: string, requirementId: string) => {
-    setTemplatesState((prev) =>
-      prev.map((template) =>
-        template.id === templateId
-          ? {
-              ...template,
-              requirementLinks: template.requirementLinks.filter(
-                (link) => link.requirement.id !== requirementId,
-              ),
-            }
-          : template,
-      ),
-    );
-  };
+  const {
+    data,
+    handleRequirementLinked,
+    handleRequirementUnlinked,
+    handleControlLinked,
+    handleControlUnlinked,
+  } = useIsmsDocumentRows({ templates, frameworkId });
 
   const columns = useMemo(
     () => [
@@ -144,7 +78,32 @@ export function IsmsDocumentsClientPage({
         ),
       }),
       columnHelper.accessor('requirementCount', {
-        header: 'Count',
+        header: 'Reqs',
+        size: 80,
+        cell: ({ getValue }) => (
+          <span className="text-muted-foreground px-2 py-1.5 text-sm tabular-nums">
+            {getValue()}
+          </span>
+        ),
+      }),
+      columnHelper.accessor('controls', {
+        header: 'Mapped Controls',
+        size: 300,
+        enableSorting: false,
+        cell: ({ row }) => (
+          <div className="relative">
+            <IsmsControlsCell
+              templateId={row.original.id}
+              controls={row.original.controls}
+              frameworkId={frameworkId}
+              onLinked={handleControlLinked}
+              onUnlinked={handleControlUnlinked}
+            />
+          </div>
+        ),
+      }),
+      columnHelper.accessor('controlCount', {
+        header: 'Controls',
         size: 80,
         cell: ({ getValue }) => (
           <span className="text-muted-foreground px-2 py-1.5 text-sm tabular-nums">

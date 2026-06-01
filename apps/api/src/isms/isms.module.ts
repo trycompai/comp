@@ -4,6 +4,7 @@ import { IsmsRegistersController } from './isms-registers.controller';
 import { IsmsService } from './isms.service';
 import { IsmsContextService } from './isms-context.service';
 import { IsmsContextIssueService } from './isms-context-issue.service';
+import { IsmsDocumentControlService } from './isms-document-control.service';
 import { IsmsInterestedPartyService } from './isms-interested-party.service';
 import { IsmsRequirementService } from './isms-requirement.service';
 import { IsmsObjectiveService } from './isms-objective.service';
@@ -23,6 +24,7 @@ import { AuthModule } from '../auth/auth.module';
     IsmsService,
     IsmsContextService,
     IsmsContextIssueService,
+    IsmsDocumentControlService,
     IsmsInterestedPartyService,
     IsmsRequirementService,
     IsmsObjectiveService,
@@ -33,6 +35,7 @@ import { AuthModule } from '../auth/auth.module';
     IsmsService,
     IsmsContextService,
     IsmsContextIssueService,
+    IsmsDocumentControlService,
     IsmsInterestedPartyService,
     IsmsRequirementService,
     IsmsObjectiveService,

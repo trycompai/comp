@@ -9,6 +9,13 @@ jest.mock('@db', () => {
       createMany: jest.fn(),
       deleteMany: jest.fn(),
     },
+    frameworkEditorControlIsmsDocumentLink: {
+      createMany: jest.fn(),
+      deleteMany: jest.fn(),
+    },
+    frameworkEditorControlTemplate: {
+      findUnique: jest.fn(),
+    },
     frameworkEditorFramework: {
       findUnique: jest.fn(),
     },
@@ -47,6 +54,15 @@ describe('IsmsDocumentTemplateService', () => {
     (
       mockDb.frameworkEditorIsmsDocumentRequirementLink.deleteMany as jest.Mock
     ).mockResolvedValue({ count: 1 });
+    (
+      mockDb.frameworkEditorControlTemplate.findUnique as jest.Mock
+    ).mockResolvedValue({ id: 'ct_1' });
+    (
+      mockDb.frameworkEditorControlIsmsDocumentLink.createMany as jest.Mock
+    ).mockResolvedValue({ count: 1 });
+    (
+      mockDb.frameworkEditorControlIsmsDocumentLink.deleteMany as jest.Mock
+    ).mockResolvedValue({ count: 1 });
   });
 
   describe('findAll', () => {
@@ -63,9 +79,10 @@ describe('IsmsDocumentTemplateService', () => {
       ).mock.calls[0][0];
       expect(callArgs.orderBy).toEqual({ sortOrder: 'asc' });
       expect(callArgs.include.requirementLinks.where).toBeUndefined();
+      expect(callArgs.include.controlLinks.where).toBeUndefined();
     });
 
-    it('scopes requirement links to the given framework', async () => {
+    it('scopes requirement and control links to the given framework', async () => {
       (
         mockDb.frameworkEditorIsmsDocumentTemplate.findMany as jest.Mock
       ).mockResolvedValue([]);
@@ -77,6 +94,12 @@ describe('IsmsDocumentTemplateService', () => {
       ).mock.calls[0][0];
       expect(callArgs.include.requirementLinks.where).toEqual({
         frameworkId: 'fw_1',
+      });
+      expect(callArgs.include.controlLinks.where).toEqual({
+        frameworkId: 'fw_1',
+      });
+      expect(callArgs.include.controlLinks.select.controlTemplate).toEqual({
+        select: { id: true, name: true },
       });
     });
   });
@@ -184,6 +207,86 @@ describe('IsmsDocumentTemplateService', () => {
           frameworkId: 'fw_1',
           ismsDocumentTemplateId: 'tpl_ctx',
           requirementId: 'req_41',
+        },
+      });
+    });
+  });
+
+  describe('linkControlTemplate', () => {
+    it('requires a frameworkId', async () => {
+      await expect(
+        service.linkControlTemplate({
+          templateId: 'tpl_ctx',
+          controlTemplateId: 'ct_1',
+        }),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it('throws NotFoundException when the framework is missing', async () => {
+      (
+        mockDb.frameworkEditorFramework.findUnique as jest.Mock
+      ).mockResolvedValue(null);
+
+      await expect(
+        service.linkControlTemplate({
+          templateId: 'tpl_ctx',
+          controlTemplateId: 'ct_1',
+          frameworkId: 'fw_missing',
+        }),
+      ).rejects.toThrow(NotFoundException);
+    });
+
+    it('throws NotFoundException when the control template is missing', async () => {
+      (
+        mockDb.frameworkEditorControlTemplate.findUnique as jest.Mock
+      ).mockResolvedValue(null);
+
+      await expect(
+        service.linkControlTemplate({
+          templateId: 'tpl_ctx',
+          controlTemplateId: 'ct_missing',
+          frameworkId: 'fw_1',
+        }),
+      ).rejects.toThrow(NotFoundException);
+    });
+
+    it('creates the framework-scoped link idempotently', async () => {
+      await service.linkControlTemplate({
+        templateId: 'tpl_ctx',
+        controlTemplateId: 'ct_1',
+        frameworkId: 'fw_1',
+      });
+
+      expect(
+        mockDb.frameworkEditorControlIsmsDocumentLink.createMany,
+      ).toHaveBeenCalledWith({
+        data: [
+          {
+            frameworkId: 'fw_1',
+            ismsDocumentTemplateId: 'tpl_ctx',
+            controlTemplateId: 'ct_1',
+          },
+        ],
+        skipDuplicates: true,
+      });
+    });
+  });
+
+  describe('unlinkControlTemplate', () => {
+    it('deletes the framework-scoped link', async () => {
+      await service.unlinkControlTemplate({
+        templateId: 'tpl_ctx',
+        controlTemplateId: 'ct_1',
+        frameworkId: 'fw_1',
+      });
+
+      expect(
+        mockDb.frameworkEditorControlIsmsDocumentLink.deleteMany,
+      ).toHaveBeenCalledWith({
+        where: {
+          frameworkId: 'fw_1',
+          ismsDocumentTemplateId: 'tpl_ctx',
+          controlTemplateId: 'ct_1',
         },
       });
     });

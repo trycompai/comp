@@ -112,6 +112,10 @@ vi.mock('sonner', () => ({
   toast: { success: vi.fn(), error: vi.fn() },
 }));
 
+vi.mock('./IsmsControlMappings', () => ({
+  IsmsControlMappings: () => <div data-testid="isms-control-mappings" />,
+}));
+
 import { ScopeClient } from './ScopeClient';
 
 const NARRATIVE: IsmsScopeNarrative = {
@@ -136,6 +140,7 @@ function makeDocument(overrides: Partial<IsmsDocument> = {}): IsmsDocument {
     interestedParties: [],
     interestedPartyRequirements: [],
     objectives: [],
+    controlLinks: [],
     versions: [{ id: 'v1', version: 1, isLatest: true, narrative: NARRATIVE }],
     ...overrides,
   };

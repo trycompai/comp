@@ -10,6 +10,7 @@ import { usePermissions } from '@/hooks/use-permissions';
 import { useIsmsDocument } from '../hooks/useIsmsDocument';
 import type { IsmsDocument as IsmsDocumentData, IsmsDriftResult } from '../isms-types';
 import { DriftBanner } from './DriftBanner';
+import { IsmsControlMappings } from './IsmsControlMappings';
 import { IsmsApprovalSection, type ApproverOption } from './IsmsApprovalSection';
 import { ObjectivesTable } from './ObjectivesTable';
 import type { ObjectiveFormValues } from './ObjectivesForm';
@@ -189,6 +190,14 @@ export function ObjectivesClient({
           canRegenerate={canManage}
           isRegenerating={isGenerating}
           onRegenerate={handleGenerate}
+        />
+      )}
+
+      {document && (
+        <IsmsControlMappings
+          document={document}
+          organizationId={organizationId}
+          canManage={canManage}
         />
       )}
 

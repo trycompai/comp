@@ -118,6 +118,10 @@ vi.mock('sonner', () => ({
   toast: { success: vi.fn(), error: vi.fn() },
 }));
 
+vi.mock('./IsmsControlMappings', () => ({
+  IsmsControlMappings: () => <div data-testid="isms-control-mappings" />,
+}));
+
 import { InterestedPartiesClient } from './InterestedPartiesClient';
 
 const PARTIES: IsmsInterestedParty[] = [
@@ -154,6 +158,7 @@ function makeDocument(overrides: Partial<IsmsDocument> = {}): IsmsDocument {
     interestedParties: PARTIES,
     interestedPartyRequirements: [],
     objectives: [],
+    controlLinks: [],
     versions: [],
     ...overrides,
   };

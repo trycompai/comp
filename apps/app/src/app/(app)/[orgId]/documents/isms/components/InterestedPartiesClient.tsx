@@ -11,6 +11,7 @@ import { useIsmsDocument } from '../hooks/useIsmsDocument';
 import type { IsmsDocument as IsmsDocumentData, IsmsDriftResult } from '../isms-types';
 import { DriftBanner } from './DriftBanner';
 import { InterestedPartiesTable } from './InterestedPartiesTable';
+import { IsmsControlMappings } from './IsmsControlMappings';
 import { IsmsApprovalSection, type ApproverOption } from './IsmsApprovalSection';
 
 interface InterestedPartiesClientProps {
@@ -189,6 +190,14 @@ export function InterestedPartiesClient({
           canRegenerate={canManage}
           isRegenerating={isGenerating}
           onRegenerate={handleGenerate}
+        />
+      )}
+
+      {document && (
+        <IsmsControlMappings
+          document={document}
+          organizationId={organizationId}
+          canManage={canManage}
         />
       )}
 

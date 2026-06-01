@@ -70,4 +70,38 @@ export class IsmsDocumentTemplateController {
       frameworkId,
     });
   }
+
+  @Post(':id/controls/:controlTemplateId')
+  @ApiOperation({
+    summary:
+      'Link a control template to an ISMS document template for a framework',
+  })
+  async linkControlTemplate(
+    @Param('id') id: string,
+    @Param('controlTemplateId') controlTemplateId: string,
+    @Query('frameworkId') frameworkId?: string,
+  ) {
+    return this.service.linkControlTemplate({
+      templateId: id,
+      controlTemplateId,
+      frameworkId,
+    });
+  }
+
+  @Delete(':id/controls/:controlTemplateId')
+  @ApiOperation({
+    summary:
+      'Unlink a control template from an ISMS document template for a framework',
+  })
+  async unlinkControlTemplate(
+    @Param('id') id: string,
+    @Param('controlTemplateId') controlTemplateId: string,
+    @Query('frameworkId') frameworkId?: string,
+  ) {
+    return this.service.unlinkControlTemplate({
+      templateId: id,
+      controlTemplateId,
+      frameworkId,
+    });
+  }
 }

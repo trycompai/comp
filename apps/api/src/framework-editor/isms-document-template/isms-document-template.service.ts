@@ -37,6 +37,15 @@ export class IsmsDocumentTemplateService {
             },
           },
         },
+        controlLinks: {
+          ...(frameworkId ? { where: { frameworkId } } : {}),
+          select: {
+            id: true,
+            frameworkId: true,
+            controlTemplateId: true,
+            controlTemplate: { select: { id: true, name: true } },
+          },
+        },
       },
     });
   }
@@ -109,6 +118,56 @@ export class IsmsDocumentTemplateService {
     return { message: 'Requirement unlinked' };
   }
 
+  async linkControlTemplate({
+    templateId,
+    controlTemplateId,
+    frameworkId,
+  }: {
+    templateId: string;
+    controlTemplateId: string;
+    frameworkId?: string;
+  }) {
+    const scopedFrameworkId = await this.ensureFrameworkScopedTemplate({
+      templateId,
+      frameworkId,
+    });
+    await this.ensureControlTemplate(controlTemplateId);
+    await db.frameworkEditorControlIsmsDocumentLink.createMany({
+      data: [
+        {
+          frameworkId: scopedFrameworkId,
+          ismsDocumentTemplateId: templateId,
+          controlTemplateId,
+        },
+      ],
+      skipDuplicates: true,
+    });
+    return { message: 'Control template linked' };
+  }
+
+  async unlinkControlTemplate({
+    templateId,
+    controlTemplateId,
+    frameworkId,
+  }: {
+    templateId: string;
+    controlTemplateId: string;
+    frameworkId?: string;
+  }) {
+    const scopedFrameworkId = await this.ensureFrameworkScopedTemplate({
+      templateId,
+      frameworkId,
+    });
+    await db.frameworkEditorControlIsmsDocumentLink.deleteMany({
+      where: {
+        frameworkId: scopedFrameworkId,
+        ismsDocumentTemplateId: templateId,
+        controlTemplateId,
+      },
+    });
+    return { message: 'Control template unlinked' };
+  }
+
   private async requireTemplate(id: string) {
     const template = await db.frameworkEditorIsmsDocumentTemplate.findUnique({
       where: { id },
@@ -163,6 +222,18 @@ export class IsmsDocumentTemplateService {
     if (requirement.frameworkId !== frameworkId) {
       throw new BadRequestException(
         'Requirement does not belong to the given framework',
+      );
+    }
+  }
+
+  private async ensureControlTemplate(controlTemplateId: string): Promise<void> {
+    const control = await db.frameworkEditorControlTemplate.findUnique({
+      where: { id: controlTemplateId },
+      select: { id: true },
+    });
+    if (!control) {
+      throw new NotFoundException(
+        `Control template ${controlTemplateId} not found`,
       );
     }
   }

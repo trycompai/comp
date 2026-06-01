@@ -14,6 +14,7 @@ import type {
   IsmsDriftResult,
 } from '../isms-types';
 import { DriftBanner } from './DriftBanner';
+import { IsmsControlMappings } from './IsmsControlMappings';
 import { IssuesRegister } from './IssuesRegister';
 import { IsmsApprovalSection, type ApproverOption } from './IsmsApprovalSection';
 
@@ -190,6 +191,14 @@ export function ContextOfOrganizationClient({
           canRegenerate={canManage}
           isRegenerating={isGenerating}
           onRegenerate={handleGenerate}
+        />
+      )}
+
+      {document && (
+        <IsmsControlMappings
+          document={document}
+          organizationId={organizationId}
+          canManage={canManage}
         />
       )}
 

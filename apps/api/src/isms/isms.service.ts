@@ -4,13 +4,12 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { db } from '@db';
-import type { IsmsDocumentType } from '@db';
 import { EnsureIsmsSetupDto } from './dto/ensure-isms-setup.dto';
 import { SubmitIsmsForApprovalDto } from './dto/submit-isms-for-approval.dto';
 import {
-  ISMS_TYPE_DEFINITIONS,
-  matchRequirementId,
-} from './utils/document-types';
+  deriveControlLinks,
+  resolveDocumentPlans,
+} from './utils/ensure-setup-plan';
 import { collectPlatformData } from './documents/data-source';
 import { upsertLatestSnapshotVersion } from './utils/version-snapshot';
 
@@ -42,14 +41,14 @@ export class IsmsService {
     });
     const existingTypes = new Set(existing.map((doc) => doc.type));
 
-    const plans = await this.resolveDocumentPlans({
+    const plans = await resolveDocumentPlans({
       frameworkId: dto.frameworkId,
       requirements: framework.requirements,
     });
 
     for (const plan of plans) {
       if (existingTypes.has(plan.type)) continue;
-      await db.ismsDocument.create({
+      const document = await db.ismsDocument.create({
         data: {
           organizationId: dto.organizationId,
           frameworkId: dto.frameworkId,
@@ -59,6 +58,11 @@ export class IsmsService {
           requirementId: plan.requirementId,
           templateId: plan.templateId,
         },
+      });
+      await deriveControlLinks({
+        documentId: document.id,
+        organizationId: dto.organizationId,
+        controlTemplateIds: plan.controlTemplateIds,
       });
     }
 
@@ -81,54 +85,6 @@ export class IsmsService {
     };
   }
 
-  /**
-   * Build one create-plan per ISMS document type. Template-driven when the
-   * FrameworkEditorIsmsDocumentTemplate rows are seeded; the requirement comes
-   * from the framework-scoped link if present, otherwise from clause matching.
-   * Falls back to ISMS_TYPE_DEFINITIONS (no templates) so unseeded DBs still
-   * work — those plans carry a null templateId.
-   */
-  private async resolveDocumentPlans({
-    frameworkId,
-    requirements,
-  }: {
-    frameworkId: string;
-    requirements: Array<{ id: string; name: string; identifier: string }>;
-  }): Promise<
-    Array<{
-      type: IsmsDocumentType;
-      title: string;
-      requirementId: string | null;
-      templateId: string | null;
-    }>
-  > {
-    const templates = await db.frameworkEditorIsmsDocumentTemplate.findMany({
-      orderBy: { sortOrder: 'asc' },
-      include: { requirementLinks: { where: { frameworkId } } },
-    });
-
-    if (templates.length === 0) {
-      return ISMS_TYPE_DEFINITIONS.map((def) => ({
-        type: def.type,
-        title: def.title,
-        templateId: null,
-        requirementId: matchRequirementId({
-          clause: def.clause,
-          requirements,
-        }),
-      }));
-    }
-
-    return templates.map((template) => ({
-      type: template.documentType,
-      title: template.name,
-      templateId: template.id,
-      requirementId:
-        template.requirementLinks[0]?.requirementId ??
-        matchRequirementId({ clause: template.clause, requirements }),
-    }));
-  }
-
   async getDocument({
     documentId,
     organizationId,
@@ -144,6 +100,13 @@ export class IsmsService {
         interestedParties: { orderBy: { position: 'asc' } },
         interestedPartyRequirements: { orderBy: { position: 'asc' } },
         objectives: { orderBy: { position: 'asc' } },
+        controlLinks: {
+          select: {
+            id: true,
+            controlId: true,
+            control: { select: { id: true, name: true } },
+          },
+        },
       },
     });
 

@@ -14,6 +14,7 @@ import type {
   IsmsLeadershipNarrative,
 } from '../isms-types';
 import { DriftBanner } from './DriftBanner';
+import { IsmsControlMappings } from './IsmsControlMappings';
 import { IsmsApprovalSection, type ApproverOption } from './IsmsApprovalSection';
 import { LeadershipForm } from './LeadershipForm';
 import type { LeadershipNarrativeValues } from './leadership-schema';
@@ -173,6 +174,14 @@ export function LeadershipClient({
           canRegenerate={canManage}
           isRegenerating={isGenerating}
           onRegenerate={handleGenerate}
+        />
+      )}
+
+      {document && (
+        <IsmsControlMappings
+          document={document}
+          organizationId={organizationId}
+          canManage={canManage}
         />
       )}
 

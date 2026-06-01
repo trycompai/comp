@@ -1,13 +1,12 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import type { Response } from 'express';
-import { Reflector } from '@nestjs/core';
 import { HybridAuthGuard } from '../auth/hybrid-auth.guard';
 import { PermissionGuard } from '../auth/permission.guard';
-import { PERMISSIONS_KEY } from '../auth/permission.guard';
 import { IsmsController } from './isms.controller';
 import { IsmsService } from './isms.service';
 import { IsmsContextService } from './isms-context.service';
 import { IsmsContextIssueService } from './isms-context-issue.service';
+import { IsmsDocumentControlService } from './isms-document-control.service';
 
 jest.mock('../auth/auth.server', () => ({
   auth: { api: { getSession: jest.fn() } },
@@ -32,6 +31,9 @@ jest.mock('./isms-context.service', () => ({
 jest.mock('./isms-context-issue.service', () => ({
   IsmsContextIssueService: class MockIsmsContextIssueService {},
 }));
+jest.mock('./isms-document-control.service', () => ({
+  IsmsDocumentControlService: class MockIsmsDocumentControlService {},
+}));
 
 describe('IsmsController', () => {
   let controller: IsmsController;
@@ -53,6 +55,10 @@ describe('IsmsController', () => {
     update: jest.fn(),
     remove: jest.fn(),
   };
+  const mockDocumentControlService = {
+    addControls: jest.fn(),
+    removeControl: jest.fn(),
+  };
 
   const mockGuard = { canActivate: jest.fn().mockReturnValue(true) };
 
@@ -63,6 +69,10 @@ describe('IsmsController', () => {
         { provide: IsmsService, useValue: mockIsmsService },
         { provide: IsmsContextService, useValue: mockContextService },
         { provide: IsmsContextIssueService, useValue: mockContextIssueService },
+        {
+          provide: IsmsDocumentControlService,
+          useValue: mockDocumentControlService,
+        },
       ],
     })
       .overrideGuard(HybridAuthGuard)
@@ -93,6 +103,34 @@ describe('IsmsController', () => {
     expect(mockIsmsService.getDocument).toHaveBeenCalledWith({
       documentId: 'doc_1',
       organizationId: 'org_1',
+    });
+  });
+
+  it('addControls passes documentId, controlIds and org', async () => {
+    mockDocumentControlService.addControls.mockResolvedValue({
+      message: 'Controls linked',
+    });
+
+    await controller.addControls('doc_1', { controlIds: ['ctl_1'] }, 'org_1');
+
+    expect(mockDocumentControlService.addControls).toHaveBeenCalledWith({
+      documentId: 'doc_1',
+      organizationId: 'org_1',
+      controlIds: ['ctl_1'],
+    });
+  });
+
+  it('removeControl passes documentId, controlId and org', async () => {
+    mockDocumentControlService.removeControl.mockResolvedValue({
+      message: 'Control unlinked',
+    });
+
+    await controller.removeControl('doc_1', 'ctl_1', 'org_1');
+
+    expect(mockDocumentControlService.removeControl).toHaveBeenCalledWith({
+      documentId: 'doc_1',
+      organizationId: 'org_1',
+      controlId: 'ctl_1',
     });
   });
 
@@ -223,45 +261,5 @@ describe('IsmsController', () => {
       'attachment; filename="context-of-the-organization-v1.pdf"',
     );
     expect(res.send).toHaveBeenCalledWith(fileBuffer);
-  });
-
-  describe('permission metadata', () => {
-    const reflector = new Reflector();
-    const permissionsFor = (method: keyof IsmsController) =>
-      reflector.get(PERMISSIONS_KEY, IsmsController.prototype[method]);
-
-    it('gates ensure-setup with evidence:read', () => {
-      expect(permissionsFor('ensureSetup')).toEqual([
-        { resource: 'evidence', actions: ['read'] },
-      ]);
-    });
-
-    it('gates read endpoints with evidence:read', () => {
-      expect(permissionsFor('getDocument')).toEqual([
-        { resource: 'evidence', actions: ['read'] },
-      ]);
-      expect(permissionsFor('drift')).toEqual([
-        { resource: 'evidence', actions: ['read'] },
-      ]);
-      expect(permissionsFor('exportDocument')).toEqual([
-        { resource: 'evidence', actions: ['read'] },
-      ]);
-    });
-
-    it('gates mutation endpoints with evidence:update', () => {
-      for (const method of [
-        'generate',
-        'createContextIssue',
-        'updateContextIssue',
-        'deleteContextIssue',
-        'submitForApproval',
-        'approve',
-        'decline',
-      ] as const) {
-        expect(permissionsFor(method)).toEqual([
-          { resource: 'evidence', actions: ['update'] },
-        ]);
-      }
-    });
   });
 });

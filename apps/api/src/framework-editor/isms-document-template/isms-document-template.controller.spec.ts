@@ -17,6 +17,8 @@ describe('IsmsDocumentTemplateController', () => {
     update: jest.fn(),
     linkRequirement: jest.fn(),
     unlinkRequirement: jest.fn(),
+    linkControlTemplate: jest.fn(),
+    unlinkControlTemplate: jest.fn(),
   };
 
   beforeEach(async () => {
@@ -70,6 +72,30 @@ describe('IsmsDocumentTemplateController', () => {
     expect(mockService.unlinkRequirement).toHaveBeenCalledWith({
       templateId: 'tpl_ctx',
       requirementId: 'req_41',
+      frameworkId: 'fw_1',
+    });
+  });
+
+  it('maps params + query to linkControlTemplate', async () => {
+    mockService.linkControlTemplate.mockResolvedValue({ message: 'linked' });
+
+    await controller.linkControlTemplate('tpl_ctx', 'ct_1', 'fw_1');
+
+    expect(mockService.linkControlTemplate).toHaveBeenCalledWith({
+      templateId: 'tpl_ctx',
+      controlTemplateId: 'ct_1',
+      frameworkId: 'fw_1',
+    });
+  });
+
+  it('maps params + query to unlinkControlTemplate', async () => {
+    mockService.unlinkControlTemplate.mockResolvedValue({ message: 'unlinked' });
+
+    await controller.unlinkControlTemplate('tpl_ctx', 'ct_1', 'fw_1');
+
+    expect(mockService.unlinkControlTemplate).toHaveBeenCalledWith({
+      templateId: 'tpl_ctx',
+      controlTemplateId: 'ct_1',
       frameworkId: 'fw_1',
     });
   });

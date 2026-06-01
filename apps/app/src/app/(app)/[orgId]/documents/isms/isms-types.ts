@@ -95,6 +95,13 @@ export interface IsmsLeadershipNarrative {
   commitments: IsmsLeadershipCommitment[];
 }
 
+/** Org control linked to an ISMS document (clause-level control mapping). */
+export interface IsmsControlLink {
+  id: string;
+  controlId: string;
+  control: { id: string; name: string };
+}
+
 /** Latest version row included on the fetched document. */
 export interface IsmsDocumentVersion {
   id: string;
@@ -135,6 +142,7 @@ export interface IsmsDocument {
   interestedParties: IsmsInterestedParty[];
   interestedPartyRequirements: IsmsInterestedPartyRequirement[];
   objectives: IsmsObjective[];
+  controlLinks: IsmsControlLink[];
   versions: IsmsDocumentVersion[];
 }
 

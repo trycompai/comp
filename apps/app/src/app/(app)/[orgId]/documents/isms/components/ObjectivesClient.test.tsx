@@ -118,6 +118,10 @@ vi.mock('sonner', () => ({
   toast: { success: vi.fn(), error: vi.fn() },
 }));
 
+vi.mock('./IsmsControlMappings', () => ({
+  IsmsControlMappings: () => <div data-testid="isms-control-mappings" />,
+}));
+
 import { ObjectivesClient } from './ObjectivesClient';
 
 const OBJECTIVES: IsmsObjective[] = [
@@ -162,6 +166,7 @@ function makeDocument(overrides: Partial<IsmsDocument> = {}): IsmsDocument {
     interestedParties: [],
     interestedPartyRequirements: [],
     objectives: OBJECTIVES,
+    controlLinks: [],
     versions: [],
     ...overrides,
   };
