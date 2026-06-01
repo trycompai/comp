@@ -7,6 +7,7 @@ import { upsertLatestSnapshotVersion } from './utils/version-snapshot';
 jest.mock('@db', () => ({
   db: {
     frameworkEditorFramework: { findUnique: jest.fn() },
+    frameworkEditorIsmsDocumentTemplate: { findMany: jest.fn() },
     ismsDocument: {
       findMany: jest.fn(),
       findFirst: jest.fn(),
@@ -38,6 +39,10 @@ describe('IsmsService', () => {
   describe('ensureSetup', () => {
     const dto = { organizationId: 'org_1', frameworkId: 'fw_1' };
 
+    const mockTemplates = (
+      mockDb.frameworkEditorIsmsDocumentTemplate.findMany as jest.Mock
+    );
+
     it('throws NotFoundException when framework not found', async () => {
       (
         mockDb.frameworkEditorFramework.findUnique as jest.Mock
@@ -45,56 +50,185 @@ describe('IsmsService', () => {
       await expect(service.ensureSetup(dto)).rejects.toThrow(NotFoundException);
     });
 
-    it('creates only missing document types and maps requirements', async () => {
-      (
-        mockDb.frameworkEditorFramework.findUnique as jest.Mock
-      ).mockResolvedValue({
-        id: 'fw_1',
-        requirements: [
-          { id: 'req_41', name: '4.1 Context', identifier: '4.1' },
-        ],
+    describe('template-driven (templates seeded)', () => {
+      beforeEach(() => {
+        (
+          mockDb.frameworkEditorFramework.findUnique as jest.Mock
+        ).mockResolvedValue({
+          id: 'fw_1',
+          requirements: [
+            { id: 'req_41', name: '4.1 Context', identifier: '4.1' },
+            { id: 'req_62', name: '6.2 Objectives', identifier: '6.2' },
+          ],
+        });
       });
-      // One existing type so only the other five are created.
-      (mockDb.ismsDocument.findMany as jest.Mock)
-        .mockResolvedValueOnce([{ type: 'context_of_organization' }])
-        .mockResolvedValueOnce([
+
+      it('creates docs from templates with templateId set', async () => {
+        mockTemplates.mockResolvedValue([
           {
-            id: 'doc_1',
-            type: 'context_of_organization',
-            status: 'draft',
-            requirementId: 'req_41',
+            id: 'tpl_ctx',
+            documentType: 'context_of_organization',
+            name: 'Context of the Organization',
+            clause: '4.1',
+            requirementLinks: [],
           },
         ]);
-      (mockDb.ismsDocument.create as jest.Mock).mockResolvedValue({});
+        (mockDb.ismsDocument.findMany as jest.Mock)
+          .mockResolvedValueOnce([])
+          .mockResolvedValueOnce([]);
+        (mockDb.ismsDocument.create as jest.Mock).mockResolvedValue({});
 
-      const result = await service.ensureSetup(dto);
+        await service.ensureSetup(dto);
 
-      expect(mockDb.ismsDocument.create).toHaveBeenCalledTimes(5);
-      expect(result.success).toBe(true);
-      expect(result.documents[0]).toEqual({
-        id: 'doc_1',
-        type: 'context_of_organization',
-        status: 'draft',
-        requirementId: 'req_41',
-        hasApprovedVersion: false,
+        expect(mockDb.ismsDocument.create).toHaveBeenCalledTimes(1);
+        const createArgs = (mockDb.ismsDocument.create as jest.Mock).mock
+          .calls[0][0];
+        expect(createArgs.data).toMatchObject({
+          type: 'context_of_organization',
+          title: 'Context of the Organization',
+          templateId: 'tpl_ctx',
+          requirementId: 'req_41', // resolved via clause fallback "4.1"
+        });
+      });
+
+      it('prefers an explicit framework requirement link over clause match', async () => {
+        mockTemplates.mockResolvedValue([
+          {
+            id: 'tpl_ctx',
+            documentType: 'context_of_organization',
+            name: 'Context of the Organization',
+            clause: '4.1',
+            requirementLinks: [
+              { frameworkId: 'fw_1', requirementId: 'req_custom' },
+            ],
+          },
+        ]);
+        (mockDb.ismsDocument.findMany as jest.Mock)
+          .mockResolvedValueOnce([])
+          .mockResolvedValueOnce([]);
+        (mockDb.ismsDocument.create as jest.Mock).mockResolvedValue({});
+
+        await service.ensureSetup(dto);
+
+        const createArgs = (mockDb.ismsDocument.create as jest.Mock).mock
+          .calls[0][0];
+        expect(createArgs.data.requirementId).toBe('req_custom');
+        expect(createArgs.data.templateId).toBe('tpl_ctx');
+      });
+
+      it('falls back to clause match when no link exists for the framework', async () => {
+        mockTemplates.mockResolvedValue([
+          {
+            id: 'tpl_obj',
+            documentType: 'objectives_plan',
+            name: 'Objectives and Plan',
+            clause: '6.2',
+            requirementLinks: [],
+          },
+        ]);
+        (mockDb.ismsDocument.findMany as jest.Mock)
+          .mockResolvedValueOnce([])
+          .mockResolvedValueOnce([]);
+        (mockDb.ismsDocument.create as jest.Mock).mockResolvedValue({});
+
+        await service.ensureSetup(dto);
+
+        const createArgs = (mockDb.ismsDocument.create as jest.Mock).mock
+          .calls[0][0];
+        expect(createArgs.data.requirementId).toBe('req_62');
+      });
+
+      it('skips templates whose document type already exists', async () => {
+        mockTemplates.mockResolvedValue([
+          {
+            id: 'tpl_ctx',
+            documentType: 'context_of_organization',
+            name: 'Context of the Organization',
+            clause: '4.1',
+            requirementLinks: [],
+          },
+          {
+            id: 'tpl_obj',
+            documentType: 'objectives_plan',
+            name: 'Objectives and Plan',
+            clause: '6.2',
+            requirementLinks: [],
+          },
+        ]);
+        (mockDb.ismsDocument.findMany as jest.Mock)
+          .mockResolvedValueOnce([{ type: 'context_of_organization' }])
+          .mockResolvedValueOnce([]);
+        (mockDb.ismsDocument.create as jest.Mock).mockResolvedValue({});
+
+        await service.ensureSetup(dto);
+
+        expect(mockDb.ismsDocument.create).toHaveBeenCalledTimes(1);
+        const createArgs = (mockDb.ismsDocument.create as jest.Mock).mock
+          .calls[0][0];
+        expect(createArgs.data.type).toBe('objectives_plan');
       });
     });
 
-    it('leaves requirementId null when no clause matches', async () => {
-      (
-        mockDb.frameworkEditorFramework.findUnique as jest.Mock
-      ).mockResolvedValue({ id: 'fw_1', requirements: [] });
-      (mockDb.ismsDocument.findMany as jest.Mock)
-        .mockResolvedValueOnce([])
-        .mockResolvedValueOnce([]);
-      (mockDb.ismsDocument.create as jest.Mock).mockResolvedValue({});
+    describe('fallback to ISMS_TYPE_DEFINITIONS (no templates seeded)', () => {
+      beforeEach(() => {
+        mockTemplates.mockResolvedValue([]);
+      });
 
-      await service.ensureSetup(dto);
+      it('creates only missing document types and maps requirements', async () => {
+        (
+          mockDb.frameworkEditorFramework.findUnique as jest.Mock
+        ).mockResolvedValue({
+          id: 'fw_1',
+          requirements: [
+            { id: 'req_41', name: '4.1 Context', identifier: '4.1' },
+          ],
+        });
+        // One existing type so only the other five are created.
+        (mockDb.ismsDocument.findMany as jest.Mock)
+          .mockResolvedValueOnce([{ type: 'context_of_organization' }])
+          .mockResolvedValueOnce([
+            {
+              id: 'doc_1',
+              type: 'context_of_organization',
+              status: 'draft',
+              requirementId: 'req_41',
+            },
+          ]);
+        (mockDb.ismsDocument.create as jest.Mock).mockResolvedValue({});
 
-      expect(mockDb.ismsDocument.create).toHaveBeenCalledTimes(6);
-      const firstCall = (mockDb.ismsDocument.create as jest.Mock).mock
-        .calls[0][0];
-      expect(firstCall.data.requirementId).toBeNull();
+        const result = await service.ensureSetup(dto);
+
+        expect(mockDb.ismsDocument.create).toHaveBeenCalledTimes(5);
+        // Definition-derived docs carry no templateId.
+        const createArgs = (mockDb.ismsDocument.create as jest.Mock).mock
+          .calls[0][0];
+        expect(createArgs.data.templateId).toBeNull();
+        expect(result.success).toBe(true);
+        expect(result.documents[0]).toEqual({
+          id: 'doc_1',
+          type: 'context_of_organization',
+          status: 'draft',
+          requirementId: 'req_41',
+          hasApprovedVersion: false,
+        });
+      });
+
+      it('leaves requirementId null when no clause matches', async () => {
+        (
+          mockDb.frameworkEditorFramework.findUnique as jest.Mock
+        ).mockResolvedValue({ id: 'fw_1', requirements: [] });
+        (mockDb.ismsDocument.findMany as jest.Mock)
+          .mockResolvedValueOnce([])
+          .mockResolvedValueOnce([]);
+        (mockDb.ismsDocument.create as jest.Mock).mockResolvedValue({});
+
+        await service.ensureSetup(dto);
+
+        expect(mockDb.ismsDocument.create).toHaveBeenCalledTimes(6);
+        const firstCall = (mockDb.ismsDocument.create as jest.Mock).mock
+          .calls[0][0];
+        expect(firstCall.data.requirementId).toBeNull();
+      });
     });
   });
 

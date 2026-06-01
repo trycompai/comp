@@ -6,42 +6,58 @@ export interface IsmsTypeDefinition {
   /** Clause number used to match the FrameworkEditorRequirement (e.g. "4.1"). */
   clause: string;
   title: string;
+  /** Short summary of what the document covers (used as the template description). */
+  description: string;
 }
 
 /**
- * The full set of ISMS foundational documents. ensure-setup creates one row per
- * entry. Several types share a clause (4.2 → register + requirements).
+ * The full set of ISMS foundational documents and the single source the
+ * framework-editor template seed derives from (see packages/db .../seed.ts).
+ * ensure-setup falls back to this list when no templates exist in the DB.
+ * Several types share a clause (4.2 → register + requirements).
  */
 export const ISMS_TYPE_DEFINITIONS: IsmsTypeDefinition[] = [
   {
     type: 'context_of_organization',
     clause: '4.1',
     title: 'Context of the Organization',
+    description:
+      'Internal and external issues relevant to the ISMS and their effect on its intended outcomes (ISO 27001 clause 4.1).',
   },
   {
     type: 'interested_parties_register',
     clause: '4.2',
     title: 'Interested Parties Register',
+    description:
+      'The interested parties relevant to the ISMS together with their needs and expectations (ISO 27001 clause 4.2).',
   },
   {
     type: 'interested_parties_requirements',
     clause: '4.2',
     title: 'Interested Parties Requirements',
+    description:
+      'The requirements of interested parties and how the ISMS addresses them (ISO 27001 clause 4.2).',
   },
   {
     type: 'isms_scope',
     clause: '4.3',
     title: 'ISMS Scope',
+    description:
+      'The boundaries and applicability of the ISMS, including the interfaces and dependencies considered (ISO 27001 clause 4.3).',
   },
   {
     type: 'leadership_commitment',
     clause: '5.1',
     title: 'Leadership and Commitment',
+    description:
+      'Evidence of top management leadership and commitment to the ISMS (ISO 27001 clause 5.1).',
   },
   {
     type: 'objectives_plan',
     clause: '6.2',
     title: 'Information Security Objectives and Plan',
+    description:
+      'Measurable information security objectives and the plan to achieve them (ISO 27001 clause 6.2).',
   },
 ];
 
