@@ -1,10 +1,12 @@
 import { Test, TestingModule } from '@nestjs/testing';
+import { BadRequestException } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import type { Request } from 'express';
 import { HybridAuthGuard } from '../auth/hybrid-auth.guard';
 import { PermissionGuard } from '../auth/permission.guard';
 import { PERMISSIONS_KEY } from '../auth/permission.guard';
 import { IsmsRegistersController } from './isms-registers.controller';
+import { IsmsContextIssueService } from './isms-context-issue.service';
 import { IsmsInterestedPartyService } from './isms-interested-party.service';
 import { IsmsRequirementService } from './isms-requirement.service';
 import { IsmsObjectiveService } from './isms-objective.service';
@@ -24,6 +26,9 @@ jest.mock('@trycompai/auth', () => ({
   statement: {},
   BUILT_IN_ROLE_PERMISSIONS: {},
 }));
+jest.mock('./isms-context-issue.service', () => ({
+  IsmsContextIssueService: class {},
+}));
 jest.mock('./isms-interested-party.service', () => ({
   IsmsInterestedPartyService: class {},
 }));
@@ -37,9 +42,17 @@ jest.mock('./isms-narrative.service', () => ({
   IsmsNarrativeService: class {},
 }));
 
+const reqWith = (body: Record<string, unknown>) =>
+  ({ body }) as unknown as Request;
+
 describe('IsmsRegistersController', () => {
   let controller: IsmsRegistersController;
 
+  const contextIssueService = {
+    create: jest.fn(),
+    update: jest.fn(),
+    remove: jest.fn(),
+  };
   const interestedPartyService = {
     create: jest.fn(),
     update: jest.fn(),
@@ -63,6 +76,7 @@ describe('IsmsRegistersController', () => {
     const module: TestingModule = await Test.createTestingModule({
       controllers: [IsmsRegistersController],
       providers: [
+        { provide: IsmsContextIssueService, useValue: contextIssueService },
         {
           provide: IsmsInterestedPartyService,
           useValue: interestedPartyService,
@@ -82,73 +96,146 @@ describe('IsmsRegistersController', () => {
     jest.clearAllMocks();
   });
 
-  it('createInterestedParty passes documentId, dto, org', async () => {
-    const dto = {
-      name: 'Customers',
-      category: 'Customer',
-      needsExpectations: 'n',
-    };
-    await controller.createInterestedParty('doc_1', dto, 'org_1');
-    expect(interestedPartyService.create).toHaveBeenCalledWith({
-      documentId: 'doc_1',
-      organizationId: 'org_1',
-      dto,
+  describe('createRow', () => {
+    it('dispatches interested-parties create with documentId, parsed dto, org', async () => {
+      const dto = {
+        name: 'Customers',
+        category: 'Customer',
+        needsExpectations: 'n',
+      };
+      await controller.createRow(
+        'doc_1',
+        'interested-parties',
+        reqWith(dto),
+        'org_1',
+      );
+      expect(interestedPartyService.create).toHaveBeenCalledWith({
+        documentId: 'doc_1',
+        organizationId: 'org_1',
+        dto,
+      });
+    });
+
+    it('dispatches context-issues create and passes category through', async () => {
+      const body = {
+        kind: 'internal',
+        category: 'Strategic',
+        description: 'd',
+        effect: 'e',
+      };
+      await controller.createRow(
+        'doc_1',
+        'context-issues',
+        reqWith(body),
+        'org_1',
+      );
+      expect(contextIssueService.create).toHaveBeenCalledWith({
+        documentId: 'doc_1',
+        organizationId: 'org_1',
+        dto: body,
+      });
+    });
+
+    it('dispatches requirements create with parsed dto', async () => {
+      const body = { partyName: 'C', requirement: 'r', treatment: 't' };
+      await controller.createRow(
+        'doc_1',
+        'requirements',
+        reqWith(body),
+        'org_1',
+      );
+      expect(requirementService.create).toHaveBeenCalledWith({
+        documentId: 'doc_1',
+        organizationId: 'org_1',
+        dto: body,
+      });
+    });
+
+    it('dispatches objectives create with parsed dto', async () => {
+      const body = { objective: 'o' };
+      await controller.createRow('doc_1', 'objectives', reqWith(body), 'org_1');
+      expect(objectiveService.create).toHaveBeenCalledWith({
+        documentId: 'doc_1',
+        organizationId: 'org_1',
+        dto: body,
+      });
+    });
+
+    it('throws BadRequestException for an unknown register', async () => {
+      await expect(
+        controller.createRow('doc_1', 'nope', reqWith({}), 'org_1'),
+      ).rejects.toBeInstanceOf(BadRequestException);
     });
   });
 
-  it('updateInterestedParty passes partyId, dto, org', async () => {
-    const dto = { name: 'X' };
-    await controller.updateInterestedParty('ip_1', dto, 'org_1');
-    expect(interestedPartyService.update).toHaveBeenCalledWith({
-      partyId: 'ip_1',
-      organizationId: 'org_1',
-      dto,
+  describe('updateRow', () => {
+    it('dispatches context-issues update with issueId, parsed dto, org', async () => {
+      const body = { description: 'updated' };
+      await controller.updateRow(
+        'context-issues',
+        'row1',
+        reqWith(body),
+        'org_1',
+      );
+      expect(contextIssueService.update).toHaveBeenCalledWith({
+        issueId: 'row1',
+        organizationId: 'org_1',
+        dto: body,
+      });
+    });
+
+    it('dispatches interested-parties update with partyId', async () => {
+      const body = { name: 'X' };
+      await controller.updateRow(
+        'interested-parties',
+        'ip_1',
+        reqWith(body),
+        'org_1',
+      );
+      expect(interestedPartyService.update).toHaveBeenCalledWith({
+        partyId: 'ip_1',
+        organizationId: 'org_1',
+        dto: body,
+      });
+    });
+
+    it('throws BadRequestException for an unknown register', async () => {
+      await expect(
+        controller.updateRow('nope', 'row1', reqWith({}), 'org_1'),
+      ).rejects.toBeInstanceOf(BadRequestException);
     });
   });
 
-  it('deleteInterestedParty passes partyId, org', async () => {
-    await controller.deleteInterestedParty('ip_1', 'org_1');
-    expect(interestedPartyService.remove).toHaveBeenCalledWith({
-      partyId: 'ip_1',
-      organizationId: 'org_1',
+  describe('deleteRow', () => {
+    it('dispatches objectives remove with objectiveId and org', async () => {
+      await controller.deleteRow('objectives', 'row1', 'org_1');
+      expect(objectiveService.remove).toHaveBeenCalledWith({
+        objectiveId: 'row1',
+        organizationId: 'org_1',
+      });
     });
-  });
 
-  it('createRequirement passes documentId, dto, org', async () => {
-    const dto = { partyName: 'C', requirement: 'r', treatment: 't' };
-    await controller.createRequirement('doc_1', dto, 'org_1');
-    expect(requirementService.create).toHaveBeenCalledWith({
-      documentId: 'doc_1',
-      organizationId: 'org_1',
-      dto,
+    it('dispatches requirements remove with requirementId and org', async () => {
+      await controller.deleteRow('requirements', 'req_1', 'org_1');
+      expect(requirementService.remove).toHaveBeenCalledWith({
+        requirementId: 'req_1',
+        organizationId: 'org_1',
+      });
     });
-  });
 
-  it('createObjective passes documentId, dto, org', async () => {
-    const dto = { objective: 'o' };
-    await controller.createObjective('doc_1', dto, 'org_1');
-    expect(objectiveService.create).toHaveBeenCalledWith({
-      documentId: 'doc_1',
-      organizationId: 'org_1',
-      dto,
-    });
-  });
-
-  it('updateObjective passes objectiveId, dto, org', async () => {
-    const dto = { status: 'met' as const };
-    await controller.updateObjective('obj_1', dto, 'org_1');
-    expect(objectiveService.update).toHaveBeenCalledWith({
-      objectiveId: 'obj_1',
-      organizationId: 'org_1',
-      dto,
+    it('throws BadRequestException for an unknown register', async () => {
+      await expect(
+        controller.deleteRow('nope', 'row1', 'org_1'),
+      ).rejects.toBeInstanceOf(BadRequestException);
     });
   });
 
   it('saveNarrative reads req.body.narrative and passes it through', async () => {
-    const req = {
-      body: { narrative: { statement: 's' } },
-    } as unknown as Request;
-    await controller.saveNarrative('doc_1', req, 'org_1');
+    await controller.saveNarrative(
+      'doc_1',
+      reqWith({ narrative: { statement: 's' } }),
+      'org_1',
+    );
     expect(narrativeService.save).toHaveBeenCalledWith({
       documentId: 'doc_1',
       organizationId: 'org_1',
@@ -163,15 +250,9 @@ describe('IsmsRegistersController', () => {
 
     it('gates every mutation with evidence:update', () => {
       for (const method of [
-        'createInterestedParty',
-        'updateInterestedParty',
-        'deleteInterestedParty',
-        'createRequirement',
-        'updateRequirement',
-        'deleteRequirement',
-        'createObjective',
-        'updateObjective',
-        'deleteObjective',
+        'createRow',
+        'updateRow',
+        'deleteRow',
         'saveNarrative',
       ] as const) {
         expect(permissionsFor(method)).toEqual([

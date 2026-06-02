@@ -22,9 +22,6 @@ jest.mock('./isms.service', () => ({
 jest.mock('./isms-context.service', () => ({
   IsmsContextService: class MockIsmsContextService {},
 }));
-jest.mock('./isms-context-issue.service', () => ({
-  IsmsContextIssueService: class MockIsmsContextIssueService {},
-}));
 jest.mock('./isms-document-control.service', () => ({
   IsmsDocumentControlService: class MockIsmsDocumentControlService {},
 }));
@@ -57,9 +54,6 @@ describe('IsmsController permission metadata', () => {
       'generate',
       'addControls',
       'removeControl',
-      'createContextIssue',
-      'updateContextIssue',
-      'deleteContextIssue',
       'submitForApproval',
       'approve',
       'decline',

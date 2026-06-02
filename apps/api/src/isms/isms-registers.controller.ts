@@ -1,10 +1,11 @@
 import {
-  Body,
+  BadRequestException,
   Controller,
   Delete,
   HttpCode,
   HttpStatus,
   Param,
+  Patch,
   Post,
   Req,
   UseGuards,
@@ -21,174 +22,103 @@ import { OrganizationId } from '@/auth/auth-context.decorator';
 import { HybridAuthGuard } from '@/auth/hybrid-auth.guard';
 import { PermissionGuard } from '../auth/permission.guard';
 import { RequirePermission } from '../auth/require-permission.decorator';
+import { IsmsContextIssueService } from './isms-context-issue.service';
 import { IsmsInterestedPartyService } from './isms-interested-party.service';
 import { IsmsRequirementService } from './isms-requirement.service';
 import { IsmsObjectiveService } from './isms-objective.service';
 import { IsmsNarrativeService } from './isms-narrative.service';
-import { CreateInterestedPartyDto } from './dto/create-interested-party.dto';
-import { UpdateInterestedPartyDto } from './dto/update-interested-party.dto';
-import { CreateRequirementDto } from './dto/create-requirement.dto';
-import { UpdateRequirementDto } from './dto/update-requirement.dto';
-import { CreateObjectiveDto } from './dto/create-objective.dto';
-import { UpdateObjectiveDto } from './dto/update-objective.dto';
+import {
+  createRegisterRegistry,
+  type IsmsRegisterKey,
+  type RegisterHandler,
+} from './registers/register-registry';
 
 /**
- * Register CRUD (interested parties, requirements, objectives) and the singleton
- * narrative save. Split from IsmsController to keep each controller under the
- * 300-line limit; both live in IsmsModule under the same `isms` path.
+ * Generic CRUD for every ISMS register row (context issues, interested parties,
+ * requirements, objectives) via a single create / update / delete trio routed by
+ * the `:register` segment, plus the singleton narrative save. Bodies are read
+ * from `req.body` and validated by the register registry's zod schemas.
  */
 @ApiTags('ISMS')
 @Controller({ path: 'isms', version: '1' })
 @UseGuards(HybridAuthGuard, PermissionGuard)
 @ApiSecurity('apikey')
 export class IsmsRegistersController {
+  private readonly registry: Record<IsmsRegisterKey, RegisterHandler>;
+
   constructor(
-    private readonly interestedPartyService: IsmsInterestedPartyService,
-    private readonly requirementService: IsmsRequirementService,
-    private readonly objectiveService: IsmsObjectiveService,
+    contextIssueService: IsmsContextIssueService,
+    interestedPartyService: IsmsInterestedPartyService,
+    requirementService: IsmsRequirementService,
+    objectiveService: IsmsObjectiveService,
     private readonly narrativeService: IsmsNarrativeService,
-  ) {}
+  ) {
+    this.registry = createRegisterRegistry({
+      contextIssues: contextIssueService,
+      interestedParties: interestedPartyService,
+      requirements: requirementService,
+      objectives: objectiveService,
+    });
+  }
 
-  // --- Interested Parties (4.2a) ---
+  private resolve(register: string): RegisterHandler {
+    const handler = this.registry[register as IsmsRegisterKey];
+    if (!handler) {
+      throw new BadRequestException(`Unknown ISMS register: ${register}`);
+    }
+    return handler;
+  }
 
-  @Post('documents/:id/interested-parties')
+  @Post('documents/:id/registers/:register')
   @HttpCode(HttpStatus.CREATED)
   @RequirePermission('evidence', 'update')
-  @ApiOperation({ summary: 'Create a manual interested party' })
+  @ApiOperation({ summary: 'Create a row in an ISMS register' })
   @ApiConsumes('application/json')
-  @ApiOkResponse({ description: 'Interested party created' })
-  async createInterestedParty(
+  @ApiOkResponse({ description: 'Register row created' })
+  async createRow(
     @Param('id') id: string,
-    @Body() dto: CreateInterestedPartyDto,
+    @Param('register') register: string,
+    // Read req.body directly: the global ValidationPipe mangles nested JSON.
+    @Req() req: Request,
     @OrganizationId() organizationId: string,
   ) {
-    return this.interestedPartyService.create({
+    return this.resolve(register).create({
       documentId: id,
       organizationId,
-      dto,
+      data: req.body,
     });
   }
 
-  @Post('interested-parties/:partyId')
+  @Patch('registers/:register/:rowId')
   @HttpCode(HttpStatus.OK)
   @RequirePermission('evidence', 'update')
-  @ApiOperation({ summary: 'Update an interested party' })
+  @ApiOperation({ summary: 'Update a row in an ISMS register' })
   @ApiConsumes('application/json')
-  @ApiOkResponse({ description: 'Interested party updated' })
-  async updateInterestedParty(
-    @Param('partyId') partyId: string,
-    @Body() dto: UpdateInterestedPartyDto,
+  @ApiOkResponse({ description: 'Register row updated' })
+  async updateRow(
+    @Param('register') register: string,
+    @Param('rowId') rowId: string,
+    @Req() req: Request,
     @OrganizationId() organizationId: string,
   ) {
-    return this.interestedPartyService.update({ partyId, organizationId, dto });
-  }
-
-  @Delete('interested-parties/:partyId')
-  @HttpCode(HttpStatus.OK)
-  @RequirePermission('evidence', 'update')
-  @ApiOperation({ summary: 'Delete an interested party' })
-  @ApiOkResponse({ description: 'Interested party deleted' })
-  async deleteInterestedParty(
-    @Param('partyId') partyId: string,
-    @OrganizationId() organizationId: string,
-  ) {
-    return this.interestedPartyService.remove({ partyId, organizationId });
-  }
-
-  // --- Requirements & Treatment (4.2b/c) ---
-
-  @Post('documents/:id/requirements')
-  @HttpCode(HttpStatus.CREATED)
-  @RequirePermission('evidence', 'update')
-  @ApiOperation({ summary: 'Create a manual requirement' })
-  @ApiConsumes('application/json')
-  @ApiOkResponse({ description: 'Requirement created' })
-  async createRequirement(
-    @Param('id') id: string,
-    @Body() dto: CreateRequirementDto,
-    @OrganizationId() organizationId: string,
-  ) {
-    return this.requirementService.create({
-      documentId: id,
+    return this.resolve(register).update({
+      rowId,
       organizationId,
-      dto,
+      data: req.body,
     });
   }
 
-  @Post('requirements/:requirementId')
+  @Delete('registers/:register/:rowId')
   @HttpCode(HttpStatus.OK)
   @RequirePermission('evidence', 'update')
-  @ApiOperation({ summary: 'Update a requirement' })
-  @ApiConsumes('application/json')
-  @ApiOkResponse({ description: 'Requirement updated' })
-  async updateRequirement(
-    @Param('requirementId') requirementId: string,
-    @Body() dto: UpdateRequirementDto,
+  @ApiOperation({ summary: 'Delete a row in an ISMS register' })
+  @ApiOkResponse({ description: 'Register row deleted' })
+  async deleteRow(
+    @Param('register') register: string,
+    @Param('rowId') rowId: string,
     @OrganizationId() organizationId: string,
   ) {
-    return this.requirementService.update({
-      requirementId,
-      organizationId,
-      dto,
-    });
-  }
-
-  @Delete('requirements/:requirementId')
-  @HttpCode(HttpStatus.OK)
-  @RequirePermission('evidence', 'update')
-  @ApiOperation({ summary: 'Delete a requirement' })
-  @ApiOkResponse({ description: 'Requirement deleted' })
-  async deleteRequirement(
-    @Param('requirementId') requirementId: string,
-    @OrganizationId() organizationId: string,
-  ) {
-    return this.requirementService.remove({ requirementId, organizationId });
-  }
-
-  // --- Objectives (6.2) ---
-
-  @Post('documents/:id/objectives')
-  @HttpCode(HttpStatus.CREATED)
-  @RequirePermission('evidence', 'update')
-  @ApiOperation({ summary: 'Create a manual objective' })
-  @ApiConsumes('application/json')
-  @ApiOkResponse({ description: 'Objective created' })
-  async createObjective(
-    @Param('id') id: string,
-    @Body() dto: CreateObjectiveDto,
-    @OrganizationId() organizationId: string,
-  ) {
-    return this.objectiveService.create({
-      documentId: id,
-      organizationId,
-      dto,
-    });
-  }
-
-  @Post('objectives/:objectiveId')
-  @HttpCode(HttpStatus.OK)
-  @RequirePermission('evidence', 'update')
-  @ApiOperation({ summary: 'Update an objective' })
-  @ApiConsumes('application/json')
-  @ApiOkResponse({ description: 'Objective updated' })
-  async updateObjective(
-    @Param('objectiveId') objectiveId: string,
-    @Body() dto: UpdateObjectiveDto,
-    @OrganizationId() organizationId: string,
-  ) {
-    return this.objectiveService.update({ objectiveId, organizationId, dto });
-  }
-
-  @Delete('objectives/:objectiveId')
-  @HttpCode(HttpStatus.OK)
-  @RequirePermission('evidence', 'update')
-  @ApiOperation({ summary: 'Delete an objective' })
-  @ApiOkResponse({ description: 'Objective deleted' })
-  async deleteObjective(
-    @Param('objectiveId') objectiveId: string,
-    @OrganizationId() organizationId: string,
-  ) {
-    return this.objectiveService.remove({ objectiveId, organizationId });
+    return this.resolve(register).remove({ rowId, organizationId });
   }
 
   // --- Singleton narrative (4.3 scope, 5.1 leadership) ---

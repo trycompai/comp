@@ -5,7 +5,6 @@ import { PermissionGuard } from '../auth/permission.guard';
 import { IsmsController } from './isms.controller';
 import { IsmsService } from './isms.service';
 import { IsmsContextService } from './isms-context.service';
-import { IsmsContextIssueService } from './isms-context-issue.service';
 import { IsmsDocumentControlService } from './isms-document-control.service';
 
 jest.mock('../auth/auth.server', () => ({
@@ -28,9 +27,6 @@ jest.mock('./isms.service', () => ({
 jest.mock('./isms-context.service', () => ({
   IsmsContextService: class MockIsmsContextService {},
 }));
-jest.mock('./isms-context-issue.service', () => ({
-  IsmsContextIssueService: class MockIsmsContextIssueService {},
-}));
 jest.mock('./isms-document-control.service', () => ({
   IsmsDocumentControlService: class MockIsmsDocumentControlService {},
 }));
@@ -50,11 +46,6 @@ describe('IsmsController', () => {
     drift: jest.fn(),
     exportDocument: jest.fn(),
   };
-  const mockContextIssueService = {
-    create: jest.fn(),
-    update: jest.fn(),
-    remove: jest.fn(),
-  };
   const mockDocumentControlService = {
     addControls: jest.fn(),
     removeControl: jest.fn(),
@@ -68,7 +59,6 @@ describe('IsmsController', () => {
       providers: [
         { provide: IsmsService, useValue: mockIsmsService },
         { provide: IsmsContextService, useValue: mockContextService },
-        { provide: IsmsContextIssueService, useValue: mockContextIssueService },
         {
           provide: IsmsDocumentControlService,
           useValue: mockDocumentControlService,
@@ -141,43 +131,6 @@ describe('IsmsController', () => {
 
     expect(mockContextService.generate).toHaveBeenCalledWith({
       documentId: 'doc_1',
-      organizationId: 'org_1',
-    });
-  });
-
-  it('createContextIssue passes documentId, dto and org', async () => {
-    const dto = { kind: 'internal' as const, description: 'd', effect: 'e' };
-    mockContextIssueService.create.mockResolvedValue({ id: 'issue_1' });
-
-    await controller.createContextIssue('doc_1', dto, 'org_1');
-
-    expect(mockContextIssueService.create).toHaveBeenCalledWith({
-      documentId: 'doc_1',
-      organizationId: 'org_1',
-      dto,
-    });
-  });
-
-  it('updateContextIssue passes issueId, dto and org', async () => {
-    const dto = { description: 'updated' };
-    mockContextIssueService.update.mockResolvedValue({ id: 'issue_1' });
-
-    await controller.updateContextIssue('issue_1', dto, 'org_1');
-
-    expect(mockContextIssueService.update).toHaveBeenCalledWith({
-      issueId: 'issue_1',
-      organizationId: 'org_1',
-      dto,
-    });
-  });
-
-  it('deleteContextIssue passes issueId and org', async () => {
-    mockContextIssueService.remove.mockResolvedValue({ success: true });
-
-    await controller.deleteContextIssue('issue_1', 'org_1');
-
-    expect(mockContextIssueService.remove).toHaveBeenCalledWith({
-      issueId: 'issue_1',
       organizationId: 'org_1',
     });
   });

@@ -112,7 +112,7 @@ export function useIsmsDocument({
   }): Promise<void> => {
     if (!documentId) throw new Error('No document ID');
     await unwrap(
-      api.post(`/v1/isms/documents/${documentId}/${register}`, rowData),
+      api.post(`/v1/isms/documents/${documentId}/registers/${register}`, rowData),
       'Failed to add row',
     );
     await mutate();
@@ -127,7 +127,10 @@ export function useIsmsDocument({
     id: string;
     data: Record<string, unknown>;
   }): Promise<void> => {
-    await unwrap(api.post(`/v1/isms/${register}/${id}`, rowData), 'Failed to update row');
+    await unwrap(
+      api.patch(`/v1/isms/registers/${register}/${id}`, rowData),
+      'Failed to update row',
+    );
     await mutate();
   };
 
@@ -138,7 +141,7 @@ export function useIsmsDocument({
     register: IsmsRegister;
     id: string;
   }): Promise<void> => {
-    const response = await api.delete(`/v1/isms/${register}/${id}`);
+    const response = await api.delete(`/v1/isms/registers/${register}/${id}`);
     if (response.error) throw new Error(response.error);
     await mutate();
   };

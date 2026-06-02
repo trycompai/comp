@@ -26,11 +26,8 @@ import { RequirePermission } from '../auth/require-permission.decorator';
 import { UserId } from '@/auth/auth-context.decorator';
 import { IsmsService } from './isms.service';
 import { IsmsContextService } from './isms-context.service';
-import { IsmsContextIssueService } from './isms-context-issue.service';
 import { IsmsDocumentControlService } from './isms-document-control.service';
 import { EnsureIsmsSetupDto } from './dto/ensure-isms-setup.dto';
-import { CreateContextIssueDto } from './dto/create-context-issue.dto';
-import { UpdateContextIssueDto } from './dto/update-context-issue.dto';
 import { SubmitIsmsForApprovalDto } from './dto/submit-isms-for-approval.dto';
 import { ExportIsmsDocumentDto } from './dto/export-isms-document.dto';
 import { LinkIsmsControlsDto } from './dto/link-isms-controls.dto';
@@ -43,7 +40,6 @@ export class IsmsController {
   constructor(
     private readonly ismsService: IsmsService,
     private readonly contextService: IsmsContextService,
-    private readonly contextIssueService: IsmsContextIssueService,
     private readonly documentControlService: IsmsDocumentControlService,
   ) {}
 
@@ -114,50 +110,6 @@ export class IsmsController {
     @OrganizationId() organizationId: string,
   ) {
     return this.contextService.generate({ documentId: id, organizationId });
-  }
-
-  @Post('documents/:id/context-issues')
-  @HttpCode(HttpStatus.CREATED)
-  @RequirePermission('evidence', 'update')
-  @ApiOperation({ summary: 'Create a manual context issue' })
-  @ApiConsumes('application/json')
-  @ApiOkResponse({ description: 'Context issue created' })
-  async createContextIssue(
-    @Param('id') id: string,
-    @Body() dto: CreateContextIssueDto,
-    @OrganizationId() organizationId: string,
-  ) {
-    return this.contextIssueService.create({
-      documentId: id,
-      organizationId,
-      dto,
-    });
-  }
-
-  @Post('context-issues/:issueId')
-  @HttpCode(HttpStatus.OK)
-  @RequirePermission('evidence', 'update')
-  @ApiOperation({ summary: 'Update a context issue' })
-  @ApiConsumes('application/json')
-  @ApiOkResponse({ description: 'Context issue updated' })
-  async updateContextIssue(
-    @Param('issueId') issueId: string,
-    @Body() dto: UpdateContextIssueDto,
-    @OrganizationId() organizationId: string,
-  ) {
-    return this.contextIssueService.update({ issueId, organizationId, dto });
-  }
-
-  @Delete('context-issues/:issueId')
-  @HttpCode(HttpStatus.OK)
-  @RequirePermission('evidence', 'update')
-  @ApiOperation({ summary: 'Delete a context issue' })
-  @ApiOkResponse({ description: 'Context issue deleted' })
-  async deleteContextIssue(
-    @Param('issueId') issueId: string,
-    @OrganizationId() organizationId: string,
-  ) {
-    return this.contextIssueService.remove({ issueId, organizationId });
   }
 
   @Post('documents/:id/submit-for-approval')
