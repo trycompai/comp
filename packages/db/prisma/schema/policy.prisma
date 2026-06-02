@@ -16,7 +16,7 @@ model Policy {
   content          Json[]
   draftContent     Json[]              @default([])
   frequency        Frequency?
-  department       Departments?
+  department       String?
   isRequiredToSign Boolean             @default(true)
   signedBy         String[]            @default([])
   reviewDate       DateTime?
@@ -26,7 +26,7 @@ model Policy {
 
   // Visibility settings (for department-specific policies)
   visibility           PolicyVisibility @default(ALL)
-  visibleToDepartments Departments[]    @default([])
+  visibleToDepartments String[]         @default([])
 
   // Dates
   createdAt       DateTime  @default(now())
