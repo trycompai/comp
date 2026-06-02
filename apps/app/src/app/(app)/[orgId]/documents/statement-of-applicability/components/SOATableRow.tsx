@@ -77,7 +77,7 @@ export function SOATableRow({
     // Manual save overrides autofill processedResult so the table updates without a full reload
     displayIsApplicable = answerData.savedIsApplicable;
     justificationValue =
-      answerData.answer ?? question.columnMapping.justification ?? null;
+      answerData.answer || question.columnMapping.justification || null;
   } else {
     // Normal logic: processedResult / column mapping until user saves (then branch above)
     const isApplicableValue =

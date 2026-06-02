@@ -185,7 +185,9 @@ export function parseAndProcessSOAAnswer(
   const justification =
     finalIsApplicable === false
       ? llmJustification
-      : llmJustification || getInclusionJustification(closure);
+      : llmJustification && !isInsufficientDataAnswer(llmJustification)
+        ? llmJustification
+        : getInclusionJustification(closure);
 
   send({
     type: 'answer',
