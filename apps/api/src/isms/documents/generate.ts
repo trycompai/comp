@@ -168,6 +168,9 @@ async function generateNarrative({
     where: { documentId, isLatest: true },
   });
   if (latest) {
+    // Seed the derived narrative only once. Preserve any existing narrative so a
+    // regenerate never clobbers the customer's manual edits (CS-437 override).
+    if (latest.narrative != null) return;
     await tx.ismsDocumentVersion.update({
       where: { id: latest.id },
       data: { narrative },

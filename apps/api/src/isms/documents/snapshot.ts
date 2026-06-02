@@ -83,8 +83,14 @@ const TYPE_DRIFT_SOURCES: Record<IsmsDocumentType, Array<keyof DiffMap>> = {
     'members',
     'wizardAnswers',
   ],
-  isms_scope: ['frameworks', 'vendors', 'subprocessors', 'members'],
-  leadership_commitment: ['organizationName'],
+  isms_scope: [
+    'frameworks',
+    'vendors',
+    'subprocessors',
+    'members',
+    'wizardAnswers',
+  ],
+  leadership_commitment: ['organizationName', 'wizardAnswers'],
 };
 
 interface DiffMap {

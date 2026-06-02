@@ -132,13 +132,15 @@ describe('diffPlatformSnapshots', () => {
     expect(result.isStale).toBe(false);
   });
 
-  it('does not flag wizard drift for documents that do not derive from it', () => {
-    const result = diffPlatformSnapshots({
-      type: 'isms_scope',
-      previous: { ...base, wizardAnswers: { hasContractors: false } },
-      current: { ...base, wizardAnswers: { hasContractors: true } },
-    });
-    expect(result.changedSources).not.toContain('wizardAnswers');
+  it('flags wizard drift for scope and leadership (both derive from wizard answers)', () => {
+    for (const type of ['isms_scope', 'leadership_commitment'] as const) {
+      const result = diffPlatformSnapshots({
+        type,
+        previous: { ...base, wizardAnswers: { hasContractors: false } },
+        current: { ...base, wizardAnswers: { hasContractors: true } },
+      });
+      expect(result.changedSources).toContain('wizardAnswers');
+    }
   });
 
   it('leadership only drifts on organization name', () => {

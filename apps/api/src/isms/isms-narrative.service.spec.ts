@@ -2,16 +2,19 @@ import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { db } from '@db';
 import { IsmsNarrativeService } from './isms-narrative.service';
 
-jest.mock('@db', () => ({
-  db: {
+jest.mock('@db', () => {
+  const db = {
     ismsDocument: { findFirst: jest.fn(), update: jest.fn() },
     ismsDocumentVersion: {
       findFirst: jest.fn(),
       create: jest.fn(),
       update: jest.fn(),
     },
-  },
-}));
+    // Run the callback with the same mock as the transaction client.
+    $transaction: jest.fn((cb: (tx: unknown) => unknown) => cb(db)),
+  };
+  return { db };
+});
 
 const mockDb = jest.mocked(db);
 

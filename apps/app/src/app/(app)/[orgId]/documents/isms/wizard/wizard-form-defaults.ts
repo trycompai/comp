@@ -29,13 +29,17 @@ export function buildWizardDefaults({
 }): WizardFormValues {
   const saved = answers ?? {};
 
-  const objectives =
-    Array.isArray(saved.objectives) && saved.objectives.length > 0
-      ? saved.objectives.map((row) => ({
-          objective: typeof row?.objective === 'string' ? row.objective : '',
-          target: typeof row?.target === 'string' ? row.target : '',
-        }))
-      : defaults.objectives.map((row) => ({ objective: row.objective, target: row.target }));
+  // Defaults seed only when objectives were never saved. A saved (even empty)
+  // array is the user's choice and must be respected, not overwritten on reload.
+  const objectives = Array.isArray(saved.objectives)
+    ? saved.objectives.map((row) => ({
+        objective: typeof row?.objective === 'string' ? row.objective : '',
+        target: typeof row?.target === 'string' ? row.target : '',
+      }))
+    : defaults.objectives.map((row) => ({
+        objective: row.objective,
+        target: row.target,
+      }));
 
   return {
     deputySpo: {

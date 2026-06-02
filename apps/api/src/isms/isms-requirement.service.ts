@@ -24,18 +24,18 @@ export class IsmsRequirementService {
     dto: CreateRequirementDto;
   }) {
     await this.requireDocument({ documentId, organizationId });
-    if (dto.interestedPartyId) {
-      await this.requirePartyInDocument({
-        interestedPartyId: dto.interestedPartyId,
-        documentId,
-      });
+    // Treat empty/whitespace as "no link" so a blank id can't skip validation
+    // or be persisted as an invalid reference.
+    const interestedPartyId = dto.interestedPartyId?.trim() || null;
+    if (interestedPartyId) {
+      await this.requirePartyInDocument({ interestedPartyId, documentId });
     }
     const position = dto.position ?? (await this.nextPosition({ documentId }));
 
     return db.ismsInterestedPartyRequirement.create({
       data: {
         documentId,
-        interestedPartyId: dto.interestedPartyId ?? null,
+        interestedPartyId,
         partyName: dto.partyName,
         requirement: dto.requirement,
         treatment: dto.treatment,
@@ -58,9 +58,12 @@ export class IsmsRequirementService {
       requirementId,
       organizationId,
     });
-    if (dto.interestedPartyId) {
+    // undefined = field omitted (leave as-is); empty string = clear the link.
+    const partyFieldProvided = dto.interestedPartyId !== undefined;
+    const interestedPartyId = dto.interestedPartyId?.trim() || null;
+    if (interestedPartyId) {
       await this.requirePartyInDocument({
-        interestedPartyId: dto.interestedPartyId,
+        interestedPartyId,
         documentId: requirement.documentId,
       });
     }
@@ -68,7 +71,7 @@ export class IsmsRequirementService {
     return db.ismsInterestedPartyRequirement.update({
       where: { id: requirementId },
       data: {
-        interestedPartyId: dto.interestedPartyId ?? undefined,
+        interestedPartyId: partyFieldProvided ? interestedPartyId : undefined,
         partyName: dto.partyName ?? undefined,
         requirement: dto.requirement ?? undefined,
         treatment: dto.treatment ?? undefined,

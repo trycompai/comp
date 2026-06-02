@@ -50,28 +50,32 @@ export class IsmsNarrativeService {
       JSON.stringify(parsed.data),
     );
 
-    // Editing an approved document invalidates its sign-off: revert to draft so
-    // the change must be re-approved (mirrors policy approval invalidation).
-    if (document.status === 'approved') {
-      await db.ismsDocument.update({
-        where: { id: documentId },
-        data: { status: 'draft', approvedAt: null, approverId: null },
-      });
-    }
-
     const latest = await db.ismsDocumentVersion.findFirst({
       where: { documentId, isLatest: true },
     });
 
-    if (latest) {
-      return db.ismsDocumentVersion.update({
-        where: { id: latest.id },
-        data: { narrative: value },
-      });
-    }
+    // Approval invalidation + the narrative write must be atomic: a failed save
+    // must not leave the document reverted to draft without the new content.
+    return db.$transaction(async (tx) => {
+      // Editing an approved document invalidates its sign-off: revert to draft so
+      // the change must be re-approved (mirrors policy approval invalidation).
+      if (document.status === 'approved') {
+        await tx.ismsDocument.update({
+          where: { id: documentId },
+          data: { status: 'draft', approvedAt: null, approverId: null },
+        });
+      }
 
-    return db.ismsDocumentVersion.create({
-      data: { documentId, version: 1, isLatest: true, narrative: value },
+      if (latest) {
+        return tx.ismsDocumentVersion.update({
+          where: { id: latest.id },
+          data: { narrative: value },
+        });
+      }
+
+      return tx.ismsDocumentVersion.create({
+        data: { documentId, version: 1, isLatest: true, narrative: value },
+      });
     });
   }
 }
