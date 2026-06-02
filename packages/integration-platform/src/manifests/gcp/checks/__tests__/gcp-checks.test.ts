@@ -181,15 +181,83 @@ describe('GCP Cloud Storage public-access check', () => {
     expect(passed).toHaveLength(0);
     expect(failed).toHaveLength(0);
   });
+
+  it('fails (high) a bucket whose IAM policy grants allUsers (UBLA alone is not enough)', async () => {
+    const { passed, failed } = await runCheck(storagePublicAccessCheck, {
+      fetch: (url) => {
+        if (url.includes('/iam')) {
+          return { bindings: [{ role: 'roles/storage.objectViewer', members: ['allUsers'] }] };
+        }
+        return {
+          items: [
+            {
+              name: 'b1',
+              iamConfiguration: {
+                uniformBucketLevelAccess: { enabled: true },
+                publicAccessPrevention: 'inherited',
+              },
+            },
+          ],
+        };
+      },
+    });
+    expect(passed).toHaveLength(0);
+    expect(failed).toHaveLength(1);
+    expect(failed[0]!.severity).toBe('high');
+    expect(failed[0]!.title).toMatch(/publicly accessible/);
+  });
+
+  it('passes a bucket with publicAccessPrevention enforced without reading IAM', async () => {
+    let iamRead = false;
+    const { passed, failed } = await runCheck(storagePublicAccessCheck, {
+      fetch: (url) => {
+        if (url.includes('/iam')) {
+          iamRead = true;
+          return { bindings: [{ role: 'roles/storage.objectViewer', members: ['allUsers'] }] };
+        }
+        return {
+          items: [
+            {
+              name: 'b1',
+              iamConfiguration: {
+                uniformBucketLevelAccess: { enabled: false },
+                publicAccessPrevention: 'enforced',
+              },
+            },
+          ],
+        };
+      },
+    });
+    expect(iamRead).toBe(false); // enforced is definitive; no IAM read needed
+    expect(failed).toHaveLength(0);
+    expect(passed).toHaveLength(1);
+  });
+
+  it('fails "could not verify" when a bucket IAM policy cannot be read', async () => {
+    const { passed, failed } = await runCheck(storagePublicAccessCheck, {
+      fetch: (url) => {
+        if (url.includes('/iam')) throw new Error('403 forbidden');
+        return {
+          items: [
+            {
+              name: 'b1',
+              iamConfiguration: {
+                uniformBucketLevelAccess: { enabled: true },
+                publicAccessPrevention: 'inherited',
+              },
+            },
+          ],
+        };
+      },
+    });
+    expect(passed).toHaveLength(0);
+    expect(failed).toHaveLength(1);
+    expect(failed[0]!.title).toMatch(/Could not verify/);
+  });
 });
 
 describe('GCP project auto-discovery', () => {
   it('paginates discovered projects (follows nextPageToken) so all are evaluated', async () => {
-    const secureBucket = {
-      items: [
-        { name: 'b', iamConfiguration: { uniformBucketLevelAccess: { enabled: true } } },
-      ],
-    };
     const { passed } = await runCheck(storagePublicAccessCheck, {
       variables: {}, // no project_ids → forces auto-discovery
       fetch: (url) => {
@@ -199,12 +267,20 @@ describe('GCP project auto-discovery', () => {
         if (url.includes('/v1/projects')) {
           return { projects: [{ projectId: 'p1' }], nextPageToken: 'tok2' };
         }
-        if (url.includes('storage/v1/b')) return secureBucket;
+        // bucket IAM policy read (must precede the bucket-list branch)
+        if (url.includes('/iam')) return { bindings: [] };
+        if (url.includes('storage/v1/b')) {
+          return {
+            items: [
+              { name: 'b', iamConfiguration: { uniformBucketLevelAccess: { enabled: true } } },
+            ],
+          };
+        }
         return {};
       },
     });
-    // both the first- and second-page projects were scanned
-    expect(passed.map((p) => p.resourceId).sort()).toEqual(['p1', 'p2']);
+    // both the first- and second-page projects were scanned (per-bucket resourceId)
+    expect(passed.map((p) => p.resourceId).sort()).toEqual(['p1/b', 'p2/b']);
   });
 });
 

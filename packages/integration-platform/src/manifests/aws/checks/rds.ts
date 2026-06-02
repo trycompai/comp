@@ -137,11 +137,18 @@ export function evaluateRdsClusterBackups(clusters: RdsClusterInfo[]): CheckOutc
   );
 }
 
+interface RegionScan<T> {
+  items: T[];
+  /** Regions whose listing call failed — their resources are unverified. */
+  failedRegions: string[];
+}
+
 async function listRdsInstances(
   session: AwsSession,
   ctx: CheckContext,
-): Promise<RdsInstanceInfo[]> {
-  const out: RdsInstanceInfo[] = [];
+): Promise<RegionScan<RdsInstanceInfo>> {
+  const items: RdsInstanceInfo[] = [];
+  const failedRegions: string[] = [];
   for (const region of session.regions) {
     // Isolate per-region failures so one bad region doesn't abort the rest.
     try {
@@ -150,7 +157,7 @@ async function listRdsInstances(
       do {
         const resp = await rds.send(new DescribeDBInstancesCommand({ Marker: marker }));
         for (const db of resp.DBInstances ?? []) {
-          out.push({
+          items.push({
             id: db.DBInstanceIdentifier ?? 'unknown',
             region,
             encrypted: db.StorageEncrypted === true,
@@ -161,19 +168,21 @@ async function listRdsInstances(
         marker = resp.Marker;
       } while (marker);
     } catch (err) {
+      failedRegions.push(region);
       ctx.log(
         `RDS: could not list DB instances in ${region}: ${err instanceof Error ? err.message : String(err)}`,
       );
     }
   }
-  return out;
+  return { items, failedRegions };
 }
 
 async function listRdsClusters(
   session: AwsSession,
   ctx: CheckContext,
-): Promise<RdsClusterInfo[]> {
-  const out: RdsClusterInfo[] = [];
+): Promise<RegionScan<RdsClusterInfo>> {
+  const items: RdsClusterInfo[] = [];
+  const failedRegions: string[] = [];
   for (const region of session.regions) {
     try {
       const rds = new RDSClient({ region, credentials: session.credentials });
@@ -181,7 +190,7 @@ async function listRdsClusters(
       do {
         const resp = await rds.send(new DescribeDBClustersCommand({ Marker: marker }));
         for (const cluster of resp.DBClusters ?? []) {
-          out.push({
+          items.push({
             id: cluster.DBClusterIdentifier ?? 'unknown',
             region,
             encrypted: cluster.StorageEncrypted === true,
@@ -192,12 +201,36 @@ async function listRdsClusters(
         marker = resp.Marker;
       } while (marker);
     } catch (err) {
+      failedRegions.push(region);
       ctx.log(
         `RDS: could not list DB clusters in ${region}: ${err instanceof Error ? err.message : String(err)}`,
       );
     }
   }
-  return out;
+  return { items, failedRegions };
+}
+
+/**
+ * Emit a "could not verify" failure for regions whose RDS listing failed so a
+ * total/partial read failure isn't recorded as a silent clean run.
+ */
+function failUnverifiedRegions(
+  ctx: CheckContext,
+  failedRegions: string[],
+  what: string,
+): void {
+  if (failedRegions.length === 0) return;
+  const regions = [...new Set(failedRegions)];
+  ctx.fail({
+    title: `Could not verify RDS ${what} in some regions`,
+    description: `RDS resources could not be listed in: ${regions.join(', ')}, so ${what} in those regions is unverified.`,
+    resourceType: 'aws-rds',
+    resourceId: `regions:${regions.join(',')}`,
+    severity: 'medium',
+    remediation:
+      'Ensure the integration role can describe RDS instances and clusters in all enabled regions, then re-run the check.',
+    evidence: { failedRegions: regions },
+  });
 }
 
 export const rdsEncryptionCheck: IntegrationCheck = {
@@ -217,9 +250,10 @@ export const rdsEncryptionCheck: IntegrationCheck = {
     // is unreliable for Aurora and produces false failures.
     const instances = await listRdsInstances(session, ctx);
     const clusters = await listRdsClusters(session, ctx);
-    if (instances.length === 0 && clusters.length === 0) return;
-    emitOutcomes(ctx, evaluateRdsEncryption(instances));
-    emitOutcomes(ctx, evaluateRdsClusterEncryption(clusters));
+    failUnverifiedRegions(ctx, [...instances.failedRegions, ...clusters.failedRegions], 'encryption');
+    if (instances.items.length === 0 && clusters.items.length === 0) return;
+    emitOutcomes(ctx, evaluateRdsEncryption(instances.items));
+    emitOutcomes(ctx, evaluateRdsClusterEncryption(clusters.items));
   },
 };
 
@@ -240,8 +274,9 @@ export const rdsBackupsCheck: IntegrationCheck = {
     // BackupRetentionPeriod is unreliable for Aurora and produces false failures.
     const instances = await listRdsInstances(session, ctx);
     const clusters = await listRdsClusters(session, ctx);
-    if (instances.length === 0 && clusters.length === 0) return;
-    emitOutcomes(ctx, evaluateRdsBackups(instances));
-    emitOutcomes(ctx, evaluateRdsClusterBackups(clusters));
+    failUnverifiedRegions(ctx, [...instances.failedRegions, ...clusters.failedRegions], 'backups');
+    if (instances.items.length === 0 && clusters.items.length === 0) return;
+    emitOutcomes(ctx, evaluateRdsBackups(instances.items));
+    emitOutcomes(ctx, evaluateRdsClusterBackups(clusters.items));
   },
 };

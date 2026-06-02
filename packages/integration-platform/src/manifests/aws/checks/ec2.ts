@@ -95,6 +95,7 @@ export const ec2SecurityGroupsCheck: IntegrationCheck = {
       return;
     }
     const sgs: SgInfo[] = [];
+    const failedRegions: string[] = [];
     for (const region of session.regions) {
       // Isolate per-region failures (opted-out/disabled regions, throttling)
       // so one region's error doesn't abort scanning of the others.
@@ -124,10 +125,25 @@ export const ec2SecurityGroupsCheck: IntegrationCheck = {
           token = resp.NextToken;
         } while (token);
       } catch (err) {
+        failedRegions.push(region);
         ctx.log(
           `EC2: could not list security groups in ${region}: ${err instanceof Error ? err.message : String(err)}`,
         );
       }
+    }
+    // A region we couldn't read is unverified — surface it instead of letting a
+    // total/partial read failure end as a silent clean run (no findings).
+    if (failedRegions.length > 0) {
+      ctx.fail({
+        title: 'Could not verify security groups in some regions',
+        description: `Security groups could not be listed in: ${failedRegions.join(', ')}. Internet exposure in those regions is unverified.`,
+        resourceType: 'aws-security-group',
+        resourceId: `regions:${failedRegions.join(',')}`,
+        severity: 'medium',
+        remediation:
+          'Ensure the integration role can call ec2:DescribeSecurityGroups in all enabled regions, then re-run the check.',
+        evidence: { failedRegions },
+      });
     }
     if (sgs.length === 0) return;
     emitOutcomes(ctx, evaluateSecurityGroups(sgs));
