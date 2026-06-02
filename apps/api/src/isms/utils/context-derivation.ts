@@ -203,17 +203,39 @@ export function diffSnapshots({
     return a.every((item) => setB.has(item));
   };
 
+  // Order-insensitive comparison of count-by-key maps. The 4.1 derivation reads
+  // the vendor-category and department mix, so a changed mix is drift even when
+  // the totals stay the same.
+  const sameNumberRecord = (
+    a: Record<string, number>,
+    b: Record<string, number>,
+  ): boolean => {
+    const keys = new Set([...Object.keys(a), ...Object.keys(b)]);
+    for (const key of keys) {
+      if ((a[key] ?? 0) !== (b[key] ?? 0)) return false;
+    }
+    return true;
+  };
+
   if (!sameStringSet(previous.frameworkNames, current.frameworkNames)) {
     changed.push('frameworks');
   }
   if (previous.vendorCount !== current.vendorCount) {
     changed.push('vendors');
   }
+  if (!sameNumberRecord(previous.vendorsByCategory, current.vendorsByCategory)) {
+    changed.push('vendorMix');
+  }
   if (previous.subProcessorCount !== current.subProcessorCount) {
     changed.push('subprocessors');
   }
   if (previous.memberCount !== current.memberCount) {
     changed.push('members');
+  }
+  if (
+    !sameNumberRecord(previous.membersByDepartment, current.membersByDepartment)
+  ) {
+    changed.push('departmentMix');
   }
   if (previous.deviceCount !== current.deviceCount) {
     changed.push('devices');

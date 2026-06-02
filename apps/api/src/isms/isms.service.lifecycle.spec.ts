@@ -1,4 +1,8 @@
-import { ForbiddenException, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ForbiddenException,
+  NotFoundException,
+} from '@nestjs/common';
 import { db } from '@db';
 import { IsmsService } from './isms.service';
 import { collectPlatformData } from './documents/data-source';
@@ -124,10 +128,33 @@ describe('IsmsService document lifecycle', () => {
       await expect(service.approve(args)).rejects.toThrow(NotFoundException);
     });
 
+    it('throws BadRequestException when document is not pending approval', async () => {
+      (mockDb.member.findFirst as jest.Mock).mockResolvedValue({ id: 'mem_1' });
+      (mockDb.ismsDocument.findFirst as jest.Mock).mockResolvedValue({
+        id: 'doc_1',
+        status: 'draft',
+        approverId: 'mem_1',
+        frameworkId: 'fw_1',
+      });
+      await expect(service.approve(args)).rejects.toThrow(BadRequestException);
+    });
+
+    it('throws ForbiddenException when no approver is assigned', async () => {
+      (mockDb.member.findFirst as jest.Mock).mockResolvedValue({ id: 'mem_1' });
+      (mockDb.ismsDocument.findFirst as jest.Mock).mockResolvedValue({
+        id: 'doc_1',
+        status: 'needs_review',
+        approverId: null,
+        frameworkId: 'fw_1',
+      });
+      await expect(service.approve(args)).rejects.toThrow(ForbiddenException);
+    });
+
     it('throws ForbiddenException when not the assigned approver', async () => {
       (mockDb.member.findFirst as jest.Mock).mockResolvedValue({ id: 'mem_1' });
       (mockDb.ismsDocument.findFirst as jest.Mock).mockResolvedValue({
         id: 'doc_1',
+        status: 'needs_review',
         approverId: 'mem_other',
         frameworkId: 'fw_1',
       });
@@ -139,6 +166,7 @@ describe('IsmsService document lifecycle', () => {
       (mockDb.ismsDocument.findFirst as jest.Mock)
         .mockResolvedValueOnce({
           id: 'doc_1',
+          status: 'needs_review',
           approverId: 'mem_1',
           frameworkId: 'fw_1',
         })
@@ -182,23 +210,50 @@ describe('IsmsService document lifecycle', () => {
   });
 
   describe('decline', () => {
-    it('throws NotFoundException when document not found', async () => {
-      (mockDb.ismsDocument.findFirst as jest.Mock).mockResolvedValue(null);
-      await expect(
-        service.decline({ documentId: 'doc_1', organizationId: 'org_1' }),
-      ).rejects.toThrow(NotFoundException);
+    const args = {
+      documentId: 'doc_1',
+      organizationId: 'org_1',
+      userId: 'usr_1',
+    };
+
+    it('throws NotFoundException when member not found', async () => {
+      (mockDb.member.findFirst as jest.Mock).mockResolvedValue(null);
+      await expect(service.decline(args)).rejects.toThrow(NotFoundException);
+    });
+
+    it('throws BadRequestException when document is not pending approval', async () => {
+      (mockDb.member.findFirst as jest.Mock).mockResolvedValue({ id: 'mem_1' });
+      (mockDb.ismsDocument.findFirst as jest.Mock).mockResolvedValue({
+        id: 'doc_1',
+        status: 'approved',
+        approverId: 'mem_1',
+      });
+      await expect(service.decline(args)).rejects.toThrow(BadRequestException);
+    });
+
+    it('throws ForbiddenException when not the assigned approver', async () => {
+      (mockDb.member.findFirst as jest.Mock).mockResolvedValue({ id: 'mem_1' });
+      (mockDb.ismsDocument.findFirst as jest.Mock).mockResolvedValue({
+        id: 'doc_1',
+        status: 'needs_review',
+        approverId: 'mem_other',
+      });
+      await expect(service.decline(args)).rejects.toThrow(ForbiddenException);
     });
 
     it('sets declined status and declinedAt', async () => {
+      (mockDb.member.findFirst as jest.Mock).mockResolvedValue({ id: 'mem_1' });
       (mockDb.ismsDocument.findFirst as jest.Mock).mockResolvedValue({
         id: 'doc_1',
+        status: 'needs_review',
+        approverId: 'mem_1',
       });
       (mockDb.ismsDocument.update as jest.Mock).mockResolvedValue({
         id: 'doc_1',
         status: 'declined',
       });
 
-      await service.decline({ documentId: 'doc_1', organizationId: 'org_1' });
+      await service.decline(args);
 
       const call = (mockDb.ismsDocument.update as jest.Mock).mock.calls[0][0];
       expect(call.data.status).toBe('declined');

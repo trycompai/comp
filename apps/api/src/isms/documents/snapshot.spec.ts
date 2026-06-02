@@ -59,6 +59,88 @@ describe('diffPlatformSnapshots', () => {
     expect(same.isStale).toBe(false);
   });
 
+  it('detects vendor category mix drift for context (same total, different mix)', () => {
+    const result = diffPlatformSnapshots({
+      type: 'context_of_organization',
+      previous: { ...base, vendorsByCategory: { cloud: 3 } },
+      current: { ...base, vendorsByCategory: { cloud: 1, hr: 2 } },
+    });
+    expect(result.isStale).toBe(true);
+    expect(result.changedSources).toContain('vendorMix');
+    // The total count is unchanged, so the plain vendor source is not flagged.
+    expect(result.changedSources).not.toContain('vendors');
+  });
+
+  it('detects department mix drift for context (same headcount, different mix)', () => {
+    const result = diffPlatformSnapshots({
+      type: 'context_of_organization',
+      previous: { ...base, membersByDepartment: { it: 5 } },
+      current: { ...base, membersByDepartment: { it: 2, hr: 3 } },
+    });
+    expect(result.changedSources).toContain('departmentMix');
+    expect(result.changedSources).not.toContain('members');
+  });
+
+  it('ignores vendor/department mix key order', () => {
+    const result = diffPlatformSnapshots({
+      type: 'context_of_organization',
+      previous: {
+        ...base,
+        vendorsByCategory: { cloud: 2, hr: 1 },
+        membersByDepartment: { it: 3, hr: 2 },
+      },
+      current: {
+        ...base,
+        vendorsByCategory: { hr: 1, cloud: 2 },
+        membersByDepartment: { hr: 2, it: 3 },
+      },
+    });
+    expect(result.isStale).toBe(false);
+  });
+
+  it('detects member-count drift for objectives (6.2 uses memberCount)', () => {
+    const result = diffPlatformSnapshots({
+      type: 'objectives_plan',
+      previous: base,
+      current: { ...base, memberCount: 50 },
+    });
+    expect(result.changedSources).toContain('members');
+  });
+
+  it('detects wizard-answer drift for documents that derive from them', () => {
+    const result = diffPlatformSnapshots({
+      type: 'interested_parties_register',
+      previous: { ...base, wizardAnswers: { hasContractors: false } },
+      current: { ...base, wizardAnswers: { hasContractors: true } },
+    });
+    expect(result.isStale).toBe(true);
+    expect(result.changedSources).toContain('wizardAnswers');
+  });
+
+  it('ignores wizard-answer key order', () => {
+    const result = diffPlatformSnapshots({
+      type: 'objectives_plan',
+      previous: {
+        ...base,
+        wizardAnswers: { hasContractors: true, certificationBody: 'BSI' },
+      },
+      current: {
+        ...base,
+        wizardAnswers: { certificationBody: 'BSI', hasContractors: true },
+      },
+    });
+    expect(result.isStale).toBe(false);
+  });
+
+  it('does not flag wizard drift for documents that do not derive from it', () => {
+    const result = diffPlatformSnapshots({
+      type: 'isms_scope',
+      previous: { ...base, wizardAnswers: { hasContractors: false } },
+      current: { ...base, wizardAnswers: { hasContractors: true } },
+    });
+    expect(result.changedSources).not.toContain('wizardAnswers');
+  });
+
   it('leadership only drifts on organization name', () => {
     const noChange = diffPlatformSnapshots({
       type: 'leadership_commitment',

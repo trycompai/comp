@@ -44,6 +44,35 @@ interface SelectableControl {
 
 interface ControlsListResponse {
   data: SelectableControl[];
+  pageCount?: number;
+}
+
+const CONTROLS_PER_PAGE = 100;
+
+/** Fetch every control across all pages so orgs with >1 page can link any control. */
+async function fetchAllControls(): Promise<SelectableControl[]> {
+  const fetchPage = async (page: number) => {
+    const res = await apiClient.get<ControlsListResponse>(
+      `/v1/controls?page=${page}&perPage=${CONTROLS_PER_PAGE}`,
+    );
+    if (res.error) throw new Error(res.error);
+    return res.data;
+  };
+
+  const first = await fetchPage(1);
+  const controls = Array.isArray(first?.data) ? [...first.data] : [];
+  const pageCount = first?.pageCount ?? 1;
+
+  if (pageCount > 1) {
+    const rest = await Promise.all(
+      Array.from({ length: pageCount - 1 }, (_, index) => fetchPage(index + 2)),
+    );
+    for (const page of rest) {
+      if (Array.isArray(page?.data)) controls.push(...page.data);
+    }
+  }
+
+  return controls;
 }
 
 interface IsmsControlMappingsProps {
@@ -64,11 +93,7 @@ export function IsmsControlMappings({
 
   const { data: allControls } = useSWR(
     canManage ? ['/v1/controls', organizationId] : null,
-    async () => {
-      const res = await apiClient.get<ControlsListResponse>('/v1/controls');
-      if (res.error) throw new Error(res.error);
-      return Array.isArray(res.data?.data) ? res.data.data : [];
-    },
+    fetchAllControls,
     { revalidateOnFocus: false },
   );
 

@@ -50,6 +50,15 @@ export class IsmsNarrativeService {
       JSON.stringify(parsed.data),
     );
 
+    // Editing an approved document invalidates its sign-off: revert to draft so
+    // the change must be re-approved (mirrors policy approval invalidation).
+    if (document.status === 'approved') {
+      await db.ismsDocument.update({
+        where: { id: documentId },
+        data: { status: 'draft', approvedAt: null, approverId: null },
+      });
+    }
+
     const latest = await db.ismsDocumentVersion.findFirst({
       where: { documentId, isLatest: true },
     });

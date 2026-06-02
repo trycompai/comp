@@ -86,6 +86,8 @@ export function ContextOfOrganizationClient({
       toast.success('Issue added');
     } catch (caught) {
       toast.error(caught instanceof Error ? caught.message : 'Failed to add issue');
+      // Re-throw so the form keeps the user's input and stays open on failure.
+      throw caught;
     }
   };
 

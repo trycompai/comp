@@ -86,17 +86,14 @@ describe('deriveInterestedParties — wizard answers (CS-438)', () => {
     expect(rows.some((r) => r.derivedFrom === 'wizard:insurance')).toBe(false);
   });
 
-  it('adds a regulator party per sectorRegulators entry (incl. custom:)', () => {
+  it('does NOT add sector regulators as parties (they are 4.2c requirement rows only)', () => {
     const rows = deriveInterestedParties({
       ...data,
       wizardAnswers: { sectorRegulators: ['FINMA', 'custom:My Regulator'] },
     });
-    const regulators = rows.filter((r) => r.derivedFrom === 'wizard:regulator');
-    expect(regulators).toHaveLength(2);
-    expect(regulators.map((r) => r.name)).toEqual([
-      'Regulator (FINMA)',
-      'Regulator (My Regulator)',
-    ]);
+    // Sector regulators are surfaced once, as requirement rows in 4.2c, never as
+    // duplicate parties here.
+    expect(rows.some((r) => r.derivedFrom === 'wizard:regulator')).toBe(false);
   });
 
   it('adds a Contractors workforce party when hasContractors', () => {

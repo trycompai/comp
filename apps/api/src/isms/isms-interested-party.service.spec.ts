@@ -41,7 +41,9 @@ describe('IsmsInterestedPartyService', () => {
       (mockDb.ismsDocument.findFirst as jest.Mock).mockResolvedValue({
         id: 'doc_1',
       });
-      (mockDb.ismsInterestedParty.count as jest.Mock).mockResolvedValue(4);
+      (mockDb.ismsInterestedParty.findFirst as jest.Mock).mockResolvedValue({
+        position: 3,
+      });
       (mockDb.ismsInterestedParty.create as jest.Mock).mockResolvedValue({
         id: 'ip_1',
       });

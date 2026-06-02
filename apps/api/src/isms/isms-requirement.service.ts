@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { db } from '@db';
 import { CreateRequirementDto } from './dto/create-requirement.dto';
 import { UpdateRequirementDto } from './dto/update-requirement.dto';
@@ -20,11 +24,13 @@ export class IsmsRequirementService {
     dto: CreateRequirementDto;
   }) {
     await this.requireDocument({ documentId, organizationId });
-    const position =
-      dto.position ??
-      (await db.ismsInterestedPartyRequirement.count({
-        where: { documentId },
-      }));
+    if (dto.interestedPartyId) {
+      await this.requirePartyInDocument({
+        interestedPartyId: dto.interestedPartyId,
+        documentId,
+      });
+    }
+    const position = dto.position ?? (await this.nextPosition({ documentId }));
 
     return db.ismsInterestedPartyRequirement.create({
       data: {
@@ -48,7 +54,16 @@ export class IsmsRequirementService {
     organizationId: string;
     dto: UpdateRequirementDto;
   }) {
-    await this.requireRequirement({ requirementId, organizationId });
+    const requirement = await this.requireRequirement({
+      requirementId,
+      organizationId,
+    });
+    if (dto.interestedPartyId) {
+      await this.requirePartyInDocument({
+        interestedPartyId: dto.interestedPartyId,
+        documentId: requirement.documentId,
+      });
+    }
 
     return db.ismsInterestedPartyRequirement.update({
       where: { id: requirementId },
@@ -75,6 +90,36 @@ export class IsmsRequirementService {
       where: { id: requirementId },
     });
     return { success: true };
+  }
+
+  /** Next position uses max(position)+1 so it survives deletes (no collisions). */
+  private async nextPosition({ documentId }: { documentId: string }) {
+    const last = await db.ismsInterestedPartyRequirement.findFirst({
+      where: { documentId },
+      orderBy: { position: 'desc' },
+      select: { position: true },
+    });
+    return (last?.position ?? -1) + 1;
+  }
+
+  /** Ensures a linked interested party belongs to the same document (and org). */
+  private async requirePartyInDocument({
+    interestedPartyId,
+    documentId,
+  }: {
+    interestedPartyId: string;
+    documentId: string;
+  }) {
+    const party = await db.ismsInterestedParty.findFirst({
+      where: { id: interestedPartyId, documentId },
+      select: { id: true },
+    });
+    if (!party) {
+      throw new BadRequestException(
+        'Interested party does not belong to this document',
+      );
+    }
+    return party;
   }
 
   private async requireDocument({

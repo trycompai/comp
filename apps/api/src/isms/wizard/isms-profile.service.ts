@@ -149,14 +149,12 @@ export class IsmsProfileService {
     organizationId: string;
     frameworkId: string;
   }) {
-    const existing = await db.ismsProfile.findUnique({
-      where: { organizationId_frameworkId: { organizationId, frameworkId } },
-    });
-    if (existing) return existing;
-
     const empty: Prisma.InputJsonValue = {};
-    return db.ismsProfile.create({
-      data: { organizationId, frameworkId, answers: empty },
+    // Idempotent: concurrent callers can't trip the unique constraint.
+    return db.ismsProfile.upsert({
+      where: { organizationId_frameworkId: { organizationId, frameworkId } },
+      update: {},
+      create: { organizationId, frameworkId, answers: empty },
     });
   }
 

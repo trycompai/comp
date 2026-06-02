@@ -10,8 +10,7 @@ jest.mock('@db', () => ({
   db: {
     frameworkEditorFramework: { findUnique: jest.fn() },
     ismsProfile: {
-      findUnique: jest.fn(),
-      create: jest.fn(),
+      upsert: jest.fn(),
       update: jest.fn(),
     },
     ismsDocument: { findMany: jest.fn() },
@@ -79,17 +78,23 @@ describe('IsmsProfileService', () => {
       await expect(service.getProfile(args)).rejects.toThrow(NotFoundException);
     });
 
-    it('creates the profile row when none exists (get-or-init)', async () => {
-      (mockDb.ismsProfile.findUnique as jest.Mock).mockResolvedValue(null);
-      (mockDb.ismsProfile.create as jest.Mock).mockResolvedValue({
+    it('upserts the profile row (get-or-init, race-safe)', async () => {
+      (mockDb.ismsProfile.upsert as jest.Mock).mockResolvedValue({
         id: 'pf_1',
         answers: {},
       });
 
       const result = await service.getProfile(args);
 
-      expect(mockDb.ismsProfile.create).toHaveBeenCalledWith({
-        data: { organizationId: 'org_1', frameworkId: 'fw_1', answers: {} },
+      expect(mockDb.ismsProfile.upsert).toHaveBeenCalledWith({
+        where: {
+          organizationId_frameworkId: {
+            organizationId: 'org_1',
+            frameworkId: 'fw_1',
+          },
+        },
+        update: {},
+        create: { organizationId: 'org_1', frameworkId: 'fw_1', answers: {} },
       });
       expect(result.answers).toBeNull();
       expect(result.defaults).toEqual(defaultsFixture);
@@ -97,18 +102,17 @@ describe('IsmsProfileService', () => {
     });
 
     it('returns saved answers when the profile has them', async () => {
-      (mockDb.ismsProfile.findUnique as jest.Mock).mockResolvedValue({
+      (mockDb.ismsProfile.upsert as jest.Mock).mockResolvedValue({
         id: 'pf_1',
         answers: { hasContractors: true },
       });
 
       const result = await service.getProfile(args);
       expect(result.answers).toEqual({ hasContractors: true });
-      expect(mockDb.ismsProfile.create).not.toHaveBeenCalled();
     });
 
     it('maps members to {id,name} using name then email', async () => {
-      (mockDb.ismsProfile.findUnique as jest.Mock).mockResolvedValue({
+      (mockDb.ismsProfile.upsert as jest.Mock).mockResolvedValue({
         id: 'pf_1',
         answers: {},
       });
@@ -127,7 +131,7 @@ describe('IsmsProfileService', () => {
 
   describe('saveProfile', () => {
     it('merges the partial payload onto stored answers', async () => {
-      (mockDb.ismsProfile.findUnique as jest.Mock).mockResolvedValue({
+      (mockDb.ismsProfile.upsert as jest.Mock).mockResolvedValue({
         id: 'pf_1',
         answers: { certificationBody: 'BSI' },
         completedAt: null,
@@ -153,7 +157,7 @@ describe('IsmsProfileService', () => {
     });
 
     it('sets completedAt and validates the full schema when complete=true', async () => {
-      (mockDb.ismsProfile.findUnique as jest.Mock).mockResolvedValue({
+      (mockDb.ismsProfile.upsert as jest.Mock).mockResolvedValue({
         id: 'pf_1',
         answers: {},
         completedAt: null,
@@ -175,7 +179,7 @@ describe('IsmsProfileService', () => {
     });
 
     it('rejects completion when the merged answers are incomplete', async () => {
-      (mockDb.ismsProfile.findUnique as jest.Mock).mockResolvedValue({
+      (mockDb.ismsProfile.upsert as jest.Mock).mockResolvedValue({
         id: 'pf_1',
         answers: {},
         completedAt: null,

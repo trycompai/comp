@@ -170,4 +170,38 @@ describe('diffSnapshots', () => {
       expect.arrayContaining(['members', 'devices']),
     );
   });
+
+  it('detects a changed vendor category mix even when the total is unchanged', () => {
+    const result = diffSnapshots({
+      previous: { ...baseInput, vendorsByCategory: { cloud: 5 } },
+      current: { ...baseInput, vendorsByCategory: { cloud: 2, hr: 3 } },
+    });
+    expect(result.changedSources).toContain('vendorMix');
+    expect(result.changedSources).not.toContain('vendors');
+  });
+
+  it('detects a changed department mix even when headcount is unchanged', () => {
+    const result = diffSnapshots({
+      previous: { ...baseInput, membersByDepartment: { it: 12 } },
+      current: { ...baseInput, membersByDepartment: { it: 6, hr: 6 } },
+    });
+    expect(result.changedSources).toContain('departmentMix');
+    expect(result.changedSources).not.toContain('members');
+  });
+
+  it('ignores key order in vendor/department mix maps', () => {
+    const result = diffSnapshots({
+      previous: {
+        ...baseInput,
+        vendorsByCategory: { cloud: 2, software_as_a_service: 3 },
+        membersByDepartment: { it: 4, hr: 2, none: 6 },
+      },
+      current: {
+        ...baseInput,
+        vendorsByCategory: { software_as_a_service: 3, cloud: 2 },
+        membersByDepartment: { none: 6, hr: 2, it: 4 },
+      },
+    });
+    expect(result.isStale).toBe(false);
+  });
 });

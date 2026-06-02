@@ -4,7 +4,7 @@ import { IsmsNarrativeService } from './isms-narrative.service';
 
 jest.mock('@db', () => ({
   db: {
-    ismsDocument: { findFirst: jest.fn() },
+    ismsDocument: { findFirst: jest.fn(), update: jest.fn() },
     ismsDocumentVersion: {
       findFirst: jest.fn(),
       create: jest.fn(),
@@ -114,5 +114,31 @@ describe('IsmsNarrativeService', () => {
     expect(mockDb.ismsDocumentVersion.update).toHaveBeenCalledWith(
       expect.objectContaining({ where: { id: 'ver_1' } }),
     );
+    expect(mockDb.ismsDocument.update).not.toHaveBeenCalled();
+  });
+
+  it('reverts an approved document to draft so it needs re-approval', async () => {
+    (mockDb.ismsDocument.findFirst as jest.Mock).mockResolvedValue({
+      id: 'doc_1',
+      type: 'isms_scope',
+      status: 'approved',
+    });
+    (mockDb.ismsDocumentVersion.findFirst as jest.Mock).mockResolvedValue({
+      id: 'ver_1',
+    });
+    (mockDb.ismsDocumentVersion.update as jest.Mock).mockResolvedValue({
+      id: 'ver_1',
+    });
+
+    await service.save({
+      documentId: 'doc_1',
+      organizationId: 'org_1',
+      narrative: validScope,
+    });
+
+    expect(mockDb.ismsDocument.update).toHaveBeenCalledWith({
+      where: { id: 'doc_1' },
+      data: { status: 'draft', approvedAt: null, approverId: null },
+    });
   });
 });

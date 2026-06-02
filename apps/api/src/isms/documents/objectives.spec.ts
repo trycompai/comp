@@ -79,7 +79,7 @@ describe('deriveObjectives', () => {
 });
 
 describe('buildObjectivesSections', () => {
-  it('renders an objectives table including status', () => {
+  it('renders an objectives table including plan, measurement, cadence and status', () => {
     const input: DocumentExportInput = {
       contextIssues: [],
       interestedParties: [],
@@ -90,15 +90,53 @@ describe('buildObjectivesSections', () => {
           target: 'Certified',
           cadence: 'Annual',
           status: 'on_track',
-          plan: 'p',
-          measurementMethod: 'm',
+          plan: 'Operate controls and pass the audit',
+          measurementMethod: 'Audit outcome',
+        },
+      ],
+      narrative: null,
+    };
+    const sections = buildObjectivesSections(input);
+    expect(sections[0].table?.headers).toEqual([
+      'Objective',
+      'Target',
+      'Plan',
+      'Measurement',
+      'Cadence',
+      'Status',
+    ]);
+    expect(sections[0].table?.rows).toEqual([
+      [
+        'Maintain ISO 27001',
+        'Certified',
+        'Operate controls and pass the audit',
+        'Audit outcome',
+        'Annual',
+        'on_track',
+      ],
+    ]);
+  });
+
+  it('renders em-dashes for missing plan and measurement', () => {
+    const input: DocumentExportInput = {
+      contextIssues: [],
+      interestedParties: [],
+      requirements: [],
+      objectives: [
+        {
+          objective: 'Reduce phishing click rate',
+          target: '< 3%',
+          cadence: null,
+          status: 'on_track',
+          plan: null,
+          measurementMethod: null,
         },
       ],
       narrative: null,
     };
     const sections = buildObjectivesSections(input);
     expect(sections[0].table?.rows).toEqual([
-      ['Maintain ISO 27001', 'Certified', 'Annual', 'on_track'],
+      ['Reduce phishing click rate', '< 3%', '—', '—', '—', 'on_track'],
     ]);
   });
 });

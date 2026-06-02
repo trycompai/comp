@@ -21,9 +21,7 @@ export class IsmsInterestedPartyService {
     dto: CreateInterestedPartyDto;
   }) {
     await this.requireDocument({ documentId, organizationId });
-    const position =
-      dto.position ??
-      (await db.ismsInterestedParty.count({ where: { documentId } }));
+    const position = dto.position ?? (await this.nextPosition({ documentId }));
 
     return db.ismsInterestedParty.create({
       data: {
@@ -70,6 +68,16 @@ export class IsmsInterestedPartyService {
     await this.requireParty({ partyId, organizationId });
     await db.ismsInterestedParty.delete({ where: { id: partyId } });
     return { success: true };
+  }
+
+  /** Next position uses max(position)+1 so it survives deletes (no collisions). */
+  private async nextPosition({ documentId }: { documentId: string }) {
+    const last = await db.ismsInterestedParty.findFirst({
+      where: { documentId },
+      orderBy: { position: 'desc' },
+      select: { position: true },
+    });
+    return (last?.position ?? -1) + 1;
   }
 
   private async requireDocument({

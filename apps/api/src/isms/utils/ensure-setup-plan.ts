@@ -27,7 +27,11 @@ export async function resolveDocumentPlans({
   const templates = await db.frameworkEditorIsmsDocumentTemplate.findMany({
     orderBy: { sortOrder: 'asc' },
     include: {
-      requirementLinks: { where: { frameworkId } },
+      // Order so requirementLinks[0] is a deterministic pick across runs.
+      requirementLinks: {
+        where: { frameworkId },
+        orderBy: [{ requirementId: 'asc' }, { id: 'asc' }],
+      },
       controlLinks: {
         where: { frameworkId },
         select: { controlTemplateId: true },

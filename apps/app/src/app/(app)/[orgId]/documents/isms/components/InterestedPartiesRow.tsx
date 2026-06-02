@@ -1,7 +1,7 @@
 'use client';
 
 import { Badge, Heading, HStack, Input, Stack, Textarea } from '@trycompai/design-system';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import type { IsmsInterestedParty } from '../isms-types';
 import {
   IsmsCardActions,
@@ -34,6 +34,16 @@ export function InterestedPartiesRow({
   const [isSaving, setIsSaving] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
 
+  // Re-sync the draft fields from the latest record whenever it changes while
+  // the row is not being edited (e.g. after a successful save revalidates), so
+  // re-opening edit never shows stale values.
+  useEffect(() => {
+    if (isEditing) return;
+    setName(party.name);
+    setCategory(party.category);
+    setNeedsExpectations(party.needsExpectations);
+  }, [party, isEditing]);
+
   const isDirty =
     name !== party.name ||
     category !== party.category ||
@@ -51,6 +61,8 @@ export function InterestedPartiesRow({
     try {
       await onSave({ name, category, needsExpectations });
       setIsEditing(false);
+    } catch {
+      // Stay in edit mode with the user's changes when the save fails.
     } finally {
       setIsSaving(false);
     }

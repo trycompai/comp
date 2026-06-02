@@ -1,13 +1,13 @@
-import { NotFoundException } from '@nestjs/common';
+import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { db } from '@db';
 import { IsmsRequirementService } from './isms-requirement.service';
 
 jest.mock('@db', () => ({
   db: {
     ismsDocument: { findFirst: jest.fn() },
+    ismsInterestedParty: { findFirst: jest.fn() },
     ismsInterestedPartyRequirement: {
       findFirst: jest.fn(),
-      count: jest.fn(),
       create: jest.fn(),
       update: jest.fn(),
       delete: jest.fn(),
@@ -42,8 +42,8 @@ describe('IsmsRequirementService', () => {
         id: 'doc_1',
       });
       (
-        mockDb.ismsInterestedPartyRequirement.count as jest.Mock
-      ).mockResolvedValue(1);
+        mockDb.ismsInterestedPartyRequirement.findFirst as jest.Mock
+      ).mockResolvedValue({ position: 0 });
       (
         mockDb.ismsInterestedPartyRequirement.create as jest.Mock
       ).mockResolvedValue({ id: 'ipr_1' });
@@ -59,6 +59,62 @@ describe('IsmsRequirementService', () => {
           }),
         },
       );
+    });
+
+    it('rejects a party that does not belong to the document', async () => {
+      (mockDb.ismsDocument.findFirst as jest.Mock).mockResolvedValue({
+        id: 'doc_1',
+      });
+      (mockDb.ismsInterestedParty.findFirst as jest.Mock).mockResolvedValue(null);
+
+      await expect(
+        service.create({
+          documentId: 'doc_1',
+          organizationId: 'org_1',
+          dto: {
+            partyName: 'Customers',
+            requirement: 'r',
+            treatment: 't',
+            interestedPartyId: 'ip_other',
+          },
+        }),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it('links a party that belongs to the document', async () => {
+      (mockDb.ismsDocument.findFirst as jest.Mock).mockResolvedValue({
+        id: 'doc_1',
+      });
+      (mockDb.ismsInterestedParty.findFirst as jest.Mock).mockResolvedValue({
+        id: 'ip_1',
+      });
+      (
+        mockDb.ismsInterestedPartyRequirement.findFirst as jest.Mock
+      ).mockResolvedValue({ position: 0 });
+      (
+        mockDb.ismsInterestedPartyRequirement.create as jest.Mock
+      ).mockResolvedValue({ id: 'ipr_1' });
+
+      await service.create({
+        documentId: 'doc_1',
+        organizationId: 'org_1',
+        dto: {
+          partyName: 'Customers',
+          requirement: 'r',
+          treatment: 't',
+          interestedPartyId: 'ip_1',
+        },
+      });
+
+      expect(mockDb.ismsInterestedParty.findFirst).toHaveBeenCalledWith({
+        where: { id: 'ip_1', documentId: 'doc_1' },
+        select: { id: true },
+      });
+      expect(
+        mockDb.ismsInterestedPartyRequirement.create,
+      ).toHaveBeenCalledWith({
+        data: expect.objectContaining({ interestedPartyId: 'ip_1' }),
+      });
     });
   });
 
@@ -95,6 +151,25 @@ describe('IsmsRequirementService', () => {
           }),
         },
       );
+    });
+
+    it('rejects relinking to a party from another document', async () => {
+      (
+        mockDb.ismsInterestedPartyRequirement.findFirst as jest.Mock
+      ).mockResolvedValue({ id: 'ipr_1', documentId: 'doc_1' });
+      (mockDb.ismsInterestedParty.findFirst as jest.Mock).mockResolvedValue(null);
+
+      await expect(
+        service.update({
+          requirementId: 'ipr_1',
+          organizationId: 'org_1',
+          dto: { interestedPartyId: 'ip_other' },
+        }),
+      ).rejects.toThrow(BadRequestException);
+      expect(mockDb.ismsInterestedParty.findFirst).toHaveBeenCalledWith({
+        where: { id: 'ip_other', documentId: 'doc_1' },
+        select: { id: true },
+      });
     });
   });
 

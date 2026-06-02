@@ -21,9 +21,7 @@ export class IsmsContextIssueService {
     dto: CreateContextIssueDto;
   }) {
     await this.requireDocument({ documentId, organizationId });
-    const position =
-      dto.position ??
-      (await db.ismsContextIssue.count({ where: { documentId } }));
+    const position = dto.position ?? (await this.nextPosition({ documentId }));
 
     return db.ismsContextIssue.create({
       data: {
@@ -73,6 +71,16 @@ export class IsmsContextIssueService {
     await this.requireIssue({ issueId, organizationId });
     await db.ismsContextIssue.delete({ where: { id: issueId } });
     return { success: true };
+  }
+
+  /** Next position uses max(position)+1 so it survives deletes (no collisions). */
+  private async nextPosition({ documentId }: { documentId: string }) {
+    const last = await db.ismsContextIssue.findFirst({
+      where: { documentId },
+      orderBy: { position: 'desc' },
+      select: { position: true },
+    });
+    return (last?.position ?? -1) + 1;
   }
 
   private async requireDocument({

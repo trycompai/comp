@@ -157,8 +157,9 @@ export class IsmsController {
   async decline(
     @Param('id') id: string,
     @OrganizationId() organizationId: string,
+    @UserId() userId: string,
   ) {
-    return this.ismsService.decline({ documentId: id, organizationId });
+    return this.ismsService.decline({ documentId: id, organizationId, userId });
   }
 
   @Get('documents/:id/drift')

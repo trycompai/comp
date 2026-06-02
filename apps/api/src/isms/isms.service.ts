@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   ForbiddenException,
   Injectable,
   NotFoundException,
@@ -157,10 +158,7 @@ export class IsmsService {
   }) {
     const member = await this.requireMember({ organizationId, userId });
     const document = await this.requireDocument({ documentId, organizationId });
-
-    if (document.approverId && document.approverId !== member.id) {
-      throw new ForbiddenException('Document is not pending your approval');
-    }
+    this.assertPendingApprovalBy({ document, member });
 
     const snapshot = await collectPlatformData({
       organizationId,
@@ -181,16 +179,39 @@ export class IsmsService {
   async decline({
     documentId,
     organizationId,
+    userId,
   }: {
     documentId: string;
     organizationId: string;
+    userId: string;
   }) {
-    await this.requireDocument({ documentId, organizationId });
+    const member = await this.requireMember({ organizationId, userId });
+    const document = await this.requireDocument({ documentId, organizationId });
+    this.assertPendingApprovalBy({ document, member });
 
     return db.ismsDocument.update({
       where: { id: documentId },
       data: { status: 'declined', declinedAt: new Date() },
     });
+  }
+
+  /**
+   * Guard shared by approve/decline: the document must be awaiting review and the
+   * acting member must be its assigned approver.
+   */
+  private assertPendingApprovalBy({
+    document,
+    member,
+  }: {
+    document: { status: string; approverId: string | null };
+    member: { id: string };
+  }) {
+    if (document.status !== 'needs_review') {
+      throw new BadRequestException('Document is not pending approval');
+    }
+    if (!document.approverId || document.approverId !== member.id) {
+      throw new ForbiddenException('Document is not pending your approval');
+    }
   }
 
   private async requireDocument({

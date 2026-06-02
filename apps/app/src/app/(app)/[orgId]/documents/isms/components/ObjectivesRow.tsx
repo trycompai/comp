@@ -1,7 +1,7 @@
 'use client';
 
 import { Badge, Grid, Heading, HStack, Stack } from '@trycompai/design-system';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import type { IsmsObjective, IsmsObjectiveStatus } from '../isms-types';
 import type { ApproverOption } from './IsmsApprovalSection';
 import {
@@ -74,6 +74,13 @@ export function ObjectivesRow({
   const [isSaving, setIsSaving] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
 
+  // Re-sync the draft from the latest record whenever it changes while the row
+  // is not being edited (e.g. after a successful save revalidates, or after
+  // generate), so re-opening edit never shows stale values.
+  useEffect(() => {
+    if (!isEditing) setDraft(toDraft(objective));
+  }, [objective, isEditing]);
+
   const isDirty =
     draft.objective !== objective.objective ||
     draft.target !== (objective.target ?? '') ||
@@ -93,6 +100,8 @@ export function ObjectivesRow({
     try {
       await onSave(draft);
       setIsEditing(false);
+    } catch {
+      // Stay in edit mode with the user's changes when the save fails.
     } finally {
       setIsSaving(false);
     }

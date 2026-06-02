@@ -160,14 +160,15 @@ describe('IsmsController', () => {
     });
   });
 
-  it('decline passes documentId and org', async () => {
+  it('decline passes documentId, org and userId', async () => {
     mockIsmsService.decline.mockResolvedValue({ id: 'doc_1' });
 
-    await controller.decline('doc_1', 'org_1');
+    await controller.decline('doc_1', 'org_1', 'usr_1');
 
     expect(mockIsmsService.decline).toHaveBeenCalledWith({
       documentId: 'doc_1',
       organizationId: 'org_1',
+      userId: 'usr_1',
     });
   });
 

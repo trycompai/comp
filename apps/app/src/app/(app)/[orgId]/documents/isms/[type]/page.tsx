@@ -3,7 +3,8 @@ import { headers } from 'next/headers';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { serverApi } from '@/lib/api-server';
-import { parseRolesString } from '@/lib/permissions';
+import { hasPermission } from '@/lib/permissions';
+import { resolveUserPermissions } from '@/lib/permissions.server';
 import { auth } from '@/utils/auth';
 import { ContextOfOrganizationClient } from '../components/ContextOfOrganizationClient';
 import { InterestedPartiesClient } from '../components/InterestedPartiesClient';
@@ -130,14 +131,24 @@ export default async function IsmsDocumentPage({
   );
   const fallbackData = documentResult.data ?? null;
 
+  // If /v1/people is unavailable to this user (e.g. no member:read), approval
+  // simply degrades to "unavailable" — no approvers, no current member — rather
+  // than breaking the page.
   const people = peopleResult.data?.data ?? [];
   const currentMember = people.find((p) => p.userId === session.user.id && !p.deactivated) ?? null;
-  const approverOptions: ApproverOption[] = people
-    .filter(
-      (p) =>
-        !p.deactivated &&
-        parseRolesString(p.role).some((role) => role === 'owner' || role === 'admin'),
-    )
+
+  // An approver is any active member whose effective permissions include
+  // evidence:update (the same gate that lets a user manage ISMS documents),
+  // resolved via RBAC rather than hardcoded role strings.
+  const activeMembers = people.filter((p) => !p.deactivated);
+  const approverFlags = await Promise.all(
+    activeMembers.map(async (p) => {
+      const permissions = await resolveUserPermissions(p.role, organizationId);
+      return hasPermission(permissions, 'evidence', 'update');
+    }),
+  );
+  const approverOptions: ApproverOption[] = activeMembers
+    .filter((_, index) => approverFlags[index])
     .map((p) => ({ id: p.id, name: p.user?.name ?? p.user?.email ?? 'Unknown' }))
     .sort((a, b) => a.name.localeCompare(b.name));
 

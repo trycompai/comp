@@ -97,7 +97,9 @@ export function useIsmsDocument({
       api.post<IsmsDocument>(`/v1/isms/documents/${documentId}/generate`, {}),
       'Failed to generate document',
     );
-    await mutate(result, false);
+    // Revalidate from the server so registers + control links are preserved
+    // (the generate response omits some relations).
+    await mutate();
     return result;
   };
 
@@ -195,33 +197,36 @@ export function useIsmsDocument({
     await mutate();
   };
 
+  // The lifecycle endpoints below return a partial document (no registers /
+  // control links), so we revalidate from the server instead of caching the
+  // partial response, which would wipe that data client-side.
   const submitForApproval = async (approverId: string): Promise<void> => {
     if (!documentId) throw new Error('No document ID');
-    const result = await unwrap<IsmsDocument>(
+    await unwrap<IsmsDocument>(
       api.post<IsmsDocument>(`/v1/isms/documents/${documentId}/submit-for-approval`, {
         approverId,
       }),
       'Failed to submit for approval',
     );
-    await mutate(result, false);
+    await mutate();
   };
 
   const approve = async (): Promise<void> => {
     if (!documentId) throw new Error('No document ID');
-    const result = await unwrap<IsmsDocument>(
+    await unwrap<IsmsDocument>(
       api.post<IsmsDocument>(`/v1/isms/documents/${documentId}/approve`, {}),
       'Failed to approve document',
     );
-    await mutate(result, false);
+    await mutate();
   };
 
   const decline = async (): Promise<void> => {
     if (!documentId) throw new Error('No document ID');
-    const result = await unwrap<IsmsDocument>(
+    await unwrap<IsmsDocument>(
       api.post<IsmsDocument>(`/v1/isms/documents/${documentId}/decline`, {}),
       'Failed to decline document',
     );
-    await mutate(result, false);
+    await mutate();
   };
 
   const getDrift = async (): Promise<IsmsDriftResult> => {

@@ -1,5 +1,4 @@
 import type { IsmsExportSection } from '../utils/export-shared';
-import { formatRegulatorLabel } from './wizard-helpers';
 import type {
   DerivedInterestedParty,
   DocumentExportInput,
@@ -118,7 +117,12 @@ export function deriveInterestedParties(
 
 /**
  * Interested parties contributed by the ISMS wizard answers (CS-438): insurer,
- * sector regulators, contractors workforce and an appointed EU representative.
+ * contractors workforce and an appointed EU representative.
+ *
+ * Sector regulators are intentionally NOT added here. They are surfaced once, as
+ * requirement rows in the 4.2c Requirements document (wizardRegulatorRequirements
+ * in requirements.ts); adding them as parties too would double-list each
+ * regulator's obligation across 4.2b and 4.2c.
  */
 function wizardDerivedParties(
   data: IsmsPlatformData,
@@ -135,17 +139,6 @@ function wizardDerivedParties(
         'Demonstrable risk management, prompt incident notification and evidence of effective security controls to support coverage.',
       source: 'derived',
       derivedFrom: 'wizard:insurance',
-    });
-  }
-
-  for (const regulator of answers.sectorRegulators ?? []) {
-    const label = formatRegulatorLabel(regulator);
-    rows.push({
-      name: `Regulator (${label})`,
-      category: 'Regulator',
-      needsExpectations: `Conformance with the sector obligations arising from ${label}.`,
-      source: 'derived',
-      derivedFrom: 'wizard:regulator',
     });
   }
 

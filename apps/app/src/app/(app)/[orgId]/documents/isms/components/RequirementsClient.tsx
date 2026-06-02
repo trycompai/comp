@@ -91,6 +91,8 @@ export function RequirementsClient({
       toast.success('Requirement added');
     } catch (caught) {
       toast.error(caught instanceof Error ? caught.message : 'Failed to add requirement');
+      // Re-throw so the form keeps the user's input and stays open on failure.
+      throw caught;
     }
   };
 

@@ -129,11 +129,13 @@ export function versionLabel(metadata: IsmsExportMetadata): string {
 
 /** Human-readable approval status used in the metadata table. */
 export function approvalLine(metadata: IsmsExportMetadata): string {
+  // Declined wins over a stale approvedAt: a document can carry an approvedAt
+  // from a prior cycle yet currently be declined.
+  if (metadata.status === 'declined' || metadata.declinedAt) {
+    return `Declined on ${formatExportDate(metadata.declinedAt)}`;
+  }
   if (metadata.approvedAt) {
     return `Approved on ${formatExportDate(metadata.approvedAt)}`;
-  }
-  if (metadata.declinedAt) {
-    return `Declined on ${formatExportDate(metadata.declinedAt)}`;
   }
   if (metadata.status === 'needs_review') return 'Pending approval';
   return 'Not approved';

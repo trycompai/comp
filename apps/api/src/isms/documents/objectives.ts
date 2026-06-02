@@ -90,10 +90,19 @@ export function buildObjectivesSections(
       heading: 'Information Security Objectives',
       emptyText: 'No objectives recorded.',
       table: {
-        headers: ['Objective', 'Target', 'Cadence', 'Status'],
+        headers: [
+          'Objective',
+          'Target',
+          'Plan',
+          'Measurement',
+          'Cadence',
+          'Status',
+        ],
         rows: input.objectives.map((objective) => [
           objective.objective,
           objective.target ?? '—',
+          objective.plan ?? '—',
+          objective.measurementMethod ?? '—',
           objective.cadence ?? '—',
           objective.status,
         ]),

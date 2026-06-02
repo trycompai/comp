@@ -41,7 +41,9 @@ describe('IsmsObjectiveService', () => {
       (mockDb.ismsDocument.findFirst as jest.Mock).mockResolvedValue({
         id: 'doc_1',
       });
-      (mockDb.ismsObjective.count as jest.Mock).mockResolvedValue(2);
+      (mockDb.ismsObjective.findFirst as jest.Mock).mockResolvedValue({
+        position: 1,
+      });
       (mockDb.ismsObjective.create as jest.Mock).mockResolvedValue({
         id: 'obj_1',
       });

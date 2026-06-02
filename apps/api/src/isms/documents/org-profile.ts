@@ -40,6 +40,9 @@ export async function loadOrgProfile({
     }),
     db.context.findMany({
       where: { organizationId },
+      // Deterministic ordering so duplicate questions resolve to the same answer
+      // every export; the earliest-created entry wins (id breaks createdAt ties).
+      orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
       select: { question: true, answer: true },
     }),
     db.ismsProfile.findUnique({
@@ -48,9 +51,13 @@ export async function loadOrgProfile({
     }),
   ]);
 
-  const answers = new Map(
-    contextEntries.map((entry) => [entry.question, (entry.answer ?? '').trim()]),
-  );
+  // First (earliest-created) entry wins for any duplicated question.
+  const answers = new Map<string, string>();
+  for (const entry of contextEntries) {
+    if (!answers.has(entry.question)) {
+      answers.set(entry.question, (entry.answer ?? '').trim());
+    }
+  }
   const get = (question: string): string | null => {
     const value = answers.get(question);
     return value && value !== '[object Object]' ? value : null;

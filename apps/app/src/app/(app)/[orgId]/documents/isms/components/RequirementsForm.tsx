@@ -43,7 +43,12 @@ function RequirementsFields({
   });
 
   const handleAdd = handleSubmit(async (values) => {
-    await onAdd(values);
+    try {
+      await onAdd(values);
+    } catch {
+      // Keep the user's input and the form open when the save fails.
+      return;
+    }
     reset({ partyName: '', interestedPartyId: '', requirement: '', treatment: '' });
     onClose();
   });

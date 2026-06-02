@@ -82,6 +82,8 @@ export function ObjectivesClient({
       toast.success('Objective added');
     } catch (caught) {
       toast.error(caught instanceof Error ? caught.message : 'Failed to add objective');
+      // Re-throw so the form keeps the user's input and stays open on failure.
+      throw caught;
     }
   };
 
@@ -97,6 +99,8 @@ export function ObjectivesClient({
       toast.success('Objective updated');
     } catch (caught) {
       toast.error(caught instanceof Error ? caught.message : 'Failed to update objective');
+      // Re-throw so the row stays in edit mode with the user's changes on failure.
+      throw caught;
     }
   };
 

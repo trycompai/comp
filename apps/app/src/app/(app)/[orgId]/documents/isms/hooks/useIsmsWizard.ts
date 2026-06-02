@@ -15,9 +15,12 @@ interface UseIsmsWizardOptions {
   fallbackData?: WizardProfileResponse | null;
 }
 
-function buildKey(frameworkId: string | null) {
+function buildKey(
+  organizationId: string,
+  frameworkId: string | null,
+): readonly [string, string] | null {
   if (!frameworkId) return null;
-  return `/v1/isms/profile?frameworkId=${encodeURIComponent(frameworkId)}`;
+  return [`/v1/isms/profile?frameworkId=${encodeURIComponent(frameworkId)}`, organizationId] as const;
 }
 
 async function unwrap<T>(
@@ -44,8 +47,8 @@ export function useIsmsWizard({
   fallbackData,
 }: UseIsmsWizardOptions) {
   const { data, error, isLoading, mutate } = useSWR<WizardProfileResponse>(
-    buildKey(frameworkId),
-    async (key: string) =>
+    buildKey(organizationId, frameworkId),
+    async ([key]: readonly [string, string]) =>
       unwrap<WizardProfileResponse>(
         api.get<WizardProfileResponse>(key, organizationId),
         'Failed to load wizard profile',

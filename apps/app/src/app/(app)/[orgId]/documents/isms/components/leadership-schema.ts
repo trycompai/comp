@@ -84,19 +84,25 @@ export const LEADERSHIP_COMMITMENTS: LeadershipCommitmentMeta[] = [
 /**
  * Merge the persisted narrative with the canonical (a)-(h) commitment list so the
  * form always renders all eight rows in a stable order, even when generation has
- * not yet populated every clause.
+ * not yet populated every clause. Any persisted commitments beyond the canonical
+ * a-h set (e.g. a Deputy SPO clause keyed 'i') are preserved so they survive a
+ * save round-trip instead of being silently dropped.
  */
 export function buildFormValues(
   narrative: Partial<LeadershipNarrativeValues> | null | undefined,
 ): LeadershipNarrativeValues {
   const persisted = Array.isArray(narrative?.commitments) ? narrative.commitments : [];
   const byKey = new Map(persisted.map((commitment) => [commitment.key, commitment.text]));
+  const canonicalKeys = new Set(LEADERSHIP_COMMITMENTS.map((meta) => meta.key));
+
+  const canonical = LEADERSHIP_COMMITMENTS.map((meta) => ({
+    key: meta.key,
+    text: byKey.get(meta.key) ?? '',
+  }));
+  const extra = persisted.filter((commitment) => !canonicalKeys.has(commitment.key));
 
   return {
     statement: typeof narrative?.statement === 'string' ? narrative.statement : '',
-    commitments: LEADERSHIP_COMMITMENTS.map((meta) => ({
-      key: meta.key,
-      text: byKey.get(meta.key) ?? '',
-    })),
+    commitments: [...canonical, ...extra],
   };
 }

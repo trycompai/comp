@@ -20,8 +20,7 @@ export class IsmsObjectiveService {
     dto: CreateObjectiveDto;
   }) {
     await this.requireDocument({ documentId, organizationId });
-    const position =
-      dto.position ?? (await db.ismsObjective.count({ where: { documentId } }));
+    const position = dto.position ?? (await this.nextPosition({ documentId }));
 
     return db.ismsObjective.create({
       data: {
@@ -76,6 +75,16 @@ export class IsmsObjectiveService {
     await this.requireObjective({ objectiveId, organizationId });
     await db.ismsObjective.delete({ where: { id: objectiveId } });
     return { success: true };
+  }
+
+  /** Next position uses max(position)+1 so it survives deletes (no collisions). */
+  private async nextPosition({ documentId }: { documentId: string }) {
+    const last = await db.ismsObjective.findFirst({
+      where: { documentId },
+      orderBy: { position: 'desc' },
+      select: { position: true },
+    });
+    return (last?.position ?? -1) + 1;
   }
 
   private async requireDocument({

@@ -41,7 +41,9 @@ describe('IsmsContextIssueService', () => {
       (mockDb.ismsDocument.findFirst as jest.Mock).mockResolvedValue({
         id: 'doc_1',
       });
-      (mockDb.ismsContextIssue.count as jest.Mock).mockResolvedValue(3);
+      (mockDb.ismsContextIssue.findFirst as jest.Mock).mockResolvedValue({
+        position: 2,
+      });
       (mockDb.ismsContextIssue.create as jest.Mock).mockResolvedValue({
         id: 'ci_1',
       });
