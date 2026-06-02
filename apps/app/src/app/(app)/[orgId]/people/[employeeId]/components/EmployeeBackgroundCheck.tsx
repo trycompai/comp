@@ -246,14 +246,12 @@ export function EmployeeBackgroundCheck({
           canUpdate={canRequest}
           onToggle={handleToggleExempt}
         />
-        {backgroundCheck && (
-          <BackgroundCheckAdminActions
-            backgroundCheck={backgroundCheck}
-            memberId={employee.id}
-            organizationId={organizationId}
-            onChange={(next) => mutateBackgroundCheck(next, { revalidate: false })}
-          />
-        )}
+        <BackgroundCheckAdminActions
+          backgroundCheck={backgroundCheck}
+          memberId={employee.id}
+          organizationId={organizationId}
+          onChange={(next) => { mutateBackgroundCheck(next, { revalidate: false }); }}
+        />
         <BackgroundCheckStatusView
           backgroundCheck={backgroundCheck}
           memberId={employee.id}
