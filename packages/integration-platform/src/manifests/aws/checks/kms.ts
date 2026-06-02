@@ -67,7 +67,16 @@ async function listKmsKeys(
       for (const k of resp.Keys ?? []) {
         const keyId = k.KeyId;
         if (!keyId) continue;
-        const meta = (await kms.send(new DescribeKeyCommand({ KeyId: keyId }))).KeyMetadata;
+        let meta;
+        try {
+          meta = (await kms.send(new DescribeKeyCommand({ KeyId: keyId }))).KeyMetadata;
+        } catch (err) {
+          // Skip this key rather than aborting the whole scan.
+          ctx.log(
+            `KMS: could not describe key ${keyId} in ${region}: ${err instanceof Error ? err.message : String(err)}`,
+          );
+          continue;
+        }
         // Only symmetric, enabled, AWS-managed-material, encrypt/decrypt
         // customer keys can have automatic rotation.
         const rotationEligible =

@@ -13,6 +13,8 @@ export interface RdsInstanceInfo {
   region: string;
   encrypted: boolean;
   backupRetentionDays: number;
+  /** e.g. 'postgres', 'mysql', 'aurora-mysql' — Aurora backups are cluster-level */
+  engine: string;
 }
 
 export function evaluateRdsEncryption(instances: RdsInstanceInfo[]): CheckOutcome[] {
@@ -41,7 +43,11 @@ export function evaluateRdsEncryption(instances: RdsInstanceInfo[]): CheckOutcom
 }
 
 export function evaluateRdsBackups(instances: RdsInstanceInfo[]): CheckOutcome[] {
-  return instances.map((i) =>
+  return instances
+    // Aurora backups are managed at the cluster level; the instance-level
+    // BackupRetentionPeriod is unreliable, so don't fail Aurora instances here.
+    .filter((i) => !i.engine.toLowerCase().startsWith('aurora'))
+    .map((i) =>
     i.backupRetentionDays > 0
       ? {
           kind: 'pass',
@@ -77,6 +83,7 @@ async function listRdsInstances(session: AwsSession): Promise<RdsInstanceInfo[]>
           region,
           encrypted: db.StorageEncrypted === true,
           backupRetentionDays: db.BackupRetentionPeriod ?? 0,
+          engine: db.Engine ?? '',
         });
       }
       marker = resp.Marker;

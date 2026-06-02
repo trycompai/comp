@@ -125,19 +125,20 @@ describe('AWS EC2 security-group evaluator', () => {
 describe('AWS RDS evaluators', () => {
   it('encryption: pass when encrypted, fail (high) when not', () => {
     const out = evaluateRdsEncryption([
-      { id: 'db1', region: 'us-east-1', encrypted: true, backupRetentionDays: 7 },
-      { id: 'db2', region: 'us-east-1', encrypted: false, backupRetentionDays: 7 },
+      { id: 'db1', region: 'us-east-1', encrypted: true, backupRetentionDays: 7, engine: 'postgres' },
+      { id: 'db2', region: 'us-east-1', encrypted: false, backupRetentionDays: 7, engine: 'postgres' },
     ]);
     expect(out[0]!.kind).toBe('pass');
     expect(out[1]!.severity).toBe('high');
   });
 
-  it('backups: pass when retention > 0, fail when 0', () => {
+  it('backups: pass when retention > 0, fail when 0, skip Aurora (cluster-level)', () => {
     const out = evaluateRdsBackups([
-      { id: 'db1', region: 'us-east-1', encrypted: true, backupRetentionDays: 7 },
-      { id: 'db2', region: 'us-east-1', encrypted: true, backupRetentionDays: 0 },
+      { id: 'db1', region: 'us-east-1', encrypted: true, backupRetentionDays: 7, engine: 'postgres' },
+      { id: 'db2', region: 'us-east-1', encrypted: true, backupRetentionDays: 0, engine: 'mysql' },
+      { id: 'aur', region: 'us-east-1', encrypted: true, backupRetentionDays: 0, engine: 'aurora-mysql' },
     ]);
-    expect(kinds(out)).toEqual(['pass', 'fail']);
+    expect(kinds(out)).toEqual(['pass', 'fail']); // aurora excluded, not failed
   });
 });
 

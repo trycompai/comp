@@ -50,20 +50,21 @@ export const vpcOpenFirewallsCheck: IntegrationCheck = {
         if (rule.disabled === true) continue;
         if (rule.direction && rule.direction !== 'INGRESS') continue;
         const srcs = rule.sourceRanges ?? [];
-        if (!srcs.includes('0.0.0.0/0') && !srcs.includes('::/0')) continue;
+        const openRanges = srcs.filter((r) => r === '0.0.0.0/0' || r === '::/0');
+        if (openRanges.length === 0) continue;
+        const openLabel = openRanges.join(' / ');
 
         const allowed = rule.allowed ?? [];
         if (allowed.some((a) => a.IPProtocol === 'all')) {
           violations++;
           ctx.fail({
             title: `Firewall open to internet (all ports): ${rule.name}`,
-            description: `Firewall rule "${rule.name}" allows ALL protocols/ports from 0.0.0.0/0.`,
+            description: `Firewall rule "${rule.name}" allows ALL protocols/ports from ${openLabel}.`,
             resourceType: 'gcp-firewall-rule',
             resourceId: rule.name,
             severity: 'critical',
-            remediation:
-              'Restrict source ranges to known CIDRs and limit allowed protocols/ports to only what is required.',
-            evidence: { projectId, rule: rule.name },
+            remediation: `Remove the public source range(s) (${openLabel}); restrict source ranges to known CIDRs and limit allowed protocols/ports to only what is required.`,
+            evidence: { projectId, rule: rule.name, openRanges },
           });
           continue;
         }
@@ -76,12 +77,12 @@ export const vpcOpenFirewallsCheck: IntegrationCheck = {
             violations++;
             ctx.fail({
               title: `${label} open to internet: ${rule.name}`,
-              description: `Firewall rule "${rule.name}" allows ${label} (port ${port}) from 0.0.0.0/0.`,
+              description: `Firewall rule "${rule.name}" allows ${label} (port ${port}) from ${openLabel}.`,
               resourceType: 'gcp-firewall-rule',
               resourceId: rule.name,
               severity,
-              remediation: `Remove the 0.0.0.0/0 source for port ${port}; restrict ${label} access to a VPN, bastion, or known CIDR ranges.`,
-              evidence: { projectId, rule: rule.name, port },
+              remediation: `Remove the public source range(s) (${openLabel}) for port ${port}; restrict ${label} access to a VPN, bastion, or known CIDR ranges.`,
+              evidence: { projectId, rule: rule.name, port, openRanges },
             });
           }
         }
