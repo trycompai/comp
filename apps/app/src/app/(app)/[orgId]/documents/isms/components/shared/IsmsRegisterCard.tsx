@@ -45,8 +45,8 @@ export function IsmsRegisterField({ label, children }: IsmsRegisterFieldProps) {
 }
 
 export interface IsmsRegisterCardProps {
-  /** Left side of the header — typically the IsmsSourceBadge. */
-  header: ReactNode;
+  /** Left side of the header — typically the entry's title. Optional (edit mode often has none). */
+  header?: ReactNode;
   /** Right side of the header — status/category badges and the edit/actions slot. */
   headerEnd?: ReactNode;
   /** Card body — the read display or the edit form. */
@@ -57,16 +57,21 @@ export interface IsmsRegisterCardProps {
  * The read-first surface for a single ISMS register entry. Echoes the
  * `IsmsDocumentCard` surface (bordered card, subtle hover) so registers feel
  * like the rest of the ISMS area instead of a spreadsheet row. The card is a
- * pure presentational shell: provenance and badges live in the header, the row
- * owns its body (read display or inline edit form).
+ * pure presentational shell: the title and any badges live in the header, the
+ * row owns its body (read display or inline edit form). When there's no header,
+ * the action cluster stays right-aligned via `ml-auto`.
  */
 export function IsmsRegisterCard({ header, headerEnd, children }: IsmsRegisterCardProps) {
   return (
     <div className="flex flex-col gap-3 rounded-md border border-border bg-card p-4 transition-colors hover:border-foreground/20">
-      <HStack align="start" justify="between" gap="3" wrap="wrap">
-        {header}
-        {headerEnd && <div className="flex shrink-0 items-center gap-2">{headerEnd}</div>}
-      </HStack>
+      {(header || headerEnd) && (
+        <HStack align="start" justify="between" gap="3" wrap="wrap">
+          {header}
+          {headerEnd && (
+            <div className="ml-auto flex shrink-0 items-center gap-2">{headerEnd}</div>
+          )}
+        </HStack>
+      )}
       {children}
     </div>
   );

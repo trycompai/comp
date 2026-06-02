@@ -8,7 +8,6 @@ import {
   IsmsFieldLabel,
   IsmsRegisterCard,
   IsmsRegisterField,
-  IsmsSourceBadge,
 } from './shared';
 
 interface InterestedPartiesRowProps {
@@ -83,10 +82,7 @@ export function InterestedPartiesRow({
 
   if (isEditing) {
     return (
-      <IsmsRegisterCard
-        header={<IsmsSourceBadge source={party.source} derivedFrom={party.derivedFrom} />}
-        headerEnd={actions}
-      >
+      <IsmsRegisterCard headerEnd={actions}>
         <Stack gap="3">
           <div className="grid gap-3 md:grid-cols-2">
             <IsmsFieldLabel label="Name">
@@ -119,12 +115,7 @@ export function InterestedPartiesRow({
 
   return (
     <IsmsRegisterCard
-      header={
-        <Stack gap="2">
-          <IsmsSourceBadge source={party.source} derivedFrom={party.derivedFrom} />
-          <Heading level="4">{party.name}</Heading>
-        </Stack>
-      }
+      header={<Heading level="4">{party.name}</Heading>}
       headerEnd={
         <HStack align="center" gap="2">
           {party.category && <Badge variant="secondary">{party.category}</Badge>}

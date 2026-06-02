@@ -124,7 +124,7 @@ describe('InterestedPartiesClient', () => {
     hookState.drift = { isStale: false, changedSources: [] };
   });
 
-  it('renders the register content with provenance', () => {
+  it('renders the register content as read-first cards', () => {
     setMockPermissions(ADMIN_PERMISSIONS);
     render(<InterestedPartiesClient {...baseProps} />);
 
@@ -132,10 +132,10 @@ describe('InterestedPartiesClient', () => {
     expect(screen.getByText('Customers')).toBeInTheDocument();
     expect(screen.getByText('Data Protection Authority')).toBeInTheDocument();
     expect(screen.getByText('Confidentiality of their data')).toBeInTheDocument();
-    expect(screen.getByText('vendor:customers')).toBeInTheDocument();
-    // Derived rows are labelled "Auto-derived", manual rows "Manual".
-    expect(screen.getAllByText('Auto-derived').length).toBeGreaterThan(0);
-    expect(screen.getAllByText('Manual').length).toBeGreaterThan(0);
+    // The category badge is shown; the redundant auto-derive provenance pill is not.
+    expect(screen.getByText('External')).toBeInTheDocument();
+    expect(screen.getByText('Regulator')).toBeInTheDocument();
+    expect(screen.queryByText('vendor:customers')).not.toBeInTheDocument();
   });
 
   it('allows editing (shows mutating controls) for a user with evidence:update', () => {
