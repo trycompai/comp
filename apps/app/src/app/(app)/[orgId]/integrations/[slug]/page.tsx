@@ -1,15 +1,7 @@
-import { serverApi } from '@/lib/api-server';
 import { PageLayout } from '@trycompai/design-system';
-import type {
-  ConnectionListItemResponse,
-  IntegrationProviderResponse,
-} from '@trycompai/integration-platform';
 import { redirect } from 'next/navigation';
 import { ProviderDetailView } from './components/ProviderDetailView';
-import {
-  type IntegrationTaskApiResponse,
-  mapTaskTemplates,
-} from './lib/task-templates';
+import { loadIntegrationPageData } from './lib/load-integration-page-data';
 
 interface PageProps {
   params: Promise<{ orgId: string; slug: string }>;
@@ -23,19 +15,12 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
   const providerParam = typeof sp.provider === 'string' ? sp.provider : '';
   const gcpOAuthJustConnected = slug === 'gcp' && success === 'true' && providerParam === 'gcp';
 
-  const [providerResult, connectionsResult, tasksResult] = await Promise.all([
-    serverApi.get<IntegrationProviderResponse>(`/v1/integrations/connections/providers/${slug}`),
-    serverApi.get<ConnectionListItemResponse[]>('/v1/integrations/connections'),
-    serverApi.get<IntegrationTaskApiResponse>('/v1/tasks'),
-  ]);
+  const { provider, providerErrored, connections, taskTemplates } =
+    await loadIntegrationPageData(slug, { sortTasks: true });
 
-  if (!providerResult.data || providerResult.error) {
+  if (!provider || providerErrored) {
     redirect(`/${orgId}/integrations`);
   }
-
-  const provider = providerResult.data;
-  const connections = (connectionsResult.data ?? []).filter((c) => c.providerSlug === slug);
-  const { templates: taskTemplates } = mapTaskTemplates(tasksResult, { sort: true });
 
   return (
     <PageLayout>

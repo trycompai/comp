@@ -15,6 +15,8 @@ interface RoleDefinition {
   };
 }
 
+// Secondary, name-based fallback only. Permission-based classification
+// (see actionIsHighPrivilege / defIsPrivileged) is the primary signal.
 const PRIVILEGED_ROLES = new Set([
   'Owner',
   'Contributor',
@@ -25,7 +27,9 @@ const PRIVILEGED_ROLES = new Set([
   'Privileged Role Administrator',
 ]);
 
-const isWildcardAction = (act: string) => act === '*' || act.endsWith('/*');
+// Any action containing a '*' is treated as a wildcard — covers bare '*',
+// suffix forms (read-all), and mid-path wildcards (e.g. Microsoft.Network).
+const isWildcardAction = (act: string) => act.includes('*');
 
 /** High-privilege ARM actions that make a role privileged regardless of its name. */
 function actionIsHighPrivilege(act: string): boolean {
@@ -39,12 +43,16 @@ function actionIsHighPrivilege(act: string): boolean {
   );
 }
 
-/** A role is privileged if it is a known built-in privileged role OR its permissions grant high-privilege actions. */
+/**
+ * A role is privileged primarily because its permissions grant high-privilege
+ * actions; the built-in privileged role-name set is only a secondary fallback.
+ */
 function defIsPrivileged(def: RoleDefinition): boolean {
-  if (PRIVILEGED_ROLES.has(def.properties.roleName)) return true;
-  return def.properties.permissions.some((perm) =>
+  const permissionPrivileged = def.properties.permissions.some((perm) =>
     (perm.actions ?? []).some(actionIsHighPrivilege),
   );
+  if (permissionPrivileged) return true;
+  return PRIVILEGED_ROLES.has(def.properties.roleName);
 }
 
 /**
@@ -75,12 +83,63 @@ export const rbacLeastPrivilegeCheck: IntegrationCheck = {
     ]);
 
     const defMap = new Map(definitions.map((d) => [d.id, d]));
-    const privileged = assignments.filter((a) => {
-      const def = defMap.get(a.properties.roleDefinitionId);
-      return def ? defIsPrivileged(def) : false;
-    });
+
+    // Assignments can reference role definitions scoped to a management group or
+    // resource group, which won't appear in the subscription-scope list above.
+    // Resolve any missing definition directly so privileged principals aren't
+    // undercounted. Cache by id to avoid refetching shared definitions.
+    const resolvedDefs = new Map<string, RoleDefinition>();
+    const resolveDef = async (
+      roleDefinitionId: string,
+    ): Promise<RoleDefinition | null> => {
+      const cached = defMap.get(roleDefinitionId) ?? resolvedDefs.get(roleDefinitionId);
+      if (cached) return cached;
+      try {
+        const def = await ctx.fetch<RoleDefinition>(
+          `${roleDefinitionId}?api-version=2022-04-01`,
+        );
+        if (def?.properties) {
+          resolvedDefs.set(roleDefinitionId, def);
+          return def;
+        }
+        return null;
+      } catch (err) {
+        ctx.warn('Failed to resolve Azure role definition for assignment', {
+          roleDefinitionId,
+          error: err instanceof Error ? err.message : String(err),
+        });
+        return null;
+      }
+    };
+
+    const privileged: RoleAssignment[] = [];
+    let unresolvedAssignments = 0;
+    for (const a of assignments) {
+      const def = await resolveDef(a.properties.roleDefinitionId);
+      if (!def) {
+        // Could not classify this assignment's role — do not silently treat it
+        // as non-privileged (ERROR-READS-NEVER-SILENT-PASS).
+        unresolvedAssignments++;
+        continue;
+      }
+      if (defIsPrivileged(def)) privileged.push(a);
+    }
 
     let violations = 0;
+
+    if (unresolvedAssignments > 0) {
+      violations++;
+      ctx.fail({
+        title: 'Could not verify all role assignments',
+        description: `${unresolvedAssignments} role assignment(s) reference role definitions that could not be loaded (e.g. custom roles defined at management-group or resource-group scope), so their privilege level is unverified.`,
+        resourceType: 'azure-subscription',
+        resourceId: sub,
+        severity: 'medium',
+        remediation:
+          'Ensure the integration principal has read access to all role definitions in scope (including management-group and resource-group scopes), then re-run the check.',
+        evidence: { unresolvedAssignments },
+      });
+    }
 
     if (privileged.length > 5) {
       violations++;

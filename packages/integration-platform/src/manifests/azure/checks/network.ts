@@ -24,6 +24,7 @@ interface Nsg {
 
 const DB_PORTS = [3306, 5432, 1433, 27017];
 const WILDCARD_SOURCES = new Set(['*', '0.0.0.0/0', '::/0', 'Internet', 'Any']);
+const MAX_PORT = 65535;
 
 /** True if an NSG port token ('22', '20-30', '*') covers any of the target ports. */
 function portTokenCoversAny(token: string, targets: number[]): boolean {
@@ -36,6 +37,23 @@ function portTokenCoversAny(token: string, targets: number[]): boolean {
 }
 function portsCoverAny(ports: string[], targets: number[]): boolean {
   return ports.some((tok) => portTokenCoversAny(tok, targets));
+}
+
+/**
+ * True if an NSG port token represents "all ports": either the '*' wildcard or
+ * a numeric range spanning the full port space (e.g. '0-65535' or '1-65535').
+ */
+function portTokenIsAllPorts(token: string): boolean {
+  if (token === '*') return true;
+  const [loStr, hiStr] = token.split('-');
+  if (hiStr === undefined) return false;
+  const lo = Number(loStr);
+  const hi = Number(hiStr);
+  if (Number.isNaN(lo) || Number.isNaN(hi)) return false;
+  return lo <= 1 && hi >= MAX_PORT;
+}
+function portsCoverAllPorts(ports: string[]): boolean {
+  return ports.some((tok) => portTokenIsAllPorts(tok));
 }
 
 function ruleSources(r: SecurityRule): string[] {
@@ -85,7 +103,7 @@ export const nsgNoOpenPortsCheck: IntegrationCheck = {
         const proto = (rule.properties.protocol ?? '*').toLowerCase();
         const tcpish = proto === '*' || proto === 'tcp';
         const conditions: Array<{ when: boolean; label: string; severity: FindingSeverity }> = [
-          { when: ports.includes('*'), label: 'all ports', severity: 'critical' },
+          { when: portsCoverAllPorts(ports), label: 'all ports', severity: 'critical' },
           { when: tcpish && portsCoverAny(ports, [3389]), label: 'RDP (3389)', severity: 'critical' },
           { when: tcpish && portsCoverAny(ports, DB_PORTS), label: 'database ports', severity: 'critical' },
           { when: tcpish && portsCoverAny(ports, [22]), label: 'SSH (22)', severity: 'high' },

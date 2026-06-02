@@ -52,79 +52,89 @@ export const iamPrimitiveRolesCheck: IntegrationCheck = {
     }
 
     for (const projectId of projectIds) {
-      const projectBindings = await getBindings(
-        ctx,
-        `v3/projects/${encodeURIComponent(projectId)}`,
-      );
-      if (projectBindings === null) continue; // can't read project policy → no assertion
-
-      // Resolve the ancestry (folders/org) so inherited bindings are evaluated.
-      let hierarchyFullyEvaluated = true;
-      const scopes: Array<{ label: string; bindings: IamBinding[] }> = [
-        { label: `Project "${projectId}"`, bindings: projectBindings },
-      ];
       try {
-        const anc = await ctx.post<{
-          ancestor?: Array<{ resourceId?: { type?: string; id?: string } }>;
-        }>(`/v1/projects/${encodeURIComponent(projectId)}:getAncestry`, {});
-        for (const a of anc.ancestor ?? []) {
-          const type = a.resourceId?.type;
-          const id = a.resourceId?.id;
-          if (!id || type === 'project') continue;
-          const resource =
-            type === 'organization'
-              ? `v3/organizations/${id}`
-              : type === 'folder'
-                ? `v3/folders/${id}`
-                : null;
-          if (!resource) continue;
-          const bindings = await getBindings(ctx, resource);
-          if (bindings === null) {
-            hierarchyFullyEvaluated = false; // couldn't read this ancestor
-            continue;
-          }
-          scopes.push({ label: `${type} ${id}`, bindings });
-        }
-      } catch {
-        hierarchyFullyEvaluated = false;
-      }
+        const projectBindings = await getBindings(
+          ctx,
+          `v3/projects/${encodeURIComponent(projectId)}`,
+        );
+        if (projectBindings === null) continue; // can't read project policy → no assertion
 
-      let violations = 0;
-      for (const scope of scopes) {
-        for (const binding of scope.bindings) {
-          const severity = PRIMITIVE_ROLES[binding.role];
-          const members = binding.members ?? [];
-          if (severity && members.length > 0) {
-            violations++;
-            ctx.fail({
-              title: `Primitive role in use: ${binding.role}`,
-              description: `${scope.label} grants the primitive role "${binding.role}" to ${members.length} member(s). Primitive roles violate least privilege.`,
+        // Resolve the ancestry (folders/org) so inherited bindings are evaluated.
+        let hierarchyFullyEvaluated = true;
+        const scopes: Array<{ label: string; bindings: IamBinding[] }> = [
+          { label: `Project "${projectId}"`, bindings: projectBindings },
+        ];
+        try {
+          const anc = await ctx.post<{
+            ancestor?: Array<{ resourceId?: { type?: string; id?: string } }>;
+          }>(`/v1/projects/${encodeURIComponent(projectId)}:getAncestry`, {});
+          for (const a of anc.ancestor ?? []) {
+            const type = a.resourceId?.type;
+            const id = a.resourceId?.id;
+            if (!id || type === 'project') continue;
+            const resource =
+              type === 'organization'
+                ? `v3/organizations/${id}`
+                : type === 'folder'
+                  ? `v3/folders/${id}`
+                  : null;
+            if (!resource) continue;
+            const bindings = await getBindings(ctx, resource);
+            if (bindings === null) {
+              hierarchyFullyEvaluated = false; // couldn't read this ancestor
+              continue;
+            }
+            scopes.push({ label: `${type} ${id}`, bindings });
+          }
+        } catch {
+          hierarchyFullyEvaluated = false;
+        }
+
+        let violations = 0;
+        for (const scope of scopes) {
+          for (const binding of scope.bindings) {
+            const severity = PRIMITIVE_ROLES[binding.role];
+            const members = binding.members ?? [];
+            if (severity && members.length > 0) {
+              violations++;
+              ctx.fail({
+                title: `Primitive role in use: ${binding.role}`,
+                description: `${scope.label} grants the primitive role "${binding.role}" to ${members.length} member(s). Primitive roles violate least privilege.`,
+                resourceType: 'gcp-project',
+                resourceId: projectId,
+                severity,
+                remediation: `Replace "${binding.role}" bindings with least-privilege predefined or custom roles.`,
+                evidence: { projectId, scope: scope.label, role: binding.role, memberCount: members.length },
+              });
+            }
+          }
+        }
+
+        if (violations === 0) {
+          if (hierarchyFullyEvaluated) {
+            ctx.pass({
+              title: 'No primitive owner/editor roles (project + inherited)',
+              description: `Project "${projectId}" and its inherited folders/organization have no primitive (owner/editor) role bindings.`,
               resourceType: 'gcp-project',
               resourceId: projectId,
-              severity,
-              remediation: `Replace "${binding.role}" bindings with least-privilege predefined or custom roles.`,
-              evidence: { projectId, scope: scope.label, role: binding.role, memberCount: members.length },
+              evidence: { projectId, scope: 'project+inherited', inheritedBindingsEvaluated: true },
             });
+          } else {
+            // Inherited bindings couldn't be fully read — don't satisfy the task
+            // on incomplete data.
+            ctx.log(
+              `GCP IAM: inherited bindings for "${projectId}" not fully readable; not asserting a pass`,
+            );
           }
         }
-      }
-
-      if (violations === 0) {
-        if (hierarchyFullyEvaluated) {
-          ctx.pass({
-            title: 'No primitive owner/editor roles (project + inherited)',
-            description: `Project "${projectId}" and its inherited folders/organization have no primitive (owner/editor) role bindings.`,
-            resourceType: 'gcp-project',
-            resourceId: projectId,
-            evidence: { projectId, scope: 'project+inherited', inheritedBindingsEvaluated: true },
-          });
-        } else {
-          // Inherited bindings couldn't be fully read — don't satisfy the task
-          // on incomplete data.
-          ctx.log(
-            `GCP IAM: inherited bindings for "${projectId}" not fully readable; not asserting a pass`,
-          );
-        }
+      } catch (error) {
+        // One project's API error must not abort the whole check.
+        ctx.warn(
+          `GCP IAM: failed to evaluate primitive roles for "${projectId}": ${
+            error instanceof Error ? error.message : String(error)
+          }`,
+        );
+        continue;
       }
     }
   },

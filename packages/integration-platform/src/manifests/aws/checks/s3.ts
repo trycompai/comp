@@ -26,6 +26,8 @@ export interface S3BucketInfo {
   encryptionDetermined: boolean;
   /** bucket-level Block Public Access flags, or null when none configured */
   bucketBpa: BpaFlags | null;
+  /** false when bucket-level Block Public Access couldn't be read (error) → excluded from eval */
+  publicAccessDetermined: boolean;
 }
 
 const FLAG_KEYS: Array<keyof BpaFlags> = [
@@ -70,7 +72,9 @@ export function evaluateS3PublicAccess(
   buckets: S3BucketInfo[],
   accountBpa: BpaFlags | null,
 ): CheckOutcome[] {
-  return buckets.map((b) =>
+  return buckets
+    .filter((b) => b.publicAccessDetermined)
+    .map((b) =>
     isFullyBlocked(b.bucketBpa, accountBpa)
       ? {
           kind: 'pass',
@@ -107,6 +111,7 @@ async function gatherBuckets(
     let encrypted = false;
     let encryptionDetermined = true;
     let bucketBpa: BpaFlags | null = null;
+    let publicAccessDetermined = true;
 
     if (opts.encryption) {
       try {
@@ -135,11 +140,21 @@ async function gatherBuckets(
           blockPublicPolicy: Boolean(c?.BlockPublicPolicy),
           restrictPublicBuckets: Boolean(c?.RestrictPublicBuckets),
         };
-      } catch {
-        bucketBpa = null; // no bucket-level config
+      } catch (err) {
+        // "no bucket-level config" is a genuine finding (account-level may still
+        // cover it); any other error (AccessDenied/transient) is indeterminate →
+        // exclude from evaluation so we don't report a false public-access failure.
+        if (
+          err instanceof Error &&
+          /NoSuchPublicAccessBlockConfiguration/i.test(err.name)
+        ) {
+          bucketBpa = null; // no bucket-level config
+        } else {
+          publicAccessDetermined = false;
+        }
       }
     }
-    infos.push({ name, encrypted, encryptionDetermined, bucketBpa });
+    infos.push({ name, encrypted, encryptionDetermined, bucketBpa, publicAccessDetermined });
   }
   return infos;
 }

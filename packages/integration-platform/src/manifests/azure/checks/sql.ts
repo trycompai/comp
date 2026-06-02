@@ -133,9 +133,19 @@ export const sqlPublicAccessCheck: IntegrationCheck = {
           evidence: { server: s.name, publicNetworkAccess: s.properties?.publicNetworkAccess ?? null },
         });
       } else if (rules === null) {
-        // Public access not Enabled but firewall rules unreadable — can't assert
-        // a clean pass, so emit neither (the task simply isn't satisfied here).
-        continue;
+        // Public access not Enabled but firewall rules unreadable — can't assert a
+        // clean pass. Fail explicitly so the public-access task isn't falsely
+        // satisfied by other servers passing.
+        ctx.fail({
+          title: `Could not read SQL firewall rules: ${s.name}`,
+          description: `Unable to read firewall rules for SQL Server "${s.name}", so wide-open access cannot be ruled out.`,
+          resourceType: 'azure-sql-server',
+          resourceId: s.id,
+          severity: 'medium',
+          remediation:
+            'Grant read access to SQL firewall rules (Microsoft.Sql/servers/firewallRules/read) so public access can be verified.',
+          evidence: { server: s.name, publicNetworkAccess: s.properties?.publicNetworkAccess ?? null },
+        });
       } else {
         ctx.pass({
           title: `No public access: ${s.name}`,
@@ -171,7 +181,21 @@ export const sqlAuditingCheck: IntegrationCheck = {
           `${ARM_BASE}${s.id}/auditingSettings/default?api-version=2021-11-01`,
         )
         .catch(() => null);
-      if (auditing === null) continue; // couldn't read — don't assert pass/fail
+      if (auditing === null) {
+        // Couldn't read auditing settings — fail explicitly so the Monitoring
+        // task isn't falsely passed by other servers that read successfully.
+        ctx.fail({
+          title: `Could not read SQL auditing settings: ${s.name}`,
+          description: `Unable to read auditing settings for SQL Server "${s.name}", so auditing state cannot be verified.`,
+          resourceType: 'azure-sql-server',
+          resourceId: s.id,
+          severity: 'medium',
+          remediation:
+            'Grant read access to SQL auditing settings (Microsoft.Sql/servers/auditingSettings/read) so auditing can be verified.',
+          evidence: { server: s.name },
+        });
+        continue;
+      }
       if (auditing.properties?.state === 'Enabled') {
         ctx.pass({
           title: `Auditing enabled: ${s.name}`,

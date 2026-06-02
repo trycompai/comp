@@ -11,8 +11,8 @@ export async function resolveAzureSubscriptionId(
   ctx: CheckContext,
 ): Promise<string | null> {
   const configured = ctx.variables.subscription_id;
-  if (typeof configured === 'string' && configured.length > 0) {
-    return configured;
+  if (typeof configured === 'string' && configured.trim().length > 0) {
+    return configured.trim();
   }
   try {
     const data = await ctx.fetch<{

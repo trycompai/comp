@@ -124,7 +124,7 @@ describe('GCP IAM primitive roles check', () => {
 });
 
 describe('GCP Cloud Storage public-access check', () => {
-  it('fails buckets without uniform access / public-access-prevention', async () => {
+  it('fails a bucket with uniform bucket-level access disabled', async () => {
     const { failed } = await runCheck(storagePublicAccessCheck, {
       fetch: () => ({
         items: [
@@ -132,15 +132,34 @@ describe('GCP Cloud Storage public-access check', () => {
             name: 'b1',
             iamConfiguration: {
               uniformBucketLevelAccess: { enabled: false },
+              // 'inherited' may be enforced by an org policy — must NOT add a
+              // second false failure on top of the uniform-access finding.
               publicAccessPrevention: 'inherited',
             },
           },
         ],
       }),
     });
-    // both violations on the one bucket
-    expect(failed.map((f) => f.title).join(' ')).toMatch(/Uniform bucket-level access/);
-    expect(failed.map((f) => f.title).join(' ')).toMatch(/Public access prevention/);
+    expect(failed).toHaveLength(1);
+    expect(failed[0]!.title).toMatch(/Uniform bucket-level access/);
+  });
+
+  it('does not fail solely on publicAccessPrevention inherited (org policy may enforce)', async () => {
+    const { passed, failed } = await runCheck(storagePublicAccessCheck, {
+      fetch: () => ({
+        items: [
+          {
+            name: 'b1',
+            iamConfiguration: {
+              uniformBucketLevelAccess: { enabled: true },
+              publicAccessPrevention: 'inherited',
+            },
+          },
+        ],
+      }),
+    });
+    expect(failed).toHaveLength(0);
+    expect(passed).toHaveLength(1);
   });
 
   it('passes when all buckets are locked down', async () => {

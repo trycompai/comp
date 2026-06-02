@@ -101,19 +101,27 @@ interface ServiceCardProps {
  * count of evidence tasks the service maps to — it is NOT a toggle.
  */
 export function ServiceCard({ service, connectionId, orgId, slug }: ServiceCardProps) {
-  const { services } = useConnectionServices(connectionId);
+  const { services, isLoading, error } = useConnectionServices(connectionId);
   const isImplemented = service.implemented !== false;
   const liveService = services.find((s) => s.id === service.id);
   const inServiceList = Boolean(liveService);
   const isEnabled = liveService?.enabled ?? false;
-  // Services not in the connection's toggle list (e.g. AWS baseline services)
-  // are always scanned — don't render them as "Scanning off".
-  const scanningOn = !inServiceList || isEnabled;
-  const scanningLabel = !inServiceList
-    ? 'Always scanned'
-    : isEnabled
-      ? 'Scanning on'
-      : 'Scanning off';
+  // Don't assert a scan status until the connection's live services have
+  // loaded. A service absent from the loaded list (e.g. AWS baseline services)
+  // is always scanned — but only treat "absent" as "always scanned" once the
+  // fetch has actually succeeded.
+  const servicesLoaded = Boolean(connectionId) && !isLoading && !error;
+  let scanningOn = false;
+  let scanningLabel: string;
+  if (!servicesLoaded) {
+    scanningLabel = error ? 'Status unavailable' : 'Checking status…';
+  } else if (!inServiceList) {
+    scanningOn = true;
+    scanningLabel = 'Always scanned';
+  } else {
+    scanningOn = isEnabled;
+    scanningLabel = isEnabled ? 'Scanning on' : 'Scanning off';
+  }
   const taskCount = service.mappedTasks?.length ?? 0;
 
   const href =

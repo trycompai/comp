@@ -33,42 +33,50 @@ export const cloudSqlBackupsCheck: IntegrationCheck = {
     }
 
     for (const projectId of projectIds) {
-      const instances = await gcpListItems<SqlInstance>(
-        ctx,
-        `https://sqladmin.googleapis.com/v1/projects/${encodeURIComponent(projectId)}/instances`,
-      );
-      if (instances.length === 0) continue;
+      try {
+        const instances = await gcpListItems<SqlInstance>(
+          ctx,
+          `https://sqladmin.googleapis.com/v1/projects/${encodeURIComponent(projectId)}/instances`,
+        );
+        if (instances.length === 0) continue;
 
-      for (const inst of instances) {
-        // Read replicas / on-prem instances can't configure their own backups
-        // (replicas are protected by the primary's backups) — don't fail them.
-        if (
-          inst.masterInstanceName ||
-          (inst.instanceType && inst.instanceType !== 'CLOUD_SQL_INSTANCE')
-        ) {
-          continue;
+        for (const inst of instances) {
+          // Read replicas / on-prem instances can't configure their own backups
+          // (replicas are protected by the primary's backups) — don't fail them.
+          if (
+            inst.masterInstanceName ||
+            (inst.instanceType && inst.instanceType !== 'CLOUD_SQL_INSTANCE')
+          ) {
+            continue;
+          }
+          const enabled = inst.settings?.backupConfiguration?.enabled === true;
+          if (enabled) {
+            ctx.pass({
+              title: `Automated backups enabled: ${inst.name}`,
+              description: `Cloud SQL instance "${inst.name}" has automated backups enabled.`,
+              resourceType: 'gcp-cloud-sql-instance',
+              resourceId: `${projectId}/${inst.name}`,
+              evidence: { projectId, instance: inst.name },
+            });
+          } else {
+            ctx.fail({
+              title: `Automated backups disabled: ${inst.name}`,
+              description: `Cloud SQL instance "${inst.name}" does not have automated backups enabled.`,
+              resourceType: 'gcp-cloud-sql-instance',
+              resourceId: `${projectId}/${inst.name}`,
+              severity: 'medium',
+              remediation:
+                'Enable automated backups (and point-in-time recovery) in the instance backup settings.',
+              evidence: { projectId, instance: inst.name },
+            });
+          }
         }
-        const enabled = inst.settings?.backupConfiguration?.enabled === true;
-        if (enabled) {
-          ctx.pass({
-            title: `Automated backups enabled: ${inst.name}`,
-            description: `Cloud SQL instance "${inst.name}" has automated backups enabled.`,
-            resourceType: 'gcp-cloud-sql-instance',
-            resourceId: inst.name,
-            evidence: { projectId, instance: inst.name },
-          });
-        } else {
-          ctx.fail({
-            title: `Automated backups disabled: ${inst.name}`,
-            description: `Cloud SQL instance "${inst.name}" does not have automated backups enabled.`,
-            resourceType: 'gcp-cloud-sql-instance',
-            resourceId: inst.name,
-            severity: 'medium',
-            remediation:
-              'Enable automated backups (and point-in-time recovery) in the instance backup settings.',
-            evidence: { projectId, instance: inst.name },
-          });
-        }
+      } catch (err) {
+        ctx.warn(
+          `GCP Cloud SQL backups check: failed to evaluate project ${projectId} — skipping`,
+          { projectId, error: err instanceof Error ? err.message : String(err) },
+        );
+        continue;
       }
     }
   },

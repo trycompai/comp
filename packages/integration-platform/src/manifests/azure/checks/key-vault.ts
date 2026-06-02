@@ -38,7 +38,7 @@ export const keyVaultProtectionCheck: IntegrationCheck = {
       const p = v.properties ?? {};
       const issues: string[] = [];
       let severity: FindingSeverity = 'medium';
-      if (!p.enableSoftDelete) {
+      if (p.enableSoftDelete === false) {
         issues.push('soft delete disabled');
         severity = 'high';
       }

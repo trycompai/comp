@@ -47,6 +47,10 @@ export function evaluateSecurityGroups(sgs: SgInfo[]): CheckOutcome[] {
         });
         continue;
       }
+      // SSH/RDP findings only apply to TCP rules. A non-TCP rule (udp/icmp) on
+      // port 22/3389 must not be misclassified as SSH/RDP. The all-protocols
+      // ('-1') case is handled above as critical.
+      if (perm.ipProtocol !== 'tcp' && perm.ipProtocol !== '6') continue;
       for (const { port, label, severity } of SENSITIVE_PORTS) {
         if (permCoversPort(perm, port)) {
           bad = true;

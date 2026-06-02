@@ -124,6 +124,20 @@ export const monitorLoggingAlertingCheck: IntegrationCheck = {
           evidence: {},
         });
       }
+    } else {
+      // Diagnostic settings unreadable — fail rather than let the alerting half
+      // pass the shared Monitoring task on incomplete evaluation.
+      ctx.fail({
+        title: 'Could not read diagnostic settings',
+        description:
+          'Subscription diagnostic settings could not be read, so log export was not verified.',
+        resourceType: 'azure-subscription',
+        resourceId: sub,
+        severity: 'medium',
+        remediation:
+          'Grant Monitoring Reader (or Reader) so diagnostic settings can be evaluated.',
+        evidence: {},
+      });
     }
 
     if (!evaluated) {

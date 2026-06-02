@@ -1,8 +1,7 @@
 'use client';
 
 import { useConnectionServices } from '@/hooks/use-integration-platform';
-import { Breadcrumb, Button, Stack } from '@trycompai/design-system';
-import { ArrowRight } from '@trycompai/design-system/icons';
+import { Breadcrumb, Stack } from '@trycompai/design-system';
 import type {
   ConnectionListItemResponse,
   IntegrationProviderResponse,
@@ -10,6 +9,7 @@ import type {
 import Link from 'next/link';
 import { useMemo, useState } from 'react';
 import { toast } from 'sonner';
+import { EvidenceTaskRow } from '../../../components/EvidenceTaskRow';
 
 interface ServiceMeta {
   id: string;
@@ -31,6 +31,7 @@ interface ServiceDetailViewProps {
   service: ServiceMeta;
   connections: ConnectionListItemResponse[];
   connectionId: string | null;
+  connectionsErrored: boolean;
   taskTemplates: TaskTemplate[];
   tasksErrored: boolean;
   orgId: string;
@@ -42,6 +43,7 @@ export function ServiceDetailView({
   service,
   connections,
   connectionId,
+  connectionsErrored,
   taskTemplates,
   tasksErrored,
   orgId,
@@ -60,11 +62,17 @@ export function ServiceDetailView({
     return active?.id ?? null;
   }, [connectionId, connections]);
 
-  const { services: connectionServices, updateServices } =
-    useConnectionServices(effectiveConnectionId);
+  const {
+    services: connectionServices,
+    updateServices,
+    isLoading: servicesLoading,
+    error: servicesError,
+  } = useConnectionServices(effectiveConnectionId);
   const liveService = connectionServices.find((s) => s.id === service.id);
   const isEnabled = liveService?.enabled ?? false;
   const isImplemented = service.implemented !== false;
+  const servicesLoaded =
+    Boolean(effectiveConnectionId) && !servicesLoading && !servicesError;
   // Only services present in the connection's live service list can be toggled.
   // (e.g. AWS baseline services are always scanned and aren't in the toggle list.)
   const isManageable = Boolean(liveService);
@@ -126,23 +134,37 @@ export function ServiceDetailView({
               controls scanning only — it&apos;s separate from the evidence below.
             </p>
           </div>
-          <button
-            type="button"
-            role="switch"
-            aria-checked={isEnabled}
-            aria-label={`Toggle Cloud Tests scanning for ${service.name}`}
-            disabled={toggling || !effectiveConnectionId || !isImplemented || !isManageable}
-            onClick={() => void handleToggle()}
-            className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer items-center rounded-full transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${
-              isEnabled ? 'bg-primary' : 'bg-muted-foreground/30'
-            }`}
-          >
-            <span
-              className={`inline-block h-3.5 w-3.5 rounded-full bg-white shadow-sm transition-transform ${
-                isEnabled ? 'translate-x-[18px]' : 'translate-x-[3px]'
+          {connectionsErrored ? (
+            <span className="shrink-0 rounded-full bg-destructive/10 px-2.5 py-1 text-xs text-destructive">
+              Couldn’t load connection
+            </span>
+          ) : isManageable ? (
+            <button
+              type="button"
+              role="switch"
+              aria-checked={isEnabled}
+              aria-label={`Toggle Cloud Tests scanning for ${service.name}`}
+              disabled={toggling || !effectiveConnectionId || !isImplemented}
+              onClick={() => void handleToggle()}
+              className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer items-center rounded-full transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${
+                isEnabled ? 'bg-primary' : 'bg-muted-foreground/30'
               }`}
-            />
-          </button>
+            >
+              <span
+                className={`inline-block h-3.5 w-3.5 rounded-full bg-white shadow-sm transition-transform ${
+                  isEnabled ? 'translate-x-[18px]' : 'translate-x-[3px]'
+                }`}
+              />
+            </button>
+          ) : (
+            <span className="shrink-0 rounded-full bg-muted px-2.5 py-1 text-xs text-muted-foreground">
+              {servicesLoaded
+                ? 'Always scanned'
+                : servicesError
+                  ? 'Status unavailable'
+                  : 'Checking…'}
+            </span>
+          )}
         </div>
       </section>
 
@@ -168,39 +190,16 @@ export function ServiceDetailView({
           </p>
         ) : (
           <div className="divide-y">
-            {mappedTasks.map((mapped) => {
-              const task = taskByTemplateId.get(mapped.id);
-              return (
-                <div
-                  key={mapped.id}
-                  className="flex items-center justify-between gap-4 px-4 py-3"
-                >
-                  <div className="min-w-0">
-                    <p className="truncate text-sm font-medium">
-                      {task?.name ?? mapped.name}
-                    </p>
-                    <p className="mt-0.5 line-clamp-2 text-xs text-muted-foreground">
-                      {task?.description ||
-                        'Mapped to this template, but the task is not in this organization yet.'}
-                    </p>
-                  </div>
-                  {task ? (
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      render={<Link href={`/${orgId}/tasks/${task.taskId}`} />}
-                      iconRight={<ArrowRight size={14} />}
-                    >
-                      View task
-                    </Button>
-                  ) : (
-                    <span className="shrink-0 text-xs text-muted-foreground">
-                      {tasksErrored ? 'Couldn’t load tasks' : 'Not added'}
-                    </span>
-                  )}
-                </div>
-              );
-            })}
+            {mappedTasks.map((mapped) => (
+              <EvidenceTaskRow
+                key={mapped.id}
+                fallbackName={mapped.name}
+                task={taskByTemplateId.get(mapped.id)}
+                orgId={orgId}
+                buttonLabel="View task"
+                tasksErrored={tasksErrored}
+              />
+            ))}
           </div>
         )}
       </section>

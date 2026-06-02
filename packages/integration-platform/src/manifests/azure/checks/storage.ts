@@ -94,9 +94,13 @@ export const storagePublicAccessCheck: IntegrationCheck = {
     for (const a of accounts) {
       const p = a.properties ?? {};
       const publicBlob = p.allowBlobPublicAccess === true;
-      // publicNetworkAccess 'Disabled' overrides the firewall default action.
+      // publicNetworkAccess 'Disabled' or 'SecuredByPerimeter' (network security
+      // perimeter) overrides the firewall default action and is not public.
+      const networkRestricted =
+        p.publicNetworkAccess === 'Disabled' ||
+        p.publicNetworkAccess === 'SecuredByPerimeter';
       const publicNetwork =
-        p.publicNetworkAccess !== 'Disabled' &&
+        !networkRestricted &&
         (p.publicNetworkAccess === 'Enabled' ||
           p.networkAcls?.defaultAction === 'Allow');
       if (publicBlob || publicNetwork) {

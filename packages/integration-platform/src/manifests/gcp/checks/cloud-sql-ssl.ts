@@ -35,45 +35,54 @@ export const cloudSqlSslCheck: IntegrationCheck = {
     }
 
     for (const projectId of projectIds) {
-      const instances = await gcpListItems<SqlInstance>(
-        ctx,
-        `https://sqladmin.googleapis.com/v1/projects/${encodeURIComponent(projectId)}/instances`,
-      );
-      if (instances.length === 0) continue;
+      try {
+        const instances = await gcpListItems<SqlInstance>(
+          ctx,
+          `https://sqladmin.googleapis.com/v1/projects/${encodeURIComponent(projectId)}/instances`,
+        );
+        if (instances.length === 0) continue;
 
-      for (const inst of instances) {
-        const ip = inst.settings?.ipConfiguration;
-        // sslMode is authoritative when present; fall back to legacy requireSsl.
-        const sslEnforced =
-          typeof ip?.sslMode === 'string'
-            ? SECURE_SSL_MODES.has(ip.sslMode)
-            : ip?.requireSsl === true;
+        for (const inst of instances) {
+          const ip = inst.settings?.ipConfiguration;
+          // sslMode is authoritative when present; fall back to legacy requireSsl.
+          const sslEnforced =
+            typeof ip?.sslMode === 'string'
+              ? SECURE_SSL_MODES.has(ip.sslMode)
+              : ip?.requireSsl === true;
 
-        if (sslEnforced) {
-          ctx.pass({
-            title: `SSL/TLS enforced: ${inst.name}`,
-            description: `Cloud SQL instance "${inst.name}" requires encrypted connections.`,
-            resourceType: 'gcp-cloud-sql-instance',
-            resourceId: inst.name,
-            evidence: {
-              projectId,
-              instance: inst.name,
-              sslMode: ip?.sslMode ?? null,
-              requireSsl: ip?.requireSsl ?? null,
-            },
-          });
-        } else {
-          ctx.fail({
-            title: `SSL/TLS not enforced: ${inst.name}`,
-            description: `Cloud SQL instance "${inst.name}" does not require SSL/TLS for connections.`,
-            resourceType: 'gcp-cloud-sql-instance',
-            resourceId: inst.name,
-            severity: 'medium',
-            remediation:
-              'Set the SSL mode to ENCRYPTED_ONLY (or require trusted client certificates) to enforce encrypted connections.',
-            evidence: { projectId, instance: inst.name },
-          });
+          if (sslEnforced) {
+            ctx.pass({
+              title: `SSL/TLS enforced: ${inst.name}`,
+              description: `Cloud SQL instance "${inst.name}" requires encrypted connections.`,
+              resourceType: 'gcp-cloud-sql-instance',
+              resourceId: `${projectId}/${inst.name}`,
+              evidence: {
+                projectId,
+                instance: inst.name,
+                sslMode: ip?.sslMode ?? null,
+                requireSsl: ip?.requireSsl ?? null,
+              },
+            });
+          } else {
+            ctx.fail({
+              title: `SSL/TLS not enforced: ${inst.name}`,
+              description: `Cloud SQL instance "${inst.name}" does not require SSL/TLS for connections.`,
+              resourceType: 'gcp-cloud-sql-instance',
+              resourceId: `${projectId}/${inst.name}`,
+              severity: 'medium',
+              remediation:
+                'Set the SSL mode to ENCRYPTED_ONLY (or require trusted client certificates) to enforce encrypted connections.',
+              evidence: { projectId, instance: inst.name },
+            });
+          }
         }
+      } catch (err) {
+        ctx.warn(
+          `GCP Cloud SQL SSL check: failed to evaluate project "${projectId}" — ${
+            err instanceof Error ? err.message : String(err)
+          }`,
+        );
+        continue;
       }
     }
   },

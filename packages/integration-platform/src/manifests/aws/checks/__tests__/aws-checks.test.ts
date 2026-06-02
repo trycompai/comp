@@ -3,7 +3,12 @@ import { evaluateCloudTrail } from '../cloudtrail';
 import { evaluateSecurityGroups } from '../ec2';
 import { evaluateIamAccount } from '../iam';
 import { evaluateKmsRotation } from '../kms';
-import { evaluateRdsBackups, evaluateRdsEncryption } from '../rds';
+import {
+  evaluateRdsBackups,
+  evaluateRdsClusterBackups,
+  evaluateRdsClusterEncryption,
+  evaluateRdsEncryption,
+} from '../rds';
 import { evaluateS3Encryption, evaluateS3PublicAccess } from '../s3';
 
 const kinds = (os: { kind: string }[]) => os.map((o) => o.kind);
@@ -42,10 +47,10 @@ const ALL_BLOCKED = {
 describe('AWS S3 evaluators', () => {
   it('encryption: pass when encrypted, fail (high) when not, skip indeterminate', () => {
     const out = evaluateS3Encryption([
-      { name: 'a', encrypted: true, encryptionDetermined: true, bucketBpa: null },
-      { name: 'b', encrypted: false, encryptionDetermined: true, bucketBpa: null },
+      { name: 'a', encrypted: true, encryptionDetermined: true, publicAccessDetermined: true, bucketBpa: null },
+      { name: 'b', encrypted: false, encryptionDetermined: true, publicAccessDetermined: true, bucketBpa: null },
       // read error → indeterminate → excluded (no false high finding)
-      { name: 'c', encrypted: false, encryptionDetermined: false, bucketBpa: null },
+      { name: 'c', encrypted: false, encryptionDetermined: false, publicAccessDetermined: true, bucketBpa: null },
     ]);
     expect(out).toHaveLength(2);
     expect(out[0]!.kind).toBe('pass');
@@ -56,8 +61,8 @@ describe('AWS S3 evaluators', () => {
   it('public access: bucket-level all-blocked passes, missing fails', () => {
     const out = evaluateS3PublicAccess(
       [
-        { name: 'a', encrypted: false, encryptionDetermined: true, bucketBpa: ALL_BLOCKED },
-        { name: 'b', encrypted: false, encryptionDetermined: true, bucketBpa: null },
+        { name: 'a', encrypted: false, encryptionDetermined: true, publicAccessDetermined: true, bucketBpa: ALL_BLOCKED },
+        { name: 'b', encrypted: false, encryptionDetermined: true, publicAccessDetermined: true, bucketBpa: null },
       ],
       null,
     );
@@ -66,7 +71,7 @@ describe('AWS S3 evaluators', () => {
 
   it('public access: account-level BPA covers buckets lacking bucket config', () => {
     const out = evaluateS3PublicAccess(
-      [{ name: 'b', encrypted: false, encryptionDetermined: true, bucketBpa: null }],
+      [{ name: 'b', encrypted: false, encryptionDetermined: true, publicAccessDetermined: true, bucketBpa: null }],
       ALL_BLOCKED,
     );
     expect(out[0]!.kind).toBe('pass');
@@ -120,6 +125,18 @@ describe('AWS EC2 security-group evaluator', () => {
     expect(out).toHaveLength(1);
     expect(out[0]!.kind).toBe('pass');
   });
+
+  it('does not flag a UDP rule on a TCP-only sensitive port (22)', () => {
+    const out = evaluateSecurityGroups([
+      {
+        groupId: 'sg-udp',
+        region: 'us-east-1',
+        permissions: [{ ipProtocol: 'udp', fromPort: 22, toPort: 22, cidrs: ['0.0.0.0/0'] }],
+      },
+    ]);
+    expect(out).toHaveLength(1);
+    expect(out[0]!.kind).toBe('pass');
+  });
 });
 
 describe('AWS RDS evaluators', () => {
@@ -139,6 +156,25 @@ describe('AWS RDS evaluators', () => {
       { id: 'aur', region: 'us-east-1', encrypted: true, backupRetentionDays: 0, engine: 'aurora-mysql' },
     ]);
     expect(kinds(out)).toEqual(['pass', 'fail']); // aurora excluded, not failed
+  });
+
+  it('cluster encryption: Aurora evaluated at cluster level (pass/fail)', () => {
+    const out = evaluateRdsClusterEncryption([
+      { id: 'c1', region: 'us-east-1', encrypted: true, backupRetentionDays: 7, engine: 'aurora-postgresql' },
+      { id: 'c2', region: 'us-east-1', encrypted: false, backupRetentionDays: 7, engine: 'aurora-mysql' },
+    ]);
+    expect(out[0]!.kind).toBe('pass');
+    expect(out[1]!.kind).toBe('fail');
+    expect(out[1]!.severity).toBe('high');
+  });
+
+  it('cluster backups: Aurora retention evaluated at cluster level (pass/fail)', () => {
+    const out = evaluateRdsClusterBackups([
+      { id: 'c1', region: 'us-east-1', encrypted: true, backupRetentionDays: 7, engine: 'aurora-mysql' },
+      { id: 'c2', region: 'us-east-1', encrypted: true, backupRetentionDays: 0, engine: 'aurora-mysql' },
+    ]);
+    expect(out[0]!.kind).toBe('pass');
+    expect(out[1]!.kind).toBe('fail');
   });
 });
 
@@ -186,5 +222,14 @@ describe('AWS CloudTrail evaluator', () => {
     ]);
     expect(out[0]!.kind).toBe('fail');
     expect(out[0]!.severity).toBe('medium');
+  });
+
+  it('emits nothing when an otherwise-compliant trail status is unreadable', () => {
+    // multi-region + validated, but GetTrailStatus failed → loggingKnown=false.
+    // We must not assert a false "not logging" failure on unverified data.
+    const out = evaluateCloudTrail([
+      { name: 't1', multiRegion: true, logValidation: true, logging: false, loggingKnown: false },
+    ]);
+    expect(out).toHaveLength(0);
   });
 });

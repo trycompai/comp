@@ -218,6 +218,24 @@ describe('Azure NSG check', () => {
     );
     expect(range.failed.some((f) => f.title.match(/SSH/))).toBe(true);
   });
+
+  it('treats an explicit all-ports range (0-65535) as wide open', async () => {
+    const { failed } = await run(
+      nsgNoOpenPortsCheck,
+      nsg({ name: 'rall', properties: { direction: 'Inbound', access: 'Allow', protocol: 'Tcp', sourceAddressPrefix: '*', destinationPortRange: '0-65535', priority: 100 } }),
+    );
+    // covers SSH + RDP just like '*'
+    expect(failed.some((f) => f.severity === 'critical')).toBe(true);
+  });
+
+  it('does not flag a UDP rule on a TCP-only sensitive port', async () => {
+    const { passed, failed } = await run(
+      nsgNoOpenPortsCheck,
+      nsg({ name: 'rudp', properties: { direction: 'Inbound', access: 'Allow', protocol: 'Udp', sourceAddressPrefix: '*', destinationPortRange: '22', priority: 100 } }),
+    );
+    expect(failed).toHaveLength(0);
+    expect(passed).toHaveLength(1);
+  });
 });
 
 describe('Azure RBAC (entra) check', () => {

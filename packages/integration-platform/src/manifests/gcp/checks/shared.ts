@@ -9,8 +9,14 @@ import type { CheckContext } from '../../../types';
  */
 export async function resolveGcpProjectIds(ctx: CheckContext): Promise<string[]> {
   const selected = ctx.variables.project_ids;
-  if (Array.isArray(selected) && selected.length > 0) {
-    return selected.filter((p): p is string => typeof p === 'string');
+  if (Array.isArray(selected)) {
+    // Sanitize: keep only non-empty, trimmed string ids. If nothing valid
+    // remains, fall through to discovery rather than returning [] and skipping.
+    const cleaned = selected
+      .filter((p): p is string => typeof p === 'string')
+      .map((p) => p.trim())
+      .filter((p) => p.length > 0);
+    if (cleaned.length > 0) return cleaned;
   }
 
   try {
@@ -61,6 +67,12 @@ export async function gcpListItems<T>(
       typeof data.nextPageToken === 'string' ? data.nextPageToken : undefined;
     pages++;
   } while (pageToken && pages < 50);
+  if (pageToken) {
+    ctx.warn('GCP list hit the page cap; results may be truncated', {
+      url,
+      pages,
+    });
+  }
   return out;
 }
 

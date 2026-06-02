@@ -1,6 +1,7 @@
 import {
   CloudTrailClient,
   DescribeTrailsCommand,
+  type DescribeTrailsCommandOutput,
   GetTrailStatusCommand,
 } from '@aws-sdk/client-cloudtrail';
 import { TASK_TEMPLATES } from '../../../task-mappings';
@@ -13,10 +14,18 @@ export interface TrailInfo {
   logValidation: boolean;
   /** GetTrailStatus.IsLogging — a trail can be configured but stopped. */
   logging: boolean;
+  /**
+   * Whether the logging status was actually read. Defaults to known/true when
+   * omitted. When a multi-region + validated candidate trail's status could not
+   * be read, this is set to false so it is NOT misreported as logging=false.
+   */
+  loggingKnown?: boolean;
 }
 
 export function evaluateCloudTrail(trails: TrailInfo[]): CheckOutcome[] {
-  const good = trails.find((t) => t.multiRegion && t.logValidation && t.logging);
+  const good = trails.find(
+    (t) => t.multiRegion && t.logValidation && t.logging && t.loggingKnown !== false,
+  );
   if (good) {
     return [
       {
@@ -28,6 +37,15 @@ export function evaluateCloudTrail(trails: TrailInfo[]): CheckOutcome[] {
         evidence: { trail: good.name },
       },
     ];
+  }
+  // No confirmed-good trail. If an otherwise-compliant (multi-region + validated)
+  // candidate exists whose logging status could not be read, we cannot assert a
+  // failure on unverified data — emit nothing rather than a false negative.
+  const unverifiableCandidate = trails.some(
+    (t) => t.multiRegion && t.logValidation && t.loggingKnown === false,
+  );
+  if (unverifiableCandidate) {
+    return [];
   }
   if (trails.length === 0) {
     return [
@@ -71,31 +89,64 @@ export const cloudTrailEnabledCheck: IntegrationCheck = {
       ctx.log('AWS CloudTrail check: connection not configured — skipping');
       return;
     }
-    const ct = new CloudTrailClient({
-      region: session.regions[0],
-      credentials: session.credentials,
-    });
-    const resp = await ct.send(new DescribeTrailsCommand({}));
-    const trailList = resp.trailList ?? [];
 
+    // A single-region trail is only returned by DescribeTrails in its home
+    // region, so scanning just one region can miss trails and misreport "No
+    // CloudTrail configured". Describe trails in every selected region and
+    // dedupe by TrailARN before evaluating.
+    const seenArns = new Set<string>();
     const trails: TrailInfo[] = [];
-    for (const t of trailList) {
-      const multiRegion = t.IsMultiRegionTrail === true;
-      const logValidation = t.LogFileValidationEnabled === true;
-      let logging = false;
-      // Logging status only matters for otherwise-compliant trails.
-      if (multiRegion && logValidation && t.TrailARN) {
-        try {
-          const status = await ct.send(new GetTrailStatusCommand({ Name: t.TrailARN }));
-          logging = status.IsLogging === true;
-        } catch (err) {
-          ctx.log(
-            `CloudTrail: could not read logging status for ${t.Name ?? t.TrailARN}: ${err instanceof Error ? err.message : String(err)}`,
-          );
-        }
+
+    for (const region of session.regions) {
+      const ct = new CloudTrailClient({
+        region,
+        credentials: session.credentials,
+      });
+
+      let trailList: DescribeTrailsCommandOutput['trailList'];
+      try {
+        const resp = await ct.send(new DescribeTrailsCommand({}));
+        trailList = resp.trailList;
+      } catch (err) {
+        ctx.log(
+          `CloudTrail: could not list trails in ${region}: ${err instanceof Error ? err.message : String(err)}`,
+        );
+        continue;
       }
-      trails.push({ name: t.Name ?? 'unknown', multiRegion, logValidation, logging });
+
+      for (const t of trailList ?? []) {
+        const arnKey = t.TrailARN ?? `${region}/${t.Name ?? 'unknown'}`;
+        if (seenArns.has(arnKey)) continue;
+        seenArns.add(arnKey);
+
+        const multiRegion = t.IsMultiRegionTrail === true;
+        const logValidation = t.LogFileValidationEnabled === true;
+        let logging = false;
+        // Track whether the logging status was actually read so a failed
+        // GetTrailStatus is not misreported as logging=false.
+        let loggingKnown = true;
+        // Logging status only matters for otherwise-compliant trails.
+        if (multiRegion && logValidation && t.TrailARN) {
+          try {
+            const status = await ct.send(new GetTrailStatusCommand({ Name: t.TrailARN }));
+            logging = status.IsLogging === true;
+          } catch (err) {
+            loggingKnown = false;
+            ctx.log(
+              `CloudTrail: could not read logging status for ${t.Name ?? t.TrailARN}: ${err instanceof Error ? err.message : String(err)}`,
+            );
+          }
+        }
+        trails.push({
+          name: t.Name ?? 'unknown',
+          multiRegion,
+          logValidation,
+          logging,
+          loggingKnown,
+        });
+      }
     }
+
     emitOutcomes(ctx, evaluateCloudTrail(trails));
   },
 };
