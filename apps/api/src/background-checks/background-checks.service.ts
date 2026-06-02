@@ -290,6 +290,64 @@ export class BackgroundChecksService {
     });
   }
 
+  async retryForMember({
+    organizationId,
+    memberId,
+    requesterEmail,
+  }: {
+    organizationId: string;
+    memberId: string;
+    requesterEmail: string;
+  }) {
+    const existing = await this.getForMember({ organizationId, memberId });
+    if (!existing) {
+      throw new NotFoundException('Background check not found.');
+    }
+    this.assertTransitionAllowed('retry', existing.status);
+
+    const attempt = existing.rerunCount + 1;
+    const where = { organizationId_memberId: { organizationId, memberId } };
+
+    // Free retry: no charge. Create a fresh Identity check first (varied
+    // idempotency key) so a late webhook from the prior check cannot match
+    // the row after we swap in the new id.
+    let identityResult;
+    try {
+      identityResult = await this.identityClient.createBackgroundCheck({
+        organizationId,
+        memberId,
+        employeeName: existing.employeeName,
+        employeeEmail: existing.employeeEmail,
+        requesterEmail,
+        attempt,
+      });
+    } catch (error) {
+      await db.backgroundCheckRequest.update({
+        where,
+        data: { status: BackgroundCheckStatus.failed, lastSyncedAt: new Date() },
+      });
+      throw error;
+    }
+
+    return db.backgroundCheckRequest.update({
+      where,
+      data: {
+        identityBackgroundCheckId: identityResult.id,
+        candidateUrl: identityResult.candidateUrl ?? null,
+        status: identityResult.status,
+        rerunCount: attempt,
+        identityStatus: null,
+        employmentStatus: null,
+        referenceStatus: null,
+        rightToWorkStatus: null,
+        adjudicationStatus: null,
+        reportSnapshot: Prisma.JsonNull,
+        reportSyncedAt: null,
+        lastSyncedAt: new Date(),
+      },
+    });
+  }
+
   private assertTransitionAllowed(
     action: 'cancel' | 'retry',
     status: BackgroundCheckStatus,

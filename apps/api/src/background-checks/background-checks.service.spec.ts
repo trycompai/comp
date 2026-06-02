@@ -3,7 +3,7 @@ import { BillingService } from '../billing/billing.service';
 import { BackgroundCheckBillingService } from './background-check-billing.service';
 import { BackgroundCheckPaymentService } from './background-check-payment.service';
 import { BackgroundChecksService } from './background-checks.service';
-import { db } from '@db';
+import { db, Prisma } from '@db';
 
 jest.mock('@db', () => {
   class PrismaClientKnownRequestError extends Error {
@@ -27,6 +27,7 @@ jest.mock('@db', () => {
     },
     Prisma: {
       PrismaClientKnownRequestError,
+      JsonNull: 'JsonNull',
     },
     db: {
       backgroundCheckRequest: {
@@ -525,6 +526,105 @@ describe('background checks', () => {
       await expect(
         service.cancelForMember({ organizationId: 'org_1', memberId: 'mem_1' }),
       ).rejects.toThrow('Background check not found.');
+    });
+  });
+
+  describe('retryForMember', () => {
+    it('resubmits a failed check for free with an incremented attempt key', async () => {
+      mockAsync<Awaited<ReturnType<typeof db.backgroundCheckRequest.findUnique>>>(
+        mockedDb.backgroundCheckRequest.findUnique,
+      ).mockResolvedValueOnce({
+        id: 'bcr_1',
+        status: 'failed',
+        rerunCount: 1,
+        employeeName: 'Ada Lovelace',
+        employeeEmail: 'ada@example.com',
+      } as Awaited<ReturnType<typeof db.backgroundCheckRequest.findUnique>>);
+      mockAsync<Awaited<ReturnType<typeof db.backgroundCheckRequest.update>>>(
+        mockedDb.backgroundCheckRequest.update,
+      ).mockResolvedValueOnce({ id: 'bcr_1', status: 'invited' } as Awaited<
+        ReturnType<typeof db.backgroundCheckRequest.update>
+      >);
+
+      const identityClient = {
+        createBackgroundCheck: jest
+          .fn()
+          .mockResolvedValue({ id: 'check_new', status: 'invited', candidateUrl: 'https://c/x' }),
+      };
+      const paymentService = { charge: jest.fn(), refund: jest.fn() };
+      const service = new BackgroundChecksService(
+        identityClient as unknown as BackgroundCheckIdentityClient,
+        paymentService as unknown as BackgroundCheckPaymentService,
+      );
+
+      await service.retryForMember({
+        organizationId: 'org_1',
+        memberId: 'mem_1',
+        requesterEmail: 'admin@example.com',
+      });
+
+      expect(paymentService.charge).not.toHaveBeenCalled();
+      expect(identityClient.createBackgroundCheck).toHaveBeenCalledWith(
+        expect.objectContaining({ memberId: 'mem_1', attempt: 2 }),
+      );
+      expect(mockedDb.backgroundCheckRequest.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            identityBackgroundCheckId: 'check_new',
+            status: 'invited',
+            rerunCount: 2,
+            identityStatus: null,
+            reportSnapshot: Prisma.JsonNull,
+            reportSyncedAt: null,
+          }),
+        }),
+      );
+    });
+
+    it('rejects retrying an in_progress check', async () => {
+      mockAsync<Awaited<ReturnType<typeof db.backgroundCheckRequest.findUnique>>>(
+        mockedDb.backgroundCheckRequest.findUnique,
+      ).mockResolvedValueOnce({ id: 'bcr_1', status: 'in_progress', rerunCount: 0 } as Awaited<
+        ReturnType<typeof db.backgroundCheckRequest.findUnique>
+      >);
+      const identityClient = { createBackgroundCheck: jest.fn() };
+      const service = new BackgroundChecksService(
+        identityClient as unknown as BackgroundCheckIdentityClient,
+        {} as unknown as BackgroundCheckPaymentService,
+      );
+      await expect(
+        service.retryForMember({ organizationId: 'org_1', memberId: 'mem_1', requesterEmail: 'a@b.c' }),
+      ).rejects.toThrow("Cannot retry a background check in 'in_progress' status.");
+      expect(identityClient.createBackgroundCheck).not.toHaveBeenCalled();
+    });
+
+    it('marks the check failed and rethrows when Identity errors', async () => {
+      mockAsync<Awaited<ReturnType<typeof db.backgroundCheckRequest.findUnique>>>(
+        mockedDb.backgroundCheckRequest.findUnique,
+      ).mockResolvedValueOnce({
+        id: 'bcr_1',
+        status: 'cancelled',
+        rerunCount: 0,
+        employeeName: 'Ada',
+        employeeEmail: 'ada@example.com',
+      } as Awaited<ReturnType<typeof db.backgroundCheckRequest.findUnique>>);
+      mockAsync<Awaited<ReturnType<typeof db.backgroundCheckRequest.update>>>(
+        mockedDb.backgroundCheckRequest.update,
+      ).mockResolvedValue({} as Awaited<ReturnType<typeof db.backgroundCheckRequest.update>>);
+      const identityClient = {
+        createBackgroundCheck: jest.fn().mockRejectedValue(new Error('identity down')),
+      };
+      const service = new BackgroundChecksService(
+        identityClient as unknown as BackgroundCheckIdentityClient,
+        { charge: jest.fn(), refund: jest.fn() } as unknown as BackgroundCheckPaymentService,
+      );
+
+      await expect(
+        service.retryForMember({ organizationId: 'org_1', memberId: 'mem_1', requesterEmail: 'a@b.c' }),
+      ).rejects.toThrow('identity down');
+      expect(mockedDb.backgroundCheckRequest.update).toHaveBeenCalledWith(
+        expect.objectContaining({ data: expect.objectContaining({ status: 'failed' }) }),
+      );
     });
   });
 
