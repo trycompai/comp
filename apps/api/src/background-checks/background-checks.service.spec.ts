@@ -645,6 +645,48 @@ describe('background checks', () => {
     });
   });
 
+  describe('deleteForMember', () => {
+    it('hard-deletes an existing check', async () => {
+      mockAsync<Awaited<ReturnType<typeof db.backgroundCheckRequest.findUnique>>>(
+        mockedDb.backgroundCheckRequest.findUnique,
+      ).mockResolvedValueOnce({ id: 'bcr_1', status: 'failed' } as Awaited<
+        ReturnType<typeof db.backgroundCheckRequest.findUnique>
+      >);
+      mockAsync<Awaited<ReturnType<typeof db.backgroundCheckRequest.delete>>>(
+        mockedDb.backgroundCheckRequest.delete,
+      ).mockResolvedValueOnce({ id: 'bcr_1' } as Awaited<
+        ReturnType<typeof db.backgroundCheckRequest.delete>
+      >);
+
+      const service = new BackgroundChecksService(
+        {} as unknown as BackgroundCheckIdentityClient,
+        {} as unknown as BackgroundCheckPaymentService,
+      );
+      const result = await service.deleteForMember({ organizationId: 'org_1', memberId: 'mem_1' });
+
+      expect(mockedDb.backgroundCheckRequest.delete).toHaveBeenCalledWith({
+        where: { organizationId_memberId: { organizationId: 'org_1', memberId: 'mem_1' } },
+      });
+      expect(result).toEqual({ ok: true });
+    });
+
+    it('throws when no check exists', async () => {
+      mockAsync<Awaited<ReturnType<typeof db.backgroundCheckRequest.findUnique>>>(
+        mockedDb.backgroundCheckRequest.findUnique,
+      ).mockResolvedValueOnce(null as Awaited<
+        ReturnType<typeof db.backgroundCheckRequest.findUnique>
+      >);
+      const service = new BackgroundChecksService(
+        {} as unknown as BackgroundCheckIdentityClient,
+        {} as unknown as BackgroundCheckPaymentService,
+      );
+      await expect(
+        service.deleteForMember({ organizationId: 'org_1', memberId: 'mem_1' }),
+      ).rejects.toThrow('Background check not found.');
+      expect(mockedDb.backgroundCheckRequest.delete).not.toHaveBeenCalled();
+    });
+  });
+
   it('includes background check and penetration test usage in billing status', async () => {
     const billingService = {
       getStatus: jest.fn().mockResolvedValue({

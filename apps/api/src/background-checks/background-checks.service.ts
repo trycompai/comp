@@ -14,6 +14,7 @@ import { identityWebhookPayloadSchema } from './background-checks.types';
 import { fetchCompletedReportSnapshot } from './background-check-report-snapshot';
 import {
   cancelForMember as cancelForMemberFn,
+  deleteForMember as deleteForMemberFn,
   retryForMember as retryForMemberFn,
 } from './background-check-retry';
 
@@ -282,6 +283,10 @@ export class BackgroundChecksService {
       identityClient: this.identityClient,
       getForMember: (p) => this.getForMember(p),
     });
+  }
+
+  async deleteForMember(params: { organizationId: string; memberId: string }) {
+    return deleteForMemberFn({ ...params, getForMember: (p) => this.getForMember(p) });
   }
 
   private isUniqueConstraintError(error: unknown): boolean {

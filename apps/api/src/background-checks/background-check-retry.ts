@@ -55,6 +55,27 @@ export async function cancelForMember({
   });
 }
 
+export async function deleteForMember({
+  organizationId,
+  memberId,
+  getForMember,
+}: {
+  organizationId: string;
+  memberId: string;
+  getForMember: GetForMemberFn;
+}): Promise<{ ok: true }> {
+  const existing = await getForMember({ organizationId, memberId });
+  if (!existing) {
+    throw new NotFoundException('Background check not found.');
+  }
+  // Hard delete; webhookEvents cascade via the FK. Frees the
+  // @@unique([organizationId, memberId]) constraint for a fresh request.
+  await db.backgroundCheckRequest.delete({
+    where: { organizationId_memberId: { organizationId, memberId } },
+  });
+  return { ok: true };
+}
+
 export async function retryForMember({
   organizationId,
   memberId,
