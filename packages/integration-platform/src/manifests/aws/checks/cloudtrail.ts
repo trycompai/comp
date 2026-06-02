@@ -39,13 +39,27 @@ export function evaluateCloudTrail(trails: TrailInfo[]): CheckOutcome[] {
     ];
   }
   // No confirmed-good trail. If an otherwise-compliant (multi-region + validated)
-  // candidate exists whose logging status could not be read, we cannot assert a
-  // failure on unverified data — emit nothing rather than a false negative.
-  const unverifiableCandidate = trails.some(
+  // candidate exists whose logging status could not be read, we must NOT record
+  // a clean run on unverified data (ERROR-READS-NEVER-SILENT-PASS) — but we also
+  // can't assert it is actively NOT logging. Emit a "could not verify" failure
+  // so the control isn't silently treated as satisfied.
+  const unverifiableCandidate = trails.find(
     (t) => t.multiRegion && t.logValidation && t.loggingKnown === false,
   );
   if (unverifiableCandidate) {
-    return [];
+    return [
+      {
+        kind: 'fail',
+        title: 'Could not verify CloudTrail logging status',
+        description: `Trail "${unverifiableCandidate.name}" is multi-region with log file validation, but its logging status (GetTrailStatus) could not be read, so active logging is unverified.`,
+        resourceType: 'aws-cloudtrail',
+        resourceId: unverifiableCandidate.name,
+        severity: 'medium',
+        remediation:
+          'Grant cloudtrail:GetTrailStatus to the integration role so logging status can be verified, then re-run the check.',
+        evidence: { trail: unverifiableCandidate.name },
+      },
+    ];
   }
   if (trails.length === 0) {
     return [

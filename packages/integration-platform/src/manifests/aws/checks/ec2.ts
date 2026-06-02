@@ -96,30 +96,38 @@ export const ec2SecurityGroupsCheck: IntegrationCheck = {
     }
     const sgs: SgInfo[] = [];
     for (const region of session.regions) {
-      const ec2 = new EC2Client({ region, credentials: session.credentials });
-      let token: string | undefined;
-      do {
-        const resp = await ec2.send(
-          new DescribeSecurityGroupsCommand({ NextToken: token, MaxResults: 1000 }),
+      // Isolate per-region failures (opted-out/disabled regions, throttling)
+      // so one region's error doesn't abort scanning of the others.
+      try {
+        const ec2 = new EC2Client({ region, credentials: session.credentials });
+        let token: string | undefined;
+        do {
+          const resp = await ec2.send(
+            new DescribeSecurityGroupsCommand({ NextToken: token, MaxResults: 1000 }),
+          );
+          for (const sg of resp.SecurityGroups ?? []) {
+            sgs.push({
+              groupId: sg.GroupId ?? 'unknown',
+              groupName: sg.GroupName,
+              region,
+              permissions: (sg.IpPermissions ?? []).map((p) => ({
+                ipProtocol: p.IpProtocol ?? '-1',
+                fromPort: p.FromPort,
+                toPort: p.ToPort,
+                cidrs: [
+                  ...(p.IpRanges ?? []).map((r) => r.CidrIp),
+                  ...(p.Ipv6Ranges ?? []).map((r) => r.CidrIpv6),
+                ].filter((c): c is string => typeof c === 'string'),
+              })),
+            });
+          }
+          token = resp.NextToken;
+        } while (token);
+      } catch (err) {
+        ctx.log(
+          `EC2: could not list security groups in ${region}: ${err instanceof Error ? err.message : String(err)}`,
         );
-        for (const sg of resp.SecurityGroups ?? []) {
-          sgs.push({
-            groupId: sg.GroupId ?? 'unknown',
-            groupName: sg.GroupName,
-            region,
-            permissions: (sg.IpPermissions ?? []).map((p) => ({
-              ipProtocol: p.IpProtocol ?? '-1',
-              fromPort: p.FromPort,
-              toPort: p.ToPort,
-              cidrs: [
-                ...(p.IpRanges ?? []).map((r) => r.CidrIp),
-                ...(p.Ipv6Ranges ?? []).map((r) => r.CidrIpv6),
-              ].filter((c): c is string => typeof c === 'string'),
-            })),
-          });
-        }
-        token = resp.NextToken;
-      } while (token);
+      }
     }
     if (sgs.length === 0) return;
     emitOutcomes(ctx, evaluateSecurityGroups(sgs));

@@ -183,6 +183,31 @@ describe('GCP Cloud Storage public-access check', () => {
   });
 });
 
+describe('GCP project auto-discovery', () => {
+  it('paginates discovered projects (follows nextPageToken) so all are evaluated', async () => {
+    const secureBucket = {
+      items: [
+        { name: 'b', iamConfiguration: { uniformBucketLevelAccess: { enabled: true } } },
+      ],
+    };
+    const { passed } = await runCheck(storagePublicAccessCheck, {
+      variables: {}, // no project_ids → forces auto-discovery
+      fetch: (url) => {
+        if (url.includes('organizations:search')) return { organizations: [] };
+        // page 2 must be matched before the generic projects branch
+        if (url.includes('pageToken=tok2')) return { projects: [{ projectId: 'p2' }] };
+        if (url.includes('/v1/projects')) {
+          return { projects: [{ projectId: 'p1' }], nextPageToken: 'tok2' };
+        }
+        if (url.includes('storage/v1/b')) return secureBucket;
+        return {};
+      },
+    });
+    // both the first- and second-page projects were scanned
+    expect(passed.map((p) => p.resourceId).sort()).toEqual(['p1', 'p2']);
+  });
+});
+
 describe('GCP VPC open-firewalls check', () => {
   it('flags RDP (3389) open to 0.0.0.0/0 as critical', async () => {
     const { failed } = await runCheck(vpcOpenFirewallsCheck, {

@@ -224,12 +224,15 @@ describe('AWS CloudTrail evaluator', () => {
     expect(out[0]!.severity).toBe('medium');
   });
 
-  it('emits nothing when an otherwise-compliant trail status is unreadable', () => {
+  it('fails "could not verify" when an otherwise-compliant trail status is unreadable', () => {
     // multi-region + validated, but GetTrailStatus failed → loggingKnown=false.
-    // We must not assert a false "not logging" failure on unverified data.
+    // Must not assert a false "not logging" failure, but also must not silently
+    // pass — emit a "could not verify" failure so the control isn't satisfied.
     const out = evaluateCloudTrail([
       { name: 't1', multiRegion: true, logValidation: true, logging: false, loggingKnown: false },
     ]);
-    expect(out).toHaveLength(0);
+    expect(out).toHaveLength(1);
+    expect(out[0]!.kind).toBe('fail');
+    expect(out[0]!.title).toMatch(/Could not verify/);
   });
 });

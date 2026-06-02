@@ -30,10 +30,34 @@ export async function resolveGcpProjectIds(ctx: CheckContext): Promise<string[]>
     const filter = orgId
       ? `lifecycleState:ACTIVE AND parent.id:${orgId}`
       : 'lifecycleState:ACTIVE';
-    const data = await ctx.fetch<{ projects?: Array<{ projectId: string }> }>(
-      `/v1/projects?filter=${encodeURIComponent(filter)}&pageSize=50`,
-    );
-    return (data.projects ?? []).map((p) => p.projectId).slice(0, 50);
+    // Page through all discoverable projects (bounded) rather than evaluating
+    // only the first page — silently dropping projects would produce false
+    // "all clean" evidence for the projects that were never scanned.
+    const projectIds: string[] = [];
+    let pageToken: string | undefined;
+    let pages = 0;
+    do {
+      const tokenParam = pageToken
+        ? `&pageToken=${encodeURIComponent(pageToken)}`
+        : '';
+      const data: {
+        projects?: Array<{ projectId: string }>;
+        nextPageToken?: string;
+      } = await ctx.fetch(
+        `/v1/projects?filter=${encodeURIComponent(filter)}&pageSize=100${tokenParam}`,
+      );
+      for (const p of data.projects ?? []) projectIds.push(p.projectId);
+      pageToken =
+        typeof data.nextPageToken === 'string' ? data.nextPageToken : undefined;
+      pages++;
+    } while (pageToken && pages < 20);
+    if (pageToken) {
+      ctx.warn(
+        'GCP project auto-discovery hit the page cap; some projects may not be evaluated — set project_ids to scope explicitly',
+        { pages, discovered: projectIds.length },
+      );
+    }
+    return projectIds;
   } catch (err) {
     ctx.warn('GCP project auto-discovery failed; checks will be skipped', {
       error: err instanceof Error ? err.message : String(err),

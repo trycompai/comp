@@ -43,7 +43,7 @@ export function evaluateRdsEncryption(instances: RdsInstanceInfo[]): CheckOutcom
           title: `RDS storage encrypted: ${i.id}`,
           description: `RDS instance "${i.id}" (${i.region}) has storage encryption enabled.`,
           resourceType: 'aws-rds-instance',
-          resourceId: i.id,
+          resourceId: `${i.region}/${i.id}`,
           evidence: { instance: i.id, region: i.region },
         }
       : {
@@ -51,7 +51,7 @@ export function evaluateRdsEncryption(instances: RdsInstanceInfo[]): CheckOutcom
           title: `RDS storage not encrypted: ${i.id}`,
           description: `RDS instance "${i.id}" (${i.region}) does not have storage encryption enabled.`,
           resourceType: 'aws-rds-instance',
-          resourceId: i.id,
+          resourceId: `${i.region}/${i.id}`,
           severity: 'high',
           remediation:
             'Enable storage encryption (encryption at rest must be set at creation; restore from an encrypted snapshot to remediate).',
@@ -72,7 +72,7 @@ export function evaluateRdsBackups(instances: RdsInstanceInfo[]): CheckOutcome[]
           title: `RDS automated backups enabled: ${i.id}`,
           description: `RDS instance "${i.id}" (${i.region}) retains backups for ${i.backupRetentionDays} day(s).`,
           resourceType: 'aws-rds-instance',
-          resourceId: i.id,
+          resourceId: `${i.region}/${i.id}`,
           evidence: { instance: i.id, backupRetentionDays: i.backupRetentionDays },
         }
       : {
@@ -80,7 +80,7 @@ export function evaluateRdsBackups(instances: RdsInstanceInfo[]): CheckOutcome[]
           title: `RDS automated backups disabled: ${i.id}`,
           description: `RDS instance "${i.id}" (${i.region}) has automated backups disabled (retention 0).`,
           resourceType: 'aws-rds-instance',
-          resourceId: i.id,
+          resourceId: `${i.region}/${i.id}`,
           severity: 'medium',
           remediation: 'Set a backup retention period of at least 7 days.',
           evidence: { instance: i.id },
@@ -96,7 +96,7 @@ export function evaluateRdsClusterEncryption(clusters: RdsClusterInfo[]): CheckO
           title: `RDS cluster storage encrypted: ${c.id}`,
           description: `RDS cluster "${c.id}" (${c.region}) has storage encryption enabled.`,
           resourceType: 'aws-rds-cluster',
-          resourceId: c.id,
+          resourceId: `${c.region}/${c.id}`,
           evidence: { cluster: c.id, region: c.region },
         }
       : {
@@ -104,7 +104,7 @@ export function evaluateRdsClusterEncryption(clusters: RdsClusterInfo[]): CheckO
           title: `RDS cluster storage not encrypted: ${c.id}`,
           description: `RDS cluster "${c.id}" (${c.region}) does not have storage encryption enabled.`,
           resourceType: 'aws-rds-cluster',
-          resourceId: c.id,
+          resourceId: `${c.region}/${c.id}`,
           severity: 'high',
           remediation:
             'Enable storage encryption (encryption at rest must be set at creation; restore from an encrypted snapshot to remediate).',
@@ -121,7 +121,7 @@ export function evaluateRdsClusterBackups(clusters: RdsClusterInfo[]): CheckOutc
           title: `RDS cluster automated backups enabled: ${c.id}`,
           description: `RDS cluster "${c.id}" (${c.region}) retains backups for ${c.backupRetentionDays} day(s).`,
           resourceType: 'aws-rds-cluster',
-          resourceId: c.id,
+          resourceId: `${c.region}/${c.id}`,
           evidence: { cluster: c.id, backupRetentionDays: c.backupRetentionDays },
         }
       : {
@@ -129,7 +129,7 @@ export function evaluateRdsClusterBackups(clusters: RdsClusterInfo[]): CheckOutc
           title: `RDS cluster automated backups disabled: ${c.id}`,
           description: `RDS cluster "${c.id}" (${c.region}) has automated backups disabled (retention 0).`,
           resourceType: 'aws-rds-cluster',
-          resourceId: c.id,
+          resourceId: `${c.region}/${c.id}`,
           severity: 'medium',
           remediation: 'Set a backup retention period of at least 7 days.',
           evidence: { cluster: c.id },
@@ -137,46 +137,65 @@ export function evaluateRdsClusterBackups(clusters: RdsClusterInfo[]): CheckOutc
   );
 }
 
-async function listRdsInstances(session: AwsSession): Promise<RdsInstanceInfo[]> {
+async function listRdsInstances(
+  session: AwsSession,
+  ctx: CheckContext,
+): Promise<RdsInstanceInfo[]> {
   const out: RdsInstanceInfo[] = [];
   for (const region of session.regions) {
-    const rds = new RDSClient({ region, credentials: session.credentials });
-    let marker: string | undefined;
-    do {
-      const resp = await rds.send(new DescribeDBInstancesCommand({ Marker: marker }));
-      for (const db of resp.DBInstances ?? []) {
-        out.push({
-          id: db.DBInstanceIdentifier ?? 'unknown',
-          region,
-          encrypted: db.StorageEncrypted === true,
-          backupRetentionDays: db.BackupRetentionPeriod ?? 0,
-          engine: db.Engine ?? '',
-        });
-      }
-      marker = resp.Marker;
-    } while (marker);
+    // Isolate per-region failures so one bad region doesn't abort the rest.
+    try {
+      const rds = new RDSClient({ region, credentials: session.credentials });
+      let marker: string | undefined;
+      do {
+        const resp = await rds.send(new DescribeDBInstancesCommand({ Marker: marker }));
+        for (const db of resp.DBInstances ?? []) {
+          out.push({
+            id: db.DBInstanceIdentifier ?? 'unknown',
+            region,
+            encrypted: db.StorageEncrypted === true,
+            backupRetentionDays: db.BackupRetentionPeriod ?? 0,
+            engine: db.Engine ?? '',
+          });
+        }
+        marker = resp.Marker;
+      } while (marker);
+    } catch (err) {
+      ctx.log(
+        `RDS: could not list DB instances in ${region}: ${err instanceof Error ? err.message : String(err)}`,
+      );
+    }
   }
   return out;
 }
 
-async function listRdsClusters(session: AwsSession): Promise<RdsClusterInfo[]> {
+async function listRdsClusters(
+  session: AwsSession,
+  ctx: CheckContext,
+): Promise<RdsClusterInfo[]> {
   const out: RdsClusterInfo[] = [];
   for (const region of session.regions) {
-    const rds = new RDSClient({ region, credentials: session.credentials });
-    let marker: string | undefined;
-    do {
-      const resp = await rds.send(new DescribeDBClustersCommand({ Marker: marker }));
-      for (const cluster of resp.DBClusters ?? []) {
-        out.push({
-          id: cluster.DBClusterIdentifier ?? 'unknown',
-          region,
-          encrypted: cluster.StorageEncrypted === true,
-          backupRetentionDays: cluster.BackupRetentionPeriod ?? 0,
-          engine: cluster.Engine ?? '',
-        });
-      }
-      marker = resp.Marker;
-    } while (marker);
+    try {
+      const rds = new RDSClient({ region, credentials: session.credentials });
+      let marker: string | undefined;
+      do {
+        const resp = await rds.send(new DescribeDBClustersCommand({ Marker: marker }));
+        for (const cluster of resp.DBClusters ?? []) {
+          out.push({
+            id: cluster.DBClusterIdentifier ?? 'unknown',
+            region,
+            encrypted: cluster.StorageEncrypted === true,
+            backupRetentionDays: cluster.BackupRetentionPeriod ?? 0,
+            engine: cluster.Engine ?? '',
+          });
+        }
+        marker = resp.Marker;
+      } while (marker);
+    } catch (err) {
+      ctx.log(
+        `RDS: could not list DB clusters in ${region}: ${err instanceof Error ? err.message : String(err)}`,
+      );
+    }
   }
   return out;
 }
@@ -196,8 +215,8 @@ export const rdsEncryptionCheck: IntegrationCheck = {
     // Evaluate non-Aurora DB instances at the instance level and DB clusters
     // (Aurora / Multi-AZ) at the cluster level — instance-level StorageEncrypted
     // is unreliable for Aurora and produces false failures.
-    const instances = await listRdsInstances(session);
-    const clusters = await listRdsClusters(session);
+    const instances = await listRdsInstances(session, ctx);
+    const clusters = await listRdsClusters(session, ctx);
     if (instances.length === 0 && clusters.length === 0) return;
     emitOutcomes(ctx, evaluateRdsEncryption(instances));
     emitOutcomes(ctx, evaluateRdsClusterEncryption(clusters));
@@ -219,8 +238,8 @@ export const rdsBackupsCheck: IntegrationCheck = {
     // Evaluate non-Aurora DB instances at the instance level and DB clusters
     // (Aurora / Multi-AZ) at the cluster level — instance-level
     // BackupRetentionPeriod is unreliable for Aurora and produces false failures.
-    const instances = await listRdsInstances(session);
-    const clusters = await listRdsClusters(session);
+    const instances = await listRdsInstances(session, ctx);
+    const clusters = await listRdsClusters(session, ctx);
     if (instances.length === 0 && clusters.length === 0) return;
     emitOutcomes(ctx, evaluateRdsBackups(instances));
     emitOutcomes(ctx, evaluateRdsClusterBackups(clusters));
