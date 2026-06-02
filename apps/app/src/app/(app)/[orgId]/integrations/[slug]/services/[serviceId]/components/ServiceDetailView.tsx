@@ -1,6 +1,7 @@
 'use client';
 
 import { useConnectionServices } from '@/hooks/use-integration-platform';
+import { usePermissions } from '@/hooks/use-permissions';
 import { Breadcrumb, Stack } from '@trycompai/design-system';
 import type {
   ConnectionListItemResponse,
@@ -68,11 +69,15 @@ export function ServiceDetailView({
     isLoading: servicesLoading,
     error: servicesError,
   } = useConnectionServices(effectiveConnectionId);
+  // Toggling a service calls PUT /connections/:id/services, which the API gates
+  // behind integration:update — gate the control the same way on the client.
+  const { hasPermission } = usePermissions();
+  const canUpdate = hasPermission('integration', 'update');
+
   const liveService = connectionServices.find((s) => s.id === service.id);
   const isEnabled = liveService?.enabled ?? false;
   const isImplemented = service.implemented !== false;
-  const servicesLoaded =
-    Boolean(effectiveConnectionId) && !servicesLoading && !servicesError;
+  const hasConnection = Boolean(effectiveConnectionId);
   // Only services present in the connection's live service list can be toggled.
   // (e.g. AWS baseline services are always scanned and aren't in the toggle list.)
   const isManageable = Boolean(liveService);
@@ -85,7 +90,7 @@ export function ServiceDetailView({
   const mappedTasks = service.mappedTasks ?? [];
 
   const handleToggle = async () => {
-    if (!effectiveConnectionId || toggling || !liveService) return;
+    if (!effectiveConnectionId || toggling || !liveService || !canUpdate) return;
     setToggling(true);
     const next = !isEnabled;
     try {
@@ -138,7 +143,23 @@ export function ServiceDetailView({
             <span className="shrink-0 rounded-full bg-destructive/10 px-2.5 py-1 text-xs text-destructive">
               Couldn’t load connection
             </span>
-          ) : isManageable ? (
+          ) : !hasConnection ? (
+            <span className="shrink-0 rounded-full bg-muted px-2.5 py-1 text-xs text-muted-foreground">
+              Not connected
+            </span>
+          ) : servicesError ? (
+            <span className="shrink-0 rounded-full bg-muted px-2.5 py-1 text-xs text-muted-foreground">
+              Status unavailable
+            </span>
+          ) : servicesLoading ? (
+            <span className="shrink-0 rounded-full bg-muted px-2.5 py-1 text-xs text-muted-foreground">
+              Checking…
+            </span>
+          ) : !isManageable ? (
+            <span className="shrink-0 rounded-full bg-muted px-2.5 py-1 text-xs text-muted-foreground">
+              Always scanned
+            </span>
+          ) : canUpdate ? (
             <button
               type="button"
               role="switch"
@@ -157,12 +178,9 @@ export function ServiceDetailView({
               />
             </button>
           ) : (
+            // Has the service but lacks integration:update → read-only status.
             <span className="shrink-0 rounded-full bg-muted px-2.5 py-1 text-xs text-muted-foreground">
-              {servicesLoaded
-                ? 'Always scanned'
-                : servicesError
-                  ? 'Status unavailable'
-                  : 'Checking…'}
+              {isEnabled ? 'Scanning on' : 'Scanning off'}
             </span>
           )}
         </div>

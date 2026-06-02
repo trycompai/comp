@@ -110,6 +110,7 @@ export const cloudTrailEnabledCheck: IntegrationCheck = {
     // dedupe by TrailARN before evaluating.
     const seenArns = new Set<string>();
     const trails: TrailInfo[] = [];
+    const failedRegions: string[] = [];
 
     for (const region of session.regions) {
       const ct = new CloudTrailClient({
@@ -122,6 +123,7 @@ export const cloudTrailEnabledCheck: IntegrationCheck = {
         const resp = await ct.send(new DescribeTrailsCommand({}));
         trailList = resp.trailList;
       } catch (err) {
+        failedRegions.push(region);
         ctx.log(
           `CloudTrail: could not list trails in ${region}: ${err instanceof Error ? err.message : String(err)}`,
         );
@@ -159,6 +161,23 @@ export const cloudTrailEnabledCheck: IntegrationCheck = {
           loggingKnown,
         });
       }
+    }
+
+    // If we found no trails AND at least one region's DescribeTrails failed, we
+    // can't conclude "No CloudTrail configured" (that would be a false high on a
+    // permissions/transient error) — report it as unverified instead.
+    if (trails.length === 0 && failedRegions.length > 0) {
+      ctx.fail({
+        title: 'Could not verify CloudTrail configuration',
+        description: `CloudTrail trails could not be listed in: ${failedRegions.join(', ')}, so trail configuration is unverified.`,
+        resourceType: 'aws-cloudtrail',
+        resourceId: 'account',
+        severity: 'medium',
+        remediation:
+          'Grant cloudtrail:DescribeTrails to the integration role in all enabled regions, then re-run the check.',
+        evidence: { failedRegions },
+      });
+      return;
     }
 
     emitOutcomes(ctx, evaluateCloudTrail(trails));

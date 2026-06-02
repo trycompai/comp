@@ -191,18 +191,30 @@ describe('AWS RDS evaluators', () => {
 });
 
 describe('AWS KMS rotation evaluator', () => {
-  it('evaluates only rotation-eligible keys with a known status', () => {
+  it('evaluates eligible keys; unreadable rotation status → could-not-verify (not dropped)', () => {
     const out = evaluateKmsRotation([
       { keyId: 'sym-on', region: 'us-east-1', rotationEligible: true, rotationStatusKnown: true, rotationEnabled: true },
       { keyId: 'sym-off', region: 'us-east-1', rotationEligible: true, rotationStatusKnown: true, rotationEnabled: false },
       // RSA/HMAC/etc. — not rotation-eligible → no finding
       { keyId: 'rsa', region: 'us-east-1', rotationEligible: false, rotationStatusKnown: false, rotationEnabled: false },
-      // eligible but status unreadable → no fabricated finding
+      // eligible but status unreadable → "could not verify" (masking a permission gap as clean would be wrong)
       { keyId: 'unknown', region: 'us-east-1', rotationEligible: true, rotationStatusKnown: false, rotationEnabled: false },
     ]);
-    expect(out).toHaveLength(2);
+    expect(out).toHaveLength(3);
     expect(out[0]!.kind).toBe('pass');
     expect(out[1]!.kind).toBe('fail');
+    expect(out[2]!.kind).toBe('fail');
+    expect(out[2]!.severity).toBe('medium');
+    expect(out[2]!.title).toMatch(/Could not verify/);
+  });
+
+  it('does not pass silently when rotation status is unreadable for all eligible keys', () => {
+    const out = evaluateKmsRotation([
+      { keyId: 'k1', region: 'us-east-1', rotationEligible: true, rotationStatusKnown: false, rotationEnabled: false },
+    ]);
+    expect(out).toHaveLength(1);
+    expect(out[0]!.kind).toBe('fail');
+    expect(out[0]!.title).toMatch(/Could not verify/);
   });
 });
 

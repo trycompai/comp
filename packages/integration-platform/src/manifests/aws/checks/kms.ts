@@ -27,12 +27,29 @@ export interface KmsKeyInfo {
   rotationEnabled: boolean;
 }
 
-/** Only rotation-eligible keys with a known status are evaluated. */
+/**
+ * Every rotation-eligible key produces an outcome. A key whose rotation status
+ * couldn't be read is surfaced as "could not verify" (medium) rather than
+ * dropped — silently excluding it would let a permission gap pass as clean.
+ */
 export function evaluateKmsRotation(keys: KmsKeyInfo[]): CheckOutcome[] {
   return keys
-    .filter((k) => k.rotationEligible && k.rotationStatusKnown)
-    .map((k) =>
-      k.rotationEnabled
+    .filter((k) => k.rotationEligible)
+    .map((k): CheckOutcome => {
+      if (!k.rotationStatusKnown) {
+        return {
+          kind: 'fail',
+          title: `Could not verify KMS key rotation: ${k.keyId}`,
+          description: `Rotation status for customer-managed KMS key "${k.keyId}" (${k.region}) could not be read, so rotation is unverified.`,
+          resourceType: 'aws-kms-key',
+          resourceId: k.keyId,
+          severity: 'medium',
+          remediation:
+            'Grant kms:GetKeyRotationStatus to the integration role so rotation can be verified, then re-run.',
+          evidence: { keyId: k.keyId, region: k.region },
+        };
+      }
+      return k.rotationEnabled
         ? {
             kind: 'pass',
             title: `KMS key rotation enabled: ${k.keyId}`,
@@ -50,8 +67,8 @@ export function evaluateKmsRotation(keys: KmsKeyInfo[]): CheckOutcome[] {
             severity: 'medium',
             remediation: 'Enable automatic annual key rotation on the customer-managed KMS key.',
             evidence: { keyId: k.keyId, region: k.region },
-          },
-    );
+          };
+    });
 }
 
 async function listKmsKeys(
@@ -121,8 +138,10 @@ export const kmsKeyRotationCheck: IntegrationCheck = {
       return;
     }
     const keys = await listKmsKeys(ctx, session);
-    // Nothing to evidence if there are no rotation-eligible keys.
-    if (!keys.some((k) => k.rotationEligible && k.rotationStatusKnown)) return;
+    // Genuine no-op only when there are NO rotation-eligible keys at all. If
+    // eligible keys exist but their status is unreadable, evaluateKmsRotation
+    // emits "could not verify" rather than passing silently.
+    if (!keys.some((k) => k.rotationEligible)) return;
     emitOutcomes(ctx, evaluateKmsRotation(keys));
   },
 };
