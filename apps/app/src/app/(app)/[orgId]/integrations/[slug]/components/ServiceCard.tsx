@@ -125,8 +125,8 @@ export function ServiceCard({ service, connectionId, orgId, slug }: ServiceCardP
   const taskCount = service.mappedTasks?.length ?? 0;
 
   const href =
-    `/${orgId}/integrations/${slug}/services/${service.id}` +
-    (connectionId ? `?connectionId=${connectionId}` : '');
+    `/${encodeURIComponent(orgId)}/integrations/${encodeURIComponent(slug)}/services/${encodeURIComponent(service.id)}` +
+    (connectionId ? `?connectionId=${encodeURIComponent(connectionId)}` : '');
 
   return (
     <Link

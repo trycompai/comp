@@ -19,7 +19,11 @@ export async function resolveAzureSubscriptionId(
       value?: Array<{ subscriptionId: string; state?: string }>;
     }>(`${ARM}/subscriptions?api-version=2020-01-01`);
     const subs = data.value ?? [];
-    const active = subs.find((s) => s.state === 'Enabled') ?? subs[0];
+    // Only auto-select an Enabled subscription. Falling back to the first
+    // subscription regardless of state could pick a Disabled/PastDue one whose
+    // API calls fail; returning null instead makes the check no-op cleanly (the
+    // user can set subscription_id explicitly).
+    const active = subs.find((s) => s.state === 'Enabled');
     return active?.subscriptionId ?? null;
   } catch (err) {
     ctx.warn(

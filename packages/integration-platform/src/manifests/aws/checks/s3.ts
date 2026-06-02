@@ -43,10 +43,24 @@ function isFullyBlocked(bucket: BpaFlags | null, account: BpaFlags | null): bool
 }
 
 export function evaluateS3Encryption(buckets: S3BucketInfo[]): CheckOutcome[] {
-  return buckets
-    .filter((b) => b.encryptionDetermined)
-    .map((b) =>
-    b.encrypted
+  return buckets.map((b): CheckOutcome => {
+    if (!b.encryptionDetermined) {
+      // Read failed → unverified. Don't assert a false "no encryption" (high),
+      // but don't silently drop it either (that would let an all-unreadable
+      // account pass with no findings).
+      return {
+        kind: 'fail',
+        title: `Could not verify encryption: ${b.name}`,
+        description: `Encryption status for bucket "${b.name}" could not be read, so it is unverified.`,
+        resourceType: 'aws-s3-bucket',
+        resourceId: b.name,
+        severity: 'medium',
+        remediation:
+          'Grant s3:GetEncryptionConfiguration to the integration role so default encryption can be verified, then re-run.',
+        evidence: { bucket: b.name },
+      };
+    }
+    return b.encrypted
       ? {
           kind: 'pass',
           title: `Default encryption enabled: ${b.name}`,
@@ -64,18 +78,29 @@ export function evaluateS3Encryption(buckets: S3BucketInfo[]): CheckOutcome[] {
           severity: 'high',
           remediation: 'Enable default encryption (SSE-S3 or SSE-KMS) on the bucket.',
           evidence: { bucket: b.name },
-        },
-  );
+        };
+  });
 }
 
 export function evaluateS3PublicAccess(
   buckets: S3BucketInfo[],
   accountBpa: BpaFlags | null,
 ): CheckOutcome[] {
-  return buckets
-    .filter((b) => b.publicAccessDetermined)
-    .map((b) =>
-    isFullyBlocked(b.bucketBpa, accountBpa)
+  return buckets.map((b): CheckOutcome => {
+    if (!b.publicAccessDetermined) {
+      return {
+        kind: 'fail',
+        title: `Could not verify public access: ${b.name}`,
+        description: `Block Public Access status for bucket "${b.name}" could not be read, so its public-access posture is unverified.`,
+        resourceType: 'aws-s3-bucket',
+        resourceId: b.name,
+        severity: 'medium',
+        remediation:
+          'Grant s3:GetBucketPublicAccessBlock to the integration role so public-access settings can be verified, then re-run.',
+        evidence: { bucket: b.name },
+      };
+    }
+    return isFullyBlocked(b.bucketBpa, accountBpa)
       ? {
           kind: 'pass',
           title: `Public access blocked: ${b.name}`,
@@ -93,8 +118,8 @@ export function evaluateS3PublicAccess(
           severity: 'high',
           remediation: 'Enable all four S3 Block Public Access settings on the bucket (or account).',
           evidence: { bucket: b.name },
-        },
-  );
+        };
+  });
 }
 
 async function gatherBuckets(

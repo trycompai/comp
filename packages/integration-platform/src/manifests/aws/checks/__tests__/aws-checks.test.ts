@@ -45,17 +45,29 @@ const ALL_BLOCKED = {
 };
 
 describe('AWS S3 evaluators', () => {
-  it('encryption: pass when encrypted, fail (high) when not, skip indeterminate', () => {
+  it('encryption: pass when encrypted, fail (high) when not, "could not verify" (medium) when indeterminate', () => {
     const out = evaluateS3Encryption([
       { name: 'a', encrypted: true, encryptionDetermined: true, publicAccessDetermined: true, bucketBpa: null },
       { name: 'b', encrypted: false, encryptionDetermined: true, publicAccessDetermined: true, bucketBpa: null },
-      // read error → indeterminate → excluded (no false high finding)
+      // read error → indeterminate → "could not verify" (not a false high, not silently dropped)
       { name: 'c', encrypted: false, encryptionDetermined: false, publicAccessDetermined: true, bucketBpa: null },
     ]);
-    expect(out).toHaveLength(2);
+    expect(out).toHaveLength(3);
     expect(out[0]!.kind).toBe('pass');
     expect(out[1]!.kind).toBe('fail');
     expect(out[1]!.severity).toBe('high');
+    expect(out[2]!.kind).toBe('fail');
+    expect(out[2]!.severity).toBe('medium');
+    expect(out[2]!.title).toMatch(/Could not verify/);
+  });
+
+  it('encryption: all-indeterminate buckets do not pass silently', () => {
+    const out = evaluateS3Encryption([
+      { name: 'x', encrypted: false, encryptionDetermined: false, publicAccessDetermined: true, bucketBpa: null },
+    ]);
+    expect(out).toHaveLength(1);
+    expect(out[0]!.kind).toBe('fail');
+    expect(out[0]!.severity).toBe('medium');
   });
 
   it('public access: bucket-level all-blocked passes, missing fails', () => {

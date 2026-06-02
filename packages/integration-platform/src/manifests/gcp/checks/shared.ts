@@ -20,19 +20,14 @@ export async function resolveGcpProjectIds(ctx: CheckContext): Promise<string[]>
   }
 
   try {
-    const orgData = await ctx.fetch<{
-      organizations?: Array<{ name: string; state?: string }>;
-    }>('https://cloudresourcemanager.googleapis.com/v3/organizations:search');
-    const activeOrg = (orgData.organizations ?? []).find(
-      (o) => o.state === 'ACTIVE',
-    );
-    const orgId = activeOrg?.name?.replace('organizations/', '');
-    const filter = orgId
-      ? `lifecycleState:ACTIVE AND parent.id:${orgId}`
-      : 'lifecycleState:ACTIVE';
-    // Page through all discoverable projects (bounded) rather than evaluating
-    // only the first page — silently dropping projects would produce false
-    // "all clean" evidence for the projects that were never scanned.
+    // List every active project the connection can access. We intentionally do
+    // NOT scope by organization/parent: a `parent.id` filter without
+    // `parent.type` is ambiguous, AND parent-scoping silently excludes
+    // folder-nested projects, both of which would drop projects that should be
+    // evaluated. Users scope to a subset explicitly via the project_ids
+    // variable. Page through all results (bounded) rather than the first page —
+    // silently dropping projects would produce false "all clean" evidence.
+    const filter = 'lifecycleState:ACTIVE';
     const projectIds: string[] = [];
     let pageToken: string | undefined;
     let pages = 0;
