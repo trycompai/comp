@@ -32,23 +32,41 @@ describe('AWS IAM account evaluator', () => {
   });
 });
 
+const ALL_BLOCKED = {
+  blockPublicAcls: true,
+  ignorePublicAcls: true,
+  blockPublicPolicy: true,
+  restrictPublicBuckets: true,
+};
+
 describe('AWS S3 evaluators', () => {
   it('encryption: pass when encrypted, fail (high) when not', () => {
     const out = evaluateS3Encryption([
-      { name: 'a', encrypted: true, publicAccessBlocked: false },
-      { name: 'b', encrypted: false, publicAccessBlocked: false },
+      { name: 'a', encrypted: true, bucketBpa: null },
+      { name: 'b', encrypted: false, bucketBpa: null },
     ]);
     expect(out[0]!.kind).toBe('pass');
     expect(out[1]!.kind).toBe('fail');
     expect(out[1]!.severity).toBe('high');
   });
 
-  it('public access: pass when blocked, fail when not', () => {
-    const out = evaluateS3PublicAccess([
-      { name: 'a', encrypted: false, publicAccessBlocked: true },
-      { name: 'b', encrypted: false, publicAccessBlocked: false },
-    ]);
+  it('public access: bucket-level all-blocked passes, missing fails', () => {
+    const out = evaluateS3PublicAccess(
+      [
+        { name: 'a', encrypted: false, bucketBpa: ALL_BLOCKED },
+        { name: 'b', encrypted: false, bucketBpa: null },
+      ],
+      null,
+    );
     expect(kinds(out)).toEqual(['pass', 'fail']);
+  });
+
+  it('public access: account-level BPA covers buckets lacking bucket config', () => {
+    const out = evaluateS3PublicAccess(
+      [{ name: 'b', encrypted: false, bucketBpa: null }],
+      ALL_BLOCKED,
+    );
+    expect(out[0]!.kind).toBe('pass');
   });
 });
 
@@ -64,6 +82,18 @@ describe('AWS EC2 security-group evaluator', () => {
     expect(out).toHaveLength(1);
     expect(out[0]!.kind).toBe('fail');
     expect(out[0]!.severity).toBe('high');
+  });
+
+  it('flags IPv6 ::/0 internet-open rules', () => {
+    const out = evaluateSecurityGroups([
+      {
+        groupId: 'sg-6',
+        region: 'us-east-1',
+        permissions: [{ ipProtocol: 'tcp', fromPort: 22, toPort: 22, cidrs: ['::/0'] }],
+      },
+    ]);
+    expect(out).toHaveLength(1);
+    expect(out[0]!.kind).toBe('fail');
   });
 
   it('flags all-protocols (-1) open as critical', () => {
@@ -109,13 +139,16 @@ describe('AWS RDS evaluators', () => {
 });
 
 describe('AWS KMS rotation evaluator', () => {
-  it('only evaluates customer-managed keys', () => {
+  it('evaluates only rotation-eligible keys with a known status', () => {
     const out = evaluateKmsRotation([
-      { keyId: 'k1', region: 'us-east-1', customerManaged: true, rotationEnabled: true },
-      { keyId: 'k2', region: 'us-east-1', customerManaged: true, rotationEnabled: false },
-      { keyId: 'aws-managed', region: 'us-east-1', customerManaged: false, rotationEnabled: false },
+      { keyId: 'sym-on', region: 'us-east-1', rotationEligible: true, rotationStatusKnown: true, rotationEnabled: true },
+      { keyId: 'sym-off', region: 'us-east-1', rotationEligible: true, rotationStatusKnown: true, rotationEnabled: false },
+      // RSA/HMAC/etc. — not rotation-eligible → no finding
+      { keyId: 'rsa', region: 'us-east-1', rotationEligible: false, rotationStatusKnown: false, rotationEnabled: false },
+      // eligible but status unreadable → no fabricated finding
+      { keyId: 'unknown', region: 'us-east-1', rotationEligible: true, rotationStatusKnown: false, rotationEnabled: false },
     ]);
-    expect(out).toHaveLength(2); // aws-managed excluded
+    expect(out).toHaveLength(2);
     expect(out[0]!.kind).toBe('pass');
     expect(out[1]!.kind).toBe('fail');
   });

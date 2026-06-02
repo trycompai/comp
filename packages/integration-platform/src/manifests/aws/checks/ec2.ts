@@ -32,7 +32,7 @@ export function evaluateSecurityGroups(sgs: SgInfo[]): CheckOutcome[] {
   for (const sg of sgs) {
     let bad = false;
     for (const perm of sg.permissions) {
-      if (!perm.cidrs.includes('0.0.0.0/0')) continue;
+      if (!perm.cidrs.includes('0.0.0.0/0') && !perm.cidrs.includes('::/0')) continue;
       if (perm.ipProtocol === '-1') {
         bad = true;
         out.push({
@@ -107,9 +107,10 @@ export const ec2SecurityGroupsCheck: IntegrationCheck = {
               ipProtocol: p.IpProtocol ?? '-1',
               fromPort: p.FromPort,
               toPort: p.ToPort,
-              cidrs: (p.IpRanges ?? [])
-                .map((r) => r.CidrIp)
-                .filter((c): c is string => typeof c === 'string'),
+              cidrs: [
+                ...(p.IpRanges ?? []).map((r) => r.CidrIp),
+                ...(p.Ipv6Ranges ?? []).map((r) => r.CidrIpv6),
+              ].filter((c): c is string => typeof c === 'string'),
             })),
           });
         }

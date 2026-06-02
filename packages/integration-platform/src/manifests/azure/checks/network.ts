@@ -22,8 +22,21 @@ interface Nsg {
   properties: { securityRules?: SecurityRule[] };
 }
 
-const DANGEROUS_DB_PORTS = new Set(['3306', '5432', '1433', '27017']);
-const WILDCARD_SOURCES = new Set(['*', '0.0.0.0/0', 'Internet', 'Any']);
+const DB_PORTS = [3306, 5432, 1433, 27017];
+const WILDCARD_SOURCES = new Set(['*', '0.0.0.0/0', '::/0', 'Internet', 'Any']);
+
+/** True if an NSG port token ('22', '20-30', '*') covers any of the target ports. */
+function portTokenCoversAny(token: string, targets: number[]): boolean {
+  if (token === '*') return true;
+  const [loStr, hiStr] = token.split('-');
+  const lo = Number(loStr);
+  const hi = hiStr === undefined ? lo : Number(hiStr);
+  if (Number.isNaN(lo) || Number.isNaN(hi)) return false;
+  return targets.some((t) => t >= lo && t <= hi);
+}
+function portsCoverAny(ports: string[], targets: number[]): boolean {
+  return ports.some((tok) => portTokenCoversAny(tok, targets));
+}
 
 function ruleSources(r: SecurityRule): string[] {
   if (r.properties.sourceAddressPrefixes?.length) {
@@ -69,13 +82,9 @@ export const nsgNoOpenPortsCheck: IntegrationCheck = {
         const ports = rulePorts(rule);
         const conditions: Array<{ when: boolean; label: string; severity: FindingSeverity }> = [
           { when: ports.includes('*'), label: 'all ports', severity: 'critical' },
-          { when: ports.includes('3389'), label: 'RDP (3389)', severity: 'critical' },
-          {
-            when: ports.some((p) => DANGEROUS_DB_PORTS.has(p)),
-            label: 'database ports',
-            severity: 'critical',
-          },
-          { when: ports.includes('22'), label: 'SSH (22)', severity: 'high' },
+          { when: portsCoverAny(ports, [3389]), label: 'RDP (3389)', severity: 'critical' },
+          { when: portsCoverAny(ports, DB_PORTS), label: 'database ports', severity: 'critical' },
+          { when: portsCoverAny(ports, [22]), label: 'SSH (22)', severity: 'high' },
         ];
         for (const c of conditions) {
           if (c.when) {

@@ -11,7 +11,7 @@ interface RoleDefinition {
   properties: {
     roleName: string;
     type: string;
-    permissions: Array<{ actions: string[] }>;
+    permissions: Array<{ actions: string[]; dataActions?: string[] }>;
   };
 }
 
@@ -19,9 +19,33 @@ const PRIVILEGED_ROLES = new Set([
   'Owner',
   'Contributor',
   'User Access Administrator',
+  // Global Administrator / Privileged Role Administrator are Entra directory
+  // roles (not ARM); kept for completeness — they won't appear on this endpoint.
   'Global Administrator',
   'Privileged Role Administrator',
 ]);
+
+const isWildcardAction = (act: string) => act === '*' || act.endsWith('/*');
+
+/** High-privilege ARM actions that make a role privileged regardless of its name. */
+function actionIsHighPrivilege(act: string): boolean {
+  const a = act.toLowerCase();
+  return (
+    a === '*' ||
+    a === '*/write' ||
+    a === 'microsoft.authorization/*' ||
+    a === 'microsoft.authorization/roleassignments/write' ||
+    a === 'microsoft.authorization/roledefinitions/write'
+  );
+}
+
+/** A role is privileged if it is a known built-in privileged role OR its permissions grant high-privilege actions. */
+function defIsPrivileged(def: RoleDefinition): boolean {
+  if (PRIVILEGED_ROLES.has(def.properties.roleName)) return true;
+  return def.properties.permissions.some((perm) =>
+    (perm.actions ?? []).some(actionIsHighPrivilege),
+  );
+}
 
 /**
  * Subscription RBAC least-privilege (ARM role assignments, not Graph) →
@@ -53,7 +77,7 @@ export const rbacLeastPrivilegeCheck: IntegrationCheck = {
     const defMap = new Map(definitions.map((d) => [d.id, d]));
     const privileged = assignments.filter((a) => {
       const def = defMap.get(a.properties.roleDefinitionId);
-      return def ? PRIVILEGED_ROLES.has(def.properties.roleName) : false;
+      return def ? defIsPrivileged(def) : false;
     });
 
     let violations = 0;
@@ -92,8 +116,10 @@ export const rbacLeastPrivilegeCheck: IntegrationCheck = {
     const wildcardRoles = definitions.filter(
       (d) =>
         d.properties.type === 'CustomRole' &&
-        d.properties.permissions.some((perm) =>
-          perm.actions.some((act) => act === '*' || act.endsWith('/*')),
+        d.properties.permissions.some(
+          (perm) =>
+            (perm.actions ?? []).some(isWildcardAction) ||
+            (perm.dataActions ?? []).some(isWildcardAction),
         ),
     );
     for (const role of wildcardRoles) {

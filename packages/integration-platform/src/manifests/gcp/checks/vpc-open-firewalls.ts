@@ -1,6 +1,6 @@
 import { TASK_TEMPLATES } from '../../../task-mappings';
 import type { CheckContext, FindingSeverity, IntegrationCheck } from '../../../types';
-import { portsCover, resolveGcpProjectIds } from './shared';
+import { gcpListItems, portsCover, resolveGcpProjectIds } from './shared';
 
 interface FirewallRule {
   name: string;
@@ -39,17 +39,18 @@ export const vpcOpenFirewallsCheck: IntegrationCheck = {
     }
 
     for (const projectId of projectIds) {
-      const data = await ctx.fetch<{ items?: FirewallRule[] }>(
+      const rules = await gcpListItems<FirewallRule>(
+        ctx,
         `https://compute.googleapis.com/compute/v1/projects/${encodeURIComponent(projectId)}/global/firewalls`,
       );
-      const rules = data.items ?? [];
       if (rules.length === 0) continue;
 
       let violations = 0;
       for (const rule of rules) {
         if (rule.disabled === true) continue;
         if (rule.direction && rule.direction !== 'INGRESS') continue;
-        if (!(rule.sourceRanges ?? []).includes('0.0.0.0/0')) continue;
+        const srcs = rule.sourceRanges ?? [];
+        if (!srcs.includes('0.0.0.0/0') && !srcs.includes('::/0')) continue;
 
         const allowed = rule.allowed ?? [];
         if (allowed.some((a) => a.IPProtocol === 'all')) {
@@ -67,11 +68,11 @@ export const vpcOpenFirewallsCheck: IntegrationCheck = {
           continue;
         }
 
-        const tcp = allowed.find(
+        const tcpTuples = allowed.filter(
           (a) => a.IPProtocol === 'tcp' || a.IPProtocol === '6',
         );
         for (const { port, label, severity } of SENSITIVE_PORTS) {
-          if (tcp && portsCover(tcp.ports, port)) {
+          if (tcpTuples.some((t) => portsCover(t.ports, port))) {
             violations++;
             ctx.fail({
               title: `${label} open to internet: ${rule.name}`,

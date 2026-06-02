@@ -94,9 +94,11 @@ export const storagePublicAccessCheck: IntegrationCheck = {
     for (const a of accounts) {
       const p = a.properties ?? {};
       const publicBlob = p.allowBlobPublicAccess === true;
+      // publicNetworkAccess 'Disabled' overrides the firewall default action.
       const publicNetwork =
-        p.publicNetworkAccess === 'Enabled' ||
-        p.networkAcls?.defaultAction === 'Allow';
+        p.publicNetworkAccess !== 'Disabled' &&
+        (p.publicNetworkAccess === 'Enabled' ||
+          p.networkAcls?.defaultAction === 'Allow');
       if (publicBlob || publicNetwork) {
         ctx.fail({
           title: `Public access enabled: ${a.name}`,

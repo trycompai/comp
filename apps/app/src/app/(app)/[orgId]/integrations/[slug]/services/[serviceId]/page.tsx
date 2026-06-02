@@ -5,16 +5,11 @@ import type {
   IntegrationProviderResponse,
 } from '@trycompai/integration-platform';
 import { redirect } from 'next/navigation';
+import {
+  type IntegrationTaskApiResponse,
+  mapTaskTemplates,
+} from '../../lib/task-templates';
 import { ServiceDetailView } from './components/ServiceDetailView';
-
-interface TaskApiResponse {
-  data: Array<{
-    id: string;
-    title: string;
-    description: string;
-    taskTemplateId: string | null;
-  }>;
-}
 
 interface PageProps {
   params: Promise<{ orgId: string; slug: string; serviceId: string }>;
@@ -29,7 +24,7 @@ export default async function ServiceDetailPage({ params, searchParams }: PagePr
   const [providerResult, connectionsResult, tasksResult] = await Promise.all([
     serverApi.get<IntegrationProviderResponse>(`/v1/integrations/connections/providers/${slug}`),
     serverApi.get<ConnectionListItemResponse[]>('/v1/integrations/connections'),
-    serverApi.get<TaskApiResponse>('/v1/tasks'),
+    serverApi.get<IntegrationTaskApiResponse>('/v1/tasks'),
   ]);
 
   const provider = providerResult.data;
@@ -43,14 +38,7 @@ export default async function ServiceDetailPage({ params, searchParams }: PagePr
   }
 
   const connections = (connectionsResult.data ?? []).filter((c) => c.providerSlug === slug);
-  const taskTemplates = (tasksResult.data?.data ?? [])
-    .filter((task) => task.taskTemplateId)
-    .map((task) => ({
-      id: task.taskTemplateId as string,
-      taskId: task.id,
-      name: task.title,
-      description: task.description,
-    }));
+  const { templates: taskTemplates, errored: tasksErrored } = mapTaskTemplates(tasksResult);
 
   return (
     <PageLayout>
@@ -60,6 +48,7 @@ export default async function ServiceDetailPage({ params, searchParams }: PagePr
         connections={connections}
         connectionId={connectionId}
         taskTemplates={taskTemplates}
+        tasksErrored={tasksErrored}
         orgId={orgId}
         slug={slug}
       />

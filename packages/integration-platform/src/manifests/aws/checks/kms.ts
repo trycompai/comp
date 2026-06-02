@@ -16,14 +16,21 @@ import {
 export interface KmsKeyInfo {
   keyId: string;
   region: string;
-  customerManaged: boolean;
+  /**
+   * Customer-managed, enabled, symmetric ENCRYPT_DECRYPT key with AWS_KMS
+   * origin — the only key kind that supports automatic rotation. Asymmetric,
+   * HMAC, external, and CloudHSM keys cannot rotate and must not be failed.
+   */
+  rotationEligible: boolean;
+  /** false when GetKeyRotationStatus couldn't be read → emit no finding. */
+  rotationStatusKnown: boolean;
   rotationEnabled: boolean;
 }
 
-/** Only customer-managed keys are evaluated — AWS-managed keys rotate automatically. */
+/** Only rotation-eligible keys with a known status are evaluated. */
 export function evaluateKmsRotation(keys: KmsKeyInfo[]): CheckOutcome[] {
   return keys
-    .filter((k) => k.customerManaged)
+    .filter((k) => k.rotationEligible && k.rotationStatusKnown)
     .map((k) =>
       k.rotationEnabled
         ? {
@@ -47,7 +54,10 @@ export function evaluateKmsRotation(keys: KmsKeyInfo[]): CheckOutcome[] {
     );
 }
 
-async function listKmsKeys(session: AwsSession): Promise<KmsKeyInfo[]> {
+async function listKmsKeys(
+  ctx: CheckContext,
+  session: AwsSession,
+): Promise<KmsKeyInfo[]> {
   const out: KmsKeyInfo[] = [];
   for (const region of session.regions) {
     const kms = new KMSClient({ region, credentials: session.credentials });
@@ -57,20 +67,31 @@ async function listKmsKeys(session: AwsSession): Promise<KmsKeyInfo[]> {
       for (const k of resp.Keys ?? []) {
         const keyId = k.KeyId;
         if (!keyId) continue;
-        const desc = await kms.send(new DescribeKeyCommand({ KeyId: keyId }));
-        const meta = desc.KeyMetadata;
-        const customerManaged =
-          meta?.KeyManager === 'CUSTOMER' && meta?.KeyState === 'Enabled';
+        const meta = (await kms.send(new DescribeKeyCommand({ KeyId: keyId }))).KeyMetadata;
+        // Only symmetric, enabled, AWS-managed-material, encrypt/decrypt
+        // customer keys can have automatic rotation.
+        const rotationEligible =
+          meta?.KeyManager === 'CUSTOMER' &&
+          meta?.KeyState === 'Enabled' &&
+          meta?.KeySpec === 'SYMMETRIC_DEFAULT' &&
+          meta?.KeyUsage === 'ENCRYPT_DECRYPT' &&
+          meta?.Origin === 'AWS_KMS';
+
         let rotationEnabled = false;
-        if (customerManaged) {
+        let rotationStatusKnown = false;
+        if (rotationEligible) {
           try {
             const rot = await kms.send(new GetKeyRotationStatusCommand({ KeyId: keyId }));
             rotationEnabled = rot.KeyRotationEnabled === true;
-          } catch {
-            rotationEnabled = false;
+            rotationStatusKnown = true;
+          } catch (err) {
+            ctx.log(
+              `KMS: could not read rotation status for ${keyId} in ${region}: ${err instanceof Error ? err.message : String(err)}`,
+            );
+            rotationStatusKnown = false;
           }
         }
-        out.push({ keyId, region, customerManaged, rotationEnabled });
+        out.push({ keyId, region, rotationEligible, rotationStatusKnown, rotationEnabled });
       }
       marker = resp.NextMarker;
     } while (marker);
@@ -81,7 +102,7 @@ async function listKmsKeys(session: AwsSession): Promise<KmsKeyInfo[]> {
 export const kmsKeyRotationCheck: IntegrationCheck = {
   id: 'aws-kms-key-rotation',
   name: 'KMS — customer key rotation enabled',
-  description: 'Verify customer-managed KMS keys have automatic rotation enabled.',
+  description: 'Verify rotation-eligible customer-managed KMS keys have automatic rotation enabled.',
   service: 'kms',
   taskMapping: TASK_TEMPLATES.encryptionAtRest,
   run: async (ctx: CheckContext) => {
@@ -90,9 +111,9 @@ export const kmsKeyRotationCheck: IntegrationCheck = {
       ctx.log('AWS KMS check: connection not configured — skipping');
       return;
     }
-    const keys = await listKmsKeys(session);
-    const customerKeys = keys.filter((k) => k.customerManaged);
-    if (customerKeys.length === 0) return; // nothing to evidence
+    const keys = await listKmsKeys(ctx, session);
+    // Nothing to evidence if there are no rotation-eligible keys.
+    if (!keys.some((k) => k.rotationEligible && k.rotationStatusKnown)) return;
     emitOutcomes(ctx, evaluateKmsRotation(keys));
   },
 };

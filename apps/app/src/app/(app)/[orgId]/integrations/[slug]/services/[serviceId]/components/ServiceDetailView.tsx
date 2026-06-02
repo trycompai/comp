@@ -32,6 +32,7 @@ interface ServiceDetailViewProps {
   connections: ConnectionListItemResponse[];
   connectionId: string | null;
   taskTemplates: TaskTemplate[];
+  tasksErrored: boolean;
   orgId: string;
   slug: string;
 }
@@ -42,6 +43,7 @@ export function ServiceDetailView({
   connections,
   connectionId,
   taskTemplates,
+  tasksErrored,
   orgId,
   slug,
 }: ServiceDetailViewProps) {
@@ -59,6 +61,9 @@ export function ServiceDetailView({
   const liveService = connectionServices.find((s) => s.id === service.id);
   const isEnabled = liveService?.enabled ?? false;
   const isImplemented = service.implemented !== false;
+  // Only services present in the connection's live service list can be toggled.
+  // (e.g. AWS baseline services are always scanned and aren't in the toggle list.)
+  const isManageable = Boolean(liveService);
   const [toggling, setToggling] = useState(false);
 
   const taskByTemplateId = useMemo(
@@ -68,7 +73,7 @@ export function ServiceDetailView({
   const mappedTasks = service.mappedTasks ?? [];
 
   const handleToggle = async () => {
-    if (!effectiveConnectionId || toggling) return;
+    if (!effectiveConnectionId || toggling || !liveService) return;
     setToggling(true);
     const next = !isEnabled;
     try {
@@ -122,7 +127,7 @@ export function ServiceDetailView({
             role="switch"
             aria-checked={isEnabled}
             aria-label={`Toggle Cloud Tests scanning for ${service.name}`}
-            disabled={toggling || !effectiveConnectionId || !isImplemented}
+            disabled={toggling || !effectiveConnectionId || !isImplemented || !isManageable}
             onClick={() => void handleToggle()}
             className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer items-center rounded-full transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${
               isEnabled ? 'bg-primary' : 'bg-muted-foreground/30'
@@ -186,7 +191,7 @@ export function ServiceDetailView({
                     </Button>
                   ) : (
                     <span className="shrink-0 text-xs text-muted-foreground">
-                      Not added
+                      {tasksErrored ? 'Couldn’t load tasks' : 'Not added'}
                     </span>
                   )}
                 </div>

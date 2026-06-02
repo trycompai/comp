@@ -21,7 +21,11 @@ export async function resolveAzureSubscriptionId(
     const subs = data.value ?? [];
     const active = subs.find((s) => s.state === 'Enabled') ?? subs[0];
     return active?.subscriptionId ?? null;
-  } catch {
+  } catch (err) {
+    ctx.warn(
+      'Failed to auto-detect Azure subscription; set subscription_id manually',
+      { error: err instanceof Error ? err.message : String(err) },
+    );
     return null;
   }
 }
@@ -39,6 +43,12 @@ export async function armListAll<T>(
     if (Array.isArray(data.value)) out.push(...data.value);
     nextUrl = data.nextLink;
     pages++;
+  }
+  if (nextUrl) {
+    ctx.warn('Azure ARM list hit the page cap; results may be truncated', {
+      url,
+      pages,
+    });
   }
   return out;
 }

@@ -174,6 +174,28 @@ describe('GCP VPC open-firewalls check', () => {
     expect(failed).toHaveLength(1);
     expect(failed[0]!.severity).toBe('high');
   });
+
+  it('flags IPv6 ::/0 and sensitive ports across multiple tcp tuples', async () => {
+    const ipv6 = await runCheck(vpcOpenFirewallsCheck, {
+      fetch: () => ({
+        items: [{ name: 'v6', sourceRanges: ['::/0'], allowed: [{ IPProtocol: 'tcp', ports: ['3389'] }] }],
+      }),
+    });
+    expect(ipv6.failed[0]!.severity).toBe('critical');
+
+    const multi = await runCheck(vpcOpenFirewallsCheck, {
+      fetch: () => ({
+        items: [
+          {
+            name: 'm',
+            sourceRanges: ['0.0.0.0/0'],
+            allowed: [{ IPProtocol: 'tcp', ports: ['443'] }, { IPProtocol: 'tcp', ports: ['22'] }],
+          },
+        ],
+      }),
+    });
+    expect(multi.failed.some((f) => f.title.match(/SSH/))).toBe(true);
+  });
 });
 
 describe('GCP Cloud SQL checks', () => {
@@ -200,6 +222,18 @@ describe('GCP Cloud SQL checks', () => {
       fetch: () => ({ items: [{ name: 'db2', settings: { backupConfiguration: { enabled: false } } }] }),
     });
     expect(bad.failed).toHaveLength(1);
+  });
+
+  it('backups: skips read replicas (not configurable on them)', async () => {
+    const out = await runCheck(cloudSqlBackupsCheck, {
+      fetch: () => ({
+        items: [
+          { name: 'replica', masterInstanceName: 'primary', settings: { backupConfiguration: { enabled: false } } },
+        ],
+      }),
+    });
+    expect(out.passed).toHaveLength(0);
+    expect(out.failed).toHaveLength(0);
   });
 });
 

@@ -28,9 +28,40 @@ export async function resolveGcpProjectIds(ctx: CheckContext): Promise<string[]>
       `/v1/projects?filter=${encodeURIComponent(filter)}&pageSize=50`,
     );
     return (data.projects ?? []).map((p) => p.projectId).slice(0, 50);
-  } catch {
+  } catch (err) {
+    ctx.warn('GCP project auto-discovery failed; checks will be skipped', {
+      error: err instanceof Error ? err.message : String(err),
+    });
     return [];
   }
+}
+
+/**
+ * Page through a GCP list endpoint that returns `{ [itemsKey]: T[], nextPageToken? }`,
+ * following `nextPageToken` via the `pageToken` query param. Bounded to avoid
+ * runaway on very large projects.
+ */
+export async function gcpListItems<T>(
+  ctx: CheckContext,
+  url: string,
+  itemsKey = 'items',
+): Promise<T[]> {
+  const out: T[] = [];
+  let pageToken: string | undefined;
+  let pages = 0;
+  do {
+    const sep = url.includes('?') ? '&' : '?';
+    const pageUrl = pageToken
+      ? `${url}${sep}pageToken=${encodeURIComponent(pageToken)}`
+      : url;
+    const data = await ctx.fetch<Record<string, unknown>>(pageUrl);
+    const items = data[itemsKey];
+    if (Array.isArray(items)) out.push(...(items as T[]));
+    pageToken =
+      typeof data.nextPageToken === 'string' ? data.nextPageToken : undefined;
+    pages++;
+  } while (pageToken && pages < 50);
+  return out;
 }
 
 /**

@@ -39,7 +39,9 @@ export const sqlTlsCheck: IntegrationCheck = {
     if (servers.length === 0) return;
     for (const s of servers) {
       const tls = s.properties?.minimalTlsVersion;
-      if (!tls || tls < '1.2') {
+      // 'None' means no TLS floor is enforced (insecure). It is lexically > '1.2'
+      // so it must be handled explicitly, not via the `< '1.2'` comparison.
+      if (!tls || tls === 'None' || tls < '1.2') {
         ctx.fail({
           title: `Outdated TLS version: ${s.name}`,
           description: `SQL Server "${s.name}" allows TLS versions below 1.2 (current: ${tls ?? 'unset'}).`,
@@ -87,33 +89,36 @@ export const sqlPublicAccessCheck: IntegrationCheck = {
         };
       }
 
+      // null = firewall read failed → do NOT treat as "no wide-open rules".
       const rules = await armListAll<SqlFirewallRule>(
         ctx,
         `${ARM_BASE}${s.id}/firewallRules?api-version=2023-05-01-preview`,
-      ).catch(() => [] as SqlFirewallRule[]);
+      ).catch(() => null);
 
-      const wideOpen = rules.find(
-        (r) =>
-          r.properties.startIpAddress === '0.0.0.0' &&
-          r.properties.endIpAddress === '255.255.255.255',
-      );
-      const allowAllAzure = rules.find(
-        (r) =>
-          r.properties.startIpAddress === '0.0.0.0' &&
-          r.properties.endIpAddress === '0.0.0.0',
-      );
-      if (wideOpen) {
-        violation = {
-          title: `SQL firewall wide open: ${s.name}`,
-          severity: 'critical',
-          detail: 'allows connections from any IP (0.0.0.0–255.255.255.255)',
-        };
-      } else if (!violation && allowAllAzure) {
-        violation = {
-          title: `SQL allows all Azure services: ${s.name}`,
-          severity: 'medium',
-          detail: 'has the "Allow Azure services" (0.0.0.0) rule',
-        };
+      if (rules) {
+        const wideOpen = rules.find(
+          (r) =>
+            r.properties.startIpAddress === '0.0.0.0' &&
+            r.properties.endIpAddress === '255.255.255.255',
+        );
+        const allowAllAzure = rules.find(
+          (r) =>
+            r.properties.startIpAddress === '0.0.0.0' &&
+            r.properties.endIpAddress === '0.0.0.0',
+        );
+        if (wideOpen) {
+          violation = {
+            title: `SQL firewall wide open: ${s.name}`,
+            severity: 'critical',
+            detail: 'allows connections from any IP (0.0.0.0–255.255.255.255)',
+          };
+        } else if (!violation && allowAllAzure) {
+          violation = {
+            title: `SQL allows all Azure services: ${s.name}`,
+            severity: 'medium',
+            detail: 'has the "Allow Azure services" (0.0.0.0) rule',
+          };
+        }
       }
 
       if (violation) {
@@ -127,6 +132,10 @@ export const sqlPublicAccessCheck: IntegrationCheck = {
             'Disable public network access and use private endpoints; remove 0.0.0.0 firewall rules.',
           evidence: { server: s.name, publicNetworkAccess: s.properties?.publicNetworkAccess ?? null },
         });
+      } else if (rules === null) {
+        // Public access not Enabled but firewall rules unreadable — can't assert
+        // a clean pass, so emit neither (the task simply isn't satisfied here).
+        continue;
       } else {
         ctx.pass({
           title: `No public access: ${s.name}`,

@@ -1,10 +1,14 @@
 import { TASK_TEMPLATES } from '../../../task-mappings';
 import type { CheckContext, IntegrationCheck } from '../../../types';
-import { resolveGcpProjectIds } from './shared';
+import { gcpListItems, resolveGcpProjectIds } from './shared';
 
 interface SqlInstance {
   name: string;
   region?: string;
+  /** CLOUD_SQL_INSTANCE (primary) | READ_REPLICA_INSTANCE | ON_PREMISES_INSTANCE | ... */
+  instanceType?: string;
+  /** Set on read replicas — points at the primary. */
+  masterInstanceName?: string;
   settings?: {
     backupConfiguration?: { enabled?: boolean };
   };
@@ -29,13 +33,21 @@ export const cloudSqlBackupsCheck: IntegrationCheck = {
     }
 
     for (const projectId of projectIds) {
-      const data = await ctx.fetch<{ items?: SqlInstance[] }>(
+      const instances = await gcpListItems<SqlInstance>(
+        ctx,
         `https://sqladmin.googleapis.com/v1/projects/${encodeURIComponent(projectId)}/instances`,
       );
-      const instances = data.items ?? [];
       if (instances.length === 0) continue;
 
       for (const inst of instances) {
+        // Read replicas / on-prem instances can't configure their own backups
+        // (replicas are protected by the primary's backups) — don't fail them.
+        if (
+          inst.masterInstanceName ||
+          (inst.instanceType && inst.instanceType !== 'CLOUD_SQL_INSTANCE')
+        ) {
+          continue;
+        }
         const enabled = inst.settings?.backupConfiguration?.enabled === true;
         if (enabled) {
           ctx.pass({

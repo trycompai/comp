@@ -1,6 +1,6 @@
 import { TASK_TEMPLATES } from '../../../task-mappings';
 import type { CheckContext, IntegrationCheck } from '../../../types';
-import { resolveGcpProjectIds } from './shared';
+import { gcpListItems, resolveGcpProjectIds } from './shared';
 
 interface Bucket {
   name: string;
@@ -32,10 +32,10 @@ export const storagePublicAccessCheck: IntegrationCheck = {
     }
 
     for (const projectId of projectIds) {
-      const data = await ctx.fetch<{ items?: Bucket[] }>(
+      const buckets = await gcpListItems<Bucket>(
+        ctx,
         `https://storage.googleapis.com/storage/v1/b?project=${encodeURIComponent(projectId)}`,
       );
-      const buckets = data.items ?? [];
       if (buckets.length === 0) continue; // nothing to evidence for this project
 
       let violations = 0;
@@ -57,8 +57,8 @@ export const storagePublicAccessCheck: IntegrationCheck = {
         if (iam?.publicAccessPrevention !== 'enforced') {
           violations++;
           ctx.fail({
-            title: `Public access prevention not enforced: ${bucket.name}`,
-            description: `Bucket "${bucket.name}" does not enforce public access prevention (current: ${iam?.publicAccessPrevention ?? 'inherited'}).`,
+            title: `Public access prevention not enforced at the bucket level: ${bucket.name}`,
+            description: `Bucket "${bucket.name}" does not set public access prevention to "enforced" at the bucket level (current: ${iam?.publicAccessPrevention ?? 'inherited'}). If an org policy enforces it, this inherits — verify the org policy or set it explicitly on the bucket.`,
             resourceType: 'gcp-storage-bucket',
             resourceId: bucket.name,
             severity: 'medium',

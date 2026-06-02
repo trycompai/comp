@@ -92,7 +92,7 @@ export function evaluateIamAccount(data: IamAccountData): CheckOutcome[] {
     out.push({
       kind: 'fail',
       title: 'Root account access keys present',
-      description: 'The root account has active access keys, which should not exist.',
+      description: 'The root account has access keys (active or inactive), which should not exist.',
       resourceType: 'aws-account',
       resourceId: id,
       severity: 'high',

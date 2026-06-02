@@ -14,6 +14,7 @@ interface DiagnosticSetting {
     workspaceId?: string;
     storageAccountId?: string;
     eventHubAuthorizationRuleId?: string;
+    logs?: Array<{ enabled?: boolean }>;
   };
 }
 
@@ -71,6 +72,20 @@ export const monitorLoggingAlertingCheck: IntegrationCheck = {
           evidence: { recommended: RECOMMENDED_ALERTS.length },
         });
       }
+    } else {
+      // Alerts unreadable — fail rather than let the log-export half pass the
+      // shared Monitoring task on incomplete evaluation.
+      ctx.fail({
+        title: 'Could not read activity log alerts',
+        description:
+          'Activity log alert coverage could not be read, so alerting was not verified.',
+        resourceType: 'azure-subscription',
+        resourceId: sub,
+        severity: 'medium',
+        remediation:
+          'Grant Monitoring Reader (or Reader) so activity log alerts can be evaluated.',
+        evidence: {},
+      });
     }
 
     const diag = await ctx
@@ -83,9 +98,10 @@ export const monitorLoggingAlertingCheck: IntegrationCheck = {
       const settings = diag.value ?? [];
       const hasExport = settings.some(
         (s) =>
-          s.properties?.workspaceId ||
-          s.properties?.storageAccountId ||
-          s.properties?.eventHubAuthorizationRuleId,
+          (s.properties?.workspaceId ||
+            s.properties?.storageAccountId ||
+            s.properties?.eventHubAuthorizationRuleId) &&
+          (s.properties?.logs ?? []).some((l) => l.enabled),
       );
       if (hasExport) {
         ctx.pass({

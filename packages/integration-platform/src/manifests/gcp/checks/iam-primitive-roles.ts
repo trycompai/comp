@@ -60,11 +60,16 @@ export const iamPrimitiveRolesCheck: IntegrationCheck = {
 
       if (violations === 0) {
         ctx.pass({
-          title: 'No primitive owner/editor roles',
-          description: `Project "${projectId}" has no primitive role bindings.`,
+          title: 'No primitive owner/editor roles granted directly on the project',
+          description: `Project "${projectId}" has no primitive (owner/editor) role bindings set directly on the project. Note: bindings inherited from parent folders or the organization are not evaluated by this check.`,
           resourceType: 'gcp-project',
           resourceId: projectId,
-          evidence: { projectId, bindingCount: bindings.length },
+          evidence: {
+            projectId,
+            bindingCount: bindings.length,
+            scope: 'direct-project-bindings-only',
+            inheritedBindingsEvaluated: false,
+          },
         });
       }
     }

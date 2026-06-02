@@ -1,6 +1,6 @@
 import { TASK_TEMPLATES } from '../../../task-mappings';
 import type { CheckContext, IntegrationCheck } from '../../../types';
-import { resolveGcpProjectIds } from './shared';
+import { gcpListItems, resolveGcpProjectIds } from './shared';
 
 interface SqlInstance {
   name: string;
@@ -35,10 +35,10 @@ export const cloudSqlSslCheck: IntegrationCheck = {
     }
 
     for (const projectId of projectIds) {
-      const data = await ctx.fetch<{ items?: SqlInstance[] }>(
+      const instances = await gcpListItems<SqlInstance>(
+        ctx,
         `https://sqladmin.googleapis.com/v1/projects/${encodeURIComponent(projectId)}/instances`,
       );
-      const instances = data.items ?? [];
       if (instances.length === 0) continue;
 
       for (const inst of instances) {

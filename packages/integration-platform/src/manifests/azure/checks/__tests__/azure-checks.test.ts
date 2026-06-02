@@ -86,6 +86,19 @@ describe('Azure storage checks', () => {
     expect(ok.passed).toHaveLength(1);
   });
 
+  it("public-access: publicNetworkAccess 'Disabled' overrides networkAcls Allow", async () => {
+    const { passed, failed } = await run(
+      storagePublicAccessCheck,
+      storageList({
+        allowBlobPublicAccess: false,
+        publicNetworkAccess: 'Disabled',
+        networkAcls: { defaultAction: 'Allow' },
+      }),
+    );
+    expect(failed).toHaveLength(0);
+    expect(passed).toHaveLength(1);
+  });
+
   it('encryption fails when a service is disabled, passes when enabled', async () => {
     const bad = await run(
       storageEncryptionCheck,
@@ -104,9 +117,12 @@ describe('Azure storage checks', () => {
 describe('Azure SQL checks', () => {
   const server = { id: '/subscriptions/sub-1/srv1', name: 'srv1', properties: {} as Record<string, unknown> };
 
-  it('tls fails below 1.2, passes at 1.2', async () => {
+  it('tls fails below 1.2 and on None, passes at 1.2', async () => {
     const bad = await run(sqlTlsCheck, () => ({ value: [{ ...server, properties: { minimalTlsVersion: '1.0' } }] }));
     expect(bad.failed).toHaveLength(1);
+    // 'None' is lexically > '1.2' but means no TLS floor → must fail
+    const none = await run(sqlTlsCheck, () => ({ value: [{ ...server, properties: { minimalTlsVersion: 'None' } }] }));
+    expect(none.failed).toHaveLength(1);
     const ok = await run(sqlTlsCheck, () => ({ value: [{ ...server, properties: { minimalTlsVersion: '1.2' } }] }));
     expect(ok.passed).toHaveLength(1);
   });
@@ -188,6 +204,20 @@ describe('Azure NSG check', () => {
     );
     expect(passed).toHaveLength(1);
   });
+
+  it('flags IPv6 ::/0 source and port ranges covering sensitive ports', async () => {
+    const ipv6 = await run(
+      nsgNoOpenPortsCheck,
+      nsg({ name: 'r6', properties: { direction: 'Inbound', access: 'Allow', protocol: 'Tcp', sourceAddressPrefix: '::/0', destinationPortRange: '3389', priority: 100 } }),
+    );
+    expect(ipv6.failed.some((f) => f.severity === 'critical')).toBe(true);
+
+    const range = await run(
+      nsgNoOpenPortsCheck,
+      nsg({ name: 'rr', properties: { direction: 'Inbound', access: 'Allow', protocol: 'Tcp', sourceAddressPrefix: '*', destinationPortRange: '20-30', priority: 100 } }),
+    );
+    expect(range.failed.some((f) => f.title.match(/SSH/))).toBe(true);
+  });
 });
 
 describe('Azure RBAC (entra) check', () => {
@@ -203,6 +233,20 @@ describe('Azure RBAC (entra) check', () => {
       };
     });
     expect(failed.some((f) => f.title.match(/Excessive privileged/))).toBe(true);
+  });
+
+  it('flags a custom role with wildcard dataActions', async () => {
+    const { failed } = await run(rbacLeastPrivilegeCheck, (url) => {
+      if (url.includes('roleDefinitions')) {
+        return {
+          value: [
+            { id: 'cr', properties: { roleName: 'Custom', type: 'CustomRole', permissions: [{ actions: [], dataActions: ['*'] }] } },
+          ],
+        };
+      }
+      return { value: [] };
+    });
+    expect(failed.some((f) => f.title.match(/[Ww]ildcard/))).toBe(true);
   });
 
   it('passes with few privileged, no wildcard roles', async () => {

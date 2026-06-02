@@ -44,8 +44,9 @@ export const keyVaultProtectionCheck: IntegrationCheck = {
       }
       if (!p.enablePurgeProtection) issues.push('purge protection disabled');
       const isPublic =
-        p.publicNetworkAccess === 'Enabled' ||
-        p.networkAcls?.defaultAction === 'Allow';
+        p.publicNetworkAccess !== 'Disabled' &&
+        (p.publicNetworkAccess === 'Enabled' ||
+          p.networkAcls?.defaultAction === 'Allow');
       if (isPublic) {
         issues.push('public network access');
         severity = 'high';
