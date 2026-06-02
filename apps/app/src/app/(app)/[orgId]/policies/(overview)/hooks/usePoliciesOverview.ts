@@ -16,6 +16,7 @@ interface PolicyFromApi {
   id: string;
   status: string;
   isArchived: boolean;
+  archivedAt: string | null;
   assigneeId: string | null;
   assignee?: {
     id: string;
@@ -32,8 +33,8 @@ interface UsePoliciesOverviewOptions {
 
 export function usePoliciesOverview({ organizationId, initialData }: UsePoliciesOverviewOptions) {
   const { data, error, isLoading, mutate } = useSWR(
-    ['/v1/policies', organizationId],
-    async ([endpoint, orgId]) => {
+    ['/v1/policies?includeArchived=true', organizationId],
+    async ([endpoint]) => {
       const response = await apiClient.get<{ data: PolicyFromApi[] }>(endpoint);
       if (response.error) throw new Error(response.error);
       return response.data?.data ?? [];

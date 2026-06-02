@@ -96,6 +96,13 @@ export class PolicyResponseDto {
   isArchived: boolean;
 
   @ApiProperty({
+    description: 'When the policy was archived by framework sync',
+    example: '2024-02-01T00:00:00.000Z',
+    nullable: true,
+  })
+  archivedAt?: Date;
+
+  @ApiProperty({
     description: 'When the policy was created',
     example: '2024-01-01T00:00:00.000Z',
   })

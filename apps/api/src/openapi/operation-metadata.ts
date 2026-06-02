@@ -50,7 +50,7 @@ const CORE_OPERATION_METADATA: Record<string, PublicOperationMetadata> = {
   PoliciesController_getAllPolicies_v1: {
     summary: 'List compliance policies',
     description:
-      'Lists compliance policies for the organization. Use this to find a policy by name, look up a policy ID, browse drafts, or get an overview of all policies for SOC 2, ISO 27001, HIPAA, and GDPR workflows. Returns id, name, status, department, and other metadata for each policy. Pass excludeContent=true to skip the heavy TipTap content fields — recommended when you only need to identify a policy. To read or edit a single policy in detail, fetch it by ID via get-compliance-policy.',
+      'Lists active compliance policies by default. Use includeArchived=true to include archived rows and excludeContent=true when you only need policy metadata.',
     codeSamples: [
       {
         lang: 'bash',
@@ -63,6 +63,12 @@ const CORE_OPERATION_METADATA: Record<string, PublicOperationMetadata> = {
         label: 'List policies (lightweight, no content)',
         source:
           'curl --request GET --url "https://api.trycomp.ai/v1/policies?excludeContent=true" --header "X-API-Key: $COMP_AI_API_KEY"',
+      },
+      {
+        lang: 'bash',
+        label: 'List policies including archived',
+        source:
+          'curl --request GET --url "https://api.trycomp.ai/v1/policies?includeArchived=true" --header "X-API-Key: $COMP_AI_API_KEY"',
       },
     ],
   },

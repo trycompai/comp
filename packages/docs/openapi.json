@@ -7127,7 +7127,7 @@
     },
     "/v1/policies": {
       "get": {
-        "description": "Lists compliance policies for the organization. Use this to find a policy by name, look up a policy ID, browse drafts, or get an overview of all policies for SOC 2, ISO 27001, HIPAA, and GDPR workflows. Returns id, name, status, department, and other metadata for each policy. Pass excludeContent=true to skip the heavy TipTap content fields — recommended when you only need to identify a policy. To read or edit a single policy in detail, fetch it by ID via get-compliance-policy.",
+        "description": "Lists active compliance policies by default. Use includeArchived=true to include archived rows and excludeContent=true when you only need policy metadata.",
         "operationId": "PoliciesController_getAllPolicies_v1",
         "parameters": [
           {
@@ -7144,6 +7144,15 @@
             "required": false,
             "in": "query",
             "description": "When true, omits `content` and `draftContent` from each policy in the response. Use this when listing policies to find one by name/ID — fetch the full content via GET /v1/policies/{id} after.",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "includeArchived",
+            "required": false,
+            "in": "query",
+            "description": "When true, includes user-archived and framework-sync-archived policies in the response. Defaults to false.",
             "schema": {
               "type": "boolean"
             }
@@ -7221,6 +7230,7 @@
                       "signedBy": [],
                       "reviewDate": "2024-12-31T00:00:00.000Z",
                       "isArchived": false,
+                      "archivedAt": null,
                       "createdAt": "2024-01-01T00:00:00.000Z",
                       "updatedAt": "2024-01-15T00:00:00.000Z",
                       "lastArchivedAt": null,
@@ -7276,9 +7286,9 @@
           "metadata": {
             "title": "List compliance policies | Comp AI API",
             "sidebarTitle": "List compliance policies",
-            "description": "Lists compliance policies for the organization. Use this to find a policy by name, look up a policy ID, browse drafts, or get an overview of all policies.",
+            "description": "Lists active compliance policies by default. Use includeArchived=true to include archived rows.",
             "og:title": "List compliance policies | Comp AI API",
-            "og:description": "Lists compliance policies for the organization. Use this to find a policy by name, look up a policy ID, browse drafts, or get an overview of all policies."
+            "og:description": "Lists active compliance policies by default. Use includeArchived=true to include archived rows."
           }
         },
         "x-codeSamples": [
@@ -7291,6 +7301,11 @@
             "lang": "bash",
             "label": "List policies (lightweight, no content)",
             "source": "curl --request GET --url \"https://api.trycomp.ai/v1/policies?excludeContent=true\" --header \"X-API-Key: $COMP_AI_API_KEY\""
+          },
+          {
+            "lang": "bash",
+            "label": "List policies including archived",
+            "source": "curl --request GET --url \"https://api.trycomp.ai/v1/policies?includeArchived=true\" --header \"X-API-Key: $COMP_AI_API_KEY\""
           }
         ]
       },
@@ -7349,6 +7364,7 @@
                   "signedBy": [],
                   "reviewDate": "2024-12-31T00:00:00.000Z",
                   "isArchived": false,
+                  "archivedAt": null,
                   "createdAt": "2024-01-01T00:00:00.000Z",
                   "updatedAt": "2024-01-15T00:00:00.000Z",
                   "organizationId": "org_abc123def456",
@@ -8470,6 +8486,7 @@
                   ],
                   "reviewDate": "2024-12-31T00:00:00.000Z",
                   "isArchived": false,
+                  "archivedAt": null,
                   "createdAt": "2024-01-01T00:00:00.000Z",
                   "updatedAt": "2024-01-15T00:00:00.000Z",
                   "organizationId": "org_abc123def456",
@@ -28211,6 +28228,13 @@
             "description": "Whether this policy is archived",
             "example": false
           },
+          "archivedAt": {
+            "format": "date-time",
+            "type": "string",
+            "description": "When the policy was archived by framework sync",
+            "example": "2024-02-01T00:00:00.000Z",
+            "nullable": true
+          },
           "createdAt": {
             "format": "date-time",
             "type": "string",
@@ -28273,6 +28297,7 @@
           "signedBy",
           "reviewDate",
           "isArchived",
+          "archivedAt",
           "createdAt",
           "updatedAt",
           "lastArchivedAt",

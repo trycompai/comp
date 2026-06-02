@@ -140,7 +140,7 @@ describe('PoliciesService', () => {
     });
 
     it('includes content and draftContent in the select by default', async () => {
-      await service.findAll(orgId);
+      await service.findAll({ organizationId: orgId });
 
       const callArgs = db.policy.findMany.mock.calls[0][0];
       expect(callArgs.select.content).toBe(true);
@@ -148,7 +148,7 @@ describe('PoliciesService', () => {
     });
 
     it('includes content and draftContent when excludeContent is false', async () => {
-      await service.findAll(orgId, { excludeContent: false });
+      await service.findAll({ organizationId: orgId, excludeContent: false });
 
       const callArgs = db.policy.findMany.mock.calls[0][0];
       expect(callArgs.select.content).toBe(true);
@@ -156,7 +156,7 @@ describe('PoliciesService', () => {
     });
 
     it('omits content and draftContent from select when excludeContent is true', async () => {
-      await service.findAll(orgId, { excludeContent: true });
+      await service.findAll({ organizationId: orgId, excludeContent: true });
 
       const callArgs = db.policy.findMany.mock.calls[0][0];
       expect(callArgs.select.content).toBeUndefined();
@@ -169,12 +169,21 @@ describe('PoliciesService', () => {
     });
 
     it('scopes results to the organization regardless of excludeContent', async () => {
-      await service.findAll(orgId, { excludeContent: true });
+      await service.findAll({ organizationId: orgId, excludeContent: true });
 
       const callArgs = db.policy.findMany.mock.calls[0][0];
       expect(callArgs.where.organizationId).toBe(orgId);
       expect(callArgs.where.isArchived).toBe(false);
       expect(callArgs.where.archivedAt).toBeNull();
+    });
+
+    it('includes archived policies when includeArchived is true', async () => {
+      await service.findAll({ organizationId: orgId, includeArchived: true });
+
+      const callArgs = db.policy.findMany.mock.calls[0][0];
+      expect(callArgs.where).toEqual({ organizationId: orgId });
+      expect(callArgs.select.archivedAt).toBe(true);
+      expect(callArgs.select.isArchived).toBe(true);
     });
   });
 

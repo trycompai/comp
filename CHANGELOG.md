@@ -1,3 +1,59 @@
+## [3.66.2](https://github.com/trycompai/comp/compare/v3.66.1...v3.66.2) (2026-06-02)
+
+
+### Bug Fixes
+
+* **frameworks:** prune deleted editor templates during org initialization ([d269491](https://github.com/trycompai/comp/commit/d2694910808dc42be4b983b1cd645bc6c5be9830))
+
+## [3.66.1](https://github.com/trycompai/comp/compare/v3.66.0...v3.66.1) (2026-06-01)
+
+
+### Bug Fixes
+
+* **api:** avoid registering duplicated device when the status is flipping to compliant ([b103710](https://github.com/trycompai/comp/commit/b1037104271c5c750bc7a5d111c98d3672b39c40))
+* **api:** exclude deactivated owners from acting-user fallback ([ec6a1fa](https://github.com/trycompai/comp/commit/ec6a1fa9beff9fe474dba37785a06bb0ae834ba8))
+* **api:** support API key auth on upload-submission endpoint ([9570390](https://github.com/trycompai/comp/commit/957039077d3681a7c90cb1f246a3a5aeb6a3a8a1))
+* **app:** fit requirements table columns ([318330e](https://github.com/trycompai/comp/commit/318330ef7b3d55b51152c1eee4c31cc960d8bd9c))
+* **app:** keep removed multi-select values in the dropdown ([4dc1a12](https://github.com/trycompai/comp/commit/4dc1a12d4491fef3b0aecbaf10787db21b09559d))
+* **app:** prevent duplicate publish all submissions ([8b0b863](https://github.com/trycompai/comp/commit/8b0b863923d8f30fd6be2d7713424cb5935dcca0))
+* **app:** resolve archived policy and compliance UI tasks ([d8ce450](https://github.com/trycompai/comp/commit/d8ce45093d87a3f7222fc14123ca88a82043f9c5))
+* **app:** resolve small linear tasks ([424d863](https://github.com/trycompai/comp/commit/424d863458ccfd9059611515239e86895fee6c5f))
+* **app:** search integrations by name ([4db9154](https://github.com/trycompai/comp/commit/4db91546dfefa9b010bedbc65aedf7a781ce6a0b))
+* **app:** warn before invalidating policy acknowledgments ([76e106f](https://github.com/trycompai/comp/commit/76e106f1ab125ddbeaaa9945e2be39185b45230b))
+* **device-agent:** make serial number extraction more robust on agent ([85f0b1e](https://github.com/trycompai/comp/commit/85f0b1e52d3f978935fddf6858eec6f6239a4e69))
+
+# [3.66.0](https://github.com/trycompai/comp/compare/v3.65.1...v3.66.0) (2026-05-29)
+
+
+### Bug Fixes
+
+* **api:** add OpenAPI summaries + descriptions to offboarding endpoints ([38ac017](https://github.com/trycompai/comp/commit/38ac017170d27d317be0a3c2862176822d9b779e))
+* **api:** add PermissionGuard + app:read to MCP controller ([7b61ed5](https://github.com/trycompai/comp/commit/7b61ed56b94835ec7fcd47b08802ad1cd4567200))
+* **api:** address cubic review findings on the MCP auth path ([03dc24a](https://github.com/trycompai/comp/commit/03dc24a2b2cc6fb86714c8856587bc3f458328bc))
+* **api:** block org-less users from the MCP entirely ([a7ccc9a](https://github.com/trycompai/comp/commit/a7ccc9a6e4996647cecb912213d21bd110ac92b8))
+* **api:** clear offboardDate when reactivating user in GWS sync ([97636c4](https://github.com/trycompai/comp/commit/97636c4ea8c56c522f8d3a005e0e1348df4f815e))
+* **api:** disable declaration emit in the build (TS4023 from mcp plugin) ([7118c6e](https://github.com/trycompai/comp/commit/7118c6e7db83752e82f2e28321bbbcbb1a4f510d))
+* **api:** prevent proxy timeout on large-org ZIP exports ([4cd3b1c](https://github.com/trycompai/comp/commit/4cd3b1ccd409550ec03ee19483d557a4262ee138))
+* **api:** reactivate the previously-deactivated user during GWS sync ([4fdb815](https://github.com/trycompai/comp/commit/4fdb815883b2aac17717016f57364075cbc7950b))
+* **api:** return 403 (not 401) when an MCP user must choose an org ([28bbc11](https://github.com/trycompai/comp/commit/28bbc112214d95ee32510b3292aa261cf6697dc6))
+* **api:** skip OAuth consent for first-party Gram MCP client ([aa7fde0](https://github.com/trycompai/comp/commit/aa7fde027d21d1c187ee43b24e38c1f803bbf648))
+* **ci:** correct gram push command (add GRAM_ORG, fix install PATH) ([3d19a73](https://github.com/trycompai/comp/commit/3d19a73cd51c5ea9cf2b91cc87856d475f665083))
+* **ci:** set least-privilege GITHUB_TOKEN permissions (contents: read) ([e53e2af](https://github.com/trycompai/comp/commit/e53e2afa38253df7cf5ba7b319584bbfb25becbc))
+* **integrations:** record lastSyncAt after Google Workspace employee sync ([1d2112e](https://github.com/trycompai/comp/commit/1d2112e4dd3c7b2468a37d4c5c3ad8c3b5082fc9))
+* platform-admin MCP bypass + revalidate on save error ([61c8016](https://github.com/trycompai/comp/commit/61c8016fad7fe0bf8e4cac4a6c0077e6168698ca))
+* **portal:** hide archived policies from employee policy lists ([1c30c30](https://github.com/trycompai/comp/commit/1c30c301ae7ec579bfc79bbbaf525f0d2929f675))
+
+
+### Features
+
+* add banner to let user know to setup their trust portal ([a10c586](https://github.com/trycompai/comp/commit/a10c58686ec3d736238852ddc3956d971f25367c))
+* **api:** add OAuth provider for keyless hosted MCP auth ([5caf46a](https://github.com/trycompai/comp/commit/5caf46a24b92e4a10f7fa24ffff6c6bcbc13c1da))
+* **api:** declare oauth2 security scheme for MCP per-user auth ([e906b6d](https://github.com/trycompai/comp/commit/e906b6de87817f4f71d556c6c9fe3abeab9f3ef0))
+* **api:** gate MCP on app-access role, not just org membership ([653fc3b](https://github.com/trycompai/comp/commit/653fc3be1ecc3243fcecf330cb71450a5ed5039b))
+* **api:** multi-org support for hosted MCP ([81d11a5](https://github.com/trycompai/comp/commit/81d11a5d51f55b95045990107045366c37aeaa0b))
+* **app:** add MCP org picker to user settings ([8d4baea](https://github.com/trycompai/comp/commit/8d4baea0425d2a33eb5533fceccecfc367cc7348))
+* **trust:** auto-publish trust portal for new orgs at creation ([e55fbfd](https://github.com/trycompai/comp/commit/e55fbfd7fb92ed7c5a5bc9f0814452ede8f5f0cb))
+
 ## [3.65.1](https://github.com/trycompai/comp/compare/v3.65.0...v3.65.1) (2026-05-28)
 
 

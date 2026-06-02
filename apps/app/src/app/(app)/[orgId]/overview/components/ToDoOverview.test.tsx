@@ -1,12 +1,13 @@
-import { render, screen } from '@testing-library/react';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
-  setMockPermissions,
   ADMIN_PERMISSIONS,
   AUDITOR_PERMISSIONS,
   NO_PERMISSIONS,
   mockHasPermission,
+  setMockPermissions,
 } from '@/test-utils/mocks/permissions';
+import { render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 vi.mock('@/hooks/use-permissions', () => ({
   usePermissions: () => ({
@@ -25,6 +26,15 @@ vi.mock('sonner', () => ({
 
 vi.mock('next/link', () => ({
   default: ({ children, href }: any) => <a href={href}>{children}</a>,
+}));
+
+const { mockRefresh } = vi.hoisted(() => ({
+  mockRefresh: vi.fn(),
+}));
+vi.mock('next/navigation', () => ({
+  useRouter: () => ({
+    refresh: mockRefresh,
+  }),
 }));
 
 vi.mock('@trycompai/ui/button', () => ({
@@ -61,9 +71,24 @@ vi.mock('@trycompai/ui/tabs', () => ({
   ),
 }));
 
-vi.mock('./ConfirmActionDialog', () => ({
-  ConfirmActionDialog: ({ isOpen, title }: any) =>
-    isOpen ? <div data-testid="confirm-dialog">{title}</div> : null,
+vi.mock('@/components/policies/PolicyAcknowledgmentInvalidationDialog', () => ({
+  getPolicyAcknowledgmentTotal: (policies: Array<{ signedBy?: string[] }>) =>
+    policies.reduce((total, policy) => total + (policy.signedBy?.length ?? 0), 0),
+  PolicyAcknowledgmentInvalidationDialog: ({
+    acknowledgmentCount,
+    onConfirm,
+    open,
+  }: {
+    acknowledgmentCount: number;
+    onConfirm: () => void;
+    open: boolean;
+  }) =>
+    open ? (
+      <div data-testid="acknowledgment-dialog">
+        <span>{acknowledgmentCount}</span>
+        <button onClick={onConfirm}>Publish and invalidate</button>
+      </div>
+    ) : null,
 }));
 
 vi.mock('lucide-react', () => ({
@@ -89,12 +114,14 @@ const mockUnpublishedPolicies = [
     name: 'Security Policy',
     status: 'draft',
     organizationId: 'org-1',
+    signedBy: ['user-1', 'user-2'],
   },
   {
     id: 'pol-2',
     name: 'Privacy Policy',
     status: 'draft',
     organizationId: 'org-1',
+    signedBy: [],
   },
 ] as any[];
 
@@ -123,6 +150,14 @@ const defaultProps = {
 describe('ToDoOverview', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(() =>
+        Promise.resolve({
+          ok: true,
+        }),
+      ),
+    );
   });
 
   describe('Permission gating', () => {
@@ -131,9 +166,7 @@ describe('ToDoOverview', () => {
 
       render(<ToDoOverview {...defaultProps} />);
 
-      expect(
-        screen.getByRole('button', { name: /publish all policies/i }),
-      ).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /publish all policies/i })).toBeInTheDocument();
     });
 
     it('hides "Publish All Policies" button when user lacks policy:update permission (auditor)', () => {
@@ -188,37 +221,21 @@ describe('ToDoOverview', () => {
 
       render(<ToDoOverview {...defaultProps} />);
 
-      expect(
-        screen.getByText('Complete SOC 2 audit'),
-      ).toBeInTheDocument();
+      expect(screen.getByText('Complete SOC 2 audit')).toBeInTheDocument();
     });
 
     it('shows "All policies are published!" when no unpublished policies exist', () => {
       setMockPermissions(ADMIN_PERMISSIONS);
 
-      render(
-        <ToDoOverview
-          {...defaultProps}
-          unpublishedPolicies={[]}
-          remainingPolicies={0}
-        />,
-      );
+      render(<ToDoOverview {...defaultProps} unpublishedPolicies={[]} remainingPolicies={0} />);
 
-      expect(
-        screen.getByText('All policies are published!'),
-      ).toBeInTheDocument();
+      expect(screen.getByText('All policies are published!')).toBeInTheDocument();
     });
 
     it('does not show publish button even with permissions when no unpublished policies', () => {
       setMockPermissions(ADMIN_PERMISSIONS);
 
-      render(
-        <ToDoOverview
-          {...defaultProps}
-          unpublishedPolicies={[]}
-          remainingPolicies={0}
-        />,
-      );
+      render(<ToDoOverview {...defaultProps} unpublishedPolicies={[]} remainingPolicies={0} />);
 
       expect(
         screen.queryByRole('button', { name: /publish all policies/i }),
@@ -232,9 +249,47 @@ describe('ToDoOverview', () => {
 
       expect(screen.getByTestId('tab-trigger-policies')).toBeInTheDocument();
       expect(screen.getByTestId('tab-trigger-tasks')).toBeInTheDocument();
-      expect(
-        screen.getByTestId('tab-trigger-offboarding'),
-      ).toBeInTheDocument();
+      expect(screen.getByTestId('tab-trigger-offboarding')).toBeInTheDocument();
+    });
+
+    it('shows acknowledgment warning before publishing policies with existing acknowledgments', async () => {
+      const user = userEvent.setup();
+      setMockPermissions(ADMIN_PERMISSIONS);
+
+      render(<ToDoOverview {...defaultProps} />);
+
+      await user.click(screen.getByRole('button', { name: /publish all policies/i }));
+
+      expect(screen.getByTestId('acknowledgment-dialog')).toHaveTextContent('2');
+      expect(fetch).not.toHaveBeenCalled();
+
+      await user.click(screen.getByRole('button', { name: /publish and invalidate/i }));
+
+      expect(fetch).toHaveBeenCalledWith('/api/policies/publish-all', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+      });
+    });
+
+    it('publishes immediately when no acknowledgments will be invalidated', async () => {
+      const user = userEvent.setup();
+      setMockPermissions(ADMIN_PERMISSIONS);
+
+      render(
+        <ToDoOverview
+          {...defaultProps}
+          unpublishedPolicies={mockUnpublishedPolicies.map((policy) => ({
+            ...policy,
+            signedBy: [],
+          }))}
+        />,
+      );
+
+      await user.click(screen.getByRole('button', { name: /publish all policies/i }));
+
+      expect(screen.queryByTestId('acknowledgment-dialog')).not.toBeInTheDocument();
+      expect(fetch).toHaveBeenCalledOnce();
     });
   });
 });

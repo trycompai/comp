@@ -122,6 +122,13 @@ export class PoliciesController {
     description:
       'When true, omits `content` and `draftContent` from each policy in the response. Use this when listing policies to find one by name/ID — fetch the full content via GET /v1/policies/{id} after.',
   })
+  @ApiQuery({
+    name: 'includeArchived',
+    required: false,
+    type: Boolean,
+    description:
+      'When true, includes user-archived and framework-sync-archived policies in the response. Defaults to false.',
+  })
   @ApiExtension('x-speakeasy-mcp', { name: 'list-policies' })
   @ApiResponse(GET_ALL_POLICIES_RESPONSES[200])
   @ApiResponse(GET_ALL_POLICIES_RESPONSES[401])
@@ -129,9 +136,12 @@ export class PoliciesController {
     @OrganizationId() organizationId: string,
     @AuthContext() authContext: AuthContextType,
     @Query('excludeContent') excludeContent?: string,
+    @Query('includeArchived') includeArchived?: string,
   ) {
-    const policies = await this.policiesService.findAll(organizationId, {
+    const policies = await this.policiesService.findAll({
+      organizationId,
       excludeContent: excludeContent === 'true',
+      includeArchived: includeArchived === 'true',
     });
 
     return {

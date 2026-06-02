@@ -44,7 +44,7 @@ export class AdminPoliciesController {
   @Get(':orgId/policies')
   @ApiOperation({ summary: 'List all policies for an organization (admin)' })
   async list(@Param('orgId') orgId: string) {
-    return this.policiesService.findAll(orgId);
+    return this.policiesService.findAll({ organizationId: orgId });
   }
 
   @Post(':orgId/policies')

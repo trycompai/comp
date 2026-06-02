@@ -91,14 +91,17 @@ export class ActingUserResolver {
   }
 
   /**
-   * Find the oldest owner of an organization. Oldest is deterministic and
-   * stable: removing a recently-added owner doesn't change the attribution
+   * Find the oldest ACTIVE owner of an organization. Oldest is deterministic
+   * and stable: removing a recently-added owner doesn't change the attribution
    * target, removing the oldest one just promotes the next one. Matches the
-   * pattern used elsewhere (e.g. tasks/task-notifier.service.ts).
+   * pattern used elsewhere (e.g. tasks/tasks.service.ts:getApiKeyActorUserId).
    *
    * Member.role is a comma-separated string (e.g. "owner,admin"), so we use
    * Prisma's `contains` filter — same query shape as the 19+ other owner
    * lookups in this codebase.
+   *
+   * `deactivated: false` + `isActive: true` excludes offboarded owners so we
+   * don't attribute new mutations to a user who no longer has org access.
    */
   private async findOrgOwnerUserId(
     organizationId: string,
@@ -106,6 +109,8 @@ export class ActingUserResolver {
     const owner = await db.member.findFirst({
       where: {
         organizationId,
+        deactivated: false,
+        isActive: true,
         role: { contains: 'owner' },
       },
       orderBy: { createdAt: 'asc' },
