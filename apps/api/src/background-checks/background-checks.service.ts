@@ -268,6 +268,47 @@ export class BackgroundChecksService {
     return { ok: true, ...(isDuplicate ? { duplicate: true } : {}) };
   }
 
+  async cancelForMember({
+    organizationId,
+    memberId,
+  }: {
+    organizationId: string;
+    memberId: string;
+  }) {
+    const existing = await this.getForMember({ organizationId, memberId });
+    if (!existing) {
+      throw new NotFoundException('Background check not found.');
+    }
+    this.assertTransitionAllowed('cancel', existing.status);
+
+    return db.backgroundCheckRequest.update({
+      where: { organizationId_memberId: { organizationId, memberId } },
+      data: {
+        status: BackgroundCheckStatus.cancelled,
+        lastSyncedAt: new Date(),
+      },
+    });
+  }
+
+  private assertTransitionAllowed(
+    action: 'cancel' | 'retry',
+    status: BackgroundCheckStatus,
+  ): void {
+    const allowed: Record<'cancel' | 'retry', BackgroundCheckStatus[]> = {
+      cancel: [
+        BackgroundCheckStatus.invited,
+        BackgroundCheckStatus.in_progress,
+        BackgroundCheckStatus.in_review,
+      ],
+      retry: [BackgroundCheckStatus.failed, BackgroundCheckStatus.cancelled],
+    };
+    if (!allowed[action].includes(status)) {
+      throw new BadRequestException(
+        `Cannot ${action} a background check in '${status}' status.`,
+      );
+    }
+  }
+
   private isUniqueConstraintError(error: unknown): boolean {
     return (
       error instanceof Prisma.PrismaClientKnownRequestError &&
