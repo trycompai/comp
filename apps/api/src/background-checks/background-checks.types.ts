@@ -45,6 +45,11 @@ export const identityWebhookPayloadSchema = z.object({
   }),
 });
 
-export type IdentityCreateResponse = z.infer<typeof identityCreateResponseSchema>;
-export type IdentityWebhookPayload = z.infer<typeof identityWebhookPayloadSchema>;
-export type BackgroundCheckStatusValue = (typeof backgroundCheckStatuses)[number];
+export type IdentityCreateResponse = z.infer<
+  typeof identityCreateResponseSchema
+>;
+export type IdentityWebhookPayload = z.infer<
+  typeof identityWebhookPayloadSchema
+>;
+export type BackgroundCheckStatusValue =
+  (typeof backgroundCheckStatuses)[number];
