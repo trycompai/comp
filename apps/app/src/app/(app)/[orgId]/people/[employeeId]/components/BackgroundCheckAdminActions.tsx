@@ -88,47 +88,54 @@ export function BackgroundCheckAdminActions({
   };
 
   return (
-    <HStack gap="2">
-      {showRetry && (
-        <Button type="button" variant="outline" disabled={pending !== null} onClick={handleRetry}>
-          Retry
-        </Button>
-      )}
-      {showCancel && (
-        <Button type="button" variant="outline" disabled={pending !== null} onClick={handleCancel}>
-          Cancel check
-        </Button>
-      )}
-      {showDelete && !confirmingDelete && (
-        <Button
-          type="button"
-          variant="destructive"
-          disabled={pending !== null}
-          onClick={() => setConfirmingDelete(true)}
-        >
-          Delete
-        </Button>
-      )}
-      {showDelete && confirmingDelete && (
-        <>
-          <Button
-            type="button"
-            variant="destructive"
-            disabled={pending !== null}
-            onClick={handleDelete}
-          >
-            Confirm delete
+    <div className="border-t pt-4">
+      <HStack gap="2">
+        {showRetry && (
+          <Button type="button" variant="outline" disabled={pending !== null} onClick={handleRetry}>
+            Retry
           </Button>
+        )}
+        {showCancel && (
           <Button
             type="button"
             variant="outline"
             disabled={pending !== null}
-            onClick={() => setConfirmingDelete(false)}
+            onClick={handleCancel}
           >
-            Keep
+            Cancel check
           </Button>
-        </>
-      )}
-    </HStack>
+        )}
+        {showDelete && !confirmingDelete && (
+          <Button
+            type="button"
+            variant="destructive"
+            disabled={pending !== null}
+            onClick={() => setConfirmingDelete(true)}
+          >
+            Delete
+          </Button>
+        )}
+        {showDelete && confirmingDelete && (
+          <>
+            <Button
+              type="button"
+              variant="destructive"
+              disabled={pending !== null}
+              onClick={handleDelete}
+            >
+              Confirm delete
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              disabled={pending !== null}
+              onClick={() => setConfirmingDelete(false)}
+            >
+              Keep
+            </Button>
+          </>
+        )}
+      </HStack>
+    </div>
   );
 }
