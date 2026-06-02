@@ -1,5 +1,4 @@
-import { Badge, Text } from '@trycompai/design-system';
-import { MachineLearningModel, UserData } from '@trycompai/design-system/icons';
+import { Badge } from '@trycompai/design-system';
 
 export type IsmsRowSource = 'derived' | 'manual';
 
@@ -35,29 +34,12 @@ function humanizeProvenance(derivedFrom?: string | null): string {
 }
 
 /**
- * The shared provenance indicator for every ISMS register row. The common case —
- * platform-**derived** rows — renders as a quiet muted line with the humanized
- * source (e.g. "ISO 27001 framework", "Vendor register"), so default rows stay
- * calm. **Manual** rows (authored or overridden by a person) render as a small
- * badge so human intervention stands out. This is the ONE place this language
- * lives — never hand-roll it elsewhere.
+ * The shared provenance pill for an ISMS register entry. Derived rows show their
+ * humanized source ("ISO 27001 framework", "Vendor register"); manual rows show
+ * "Manual". Rendered as a plain tag-style pill (no icon) meant to sit beneath the
+ * entry's description. This is the ONE place this language lives.
  */
 export function IsmsSourceBadge({ source, derivedFrom }: IsmsSourceBadgeProps) {
-  if (source === 'manual') {
-    return (
-      <Badge variant="outline">
-        <UserData size={10} />
-        Manual
-      </Badge>
-    );
-  }
-
-  return (
-    <div className="flex items-center gap-1.5 text-muted-foreground">
-      <MachineLearningModel size={12} />
-      <Text size="xs" variant="muted">
-        {humanizeProvenance(derivedFrom)}
-      </Text>
-    </div>
-  );
+  const label = source === 'manual' ? 'Manual' : humanizeProvenance(derivedFrom);
+  return <Badge variant="secondary">{label}</Badge>;
 }

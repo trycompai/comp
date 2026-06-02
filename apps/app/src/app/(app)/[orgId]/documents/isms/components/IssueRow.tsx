@@ -98,22 +98,22 @@ export function IssueRow({ issue, canEdit, onSave, onDelete }: IssueRowProps) {
   // Read mode: dense two-line row (issue + effect), source chip + hover actions.
   return (
     <div className="group flex items-start justify-between gap-3 rounded-md border border-border bg-card px-3.5 py-2.5 transition-colors hover:border-foreground/20">
-      <div className="flex min-w-0 flex-1 flex-col gap-0.5">
+      <div className="flex min-w-0 flex-1 flex-col gap-1.5">
         <Text size="sm" weight="medium">
           {issue.description}
         </Text>
         <Text size="xs" variant="muted">
           {issue.effect}
         </Text>
+        <div className="flex">
+          <IsmsSourceBadge source={issue.source} derivedFrom={issue.derivedFrom} />
+        </div>
       </div>
-      <div className="flex shrink-0 items-center gap-2">
-        <IsmsSourceBadge source={issue.source} derivedFrom={issue.derivedFrom} />
-        {actions && (
-          <div className="opacity-0 transition-opacity focus-within:opacity-100 group-hover:opacity-100">
-            {actions}
-          </div>
-        )}
-      </div>
+      {actions && (
+        <div className="shrink-0 opacity-0 transition-opacity focus-within:opacity-100 group-hover:opacity-100">
+          {actions}
+        </div>
+      )}
     </div>
   );
 }
