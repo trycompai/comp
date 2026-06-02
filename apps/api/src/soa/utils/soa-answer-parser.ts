@@ -1,6 +1,7 @@
 import {
   isInsufficientDataAnswer,
   FULLY_REMOTE_JUSTIFICATION,
+  DEFAULT_INCLUSION_JUSTIFICATION,
   getInclusionJustification,
 } from './constants';
 
@@ -46,7 +47,8 @@ export function createDefaultYesResult(
   send: SOAStreamSender,
   closure?: string | null,
 ): SOAQuestionResult {
-  const justification = getInclusionJustification(closure);
+  const justification =
+    getInclusionJustification(closure) ?? DEFAULT_INCLUSION_JUSTIFICATION;
 
   send({
     type: 'answer',
@@ -187,7 +189,7 @@ export function parseAndProcessSOAAnswer(
       ? llmJustification
       : llmJustification && !isInsufficientDataAnswer(llmJustification)
         ? llmJustification
-        : getInclusionJustification(closure);
+        : (getInclusionJustification(closure) ?? DEFAULT_INCLUSION_JUSTIFICATION);
 
   send({
     type: 'answer',

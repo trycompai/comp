@@ -13,6 +13,10 @@ export const ISO27001_FRAMEWORK_NAMES = ['ISO 27001', 'iso27001', 'ISO27001'];
 export const FULLY_REMOTE_JUSTIFICATION =
   'This control is not applicable as our organization operates fully remotely.';
 
+// Generic fallback inclusion justification used when no family-specific text applies.
+export const DEFAULT_INCLUSION_JUSTIFICATION =
+  'Applicable because this control is within our ISMS scope and requires documented implementation and rationale.';
+
 /**
  * Default inclusion justifications by ISO 27001:2022 control family.
  * Used when a control is deemed Applicable but the LLM did not supply a justification.
@@ -99,9 +103,7 @@ export function getInclusionJustification(
   }
 
   const family = CLOSURE_TO_FAMILY[closure];
-  return family
-    ? INCLUSION_JUSTIFICATIONS[family]
-    : 'Applicable because this control is within our ISMS scope and requires documented implementation and rationale.';
+  return family ? INCLUSION_JUSTIFICATIONS[family] : DEFAULT_INCLUSION_JUSTIFICATION;
 }
 
 // System prompt for SOA RAG generation

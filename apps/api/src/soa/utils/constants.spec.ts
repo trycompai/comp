@@ -1,4 +1,5 @@
 import {
+  DEFAULT_INCLUSION_JUSTIFICATION,
   INCLUSION_JUSTIFICATIONS,
   getInclusionJustification,
 } from './constants';
@@ -59,10 +60,10 @@ describe('getInclusionJustification', () => {
     }
   });
 
-  it('returns null for controls outside the six named families', () => {
+  it('returns the generic ISMS-scope justification for controls outside the six named families', () => {
     // Organisational policies, HR, general technical controls outside the named families.
     for (const closure of ['5.1', '5.2', '6.1', '6.2', '8.1', '8.15', '8.20']) {
-      expect(getInclusionJustification(closure)).toBeNull();
+      expect(getInclusionJustification(closure)).toBe(DEFAULT_INCLUSION_JUSTIFICATION);
     }
   });
 
