@@ -6,6 +6,7 @@ type GetForMemberFn = (params: {
   organizationId: string;
   memberId: string;
 }) => Promise<{
+  id: string;
   rerunCount: number;
   employeeName: string;
   employeeEmail: string;
@@ -109,12 +110,17 @@ export async function retryForMember({
       employeeName: existing.employeeName,
       employeeEmail: existing.employeeEmail,
       requesterEmail,
-      attempt,
+      // Per-record, per-attempt key so each retry creates a fresh vendor
+      // check rather than colliding with a prior attempt's idempotency key.
+      idempotencyKey: `comp-background-check:${existing.id}:${attempt}`,
     });
   } catch (error) {
+    // Restore the prior status (retry is only allowed from 'failed' or
+    // 'cancelled'). Forcing 'failed' here would strip a cancelled check of the
+    // webhook terminal-guard and let a late vendor webhook resurrect it.
     await db.backgroundCheckRequest.update({
       where,
-      data: { status: BackgroundCheckStatus.failed, lastSyncedAt: new Date() },
+      data: { status: existing.status, lastSyncedAt: new Date() },
     });
     throw error;
   }

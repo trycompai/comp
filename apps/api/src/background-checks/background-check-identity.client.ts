@@ -14,7 +14,7 @@ export class BackgroundCheckIdentityClient {
     employeeName: string;
     employeeEmail: string;
     requesterEmail: string;
-    attempt: number;
+    idempotencyKey: string;
   }): Promise<IdentityCreateResponse> {
     const apiKey = process.env.BACKGROUND_CHECK_API_KEY;
     if (!apiKey) {
@@ -33,10 +33,7 @@ export class BackgroundCheckIdentityClient {
         headers: {
           Authorization: `Bearer ${apiKey}`,
           'Content-Type': 'application/json',
-          'Idempotency-Key':
-            params.attempt > 0
-              ? `comp-background-check:${params.memberId}:${params.attempt}`
-              : `comp-background-check:${params.memberId}`,
+          'Idempotency-Key': params.idempotencyKey,
         },
         body: JSON.stringify({
           candidate: {

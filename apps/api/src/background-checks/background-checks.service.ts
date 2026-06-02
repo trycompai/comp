@@ -68,8 +68,11 @@ export class BackgroundChecksService {
 
     // Step 1: Claim the record slot before charging. Catches the TOCTOU race
     // where two concurrent requests both pass the getForMember check.
+    let created: Awaited<
+      ReturnType<typeof db.backgroundCheckRequest.create>
+    >;
     try {
-      await db.backgroundCheckRequest.create({
+      created = await db.backgroundCheckRequest.create({
         data: {
           organizationId,
           memberId,
@@ -124,7 +127,10 @@ export class BackgroundChecksService {
         employeeName,
         employeeEmail,
         requesterEmail,
-        attempt: 0,
+        // Key on the record's unique id (not memberId) so a delete +
+        // re-request creates a genuinely fresh vendor check instead of
+        // colliding with the original request's idempotency key.
+        idempotencyKey: `comp-background-check:${created.id}`,
       });
     } catch (error) {
       const refundId = await this.paymentService.refund({

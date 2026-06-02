@@ -111,4 +111,18 @@ describe('BackgroundCheckAdminActions', () => {
     });
     expect(onChange).toHaveBeenCalledWith(null);
   });
+
+  it('clears a pending delete confirmation when Retry is clicked', async () => {
+    const user = userEvent.setup();
+    renderActions('failed');
+    await user.click(screen.getByRole('button', { name: /^Delete$/i }));
+    expect(screen.getByRole('button', { name: /Confirm delete/i })).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: /Retry/i }));
+    await waitFor(() => {
+      expect(apiClient.post).toHaveBeenCalled();
+    });
+    expect(screen.queryByRole('button', { name: /Confirm delete/i })).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /^Delete$/i })).toBeInTheDocument();
+  });
 });

@@ -38,6 +38,7 @@ export function BackgroundCheckAdminActions({
   if (!showRetry && !showCancel && !showDelete) return null;
 
   const handleRetry = async () => {
+    setConfirmingDelete(false);
     setPending('retry');
     const response = await apiClient.post<BackgroundCheckRecord>(
       `/v1/people/${memberId}/background-check/retry`,
@@ -54,6 +55,7 @@ export function BackgroundCheckAdminActions({
   };
 
   const handleCancel = async () => {
+    setConfirmingDelete(false);
     setPending('cancel');
     const response = await apiClient.post<BackgroundCheckRecord>(
       `/v1/people/${memberId}/background-check/cancel`,

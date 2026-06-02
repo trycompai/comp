@@ -112,7 +112,7 @@ describe('background checks', () => {
       employeeName: 'Ada Lovelace',
       employeeEmail: 'ada@example.com',
       requesterEmail: 'admin@example.com',
-      attempt: 0,
+      idempotencyKey: 'comp-background-check:mem_1',
     });
 
     expect(fetchSpy).toHaveBeenCalledWith(
@@ -168,7 +168,7 @@ describe('background checks', () => {
       employeeName: 'Ada Lovelace',
       employeeEmail: 'ada@example.com',
       requesterEmail: 'admin@example.com',
-      attempt: 0,
+      idempotencyKey: 'comp-background-check:mem_1',
     });
 
     const request = fetchSpy.mock.calls[0]?.[1];
@@ -195,7 +195,7 @@ describe('background checks', () => {
         employeeName: 'Ada Lovelace',
         employeeEmail: 'ada@example.com',
         requesterEmail: 'admin@example.com',
-        attempt: 0,
+        idempotencyKey: 'comp-background-check:mem_1',
       }),
     ).rejects.toThrow('Identity background check request failed.');
   });
@@ -580,7 +580,10 @@ describe('background checks', () => {
 
       expect(paymentService.charge).not.toHaveBeenCalled();
       expect(identityClient.createBackgroundCheck).toHaveBeenCalledWith(
-        expect.objectContaining({ memberId: 'mem_1', attempt: 2 }),
+        expect.objectContaining({
+          memberId: 'mem_1',
+          idempotencyKey: 'comp-background-check:bcr_1:2',
+        }),
       );
       expect(mockedDb.backgroundCheckRequest.update).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -621,7 +624,7 @@ describe('background checks', () => {
       expect(identityClient.createBackgroundCheck).not.toHaveBeenCalled();
     });
 
-    it('marks the check failed and rethrows when Identity errors', async () => {
+    it('keeps a cancelled check cancelled (no resurrection) and rethrows when Identity errors', async () => {
       mockAsync<
         Awaited<ReturnType<typeof db.backgroundCheckRequest.findUnique>>
       >(mockedDb.backgroundCheckRequest.findUnique).mockResolvedValueOnce({
@@ -658,7 +661,7 @@ describe('background checks', () => {
       ).rejects.toThrow('identity down');
       expect(mockedDb.backgroundCheckRequest.update).toHaveBeenCalledWith(
         expect.objectContaining({
-          data: expect.objectContaining({ status: 'failed' }),
+          data: expect.objectContaining({ status: 'cancelled' }),
         }),
       );
     });

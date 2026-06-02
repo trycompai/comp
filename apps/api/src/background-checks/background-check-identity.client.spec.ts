@@ -41,21 +41,21 @@ describe('BackgroundCheckIdentityClient idempotency key', () => {
     requesterEmail: 'admin@example.com',
   };
 
-  it('uses the bare key for the initial request (attempt 0)', async () => {
+  it('forwards the provided idempotency key as the Idempotency-Key header', async () => {
     const fetchMock = mockFetchOk();
     await new BackgroundCheckIdentityClient().createBackgroundCheck({
       ...params,
-      attempt: 0,
+      idempotencyKey: 'comp-background-check:bcr_1',
     });
-    expect(keyFrom(fetchMock)).toBe('comp-background-check:mem_1');
+    expect(keyFrom(fetchMock)).toBe('comp-background-check:bcr_1');
   });
 
-  it('suffixes the key with the attempt number for retries', async () => {
+  it('forwards a per-attempt retry idempotency key unchanged', async () => {
     const fetchMock = mockFetchOk();
     await new BackgroundCheckIdentityClient().createBackgroundCheck({
       ...params,
-      attempt: 2,
+      idempotencyKey: 'comp-background-check:bcr_1:2',
     });
-    expect(keyFrom(fetchMock)).toBe('comp-background-check:mem_1:2');
+    expect(keyFrom(fetchMock)).toBe('comp-background-check:bcr_1:2');
   });
 });
