@@ -40,7 +40,7 @@ vi.mock('../hooks/useIsmsDocument', () => ({
     submitForApproval: vi.fn().mockResolvedValue(undefined),
     approve: vi.fn().mockResolvedValue(undefined),
     decline: vi.fn().mockResolvedValue(undefined),
-    getDrift: vi.fn().mockResolvedValue(hookState.drift),
+    refresh: vi.fn().mockResolvedValue(undefined),
     handleExport: mockHandleExport,
   }),
 }));

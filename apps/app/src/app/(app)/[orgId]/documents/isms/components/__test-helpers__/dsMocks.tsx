@@ -49,6 +49,7 @@ export function ismsDesignSystemMock() {
       </section>
     ),
     Stack: ({ children }: { children: ReactNode }) => <div>{children}</div>,
+    Spinner: () => <span role="status" aria-label="Loading" />,
     Select: ({ children }: { children: ReactNode }) => <div>{children}</div>,
     SelectContent: ({ children }: { children: ReactNode }) => <div>{children}</div>,
     SelectItem: ({ children }: { children: ReactNode }) => <div>{children}</div>,

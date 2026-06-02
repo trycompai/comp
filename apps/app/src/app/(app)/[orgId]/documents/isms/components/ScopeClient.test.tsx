@@ -35,7 +35,7 @@ vi.mock('../hooks/useIsmsDocument', () => ({
     submitForApproval: vi.fn().mockResolvedValue(undefined),
     approve: vi.fn().mockResolvedValue(undefined),
     decline: vi.fn().mockResolvedValue(undefined),
-    getDrift: vi.fn().mockResolvedValue(hookState.drift),
+    refresh: vi.fn().mockResolvedValue(undefined),
     handleExport: mockHandleExport,
   }),
 }));
@@ -88,6 +88,7 @@ vi.mock('@trycompai/design-system', () => ({
     </section>
   ),
   Stack: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+  Spinner: () => <span role="status" aria-label="Loading" />,
   Select: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
   SelectContent: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
   SelectItem: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,

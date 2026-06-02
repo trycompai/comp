@@ -1,7 +1,10 @@
 'use client';
 
+import { zodResolver } from '@hookform/resolvers/zod';
 import {
   Badge,
+  Field,
+  FieldError,
   Select,
   SelectContent,
   SelectItem,
@@ -11,8 +14,10 @@ import {
   Text,
   Textarea,
 } from '@trycompai/design-system';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { Controller, useForm } from 'react-hook-form';
 import { categoriesForKind, type IsmsContextIssue } from '../isms-types';
+import { issueSchema, type IssueFormValues } from './issue-schema';
 import {
   IsmsCardActions,
   IsmsFieldLabel,
@@ -23,44 +28,60 @@ import {
 interface IssueRowProps {
   issue: IsmsContextIssue;
   canEdit: boolean;
-  onSave: (params: {
-    category: string;
-    description: string;
-    effect: string;
-  }) => Promise<void>;
+  onSave: (params: IssueFormValues) => Promise<void>;
   onDelete: () => Promise<void>;
+}
+
+function toFormValues(issue: IsmsContextIssue, fallbackCategory: string): IssueFormValues {
+  return {
+    category: issue.category ?? fallbackCategory,
+    description: issue.description,
+    effect: issue.effect,
+  };
 }
 
 export function IssueRow({ issue, canEdit, onSave, onDelete }: IssueRowProps) {
   const categories = categoriesForKind(issue.kind);
   const [isEditing, setIsEditing] = useState(false);
-  const [category, setCategory] = useState(issue.category ?? categories[0]);
-  const [description, setDescription] = useState(issue.description);
-  const [effect, setEffect] = useState(issue.effect);
-  const [isSaving, setIsSaving] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
 
-  const isDirty =
-    category !== (issue.category ?? categories[0]) ||
-    description !== issue.description ||
-    effect !== issue.effect;
+  const {
+    control,
+    handleSubmit,
+    reset,
+    formState: { isDirty, isValid, isSubmitting, errors },
+  } = useForm<IssueFormValues>({
+    resolver: zodResolver(issueSchema),
+    mode: 'onChange',
+    defaultValues: toFormValues(issue, categories[0]),
+  });
+
+  // Re-sync the form from the latest record whenever it changes while the row is
+  // not being edited (e.g. after a successful save revalidates), so re-opening
+  // edit never shows stale values.
+  useEffect(() => {
+    if (!isEditing) reset(toFormValues(issue, categories[0]));
+  }, [issue, isEditing, reset, categories]);
+
+  const handleEdit = () => {
+    reset(toFormValues(issue, categories[0]));
+    setIsEditing(true);
+  };
 
   const handleCancel = () => {
-    setCategory(issue.category ?? categories[0]);
-    setDescription(issue.description);
-    setEffect(issue.effect);
+    reset(toFormValues(issue, categories[0]));
     setIsEditing(false);
   };
 
-  const handleSave = async () => {
-    setIsSaving(true);
+  const handleSave = handleSubmit(async (values) => {
     try {
-      await onSave({ category, description, effect });
-      setIsEditing(false);
-    } finally {
-      setIsSaving(false);
+      await onSave(values);
+    } catch {
+      // Stay in edit mode with the user's changes when the save fails.
+      return;
     }
-  };
+    setIsEditing(false);
+  });
 
   const handleDelete = async () => {
     setIsDeleting(true);
@@ -74,12 +95,12 @@ export function IssueRow({ issue, canEdit, onSave, onDelete }: IssueRowProps) {
   const actions = canEdit ? (
     <IsmsCardActions
       isEditing={isEditing}
-      onEdit={() => setIsEditing(true)}
+      onEdit={handleEdit}
       onSave={handleSave}
       onCancel={handleCancel}
       onDelete={handleDelete}
-      isDirty={isDirty}
-      isSaving={isSaving}
+      isDirty={isDirty && isValid}
+      isSaving={isSubmitting}
       isDeleting={isDeleting}
       editLabel="Edit issue"
       deleteLabel="Delete issue"
@@ -95,37 +116,48 @@ export function IssueRow({ issue, canEdit, onSave, onDelete }: IssueRowProps) {
       >
         <Stack gap="3">
           <IsmsFieldLabel label="Category">
-            <Select
-              value={category}
-              onValueChange={(value) => value && setCategory(value)}
-            >
-              <SelectTrigger aria-label="Issue category">
-                <SelectValue placeholder="Select a category" />
-              </SelectTrigger>
-              <SelectContent>
-                {categories.map((option) => (
-                  <SelectItem key={option} value={option}>
-                    {option}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <Controller
+              control={control}
+              name="category"
+              render={({ field }) => (
+                <Select value={field.value} onValueChange={field.onChange}>
+                  <SelectTrigger aria-label="Issue category">
+                    <SelectValue placeholder="Select a category" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {categories.map((option) => (
+                      <SelectItem key={option} value={option}>
+                        {option}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+            />
           </IsmsFieldLabel>
           <IsmsFieldLabel label="Issue">
-            <Textarea
-              value={description}
-              onChange={(event) => setDescription(event.target.value)}
-              rows={3}
-              aria-label="Issue description"
-            />
+            <Field>
+              <Controller
+                control={control}
+                name="description"
+                render={({ field: { ref: _ref, ...field } }) => (
+                  <Textarea {...field} rows={3} aria-label="Issue description" />
+                )}
+              />
+              <FieldError>{errors.description?.message}</FieldError>
+            </Field>
           </IsmsFieldLabel>
           <IsmsFieldLabel label="Effect on ISMS">
-            <Textarea
-              value={effect}
-              onChange={(event) => setEffect(event.target.value)}
-              rows={3}
-              aria-label="Issue effect"
-            />
+            <Field>
+              <Controller
+                control={control}
+                name="effect"
+                render={({ field: { ref: _ref, ...field } }) => (
+                  <Textarea {...field} rows={3} aria-label="Issue effect" />
+                )}
+              />
+              <FieldError>{errors.effect?.message}</FieldError>
+            </Field>
           </IsmsFieldLabel>
         </Stack>
       </IsmsRegisterCard>

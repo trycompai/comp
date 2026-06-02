@@ -1,8 +1,11 @@
 'use client';
 
+import { zodResolver } from '@hookform/resolvers/zod';
 import { Badge, Grid, Heading, HStack, Stack } from '@trycompai/design-system';
 import { useEffect, useState } from 'react';
+import { useForm } from 'react-hook-form';
 import type { IsmsObjective, IsmsObjectiveStatus } from '../isms-types';
+import { objectiveSchema, type ObjectiveFormValues } from './objective-schema';
 import type { ApproverOption } from './IsmsApprovalSection';
 import {
   IsmsCardActions,
@@ -21,15 +24,11 @@ const STATUS_VARIANT: Record<IsmsObjectiveStatus, 'outline' | 'secondary' | 'acc
     met: 'accent',
   };
 
-export interface ObjectiveRowUpdate {
-  objective: string;
-  target: string;
-  ownerMemberId: string;
-  cadence: string;
-  plan: string;
-  measurementMethod: string;
-  status: IsmsObjectiveStatus;
-}
+/**
+ * The values the row emits on save. Shares the canonical objective schema with
+ * the add form so add + edit validate against one source of truth.
+ */
+export type ObjectiveRowUpdate = ObjectiveFormValues;
 
 interface ObjectivesRowProps {
   objective: IsmsObjective;
@@ -50,7 +49,7 @@ function ownerDisplay({
   return ownerOptions.find((option) => option.id === ownerMemberId)?.name ?? ownerMemberId;
 }
 
-function toDraft(objective: IsmsObjective): ObjectiveRowUpdate {
+function toFormValues(objective: IsmsObjective): ObjectiveFormValues {
   return {
     objective: objective.objective,
     target: objective.target ?? '',
@@ -70,42 +69,45 @@ export function ObjectivesRow({
   onDelete,
 }: ObjectivesRowProps) {
   const [isEditing, setIsEditing] = useState(false);
-  const [draft, setDraft] = useState<ObjectiveRowUpdate>(toDraft(objective));
-  const [isSaving, setIsSaving] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
 
-  // Re-sync the draft from the latest record whenever it changes while the row
-  // is not being edited (e.g. after a successful save revalidates, or after
+  const {
+    control,
+    handleSubmit,
+    reset,
+    formState: { isDirty, isValid, isSubmitting },
+  } = useForm<ObjectiveFormValues>({
+    resolver: zodResolver(objectiveSchema),
+    mode: 'onChange',
+    defaultValues: toFormValues(objective),
+  });
+
+  // Re-sync the form from the latest record whenever it changes while the row is
+  // not being edited (e.g. after a successful save revalidates, or after
   // generate), so re-opening edit never shows stale values.
   useEffect(() => {
-    if (!isEditing) setDraft(toDraft(objective));
-  }, [objective, isEditing]);
+    if (!isEditing) reset(toFormValues(objective));
+  }, [objective, isEditing, reset]);
 
-  const isDirty =
-    draft.objective !== objective.objective ||
-    draft.target !== (objective.target ?? '') ||
-    draft.ownerMemberId !== (objective.ownerMemberId ?? '') ||
-    draft.cadence !== (objective.cadence ?? '') ||
-    draft.plan !== (objective.plan ?? '') ||
-    draft.measurementMethod !== (objective.measurementMethod ?? '') ||
-    draft.status !== objective.status;
+  const handleEdit = () => {
+    reset(toFormValues(objective));
+    setIsEditing(true);
+  };
 
   const handleCancel = () => {
-    setDraft(toDraft(objective));
+    reset(toFormValues(objective));
     setIsEditing(false);
   };
 
-  const handleSave = async () => {
-    setIsSaving(true);
+  const handleSave = handleSubmit(async (values) => {
     try {
-      await onSave(draft);
-      setIsEditing(false);
+      await onSave(values);
     } catch {
       // Stay in edit mode with the user's changes when the save fails.
-    } finally {
-      setIsSaving(false);
+      return;
     }
-  };
+    setIsEditing(false);
+  });
 
   const handleDelete = async () => {
     setIsDeleting(true);
@@ -119,12 +121,12 @@ export function ObjectivesRow({
   const actions = canEdit ? (
     <IsmsCardActions
       isEditing={isEditing}
-      onEdit={() => setIsEditing(true)}
+      onEdit={handleEdit}
       onSave={handleSave}
       onCancel={handleCancel}
       onDelete={handleDelete}
-      isDirty={isDirty}
-      isSaving={isSaving}
+      isDirty={isDirty && isValid}
+      isSaving={isSubmitting}
       isDeleting={isDeleting}
       editLabel="Edit objective"
       deleteLabel="Delete objective"
@@ -137,7 +139,7 @@ export function ObjectivesRow({
         header={<IsmsSourceBadge source={objective.source} derivedFrom={objective.derivedFrom} />}
         headerEnd={actions}
       >
-        <ObjectivesRowEditor draft={draft} onChange={setDraft} ownerOptions={ownerOptions} />
+        <ObjectivesRowEditor control={control} ownerOptions={ownerOptions} />
       </IsmsRegisterCard>
     );
   }

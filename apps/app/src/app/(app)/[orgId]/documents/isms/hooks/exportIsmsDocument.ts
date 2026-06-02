@@ -1,38 +1,43 @@
 import { toast } from 'sonner';
-import { env } from '@/env.mjs';
+import { api } from '@/lib/api-client';
 import type { IsmsExportFormat } from '../isms-types';
 
 interface ExportIsmsDocumentParams {
   documentId: string;
   format: IsmsExportFormat;
+  organizationId?: string;
+}
+
+function parseFilename(contentDisposition: string | null, fallback: string): string {
+  if (!contentDisposition) return fallback;
+  const match = contentDisposition.match(/filename="(.+)"/);
+  return match ? match[1] : fallback;
 }
 
 /** Downloads an ISMS document export (pdf/docx/md) via the API and triggers a browser save. */
 export async function exportIsmsDocument({
   documentId,
   format,
+  organizationId,
 }: ExportIsmsDocumentParams): Promise<void> {
-  const response = await fetch(
-    `${env.NEXT_PUBLIC_API_URL || 'http://localhost:3333'}/v1/isms/documents/${documentId}/export`,
-    {
-      method: 'POST',
-      credentials: 'include',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ format }),
-    },
-  );
+  // Route through the shared apiClient so the request carries the same
+  // credentials + organization header context as every other API call.
+  const response = await api.raw(`/v1/isms/documents/${documentId}/export`, {
+    method: 'POST',
+    organizationId,
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ format }),
+  });
 
   if (!response.ok) {
     const errorData = await response.json().catch(() => ({}));
     throw new Error(errorData.message || 'Failed to export document');
   }
 
-  const contentDisposition = response.headers.get('Content-Disposition');
-  let filename = `isms-document.${format}`;
-  if (contentDisposition) {
-    const match = contentDisposition.match(/filename="(.+)"/);
-    if (match) filename = match[1];
-  }
+  const filename = parseFilename(
+    response.headers.get('Content-Disposition'),
+    `isms-document.${format}`,
+  );
 
   const blob = await response.blob();
   const url = window.URL.createObjectURL(blob);

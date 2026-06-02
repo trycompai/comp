@@ -4,12 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import useSWR from 'swr';
 import { toast } from 'sonner';
 import { api } from '@/lib/api-client';
-import type {
-  IsmsContextIssueKind,
-  IsmsDocument,
-  IsmsDriftResult,
-  IsmsExportFormat,
-} from '../isms-types';
+import type { IsmsContextIssueKind, IsmsDocument, IsmsExportFormat } from '../isms-types';
 import { exportIsmsDocument } from './exportIsmsDocument';
 
 interface UseIsmsDocumentOptions {
@@ -85,11 +80,6 @@ export function useIsmsDocument({
       void mutate(fallbackData, false);
     }
   }, [fallbackData, mutate]);
-
-  const refresh = async (): Promise<void> => {
-    if (!documentId) return;
-    await mutate();
-  };
 
   const generate = async (): Promise<IsmsDocument> => {
     if (!documentId) throw new Error('No document ID');
@@ -229,14 +219,6 @@ export function useIsmsDocument({
     await mutate();
   };
 
-  const getDrift = async (): Promise<IsmsDriftResult> => {
-    if (!documentId) throw new Error('No document ID');
-    return unwrap<IsmsDriftResult>(
-      api.get<IsmsDriftResult>(`/v1/isms/documents/${documentId}/drift`),
-      'Failed to load drift status',
-    );
-  };
-
   const handleExport = async (format: IsmsExportFormat): Promise<void> => {
     if (!documentId) {
       toast.error('No document to export');
@@ -258,8 +240,8 @@ export function useIsmsDocument({
     error,
     isLoading,
     isExporting,
-    mutate,
-    refresh,
+    // Revalidate the document from the server (used by the shell's error-retry UX).
+    refresh: () => mutate(),
     generate,
     createRow,
     updateRow,
@@ -273,7 +255,9 @@ export function useIsmsDocument({
     submitForApproval,
     approve,
     decline,
-    getDrift,
     handleExport,
   };
 }
+
+/** The full surface returned by {@link useIsmsDocument}. */
+export type UseIsmsDocumentReturn = ReturnType<typeof useIsmsDocument>;

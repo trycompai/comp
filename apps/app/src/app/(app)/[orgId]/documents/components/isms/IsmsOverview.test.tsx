@@ -47,6 +47,10 @@ vi.mock('swr', () => ({
 // ─── Mock design system ──────────────────────────────────────
 type Kids = { children?: React.ReactNode };
 vi.mock('@trycompai/design-system', () => ({
+  Alert: ({ children }: Kids) => <div role="alert">{children}</div>,
+  AlertTitle: ({ children }: Kids) => <strong>{children}</strong>,
+  AlertDescription: ({ children }: Kids) => <div>{children}</div>,
+  Spinner: () => <span role="status" aria-label="Loading" />,
   Badge: ({ children }: Kids) => <span>{children}</span>,
   Button: ({ children }: Kids) => <button type="button">{children}</button>,
   Card: ({ children }: Kids) => <div data-testid="card">{children}</div>,
@@ -92,7 +96,9 @@ vi.mock('@trycompai/design-system/icons', () => {
     Incomplete: Icon,
     MagicWand: Icon,
     Misuse: Icon,
+    Renew: Icon,
     Time: Icon,
+    WarningAlt: Icon,
     WarningAltFilled: Icon,
   };
 });

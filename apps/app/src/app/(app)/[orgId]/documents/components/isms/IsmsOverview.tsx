@@ -1,11 +1,22 @@
 'use client';
 
-import { Button, Grid, Section, Stack } from '@trycompai/design-system';
+import {
+  Alert,
+  AlertDescription,
+  AlertTitle,
+  Button,
+  Grid,
+  Section,
+  Spinner,
+  Stack,
+} from '@trycompai/design-system';
 import {
   CheckmarkFilled,
   DocumentMultiple_01,
   Incomplete,
   MagicWand,
+  Renew,
+  WarningAlt,
   WarningAltFilled,
 } from '@trycompai/design-system/icons';
 import Link from 'next/link';
@@ -32,7 +43,12 @@ export function IsmsOverview({ organizationId }: { organizationId: string }) {
   const { hasPermission } = usePermissions();
   const canRunWizard = hasPermission('evidence', 'update');
 
-  const { data: setupResponse } = useSWR<IsmsEnsureSetupResponse>(
+  const {
+    data: setupResponse,
+    error: setupError,
+    isLoading: isSetupLoading,
+    mutate: mutateSetup,
+  } = useSWR<IsmsEnsureSetupResponse>(
     iso27001FrameworkId
       ? (['/v1/isms/ensure-setup', organizationId, iso27001FrameworkId] as const)
       : null,
@@ -92,6 +108,44 @@ export function IsmsOverview({ organizationId }: { organizationId: string }) {
         title="ISO 27001 isn't active yet"
         description="Add the ISO 27001 framework to your organization to manage your ISMS foundational documents."
       />
+    );
+  }
+
+  // Surface a load failure with a retry instead of a silently zeroed summary.
+  if (setupError && !setupResponse) {
+    return (
+      <Alert variant="destructive" icon={<WarningAlt />}>
+        <AlertTitle>Couldn&apos;t load your ISMS documents</AlertTitle>
+        <AlertDescription>
+          <div className="flex flex-col gap-3">
+            <div>
+              {setupError instanceof Error
+                ? setupError.message
+                : 'Something went wrong loading your ISMS foundational documents.'}
+            </div>
+            <div className="flex">
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                onClick={() => void mutateSetup()}
+                iconLeft={<Renew size={16} />}
+              >
+                Retry
+              </Button>
+            </div>
+          </div>
+        </AlertDescription>
+      </Alert>
+    );
+  }
+
+  // Loading the first response: show a spinner rather than an all-zero summary.
+  if (!setupResponse && isSetupLoading) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <Spinner />
+      </div>
     );
   }
 

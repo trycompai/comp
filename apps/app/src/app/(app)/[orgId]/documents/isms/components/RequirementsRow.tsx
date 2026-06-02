@@ -1,8 +1,18 @@
 'use client';
 
-import { Heading, Input, Stack, Textarea } from '@trycompai/design-system';
-import { useState } from 'react';
+import { zodResolver } from '@hookform/resolvers/zod';
+import {
+  Field,
+  FieldError,
+  Heading,
+  Input,
+  Stack,
+  Textarea,
+} from '@trycompai/design-system';
+import { useEffect, useState } from 'react';
+import { Controller, useForm } from 'react-hook-form';
 import type { IsmsInterestedPartyRequirement } from '../isms-types';
+import { requirementSchema, type RequirementFormValues } from './requirement-schema';
 import {
   IsmsCardActions,
   IsmsFieldLabel,
@@ -11,12 +21,11 @@ import {
   IsmsSourceBadge,
 } from './shared';
 
-export interface RequirementRowValues {
-  partyName: string;
-  interestedPartyId: string;
-  requirement: string;
-  treatment: string;
-}
+/**
+ * The values the row emits on save. Shares the canonical requirement schema with
+ * the add form so add + edit validate against one source of truth.
+ */
+export type RequirementRowValues = RequirementFormValues;
 
 interface RequirementsRowProps {
   requirement: IsmsInterestedPartyRequirement;
@@ -25,38 +34,56 @@ interface RequirementsRowProps {
   onDelete: () => Promise<void>;
 }
 
+function toFormValues(requirement: IsmsInterestedPartyRequirement): RequirementFormValues {
+  return {
+    partyName: requirement.partyName,
+    interestedPartyId: requirement.interestedPartyId ?? '',
+    requirement: requirement.requirement,
+    treatment: requirement.treatment,
+  };
+}
+
 export function RequirementsRow({ requirement, canEdit, onSave, onDelete }: RequirementsRowProps) {
   const [isEditing, setIsEditing] = useState(false);
-  const [partyName, setPartyName] = useState(requirement.partyName);
-  const [interestedPartyId, setInterestedPartyId] = useState(requirement.interestedPartyId ?? '');
-  const [requirementText, setRequirementText] = useState(requirement.requirement);
-  const [treatment, setTreatment] = useState(requirement.treatment);
-  const [isSaving, setIsSaving] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
 
-  const isDirty =
-    partyName !== requirement.partyName ||
-    interestedPartyId !== (requirement.interestedPartyId ?? '') ||
-    requirementText !== requirement.requirement ||
-    treatment !== requirement.treatment;
+  const {
+    control,
+    handleSubmit,
+    reset,
+    formState: { isDirty, isValid, isSubmitting, errors },
+  } = useForm<RequirementFormValues>({
+    resolver: zodResolver(requirementSchema),
+    mode: 'onChange',
+    defaultValues: toFormValues(requirement),
+  });
+
+  // Re-sync the form from the latest record whenever it changes while the row is
+  // not being edited (e.g. after a successful save revalidates), so re-opening
+  // edit never shows stale values.
+  useEffect(() => {
+    if (!isEditing) reset(toFormValues(requirement));
+  }, [requirement, isEditing, reset]);
+
+  const handleEdit = () => {
+    reset(toFormValues(requirement));
+    setIsEditing(true);
+  };
 
   const handleCancel = () => {
-    setPartyName(requirement.partyName);
-    setInterestedPartyId(requirement.interestedPartyId ?? '');
-    setRequirementText(requirement.requirement);
-    setTreatment(requirement.treatment);
+    reset(toFormValues(requirement));
     setIsEditing(false);
   };
 
-  const handleSave = async () => {
-    setIsSaving(true);
+  const handleSave = handleSubmit(async (values) => {
     try {
-      await onSave({ partyName, interestedPartyId, requirement: requirementText, treatment });
-      setIsEditing(false);
-    } finally {
-      setIsSaving(false);
+      await onSave(values);
+    } catch {
+      // Stay in edit mode with the user's changes when the save fails.
+      return;
     }
-  };
+    setIsEditing(false);
+  });
 
   const handleDelete = async () => {
     setIsDeleting(true);
@@ -70,12 +97,12 @@ export function RequirementsRow({ requirement, canEdit, onSave, onDelete }: Requ
   const actions = canEdit ? (
     <IsmsCardActions
       isEditing={isEditing}
-      onEdit={() => setIsEditing(true)}
+      onEdit={handleEdit}
       onSave={handleSave}
       onCancel={handleCancel}
       onDelete={handleDelete}
-      isDirty={isDirty}
-      isSaving={isSaving}
+      isDirty={isDirty && isValid}
+      isSaving={isSubmitting}
       isDeleting={isDeleting}
       editLabel="Edit requirement"
       deleteLabel="Delete requirement"
@@ -91,36 +118,54 @@ export function RequirementsRow({ requirement, canEdit, onSave, onDelete }: Requ
         <Stack gap="3">
           <div className="grid gap-3 md:grid-cols-2">
             <IsmsFieldLabel label="Interested party">
-              <Input
-                value={partyName}
-                onChange={(event) => setPartyName(event.target.value)}
-                aria-label="Requirement party"
-              />
+              <Field>
+                <Controller
+                  control={control}
+                  name="partyName"
+                  render={({ field: { ref: _ref, ...field } }) => (
+                    <Input {...field} aria-label="Requirement party" />
+                  )}
+                />
+                <FieldError>{errors.partyName?.message}</FieldError>
+              </Field>
             </IsmsFieldLabel>
             <IsmsFieldLabel label="Linked party ID (optional)">
-              <Input
-                value={interestedPartyId}
-                onChange={(event) => setInterestedPartyId(event.target.value)}
-                placeholder="Linked party ID (optional)"
-                aria-label="Requirement party ID"
+              <Controller
+                control={control}
+                name="interestedPartyId"
+                render={({ field: { ref: _ref, ...field } }) => (
+                  <Input
+                    {...field}
+                    placeholder="Linked party ID (optional)"
+                    aria-label="Requirement party ID"
+                  />
+                )}
               />
             </IsmsFieldLabel>
           </div>
           <IsmsFieldLabel label="Requirement">
-            <Textarea
-              value={requirementText}
-              onChange={(event) => setRequirementText(event.target.value)}
-              rows={3}
-              aria-label="Requirement description"
-            />
+            <Field>
+              <Controller
+                control={control}
+                name="requirement"
+                render={({ field: { ref: _ref, ...field } }) => (
+                  <Textarea {...field} rows={3} aria-label="Requirement description" />
+                )}
+              />
+              <FieldError>{errors.requirement?.message}</FieldError>
+            </Field>
           </IsmsFieldLabel>
           <IsmsFieldLabel label="ISMS treatment">
-            <Textarea
-              value={treatment}
-              onChange={(event) => setTreatment(event.target.value)}
-              rows={3}
-              aria-label="Requirement treatment"
-            />
+            <Field>
+              <Controller
+                control={control}
+                name="treatment"
+                render={({ field: { ref: _ref, ...field } }) => (
+                  <Textarea {...field} rows={3} aria-label="Requirement treatment" />
+                )}
+              />
+              <FieldError>{errors.treatment?.message}</FieldError>
+            </Field>
           </IsmsFieldLabel>
         </Stack>
       </IsmsRegisterCard>

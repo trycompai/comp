@@ -1,8 +1,23 @@
 'use client';
 
-import { Badge, Heading, HStack, Input, Stack, Textarea } from '@trycompai/design-system';
+import { zodResolver } from '@hookform/resolvers/zod';
+import {
+  Badge,
+  Field,
+  FieldError,
+  Heading,
+  HStack,
+  Input,
+  Stack,
+  Textarea,
+} from '@trycompai/design-system';
 import { useEffect, useState } from 'react';
+import { Controller, useForm } from 'react-hook-form';
 import type { IsmsInterestedParty } from '../isms-types';
+import {
+  interestedPartySchema,
+  type InterestedPartyFormValues,
+} from './interested-party-schema';
 import {
   IsmsCardActions,
   IsmsFieldLabel,
@@ -13,12 +28,16 @@ import {
 interface InterestedPartiesRowProps {
   party: IsmsInterestedParty;
   canEdit: boolean;
-  onSave: (params: {
-    name: string;
-    category: string;
-    needsExpectations: string;
-  }) => Promise<void>;
+  onSave: (params: InterestedPartyFormValues) => Promise<void>;
   onDelete: () => Promise<void>;
+}
+
+function toFormValues(party: IsmsInterestedParty): InterestedPartyFormValues {
+  return {
+    name: party.name,
+    category: party.category,
+    needsExpectations: party.needsExpectations,
+  };
 }
 
 export function InterestedPartiesRow({
@@ -28,45 +47,45 @@ export function InterestedPartiesRow({
   onDelete,
 }: InterestedPartiesRowProps) {
   const [isEditing, setIsEditing] = useState(false);
-  const [name, setName] = useState(party.name);
-  const [category, setCategory] = useState(party.category);
-  const [needsExpectations, setNeedsExpectations] = useState(party.needsExpectations);
-  const [isSaving, setIsSaving] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
 
-  // Re-sync the draft fields from the latest record whenever it changes while
-  // the row is not being edited (e.g. after a successful save revalidates), so
-  // re-opening edit never shows stale values.
-  useEffect(() => {
-    if (isEditing) return;
-    setName(party.name);
-    setCategory(party.category);
-    setNeedsExpectations(party.needsExpectations);
-  }, [party, isEditing]);
+  const {
+    control,
+    handleSubmit,
+    reset,
+    formState: { isDirty, isValid, isSubmitting, errors },
+  } = useForm<InterestedPartyFormValues>({
+    resolver: zodResolver(interestedPartySchema),
+    mode: 'onChange',
+    defaultValues: toFormValues(party),
+  });
 
-  const isDirty =
-    name !== party.name ||
-    category !== party.category ||
-    needsExpectations !== party.needsExpectations;
+  // Re-sync the form from the latest record whenever it changes while the row is
+  // not being edited (e.g. after a successful save revalidates), so re-opening
+  // edit never shows stale values.
+  useEffect(() => {
+    if (!isEditing) reset(toFormValues(party));
+  }, [party, isEditing, reset]);
+
+  const handleEdit = () => {
+    reset(toFormValues(party));
+    setIsEditing(true);
+  };
 
   const handleCancel = () => {
-    setName(party.name);
-    setCategory(party.category);
-    setNeedsExpectations(party.needsExpectations);
+    reset(toFormValues(party));
     setIsEditing(false);
   };
 
-  const handleSave = async () => {
-    setIsSaving(true);
+  const handleSave = handleSubmit(async (values) => {
     try {
-      await onSave({ name, category, needsExpectations });
-      setIsEditing(false);
+      await onSave(values);
     } catch {
       // Stay in edit mode with the user's changes when the save fails.
-    } finally {
-      setIsSaving(false);
+      return;
     }
-  };
+    setIsEditing(false);
+  });
 
   const handleDelete = async () => {
     setIsDeleting(true);
@@ -80,12 +99,12 @@ export function InterestedPartiesRow({
   const actions = canEdit ? (
     <IsmsCardActions
       isEditing={isEditing}
-      onEdit={() => setIsEditing(true)}
+      onEdit={handleEdit}
       onSave={handleSave}
       onCancel={handleCancel}
       onDelete={handleDelete}
-      isDirty={isDirty}
-      isSaving={isSaving}
+      isDirty={isDirty && isValid}
+      isSaving={isSubmitting}
       isDeleting={isDeleting}
       editLabel="Edit interested party"
       deleteLabel="Delete interested party"
@@ -98,27 +117,45 @@ export function InterestedPartiesRow({
         <Stack gap="3">
           <div className="grid gap-3 md:grid-cols-2">
             <IsmsFieldLabel label="Name">
-              <Input
-                value={name}
-                onChange={(event) => setName(event.target.value)}
-                aria-label="Interested party name"
-              />
+              <Field>
+                <Controller
+                  control={control}
+                  name="name"
+                  render={({ field: { ref: _ref, ...field } }) => (
+                    <Input {...field} aria-label="Interested party name" />
+                  )}
+                />
+                <FieldError>{errors.name?.message}</FieldError>
+              </Field>
             </IsmsFieldLabel>
             <IsmsFieldLabel label="Category">
-              <Input
-                value={category}
-                onChange={(event) => setCategory(event.target.value)}
-                aria-label="Interested party category"
-              />
+              <Field>
+                <Controller
+                  control={control}
+                  name="category"
+                  render={({ field: { ref: _ref, ...field } }) => (
+                    <Input {...field} aria-label="Interested party category" />
+                  )}
+                />
+                <FieldError>{errors.category?.message}</FieldError>
+              </Field>
             </IsmsFieldLabel>
           </div>
           <IsmsFieldLabel label="Needs & expectations">
-            <Textarea
-              value={needsExpectations}
-              onChange={(event) => setNeedsExpectations(event.target.value)}
-              rows={3}
-              aria-label="Interested party needs and expectations"
-            />
+            <Field>
+              <Controller
+                control={control}
+                name="needsExpectations"
+                render={({ field: { ref: _ref, ...field } }) => (
+                  <Textarea
+                    {...field}
+                    rows={3}
+                    aria-label="Interested party needs and expectations"
+                  />
+                )}
+              />
+              <FieldError>{errors.needsExpectations?.message}</FieldError>
+            </Field>
           </IsmsFieldLabel>
         </Stack>
       </IsmsRegisterCard>
