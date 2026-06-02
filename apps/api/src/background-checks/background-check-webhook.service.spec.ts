@@ -17,6 +17,7 @@ jest.mock('@db', () => {
 
   return {
     Prisma: { PrismaClientKnownRequestError },
+    BackgroundCheckStatus: { cancelled: 'cancelled' },
     db: {
       backgroundCheckRequest: {
         findFirst: jest.fn(),
@@ -238,6 +239,41 @@ describe('BackgroundChecksService webhooks', () => {
         data: expect.objectContaining({ status: 'in_progress' }),
       }),
     );
+  });
+
+  it('does not change status when the local record is already cancelled', async () => {
+    const payload = webhookPayload();
+    const rawBody = JSON.stringify(payload);
+    const timestamp = String(Date.now());
+    mockAsync<Awaited<ReturnType<typeof db.backgroundCheckRequest.findFirst>>>(
+      mockedDb.backgroundCheckRequest.findFirst,
+    ).mockResolvedValueOnce({
+      id: 'bcr_1',
+      status: 'cancelled',
+      employeeName: 'Ada',
+      employeeEmail: 'ada@example.com',
+    } as Awaited<ReturnType<typeof db.backgroundCheckRequest.findFirst>>);
+    mockAsync<Awaited<ReturnType<typeof db.backgroundCheckWebhookEvent.create>>>(
+      mockedDb.backgroundCheckWebhookEvent.create,
+    ).mockResolvedValueOnce(
+      {} as Awaited<ReturnType<typeof db.backgroundCheckWebhookEvent.create>>,
+    );
+    const service = new BackgroundChecksService(
+      { getBackgroundCheck: jest.fn() } as unknown as BackgroundCheckIdentityClient,
+      {} as unknown as BackgroundCheckPaymentService,
+    );
+
+    const result = await service.handleWebhook({
+      rawBody: Buffer.from(rawBody),
+      headers: {
+        'x-background-check-timestamp': timestamp,
+        'x-background-check-signature': makeSignature(rawBody, timestamp),
+      },
+    });
+
+    expect(mockedDb.backgroundCheckWebhookEvent.create).toHaveBeenCalled();
+    expect(mockedDb.backgroundCheckRequest.update).not.toHaveBeenCalled();
+    expect(result).toEqual({ ok: true });
   });
 
   it('reconciles state even on duplicate webhook events', async () => {

@@ -236,6 +236,12 @@ export class BackgroundChecksService {
       }
     }
 
+    // Cancelled is terminal Comp-side: record the event for audit but never
+    // let a late Identity webhook resurrect the status.
+    if (record.status === BackgroundCheckStatus.cancelled) {
+      return { ok: true, ...(isDuplicate ? { duplicate: true } : {}) };
+    }
+
     const reportSnapshot = await fetchCompletedReportSnapshot({
       identityClient: this.identityClient,
       identityBackgroundCheckId: payload.data.id,
