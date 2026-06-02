@@ -78,7 +78,7 @@ export function EditableSOAFields({
   const executeSave = async (
     nextIsApplicable: boolean | null,
     nextJustification: string | null,
-  ) => {
+  ): Promise<boolean> => {
     setIsSaving(true);
     try {
       await saveAnswer({
@@ -98,6 +98,7 @@ export function EditableSOAFields({
         isApplicable: nextIsApplicable,
         justification: nextJustification,
       });
+      return true;
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to save answer';
       if (!isJustificationDialogOpen) {
@@ -107,6 +108,7 @@ export function EditableSOAFields({
       }
       setError(message);
       toast.error(message);
+      return false;
     } finally {
       setIsSaving(false);
     }
@@ -149,7 +151,10 @@ export function EditableSOAFields({
       return;
     }
 
-    await executeSave(isApplicable, justification);
+    const success = await executeSave(isApplicable, justification);
+    if (!success) {
+      return;
+    }
     dialogSavedRef.current = true;
     setJustificationDialogOpen(false);
   };
