@@ -20,6 +20,7 @@ import { EmployeeDevice } from './EmployeeDevice';
 import { EmployeePageHeader } from './EmployeePageHeader';
 import { EmployeePolicies } from './EmployeePolicies';
 import { EmployeeHipaaTraining, EmployeeTrainingVideos } from './EmployeeTraining';
+import { isAuditorOnly } from './isAuditorOnly';
 import { OffboardingChecklist } from './OffboardingChecklist';
 
 type EmployeeTab =
@@ -74,19 +75,23 @@ export function Employee({
   const pathname = usePathname();
   const router = useRouter();
 
+  // CS-416: auditor-only members aren't subject to background checks, so the
+  // tab, header status, and content are hidden for them.
+  const showBackgroundCheck = backgroundCheckStepEnabled && !isAuditorOnly(employee.role);
+
   const availableTabs: EmployeeTab[] = [
     'details',
     'policies',
     'training',
     ...(hasHipaaFramework ? (['hipaa'] as EmployeeTab[]) : []),
     'device',
-    ...(backgroundCheckStepEnabled ? (['background-check'] as EmployeeTab[]) : []),
+    ...(showBackgroundCheck ? (['background-check'] as EmployeeTab[]) : []),
     ...(employee.offboardDate ? (['offboarding'] as EmployeeTab[]) : []),
   ];
 
   const resolveTab = (): EmployeeTab => {
     if (
-      backgroundCheckStepEnabled &&
+      showBackgroundCheck &&
       (searchParams.get('background_check_step') || searchParams.get('background_check_billing'))
     ) {
       return 'background-check';
@@ -131,7 +136,7 @@ export function Employee({
           employeeName={employee.user.name ?? 'Employee'}
           orgId={orgId}
           backgroundCheck={initialBackgroundCheck}
-          backgroundCheckStepEnabled={backgroundCheckStepEnabled}
+          backgroundCheckStepEnabled={showBackgroundCheck}
           memberBackgroundCheckExempt={memberExempt}
         />
       }
@@ -149,12 +154,10 @@ export function Employee({
             <TabsTrigger value="training">Training Videos</TabsTrigger>
             {hasHipaaFramework && <TabsTrigger value="hipaa">HIPAA Training</TabsTrigger>}
             <TabsTrigger value="device">Device</TabsTrigger>
-            {backgroundCheckStepEnabled && (
+            {showBackgroundCheck && (
               <TabsTrigger value="background-check">Background Check</TabsTrigger>
             )}
-            {employee.offboardDate && (
-              <TabsTrigger value="offboarding">Offboarding</TabsTrigger>
-            )}
+            {employee.offboardDate && <TabsTrigger value="offboarding">Offboarding</TabsTrigger>}
           </TabsList>
           <TabsContent value="details">
             <EmployeeDetails employee={employee} canEdit={canEdit} />
@@ -195,7 +198,7 @@ export function Employee({
               />
             </TabsContent>
           )}
-          {backgroundCheckStepEnabled && (
+          {showBackgroundCheck && (
             <TabsContent value="background-check">
               <EmployeeBackgroundCheck
                 employee={employee}

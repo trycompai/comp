@@ -299,6 +299,56 @@ describe('EmployeeBackgroundCheck — V1 two-paths', () => {
     expect(screen.queryByRole('switch', { name: /exempt this employee/i })).not.toBeInTheDocument();
   });
 
+  it('renders BackgroundCheckAdminActions when a background check record exists', () => {
+    const backgroundCheck = {
+      id: 'bcr_1',
+      employeeName: 'Ada Lovelace',
+      employeeEmail: 'ada@example.com',
+      requesterNotes: null,
+      candidateUrl: 'https://identity.trycomp.ai/cand_1',
+      status: 'failed' as const,
+      identityStatus: null,
+      employmentStatus: null,
+      referenceStatus: null,
+      rightToWorkStatus: null,
+      adjudicationStatus: null,
+      lastSyncedAt: null,
+      reportSnapshot: null,
+      reportSyncedAt: null,
+    };
+
+    renderSection({ initialBackgroundCheck: backgroundCheck });
+
+    // Retry is shown for 'failed' status (member:update is mocked as allowed)
+    expect(screen.getByRole('button', { name: /Retry/i })).toBeInTheDocument();
+    // The V1 new-check flow must not appear
+    expect(screen.queryByText('How would you like to proceed?')).not.toBeInTheDocument();
+  });
+
+  it('renders Cancel button when background check is in progress', () => {
+    const backgroundCheck = {
+      id: 'bcr_2',
+      employeeName: 'Ada Lovelace',
+      employeeEmail: 'ada@example.com',
+      requesterNotes: null,
+      candidateUrl: 'https://identity.trycomp.ai/cand_2',
+      status: 'in_progress' as const,
+      identityStatus: null,
+      employmentStatus: null,
+      referenceStatus: null,
+      rightToWorkStatus: null,
+      adjudicationStatus: null,
+      lastSyncedAt: null,
+      reportSnapshot: null,
+      reportSyncedAt: null,
+    };
+
+    renderSection({ initialBackgroundCheck: backgroundCheck });
+
+    expect(screen.getByRole('button', { name: /Cancel check/i })).toBeInTheDocument();
+    expect(screen.queryByText('How would you like to proceed?')).not.toBeInTheDocument();
+  });
+
   it('resyncs internal exempt state when the prop flips to true', () => {
     const { rerender } = render(
       <EmployeeBackgroundCheck
