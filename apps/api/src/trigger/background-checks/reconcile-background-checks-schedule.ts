@@ -214,6 +214,7 @@ export async function runReconciliation(payload: {
 export const reconcileBackgroundChecksSchedule = schedules.task({
   id: 'reconcile-background-checks-schedule',
   cron: '0 * * * *', // hourly (UTC)
-  maxDuration: 1000 * 60 * 30,
+  maxDuration: 30 * 60, // 30 minutes — Trigger.dev maxDuration is in SECONDS
+
   run: (payload) => runReconciliation(payload),
 });
