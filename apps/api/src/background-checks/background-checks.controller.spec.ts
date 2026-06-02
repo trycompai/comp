@@ -1,7 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import {
-  PeopleBackgroundChecksController,
-} from './background-checks.controller';
+import { PeopleBackgroundChecksController } from './background-checks.controller';
 import { BackgroundChecksService } from './background-checks.service';
 import { BackgroundCheckCustomService } from './background-check-custom.service';
 import { HybridAuthGuard } from '../auth/hybrid-auth.guard';

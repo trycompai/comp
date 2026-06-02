@@ -175,7 +175,10 @@ export class BackgroundChecksService {
       throw new NotFoundException('Background check not found.');
     }
 
-    if (!record.identityBackgroundCheckId || !process.env.BACKGROUND_CHECK_API_KEY) {
+    if (
+      !record.identityBackgroundCheckId ||
+      !process.env.BACKGROUND_CHECK_API_KEY
+    ) {
       return { record };
     }
 
@@ -197,8 +200,11 @@ export class BackgroundChecksService {
     }
 
     verifyBackgroundCheckWebhookSignature({ rawBody, headers });
-    const payload = identityWebhookPayloadSchema.parse(JSON.parse(rawBody.toString('utf8')));
-    const eventId = headerValue(headers, 'x-background-check-event-id') ?? payload.eventId;
+    const payload = identityWebhookPayloadSchema.parse(
+      JSON.parse(rawBody.toString('utf8')),
+    );
+    const eventId =
+      headerValue(headers, 'x-background-check-event-id') ?? payload.eventId;
     const eventType =
       headerValue(headers, 'x-background-check-event-type') ?? payload.type;
 
@@ -276,7 +282,10 @@ export class BackgroundChecksService {
   }
 
   async cancelForMember(params: { organizationId: string; memberId: string }) {
-    return cancelForMemberFn({ ...params, getForMember: (p) => this.getForMember(p) });
+    return cancelForMemberFn({
+      ...params,
+      getForMember: (p) => this.getForMember(p),
+    });
   }
 
   async retryForMember(params: {
@@ -292,7 +301,10 @@ export class BackgroundChecksService {
   }
 
   async deleteForMember(params: { organizationId: string; memberId: string }) {
-    return deleteForMemberFn({ ...params, getForMember: (p) => this.getForMember(p) });
+    return deleteForMemberFn({
+      ...params,
+      getForMember: (p) => this.getForMember(p),
+    });
   }
 
   private isUniqueConstraintError(error: unknown): boolean {

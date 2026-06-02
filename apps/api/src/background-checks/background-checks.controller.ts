@@ -41,7 +41,10 @@ export class PeopleBackgroundChecksController {
     @Param('id') memberId: string,
     @OrganizationId() organizationId: string,
   ) {
-    return this.backgroundChecksService.getForMember({ organizationId, memberId });
+    return this.backgroundChecksService.getForMember({
+      organizationId,
+      memberId,
+    });
   }
 
   @Post(':id/background-check')
@@ -66,12 +69,17 @@ export class PeopleBackgroundChecksController {
 
   @Get(':id/background-check/custom-attachments')
   @RequirePermission('member', 'read')
-  @ApiOperation({ summary: 'Get custom background check attachments for a member' })
+  @ApiOperation({
+    summary: 'Get custom background check attachments for a member',
+  })
   async getCustomAttachmentsForMember(
     @Param('id') memberId: string,
     @OrganizationId() organizationId: string,
   ) {
-    return this.customService.getAttachmentsForMember({ organizationId, memberId });
+    return this.customService.getAttachmentsForMember({
+      organizationId,
+      memberId,
+    });
   }
 
   @Post(':id/background-check/custom')
@@ -102,7 +110,9 @@ export class PeopleBackgroundChecksController {
   @Post(':id/background-check/retry')
   @HttpCode(200)
   @RequirePermission('member', 'update')
-  @ApiOperation({ summary: 'Retry a failed or cancelled background check (free)' })
+  @ApiOperation({
+    summary: 'Retry a failed or cancelled background check (free)',
+  })
   async retryForMember(
     @Param('id') memberId: string,
     @OrganizationId() organizationId: string,
@@ -123,7 +133,10 @@ export class PeopleBackgroundChecksController {
     @Param('id') memberId: string,
     @OrganizationId() organizationId: string,
   ) {
-    return this.backgroundChecksService.cancelForMember({ organizationId, memberId });
+    return this.backgroundChecksService.cancelForMember({
+      organizationId,
+      memberId,
+    });
   }
 
   @Delete(':id/background-check')
@@ -134,7 +147,10 @@ export class PeopleBackgroundChecksController {
     @Param('id') memberId: string,
     @OrganizationId() organizationId: string,
   ) {
-    return this.backgroundChecksService.deleteForMember({ organizationId, memberId });
+    return this.backgroundChecksService.deleteForMember({
+      organizationId,
+      memberId,
+    });
   }
 }
 
@@ -143,7 +159,9 @@ export class PeopleBackgroundChecksController {
 @UseGuards(HybridAuthGuard, PermissionGuard)
 @ApiSecurity('apikey')
 export class BackgroundChecksController {
-  constructor(private readonly backgroundChecksService: BackgroundChecksService) {}
+  constructor(
+    private readonly backgroundChecksService: BackgroundChecksService,
+  ) {}
 
   @Get(':id')
   @RequirePermission('member', 'read')

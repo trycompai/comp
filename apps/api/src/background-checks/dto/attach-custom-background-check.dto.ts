@@ -1,4 +1,10 @@
-import { IsEmail, IsOptional, IsString, MaxLength, MinLength } from 'class-validator';
+import {
+  IsEmail,
+  IsOptional,
+  IsString,
+  MaxLength,
+  MinLength,
+} from 'class-validator';
 import { UploadAttachmentDto } from '../../attachments/upload-attachment.dto';
 
 export class AttachCustomBackgroundCheckDto extends UploadAttachmentDto {

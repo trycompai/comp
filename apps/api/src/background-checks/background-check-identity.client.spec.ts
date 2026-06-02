@@ -27,7 +27,9 @@ describe('BackgroundCheckIdentityClient idempotency key', () => {
   }
 
   function keyFrom(fetchMock: jest.Mock): string {
-    const init = fetchMock.mock.calls[0][1] as { headers: Record<string, string> };
+    const init = fetchMock.mock.calls[0][1] as {
+      headers: Record<string, string>;
+    };
     return init.headers['Idempotency-Key'];
   }
 
@@ -41,13 +43,19 @@ describe('BackgroundCheckIdentityClient idempotency key', () => {
 
   it('uses the bare key for the initial request (attempt 0)', async () => {
     const fetchMock = mockFetchOk();
-    await new BackgroundCheckIdentityClient().createBackgroundCheck({ ...params, attempt: 0 });
+    await new BackgroundCheckIdentityClient().createBackgroundCheck({
+      ...params,
+      attempt: 0,
+    });
     expect(keyFrom(fetchMock)).toBe('comp-background-check:mem_1');
   });
 
   it('suffixes the key with the attempt number for retries', async () => {
     const fetchMock = mockFetchOk();
-    await new BackgroundCheckIdentityClient().createBackgroundCheck({ ...params, attempt: 2 });
+    await new BackgroundCheckIdentityClient().createBackgroundCheck({
+      ...params,
+      attempt: 2,
+    });
     expect(keyFrom(fetchMock)).toBe('comp-background-check:mem_1:2');
   });
 });
