@@ -3,7 +3,7 @@
 import { Input, Spinner } from '@trycompai/design-system';
 import { Close } from '@trycompai/design-system/icons';
 import MultipleSelector from '@trycompai/ui/multiple-selector';
-import { useEffect, useRef } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import type { ConnectionVariable, VariableValue } from './ConnectionVariablesForm';
 
 interface ConnectionVariableMultiSelectProps {
@@ -30,6 +30,30 @@ export function ConnectionVariableMultiSelect({
   const hasLoadedRef = useRef(false);
   const isGitHubRepos = variable.id === 'target_repos';
   const parsedConfigs = isGitHubRepos ? normalizedSelectedValues.map(parseRepoBranch) : [];
+
+  const reposForSelector = isGitHubRepos
+    ? parsedConfigs.map((config) => config.repo)
+    : normalizedSelectedValues;
+
+  // Remembers every value that has appeared in the multi-select during the
+  // lifetime of this component so that values the user removes (clicking the
+  // X on a tag) remain available as re-selectable options in the dropdown.
+  // Without this, free-form multi-selects like Google Workspace's
+  // `sync_excluded_emails` have an empty dropdown (no fetchOptions, no static
+  // options), so a removed tag can only be brought back by retyping it.
+  const [seenValues, setSeenValues] = useState<Set<string>>(() => new Set(reposForSelector));
+  useEffect(() => {
+    setSeenValues((prev) => {
+      let next: Set<string> | null = null;
+      for (const v of reposForSelector) {
+        if (v && !prev.has(v)) {
+          if (!next) next = new Set(prev);
+          next.add(v);
+        }
+      }
+      return next ?? prev;
+    });
+  }, [reposForSelector]);
 
   useEffect(() => {
     if (
@@ -77,21 +101,31 @@ export function ConnectionVariableMultiSelect({
     onChange(newValues);
   };
 
-  const reposForSelector = isGitHubRepos
-    ? parsedConfigs.map((config) => config.repo)
-    : normalizedSelectedValues;
   const isCreatable = isGitHubRepos || options.length === 0;
+
+  const combinedOptions = useMemo(() => {
+    const map = new Map<string, { value: string; label: string }>();
+    for (const option of options) {
+      map.set(option.value, { value: option.value, label: option.label });
+    }
+    for (const v of seenValues) {
+      if (!map.has(v)) {
+        map.set(v, { value: v, label: v });
+      }
+    }
+    return Array.from(map.values());
+  }, [options, seenValues]);
 
   return (
     <div className="space-y-3">
       <MultipleSelector
         value={reposForSelector.map((value) => ({
           value,
-          label: options.find((option) => option.value === value)?.label || value,
+          label: combinedOptions.find((option) => option.value === value)?.label || value,
         }))}
         onChange={(selected) => handleRepoSelectionChange(selected.map((item) => item.value))}
-        defaultOptions={options.map((option) => ({ value: option.value, label: option.label }))}
-        options={options.map((option) => ({ value: option.value, label: option.label }))}
+        defaultOptions={combinedOptions}
+        options={combinedOptions}
         placeholder={variable.placeholder || `Select ${variable.label.toLowerCase()}...`}
         creatable={isCreatable}
         emptyIndicator={
