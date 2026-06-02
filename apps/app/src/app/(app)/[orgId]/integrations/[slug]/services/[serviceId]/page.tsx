@@ -5,23 +5,21 @@ import type {
   IntegrationProviderResponse,
 } from '@trycompai/integration-platform';
 import { redirect } from 'next/navigation';
-import { ProviderDetailView } from './components/ProviderDetailView';
 import {
   type IntegrationTaskApiResponse,
   mapTaskTemplates,
-} from './lib/task-templates';
+} from '../../lib/task-templates';
+import { ServiceDetailView } from './components/ServiceDetailView';
 
 interface PageProps {
-  params: Promise<{ orgId: string; slug: string }>;
+  params: Promise<{ orgId: string; slug: string; serviceId: string }>;
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }
 
-export default async function ProviderDetailPage({ params, searchParams }: PageProps) {
-  const { orgId, slug } = await params;
+export default async function ServiceDetailPage({ params, searchParams }: PageProps) {
+  const { orgId, slug, serviceId } = await params;
   const sp = await searchParams;
-  const success = typeof sp.success === 'string' ? sp.success : '';
-  const providerParam = typeof sp.provider === 'string' ? sp.provider : '';
-  const gcpOAuthJustConnected = slug === 'gcp' && success === 'true' && providerParam === 'gcp';
+  const connectionId = typeof sp.connectionId === 'string' ? sp.connectionId : null;
 
   const [providerResult, connectionsResult, tasksResult] = await Promise.all([
     serverApi.get<IntegrationProviderResponse>(`/v1/integrations/connections/providers/${slug}`),
@@ -29,21 +27,30 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
     serverApi.get<IntegrationTaskApiResponse>('/v1/tasks'),
   ]);
 
-  if (!providerResult.data || providerResult.error) {
+  const provider = providerResult.data;
+  if (!provider || providerResult.error) {
     redirect(`/${orgId}/integrations`);
   }
 
-  const provider = providerResult.data;
+  const service = (provider.services ?? []).find((s) => s.id === serviceId);
+  if (!service) {
+    redirect(`/${orgId}/integrations/${slug}`);
+  }
+
   const connections = (connectionsResult.data ?? []).filter((c) => c.providerSlug === slug);
-  const { templates: taskTemplates } = mapTaskTemplates(tasksResult, { sort: true });
+  const { templates: taskTemplates, errored: tasksErrored } = mapTaskTemplates(tasksResult);
 
   return (
     <PageLayout>
-      <ProviderDetailView
+      <ServiceDetailView
         provider={provider}
-        initialConnections={connections}
+        service={service}
+        connections={connections}
+        connectionId={connectionId}
         taskTemplates={taskTemplates}
-        gcpOAuthJustConnected={gcpOAuthJustConnected}
+        tasksErrored={tasksErrored}
+        orgId={orgId}
+        slug={slug}
       />
     </PageLayout>
   );

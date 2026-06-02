@@ -1,4 +1,11 @@
 import type { IntegrationManifest } from '../../types';
+import {
+  cloudSqlBackupsCheck,
+  cloudSqlSslCheck,
+  iamPrimitiveRolesCheck,
+  storagePublicAccessCheck,
+  vpcOpenFirewallsCheck,
+} from './checks';
 
 export const gcpManifest: IntegrationManifest = {
   id: 'gcp',
@@ -145,5 +152,11 @@ This is industry standard - all GCP security monitoring tools use the same scope
     },
   ],
 
-  checks: [],
+  checks: [
+    iamPrimitiveRolesCheck,
+    storagePublicAccessCheck,
+    vpcOpenFirewallsCheck,
+    cloudSqlSslCheck,
+    cloudSqlBackupsCheck,
+  ],
 };

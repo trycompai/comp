@@ -75,6 +75,7 @@ export function ProviderDetailView({
             name: string;
             description: string;
             implemented?: boolean;
+            mappedTasks?: Array<{ id: string; name: string }>;
           }>;
         }
       ).services ?? [],
@@ -97,9 +98,7 @@ export function ProviderDetailView({
     services: connectionServices,
     meta: servicesMeta,
     refresh: refreshServices,
-    updateServices,
   } = useConnectionServices(selectedConnection?.id ?? null);
-  const [togglingService, setTogglingService] = useState<string | null>(null);
   const [gcpOrgs, setGcpOrgs] = useState<
     Array<{
       id: string;
@@ -110,25 +109,6 @@ export function ProviderDetailView({
   const [gcpSelectedProjectIds, setGcpSelectedProjectIds] = useState<string[]>([]);
   const oauthBootstrapHandledRef = useRef(false);
   const settingsQueryHandledRef = useRef(false);
-
-  const handleToggleService = useCallback(
-    async (serviceId: string, enabled: boolean): Promise<boolean> => {
-      setTogglingService(serviceId);
-      try {
-        await updateServices(serviceId, enabled);
-        toast.success(
-          `${services.find((s) => s.id === serviceId)?.name ?? serviceId} ${enabled ? 'enabled' : 'disabled'}`,
-        );
-        return true;
-      } catch (err) {
-        toast.error(err instanceof Error ? err.message : 'Failed to update');
-        return false;
-      } finally {
-        setTogglingService(null);
-      }
-    },
-    [updateServices, services],
-  );
 
   // OAuth return (?success=true): strip query, detect org/projects (NOT services yet — user must select projects first)
   useEffect(() => {
@@ -415,8 +395,8 @@ export function ProviderDetailView({
                     services={services}
                     connectionServices={connectionServices}
                     connectionId={selectedConnection?.id ?? null}
-                    onToggle={handleToggleService}
-                    togglingService={togglingService}
+                    orgId={orgId}
+                    slug={provider.id}
                   />
                 )}
               </div>
