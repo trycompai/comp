@@ -24,7 +24,7 @@ function humanizeProvenance(derivedFrom?: string | null): string {
   if (!derivedFrom) return 'Auto-derived';
   if (derivedFrom.startsWith('framework:')) {
     const name = derivedFrom.slice('framework:'.length).trim();
-    return name ? `${name} framework` : 'Frameworks';
+    return name || 'Framework';
   }
   if (derivedFrom.startsWith('wizard:')) return 'Setup wizard';
   const mapped = PROVENANCE_LABELS[derivedFrom];
