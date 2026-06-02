@@ -7,7 +7,7 @@ import { encodeSimple } from "../lib/encodings.js";
 import { compactMap } from "../lib/primitives.js";
 import { safeParse } from "../lib/schemas.js";
 import { RequestOptions } from "../lib/sdks.js";
-import { extractSecurity, resolveGlobalSecurity } from "../lib/security.js";
+import { resolveSecurity } from "../lib/security.js";
 import { pathToFunc } from "../lib/url.js";
 import { APIError } from "../models/errors/apierror.js";
 import {
@@ -21,6 +21,7 @@ import { SDKValidationError } from "../models/errors/sdkvalidationerror.js";
 import {
   PeopleControllerDeleteEmploymentEvidenceV1Request,
   PeopleControllerDeleteEmploymentEvidenceV1Request$zodSchema,
+  PeopleControllerDeleteEmploymentEvidenceV1Security,
 } from "../models/peoplecontrollerdeleteemploymentevidencev1op.js";
 import { APICall, APIPromise } from "../types/async.js";
 import { Result } from "../types/fp.js";
@@ -30,11 +31,10 @@ import { Result } from "../types/fp.js";
  *
  * @remarks
  * Delete employment evidence in Comp AI. Invite and manage workforce members, training status, device compliance, email preferences, and employee evidence records.
- *
- * If set, this operation will use {@link Security.apikey} from the global security.
  */
 export function peoplePeopleControllerDeleteEmploymentEvidenceV1(
   client$: CompAiCore,
+  security: PeopleControllerDeleteEmploymentEvidenceV1Security,
   request: PeopleControllerDeleteEmploymentEvidenceV1Request,
   options?: RequestOptions,
 ): APIPromise<
@@ -51,6 +51,7 @@ export function peoplePeopleControllerDeleteEmploymentEvidenceV1(
 > {
   return new APIPromise($do(
     client$,
+    security,
     request,
     options,
   ));
@@ -58,6 +59,7 @@ export function peoplePeopleControllerDeleteEmploymentEvidenceV1(
 
 async function $do(
   client$: CompAiCore,
+  security: PeopleControllerDeleteEmploymentEvidenceV1Security,
   request: PeopleControllerDeleteEmploymentEvidenceV1Request,
   options?: RequestOptions,
 ): Promise<
@@ -110,8 +112,23 @@ async function $do(
   const headers$ = new Headers(compactMap({
     Accept: "*/*",
   }));
-  const securityInput = await extractSecurity(client$._options.security);
-  const requestSecurity = resolveGlobalSecurity(securityInput, [0]);
+
+  const requestSecurity = resolveSecurity(
+    [
+      {
+        fieldName: "X-API-Key",
+        type: "apiKey:header",
+        value: security?.apikey,
+      },
+    ],
+    [
+      {
+        fieldName: "Authorization",
+        type: "oauth2",
+        value: security?.oauth2,
+      },
+    ],
+  );
 
   const context = {
     options: client$._options,
@@ -119,7 +136,7 @@ async function $do(
     operationID: "PeopleController_deleteEmploymentEvidence_v1",
     oAuth2Scopes: null,
     resolvedSecurity: requestSecurity,
-    securitySource: client$._options.security,
+    securitySource: security,
     retryConfig: options?.retries
       || client$._options.retryConfig
       || { strategy: "none" },
