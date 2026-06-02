@@ -69,9 +69,7 @@ export function SOAMobileRow({
   } else if (answerData?.savedIsApplicable !== undefined) {
     displayIsApplicable = answerData.savedIsApplicable;
     justificationValue =
-      displayIsApplicable === false
-        ? (answerData.answer ?? question.columnMapping.justification ?? null)
-        : null;
+      answerData.answer ?? question.columnMapping.justification ?? null;
   } else {
     displayIsApplicable =
       processedResult?.isApplicable !== null && processedResult?.isApplicable !== undefined
@@ -79,12 +77,10 @@ export function SOAMobileRow({
         : (question.columnMapping.isApplicable ?? true);
 
     justificationValue =
-      displayIsApplicable === false
-        ? (processedResult?.justification ||
-            answerData?.answer ||
-            question.columnMapping.justification ||
-            null)
-        : null;
+      processedResult?.justification ||
+      answerData?.answer ||
+      question.columnMapping.justification ||
+      null;
   }
 
   return (
@@ -126,8 +122,8 @@ export function SOAMobileRow({
         )}
       </div>
 
-      {/* Justification (only when not applicable) */}
-      {displayIsApplicable === false && !isProcessing && (
+      {/* Justification (shown for both Applicable and Not Applicable per ISO 27001) */}
+      {!isProcessing && (
         <div>
           <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Justification</p>
           <p className="text-sm text-foreground mt-0.5 leading-relaxed whitespace-pre-wrap">

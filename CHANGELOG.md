@@ -1,3 +1,27 @@
+## [3.66.2](https://github.com/trycompai/comp/compare/v3.66.1...v3.66.2) (2026-06-02)
+
+
+### Bug Fixes
+
+* **frameworks:** prune deleted editor templates during org initialization ([d269491](https://github.com/trycompai/comp/commit/d2694910808dc42be4b983b1cd645bc6c5be9830))
+
+## [3.66.1](https://github.com/trycompai/comp/compare/v3.66.0...v3.66.1) (2026-06-01)
+
+
+### Bug Fixes
+
+* **api:** avoid registering duplicated device when the status is flipping to compliant ([b103710](https://github.com/trycompai/comp/commit/b1037104271c5c750bc7a5d111c98d3672b39c40))
+* **api:** exclude deactivated owners from acting-user fallback ([ec6a1fa](https://github.com/trycompai/comp/commit/ec6a1fa9beff9fe474dba37785a06bb0ae834ba8))
+* **api:** support API key auth on upload-submission endpoint ([9570390](https://github.com/trycompai/comp/commit/957039077d3681a7c90cb1f246a3a5aeb6a3a8a1))
+* **app:** fit requirements table columns ([318330e](https://github.com/trycompai/comp/commit/318330ef7b3d55b51152c1eee4c31cc960d8bd9c))
+* **app:** keep removed multi-select values in the dropdown ([4dc1a12](https://github.com/trycompai/comp/commit/4dc1a12d4491fef3b0aecbaf10787db21b09559d))
+* **app:** prevent duplicate publish all submissions ([8b0b863](https://github.com/trycompai/comp/commit/8b0b863923d8f30fd6be2d7713424cb5935dcca0))
+* **app:** resolve archived policy and compliance UI tasks ([d8ce450](https://github.com/trycompai/comp/commit/d8ce45093d87a3f7222fc14123ca88a82043f9c5))
+* **app:** resolve small linear tasks ([424d863](https://github.com/trycompai/comp/commit/424d863458ccfd9059611515239e86895fee6c5f))
+* **app:** search integrations by name ([4db9154](https://github.com/trycompai/comp/commit/4db91546dfefa9b010bedbc65aedf7a781ce6a0b))
+* **app:** warn before invalidating policy acknowledgments ([76e106f](https://github.com/trycompai/comp/commit/76e106f1ab125ddbeaaa9945e2be39185b45230b))
+* **device-agent:** make serial number extraction more robust on agent ([85f0b1e](https://github.com/trycompai/comp/commit/85f0b1e52d3f978935fddf6858eec6f6239a4e69))
+
 # [3.66.0](https://github.com/trycompai/comp/compare/v3.65.1...v3.66.0) (2026-05-29)
 
 
