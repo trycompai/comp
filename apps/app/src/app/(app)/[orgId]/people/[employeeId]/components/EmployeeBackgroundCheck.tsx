@@ -6,6 +6,7 @@ import type { Member, User } from '@db';
 import { Stack } from '@trycompai/design-system';
 import { useState } from 'react';
 import { toast } from 'sonner';
+import { BackgroundCheckAdminActions } from './BackgroundCheckAdminActions';
 import type { AttachFormValues } from './BackgroundCheckAttachForm';
 import type { ExemptFormValues } from './BackgroundCheckExemptForm';
 import {
@@ -54,7 +55,9 @@ export function EmployeeBackgroundCheck({
     employeeEmail: '',
     requesterNotes: '',
   });
-  const [orderErrors, setOrderErrors] = useState<Partial<Record<keyof OrderFormValues, string>>>({});
+  const [orderErrors, setOrderErrors] = useState<Partial<Record<keyof OrderFormValues, string>>>(
+    {},
+  );
   const [attachValues, setAttachValues] = useState<AttachFormValues>({
     vendor: 'checkr',
     reportDate: '',
@@ -210,9 +213,7 @@ export function EmployeeBackgroundCheck({
       return;
     }
 
-    toast.success(
-      next ? 'Employee exempted from background check' : 'Employee no longer exempt',
-    );
+    toast.success(next ? 'Employee exempted from background check' : 'Employee no longer exempt');
   };
 
   if (!backgroundCheckStepEnabled) {
@@ -244,6 +245,14 @@ export function EmployeeBackgroundCheck({
           saving={savingExempt}
           canUpdate={canRequest}
           onToggle={handleToggleExempt}
+        />
+        <BackgroundCheckAdminActions
+          backgroundCheck={backgroundCheck}
+          memberId={employee.id}
+          organizationId={organizationId}
+          onChange={(next) => {
+            mutateBackgroundCheck(next, { revalidate: false });
+          }}
         />
         <BackgroundCheckStatusView
           backgroundCheck={backgroundCheck}
@@ -280,5 +289,3 @@ export function EmployeeBackgroundCheck({
     />
   );
 }
-
-
