@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import type { ReactNode } from 'react';
 import { describe, expect, it, vi } from 'vitest';
 import type { IsmsDocument, IsmsDocumentStatus } from '../isms-types';
@@ -51,11 +51,32 @@ vi.mock('@trycompai/design-system', () => ({
   DialogFooter: ({ children }: { children: ReactNode }) => <div>{children}</div>,
   DialogHeader: ({ children }: { children: ReactNode }) => <div>{children}</div>,
   DialogTitle: ({ children }: { children: ReactNode }) => <h2>{children}</h2>,
-  Select: ({ children }: { children: ReactNode }) => <div>{children}</div>,
-  SelectContent: ({ children }: { children: ReactNode }) => <div>{children}</div>,
-  SelectItem: ({ children }: { children: ReactNode }) => <div>{children}</div>,
-  SelectTrigger: ({ children }: { children: ReactNode }) => <div>{children}</div>,
-  SelectValue: () => <span />,
+  // Expose the approver options as plain native <option>s wired to onValueChange
+  // so tests can drive the real selection -> handleSubmit gating.
+  Select: ({
+    children,
+    value,
+    onValueChange,
+  }: {
+    children: ReactNode;
+    value?: string;
+    onValueChange?: (value: string) => void;
+  }) => (
+    <select
+      aria-label="Approver"
+      value={value ?? ''}
+      onChange={(event) => onValueChange?.(event.target.value)}
+    >
+      <option value="" />
+      {children}
+    </select>
+  ),
+  SelectContent: ({ children }: { children: ReactNode }) => <>{children}</>,
+  SelectItem: ({ children, value }: { children: ReactNode; value: string }) => (
+    <option value={value}>{children}</option>
+  ),
+  SelectTrigger: () => null,
+  SelectValue: () => null,
   Text: ({ children }: { children: ReactNode }) => <span>{children}</span>,
 }));
 
@@ -168,5 +189,86 @@ describe('IsmsApprovalSection', () => {
     );
     expect(screen.queryByText('Submit for approval')).not.toBeInTheDocument();
     expect(screen.queryByText('Resubmit for approval')).not.toBeInTheDocument();
+  });
+});
+
+describe('IsmsApprovalSection interactions', () => {
+  // Fresh handlers per test so call counts are isolated from the module-level
+  // baseProps mocks used by the presence tests above.
+  function makeHandlers() {
+    return {
+      onSubmitForApproval: vi.fn().mockResolvedValue(undefined),
+      onApprove: vi.fn().mockResolvedValue(undefined),
+      onDecline: vi.fn().mockResolvedValue(undefined),
+    };
+  }
+
+  it('calls onApprove exactly once when the approver clicks Approve', () => {
+    const handlers = makeHandlers();
+    render(
+      <IsmsApprovalSection
+        canManage={false}
+        currentMemberId="mem_approver"
+        approverOptions={APPROVER_OPTIONS}
+        document={makeDocument({ status: 'needs_review', approverId: 'mem_approver' })}
+        {...handlers}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'Approve' }));
+
+    expect(handlers.onApprove).toHaveBeenCalledTimes(1);
+    expect(handlers.onDecline).not.toHaveBeenCalled();
+  });
+
+  it('calls onDecline exactly once when the approver clicks Decline', () => {
+    const handlers = makeHandlers();
+    render(
+      <IsmsApprovalSection
+        canManage={false}
+        currentMemberId="mem_approver"
+        approverOptions={APPROVER_OPTIONS}
+        document={makeDocument({ status: 'needs_review', approverId: 'mem_approver' })}
+        {...handlers}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'Decline' }));
+
+    expect(handlers.onDecline).toHaveBeenCalledTimes(1);
+    expect(handlers.onApprove).not.toHaveBeenCalled();
+  });
+
+  it('lets an editor submit a draft for approval with the chosen approver', async () => {
+    const handlers = makeHandlers();
+    render(
+      <IsmsApprovalSection
+        canManage
+        currentMemberId="mem_current"
+        approverOptions={APPROVER_OPTIONS}
+        document={makeDocument()}
+        {...handlers}
+      />,
+    );
+
+    // Open the submit dialog.
+    fireEvent.click(screen.getByText('Submit for approval'));
+    expect(screen.getByRole('dialog')).toBeInTheDocument();
+
+    // Confirm is disabled until an approver is chosen.
+    const confirm = screen.getByRole('button', { name: 'Confirm & Submit' });
+    expect(confirm).toBeDisabled();
+
+    fireEvent.change(screen.getByRole('combobox', { name: 'Approver' }), {
+      target: { value: 'mem_approver' },
+    });
+    expect(confirm).not.toBeDisabled();
+
+    fireEvent.click(confirm);
+
+    await waitFor(() => {
+      expect(handlers.onSubmitForApproval).toHaveBeenCalledTimes(1);
+    });
+    expect(handlers.onSubmitForApproval).toHaveBeenCalledWith('mem_approver');
   });
 });

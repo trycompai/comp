@@ -1,5 +1,6 @@
-import { render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import type { ReactNode } from 'react';
 import {
   setMockPermissions,
   ADMIN_PERMISSIONS,
@@ -57,7 +58,30 @@ vi.mock('swr', () => ({
 // ─── Mock design system + icons + shared components ──────────
 vi.mock('@trycompai/design-system', () => ismsDesignSystemMock());
 vi.mock('@trycompai/design-system/icons', () => ismsIconsMock());
-vi.mock('./shared', () => ismsSharedMock());
+// Override IsmsAddCard so the closed-state trigger toggles the real form open,
+// letting the mutation-through-to-hook test fill + submit the add form.
+vi.mock('./shared', () => {
+  const shared = ismsSharedMock();
+  function IsmsAddCard({
+    addLabel,
+    children,
+  }: {
+    addLabel: string;
+    children: (helpers: { close: () => void }) => ReactNode;
+  }) {
+    const { useState } = require('react') as typeof import('react');
+    const [isOpen, setIsOpen] = useState(false);
+    if (!isOpen) {
+      return (
+        <button type="button" onClick={() => setIsOpen(true)}>
+          {addLabel}
+        </button>
+      );
+    }
+    return <div>{children({ close: () => setIsOpen(false) })}</div>;
+  }
+  return { ...shared, IsmsAddCard };
+});
 
 vi.mock('sonner', () => ({
   toast: { success: vi.fn(), error: vi.fn() },
@@ -174,5 +198,65 @@ describe('InterestedPartiesClient', () => {
       expect(screen.getByText('Out of date')).toBeInTheDocument();
     });
     expect(screen.getByText('Regenerate')).toBeInTheDocument();
+  });
+
+  it('creates a party through to hook.createRow with the register + form data', async () => {
+    setMockPermissions(ADMIN_PERMISSIONS);
+    render(<InterestedPartiesClient {...baseProps} />);
+
+    // Open the add form (closed-state trigger), then fill the three fields.
+    fireEvent.click(screen.getByText('Add interested party'));
+
+    fireEvent.change(screen.getByLabelText('New interested party name'), {
+      target: { value: 'Suppliers' },
+    });
+    fireEvent.change(screen.getByLabelText('New interested party category'), {
+      target: { value: 'External' },
+    });
+    fireEvent.change(screen.getByLabelText('New interested party needs and expectations'), {
+      target: { value: 'Timely security disclosures' },
+    });
+
+    // Once open, the submit button shares the label; it is the last match.
+    const submitButtons = screen.getAllByText('Add interested party');
+    fireEvent.click(submitButtons[submitButtons.length - 1]);
+
+    await waitFor(() => {
+      expect(mockCreateRow).toHaveBeenCalledTimes(1);
+    });
+    expect(mockCreateRow).toHaveBeenCalledWith({
+      register: 'interested-parties',
+      data: {
+        name: 'Suppliers',
+        category: 'External',
+        needsExpectations: 'Timely security disclosures',
+      },
+    });
+  });
+
+  it('edits a row through to hook.updateRow with the register, row id + changes', async () => {
+    setMockPermissions(ADMIN_PERMISSIONS);
+    render(<InterestedPartiesClient {...baseProps} />);
+
+    // Enter edit mode on the first row, change the name, then save.
+    fireEvent.click(screen.getAllByLabelText('Edit interested party')[0]);
+
+    const nameInput = screen.getByLabelText('Interested party name');
+    fireEvent.change(nameInput, { target: { value: 'Key Customers' } });
+
+    fireEvent.click(screen.getByText('Save'));
+
+    await waitFor(() => {
+      expect(mockUpdateRow).toHaveBeenCalledTimes(1);
+    });
+    expect(mockUpdateRow).toHaveBeenCalledWith({
+      register: 'interested-parties',
+      id: 'p1',
+      data: {
+        name: 'Key Customers',
+        category: 'External',
+        needsExpectations: 'Confidentiality of their data',
+      },
+    });
   });
 });
