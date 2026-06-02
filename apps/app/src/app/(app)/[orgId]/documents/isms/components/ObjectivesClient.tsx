@@ -68,6 +68,8 @@ export function ObjectivesClient(props: ObjectivesClientProps) {
             toast.success('Objective deleted');
           } catch (caught) {
             toast.error(caught instanceof Error ? caught.message : 'Failed to delete objective');
+            // Re-throw so the row's delete state resets only after a real outcome.
+            throw caught;
           }
         };
 

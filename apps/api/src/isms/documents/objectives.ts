@@ -11,22 +11,25 @@ import type {
  * is a pure snapshot comparison. Manual rows are preserved by the caller.
  */
 export function deriveObjectives(data: IsmsPlatformData): DerivedObjective[] {
-  // Skip blank-objective rows so empty wizard entries never become blank 6.2
-  // rows; fall through to the standard derived objectives when none remain.
-  const wizardObjectives = (data.wizardAnswers.objectives ?? []).filter(
-    (objective) => objective.objective?.trim(),
-  );
-  if (wizardObjectives.length > 0) {
-    return wizardObjectives.map((objective, index) => ({
-      objective: objective.objective,
-      target: objective.target || null,
-      cadence: null,
-      plan: null,
-      measurementMethod: null,
-      source: 'derived',
-      derivedFrom: 'wizard:objective',
-      position: index,
-    }));
+  // An explicitly-saved objectives array is the user's choice and must be
+  // respected — even when it ends up empty after dropping blank-text rows.
+  // Only fall through to the standard derived objectives when the field was
+  // never set (undefined). Mirrors buildWizardDefaults, which preserves a saved
+  // empty array rather than reseeding it from defaults.
+  const savedObjectives = data.wizardAnswers.objectives;
+  if (savedObjectives !== undefined) {
+    return savedObjectives
+      .filter((objective) => objective.objective?.trim())
+      .map((objective, index) => ({
+        objective: objective.objective,
+        target: objective.target || null,
+        cadence: null,
+        plan: null,
+        measurementMethod: null,
+        source: 'derived',
+        derivedFrom: 'wizard:objective',
+        position: index,
+      }));
   }
 
   const rows: Array<Omit<DerivedObjective, 'position'>> = [];

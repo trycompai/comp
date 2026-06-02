@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import type { IsmsDocumentTemplate, MappedControl, MappedRequirement } from './types';
 
 export interface IsmsDocumentRow {
@@ -31,6 +31,13 @@ export function useIsmsDocumentRows({
   frameworkId,
 }: UseIsmsDocumentRowsParams): UseIsmsDocumentRowsResult {
   const [templatesState, setTemplatesState] = useState(templates);
+
+  // Re-sync optimistic local state whenever the server-provided templates change
+  // (e.g. after the parent refetches following a link/unlink save), so fresh data
+  // isn't silently dropped.
+  useEffect(() => {
+    setTemplatesState(templates);
+  }, [templates]);
 
   const data: IsmsDocumentRow[] = useMemo(
     () =>

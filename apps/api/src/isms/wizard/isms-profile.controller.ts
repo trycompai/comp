@@ -12,6 +12,7 @@ import {
 } from '@nestjs/common';
 import type { Request } from 'express';
 import {
+  ApiBody,
   ApiConsumes,
   ApiOkResponse,
   ApiOperation,
@@ -25,6 +26,34 @@ import { RequirePermission } from '../../auth/require-permission.decorator';
 import { IsmsProfileService } from './isms-profile.service';
 import { GenerateAllDto } from './dto/generate-all.dto';
 import { saveWizardProfileSchema } from './wizard-schema';
+
+/**
+ * OpenAPI body contract for POST /v1/isms/profile. It reads `req.body` directly
+ * (the global ValidationPipe mangles the nested answers JSON), so the request
+ * shape is documented explicitly here and validated at runtime by
+ * `saveWizardProfileSchema`. Mirrors the inline-schema @ApiBody the registers
+ * controller uses for its @Req()-bodied endpoints (e.g. REGISTER_ROW_BODY).
+ */
+const SAVE_PROFILE_BODY = {
+  description: 'Partial ISMS wizard answers (validated at runtime by zod)',
+  schema: {
+    type: 'object',
+    properties: {
+      frameworkId: { type: 'string' },
+      answers: {
+        type: 'object',
+        description:
+          'Deeply-partial wizard answers (any subset of the wizard steps)',
+        additionalProperties: true,
+      },
+      complete: {
+        type: 'boolean',
+        description: 'Whether the wizard is being finalized',
+      },
+    },
+    required: ['frameworkId', 'answers'],
+  },
+} as const;
 
 /**
  * ISMS wizard profile endpoints (CS-438). The profile holds the ~12 un-derivable
@@ -58,6 +87,7 @@ export class IsmsProfileController {
   @RequirePermission('evidence', 'update')
   @ApiOperation({ summary: 'Save (partial) ISMS wizard answers' })
   @ApiConsumes('application/json')
+  @ApiBody(SAVE_PROFILE_BODY)
   @ApiOkResponse({ description: 'Saved profile' })
   async saveProfile(
     // Read req.body directly: ValidationPipe with transform mangles the nested

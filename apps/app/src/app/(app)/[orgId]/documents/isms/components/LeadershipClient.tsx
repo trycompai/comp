@@ -48,6 +48,8 @@ export function LeadershipClient(props: LeadershipClientProps) {
             toast.success('Document saved');
           } catch (caught) {
             toast.error(caught instanceof Error ? caught.message : 'Failed to save document');
+            // Re-throw so the form keeps the user's input and stays open on failure.
+            throw caught;
           }
         };
 

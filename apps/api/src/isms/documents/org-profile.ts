@@ -77,10 +77,13 @@ export async function loadOrgProfile({
   add('Hosting', get(QUESTIONS.infrastructure));
 
   const wizard = parseStoredAnswers(profile?.answers);
+  // Fall back to the defaults only when intended outcomes were never set. A
+  // saved (even empty) array is the user's choice and must be respected, not
+  // overwritten on every read. Mirrors buildWizardDefaults.
   const intendedOutcomes =
-    wizard.intendedOutcomes && wizard.intendedOutcomes.length > 0
-      ? wizard.intendedOutcomes
-      : DEFAULT_INTENDED_OUTCOMES;
+    wizard.intendedOutcomes === undefined
+      ? DEFAULT_INTENDED_OUTCOMES
+      : wizard.intendedOutcomes;
 
   return { overview, mission: get(QUESTIONS.describe), intendedOutcomes };
 }

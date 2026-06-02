@@ -58,6 +58,8 @@ export function ScopeClient(props: ScopeClientProps) {
             toast.success('Scope saved');
           } catch (caught) {
             toast.error(caught instanceof Error ? caught.message : 'Failed to save scope');
+            // Re-throw so the form keeps the user's input and stays open on failure.
+            throw caught;
           }
         };
 

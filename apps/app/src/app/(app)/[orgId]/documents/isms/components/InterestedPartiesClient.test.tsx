@@ -7,6 +7,7 @@ import {
   AUDITOR_PERMISSIONS,
   mockHasPermission,
 } from '@/test-utils/mocks/permissions';
+import { toast } from 'sonner';
 import type { IsmsDocument, IsmsDriftResult, IsmsInterestedParty } from '../isms-types';
 import { ismsDesignSystemMock, ismsIconsMock, ismsSharedMock } from './__test-helpers__/dsMocks';
 
@@ -258,5 +259,52 @@ describe('InterestedPartiesClient', () => {
         needsExpectations: 'Confidentiality of their data',
       },
     });
+  });
+
+  it('keeps the add form open with the user input when hook.createRow rejects', async () => {
+    setMockPermissions(ADMIN_PERMISSIONS);
+    mockCreateRow.mockRejectedValueOnce(new Error('Network error'));
+    render(<InterestedPartiesClient {...baseProps} />);
+
+    fireEvent.click(screen.getByText('Add interested party'));
+    fireEvent.change(screen.getByLabelText('New interested party name'), {
+      target: { value: 'Suppliers' },
+    });
+    fireEvent.change(screen.getByLabelText('New interested party category'), {
+      target: { value: 'External' },
+    });
+    fireEvent.change(screen.getByLabelText('New interested party needs and expectations'), {
+      target: { value: 'Timely security disclosures' },
+    });
+
+    const submitButtons = screen.getAllByText('Add interested party');
+    fireEvent.click(submitButtons[submitButtons.length - 1]);
+
+    await waitFor(() => {
+      expect(toast.error).toHaveBeenCalledWith('Network error');
+    });
+    // The handler re-throws, so the form stays open with the user's input intact.
+    expect(screen.getByLabelText('New interested party name')).toHaveValue('Suppliers');
+    expect(
+      screen.getByLabelText('New interested party needs and expectations'),
+    ).toHaveValue('Timely security disclosures');
+  });
+
+  it('keeps the row in edit mode with the user changes when hook.updateRow rejects', async () => {
+    setMockPermissions(ADMIN_PERMISSIONS);
+    mockUpdateRow.mockRejectedValueOnce(new Error('Save failed'));
+    render(<InterestedPartiesClient {...baseProps} />);
+
+    fireEvent.click(screen.getAllByLabelText('Edit interested party')[0]);
+    fireEvent.change(screen.getByLabelText('Interested party name'), {
+      target: { value: 'Key Customers' },
+    });
+    fireEvent.click(screen.getByText('Save'));
+
+    await waitFor(() => {
+      expect(toast.error).toHaveBeenCalledWith('Save failed');
+    });
+    // The handler re-throws, so the row stays in edit mode with the user's changes.
+    expect(screen.getByLabelText('Interested party name')).toHaveValue('Key Customers');
   });
 });

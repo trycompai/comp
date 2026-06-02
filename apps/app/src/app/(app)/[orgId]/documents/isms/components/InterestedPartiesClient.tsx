@@ -67,6 +67,8 @@ export function InterestedPartiesClient(props: InterestedPartiesClientProps) {
             toast.error(
               caught instanceof Error ? caught.message : 'Failed to delete interested party',
             );
+            // Re-throw so the row's delete state resets only after a real outcome.
+            throw caught;
           }
         };
 

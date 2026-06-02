@@ -72,10 +72,28 @@ describe('deriveObjectives', () => {
     expect(rows.every((r) => r.source === 'derived')).toBe(true);
   });
 
-  it('falls back to defaults when wizard objectives is empty', () => {
-    const rows = deriveObjectives({ ...data, wizardAnswers: { objectives: [] } });
+  it('falls back to defaults when wizard objectives was never set', () => {
+    const rows = deriveObjectives({ ...data, wizardAnswers: {} });
     expect(rows.some((r) => r.derivedFrom === 'wizard:objective')).toBe(false);
     expect(rows.some((r) => r.derivedFrom.startsWith('framework:'))).toBe(true);
+  });
+
+  it('respects an explicitly-saved empty objectives array (CS-438)', () => {
+    const rows = deriveObjectives({ ...data, wizardAnswers: { objectives: [] } });
+    expect(rows).toEqual([]);
+  });
+
+  it('respects an explicitly-saved array that is empty after dropping blank rows', () => {
+    const rows = deriveObjectives({
+      ...data,
+      wizardAnswers: {
+        objectives: [
+          { objective: '   ', target: 'ignored' },
+          { objective: '', target: '' },
+        ],
+      },
+    });
+    expect(rows).toEqual([]);
   });
 });
 

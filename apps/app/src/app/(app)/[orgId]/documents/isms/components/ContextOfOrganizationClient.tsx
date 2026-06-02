@@ -50,6 +50,8 @@ export function ContextOfOrganizationClient(props: ContextOfOrganizationClientPr
             toast.success('Issue updated');
           } catch (caught) {
             toast.error(caught instanceof Error ? caught.message : 'Failed to update issue');
+            // Re-throw so the row stays in edit mode with the user's changes on failure.
+            throw caught;
           }
         };
 
@@ -59,6 +61,8 @@ export function ContextOfOrganizationClient(props: ContextOfOrganizationClientPr
             toast.success('Issue deleted');
           } catch (caught) {
             toast.error(caught instanceof Error ? caught.message : 'Failed to delete issue');
+            // Re-throw so the row's delete state resets only after a real outcome.
+            throw caught;
           }
         };
 

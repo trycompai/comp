@@ -3,26 +3,14 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Button, Field, FieldError, HStack } from '@trycompai/design-system';
 import { Add } from '@trycompai/design-system/icons';
-import { Controller, useForm } from 'react-hook-form';
-import { z } from 'zod';
+import { useForm } from 'react-hook-form';
 import type { ApproverOption } from './IsmsApprovalSection';
-import { OBJECTIVE_STATUSES, OBJECTIVE_STATUS_LABELS } from './objectives-status';
+import { objectiveSchema, type ObjectiveFormValues } from './objective-schema';
 import { IsmsAddCard } from './shared';
 import { ObjectivesFormFields } from './ObjectivesFormFields';
 
 export { OBJECTIVE_STATUS_LABELS } from './objectives-status';
-
-const objectiveSchema = z.object({
-  objective: z.string().min(1, 'Objective is required'),
-  target: z.string(),
-  ownerMemberId: z.string(),
-  cadence: z.string(),
-  plan: z.string(),
-  measurementMethod: z.string(),
-  status: z.enum(OBJECTIVE_STATUSES),
-});
-
-export type ObjectiveFormValues = z.infer<typeof objectiveSchema>;
+export type { ObjectiveFormValues } from './objective-schema';
 
 interface ObjectivesFormProps {
   ownerOptions: ApproverOption[];

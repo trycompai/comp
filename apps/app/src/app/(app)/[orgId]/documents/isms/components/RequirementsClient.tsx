@@ -56,6 +56,8 @@ export function RequirementsClient(props: RequirementsClientProps) {
             toast.success('Requirement updated');
           } catch (caught) {
             toast.error(caught instanceof Error ? caught.message : 'Failed to update requirement');
+            // Re-throw so the row stays in edit mode with the user's changes on failure.
+            throw caught;
           }
         };
 
@@ -65,6 +67,8 @@ export function RequirementsClient(props: RequirementsClientProps) {
             toast.success('Requirement deleted');
           } catch (caught) {
             toast.error(caught instanceof Error ? caught.message : 'Failed to delete requirement');
+            // Re-throw so the row's delete state resets only after a real outcome.
+            throw caught;
           }
         };
 

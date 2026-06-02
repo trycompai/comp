@@ -24,7 +24,7 @@ export default async function IsmsWizardPage({
       items={[
         {
           label: 'Documents',
-          href: `/${orgId}/documents`,
+          href: `/${orgId}/documents?tab=iso-27001`,
           props: { render: <Link href={`/${orgId}/documents?tab=iso-27001`} /> },
         },
         { label: 'Setup wizard', isCurrent: true },
