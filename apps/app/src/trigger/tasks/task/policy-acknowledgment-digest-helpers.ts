@@ -93,7 +93,7 @@ export interface DigestPolicy {
   name: string;
   signedBy: string[];
   visibility: PolicyVisibility;
-  visibleToDepartments: Departments[];
+  visibleToDepartments: string[];
 }
 
 export interface DigestMember {

@@ -1,9 +1,17 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsString, IsNotEmpty, IsOptional, IsEnum } from 'class-validator';
+import { Transform } from 'class-transformer';
+import {
+  IsString,
+  IsNotEmpty,
+  IsOptional,
+  IsEnum,
+  MaxLength,
+} from 'class-validator';
 import {
   PolicyStatus,
   Frequency,
   Departments,
+  DEPARTMENT_MAX_LENGTH,
 } from '../../policies/dto/create-policy.dto';
 
 export class CreateAdminPolicyDto {
@@ -45,12 +53,17 @@ export class CreateAdminPolicyDto {
   frequency?: Frequency;
 
   @ApiProperty({
-    description: 'Department this policy applies to',
-    enum: Departments,
+    description:
+      'Department this policy applies to. Built-in values: none, admin, gov, hr, it, itsm, qms. Custom department names are also accepted.',
     example: Departments.IT,
     required: false,
+    type: 'string',
+    maxLength: DEPARTMENT_MAX_LENGTH,
   })
   @IsOptional()
-  @IsEnum(Departments)
-  department?: Departments;
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(DEPARTMENT_MAX_LENGTH)
+  @Transform(({ value }) => (typeof value === 'string' ? value.trim() : value))
+  department?: string;
 }

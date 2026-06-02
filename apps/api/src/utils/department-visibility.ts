@@ -59,7 +59,7 @@ export function buildPolicyVisibilityFilter(
 export function canViewPolicy(
   policy: {
     visibility: PolicyVisibility;
-    visibleToDepartments: Departments[];
+    visibleToDepartments: string[];
   },
   memberDepartment: Departments | null | undefined,
   memberRoles: string[] | null | undefined,
