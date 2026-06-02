@@ -105,6 +105,7 @@ describe('background checks', () => {
       employeeName: 'Ada Lovelace',
       employeeEmail: 'ada@example.com',
       requesterEmail: 'admin@example.com',
+      attempt: 0,
     });
 
     expect(fetchSpy).toHaveBeenCalledWith(
@@ -160,6 +161,7 @@ describe('background checks', () => {
       employeeName: 'Ada Lovelace',
       employeeEmail: 'ada@example.com',
       requesterEmail: 'admin@example.com',
+      attempt: 0,
     });
 
     const request = fetchSpy.mock.calls[0]?.[1];
@@ -186,6 +188,7 @@ describe('background checks', () => {
         employeeName: 'Ada Lovelace',
         employeeEmail: 'ada@example.com',
         requesterEmail: 'admin@example.com',
+        attempt: 0,
       }),
     ).rejects.toThrow('Identity background check request failed.');
   });
