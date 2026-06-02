@@ -1,3 +1,25 @@
+# [3.67.0](https://github.com/trycompai/comp/compare/v3.66.2...v3.67.0) (2026-06-02)
+
+
+### Bug Fixes
+
+* **api:** guarantee non-null SoA justification on YES defaults ([7f564df](https://github.com/trycompai/comp/commit/7f564df763937b988ba85c47e92cae29817da151))
+* **api:** include a default justification on SoA ([732f262](https://github.com/trycompai/comp/commit/732f262f4b8a6bfc0856bf2a2a0dcc5c255841f3))
+* **app:** able to edit the justification ([2939178](https://github.com/trycompai/comp/commit/2939178111ac4af55f886ab1bee312a3321e590b))
+* **app:** fix empty justification issue on SoA ([43fa889](https://github.com/trycompai/comp/commit/43fa88968a53a0054ed5e0fd8d7b38f11a4b3ab2))
+* **app:** keep SoA justification dialog open when save fails ([a5621cb](https://github.com/trycompai/comp/commit/a5621cb89a03e1c2ea850b3f1e1044b0be5e3718))
+* **app:** return a generic default when no family match on SoA ([6682be1](https://github.com/trycompai/comp/commit/6682be16dd31e563b723aeae5dcf23f03de0ab22))
+* **app:** show default justification at all times on SoA ([13f468a](https://github.com/trycompai/comp/commit/13f468a2855e1b272c92ce3272b8b3bdfb8d32ca))
+* **background-checks:** move admin actions into the status card footer ([#2998](https://github.com/trycompai/comp/issues/2998)) ([dcd4b4d](https://github.com/trycompai/comp/commit/dcd4b4da8c490d0e2cf3cb54f09815e945de552d))
+* **people:** stop tracking background checks for auditor-only members (CS-416) ([#2995](https://github.com/trycompai/comp/issues/2995)) ([4e7d57d](https://github.com/trycompai/comp/commit/4e7d57dbedb3bf6125dd764b9ecd91c19db8c362))
+
+
+### Features
+
+* **admin:** add Finding Templates management to admin panel ([c381397](https://github.com/trycompai/comp/commit/c381397faeda6abe645a673b8c4378c9b3e5fa3c))
+* **background-checks:** admin cancel/delete/retry (CS-475) ([#2993](https://github.com/trycompai/comp/issues/2993)) ([51c3b3d](https://github.com/trycompai/comp/commit/51c3b3d023e11e6651d784dcccefef6fddaad56f))
+* **background-checks:** hourly reconciliation for stuck checks (CS-473) ([#2996](https://github.com/trycompai/comp/issues/2996)) ([3d6e609](https://github.com/trycompai/comp/commit/3d6e60925b527da5431e3be37435b675360f73a4))
+
 ## [3.66.2](https://github.com/trycompai/comp/compare/v3.66.1...v3.66.2) (2026-06-02)
 
 
