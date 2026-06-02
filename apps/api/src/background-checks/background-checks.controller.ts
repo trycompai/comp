@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   Headers,
   HttpCode,
@@ -96,6 +97,44 @@ export class PeopleBackgroundChecksController {
       },
       userId: authContext.userId,
     });
+  }
+
+  @Post(':id/background-check/retry')
+  @HttpCode(200)
+  @RequirePermission('member', 'update')
+  @ApiOperation({ summary: 'Retry a failed or cancelled background check (free)' })
+  async retryForMember(
+    @Param('id') memberId: string,
+    @OrganizationId() organizationId: string,
+    @AuthContext() authContext: AuthContextType,
+  ) {
+    return this.backgroundChecksService.retryForMember({
+      organizationId,
+      memberId,
+      requesterEmail: authContext.userEmail ?? 'api-key@trycomp.ai',
+    });
+  }
+
+  @Post(':id/background-check/cancel')
+  @HttpCode(200)
+  @RequirePermission('member', 'update')
+  @ApiOperation({ summary: 'Cancel an in-flight background check' })
+  async cancelForMember(
+    @Param('id') memberId: string,
+    @OrganizationId() organizationId: string,
+  ) {
+    return this.backgroundChecksService.cancelForMember({ organizationId, memberId });
+  }
+
+  @Delete(':id/background-check')
+  @HttpCode(200)
+  @RequirePermission('member', 'delete')
+  @ApiOperation({ summary: 'Delete a member background check' })
+  async deleteForMember(
+    @Param('id') memberId: string,
+    @OrganizationId() organizationId: string,
+  ) {
+    return this.backgroundChecksService.deleteForMember({ organizationId, memberId });
   }
 }
 
