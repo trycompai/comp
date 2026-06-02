@@ -22,7 +22,10 @@ export function verifyBackgroundCheckWebhookSignature({
   }
 
   const timestamp = Number(timestampHeader);
-  if (!Number.isFinite(timestamp) || Math.abs(Date.now() - timestamp) > WEBHOOK_MAX_SKEW_MS) {
+  if (
+    !Number.isFinite(timestamp) ||
+    Math.abs(Date.now() - timestamp) > WEBHOOK_MAX_SKEW_MS
+  ) {
     throw new UnauthorizedException('Webhook timestamp is invalid.');
   }
 

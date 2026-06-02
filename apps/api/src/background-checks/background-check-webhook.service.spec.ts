@@ -17,6 +17,7 @@ jest.mock('@db', () => {
 
   return {
     Prisma: { PrismaClientKnownRequestError },
+    BackgroundCheckStatus: { cancelled: 'cancelled' },
     db: {
       backgroundCheckRequest: {
         findFirst: jest.fn(),
@@ -119,9 +120,9 @@ describe('BackgroundChecksService webhooks', () => {
       employeeName: 'Ada',
       employeeEmail: 'old@example.com',
     } as Awaited<ReturnType<typeof db.backgroundCheckRequest.findFirst>>);
-    mockAsync<Awaited<ReturnType<typeof db.backgroundCheckWebhookEvent.create>>>(
-      mockedDb.backgroundCheckWebhookEvent.create,
-    ).mockResolvedValueOnce(
+    mockAsync<
+      Awaited<ReturnType<typeof db.backgroundCheckWebhookEvent.create>>
+    >(mockedDb.backgroundCheckWebhookEvent.create).mockResolvedValueOnce(
       {} as Awaited<ReturnType<typeof db.backgroundCheckWebhookEvent.create>>,
     );
     const reportSnapshot = {
@@ -170,9 +171,9 @@ describe('BackgroundChecksService webhooks', () => {
       employeeName: 'Ada',
       employeeEmail: 'old@example.com',
     } as Awaited<ReturnType<typeof db.backgroundCheckRequest.findFirst>>);
-    mockAsync<Awaited<ReturnType<typeof db.backgroundCheckWebhookEvent.create>>>(
-      mockedDb.backgroundCheckWebhookEvent.create,
-    ).mockResolvedValueOnce(
+    mockAsync<
+      Awaited<ReturnType<typeof db.backgroundCheckWebhookEvent.create>>
+    >(mockedDb.backgroundCheckWebhookEvent.create).mockResolvedValueOnce(
       {} as Awaited<ReturnType<typeof db.backgroundCheckWebhookEvent.create>>,
     );
     const identityClient = {
@@ -213,9 +214,9 @@ describe('BackgroundChecksService webhooks', () => {
       employeeName: 'Ada',
       employeeEmail: 'old@example.com',
     } as Awaited<ReturnType<typeof db.backgroundCheckRequest.findFirst>>);
-    mockAsync<Awaited<ReturnType<typeof db.backgroundCheckWebhookEvent.create>>>(
-      mockedDb.backgroundCheckWebhookEvent.create,
-    ).mockResolvedValueOnce(
+    mockAsync<
+      Awaited<ReturnType<typeof db.backgroundCheckWebhookEvent.create>>
+    >(mockedDb.backgroundCheckWebhookEvent.create).mockResolvedValueOnce(
       {} as Awaited<ReturnType<typeof db.backgroundCheckWebhookEvent.create>>,
     );
     const identityClient = { getBackgroundCheck: jest.fn() };
@@ -240,6 +241,43 @@ describe('BackgroundChecksService webhooks', () => {
     );
   });
 
+  it('does not change status when the local record is already cancelled', async () => {
+    const payload = webhookPayload();
+    const rawBody = JSON.stringify(payload);
+    const timestamp = String(Date.now());
+    mockAsync<Awaited<ReturnType<typeof db.backgroundCheckRequest.findFirst>>>(
+      mockedDb.backgroundCheckRequest.findFirst,
+    ).mockResolvedValueOnce({
+      id: 'bcr_1',
+      status: 'cancelled',
+      employeeName: 'Ada',
+      employeeEmail: 'ada@example.com',
+    } as Awaited<ReturnType<typeof db.backgroundCheckRequest.findFirst>>);
+    mockAsync<
+      Awaited<ReturnType<typeof db.backgroundCheckWebhookEvent.create>>
+    >(mockedDb.backgroundCheckWebhookEvent.create).mockResolvedValueOnce(
+      {} as Awaited<ReturnType<typeof db.backgroundCheckWebhookEvent.create>>,
+    );
+    const service = new BackgroundChecksService(
+      {
+        getBackgroundCheck: jest.fn(),
+      } as unknown as BackgroundCheckIdentityClient,
+      {} as unknown as BackgroundCheckPaymentService,
+    );
+
+    const result = await service.handleWebhook({
+      rawBody: Buffer.from(rawBody),
+      headers: {
+        'x-background-check-timestamp': timestamp,
+        'x-background-check-signature': makeSignature(rawBody, timestamp),
+      },
+    });
+
+    expect(mockedDb.backgroundCheckWebhookEvent.create).toHaveBeenCalled();
+    expect(mockedDb.backgroundCheckRequest.update).not.toHaveBeenCalled();
+    expect(result).toEqual({ ok: true });
+  });
+
   it('reconciles state even on duplicate webhook events', async () => {
     const payload = webhookPayload();
     const rawBody = JSON.stringify(payload);
@@ -251,16 +289,18 @@ describe('BackgroundChecksService webhooks', () => {
       employeeName: 'Ada',
       employeeEmail: 'old@example.com',
     } as Awaited<ReturnType<typeof db.backgroundCheckRequest.findFirst>>);
-    mockAsync<Awaited<ReturnType<typeof db.backgroundCheckWebhookEvent.create>>>(
-      mockedDb.backgroundCheckWebhookEvent.create,
-    ).mockRejectedValueOnce(
+    mockAsync<
+      Awaited<ReturnType<typeof db.backgroundCheckWebhookEvent.create>>
+    >(mockedDb.backgroundCheckWebhookEvent.create).mockRejectedValueOnce(
       new Prisma.PrismaClientKnownRequestError('duplicate', {
         code: 'P2002',
         clientVersion: 'test',
       }),
     );
     const identityClient = {
-      getBackgroundCheck: jest.fn().mockResolvedValue({ status: 'completed_with_flags' }),
+      getBackgroundCheck: jest
+        .fn()
+        .mockResolvedValue({ status: 'completed_with_flags' }),
     };
     const service = new BackgroundChecksService(
       identityClient as unknown as BackgroundCheckIdentityClient,
