@@ -149,6 +149,16 @@ async function generateObjectives({
   });
 }
 
+/** True when a stored narrative actually holds content (not null/undefined or {}). */
+function hasNarrativeContent(narrative: unknown): boolean {
+  return (
+    narrative != null &&
+    typeof narrative === 'object' &&
+    !Array.isArray(narrative) &&
+    Object.keys(narrative).length > 0
+  );
+}
+
 async function generateNarrative({
   tx,
   documentId,
@@ -168,9 +178,10 @@ async function generateNarrative({
     where: { documentId, isLatest: true },
   });
   if (latest) {
-    // Seed the derived narrative only once. Preserve any existing narrative so a
-    // regenerate never clobbers the customer's manual edits (CS-437 override).
-    if (latest.narrative != null) return;
+    // Preserve a non-empty narrative so a regenerate never clobbers the
+    // customer's manual edits (CS-437 override). An absent or empty ({}) value —
+    // e.g. a snapshot-only version — is still seeded with the derived narrative.
+    if (hasNarrativeContent(latest.narrative)) return;
     await tx.ismsDocumentVersion.update({
       where: { id: latest.id },
       data: { narrative },
