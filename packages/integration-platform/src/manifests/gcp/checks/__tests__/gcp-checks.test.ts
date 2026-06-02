@@ -121,6 +121,22 @@ describe('GCP IAM primitive roles check', () => {
     expect(passed).toHaveLength(0);
     expect(failed).toHaveLength(0);
   });
+
+  it('fails closed when the project IAM policy cannot be read', async () => {
+    // getBindings swallows the throw and returns null; the project read must
+    // surface a "could not verify" finding rather than silently skipping the
+    // project (which would leave the RBAC task stale-passing).
+    const { passed, failed } = await runCheck(iamPrimitiveRolesCheck, {
+      post: (url) => {
+        if (url.includes(':getIamPolicy')) throw new Error('403');
+        return {};
+      },
+    });
+    expect(passed).toHaveLength(0);
+    expect(failed).toHaveLength(1);
+    expect(failed[0]!.title).toMatch(/Could not verify IAM primitive roles/);
+    expect(failed[0]!.severity).toBe('medium');
+  });
 });
 
 describe('GCP Cloud Storage public-access check', () => {

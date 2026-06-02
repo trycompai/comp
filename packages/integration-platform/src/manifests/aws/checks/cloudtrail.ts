@@ -143,8 +143,23 @@ export const cloudTrailEnabledCheck: IntegrationCheck = {
         let loggingKnown = true;
         // Logging status only matters for otherwise-compliant trails.
         if (multiRegion && logValidation && t.TrailARN) {
+          // Query GetTrailStatus against the trail's home region. A multi-region
+          // trail is returned as a shadow in every scanned region; reusing the
+          // scan-region client when it differs from the home region can fail on
+          // some SDK paths and produce a false "could not verify". Reuse `ct`
+          // when the scan region already is the home region.
+          const homeRegion = t.HomeRegion ?? region;
+          const statusClient =
+            homeRegion === region
+              ? ct
+              : new CloudTrailClient({
+                  region: homeRegion,
+                  credentials: session.credentials,
+                });
           try {
-            const status = await ct.send(new GetTrailStatusCommand({ Name: t.TrailARN }));
+            const status = await statusClient.send(
+              new GetTrailStatusCommand({ Name: t.TrailARN }),
+            );
             logging = status.IsLogging === true;
           } catch (err) {
             loggingKnown = false;

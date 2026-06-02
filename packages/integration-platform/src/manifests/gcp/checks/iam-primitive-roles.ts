@@ -30,6 +30,35 @@ async function getBindings(
 }
 
 /**
+ * Emit a fail-closed "could not verify" finding for a project whose IAM policy
+ * couldn't be read. Used for both the project-level read (where getBindings
+ * swallows the error and returns null) and the outer per-project catch, so an
+ * unreadable project is never silently skipped (which would leave the RBAC task
+ * stale-passing on unverified data).
+ */
+function failUnverifiedProject(
+  ctx: CheckContext,
+  projectId: string,
+  error?: unknown,
+): void {
+  ctx.fail({
+    title: `Could not verify IAM primitive roles: ${projectId}`,
+    description: `IAM policy for project "${projectId}" could not be read, so primitive-role usage is unverified.`,
+    resourceType: 'gcp-project',
+    resourceId: projectId,
+    severity: 'medium',
+    remediation:
+      'Grant resourcemanager.projects.getIamPolicy (e.g. roles/iam.securityReviewer) to the connection for this project, then re-run.',
+    evidence: {
+      projectId,
+      ...(error !== undefined
+        ? { error: error instanceof Error ? error.message : String(error) }
+        : {}),
+    },
+  });
+}
+
+/**
  * IAM least-privilege check (direct API, no SCC). Evaluates primitive role
  * bindings (roles/owner, roles/editor) on the project AND its inherited
  * folders/organization (effective access). A pass is emitted only when the
@@ -57,7 +86,12 @@ export const iamPrimitiveRolesCheck: IntegrationCheck = {
           ctx,
           `v3/projects/${encodeURIComponent(projectId)}`,
         );
-        if (projectBindings === null) continue; // can't read project policy → no assertion
+        if (projectBindings === null) {
+          // Couldn't read the project's own IAM policy (getBindings swallowed
+          // the throw → null). Fail closed rather than silently skipping.
+          failUnverifiedProject(ctx, projectId);
+          continue;
+        }
 
         // Resolve the ancestry (folders/org) so inherited bindings are evaluated.
         let hierarchyFullyEvaluated = true;
@@ -131,19 +165,7 @@ export const iamPrimitiveRolesCheck: IntegrationCheck = {
         // One project's API error must not abort the whole check — but it is
         // unverified, so emit a finding rather than warn-and-skip (an
         // all-projects-failed run would otherwise leave the task stale).
-        ctx.fail({
-          title: `Could not verify IAM primitive roles: ${projectId}`,
-          description: `IAM policy for project "${projectId}" could not be read, so primitive-role usage is unverified.`,
-          resourceType: 'gcp-project',
-          resourceId: projectId,
-          severity: 'medium',
-          remediation:
-            'Grant resourcemanager.projects.getIamPolicy (e.g. roles/iam.securityReviewer) to the connection for this project, then re-run.',
-          evidence: {
-            projectId,
-            error: error instanceof Error ? error.message : String(error),
-          },
-        });
+        failUnverifiedProject(ctx, projectId, error);
         continue;
       }
     }
