@@ -52,9 +52,9 @@ export async function saveAnswersToDatabase(
         });
       }
 
-      // Store justification in answer field only if isApplicable is NO
-      const answerValue =
-        result.isApplicable === false ? result.justification : null;
+      // Store justification in the answer field for both YES and NO so the
+      // SoA always carries a justification for every control (per ISO 27001).
+      const answerValue = result.justification ?? null;
 
       // Create new answer
       await db.sOAAnswer.create({
