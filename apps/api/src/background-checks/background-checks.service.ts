@@ -123,6 +123,7 @@ export class BackgroundChecksService {
         employeeName,
         employeeEmail,
         requesterEmail,
+        attempt: 0,
       });
     } catch (error) {
       const refundId = await this.paymentService.refund({
