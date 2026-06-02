@@ -13,6 +13,99 @@ export const ISO27001_FRAMEWORK_NAMES = ['ISO 27001', 'iso27001', 'ISO27001'];
 export const FULLY_REMOTE_JUSTIFICATION =
   'This control is not applicable as our organization operates fully remotely.';
 
+// Generic fallback inclusion justification used when no family-specific text applies.
+export const DEFAULT_INCLUSION_JUSTIFICATION =
+  'Applicable because this control is within our ISMS scope and requires documented implementation and rationale.';
+
+/**
+ * Default inclusion justifications by ISO 27001:2022 control family.
+ * Used when a control is deemed Applicable but the LLM did not supply a justification.
+ * Controls outside these named families intentionally receive no default justification.
+ */
+export const INCLUSION_JUSTIFICATIONS = {
+  accessControl:
+    'Applicable because the organisation must restrict access to systems and information based on business need, user role, and information security risk.',
+  supplierCloud:
+    'Applicable because third-party and cloud services are used within the ISMS scope and must be governed to manage supplier and service-provider risk.',
+  incidentManagement:
+    'Applicable because the organisation requires defined processes to identify, report, assess, respond to, and learn from information security events and incidents.',
+  secureDevelopment:
+    'Applicable because software or system changes are developed, configured, tested, or deployed within the ISMS scope.',
+  legalPrivacyCompliance:
+    'Applicable because legal, regulatory, contractual, privacy, and records-protection obligations must be identified and met.',
+  physicalRemoteWorking:
+    'Applicable only where physical, endpoint, home-working, or off-premises asset risks exist; otherwise the control should be excluded with a clear rationale.',
+} as const;
+
+// Maps each ISO 27001:2022 control closure code to a family key in INCLUSION_JUSTIFICATIONS.
+const CLOSURE_TO_FAMILY: Record<string, keyof typeof INCLUSION_JUSTIFICATIONS> = {
+  // Access control (organizational + technical)
+  '5.15': 'accessControl',
+  '5.16': 'accessControl',
+  '5.17': 'accessControl',
+  '5.18': 'accessControl',
+  '8.2': 'accessControl',
+  '8.3': 'accessControl',
+  '8.4': 'accessControl',
+  '8.5': 'accessControl',
+  // Supplier and cloud
+  '5.19': 'supplierCloud',
+  '5.20': 'supplierCloud',
+  '5.21': 'supplierCloud',
+  '5.22': 'supplierCloud',
+  '5.23': 'supplierCloud',
+  // Incident management and continuity
+  '5.24': 'incidentManagement',
+  '5.25': 'incidentManagement',
+  '5.26': 'incidentManagement',
+  '5.27': 'incidentManagement',
+  '5.28': 'incidentManagement',
+  '5.29': 'incidentManagement',
+  '5.30': 'incidentManagement',
+  '6.8': 'incidentManagement',
+  // Secure development
+  '8.25': 'secureDevelopment',
+  '8.26': 'secureDevelopment',
+  '8.27': 'secureDevelopment',
+  '8.28': 'secureDevelopment',
+  '8.29': 'secureDevelopment',
+  '8.30': 'secureDevelopment',
+  '8.31': 'secureDevelopment',
+  '8.32': 'secureDevelopment',
+  '8.33': 'secureDevelopment',
+  '8.34': 'secureDevelopment',
+  // Legal, privacy, compliance, data protection
+  '5.31': 'legalPrivacyCompliance',
+  '5.32': 'legalPrivacyCompliance',
+  '5.33': 'legalPrivacyCompliance',
+  '5.34': 'legalPrivacyCompliance',
+  '5.35': 'legalPrivacyCompliance',
+  '5.36': 'legalPrivacyCompliance',
+  '8.10': 'legalPrivacyCompliance',
+  '8.11': 'legalPrivacyCompliance',
+  '8.12': 'legalPrivacyCompliance',
+  // Physical and remote working (all section 7 plus 6.7)
+  '6.7': 'physicalRemoteWorking',
+};
+
+/**
+ * Returns a default inclusion justification appropriate to the control's family,
+ * or null when the control does not fall into one of the named families.
+ */
+export function getInclusionJustification(
+  closure: string | null | undefined,
+): string | null {
+  if (!closure) return null;
+
+  // All of section 7 (7.1–7.14) is physical security.
+  if (closure.startsWith('7.')) {
+    return INCLUSION_JUSTIFICATIONS.physicalRemoteWorking;
+  }
+
+  const family = CLOSURE_TO_FAMILY[closure];
+  return family ? INCLUSION_JUSTIFICATIONS[family] : DEFAULT_INCLUSION_JUSTIFICATION;
+}
+
 // System prompt for SOA RAG generation
 export const SOA_RAG_SYSTEM_PROMPT = `You are an expert organizational analyst conducting a comprehensive assessment of a company for ISO 27001 compliance.
 
