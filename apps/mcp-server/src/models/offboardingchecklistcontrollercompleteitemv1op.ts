@@ -8,6 +8,19 @@ import {
   CompleteChecklistItemDto$zodSchema,
 } from "./completechecklistitemdto.js";
 
+export type OffboardingChecklistControllerCompleteItemV1Security = {
+  apikey?: string | undefined;
+  oauth2?: string | undefined;
+};
+
+export const OffboardingChecklistControllerCompleteItemV1Security$zodSchema:
+  z.ZodType<OffboardingChecklistControllerCompleteItemV1Security> = z.object({
+    apikey: z.string().describe("API key for authentication").optional(),
+    oauth2: z.string().describe(
+      "OAuth 2.1 authorization code flow. Sign in with your Comp AI account — tokens are issued by the Comp AI authorization server and scoped to your organization, role, and permissions.",
+    ).optional(),
+  });
+
 export type OffboardingChecklistControllerCompleteItemV1Request = {
   memberId: string;
   templateItemId: string;

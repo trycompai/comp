@@ -4,6 +4,19 @@
 
 import * as z from "zod";
 
+export type KnowledgeBaseControllerDeleteDocumentV1Security = {
+  apikey?: string | undefined;
+  oauth2?: string | undefined;
+};
+
+export const KnowledgeBaseControllerDeleteDocumentV1Security$zodSchema:
+  z.ZodType<KnowledgeBaseControllerDeleteDocumentV1Security> = z.object({
+    apikey: z.string().describe("API key for authentication").optional(),
+    oauth2: z.string().describe(
+      "OAuth 2.1 authorization code flow. Sign in with your Comp AI account — tokens are issued by the Comp AI authorization server and scoped to your organization, role, and permissions.",
+    ).optional(),
+  });
+
 export type KnowledgeBaseControllerDeleteDocumentV1Request = {
   documentId: string;
 };
