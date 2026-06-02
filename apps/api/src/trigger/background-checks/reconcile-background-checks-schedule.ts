@@ -63,9 +63,7 @@ export function parseIdentityCheckState(raw: unknown): {
  * reports — recovering checks whose webhook was missed (CS-473). Background
  * check status is normally driven by Identity webhooks; this is the fallback.
  */
-export async function runReconciliation(payload: {
-  timestamp: Date;
-}): Promise<ReconciliationResult> {
+export async function runReconciliation(): Promise<ReconciliationResult> {
   if (!process.env.BACKGROUND_CHECK_API_KEY) {
     logger.warn(
       'BACKGROUND_CHECK_API_KEY not configured — skipping reconciliation',
@@ -73,7 +71,9 @@ export async function runReconciliation(payload: {
     return { success: true, checked: 0, updated: 0, unparseable: 0 };
   }
 
-  const staleBefore = new Date(payload.timestamp.getTime() - STALE_AFTER_MS);
+  // Base the stale cutoff on the ACTUAL run time, not the scheduled time — a
+  // cron that starts late would otherwise narrow the window and delay recovery.
+  const staleBefore = new Date(Date.now() - STALE_AFTER_MS);
 
   const stuckChecks = await db.backgroundCheckRequest.findMany({
     where: {
@@ -216,5 +216,5 @@ export const reconcileBackgroundChecksSchedule = schedules.task({
   cron: '0 * * * *', // hourly (UTC)
   maxDuration: 30 * 60, // 30 minutes — Trigger.dev maxDuration is in SECONDS
 
-  run: (payload) => runReconciliation(payload),
+  run: () => runReconciliation(),
 });

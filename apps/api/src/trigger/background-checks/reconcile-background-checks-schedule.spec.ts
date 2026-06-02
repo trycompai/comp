@@ -44,7 +44,6 @@ const mockedDb = db as jest.Mocked<typeof db>;
 const findMany = mockedDb.backgroundCheckRequest.findMany as jest.Mock;
 const updateMany = mockedDb.backgroundCheckRequest.updateMany as jest.Mock;
 
-const payload = { timestamp: new Date('2026-06-02T12:00:00.000Z') };
 const NON_TERMINAL = ['invited', 'in_progress', 'in_review'];
 
 describe('parseIdentityCheckState', () => {
@@ -108,7 +107,7 @@ describe('runReconciliation', () => {
 
   it('skips entirely when the API key is not configured', async () => {
     delete process.env.BACKGROUND_CHECK_API_KEY;
-    const result = await runReconciliation(payload);
+    const result = await runReconciliation();
     expect(findMany).not.toHaveBeenCalled();
     expect(result).toEqual({
       success: true,
@@ -132,7 +131,7 @@ describe('runReconciliation', () => {
     });
     mockFetchSnapshot.mockResolvedValue({ report: 'x' });
 
-    const result = await runReconciliation(payload);
+    const result = await runReconciliation();
 
     expect(updateMany).toHaveBeenCalledWith({
       where: { id: 'bcr_1', status: { in: NON_TERMINAL } },
@@ -161,7 +160,7 @@ describe('runReconciliation', () => {
       statuses: { identity: 'passed' },
     });
 
-    const result = await runReconciliation(payload);
+    const result = await runReconciliation();
 
     const call = updateMany.mock.calls[0][0];
     expect(call.data).toMatchObject({ identityStatus: 'passed' });
@@ -179,7 +178,7 @@ describe('runReconciliation', () => {
     ]);
     mockGetBackgroundCheck.mockResolvedValue({ status: 'in_progress' });
 
-    const result = await runReconciliation(payload);
+    const result = await runReconciliation();
 
     expect(updateMany).toHaveBeenCalledWith({
       where: { id: 'bcr_1', status: { in: NON_TERMINAL } },
@@ -198,7 +197,7 @@ describe('runReconciliation', () => {
     ]);
     mockGetBackgroundCheck.mockResolvedValue({ id: 'check_1' });
 
-    const result = await runReconciliation(payload);
+    const result = await runReconciliation();
 
     expect(updateMany).not.toHaveBeenCalled();
     expect(result).toEqual({
@@ -211,14 +210,14 @@ describe('runReconciliation', () => {
 
   it('queries only stale, non-terminal checks with an Identity id', async () => {
     findMany.mockResolvedValue([]);
-    await runReconciliation(payload);
+    await runReconciliation();
     expect(findMany).toHaveBeenCalledWith({
       where: {
         status: { in: NON_TERMINAL },
         identityBackgroundCheckId: { not: null },
         OR: [
           { lastSyncedAt: null },
-          { lastSyncedAt: { lt: new Date('2026-06-02T11:00:00.000Z') } },
+          { lastSyncedAt: { lt: expect.any(Date) } },
         ],
       },
       select: {
