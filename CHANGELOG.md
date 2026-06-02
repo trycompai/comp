@@ -1,3 +1,10 @@
+## [3.66.2](https://github.com/trycompai/comp/compare/v3.66.1...v3.66.2) (2026-06-02)
+
+
+### Bug Fixes
+
+* **frameworks:** prune deleted editor templates during org initialization ([d269491](https://github.com/trycompai/comp/commit/d2694910808dc42be4b983b1cd645bc6c5be9830))
+
 ## [3.66.1](https://github.com/trycompai/comp/compare/v3.66.0...v3.66.1) (2026-06-01)
 
 
