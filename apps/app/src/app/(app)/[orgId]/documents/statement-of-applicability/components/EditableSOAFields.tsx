@@ -78,16 +78,14 @@ export function EditableSOAFields({
   const executeSave = async (
     nextIsApplicable: boolean | null,
     nextJustification: string | null,
-  ) => {
+  ): Promise<boolean> => {
     setIsSaving(true);
     try {
-      const answerValue = nextIsApplicable === false ? nextJustification : null;
-
       await saveAnswer({
         questionId,
-        answer: answerValue,
+        answer: nextJustification,
         isApplicable: nextIsApplicable,
-        justification: nextIsApplicable === false ? nextJustification : null,
+        justification: nextJustification,
       });
 
       // Update local state
@@ -98,8 +96,9 @@ export function EditableSOAFields({
       toast.success('Answer saved successfully');
       onUpdate?.({
         isApplicable: nextIsApplicable,
-        justification: nextIsApplicable === false ? nextJustification : null,
+        justification: nextJustification,
       });
+      return true;
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to save answer';
       if (!isJustificationDialogOpen) {
@@ -109,6 +108,7 @@ export function EditableSOAFields({
       }
       setError(message);
       toast.error(message);
+      return false;
     } finally {
       setIsSaving(false);
     }
@@ -135,14 +135,7 @@ export function EditableSOAFields({
     setIsApplicable(newValue);
     setError(null);
 
-    if (newValue === true) {
-      setJustification(null);
-      setJustificationDialogOpen(false);
-      void executeSave(true, null);
-      return;
-    }
-
-    if (newValue === false) {
+    if (newValue === true || newValue === false) {
       setJustificationDialogOpen(true);
       return;
     }
@@ -152,13 +145,16 @@ export function EditableSOAFields({
   };
 
   const handleJustificationSave = async () => {
-    if (!justification || justification.trim().length === 0) {
+    if (isApplicable === false && (!justification || justification.trim().length === 0)) {
       setError('Justification is required when Applicable is NO');
       justificationTextareaRef.current?.focus();
       return;
     }
 
-    await executeSave(false, justification);
+    const success = await executeSave(isApplicable, justification);
+    if (!success) {
+      return;
+    }
     dialogSavedRef.current = true;
     setJustificationDialogOpen(false);
   };
@@ -242,9 +238,13 @@ export function EditableSOAFields({
       <Dialog open={isJustificationDialogOpen} onOpenChange={handleDialogOpenChange}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Justification Required</DialogTitle>
+            <DialogTitle>
+              {isApplicable === false ? 'Justification Required' : 'Edit Justification'}
+            </DialogTitle>
             <DialogDescription>
-              Explain why this control is not applicable to your organization.
+              {isApplicable === false
+                ? 'Explain why this control is not applicable to your organization.'
+                : 'Explain why this control is applicable to your organization.'}
             </DialogDescription>
           </DialogHeader>
           <Textarea
@@ -254,10 +254,14 @@ export function EditableSOAFields({
               setJustification(e.target.value);
               setError(null);
             }}
-            placeholder="Enter justification (required)"
+            placeholder={
+              isApplicable === false
+                ? 'Enter justification (required)'
+                : 'Enter justification'
+            }
             rows={5}
             size="full"
-            required
+            required={isApplicable === false}
           />
           {error && (
             <p className="text-xs text-destructive">{error}</p>
