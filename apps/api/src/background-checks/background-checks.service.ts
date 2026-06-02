@@ -10,12 +10,12 @@ import {
   headerValue,
   verifyBackgroundCheckWebhookSignature,
 } from './background-check-webhook-signature';
+import { identityWebhookPayloadSchema } from './background-checks.types';
+import { fetchCompletedReportSnapshot } from './background-check-report-snapshot';
 import {
-  identityWebhookPayloadSchema,
-} from './background-checks.types';
-import {
-  fetchCompletedReportSnapshot,
-} from './background-check-report-snapshot';
+  cancelForMember as cancelForMemberFn,
+  retryForMember as retryForMemberFn,
+} from './background-check-retry';
 
 @Injectable()
 export class BackgroundChecksService {
@@ -268,103 +268,20 @@ export class BackgroundChecksService {
     return { ok: true, ...(isDuplicate ? { duplicate: true } : {}) };
   }
 
-  async cancelForMember({
-    organizationId,
-    memberId,
-  }: {
-    organizationId: string;
-    memberId: string;
-  }) {
-    const existing = await this.getForMember({ organizationId, memberId });
-    if (!existing) {
-      throw new NotFoundException('Background check not found.');
-    }
-    this.assertTransitionAllowed('cancel', existing.status);
-
-    return db.backgroundCheckRequest.update({
-      where: { organizationId_memberId: { organizationId, memberId } },
-      data: {
-        status: BackgroundCheckStatus.cancelled,
-        lastSyncedAt: new Date(),
-      },
-    });
+  async cancelForMember(params: { organizationId: string; memberId: string }) {
+    return cancelForMemberFn({ ...params, getForMember: (p) => this.getForMember(p) });
   }
 
-  async retryForMember({
-    organizationId,
-    memberId,
-    requesterEmail,
-  }: {
+  async retryForMember(params: {
     organizationId: string;
     memberId: string;
     requesterEmail: string;
   }) {
-    const existing = await this.getForMember({ organizationId, memberId });
-    if (!existing) {
-      throw new NotFoundException('Background check not found.');
-    }
-    this.assertTransitionAllowed('retry', existing.status);
-
-    const attempt = existing.rerunCount + 1;
-    const where = { organizationId_memberId: { organizationId, memberId } };
-
-    // Free retry: no charge. Create a fresh Identity check first (varied
-    // idempotency key) so a late webhook from the prior check cannot match
-    // the row after we swap in the new id.
-    let identityResult;
-    try {
-      identityResult = await this.identityClient.createBackgroundCheck({
-        organizationId,
-        memberId,
-        employeeName: existing.employeeName,
-        employeeEmail: existing.employeeEmail,
-        requesterEmail,
-        attempt,
-      });
-    } catch (error) {
-      await db.backgroundCheckRequest.update({
-        where,
-        data: { status: BackgroundCheckStatus.failed, lastSyncedAt: new Date() },
-      });
-      throw error;
-    }
-
-    return db.backgroundCheckRequest.update({
-      where,
-      data: {
-        identityBackgroundCheckId: identityResult.id,
-        candidateUrl: identityResult.candidateUrl ?? null,
-        status: identityResult.status,
-        rerunCount: attempt,
-        identityStatus: null,
-        employmentStatus: null,
-        referenceStatus: null,
-        rightToWorkStatus: null,
-        adjudicationStatus: null,
-        reportSnapshot: Prisma.JsonNull,
-        reportSyncedAt: null,
-        lastSyncedAt: new Date(),
-      },
+    return retryForMemberFn({
+      ...params,
+      identityClient: this.identityClient,
+      getForMember: (p) => this.getForMember(p),
     });
-  }
-
-  private assertTransitionAllowed(
-    action: 'cancel' | 'retry',
-    status: BackgroundCheckStatus,
-  ): void {
-    const allowed: Record<'cancel' | 'retry', BackgroundCheckStatus[]> = {
-      cancel: [
-        BackgroundCheckStatus.invited,
-        BackgroundCheckStatus.in_progress,
-        BackgroundCheckStatus.in_review,
-      ],
-      retry: [BackgroundCheckStatus.failed, BackgroundCheckStatus.cancelled],
-    };
-    if (!allowed[action].includes(status)) {
-      throw new BadRequestException(
-        `Cannot ${action} a background check in '${status}' status.`,
-      );
-    }
   }
 
   private isUniqueConstraintError(error: unknown): boolean {

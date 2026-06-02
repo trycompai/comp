@@ -626,6 +626,23 @@ describe('background checks', () => {
         expect.objectContaining({ data: expect.objectContaining({ status: 'failed' }) }),
       );
     });
+
+    it('throws when no check exists', async () => {
+      mockAsync<Awaited<ReturnType<typeof db.backgroundCheckRequest.findUnique>>>(
+        mockedDb.backgroundCheckRequest.findUnique,
+      ).mockResolvedValueOnce(null as Awaited<
+        ReturnType<typeof db.backgroundCheckRequest.findUnique>
+      >);
+      const identityClient = { createBackgroundCheck: jest.fn() };
+      const service = new BackgroundChecksService(
+        identityClient as unknown as BackgroundCheckIdentityClient,
+        {} as unknown as BackgroundCheckPaymentService,
+      );
+      await expect(
+        service.retryForMember({ organizationId: 'org_1', memberId: 'mem_1', requesterEmail: 'a@b.c' }),
+      ).rejects.toThrow('Background check not found.');
+      expect(identityClient.createBackgroundCheck).not.toHaveBeenCalled();
+    });
   });
 
   it('includes background check and penetration test usage in billing status', async () => {
