@@ -38,7 +38,6 @@ export function IsmsOverview({ organizationId }: { organizationId: string }) {
       : null,
     async ([endpoint, orgId, frameworkId]: readonly [string, string, string]) => {
       const response = await api.post<IsmsEnsureSetupResponse>(endpoint, {
-        organizationId: orgId,
         frameworkId,
       });
       if (response.error || !response.data) {

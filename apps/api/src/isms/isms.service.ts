@@ -5,7 +5,6 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { db } from '@db';
-import { EnsureIsmsSetupDto } from './dto/ensure-isms-setup.dto';
 import { SubmitIsmsForApprovalDto } from './dto/submit-isms-for-approval.dto';
 import {
   deriveControlLinks,
@@ -21,9 +20,15 @@ import { upsertLatestSnapshotVersion } from './utils/version-snapshot';
  */
 @Injectable()
 export class IsmsService {
-  async ensureSetup(dto: EnsureIsmsSetupDto) {
+  async ensureSetup({
+    organizationId,
+    frameworkId,
+  }: {
+    organizationId: string;
+    frameworkId: string;
+  }) {
     const framework = await db.frameworkEditorFramework.findUnique({
-      where: { id: dto.frameworkId },
+      where: { id: frameworkId },
       include: {
         requirements: { select: { id: true, name: true, identifier: true } },
       },
@@ -35,15 +40,15 @@ export class IsmsService {
 
     const existing = await db.ismsDocument.findMany({
       where: {
-        organizationId: dto.organizationId,
-        frameworkId: dto.frameworkId,
+        organizationId: organizationId,
+        frameworkId: frameworkId,
       },
       select: { type: true },
     });
     const existingTypes = new Set(existing.map((doc) => doc.type));
 
     const plans = await resolveDocumentPlans({
-      frameworkId: dto.frameworkId,
+      frameworkId: frameworkId,
       requirements: framework.requirements,
     });
 
@@ -51,8 +56,8 @@ export class IsmsService {
       if (existingTypes.has(plan.type)) continue;
       const document = await db.ismsDocument.create({
         data: {
-          organizationId: dto.organizationId,
-          frameworkId: dto.frameworkId,
+          organizationId: organizationId,
+          frameworkId: frameworkId,
           type: plan.type,
           title: plan.title,
           status: 'draft',
@@ -62,15 +67,15 @@ export class IsmsService {
       });
       await deriveControlLinks({
         documentId: document.id,
-        organizationId: dto.organizationId,
+        organizationId: organizationId,
         controlTemplateIds: plan.controlTemplateIds,
       });
     }
 
     const documents = await db.ismsDocument.findMany({
       where: {
-        organizationId: dto.organizationId,
-        frameworkId: dto.frameworkId,
+        organizationId: organizationId,
+        frameworkId: frameworkId,
       },
     });
 

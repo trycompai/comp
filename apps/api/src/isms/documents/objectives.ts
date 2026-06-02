@@ -11,7 +11,11 @@ import type {
  * is a pure snapshot comparison. Manual rows are preserved by the caller.
  */
 export function deriveObjectives(data: IsmsPlatformData): DerivedObjective[] {
-  const wizardObjectives = data.wizardAnswers.objectives ?? [];
+  // Skip blank-objective rows so empty wizard entries never become blank 6.2
+  // rows; fall through to the standard derived objectives when none remain.
+  const wizardObjectives = (data.wizardAnswers.objectives ?? []).filter(
+    (objective) => objective.objective?.trim(),
+  );
   if (wizardObjectives.length > 0) {
     return wizardObjectives.map((objective, index) => ({
       objective: objective.objective,

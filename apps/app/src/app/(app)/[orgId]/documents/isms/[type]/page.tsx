@@ -110,7 +110,6 @@ export default async function IsmsDocumentPage({
   }
 
   const setupResult = await serverApi.post<IsmsEnsureSetupResponse>('/v1/isms/ensure-setup', {
-    organizationId,
     frameworkId: isoFramework.frameworkId,
   });
 

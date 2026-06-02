@@ -49,8 +49,14 @@ export class IsmsController {
   @ApiOperation({ summary: 'Ensure ISMS foundational documents exist' })
   @ApiConsumes('application/json')
   @ApiOkResponse({ description: 'Setup ensured' })
-  async ensureSetup(@Body() dto: EnsureIsmsSetupDto) {
-    return this.ismsService.ensureSetup(dto);
+  async ensureSetup(
+    @Body() dto: EnsureIsmsSetupDto,
+    @OrganizationId() organizationId: string,
+  ) {
+    return this.ismsService.ensureSetup({
+      organizationId,
+      frameworkId: dto.frameworkId,
+    });
   }
 
   @Get('documents/:id')

@@ -75,13 +75,15 @@ describe('IsmsController', () => {
     jest.clearAllMocks();
   });
 
-  it('ensureSetup passes dto to the service', async () => {
+  it('ensureSetup derives the org from the session, not the body', async () => {
     mockIsmsService.ensureSetup.mockResolvedValue({ success: true });
-    const dto = { organizationId: 'org_1', frameworkId: 'fw_1' };
 
-    const result = await controller.ensureSetup(dto);
+    const result = await controller.ensureSetup({ frameworkId: 'fw_1' }, 'org_1');
 
-    expect(mockIsmsService.ensureSetup).toHaveBeenCalledWith(dto);
+    expect(mockIsmsService.ensureSetup).toHaveBeenCalledWith({
+      organizationId: 'org_1',
+      frameworkId: 'fw_1',
+    });
     expect(result).toEqual({ success: true });
   });
 
