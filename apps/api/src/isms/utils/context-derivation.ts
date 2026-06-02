@@ -25,9 +25,32 @@ export interface ContextDerivationInput {
   deviceCount: number;
 }
 
+/**
+ * The ISO 27001 clause 4.1 category taxonomy. Auditors expect external and
+ * internal issues grouped under these headings; the export renders one table
+ * row per issue with its category, and the editor offers these as options.
+ */
+export const EXTERNAL_ISSUE_CATEGORIES = [
+  'Regulatory & Legal',
+  'Market & Economic',
+  'Technological',
+  'Social & Cultural',
+] as const;
+
+export const INTERNAL_ISSUE_CATEGORIES = [
+  'Governance & Structure',
+  'Strategy & Objectives',
+  'Capabilities & Resources',
+  'Culture & Values',
+] as const;
+
+export type ExternalIssueCategory = (typeof EXTERNAL_ISSUE_CATEGORIES)[number];
+export type InternalIssueCategory = (typeof INTERNAL_ISSUE_CATEGORIES)[number];
+
 /** A single derived issue, ready to be written as an IsmsContextIssue row. */
 export interface DerivedContextIssue {
   kind: IsmsContextIssueKind;
+  category: ExternalIssueCategory | InternalIssueCategory;
   description: string;
   effect: string;
   source: IsmsContextSource;
@@ -46,6 +69,7 @@ function buildExternalIssues(
   for (const name of input.frameworkNames) {
     issues.push({
       kind: 'external',
+      category: 'Regulatory & Legal',
       description: `Compliance obligations arising from the ${name} framework that the organization is pursuing.`,
       effect: `The ISMS must implement and evidence controls sufficient to satisfy ${name}, shaping ISMS objectives and the audit scope.`,
       source: 'derived',
@@ -56,6 +80,7 @@ function buildExternalIssues(
   if (input.vendorCount > 0) {
     issues.push({
       kind: 'external',
+      category: 'Technological',
       description: `Reliance on ${input.vendorCount} third-party vendor${input.vendorCount === 1 ? '' : 's'}${input.subProcessorCount > 0 ? `, of which ${input.subProcessorCount} act as sub-processor${input.subProcessorCount === 1 ? '' : 's'}` : ''}.`,
       effect:
         'Supplier risk and data-sharing arrangements extend the ISMS boundary and require vendor due diligence and ongoing monitoring.',
@@ -67,6 +92,7 @@ function buildExternalIssues(
   if (input.subProcessorCount > 0) {
     issues.push({
       kind: 'external',
+      category: 'Regulatory & Legal',
       description: `Personal or customer data is processed by ${input.subProcessorCount} sub-processor${input.subProcessorCount === 1 ? '' : 's'}, creating regulatory and data-protection obligations.`,
       effect:
         'The ISMS must address data-protection, breach-notification and contractual safeguards for data handled outside the organization.',
@@ -91,6 +117,7 @@ function buildInternalIssues(
       departments.length > 0 ? ` spanning ${departments.join(', ')}` : '';
     issues.push({
       kind: 'internal',
+      category: 'Governance & Structure',
       description: `A workforce of ${input.memberCount} member${input.memberCount === 1 ? '' : 's'}${departmentSummary}.`,
       effect:
         'Headcount and organizational structure determine security awareness, segregation of duties and access-management needs within the ISMS.',
@@ -106,6 +133,7 @@ function buildInternalIssues(
   if (cloudVendors > 0) {
     issues.push({
       kind: 'internal',
+      category: 'Capabilities & Resources',
       description: `A cloud-centric technology footprint built on ${cloudVendors} infrastructure and SaaS provider${cloudVendors === 1 ? '' : 's'}.`,
       effect:
         'The chosen architecture defines where data resides and which technical controls (encryption, access control, logging) the ISMS must enforce.',
@@ -117,6 +145,7 @@ function buildInternalIssues(
   if (input.deviceCount > 0) {
     issues.push({
       kind: 'internal',
+      category: 'Capabilities & Resources',
       description: `${input.deviceCount} managed endpoint${input.deviceCount === 1 ? '' : 's'} used by the workforce.`,
       effect:
         'Endpoint posture (encryption, patching, configuration) is a core ISMS objective and drives device-management controls.',
@@ -126,6 +155,7 @@ function buildInternalIssues(
   } else {
     issues.push({
       kind: 'internal',
+      category: 'Capabilities & Resources',
       description:
         'A predominantly remote working model with limited centrally-managed hardware.',
       effect:

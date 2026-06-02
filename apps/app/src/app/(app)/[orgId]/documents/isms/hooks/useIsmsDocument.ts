@@ -33,6 +33,7 @@ export type IsmsRegister =
 
 interface IssueInput {
   kind: IsmsContextIssueKind;
+  category?: string;
   description: string;
   effect: string;
   position?: number;
@@ -40,6 +41,7 @@ interface IssueInput {
 
 interface IssueUpdateInput {
   kind?: IsmsContextIssueKind;
+  category?: string;
   description?: string;
   effect?: string;
   position?: number;

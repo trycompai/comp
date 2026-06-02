@@ -29,6 +29,7 @@ export class IsmsContextIssueService {
       data: {
         documentId,
         kind: dto.kind,
+        category: dto.category ?? null,
         description: dto.description,
         effect: dto.effect,
         source: 'manual',
@@ -52,6 +53,7 @@ export class IsmsContextIssueService {
       where: { id: issueId },
       data: {
         kind: dto.kind ?? undefined,
+        category: dto.category ?? undefined,
         description: dto.description ?? undefined,
         effect: dto.effect ?? undefined,
         position: dto.position ?? undefined,

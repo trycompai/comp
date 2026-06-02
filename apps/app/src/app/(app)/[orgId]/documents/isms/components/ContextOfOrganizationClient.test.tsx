@@ -73,6 +73,7 @@ const ISSUES: IsmsContextIssue[] = [
   {
     id: 'i1',
     kind: 'internal',
+    category: 'Governance & Structure',
     description: 'Derived internal issue',
     effect: 'Internal effect',
     source: 'derived',
@@ -82,6 +83,7 @@ const ISSUES: IsmsContextIssue[] = [
   {
     id: 'i2',
     kind: 'external',
+    category: 'Regulatory & Legal',
     description: 'Derived external issue',
     effect: 'External effect',
     source: 'derived',
@@ -147,6 +149,18 @@ describe('ContextOfOrganizationClient', () => {
     expect(screen.getAllByLabelText('Edit issue').length).toBe(2);
     expect(screen.getAllByLabelText('Delete issue').length).toBe(2);
     expect(mockHasPermission).toHaveBeenCalledWith('evidence', 'update');
+  });
+
+  it('renders each issue category and exposes a per-kind add affordance for an admin', () => {
+    setMockPermissions(ADMIN_PERMISSIONS);
+    render(<ContextOfOrganizationClient {...baseProps} />);
+
+    // Read-mode rows surface the clause 4.1 category alongside the source pill.
+    expect(screen.getByText('Governance & Structure')).toBeInTheDocument();
+    expect(screen.getByText('Regulatory & Legal')).toBeInTheDocument();
+    // The add-issue affordance is present for both internal and external kinds.
+    expect(screen.getByText('Add internal issue')).toBeInTheDocument();
+    expect(screen.getByText('Add external issue')).toBeInTheDocument();
   });
 
   it('hides mutating controls for a read-only user but keeps export', () => {

@@ -210,6 +210,7 @@ export async function runDerivation({
           data: rows.map((row, index) => ({
             documentId,
             kind: row.kind,
+            category: row.category,
             description: row.description,
             effect: row.effect,
             source: row.source,

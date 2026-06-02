@@ -1,8 +1,18 @@
 'use client';
 
-import { Stack, Text, Textarea } from '@trycompai/design-system';
+import {
+  Badge,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+  Stack,
+  Text,
+  Textarea,
+} from '@trycompai/design-system';
 import { useState } from 'react';
-import type { IsmsContextIssue } from '../isms-types';
+import { categoriesForKind, type IsmsContextIssue } from '../isms-types';
 import {
   IsmsCardActions,
   IsmsFieldLabel,
@@ -13,20 +23,30 @@ import {
 interface IssueRowProps {
   issue: IsmsContextIssue;
   canEdit: boolean;
-  onSave: (params: { description: string; effect: string }) => Promise<void>;
+  onSave: (params: {
+    category: string;
+    description: string;
+    effect: string;
+  }) => Promise<void>;
   onDelete: () => Promise<void>;
 }
 
 export function IssueRow({ issue, canEdit, onSave, onDelete }: IssueRowProps) {
+  const categories = categoriesForKind(issue.kind);
   const [isEditing, setIsEditing] = useState(false);
+  const [category, setCategory] = useState(issue.category ?? categories[0]);
   const [description, setDescription] = useState(issue.description);
   const [effect, setEffect] = useState(issue.effect);
   const [isSaving, setIsSaving] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
 
-  const isDirty = description !== issue.description || effect !== issue.effect;
+  const isDirty =
+    category !== (issue.category ?? categories[0]) ||
+    description !== issue.description ||
+    effect !== issue.effect;
 
   const handleCancel = () => {
+    setCategory(issue.category ?? categories[0]);
     setDescription(issue.description);
     setEffect(issue.effect);
     setIsEditing(false);
@@ -35,7 +55,7 @@ export function IssueRow({ issue, canEdit, onSave, onDelete }: IssueRowProps) {
   const handleSave = async () => {
     setIsSaving(true);
     try {
-      await onSave({ description, effect });
+      await onSave({ category, description, effect });
       setIsEditing(false);
     } finally {
       setIsSaving(false);
@@ -74,6 +94,23 @@ export function IssueRow({ issue, canEdit, onSave, onDelete }: IssueRowProps) {
         headerEnd={actions}
       >
         <Stack gap="3">
+          <IsmsFieldLabel label="Category">
+            <Select
+              value={category}
+              onValueChange={(value) => value && setCategory(value)}
+            >
+              <SelectTrigger aria-label="Issue category">
+                <SelectValue placeholder="Select a category" />
+              </SelectTrigger>
+              <SelectContent>
+                {categories.map((option) => (
+                  <SelectItem key={option} value={option}>
+                    {option}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </IsmsFieldLabel>
           <IsmsFieldLabel label="Issue">
             <Textarea
               value={description}
@@ -95,7 +132,7 @@ export function IssueRow({ issue, canEdit, onSave, onDelete }: IssueRowProps) {
     );
   }
 
-  // Read mode: dense two-line row (issue + effect), source chip + hover actions.
+  // Read mode: dense two-line row (issue + effect), category + source pills, hover actions.
   return (
     <div className="group flex items-start justify-between gap-3 rounded-md border border-border bg-card px-3.5 py-2.5 transition-colors hover:border-foreground/20">
       <div className="flex min-w-0 flex-1 flex-col gap-1.5">
@@ -105,7 +142,8 @@ export function IssueRow({ issue, canEdit, onSave, onDelete }: IssueRowProps) {
         <Text size="xs" variant="muted">
           {issue.effect}
         </Text>
-        <div className="flex">
+        <div className="flex flex-wrap items-center gap-2">
+          {issue.category && <Badge variant="secondary">{issue.category}</Badge>}
           <IsmsSourceBadge source={issue.source} derivedFrom={issue.derivedFrom} />
         </div>
       </div>

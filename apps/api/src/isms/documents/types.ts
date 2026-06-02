@@ -1,5 +1,6 @@
 import type { IsmsContextSource } from '@db';
 import type { PartialWizardAnswers } from '../wizard/wizard-schema';
+import type { IsmsKeyValue } from '../utils/export-shared';
 
 /**
  * Platform data shared by every ISMS document derivation. Collected once per
@@ -68,9 +69,28 @@ export interface DerivedObjective extends DerivedRegisterRow {
   measurementMethod: string | null;
 }
 
+/**
+ * The organization profile that fills the narrative parts of the Context of the
+ * Organization document (clause 4.1) — overview table, mission, intended
+ * outcomes. Assembled from onboarding Q&A + the ISMS wizard at export time.
+ */
+export interface IsmsOrgProfile {
+  /** Key/value rows for the "Organization overview" table. */
+  overview: IsmsKeyValue[];
+  /** Company mission / description narrative, if captured. */
+  mission: string | null;
+  /** Intended outcomes of the ISMS (customer-edited wizard answers or defaults). */
+  intendedOutcomes: string[];
+}
+
 /** Everything a section builder needs to render a document's export sections. */
 export interface DocumentExportInput {
-  contextIssues: Array<{ kind: string; description: string; effect: string }>;
+  contextIssues: Array<{
+    kind: string;
+    category: string | null;
+    description: string;
+    effect: string;
+  }>;
   interestedParties: Array<{
     name: string;
     category: string;
@@ -90,4 +110,6 @@ export interface DocumentExportInput {
     measurementMethod: string | null;
   }>;
   narrative: unknown;
+  /** Org overview/mission/outcomes — only populated for the Context document. */
+  orgProfile?: IsmsOrgProfile;
 }

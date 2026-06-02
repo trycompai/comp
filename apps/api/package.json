@@ -102,6 +102,7 @@
         "helmet": "^8.1.0",
         "jose": "^6.0.12",
         "jspdf": "^4.2.0",
+        "jspdf-autotable": "^5.0.8",
         "mammoth": "^1.8.0",
         "nanoid": "^5.1.6",
         "pdf-lib": "^1.17.1",

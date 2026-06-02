@@ -14,6 +14,9 @@ import { upsertLatestSnapshotVersion } from './utils/version-snapshot';
 jest.mock('@db', () => ({
   db: {
     ismsDocument: { findFirst: jest.fn() },
+    organization: { findUnique: jest.fn() },
+    context: { findMany: jest.fn() },
+    ismsProfile: { findUnique: jest.fn() },
     $transaction: jest.fn(),
   },
 }));
@@ -188,7 +191,14 @@ describe('IsmsContextService', () => {
       framework: { name: 'ISO 27001' },
       organization: { name: 'Acme', primaryColor: '#004D3D' },
       approver: { user: { name: 'Jane', email: 'jane@acme.io' } },
-      contextIssues: [{ kind: 'external', description: 'd', effect: 'e' }],
+      contextIssues: [
+        {
+          kind: 'external',
+          category: 'Regulatory & Legal',
+          description: 'd',
+          effect: 'e',
+        },
+      ],
       interestedParties: [
         { name: 'Customers', category: 'Customer', needsExpectations: 'n' },
       ],
@@ -223,6 +233,16 @@ describe('IsmsContextService', () => {
         (mockDb.ismsDocument.findFirst as jest.Mock).mockResolvedValue(
           buildDocument(type),
         );
+        // The Context document loads the org profile (org + Context Q&A +
+        // ISMS wizard answers); other types skip it. Stub all three reads.
+        (mockDb.organization.findUnique as jest.Mock).mockResolvedValue({
+          name: 'Acme',
+          website: 'https://acme.io',
+        });
+        (mockDb.context.findMany as jest.Mock).mockResolvedValue([]);
+        (mockDb.ismsProfile.findUnique as jest.Mock).mockResolvedValue({
+          answers: {},
+        });
         mockBuild.mockReturnValue([{ heading: 'H' }]);
         mockExport.mockResolvedValue({
           fileBuffer: Buffer.from('bytes'),

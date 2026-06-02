@@ -12,12 +12,13 @@ interface IssuesRegisterProps {
   canEdit: boolean;
   onCreate: (params: {
     kind: IsmsContextIssueKind;
+    category: string;
     description: string;
     effect: string;
   }) => Promise<void>;
   onUpdate: (params: {
     issueId: string;
-    input: { description: string; effect: string };
+    input: { category: string; description: string; effect: string };
   }) => Promise<void>;
   onDelete: (issueId: string) => Promise<void>;
 }
@@ -47,7 +48,9 @@ function KindSection({
         canEdit ? (
           <AddIssueForm
             kind={kind}
-            onAdd={({ description, effect }) => onCreate({ kind, description, effect })}
+            onAdd={({ category, description, effect }) =>
+              onCreate({ kind, category, description, effect })
+            }
           />
         ) : undefined
       }
@@ -58,8 +61,11 @@ function KindSection({
             key={issue.id}
             issue={issue}
             canEdit={canEdit}
-            onSave={({ description, effect }) =>
-              onUpdate({ issueId: issue.id, input: { description, effect } })
+            onSave={({ category, description, effect }) =>
+              onUpdate({
+                issueId: issue.id,
+                input: { category, description, effect },
+              })
             }
             onDelete={() => onDelete(issue.id)}
           />

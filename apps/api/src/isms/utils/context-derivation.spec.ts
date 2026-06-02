@@ -1,6 +1,8 @@
 import {
   deriveContextIssues,
   diffSnapshots,
+  EXTERNAL_ISSUE_CATEGORIES,
+  INTERNAL_ISSUE_CATEGORIES,
   type ContextDerivationInput,
 } from './context-derivation';
 
@@ -62,6 +64,64 @@ describe('deriveContextIssues', () => {
     expect(deriveContextIssues(baseInput)).toEqual(
       deriveContextIssues(baseInput),
     );
+  });
+});
+
+describe('deriveContextIssues — categories', () => {
+  it('tags framework issues as Regulatory & Legal', () => {
+    const issue = deriveContextIssues(baseInput).find((i) =>
+      i.derivedFrom.startsWith('framework:'),
+    );
+    expect(issue?.category).toBe('Regulatory & Legal');
+  });
+
+  it('tags the vendor issue as Technological', () => {
+    const issue = deriveContextIssues(baseInput).find(
+      (i) => i.kind === 'external' && i.derivedFrom === 'vendors',
+    );
+    expect(issue?.category).toBe('Technological');
+  });
+
+  it('tags the sub-processor issue as Regulatory & Legal', () => {
+    const issue = deriveContextIssues(baseInput).find(
+      (i) => i.derivedFrom === 'subprocessors',
+    );
+    expect(issue?.category).toBe('Regulatory & Legal');
+  });
+
+  it('tags the workforce issue as Governance & Structure', () => {
+    const issue = deriveContextIssues(baseInput).find(
+      (i) => i.derivedFrom === 'members',
+    );
+    expect(issue?.category).toBe('Governance & Structure');
+  });
+
+  it('tags cloud-footprint and device issues as Capabilities & Resources', () => {
+    const issues = deriveContextIssues(baseInput);
+    const cloud = issues.find(
+      (i) => i.kind === 'internal' && i.derivedFrom === 'vendors',
+    );
+    const device = issues.find((i) => i.derivedFrom === 'devices');
+    expect(cloud?.category).toBe('Capabilities & Resources');
+    expect(device?.category).toBe('Capabilities & Resources');
+  });
+
+  it('tags the remote-work fallback issue as Capabilities & Resources', () => {
+    const issue = deriveContextIssues({ ...baseInput, deviceCount: 0 }).find(
+      (i) => i.derivedFrom === 'devices',
+    );
+    expect(issue?.description).toContain('remote');
+    expect(issue?.category).toBe('Capabilities & Resources');
+  });
+
+  it('only uses categories from the published taxonomy', () => {
+    const valid = new Set<string>([
+      ...EXTERNAL_ISSUE_CATEGORIES,
+      ...INTERNAL_ISSUE_CATEGORIES,
+    ]);
+    for (const issue of deriveContextIssues(baseInput)) {
+      expect(valid.has(issue.category)).toBe(true);
+    }
   });
 });
 

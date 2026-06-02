@@ -1,8 +1,12 @@
 import {
+  AlignmentType,
+  BorderStyle,
   Document,
-  HeadingLevel,
+  Footer,
+  PageNumber,
   Packer,
   Paragraph,
+  ShadingType,
   Table,
   TableCell,
   TableRow,
@@ -10,13 +14,20 @@ import {
   WidthType,
 } from 'docx';
 import {
-  metadataLines,
+  metadataRows,
   type IsmsExportMetadata,
   type IsmsExportParagraph,
   type IsmsExportSection,
+  type IsmsExportTable,
+  type IsmsKeyValue,
 } from './export-shared';
 
 const DEFAULT_ACCENT = '004D3D';
+const INK = '212121';
+const MUTED = '6E6E6E';
+const HAIRLINE = 'DFDFDF';
+const ZEBRA = 'F7F7F7';
+const WHITE = 'FFFFFF';
 
 function normalizeHexColor(hex: string | null): string {
   if (!hex) return DEFAULT_ACCENT;
@@ -24,13 +35,113 @@ function normalizeHexColor(hex: string | null): string {
   return /^[0-9a-fA-F]{6}$/.test(clean) ? clean.toUpperCase() : DEFAULT_ACCENT;
 }
 
-function metadataParagraphs(metadata: IsmsExportMetadata): Paragraph[] {
-  return metadataLines(metadata).map(
-    (text) =>
+const thin = { style: BorderStyle.SINGLE, size: 4, color: HAIRLINE };
+const TABLE_BORDERS = {
+  top: thin,
+  bottom: thin,
+  left: thin,
+  right: thin,
+  insideHorizontal: thin,
+  insideVertical: thin,
+};
+
+function shaded(fill: string) {
+  return { type: ShadingType.CLEAR, fill, color: 'auto' };
+}
+
+function cell({
+  text,
+  bold,
+  color,
+  fill,
+  width,
+}: {
+  text: string;
+  bold?: boolean;
+  color?: string;
+  fill?: string;
+  width?: number;
+}): TableCell {
+  return new TableCell({
+    width: width ? { size: width, type: WidthType.DXA } : undefined,
+    shading: fill ? shaded(fill) : undefined,
+    margins: { top: 60, bottom: 60, left: 90, right: 90 },
+    children: [
       new Paragraph({
-        children: [new TextRun({ text, color: '505050', size: 20 })],
+        children: [new TextRun({ text, bold, color: color ?? INK })],
+      }),
+    ],
+  });
+}
+
+/** A 2-column label/value table (metadata block + organization overview). */
+function keyValueTable(rows: IsmsKeyValue[]): Table {
+  return new Table({
+    width: { size: 100, type: WidthType.PERCENTAGE },
+    columnWidths: [2600, 6426],
+    borders: TABLE_BORDERS,
+    rows: rows.map(
+      (row) =>
+        new TableRow({
+          children: [
+            cell({
+              text: row.label,
+              bold: true,
+              color: MUTED,
+              fill: ZEBRA,
+              width: 2600,
+            }),
+            cell({ text: row.value, width: 6426 }),
+          ],
+        }),
+    ),
+  });
+}
+
+/** A bordered data table with a shaded accent header row. */
+function dataTable({
+  table,
+  accent,
+}: {
+  table: IsmsExportTable;
+  accent: string;
+}): Table {
+  const widths =
+    table.headers.length === 3 ? [1900, 3000, 4126] : undefined;
+  const headerRow = new TableRow({
+    tableHeader: true,
+    children: table.headers.map(
+      (header, index) =>
+        new TableCell({
+          width: widths ? { size: widths[index], type: WidthType.DXA } : undefined,
+          shading: shaded(accent),
+          margins: { top: 60, bottom: 60, left: 90, right: 90 },
+          children: [
+            new Paragraph({
+              children: [new TextRun({ text: header, bold: true, color: WHITE })],
+            }),
+          ],
+        }),
+    ),
+  });
+  const bodyRows = table.rows.map(
+    (row) =>
+      new TableRow({
+        children: row.map((value, index) =>
+          cell({
+            text: value,
+            bold: widths ? index === 0 : false,
+            width: widths ? widths[index] : undefined,
+          }),
+        ),
       }),
   );
+  return new Table({
+    width: { size: 100, type: WidthType.PERCENTAGE },
+    columnWidths: widths,
+    borders: TABLE_BORDERS,
+    rows: [headerRow, ...bodyRows],
+  });
 }
 
 function paragraphRuns(paragraph: IsmsExportParagraph): TextRun[] {
@@ -42,46 +153,6 @@ function paragraphRuns(paragraph: IsmsExportParagraph): TextRun[] {
   return runs;
 }
 
-function tableElement({
-  table,
-  accent,
-}: {
-  table: NonNullable<IsmsExportSection['table']>;
-  accent: string;
-}): Table {
-  const headerRow = new TableRow({
-    children: table.headers.map(
-      (header) =>
-        new TableCell({
-          children: [
-            new Paragraph({
-              children: [
-                new TextRun({ text: header, bold: true, color: accent }),
-              ],
-            }),
-          ],
-        }),
-    ),
-  });
-  const bodyRows = table.rows.map(
-    (row) =>
-      new TableRow({
-        children: row.map(
-          (cell) =>
-            new TableCell({
-              children: [
-                new Paragraph({ children: [new TextRun({ text: cell })] }),
-              ],
-            }),
-        ),
-      }),
-  );
-  return new Table({
-    width: { size: 100, type: WidthType.PERCENTAGE },
-    rows: [headerRow, ...bodyRows],
-  });
-}
-
 function sectionElements({
   section,
   accent,
@@ -91,18 +162,21 @@ function sectionElements({
 }): Array<Paragraph | Table> {
   const elements: Array<Paragraph | Table> = [
     new Paragraph({
-      heading: HeadingLevel.HEADING_2,
-      spacing: { before: 240, after: 120 },
+      spacing: { before: 280, after: 120 },
       children: [
-        new TextRun({ text: section.heading, bold: true, color: accent }),
+        new TextRun({ text: section.heading, bold: true, color: accent, size: 26 }),
       ],
     }),
   ];
 
-  const hasParagraphs = section.paragraphs && section.paragraphs.length > 0;
-  const hasTable = section.table && section.table.rows.length > 0;
+  const hasContent =
+    Boolean(section.intro) ||
+    Boolean(section.paragraphs?.length) ||
+    Boolean(section.bullets?.length) ||
+    Boolean(section.keyValues?.length) ||
+    Boolean(section.table && section.table.rows.length);
 
-  if (!hasParagraphs && !hasTable) {
+  if (!hasContent) {
     elements.push(
       new Paragraph({
         children: [
@@ -113,22 +187,89 @@ function sectionElements({
     return elements;
   }
 
-  for (const paragraph of section.paragraphs ?? []) {
+  if (section.intro) {
     elements.push(
-      new Paragraph({
-        spacing: { before: 80 },
-        children: paragraphRuns(paragraph),
-      }),
+      new Paragraph({ spacing: { after: 80 }, children: [new TextRun(section.intro)] }),
     );
   }
-
-  if (hasTable && section.table) {
-    elements.push(tableElement({ table: section.table, accent }));
+  for (const paragraph of section.paragraphs ?? []) {
+    elements.push(
+      new Paragraph({ spacing: { after: 60 }, children: paragraphRuns(paragraph) }),
+    );
+  }
+  for (const bullet of section.bullets ?? []) {
+    elements.push(
+      new Paragraph({ bullet: { level: 0 }, children: [new TextRun(bullet)] }),
+    );
+  }
+  if (section.keyValues?.length) elements.push(keyValueTable(section.keyValues));
+  if (section.table && section.table.rows.length) {
+    elements.push(dataTable({ table: section.table, accent }));
   }
 
   return elements;
 }
 
+function coverBlock(metadata: IsmsExportMetadata): Paragraph[] {
+  const center = AlignmentType.CENTER;
+  const block: Paragraph[] = [];
+  if (metadata.organizationName) {
+    block.push(
+      new Paragraph({
+        alignment: center,
+        spacing: { before: 480, after: 80 },
+        children: [
+          new TextRun({ text: metadata.organizationName, bold: true, size: 26, color: INK }),
+        ],
+      }),
+    );
+  }
+  block.push(
+    new Paragraph({
+      alignment: center,
+      spacing: { after: 160 },
+      children: [new TextRun({ text: metadata.standardLabel, size: 22, color: MUTED })],
+    }),
+    new Paragraph({
+      alignment: center,
+      spacing: { after: 60 },
+      children: [new TextRun({ text: metadata.title, bold: true, size: 44, color: metadata.primaryColor ? normalizeHexColor(metadata.primaryColor) : DEFAULT_ACCENT })],
+    }),
+    new Paragraph({
+      alignment: center,
+      spacing: { after: 320 },
+      children: [new TextRun({ text: `Clause ${metadata.clause}`, size: 22, color: MUTED })],
+    }),
+  );
+  return block;
+}
+
+function pageFooter(metadata: IsmsExportMetadata): Footer {
+  const left = [metadata.organizationName, metadata.classification]
+    .filter(Boolean)
+    .join('  ·  ');
+  return new Footer({
+    children: [
+      new Paragraph({
+        tabStops: [{ type: 'right', position: 9026 }],
+        children: [
+          new TextRun({ text: left, size: 16, color: MUTED }),
+          new TextRun({ text: `\t${metadata.documentCode}  ·  Page `, size: 16, color: MUTED }),
+          new TextRun({ children: [PageNumber.CURRENT], size: 16, color: MUTED }),
+          new TextRun({ text: ' of ', size: 16, color: MUTED }),
+          new TextRun({ children: [PageNumber.TOTAL_PAGES], size: 16, color: MUTED }),
+        ],
+      }),
+    ],
+  });
+}
+
+/**
+ * Render an ISMS document to a polished DOCX matching the PDF: a centred cover
+ * block, a metadata table, numbered sections, bullet lists, a key/value
+ * overview and bordered data tables with a shaded accent header, plus a footer
+ * with the org, classification and page numbers.
+ */
 export async function renderIsmsDocx({
   sections,
   metadata,
@@ -138,37 +279,17 @@ export async function renderIsmsDocx({
 }): Promise<Buffer> {
   const accent = normalizeHexColor(metadata.primaryColor);
 
-  const header: Paragraph[] = [];
-  if (metadata.organizationName) {
-    header.push(
-      new Paragraph({
-        children: [
-          new TextRun({
-            text: metadata.organizationName,
-            bold: true,
-            color: accent,
-            size: 28,
-          }),
-        ],
-      }),
-    );
-  }
-  header.push(
-    new Paragraph({
-      heading: HeadingLevel.HEADING_1,
-      spacing: { after: 200 },
-      children: [new TextRun({ text: metadata.title, bold: true })],
-    }),
-  );
-
-  const body = sections.flatMap((section) =>
-    sectionElements({ section, accent }),
-  );
+  const body: Array<Paragraph | Table> = [
+    ...coverBlock(metadata),
+    keyValueTable(metadataRows(metadata)),
+    ...sections.flatMap((section) => sectionElements({ section, accent })),
+  ];
 
   const doc = new Document({
     sections: [
       {
-        children: [...header, ...metadataParagraphs(metadata), ...body],
+        footers: { default: pageFooter(metadata) },
+        children: body,
       },
     ],
   });

@@ -3,6 +3,7 @@ import { db } from '@db';
 import { ExportIsmsDocumentDto } from './dto/export-isms-document.dto';
 import { collectPlatformData } from './documents/data-source';
 import { runDerivation } from './documents/generate';
+import { loadOrgProfile } from './documents/org-profile';
 import { buildExportSections } from './documents/registry';
 import {
   diffPlatformSnapshots,
@@ -13,6 +14,7 @@ import {
   generateIsmsExportFile,
   type IsmsExportResult,
 } from './utils/export-generator';
+import { buildExportMetadata } from './utils/export-metadata';
 import { upsertLatestSnapshotVersion } from './utils/version-snapshot';
 
 const DOCUMENT_INCLUDE = {
@@ -104,7 +106,9 @@ export class IsmsContextService {
       where: { id: documentId, organizationId },
       include: {
         framework: { select: { name: true } },
-        organization: { select: { name: true, primaryColor: true } },
+        organization: {
+          select: { name: true, website: true, primaryColor: true },
+        },
         approver: { select: { user: { select: { name: true, email: true } } } },
         ...DOCUMENT_INCLUDE,
       },
@@ -113,9 +117,20 @@ export class IsmsContextService {
       throw new NotFoundException('ISMS document not found');
     }
 
+    // The Context document (clause 4.1) renders an org overview, mission and
+    // intended outcomes; other document types don't need the profile.
+    const orgProfile =
+      document.type === 'context_of_organization'
+        ? await loadOrgProfile({
+            organizationId,
+            frameworkId: document.frameworkId,
+          })
+        : undefined;
+
     const input: DocumentExportInput = {
       contextIssues: document.contextIssues.map((issue) => ({
         kind: issue.kind,
+        category: issue.category,
         description: issue.description,
         effect: issue.effect,
       })),
@@ -138,6 +153,7 @@ export class IsmsContextService {
         measurementMethod: objective.measurementMethod,
       })),
       narrative: document.versions[0]?.narrative ?? null,
+      orgProfile,
     };
 
     const sections = buildExportSections({ type: document.type, input });
@@ -145,12 +161,14 @@ export class IsmsContextService {
     return generateIsmsExportFile({
       sections,
       format: dto.format,
-      metadata: {
+      metadata: buildExportMetadata({
+        type: document.type,
         title: document.title,
         frameworkName: document.framework.name || 'ISO 27001',
         version: document.versions[0]?.version ?? 1,
-        preparedBy: document.preparedBy,
         status: document.status,
+        preparedBy: document.preparedBy,
+        owner: null,
         approverName:
           document.approver?.user?.name ||
           document.approver?.user?.email ||
@@ -159,7 +177,7 @@ export class IsmsContextService {
         declinedAt: document.declinedAt,
         organizationName: document.organization.name,
         primaryColor: document.organization.primaryColor,
-      },
+      }),
     });
   }
 

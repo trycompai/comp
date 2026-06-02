@@ -24,10 +24,37 @@ export type IsmsContextSource = 'derived' | 'manual';
 export type IsmsExportFormat = 'pdf' | 'docx';
 export type IsmsObjectiveStatus = 'not_started' | 'on_track' | 'at_risk' | 'met';
 
+/**
+ * The ISO 27001 clause 4.1 category taxonomy auditors expect, scoped by kind.
+ * Mirrors the API derivation taxonomy (context-derivation.ts).
+ */
+export const EXTERNAL_ISSUE_CATEGORIES = [
+  'Regulatory & Legal',
+  'Market & Economic',
+  'Technological',
+  'Social & Cultural',
+] as const;
+
+export const INTERNAL_ISSUE_CATEGORIES = [
+  'Governance & Structure',
+  'Strategy & Objectives',
+  'Capabilities & Resources',
+  'Culture & Values',
+] as const;
+
+export function categoriesForKind(
+  kind: IsmsContextIssueKind,
+): readonly string[] {
+  return kind === 'external'
+    ? EXTERNAL_ISSUE_CATEGORIES
+    : INTERNAL_ISSUE_CATEGORIES;
+}
+
 /** Register: Context of the Organization (clause 4.1). */
 export interface IsmsContextIssue {
   id: string;
   kind: IsmsContextIssueKind;
+  category: string | null;
   description: string;
   effect: string;
   source: IsmsContextSource;

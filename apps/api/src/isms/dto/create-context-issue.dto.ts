@@ -5,6 +5,10 @@ export class CreateContextIssueDto {
   @IsIn(['internal', 'external'])
   kind!: IsmsContextIssueKind;
 
+  @IsOptional()
+  @IsString()
+  category?: string;
+
   @IsString()
   description!: string;
 

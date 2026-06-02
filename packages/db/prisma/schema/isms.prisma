@@ -126,6 +126,11 @@ model IsmsContextIssue {
   document   IsmsDocument @relation(fields: [documentId], references: [id], onDelete: Cascade)
 
   kind        IsmsContextIssueKind
+  // ISO 27001 clause 4.1 grouping. External: "Regulatory & Legal" / "Market &
+  // Economic" / "Technological" / "Social & Cultural". Internal: "Governance &
+  // Structure" / "Strategy & Objectives" / "Capabilities & Resources" /
+  // "Culture & Values". Nullable so legacy rows + free-form issues stay valid.
+  category    String?
   description String // the internal / external issue
   effect      String // effect on the ISMS and its objectives (required by clause 4.1)
 

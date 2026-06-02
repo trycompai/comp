@@ -1,14 +1,26 @@
 'use client';
 
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Button, Field, FieldError, HStack, Textarea } from '@trycompai/design-system';
+import {
+  Button,
+  Field,
+  FieldError,
+  HStack,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+  Textarea,
+} from '@trycompai/design-system';
 import { Add } from '@trycompai/design-system/icons';
 import { Controller, useForm } from 'react-hook-form';
 import { z } from 'zod';
-import type { IsmsContextIssueKind } from '../isms-types';
-import { IsmsAddCard } from './shared';
+import { categoriesForKind, type IsmsContextIssueKind } from '../isms-types';
+import { IsmsAddCard, IsmsFieldLabel } from './shared';
 
 const addIssueSchema = z.object({
+  category: z.string().min(1, 'Category is required'),
   description: z.string().min(1, 'Description is required'),
   effect: z.string().min(1, 'Effect is required'),
 });
@@ -17,7 +29,11 @@ type AddIssueValues = z.infer<typeof addIssueSchema>;
 
 interface AddIssueFormProps {
   kind: IsmsContextIssueKind;
-  onAdd: (params: { description: string; effect: string }) => Promise<void>;
+  onAdd: (params: {
+    category: string;
+    description: string;
+    effect: string;
+  }) => Promise<void>;
 }
 
 export function AddIssueForm({ kind, onAdd }: AddIssueFormProps) {
@@ -33,6 +49,7 @@ function AddIssueFields({
   onAdd,
   onClose,
 }: AddIssueFormProps & { onClose: () => void }) {
+  const categories = categoriesForKind(kind);
   const {
     control,
     handleSubmit,
@@ -40,17 +57,38 @@ function AddIssueFields({
     formState: { isSubmitting, errors },
   } = useForm<AddIssueValues>({
     resolver: zodResolver(addIssueSchema),
-    defaultValues: { description: '', effect: '' },
+    defaultValues: { category: categories[0], description: '', effect: '' },
   });
 
   const handleAdd = handleSubmit(async (values) => {
     await onAdd(values);
-    reset({ description: '', effect: '' });
+    reset({ category: categories[0], description: '', effect: '' });
     onClose();
   });
 
   return (
     <form onSubmit={handleAdd} className="flex flex-col gap-3">
+      <IsmsFieldLabel label="Category">
+        <Controller
+          control={control}
+          name="category"
+          render={({ field }) => (
+            <Select value={field.value} onValueChange={field.onChange}>
+              <SelectTrigger aria-label={`New ${kind} issue category`}>
+                <SelectValue placeholder="Select a category" />
+              </SelectTrigger>
+              <SelectContent>
+                {categories.map((category) => (
+                  <SelectItem key={category} value={category}>
+                    {category}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
+        />
+        <FieldError>{errors.category?.message}</FieldError>
+      </IsmsFieldLabel>
       <div className="grid gap-3 md:grid-cols-2">
         <Field>
           <Controller

@@ -15,13 +15,20 @@ const mockRenderDocx = jest.mocked(renderIsmsDocx);
 
 const metadata: IsmsExportMetadata = {
   title: 'Context of the Organization',
+  clause: '4.1',
+  documentCode: 'ACME-ISMS-001',
+  standardLabel: 'ISO/IEC 27001:2022',
   frameworkName: 'ISO 27001',
   version: 2,
   preparedBy: 'Comp AI',
+  owner: 'Comp AI',
   status: 'approved',
   approverName: 'Jane Doe',
   approvedAt: new Date('2026-05-01T00:00:00.000Z'),
   declinedAt: null,
+  classification: 'Internal',
+  nextReview: 'Annual, or on material change',
+  issueDate: new Date('2026-01-01'),
   organizationName: 'Acme Inc',
   primaryColor: '#123456',
 };
