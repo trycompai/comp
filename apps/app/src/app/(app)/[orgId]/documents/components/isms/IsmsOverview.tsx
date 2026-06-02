@@ -26,7 +26,6 @@ import {
   IsmsSummaryRow,
   type IsmsSummaryStat,
 } from '../../isms/components/shared';
-import { SOAOverviewCard } from '../SOAOverviewCard';
 
 export function IsmsOverview({ organizationId }: { organizationId: string }) {
   const iso27001FrameworkId = useIso27001FrameworkId(organizationId);
@@ -92,7 +91,7 @@ export function IsmsOverview({ organizationId }: { organizationId: string }) {
       <IsmsEmptyState
         icon={DocumentMultiple_01}
         title="ISO 27001 isn't active yet"
-        description="Add the ISO 27001 framework to your organization to manage your ISMS foundational documents and Statement of Applicability."
+        description="Add the ISO 27001 framework to your organization to manage your ISMS foundational documents."
       />
     );
   }
@@ -131,13 +130,6 @@ export function IsmsOverview({ organizationId }: { organizationId: string }) {
             );
           })}
         </Grid>
-      </Section>
-
-      <Section
-        title="Statement of Applicability"
-        description="The Annex A controls you apply, with justification for inclusions and exclusions."
-      >
-        <SOAOverviewCard organizationId={organizationId} iso27001FrameworkId={iso27001FrameworkId} />
       </Section>
     </Stack>
   );

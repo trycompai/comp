@@ -127,10 +127,10 @@ describe('IsmsOverview', () => {
     expect(screen.getByText('Foundational Documents')).toBeInTheDocument();
   });
 
-  it('renders the Statement of Applicability section', () => {
+  it('does not render the Statement of Applicability (it lives in general documents)', () => {
     render(<IsmsOverview organizationId="org-1" />);
-    // SOAOverviewCard renders "Statement of Applicability" as its section title + card title.
-    expect(screen.getAllByText('Statement of Applicability').length).toBeGreaterThan(0);
+    // SOA was moved out of the ISMS tab back into the general documents list.
+    expect(screen.queryByText('Statement of Applicability')).not.toBeInTheDocument();
   });
 
   it('links the Context of the Organization card to its detail page', () => {

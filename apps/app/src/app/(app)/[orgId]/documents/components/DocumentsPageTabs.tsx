@@ -1,5 +1,6 @@
 'use client';
 
+import { useFeatureFlag } from '@trycompai/analytics';
 import {
   PageHeader,
   PageLayout,
@@ -12,6 +13,13 @@ import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import type { ReactNode } from 'react';
 import { useCallback } from 'react';
 import { useIso27001FrameworkId } from '../isms/hooks/useIso27001FrameworkId';
+
+/**
+ * PostHog flag gating the ISMS area while it's privately tested. Enable it
+ * per-org in PostHog to expose the tab. Local development falls through so the
+ * tab stays visible without PostHog configured.
+ */
+const ISMS_FEATURE_FLAG = 'is-isms-enabled';
 
 interface DocumentsPageTabsProps {
   organizationId: string;
@@ -46,9 +54,14 @@ export function DocumentsPageTabs({
   const pathname = usePathname();
   const router = useRouter();
   const searchParams = useSearchParams();
-  // The ISO 27001 (ISMS) tab is framework-conditional: it appears only when the
-  // organization has ISO 27001 active (the same detection the SOA card uses).
-  const showIsmsTab = !!useIso27001FrameworkId(organizationId);
+  // The ISO 27001 (ISMS) tab appears only when the organization has ISO 27001
+  // active AND the ISMS feature flag is enabled (private testing). Development
+  // falls through so the tab is visible locally without PostHog.
+  const hasIso27001 = !!useIso27001FrameworkId(organizationId);
+  const ismsFlagEnabled = useFeatureFlag(ISMS_FEATURE_FLAG);
+  const showIsmsTab =
+    hasIso27001 &&
+    (ismsFlagEnabled || process.env.NODE_ENV === 'development');
   const activeTab = tabParamToInternal({ tabParam: searchParams.get('tab'), showIsmsTab });
 
   const handleTabChange = useCallback(
