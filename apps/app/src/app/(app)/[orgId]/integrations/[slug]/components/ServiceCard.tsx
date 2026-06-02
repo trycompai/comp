@@ -104,7 +104,16 @@ export function ServiceCard({ service, connectionId, orgId, slug }: ServiceCardP
   const { services } = useConnectionServices(connectionId);
   const isImplemented = service.implemented !== false;
   const liveService = services.find((s) => s.id === service.id);
+  const inServiceList = Boolean(liveService);
   const isEnabled = liveService?.enabled ?? false;
+  // Services not in the connection's toggle list (e.g. AWS baseline services)
+  // are always scanned — don't render them as "Scanning off".
+  const scanningOn = !inServiceList || isEnabled;
+  const scanningLabel = !inServiceList
+    ? 'Always scanned'
+    : isEnabled
+      ? 'Scanning on'
+      : 'Scanning off';
   const taskCount = service.mappedTasks?.length ?? 0;
 
   const href =
@@ -135,10 +144,10 @@ export function ServiceCard({ service, connectionId, orgId, slug }: ServiceCardP
           <span className="inline-flex items-center gap-1">
             <span
               className={`h-1.5 w-1.5 rounded-full ${
-                isEnabled ? 'bg-primary' : 'bg-muted-foreground/40'
+                scanningOn ? 'bg-primary' : 'bg-muted-foreground/40'
               }`}
             />
-            {isEnabled ? 'Scanning on' : 'Scanning off'}
+            {scanningLabel}
           </span>
           {taskCount > 0 && (
             <span>

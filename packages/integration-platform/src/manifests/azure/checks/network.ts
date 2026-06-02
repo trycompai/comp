@@ -80,11 +80,15 @@ export const nsgNoOpenPortsCheck: IntegrationCheck = {
       for (const rule of inbound) {
         if (!ruleSources(rule).some((s) => WILDCARD_SOURCES.has(s))) continue;
         const ports = rulePorts(rule);
+        // SSH/RDP/DB are TCP services — only flag them on TCP or any-protocol
+        // rules. "All ports" exposure applies to any protocol.
+        const proto = (rule.properties.protocol ?? '*').toLowerCase();
+        const tcpish = proto === '*' || proto === 'tcp';
         const conditions: Array<{ when: boolean; label: string; severity: FindingSeverity }> = [
           { when: ports.includes('*'), label: 'all ports', severity: 'critical' },
-          { when: portsCoverAny(ports, [3389]), label: 'RDP (3389)', severity: 'critical' },
-          { when: portsCoverAny(ports, DB_PORTS), label: 'database ports', severity: 'critical' },
-          { when: portsCoverAny(ports, [22]), label: 'SSH (22)', severity: 'high' },
+          { when: tcpish && portsCoverAny(ports, [3389]), label: 'RDP (3389)', severity: 'critical' },
+          { when: tcpish && portsCoverAny(ports, DB_PORTS), label: 'database ports', severity: 'critical' },
+          { when: tcpish && portsCoverAny(ports, [22]), label: 'SSH (22)', severity: 'high' },
         ];
         for (const c of conditions) {
           if (c.when) {

@@ -22,11 +22,13 @@ export async function assumeAwsSession(
   const raw = ctx.credentials as Record<string, unknown>;
   const roleArn = typeof raw.roleArn === 'string' ? raw.roleArn : '';
   const externalId = typeof raw.externalId === 'string' ? raw.externalId : '';
-  const regions = Array.isArray(raw.regions)
-    ? raw.regions.filter((r): r is string => typeof r === 'string')
-    : typeof raw.region === 'string'
-      ? [raw.region]
-      : [];
+  const regions = (
+    Array.isArray(raw.regions)
+      ? raw.regions.filter((r): r is string => typeof r === 'string')
+      : typeof raw.region === 'string'
+        ? [raw.region]
+        : []
+  ).filter((r) => r.trim().length > 0);
 
   if (!roleArn || !externalId || regions.length === 0) return null;
 

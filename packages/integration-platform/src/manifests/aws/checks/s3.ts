@@ -22,6 +22,8 @@ export interface BpaFlags {
 export interface S3BucketInfo {
   name: string;
   encrypted: boolean;
+  /** false when encryption status couldn't be read (error) → excluded from eval */
+  encryptionDetermined: boolean;
   /** bucket-level Block Public Access flags, or null when none configured */
   bucketBpa: BpaFlags | null;
 }
@@ -39,7 +41,9 @@ function isFullyBlocked(bucket: BpaFlags | null, account: BpaFlags | null): bool
 }
 
 export function evaluateS3Encryption(buckets: S3BucketInfo[]): CheckOutcome[] {
-  return buckets.map((b) =>
+  return buckets
+    .filter((b) => b.encryptionDetermined)
+    .map((b) =>
     b.encrypted
       ? {
           kind: 'pass',
@@ -101,14 +105,24 @@ async function gatherBuckets(
   const infos: S3BucketInfo[] = [];
   for (const name of names) {
     let encrypted = false;
+    let encryptionDetermined = true;
     let bucketBpa: BpaFlags | null = null;
 
     if (opts.encryption) {
       try {
         const enc = await s3.send(new GetBucketEncryptionCommand({ Bucket: name }));
         encrypted = (enc.ServerSideEncryptionConfiguration?.Rules?.length ?? 0) > 0;
-      } catch {
-        encrypted = false;
+      } catch (err) {
+        // "no encryption configured" is a genuine finding; any other error
+        // (permissions/transient) is indeterminate → exclude from evaluation.
+        if (
+          err instanceof Error &&
+          /ServerSideEncryptionConfigurationNotFound/i.test(err.name)
+        ) {
+          encrypted = false;
+        } else {
+          encryptionDetermined = false;
+        }
       }
     }
     if (opts.publicAccess) {
@@ -125,7 +139,7 @@ async function gatherBuckets(
         bucketBpa = null; // no bucket-level config
       }
     }
-    infos.push({ name, encrypted, bucketBpa });
+    infos.push({ name, encrypted, encryptionDetermined, bucketBpa });
   }
   return infos;
 }

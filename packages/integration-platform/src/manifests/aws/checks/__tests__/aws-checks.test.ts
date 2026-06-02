@@ -40,11 +40,14 @@ const ALL_BLOCKED = {
 };
 
 describe('AWS S3 evaluators', () => {
-  it('encryption: pass when encrypted, fail (high) when not', () => {
+  it('encryption: pass when encrypted, fail (high) when not, skip indeterminate', () => {
     const out = evaluateS3Encryption([
-      { name: 'a', encrypted: true, bucketBpa: null },
-      { name: 'b', encrypted: false, bucketBpa: null },
+      { name: 'a', encrypted: true, encryptionDetermined: true, bucketBpa: null },
+      { name: 'b', encrypted: false, encryptionDetermined: true, bucketBpa: null },
+      // read error → indeterminate → excluded (no false high finding)
+      { name: 'c', encrypted: false, encryptionDetermined: false, bucketBpa: null },
     ]);
+    expect(out).toHaveLength(2);
     expect(out[0]!.kind).toBe('pass');
     expect(out[1]!.kind).toBe('fail');
     expect(out[1]!.severity).toBe('high');
@@ -53,8 +56,8 @@ describe('AWS S3 evaluators', () => {
   it('public access: bucket-level all-blocked passes, missing fails', () => {
     const out = evaluateS3PublicAccess(
       [
-        { name: 'a', encrypted: false, bucketBpa: ALL_BLOCKED },
-        { name: 'b', encrypted: false, bucketBpa: null },
+        { name: 'a', encrypted: false, encryptionDetermined: true, bucketBpa: ALL_BLOCKED },
+        { name: 'b', encrypted: false, encryptionDetermined: true, bucketBpa: null },
       ],
       null,
     );
@@ -63,7 +66,7 @@ describe('AWS S3 evaluators', () => {
 
   it('public access: account-level BPA covers buckets lacking bucket config', () => {
     const out = evaluateS3PublicAccess(
-      [{ name: 'b', encrypted: false, bucketBpa: null }],
+      [{ name: 'b', encrypted: false, encryptionDetermined: true, bucketBpa: null }],
       ALL_BLOCKED,
     );
     expect(out[0]!.kind).toBe('pass');
@@ -155,9 +158,19 @@ describe('AWS KMS rotation evaluator', () => {
 });
 
 describe('AWS CloudTrail evaluator', () => {
-  it('passes when a multi-region trail with log validation exists', () => {
-    const out = evaluateCloudTrail([{ name: 't1', multiRegion: true, logValidation: true }]);
+  it('passes when a multi-region trail with validation is actively logging', () => {
+    const out = evaluateCloudTrail([
+      { name: 't1', multiRegion: true, logValidation: true, logging: true },
+    ]);
     expect(out[0]!.kind).toBe('pass');
+  });
+
+  it('fails (medium) when an otherwise-compliant trail is not logging', () => {
+    const out = evaluateCloudTrail([
+      { name: 't1', multiRegion: true, logValidation: true, logging: false },
+    ]);
+    expect(out[0]!.kind).toBe('fail');
+    expect(out[0]!.severity).toBe('medium');
   });
 
   it('fails (high) when no trails exist', () => {
@@ -167,7 +180,9 @@ describe('AWS CloudTrail evaluator', () => {
   });
 
   it('fails (medium) when a trail exists but is not multi-region + validated', () => {
-    const out = evaluateCloudTrail([{ name: 't1', multiRegion: false, logValidation: true }]);
+    const out = evaluateCloudTrail([
+      { name: 't1', multiRegion: false, logValidation: true, logging: true },
+    ]);
     expect(out[0]!.kind).toBe('fail');
     expect(out[0]!.severity).toBe('medium');
   });

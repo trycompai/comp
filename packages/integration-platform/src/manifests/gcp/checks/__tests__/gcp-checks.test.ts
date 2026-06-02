@@ -87,6 +87,40 @@ describe('GCP IAM primitive roles check', () => {
     expect(failed).toHaveLength(0);
     expect(passed).toHaveLength(1);
   });
+
+  it('flags inherited primitive roles from an ancestor organization', async () => {
+    const { failed } = await runCheck(iamPrimitiveRolesCheck, {
+      post: (url) => {
+        if (url.includes(':getAncestry')) {
+          return {
+            ancestor: [
+              { resourceId: { type: 'project', id: 'proj-1' } },
+              { resourceId: { type: 'organization', id: '12345' } },
+            ],
+          };
+        }
+        if (url.includes('/organizations/12345:getIamPolicy')) {
+          return { bindings: [{ role: 'roles/owner', members: ['user:a@x.com'] }] };
+        }
+        return { bindings: [{ role: 'roles/viewer', members: ['user:b@x.com'] }] };
+      },
+    });
+    expect(failed.some((f) => f.title.match(/Primitive role/))).toBe(true);
+  });
+
+  it('does not pass when inherited bindings are unreadable', async () => {
+    const { passed, failed } = await runCheck(iamPrimitiveRolesCheck, {
+      post: (url) => {
+        if (url.includes(':getAncestry')) {
+          return { ancestor: [{ resourceId: { type: 'folder', id: 'f1' } }] };
+        }
+        if (url.includes('/folders/f1:getIamPolicy')) throw new Error('403');
+        return { bindings: [] }; // project clean
+      },
+    });
+    expect(passed).toHaveLength(0);
+    expect(failed).toHaveLength(0);
+  });
 });
 
 describe('GCP Cloud Storage public-access check', () => {

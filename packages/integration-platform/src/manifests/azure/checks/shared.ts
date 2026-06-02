@@ -42,6 +42,14 @@ export async function armListAll<T>(
     const data: { value?: T[]; nextLink?: string } = await ctx.fetch(nextUrl);
     if (Array.isArray(data.value)) out.push(...data.value);
     nextUrl = data.nextLink;
+    // nextLink is an absolute URL from the API; only follow it if it stays on
+    // the ARM host, so the injected bearer token can't be sent elsewhere.
+    if (nextUrl && !nextUrl.startsWith(`${ARM}/`)) {
+      ctx.warn('Azure ARM nextLink pointed to an unexpected host; stopping pagination', {
+        nextLink: nextUrl,
+      });
+      nextUrl = undefined;
+    }
     pages++;
   }
   if (nextUrl) {

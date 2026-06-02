@@ -49,7 +49,11 @@ export function ServiceDetailView({
 }: ServiceDetailViewProps) {
   // Resolve the connection this service belongs to (URL param, else first active).
   const effectiveConnectionId = useMemo(() => {
-    if (connectionId) return connectionId;
+    // Only trust the URL connectionId if it actually belongs to this provider;
+    // otherwise fall back to the active connection (stale/invalid id guard).
+    if (connectionId && connections.some((c) => c.id === connectionId)) {
+      return connectionId;
+    }
     const active = connections.find(
       (c) => c.status === 'active' || c.status === 'pending',
     );

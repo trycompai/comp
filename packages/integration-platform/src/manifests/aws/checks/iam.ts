@@ -134,8 +134,9 @@ export const iamAccountSecurityCheck: IntegrationCheck = {
       const pp = await iam.send(new GetAccountPasswordPolicyCommand({}));
       passwordPolicy = pp.PasswordPolicy ?? null;
     } catch (err) {
-      // NoSuchEntity = no policy set → treat as null (a finding). Re-throw others.
-      if (!(err instanceof Error && err.name === 'NoSuchEntityException')) throw err;
+      // No password policy set surfaces as NoSuchEntity(Exception); treat as
+      // null (a finding). Anything else (e.g. AccessDenied) propagates.
+      if (!(err instanceof Error && /NoSuchEntity/i.test(err.name))) throw err;
     }
 
     const summaryResp = await iam.send(new GetAccountSummaryCommand({}));

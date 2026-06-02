@@ -43,9 +43,11 @@ export const cloudSqlSslCheck: IntegrationCheck = {
 
       for (const inst of instances) {
         const ip = inst.settings?.ipConfiguration;
+        // sslMode is authoritative when present; fall back to legacy requireSsl.
         const sslEnforced =
-          ip?.requireSsl === true ||
-          (typeof ip?.sslMode === 'string' && SECURE_SSL_MODES.has(ip.sslMode));
+          typeof ip?.sslMode === 'string'
+            ? SECURE_SSL_MODES.has(ip.sslMode)
+            : ip?.requireSsl === true;
 
         if (sslEnforced) {
           ctx.pass({
