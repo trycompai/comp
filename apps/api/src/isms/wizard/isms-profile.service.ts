@@ -1,8 +1,9 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { db } from '@db';
-import type { Prisma } from '@db';
+import type { IsmsDocumentType, Prisma } from '@db';
 import { IsmsService } from '../isms.service';
 import { IsmsContextService } from '../isms-context.service';
+import { collectPlatformData } from '../documents/data-source';
 import { computeWizardDefaults } from './wizard-defaults';
 import { mergeWizardAnswers } from './merge-answers';
 import {
@@ -16,6 +17,23 @@ export interface WizardMemberOption {
   id: string;
   name: string;
 }
+
+/**
+ * Deterministic generation order for generateAll. The Parties register MUST be
+ * generated before the Requirements register, since requirements derive from
+ * the persisted parties; an unordered findMany could regenerate requirements
+ * against a stale/empty register. Lower number = generated first; unlisted
+ * types fall back to GENERATION_ORDER_DEFAULT.
+ */
+const GENERATION_ORDER: Record<IsmsDocumentType, number> = {
+  context_of_organization: 0,
+  interested_parties_register: 1,
+  interested_parties_requirements: 2,
+  isms_scope: 3,
+  leadership_commitment: 4,
+  objectives_plan: 5,
+};
+const GENERATION_ORDER_DEFAULT = Object.keys(GENERATION_ORDER).length;
 
 /**
  * IsmsProfile lifecycle: get-or-init, partial save, completion, and the
@@ -120,21 +138,36 @@ export class IsmsProfileService {
   }) {
     await this.requireFramework({ frameworkId });
 
-    await this.ismsService.ensureSetup({ organizationId, frameworkId });
+    // The wizard is an evidence:update flow, so it always provisions.
+    await this.ismsService.ensureSetup({
+      organizationId,
+      frameworkId,
+      canWrite: true,
+    });
 
     const documents = await db.ismsDocument.findMany({
       where: { organizationId, frameworkId },
-      select: { id: true },
+      select: { id: true, type: true },
     });
+    const ordered = [...documents].sort(
+      (a, b) =>
+        (GENERATION_ORDER[a.type] ?? GENERATION_ORDER_DEFAULT) -
+        (GENERATION_ORDER[b.type] ?? GENERATION_ORDER_DEFAULT),
+    );
+
+    // Collect the expensive platform snapshot once and reuse it across every
+    // document, instead of re-querying it per document inside generate().
+    const data = await collectPlatformData({ organizationId, frameworkId });
 
     type GeneratedDocument = Awaited<
       ReturnType<IsmsContextService['generate']>
     >;
     const generated: GeneratedDocument[] = [];
-    for (const doc of documents) {
+    for (const doc of ordered) {
       const result = await this.contextService.generate({
         documentId: doc.id,
         organizationId,
+        data,
       });
       generated.push(result);
     }

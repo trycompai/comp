@@ -74,6 +74,9 @@ const TYPE_DRIFT_SOURCES: Record<IsmsDocumentType, Array<keyof DiffMap>> = {
     'subprocessors',
     'members',
     'wizardAnswers',
+    // Requirements derive one row per Interested Parties Register party, so a
+    // manual edit to a party (which the rest of this snapshot can't see) is drift.
+    'parties',
   ],
   objectives_plan: [
     'frameworks',
@@ -105,6 +108,7 @@ interface DiffMap {
   training: boolean;
   organizationName: boolean;
   wizardAnswers: boolean;
+  parties: boolean;
 }
 
 function computeChanges({
@@ -137,6 +141,7 @@ function computeChanges({
       previous.wizardAnswers,
       current.wizardAnswers,
     ),
+    parties: previous.partiesFingerprint !== current.partiesFingerprint,
   };
 }
 
@@ -189,6 +194,7 @@ export function parsePlatformSnapshot(
     highRiskCount: toNum(record.highRiskCount),
     hasTrainingProgram: record.hasTrainingProgram === true,
     wizardAnswers: parseStoredAnswers(record.wizardAnswers),
+    partiesFingerprint: toStr(record.partiesFingerprint, ''),
   };
 }
 

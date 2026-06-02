@@ -22,6 +22,7 @@ const data: IsmsPlatformData = {
   highRiskCount: 1,
   hasTrainingProgram: true,
   wizardAnswers: {},
+  partiesFingerprint: '',
 };
 
 function registerTable() {

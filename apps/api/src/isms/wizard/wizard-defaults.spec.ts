@@ -33,6 +33,7 @@ const platformData: IsmsPlatformData = {
   highRiskCount: 1,
   hasTrainingProgram: true,
   wizardAnswers: {},
+  partiesFingerprint: '',
 };
 
 const args = { organizationId: 'org_1', frameworkId: 'fw_1' };

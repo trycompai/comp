@@ -1,7 +1,10 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { db } from '@db';
-import { CreateContextIssueDto } from './dto/create-context-issue.dto';
-import { UpdateContextIssueDto } from './dto/update-context-issue.dto';
+import { invalidateApprovalIfNeeded } from './utils/approval';
+import type {
+  CreateContextIssueInput,
+  UpdateContextIssueInput,
+} from './registers/register-registry';
 
 /**
  * CRUD for the Context-of-the-Organization (clause 4.1) issue register. Derived
@@ -18,21 +21,24 @@ export class IsmsContextIssueService {
   }: {
     documentId: string;
     organizationId: string;
-    dto: CreateContextIssueDto;
+    dto: CreateContextIssueInput;
   }) {
     await this.requireDocument({ documentId, organizationId });
     const position = dto.position ?? (await this.nextPosition({ documentId }));
 
-    return db.ismsContextIssue.create({
-      data: {
-        documentId,
-        kind: dto.kind,
-        category: dto.category ?? null,
-        description: dto.description,
-        effect: dto.effect,
-        source: 'manual',
-        position,
-      },
+    return db.$transaction(async (tx) => {
+      await invalidateApprovalIfNeeded({ tx, documentId });
+      return tx.ismsContextIssue.create({
+        data: {
+          documentId,
+          kind: dto.kind,
+          category: dto.category ?? null,
+          description: dto.description,
+          effect: dto.effect,
+          source: 'manual',
+          position,
+        },
+      });
     });
   }
 
@@ -43,21 +49,24 @@ export class IsmsContextIssueService {
   }: {
     issueId: string;
     organizationId: string;
-    dto: UpdateContextIssueDto;
+    dto: UpdateContextIssueInput;
   }) {
-    await this.requireIssue({ issueId, organizationId });
+    const issue = await this.requireIssue({ issueId, organizationId });
 
-    return db.ismsContextIssue.update({
-      where: { id: issueId },
-      data: {
-        kind: dto.kind ?? undefined,
-        category: dto.category ?? undefined,
-        description: dto.description ?? undefined,
-        effect: dto.effect ?? undefined,
-        position: dto.position ?? undefined,
-        // Editing a derived row records the override by flipping it to manual.
-        source: 'manual',
-      },
+    return db.$transaction(async (tx) => {
+      await invalidateApprovalIfNeeded({ tx, documentId: issue.documentId });
+      return tx.ismsContextIssue.update({
+        where: { id: issueId },
+        data: {
+          kind: dto.kind ?? undefined,
+          category: dto.category ?? undefined,
+          description: dto.description ?? undefined,
+          effect: dto.effect ?? undefined,
+          position: dto.position ?? undefined,
+          // Editing a derived row records the override by flipping it to manual.
+          source: 'manual',
+        },
+      });
     });
   }
 
@@ -68,8 +77,11 @@ export class IsmsContextIssueService {
     issueId: string;
     organizationId: string;
   }) {
-    await this.requireIssue({ issueId, organizationId });
-    await db.ismsContextIssue.delete({ where: { id: issueId } });
+    const issue = await this.requireIssue({ issueId, organizationId });
+    await db.$transaction(async (tx) => {
+      await invalidateApprovalIfNeeded({ tx, documentId: issue.documentId });
+      await tx.ismsContextIssue.delete({ where: { id: issueId } });
+    });
     return { success: true };
   }
 

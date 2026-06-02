@@ -6,6 +6,7 @@ import {
 import { db } from '@db';
 import type { Prisma } from '@db';
 import { narrativeSchemaForType } from './documents/registry';
+import { invalidateApprovalIfNeeded } from './utils/approval';
 
 /**
  * Saves the singleton-document narrative (clauses 4.3 ISMS Scope and 5.1
@@ -57,14 +58,7 @@ export class IsmsNarrativeService {
     // Approval invalidation + the narrative write must be atomic: a failed save
     // must not leave the document reverted to draft without the new content.
     return db.$transaction(async (tx) => {
-      // Editing an approved document invalidates its sign-off: revert to draft so
-      // the change must be re-approved (mirrors policy approval invalidation).
-      if (document.status === 'approved') {
-        await tx.ismsDocument.update({
-          where: { id: documentId },
-          data: { status: 'draft', approvedAt: null, approverId: null },
-        });
-      }
+      await invalidateApprovalIfNeeded({ tx, documentId });
 
       if (latest) {
         return tx.ismsDocumentVersion.update({

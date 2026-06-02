@@ -16,6 +16,13 @@ jest.mock('@trycompai/auth', () => ({
   statement: {},
   BUILT_IN_ROLE_PERMISSIONS: {},
 }));
+jest.mock('../auth/app-access', () => ({
+  resolveRolePermissions: jest.fn(),
+  permissionsGrant: jest.fn(),
+}));
+jest.mock('../auth/service-token.config', () => ({
+  resolveServiceByName: jest.fn(),
+}));
 jest.mock('./isms.service', () => ({
   IsmsService: class MockIsmsService {},
 }));

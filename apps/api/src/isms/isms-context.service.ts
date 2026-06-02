@@ -9,7 +9,7 @@ import {
   diffPlatformSnapshots,
   parsePlatformSnapshot,
 } from './documents/snapshot';
-import type { DocumentExportInput } from './documents/types';
+import type { DocumentExportInput, IsmsPlatformData } from './documents/types';
 import {
   generateIsmsExportFile,
   type IsmsExportResult,
@@ -36,9 +36,16 @@ export class IsmsContextService {
   async generate({
     documentId,
     organizationId,
+    data: precollected,
   }: {
     documentId: string;
     organizationId: string;
+    /**
+     * Pre-collected platform data, reused instead of re-querying. Passed by
+     * generateAll so the expensive multi-query collect runs once for the whole
+     * batch instead of once per document. Omit for a standalone regenerate.
+     */
+    data?: IsmsPlatformData;
   }) {
     const document = await db.ismsDocument.findFirst({
       where: { id: documentId, organizationId },
@@ -47,10 +54,12 @@ export class IsmsContextService {
       throw new NotFoundException('ISMS document not found');
     }
 
-    const data = await collectPlatformData({
-      organizationId,
-      frameworkId: document.frameworkId,
-    });
+    const data =
+      precollected ??
+      (await collectPlatformData({
+        organizationId,
+        frameworkId: document.frameworkId,
+      }));
 
     await db.$transaction(async (tx) => {
       await runDerivation({

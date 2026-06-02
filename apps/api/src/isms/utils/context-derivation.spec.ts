@@ -1,6 +1,5 @@
 import {
   deriveContextIssues,
-  diffSnapshots,
   EXTERNAL_ISSUE_CATEGORIES,
   INTERNAL_ISSUE_CATEGORIES,
   type ContextDerivationInput,
@@ -122,86 +121,5 @@ describe('deriveContextIssues — categories', () => {
     for (const issue of deriveContextIssues(baseInput)) {
       expect(valid.has(issue.category)).toBe(true);
     }
-  });
-});
-
-describe('diffSnapshots', () => {
-  it('flags stale with no-baseline when there is no previous snapshot', () => {
-    const result = diffSnapshots({ previous: null, current: baseInput });
-    expect(result.isStale).toBe(true);
-    expect(result.changedSources).toContain('no-baseline');
-  });
-
-  it('reports not stale when snapshots match', () => {
-    const result = diffSnapshots({ previous: baseInput, current: baseInput });
-    expect(result.isStale).toBe(false);
-    expect(result.changedSources).toHaveLength(0);
-  });
-
-  it('detects a changed vendor count', () => {
-    const result = diffSnapshots({
-      previous: baseInput,
-      current: { ...baseInput, vendorCount: 9 },
-    });
-    expect(result.isStale).toBe(true);
-    expect(result.changedSources).toContain('vendors');
-  });
-
-  it('detects framework additions/removals regardless of order', () => {
-    const same = diffSnapshots({
-      previous: { ...baseInput, frameworkNames: ['ISO 27001', 'SOC 2'] },
-      current: { ...baseInput, frameworkNames: ['SOC 2', 'ISO 27001'] },
-    });
-    expect(same.isStale).toBe(false);
-
-    const changed = diffSnapshots({
-      previous: { ...baseInput, frameworkNames: ['ISO 27001'] },
-      current: { ...baseInput, frameworkNames: ['ISO 27001', 'SOC 2'] },
-    });
-    expect(changed.changedSources).toContain('frameworks');
-  });
-
-  it('detects member and device drift', () => {
-    const result = diffSnapshots({
-      previous: baseInput,
-      current: { ...baseInput, memberCount: 20, deviceCount: 15 },
-    });
-    expect(result.changedSources).toEqual(
-      expect.arrayContaining(['members', 'devices']),
-    );
-  });
-
-  it('detects a changed vendor category mix even when the total is unchanged', () => {
-    const result = diffSnapshots({
-      previous: { ...baseInput, vendorsByCategory: { cloud: 5 } },
-      current: { ...baseInput, vendorsByCategory: { cloud: 2, hr: 3 } },
-    });
-    expect(result.changedSources).toContain('vendorMix');
-    expect(result.changedSources).not.toContain('vendors');
-  });
-
-  it('detects a changed department mix even when headcount is unchanged', () => {
-    const result = diffSnapshots({
-      previous: { ...baseInput, membersByDepartment: { it: 12 } },
-      current: { ...baseInput, membersByDepartment: { it: 6, hr: 6 } },
-    });
-    expect(result.changedSources).toContain('departmentMix');
-    expect(result.changedSources).not.toContain('members');
-  });
-
-  it('ignores key order in vendor/department mix maps', () => {
-    const result = diffSnapshots({
-      previous: {
-        ...baseInput,
-        vendorsByCategory: { cloud: 2, software_as_a_service: 3 },
-        membersByDepartment: { it: 4, hr: 2, none: 6 },
-      },
-      current: {
-        ...baseInput,
-        vendorsByCategory: { software_as_a_service: 3, cloud: 2 },
-        membersByDepartment: { none: 6, hr: 2, it: 4 },
-      },
-    });
-    expect(result.isStale).toBe(false);
   });
 });

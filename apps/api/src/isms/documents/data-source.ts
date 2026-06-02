@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto';
 import { db } from '@db';
 import { parseStoredAnswers } from '../wizard/wizard-schema';
 import type { IsmsPlatformData } from './types';
@@ -30,6 +31,7 @@ export async function collectPlatformData({
     trainingCompletionCount,
     ownFramework,
     profile,
+    partiesRows,
   ] = await Promise.all([
     db.organization.findUnique({
       where: { id: organizationId },
@@ -64,6 +66,16 @@ export async function collectPlatformData({
     db.ismsProfile.findUnique({
       where: { organizationId_frameworkId: { organizationId, frameworkId } },
       select: { answers: true },
+    }),
+    db.ismsInterestedParty.findMany({
+      where: {
+        document: {
+          organizationId,
+          frameworkId,
+          type: 'interested_parties_register',
+        },
+      },
+      select: { id: true, name: true, category: true },
     }),
   ]);
 
@@ -111,5 +123,25 @@ export async function collectPlatformData({
     highRiskCount,
     hasTrainingProgram: trainingCompletionCount > 0,
     wizardAnswers: parseStoredAnswers(profile?.answers),
+    partiesFingerprint: fingerprintParties(partiesRows),
   };
+}
+
+/**
+ * Stable, order-insensitive SHA-256 of the parties register rows. The
+ * Requirements document derives one row per party, so a manual party edit (name
+ * or category) — otherwise invisible to the platform snapshot — must change this
+ * fingerprint and flag requirements drift. Each row is JSON-encoded (so field
+ * boundaries can never collide) and the encoded rows are sorted, making the
+ * result independent of row order.
+ */
+function fingerprintParties(
+  rows: Array<{ id: string; name: string; category: string }>,
+): string {
+  if (rows.length === 0) return '';
+  const canonical = rows
+    .map((row) => JSON.stringify([row.id, row.name, row.category]))
+    .sort()
+    .join('');
+  return createHash('sha256').update(canonical).digest('hex');
 }

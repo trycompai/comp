@@ -58,9 +58,6 @@ export interface DerivedContextIssue {
   position: number;
 }
 
-/** The snapshot persisted onto the version for later drift comparison. */
-export type ContextSourceSnapshot = ContextDerivationInput;
-
 function buildExternalIssues(
   input: ContextDerivationInput,
 ): Array<Omit<DerivedContextIssue, 'position'>> {
@@ -181,65 +178,4 @@ export function deriveContextIssues(
     ...buildInternalIssues(input),
   ];
   return ordered.map((issue, index) => ({ ...issue, position: index }));
-}
-
-/** Compare two snapshots and report which derived sources changed (drift). */
-export function diffSnapshots({
-  previous,
-  current,
-}: {
-  previous: ContextSourceSnapshot | null;
-  current: ContextSourceSnapshot;
-}): { isStale: boolean; changedSources: string[] } {
-  if (!previous) {
-    return { isStale: true, changedSources: ['no-baseline'] };
-  }
-
-  const changed: string[] = [];
-
-  const sameStringSet = (a: string[], b: string[]): boolean => {
-    if (a.length !== b.length) return false;
-    const setB = new Set(b);
-    return a.every((item) => setB.has(item));
-  };
-
-  // Order-insensitive comparison of count-by-key maps. The 4.1 derivation reads
-  // the vendor-category and department mix, so a changed mix is drift even when
-  // the totals stay the same.
-  const sameNumberRecord = (
-    a: Record<string, number>,
-    b: Record<string, number>,
-  ): boolean => {
-    const keys = new Set([...Object.keys(a), ...Object.keys(b)]);
-    for (const key of keys) {
-      if ((a[key] ?? 0) !== (b[key] ?? 0)) return false;
-    }
-    return true;
-  };
-
-  if (!sameStringSet(previous.frameworkNames, current.frameworkNames)) {
-    changed.push('frameworks');
-  }
-  if (previous.vendorCount !== current.vendorCount) {
-    changed.push('vendors');
-  }
-  if (!sameNumberRecord(previous.vendorsByCategory, current.vendorsByCategory)) {
-    changed.push('vendorMix');
-  }
-  if (previous.subProcessorCount !== current.subProcessorCount) {
-    changed.push('subprocessors');
-  }
-  if (previous.memberCount !== current.memberCount) {
-    changed.push('members');
-  }
-  if (
-    !sameNumberRecord(previous.membersByDepartment, current.membersByDepartment)
-  ) {
-    changed.push('departmentMix');
-  }
-  if (previous.deviceCount !== current.deviceCount) {
-    changed.push('devices');
-  }
-
-  return { isStale: changed.length > 0, changedSources: changed };
 }

@@ -6,11 +6,9 @@ import {
 } from '@nestjs/common';
 import { db } from '@db';
 import { SubmitIsmsForApprovalDto } from './dto/submit-isms-for-approval.dto';
-import {
-  deriveControlLinks,
-  resolveDocumentPlans,
-} from './utils/ensure-setup-plan';
+import { deriveControlLinks, resolveDocumentPlans } from './utils/ensure-setup-plan';
 import { collectPlatformData } from './documents/data-source';
+import { runDerivation } from './documents/generate';
 import { upsertLatestSnapshotVersion } from './utils/version-snapshot';
 
 /**
@@ -20,12 +18,18 @@ import { upsertLatestSnapshotVersion } from './utils/version-snapshot';
  */
 @Injectable()
 export class IsmsService {
+  /**
+   * List the org's ISMS documents, provisioning missing ones first only when the
+   * caller can write (`evidence:update`). Read-only callers never trigger writes.
+   */
   async ensureSetup({
     organizationId,
     frameworkId,
+    canWrite,
   }: {
     organizationId: string;
     frameworkId: string;
+    canWrite: boolean;
   }) {
     const framework = await db.frameworkEditorFramework.findUnique({
       where: { id: frameworkId },
@@ -38,45 +42,16 @@ export class IsmsService {
       throw new NotFoundException('Framework not found');
     }
 
-    const existing = await db.ismsDocument.findMany({
-      where: {
-        organizationId: organizationId,
-        frameworkId: frameworkId,
-      },
-      select: { type: true },
-    });
-    const existingTypes = new Set(existing.map((doc) => doc.type));
-
-    const plans = await resolveDocumentPlans({
-      frameworkId: frameworkId,
-      requirements: framework.requirements,
-    });
-
-    for (const plan of plans) {
-      if (existingTypes.has(plan.type)) continue;
-      const document = await db.ismsDocument.create({
-        data: {
-          organizationId: organizationId,
-          frameworkId: frameworkId,
-          type: plan.type,
-          title: plan.title,
-          status: 'draft',
-          requirementId: plan.requirementId,
-          templateId: plan.templateId,
-        },
-      });
-      await deriveControlLinks({
-        documentId: document.id,
-        organizationId: organizationId,
-        controlTemplateIds: plan.controlTemplateIds,
+    if (canWrite) {
+      await this.provisionMissingDocuments({
+        organizationId,
+        frameworkId,
+        requirements: framework.requirements,
       });
     }
 
     const documents = await db.ismsDocument.findMany({
-      where: {
-        organizationId: organizationId,
-        frameworkId: frameworkId,
-      },
+      where: { organizationId, frameworkId },
     });
 
     return {
@@ -89,6 +64,66 @@ export class IsmsService {
         hasApprovedVersion: doc.status === 'approved',
       })),
     };
+  }
+
+  /**
+   * Create any missing ISMS documents for the (org, framework), then derive
+   * control links for just the newly-created types so manual links on existing
+   * documents stay untouched. `createMany` + `skipDuplicates` makes this safe
+   * under concurrent calls — the unique (org, framework, type) constraint
+   * absorbs the race, mirroring the idempotent ensureProfile pattern.
+   */
+  private async provisionMissingDocuments({
+    organizationId,
+    frameworkId,
+    requirements,
+  }: {
+    organizationId: string;
+    frameworkId: string;
+    requirements: Array<{ id: string; name: string; identifier: string }>;
+  }) {
+    const existing = await db.ismsDocument.findMany({
+      where: { organizationId, frameworkId },
+      select: { type: true },
+    });
+    const existingTypes = new Set(existing.map((doc) => doc.type));
+
+    const plans = await resolveDocumentPlans({ frameworkId, requirements });
+    const missingPlans = plans.filter((plan) => !existingTypes.has(plan.type));
+    if (missingPlans.length === 0) return;
+
+    await db.ismsDocument.createMany({
+      data: missingPlans.map((plan) => ({
+        organizationId,
+        frameworkId,
+        type: plan.type,
+        title: plan.title,
+        status: 'draft',
+        requirementId: plan.requirementId,
+        templateId: plan.templateId,
+      })),
+      skipDuplicates: true,
+    });
+
+    const created = await db.ismsDocument.findMany({
+      where: {
+        organizationId,
+        frameworkId,
+        type: { in: missingPlans.map((plan) => plan.type) },
+      },
+      select: { id: true, type: true },
+    });
+    const controlTemplatesByType = new Map(
+      missingPlans.map((plan) => [plan.type, plan.controlTemplateIds]),
+    );
+
+    for (const doc of created) {
+      await deriveControlLinks({
+        documentId: doc.id,
+        organizationId,
+        controlTemplateIds: controlTemplatesByType.get(doc.type) ?? [],
+      });
+    }
   }
 
   async getDocument({
@@ -171,6 +206,16 @@ export class IsmsService {
     });
 
     await db.$transaction(async (tx) => {
+      // Re-derive in the same transaction so the persisted rows and the snapshot
+      // baseline come from one pass (otherwise the approved content can drift).
+      await runDerivation({
+        tx,
+        type: document.type,
+        documentId,
+        organizationId,
+        frameworkId: document.frameworkId,
+        data: snapshot,
+      });
       await upsertLatestSnapshotVersion({ tx, documentId, snapshot });
       await tx.ismsDocument.update({
         where: { id: documentId },

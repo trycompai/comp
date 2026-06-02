@@ -16,6 +16,7 @@ const data: IsmsPlatformData = {
   highRiskCount: 0,
   hasTrainingProgram: true,
   wizardAnswers: {},
+  partiesFingerprint: '',
 };
 
 describe('deriveRequirements', () => {

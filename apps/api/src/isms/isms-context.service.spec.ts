@@ -63,6 +63,7 @@ const snapshot = {
   highRiskCount: 1,
   hasTrainingProgram: true,
   wizardAnswers: {},
+  partiesFingerprint: '',
 };
 
 describe('IsmsContextService', () => {
@@ -110,6 +111,36 @@ describe('IsmsContextService', () => {
         tx,
         documentId: 'doc_1',
         snapshot,
+      });
+    });
+
+    it('reuses pre-collected data and skips collectPlatformData', async () => {
+      (mockDb.ismsDocument.findFirst as jest.Mock)
+        .mockResolvedValueOnce({
+          id: 'doc_1',
+          type: 'objectives_plan',
+          frameworkId: 'fw_1',
+        })
+        .mockResolvedValueOnce({ id: 'doc_1' });
+      const tx = {};
+      (mockDb.$transaction as jest.Mock).mockImplementation((cb) => cb(tx));
+      const precollected = { ...snapshot, riskCount: 42 };
+
+      await service.generate({ ...args, data: precollected });
+
+      expect(mockCollect).not.toHaveBeenCalled();
+      expect(mockRun).toHaveBeenCalledWith({
+        tx,
+        type: 'objectives_plan',
+        documentId: 'doc_1',
+        organizationId: 'org_1',
+        frameworkId: 'fw_1',
+        data: precollected,
+      });
+      expect(upsertLatestSnapshotVersion).toHaveBeenCalledWith({
+        tx,
+        documentId: 'doc_1',
+        snapshot: precollected,
       });
     });
   });

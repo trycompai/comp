@@ -4,8 +4,11 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { db } from '@db';
-import { CreateRequirementDto } from './dto/create-requirement.dto';
-import { UpdateRequirementDto } from './dto/update-requirement.dto';
+import { invalidateApprovalIfNeeded } from './utils/approval';
+import type {
+  CreateRequirementInput,
+  UpdateRequirementInput,
+} from './registers/register-registry';
 
 /**
  * CRUD for the Interested Parties Requirements & ISMS Treatment register (clauses
@@ -21,7 +24,7 @@ export class IsmsRequirementService {
   }: {
     documentId: string;
     organizationId: string;
-    dto: CreateRequirementDto;
+    dto: CreateRequirementInput;
   }) {
     await this.requireDocument({ documentId, organizationId });
     // Treat empty/whitespace as "no link" so a blank id can't skip validation
@@ -32,16 +35,19 @@ export class IsmsRequirementService {
     }
     const position = dto.position ?? (await this.nextPosition({ documentId }));
 
-    return db.ismsInterestedPartyRequirement.create({
-      data: {
-        documentId,
-        interestedPartyId,
-        partyName: dto.partyName,
-        requirement: dto.requirement,
-        treatment: dto.treatment,
-        source: 'manual',
-        position,
-      },
+    return db.$transaction(async (tx) => {
+      await invalidateApprovalIfNeeded({ tx, documentId });
+      return tx.ismsInterestedPartyRequirement.create({
+        data: {
+          documentId,
+          interestedPartyId,
+          partyName: dto.partyName,
+          requirement: dto.requirement,
+          treatment: dto.treatment,
+          source: 'manual',
+          position,
+        },
+      });
     });
   }
 
@@ -52,7 +58,7 @@ export class IsmsRequirementService {
   }: {
     requirementId: string;
     organizationId: string;
-    dto: UpdateRequirementDto;
+    dto: UpdateRequirementInput;
   }) {
     const requirement = await this.requireRequirement({
       requirementId,
@@ -68,16 +74,22 @@ export class IsmsRequirementService {
       });
     }
 
-    return db.ismsInterestedPartyRequirement.update({
-      where: { id: requirementId },
-      data: {
-        interestedPartyId: partyFieldProvided ? interestedPartyId : undefined,
-        partyName: dto.partyName ?? undefined,
-        requirement: dto.requirement ?? undefined,
-        treatment: dto.treatment ?? undefined,
-        position: dto.position ?? undefined,
-        source: 'manual',
-      },
+    return db.$transaction(async (tx) => {
+      await invalidateApprovalIfNeeded({
+        tx,
+        documentId: requirement.documentId,
+      });
+      return tx.ismsInterestedPartyRequirement.update({
+        where: { id: requirementId },
+        data: {
+          interestedPartyId: partyFieldProvided ? interestedPartyId : undefined,
+          partyName: dto.partyName ?? undefined,
+          requirement: dto.requirement ?? undefined,
+          treatment: dto.treatment ?? undefined,
+          position: dto.position ?? undefined,
+          source: 'manual',
+        },
+      });
     });
   }
 
@@ -88,9 +100,18 @@ export class IsmsRequirementService {
     requirementId: string;
     organizationId: string;
   }) {
-    await this.requireRequirement({ requirementId, organizationId });
-    await db.ismsInterestedPartyRequirement.delete({
-      where: { id: requirementId },
+    const requirement = await this.requireRequirement({
+      requirementId,
+      organizationId,
+    });
+    await db.$transaction(async (tx) => {
+      await invalidateApprovalIfNeeded({
+        tx,
+        documentId: requirement.documentId,
+      });
+      await tx.ismsInterestedPartyRequirement.delete({
+        where: { id: requirementId },
+      });
     });
     return { success: true };
   }

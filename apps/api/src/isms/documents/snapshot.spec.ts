@@ -16,6 +16,7 @@ const base: IsmsPlatformData = {
   highRiskCount: 1,
   hasTrainingProgram: true,
   wizardAnswers: {},
+  partiesFingerprint: 'fp-base',
 };
 
 describe('diffPlatformSnapshots', () => {
@@ -143,6 +144,43 @@ describe('diffPlatformSnapshots', () => {
     }
   });
 
+  it('flags requirements drift when the parties register fingerprint changes', () => {
+    const result = diffPlatformSnapshots({
+      type: 'interested_parties_requirements',
+      previous: base,
+      current: { ...base, partiesFingerprint: 'fp-edited' },
+    });
+    expect(result.isStale).toBe(true);
+    expect(result.changedSources).toContain('parties');
+  });
+
+  it('does not flag requirements drift when the parties fingerprint is unchanged', () => {
+    const result = diffPlatformSnapshots({
+      type: 'interested_parties_requirements',
+      previous: base,
+      current: base,
+    });
+    expect(result.isStale).toBe(false);
+    expect(result.changedSources).not.toContain('parties');
+  });
+
+  it('only the requirements doc treats parties edits as drift', () => {
+    for (const type of [
+      'context_of_organization',
+      'interested_parties_register',
+      'objectives_plan',
+      'isms_scope',
+      'leadership_commitment',
+    ] as const) {
+      const result = diffPlatformSnapshots({
+        type,
+        previous: base,
+        current: { ...base, partiesFingerprint: 'fp-edited' },
+      });
+      expect(result.changedSources).not.toContain('parties');
+    }
+  });
+
   it('leadership only drifts on organization name', () => {
     const noChange = diffPlatformSnapshots({
       type: 'leadership_commitment',
@@ -170,5 +208,11 @@ describe('parsePlatformSnapshot', () => {
     expect(parsePlatformSnapshot(null)).toBeNull();
     expect(parsePlatformSnapshot([1, 2])).toBeNull();
     expect(parsePlatformSnapshot({ foo: 'bar' })).toBeNull();
+  });
+
+  it('defaults partiesFingerprint to empty for legacy snapshots without it', () => {
+    const { partiesFingerprint: _omit, ...legacy } = base;
+    const parsed = parsePlatformSnapshot(JSON.parse(JSON.stringify(legacy)));
+    expect(parsed?.partiesFingerprint).toBe('');
   });
 });

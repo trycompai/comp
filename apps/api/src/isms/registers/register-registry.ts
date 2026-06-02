@@ -80,6 +80,22 @@ const schemas = {
   }),
 } as const;
 
+// Inferred input types — the single source of truth for register row shapes.
+// Service method signatures use these directly; the per-register DTO classes were
+// removed because they only duplicated these schemas.
+export type CreateContextIssueInput = z.infer<typeof schemas.contextIssueCreate>;
+export type UpdateContextIssueInput = z.infer<typeof schemas.contextIssueUpdate>;
+export type CreateInterestedPartyInput = z.infer<
+  typeof schemas.interestedPartyCreate
+>;
+export type UpdateInterestedPartyInput = z.infer<
+  typeof schemas.interestedPartyUpdate
+>;
+export type CreateRequirementInput = z.infer<typeof schemas.requirementCreate>;
+export type UpdateRequirementInput = z.infer<typeof schemas.requirementUpdate>;
+export type CreateObjectiveInput = z.infer<typeof schemas.objectiveCreate>;
+export type UpdateObjectiveInput = z.infer<typeof schemas.objectiveUpdate>;
+
 export const ISMS_REGISTER_KEYS = [
   'context-issues',
   'interested-parties',

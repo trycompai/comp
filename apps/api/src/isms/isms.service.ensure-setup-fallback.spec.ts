@@ -7,7 +7,7 @@ jest.mock('@db', () => ({
     frameworkEditorIsmsDocumentTemplate: { findMany: jest.fn() },
     ismsDocument: {
       findMany: jest.fn(),
-      create: jest.fn(),
+      createMany: jest.fn(),
     },
     control: { findMany: jest.fn() },
     ismsDocumentControlLink: { createMany: jest.fn() },
@@ -16,15 +16,22 @@ jest.mock('@db', () => ({
 jest.mock('./documents/data-source', () => ({
   collectPlatformData: jest.fn(),
 }));
+jest.mock('./documents/generate', () => ({
+  runDerivation: jest.fn(),
+}));
 jest.mock('./utils/version-snapshot', () => ({
   upsertLatestSnapshotVersion: jest.fn(),
 }));
 
 const mockDb = jest.mocked(db);
 
+/** Convenience accessor for the first createMany call's `data` array. */
+const createManyData = () =>
+  (mockDb.ismsDocument.createMany as jest.Mock).mock.calls[0][0].data;
+
 describe('IsmsService ensureSetup fallback to ISMS_TYPE_DEFINITIONS (no templates seeded)', () => {
   let service: IsmsService;
-  const dto = { organizationId: 'org_1', frameworkId: 'fw_1' };
+  const dto = { organizationId: 'org_1', frameworkId: 'fw_1', canWrite: true };
   const mockTemplates = mockDb.frameworkEditorIsmsDocumentTemplate
     .findMany as jest.Mock;
 
@@ -32,6 +39,9 @@ describe('IsmsService ensureSetup fallback to ISMS_TYPE_DEFINITIONS (no template
     jest.clearAllMocks();
     service = new IsmsService();
     (mockDb.control.findMany as jest.Mock).mockResolvedValue([]);
+    (mockDb.ismsDocument.createMany as jest.Mock).mockResolvedValue({
+      count: 0,
+    });
     (mockDb.ismsDocumentControlLink.createMany as jest.Mock).mockResolvedValue({
       count: 0,
     });
@@ -47,7 +57,8 @@ describe('IsmsService ensureSetup fallback to ISMS_TYPE_DEFINITIONS (no template
     });
     // One existing type so only the other five are created.
     (mockDb.ismsDocument.findMany as jest.Mock)
-      .mockResolvedValueOnce([{ type: 'context_of_organization' }])
+      .mockResolvedValueOnce([{ type: 'context_of_organization' }]) // existing-types probe
+      .mockResolvedValueOnce([]) // created lookup
       .mockResolvedValueOnce([
         {
           id: 'doc_1',
@@ -55,16 +66,14 @@ describe('IsmsService ensureSetup fallback to ISMS_TYPE_DEFINITIONS (no template
           status: 'draft',
           requirementId: 'req_41',
         },
-      ]);
-    (mockDb.ismsDocument.create as jest.Mock).mockResolvedValue({});
+      ]); // final list
 
     const result = await service.ensureSetup(dto);
 
-    expect(mockDb.ismsDocument.create).toHaveBeenCalledTimes(5);
+    expect(mockDb.ismsDocument.createMany).toHaveBeenCalledTimes(1);
+    expect(createManyData()).toHaveLength(5);
     // Definition-derived docs carry no templateId.
-    const createArgs = (mockDb.ismsDocument.create as jest.Mock).mock
-      .calls[0][0];
-    expect(createArgs.data.templateId).toBeNull();
+    expect(createManyData()[0].templateId).toBeNull();
     expect(result.success).toBe(true);
     expect(result.documents[0]).toEqual({
       id: 'doc_1',
@@ -81,14 +90,12 @@ describe('IsmsService ensureSetup fallback to ISMS_TYPE_DEFINITIONS (no template
     ).mockResolvedValue({ id: 'fw_1', requirements: [] });
     (mockDb.ismsDocument.findMany as jest.Mock)
       .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([])
       .mockResolvedValueOnce([]);
-    (mockDb.ismsDocument.create as jest.Mock).mockResolvedValue({});
 
     await service.ensureSetup(dto);
 
-    expect(mockDb.ismsDocument.create).toHaveBeenCalledTimes(6);
-    const firstCall = (mockDb.ismsDocument.create as jest.Mock).mock
-      .calls[0][0];
-    expect(firstCall.data.requirementId).toBeNull();
+    expect(createManyData()).toHaveLength(6);
+    expect(createManyData()[0].requirementId).toBeNull();
   });
 });

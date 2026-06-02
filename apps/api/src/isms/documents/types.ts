@@ -39,6 +39,14 @@ export interface IsmsPlatformData {
    * customer supplied. Empty object when the wizard has not been filled in.
    */
   wizardAnswers: PartialWizardAnswers;
+  /**
+   * Stable, order-insensitive fingerprint of the Interested Parties Register
+   * rows (id + name + category). The Requirements document (4.2c) derives one
+   * row per party, so a manual edit to a party — invisible to the rest of this
+   * snapshot — must still flag requirements drift. Empty string when the
+   * register has no rows yet.
+   */
+  partiesFingerprint: string;
 }
 
 /** A row destined for one of the ISMS registers (interested parties, etc.). */

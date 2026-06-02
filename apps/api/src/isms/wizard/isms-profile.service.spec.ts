@@ -5,6 +5,7 @@ import { IsmsProfileService } from './isms-profile.service';
 import { IsmsService } from '../isms.service';
 import { IsmsContextService } from '../isms-context.service';
 import { computeWizardDefaults } from './wizard-defaults';
+import { collectPlatformData } from '../documents/data-source';
 
 jest.mock('@db', () => ({
   db: {
@@ -20,9 +21,13 @@ jest.mock('@db', () => ({
 jest.mock('./wizard-defaults', () => ({
   computeWizardDefaults: jest.fn(),
 }));
+jest.mock('../documents/data-source', () => ({
+  collectPlatformData: jest.fn(),
+}));
 
 const mockDb = jest.mocked(db);
 const mockDefaults = jest.mocked(computeWizardDefaults);
+const mockCollect = jest.mocked(collectPlatformData);
 
 const fullAnswers = {
   deputySpo: { memberId: 'mem_1', toBeNamed: false },
@@ -48,6 +53,24 @@ const defaultsFixture = {
   sectorRegulatorOptions: [],
 };
 
+const platformData = {
+  organizationName: 'Acme',
+  frameworkNames: ['ISO 27001'],
+  vendorCount: 0,
+  subProcessorCount: 0,
+  vendorsByCategory: {},
+  subProcessorNames: [],
+  infraVendorNames: [],
+  memberCount: 0,
+  membersByDepartment: {},
+  deviceCount: 0,
+  riskCount: 0,
+  highRiskCount: 0,
+  hasTrainingProgram: false,
+  wizardAnswers: {},
+  partiesFingerprint: '',
+};
+
 const args = { organizationId: 'org_1', frameworkId: 'fw_1' };
 
 describe('IsmsProfileService', () => {
@@ -68,6 +91,7 @@ describe('IsmsProfileService', () => {
     });
     mockDefaults.mockResolvedValue(defaultsFixture);
     (mockDb.member.findMany as jest.Mock).mockResolvedValue([]);
+    mockCollect.mockResolvedValue(platformData);
   });
 
   describe('getProfile', () => {
@@ -197,14 +221,14 @@ describe('IsmsProfileService', () => {
   });
 
   describe('generateAll', () => {
-    it('ensures setup then regenerates every document', async () => {
+    it('ensures setup, collects platform data once, then regenerates every document', async () => {
       ismsService.ensureSetup.mockResolvedValue({
         success: true,
         documents: [],
       });
       (mockDb.ismsDocument.findMany as jest.Mock).mockResolvedValue([
-        { id: 'doc_1' },
-        { id: 'doc_2' },
+        { id: 'doc_1', type: 'context_of_organization' },
+        { id: 'doc_2', type: 'objectives_plan' },
       ]);
       contextService.generate
         .mockResolvedValueOnce({ id: 'doc_1' } as never)
@@ -215,16 +239,50 @@ describe('IsmsProfileService', () => {
       expect(ismsService.ensureSetup).toHaveBeenCalledWith({
         organizationId: 'org_1',
         frameworkId: 'fw_1',
+        canWrite: true,
+      });
+      // Expensive platform collect runs once for the whole batch.
+      expect(mockCollect).toHaveBeenCalledTimes(1);
+      expect(mockCollect).toHaveBeenCalledWith({
+        organizationId: 'org_1',
+        frameworkId: 'fw_1',
       });
       expect(contextService.generate).toHaveBeenCalledTimes(2);
+      // The pre-collected snapshot is threaded into every generate call.
       expect(contextService.generate).toHaveBeenNthCalledWith(1, {
         documentId: 'doc_1',
         organizationId: 'org_1',
+        data: platformData,
+      });
+      expect(contextService.generate).toHaveBeenNthCalledWith(2, {
+        documentId: 'doc_2',
+        organizationId: 'org_1',
+        data: platformData,
       });
       expect(result).toEqual({
         success: true,
         documents: [{ id: 'doc_1' }, { id: 'doc_2' }],
       });
+    });
+
+    it('generates the parties register before the requirements register', async () => {
+      ismsService.ensureSetup.mockResolvedValue({
+        success: true,
+        documents: [],
+      });
+      // findMany returns requirements before the register (unordered DB order).
+      (mockDb.ismsDocument.findMany as jest.Mock).mockResolvedValue([
+        { id: 'doc_reqs', type: 'interested_parties_requirements' },
+        { id: 'doc_register', type: 'interested_parties_register' },
+      ]);
+      contextService.generate.mockResolvedValue({ id: 'x' } as never);
+
+      await service.generateAll(args);
+
+      const generatedOrder = contextService.generate.mock.calls.map(
+        ([call]) => call.documentId,
+      );
+      expect(generatedOrder).toEqual(['doc_register', 'doc_reqs']);
     });
   });
 });

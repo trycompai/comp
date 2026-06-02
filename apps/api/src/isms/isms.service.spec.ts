@@ -8,7 +8,7 @@ jest.mock('@db', () => ({
     frameworkEditorIsmsDocumentTemplate: { findMany: jest.fn() },
     ismsDocument: {
       findMany: jest.fn(),
-      create: jest.fn(),
+      createMany: jest.fn(),
     },
     control: { findMany: jest.fn() },
     ismsDocumentControlLink: { createMany: jest.fn() },
@@ -17,11 +17,18 @@ jest.mock('@db', () => ({
 jest.mock('./documents/data-source', () => ({
   collectPlatformData: jest.fn(),
 }));
+jest.mock('./documents/generate', () => ({
+  runDerivation: jest.fn(),
+}));
 jest.mock('./utils/version-snapshot', () => ({
   upsertLatestSnapshotVersion: jest.fn(),
 }));
 
 const mockDb = jest.mocked(db);
+
+/** Convenience accessor for the first createMany call's `data` array. */
+const createManyData = () =>
+  (mockDb.ismsDocument.createMany as jest.Mock).mock.calls[0][0].data;
 
 describe('IsmsService ensureSetup', () => {
   let service: IsmsService;
@@ -30,23 +37,57 @@ describe('IsmsService ensureSetup', () => {
     jest.clearAllMocks();
     service = new IsmsService();
     (mockDb.control.findMany as jest.Mock).mockResolvedValue([]);
+    (mockDb.ismsDocument.createMany as jest.Mock).mockResolvedValue({
+      count: 0,
+    });
     (mockDb.ismsDocumentControlLink.createMany as jest.Mock).mockResolvedValue({
       count: 0,
     });
   });
 
   describe('ensureSetup', () => {
-    const dto = { organizationId: 'org_1', frameworkId: 'fw_1' };
+    const dto = { organizationId: 'org_1', frameworkId: 'fw_1', canWrite: true };
 
-    const mockTemplates = (
-      mockDb.frameworkEditorIsmsDocumentTemplate.findMany as jest.Mock
-    );
+    const mockTemplates = mockDb.frameworkEditorIsmsDocumentTemplate
+      .findMany as jest.Mock;
 
     it('throws NotFoundException when framework not found', async () => {
       (
         mockDb.frameworkEditorFramework.findUnique as jest.Mock
       ).mockResolvedValue(null);
       await expect(service.ensureSetup(dto)).rejects.toThrow(NotFoundException);
+    });
+
+    describe('read-only callers (canWrite: false)', () => {
+      it('never writes — only lists the existing documents', async () => {
+        (
+          mockDb.frameworkEditorFramework.findUnique as jest.Mock
+        ).mockResolvedValue({
+          id: 'fw_1',
+          requirements: [],
+        });
+        (mockDb.ismsDocument.findMany as jest.Mock).mockResolvedValueOnce([
+          {
+            id: 'doc_1',
+            type: 'context_of_organization',
+            status: 'draft',
+            requirementId: null,
+          },
+        ]);
+
+        const result = await service.ensureSetup({ ...dto, canWrite: false });
+
+        // No provisioning at all: no template resolution, no creates.
+        expect(mockTemplates).not.toHaveBeenCalled();
+        expect(mockDb.ismsDocument.createMany).not.toHaveBeenCalled();
+        expect(mockDb.control.findMany).not.toHaveBeenCalled();
+        expect(
+          mockDb.ismsDocumentControlLink.createMany,
+        ).not.toHaveBeenCalled();
+        // The findMany that ran was the list query, not a provisioning probe.
+        expect(mockDb.ismsDocument.findMany).toHaveBeenCalledTimes(1);
+        expect(result.documents).toHaveLength(1);
+      });
     });
 
     describe('template-driven (templates seeded)', () => {
@@ -74,16 +115,15 @@ describe('IsmsService ensureSetup', () => {
           },
         ]);
         (mockDb.ismsDocument.findMany as jest.Mock)
-          .mockResolvedValueOnce([])
-          .mockResolvedValueOnce([]);
-        (mockDb.ismsDocument.create as jest.Mock).mockResolvedValue({});
+          .mockResolvedValueOnce([]) // existing-types probe
+          .mockResolvedValueOnce([]) // created lookup
+          .mockResolvedValueOnce([]); // final list
 
         await service.ensureSetup(dto);
 
-        expect(mockDb.ismsDocument.create).toHaveBeenCalledTimes(1);
-        const createArgs = (mockDb.ismsDocument.create as jest.Mock).mock
-          .calls[0][0];
-        expect(createArgs.data).toMatchObject({
+        expect(mockDb.ismsDocument.createMany).toHaveBeenCalledTimes(1);
+        expect(createManyData()).toHaveLength(1);
+        expect(createManyData()[0]).toMatchObject({
           type: 'context_of_organization',
           title: 'Context of the Organization',
           templateId: 'tpl_ctx',
@@ -106,15 +146,13 @@ describe('IsmsService ensureSetup', () => {
         ]);
         (mockDb.ismsDocument.findMany as jest.Mock)
           .mockResolvedValueOnce([])
+          .mockResolvedValueOnce([])
           .mockResolvedValueOnce([]);
-        (mockDb.ismsDocument.create as jest.Mock).mockResolvedValue({});
 
         await service.ensureSetup(dto);
 
-        const createArgs = (mockDb.ismsDocument.create as jest.Mock).mock
-          .calls[0][0];
-        expect(createArgs.data.requirementId).toBe('req_custom');
-        expect(createArgs.data.templateId).toBe('tpl_ctx');
+        expect(createManyData()[0].requirementId).toBe('req_custom');
+        expect(createManyData()[0].templateId).toBe('tpl_ctx');
       });
 
       it('falls back to clause match when no link exists for the framework', async () => {
@@ -130,14 +168,12 @@ describe('IsmsService ensureSetup', () => {
         ]);
         (mockDb.ismsDocument.findMany as jest.Mock)
           .mockResolvedValueOnce([])
+          .mockResolvedValueOnce([])
           .mockResolvedValueOnce([]);
-        (mockDb.ismsDocument.create as jest.Mock).mockResolvedValue({});
 
         await service.ensureSetup(dto);
 
-        const createArgs = (mockDb.ismsDocument.create as jest.Mock).mock
-          .calls[0][0];
-        expect(createArgs.data.requirementId).toBe('req_62');
+        expect(createManyData()[0].requirementId).toBe('req_62');
       });
 
       it('skips templates whose document type already exists', async () => {
@@ -161,15 +197,13 @@ describe('IsmsService ensureSetup', () => {
         ]);
         (mockDb.ismsDocument.findMany as jest.Mock)
           .mockResolvedValueOnce([{ type: 'context_of_organization' }])
+          .mockResolvedValueOnce([])
           .mockResolvedValueOnce([]);
-        (mockDb.ismsDocument.create as jest.Mock).mockResolvedValue({});
 
         await service.ensureSetup(dto);
 
-        expect(mockDb.ismsDocument.create).toHaveBeenCalledTimes(1);
-        const createArgs = (mockDb.ismsDocument.create as jest.Mock).mock
-          .calls[0][0];
-        expect(createArgs.data.type).toBe('objectives_plan');
+        expect(createManyData()).toHaveLength(1);
+        expect(createManyData()[0].type).toBe('objectives_plan');
       });
 
       it('auto-derives org control links from the template control links', async () => {
@@ -187,11 +221,11 @@ describe('IsmsService ensureSetup', () => {
           },
         ]);
         (mockDb.ismsDocument.findMany as jest.Mock)
-          .mockResolvedValueOnce([])
-          .mockResolvedValueOnce([]);
-        (mockDb.ismsDocument.create as jest.Mock).mockResolvedValue({
-          id: 'doc_new',
-        });
+          .mockResolvedValueOnce([]) // existing-types probe
+          .mockResolvedValueOnce([
+            { id: 'doc_new', type: 'context_of_organization' },
+          ]) // created lookup
+          .mockResolvedValueOnce([]); // final list
         (mockDb.control.findMany as jest.Mock).mockResolvedValue([
           { id: 'ctl_1' },
           { id: 'ctl_2' },
@@ -228,10 +262,10 @@ describe('IsmsService ensureSetup', () => {
         ]);
         (mockDb.ismsDocument.findMany as jest.Mock)
           .mockResolvedValueOnce([])
+          .mockResolvedValueOnce([
+            { id: 'doc_new', type: 'context_of_organization' },
+          ])
           .mockResolvedValueOnce([]);
-        (mockDb.ismsDocument.create as jest.Mock).mockResolvedValue({
-          id: 'doc_new',
-        });
 
         await service.ensureSetup(dto);
 
@@ -260,13 +294,12 @@ describe('IsmsService ensureSetup', () => {
 
         await service.ensureSetup(dto);
 
-        expect(mockDb.ismsDocument.create).not.toHaveBeenCalled();
+        expect(mockDb.ismsDocument.createMany).not.toHaveBeenCalled();
         expect(mockDb.control.findMany).not.toHaveBeenCalled();
         expect(
           mockDb.ismsDocumentControlLink.createMany,
         ).not.toHaveBeenCalled();
       });
     });
-
   });
 });

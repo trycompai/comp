@@ -2,9 +2,9 @@ import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { db } from '@db';
 import { IsmsRequirementService } from './isms-requirement.service';
 
-jest.mock('@db', () => ({
-  db: {
-    ismsDocument: { findFirst: jest.fn() },
+jest.mock('@db', () => {
+  const db = {
+    ismsDocument: { findFirst: jest.fn(), findUnique: jest.fn(), update: jest.fn() },
     ismsInterestedParty: { findFirst: jest.fn() },
     ismsInterestedPartyRequirement: {
       findFirst: jest.fn(),
@@ -12,8 +12,11 @@ jest.mock('@db', () => ({
       update: jest.fn(),
       delete: jest.fn(),
     },
-  },
-}));
+    // Run the callback with the same mock as the transaction client.
+    $transaction: jest.fn((cb: (tx: unknown) => unknown) => cb(db)),
+  };
+  return { db };
+});
 
 const mockDb = jest.mocked(db);
 
@@ -192,6 +195,29 @@ describe('IsmsRequirementService', () => {
       ).mockResolvedValue({});
       const result = await service.remove(args);
       expect(result).toEqual({ success: true });
+    });
+  });
+
+  it('reverts an approved document to draft so it needs re-approval', async () => {
+    (
+      mockDb.ismsInterestedPartyRequirement.findFirst as jest.Mock
+    ).mockResolvedValue({ id: 'ipr_1', documentId: 'doc_1' });
+    (mockDb.ismsDocument.findUnique as jest.Mock).mockResolvedValue({
+      status: 'approved',
+    });
+    (
+      mockDb.ismsInterestedPartyRequirement.update as jest.Mock
+    ).mockResolvedValue({});
+
+    await service.update({
+      requirementId: 'ipr_1',
+      organizationId: 'org_1',
+      dto: { treatment: 'updated' },
+    });
+
+    expect(mockDb.ismsDocument.update).toHaveBeenCalledWith({
+      where: { id: 'doc_1' },
+      data: { status: 'draft', approvedAt: null, approverId: null },
     });
   });
 });

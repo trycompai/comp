@@ -19,11 +19,17 @@ import {
   ApiSecurity,
   ApiTags,
 } from '@nestjs/swagger';
-import { OrganizationId } from '@/auth/auth-context.decorator';
+import {
+  AuthContext,
+  OrganizationId,
+  UserId,
+} from '@/auth/auth-context.decorator';
+import type { AuthContext as AuthContextType } from '@/auth/types';
 import { HybridAuthGuard } from '@/auth/hybrid-auth.guard';
 import { PermissionGuard } from '../auth/permission.guard';
 import { RequirePermission } from '../auth/require-permission.decorator';
-import { UserId } from '@/auth/auth-context.decorator';
+import { resolveRolePermissions, permissionsGrant } from '../auth/app-access';
+import { resolveServiceByName } from '../auth/service-token.config';
 import { IsmsService } from './isms.service';
 import { IsmsContextService } from './isms-context.service';
 import { IsmsDocumentControlService } from './isms-document-control.service';
@@ -43,6 +49,10 @@ export class IsmsController {
     private readonly documentControlService: IsmsDocumentControlService,
   ) {}
 
+  // Gated at evidence:read so read-only auditors can LIST existing ISMS
+  // documents, but provisioning only happens when the caller can actually write
+  // (evidence:update) — resolved below and threaded as `canWrite`. This keeps
+  // read-only callers from creating rows just by viewing the page.
   @Post('ensure-setup')
   @HttpCode(HttpStatus.OK)
   @RequirePermission('evidence', 'read')
@@ -52,11 +62,44 @@ export class IsmsController {
   async ensureSetup(
     @Body() dto: EnsureIsmsSetupDto,
     @OrganizationId() organizationId: string,
+    @AuthContext() authContext: AuthContextType,
   ) {
     return this.ismsService.ensureSetup({
       organizationId,
       frameworkId: dto.frameworkId,
+      canWrite: await this.resolveCanWrite(authContext),
     });
+  }
+
+  /**
+   * Whether the caller has `evidence:update`, mirroring PermissionGuard's
+   * precedence (platform admin → API key scopes → service token → roles). Used
+   * to keep ensure-setup's list path read-only while still letting writers
+   * provision missing documents.
+   */
+  private async resolveCanWrite(ctx: AuthContextType): Promise<boolean> {
+    const RESOURCE = 'evidence';
+    const ACTION = 'update';
+    if (ctx.isPlatformAdmin) return true;
+
+    if (ctx.isApiKey) {
+      const scopes = ctx.apiKeyScopes;
+      // Legacy keys (empty scopes) keep full access until the guard's cutoff;
+      // the guard already blocks them past the deprecation date.
+      if (!scopes || scopes.length === 0) return true;
+      return scopes.includes(`${RESOURCE}:${ACTION}`);
+    }
+
+    if (ctx.isServiceToken) {
+      const service = resolveServiceByName(ctx.serviceName);
+      return service?.permissions.includes(`${RESOURCE}:${ACTION}`) ?? false;
+    }
+
+    const perms = await resolveRolePermissions(
+      ctx.organizationId,
+      ctx.userRoles ?? [],
+    );
+    return permissionsGrant(perms, RESOURCE, ACTION);
   }
 
   @Get('documents/:id')

@@ -12,6 +12,7 @@ import {
 } from '@nestjs/common';
 import type { Request } from 'express';
 import {
+  ApiBody,
   ApiConsumes,
   ApiOkResponse,
   ApiOperation,
@@ -32,6 +33,60 @@ import {
   type IsmsRegisterKey,
   type RegisterHandler,
 } from './registers/register-registry';
+
+/**
+ * OpenAPI body contracts for the generic register endpoints. They read `req.body`
+ * directly (the global ValidationPipe mangles nested JSON), so the request shape
+ * is documented explicitly here. Each register accepts its own fields — the union
+ * below covers every register's row; per-register validation is enforced at
+ * runtime by the registry's zod schemas. Mirrors the inline-schema @ApiBody used
+ * by the policies controller for its @Req()-bodied endpoints.
+ */
+const REGISTER_ROW_BODY = {
+  description: 'Register row fields (per-register; validated at runtime by zod)',
+  schema: {
+    type: 'object',
+    properties: {
+      kind: { type: 'string', enum: ['internal', 'external'] },
+      category: { type: 'string' },
+      description: { type: 'string' },
+      effect: { type: 'string' },
+      name: { type: 'string' },
+      needsExpectations: { type: 'string' },
+      interestedPartyId: { type: 'string' },
+      partyName: { type: 'string' },
+      requirement: { type: 'string' },
+      treatment: { type: 'string' },
+      objective: { type: 'string' },
+      target: { type: 'string' },
+      ownerMemberId: { type: 'string' },
+      cadence: { type: 'string' },
+      plan: { type: 'string' },
+      measurementMethod: { type: 'string' },
+      status: {
+        type: 'string',
+        enum: ['not_started', 'on_track', 'at_risk', 'met'],
+      },
+      position: { type: 'integer', minimum: 0 },
+    },
+  },
+} as const;
+
+const NARRATIVE_BODY = {
+  description: 'Singleton document narrative payload',
+  schema: {
+    type: 'object',
+    properties: {
+      narrative: {
+        type: 'object',
+        description:
+          'Per-type narrative object (e.g. ISMS scope or leadership commitment), validated at runtime by zod',
+        additionalProperties: true,
+      },
+    },
+    required: ['narrative'],
+  },
+} as const;
 
 /**
  * Generic CRUD for every ISMS register row (context issues, interested parties,
@@ -74,6 +129,7 @@ export class IsmsRegistersController {
   @RequirePermission('evidence', 'update')
   @ApiOperation({ summary: 'Create a row in an ISMS register' })
   @ApiConsumes('application/json')
+  @ApiBody(REGISTER_ROW_BODY)
   @ApiOkResponse({ description: 'Register row created' })
   async createRow(
     @Param('id') id: string,
@@ -94,6 +150,7 @@ export class IsmsRegistersController {
   @RequirePermission('evidence', 'update')
   @ApiOperation({ summary: 'Update a row in an ISMS register' })
   @ApiConsumes('application/json')
+  @ApiBody(REGISTER_ROW_BODY)
   @ApiOkResponse({ description: 'Register row updated' })
   async updateRow(
     @Param('register') register: string,
@@ -128,6 +185,7 @@ export class IsmsRegistersController {
   @RequirePermission('evidence', 'update')
   @ApiOperation({ summary: 'Save a singleton document narrative' })
   @ApiConsumes('application/json')
+  @ApiBody(NARRATIVE_BODY)
   @ApiOkResponse({ description: 'Narrative saved' })
   async saveNarrative(
     @Param('id') id: string,

@@ -1,7 +1,10 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { db } from '@db';
-import { CreateInterestedPartyDto } from './dto/create-interested-party.dto';
-import { UpdateInterestedPartyDto } from './dto/update-interested-party.dto';
+import { invalidateApprovalIfNeeded } from './utils/approval';
+import type {
+  CreateInterestedPartyInput,
+  UpdateInterestedPartyInput,
+} from './registers/register-registry';
 
 /**
  * CRUD for the Interested Parties register (clause 4.2a). Derived rows are written
@@ -18,20 +21,23 @@ export class IsmsInterestedPartyService {
   }: {
     documentId: string;
     organizationId: string;
-    dto: CreateInterestedPartyDto;
+    dto: CreateInterestedPartyInput;
   }) {
     await this.requireDocument({ documentId, organizationId });
     const position = dto.position ?? (await this.nextPosition({ documentId }));
 
-    return db.ismsInterestedParty.create({
-      data: {
-        documentId,
-        name: dto.name,
-        category: dto.category,
-        needsExpectations: dto.needsExpectations,
-        source: 'manual',
-        position,
-      },
+    return db.$transaction(async (tx) => {
+      await invalidateApprovalIfNeeded({ tx, documentId });
+      return tx.ismsInterestedParty.create({
+        data: {
+          documentId,
+          name: dto.name,
+          category: dto.category,
+          needsExpectations: dto.needsExpectations,
+          source: 'manual',
+          position,
+        },
+      });
     });
   }
 
@@ -42,19 +48,22 @@ export class IsmsInterestedPartyService {
   }: {
     partyId: string;
     organizationId: string;
-    dto: UpdateInterestedPartyDto;
+    dto: UpdateInterestedPartyInput;
   }) {
-    await this.requireParty({ partyId, organizationId });
+    const party = await this.requireParty({ partyId, organizationId });
 
-    return db.ismsInterestedParty.update({
-      where: { id: partyId },
-      data: {
-        name: dto.name ?? undefined,
-        category: dto.category ?? undefined,
-        needsExpectations: dto.needsExpectations ?? undefined,
-        position: dto.position ?? undefined,
-        source: 'manual',
-      },
+    return db.$transaction(async (tx) => {
+      await invalidateApprovalIfNeeded({ tx, documentId: party.documentId });
+      return tx.ismsInterestedParty.update({
+        where: { id: partyId },
+        data: {
+          name: dto.name ?? undefined,
+          category: dto.category ?? undefined,
+          needsExpectations: dto.needsExpectations ?? undefined,
+          position: dto.position ?? undefined,
+          source: 'manual',
+        },
+      });
     });
   }
 
@@ -65,8 +74,11 @@ export class IsmsInterestedPartyService {
     partyId: string;
     organizationId: string;
   }) {
-    await this.requireParty({ partyId, organizationId });
-    await db.ismsInterestedParty.delete({ where: { id: partyId } });
+    const party = await this.requireParty({ partyId, organizationId });
+    await db.$transaction(async (tx) => {
+      await invalidateApprovalIfNeeded({ tx, documentId: party.documentId });
+      await tx.ismsInterestedParty.delete({ where: { id: partyId } });
+    });
     return { success: true };
   }
 

@@ -4,7 +4,11 @@ import { IsmsNarrativeService } from './isms-narrative.service';
 
 jest.mock('@db', () => {
   const db = {
-    ismsDocument: { findFirst: jest.fn(), update: jest.fn() },
+    ismsDocument: {
+      findFirst: jest.fn(),
+      findUnique: jest.fn(),
+      update: jest.fn(),
+    },
     ismsDocumentVersion: {
       findFirst: jest.fn(),
       create: jest.fn(),
@@ -124,6 +128,8 @@ describe('IsmsNarrativeService', () => {
     (mockDb.ismsDocument.findFirst as jest.Mock).mockResolvedValue({
       id: 'doc_1',
       type: 'isms_scope',
+    });
+    (mockDb.ismsDocument.findUnique as jest.Mock).mockResolvedValue({
       status: 'approved',
     });
     (mockDb.ismsDocumentVersion.findFirst as jest.Mock).mockResolvedValue({

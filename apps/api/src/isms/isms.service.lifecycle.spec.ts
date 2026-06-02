@@ -6,6 +6,7 @@ import {
 import { db } from '@db';
 import { IsmsService } from './isms.service';
 import { collectPlatformData } from './documents/data-source';
+import { runDerivation } from './documents/generate';
 import { upsertLatestSnapshotVersion } from './utils/version-snapshot';
 
 jest.mock('@db', () => ({
@@ -21,12 +22,16 @@ jest.mock('@db', () => ({
 jest.mock('./documents/data-source', () => ({
   collectPlatformData: jest.fn(),
 }));
+jest.mock('./documents/generate', () => ({
+  runDerivation: jest.fn(),
+}));
 jest.mock('./utils/version-snapshot', () => ({
   upsertLatestSnapshotVersion: jest.fn(),
 }));
 
 const mockDb = jest.mocked(db);
 const mockCollect = jest.mocked(collectPlatformData);
+const mockRunDerivation = jest.mocked(runDerivation);
 
 describe('IsmsService document lifecycle', () => {
   let service: IsmsService;
@@ -169,6 +174,7 @@ describe('IsmsService document lifecycle', () => {
           status: 'needs_review',
           approverId: 'mem_1',
           frameworkId: 'fw_1',
+          type: 'context_of_organization',
         })
         .mockResolvedValueOnce({ id: 'doc_1', status: 'approved' });
       mockCollect.mockResolvedValue({
@@ -186,6 +192,7 @@ describe('IsmsService document lifecycle', () => {
         highRiskCount: 0,
         hasTrainingProgram: false,
         wizardAnswers: {},
+        partiesFingerprint: '',
       });
       const tx = {
         ismsDocument: { update: jest.fn().mockResolvedValue({}) },
@@ -197,6 +204,16 @@ describe('IsmsService document lifecycle', () => {
       expect(mockCollect).toHaveBeenCalledWith({
         organizationId: 'org_1',
         frameworkId: 'fw_1',
+      });
+      // Re-derives inside the transaction from the same snapshot, so the
+      // persisted rows and the snapshot baseline come from one pass.
+      expect(mockRunDerivation).toHaveBeenCalledWith({
+        tx,
+        type: 'context_of_organization',
+        documentId: 'doc_1',
+        organizationId: 'org_1',
+        frameworkId: 'fw_1',
+        data: expect.objectContaining({ organizationName: 'Acme' }),
       });
       expect(upsertLatestSnapshotVersion).toHaveBeenCalled();
       expect(tx.ismsDocument.update).toHaveBeenCalledWith({

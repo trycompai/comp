@@ -1,7 +1,10 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { db } from '@db';
-import { CreateObjectiveDto } from './dto/create-objective.dto';
-import { UpdateObjectiveDto } from './dto/update-objective.dto';
+import { invalidateApprovalIfNeeded } from './utils/approval';
+import type {
+  CreateObjectiveInput,
+  UpdateObjectiveInput,
+} from './registers/register-registry';
 
 /**
  * CRUD for the Information Security Objectives register (clause 6.2). Derived rows
@@ -17,24 +20,31 @@ export class IsmsObjectiveService {
   }: {
     documentId: string;
     organizationId: string;
-    dto: CreateObjectiveDto;
+    dto: CreateObjectiveInput;
   }) {
     await this.requireDocument({ documentId, organizationId });
+    const ownerMemberId = await this.resolveOwner({
+      ownerMemberId: dto.ownerMemberId,
+      organizationId,
+    });
     const position = dto.position ?? (await this.nextPosition({ documentId }));
 
-    return db.ismsObjective.create({
-      data: {
-        documentId,
-        objective: dto.objective,
-        target: dto.target ?? null,
-        ownerMemberId: dto.ownerMemberId ?? null,
-        cadence: dto.cadence ?? null,
-        plan: dto.plan ?? null,
-        measurementMethod: dto.measurementMethod ?? null,
-        status: dto.status ?? 'not_started',
-        source: 'manual',
-        position,
-      },
+    return db.$transaction(async (tx) => {
+      await invalidateApprovalIfNeeded({ tx, documentId });
+      return tx.ismsObjective.create({
+        data: {
+          documentId,
+          objective: dto.objective,
+          target: dto.target ?? null,
+          ownerMemberId: ownerMemberId ?? null,
+          cadence: dto.cadence ?? null,
+          plan: dto.plan ?? null,
+          measurementMethod: dto.measurementMethod ?? null,
+          status: dto.status ?? 'not_started',
+          source: 'manual',
+          position,
+        },
+      });
     });
   }
 
@@ -45,23 +55,38 @@ export class IsmsObjectiveService {
   }: {
     objectiveId: string;
     organizationId: string;
-    dto: UpdateObjectiveDto;
+    dto: UpdateObjectiveInput;
   }) {
-    await this.requireObjective({ objectiveId, organizationId });
+    const objective = await this.requireObjective({
+      objectiveId,
+      organizationId,
+    });
+    // undefined = field omitted (leave as-is); empty string = clear the owner.
+    const ownerFieldProvided = dto.ownerMemberId !== undefined;
+    const ownerMemberId = await this.resolveOwner({
+      ownerMemberId: dto.ownerMemberId,
+      organizationId,
+    });
 
-    return db.ismsObjective.update({
-      where: { id: objectiveId },
-      data: {
-        objective: dto.objective ?? undefined,
-        target: dto.target ?? undefined,
-        ownerMemberId: dto.ownerMemberId ?? undefined,
-        cadence: dto.cadence ?? undefined,
-        plan: dto.plan ?? undefined,
-        measurementMethod: dto.measurementMethod ?? undefined,
-        status: dto.status ?? undefined,
-        position: dto.position ?? undefined,
-        source: 'manual',
-      },
+    return db.$transaction(async (tx) => {
+      await invalidateApprovalIfNeeded({
+        tx,
+        documentId: objective.documentId,
+      });
+      return tx.ismsObjective.update({
+        where: { id: objectiveId },
+        data: {
+          objective: dto.objective ?? undefined,
+          target: dto.target ?? undefined,
+          ownerMemberId: ownerFieldProvided ? ownerMemberId : undefined,
+          cadence: dto.cadence ?? undefined,
+          plan: dto.plan ?? undefined,
+          measurementMethod: dto.measurementMethod ?? undefined,
+          status: dto.status ?? undefined,
+          position: dto.position ?? undefined,
+          source: 'manual',
+        },
+      });
     });
   }
 
@@ -72,8 +97,17 @@ export class IsmsObjectiveService {
     objectiveId: string;
     organizationId: string;
   }) {
-    await this.requireObjective({ objectiveId, organizationId });
-    await db.ismsObjective.delete({ where: { id: objectiveId } });
+    const objective = await this.requireObjective({
+      objectiveId,
+      organizationId,
+    });
+    await db.$transaction(async (tx) => {
+      await invalidateApprovalIfNeeded({
+        tx,
+        documentId: objective.documentId,
+      });
+      await tx.ismsObjective.delete({ where: { id: objectiveId } });
+    });
     return { success: true };
   }
 
@@ -85,6 +119,35 @@ export class IsmsObjectiveService {
       select: { position: true },
     });
     return (last?.position ?? -1) + 1;
+  }
+
+  /**
+   * Resolve an objective owner. `undefined` (field omitted) is passed through so
+   * the caller can leave it untouched; an empty/whitespace value clears it; a
+   * non-empty id must resolve to a member of the document's organization (mirrors
+   * submitForApproval's approver check).
+   */
+  private async resolveOwner({
+    ownerMemberId,
+    organizationId,
+  }: {
+    ownerMemberId: string | undefined;
+    organizationId: string;
+  }): Promise<string | null | undefined> {
+    if (ownerMemberId === undefined) {
+      return undefined;
+    }
+    const trimmed = ownerMemberId.trim();
+    if (!trimmed) {
+      return null;
+    }
+    const member = await db.member.findFirst({
+      where: { id: trimmed, organizationId },
+    });
+    if (!member) {
+      throw new NotFoundException('Owner not found in organization');
+    }
+    return trimmed;
   }
 
   private async requireDocument({
