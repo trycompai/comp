@@ -6,7 +6,7 @@ import {
 } from '@aws-sdk/client-cloudtrail';
 import { TASK_TEMPLATES } from '../../../task-mappings';
 import type { CheckContext, IntegrationCheck } from '../../../types';
-import { assumeAwsSession, type CheckOutcome, emitOutcomes } from './shared';
+import { resolveAwsSessionOrFail, type CheckOutcome, emitOutcomes } from './shared';
 
 export interface TrailInfo {
   name: string;
@@ -98,7 +98,7 @@ export const cloudTrailEnabledCheck: IntegrationCheck = {
   service: 'cloudtrail',
   taskMapping: TASK_TEMPLATES.monitoringAlerting,
   run: async (ctx: CheckContext) => {
-    const session = await assumeAwsSession(ctx);
+    const session = await resolveAwsSessionOrFail(ctx);
     if (!session) {
       ctx.log('AWS CloudTrail check: connection not configured — skipping');
       return;

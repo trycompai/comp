@@ -5,7 +5,7 @@ import {
 } from '@aws-sdk/client-iam';
 import { TASK_TEMPLATES } from '../../../task-mappings';
 import type { CheckContext, IntegrationCheck } from '../../../types';
-import { assumeAwsSession, type CheckOutcome, emitOutcomes } from './shared';
+import { resolveAwsSessionOrFail, type CheckOutcome, emitOutcomes } from './shared';
 
 export interface IamAccountData {
   /** null = no password policy configured */
@@ -119,7 +119,7 @@ export const iamAccountSecurityCheck: IntegrationCheck = {
   service: 'iam-analyzer',
   taskMapping: TASK_TEMPLATES.rolebasedAccessControls,
   run: async (ctx: CheckContext) => {
-    const session = await assumeAwsSession(ctx);
+    const session = await resolveAwsSessionOrFail(ctx);
     if (!session) {
       ctx.log('AWS IAM check: connection not configured — skipping');
       return;
@@ -139,8 +139,27 @@ export const iamAccountSecurityCheck: IntegrationCheck = {
       if (!(err instanceof Error && /NoSuchEntity/i.test(err.name))) throw err;
     }
 
-    const summaryResp = await iam.send(new GetAccountSummaryCommand({}));
-    const summary = (summaryResp.SummaryMap ?? {}) as Record<string, number>;
+    let summary: Record<string, number>;
+    try {
+      const summaryResp = await iam.send(new GetAccountSummaryCommand({}));
+      summary = (summaryResp.SummaryMap ?? {}) as Record<string, number>;
+    } catch (err) {
+      // The account summary drives the root-MFA / root-access-key findings — if
+      // it can't be read, surface "could not verify" rather than aborting the
+      // check with a bare error (or omitting those critical findings).
+      ctx.fail({
+        title: 'Could not verify IAM account summary',
+        description:
+          'The IAM account summary (root MFA, root access keys) could not be read, so account security is unverified.',
+        resourceType: 'aws-account',
+        resourceId: 'account',
+        severity: 'medium',
+        remediation:
+          'Grant iam:GetAccountSummary to the integration role, then re-run the check.',
+        evidence: { error: err instanceof Error ? err.message : String(err) },
+      });
+      return;
+    }
 
     emitOutcomes(ctx, evaluateIamAccount({ passwordPolicy, summary }));
   },

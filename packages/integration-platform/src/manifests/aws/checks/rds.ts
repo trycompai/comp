@@ -6,7 +6,7 @@ import {
 import { TASK_TEMPLATES } from '../../../task-mappings';
 import type { CheckContext, IntegrationCheck } from '../../../types';
 import {
-  assumeAwsSession,
+  resolveAwsSessionOrFail,
   type AwsSession,
   type CheckOutcome,
   emitOutcomes,
@@ -240,7 +240,7 @@ export const rdsEncryptionCheck: IntegrationCheck = {
   service: 'rds',
   taskMapping: TASK_TEMPLATES.encryptionAtRest,
   run: async (ctx: CheckContext) => {
-    const session = await assumeAwsSession(ctx);
+    const session = await resolveAwsSessionOrFail(ctx);
     if (!session) {
       ctx.log('AWS RDS encryption check: connection not configured — skipping');
       return;
@@ -264,7 +264,7 @@ export const rdsBackupsCheck: IntegrationCheck = {
   service: 'rds',
   taskMapping: TASK_TEMPLATES.backupLogs,
   run: async (ctx: CheckContext) => {
-    const session = await assumeAwsSession(ctx);
+    const session = await resolveAwsSessionOrFail(ctx);
     if (!session) {
       ctx.log('AWS RDS backups check: connection not configured — skipping');
       return;

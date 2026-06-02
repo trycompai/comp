@@ -52,9 +52,20 @@ export const storagePublicAccessCheck: IntegrationCheck = {
           await evaluateBucket(ctx, projectId, bucket);
         }
       } catch (err) {
-        ctx.warn('GCP storage check failed for project; skipping', {
-          projectId,
-          error: err instanceof Error ? err.message : String(err),
+        // Unverified project → emit a finding, not a warn-and-skip, so an
+        // all-projects-failed run doesn't leave the task stale (silent pass).
+        ctx.fail({
+          title: `Could not verify Cloud Storage: ${projectId}`,
+          description: `Buckets for project "${projectId}" could not be listed, so public access is unverified.`,
+          resourceType: 'gcp-project',
+          resourceId: projectId,
+          severity: 'medium',
+          remediation:
+            'Grant storage.buckets.list (e.g. roles/storage.legacyBucketReader or Viewer) to the connection for this project, then re-run.',
+          evidence: {
+            projectId,
+            error: err instanceof Error ? err.message : String(err),
+          },
         });
       }
     }

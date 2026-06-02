@@ -1,6 +1,6 @@
 import { TASK_TEMPLATES } from '../../../task-mappings';
 import type { CheckContext, IntegrationCheck } from '../../../types';
-import { ARM_BASE, armListAll, resolveAzureSubscriptionId } from './shared';
+import { ARM_BASE, armListAll, armListAllOrFail, resolveAzureSubscriptionId } from './shared';
 
 interface SqlServer {
   id: string;
@@ -18,10 +18,11 @@ interface SqlFirewallRule {
 async function listSqlServers(
   ctx: CheckContext,
   sub: string,
-): Promise<SqlServer[]> {
-  return armListAll<SqlServer>(
+): Promise<SqlServer[] | null> {
+  return armListAllOrFail<SqlServer>(
     ctx,
     `${ARM_BASE}/subscriptions/${sub}/providers/Microsoft.Sql/servers?api-version=2023-05-01-preview`,
+    { what: 'SQL servers', resourceType: 'azure-sql-server', subscriptionId: sub },
   );
 }
 
@@ -36,6 +37,7 @@ export const sqlTlsCheck: IntegrationCheck = {
     const sub = await resolveAzureSubscriptionId(ctx);
     if (!sub) return;
     const servers = await listSqlServers(ctx, sub);
+    if (!servers) return;
     if (servers.length === 0) return;
     for (const s of servers) {
       const tls = s.properties?.minimalTlsVersion;
@@ -76,6 +78,7 @@ export const sqlPublicAccessCheck: IntegrationCheck = {
     const sub = await resolveAzureSubscriptionId(ctx);
     if (!sub) return;
     const servers = await listSqlServers(ctx, sub);
+    if (!servers) return;
     if (servers.length === 0) return;
     for (const s of servers) {
       let violation: { title: string; severity: 'high' | 'critical' | 'medium'; detail: string } | null =
@@ -174,6 +177,7 @@ export const sqlAuditingCheck: IntegrationCheck = {
     const sub = await resolveAzureSubscriptionId(ctx);
     if (!sub) return;
     const servers = await listSqlServers(ctx, sub);
+    if (!servers) return;
     if (servers.length === 0) return;
     for (const s of servers) {
       const auditing = await ctx

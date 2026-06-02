@@ -7,7 +7,7 @@ import {
 import { TASK_TEMPLATES } from '../../../task-mappings';
 import type { CheckContext, IntegrationCheck } from '../../../types';
 import {
-  assumeAwsSession,
+  resolveAwsSessionOrFail,
   type AwsSession,
   type CheckOutcome,
   emitOutcomes,
@@ -71,14 +71,22 @@ export function evaluateKmsRotation(keys: KmsKeyInfo[]): CheckOutcome[] {
     });
 }
 
+interface KmsKeyScan {
+  keys: KmsKeyInfo[];
+  /** Keys whose DescribeKey failed — eligibility couldn't be classified. */
+  unreadableKeyIds: string[];
+}
+
 async function listKmsKeys(
   ctx: CheckContext,
   session: AwsSession,
-): Promise<KmsKeyInfo[]> {
+): Promise<KmsKeyScan> {
   const out: KmsKeyInfo[] = [];
+  const unreadableKeyIds: string[] = [];
   for (const region of session.regions) {
     const kms = new KMSClient({ region, credentials: session.credentials });
     let marker: string | undefined;
+    try {
     do {
       const resp = await kms.send(new ListKeysCommand({ Marker: marker }));
       for (const k of resp.Keys ?? []) {
@@ -88,7 +96,10 @@ async function listKmsKeys(
         try {
           meta = (await kms.send(new DescribeKeyCommand({ KeyId: keyId }))).KeyMetadata;
         } catch (err) {
-          // Skip this key rather than aborting the whole scan.
+          // Can't classify this key's eligibility — record it as unreadable so
+          // an all-unreadable account isn't reported as a clean run (a denied
+          // kms:DescribeKey would otherwise leave zero eligible keys silently).
+          unreadableKeyIds.push(keyId);
           ctx.log(
             `KMS: could not describe key ${keyId} in ${region}: ${err instanceof Error ? err.message : String(err)}`,
           );
@@ -121,8 +132,16 @@ async function listKmsKeys(
       }
       marker = resp.NextMarker;
     } while (marker);
+    } catch (err) {
+      // ListKeys failed for this region — record a region marker so run()
+      // surfaces "could not verify" instead of aborting / silently skipping it.
+      unreadableKeyIds.push(`region:${region}`);
+      ctx.log(
+        `KMS: could not list keys in ${region}: ${err instanceof Error ? err.message : String(err)}`,
+      );
+    }
   }
-  return out;
+  return { keys: out, unreadableKeyIds };
 }
 
 export const kmsKeyRotationCheck: IntegrationCheck = {
@@ -132,16 +151,34 @@ export const kmsKeyRotationCheck: IntegrationCheck = {
   service: 'kms',
   taskMapping: TASK_TEMPLATES.encryptionAtRest,
   run: async (ctx: CheckContext) => {
-    const session = await assumeAwsSession(ctx);
+    const session = await resolveAwsSessionOrFail(ctx);
     if (!session) {
       ctx.log('AWS KMS check: connection not configured — skipping');
       return;
     }
-    const keys = await listKmsKeys(ctx, session);
-    // Genuine no-op only when there are NO rotation-eligible keys at all. If
-    // eligible keys exist but their status is unreadable, evaluateKmsRotation
-    // emits "could not verify" rather than passing silently.
-    if (!keys.some((k) => k.rotationEligible)) return;
-    emitOutcomes(ctx, evaluateKmsRotation(keys));
+    const { keys, unreadableKeyIds } = await listKmsKeys(ctx, session);
+
+    // Keys whose metadata couldn't be read can't be classified — surface them
+    // so an all-unreadable account (e.g. kms:DescribeKey denied) isn't recorded
+    // as a clean run with no findings.
+    if (unreadableKeyIds.length > 0) {
+      ctx.fail({
+        title: 'Could not verify KMS keys',
+        description: `Key metadata could not be read for ${unreadableKeyIds.length} KMS key(s) (DescribeKey failed), so their rotation eligibility and status are unverified.`,
+        resourceType: 'aws-kms-key',
+        resourceId: 'account',
+        severity: 'medium',
+        remediation:
+          'Grant kms:DescribeKey (and kms:GetKeyRotationStatus) to the integration role, then re-run the check.',
+        evidence: { unreadableKeyCount: unreadableKeyIds.length },
+      });
+    }
+
+    // Rotation-eligible keys each produce an outcome (incl. could-not-verify for
+    // unreadable rotation status). If there are none and nothing was unreadable,
+    // it's a genuine no-op (no rotation-eligible keys to evidence).
+    if (keys.some((k) => k.rotationEligible)) {
+      emitOutcomes(ctx, evaluateKmsRotation(keys));
+    }
   },
 };

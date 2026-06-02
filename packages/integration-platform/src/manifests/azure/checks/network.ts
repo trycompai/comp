@@ -1,6 +1,6 @@
 import { TASK_TEMPLATES } from '../../../task-mappings';
 import type { CheckContext, FindingSeverity, IntegrationCheck } from '../../../types';
-import { ARM_BASE, armListAll, resolveAzureSubscriptionId } from './shared';
+import { ARM_BASE, armListAllOrFail, resolveAzureSubscriptionId } from './shared';
 
 interface SecurityRule {
   name: string;
@@ -81,10 +81,12 @@ export const nsgNoOpenPortsCheck: IntegrationCheck = {
   run: async (ctx: CheckContext) => {
     const sub = await resolveAzureSubscriptionId(ctx);
     if (!sub) return;
-    const nsgs = await armListAll<Nsg>(
+    const nsgs = await armListAllOrFail<Nsg>(
       ctx,
       `${ARM_BASE}/subscriptions/${sub}/providers/Microsoft.Network/networkSecurityGroups?api-version=2023-11-01`,
+      { what: 'network security groups', resourceType: 'azure-nsg', subscriptionId: sub },
     );
+    if (!nsgs) return;
     if (nsgs.length === 0) return;
 
     for (const nsg of nsgs) {

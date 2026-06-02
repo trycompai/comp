@@ -1,7 +1,7 @@
 import { DescribeSecurityGroupsCommand, EC2Client } from '@aws-sdk/client-ec2';
 import { TASK_TEMPLATES } from '../../../task-mappings';
 import type { CheckContext, FindingSeverity, IntegrationCheck } from '../../../types';
-import { assumeAwsSession, type CheckOutcome, emitOutcomes } from './shared';
+import { resolveAwsSessionOrFail, type CheckOutcome, emitOutcomes } from './shared';
 
 export interface SgPermission {
   ipProtocol: string;
@@ -89,7 +89,7 @@ export const ec2SecurityGroupsCheck: IntegrationCheck = {
   service: 'ec2-vpc',
   taskMapping: TASK_TEMPLATES.productionFirewallNopublicaccessControls,
   run: async (ctx: CheckContext) => {
-    const session = await assumeAwsSession(ctx);
+    const session = await resolveAwsSessionOrFail(ctx);
     if (!session) {
       ctx.log('AWS EC2 security-groups check: connection not configured — skipping');
       return;

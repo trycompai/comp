@@ -128,12 +128,22 @@ export const iamPrimitiveRolesCheck: IntegrationCheck = {
           }
         }
       } catch (error) {
-        // One project's API error must not abort the whole check.
-        ctx.warn(
-          `GCP IAM: failed to evaluate primitive roles for "${projectId}": ${
-            error instanceof Error ? error.message : String(error)
-          }`,
-        );
+        // One project's API error must not abort the whole check — but it is
+        // unverified, so emit a finding rather than warn-and-skip (an
+        // all-projects-failed run would otherwise leave the task stale).
+        ctx.fail({
+          title: `Could not verify IAM primitive roles: ${projectId}`,
+          description: `IAM policy for project "${projectId}" could not be read, so primitive-role usage is unverified.`,
+          resourceType: 'gcp-project',
+          resourceId: projectId,
+          severity: 'medium',
+          remediation:
+            'Grant resourcemanager.projects.getIamPolicy (e.g. roles/iam.securityReviewer) to the connection for this project, then re-run.',
+          evidence: {
+            projectId,
+            error: error instanceof Error ? error.message : String(error),
+          },
+        });
         continue;
       }
     }

@@ -72,10 +72,18 @@ export const cloudSqlBackupsCheck: IntegrationCheck = {
           }
         }
       } catch (err) {
-        ctx.warn(
-          `GCP Cloud SQL backups check: failed to evaluate project ${projectId} — skipping`,
-          { projectId, error: err instanceof Error ? err.message : String(err) },
-        );
+        // Unverified project → emit a finding, not a warn-and-skip, so an
+        // all-projects-failed run doesn't leave the task stale (silent pass).
+        ctx.fail({
+          title: `Could not verify Cloud SQL backups: ${projectId}`,
+          description: `Cloud SQL instances for project "${projectId}" could not be listed, so backup configuration is unverified.`,
+          resourceType: 'gcp-project',
+          resourceId: projectId,
+          severity: 'medium',
+          remediation:
+            'Grant cloudsql.instances.list (e.g. roles/cloudsql.viewer) to the connection for this project, then re-run.',
+          evidence: { projectId, error: err instanceof Error ? err.message : String(err) },
+        });
         continue;
       }
     }

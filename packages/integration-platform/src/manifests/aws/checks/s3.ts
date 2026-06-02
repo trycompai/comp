@@ -10,7 +10,7 @@ import {
 } from '@aws-sdk/client-s3-control';
 import { TASK_TEMPLATES } from '../../../task-mappings';
 import type { CheckContext, IntegrationCheck } from '../../../types';
-import { assumeAwsSession, type CheckOutcome, emitOutcomes } from './shared';
+import { resolveAwsSessionOrFail, type CheckOutcome, emitOutcomes } from './shared';
 
 export interface BpaFlags {
   blockPublicAcls: boolean;
@@ -199,7 +199,7 @@ export const s3EncryptionCheck: IntegrationCheck = {
   service: 's3',
   taskMapping: TASK_TEMPLATES.encryptionAtRest,
   run: async (ctx: CheckContext) => {
-    const session = await assumeAwsSession(ctx);
+    const session = await resolveAwsSessionOrFail(ctx);
     if (!session) {
       ctx.log('AWS S3 encryption check: connection not configured — skipping');
       return;
@@ -209,7 +209,23 @@ export const s3EncryptionCheck: IntegrationCheck = {
       credentials: session.credentials,
       followRegionRedirects: true,
     });
-    const buckets = await gatherBuckets(s3, { encryption: true, publicAccess: false });
+    let buckets: S3BucketInfo[];
+    try {
+      buckets = await gatherBuckets(s3, { encryption: true, publicAccess: false });
+    } catch (err) {
+      ctx.fail({
+        title: 'Could not verify S3 encryption',
+        description:
+          'S3 buckets could not be listed, so default encryption could not be verified.',
+        resourceType: 'aws-account',
+        resourceId: 'account',
+        severity: 'medium',
+        remediation:
+          'Grant s3:ListAllMyBuckets (and s3:GetEncryptionConfiguration) to the integration role, then re-run the check.',
+        evidence: { error: err instanceof Error ? err.message : String(err) },
+      });
+      return;
+    }
     if (buckets.length === 0) return;
     emitOutcomes(ctx, evaluateS3Encryption(buckets));
   },
@@ -222,7 +238,7 @@ export const s3PublicAccessCheck: IntegrationCheck = {
   service: 's3',
   taskMapping: TASK_TEMPLATES.productionFirewallNopublicaccessControls,
   run: async (ctx: CheckContext) => {
-    const session = await assumeAwsSession(ctx);
+    const session = await resolveAwsSessionOrFail(ctx);
     if (!session) {
       ctx.log('AWS S3 public-access check: connection not configured — skipping');
       return;
@@ -260,7 +276,23 @@ export const s3PublicAccessCheck: IntegrationCheck = {
       }
     }
 
-    const buckets = await gatherBuckets(s3, { encryption: false, publicAccess: true });
+    let buckets: S3BucketInfo[];
+    try {
+      buckets = await gatherBuckets(s3, { encryption: false, publicAccess: true });
+    } catch (err) {
+      ctx.fail({
+        title: 'Could not verify S3 public access',
+        description:
+          'S3 buckets could not be listed, so Block Public Access could not be verified.',
+        resourceType: 'aws-account',
+        resourceId: 'account',
+        severity: 'medium',
+        remediation:
+          'Grant s3:ListAllMyBuckets (and s3:GetBucketPublicAccessBlock) to the integration role, then re-run the check.',
+        evidence: { error: err instanceof Error ? err.message : String(err) },
+      });
+      return;
+    }
     if (buckets.length === 0) return;
     emitOutcomes(ctx, evaluateS3PublicAccess(buckets, accountBpa));
   },

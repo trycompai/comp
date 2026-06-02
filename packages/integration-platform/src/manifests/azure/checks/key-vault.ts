@@ -1,6 +1,6 @@
 import { TASK_TEMPLATES } from '../../../task-mappings';
 import type { CheckContext, FindingSeverity, IntegrationCheck } from '../../../types';
-import { ARM_BASE, armListAll, resolveAzureSubscriptionId } from './shared';
+import { ARM_BASE, armListAllOrFail, resolveAzureSubscriptionId } from './shared';
 
 interface KeyVault {
   id: string;
@@ -14,10 +14,14 @@ interface KeyVault {
   };
 }
 
-async function listVaults(ctx: CheckContext, sub: string): Promise<KeyVault[]> {
-  return armListAll<KeyVault>(
+async function listVaults(
+  ctx: CheckContext,
+  sub: string,
+): Promise<KeyVault[] | null> {
+  return armListAllOrFail<KeyVault>(
     ctx,
     `${ARM_BASE}/subscriptions/${sub}/providers/Microsoft.KeyVault/vaults?api-version=2023-07-01`,
+    { what: 'key vaults', resourceType: 'azure-key-vault', subscriptionId: sub },
   );
 }
 
@@ -33,6 +37,7 @@ export const keyVaultProtectionCheck: IntegrationCheck = {
     const sub = await resolveAzureSubscriptionId(ctx);
     if (!sub) return;
     const vaults = await listVaults(ctx, sub);
+    if (!vaults) return;
     if (vaults.length === 0) return;
     for (const v of vaults) {
       const p = v.properties ?? {};
@@ -92,6 +97,7 @@ export const keyVaultRbacCheck: IntegrationCheck = {
     const sub = await resolveAzureSubscriptionId(ctx);
     if (!sub) return;
     const vaults = await listVaults(ctx, sub);
+    if (!vaults) return;
     if (vaults.length === 0) return;
     for (const v of vaults) {
       if (v.properties?.enableRbacAuthorization) {

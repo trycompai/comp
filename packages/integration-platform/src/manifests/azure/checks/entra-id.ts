@@ -1,6 +1,6 @@
 import { TASK_TEMPLATES } from '../../../task-mappings';
 import type { CheckContext, IntegrationCheck } from '../../../types';
-import { ARM_BASE, armListAll, resolveAzureSubscriptionId } from './shared';
+import { ARM_BASE, armListAllOrFail, resolveAzureSubscriptionId } from './shared';
 
 interface RoleAssignment {
   properties: { roleDefinitionId: string; principalId: string; principalType: string };
@@ -72,15 +72,18 @@ export const rbacLeastPrivilegeCheck: IntegrationCheck = {
     if (!sub) return;
 
     const [assignments, definitions] = await Promise.all([
-      armListAll<RoleAssignment>(
+      armListAllOrFail<RoleAssignment>(
         ctx,
         `${ARM_BASE}/subscriptions/${sub}/providers/Microsoft.Authorization/roleAssignments?api-version=2022-04-01`,
+        { what: 'role assignments', resourceType: 'azure-subscription', subscriptionId: sub },
       ),
-      armListAll<RoleDefinition>(
+      armListAllOrFail<RoleDefinition>(
         ctx,
         `${ARM_BASE}/subscriptions/${sub}/providers/Microsoft.Authorization/roleDefinitions?api-version=2022-04-01`,
+        { what: 'role definitions', resourceType: 'azure-subscription', subscriptionId: sub },
       ),
     ]);
+    if (!assignments || !definitions) return;
 
     const defMap = new Map(definitions.map((d) => [d.id, d]));
 

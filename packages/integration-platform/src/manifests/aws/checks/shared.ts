@@ -54,6 +54,35 @@ export async function assumeAwsSession(
   };
 }
 
+/**
+ * Resolve an AWS session, distinguishing "connection not configured" (returns
+ * null silently — a legitimate no-op) from "assume-role failed" (e.g. denied,
+ * bad ARN/external ID, throttling). On an assume-role failure it emits a
+ * "could not verify" finding and returns null, so the failure surfaces as
+ * explicit evidence with remediation rather than as a bare check error (or a
+ * false non-compliant verdict). Use this instead of assumeAwsSession directly.
+ */
+export async function resolveAwsSessionOrFail(
+  ctx: CheckContext,
+): Promise<AwsSession | null> {
+  try {
+    return await assumeAwsSession(ctx);
+  } catch (err) {
+    ctx.fail({
+      title: 'Could not assume AWS role',
+      description:
+        'The cross-account IAM role could not be assumed, so this check could not be verified.',
+      resourceType: 'aws-account',
+      resourceId: 'account',
+      severity: 'medium',
+      remediation:
+        'Verify the role ARN and external ID are correct and the role trust policy allows Comp to assume it, then re-run the check.',
+      evidence: { error: err instanceof Error ? err.message : String(err) },
+    });
+    return null;
+  }
+}
+
 /** A provider-agnostic pass/fail outcome produced by a pure evaluator. */
 export interface CheckOutcome {
   kind: 'pass' | 'fail';

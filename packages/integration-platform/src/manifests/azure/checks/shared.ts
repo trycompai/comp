@@ -65,4 +65,32 @@ export async function armListAll<T>(
   return out;
 }
 
+/**
+ * Paginate an ARM list endpoint, emitting a "could not verify" finding (and
+ * returning null) if the read throws. Use this for a check's primary list so a
+ * permission/transient failure surfaces as explicit evidence with remediation
+ * rather than aborting the check with a bare error or a false verdict.
+ */
+export async function armListAllOrFail<T>(
+  ctx: CheckContext,
+  url: string,
+  opts: { what: string; resourceType: string; subscriptionId: string },
+): Promise<T[] | null> {
+  try {
+    return await armListAll<T>(ctx, url);
+  } catch (err) {
+    ctx.fail({
+      title: `Could not verify ${opts.what}`,
+      description: `${opts.what} could not be listed from Azure, so this check is unverified.`,
+      resourceType: opts.resourceType,
+      resourceId: opts.subscriptionId,
+      severity: 'medium',
+      remediation:
+        'Ensure the connection has Reader access to the subscription, then re-run the check.',
+      evidence: { error: err instanceof Error ? err.message : String(err) },
+    });
+    return null;
+  }
+}
+
 export const ARM_BASE = ARM;

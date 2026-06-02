@@ -254,6 +254,19 @@ describe('GCP Cloud Storage public-access check', () => {
     expect(failed).toHaveLength(1);
     expect(failed[0]!.title).toMatch(/Could not verify/);
   });
+
+  it('emits "could not verify" (not a silent pass) when the bucket list read fails', async () => {
+    const { passed, failed } = await runCheck(storagePublicAccessCheck, {
+      fetch: (url) => {
+        if (url.includes('storage/v1/b')) throw new Error('403 forbidden');
+        return {};
+      },
+    });
+    // A project read failure must surface a finding, not leave the task stale.
+    expect(passed).toHaveLength(0);
+    expect(failed).toHaveLength(1);
+    expect(failed[0]!.title).toMatch(/Could not verify Cloud Storage/);
+  });
 });
 
 describe('GCP project auto-discovery', () => {
@@ -299,6 +312,17 @@ describe('GCP VPC open-firewalls check', () => {
     });
     expect(failed).toHaveLength(1);
     expect(failed[0]!.severity).toBe('critical');
+  });
+
+  it('emits "could not verify" (not a silent pass) when the firewall list read fails', async () => {
+    const { passed, failed } = await runCheck(vpcOpenFirewallsCheck, {
+      fetch: () => {
+        throw new Error('403 forbidden');
+      },
+    });
+    expect(passed).toHaveLength(0);
+    expect(failed).toHaveLength(1);
+    expect(failed[0]!.title).toMatch(/Could not verify VPC firewall rules/);
   });
 
   it('passes when no rule exposes sensitive ports (incl. disabled/egress/internal)', async () => {

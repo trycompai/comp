@@ -1,6 +1,6 @@
 import { TASK_TEMPLATES } from '../../../task-mappings';
 import type { CheckContext, IntegrationCheck } from '../../../types';
-import { ARM_BASE, armListAll, resolveAzureSubscriptionId } from './shared';
+import { ARM_BASE, armListAllOrFail, resolveAzureSubscriptionId } from './shared';
 
 interface StorageAccount {
   id: string;
@@ -23,10 +23,15 @@ interface StorageAccount {
 async function listStorageAccounts(
   ctx: CheckContext,
   sub: string,
-): Promise<StorageAccount[]> {
-  return armListAll<StorageAccount>(
+): Promise<StorageAccount[] | null> {
+  return armListAllOrFail<StorageAccount>(
     ctx,
     `${ARM_BASE}/subscriptions/${sub}/providers/Microsoft.Storage/storageAccounts?api-version=2023-05-01`,
+    {
+      what: 'storage accounts',
+      resourceType: 'azure-storage-account',
+      subscriptionId: sub,
+    },
   );
 }
 
@@ -42,6 +47,7 @@ export const storageHttpsTlsCheck: IntegrationCheck = {
     const sub = await resolveAzureSubscriptionId(ctx);
     if (!sub) return;
     const accounts = await listStorageAccounts(ctx, sub);
+    if (!accounts) return;
     if (accounts.length === 0) return;
     for (const a of accounts) {
       const p = a.properties ?? {};
@@ -90,6 +96,7 @@ export const storagePublicAccessCheck: IntegrationCheck = {
     const sub = await resolveAzureSubscriptionId(ctx);
     if (!sub) return;
     const accounts = await listStorageAccounts(ctx, sub);
+    if (!accounts) return;
     if (accounts.length === 0) return;
     for (const a of accounts) {
       const p = a.properties ?? {};
@@ -143,6 +150,7 @@ export const storageEncryptionCheck: IntegrationCheck = {
     const sub = await resolveAzureSubscriptionId(ctx);
     if (!sub) return;
     const accounts = await listStorageAccounts(ctx, sub);
+    if (!accounts) return;
     if (accounts.length === 0) return;
     for (const a of accounts) {
       const enc = a.properties?.encryption?.services;

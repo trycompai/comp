@@ -110,9 +110,21 @@ export const vpcOpenFirewallsCheck: IntegrationCheck = {
           });
         }
       } catch (err) {
-        ctx.warn('GCP VPC firewall check failed for project; skipping', {
-          projectId,
-          error: err instanceof Error ? err.message : String(err),
+        // A read failure for this project is unverified — emit a finding rather
+        // than warn-and-skip, otherwise an all-projects-failed run emits no
+        // outcomes and leaves the mapped task stale (a silent clean run).
+        ctx.fail({
+          title: `Could not verify VPC firewall rules: ${projectId}`,
+          description: `Firewall rules for project "${projectId}" could not be read, so internet exposure is unverified.`,
+          resourceType: 'gcp-project',
+          resourceId: projectId,
+          severity: 'medium',
+          remediation:
+            'Grant compute.firewalls.list (e.g. roles/compute.viewer) to the connection for this project, then re-run.',
+          evidence: {
+            projectId,
+            error: err instanceof Error ? err.message : String(err),
+          },
         });
       }
     }
