@@ -184,6 +184,18 @@ export function InterestedPartiesClient({
         }
       />
 
+      {document && (
+        <IsmsApprovalSection
+          document={document}
+          canManage={canManage}
+          currentMemberId={currentMemberId}
+          approverOptions={approverOptions}
+          onSubmitForApproval={handleSubmit}
+          onApprove={handleApprove}
+          onDecline={handleDecline}
+        />
+      )}
+
       {drift?.isStale && (
         <DriftBanner
           changedSources={drift.changedSources}
@@ -211,18 +223,6 @@ export function InterestedPartiesClient({
           document={document}
           organizationId={organizationId}
           canManage={canManage}
-        />
-      )}
-
-      {document && (
-        <IsmsApprovalSection
-          document={document}
-          canManage={canManage}
-          currentMemberId={currentMemberId}
-          approverOptions={approverOptions}
-          onSubmitForApproval={handleSubmit}
-          onApprove={handleApprove}
-          onDecline={handleDecline}
         />
       )}
     </Stack>

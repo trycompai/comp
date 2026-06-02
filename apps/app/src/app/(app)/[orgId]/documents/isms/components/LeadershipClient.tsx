@@ -167,6 +167,18 @@ export function LeadershipClient({
         }
       />
 
+      {document && (
+        <IsmsApprovalSection
+          document={document}
+          canManage={canManage}
+          currentMemberId={currentMemberId}
+          approverOptions={approverOptions}
+          onSubmitForApproval={handleSubmit}
+          onApprove={handleApprove}
+          onDecline={handleDecline}
+        />
+      )}
+
       {drift?.isStale && (
         <DriftBanner
           changedSources={drift.changedSources}
@@ -188,18 +200,6 @@ export function LeadershipClient({
           document={document}
           organizationId={organizationId}
           canManage={canManage}
-        />
-      )}
-
-      {document && (
-        <IsmsApprovalSection
-          document={document}
-          canManage={canManage}
-          currentMemberId={currentMemberId}
-          approverOptions={approverOptions}
-          onSubmitForApproval={handleSubmit}
-          onApprove={handleApprove}
-          onDecline={handleDecline}
         />
       )}
     </Stack>
