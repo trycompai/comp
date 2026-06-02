@@ -9,9 +9,24 @@ import {
   PolicyResponseDto$zodSchema,
 } from "./policyresponsedto.js";
 
+export type PoliciesControllerGetAllPoliciesV1Security = {
+  apikey?: string | undefined;
+  oauth2?: string | undefined;
+};
+
+export const PoliciesControllerGetAllPoliciesV1Security$zodSchema: z.ZodType<
+  PoliciesControllerGetAllPoliciesV1Security
+> = z.object({
+  apikey: z.string().describe("API key for authentication").optional(),
+  oauth2: z.string().describe(
+    "OAuth 2.1 authorization code flow. Sign in with your Comp AI account — tokens are issued by the Comp AI authorization server and scoped to your organization, role, and permissions.",
+  ).optional(),
+});
+
 export type PoliciesControllerGetAllPoliciesV1Request = {
   xOrganizationId?: string | undefined;
   excludeContent?: boolean | undefined;
+  includeArchived?: boolean | undefined;
 };
 
 export const PoliciesControllerGetAllPoliciesV1Request$zodSchema: z.ZodType<
@@ -19,6 +34,9 @@ export const PoliciesControllerGetAllPoliciesV1Request$zodSchema: z.ZodType<
 > = z.object({
   excludeContent: z.boolean().describe(
     "When true, omits `content` and `draftContent` from each policy in the response. Use this when listing policies to find one by name/ID — fetch the full content via GET /v1/policies/{id} after.",
+  ).optional(),
+  includeArchived: z.boolean().describe(
+    "When true, includes user-archived and framework-sync-archived policies in the response. Defaults to false.",
   ).optional(),
   xOrganizationId: z.string().describe(
     "Organization ID (required for session auth, optional for API key auth)",

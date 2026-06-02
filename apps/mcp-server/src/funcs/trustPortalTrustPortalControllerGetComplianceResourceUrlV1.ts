@@ -7,7 +7,7 @@ import { encodeJSON } from "../lib/encodings.js";
 import { compactMap } from "../lib/primitives.js";
 import { safeParse } from "../lib/schemas.js";
 import { RequestOptions } from "../lib/sdks.js";
-import { extractSecurity, resolveGlobalSecurity } from "../lib/security.js";
+import { resolveSecurity } from "../lib/security.js";
 import { pathToFunc } from "../lib/url.js";
 import {
   ComplianceResourceSignedUrlDto,
@@ -22,6 +22,7 @@ import {
   UnexpectedClientError,
 } from "../models/errors/httpclienterrors.js";
 import { SDKValidationError } from "../models/errors/sdkvalidationerror.js";
+import { TrustPortalControllerGetComplianceResourceUrlV1Security } from "../models/trustportalcontrollergetcomplianceresourceurlv1op.js";
 import { APICall, APIPromise } from "../types/async.js";
 import { Result } from "../types/fp.js";
 
@@ -30,11 +31,10 @@ import { Result } from "../types/fp.js";
  *
  * @remarks
  * Generate a temporary signed URL for a compliance certificate in Comp AI. Configure the live Trust Center, custom domain, public overview, FAQs, compliance resources, documents, links, and vendor disclosures.
- *
- * If set, this operation will use {@link Security.apikey} from the global security.
  */
 export function trustPortalTrustPortalControllerGetComplianceResourceUrlV1(
   client$: CompAiCore,
+  security: TrustPortalControllerGetComplianceResourceUrlV1Security,
   request: ComplianceResourceSignedUrlDto,
   options?: RequestOptions,
 ): APIPromise<
@@ -51,6 +51,7 @@ export function trustPortalTrustPortalControllerGetComplianceResourceUrlV1(
 > {
   return new APIPromise($do(
     client$,
+    security,
     request,
     options,
   ));
@@ -58,6 +59,7 @@ export function trustPortalTrustPortalControllerGetComplianceResourceUrlV1(
 
 async function $do(
   client$: CompAiCore,
+  security: TrustPortalControllerGetComplianceResourceUrlV1Security,
   request: ComplianceResourceSignedUrlDto,
   options?: RequestOptions,
 ): Promise<
@@ -93,8 +95,23 @@ async function $do(
     "Content-Type": "application/json",
     Accept: "application/json",
   }));
-  const securityInput = await extractSecurity(client$._options.security);
-  const requestSecurity = resolveGlobalSecurity(securityInput, [0]);
+
+  const requestSecurity = resolveSecurity(
+    [
+      {
+        fieldName: "X-API-Key",
+        type: "apiKey:header",
+        value: security?.apikey,
+      },
+    ],
+    [
+      {
+        fieldName: "Authorization",
+        type: "oauth2",
+        value: security?.oauth2,
+      },
+    ],
+  );
 
   const context = {
     options: client$._options,
@@ -102,7 +119,7 @@ async function $do(
     operationID: "TrustPortalController_getComplianceResourceUrl_v1",
     oAuth2Scopes: null,
     resolvedSecurity: requestSecurity,
-    securitySource: client$._options.security,
+    securitySource: security,
     retryConfig: options?.retries
       || client$._options.retryConfig
       || { strategy: "none" },

@@ -7,7 +7,7 @@ import { encodeJSON, encodeSimple } from "../lib/encodings.js";
 import { compactMap } from "../lib/primitives.js";
 import { safeParse } from "../lib/schemas.js";
 import { RequestOptions } from "../lib/sdks.js";
-import { extractSecurity, resolveGlobalSecurity } from "../lib/security.js";
+import { resolveSecurity } from "../lib/security.js";
 import { pathToFunc } from "../lib/url.js";
 import { APIError } from "../models/errors/apierror.js";
 import {
@@ -21,6 +21,7 @@ import { SDKValidationError } from "../models/errors/sdkvalidationerror.js";
 import {
   PoliciesControllerPublishPolicyVersionV1Request,
   PoliciesControllerPublishPolicyVersionV1Request$zodSchema,
+  PoliciesControllerPublishPolicyVersionV1Security,
 } from "../models/policiescontrollerpublishpolicyversionv1op.js";
 import { APICall, APIPromise } from "../types/async.js";
 import { Result } from "../types/fp.js";
@@ -30,11 +31,10 @@ import { Result } from "../types/fp.js";
  *
  * @remarks
  * Publishes a draft policy version, making it the active/current version of the policy. Pass the versionId of the draft you want to publish — for example one created via create-policy-version and then edited.
- *
- * If set, this operation will use {@link Security.apikey} from the global security.
  */
 export function policiesPoliciesControllerPublishPolicyVersionV1(
   client$: CompAiCore,
+  security: PoliciesControllerPublishPolicyVersionV1Security,
   request: PoliciesControllerPublishPolicyVersionV1Request,
   options?: RequestOptions,
 ): APIPromise<
@@ -51,6 +51,7 @@ export function policiesPoliciesControllerPublishPolicyVersionV1(
 > {
   return new APIPromise($do(
     client$,
+    security,
     request,
     options,
   ));
@@ -58,6 +59,7 @@ export function policiesPoliciesControllerPublishPolicyVersionV1(
 
 async function $do(
   client$: CompAiCore,
+  security: PoliciesControllerPublishPolicyVersionV1Security,
   request: PoliciesControllerPublishPolicyVersionV1Request,
   options?: RequestOptions,
 ): Promise<
@@ -106,8 +108,23 @@ async function $do(
       { explode: false, charEncoding: "none" },
     ),
   }));
-  const securityInput = await extractSecurity(client$._options.security);
-  const requestSecurity = resolveGlobalSecurity(securityInput, [0]);
+
+  const requestSecurity = resolveSecurity(
+    [
+      {
+        fieldName: "X-API-Key",
+        type: "apiKey:header",
+        value: security?.apikey,
+      },
+    ],
+    [
+      {
+        fieldName: "Authorization",
+        type: "oauth2",
+        value: security?.oauth2,
+      },
+    ],
+  );
 
   const context = {
     options: client$._options,
@@ -115,7 +132,7 @@ async function $do(
     operationID: "PoliciesController_publishPolicyVersion_v1",
     oAuth2Scopes: null,
     resolvedSecurity: requestSecurity,
-    securitySource: client$._options.security,
+    securitySource: security,
     retryConfig: options?.retries
       || client$._options.retryConfig
       || { strategy: "none" },
