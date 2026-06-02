@@ -158,19 +158,31 @@ export const kmsKeyRotationCheck: IntegrationCheck = {
     }
     const { keys, unreadableKeyIds } = await listKmsKeys(ctx, session);
 
-    // Keys whose metadata couldn't be read can't be classified — surface them
-    // so an all-unreadable account (e.g. kms:DescribeKey denied) isn't recorded
-    // as a clean run with no findings.
+    // Keys/regions that couldn't be read can't be classified — surface them so
+    // an all-unreadable account (e.g. kms:ListKeys or kms:DescribeKey denied)
+    // isn't recorded as a clean run with no findings. Region markers
+    // ("region:<name>") are ListKeys failures; the rest are DescribeKey failures.
     if (unreadableKeyIds.length > 0) {
+      const failedRegions = unreadableKeyIds
+        .filter((k) => k.startsWith('region:'))
+        .map((k) => k.slice('region:'.length));
+      const failedKeyCount = unreadableKeyIds.length - failedRegions.length;
+      const parts: string[] = [];
+      if (failedRegions.length > 0) {
+        parts.push(`keys could not be listed in ${failedRegions.length} region(s) (${failedRegions.join(', ')})`);
+      }
+      if (failedKeyCount > 0) {
+        parts.push(`metadata could not be read for ${failedKeyCount} key(s)`);
+      }
       ctx.fail({
         title: 'Could not verify KMS keys',
-        description: `Key metadata could not be read for ${unreadableKeyIds.length} KMS key(s) (DescribeKey failed), so their rotation eligibility and status are unverified.`,
+        description: `${parts.join('; ')} — rotation eligibility/status is unverified.`,
         resourceType: 'aws-kms-key',
         resourceId: 'account',
         severity: 'medium',
         remediation:
-          'Grant kms:DescribeKey (and kms:GetKeyRotationStatus) to the integration role, then re-run the check.',
-        evidence: { unreadableKeyCount: unreadableKeyIds.length },
+          'Grant kms:ListKeys, kms:DescribeKey, and kms:GetKeyRotationStatus to the integration role in all enabled regions, then re-run the check.',
+        evidence: { failedRegions, failedKeyCount },
       });
     }
 

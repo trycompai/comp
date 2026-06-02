@@ -1,7 +1,11 @@
 import { describe, expect, it } from 'bun:test';
 import { evaluateCloudTrail } from '../cloudtrail';
 import { evaluateSecurityGroups } from '../ec2';
-import { evaluateIamAccount } from '../iam';
+import {
+  evaluateAccountSummary,
+  evaluateIamAccount,
+  evaluatePasswordPolicy,
+} from '../iam';
 import { evaluateKmsRotation } from '../kms';
 import {
   evaluateRdsBackups,
@@ -34,6 +38,17 @@ describe('AWS IAM account evaluator', () => {
       summary: { AccountMFAEnabled: 1, AccountAccessKeysPresent: 0 },
     });
     expect(kinds(out)).toEqual(['pass', 'pass', 'pass']);
+  });
+
+  it('password-policy evaluation stands alone (preserved even if summary read fails)', () => {
+    // run() emits evaluatePasswordPolicy() before the summary fetch, so a
+    // summary failure can no longer discard the password-policy findings.
+    const out = evaluatePasswordPolicy(null);
+    expect(out).toHaveLength(1);
+    expect(out[0]!.kind).toBe('fail');
+    expect(out[0]!.title).toMatch(/password policy/i);
+    // and the summary evaluator is independent
+    expect(evaluateAccountSummary({ AccountMFAEnabled: 1, AccountAccessKeysPresent: 0 })).toHaveLength(2);
   });
 });
 

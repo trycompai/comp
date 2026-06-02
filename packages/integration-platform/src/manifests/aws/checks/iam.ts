@@ -20,12 +20,13 @@ export interface IamAccountData {
   summary: Record<string, number>;
 }
 
-/** Pure evaluation of IAM account-level posture (unit-tested without the SDK). */
-export function evaluateIamAccount(data: IamAccountData): CheckOutcome[] {
+/** Password-policy findings only (independent of the account summary). */
+export function evaluatePasswordPolicy(
+  pp: IamAccountData['passwordPolicy'],
+): CheckOutcome[] {
   const out: CheckOutcome[] = [];
   const id = 'account';
 
-  const pp = data.passwordPolicy;
   if (!pp) {
     out.push({
       kind: 'fail',
@@ -68,7 +69,17 @@ export function evaluateIamAccount(data: IamAccountData): CheckOutcome[] {
     }
   }
 
-  if (data.summary.AccountMFAEnabled === 1) {
+  return out;
+}
+
+/** Root-account findings from the IAM account summary (MFA, access keys). */
+export function evaluateAccountSummary(
+  summary: Record<string, number>,
+): CheckOutcome[] {
+  const out: CheckOutcome[] = [];
+  const id = 'account';
+
+  if (summary.AccountMFAEnabled === 1) {
     out.push({
       kind: 'pass',
       title: 'Root account MFA enabled',
@@ -88,7 +99,7 @@ export function evaluateIamAccount(data: IamAccountData): CheckOutcome[] {
     });
   }
 
-  if ((data.summary.AccountAccessKeysPresent ?? 0) > 0) {
+  if ((summary.AccountAccessKeysPresent ?? 0) > 0) {
     out.push({
       kind: 'fail',
       title: 'Root account access keys present',
@@ -109,6 +120,14 @@ export function evaluateIamAccount(data: IamAccountData): CheckOutcome[] {
   }
 
   return out;
+}
+
+/** Pure evaluation of IAM account-level posture (unit-tested without the SDK). */
+export function evaluateIamAccount(data: IamAccountData): CheckOutcome[] {
+  return [
+    ...evaluatePasswordPolicy(data.passwordPolicy),
+    ...evaluateAccountSummary(data.summary),
+  ];
 }
 
 export const iamAccountSecurityCheck: IntegrationCheck = {
@@ -139,10 +158,15 @@ export const iamAccountSecurityCheck: IntegrationCheck = {
       if (!(err instanceof Error && /NoSuchEntity/i.test(err.name))) throw err;
     }
 
-    let summary: Record<string, number>;
+    // Password policy and account summary are independent — emit the
+    // password-policy findings now so they aren't lost if the summary read
+    // fails below.
+    emitOutcomes(ctx, evaluatePasswordPolicy(passwordPolicy));
+
     try {
       const summaryResp = await iam.send(new GetAccountSummaryCommand({}));
-      summary = (summaryResp.SummaryMap ?? {}) as Record<string, number>;
+      const summary = (summaryResp.SummaryMap ?? {}) as Record<string, number>;
+      emitOutcomes(ctx, evaluateAccountSummary(summary));
     } catch (err) {
       // The account summary drives the root-MFA / root-access-key findings — if
       // it can't be read, surface "could not verify" rather than aborting the
@@ -150,7 +174,7 @@ export const iamAccountSecurityCheck: IntegrationCheck = {
       ctx.fail({
         title: 'Could not verify IAM account summary',
         description:
-          'The IAM account summary (root MFA, root access keys) could not be read, so account security is unverified.',
+          'The IAM account summary (root MFA, root access keys) could not be read, so root-account security is unverified.',
         resourceType: 'aws-account',
         resourceId: 'account',
         severity: 'medium',
@@ -158,9 +182,6 @@ export const iamAccountSecurityCheck: IntegrationCheck = {
           'Grant iam:GetAccountSummary to the integration role, then re-run the check.',
         evidence: { error: err instanceof Error ? err.message : String(err) },
       });
-      return;
     }
-
-    emitOutcomes(ctx, evaluateIamAccount({ passwordPolicy, summary }));
   },
 };
