@@ -216,7 +216,9 @@ export const integrationChecksSchedule = schedules.task({
     logger.info(`Triggered ${deviceSyncsTriggered} device syncs`);
 
     return {
-      success: true,
+      // Report failure when not every queued task batch was dispatched, so a
+      // partial/failed batchTrigger is not masked as a successful run.
+      success: totalTriggered === tasksToRun.length,
       tasksTriggered: totalTriggered,
       deviceSyncsTriggered,
     };

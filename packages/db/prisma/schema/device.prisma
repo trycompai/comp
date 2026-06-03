@@ -34,6 +34,10 @@ model Device {
   externalDeviceId          String?
 
   @@unique([serialNumber, organizationId])
+  // Prevents duplicate integration-sourced devices for the same connection and
+  // also serves the device-sync fallback lookup (externalDeviceId + connection).
+  // NULLs are distinct in Postgres, so agent/serial-only rows are unaffected.
+  @@unique([integrationConnectionId, externalDeviceId])
   @@index([memberId])
   @@index([organizationId])
   @@index([isCompliant])

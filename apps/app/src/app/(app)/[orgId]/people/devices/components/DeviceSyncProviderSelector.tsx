@@ -9,6 +9,10 @@ import { useDeviceSync } from '../hooks/useDeviceSync';
 export function DeviceSyncProviderSelector() {
   const { orgId } = useParams<{ orgId: string }>();
   const { hasPermission } = usePermissions();
+  // Selecting a provider and triggering syncs are integration:update actions.
+  // Gate the hook itself so users without the permission never hit any
+  // device-sync API, and hide the controls below.
+  const canManageDeviceSync = hasPermission('integration', 'update');
   const {
     selectedProvider,
     isSyncing,
@@ -19,12 +23,9 @@ export function DeviceSyncProviderSelector() {
     getProviderName,
     getProviderLogo,
     hasAnyConnection,
-  } = useDeviceSync({ organizationId: orgId });
+  } = useDeviceSync({ organizationId: orgId, enabled: canManageDeviceSync });
 
-  // Selecting a provider and triggering syncs mutate org-level device-sync
-  // settings — both backed by `integration:update` endpoints. Hide the controls
-  // entirely for users without that permission.
-  if (!hasPermission('integration', 'update')) {
+  if (!canManageDeviceSync) {
     return null;
   }
 
@@ -89,7 +90,8 @@ export function DeviceSyncProviderSelector() {
       </div>
 
       <div className="flex items-center gap-2">
-        {connectedProviders.length > 1 || !selectedProvider ? (
+        {connectedProviders.length > 1 ||
+        !connectedProviders.some((p) => p.slug === selectedProvider) ? (
           <select
             value={selectedProvider ?? ''}
             onChange={handleProviderChange}

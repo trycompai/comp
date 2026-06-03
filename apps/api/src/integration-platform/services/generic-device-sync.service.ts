@@ -199,13 +199,30 @@ export class GenericDeviceSyncService {
               this.logger.warn(
                 `[DeviceSync] Unique constraint hit for ${identifier} — falling back to update`,
               );
-              const conflicting = await db.device.findFirst({
-                where: {
-                  serialNumber: device.serialNumber,
-                  organizationId,
-                },
-                select: { id: true, source: true },
-              });
+              // The conflict can be on (serialNumber, organizationId) OR on
+              // (integrationConnectionId, externalDeviceId). Re-find by whichever
+              // identifier is present — never query with an undefined value
+              // (that would drop the filter and match an arbitrary row).
+              let conflicting: { id: string; source: string } | null = null;
+              if (device.serialNumber) {
+                conflicting = await db.device.findFirst({
+                  where: {
+                    serialNumber: device.serialNumber,
+                    organizationId,
+                  },
+                  select: { id: true, source: true },
+                });
+              }
+              if (!conflicting && device.externalId) {
+                conflicting = await db.device.findFirst({
+                  where: {
+                    externalDeviceId: device.externalId,
+                    integrationConnectionId: connectionId,
+                  },
+                  select: { id: true, source: true },
+                });
+              }
+
               if (conflicting && conflicting.source !== 'integration') {
                 result.skipped++;
                 result.details.push({
@@ -220,6 +237,13 @@ export class GenericDeviceSyncService {
                 });
                 result.updated++;
                 result.details.push({ identifier, status: 'updated' });
+              } else {
+                result.errors++;
+                result.details.push({
+                  identifier,
+                  status: 'error',
+                  reason: 'Unique conflict but conflicting device not found',
+                });
               }
             } else {
               throw createError;

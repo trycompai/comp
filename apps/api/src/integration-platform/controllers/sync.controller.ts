@@ -1703,7 +1703,9 @@ export class SyncController {
     @OrganizationId() organizationId: string,
     @Body() body: { provider: string | null },
   ) {
-    const { provider } = body;
+    // Normalize blank/whitespace to null so an empty string is never persisted
+    // as a configured provider (the scheduler would otherwise sync a blank slug).
+    const provider = body.provider?.trim() ? body.provider.trim() : null;
 
     if (provider) {
       const allManifests = registry.getActiveManifests();
@@ -2058,6 +2060,20 @@ export class SyncController {
     const connection = await this.connectionRepository.findById(connectionId);
     if (!connection || connection.organizationId !== organizationId) {
       throw new HttpException('Connection not found', HttpStatus.NOT_FOUND);
+    }
+
+    // Verify the connection actually belongs to the requested provider, so a
+    // connectionId for one provider can't be driven through another's manifest
+    // and sync logic.
+    const expectedProvider = await db.integrationProvider.findUnique({
+      where: { slug: providerSlug },
+      select: { id: true },
+    });
+    if (!expectedProvider || connection.providerId !== expectedProvider.id) {
+      throw new HttpException(
+        `Connection does not belong to provider "${providerSlug}"`,
+        HttpStatus.BAD_REQUEST,
+      );
     }
 
     // 2. Get manifest from registry — must have 'device_sync' capability

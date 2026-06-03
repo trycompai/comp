@@ -201,6 +201,40 @@ describe('GenericDeviceSyncService', () => {
       expect(result.updated).toBe(1);
     });
 
+    it('falls back via externalDeviceId when create hits the externalId unique constraint', async () => {
+      // externalId-only device (no serial): a concurrent create hits P2002 on
+      // (integrationConnectionId, externalDeviceId); the fallback must re-find by
+      // that key (not by an undefined serialNumber) and update.
+      mockDeviceFindFirst
+        .mockResolvedValueOnce(null) // Phase 1 externalId lookup → none yet
+        .mockResolvedValueOnce({ id: 'dev_ext', source: 'integration' }); // fallback by externalId
+      mockMemberFindFirst.mockResolvedValue({ id: 'mem_1' });
+      mockDeviceCreate.mockRejectedValue(
+        new Prisma.PrismaClientKnownRequestError('Unique constraint failed', {
+          code: 'P2002',
+          clientVersion: 'test',
+        }),
+      );
+
+      const result = await service.processDevices({
+        organizationId: ORG_ID,
+        connectionId: CONN_ID,
+        devices: [baseDevice({ serialNumber: undefined, externalId: 'ext-123' })],
+      });
+
+      expect(mockDeviceUpdate).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { id: 'dev_ext' },
+          data: expect.objectContaining({
+            memberId: 'mem_1',
+            externalDeviceId: 'ext-123',
+          }),
+        }),
+      );
+      expect(result.updated).toBe(1);
+      expect(result.errors).toBe(0);
+    });
+
     it('skips a device whose serial is already managed by the agent (no hijack)', async () => {
       mockDeviceFindFirst.mockResolvedValue({
         id: 'dev_agent',

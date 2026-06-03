@@ -27,6 +27,11 @@ interface DeviceSyncResult {
 
 interface UseDeviceSyncOptions {
   organizationId: string;
+  /**
+   * When false, the hook makes no API calls (used to fully disable it for users
+   * who lack the integration:update permission, so no device-sync API is hit).
+   */
+  enabled?: boolean;
 }
 
 interface UseDeviceSyncReturn {
@@ -35,18 +40,23 @@ interface UseDeviceSyncReturn {
   isLoading: boolean;
   availableProviders: DeviceSyncProviderInfo[];
   syncDevices: (provider: string) => Promise<DeviceSyncResult | null>;
-  setSyncProvider: (provider: string | null) => Promise<void>;
+  setSyncProvider: (provider: string | null) => Promise<boolean>;
   getProviderName: (provider: string) => string;
   getProviderLogo: (provider: string) => string;
   hasAnyConnection: boolean;
 }
 
-export function useDeviceSync({ organizationId }: UseDeviceSyncOptions): UseDeviceSyncReturn {
+export function useDeviceSync({
+  organizationId,
+  enabled = true,
+}: UseDeviceSyncOptions): UseDeviceSyncReturn {
   const [isSyncing, setIsSyncing] = useState(false);
 
   // Fetch current device sync provider
   const { data: providerData, mutate: mutateProvider } = useSWR<{ provider: string | null }>(
-    `/v1/integrations/sync/device-sync-provider?organizationId=${organizationId}`,
+    enabled
+      ? `/v1/integrations/sync/device-sync-provider?organizationId=${organizationId}`
+      : null,
     async (url: string) => {
       const res = await apiClient.get<{ provider: string | null }>(url);
       if (res.error) throw new Error(res.error);
@@ -56,7 +66,9 @@ export function useDeviceSync({ organizationId }: UseDeviceSyncOptions): UseDevi
 
   // Fetch available device sync providers
   const { data: availableData, isLoading } = useSWR<{ providers: DeviceSyncProviderInfo[] }>(
-    `/v1/integrations/sync/available-providers?organizationId=${organizationId}&syncType=device`,
+    enabled
+      ? `/v1/integrations/sync/available-providers?organizationId=${organizationId}&syncType=device`
+      : null,
     async (url: string) => {
       const res = await apiClient.get<{ providers: DeviceSyncProviderInfo[] }>(url);
       if (res.error) throw new Error(res.error);
@@ -77,7 +89,7 @@ export function useDeviceSync({ organizationId }: UseDeviceSyncOptions): UseDevi
     return availableProviders.find((p) => p.slug === provider)?.logoUrl ?? '';
   };
 
-  const setSyncProvider = async (provider: string | null) => {
+  const setSyncProvider = async (provider: string | null): Promise<boolean> => {
     try {
       const response = await apiClient.post(
         `/v1/integrations/sync/device-sync-provider?organizationId=${organizationId}`,
@@ -86,7 +98,7 @@ export function useDeviceSync({ organizationId }: UseDeviceSyncOptions): UseDevi
 
       if (response.error) {
         toast.error('Failed to set device sync provider');
-        return;
+        return false;
       }
 
       mutateProvider({ provider }, false);
@@ -95,8 +107,10 @@ export function useDeviceSync({ organizationId }: UseDeviceSyncOptions): UseDevi
         const name = getProviderName(provider);
         toast.success(`${name} set as your device sync provider`);
       }
+      return true;
     } catch {
       toast.error('Failed to set device sync provider');
+      return false;
     }
   };
 
@@ -114,7 +128,11 @@ export function useDeviceSync({ organizationId }: UseDeviceSyncOptions): UseDevi
 
     try {
       if (selectedProvider !== provider) {
-        await setSyncProvider(provider);
+        // Don't sync with a stale provider config if persisting the choice failed.
+        const providerSet = await setSyncProvider(provider);
+        if (!providerSet) {
+          return null;
+        }
       }
 
       const response = await apiClient.post<DeviceSyncResult>(
