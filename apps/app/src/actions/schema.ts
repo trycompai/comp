@@ -302,7 +302,7 @@ export const updatePolicyFormSchema = z.object({
   id: z.string(),
   status: z.nativeEnum(PolicyStatus),
   assigneeId: z.string().optional().nullable(),
-  department: z.nativeEnum(Departments),
+  department: z.string(),
   review_frequency: z.nativeEnum(Frequency),
   review_date: z.date(),
   approverId: z.string().optional().nullable(), // Added for selecting an approver
