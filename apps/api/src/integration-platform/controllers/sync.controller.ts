@@ -1703,14 +1703,20 @@ export class SyncController {
     @OrganizationId() organizationId: string,
     @Body() body: { provider: string | null },
   ) {
-    // Accept only a non-empty string; anything else (null, missing, number,
-    // object) normalizes to null so a blank/invalid value is never persisted
-    // and a non-string body can't throw on .trim().
+    // Only an explicit string (set) or null (clear) are valid. Reject anything
+    // else — non-string, or blank/whitespace — with a 400 rather than silently
+    // coercing it to null and clearing the org's configured provider.
     const rawProvider = body?.provider;
-    const provider =
-      typeof rawProvider === 'string' && rawProvider.trim().length > 0
-        ? rawProvider.trim()
-        : null;
+    if (
+      rawProvider !== null &&
+      (typeof rawProvider !== 'string' || rawProvider.trim().length === 0)
+    ) {
+      throw new HttpException(
+        'provider must be a non-empty string or null',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+    const provider = rawProvider === null ? null : rawProvider.trim();
 
     if (provider) {
       const allManifests = registry.getActiveManifests();
