@@ -121,8 +121,12 @@ export function useDeviceSync({ organizationId }: UseDeviceSyncOptions): UseDevi
         `/v1/integrations/sync/dynamic/${provider}/devices?organizationId=${organizationId}&connectionId=${connId}`,
       );
 
-      if (response.data?.success) {
-        const { imported, updated, removed, skipped, errors } = response.data;
+      // Branch on the presence of a result body, NOT on `success`: a partial
+      // sync returns HTTP 200 with success=false (errors > 0) but still imports
+      // some devices — we must surface both the summary and the warning.
+      if (response.data) {
+        const { totalFound, imported, updated, removed, skipped, errors } =
+          response.data;
         const parts: string[] = [];
         if (imported > 0) parts.push(`${imported} new`);
         if (updated > 0) parts.push(`${updated} updated`);
@@ -130,8 +134,8 @@ export function useDeviceSync({ organizationId }: UseDeviceSyncOptions): UseDevi
         if (skipped > 0) parts.push(`${skipped} skipped`);
 
         if (parts.length > 0) {
-          toast.success(`Synced ${response.data.totalFound} devices — ${parts.join(', ')}`);
-        } else {
+          toast.success(`Synced ${totalFound} devices — ${parts.join(', ')}`);
+        } else if (errors === 0) {
           toast.info('All devices are already synced');
         }
 

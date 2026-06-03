@@ -1,5 +1,9 @@
 // DSL Engine — Declarative check and sync definitions
-export { interpretDeclarativeCheck, interpretDeclarativeSync } from './interpreter';
+export {
+  interpretDeclarativeCheck,
+  interpretDeclarativeSync,
+  interpretDeclarativeDeviceSync,
+} from './interpreter';
 export { evaluateCondition, evaluateOperator, resolvePath } from './expression-evaluator';
 export { interpolate, interpolateTemplate } from './template-engine';
 export { validateIntegrationDefinition, type ValidationResult } from './validate';

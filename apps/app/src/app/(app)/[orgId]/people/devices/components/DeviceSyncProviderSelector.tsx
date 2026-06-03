@@ -3,10 +3,12 @@
 import { useParams } from 'next/navigation';
 import { Button, Skeleton } from '@trycompai/design-system';
 import { Renew } from '@trycompai/design-system/icons';
+import { usePermissions } from '@/hooks/use-permissions';
 import { useDeviceSync } from '../hooks/useDeviceSync';
 
 export function DeviceSyncProviderSelector() {
   const { orgId } = useParams<{ orgId: string }>();
+  const { hasPermission } = usePermissions();
   const {
     selectedProvider,
     isSyncing,
@@ -18,6 +20,13 @@ export function DeviceSyncProviderSelector() {
     getProviderLogo,
     hasAnyConnection,
   } = useDeviceSync({ organizationId: orgId });
+
+  // Selecting a provider and triggering syncs mutate org-level device-sync
+  // settings — both backed by `integration:update` endpoints. Hide the controls
+  // entirely for users without that permission.
+  if (!hasPermission('integration', 'update')) {
+    return null;
+  }
 
   if (isLoading) {
     return <Skeleton style={{ height: 48, width: '100%' }} />;

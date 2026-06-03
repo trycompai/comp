@@ -53,9 +53,10 @@ export class GenericDeviceSyncService {
     organizationId: string;
     connectionId: string;
     devices: SyncDevice[];
-    options?: { providerName?: string };
+    options?: { providerName?: string; isDirectorySource?: boolean };
   }): Promise<DeviceSyncResult> {
     const providerName = options.providerName ?? 'provider';
+    const isDirectorySource = options.isDirectorySource ?? false;
 
     const result: DeviceSyncResult = {
       success: true,
@@ -81,6 +82,18 @@ export class GenericDeviceSyncService {
     for (const device of activeDevices) {
       const identifier =
         device.serialNumber ?? device.externalId ?? device.name;
+
+      // A device with neither serialNumber nor externalId can never be matched
+      // on a later sync, so importing it would create an untrackable orphan.
+      if (!device.serialNumber && !device.externalId) {
+        result.skipped++;
+        result.details.push({
+          identifier,
+          status: 'skipped',
+          reason: 'No stable identifier (serialNumber or externalId required)',
+        });
+        continue;
+      }
 
       try {
         const normalizedEmail = device.userEmail.toLowerCase();
@@ -112,23 +125,38 @@ export class GenericDeviceSyncService {
         }
 
         // Find existing device — serialNumber match takes priority
-        let existingDevice: { id: string } | null = null;
+        let existingDevice: { id: string; source: string } | null = null;
         if (device.serialNumber) {
           existingDevice = await db.device.findFirst({
             where: {
               serialNumber: device.serialNumber,
               organizationId,
             },
-            select: { id: true },
+            select: { id: true, source: true },
           });
         }
+
+        // Never overwrite a device owned by the agent or Fleet that happens to
+        // share a hardware serial — doing so would hijack (and later expose to
+        // deletion) a device managed by a richer source. Leave it untouched.
+        if (existingDevice && existingDevice.source !== 'integration') {
+          result.skipped++;
+          result.details.push({
+            identifier,
+            status: 'skipped',
+            reason: `Serial already managed by "${existingDevice.source}" — left untouched`,
+          });
+          continue;
+        }
+
         if (!existingDevice && device.externalId) {
           existingDevice = await db.device.findFirst({
             where: {
               externalDeviceId: device.externalId,
               integrationConnectionId: connectionId,
+              source: 'integration',
             },
-            select: { id: true },
+            select: { id: true, source: true },
           });
         }
 
@@ -176,12 +204,19 @@ export class GenericDeviceSyncService {
                   serialNumber: device.serialNumber,
                   organizationId,
                 },
-                select: { id: true },
+                select: { id: true, source: true },
               });
-              if (conflicting) {
+              if (conflicting && conflicting.source !== 'integration') {
+                result.skipped++;
+                result.details.push({
+                  identifier,
+                  status: 'skipped',
+                  reason: `Serial already managed by "${conflicting.source}" — left untouched`,
+                });
+              } else if (conflicting) {
                 await db.device.update({
                   where: { id: conflicting.id },
-                  data: updateData,
+                  data: { ...updateData, memberId: member.id },
                 });
                 result.updated++;
                 result.details.push({ identifier, status: 'updated' });
@@ -212,8 +247,18 @@ export class GenericDeviceSyncService {
     // Phase 2: Remove disappeared devices
     // ==================================================================
 
-    // Only run removal if we actually processed at least one device successfully
-    if (syncedIdentifiers.length === 0) {
+    // Phase 2 removal only runs when the provider is the authoritative device
+    // source (isDirectorySource). Like the employee sync, a non-authoritative
+    // or partial provider response must NEVER delete devices it simply didn't
+    // return this run.
+    // WARNING: the removal below is a HARD delete that cascades to the devices'
+    // Finding rows. It must be converted to a recoverable soft-removal before
+    // any provider sets isDirectorySource=true.
+    if (!isDirectorySource) {
+      this.logger.log(
+        `[DeviceSync] Phase 2 skipped for "${providerName}": isDirectorySource=false. Devices absent from the sync payload were left alone.`,
+      );
+    } else if (syncedIdentifiers.length === 0) {
       this.logger.log(
         '[DeviceSync] No devices successfully processed — skipping Phase 2 removal',
       );

@@ -1,3 +1,4 @@
+import { Prisma } from '@prisma/client';
 import type { SyncDevice } from '@trycompai/integration-platform';
 
 const mockMemberFindFirst = jest.fn();
@@ -102,9 +103,10 @@ describe('GenericDeviceSyncService', () => {
       );
     });
 
-    it('updates an existing device matched by serial number', async () => {
+    it('updates an existing integration device matched by serial number', async () => {
       mockDeviceFindFirst.mockResolvedValue({
         id: 'dev_existing',
+        source: 'integration',
         serialNumber: 'SN-001',
         organizationId: ORG_ID,
       });
@@ -141,6 +143,7 @@ describe('GenericDeviceSyncService', () => {
     it('updates memberId when device ownership changes', async () => {
       mockDeviceFindFirst.mockResolvedValue({
         id: 'dev_existing',
+        source: 'integration',
         serialNumber: 'SN-001',
         organizationId: ORG_ID,
       });
@@ -161,6 +164,86 @@ describe('GenericDeviceSyncService', () => {
         }),
       );
       expect(result.updated).toBe(1);
+    });
+
+    it('refreshes memberId on the P2002 unique-constraint fallback update', async () => {
+      // existingDevice lookup → null (forces a create), then the create hits a
+      // unique constraint and the conflicting-row lookup returns the existing device.
+      mockDeviceFindFirst
+        .mockResolvedValueOnce(null)
+        .mockResolvedValueOnce({
+          id: 'dev_conflict',
+          source: 'integration',
+          serialNumber: 'SN-001',
+          organizationId: ORG_ID,
+        });
+      mockMemberFindFirst.mockResolvedValue({ id: 'mem_new_owner' });
+      mockDeviceCreate.mockRejectedValue(
+        new Prisma.PrismaClientKnownRequestError('Unique constraint failed', {
+          code: 'P2002',
+          clientVersion: 'test',
+        }),
+      );
+
+      const result = await service.processDevices({
+        organizationId: ORG_ID,
+        connectionId: CONN_ID,
+        devices: [baseDevice()],
+      });
+
+      // The fallback update must apply the current owner, not just static fields.
+      expect(mockDeviceUpdate).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { id: 'dev_conflict' },
+          data: expect.objectContaining({ memberId: 'mem_new_owner' }),
+        }),
+      );
+      expect(result.updated).toBe(1);
+    });
+
+    it('skips a device whose serial is already managed by the agent (no hijack)', async () => {
+      mockDeviceFindFirst.mockResolvedValue({
+        id: 'dev_agent',
+        source: 'agent',
+        serialNumber: 'SN-001',
+        organizationId: ORG_ID,
+      });
+
+      const result = await service.processDevices({
+        organizationId: ORG_ID,
+        connectionId: CONN_ID,
+        devices: [baseDevice()],
+      });
+
+      expect(mockDeviceUpdate).not.toHaveBeenCalled();
+      expect(mockDeviceCreate).not.toHaveBeenCalled();
+      expect(result.skipped).toBe(1);
+      expect(result.details).toContainEqual(
+        expect.objectContaining({
+          status: 'skipped',
+          reason: expect.stringContaining('agent'),
+        }),
+      );
+    });
+
+    it('skips a device that has neither serialNumber nor externalId', async () => {
+      const result = await service.processDevices({
+        organizationId: ORG_ID,
+        connectionId: CONN_ID,
+        devices: [
+          baseDevice({ serialNumber: undefined, externalId: undefined }),
+        ],
+      });
+
+      expect(mockMemberFindFirst).not.toHaveBeenCalled();
+      expect(mockDeviceCreate).not.toHaveBeenCalled();
+      expect(result.skipped).toBe(1);
+      expect(result.details).toContainEqual(
+        expect.objectContaining({
+          status: 'skipped',
+          reason: expect.stringContaining('identifier'),
+        }),
+      );
     });
 
     it('skips devices when no matching member exists', async () => {
@@ -201,12 +284,33 @@ describe('GenericDeviceSyncService', () => {
   });
 
   // ========================================================================
-  // Phase 2 — Remove disappeared
+  // Phase 2 — Remove disappeared (only when isDirectorySource = true)
   // ========================================================================
 
   describe('Phase 2 — Remove disappeared', () => {
-    it('deletes devices from this connection that are no longer in the sync result', async () => {
-      // Phase 2: existing devices in DB for this connection
+    it('is skipped entirely when isDirectorySource is not set (default)', async () => {
+      mockDeviceFindMany.mockResolvedValue([
+        {
+          id: 'dev_old',
+          serialNumber: 'SN-OLD',
+          externalDeviceId: null,
+          integrationConnectionId: CONN_ID,
+        },
+      ]);
+
+      const result = await service.processDevices({
+        organizationId: ORG_ID,
+        connectionId: CONN_ID,
+        devices: [baseDevice({ serialNumber: 'SN-001' })],
+      });
+
+      // No pruning by default — a non-authoritative provider must never delete.
+      expect(mockDeviceFindMany).not.toHaveBeenCalled();
+      expect(mockDeviceDeleteMany).not.toHaveBeenCalled();
+      expect(result.removed).toBe(0);
+    });
+
+    it('deletes stale devices when isDirectorySource = true', async () => {
       mockDeviceFindMany.mockResolvedValue([
         {
           id: 'dev_old',
@@ -226,6 +330,7 @@ describe('GenericDeviceSyncService', () => {
         organizationId: ORG_ID,
         connectionId: CONN_ID,
         devices: [baseDevice({ serialNumber: 'SN-001' })],
+        options: { isDirectorySource: true },
       });
 
       expect(mockDeviceDeleteMany).toHaveBeenCalledWith({
@@ -249,6 +354,7 @@ describe('GenericDeviceSyncService', () => {
         organizationId: ORG_ID,
         connectionId: CONN_ID,
         devices: [baseDevice({ serialNumber: 'SN-001' })],
+        options: { isDirectorySource: true },
       });
 
       // Device was skipped because member doesn't exist, but its identifier
@@ -272,6 +378,7 @@ describe('GenericDeviceSyncService', () => {
         organizationId: ORG_ID,
         connectionId: CONN_ID,
         devices: [baseDevice({ status: 'inactive', serialNumber: 'SN-INACTIVE' })],
+        options: { isDirectorySource: true },
       });
 
       // No active devices means no identifiers tracked → Phase 2 guard skips removal
@@ -293,6 +400,7 @@ describe('GenericDeviceSyncService', () => {
         organizationId: ORG_ID,
         connectionId: CONN_ID,
         devices: [baseDevice({ serialNumber: 'SN-001' })],
+        options: { isDirectorySource: true },
       });
 
       expect(mockDeviceDeleteMany).not.toHaveBeenCalled();

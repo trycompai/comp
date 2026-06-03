@@ -11,7 +11,7 @@ const API_BASE_URL = process.env.BASE_URL || 'http://localhost:3333';
  */
 export const runDeviceSync = task({
   id: 'run-device-sync',
-  maxDuration: 1000 * 60 * 10, // 10 minutes
+  maxDuration: 60 * 10, // 10 minutes — Trigger.dev maxDuration is in SECONDS
   run: async (payload: {
     organizationId: string;
     connectionId: string;

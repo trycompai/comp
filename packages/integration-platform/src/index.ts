@@ -99,6 +99,7 @@ export {
 export {
   interpretDeclarativeCheck,
   interpretDeclarativeSync,
+  interpretDeclarativeDeviceSync,
   evaluateCondition,
   evaluateOperator,
   resolvePath,

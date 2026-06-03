@@ -34,7 +34,7 @@ import {
   matchesSyncFilterTerms,
   parseSyncFilterTerms,
   interpretDeclarativeSync,
-  SyncDeviceSchema,
+  interpretDeclarativeDeviceSync,
   type OAuthConfig,
   type SyncDefinition,
 } from '@trycompai/integration-platform';
@@ -2159,29 +2159,17 @@ export class SyncController {
     });
 
     try {
-      // 7. Run device sync definition → get raw device data
+      // 7. Run device sync definition → get validated device list
       const syncDefinition =
         dynamicIntegration.deviceSyncDefinition as unknown as SyncDefinition;
-      const syncRunner = interpretDeclarativeSync({
+      const syncRunner = interpretDeclarativeDeviceSync({
         definition: syncDefinition,
       });
 
-      const rawDevices = await syncRunner.run(ctx);
-
-      const validDevices: import('@trycompai/integration-platform').SyncDevice[] = [];
-      for (const raw of rawDevices) {
-        const parsed = SyncDeviceSchema.safeParse(raw);
-        if (parsed.success) {
-          validDevices.push(parsed.data);
-        } else {
-          this.logger.warn(
-            `[DeviceSync] Skipping invalid device: ${JSON.stringify(parsed.error.issues)}`,
-          );
-        }
-      }
+      const validDevices = await syncRunner.run(ctx);
 
       this.logger.log(
-        `[DeviceSync] Sync definition produced ${rawDevices.length} raw devices, ${validDevices.length} valid for "${providerSlug}"`,
+        `[DeviceSync] Device sync definition produced ${validDevices.length} valid devices for "${providerSlug}"`,
       );
 
       // 8. Process devices via generic service
@@ -2189,7 +2177,12 @@ export class SyncController {
         organizationId,
         connectionId,
         devices: validDevices,
-        options: { providerName: manifest.name },
+        options: {
+          providerName: manifest.name,
+          isDirectorySource:
+            (syncDefinition as { isDirectorySource?: boolean })
+              .isDirectorySource ?? false,
+        },
       });
 
       // 9. Persist execution logs + results to the run record
@@ -2211,6 +2204,12 @@ export class SyncController {
           executionLogs.length > 0
             ? (executionLogs as unknown as Prisma.InputJsonValue)
             : undefined,
+      });
+
+      // Record that a device sync ran so the People → Devices selector can show
+      // "Last synced" (mirrors the employee sync path).
+      await this.connectionRepository.update(connectionId, {
+        lastSyncAt: new Date(),
       });
 
       this.logger.log(
