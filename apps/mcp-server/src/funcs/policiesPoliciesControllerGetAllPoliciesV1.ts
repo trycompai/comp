@@ -7,7 +7,7 @@ import { encodeFormQuery, encodeSimple } from "../lib/encodings.js";
 import { compactMap } from "../lib/primitives.js";
 import { safeParse } from "../lib/schemas.js";
 import { RequestOptions } from "../lib/sdks.js";
-import { extractSecurity, resolveGlobalSecurity } from "../lib/security.js";
+import { resolveSecurity } from "../lib/security.js";
 import { pathToFunc } from "../lib/url.js";
 import { APIError } from "../models/errors/apierror.js";
 import {
@@ -21,6 +21,7 @@ import { SDKValidationError } from "../models/errors/sdkvalidationerror.js";
 import {
   PoliciesControllerGetAllPoliciesV1Request,
   PoliciesControllerGetAllPoliciesV1Request$zodSchema,
+  PoliciesControllerGetAllPoliciesV1Security,
 } from "../models/policiescontrollergetallpoliciesv1op.js";
 import { APICall, APIPromise } from "../types/async.js";
 import { Result } from "../types/fp.js";
@@ -29,12 +30,11 @@ import { Result } from "../types/fp.js";
  * List compliance policies
  *
  * @remarks
- * Lists compliance policies for the organization. Use this to find a policy by name, look up a policy ID, browse drafts, or get an overview of all policies for SOC 2, ISO 27001, HIPAA, and GDPR workflows. Returns id, name, status, department, and other metadata for each policy. Pass excludeContent=true to skip the heavy TipTap content fields — recommended when you only need to identify a policy. To read or edit a single policy in detail, fetch it by ID via get-compliance-policy.
- *
- * If set, this operation will use {@link Security.apikey} from the global security.
+ * Lists active compliance policies by default. Use includeArchived=true to include archived rows and excludeContent=true when you only need policy metadata.
  */
 export function policiesPoliciesControllerGetAllPoliciesV1(
   client$: CompAiCore,
+  security: PoliciesControllerGetAllPoliciesV1Security,
   request?: PoliciesControllerGetAllPoliciesV1Request | undefined,
   options?: RequestOptions,
 ): APIPromise<
@@ -51,6 +51,7 @@ export function policiesPoliciesControllerGetAllPoliciesV1(
 > {
   return new APIPromise($do(
     client$,
+    security,
     request,
     options,
   ));
@@ -58,6 +59,7 @@ export function policiesPoliciesControllerGetAllPoliciesV1(
 
 async function $do(
   client$: CompAiCore,
+  security: PoliciesControllerGetAllPoliciesV1Security,
   request?: PoliciesControllerGetAllPoliciesV1Request | undefined,
   options?: RequestOptions,
 ): Promise<
@@ -91,6 +93,7 @@ async function $do(
   const path$ = pathToFunc("/v1/policies")();
   const query$ = encodeFormQuery({
     "excludeContent": payload$?.excludeContent,
+    "includeArchived": payload$?.includeArchived,
   });
 
   const headers$ = new Headers(compactMap({
@@ -101,8 +104,23 @@ async function $do(
       { explode: false, charEncoding: "none" },
     ),
   }));
-  const securityInput = await extractSecurity(client$._options.security);
-  const requestSecurity = resolveGlobalSecurity(securityInput, [0]);
+
+  const requestSecurity = resolveSecurity(
+    [
+      {
+        fieldName: "X-API-Key",
+        type: "apiKey:header",
+        value: security?.apikey,
+      },
+    ],
+    [
+      {
+        fieldName: "Authorization",
+        type: "oauth2",
+        value: security?.oauth2,
+      },
+    ],
+  );
 
   const context = {
     options: client$._options,
@@ -110,7 +128,7 @@ async function $do(
     operationID: "PoliciesController_getAllPolicies_v1",
     oAuth2Scopes: null,
     resolvedSecurity: requestSecurity,
-    securitySource: client$._options.security,
+    securitySource: security,
     retryConfig: options?.retries
       || client$._options.retryConfig
       || { strategy: "none" },
