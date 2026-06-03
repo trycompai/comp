@@ -75,6 +75,7 @@ export const openSecurityIssuesCheck: IntegrationCheck = {
   name: 'No Open Security Issues',
   description:
     'Verify that there are no open high or critical security vulnerabilities detected by Aikido',
+  service: 'issue-tracking',
   taskMapping: TASK_TEMPLATES.secureCode,
   defaultSeverity: 'high',
 

@@ -21,7 +21,13 @@ import {
   ApiSecurity,
   ApiTags,
 } from '@nestjs/swagger';
-import { IsArray, IsObject, IsOptional, IsString } from 'class-validator';
+import {
+  IsArray,
+  IsBoolean,
+  IsObject,
+  IsOptional,
+  IsString,
+} from 'class-validator';
 import { db } from '@db';
 import {
   AssumeRoleCommand,
@@ -55,6 +61,7 @@ import {
   parseAwsRoleArn,
   validateAwsPartitionConfig,
 } from '../../cloud-security/aws-partition.utils';
+import { getProviderSummary } from '../utils/provider-summary';
 
 // Class (not interface) so @nestjs/swagger can introspect it — interfaces are
 // erased at runtime and produce an empty OpenAPI body schema, which means MCP
@@ -184,6 +191,17 @@ class UpdateConnectionCredentialsDto {
   credentials!: Record<string, string | string[]>;
 }
 
+class EnsureValidCredentialsDto {
+  @ApiPropertyOptional({
+    description:
+      'Force an OAuth token refresh even when the stored expiry has not been reached. Use after a provider returns 401.',
+    default: false,
+  })
+  @IsOptional()
+  @IsBoolean()
+  forceRefresh?: boolean;
+}
+
 const hasCredentialValue = (value?: string | string[]): boolean => {
   if (Array.isArray(value)) {
     return value.length > 0;
@@ -305,9 +323,32 @@ export class ConnectionsController {
             description: s.description,
             enabledByDefault: s.enabledByDefault ?? true,
             implemented: s.implemented ?? true,
+            mappedTasks: this.buildServiceTaskMappings(m.checks, s.id),
           })) ?? [],
       };
     });
+  }
+
+  /**
+   * Evidence tasks a single service's checks satisfy: distinct taskMappings of
+   * the manifest checks whose `service` equals serviceId, resolved to names.
+   */
+  private buildServiceTaskMappings(
+    checks:
+      | ReadonlyArray<{ service?: string; taskMapping?: TaskTemplateId }>
+      | undefined,
+    serviceId: string,
+  ): Array<{ id: string; name: string }> {
+    const out: Array<{ id: string; name: string }> = [];
+    const seen = new Set<string>();
+    for (const check of checks ?? []) {
+      if (check.service !== serviceId || !check.taskMapping) continue;
+      if (seen.has(check.taskMapping)) continue;
+      seen.add(check.taskMapping);
+      const info = TASK_TEMPLATE_INFO[check.taskMapping];
+      if (info) out.push({ id: check.taskMapping, name: info.name });
+    }
+    return out;
   }
 
   /**
@@ -398,6 +439,7 @@ export class ConnectionsController {
           description: s.description,
           enabledByDefault: s.enabledByDefault ?? true,
           implemented: s.implemented ?? true,
+          mappedTasks: this.buildServiceTaskMappings(manifest.checks, s.id),
         })) ?? [],
     };
   }
@@ -414,20 +456,24 @@ export class ConnectionsController {
 
     return connections
       .filter((c) => c.status !== 'disconnected')
-      .map((c) => ({
-        id: c.id,
-        providerId: c.providerId,
-        providerSlug: (c as any).provider?.slug,
-        providerName: (c as any).provider?.name,
-        status: c.status,
-        authStrategy: c.authStrategy,
-        lastSyncAt: c.lastSyncAt,
-        nextSyncAt: c.nextSyncAt,
-        errorMessage: c.errorMessage,
-        variables: c.variables,
-        metadata: c.metadata,
-        createdAt: c.createdAt,
-      }));
+      .map((c) => {
+        const provider = getProviderSummary(c);
+
+        return {
+          id: c.id,
+          providerId: c.providerId,
+          providerSlug: provider?.slug,
+          providerName: provider?.name,
+          status: c.status,
+          authStrategy: c.authStrategy,
+          lastSyncAt: c.lastSyncAt,
+          nextSyncAt: c.nextSyncAt,
+          errorMessage: c.errorMessage,
+          variables: c.variables,
+          metadata: c.metadata,
+          createdAt: c.createdAt,
+        };
+      });
   }
 
   /**
@@ -444,8 +490,7 @@ export class ConnectionsController {
       id,
       organizationId,
     );
-    const providerSlug = (connection as { provider?: { slug: string } })
-      .provider?.slug;
+    const providerSlug = getProviderSummary(connection)?.slug;
 
     // Get credential fields for custom auth integrations
     let credentialFields: Array<{
@@ -865,7 +910,7 @@ export class ConnectionsController {
       id,
       organizationId,
     );
-    const providerSlug = (connection as any).provider?.slug;
+    const providerSlug = getProviderSummary(connection)?.slug;
 
     if (!providerSlug) {
       throw new HttpException(
@@ -1048,10 +1093,12 @@ export class ConnectionsController {
    */
   @Post(':id/ensure-valid-credentials')
   @ApiOperation({ summary: 'Ensure valid credentials for a connection' })
+  @ApiBody({ type: EnsureValidCredentialsDto, required: false })
   @RequirePermission('integration', 'update')
   async ensureValidCredentials(
     @Param('id') id: string,
     @OrganizationId() organizationId: string,
+    @Body() body?: EnsureValidCredentialsDto,
   ) {
     const connection = await this.connectionService.getConnectionForOrg(
       id,
@@ -1065,8 +1112,7 @@ export class ConnectionsController {
       );
     }
 
-    const providerSlug = (connection as { provider?: { slug: string } })
-      .provider?.slug;
+    const providerSlug = getProviderSummary(connection)?.slug;
     if (!providerSlug) {
       throw new HttpException(
         'Provider not found for connection',
@@ -1090,11 +1136,15 @@ export class ConnectionsController {
       const supportsRefresh = oauthConfig.supportsRefreshToken !== false;
 
       if (supportsRefresh) {
-        const needsRefresh = await this.credentialVaultService.needsRefresh(id);
+        const forceRefresh = body?.forceRefresh === true;
+        const needsRefresh =
+          forceRefresh || (await this.credentialVaultService.needsRefresh(id));
 
         if (needsRefresh) {
           this.logger.log(
-            `Token needs refresh for connection ${id}, attempting refresh...`,
+            forceRefresh
+              ? `Force refreshing token for connection ${id}...`
+              : `Token needs refresh for connection ${id}, attempting refresh...`,
           );
 
           const oauthCredentials =
@@ -1118,6 +1168,8 @@ export class ConnectionsController {
               clientId: oauthCredentials.clientId,
               clientSecret: oauthCredentials.clientSecret,
               clientAuthMethod: oauthConfig.clientAuthMethod,
+              scope: oauthCredentials.scopes.join(' '),
+              tokenParams: oauthConfig.tokenParams,
             },
           );
 
@@ -1293,8 +1345,7 @@ export class ConnectionsController {
       organizationId,
     );
 
-    const providerSlug = (connection as { provider?: { slug: string } })
-      .provider?.slug;
+    const providerSlug = getProviderSummary(connection)?.slug;
     if (!providerSlug) {
       throw new HttpException(
         'Provider not found for connection',

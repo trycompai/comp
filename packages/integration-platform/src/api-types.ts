@@ -43,6 +43,8 @@ export interface IntegrationProviderResponse {
     description: string;
     enabledByDefault?: boolean;
     implemented?: boolean;
+    /** Evidence tasks this service's checks satisfy (template id + name) */
+    mappedTasks?: Array<{ id: string; name: string }>;
   }>;
 }
 

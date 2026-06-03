@@ -1,3 +1,61 @@
+# [3.68.0](https://github.com/trycompai/comp/compare/v3.67.0...v3.68.0) (2026-06-03)
+
+
+### Bug Fixes
+
+* **app:** count only added evidence tasks on the service card ([f6048a2](https://github.com/trycompai/comp/commit/f6048a218cffc8ec9698c3f3ad3ba602dc4125bb))
+* **app:** hide evidence tasks not added to the org in integration views ([0b55cd2](https://github.com/trycompai/comp/commit/0b55cd2a048dc989ba83ba98baf13d6ed7a54700))
+* **app:** keep addedTemplateIds undefined when taskTemplates absent ([8e6f4ef](https://github.com/trycompai/comp/commit/8e6f4efdf6349003255306b13cdcd239f1818853))
+* **app:** keep integration check dropdowns open ([0d7c7fe](https://github.com/trycompai/comp/commit/0d7c7fe601bfb2b69af7998f4600d6ca0213685b))
+* **integration-platform:** address cubic review of d59e4c7ca (2 P2s) ([4a6b64a](https://github.com/trycompai/comp/commit/4a6b64a8003f8c801a93279c0ae48a1465ea8a66))
+* **integration-platform:** address cubic round-4 review (27 findings) ([a467ff9](https://github.com/trycompai/comp/commit/a467ff9edf878de396bdd2e3a9182690b288f20d))
+* **integration-platform:** align Azure diagnostic-export evidence with enabled logs ([ecc98cf](https://github.com/trycompai/comp/commit/ecc98cf8615037535bdb0f939e3cdb9004e68b8e))
+* **integration-platform:** assume AWS customer role via the roleAssumer (two-hop) ([23e68d2](https://github.com/trycompai/comp/commit/23e68d293d989e58ad1b739747080f47ff93c7e4)), closes [#3003](https://github.com/trycompai/comp/issues/3003)
+* **integration-platform:** attach evidence to all IAM/CloudTrail check outcomes ([7624405](https://github.com/trycompai/comp/commit/762440511406a787cd48dba9d48fcffb14285544))
+* **integration-platform:** close GCP IAM silent pass, harden CloudTrail region, tag per-service checks ([cdde662](https://github.com/trycompai/comp/commit/cdde66214e95259c4d6fe1b926ce976b6916c841))
+* **integration-platform:** enrich evidence with the determining value on every check outcome ([2d09795](https://github.com/trycompai/comp/commit/2d09795db4f5aa6a7e49ec830777144f1cb2c923))
+* **integration-platform:** extend round-4 patterns to sibling check files ([6ef7ad0](https://github.com/trycompai/comp/commit/6ef7ad0705afc525e0337a5ecea689419cd3ca45))
+* **integration-platform:** include out-of-scope role defs in azure rbac wildcard scan ([05d1cce](https://github.com/trycompai/comp/commit/05d1cce0a7ebc90f9564c82b7221941f5772d5a6)), closes [hi#privilege](https://github.com/hi/issues/privilege)
+* **integration-platform:** never let a read failure end as a silent/false verdict ([d59e4c7](https://github.com/trycompai/comp/commit/d59e4c7ca5f2b754fe553d92fca568e62cc1dace))
+* **integration-platform:** preserve array credential fields so AWS evidence checks see regions ([777fe9d](https://github.com/trycompai/comp/commit/777fe9d8c5d86075ee6e2505049a1dab3a38c171))
+* **integration-platform:** resolve 3 P1s from cubic review of fix commits ([3ec918a](https://github.com/trycompai/comp/commit/3ec918ad14a57b59cace4805673cbac303d14096))
+* **integration-platform:** resolve 4 cubic findings (RBAC gate + read-error states) ([b1b5579](https://github.com/trycompai/comp/commit/b1b55791eddd69ecb15f6a30de15f060b0ac7080))
+* **integration-platform:** resolve cubic findings on latest commit (4 of 5) ([239aea4](https://github.com/trycompai/comp/commit/239aea4b131ac5492afc26c9fc23d2b5208753c9))
+* **integrations:** address cubic 2nd-pass review (10 findings) ([d1c6368](https://github.com/trycompai/comp/commit/d1c63688278febad0f5ee8d98151ea3a8efe008f))
+* **integrations:** address cubic review — fix 30 verified cloud-check bugs ([5f6bebc](https://github.com/trycompai/comp/commit/5f6bebc9329e2e6dfc8e8ffd5d39de03cd43bf6d))
+* **integrations:** cubic 3rd-pass — scan continuity, Aurora backups, IPv6 wording ([220982b](https://github.com/trycompai/comp/commit/220982bc7c734824b544a3fd2b9f1728cc39021d))
+* **integrations:** harden oauth refresh handling ([20041cf](https://github.com/trycompai/comp/commit/20041cf0e3a3a918950c7ff2e6a5293b33fc2bf5))
+* **integrations:** make config dropdown clickable via pointer-events, not portal={false} ([ffa5c91](https://github.com/trycompai/comp/commit/ffa5c917d57c01ec2f3a8e1aee3af28d8cbc8e5e))
+* **integrations:** refresh oauth tokens during checks ([8960820](https://github.com/trycompai/comp/commit/89608203c2ee396f0d388a52be09b9e00d652f4d))
+* **integrations:** render config dropdowns inline so they work inside the modal ([a93f479](https://github.com/trycompai/comp/commit/a93f4793f1bb9e658b30f8349f1cc5225965ce51))
+
+
+### Features
+
+* **integrations:** add cloud services as evidence integrations (GCP/Azure/AWS) ([665f454](https://github.com/trycompai/comp/commit/665f4549184879e35f2ae8288827d72ffbf9de23))
+
+# [3.67.0](https://github.com/trycompai/comp/compare/v3.66.2...v3.67.0) (2026-06-02)
+
+
+### Bug Fixes
+
+* **api:** guarantee non-null SoA justification on YES defaults ([7f564df](https://github.com/trycompai/comp/commit/7f564df763937b988ba85c47e92cae29817da151))
+* **api:** include a default justification on SoA ([732f262](https://github.com/trycompai/comp/commit/732f262f4b8a6bfc0856bf2a2a0dcc5c255841f3))
+* **app:** able to edit the justification ([2939178](https://github.com/trycompai/comp/commit/2939178111ac4af55f886ab1bee312a3321e590b))
+* **app:** fix empty justification issue on SoA ([43fa889](https://github.com/trycompai/comp/commit/43fa88968a53a0054ed5e0fd8d7b38f11a4b3ab2))
+* **app:** keep SoA justification dialog open when save fails ([a5621cb](https://github.com/trycompai/comp/commit/a5621cb89a03e1c2ea850b3f1e1044b0be5e3718))
+* **app:** return a generic default when no family match on SoA ([6682be1](https://github.com/trycompai/comp/commit/6682be16dd31e563b723aeae5dcf23f03de0ab22))
+* **app:** show default justification at all times on SoA ([13f468a](https://github.com/trycompai/comp/commit/13f468a2855e1b272c92ce3272b8b3bdfb8d32ca))
+* **background-checks:** move admin actions into the status card footer ([#2998](https://github.com/trycompai/comp/issues/2998)) ([dcd4b4d](https://github.com/trycompai/comp/commit/dcd4b4da8c490d0e2cf3cb54f09815e945de552d))
+* **people:** stop tracking background checks for auditor-only members (CS-416) ([#2995](https://github.com/trycompai/comp/issues/2995)) ([4e7d57d](https://github.com/trycompai/comp/commit/4e7d57dbedb3bf6125dd764b9ecd91c19db8c362))
+
+
+### Features
+
+* **admin:** add Finding Templates management to admin panel ([c381397](https://github.com/trycompai/comp/commit/c381397faeda6abe645a673b8c4378c9b3e5fa3c))
+* **background-checks:** admin cancel/delete/retry (CS-475) ([#2993](https://github.com/trycompai/comp/issues/2993)) ([51c3b3d](https://github.com/trycompai/comp/commit/51c3b3d023e11e6651d784dcccefef6fddaad56f))
+* **background-checks:** hourly reconciliation for stuck checks (CS-473) ([#2996](https://github.com/trycompai/comp/issues/2996)) ([3d6e609](https://github.com/trycompai/comp/commit/3d6e60925b527da5431e3be37435b675360f73a4))
+
 ## [3.66.2](https://github.com/trycompai/comp/compare/v3.66.1...v3.66.2) (2026-06-02)
 
 
