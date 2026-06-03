@@ -10,7 +10,7 @@ import {
   SelectValue,
   Spinner,
 } from '@trycompai/design-system';
-import type { Dispatch, SetStateAction } from 'react';
+import type { ComponentProps, Dispatch, SetStateAction } from 'react';
 import { ConnectionVariableMultiSelect } from './ConnectionVariableMultiSelect';
 
 export interface ConnectionVariable {
@@ -28,6 +28,11 @@ export interface ConnectionVariable {
 
 export type VariableValue = string | number | boolean | string[];
 
+export type ConnectionVariableSelectContentOptions = Pick<
+  ComponentProps<typeof SelectContent>,
+  'portal' | 'alignItemWithTrigger'
+>;
+
 interface ConnectionVariablesFieldsProps {
   variables: ConnectionVariable[];
   variableValues: Record<string, VariableValue>;
@@ -35,6 +40,7 @@ interface ConnectionVariablesFieldsProps {
   dynamicOptions: Record<string, { value: string; label: string }[]>;
   loadingOptions: Record<string, boolean>;
   fetchOptions: (variableId: string) => void;
+  selectContentOptions?: ConnectionVariableSelectContentOptions;
 }
 
 export const normalizeVariableValue = (
@@ -87,6 +93,7 @@ export function ConnectionVariablesFields({
   dynamicOptions,
   loadingOptions,
   fetchOptions,
+  selectContentOptions,
 }: ConnectionVariablesFieldsProps) {
   const syncModeVariable = variables.find((variable) => variable.id === 'sync_user_filter_mode');
   const hasSyncModeVariable = Boolean(syncModeVariable);
@@ -170,7 +177,17 @@ export function ConnectionVariablesFields({
                 <SelectTrigger id={variable.id}>
                   <SelectValue placeholder={`Select ${variable.label.toLowerCase()}`} />
                 </SelectTrigger>
-                <SelectContent>
+                {/*
+                  The DS Select is built on @base-ui/react and portals its popup to document.body.
+                  This form is rendered inside a Radix (@trycompai/ui) modal Dialog (ManageIntegrationDialog),
+                  and Radix's modal sets `body { pointer-events: none }`. The portaled popup inherits that,
+                  so its options are unclickable and the open is cancelled on mouseup ("insta-closes").
+                  ManageIntegrationDialog passes portal={false} plus alignItemWithTrigger={false} so the
+                  popup stays inside the dialog focus boundary and uses normal absolute anchored positioning.
+                  pointer-events:auto keeps the popup interactive if a modal body lock is active. Harmless in
+                  the design-system Sheet consumer (AccountSettingsSheet), which does not lock body events.
+                */}
+                <SelectContent {...selectContentOptions} style={{ pointerEvents: 'auto' }}>
                   {isLoadingOptions ? (
                     <div className="py-2 px-3 text-sm text-muted-foreground flex items-center gap-2">
                       <Spinner />
@@ -203,7 +220,8 @@ export function ConnectionVariablesFields({
                 <SelectTrigger id={variable.id}>
                   <SelectValue />
                 </SelectTrigger>
-                <SelectContent>
+                {/* pointer-events:auto so the popup is clickable inside the Radix modal's body lock (see note above). */}
+                <SelectContent {...selectContentOptions} style={{ pointerEvents: 'auto' }}>
                   <SelectItem value="true">Yes</SelectItem>
                   <SelectItem value="false">No</SelectItem>
                 </SelectContent>

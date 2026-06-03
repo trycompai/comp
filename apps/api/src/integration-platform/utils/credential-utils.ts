@@ -14,22 +14,3 @@ export function getStringValue(value?: string | string[]): string | undefined {
   }
   return value;
 }
-
-/**
- * Normalizes credentials from Record<string, string | string[]> to Record<string, string>
- * by extracting the first value from arrays
- * @param credentials - The credentials object with potential array values
- * @returns A normalized credentials object with only string values
- */
-export function toStringCredentials(
-  credentials: Record<string, string | string[]>,
-): Record<string, string> {
-  const normalized: Record<string, string> = {};
-  for (const [key, value] of Object.entries(credentials)) {
-    const stringValue = getStringValue(value);
-    if (typeof stringValue === 'string' && stringValue.length > 0) {
-      normalized[key] = stringValue;
-    }
-  }
-  return normalized;
-}

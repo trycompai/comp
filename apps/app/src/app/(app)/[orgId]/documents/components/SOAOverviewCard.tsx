@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 import useSWR from 'swr';
 import { api } from '@/lib/api-client';
+import { usePermissions } from '@/hooks/use-permissions';
 import { IsmsDocumentCard } from '../isms/components/shared';
 import type { IsmsDocumentStatus } from '../isms/isms-types';
 
@@ -38,8 +39,14 @@ function toIsmsStatus(document: SOASetupResponse['document']): IsmsDocumentStatu
 
 export function SOAOverviewCard({ organizationId, iso27001FrameworkId }: SOAOverviewCardProps) {
   const form = STATEMENT_OF_APPLICABILITY_FORM;
+  const { hasPermission } = usePermissions();
+  // Least privilege: only audit:create users hit the writing ensure-setup;
+  // read-only users use the read-only get-setup endpoint.
+  const soaEndpoint = hasPermission('audit', 'create')
+    ? '/v1/soa/ensure-setup'
+    : '/v1/soa/get-setup';
   const { data: soaSetupResponse, error: soaSetupError } = useSWR<SOASetupResponse>(
-    ['/v1/soa/ensure-setup', organizationId, iso27001FrameworkId],
+    [soaEndpoint, organizationId, iso27001FrameworkId],
     async ([endpoint, orgId, frameworkId]: readonly [string, string, string]) => {
       const response = await api.post<SOASetupResponse>(endpoint, {
         organizationId: orgId,
