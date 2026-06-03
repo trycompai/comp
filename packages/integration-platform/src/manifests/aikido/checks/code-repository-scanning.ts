@@ -30,6 +30,7 @@ export const codeRepositoryScanningCheck: IntegrationCheck = {
   id: 'code_repository_scanning',
   name: 'Code Repositories Actively Scanned',
   description: 'Verify that all code repositories are being actively scanned for vulnerabilities',
+  service: 'vulnerability-scanning',
   taskMapping: TASK_TEMPLATES.secureCode,
   defaultSeverity: 'medium',
 
