@@ -8,6 +8,7 @@ import {
   Text,
 } from '@trycompai/design-system';
 import { api } from '@/lib/api-client';
+import { usePermissions } from '@/hooks/use-permissions';
 import Link from 'next/link';
 import { useMemo } from 'react';
 import useSWR from 'swr';
@@ -94,9 +95,13 @@ export function SOAOverviewCard({
   iso27001FrameworkId,
 }: SOAOverviewCardProps) {
   const form = STATEMENT_OF_APPLICABILITY_FORM;
+  const { hasPermission } = usePermissions();
+  const soaEndpoint = hasPermission('audit', 'create')
+    ? '/v1/soa/ensure-setup'
+    : '/v1/soa/get-setup';
   const { data: soaSetupResponse, error: soaSetupError, isLoading: isLoadingSOASetup } =
     useSWR<SOASetupResponse>(
-    ['/v1/soa/ensure-setup', organizationId, iso27001FrameworkId],
+    [soaEndpoint, organizationId, iso27001FrameworkId],
     async ([endpoint, orgId, frameworkId]: readonly [string, string, string]) => {
       const response = await api.post<SOASetupResponse>(endpoint, {
         organizationId: orgId,

@@ -44,6 +44,7 @@ describe('SOAController', () => {
     updateDocumentAfterAutoFill: jest.fn(),
     createDocument: jest.fn(),
     ensureSetup: jest.fn(),
+    getSetup: jest.fn(),
     approveDocument: jest.fn(),
     declineDocument: jest.fn(),
     submitForApproval: jest.fn(),
@@ -143,6 +144,27 @@ describe('SOAController', () => {
       const result = await controller.ensureSetup(dto as never, 'org_123');
 
       expect(soaService.ensureSetup).toHaveBeenCalledWith(dto);
+      expect(result).toEqual(setupResult);
+    });
+  });
+
+  describe('getSetup', () => {
+    const dto = {
+      organizationId: 'org_123',
+      frameworkId: 'fw_1',
+    };
+
+    it('should call soaService.getSetup with dto', async () => {
+      const setupResult = {
+        success: true,
+        configuration: { id: 'cfg_1' },
+        document: { id: 'doc_1' },
+      };
+      mockSOAService.getSetup.mockResolvedValue(setupResult);
+
+      const result = await controller.getSetup(dto as never, 'org_123');
+
+      expect(soaService.getSetup).toHaveBeenCalledWith(dto);
       expect(result).toEqual(setupResult);
     });
   });
