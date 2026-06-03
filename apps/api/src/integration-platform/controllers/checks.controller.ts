@@ -32,7 +32,7 @@ import { ConnectionService } from '../services/connection.service';
 import { CredentialVaultService } from '../services/credential-vault.service';
 import { ProviderRepository } from '../repositories/provider.repository';
 import { CheckRunRepository } from '../repositories/check-run.repository';
-import { getStringValue, toStringCredentials } from '../utils/credential-utils';
+import { getStringValue } from '../utils/credential-utils';
 
 // Class (not interface) so @nestjs/swagger emits a body schema, plus a
 // class-validator decorator so the ValidationPipe whitelist accepts the field.
@@ -257,11 +257,13 @@ export class ChecksController {
     try {
       // Run checks
       const accessToken = getStringValue(credentials.access_token);
-      const stringCredentials = toStringCredentials(credentials);
       const result = await runAllChecks({
         manifest,
         accessToken,
-        credentials: stringCredentials,
+        // Pass decrypted credentials through unchanged. Collapsing array fields
+        // here (e.g. AWS `regions`) made custom-auth checks see no regions and
+        // skip with "connection not configured".
+        credentials,
         variables,
         connectionId,
         organizationId: connection.organizationId,

@@ -35,7 +35,7 @@ import { CheckRunRepository } from '../repositories/check-run.repository';
 import { CredentialVaultService } from '../services/credential-vault.service';
 import { OAuthCredentialsService } from '../services/oauth-credentials.service';
 import { TaskIntegrationChecksService } from '../services/task-integration-checks.service';
-import { getStringValue, toStringCredentials } from '../utils/credential-utils';
+import { getStringValue } from '../utils/credential-utils';
 import { isCheckDisabledForTask } from '../utils/disabled-task-checks';
 import { db } from '@db';
 import type { Prisma } from '@db';
@@ -429,11 +429,13 @@ export class TaskIntegrationsController {
     try {
       // Run the specific check
       const accessToken = getStringValue(credentials.access_token);
-      const stringCredentials = toStringCredentials(credentials);
       const result = await runAllChecks({
         manifest,
         accessToken,
-        credentials: stringCredentials,
+        // Pass decrypted credentials through unchanged. Collapsing array fields
+        // here (e.g. AWS `regions`) made custom-auth checks see no regions and
+        // skip with "connection not configured".
+        credentials,
         variables,
         connectionId,
         organizationId,
