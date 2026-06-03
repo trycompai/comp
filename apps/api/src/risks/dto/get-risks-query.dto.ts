@@ -2,13 +2,14 @@ import { ApiPropertyOptional } from '@nestjs/swagger';
 import {
   IsEnum,
   IsInt,
+  IsNotEmpty,
   IsOptional,
   IsString,
   Max,
   MaxLength,
   Min,
 } from 'class-validator';
-import { Type } from 'class-transformer';
+import { Transform, Type } from 'class-transformer';
 import { RiskCategory, Departments, RiskStatus } from '@db';
 import { DEPARTMENT_MAX_LENGTH } from '../../policies/dto/create-policy.dto';
 
@@ -102,7 +103,9 @@ export class GetRisksQueryDto {
   })
   @IsOptional()
   @IsString()
+  @IsNotEmpty()
   @MaxLength(DEPARTMENT_MAX_LENGTH)
+  @Transform(({ value }) => (typeof value === 'string' ? value.trim() : value))
   department?: string;
 
   @ApiPropertyOptional({
