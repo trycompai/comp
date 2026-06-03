@@ -8,6 +8,19 @@ import {
   UpdateVersionContentDto$zodSchema,
 } from "./updateversioncontentdto.js";
 
+export type PoliciesControllerUpdateVersionContentV1Security = {
+  apikey?: string | undefined;
+  oauth2?: string | undefined;
+};
+
+export const PoliciesControllerUpdateVersionContentV1Security$zodSchema:
+  z.ZodType<PoliciesControllerUpdateVersionContentV1Security> = z.object({
+    apikey: z.string().describe("API key for authentication").optional(),
+    oauth2: z.string().describe(
+      "OAuth 2.1 authorization code flow. Sign in with your Comp AI account — tokens are issued by the Comp AI authorization server and scoped to your organization, role, and permissions.",
+    ).optional(),
+  });
+
 export type PoliciesControllerUpdateVersionContentV1Request = {
   xOrganizationId?: string | undefined;
   id: string;

@@ -5,7 +5,7 @@
 import { CompAiCore } from "../core.js";
 import { compactMap } from "../lib/primitives.js";
 import { RequestOptions } from "../lib/sdks.js";
-import { extractSecurity, resolveGlobalSecurity } from "../lib/security.js";
+import { resolveSecurity } from "../lib/security.js";
 import { pathToFunc } from "../lib/url.js";
 import { APIError } from "../models/errors/apierror.js";
 import {
@@ -16,6 +16,7 @@ import {
   UnexpectedClientError,
 } from "../models/errors/httpclienterrors.js";
 import { SDKValidationError } from "../models/errors/sdkvalidationerror.js";
+import { TrustPortalControllerUpdateOverviewV1Security } from "../models/trustportalcontrollerupdateoverviewv1op.js";
 import { APICall, APIPromise } from "../types/async.js";
 import { Result } from "../types/fp.js";
 
@@ -24,11 +25,10 @@ import { Result } from "../types/fp.js";
  *
  * @remarks
  * Update the public Trust Center overview content that explains security posture and compliance status to prospects and customers.
- *
- * If set, this operation will use {@link Security.apikey} from the global security.
  */
 export function trustPortalTrustPortalControllerUpdateOverviewV1(
   client$: CompAiCore,
+  security: TrustPortalControllerUpdateOverviewV1Security,
   options?: RequestOptions,
 ): APIPromise<
   Result<
@@ -44,12 +44,14 @@ export function trustPortalTrustPortalControllerUpdateOverviewV1(
 > {
   return new APIPromise($do(
     client$,
+    security,
     options,
   ));
 }
 
 async function $do(
   client$: CompAiCore,
+  security: TrustPortalControllerUpdateOverviewV1Security,
   options?: RequestOptions,
 ): Promise<
   [
@@ -71,8 +73,23 @@ async function $do(
   const headers$ = new Headers(compactMap({
     Accept: "*/*",
   }));
-  const securityInput = await extractSecurity(client$._options.security);
-  const requestSecurity = resolveGlobalSecurity(securityInput, [0]);
+
+  const requestSecurity = resolveSecurity(
+    [
+      {
+        fieldName: "X-API-Key",
+        type: "apiKey:header",
+        value: security?.apikey,
+      },
+    ],
+    [
+      {
+        fieldName: "Authorization",
+        type: "oauth2",
+        value: security?.oauth2,
+      },
+    ],
+  );
 
   const context = {
     options: client$._options,
@@ -80,7 +97,7 @@ async function $do(
     operationID: "TrustPortalController_updateOverview_v1",
     oAuth2Scopes: null,
     resolvedSecurity: requestSecurity,
-    securitySource: client$._options.security,
+    securitySource: security,
     retryConfig: options?.retries
       || client$._options.retryConfig
       || { strategy: "none" },

@@ -7,7 +7,7 @@ import { encodeSimple } from "../lib/encodings.js";
 import { compactMap } from "../lib/primitives.js";
 import { safeParse } from "../lib/schemas.js";
 import { RequestOptions } from "../lib/sdks.js";
-import { extractSecurity, resolveGlobalSecurity } from "../lib/security.js";
+import { resolveSecurity } from "../lib/security.js";
 import { pathToFunc } from "../lib/url.js";
 import { APIError } from "../models/errors/apierror.js";
 import {
@@ -21,6 +21,7 @@ import { SDKValidationError } from "../models/errors/sdkvalidationerror.js";
 import {
   VariablesControllerFetchVariableOptionsV1Request,
   VariablesControllerFetchVariableOptionsV1Request$zodSchema,
+  VariablesControllerFetchVariableOptionsV1Security,
 } from "../models/variablescontrollerfetchvariableoptionsv1op.js";
 import { APICall, APIPromise } from "../types/async.js";
 import { Result } from "../types/fp.js";
@@ -30,11 +31,10 @@ import { Result } from "../types/fp.js";
  *
  * @remarks
  * Get options for a connection variable in Comp AI. Connect vendor systems, configure OAuth apps, run compliance checks, sync employees, manage variables, and collect automated evidence.
- *
- * If set, this operation will use {@link Security.apikey} from the global security.
  */
 export function integrationsVariablesControllerFetchVariableOptionsV1(
   client$: CompAiCore,
+  security: VariablesControllerFetchVariableOptionsV1Security,
   request: VariablesControllerFetchVariableOptionsV1Request,
   options?: RequestOptions,
 ): APIPromise<
@@ -51,6 +51,7 @@ export function integrationsVariablesControllerFetchVariableOptionsV1(
 > {
   return new APIPromise($do(
     client$,
+    security,
     request,
     options,
   ));
@@ -58,6 +59,7 @@ export function integrationsVariablesControllerFetchVariableOptionsV1(
 
 async function $do(
   client$: CompAiCore,
+  security: VariablesControllerFetchVariableOptionsV1Security,
   request: VariablesControllerFetchVariableOptionsV1Request,
   options?: RequestOptions,
 ): Promise<
@@ -106,8 +108,23 @@ async function $do(
   const headers$ = new Headers(compactMap({
     Accept: "*/*",
   }));
-  const securityInput = await extractSecurity(client$._options.security);
-  const requestSecurity = resolveGlobalSecurity(securityInput, [0]);
+
+  const requestSecurity = resolveSecurity(
+    [
+      {
+        fieldName: "X-API-Key",
+        type: "apiKey:header",
+        value: security?.apikey,
+      },
+    ],
+    [
+      {
+        fieldName: "Authorization",
+        type: "oauth2",
+        value: security?.oauth2,
+      },
+    ],
+  );
 
   const context = {
     options: client$._options,
@@ -115,7 +132,7 @@ async function $do(
     operationID: "VariablesController_fetchVariableOptions_v1",
     oAuth2Scopes: null,
     resolvedSecurity: requestSecurity,
-    securitySource: client$._options.security,
+    securitySource: security,
     retryConfig: options?.retries
       || client$._options.retryConfig
       || { strategy: "none" },
