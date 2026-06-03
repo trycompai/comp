@@ -47,11 +47,44 @@ export function resolveAwsCredentialInputs(
   return { roleArn, externalId, regions };
 }
 
+type AwsPartition = 'aws' | 'aws-us-gov';
+
+function awsPartitionForRegion(region: string): AwsPartition {
+  return region.startsWith('us-gov-') ? 'aws-us-gov' : 'aws';
+}
+
+/** Comp's dedicated roleAssumer role ARN for the partition (set per environment). */
+function awsRoleAssumerArn(partition: AwsPartition): string | undefined {
+  return partition === 'aws-us-gov'
+    ? process.env.SECURITY_HUB_GOVCLOUD_ROLE_ASSUMER_ARN
+    : process.env.SECURITY_HUB_ROLE_ASSUMER_ARN;
+}
+
+/**
+ * Base credentials for hop 1. Commercial AWS uses the task role's default
+ * provider chain (undefined); GovCloud uses explicit access keys when set.
+ */
+function awsBaseCredentials(
+  partition: AwsPartition,
+): { accessKeyId: string; secretAccessKey: string } | undefined {
+  if (partition !== 'aws-us-gov') return undefined;
+  const accessKeyId = process.env.SECURITY_HUB_GOVCLOUD_ACCESS_KEY_ID;
+  const secretAccessKey = process.env.SECURITY_HUB_GOVCLOUD_SECRET_ACCESS_KEY;
+  if (!accessKeyId || !secretAccessKey) return undefined;
+  return { accessKeyId, secretAccessKey };
+}
+
 /**
  * Assume the customer's cross-account IAM role (role ARN + external ID from the
  * connection credentials) and return temporary credentials + the selected
  * regions. Returns null when the connection isn't configured — the check
  * should then no-op (no false pass).
+ *
+ * Uses the SAME two-hop chain as Cloud Tests (independent copy): the customer's
+ * role trust policy whitelists Comp's dedicated roleAssumer role, NOT the raw
+ * task role — so we must (1) assume the roleAssumer from the task/base creds,
+ * then (2) assume the customer role with the roleAssumer creds + external ID. A
+ * single direct hop fails with "not authorized to perform sts:AssumeRole".
  */
 export async function assumeAwsSession(
   ctx: CheckContext,
@@ -62,8 +95,51 @@ export async function assumeAwsSession(
   if (!inputs) return null;
   const { roleArn, externalId, regions } = inputs;
 
-  const sts = new STSClient({ region: regions[0] });
-  const res = await sts.send(
+  // IAM is global — assume once in the first region; the creds work everywhere.
+  const region = regions[0];
+  const partition = awsPartitionForRegion(region);
+
+  const roleAssumerArn = awsRoleAssumerArn(partition);
+  if (!roleAssumerArn) {
+    const envName =
+      partition === 'aws-us-gov'
+        ? 'SECURITY_HUB_GOVCLOUD_ROLE_ASSUMER_ARN'
+        : 'SECURITY_HUB_ROLE_ASSUMER_ARN';
+    throw new Error(`Missing ${envName} (Comp roleAssumer ARN).`);
+  }
+
+  // Hop 1: task/base creds -> Comp roleAssumer.
+  const baseSts = new STSClient({
+    region,
+    credentials: awsBaseCredentials(partition),
+  });
+  const assumerResp = await baseSts.send(
+    new AssumeRoleCommand({
+      RoleArn: roleAssumerArn,
+      RoleSessionName: 'CompRoleAssumer',
+      DurationSeconds: 3600,
+    }),
+  );
+  const assumer = assumerResp.Credentials;
+  if (
+    !assumer?.AccessKeyId ||
+    !assumer.SecretAccessKey ||
+    !assumer.SessionToken
+  ) {
+    return null;
+  }
+
+  // Hop 2: roleAssumer -> customer role (trust policy whitelists the roleAssumer
+  // ARN + external ID).
+  const assumerSts = new STSClient({
+    region,
+    credentials: {
+      accessKeyId: assumer.AccessKeyId,
+      secretAccessKey: assumer.SecretAccessKey,
+      sessionToken: assumer.SessionToken,
+    },
+  });
+  const res = await assumerSts.send(
     new AssumeRoleCommand({
       RoleArn: roleArn,
       ExternalId: externalId,

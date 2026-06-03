@@ -171,13 +171,16 @@ export function ConnectionVariablesFields({
                   <SelectValue placeholder={`Select ${variable.label.toLowerCase()}`} />
                 </SelectTrigger>
                 {/*
-                  portal={false} renders the dropdown inline, inside whatever modal wraps this form.
-                  This component is shown inside a Radix (@trycompai/ui) Dialog (ManageIntegrationDialog).
-                  The DS Select is built on @base-ui/react and portals to document.body by default, which
-                  escapes the Radix modal's pointer-events/dismiss scope and makes the dropdown unclickable
-                  ("insta-closes"). Keeping it inline keeps it inside the modal's scope. Do not remove.
+                  The DS Select is built on @base-ui/react and portals its popup to document.body.
+                  This form is rendered inside a Radix (@trycompai/ui) modal Dialog (ManageIntegrationDialog),
+                  and Radix's modal sets `body { pointer-events: none }`. The portaled popup inherits that,
+                  so its options are unclickable and the open is cancelled on mouseup ("insta-closes").
+                  pointer-events:auto re-enables interaction on the popup while keeping it portaled, so it
+                  stays anchored to the trigger — rendering it inline (portal={false}) instead mis-positions
+                  it because the dialog is centered with a CSS transform. Harmless in the design-system Sheet
+                  consumer (AccountSettingsSheet), which does not lock body pointer-events. Do not remove.
                 */}
-                <SelectContent portal={false}>
+                <SelectContent style={{ pointerEvents: 'auto' }}>
                   {isLoadingOptions ? (
                     <div className="py-2 px-3 text-sm text-muted-foreground flex items-center gap-2">
                       <Spinner />
@@ -210,8 +213,8 @@ export function ConnectionVariablesFields({
                 <SelectTrigger id={variable.id}>
                   <SelectValue />
                 </SelectTrigger>
-                {/* portal={false}: render inline so the dropdown stays inside the Radix modal scope (see note above). */}
-                <SelectContent portal={false}>
+                {/* pointer-events:auto so the popup is clickable inside the Radix modal's body lock (see note above). */}
+                <SelectContent style={{ pointerEvents: 'auto' }}>
                   <SelectItem value="true">Yes</SelectItem>
                   <SelectItem value="false">No</SelectItem>
                 </SelectContent>
