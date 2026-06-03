@@ -1,4 +1,17 @@
 import type { IntegrationManifest } from '../../types';
+import {
+  keyVaultProtectionCheck,
+  keyVaultRbacCheck,
+  monitorLoggingAlertingCheck,
+  nsgNoOpenPortsCheck,
+  rbacLeastPrivilegeCheck,
+  sqlAuditingCheck,
+  sqlPublicAccessCheck,
+  sqlTlsCheck,
+  storageEncryptionCheck,
+  storageHttpsTlsCheck,
+  storagePublicAccessCheck,
+} from './checks';
 
 export const azureManifest: IntegrationManifest = {
   id: 'azure',
@@ -90,5 +103,17 @@ Our integration only makes read-only API calls for security scanning.`,
     },
   ],
 
-  checks: [],
+  checks: [
+    storageHttpsTlsCheck,
+    storagePublicAccessCheck,
+    storageEncryptionCheck,
+    sqlTlsCheck,
+    sqlPublicAccessCheck,
+    sqlAuditingCheck,
+    keyVaultProtectionCheck,
+    keyVaultRbacCheck,
+    nsgNoOpenPortsCheck,
+    rbacLeastPrivilegeCheck,
+    monitorLoggingAlertingCheck,
+  ],
 };
