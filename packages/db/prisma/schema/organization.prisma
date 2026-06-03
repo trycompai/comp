@@ -25,6 +25,10 @@ model Organization {
   // When set, the scheduled sync will only use this provider
   employeeSyncProvider String?
 
+  // Device sync provider (e.g., 'jamf', 'kandji')
+  // When set, the scheduled sync will import devices from this provider
+  deviceSyncProvider String?
+
   apiKeys                            ApiKey[]
   mcpOrgBindings                     McpOrgBinding[]
   auditLog                           AuditLog[]

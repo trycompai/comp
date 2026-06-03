@@ -56,6 +56,7 @@ export class DynamicIntegrationRepository {
     capabilities?: Prisma.InputJsonValue;
     supportsMultipleConnections?: boolean;
     syncDefinition?: Prisma.InputJsonValue;
+    deviceSyncDefinition?: Prisma.InputJsonValue;
     services?: Prisma.InputJsonValue;
   }): Promise<DynamicIntegration> {
     return db.dynamicIntegration.create({
@@ -72,6 +73,7 @@ export class DynamicIntegrationRepository {
         capabilities: data.capabilities ?? ['checks'],
         supportsMultipleConnections: data.supportsMultipleConnections ?? false,
         syncDefinition: data.syncDefinition ?? undefined,
+        deviceSyncDefinition: data.deviceSyncDefinition ?? undefined,
         services: data.services ?? undefined,
       },
     });
@@ -104,6 +106,7 @@ export class DynamicIntegrationRepository {
     capabilities?: Prisma.InputJsonValue;
     supportsMultipleConnections?: boolean;
     syncDefinition?: Prisma.InputJsonValue | null;
+    deviceSyncDefinition?: Prisma.InputJsonValue | null;
     services?: Prisma.InputJsonValue;
   }): Promise<DynamicIntegration> {
     return db.dynamicIntegration.upsert({
@@ -121,6 +124,7 @@ export class DynamicIntegrationRepository {
         capabilities: data.capabilities ?? ['checks'],
         supportsMultipleConnections: data.supportsMultipleConnections ?? false,
         syncDefinition: data.syncDefinition ?? undefined,
+        deviceSyncDefinition: data.deviceSyncDefinition ?? undefined,
         services: data.services ?? undefined,
       },
       update: {
@@ -138,6 +142,10 @@ export class DynamicIntegrationRepository {
           data.syncDefinition === null
             ? Prisma.DbNull
             : (data.syncDefinition ?? undefined),
+        deviceSyncDefinition:
+          data.deviceSyncDefinition === null
+            ? Prisma.DbNull
+            : (data.deviceSyncDefinition ?? undefined),
         services: data.services ?? undefined,
       },
     });

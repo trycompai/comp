@@ -99,6 +99,7 @@ export {
 export {
   interpretDeclarativeCheck,
   interpretDeclarativeSync,
+  interpretDeclarativeDeviceSync,
   evaluateCondition,
   evaluateOperator,
   resolvePath,
@@ -107,6 +108,7 @@ export {
   validateIntegrationDefinition,
   CheckDefinitionSchema,
   SyncEmployeeSchema,
+  SyncDeviceSchema,
   SyncDefinitionSchema,
   DynamicIntegrationDefinitionSchema,
   ConditionSchema,
@@ -119,6 +121,7 @@ export type {
   CodeStep,
   CheckDefinition,
   SyncEmployee,
+  SyncDevice,
   SyncDefinition,
   Condition,
   DynamicIntegrationDefinition,
