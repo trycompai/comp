@@ -5,6 +5,7 @@ import {
   normalizeVariableValue,
   validateTargetRepos,
   type ConnectionVariable,
+  type ConnectionVariableSelectContentOptions,
 } from '@/components/integrations/ConnectionVariablesForm';
 import {
   useIntegrationConnections,
@@ -91,6 +92,11 @@ interface ManageIntegrationDialogProps {
   onDeleted?: () => void;
   onSaved?: () => void;
 }
+
+const LEGACY_MODAL_SELECT_CONTENT_OPTIONS = {
+  portal: false,
+  alignItemWithTrigger: false,
+} satisfies ConnectionVariableSelectContentOptions;
 
 export function ManageIntegrationDialog({
   open,
@@ -471,6 +477,7 @@ function ConfigurationContent({
         dynamicOptions={dynamicOptions}
         loadingOptions={loadingDynamicOptions}
         fetchOptions={fetchDynamicOptions}
+        selectContentOptions={LEGACY_MODAL_SELECT_CONTENT_OPTIONS}
       />
     </div>
   );
