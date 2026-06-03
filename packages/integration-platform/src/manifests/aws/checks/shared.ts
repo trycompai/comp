@@ -10,6 +10,43 @@ export interface AwsSession {
   regions: string[];
 }
 
+export interface AwsCredentialInputs {
+  roleArn: string;
+  externalId: string;
+  regions: string[];
+}
+
+/**
+ * Resolve role ARN, external ID, and regions from raw connection credentials.
+ * Returns null when any is missing (treated as "connection not configured").
+ *
+ * `regions` is normally a string[]; a single region string (or the legacy
+ * singular `region` key) is also accepted, so a value that was collapsed to a
+ * scalar upstream still yields a usable region instead of silently resolving to
+ * "not configured".
+ */
+export function resolveAwsCredentialInputs(
+  credentials: Record<string, unknown>,
+): AwsCredentialInputs | null {
+  const roleArn =
+    typeof credentials.roleArn === 'string' ? credentials.roleArn : '';
+  const externalId =
+    typeof credentials.externalId === 'string' ? credentials.externalId : '';
+  const rawRegions = credentials.regions;
+  const regions = (
+    Array.isArray(rawRegions)
+      ? rawRegions.filter((r): r is string => typeof r === 'string')
+      : typeof rawRegions === 'string'
+        ? [rawRegions]
+        : typeof credentials.region === 'string'
+          ? [credentials.region]
+          : []
+  ).filter((r) => r.trim().length > 0);
+
+  if (!roleArn || !externalId || regions.length === 0) return null;
+  return { roleArn, externalId, regions };
+}
+
 /**
  * Assume the customer's cross-account IAM role (role ARN + external ID from the
  * connection credentials) and return temporary credentials + the selected
@@ -19,18 +56,11 @@ export interface AwsSession {
 export async function assumeAwsSession(
   ctx: CheckContext,
 ): Promise<AwsSession | null> {
-  const raw = ctx.credentials as Record<string, unknown>;
-  const roleArn = typeof raw.roleArn === 'string' ? raw.roleArn : '';
-  const externalId = typeof raw.externalId === 'string' ? raw.externalId : '';
-  const regions = (
-    Array.isArray(raw.regions)
-      ? raw.regions.filter((r): r is string => typeof r === 'string')
-      : typeof raw.region === 'string'
-        ? [raw.region]
-        : []
-  ).filter((r) => r.trim().length > 0);
-
-  if (!roleArn || !externalId || regions.length === 0) return null;
+  const inputs = resolveAwsCredentialInputs(
+    ctx.credentials as Record<string, unknown>,
+  );
+  if (!inputs) return null;
+  const { roleArn, externalId, regions } = inputs;
 
   const sts = new STSClient({ region: regions[0] });
   const res = await sts.send(
