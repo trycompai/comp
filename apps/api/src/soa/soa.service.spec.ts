@@ -145,6 +145,64 @@ describe('SOAService', () => {
     });
   });
 
+  describe('getSetup', () => {
+    const dto = { frameworkId: 'fw-1', organizationId: 'org-1' };
+
+    it('throws NotFoundException when framework not found', async () => {
+      mockDb.frameworkEditorFramework.findUnique.mockResolvedValue(null);
+      await expect(service.getSetup(dto)).rejects.toThrow(NotFoundException);
+    });
+
+    it('returns success:false for non-ISO 27001 framework', async () => {
+      (
+        mockDb.frameworkEditorFramework.findUnique as jest.Mock
+      ).mockResolvedValue({ id: 'fw-1', name: 'SOC 2' });
+      const result = await service.getSetup(dto);
+      expect(result.success).toBe(false);
+      expect(result.error).toContain('ISO 27001');
+    });
+
+    it('returns nulls without creating when configuration and document are missing', async () => {
+      (
+        mockDb.frameworkEditorFramework.findUnique as jest.Mock
+      ).mockResolvedValue({ id: 'fw-1', name: 'ISO 27001' });
+      (
+        mockDb.sOAFrameworkConfiguration.findFirst as jest.Mock
+      ).mockResolvedValue(null);
+      (mockDb.sOADocument.findFirst as jest.Mock).mockResolvedValue(null);
+
+      const result = await service.getSetup(dto);
+
+      expect(result.success).toBe(true);
+      expect(result.configuration).toBeNull();
+      expect(result.document).toBeNull();
+      expect(mockDb.sOAFrameworkConfiguration.create).not.toHaveBeenCalled();
+      expect(mockDb.sOADocument.create).not.toHaveBeenCalled();
+    });
+
+    it('returns existing configuration and document without mutating', async () => {
+      const config = { id: 'cfg-1', questions: [{ id: 'q1' }] };
+      const doc = { id: 'doc-1', answers: [] };
+      (
+        mockDb.frameworkEditorFramework.findUnique as jest.Mock
+      ).mockResolvedValue({ id: 'fw-1', name: 'ISO 27001' });
+      (
+        mockDb.sOAFrameworkConfiguration.findFirst as jest.Mock
+      ).mockResolvedValue(config);
+      (mockDb.sOADocument.findFirst as jest.Mock).mockResolvedValue(doc);
+
+      const result = await service.getSetup(dto);
+
+      expect(result).toEqual({
+        success: true,
+        configuration: config,
+        document: doc,
+      });
+      expect(mockDb.sOAFrameworkConfiguration.create).not.toHaveBeenCalled();
+      expect(mockDb.sOADocument.create).not.toHaveBeenCalled();
+    });
+  });
+
   describe('approveDocument', () => {
     const dto = { documentId: 'doc-1', organizationId: 'org-1' };
     const userId = 'user-1';
