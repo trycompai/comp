@@ -11,7 +11,7 @@ export function ServicesGrid({
   connectionId,
   orgId,
   slug,
-  taskTemplates = [],
+  taskTemplates,
 }: {
   services: Array<{
     id: string;
@@ -30,9 +30,12 @@ export function ServicesGrid({
   const [search, setSearch] = useState('');
 
   // Template ids the org actually has a live task for — so each card counts
-  // only added evidence tasks (matching the service detail page).
+  // only added evidence tasks (matching the service detail page). Stays
+  // undefined when taskTemplates isn't provided so ServiceCard falls back to
+  // counting all mapped tasks; an explicit empty array still means "none added"
+  // (count 0), matching the detail page for an org with no live tasks.
   const addedTemplateIds = useMemo(
-    () => new Set(taskTemplates.map((t) => t.id)),
+    () => (taskTemplates ? new Set(taskTemplates.map((t) => t.id)) : undefined),
     [taskTemplates],
   );
 
