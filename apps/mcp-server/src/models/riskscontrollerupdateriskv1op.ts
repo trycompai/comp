@@ -6,6 +6,20 @@ import * as z from "zod";
 import { ClosedEnum } from "../types/enums.js";
 import { UpdateRiskDto, UpdateRiskDto$zodSchema } from "./updateriskdto.js";
 
+export type RisksControllerUpdateRiskV1Security = {
+  apikey?: string | undefined;
+  oauth2?: string | undefined;
+};
+
+export const RisksControllerUpdateRiskV1Security$zodSchema: z.ZodType<
+  RisksControllerUpdateRiskV1Security
+> = z.object({
+  apikey: z.string().describe("API key for authentication").optional(),
+  oauth2: z.string().describe(
+    "OAuth 2.1 authorization code flow. Sign in with your Comp AI account — tokens are issued by the Comp AI authorization server and scoped to your organization, role, and permissions.",
+  ).optional(),
+});
+
 export type RisksControllerUpdateRiskV1Request = {
   id: string;
   body: UpdateRiskDto;
