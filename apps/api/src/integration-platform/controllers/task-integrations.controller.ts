@@ -37,6 +37,7 @@ import { OAuthCredentialsService } from '../services/oauth-credentials.service';
 import { TaskIntegrationChecksService } from '../services/task-integration-checks.service';
 import { getStringValue } from '../utils/credential-utils';
 import { isCheckDisabledForTask } from '../utils/disabled-task-checks';
+import { getProviderSummary } from '../utils/provider-summary';
 import { db } from '@db';
 import type { Prisma } from '@db';
 
@@ -411,6 +412,8 @@ export class TaskIntegrationsController {
                 clientId: oauthCredentials.clientId,
                 clientSecret: oauthCredentials.clientSecret,
                 clientAuthMethod: oauthConfig.clientAuthMethod,
+                scope: oauthCredentials.scopes.join(' '),
+                tokenParams: oauthConfig.tokenParams,
               },
             );
           };
@@ -644,37 +647,41 @@ export class TaskIntegrationsController {
     );
 
     return {
-      runs: runs.map((run) => ({
-        id: run.id,
-        checkId: run.checkId,
-        checkName: run.checkName,
-        status: run.status,
-        startedAt: run.startedAt,
-        completedAt: run.completedAt,
-        durationMs: run.durationMs,
-        totalChecked: run.totalChecked,
-        passedCount: run.passedCount,
-        failedCount: run.failedCount,
-        errorMessage: run.errorMessage,
-        logs: run.logs,
-        provider: {
-          slug: (run.connection as any).provider?.slug,
-          name: (run.connection as any).provider?.name,
-        },
-        results: run.results.map((r) => ({
-          id: r.id,
-          passed: r.passed,
-          resourceType: r.resourceType,
-          resourceId: r.resourceId,
-          title: r.title,
-          description: r.description,
-          severity: r.severity,
-          remediation: r.remediation,
-          evidence: r.evidence,
-          collectedAt: r.collectedAt,
-        })),
-        createdAt: run.createdAt,
-      })),
+      runs: runs.map((run) => {
+        const provider = getProviderSummary(run.connection);
+
+        return {
+          id: run.id,
+          checkId: run.checkId,
+          checkName: run.checkName,
+          status: run.status,
+          startedAt: run.startedAt,
+          completedAt: run.completedAt,
+          durationMs: run.durationMs,
+          totalChecked: run.totalChecked,
+          passedCount: run.passedCount,
+          failedCount: run.failedCount,
+          errorMessage: run.errorMessage,
+          logs: run.logs,
+          provider: {
+            slug: provider?.slug,
+            name: provider?.name,
+          },
+          results: run.results.map((r) => ({
+            id: r.id,
+            passed: r.passed,
+            resourceType: r.resourceType,
+            resourceId: r.resourceId,
+            title: r.title,
+            description: r.description,
+            severity: r.severity,
+            remediation: r.remediation,
+            evidence: r.evidence,
+            collectedAt: r.collectedAt,
+          })),
+          createdAt: run.createdAt,
+        };
+      }),
     };
   }
 }
