@@ -170,7 +170,14 @@ export function ConnectionVariablesFields({
                 <SelectTrigger id={variable.id}>
                   <SelectValue placeholder={`Select ${variable.label.toLowerCase()}`} />
                 </SelectTrigger>
-                <SelectContent>
+                {/*
+                  portal={false} renders the dropdown inline, inside whatever modal wraps this form.
+                  This component is shown inside a Radix (@trycompai/ui) Dialog (ManageIntegrationDialog).
+                  The DS Select is built on @base-ui/react and portals to document.body by default, which
+                  escapes the Radix modal's pointer-events/dismiss scope and makes the dropdown unclickable
+                  ("insta-closes"). Keeping it inline keeps it inside the modal's scope. Do not remove.
+                */}
+                <SelectContent portal={false}>
                   {isLoadingOptions ? (
                     <div className="py-2 px-3 text-sm text-muted-foreground flex items-center gap-2">
                       <Spinner />
@@ -203,7 +210,8 @@ export function ConnectionVariablesFields({
                 <SelectTrigger id={variable.id}>
                   <SelectValue />
                 </SelectTrigger>
-                <SelectContent>
+                {/* portal={false}: render inline so the dropdown stays inside the Radix modal scope (see note above). */}
+                <SelectContent portal={false}>
                   <SelectItem value="true">Yes</SelectItem>
                   <SelectItem value="false">No</SelectItem>
                 </SelectContent>
