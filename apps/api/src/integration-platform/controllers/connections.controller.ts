@@ -61,6 +61,7 @@ import {
   parseAwsRoleArn,
   validateAwsPartitionConfig,
 } from '../../cloud-security/aws-partition.utils';
+import { getProviderSummary } from '../utils/provider-summary';
 
 // Class (not interface) so @nestjs/swagger can introspect it — interfaces are
 // erased at runtime and produce an empty OpenAPI body schema, which means MCP
@@ -206,30 +207,6 @@ const hasCredentialValue = (value?: string | string[]): boolean => {
     return value.length > 0;
   }
   return typeof value === 'string' && value.trim().length > 0;
-};
-
-const getProviderSummary = (
-  value: unknown,
-): { slug?: string; name?: string } | undefined => {
-  if (!value || typeof value !== 'object' || !('provider' in value)) {
-    return undefined;
-  }
-
-  const provider = (value as { provider?: unknown }).provider;
-  if (!provider || typeof provider !== 'object') {
-    return undefined;
-  }
-
-  const slug =
-    'slug' in provider && typeof provider.slug === 'string'
-      ? provider.slug
-      : undefined;
-  const name =
-    'name' in provider && typeof provider.name === 'string'
-      ? provider.name
-      : undefined;
-
-  return { slug, name };
 };
 
 @Controller({ path: 'integrations/connections', version: '1' })

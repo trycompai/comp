@@ -37,6 +37,7 @@ import { OAuthCredentialsService } from '../services/oauth-credentials.service';
 import { TaskIntegrationChecksService } from '../services/task-integration-checks.service';
 import { getStringValue } from '../utils/credential-utils';
 import { isCheckDisabledForTask } from '../utils/disabled-task-checks';
+import { getProviderSummary } from '../utils/provider-summary';
 import { db } from '@db';
 import type { Prisma } from '@db';
 
@@ -117,30 +118,6 @@ class ToggleCheckForTaskDto {
   @IsString()
   checkId!: string;
 }
-
-const getProviderSummary = (
-  value: unknown,
-): { slug?: string; name?: string } | undefined => {
-  if (!value || typeof value !== 'object' || !('provider' in value)) {
-    return undefined;
-  }
-
-  const provider = (value as { provider?: unknown }).provider;
-  if (!provider || typeof provider !== 'object') {
-    return undefined;
-  }
-
-  const slug =
-    'slug' in provider && typeof provider.slug === 'string'
-      ? provider.slug
-      : undefined;
-  const name =
-    'name' in provider && typeof provider.name === 'string'
-      ? provider.name
-      : undefined;
-
-  return { slug, name };
-};
 
 @Controller({ path: 'integrations/tasks', version: '1' })
 @ApiTags('Integrations')

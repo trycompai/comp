@@ -15,6 +15,13 @@ const KEY_LENGTH = 32;
 
 // Refresh tokens 5 minutes before expiry to avoid race conditions
 const REFRESH_BUFFER_SECONDS = 300;
+const RESERVED_REFRESH_TOKEN_PARAMS = new Set([
+  'grant_type',
+  'refresh_token',
+  'client_id',
+  'client_secret',
+  'scope',
+]);
 
 export interface EncryptedData {
   encrypted: string;
@@ -332,6 +339,12 @@ export class CredentialVaultService {
 
     if (config.tokenParams) {
       for (const [key, value] of Object.entries(config.tokenParams)) {
+        if (RESERVED_REFRESH_TOKEN_PARAMS.has(key)) {
+          this.logger.warn(
+            `Ignoring reserved OAuth refresh token parameter: ${key}`,
+          );
+          continue;
+        }
         body.set(key, value);
       }
     }
