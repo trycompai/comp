@@ -37,6 +37,7 @@ export function evaluatePasswordPolicy(
       severity: 'high',
       remediation:
         'Set an IAM password policy (min length 14; require symbols, numbers, upper and lower case).',
+      evidence: { passwordPolicyConfigured: false },
     });
   } else {
     const weak: string[] = [];
@@ -86,6 +87,7 @@ export function evaluateAccountSummary(
       description: 'The root account has MFA enabled.',
       resourceType: 'aws-account',
       resourceId: id,
+      evidence: { accountMFAEnabled: true },
     });
   } else {
     out.push({
@@ -96,6 +98,7 @@ export function evaluateAccountSummary(
       resourceId: id,
       severity: 'high',
       remediation: 'Enable MFA on the root account.',
+      evidence: { accountMFAEnabled: false },
     });
   }
 
@@ -108,6 +111,9 @@ export function evaluateAccountSummary(
       resourceId: id,
       severity: 'high',
       remediation: 'Delete root account access keys; use IAM users/roles instead.',
+      evidence: {
+        accountAccessKeysPresent: summary.AccountAccessKeysPresent ?? 0,
+      },
     });
   } else {
     out.push({
@@ -116,6 +122,7 @@ export function evaluateAccountSummary(
       description: 'The root account has no access keys.',
       resourceType: 'aws-account',
       resourceId: id,
+      evidence: { accountAccessKeysPresent: 0 },
     });
   }
 

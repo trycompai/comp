@@ -71,6 +71,7 @@ export function evaluateCloudTrail(trails: TrailInfo[]): CheckOutcome[] {
         resourceId: 'account',
         severity: 'high',
         remediation: 'Create a multi-region CloudTrail trail with log file validation enabled.',
+        evidence: { trailsFound: 0 },
       },
     ];
   }
