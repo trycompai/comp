@@ -1,5 +1,6 @@
 import { serverApi } from '@/lib/api-server';
-import { parseRolesString } from '@/lib/permissions';
+import { hasPermission, parseRolesString } from '@/lib/permissions';
+import { resolveCurrentUserPermissions } from '@/lib/permissions.server';
 import { auth } from '@/utils/auth';
 import { Breadcrumb, PageLayout } from '@trycompai/design-system';
 import { headers } from 'next/headers';
@@ -90,12 +91,19 @@ export default async function StatementOfApplicabilityPage({
     try {
       const { frameworkId, framework } = isoFrameworkInstance;
 
+      const userPermissions = await resolveCurrentUserPermissions(organizationId);
+      const canCreateSetup =
+        !!userPermissions && hasPermission(userPermissions, 'audit', 'create');
+      const setupEndpoint = canCreateSetup
+        ? '/v1/soa/ensure-setup'
+        : '/v1/soa/get-setup';
+
       const setupResult = await serverApi.post<{
         success: boolean;
         error?: string;
         configuration: Record<string, unknown> | null;
         document: Record<string, unknown> | null;
-      }>('/v1/soa/ensure-setup', { frameworkId, organizationId });
+      }>(setupEndpoint, { frameworkId, organizationId });
 
       const setupData = setupResult.data;
       if (!setupData?.success) {
