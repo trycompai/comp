@@ -5,6 +5,19 @@
 import * as z from "zod";
 import * as b64$ from "../lib/base64.js";
 
+export type DeviceAgentControllerDownloadMacAgentV1Security = {
+  apikey?: string | undefined;
+  oauth2?: string | undefined;
+};
+
+export const DeviceAgentControllerDownloadMacAgentV1Security$zodSchema:
+  z.ZodType<DeviceAgentControllerDownloadMacAgentV1Security> = z.object({
+    apikey: z.string().describe("API key for authentication").optional(),
+    oauth2: z.string().describe(
+      "OAuth 2.1 authorization code flow. Sign in with your Comp AI account — tokens are issued by the Comp AI authorization server and scoped to your organization, role, and permissions.",
+    ).optional(),
+  });
+
 export type DeviceAgentControllerDownloadMacAgentV1Response = {
   Headers: { [k: string]: Array<string> };
   Result: Uint8Array | string;
