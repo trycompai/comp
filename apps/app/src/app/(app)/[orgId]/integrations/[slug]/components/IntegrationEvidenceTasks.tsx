@@ -32,8 +32,11 @@ export function IntegrationEvidenceTasks({
     () => new Map(taskTemplates.map((task) => [task.id, task])),
     [taskTemplates],
   );
+  // Hide template mappings with no live task in this org — they would render as
+  // "Not added" and prompt customers to ask why. Show only tasks they have.
+  const visibleTasks = mappedTasks.filter((m) => taskByTemplateId.has(m.id));
 
-  if (mappedTasks.length === 0) {
+  if (visibleTasks.length === 0) {
     return null;
   }
 
@@ -48,13 +51,13 @@ export function IntegrationEvidenceTasks({
             </p>
           </div>
           <span className="shrink-0 rounded-full bg-muted px-2 py-1 text-xs text-muted-foreground">
-            {mappedTasks.length}
+            {visibleTasks.length}
           </span>
         </div>
       </div>
 
       <div className="divide-y">
-        {mappedTasks.map((mappedTask) => (
+        {visibleTasks.map((mappedTask) => (
           <EvidenceTaskRow
             key={mappedTask.id}
             fallbackName={mappedTask.name}
