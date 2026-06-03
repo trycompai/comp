@@ -305,9 +305,32 @@ export class ConnectionsController {
             description: s.description,
             enabledByDefault: s.enabledByDefault ?? true,
             implemented: s.implemented ?? true,
+            mappedTasks: this.buildServiceTaskMappings(m.checks, s.id),
           })) ?? [],
       };
     });
+  }
+
+  /**
+   * Evidence tasks a single service's checks satisfy: distinct taskMappings of
+   * the manifest checks whose `service` equals serviceId, resolved to names.
+   */
+  private buildServiceTaskMappings(
+    checks:
+      | ReadonlyArray<{ service?: string; taskMapping?: TaskTemplateId }>
+      | undefined,
+    serviceId: string,
+  ): Array<{ id: string; name: string }> {
+    const out: Array<{ id: string; name: string }> = [];
+    const seen = new Set<string>();
+    for (const check of checks ?? []) {
+      if (check.service !== serviceId || !check.taskMapping) continue;
+      if (seen.has(check.taskMapping)) continue;
+      seen.add(check.taskMapping);
+      const info = TASK_TEMPLATE_INFO[check.taskMapping];
+      if (info) out.push({ id: check.taskMapping, name: info.name });
+    }
+    return out;
   }
 
   /**
@@ -398,6 +421,7 @@ export class ConnectionsController {
           description: s.description,
           enabledByDefault: s.enabledByDefault ?? true,
           implemented: s.implemented ?? true,
+          mappedTasks: this.buildServiceTaskMappings(manifest.checks, s.id),
         })) ?? [],
     };
   }

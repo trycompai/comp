@@ -1,10 +1,8 @@
 'use client';
 
 import type { IntegrationProvider } from '@/hooks/use-integration-platform';
-import { Button } from '@trycompai/design-system';
-import { ArrowRight } from '@trycompai/design-system/icons';
-import Link from 'next/link';
 import { useMemo } from 'react';
+import { EvidenceTaskRow } from './EvidenceTaskRow';
 
 export interface IntegrationTaskTemplate {
   id: string;
@@ -56,34 +54,14 @@ export function IntegrationEvidenceTasks({
       </div>
 
       <div className="divide-y">
-        {mappedTasks.map((mappedTask) => {
-          const task = taskByTemplateId.get(mappedTask.id);
-
-          return (
-            <div key={mappedTask.id} className="flex items-center justify-between gap-4 px-4 py-3">
-              <div className="min-w-0">
-                <p className="truncate text-sm font-medium">{task?.name ?? mappedTask.name}</p>
-                <p className="mt-0.5 line-clamp-2 text-xs text-muted-foreground">
-                  {task?.description ||
-                    'This task is mapped to the integration template, but is not available in this organization yet.'}
-                </p>
-              </div>
-
-              {task ? (
-                <Button
-                  size="sm"
-                  variant="outline"
-                  render={<Link href={`/${orgId}/tasks/${task.taskId}`} />}
-                  iconRight={<ArrowRight size={14} />}
-                >
-                  Open
-                </Button>
-              ) : (
-                <span className="shrink-0 text-xs text-muted-foreground">Not added</span>
-              )}
-            </div>
-          );
-        })}
+        {mappedTasks.map((mappedTask) => (
+          <EvidenceTaskRow
+            key={mappedTask.id}
+            fallbackName={mappedTask.name}
+            task={taskByTemplateId.get(mappedTask.id)}
+            orgId={orgId}
+          />
+        ))}
       </div>
     </section>
   );

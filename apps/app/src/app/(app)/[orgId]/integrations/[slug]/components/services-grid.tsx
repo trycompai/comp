@@ -2,44 +2,29 @@
 
 import { orderServicesForConnectionGrid } from '@/lib/connection-services-display-order';
 import { Search } from '@trycompai/design-system/icons';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { ServiceCard } from './ServiceCard';
 
 export function ServicesGrid({
   services,
   connectionServices = [],
   connectionId,
-  onToggle,
-  togglingService,
+  orgId,
+  slug,
 }: {
-  services: Array<{ id: string; name: string; description: string; implemented?: boolean }>;
+  services: Array<{
+    id: string;
+    name: string;
+    description: string;
+    implemented?: boolean;
+    mappedTasks?: Array<{ id: string; name: string }>;
+  }>;
   connectionServices?: Array<{ id: string; enabled: boolean }>;
   connectionId: string | null;
-  onToggle: (id: string, enabled: boolean) => boolean | void | Promise<boolean | void>;
-  togglingService: string | null;
+  orgId: string;
+  slug: string;
 }) {
   const [search, setSearch] = useState('');
-  const [tailEnabledIds, setTailEnabledIds] = useState<string[]>([]);
-
-  useEffect(() => {
-    setTailEnabledIds([]);
-  }, [connectionId]);
-
-  const handleToggle = useCallback(
-    async (id: string, enabled: boolean) => {
-      let rollback: string[] | null = null;
-      setTailEnabledIds((prev) => {
-        rollback = [...prev];
-        if (enabled) return [...prev.filter((x) => x !== id), id];
-        return prev.filter((x) => x !== id);
-      });
-      const result = await Promise.resolve(onToggle(id, enabled));
-      if (result === false && rollback) {
-        setTailEnabledIds(rollback);
-      }
-    },
-    [onToggle],
-  );
 
   const displayedServices = useMemo(
     () =>
@@ -47,9 +32,9 @@ export function ServicesGrid({
         manifestServices: services,
         connectionServices,
         search,
-        tailEnabledIds,
+        tailEnabledIds: [],
       }),
-    [services, connectionServices, search, tailEnabledIds],
+    [services, connectionServices, search],
   );
 
   return (
@@ -75,9 +60,8 @@ export function ServicesGrid({
             key={service.id}
             service={service}
             connectionId={connectionId}
-            isConnected
-            onToggle={handleToggle}
-            toggling={togglingService === service.id}
+            orgId={orgId}
+            slug={slug}
           />
         ))}
         {displayedServices.length === 0 && search && (
