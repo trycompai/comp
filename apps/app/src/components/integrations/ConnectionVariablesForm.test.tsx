@@ -2,12 +2,13 @@ import { render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 
 // Stub the design-system Select family so we can assert how it is configured.
-// SelectContent exposes its `portal` prop as a data attribute — this is the
-// crux of the fix: the DS Select is built on @base-ui/react and portals to
-// document.body by default, which escapes the Radix (@trycompai/ui) modal
-// Dialog it is rendered inside (ManageIntegrationDialog) and makes the dropdown
-// unclickable ("insta-closes"). Rendering inline (portal={false}) keeps the
-// popup inside the modal's pointer-events/focus scope.
+// SelectContent forwards its `style` to the popup — this is the crux of the fix:
+// the DS Select is built on @base-ui/react and portals its popup to document.body.
+// Inside the Radix (@trycompai/ui) modal Dialog it is rendered in (ManageIntegrationDialog),
+// Radix sets `body { pointer-events: none }`, so the portaled popup is unclickable and
+// the open is cancelled ("insta-closes"). pointer-events:auto re-enables the popup while
+// keeping it portaled (so it stays anchored to the trigger instead of being mis-positioned
+// by the dialog's CSS transform, as rendering inline would do).
 vi.mock('@trycompai/design-system', () => ({
   Input: (props: Record<string, unknown>) => <input {...props} />,
   Label: ({ children, htmlFor }: { children: React.ReactNode; htmlFor?: string }) => (
@@ -21,8 +22,14 @@ vi.mock('@trycompai/design-system', () => ({
     <div data-trigger-id={id}>{children}</div>
   ),
   SelectValue: ({ placeholder }: { placeholder?: string }) => <span>{placeholder}</span>,
-  SelectContent: ({ children, portal }: { children: React.ReactNode; portal?: boolean }) => (
-    <div data-testid="select-content" data-portal={String(portal)}>
+  SelectContent: ({
+    children,
+    style,
+  }: {
+    children: React.ReactNode;
+    style?: React.CSSProperties;
+  }) => (
+    <div data-testid="select-content" style={style}>
       {children}
     </div>
   ),
@@ -56,8 +63,8 @@ function renderFields(variables: ConnectionVariable[]) {
   );
 }
 
-describe('ConnectionVariablesFields dropdown portal behavior', () => {
-  it('renders a select-type dropdown inline (portal={false}) so it survives inside a Radix modal', () => {
+describe('ConnectionVariablesFields dropdown clickability inside a modal', () => {
+  it('renders a select-type dropdown popup with pointer-events:auto so it works inside a Radix modal', () => {
     renderFields([
       {
         id: 'alert_severity_threshold',
@@ -72,13 +79,13 @@ describe('ConnectionVariablesFields dropdown portal behavior', () => {
     ]);
 
     const content = screen.getByTestId('select-content');
-    expect(content).toHaveAttribute('data-portal', 'false');
+    expect(content).toHaveStyle({ pointerEvents: 'auto' });
     // Options still render
     expect(screen.getByText('Low')).toBeInTheDocument();
     expect(screen.getByText('Critical')).toBeInTheDocument();
   });
 
-  it('renders a boolean-type dropdown inline (portal={false})', () => {
+  it('renders a boolean-type dropdown popup with pointer-events:auto', () => {
     renderFields([
       {
         id: 'enabled',
@@ -90,12 +97,12 @@ describe('ConnectionVariablesFields dropdown portal behavior', () => {
     ]);
 
     const content = screen.getByTestId('select-content');
-    expect(content).toHaveAttribute('data-portal', 'false');
+    expect(content).toHaveStyle({ pointerEvents: 'auto' });
     expect(screen.getByText('Yes')).toBeInTheDocument();
     expect(screen.getByText('No')).toBeInTheDocument();
   });
 
-  it('does not portal any dropdown to document.body for mixed select + boolean fields', () => {
+  it('applies pointer-events:auto to every dropdown for mixed select + boolean fields', () => {
     renderFields([
       {
         id: 'mode',
@@ -110,7 +117,7 @@ describe('ConnectionVariablesFields dropdown portal behavior', () => {
     const contents = screen.getAllByTestId('select-content');
     expect(contents).toHaveLength(2);
     for (const content of contents) {
-      expect(content).toHaveAttribute('data-portal', 'false');
+      expect(content).toHaveStyle({ pointerEvents: 'auto' });
     }
   });
 });
