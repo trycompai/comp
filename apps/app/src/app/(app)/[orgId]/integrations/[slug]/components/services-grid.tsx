@@ -11,6 +11,7 @@ export function ServicesGrid({
   connectionId,
   orgId,
   slug,
+  taskTemplates = [],
 }: {
   services: Array<{
     id: string;
@@ -23,8 +24,17 @@ export function ServicesGrid({
   connectionId: string | null;
   orgId: string;
   slug: string;
+  /** Org task templates (live tasks). Used to count only added evidence tasks. */
+  taskTemplates?: Array<{ id: string }>;
 }) {
   const [search, setSearch] = useState('');
+
+  // Template ids the org actually has a live task for — so each card counts
+  // only added evidence tasks (matching the service detail page).
+  const addedTemplateIds = useMemo(
+    () => new Set(taskTemplates.map((t) => t.id)),
+    [taskTemplates],
+  );
 
   const displayedServices = useMemo(
     () =>
@@ -62,6 +72,7 @@ export function ServicesGrid({
             connectionId={connectionId}
             orgId={orgId}
             slug={slug}
+            addedTemplateIds={addedTemplateIds}
           />
         ))}
         {displayedServices.length === 0 && search && (

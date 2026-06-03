@@ -397,6 +397,7 @@ export function ProviderDetailView({
                     connectionId={selectedConnection?.id ?? null}
                     orgId={orgId}
                     slug={provider.id}
+                    taskTemplates={taskTemplates}
                   />
                 )}
               </div>
