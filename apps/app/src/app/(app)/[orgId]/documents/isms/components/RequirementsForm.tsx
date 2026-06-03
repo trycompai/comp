@@ -4,17 +4,10 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { Button, Field, FieldError, HStack, Input, Textarea } from '@trycompai/design-system';
 import { Add } from '@trycompai/design-system/icons';
 import { Controller, useForm } from 'react-hook-form';
-import { z } from 'zod';
+import { requirementSchema, type RequirementFormValues } from './requirement-schema';
 import { IsmsAddCard } from './shared';
 
-const requirementSchema = z.object({
-  partyName: z.string().min(1, 'Interested party is required'),
-  interestedPartyId: z.string().optional(),
-  requirement: z.string().min(1, 'Requirement is required'),
-  treatment: z.string().min(1, 'ISMS treatment is required'),
-});
-
-export type RequirementFormValues = z.infer<typeof requirementSchema>;
+export type { RequirementFormValues };
 
 interface RequirementsFormProps {
   onAdd: (values: RequirementFormValues) => Promise<void>;

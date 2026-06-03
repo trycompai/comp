@@ -71,27 +71,32 @@ export function useIsmsDocumentRows({
     requirement: MappedRequirement,
   ) => {
     setTemplatesState((prev) =>
-      prev.map((template) =>
-        template.id === templateId
-          ? {
-              ...template,
-              requirementLinks: [
-                ...template.requirementLinks,
-                {
-                  id: `local_${requirement.id}`,
-                  frameworkId,
-                  requirementId: requirement.id,
-                  requirement: {
-                    id: requirement.id,
-                    name: requirement.name,
-                    identifier: '',
-                    framework: { id: frameworkId, name: '' },
-                  },
-                },
-              ],
-            }
-          : template,
-      ),
+      prev.map((template) => {
+        if (template.id !== templateId) return template;
+        // Idempotency guard: skip if this requirement is already linked so rapid
+        // clicks / programmatic calls can't add the same item twice.
+        const alreadyLinked = template.requirementLinks.some(
+          (link) => link.requirement.id === requirement.id,
+        );
+        if (alreadyLinked) return template;
+        return {
+          ...template,
+          requirementLinks: [
+            ...template.requirementLinks,
+            {
+              id: `local_${requirement.id}`,
+              frameworkId,
+              requirementId: requirement.id,
+              requirement: {
+                id: requirement.id,
+                name: requirement.name,
+                identifier: '',
+                framework: { id: frameworkId, name: '' },
+              },
+            },
+          ],
+        };
+      }),
     );
   };
 
@@ -112,22 +117,27 @@ export function useIsmsDocumentRows({
 
   const handleControlLinked = (templateId: string, control: MappedControl) => {
     setTemplatesState((prev) =>
-      prev.map((template) =>
-        template.id === templateId
-          ? {
-              ...template,
-              controlLinks: [
-                ...template.controlLinks,
-                {
-                  id: `local_${control.id}`,
-                  frameworkId,
-                  controlTemplateId: control.id,
-                  controlTemplate: { id: control.id, name: control.name },
-                },
-              ],
-            }
-          : template,
-      ),
+      prev.map((template) => {
+        if (template.id !== templateId) return template;
+        // Idempotency guard: skip if this control is already linked so rapid
+        // clicks / programmatic calls can't add the same item twice.
+        const alreadyLinked = template.controlLinks.some(
+          (link) => link.controlTemplate.id === control.id,
+        );
+        if (alreadyLinked) return template;
+        return {
+          ...template,
+          controlLinks: [
+            ...template.controlLinks,
+            {
+              id: `local_${control.id}`,
+              frameworkId,
+              controlTemplateId: control.id,
+              controlTemplate: { id: control.id, name: control.name },
+            },
+          ],
+        };
+      }),
     );
   };
 

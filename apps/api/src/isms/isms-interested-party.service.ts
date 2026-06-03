@@ -1,5 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { db } from '@db';
+import type { Prisma } from '@db';
 import { invalidateApprovalIfNeeded } from './utils/approval';
 import type {
   CreateInterestedPartyInput,
@@ -24,9 +25,10 @@ export class IsmsInterestedPartyService {
     dto: CreateInterestedPartyInput;
   }) {
     await this.requireDocument({ documentId, organizationId });
-    const position = dto.position ?? (await this.nextPosition({ documentId }));
 
     return db.$transaction(async (tx) => {
+      const position =
+        dto.position ?? (await this.nextPosition({ tx, documentId }));
       await invalidateApprovalIfNeeded({ tx, documentId });
       return tx.ismsInterestedParty.create({
         data: {
@@ -82,9 +84,19 @@ export class IsmsInterestedPartyService {
     return { success: true };
   }
 
-  /** Next position uses max(position)+1 so it survives deletes (no collisions). */
-  private async nextPosition({ documentId }: { documentId: string }) {
-    const last = await db.ismsInterestedParty.findFirst({
+  /**
+   * Next position uses max(position)+1 so it survives deletes (no collisions).
+   * Runs on the transaction client so the max-position read and the create are
+   * atomic — otherwise concurrent creates can compute the same position.
+   */
+  private async nextPosition({
+    tx,
+    documentId,
+  }: {
+    tx: Prisma.TransactionClient;
+    documentId: string;
+  }) {
+    const last = await tx.ismsInterestedParty.findFirst({
       where: { documentId },
       orderBy: { position: 'desc' },
       select: { position: true },

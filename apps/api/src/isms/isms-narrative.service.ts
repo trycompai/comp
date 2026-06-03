@@ -51,13 +51,16 @@ export class IsmsNarrativeService {
       JSON.stringify(parsed.data),
     );
 
-    const latest = await db.ismsDocumentVersion.findFirst({
-      where: { documentId, isLatest: true },
-    });
-
-    // Approval invalidation + the narrative write must be atomic: a failed save
-    // must not leave the document reverted to draft without the new content.
+    // The latest-version read, approval invalidation, and the narrative write
+    // must all be atomic: reading the latest version outside the transaction
+    // lets a concurrent save update a stale version or hit the unique
+    // constraint, and a failed write must not leave the document reverted to
+    // draft without the new content.
     return db.$transaction(async (tx) => {
+      const latest = await tx.ismsDocumentVersion.findFirst({
+        where: { documentId, isLatest: true },
+      });
+
       await invalidateApprovalIfNeeded({ tx, documentId });
 
       if (latest) {

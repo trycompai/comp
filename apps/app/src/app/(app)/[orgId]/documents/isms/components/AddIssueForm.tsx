@@ -15,25 +15,13 @@ import {
 } from '@trycompai/design-system';
 import { Add } from '@trycompai/design-system/icons';
 import { Controller, useForm } from 'react-hook-form';
-import { z } from 'zod';
 import { categoriesForKind, type IsmsContextIssueKind } from '../isms-types';
+import { issueSchema, type IssueFormValues } from './issue-schema';
 import { IsmsAddCard, IsmsFieldLabel } from './shared';
-
-const addIssueSchema = z.object({
-  category: z.string().min(1, 'Category is required'),
-  description: z.string().min(1, 'Description is required'),
-  effect: z.string().min(1, 'Effect is required'),
-});
-
-type AddIssueValues = z.infer<typeof addIssueSchema>;
 
 interface AddIssueFormProps {
   kind: IsmsContextIssueKind;
-  onAdd: (params: {
-    category: string;
-    description: string;
-    effect: string;
-  }) => Promise<void>;
+  onAdd: (params: IssueFormValues) => Promise<void>;
 }
 
 export function AddIssueForm({ kind, onAdd }: AddIssueFormProps) {
@@ -55,8 +43,8 @@ function AddIssueFields({
     handleSubmit,
     reset,
     formState: { isSubmitting, errors },
-  } = useForm<AddIssueValues>({
-    resolver: zodResolver(addIssueSchema),
+  } = useForm<IssueFormValues>({
+    resolver: zodResolver(issueSchema),
     defaultValues: { category: categories[0], description: '', effect: '' },
   });
 

@@ -7,10 +7,10 @@ import { z } from 'zod';
  * truth.
  */
 export const requirementSchema = z.object({
-  partyName: z.string().min(1, 'Interested party is required'),
+  partyName: z.string().trim().min(1, 'Interested party is required'),
   interestedPartyId: z.string().optional(),
-  requirement: z.string().min(1, 'Requirement is required'),
-  treatment: z.string().min(1, 'ISMS treatment is required'),
+  requirement: z.string().trim().min(1, 'Requirement is required'),
+  treatment: z.string().trim().min(1, 'ISMS treatment is required'),
 });
 
 export type RequirementFormValues = z.infer<typeof requirementSchema>;

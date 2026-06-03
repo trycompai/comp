@@ -75,6 +75,10 @@ model IsmsDocument {
   @@index([status])
 }
 
+// A partial unique index ("isms_document_version_one_latest") enforces at most one
+// row with isLatest = true per documentId. Prisma cannot express a filtered unique
+// index, so it lives in the raw SQL migration (isms_version_single_latest); keep it
+// in sync if isLatest semantics change.
 model IsmsDocumentVersion {
   id         String       @id @default(dbgenerated("generate_prefixed_cuid('isms_ver'::text)"))
   documentId String

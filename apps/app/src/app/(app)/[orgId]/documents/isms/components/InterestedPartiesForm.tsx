@@ -4,19 +4,14 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { Button, Field, FieldError, HStack, Input, Textarea } from '@trycompai/design-system';
 import { Add } from '@trycompai/design-system/icons';
 import { Controller, useForm } from 'react-hook-form';
-import { z } from 'zod';
+import {
+  interestedPartySchema,
+  type InterestedPartyFormValues,
+} from './interested-party-schema';
 import { IsmsAddCard } from './shared';
 
-const addPartySchema = z.object({
-  name: z.string().min(1, 'Name is required'),
-  category: z.string().min(1, 'Category is required'),
-  needsExpectations: z.string().min(1, 'Needs & expectations are required'),
-});
-
-type AddPartyValues = z.infer<typeof addPartySchema>;
-
 interface InterestedPartiesFormProps {
-  onAdd: (params: AddPartyValues) => Promise<void>;
+  onAdd: (params: InterestedPartyFormValues) => Promise<void>;
 }
 
 export function InterestedPartiesForm({ onAdd }: InterestedPartiesFormProps) {
@@ -36,8 +31,8 @@ function InterestedPartiesFields({
     handleSubmit,
     reset,
     formState: { isSubmitting, errors },
-  } = useForm<AddPartyValues>({
-    resolver: zodResolver(addPartySchema),
+  } = useForm<InterestedPartyFormValues>({
+    resolver: zodResolver(interestedPartySchema),
     defaultValues: { name: '', category: '', needsExpectations: '' },
   });
 

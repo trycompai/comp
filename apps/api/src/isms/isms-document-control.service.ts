@@ -4,6 +4,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { db } from '@db';
+import { invalidateApprovalIfNeeded } from './utils/approval';
 
 /**
  * Org-level mapping between an ISMS document and the organization's Controls
@@ -35,12 +36,18 @@ export class IsmsDocumentControlService {
       );
     }
 
-    await db.ismsDocumentControlLink.createMany({
-      data: uniqueControlIds.map((controlId) => ({
-        ismsDocumentId: documentId,
-        controlId,
-      })),
-      skipDuplicates: true,
+    // Mutating an approved document's control mappings invalidates its sign-off,
+    // so revert it to draft in the same transaction as the write (mirrors the
+    // register/narrative edits) — a failed write must not leave it reverted.
+    await db.$transaction(async (tx) => {
+      await invalidateApprovalIfNeeded({ tx, documentId });
+      await tx.ismsDocumentControlLink.createMany({
+        data: uniqueControlIds.map((controlId) => ({
+          ismsDocumentId: documentId,
+          controlId,
+        })),
+        skipDuplicates: true,
+      });
     });
     return { message: 'Controls linked' };
   }
@@ -55,8 +62,14 @@ export class IsmsDocumentControlService {
     controlId: string;
   }) {
     await this.requireDocument({ documentId, organizationId });
-    await db.ismsDocumentControlLink.deleteMany({
-      where: { ismsDocumentId: documentId, controlId },
+    // Mutating an approved document's control mappings invalidates its sign-off,
+    // so revert it to draft in the same transaction as the write (mirrors the
+    // register/narrative edits) — a failed write must not leave it reverted.
+    await db.$transaction(async (tx) => {
+      await invalidateApprovalIfNeeded({ tx, documentId });
+      await tx.ismsDocumentControlLink.deleteMany({
+        where: { ismsDocumentId: documentId, controlId },
+      });
     });
     return { message: 'Control unlinked' };
   }

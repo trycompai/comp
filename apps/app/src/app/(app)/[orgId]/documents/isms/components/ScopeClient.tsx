@@ -68,7 +68,7 @@ export function ScopeClient(props: ScopeClientProps) {
 
         return (
           <ScopeForm
-            key={`${narrative.certificateScopeSentence}|${versions[0]?.id ?? 'none'}`}
+            key={versions[0]?.id ?? 'none'}
             narrative={narrative}
             canEdit={canManage}
             onSave={handleSaveNarrative}

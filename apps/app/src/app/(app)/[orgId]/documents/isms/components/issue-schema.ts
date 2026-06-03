@@ -6,9 +6,9 @@ import { z } from 'zod';
  * validate identically against a single source of truth.
  */
 export const issueSchema = z.object({
-  category: z.string().min(1, 'Category is required'),
-  description: z.string().min(1, 'Description is required'),
-  effect: z.string().min(1, 'Effect is required'),
+  category: z.string().trim().min(1, 'Category is required'),
+  description: z.string().trim().min(1, 'Description is required'),
+  effect: z.string().trim().min(1, 'Effect is required'),
 });
 
 export type IssueFormValues = z.infer<typeof issueSchema>;

@@ -2,16 +2,23 @@ import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { db } from '@db';
 import { IsmsDocumentControlService } from './isms-document-control.service';
 
-jest.mock('@db', () => ({
-  db: {
-    ismsDocument: { findFirst: jest.fn() },
+jest.mock('@db', () => {
+  const db = {
+    ismsDocument: {
+      findFirst: jest.fn(),
+      findUnique: jest.fn(),
+      update: jest.fn(),
+    },
     control: { findMany: jest.fn() },
     ismsDocumentControlLink: {
       createMany: jest.fn(),
       deleteMany: jest.fn(),
     },
-  },
-}));
+    // Run the callback with the same mock as the transaction client.
+    $transaction: jest.fn((cb: (tx: unknown) => unknown) => cb(db)),
+  };
+  return { db };
+});
 
 const mockDb = jest.mocked(db);
 
@@ -102,6 +109,56 @@ describe('IsmsDocumentControlService', () => {
       expect(mockDb.ismsDocumentControlLink.deleteMany).toHaveBeenCalledWith({
         where: { ismsDocumentId: 'doc_1', controlId: 'ctl_1' },
       });
+    });
+  });
+
+  describe('approval invalidation', () => {
+    it('reverts an approved document to draft on control add', async () => {
+      (mockDb.ismsDocument.findUnique as jest.Mock).mockResolvedValue({
+        status: 'approved',
+      });
+
+      await service.addControls({
+        documentId: 'doc_1',
+        organizationId: 'org_1',
+        controlIds: ['ctl_1', 'ctl_2'],
+      });
+
+      expect(mockDb.ismsDocument.update).toHaveBeenCalledWith({
+        where: { id: 'doc_1' },
+        data: { status: 'draft', approvedAt: null, approverId: null },
+      });
+    });
+
+    it('reverts an approved document to draft on control remove', async () => {
+      (mockDb.ismsDocument.findUnique as jest.Mock).mockResolvedValue({
+        status: 'approved',
+      });
+
+      await service.removeControl({
+        documentId: 'doc_1',
+        organizationId: 'org_1',
+        controlId: 'ctl_1',
+      });
+
+      expect(mockDb.ismsDocument.update).toHaveBeenCalledWith({
+        where: { id: 'doc_1' },
+        data: { status: 'draft', approvedAt: null, approverId: null },
+      });
+    });
+
+    it('leaves a draft document untouched on control add', async () => {
+      (mockDb.ismsDocument.findUnique as jest.Mock).mockResolvedValue({
+        status: 'draft',
+      });
+
+      await service.addControls({
+        documentId: 'doc_1',
+        organizationId: 'org_1',
+        controlIds: ['ctl_1', 'ctl_2'],
+      });
+
+      expect(mockDb.ismsDocument.update).not.toHaveBeenCalled();
     });
   });
 });

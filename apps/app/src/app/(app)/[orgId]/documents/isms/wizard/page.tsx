@@ -34,7 +34,6 @@ export default async function IsmsWizardPage({
 
   const session = await auth.api.getSession({ headers: await headers() });
   if (!session?.user?.id) notFound();
-  const organizationId = session.session.activeOrganizationId ?? orgId;
 
   const frameworksResult = await serverApi.get<FrameworkApiResponse>('/v1/frameworks');
   const frameworks = frameworksResult.data?.data ?? [];
@@ -64,7 +63,7 @@ export default async function IsmsWizardPage({
     <PageLayout>
       {breadcrumb}
       <WizardClient
-        organizationId={organizationId}
+        organizationId={orgId}
         frameworkId={isoFramework.frameworkId}
         fallbackData={fallbackData}
       />

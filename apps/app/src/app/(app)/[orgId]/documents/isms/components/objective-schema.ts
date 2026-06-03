@@ -7,7 +7,7 @@ import { OBJECTIVE_STATUSES } from './objectives-status';
  * both validate identically against a single source of truth.
  */
 export const objectiveSchema = z.object({
-  objective: z.string().min(1, 'Objective is required'),
+  objective: z.string().trim().min(1, 'Objective is required'),
   target: z.string(),
   ownerMemberId: z.string(),
   cadence: z.string(),
