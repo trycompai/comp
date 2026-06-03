@@ -15,7 +15,10 @@ import {
 import { Add, Checkmark, Close } from '@trycompai/design-system/icons';
 import { useEffect, useMemo, useRef, useState } from 'react';
 
-const ADD_CUSTOM_VALUE = '__add_custom__';
+// Padded beyond the backend's DEPARTMENT_MAX_LENGTH (64) so this sentinel can
+// never equal a persisted custom department value.
+const ADD_CUSTOM_VALUE =
+  '__compai_add_custom_department_action_sentinel_do_not_use_as_a_value__';
 
 interface DepartmentSelectProps {
   value: string;
@@ -46,14 +49,19 @@ export function DepartmentSelect({
   className,
 }: DepartmentSelectProps) {
   const [seen, setSeen] = useState<Set<string>>(
-    () => new Set([value, ...(customDepartments ?? [])].filter(Boolean)),
+    () =>
+      new Set(
+        [value, ...(customDepartments ?? [])].filter(
+          (v): v is string => Boolean(v) && v !== ADD_CUSTOM_VALUE,
+        ),
+      ),
   );
 
   useEffect(() => {
     setSeen((prev) => {
       let next: Set<string> | null = null;
       for (const v of [value, ...(customDepartments ?? [])]) {
-        if (v && !prev.has(v)) {
+        if (v && v !== ADD_CUSTOM_VALUE && !prev.has(v)) {
           if (!next) next = new Set(prev);
           next.add(v);
         }
@@ -92,7 +100,7 @@ export function DepartmentSelect({
 
   const handleSaveCustom = () => {
     const trimmed = draft.trim();
-    if (!trimmed) return;
+    if (!trimmed || trimmed === ADD_CUSTOM_VALUE) return;
     setSeen((prev) => {
       if (prev.has(trimmed)) return prev;
       const next = new Set(prev);
