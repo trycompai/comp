@@ -146,6 +146,21 @@ describe('Azure SQL checks', () => {
     expect(passed).toHaveLength(1);
   });
 
+  it('public-access fails closed (medium) when firewall rules cannot be read', async () => {
+    // A firewall read failure must NOT be coerced to "no public rules" (a false
+    // pass that hides exposure) — it must emit a "could not verify" finding.
+    const { passed, failed } = await run(sqlPublicAccessCheck, (url) => {
+      if (url.includes('/firewallRules')) throw new Error('403');
+      return { value: [{ ...server, properties: { publicNetworkAccess: 'Disabled' } }] };
+    });
+    expect(passed).toHaveLength(0);
+    expect(
+      failed.some(
+        (f) => /Could not read SQL firewall/.test(f.title) && f.severity === 'medium',
+      ),
+    ).toBe(true);
+  });
+
   it('auditing fails when disabled, passes when enabled', async () => {
     const bad = await run(sqlAuditingCheck, (url) =>
       url.includes('/auditingSettings/default')
@@ -276,6 +291,32 @@ describe('Azure RBAC (entra) check', () => {
     });
     expect(passed).toHaveLength(1);
   });
+
+  it('flags a wildcard custom role assigned from a management-group scope (resolved out-of-scope)', async () => {
+    // The role lives at an MG scope, so it is NOT in the subscription-scope
+    // roleDefinitions list — it's only resolved because an assignment references
+    // it. Its wildcard is a mid-path action (not high-privilege), so it is caught
+    // ONLY by the wildcard scan, which must include resolved out-of-scope defs.
+    const mgRoleId =
+      '/providers/Microsoft.Management/managementGroups/mg1/providers/Microsoft.Authorization/roleDefinitions/role-guid';
+    const { failed } = await run(rbacLeastPrivilegeCheck, (url) => {
+      if (url.includes('/managementGroups/')) {
+        return {
+          id: mgRoleId,
+          properties: {
+            roleName: 'MG Wildcard',
+            type: 'CustomRole',
+            permissions: [{ actions: ['Microsoft.Network/*/read'], dataActions: [] }],
+          },
+        };
+      }
+      if (url.includes('roleDefinitions')) return { value: [] };
+      return {
+        value: [{ properties: { roleDefinitionId: mgRoleId, principalId: 'p', principalType: 'User' } }],
+      };
+    });
+    expect(failed.some((f) => /Custom role with wildcard/.test(f.title))).toBe(true);
+  });
 });
 
 describe('Azure Monitor check', () => {
@@ -283,5 +324,32 @@ describe('Azure Monitor check', () => {
     const { failed } = await run(monitorLoggingAlertingCheck, () => ({ value: [] }));
     // missing alerts + no diagnostic export
     expect(failed).toHaveLength(2);
+  });
+});
+
+describe('Azure ARM pagination safety', () => {
+  it('does not follow an off-host nextLink (no bearer token leaks to a foreign host)', async () => {
+    // A nextLink whose host is not management.azure.com must be rejected before
+    // the next fetch, else the OAuth bearer token would be sent to it. The
+    // classic prefix bypass "https://management.azure.com.evil.com/..." must NOT
+    // be treated as on-host.
+    const fetched: string[] = [];
+    await run(storageHttpsTlsCheck, (url) => {
+      fetched.push(url);
+      if (url.includes('/storageAccounts') && !url.includes('evil')) {
+        return {
+          value: [
+            {
+              id: 'sa1',
+              name: 'sa1',
+              properties: { supportsHttpsTrafficOnly: true, minimumTlsVersion: 'TLS1_2' },
+            },
+          ],
+          nextLink: 'https://management.azure.com.evil.com/next?api-version=2023-01-01',
+        };
+      }
+      return { value: [] };
+    });
+    expect(fetched.some((u) => u.includes('evil'))).toBe(false);
   });
 });

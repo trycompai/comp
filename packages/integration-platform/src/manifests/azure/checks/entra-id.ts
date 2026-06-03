@@ -175,7 +175,17 @@ export const rbacLeastPrivilegeCheck: IntegrationCheck = {
       });
     }
 
-    const wildcardRoles = definitions.filter(
+    // Inspect every role definition actually seen — the subscription-scope list
+    // PLUS any out-of-scope definitions resolved from assignments above (e.g.
+    // custom roles defined at a management group and assigned into this
+    // subscription). Filtering only the subscription-scope `definitions` would
+    // miss assigned MG/RG-scoped wildcard custom roles entirely. Dedupe by id.
+    const allDefs = new Map<string, RoleDefinition>(
+      definitions.map((d) => [d.id, d]),
+    );
+    for (const [id, def] of resolvedDefs) allDefs.set(id, def);
+
+    const wildcardRoles = [...allDefs.values()].filter(
       (d) =>
         d.properties.type === 'CustomRole' &&
         d.properties.permissions.some(
