@@ -92,6 +92,13 @@ interface ServiceCardProps {
   connectionId: string | null;
   orgId: string;
   slug: string;
+  /**
+   * Template ids that have a live task in this org. When provided, the evidence
+   * count shows only added tasks — matching the service detail page, which
+   * hides mappings the org hasn't added. Falls back to all mapped tasks when
+   * absent.
+   */
+  addedTemplateIds?: Set<string>;
 }
 
 /**
@@ -100,7 +107,13 @@ interface ServiceCardProps {
  * tasks it satisfies live). The row itself shows current scan status + the
  * count of evidence tasks the service maps to — it is NOT a toggle.
  */
-export function ServiceCard({ service, connectionId, orgId, slug }: ServiceCardProps) {
+export function ServiceCard({
+  service,
+  connectionId,
+  orgId,
+  slug,
+  addedTemplateIds,
+}: ServiceCardProps) {
   const { services, isLoading, error } = useConnectionServices(connectionId);
   const isImplemented = service.implemented !== false;
   const liveService = services.find((s) => s.id === service.id);
@@ -122,7 +135,10 @@ export function ServiceCard({ service, connectionId, orgId, slug }: ServiceCardP
     scanningOn = isEnabled;
     scanningLabel = isEnabled ? 'Scanning on' : 'Scanning off';
   }
-  const taskCount = service.mappedTasks?.length ?? 0;
+  const mappedTasks = service.mappedTasks ?? [];
+  const taskCount = addedTemplateIds
+    ? mappedTasks.filter((m) => addedTemplateIds.has(m.id)).length
+    : mappedTasks.length;
 
   const href =
     `/${encodeURIComponent(orgId)}/integrations/${encodeURIComponent(slug)}/services/${encodeURIComponent(service.id)}` +
