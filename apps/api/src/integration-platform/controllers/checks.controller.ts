@@ -30,6 +30,7 @@ import {
 import { ConnectionRepository } from '../repositories/connection.repository';
 import { ConnectionService } from '../services/connection.service';
 import { CredentialVaultService } from '../services/credential-vault.service';
+import { OAuthCredentialsService } from '../services/oauth-credentials.service';
 import { ProviderRepository } from '../repositories/provider.repository';
 import { CheckRunRepository } from '../repositories/check-run.repository';
 import { getStringValue } from '../utils/credential-utils';
@@ -67,6 +68,7 @@ export class ChecksController {
     private readonly connectionRepository: ConnectionRepository,
     private readonly providerRepository: ProviderRepository,
     private readonly credentialVaultService: CredentialVaultService,
+    private readonly oauthCredentialsService: OAuthCredentialsService,
     private readonly checkRunRepository: CheckRunRepository,
     private readonly connectionService: ConnectionService,
   ) {}
@@ -247,6 +249,48 @@ export class ChecksController {
       `Running checks for connection ${connectionId} (${provider.slug})${body.checkId ? ` - check: ${body.checkId}` : ''}`,
     );
 
+    let accessToken = getStringValue(credentials.access_token);
+    let onTokenRefresh: (() => Promise<string | null>) | undefined;
+    if (manifest.auth.type === 'oauth2') {
+      const oauthConfig = manifest.auth.config;
+      const supportsRefresh = oauthConfig.supportsRefreshToken !== false;
+
+      if (supportsRefresh) {
+        const oauthCredentials =
+          await this.oauthCredentialsService.getCredentials(
+            provider.slug,
+            organizationId,
+          );
+
+        if (oauthCredentials) {
+          const refreshConfig = {
+            tokenUrl: oauthConfig.tokenUrl,
+            refreshUrl: oauthConfig.refreshUrl,
+            clientId: oauthCredentials.clientId,
+            clientSecret: oauthCredentials.clientSecret,
+            clientAuthMethod: oauthConfig.clientAuthMethod,
+            scope: oauthCredentials.scopes.join(' '),
+            tokenParams: oauthConfig.tokenParams,
+          };
+
+          const validAccessToken =
+            await this.credentialVaultService.getValidAccessToken(
+              connectionId,
+              refreshConfig,
+            );
+          if (validAccessToken) {
+            accessToken = validAccessToken;
+          }
+
+          onTokenRefresh = () =>
+            this.credentialVaultService.refreshOAuthTokens(
+              connectionId,
+              refreshConfig,
+            );
+        }
+      }
+    }
+
     // Create a check run record
     const checkRun = await this.checkRunRepository.create({
       connectionId,
@@ -256,7 +300,6 @@ export class ChecksController {
 
     try {
       // Run checks
-      const accessToken = getStringValue(credentials.access_token);
       const result = await runAllChecks({
         manifest,
         accessToken,
@@ -268,6 +311,7 @@ export class ChecksController {
         connectionId,
         organizationId: connection.organizationId,
         checkId: body.checkId,
+        onTokenRefresh,
         logger: {
           info: (msg, data) => this.logger.log(msg, data),
           warn: (msg, data) => this.logger.warn(msg, data),

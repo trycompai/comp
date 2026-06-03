@@ -187,6 +187,8 @@ export class SyncController {
               clientId: oauthCredentials.clientId,
               clientSecret: oauthCredentials.clientSecret,
               clientAuthMethod: oauthConfig.clientAuthMethod,
+              scope: oauthCredentials.scopes.join(' '),
+              tokenParams: oauthConfig.tokenParams,
             },
           );
           if (newToken) {
@@ -684,9 +686,12 @@ export class SyncController {
             connectionId,
             {
               tokenUrl: oauthConfig.tokenUrl,
+              refreshUrl: oauthConfig.refreshUrl,
               clientId: oauthCredentials.clientId,
               clientSecret: oauthCredentials.clientSecret,
               clientAuthMethod: oauthConfig.clientAuthMethod,
+              scope: oauthCredentials.scopes.join(' '),
+              tokenParams: oauthConfig.tokenParams,
             },
           );
           if (newToken) {
@@ -1799,6 +1804,8 @@ export class SyncController {
               clientId: oauthCredentials.clientId,
               clientSecret: oauthCredentials.clientSecret,
               clientAuthMethod: oauthConfig.clientAuthMethod,
+              scope: oauthCredentials.scopes.join(' '),
+              tokenParams: oauthConfig.tokenParams,
             },
           );
           if (newToken) {
@@ -1867,7 +1874,7 @@ export class SyncController {
           // `SyncDefinition` (from @trycompai/integration-platform) doesn't
           // declare `isDirectorySource`, but the underlying Prisma JSON value
           // may carry it. Structural cast lets us read the optional flag
-          // without an `as any`, with a safe `?? false` fallback.
+          // with a safe `?? false` fallback.
           isDirectorySource:
             (syncDefinition as { isDirectorySource?: boolean })
               .isDirectorySource ?? false,
