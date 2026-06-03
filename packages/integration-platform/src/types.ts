@@ -268,8 +268,13 @@ export interface CheckContext {
   /** The OAuth access token (for oauth2 auth). Empty for custom auth types like AWS. */
   accessToken: string;
 
-  /** All credentials as key-value pairs (form fields for custom auth, or token data for OAuth) */
-  credentials: Record<string, string>;
+  /**
+   * All credentials as key-value pairs (form fields for custom auth, or token
+   * data for OAuth). Custom-auth fields can be arrays (e.g. AWS `regions`), so
+   * values are `string | string[]` — read array fields directly and use a
+   * scalar coercion only where a single string is required.
+   */
+  credentials: Record<string, string | string[]>;
 
   /** User-configured variables for this integration */
   variables: CheckVariableValues;

@@ -14,8 +14,47 @@ import {
   evaluateRdsEncryption,
 } from '../rds';
 import { evaluateS3Encryption, evaluateS3PublicAccess } from '../s3';
+import { resolveAwsCredentialInputs } from '../shared';
 
 const kinds = (os: { kind: string }[]) => os.map((o) => o.kind);
+
+describe('AWS credential resolution (regions shape)', () => {
+  const base = { roleArn: 'arn:aws:iam::123456789012:role/x', externalId: 'eid' };
+
+  it('honors a multi-element regions array (the normal stored shape)', () => {
+    const r = resolveAwsCredentialInputs({
+      ...base,
+      regions: ['us-east-1', 'us-west-2'],
+    });
+    expect(r).not.toBeNull();
+    expect(r!.regions).toEqual(['us-east-1', 'us-west-2']);
+  });
+
+  it('accepts a single region string (resilient to an upstream collapse)', () => {
+    const r = resolveAwsCredentialInputs({ ...base, regions: 'us-east-1' });
+    expect(r).not.toBeNull();
+    expect(r!.regions).toEqual(['us-east-1']);
+  });
+
+  it('accepts the legacy singular `region` key', () => {
+    const r = resolveAwsCredentialInputs({ ...base, region: 'eu-west-1' });
+    expect(r!.regions).toEqual(['eu-west-1']);
+  });
+
+  it('returns null when regions resolve to empty (not configured)', () => {
+    expect(resolveAwsCredentialInputs({ ...base, regions: [] })).toBeNull();
+    expect(resolveAwsCredentialInputs({ ...base, regions: ['  '] })).toBeNull();
+  });
+
+  it('returns null when roleArn or externalId is missing', () => {
+    expect(
+      resolveAwsCredentialInputs({ externalId: 'eid', regions: ['us-east-1'] }),
+    ).toBeNull();
+    expect(
+      resolveAwsCredentialInputs({ roleArn: base.roleArn, regions: ['us-east-1'] }),
+    ).toBeNull();
+  });
+});
 
 describe('AWS IAM account evaluator', () => {
   it('fails on missing policy, root MFA off, and root keys present', () => {
