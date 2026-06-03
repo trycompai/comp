@@ -10,7 +10,13 @@ export interface CheckContextOptions {
   manifest: IntegrationManifest;
   /** Access token for OAuth integrations. Optional for custom auth types (e.g., AWS IAM). */
   accessToken?: string;
-  credentials: Record<string, string>;
+  /**
+   * Credential values. Custom-auth providers can legitimately hold array
+   * fields (e.g. AWS `regions: string[]`), so values are `string | string[]`.
+   * Do NOT collapse arrays to a single value before passing them in — checks
+   * like the AWS ones read `regions` as an array.
+   */
+  credentials: Record<string, string | string[]>;
   variables?: CheckVariableValues;
   connectionId: string;
   organizationId: string;
@@ -92,6 +98,17 @@ export function createCheckContext(options: CheckContextOptions): {
   } = options;
 
   let currentAccessToken = initialAccessToken ?? '';
+
+  // Read a credential as a single string. Custom-auth credentials can be
+  // arrays (e.g. AWS regions); the string-based auth schemes (api key, basic)
+  // need a scalar, so collapse to the first element here — never upstream,
+  // where it would destroy multi-value fields for the checks that need them.
+  const credString = (key: string): string => {
+    const v = credentials[key];
+    if (Array.isArray(v)) return v[0] ?? '';
+    return v ?? '';
+  };
+
   const findings: CheckResult['findings'] = [];
   const passingResults: CheckResult['passingResults'] = [];
   const logs: CheckResult['logs'] = [];
@@ -135,7 +152,7 @@ export function createCheckContext(options: CheckContextOptions): {
 
     // API Key: Add to header if configured
     if (manifest.auth.type === 'api_key' && manifest.auth.config.in === 'header') {
-      const apiKey = credentials[manifest.auth.config.name] || credentials.api_key || '';
+      const apiKey = credString(manifest.auth.config.name) || credString('api_key');
       const value = manifest.auth.config.prefix
         ? `${manifest.auth.config.prefix}${apiKey}`
         : apiKey;
@@ -144,8 +161,8 @@ export function createCheckContext(options: CheckContextOptions): {
 
     // Basic Auth: Encode username:password
     if (manifest.auth.type === 'basic') {
-      const username = credentials[manifest.auth.config.usernameField || 'username'] || '';
-      const password = credentials[manifest.auth.config.passwordField || 'password'] || '';
+      const username = credString(manifest.auth.config.usernameField || 'username');
+      const password = credString(manifest.auth.config.passwordField || 'password');
       const encoded = Buffer.from(`${username}:${password}`).toString('base64');
       headers['Authorization'] = `Basic ${encoded}`;
     }
@@ -227,7 +244,7 @@ export function createCheckContext(options: CheckContextOptions): {
 
     // API Key in query param
     if (manifest.auth.type === 'api_key' && manifest.auth.config.in === 'query') {
-      const apiKey = credentials[manifest.auth.config.name] || credentials.api_key || '';
+      const apiKey = credString(manifest.auth.config.name) || credString('api_key');
       const value = manifest.auth.config.prefix
         ? `${manifest.auth.config.prefix}${apiKey}`
         : apiKey;

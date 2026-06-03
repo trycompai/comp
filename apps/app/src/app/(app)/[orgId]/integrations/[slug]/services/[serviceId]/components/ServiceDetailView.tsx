@@ -88,6 +88,13 @@ export function ServiceDetailView({
     [taskTemplates],
   );
   const mappedTasks = service.mappedTasks ?? [];
+  // Only surface evidence tasks that actually exist in this org. A template
+  // mapping with no live task would render as "Not added", which prompts
+  // customers to ask why it isn't added. On a tasks-fetch error we can't tell
+  // added from not-added, so show everything (the row renders "Couldn't load").
+  const visibleTasks = tasksErrored
+    ? mappedTasks
+    : mappedTasks.filter((m) => taskByTemplateId.has(m.id));
 
   const handleToggle = async () => {
     if (!effectiveConnectionId || toggling || !liveService || !canUpdate) return;
@@ -197,18 +204,18 @@ export function ServiceDetailView({
               </p>
             </div>
             <span className="shrink-0 rounded-full bg-muted px-2 py-1 text-xs text-muted-foreground">
-              {mappedTasks.length}
+              {visibleTasks.length}
             </span>
           </div>
         </div>
 
-        {mappedTasks.length === 0 ? (
+        {visibleTasks.length === 0 ? (
           <p className="px-4 py-6 text-center text-xs text-muted-foreground">
             This service doesn&apos;t map to any evidence task yet.
           </p>
         ) : (
           <div className="divide-y">
-            {mappedTasks.map((mapped) => (
+            {visibleTasks.map((mapped) => (
               <EvidenceTaskRow
                 key={mapped.id}
                 fallbackName={mapped.name}
