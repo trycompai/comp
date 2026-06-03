@@ -302,7 +302,11 @@ export const updatePolicyFormSchema = z.object({
   id: z.string(),
   status: z.nativeEnum(PolicyStatus),
   assigneeId: z.string().optional().nullable(),
-  department: z.string(),
+  department: z
+    .string({ error: 'Department is required' })
+    .trim()
+    .min(1, { message: 'Department is required' })
+    .max(64, { message: 'Department must be at most 64 characters' }),
   review_frequency: z.nativeEnum(Frequency),
   review_date: z.date(),
   approverId: z.string().optional().nullable(), // Added for selecting an approver
