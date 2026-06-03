@@ -41,6 +41,7 @@ export class CreateTaskDto {
     description:
       'Department assignment. Built-in values: none, admin, gov, hr, it, itsm, qms. Custom department names are also accepted.',
     type: 'string',
+    nullable: true,
     default: 'none',
     required: false,
     maxLength: 64,
