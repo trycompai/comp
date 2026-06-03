@@ -133,7 +133,12 @@ export const sqlPublicAccessCheck: IntegrationCheck = {
           severity: violation.severity,
           remediation:
             'Disable public network access and use private endpoints; remove 0.0.0.0 firewall rules.',
-          evidence: { server: s.name, publicNetworkAccess: s.properties?.publicNetworkAccess ?? null },
+          evidence: {
+            server: s.name,
+            publicNetworkAccess: s.properties?.publicNetworkAccess ?? null,
+            reason: violation.detail,
+            firewallRuleCount: rules?.length ?? null,
+          },
         });
       } else if (rules === null) {
         // Public access not Enabled but firewall rules unreadable — can't assert a
@@ -155,7 +160,11 @@ export const sqlPublicAccessCheck: IntegrationCheck = {
           description: `SQL Server "${s.name}" restricts public network access and has no wide-open firewall rules.`,
           resourceType: 'azure-sql-server',
           resourceId: s.id,
-          evidence: { server: s.name, firewallRuleCount: rules.length },
+          evidence: {
+            server: s.name,
+            publicNetworkAccess: s.properties?.publicNetworkAccess ?? null,
+            firewallRuleCount: rules.length,
+          },
         });
       }
     }
@@ -206,7 +215,7 @@ export const sqlAuditingCheck: IntegrationCheck = {
           description: `SQL Server "${s.name}" has auditing enabled.`,
           resourceType: 'azure-sql-server',
           resourceId: s.id,
-          evidence: { server: s.name },
+          evidence: { server: s.name, state: auditing.properties?.state ?? null },
         });
       } else {
         ctx.fail({

@@ -69,7 +69,10 @@ export const monitorLoggingAlertingCheck: IntegrationCheck = {
           description: 'All recommended activity log alerts are configured.',
           resourceType: 'azure-subscription',
           resourceId: sub,
-          evidence: { recommended: RECOMMENDED_ALERTS.length },
+          evidence: {
+            recommended: RECOMMENDED_ALERTS.map((r) => r.op),
+            configuredOperations: [...ops],
+          },
         });
       }
     } else {
@@ -109,7 +112,14 @@ export const monitorLoggingAlertingCheck: IntegrationCheck = {
           description: 'Subscription activity logs are exported.',
           resourceType: 'azure-subscription',
           resourceId: sub,
-          evidence: { settings: settings.length },
+          evidence: {
+            settingsCount: settings.length,
+            exportsToLogAnalytics: settings.some((s) => !!s.properties?.workspaceId),
+            exportsToStorage: settings.some((s) => !!s.properties?.storageAccountId),
+            exportsToEventHub: settings.some(
+              (s) => !!s.properties?.eventHubAuthorizationRuleId,
+            ),
+          },
         });
       } else {
         ctx.fail({
@@ -121,7 +131,7 @@ export const monitorLoggingAlertingCheck: IntegrationCheck = {
           severity: 'medium',
           remediation:
             'Configure a diagnostic setting to export subscription activity logs.',
-          evidence: {},
+          evidence: { diagnosticSettingsFound: settings.length },
         });
       }
     } else {

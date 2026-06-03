@@ -46,7 +46,7 @@ export function evaluateKmsRotation(keys: KmsKeyInfo[]): CheckOutcome[] {
           severity: 'medium',
           remediation:
             'Grant kms:GetKeyRotationStatus to the integration role so rotation can be verified, then re-run.',
-          evidence: { keyId: k.keyId, region: k.region },
+          evidence: { keyId: k.keyId, region: k.region, rotationStatusKnown: false },
         };
       }
       return k.rotationEnabled
@@ -56,7 +56,7 @@ export function evaluateKmsRotation(keys: KmsKeyInfo[]): CheckOutcome[] {
             description: `Customer-managed KMS key "${k.keyId}" (${k.region}) has automatic rotation enabled.`,
             resourceType: 'aws-kms-key',
             resourceId: k.keyId,
-            evidence: { keyId: k.keyId, region: k.region },
+            evidence: { keyId: k.keyId, region: k.region, rotationEnabled: true },
           }
         : {
             kind: 'fail',
@@ -66,7 +66,7 @@ export function evaluateKmsRotation(keys: KmsKeyInfo[]): CheckOutcome[] {
             resourceId: k.keyId,
             severity: 'medium',
             remediation: 'Enable automatic annual key rotation on the customer-managed KMS key.',
-            evidence: { keyId: k.keyId, region: k.region },
+            evidence: { keyId: k.keyId, region: k.region, rotationEnabled: false },
           };
     });
 }

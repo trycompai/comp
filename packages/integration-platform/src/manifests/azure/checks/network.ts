@@ -121,7 +121,15 @@ export const nsgNoOpenPortsCheck: IntegrationCheck = {
               severity: c.severity,
               remediation:
                 'Restrict the source to specific IP ranges, or use Azure Bastion / Private Link.',
-              evidence: { nsg: nsg.name, rule: rule.name, priority: rule.properties.priority },
+              evidence: {
+                nsg: nsg.name,
+                rule: rule.name,
+                priority: rule.properties.priority,
+                exposure: c.label,
+                sources: ruleSources(rule),
+                ports,
+                protocol: rule.properties.protocol ?? '*',
+              },
             });
           }
         }
@@ -133,7 +141,11 @@ export const nsgNoOpenPortsCheck: IntegrationCheck = {
           description: `NSG "${nsg.name}" has no overly permissive inbound rules.`,
           resourceType: 'azure-nsg',
           resourceId: nsg.id,
-          evidence: { nsg: nsg.name },
+          evidence: {
+            nsg: nsg.name,
+            inboundAllowRulesEvaluated: inbound.length,
+            totalRules: (nsg.properties.securityRules ?? []).length,
+          },
         });
       }
     }

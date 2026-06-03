@@ -72,7 +72,12 @@ export const cloudSqlSslCheck: IntegrationCheck = {
               severity: 'medium',
               remediation:
                 'Set the SSL mode to ENCRYPTED_ONLY (or require trusted client certificates) to enforce encrypted connections.',
-              evidence: { projectId, instance: inst.name },
+              evidence: {
+                projectId,
+                instance: inst.name,
+                sslMode: ip?.sslMode ?? null,
+                requireSsl: ip?.requireSsl ?? null,
+              },
             });
           }
         }

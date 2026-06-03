@@ -356,4 +356,20 @@ describe('IAM/CloudTrail outcomes carry evidence (so the UI shows "View Evidence
     expect(out[0]!.title).toMatch(/No CloudTrail configured/);
     expect(hasEvidence(out[0]!)).toBe(true);
   });
+
+  it('pass/fail evidence carries the determining value (S3 encryption, KMS rotation)', () => {
+    const enc = evaluateS3Encryption([
+      { name: 'enc', encrypted: true, encryptionDetermined: true, publicAccessDetermined: true, bucketBpa: null },
+      { name: 'plain', encrypted: false, encryptionDetermined: true, publicAccessDetermined: true, bucketBpa: null },
+    ]);
+    expect(enc[0]!.evidence?.encrypted).toBe(true);
+    expect(enc[1]!.evidence?.encrypted).toBe(false);
+
+    const rot = evaluateKmsRotation([
+      { keyId: 'on', region: 'us-east-1', rotationEligible: true, rotationStatusKnown: true, rotationEnabled: true },
+      { keyId: 'off', region: 'us-east-1', rotationEligible: true, rotationStatusKnown: true, rotationEnabled: false },
+    ]);
+    expect(rot[0]!.evidence?.rotationEnabled).toBe(true);
+    expect(rot[1]!.evidence?.rotationEnabled).toBe(false);
+  });
 });
