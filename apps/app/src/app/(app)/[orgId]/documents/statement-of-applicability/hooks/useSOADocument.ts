@@ -215,25 +215,35 @@ export async function createSOADocument(params: {
   return response.data.data;
 }
 
-/** Standalone helper: ensure SOA setup for a framework */
-export async function ensureSOASetup(params: {
-  frameworkId: string;
-  organizationId: string;
-}): Promise<{
+type SOASetupResult = {
   success: boolean;
   configuration?: Record<string, unknown> | null;
   document?: Record<string, unknown> | null;
   error?: string;
-}> {
-  const response = await api.post<{
-    success: boolean;
-    configuration?: Record<string, unknown> | null;
-    document?: Record<string, unknown> | null;
-    error?: string;
-  }>('/v1/soa/ensure-setup', params);
+};
+
+/** Standalone helper: ensure SOA setup for a framework (creates if missing). */
+export async function ensureSOASetup(params: {
+  frameworkId: string;
+  organizationId: string;
+}): Promise<SOASetupResult> {
+  const response = await api.post<SOASetupResult>('/v1/soa/ensure-setup', params);
 
   if (response.error) throw new Error(response.error || 'Failed to setup SOA');
   if (!response.data) throw new Error('Failed to setup SOA');
+
+  return response.data;
+}
+
+/** Standalone helper: read SOA setup for a framework without creating anything. */
+export async function getSOASetup(params: {
+  frameworkId: string;
+  organizationId: string;
+}): Promise<SOASetupResult> {
+  const response = await api.post<SOASetupResult>('/v1/soa/get-setup', params);
+
+  if (response.error) throw new Error(response.error || 'Failed to load SOA');
+  if (!response.data) throw new Error('Failed to load SOA');
 
   return response.data;
 }
