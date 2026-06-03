@@ -1,6 +1,7 @@
 'use client';
 
 import { createRiskSchema } from '@/actions/schema';
+import { DepartmentSelect } from '@/components/DepartmentSelect';
 import { SelectAssignee } from '@/components/SelectAssignee';
 import { useRiskActions } from '@/hooks/use-risks';
 import { Button } from '@trycompai/ui/button';
@@ -130,18 +131,11 @@ export function CreateRisk({ assignees, onSuccess }: CreateRiskProps) {
           render={({ field }) => (
             <Field>
               <FieldLabel>Department</FieldLabel>
-              <Select value={field.value} onValueChange={field.onChange}>
-                <SelectTrigger>
-                  {field.value ? field.value.toUpperCase() : 'Select a department'}
-                </SelectTrigger>
-                <SelectContent>
-                  {Object.values(Departments).map((department) => (
-                    <SelectItem key={department} value={department}>
-                      {department.toUpperCase()}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <DepartmentSelect
+                value={field.value || ''}
+                onChange={field.onChange}
+                disabled={isSubmitting}
+              />
               <FieldError errors={[errors.department]} />
             </Field>
           )}

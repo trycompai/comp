@@ -2,7 +2,7 @@
  * Helper types and pure filter function for the policy acknowledgment digest.
  * Extracted from the scheduled task for testability.
  */
-import type { Departments, PolicyVisibility } from '@db';
+import type { PolicyVisibility } from '@db';
 
 // Inlined from @trycompai/auth to avoid pulling that package into the Trigger.dev bundle.
 // Keep in sync with packages/auth/src/permissions.ts BUILT_IN_ROLE_OBLIGATIONS.
@@ -99,7 +99,7 @@ export interface DigestPolicy {
 export interface DigestMember {
   id: string;
   role: string;
-  department: Departments | null;
+  department: string | null;
   user: { id: string; name: string | null; email: string; role?: string | null };
 }
 

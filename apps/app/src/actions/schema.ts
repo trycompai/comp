@@ -96,7 +96,11 @@ export const createRiskSchema = z.object({
     .min(1, { message: 'Risk description should be at least 1 character' })
     .max(255, { message: 'Risk description should be at most 255 characters' }),
   category: z.nativeEnum(RiskCategory, { error: 'Risk category is required' }),
-  department: z.nativeEnum(Departments, { error: 'Risk department is required' }),
+  department: z
+    .string({ error: 'Risk department is required' })
+    .trim()
+    .min(1, { message: 'Risk department is required' })
+    .max(64, { message: 'Risk department must be at most 64 characters' }),
   assigneeId: z.string().optional().nullable(),
 });
 
@@ -111,7 +115,11 @@ export const updateRiskSchema = z.object({
     message: 'Risk description is required',
   }),
   category: z.nativeEnum(RiskCategory, { error: 'Risk category is required' }),
-  department: z.nativeEnum(Departments, { error: 'Risk department is required' }),
+  department: z
+    .string({ error: 'Risk department is required' })
+    .trim()
+    .min(1, { message: 'Risk department is required' })
+    .max(64, { message: 'Risk department must be at most 64 characters' }),
   assigneeId: z.string().optional().nullable(),
   status: z.nativeEnum(RiskStatus, { error: 'Risk status is required' }),
 });
