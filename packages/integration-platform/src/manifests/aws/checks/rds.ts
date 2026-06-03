@@ -44,7 +44,7 @@ export function evaluateRdsEncryption(instances: RdsInstanceInfo[]): CheckOutcom
           description: `RDS instance "${i.id}" (${i.region}) has storage encryption enabled.`,
           resourceType: 'aws-rds-instance',
           resourceId: `${i.region}/${i.id}`,
-          evidence: { instance: i.id, region: i.region },
+          evidence: { instance: i.id, region: i.region, encrypted: true },
         }
       : {
           kind: 'fail',
@@ -55,7 +55,7 @@ export function evaluateRdsEncryption(instances: RdsInstanceInfo[]): CheckOutcom
           severity: 'high',
           remediation:
             'Enable storage encryption (encryption at rest must be set at creation; restore from an encrypted snapshot to remediate).',
-          evidence: { instance: i.id, region: i.region },
+          evidence: { instance: i.id, region: i.region, encrypted: false },
         },
   );
 }
@@ -83,7 +83,7 @@ export function evaluateRdsBackups(instances: RdsInstanceInfo[]): CheckOutcome[]
           resourceId: `${i.region}/${i.id}`,
           severity: 'medium',
           remediation: 'Set a backup retention period of at least 7 days.',
-          evidence: { instance: i.id },
+          evidence: { instance: i.id, region: i.region, backupRetentionDays: i.backupRetentionDays },
         },
   );
 }
@@ -97,7 +97,7 @@ export function evaluateRdsClusterEncryption(clusters: RdsClusterInfo[]): CheckO
           description: `RDS cluster "${c.id}" (${c.region}) has storage encryption enabled.`,
           resourceType: 'aws-rds-cluster',
           resourceId: `${c.region}/${c.id}`,
-          evidence: { cluster: c.id, region: c.region },
+          evidence: { cluster: c.id, region: c.region, encrypted: true },
         }
       : {
           kind: 'fail',
@@ -108,7 +108,7 @@ export function evaluateRdsClusterEncryption(clusters: RdsClusterInfo[]): CheckO
           severity: 'high',
           remediation:
             'Enable storage encryption (encryption at rest must be set at creation; restore from an encrypted snapshot to remediate).',
-          evidence: { cluster: c.id, region: c.region },
+          evidence: { cluster: c.id, region: c.region, encrypted: false },
         },
   );
 }
@@ -132,7 +132,7 @@ export function evaluateRdsClusterBackups(clusters: RdsClusterInfo[]): CheckOutc
           resourceId: `${c.region}/${c.id}`,
           severity: 'medium',
           remediation: 'Set a backup retention period of at least 7 days.',
-          evidence: { cluster: c.id },
+          evidence: { cluster: c.id, region: c.region, backupRetentionDays: c.backupRetentionDays },
         },
   );
 }

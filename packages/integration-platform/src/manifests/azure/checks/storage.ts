@@ -77,7 +77,11 @@ export const storageHttpsTlsCheck: IntegrationCheck = {
           description: `Storage account "${a.name}" enforces HTTPS-only and TLS >= 1.2.`,
           resourceType: 'azure-storage-account',
           resourceId: a.id,
-          evidence: { account: a.name, minimumTlsVersion: p.minimumTlsVersion },
+          evidence: {
+            account: a.name,
+            supportsHttpsTrafficOnly: p.supportsHttpsTrafficOnly,
+            minimumTlsVersion: p.minimumTlsVersion,
+          },
         });
       }
     }
@@ -131,7 +135,12 @@ export const storagePublicAccessCheck: IntegrationCheck = {
           description: `Storage account "${a.name}" blocks anonymous blob and public network access.`,
           resourceType: 'azure-storage-account',
           resourceId: a.id,
-          evidence: { account: a.name },
+          evidence: {
+            account: a.name,
+            allowBlobPublicAccess: p.allowBlobPublicAccess,
+            publicNetworkAccess: p.publicNetworkAccess ?? null,
+            networkDefaultAction: p.networkAcls?.defaultAction ?? null,
+          },
         });
       }
     }
@@ -162,7 +171,7 @@ export const storageEncryptionCheck: IntegrationCheck = {
           description: `Storage account "${a.name}" has blob and file encryption enabled.`,
           resourceType: 'azure-storage-account',
           resourceId: a.id,
-          evidence: { account: a.name },
+          evidence: { account: a.name, blobEnabled: blobOk, fileEnabled: fileOk },
         });
       } else {
         ctx.fail({

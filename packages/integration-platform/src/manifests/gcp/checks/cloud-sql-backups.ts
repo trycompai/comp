@@ -56,7 +56,7 @@ export const cloudSqlBackupsCheck: IntegrationCheck = {
               description: `Cloud SQL instance "${inst.name}" has automated backups enabled.`,
               resourceType: 'gcp-cloud-sql-instance',
               resourceId: `${projectId}/${inst.name}`,
-              evidence: { projectId, instance: inst.name },
+              evidence: { projectId, instance: inst.name, region: inst.region ?? null, backupsEnabled: true },
             });
           } else {
             ctx.fail({
@@ -67,7 +67,7 @@ export const cloudSqlBackupsCheck: IntegrationCheck = {
               severity: 'medium',
               remediation:
                 'Enable automated backups (and point-in-time recovery) in the instance backup settings.',
-              evidence: { projectId, instance: inst.name },
+              evidence: { projectId, instance: inst.name, region: inst.region ?? null, backupsEnabled: false },
             });
           }
         }
