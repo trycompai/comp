@@ -1,3 +1,18 @@
+# [3.69.0](https://github.com/trycompai/comp/compare/v3.68.0...v3.69.0) (2026-06-03)
+
+
+### Bug Fixes
+
+* **api:** pass trusted organization to getSetup service ([5108839](https://github.com/trycompai/comp/commit/5108839ecfe8988f96cadac8ddc42bb1b47d3fe3))
+* **api:** update permission of ensure-setup endpoint to allow auditor to access SoA ([dd5a801](https://github.com/trycompai/comp/commit/dd5a801749128a3b5a60198682ebd3f3a33417f4))
+* **app:** show empty state instead of spinner when soa setup missing ([eace526](https://github.com/trycompai/comp/commit/eace5265e2b94843343727a9502b4f19b150ba6e))
+* **app:** use get-setup endpoint for auditor role on SoA ([0256e81](https://github.com/trycompai/comp/commit/0256e81cb904db4f7913b496d0521efa7fd5b783))
+
+
+### Features
+
+* **api:** create get-setup endpoint for audit:read permission ([c1e6215](https://github.com/trycompai/comp/commit/c1e62158573d8adfb5135691ce0c87d15d2d7926))
+
 # [3.68.0](https://github.com/trycompai/comp/compare/v3.67.0...v3.68.0) (2026-06-03)
 
 
