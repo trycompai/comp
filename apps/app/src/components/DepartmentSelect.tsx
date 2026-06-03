@@ -15,8 +15,12 @@ import {
 import { Add, Checkmark, Close } from '@trycompai/design-system/icons';
 import { useEffect, useMemo, useRef, useState } from 'react';
 
-// Padded beyond the backend's DEPARTMENT_MAX_LENGTH (64) so this sentinel can
-// never equal a persisted custom department value.
+// Mirrors the backend's DEPARTMENT_MAX_LENGTH in apps/api so the input rejects
+// values the API would reject anyway.
+const DEPARTMENT_MAX_LENGTH = 64;
+
+// Padded beyond DEPARTMENT_MAX_LENGTH so this sentinel can never equal a
+// persisted custom department value.
 const ADD_CUSTOM_VALUE =
   '__compai_add_custom_department_action_sentinel_do_not_use_as_a_value__';
 
@@ -100,7 +104,12 @@ export function DepartmentSelect({
 
   const handleSaveCustom = () => {
     const trimmed = draft.trim();
-    if (!trimmed || trimmed === ADD_CUSTOM_VALUE) return;
+    if (
+      !trimmed ||
+      trimmed === ADD_CUSTOM_VALUE ||
+      trimmed.length > DEPARTMENT_MAX_LENGTH
+    )
+      return;
     setSeen((prev) => {
       if (prev.has(trimmed)) return prev;
       const next = new Set(prev);
@@ -135,6 +144,7 @@ export function DepartmentSelect({
               }
             }}
             placeholder="Department name"
+            maxLength={DEPARTMENT_MAX_LENGTH}
             disabled={disabled}
           />
           <Button
@@ -142,7 +152,11 @@ export function DepartmentSelect({
             size="icon"
             variant="ghost"
             onClick={handleSaveCustom}
-            disabled={disabled || draft.trim().length === 0}
+            disabled={
+              disabled ||
+              draft.trim().length === 0 ||
+              draft.trim().length > DEPARTMENT_MAX_LENGTH
+            }
             aria-label="Save custom department"
           >
             <Checkmark size={16} />
