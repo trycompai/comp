@@ -187,14 +187,14 @@ describe('computePeopleScore', () => {
 
   it('counts every member as complete when all members are exempt', async () => {
     (mockDb.backgroundCheckRequest.findMany as jest.Mock).mockResolvedValue([]);
-    (mockDb.member.findMany as jest.Mock).mockImplementation(async (args: {
-      where?: { backgroundCheckExempt?: boolean };
-    }) => {
-      if (args?.where?.backgroundCheckExempt === true) {
-        return [{ id: 'mem_1' }, { id: 'mem_2' }];
-      }
-      return [];
-    });
+    (mockDb.member.findMany as jest.Mock).mockImplementation(
+      async (args: { where?: { backgroundCheckExempt?: boolean } }) => {
+        if (args?.where?.backgroundCheckExempt === true) {
+          return [{ id: 'mem_1' }, { id: 'mem_2' }];
+        }
+        return [];
+      },
+    );
 
     const score = await computePeopleScore({
       organizationId: 'org_1',
@@ -207,6 +207,64 @@ describe('computePeopleScore', () => {
     });
 
     expect(score).toEqual({ total: 2, completed: 2 });
+  });
+
+  it('does not require a background check for auditor-only members', async () => {
+    const auditorMembers = [
+      {
+        id: 'mem_1',
+        role: 'auditor',
+        user: { id: 'usr_1', email: 'a@example.com', role: 'auditor' },
+      },
+      {
+        id: 'mem_2',
+        role: 'owner',
+        user: { id: 'usr_2', email: 'b@example.com', role: 'owner' },
+      },
+    ];
+    mockFilterComplianceMembers.mockResolvedValue(auditorMembers);
+    (mockDb.backgroundCheckRequest.findMany as jest.Mock).mockResolvedValue([]);
+    (mockDb.member.findMany as jest.Mock).mockResolvedValue([]);
+
+    const score = await computePeopleScore({
+      organizationId: 'org_1',
+      allPolicies: [],
+      employees: auditorMembers,
+      securityTrainingStepEnabled: false,
+      deviceAgentStepEnabled: false,
+      backgroundCheckStepEnabled: true,
+      hasHipaaFramework: false,
+    });
+
+    // mem_1 (auditor-only) → no BG check required → complete
+    // mem_2 (owner) → no BG check, not exempt → not complete
+    expect(score).toEqual({ total: 2, completed: 1 });
+  });
+
+  it('still requires a background check for members with auditor plus another role', async () => {
+    const mixedMembers = [
+      {
+        id: 'mem_1',
+        role: 'auditor,employee',
+        user: { id: 'usr_1', email: 'a@example.com', role: 'employee' },
+      },
+    ];
+    mockFilterComplianceMembers.mockResolvedValue(mixedMembers);
+    (mockDb.backgroundCheckRequest.findMany as jest.Mock).mockResolvedValue([]);
+    (mockDb.member.findMany as jest.Mock).mockResolvedValue([]);
+
+    const score = await computePeopleScore({
+      organizationId: 'org_1',
+      allPolicies: [],
+      employees: mixedMembers,
+      securityTrainingStepEnabled: false,
+      deviceAgentStepEnabled: false,
+      backgroundCheckStepEnabled: true,
+      hasHipaaFramework: false,
+    });
+
+    // auditor+employee is NOT auditor-only → still requires a BG check → not complete
+    expect(score).toEqual({ total: 1, completed: 0 });
   });
 
   it('skips the exempt query entirely when backgroundCheckStepEnabled is false', async () => {

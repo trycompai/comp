@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   Headers,
   HttpCode,
@@ -40,7 +41,10 @@ export class PeopleBackgroundChecksController {
     @Param('id') memberId: string,
     @OrganizationId() organizationId: string,
   ) {
-    return this.backgroundChecksService.getForMember({ organizationId, memberId });
+    return this.backgroundChecksService.getForMember({
+      organizationId,
+      memberId,
+    });
   }
 
   @Post(':id/background-check')
@@ -65,12 +69,17 @@ export class PeopleBackgroundChecksController {
 
   @Get(':id/background-check/custom-attachments')
   @RequirePermission('member', 'read')
-  @ApiOperation({ summary: 'Get custom background check attachments for a member' })
+  @ApiOperation({
+    summary: 'Get custom background check attachments for a member',
+  })
   async getCustomAttachmentsForMember(
     @Param('id') memberId: string,
     @OrganizationId() organizationId: string,
   ) {
-    return this.customService.getAttachmentsForMember({ organizationId, memberId });
+    return this.customService.getAttachmentsForMember({
+      organizationId,
+      memberId,
+    });
   }
 
   @Post(':id/background-check/custom')
@@ -97,6 +106,52 @@ export class PeopleBackgroundChecksController {
       userId: authContext.userId,
     });
   }
+
+  @Post(':id/background-check/retry')
+  @HttpCode(200)
+  @RequirePermission('member', 'update')
+  @ApiOperation({
+    summary: 'Retry a failed or cancelled background check (free)',
+  })
+  async retryForMember(
+    @Param('id') memberId: string,
+    @OrganizationId() organizationId: string,
+    @AuthContext() authContext: AuthContextType,
+  ) {
+    return this.backgroundChecksService.retryForMember({
+      organizationId,
+      memberId,
+      requesterEmail: authContext.userEmail ?? 'api-key@trycomp.ai',
+    });
+  }
+
+  @Post(':id/background-check/cancel')
+  @HttpCode(200)
+  @RequirePermission('member', 'update')
+  @ApiOperation({ summary: 'Cancel an in-flight background check' })
+  async cancelForMember(
+    @Param('id') memberId: string,
+    @OrganizationId() organizationId: string,
+  ) {
+    return this.backgroundChecksService.cancelForMember({
+      organizationId,
+      memberId,
+    });
+  }
+
+  @Delete(':id/background-check')
+  @HttpCode(200)
+  @RequirePermission('member', 'delete')
+  @ApiOperation({ summary: 'Delete a member background check' })
+  async deleteForMember(
+    @Param('id') memberId: string,
+    @OrganizationId() organizationId: string,
+  ) {
+    return this.backgroundChecksService.deleteForMember({
+      organizationId,
+      memberId,
+    });
+  }
 }
 
 @ApiTags('Background Checks')
@@ -104,7 +159,9 @@ export class PeopleBackgroundChecksController {
 @UseGuards(HybridAuthGuard, PermissionGuard)
 @ApiSecurity('apikey')
 export class BackgroundChecksController {
-  constructor(private readonly backgroundChecksService: BackgroundChecksService) {}
+  constructor(
+    private readonly backgroundChecksService: BackgroundChecksService,
+  ) {}
 
   @Get(':id')
   @RequirePermission('member', 'read')

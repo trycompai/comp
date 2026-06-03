@@ -40,7 +40,9 @@ export async function fetchCompletedReportSnapshot({
   }
 
   try {
-    const snapshot = await identityClient.getBackgroundCheck(identityBackgroundCheckId);
+    const snapshot = await identityClient.getBackgroundCheck(
+      identityBackgroundCheckId,
+    );
     return toInputJsonValue(snapshot);
   } catch {
     return null;

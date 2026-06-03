@@ -1,0 +1,226 @@
+'use client';
+
+import { useConnectionServices } from '@/hooks/use-integration-platform';
+import { usePermissions } from '@/hooks/use-permissions';
+import { Breadcrumb, Stack } from '@trycompai/design-system';
+import type {
+  ConnectionListItemResponse,
+  IntegrationProviderResponse,
+} from '@trycompai/integration-platform';
+import Link from 'next/link';
+import { useMemo, useState } from 'react';
+import { toast } from 'sonner';
+import { EvidenceTaskRow } from '../../../components/EvidenceTaskRow';
+
+interface ServiceMeta {
+  id: string;
+  name: string;
+  description: string;
+  implemented?: boolean;
+  mappedTasks?: Array<{ id: string; name: string }>;
+}
+
+interface TaskTemplate {
+  id: string;
+  taskId: string;
+  name: string;
+  description: string;
+}
+
+interface ServiceDetailViewProps {
+  provider: IntegrationProviderResponse;
+  service: ServiceMeta;
+  connections: ConnectionListItemResponse[];
+  connectionId: string | null;
+  connectionsErrored: boolean;
+  taskTemplates: TaskTemplate[];
+  tasksErrored: boolean;
+  orgId: string;
+  slug: string;
+}
+
+export function ServiceDetailView({
+  provider,
+  service,
+  connections,
+  connectionId,
+  connectionsErrored,
+  taskTemplates,
+  tasksErrored,
+  orgId,
+  slug,
+}: ServiceDetailViewProps) {
+  // Resolve the connection this service belongs to (URL param, else first active).
+  const effectiveConnectionId = useMemo(() => {
+    // Only trust the URL connectionId if it actually belongs to this provider;
+    // otherwise fall back to the active connection (stale/invalid id guard).
+    if (connectionId && connections.some((c) => c.id === connectionId)) {
+      return connectionId;
+    }
+    const active = connections.find(
+      (c) => c.status === 'active' || c.status === 'pending',
+    );
+    return active?.id ?? null;
+  }, [connectionId, connections]);
+
+  const {
+    services: connectionServices,
+    updateServices,
+    isLoading: servicesLoading,
+    error: servicesError,
+  } = useConnectionServices(effectiveConnectionId);
+  // Toggling a service calls PUT /connections/:id/services, which the API gates
+  // behind integration:update — gate the control the same way on the client.
+  const { hasPermission } = usePermissions();
+  const canUpdate = hasPermission('integration', 'update');
+
+  const liveService = connectionServices.find((s) => s.id === service.id);
+  const isEnabled = liveService?.enabled ?? false;
+  const isImplemented = service.implemented !== false;
+  const hasConnection = Boolean(effectiveConnectionId);
+  // Only services present in the connection's live service list can be toggled.
+  // (e.g. AWS baseline services are always scanned and aren't in the toggle list.)
+  const isManageable = Boolean(liveService);
+  const [toggling, setToggling] = useState(false);
+
+  const taskByTemplateId = useMemo(
+    () => new Map(taskTemplates.map((t) => [t.id, t])),
+    [taskTemplates],
+  );
+  const mappedTasks = service.mappedTasks ?? [];
+
+  const handleToggle = async () => {
+    if (!effectiveConnectionId || toggling || !liveService || !canUpdate) return;
+    setToggling(true);
+    const next = !isEnabled;
+    try {
+      await updateServices(service.id, next);
+      toast.success(
+        `${service.name} scanning ${next ? 'enabled' : 'disabled'} in Cloud Tests`,
+      );
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Failed to update');
+    } finally {
+      setToggling(false);
+    }
+  };
+
+  return (
+    <Stack gap="lg">
+      <Breadcrumb
+        items={[
+          {
+            label: 'Integrations',
+            href: `/${orgId}/integrations`,
+            props: { render: <Link href={`/${orgId}/integrations`} /> },
+          },
+          {
+            label: provider.name,
+            href: `/${orgId}/integrations/${slug}`,
+            props: { render: <Link href={`/${orgId}/integrations/${slug}`} /> },
+          },
+          { label: service.name, isCurrent: true },
+        ]}
+      />
+
+      {/* Header */}
+      <div className="rounded-xl border bg-background p-5">
+        <h1 className="text-base font-semibold">{service.name}</h1>
+        <p className="mt-1 text-sm text-muted-foreground">{service.description}</p>
+      </div>
+
+      {/* Cloud Tests scanning toggle */}
+      <section className="rounded-lg border bg-background">
+        <div className="flex items-center justify-between gap-4 px-4 py-4">
+          <div className="min-w-0">
+            <h2 className="text-sm font-semibold">Cloud Tests scanning</h2>
+            <p className="mt-0.5 text-xs text-muted-foreground">
+              Whether Cloud Tests scans this service for security findings. This
+              controls scanning only — it&apos;s separate from the evidence below.
+            </p>
+          </div>
+          {connectionsErrored ? (
+            <span className="shrink-0 rounded-full bg-destructive/10 px-2.5 py-1 text-xs text-destructive">
+              Couldn’t load connection
+            </span>
+          ) : !hasConnection ? (
+            <span className="shrink-0 rounded-full bg-muted px-2.5 py-1 text-xs text-muted-foreground">
+              Not connected
+            </span>
+          ) : servicesError ? (
+            <span className="shrink-0 rounded-full bg-muted px-2.5 py-1 text-xs text-muted-foreground">
+              Status unavailable
+            </span>
+          ) : servicesLoading ? (
+            <span className="shrink-0 rounded-full bg-muted px-2.5 py-1 text-xs text-muted-foreground">
+              Checking…
+            </span>
+          ) : !isManageable ? (
+            <span className="shrink-0 rounded-full bg-muted px-2.5 py-1 text-xs text-muted-foreground">
+              Always scanned
+            </span>
+          ) : canUpdate ? (
+            <button
+              type="button"
+              role="switch"
+              aria-checked={isEnabled}
+              aria-label={`Toggle Cloud Tests scanning for ${service.name}`}
+              disabled={toggling || !effectiveConnectionId || !isImplemented}
+              onClick={() => void handleToggle()}
+              className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer items-center rounded-full transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${
+                isEnabled ? 'bg-primary' : 'bg-muted-foreground/30'
+              }`}
+            >
+              <span
+                className={`inline-block h-3.5 w-3.5 rounded-full bg-white shadow-sm transition-transform ${
+                  isEnabled ? 'translate-x-[18px]' : 'translate-x-[3px]'
+                }`}
+              />
+            </button>
+          ) : (
+            // Has the service but lacks integration:update → read-only status.
+            <span className="shrink-0 rounded-full bg-muted px-2.5 py-1 text-xs text-muted-foreground">
+              {isEnabled ? 'Scanning on' : 'Scanning off'}
+            </span>
+          )}
+        </div>
+      </section>
+
+      {/* Evidence provided */}
+      <section className="rounded-lg border bg-background">
+        <div className="border-b px-4 py-3">
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <h2 className="text-sm font-semibold">Evidence provided</h2>
+              <p className="mt-0.5 text-xs text-muted-foreground">
+                Evidence tasks this service&apos;s checks satisfy when they pass.
+              </p>
+            </div>
+            <span className="shrink-0 rounded-full bg-muted px-2 py-1 text-xs text-muted-foreground">
+              {mappedTasks.length}
+            </span>
+          </div>
+        </div>
+
+        {mappedTasks.length === 0 ? (
+          <p className="px-4 py-6 text-center text-xs text-muted-foreground">
+            This service doesn&apos;t map to any evidence task yet.
+          </p>
+        ) : (
+          <div className="divide-y">
+            {mappedTasks.map((mapped) => (
+              <EvidenceTaskRow
+                key={mapped.id}
+                fallbackName={mapped.name}
+                task={taskByTemplateId.get(mapped.id)}
+                orgId={orgId}
+                buttonLabel="View task"
+                tasksErrored={tasksErrored}
+              />
+            ))}
+          </div>
+        )}
+      </section>
+    </Stack>
+  );
+}
