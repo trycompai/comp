@@ -1,4 +1,6 @@
-import { Departments, Prisma, PolicyVisibility } from '@db';
+import { Prisma, PolicyVisibility } from '@db';
+
+const NONE_DEPARTMENT = 'none';
 
 /**
  * Roles that have full access without department visibility filtering
@@ -24,7 +26,7 @@ export function isPrivilegedRole(roles: string[] | null | undefined): boolean {
  *   - See policies where their department is in visibleToDepartments
  */
 export function buildPolicyVisibilityFilter(
-  memberDepartment: Departments | null | undefined,
+  memberDepartment: string | null | undefined,
   memberRoles: string[] | null | undefined,
 ): Prisma.PolicyWhereInput {
   // Privileged roles see everything
@@ -33,7 +35,7 @@ export function buildPolicyVisibilityFilter(
   }
 
   // If no department, only show policies visible to ALL
-  if (!memberDepartment || memberDepartment === Departments.none) {
+  if (!memberDepartment || memberDepartment === NONE_DEPARTMENT) {
     return {
       visibility: PolicyVisibility.ALL,
     };
@@ -61,7 +63,7 @@ export function canViewPolicy(
     visibility: PolicyVisibility;
     visibleToDepartments: string[];
   },
-  memberDepartment: Departments | null | undefined,
+  memberDepartment: string | null | undefined,
   memberRoles: string[] | null | undefined,
 ): boolean {
   // Privileged roles see everything
@@ -77,7 +79,7 @@ export function canViewPolicy(
   // Policy is department-specific
   if (policy.visibility === PolicyVisibility.DEPARTMENT) {
     // No department = can't see department-specific policies
-    if (!memberDepartment || memberDepartment === Departments.none) {
+    if (!memberDepartment || memberDepartment === NONE_DEPARTMENT) {
       return false;
     }
 

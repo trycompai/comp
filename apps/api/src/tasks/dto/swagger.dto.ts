@@ -38,10 +38,12 @@ export class CreateTaskDto {
   integrationScheduleFrequency?: string;
 
   @ApiProperty({
-    description: 'Department assignment',
-    enum: ['none', 'admin', 'gov', 'hr', 'it', 'itsm', 'qms'],
+    description:
+      'Department assignment. Built-in values: none, admin, gov, hr, it, itsm, qms. Custom department names are also accepted.',
+    type: 'string',
     default: 'none',
     required: false,
+    maxLength: 64,
   })
   department?: string;
 
@@ -97,9 +99,11 @@ export class UpdateTaskDto {
   integrationScheduleFrequency?: string;
 
   @ApiProperty({
-    description: 'Department assignment',
-    enum: ['none', 'admin', 'gov', 'hr', 'it', 'itsm', 'qms'],
+    description:
+      'Department assignment. Built-in values: none, admin, gov, hr, it, itsm, qms. Custom department names are also accepted.',
+    type: 'string',
     required: false,
+    maxLength: 64,
   })
   department?: string;
 
@@ -143,9 +147,11 @@ export class TaskQueryDto {
   frequency?: string;
 
   @ApiProperty({
-    description: 'Filter by department',
-    enum: ['none', 'admin', 'gov', 'hr', 'it', 'itsm', 'qms'],
+    description:
+      'Filter by department. Built-in values: none, admin, gov, hr, it, itsm, qms. Custom department names are also accepted.',
+    type: 'string',
     required: false,
+    maxLength: 64,
   })
   department?: string;
 
@@ -201,8 +207,9 @@ export class TaskResponseDto {
   integrationLastRunAt: Date | null;
 
   @ApiProperty({
-    description: 'Department assignment',
-    enum: ['none', 'admin', 'gov', 'hr', 'it', 'itsm', 'qms'],
+    description:
+      'Department assignment. May be one of the built-in values (none, admin, gov, hr, it, itsm, qms) or a custom department name.',
+    type: 'string',
     nullable: true,
   })
   department: string | null;

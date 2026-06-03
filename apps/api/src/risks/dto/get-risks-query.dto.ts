@@ -1,7 +1,16 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { IsEnum, IsInt, IsOptional, IsString, Max, Min } from 'class-validator';
+import {
+  IsEnum,
+  IsInt,
+  IsOptional,
+  IsString,
+  Max,
+  MaxLength,
+  Min,
+} from 'class-validator';
 import { Type } from 'class-transformer';
 import { RiskCategory, Departments, RiskStatus } from '@db';
+import { DEPARTMENT_MAX_LENGTH } from '../../policies/dto/create-policy.dto';
 
 export enum RiskSortBy {
   CREATED_AT = 'createdAt',
@@ -85,12 +94,16 @@ export class GetRisksQueryDto {
   category?: RiskCategory;
 
   @ApiPropertyOptional({
-    description: 'Filter by department',
-    enum: Departments,
+    description:
+      'Filter by department. Built-in values: none, admin, gov, hr, it, itsm, qms. Custom department names are also accepted.',
+    type: 'string',
+    example: Departments.it,
+    maxLength: DEPARTMENT_MAX_LENGTH,
   })
   @IsOptional()
-  @IsEnum(Departments)
-  department?: Departments;
+  @IsString()
+  @MaxLength(DEPARTMENT_MAX_LENGTH)
+  department?: string;
 
   @ApiPropertyOptional({
     description: 'Filter by assignee member ID',
