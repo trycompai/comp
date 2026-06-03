@@ -1,7 +1,10 @@
 'use client';
 
 import { useApi } from '@/hooks/use-api';
-import { useIntegrationMutations } from '@/hooks/use-integration-platform';
+import {
+  useIntegrationConnection,
+  useIntegrationMutations,
+} from '@/hooks/use-integration-platform';
 import { usePermissions } from '@/hooks/use-permissions';
 import {
   Dialog,
@@ -20,6 +23,8 @@ import {
 import { TrashCan } from '@trycompai/design-system/icons';
 import { useState } from 'react';
 import { toast } from 'sonner';
+import { ScanModeSwitchDialog } from './ScanModeSwitchDialog';
+import type { AwsScanModeChoice } from '../../integrations/[slug]/components/AwsScanModeStep';
 
 interface CloudProvider {
   id: string;
@@ -58,6 +63,12 @@ export function CloudSettingsModal({
   const api = useApi();
   const { hasPermission } = usePermissions();
   const canDelete = hasPermission('integration', 'delete');
+  // Scan-mode switch is an UPDATE operation (the API endpoint is
+  // gated by integration:update — see CloudSecurityController.updateAwsScanMode),
+  // so the UI must use update permission, NOT delete permission. Using
+  // canDelete here would silently block valid update users from seeing
+  // the "Switch" button even though the API would accept their request.
+  const canUpdate = hasPermission('integration', 'update');
   const [activeProvider, setActiveProvider] = useState<string>(connectedProviders[0]?.connectionId || '');
   const [isDeleting, setIsDeleting] = useState(false);
   const { deleteConnection } = useIntegrationMutations();
@@ -124,6 +135,7 @@ export function CloudSettingsModal({
           <ConnectionTab
             provider={currentProvider}
             canDelete={canDelete}
+            canUpdate={canUpdate}
             isDeleting={isDeleting}
             onDisconnect={handleDisconnect}
           />
@@ -138,11 +150,13 @@ export function CloudSettingsModal({
 function ConnectionTab({
   provider,
   canDelete,
+  canUpdate,
   isDeleting,
   onDisconnect,
 }: {
   provider: CloudProvider;
   canDelete: boolean;
+  canUpdate: boolean;
   isDeleting: boolean;
   onDisconnect: (p: CloudProvider) => void;
 }) {
@@ -177,6 +191,19 @@ function ConnectionTab({
             : 'To update credentials, disconnect and reconnect with your Microsoft account.'}
       </p>
 
+      {/* AWS-only — scan engine switcher. Lets the customer change between
+          Comp AI scanners and Security Hub on an existing connection.
+          Surfaces the current mode + a "Change" button that opens
+          ScanModeSwitchDialog with the right confirmation copy.
+
+          Gated by `canUpdate` (integration:update) — matches the API
+          endpoint at PATCH /v1/cloud-security/connections/:id/scan-mode.
+          Using canDelete here would silently block users who legitimately
+          have update permission. */}
+      {provider.id === 'aws' && !provider.isLegacy && (
+        <AwsScanModeSection connectionId={provider.connectionId} canEdit={canUpdate} />
+      )}
+
       {canDelete && (
         <Button
           variant="destructive"
@@ -189,5 +216,76 @@ function ConnectionTab({
         </Button>
       )}
     </div>
+  );
+}
+
+// ─── AWS Scan Mode Section ──────────────────────────────────────────────
+
+const SCAN_MODE_LABEL: Record<AwsScanModeChoice, string> = {
+  comp_scanners: 'Comp AI Scanners',
+  security_hub: 'AWS Security Hub',
+};
+
+/**
+ * Renders the current scan engine for an AWS connection and a "Change"
+ * button that opens the switch dialog. Reads the connection's
+ * `variables.awsScanMode` to determine the current mode, falling back
+ * to 'comp_scanners' when the field is missing (pre-feature connections).
+ */
+function AwsScanModeSection({
+  connectionId,
+  canEdit,
+}: {
+  connectionId: string;
+  canEdit: boolean;
+}) {
+  const { connection, isLoading, refresh } = useIntegrationConnection(connectionId);
+  const [switchDialogOpen, setSwitchDialogOpen] = useState(false);
+
+  if (isLoading || !connection) {
+    return null;
+  }
+
+  // awsScanMode lives in metadata (non-secret, frontend-readable),
+  // mirroring how `awsType`, `roleArn`, `regions` are surfaced. Missing
+  // field = today's default = comp_scanners.
+  const metadata = (connection.metadata ?? {}) as Record<string, unknown>;
+  const currentMode: AwsScanModeChoice =
+    metadata.awsScanMode === 'security_hub' ? 'security_hub' : 'comp_scanners';
+  const targetMode: AwsScanModeChoice =
+    currentMode === 'comp_scanners' ? 'security_hub' : 'comp_scanners';
+
+  return (
+    <>
+      <div className="rounded-lg border p-4 space-y-3">
+        <div className="flex items-center justify-between">
+          <div>
+            <p className="text-sm font-medium">Scan engine</p>
+            <p className="mt-0.5 text-xs text-muted-foreground">
+              {SCAN_MODE_LABEL[currentMode]}
+            </p>
+          </div>
+          {canEdit && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setSwitchDialogOpen(true)}
+            >
+              Switch to {SCAN_MODE_LABEL[targetMode]}
+            </Button>
+          )}
+        </div>
+      </div>
+      <ScanModeSwitchDialog
+        open={switchDialogOpen}
+        onOpenChange={setSwitchDialogOpen}
+        connectionId={connectionId}
+        currentMode={currentMode}
+        targetMode={targetMode}
+        onSwitched={() => {
+          refresh();
+        }}
+      />
+    </>
   );
 }

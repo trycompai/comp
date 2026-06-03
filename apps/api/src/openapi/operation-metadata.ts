@@ -50,7 +50,7 @@ const CORE_OPERATION_METADATA: Record<string, PublicOperationMetadata> = {
   PoliciesController_getAllPolicies_v1: {
     summary: 'List compliance policies',
     description:
-      'List compliance policies for an organization, including drafts and published policies used for SOC 2, ISO 27001, HIPAA, and GDPR workflows.',
+      'Lists active compliance policies by default. Use includeArchived=true to include archived rows and excludeContent=true when you only need policy metadata.',
     codeSamples: [
       {
         lang: 'bash',
@@ -58,12 +58,34 @@ const CORE_OPERATION_METADATA: Record<string, PublicOperationMetadata> = {
         source:
           'curl --request GET --url "https://api.trycomp.ai/v1/policies" --header "X-API-Key: $COMP_AI_API_KEY"',
       },
+      {
+        lang: 'bash',
+        label: 'List policies (lightweight, no content)',
+        source:
+          'curl --request GET --url "https://api.trycomp.ai/v1/policies?excludeContent=true" --header "X-API-Key: $COMP_AI_API_KEY"',
+      },
+      {
+        lang: 'bash',
+        label: 'List policies including archived',
+        source:
+          'curl --request GET --url "https://api.trycomp.ai/v1/policies?includeArchived=true" --header "X-API-Key: $COMP_AI_API_KEY"',
+      },
     ],
   },
   PoliciesController_createPolicy_v1: {
     summary: 'Create compliance policy',
     description:
       'Create a policy record that can be reviewed, versioned, published, linked to controls, and used as source evidence for questionnaires.',
+  },
+  PoliciesController_requestPolicyPdfUploadUrl_v1: {
+    summary: 'Request a presigned URL to upload a policy PDF',
+    description:
+      'Generates a presigned S3 URL for uploading a policy PDF directly to storage. Use this when attaching a PDF to a compliance policy — the file bytes are uploaded straight to S3 without passing through the API. Requires the policy ID; if you only know the policy name, look it up first via the list-compliance-policies tool. After uploading the file to the returned URL, finalize the attachment by calling confirm-policy-pdf-uploaded with the same s3Key.',
+  },
+  PoliciesController_confirmPolicyPdfUploaded_v1: {
+    summary: 'Confirm a policy PDF upload completed',
+    description:
+      'Links an uploaded PDF to a compliance policy after the file has been PUT to a presigned S3 URL. Call this after request-policy-pdf-upload-url returned an s3Key and you successfully uploaded the file bytes to that URL. The endpoint verifies the file exists in S3 before linking it to the policy or version.',
   },
   PoliciesController_publishAllPolicies_v1: {
     summary: 'Publish all draft policies',
@@ -88,7 +110,7 @@ const CORE_OPERATION_METADATA: Record<string, PublicOperationMetadata> = {
   PoliciesController_getPolicy_v1: {
     summary: 'Get compliance policy',
     description:
-      'Retrieve one compliance policy with its current content, review status, framework links, and audit-ready metadata.',
+      'Retrieve a single compliance policy by its ID, including current content, draft content, review status, framework links, and audit metadata. Use this to read or inspect one policy in detail. If you only have a policy name, find its ID first by listing compliance policies.',
   },
   PoliciesController_updatePolicy_v1: {
     summary: 'Update compliance policy',

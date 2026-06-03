@@ -80,10 +80,12 @@ export interface LoadedFrameworkSources {
     automationStatus: TaskAutomationStatus;
   }>;
   groupedRelations: Array<{
+    frameworkId: string;
     controlTemplateId: string;
     requirementTemplateIds: string[];
     policyTemplateIds: string[];
     taskTemplateIds: string[];
+    documentTypes: EvidenceFormType[];
   }>;
   latestVersionByFrameworkId: Map<string, string>;
   frameworksWithoutVersion: string[];
@@ -124,26 +126,36 @@ export async function loadFrameworkSources({
   const controlsMap = new Map<string, LoadedFrameworkSources['controlTemplates'][number]>();
   const policiesMap = new Map<string, LoadedFrameworkSources['policyTemplates'][number]>();
   const tasksMap = new Map<string, LoadedFrameworkSources['taskTemplates'][number]>();
+  // Requirement ids referenced by manifest controls, validated against live
+  // FrameworkEditorRequirement rows below. Dead ones are pruned from relations
+  // so RequirementMap inserts never reference a deleted requirement.
+  const manifestRequirementIds = new Set<string>();
+  const deadRequirementIds = new Set<string>();
 
   const relationsByControl = new Map<
     string,
     {
+      frameworkId: string;
       controlTemplateId: string;
       requirementTemplateIds: Set<string>;
       policyTemplateIds: Set<string>;
       taskTemplateIds: Set<string>;
+      documentTypes: Set<EvidenceFormType>;
     }
   >();
-  const getOrCreateRelation = (controlTemplateId: string) => {
-    let rel = relationsByControl.get(controlTemplateId);
+  const getOrCreateRelation = (frameworkId: string, controlTemplateId: string) => {
+    const key = `${frameworkId}::${controlTemplateId}`;
+    let rel = relationsByControl.get(key);
     if (!rel) {
       rel = {
+        frameworkId,
         controlTemplateId,
         requirementTemplateIds: new Set(),
         policyTemplateIds: new Set(),
         taskTemplateIds: new Set(),
+        documentTypes: new Set(),
       };
-      relationsByControl.set(controlTemplateId, rel);
+      relationsByControl.set(key, rel);
     }
     return rel;
   };
@@ -161,10 +173,14 @@ export async function loadFrameworkSources({
           documentTypes: (c.documentTypes ?? []) as EvidenceFormType[],
         });
       }
-      const rel = getOrCreateRelation(c.id);
-      for (const rid of c.requirementIds) rel.requirementTemplateIds.add(rid);
+      const rel = getOrCreateRelation(frameworkId, c.id);
+      for (const rid of c.requirementIds) {
+        rel.requirementTemplateIds.add(rid);
+        manifestRequirementIds.add(rid);
+      }
       for (const pid of c.policyIds) rel.policyTemplateIds.add(pid);
       for (const tid of c.taskIds) rel.taskTemplateIds.add(tid);
+      for (const dt of c.documentTypes ?? []) rel.documentTypes.add(dt as EvidenceFormType);
     }
     for (const p of manifest.policies) {
       if (!policiesMap.has(p.id)) {
@@ -192,16 +208,73 @@ export async function loadFrameworkSources({
     }
   }
 
-  // automationStatus isn't in the manifest — resolve from live task templates.
-  const manifestTaskIds = Array.from(tasksMap.keys());
-  if (manifestTaskIds.length > 0) {
-    const liveTasks = await tx.frameworkEditorTaskTemplate.findMany({
-      where: { id: { in: manifestTaskIds } },
-      select: { id: true, automationStatus: true },
-    });
+  // Manifests are frozen snapshots: a control/policy/task/requirement they
+  // reference may have been hard-deleted from the live framework-editor tables
+  // since the version was published. Org rows FK to those live tables
+  // (Control.controlTemplateId, Policy.policyTemplateId, Task.taskTemplateId,
+  // RequirementMap.requirementId), so creating one that points at a deleted
+  // template raises a P2003 FK violation and aborts onboarding. Reconcile
+  // against the live tables: resolve task automationStatus (only carried live)
+  // and drop any manifest reference whose live row is gone. Fallback-path ids
+  // are read straight from live tables below, so they are never pruned here.
+  if (manifestByFrameworkId.size > 0) {
+    const manifestControlIds = Array.from(controlsMap.keys());
+    const manifestPolicyIds = Array.from(policiesMap.keys());
+    const manifestTaskIds = Array.from(tasksMap.keys());
+    const manifestReqIds = Array.from(manifestRequirementIds);
+
+    const [liveControls, livePolicies, liveTasks, liveRequirements] = await Promise.all([
+      tx.frameworkEditorControlTemplate.findMany({
+        where: { id: { in: manifestControlIds } },
+        select: { id: true },
+      }),
+      tx.frameworkEditorPolicyTemplate.findMany({
+        where: { id: { in: manifestPolicyIds } },
+        select: { id: true },
+      }),
+      tx.frameworkEditorTaskTemplate.findMany({
+        where: { id: { in: manifestTaskIds } },
+        select: { id: true, automationStatus: true },
+      }),
+      tx.frameworkEditorRequirement.findMany({
+        where: { id: { in: manifestReqIds } },
+        select: { id: true },
+      }),
+    ]);
+
+    // automationStatus isn't carried in the manifest — copy it from the live row.
     for (const lt of liveTasks) {
       const existing = tasksMap.get(lt.id);
       if (existing) existing.automationStatus = lt.automationStatus;
+    }
+
+    const liveControlIds = new Set(liveControls.map((c) => c.id));
+    const livePolicyIds = new Set(livePolicies.map((p) => p.id));
+    const liveTaskIds = new Set(liveTasks.map((t) => t.id));
+    const liveRequirementIds = new Set(liveRequirements.map((r) => r.id));
+
+    const droppedControls = manifestControlIds.filter((id) => !liveControlIds.has(id));
+    const droppedPolicies = manifestPolicyIds.filter((id) => !livePolicyIds.has(id));
+    const droppedTasks = manifestTaskIds.filter((id) => !liveTaskIds.has(id));
+    const droppedRequirements = manifestReqIds.filter((id) => !liveRequirementIds.has(id));
+
+    for (const id of droppedControls) controlsMap.delete(id);
+    for (const id of droppedPolicies) policiesMap.delete(id);
+    for (const id of droppedTasks) tasksMap.delete(id);
+    for (const id of droppedRequirements) deadRequirementIds.add(id);
+
+    if (
+      droppedControls.length ||
+      droppedPolicies.length ||
+      droppedTasks.length ||
+      droppedRequirements.length
+    ) {
+      console.warn(
+        `loadFrameworkSources: pruned manifest references with no live framework-editor template ` +
+          `(stale manifest — republish the affected framework version). ` +
+          `controls=[${droppedControls.join(', ')}] policies=[${droppedPolicies.join(', ')}] ` +
+          `tasks=[${droppedTasks.join(', ')}] requirements=[${droppedRequirements.join(', ')}]`,
+      );
     }
   }
 
@@ -247,10 +320,23 @@ export async function loadFrameworkSources({
       },
     });
     for (const cr of controlRelationsLive) {
-      const rel = getOrCreateRelation(cr.id);
-      for (const r of cr.requirements) rel.requirementTemplateIds.add(r.id);
-      for (const p of cr.policyTemplates) rel.policyTemplateIds.add(p.id);
-      for (const t of cr.taskTemplates) rel.taskTemplateIds.add(t.id);
+      const frameworkIds = new Set(
+        cr.requirements
+          .map((r) => requirementToFrameworkId.get(r.id))
+          .filter((id): id is string => Boolean(id)),
+      );
+      for (const fwId of frameworkIds) {
+        const rel = getOrCreateRelation(fwId, cr.id);
+        for (const r of cr.requirements) {
+          if (requirementToFrameworkId.get(r.id) === fwId) {
+            rel.requirementTemplateIds.add(r.id);
+          }
+        }
+        for (const p of cr.policyTemplates) rel.policyTemplateIds.add(p.id);
+        for (const t of cr.taskTemplates) rel.taskTemplateIds.add(t.id);
+        const controlEntry = controlsMap.get(cr.id);
+        for (const dt of controlEntry?.documentTypes ?? []) rel.documentTypes.add(dt);
+      }
     }
 
     const fallbackPolicyIds = controlRelationsLive.flatMap((cr) =>
@@ -297,10 +383,17 @@ export async function loadFrameworkSources({
   }
 
   const groupedRelations = Array.from(relationsByControl.values()).map((rel) => ({
+    frameworkId: rel.frameworkId,
     controlTemplateId: rel.controlTemplateId,
-    requirementTemplateIds: Array.from(rel.requirementTemplateIds),
+    // Dead manifest requirements are pruned here: RequirementMap.requirementId
+    // has no downstream instance-map guard (unlike policy/task ids), so a stale
+    // id would otherwise FK-fail on RequirementMap_requirementId_fkey.
+    requirementTemplateIds: Array.from(rel.requirementTemplateIds).filter(
+      (id) => !deadRequirementIds.has(id),
+    ),
     policyTemplateIds: Array.from(rel.policyTemplateIds),
     taskTemplateIds: Array.from(rel.taskTemplateIds),
+    documentTypes: Array.from(rel.documentTypes),
   }));
 
   return {

@@ -10,6 +10,7 @@ import stringify from 'safe-stable-stringify';
 import { redactSensitiveData } from './evidence-redaction';
 import type {
   NormalizedAutomation,
+  NormalizedEvidenceRun,
   TaskEvidenceSummary,
 } from './evidence-export.types';
 
@@ -233,18 +234,8 @@ function addPageNumbers(config: PDFConfig): void {
   }
 }
 
-/**
- * Generate PDF for a single automation
- */
-export function generateAutomationPDF(
-  automation: NormalizedAutomation,
-  context: {
-    organizationName: string;
-    taskTitle: string;
-  },
-): Buffer {
-  const doc = new jsPDF();
-  const config: PDFConfig = {
+function createPDFConfig(doc: jsPDF): PDFConfig {
+  return {
     doc,
     pageWidth: doc.internal.pageSize.getWidth(),
     pageHeight: doc.internal.pageSize.getHeight(),
@@ -254,25 +245,27 @@ export function generateAutomationPDF(
     defaultFontSize: 10,
     yPosition: 20,
   };
+}
 
-  // Header
+function renderAutomationHeader(
+  config: PDFConfig,
+  header: NormalizedAutomation,
+  context: { organizationName: string; taskTitle: string },
+): void {
   addText(config, context.organizationName, { fontSize: 14, bold: true });
   config.yPosition += config.lineHeight * 0.5;
   addText(config, `Task: ${context.taskTitle}`, { fontSize: 11 });
   config.yPosition += config.lineHeight;
 
-  // Automation title
   const typeLabel =
-    automation.type === 'app_automation'
-      ? 'App Automation'
-      : 'Custom Automation';
-  addText(config, `${typeLabel}: ${automation.name}`, {
+    header.type === 'app_automation' ? 'App Automation' : 'Custom Automation';
+  addText(config, `${typeLabel}: ${header.name}`, {
     fontSize: 13,
     bold: true,
   });
 
-  if (automation.integrationName) {
-    addText(config, `Integration: ${automation.integrationName}`, {
+  if (header.integrationName) {
+    addText(config, `Integration: ${header.integrationName}`, {
       fontSize: 10,
       color: [100, 100, 100],
     });
@@ -280,7 +273,6 @@ export function generateAutomationPDF(
 
   config.yPosition += config.lineHeight;
 
-  // Export timestamp
   addText(config, `Exported: ${format(new Date(), 'PPpp')}`, {
     fontSize: 9,
     color: [128, 128, 128],
@@ -288,157 +280,172 @@ export function generateAutomationPDF(
 
   addSeparator(config);
 
-  // Summary section
   addSectionHeader(config, 'Summary');
-  addText(config, `Total Runs: ${automation.totalRuns}`);
-  addText(config, `Successful: ${automation.successfulRuns}`);
-  addText(config, `Failed: ${automation.failedRuns}`);
+  addText(config, `Total Runs: ${header.totalRuns}`);
+  addText(config, `Successful: ${header.successfulRuns}`);
+  addText(config, `Failed: ${header.failedRuns}`);
 
-  if (automation.latestRunAt) {
-    addText(config, `Latest Run: ${format(automation.latestRunAt, 'PPpp')}`);
+  if (header.latestRunAt) {
+    addText(config, `Latest Run: ${format(header.latestRunAt, 'PPpp')}`);
   }
 
   addSeparator(config);
-
-  // Runs section
   addSectionHeader(config, 'Run History');
+}
 
-  for (const run of automation.runs) {
-    checkPageBreak(config, config.lineHeight * 8);
+function renderRunToPDF(config: PDFConfig, run: NormalizedEvidenceRun): void {
+  checkPageBreak(config, config.lineHeight * 8);
 
-    // Run header
-    const statusColor = getStatusColor(run.status, run.failedCount > 0);
-    addText(config, `Run: ${format(run.createdAt, 'PPpp')}`, {
-      fontSize: 10,
-      bold: true,
-    });
-    addText(config, `Status: ${run.status.toUpperCase()}`, {
+  const statusColor = getStatusColor(run.status, run.failedCount > 0);
+  addText(config, `Run: ${format(run.createdAt, 'PPpp')}`, {
+    fontSize: 10,
+    bold: true,
+  });
+  addText(config, `Status: ${run.status.toUpperCase()}`, {
+    fontSize: 9,
+    color: statusColor,
+  });
+
+  if (run.durationMs) {
+    addText(config, `Duration: ${run.durationMs}ms`, { fontSize: 9 });
+  }
+
+  if (run.type === 'app_automation') {
+    addText(
+      config,
+      `Checked: ${run.totalChecked} | Passed: ${run.passedCount} | Failed: ${run.failedCount}`,
+      { fontSize: 9 },
+    );
+  } else if (run.evaluationStatus) {
+    addText(config, `Evaluation: ${run.evaluationStatus.toUpperCase()}`, {
       fontSize: 9,
-      color: statusColor,
+      color: run.evaluationStatus === 'pass' ? [0, 128, 0] : [200, 0, 0],
     });
-
-    if (run.durationMs) {
-      addText(config, `Duration: ${run.durationMs}ms`, { fontSize: 9 });
-    }
-
-    // Metrics
-    if (run.type === 'app_automation') {
-      addText(
-        config,
-        `Checked: ${run.totalChecked} | Passed: ${run.passedCount} | Failed: ${run.failedCount}`,
-        { fontSize: 9 },
-      );
-    } else if (run.evaluationStatus) {
-      addText(config, `Evaluation: ${run.evaluationStatus.toUpperCase()}`, {
+    if (run.evaluationReason) {
+      addText(config, `Reason: ${run.evaluationReason}`, {
         fontSize: 9,
-        color: run.evaluationStatus === 'pass' ? [0, 128, 0] : [200, 0, 0],
-      });
-      if (run.evaluationReason) {
-        addText(config, `Reason: ${run.evaluationReason}`, {
-          fontSize: 9,
-          indent: 10,
-        });
-      }
-    }
-
-    // Error
-    if (run.error) {
-      config.yPosition += config.lineHeight * 0.5;
-      addText(config, 'Error:', {
-        fontSize: 9,
-        bold: true,
-        color: [200, 0, 0],
-      });
-      addText(config, run.error, {
-        fontSize: 8,
-        color: [150, 0, 0],
         indent: 10,
       });
     }
-
-    // Output (for custom automations)
-    if (run.output) {
-      config.yPosition += config.lineHeight * 0.5;
-      addText(config, 'Output:', { fontSize: 9, bold: true });
-      const outputText = formatJsonForPDF(run.output);
-      addMonospaceText(config, outputText);
-    }
-
-    // Logs
-    if (run.logs) {
-      config.yPosition += config.lineHeight * 0.5;
-      addText(config, 'Logs:', { fontSize: 9, bold: true });
-      const logsText = formatJsonForPDF(run.logs);
-      addMonospaceText(config, logsText);
-    }
-
-    // Results (for app automations)
-    if (run.results.length > 0) {
-      config.yPosition += config.lineHeight * 0.5;
-      addText(config, `Results (${run.results.length}):`, {
-        fontSize: 9,
-        bold: true,
-      });
-
-      for (const result of run.results) {
-        checkPageBreak(config, config.lineHeight * 5);
-
-        const resultIcon = result.passed ? '[PASS]' : '[FAIL]';
-        const resultColor: [number, number, number] = result.passed
-          ? [0, 100, 0]
-          : [180, 0, 0];
-
-        addText(config, `${resultIcon} ${result.title}`, {
-          fontSize: 9,
-          bold: true,
-          color: resultColor,
-          indent: 10,
-        });
-
-        addText(
-          config,
-          `Resource: ${result.resourceType}/${result.resourceId}`,
-          {
-            fontSize: 8,
-            indent: 15,
-          },
-        );
-
-        if (result.description) {
-          addText(config, result.description, { fontSize: 8, indent: 15 });
-        }
-
-        if (result.severity) {
-          addText(config, `Severity: ${result.severity}`, {
-            fontSize: 8,
-            indent: 15,
-          });
-        }
-
-        if (result.remediation) {
-          addText(config, `Remediation: ${result.remediation}`, {
-            fontSize: 8,
-            indent: 15,
-          });
-        }
-
-        if (result.evidence) {
-          addText(config, 'Evidence:', { fontSize: 8, bold: true, indent: 15 });
-          const evidenceText = formatJsonForPDF(result.evidence);
-          addMonospaceText(config, evidenceText, 20);
-        }
-
-        config.yPosition += config.lineHeight * 0.5;
-      }
-    }
-
-    config.yPosition += config.lineHeight;
-    addSeparator(config);
   }
 
-  addPageNumbers(config);
+  if (run.error) {
+    config.yPosition += config.lineHeight * 0.5;
+    addText(config, 'Error:', {
+      fontSize: 9,
+      bold: true,
+      color: [200, 0, 0],
+    });
+    addText(config, run.error, {
+      fontSize: 8,
+      color: [150, 0, 0],
+      indent: 10,
+    });
+  }
 
-  return Buffer.from(doc.output('arraybuffer'));
+  if (run.output) {
+    config.yPosition += config.lineHeight * 0.5;
+    addText(config, 'Output:', { fontSize: 9, bold: true });
+    addMonospaceText(config, formatJsonForPDF(run.output));
+  }
+
+  if (run.logs) {
+    config.yPosition += config.lineHeight * 0.5;
+    addText(config, 'Logs:', { fontSize: 9, bold: true });
+    addMonospaceText(config, formatJsonForPDF(run.logs));
+  }
+
+  if (run.results.length > 0) {
+    config.yPosition += config.lineHeight * 0.5;
+    addText(config, `Results (${run.results.length}):`, {
+      fontSize: 9,
+      bold: true,
+    });
+
+    for (const result of run.results) {
+      checkPageBreak(config, config.lineHeight * 5);
+
+      const resultIcon = result.passed ? '[PASS]' : '[FAIL]';
+      const resultColor: [number, number, number] = result.passed
+        ? [0, 100, 0]
+        : [180, 0, 0];
+
+      addText(config, `${resultIcon} ${result.title}`, {
+        fontSize: 9,
+        bold: true,
+        color: resultColor,
+        indent: 10,
+      });
+
+      addText(
+        config,
+        `Resource: ${result.resourceType}/${result.resourceId}`,
+        { fontSize: 8, indent: 15 },
+      );
+
+      if (result.description) {
+        addText(config, result.description, { fontSize: 8, indent: 15 });
+      }
+      if (result.severity) {
+        addText(config, `Severity: ${result.severity}`, {
+          fontSize: 8,
+          indent: 15,
+        });
+      }
+      if (result.remediation) {
+        addText(config, `Remediation: ${result.remediation}`, {
+          fontSize: 8,
+          indent: 15,
+        });
+      }
+      if (result.evidence) {
+        addText(config, 'Evidence:', { fontSize: 8, bold: true, indent: 15 });
+        addMonospaceText(config, formatJsonForPDF(result.evidence), 20);
+      }
+
+      config.yPosition += config.lineHeight * 0.5;
+    }
+  }
+
+  config.yPosition += config.lineHeight;
+  addSeparator(config);
+}
+
+/**
+ * Generate PDF for a single automation (loads all runs into memory).
+ * Use generateAutomationPDFFromStream for large automations.
+ */
+export function generateAutomationPDF(
+  automation: NormalizedAutomation,
+  context: { organizationName: string; taskTitle: string },
+): Buffer {
+  const config = createPDFConfig(new jsPDF());
+  renderAutomationHeader(config, automation, context);
+  for (const run of automation.runs) {
+    renderRunToPDF(config, run);
+  }
+  addPageNumbers(config);
+  return Buffer.from(config.doc.output('arraybuffer'));
+}
+
+/**
+ * Build a PDF incrementally from an async stream of run batches.
+ * Peak memory = one batch of runs + the jsPDF document (lightweight page objects).
+ */
+export async function generateAutomationPDFFromStream(
+  header: NormalizedAutomation,
+  context: { organizationName: string; taskTitle: string },
+  runBatches: AsyncIterable<NormalizedEvidenceRun[]>,
+): Promise<Buffer> {
+  const config = createPDFConfig(new jsPDF());
+  renderAutomationHeader(config, header, context);
+  for await (const batch of runBatches) {
+    for (const run of batch) {
+      renderRunToPDF(config, run);
+    }
+  }
+  addPageNumbers(config);
+  return Buffer.from(config.doc.output('arraybuffer'));
 }
 
 /**

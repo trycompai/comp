@@ -30,6 +30,7 @@ model Organization {
   deviceSyncProvider String?
 
   apiKeys                            ApiKey[]
+  mcpOrgBindings                     McpOrgBinding[]
   auditLog                           AuditLog[]
   controls                           Control[]
   frameworkInstances                 FrameworkInstance[]
@@ -65,6 +66,10 @@ model Organization {
   integrationConnections IntegrationConnection[]
   integrationOAuthApps   IntegrationOAuthApp[]
   integrationSyncLogs    IntegrationSyncLog[]
+  checkDefinitions       CheckDefinition[]
+  findingExceptions      FindingException[]
+  findingResolutions     FindingResolution[]
+  findingRegressions     FindingRegression[]
 
   // Pentest credits — wallet of run-credits an org can spend.
   // Source of credits (trial / future Stripe subscription / top-up)
@@ -103,6 +108,11 @@ model Organization {
   // Custom frameworks / requirements authored by this org
   customFrameworks   CustomFramework[]
   customRequirements CustomRequirement[]
+
+  // Offboarding Checklist
+  offboardingChecklistTemplates    OffboardingChecklistTemplate[]
+  offboardingChecklistCompletions  OffboardingChecklistCompletion[]
+  offboardingAccessRevocations     OffboardingAccessRevocation[]
 
   @@index([slug])
 }

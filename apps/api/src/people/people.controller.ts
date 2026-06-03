@@ -16,6 +16,7 @@ import {
 } from '@nestjs/common';
 import {
   ApiBody,
+  ApiExtension,
   ApiExtraModels,
   ApiOperation,
   ApiParam,
@@ -36,6 +37,9 @@ import { BulkCreatePeopleDto } from './dto/bulk-create-people.dto';
 import { InvitePeopleDto } from './dto/invite-people.dto';
 import { PeopleResponseDto, UserResponseDto } from './dto/people-responses.dto';
 import { UpdateEmailPreferencesDto } from './dto/update-email-preferences.dto';
+import { AttachmentsService } from '../attachments/attachments.service';
+import { UploadAttachmentDto } from '../attachments/upload-attachment.dto';
+import { AttachmentEntityType } from '@db';
 import { PeopleService } from './people.service';
 import { PeopleInviteService } from './people-invite.service';
 import { GET_ALL_PEOPLE_RESPONSES } from './schemas/get-all-people.responses';
@@ -58,11 +62,26 @@ export class PeopleController {
   constructor(
     private readonly peopleService: PeopleService,
     private readonly peopleInviteService: PeopleInviteService,
+    private readonly attachmentsService: AttachmentsService,
   ) {}
+
+  private resolveEventType(eventType: string): AttachmentEntityType {
+    if (eventType === 'onboard') return AttachmentEntityType.employment_onboard;
+    if (eventType === 'offboard')
+      return AttachmentEntityType.employment_offboard;
+    throw new BadRequestException(
+      `Invalid event type "${eventType}". Must be "onboard" or "offboard".`,
+    );
+  }
 
   @Post('invite')
   @RequirePermission('member', 'create')
-  @ApiOperation({ summary: 'Invite members to the organization' })
+  @ApiOperation({
+    summary: 'Invite members to the organization',
+    description:
+      'Invite one or more people to the organization by email and assign them roles (e.g. admin, employee). Use this to add a teammate or send someone an invitation. Each invite takes an email and an array of role names.',
+  })
+  @ApiExtension('x-speakeasy-mcp', { name: 'invite-members' })
   async inviteMembers(
     @Body() inviteData: InvitePeopleDto,
     @OrganizationId() organizationId: string,
@@ -71,8 +90,10 @@ export class PeopleController {
     const results = await this.peopleInviteService.inviteMembers({
       organizationId,
       invites: inviteData.invites,
-      callerUserId: authContext.userId!,
+      callerUserId: authContext.userId ?? '',
       callerRole: authContext.userRoles?.join(',') ?? '',
+      isApiKey: authContext.isApiKey,
+      apiKeyScopes: authContext.apiKeyScopes,
     });
 
     return {
@@ -91,6 +112,7 @@ export class PeopleController {
   @Get()
   @RequirePermission('member', 'read')
   @ApiOperation(PEOPLE_OPERATIONS.getAllPeople)
+  @ApiExtension('x-speakeasy-mcp', { name: 'list-members' })
   @ApiResponse(GET_ALL_PEOPLE_RESPONSES[200])
   @ApiResponse(GET_ALL_PEOPLE_RESPONSES[401])
   @ApiResponse(GET_ALL_PEOPLE_RESPONSES[404])
@@ -99,10 +121,33 @@ export class PeopleController {
     @OrganizationId() organizationId: string,
     @AuthContext() authContext: AuthContextType,
     @Query('includeDeactivated') includeDeactivated?: string,
+    @Query('onboardAfter') onboardAfter?: string,
+    @Query('onboardBefore') onboardBefore?: string,
+    @Query('offboardAfter') offboardAfter?: string,
+    @Query('offboardBefore') offboardBefore?: string,
   ) {
+    const parseDateParam = (param: string | undefined, name: string): Date | undefined => {
+      if (!param) return undefined;
+      const date = new Date(param);
+      if (isNaN(date.getTime())) {
+        throw new BadRequestException(`Invalid date value for "${name}": ${param}`);
+      }
+      return date;
+    };
+
+    const filters = {
+      ...(onboardAfter ? { onboardAfter: parseDateParam(onboardAfter, 'onboardAfter') } : {}),
+      ...(onboardBefore ? { onboardBefore: parseDateParam(onboardBefore, 'onboardBefore') } : {}),
+      ...(offboardAfter ? { offboardAfter: parseDateParam(offboardAfter, 'offboardAfter') } : {}),
+      ...(offboardBefore ? { offboardBefore: parseDateParam(offboardBefore, 'offboardBefore') } : {}),
+    };
+
+    const hasFilters = Object.keys(filters).length > 0;
+
     const people = await this.peopleService.findAllByOrganization(
       organizationId,
       includeDeactivated === 'true',
+      hasFilters ? filters : undefined,
     );
 
     return {
@@ -172,6 +217,7 @@ export class PeopleController {
   @RequirePermission('member', 'create')
   @ApiOperation(PEOPLE_OPERATIONS.createMember)
   @ApiBody(PEOPLE_BODIES.createMember)
+  @ApiExtension('x-speakeasy-mcp', { name: 'create-member' })
   @ApiResponse(CREATE_MEMBER_RESPONSES[201])
   @ApiResponse(CREATE_MEMBER_RESPONSES[400])
   @ApiResponse(CREATE_MEMBER_RESPONSES[401])
@@ -273,6 +319,7 @@ export class PeopleController {
   @RequirePermission('member', 'update')
   @ApiOperation({ summary: 'Reactivate a deactivated member' })
   @ApiParam(PEOPLE_PARAMS.memberId)
+  @ApiExtension('x-speakeasy-mcp', { name: 'reactivate-member' })
   async reactivateMember(
     @Param('id') memberId: string,
     @OrganizationId() organizationId: string,
@@ -301,6 +348,7 @@ export class PeopleController {
   @RequirePermission('member', 'read')
   @ApiOperation(PEOPLE_OPERATIONS.getPersonById)
   @ApiParam(PEOPLE_PARAMS.memberId)
+  @ApiExtension('x-speakeasy-mcp', { name: 'get-member' })
   @ApiResponse(GET_PERSON_BY_ID_RESPONSES[200])
   @ApiResponse(GET_PERSON_BY_ID_RESPONSES[401])
   @ApiResponse(GET_PERSON_BY_ID_RESPONSES[404])
@@ -384,6 +432,7 @@ export class PeopleController {
   @ApiOperation(PEOPLE_OPERATIONS.updateMember)
   @ApiParam(PEOPLE_PARAMS.memberId)
   @ApiBody(PEOPLE_BODIES.updateMember)
+  @ApiExtension('x-speakeasy-mcp', { name: 'update-member' })
   @ApiResponse(UPDATE_MEMBER_RESPONSES[200])
   @ApiResponse(UPDATE_MEMBER_RESPONSES[400])
   @ApiResponse(UPDATE_MEMBER_RESPONSES[401])
@@ -468,6 +517,7 @@ export class PeopleController {
   @RequirePermission('member', 'delete')
   @ApiOperation(PEOPLE_OPERATIONS.deleteMember)
   @ApiParam(PEOPLE_PARAMS.memberId)
+  @ApiExtension('x-speakeasy-mcp', { name: 'delete-member' })
   @ApiResponse(DELETE_MEMBER_RESPONSES[200])
   @ApiResponse(DELETE_MEMBER_RESPONSES[401])
   @ApiResponse(DELETE_MEMBER_RESPONSES[404])
@@ -527,6 +577,77 @@ export class PeopleController {
           },
         }),
     };
+  }
+
+  @Get(':id/employment-evidence/:eventType')
+  @RequirePermission('member', 'read')
+  @ApiOperation({ summary: 'Get employment evidence attachments' })
+  @ApiParam(PEOPLE_PARAMS.memberId)
+  @ApiParam({ name: 'eventType', enum: ['onboard', 'offboard'] })
+  async getEmploymentEvidence(
+    @Param('id') memberId: string,
+    @Param('eventType') eventType: string,
+    @OrganizationId() organizationId: string,
+  ) {
+    const entityType = this.resolveEventType(eventType);
+    await this.peopleService.findById(memberId, organizationId);
+    return this.attachmentsService.getAttachments(
+      organizationId,
+      memberId,
+      entityType,
+    );
+  }
+
+  @Post(':id/employment-evidence/:eventType')
+  @RequirePermission('member', 'update')
+  @ApiOperation({ summary: 'Upload employment evidence' })
+  @ApiParam(PEOPLE_PARAMS.memberId)
+  @ApiParam({ name: 'eventType', enum: ['onboard', 'offboard'] })
+  async uploadEmploymentEvidence(
+    @Param('id') memberId: string,
+    @Param('eventType') eventType: string,
+    @OrganizationId() organizationId: string,
+    @AuthContext() authContext: AuthContextType,
+    @Body() uploadDto: UploadAttachmentDto,
+  ) {
+    if (!authContext.userId) {
+      throw new BadRequestException('User context required for this operation');
+    }
+    const entityType = this.resolveEventType(eventType);
+    await this.peopleService.findById(memberId, organizationId);
+    return this.attachmentsService.uploadAttachment(
+      organizationId,
+      memberId,
+      entityType,
+      uploadDto,
+      authContext.userId,
+    );
+  }
+
+  @Delete(':id/employment-evidence/:eventType/:attachmentId')
+  @RequirePermission('member', 'delete')
+  @ApiOperation({ summary: 'Delete employment evidence' })
+  @ApiParam(PEOPLE_PARAMS.memberId)
+  @ApiParam({ name: 'eventType', enum: ['onboard', 'offboard'] })
+  @ApiParam({ name: 'attachmentId', description: 'Attachment ID' })
+  async deleteEmploymentEvidence(
+    @Param('id') memberId: string,
+    @Param('eventType') eventType: string,
+    @Param('attachmentId') attachmentId: string,
+    @OrganizationId() organizationId: string,
+  ) {
+    const entityType = this.resolveEventType(eventType);
+    await this.peopleService.findById(memberId, organizationId);
+    const attachments = await this.attachmentsService.getAttachments(
+      organizationId,
+      memberId,
+      entityType,
+    );
+    if (!attachments.some((a) => a.id === attachmentId)) {
+      throw new BadRequestException('Attachment not found for this member and event type');
+    }
+    await this.attachmentsService.deleteAttachment(organizationId, attachmentId);
+    return { success: true };
   }
 
   @Get('me/email-preferences')

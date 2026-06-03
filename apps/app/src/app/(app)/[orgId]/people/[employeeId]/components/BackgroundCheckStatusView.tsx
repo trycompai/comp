@@ -2,6 +2,7 @@
 
 import { apiClient } from '@/lib/api-client';
 import { Badge, Button, Grid, HStack, Stack, Text } from '@trycompai/design-system';
+import type { ReactNode } from 'react';
 import { toast } from 'sonner';
 import useSWR from 'swr';
 import { BackgroundCheckReport } from './BackgroundCheckReport';
@@ -33,11 +34,13 @@ export function BackgroundCheckStatusView({
   confirmation,
   memberId,
   organizationId,
+  actions,
 }: {
   backgroundCheck: BackgroundCheckRecord;
   confirmation?: string | null;
   memberId?: string;
   organizationId?: string;
+  actions?: ReactNode;
 }) {
   const isComplete = isCompletedBackgroundCheck(backgroundCheck.status);
   const customAttachmentsKey =
@@ -107,6 +110,8 @@ export function BackgroundCheckStatusView({
           </Grid>
 
           <ComponentStatuses backgroundCheck={backgroundCheck} />
+
+          {actions}
         </Stack>
       </div>
 

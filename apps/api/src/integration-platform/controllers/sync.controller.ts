@@ -10,7 +10,14 @@ import {
   Logger,
   UseGuards,
 } from '@nestjs/common';
-import { ApiTags, ApiSecurity, ApiOperation } from '@nestjs/swagger';
+import {
+  ApiBody,
+  ApiOperation,
+  ApiPropertyOptional,
+  ApiSecurity,
+  ApiTags,
+} from '@nestjs/swagger';
+import { IsOptional, IsString } from 'class-validator';
 import { HybridAuthGuard } from '../../auth/hybrid-auth.guard';
 import { PermissionGuard } from '../../auth/permission.guard';
 import { RequirePermission } from '../../auth/require-permission.decorator';
@@ -50,6 +57,7 @@ interface GoogleWorkspaceUser {
   isAdmin?: boolean;
   suspended?: boolean;
   orgUnitPath?: string;
+  creationTime?: string;
 }
 
 interface GoogleWorkspaceUsersResponse {
@@ -61,6 +69,30 @@ type GoogleWorkspaceSyncFilterMode = 'all' | 'exclude' | 'include';
 
 const GOOGLE_WORKSPACE_SYNC_FILTER_MODES =
   new Set<GoogleWorkspaceSyncFilterMode>(['all', 'exclude', 'include']);
+
+// Body for POST /v1/integrations/sync/employee-sync-provider. Pass a provider
+// slug to set it as the org's employee-sync provider, or null/omit to clear it.
+// Class (not inline type) so swagger + the ValidationPipe whitelist accept it.
+class SetEmployeeSyncProviderDto {
+  // UI sends organizationId in the body; ignored by the handler (derived from auth).
+  @ApiPropertyOptional({
+    description:
+      'Auto-resolved from your API key / session. You can omit this; it is ignored by the server.',
+  })
+  @IsOptional()
+  @IsString()
+  organizationId?: string;
+
+  @ApiPropertyOptional({
+    description:
+      'Provider slug to use for employee sync (must have the "sync" capability in its manifest — call list-providers to see options). Pass null or omit the field to disable employee sync for this org.',
+    example: 'google-workspace',
+    nullable: true,
+  })
+  @IsOptional()
+  @IsString()
+  provider?: string | null;
+}
 
 @Controller({ path: 'integrations/sync', version: '1' })
 @ApiTags('Integrations')
@@ -158,6 +190,8 @@ export class SyncController {
               clientId: oauthCredentials.clientId,
               clientSecret: oauthCredentials.clientSecret,
               clientAuthMethod: oauthConfig.clientAuthMethod,
+              scope: oauthCredentials.scopes.join(' '),
+              tokenParams: oauthConfig.tokenParams,
             },
           );
           if (newToken) {
@@ -384,27 +418,48 @@ export class SyncController {
         });
 
         if (existingMember) {
-          // Never reactivate deactivated members — whether deactivated manually
-          // by an admin or by a previous sync, they should stay deactivated.
-          // Admins can reactivate manually if needed.
-          results.skipped++;
-          results.details.push({
-            email: normalizedEmail,
-            status: 'skipped',
-            reason: existingMember.deactivated
-              ? 'Member is deactivated'
-              : 'Already a member',
-          });
+          if (!existingMember.onboardDate && gwUser.creationTime) {
+            const parsed = new Date(gwUser.creationTime);
+            const onboardDate = isNaN(parsed.getTime()) ? undefined : parsed;
+            if (onboardDate) {
+              await db.member.update({
+                where: { id: existingMember.id },
+                data: { onboardDate },
+              });
+            }
+          }
+          if (existingMember.deactivated) {
+            await db.member.update({
+              where: { id: existingMember.id },
+              data: { deactivated: false, isActive: true, offboardDate: null },
+            });
+            results.reactivated++;
+            results.details.push({
+              email: normalizedEmail,
+              status: 'reactivated',
+              reason: 'User is active again in Google Workspace',
+            });
+          } else {
+            results.skipped++;
+            results.details.push({
+              email: normalizedEmail,
+              status: 'skipped',
+              reason: 'Already a member',
+            });
+          }
           continue;
         }
 
         // Create member - always as employee, admins can be promoted manually
+        const gwParsed = gwUser.creationTime ? new Date(gwUser.creationTime) : null;
+        const gwOnboardDate = gwParsed && !isNaN(gwParsed.getTime()) ? gwParsed : undefined;
         await db.member.create({
           data: {
             organizationId,
             userId,
             role: 'employee',
             isActive: true,
+            ...(gwOnboardDate ? { onboardDate: gwOnboardDate } : {}),
           },
         });
 
@@ -436,18 +491,9 @@ export class SyncController {
       },
     });
 
-    const deactivationGwDomains =
-      effectiveSyncFilterMode === 'include'
-        ? new Set(
-            ouFilteredUsers.map((u) =>
-              u.primaryEmail.split('@')[1]?.toLowerCase(),
-            ),
-          )
-        : new Set(
-            filteredUsers.map((u) =>
-              u.primaryEmail.split('@')[1]?.toLowerCase(),
-            ),
-          );
+    const deactivationGwDomains = new Set(
+      ouFilteredUsers.map((u) => u.primaryEmail.split('@')[1]?.toLowerCase()),
+    );
     const deactivationSuspendedEmails =
       effectiveSyncFilterMode === 'include'
         ? allSuspendedEmails
@@ -478,12 +524,26 @@ export class SyncController {
         continue;
       }
 
-      // In exclude mode we keep excluded users unchanged and only stop syncing them.
-      if (
+      const isExcluded =
         effectiveSyncFilterMode === 'exclude' &&
         excludedTerms.length > 0 &&
-        matchesSyncFilterTerms(memberEmail, excludedTerms)
-      ) {
+        matchesSyncFilterTerms(memberEmail, excludedTerms);
+
+      if (isExcluded) {
+        try {
+          await db.member.update({
+            where: { id: member.id },
+            data: { deactivated: true, isActive: false },
+          });
+          results.deactivated++;
+          results.details.push({
+            email: member.user.email,
+            status: 'deactivated',
+            reason: 'User is excluded from Google Workspace sync',
+          });
+        } catch (error) {
+          this.logger.error(`Error deactivating excluded member: ${error}`);
+        }
         continue;
       }
 
@@ -516,6 +576,13 @@ export class SyncController {
     this.logger.log(
       `Google Workspace sync complete: ${results.imported} imported, ${results.reactivated} reactivated, ${results.deactivated} deactivated, ${results.skipped} skipped, ${results.errors} errors`,
     );
+
+    // Record that an employee sync ran. The People page reads
+    // connection.lastSyncAt as "Last sync"; without this it would only ever
+    // reflect the last check run, making a working daily sync look stuck.
+    await this.connectionRepository.update(connectionId, {
+      lastSyncAt: new Date(),
+    });
 
     return {
       success: true,
@@ -622,9 +689,12 @@ export class SyncController {
             connectionId,
             {
               tokenUrl: oauthConfig.tokenUrl,
+              refreshUrl: oauthConfig.refreshUrl,
               clientId: oauthCredentials.clientId,
               clientSecret: oauthCredentials.clientSecret,
               clientAuthMethod: oauthConfig.clientAuthMethod,
+              scope: oauthCredentials.scopes.join(' '),
+              tokenParams: oauthConfig.tokenParams,
             },
           );
           if (newToken) {
@@ -842,10 +912,20 @@ export class SyncController {
         });
 
         if (existingMember) {
+          if (!existingMember.onboardDate && worker.start_date) {
+            const parsed = new Date(worker.start_date);
+            const onboardDate = isNaN(parsed.getTime()) ? undefined : parsed;
+            if (onboardDate) {
+              await db.member.update({
+                where: { id: existingMember.id },
+                data: { onboardDate },
+              });
+            }
+          }
           if (existingMember.deactivated) {
             await db.member.update({
               where: { id: existingMember.id },
-              data: { deactivated: false, isActive: true },
+              data: { deactivated: false, isActive: true, offboardDate: null },
             });
             results.reactivated++;
             results.details.push({
@@ -862,12 +942,15 @@ export class SyncController {
             });
           }
         } else {
+          const ripplingParsed = worker.start_date ? new Date(worker.start_date) : null;
+          const ripplingOnboardDate = ripplingParsed && !isNaN(ripplingParsed.getTime()) ? ripplingParsed : undefined;
           await db.member.create({
             data: {
               organizationId,
               userId,
               role: 'employee',
               isActive: true,
+              ...(ripplingOnboardDate ? { onboardDate: ripplingOnboardDate } : {}),
             },
           });
           results.imported++;
@@ -1336,11 +1419,20 @@ export class SyncController {
         });
 
         if (existingMember) {
-          // If member was deactivated but is now active in JumpCloud, reactivate them
+          if (!existingMember.onboardDate && jcUser.created) {
+            const parsed = new Date(jcUser.created);
+            const onboardDate = isNaN(parsed.getTime()) ? undefined : parsed;
+            if (onboardDate) {
+              await db.member.update({
+                where: { id: existingMember.id },
+                data: { onboardDate },
+              });
+            }
+          }
           if (existingMember.deactivated) {
             await db.member.update({
               where: { id: existingMember.id },
-              data: { deactivated: false, isActive: true },
+              data: { deactivated: false, isActive: true, offboardDate: null },
             });
             results.reactivated++;
             results.details.push({
@@ -1362,12 +1454,15 @@ export class SyncController {
         }
 
         // Create member - always as employee, admins can be promoted manually
+        const jcParsed = jcUser.created ? new Date(jcUser.created) : null;
+        const jcOnboardDate = jcParsed && !isNaN(jcParsed.getTime()) ? jcParsed : undefined;
         await db.member.create({
           data: {
             organizationId,
             userId,
             role: 'employee',
             isActive: true,
+            ...(jcOnboardDate ? { onboardDate: jcOnboardDate } : {}),
           },
         });
 
@@ -1529,10 +1624,11 @@ export class SyncController {
    */
   @Post('employee-sync-provider')
   @ApiOperation({ summary: 'Set the employee sync provider' })
+  @ApiBody({ type: SetEmployeeSyncProviderDto })
   @RequirePermission('integration', 'update')
   async setEmployeeSyncProvider(
     @OrganizationId() organizationId: string,
-    @Body() body: { provider: string | null },
+    @Body() body: SetEmployeeSyncProviderDto,
   ) {
     const { provider } = body;
 
@@ -1783,6 +1879,8 @@ export class SyncController {
               clientId: oauthCredentials.clientId,
               clientSecret: oauthCredentials.clientSecret,
               clientAuthMethod: oauthConfig.clientAuthMethod,
+              scope: oauthCredentials.scopes.join(' '),
+              tokenParams: oauthConfig.tokenParams,
             },
           );
           if (newToken) {
@@ -1848,6 +1946,13 @@ export class SyncController {
         employees,
         options: {
           providerName: manifest.name,
+          // `SyncDefinition` (from @trycompai/integration-platform) doesn't
+          // declare `isDirectorySource`, but the underlying Prisma JSON value
+          // may carry it. Structural cast lets us read the optional flag
+          // with a safe `?? false` fallback.
+          isDirectorySource:
+            (syncDefinition as { isDirectorySource?: boolean })
+              .isDirectorySource ?? false,
         },
       });
 

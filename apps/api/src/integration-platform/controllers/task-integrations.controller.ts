@@ -10,7 +10,15 @@ import {
   Logger,
   UseGuards,
 } from '@nestjs/common';
-import { ApiTags, ApiSecurity, ApiOperation } from '@nestjs/swagger';
+import {
+  ApiBody,
+  ApiOperation,
+  ApiProperty,
+  ApiPropertyOptional,
+  ApiSecurity,
+  ApiTags,
+} from '@nestjs/swagger';
+import { IsOptional, IsString } from 'class-validator';
 import { HybridAuthGuard } from '../../auth/hybrid-auth.guard';
 import { PermissionGuard } from '../../auth/permission.guard';
 import { RequirePermission } from '../../auth/require-permission.decorator';
@@ -27,8 +35,9 @@ import { CheckRunRepository } from '../repositories/check-run.repository';
 import { CredentialVaultService } from '../services/credential-vault.service';
 import { OAuthCredentialsService } from '../services/oauth-credentials.service';
 import { TaskIntegrationChecksService } from '../services/task-integration-checks.service';
-import { getStringValue, toStringCredentials } from '../utils/credential-utils';
+import { getStringValue } from '../utils/credential-utils';
 import { isCheckDisabledForTask } from '../utils/disabled-task-checks';
+import { getProviderSummary } from '../utils/provider-summary';
 import { db } from '@db';
 import type { Prisma } from '@db';
 
@@ -54,14 +63,60 @@ interface TaskIntegrationCheck {
   oauthConfigured?: boolean;
 }
 
-interface RunCheckForTaskDto {
-  connectionId: string;
-  checkId: string;
+// Classes (not interfaces) so @nestjs/swagger can emit a body schema. Both
+// carry class-validator decorators so the global ValidationPipe doesn't reject
+// the body with "property X should not exist" (whitelist + forbidNonWhitelisted).
+class RunCheckForTaskDto {
+  // UI sends organizationId in the body; ignored by the handler (derived from auth).
+  @ApiPropertyOptional({
+    description:
+      'Auto-resolved from your API key / session. You can omit this; it is ignored by the server.',
+  })
+  @IsOptional()
+  @IsString()
+  organizationId?: string;
+
+  @ApiProperty({
+    description:
+      'ID of the integration connection that owns the check (call list-connections to find it).',
+    example: 'conn_abc123',
+  })
+  @IsString()
+  connectionId!: string;
+
+  @ApiProperty({
+    description:
+      'ID of the integration check to run (from the provider manifest — call list-checks-for-task to find available ones).',
+    example: 'aws-s3-bucket-public-access',
+  })
+  @IsString()
+  checkId!: string;
 }
 
-interface ToggleCheckForTaskDto {
-  connectionId: string;
-  checkId: string;
+class ToggleCheckForTaskDto {
+  // UI sends organizationId in the body; ignored by the handler (derived from auth).
+  @ApiPropertyOptional({
+    description:
+      'Auto-resolved from your API key / session. You can omit this; it is ignored by the server.',
+  })
+  @IsOptional()
+  @IsString()
+  organizationId?: string;
+
+  @ApiProperty({
+    description:
+      'ID of the integration connection whose check is being disconnected from / reconnected to this task.',
+    example: 'conn_abc123',
+  })
+  @IsString()
+  connectionId!: string;
+
+  @ApiProperty({
+    description: 'ID of the integration check being toggled.',
+    example: 'aws-s3-bucket-public-access',
+  })
+  @IsString()
+  checkId!: string;
 }
 
 @Controller({ path: 'integrations/tasks', version: '1' })
@@ -228,6 +283,7 @@ export class TaskIntegrationsController {
    */
   @Post(':taskId/run-check')
   @ApiOperation({ summary: 'Run a check for a task' })
+  @ApiBody({ type: RunCheckForTaskDto })
   @RequirePermission('integration', 'update')
   async runCheckForTask(
     @Param('taskId') taskId: string,
@@ -356,6 +412,8 @@ export class TaskIntegrationsController {
                 clientId: oauthCredentials.clientId,
                 clientSecret: oauthCredentials.clientSecret,
                 clientAuthMethod: oauthConfig.clientAuthMethod,
+                scope: oauthCredentials.scopes.join(' '),
+                tokenParams: oauthConfig.tokenParams,
               },
             );
           };
@@ -374,11 +432,13 @@ export class TaskIntegrationsController {
     try {
       // Run the specific check
       const accessToken = getStringValue(credentials.access_token);
-      const stringCredentials = toStringCredentials(credentials);
       const result = await runAllChecks({
         manifest,
         accessToken,
-        credentials: stringCredentials,
+        // Pass decrypted credentials through unchanged. Collapsing array fields
+        // here (e.g. AWS `regions`) made custom-auth checks see no regions and
+        // skip with "connection not configured".
+        credentials,
         variables,
         connectionId,
         organizationId,
@@ -533,6 +593,7 @@ export class TaskIntegrationsController {
    */
   @Post(':taskId/checks/disconnect')
   @ApiOperation({ summary: 'Disconnect checks from a task' })
+  @ApiBody({ type: ToggleCheckForTaskDto })
   @RequirePermission('integration', 'update')
   async disconnectCheckFromTask(
     @Param('taskId') taskId: string,
@@ -554,6 +615,7 @@ export class TaskIntegrationsController {
    */
   @Post(':taskId/checks/reconnect')
   @ApiOperation({ summary: 'Reconnect checks to a task' })
+  @ApiBody({ type: ToggleCheckForTaskDto })
   @RequirePermission('integration', 'update')
   async reconnectCheckToTask(
     @Param('taskId') taskId: string,
@@ -585,37 +647,41 @@ export class TaskIntegrationsController {
     );
 
     return {
-      runs: runs.map((run) => ({
-        id: run.id,
-        checkId: run.checkId,
-        checkName: run.checkName,
-        status: run.status,
-        startedAt: run.startedAt,
-        completedAt: run.completedAt,
-        durationMs: run.durationMs,
-        totalChecked: run.totalChecked,
-        passedCount: run.passedCount,
-        failedCount: run.failedCount,
-        errorMessage: run.errorMessage,
-        logs: run.logs,
-        provider: {
-          slug: (run.connection as any).provider?.slug,
-          name: (run.connection as any).provider?.name,
-        },
-        results: run.results.map((r) => ({
-          id: r.id,
-          passed: r.passed,
-          resourceType: r.resourceType,
-          resourceId: r.resourceId,
-          title: r.title,
-          description: r.description,
-          severity: r.severity,
-          remediation: r.remediation,
-          evidence: r.evidence,
-          collectedAt: r.collectedAt,
-        })),
-        createdAt: run.createdAt,
-      })),
+      runs: runs.map((run) => {
+        const provider = getProviderSummary(run.connection);
+
+        return {
+          id: run.id,
+          checkId: run.checkId,
+          checkName: run.checkName,
+          status: run.status,
+          startedAt: run.startedAt,
+          completedAt: run.completedAt,
+          durationMs: run.durationMs,
+          totalChecked: run.totalChecked,
+          passedCount: run.passedCount,
+          failedCount: run.failedCount,
+          errorMessage: run.errorMessage,
+          logs: run.logs,
+          provider: {
+            slug: provider?.slug,
+            name: provider?.name,
+          },
+          results: run.results.map((r) => ({
+            id: r.id,
+            passed: r.passed,
+            resourceType: r.resourceType,
+            resourceId: r.resourceId,
+            title: r.title,
+            description: r.description,
+            severity: r.severity,
+            remediation: r.remediation,
+            evidence: r.evidence,
+            collectedAt: r.collectedAt,
+          })),
+          createdAt: run.createdAt,
+        };
+      }),
     };
   }
 }

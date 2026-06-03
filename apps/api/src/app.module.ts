@@ -5,6 +5,7 @@ import { APP_GUARD } from '@nestjs/core';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { AttachmentsModule } from './attachments/attachments.module';
+import { UploadsModule } from './uploads/uploads.module';
 import { AuthModule } from './auth/auth.module';
 import { CommentsModule } from './comments/comments.module';
 import { PeopleModule } from './people/people.module';
@@ -46,6 +47,7 @@ import { FrameworkVersionsModule } from './framework-editor-versions/framework-v
 import { AuditModule } from './audit/audit.module';
 import { ControlsModule } from './controls/controls.module';
 import { RolesModule } from './roles/roles.module';
+import { McpModule } from './mcp/mcp.module';
 import { EmailModule } from './email/email.module';
 import { SecretsModule } from './secrets/secrets.module';
 import { SecurityPenetrationTestsModule } from './security-penetration-tests/security-penetration-tests.module';
@@ -55,6 +57,7 @@ import { AdminFeatureFlagsModule } from './admin-feature-flags/admin-feature-fla
 import { TimelinesModule } from './timelines/timelines.module';
 import { BackgroundChecksModule } from './background-checks/background-checks.module';
 import { BillingModule } from './billing/billing.module';
+import { OffboardingChecklistModule } from './offboarding-checklist/offboarding-checklist.module';
 
 @Module({
   imports: [
@@ -84,6 +87,7 @@ import { BillingModule } from './billing/billing.module';
     PoliciesModule,
     DeviceAgentModule,
     AttachmentsModule,
+    UploadsModule,
     TasksModule,
     EvidenceExportModule,
     CommentsModule,
@@ -122,6 +126,8 @@ import { BillingModule } from './billing/billing.module';
     AdminOrganizationsModule,
     AdminFeatureFlagsModule,
     TimelinesModule,
+    OffboardingChecklistModule,
+    McpModule,
   ],
   controllers: [AppController],
   providers: [

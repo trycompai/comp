@@ -1,5 +1,3 @@
-'use server';
-
 import { auth } from '@/app/lib/auth';
 import { getFleetInstance } from '@/utils/fleet';
 import type { FleetPolicyResult, Member } from '@db';
@@ -7,6 +5,8 @@ import { db } from '@db/server';
 import { PageHeader, PageLayout } from '@trycompai/design-system';
 import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
+import { hasPortalAccess } from '@/utils/portal-access';
+import { NoAccessMessage } from '../components/NoAccessMessage';
 import { OrganizationDashboard } from './components/OrganizationDashboard';
 import type { FleetPolicy, Host } from './types';
 
@@ -49,9 +49,21 @@ export default async function OrganizationPage({ params }: { params: Promise<{ o
     redirect('/');
   }
 
-  // Member check - redirect happens outside try-catch
   if (!member) {
     redirect('/');
+  }
+
+  const canAccessPortal = await hasPortalAccess({
+    roleString: member.role,
+    organizationId: orgId,
+  });
+  if (!canAccessPortal) {
+    return (
+      <PageLayout>
+        <PageHeader title="Comp AI - Employee Portal" />
+        <NoAccessMessage message="Your role does not include employee portal access. Ask your administrator to add the employee role to your account." />
+      </PageLayout>
+    );
   }
 
   // Fleet policies - only fetch if member has a fleet device label

@@ -2,6 +2,7 @@
 const nextConfig = {
   transpilePackages: [
     '@trycompai/ui',
+    '@trycompai/design-system',
     '@trycompai/db',
     '@trycompai/company',
     'better-auth',

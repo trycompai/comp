@@ -10,12 +10,13 @@ import {
   headerValue,
   verifyBackgroundCheckWebhookSignature,
 } from './background-check-webhook-signature';
+import { identityWebhookPayloadSchema } from './background-checks.types';
+import { fetchCompletedReportSnapshot } from './background-check-report-snapshot';
 import {
-  identityWebhookPayloadSchema,
-} from './background-checks.types';
-import {
-  fetchCompletedReportSnapshot,
-} from './background-check-report-snapshot';
+  cancelForMember as cancelForMemberFn,
+  deleteForMember as deleteForMemberFn,
+  retryForMember as retryForMemberFn,
+} from './background-check-retry';
 
 @Injectable()
 export class BackgroundChecksService {
@@ -67,8 +68,11 @@ export class BackgroundChecksService {
 
     // Step 1: Claim the record slot before charging. Catches the TOCTOU race
     // where two concurrent requests both pass the getForMember check.
+    let created: Awaited<
+      ReturnType<typeof db.backgroundCheckRequest.create>
+    >;
     try {
-      await db.backgroundCheckRequest.create({
+      created = await db.backgroundCheckRequest.create({
         data: {
           organizationId,
           memberId,
@@ -123,6 +127,10 @@ export class BackgroundChecksService {
         employeeName,
         employeeEmail,
         requesterEmail,
+        // Key on the record's unique id (not memberId) so a delete +
+        // re-request creates a genuinely fresh vendor check instead of
+        // colliding with the original request's idempotency key.
+        idempotencyKey: `comp-background-check:${created.id}`,
       });
     } catch (error) {
       const refundId = await this.paymentService.refund({
@@ -173,7 +181,10 @@ export class BackgroundChecksService {
       throw new NotFoundException('Background check not found.');
     }
 
-    if (!record.identityBackgroundCheckId || !process.env.BACKGROUND_CHECK_API_KEY) {
+    if (
+      !record.identityBackgroundCheckId ||
+      !process.env.BACKGROUND_CHECK_API_KEY
+    ) {
       return { record };
     }
 
@@ -195,8 +206,11 @@ export class BackgroundChecksService {
     }
 
     verifyBackgroundCheckWebhookSignature({ rawBody, headers });
-    const payload = identityWebhookPayloadSchema.parse(JSON.parse(rawBody.toString('utf8')));
-    const eventId = headerValue(headers, 'x-background-check-event-id') ?? payload.eventId;
+    const payload = identityWebhookPayloadSchema.parse(
+      JSON.parse(rawBody.toString('utf8')),
+    );
+    const eventId =
+      headerValue(headers, 'x-background-check-event-id') ?? payload.eventId;
     const eventType =
       headerValue(headers, 'x-background-check-event-type') ?? payload.type;
 
@@ -234,6 +248,12 @@ export class BackgroundChecksService {
       }
     }
 
+    // Cancelled is terminal Comp-side: record the event for audit but never
+    // let a late Identity webhook resurrect the status.
+    if (record.status === BackgroundCheckStatus.cancelled) {
+      return { ok: true, ...(isDuplicate ? { duplicate: true } : {}) };
+    }
+
     const reportSnapshot = await fetchCompletedReportSnapshot({
       identityClient: this.identityClient,
       identityBackgroundCheckId: payload.data.id,
@@ -265,6 +285,32 @@ export class BackgroundChecksService {
     });
 
     return { ok: true, ...(isDuplicate ? { duplicate: true } : {}) };
+  }
+
+  async cancelForMember(params: { organizationId: string; memberId: string }) {
+    return cancelForMemberFn({
+      ...params,
+      getForMember: (p) => this.getForMember(p),
+    });
+  }
+
+  async retryForMember(params: {
+    organizationId: string;
+    memberId: string;
+    requesterEmail: string;
+  }) {
+    return retryForMemberFn({
+      ...params,
+      identityClient: this.identityClient,
+      getForMember: (p) => this.getForMember(p),
+    });
+  }
+
+  async deleteForMember(params: { organizationId: string; memberId: string }) {
+    return deleteForMemberFn({
+      ...params,
+      getForMember: (p) => this.getForMember(p),
+    });
   }
 
   private isUniqueConstraintError(error: unknown): boolean {

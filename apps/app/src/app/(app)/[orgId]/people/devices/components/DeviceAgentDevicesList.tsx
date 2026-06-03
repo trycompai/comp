@@ -37,6 +37,7 @@ import { useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import { useSWRConfig } from 'swr';
 import { usePeopleActions } from '@/hooks/use-people-api';
+import { usePermissions } from '@/hooks/use-permissions';
 import type { DeviceWithChecks } from '../types';
 import {
   buildDevicesCsv,
@@ -48,7 +49,6 @@ import { RemoveDeviceAlert } from '../../all/components/RemoveDeviceAlert';
 
 export interface DeviceAgentDevicesListProps {
   devices: DeviceWithChecks[];
-  isCurrentUserOwner: boolean;
 }
 
 const CHECK_FIELDS = [
@@ -176,10 +176,11 @@ function CheckBadges({ device }: { device: DeviceWithChecks }) {
 
 export const DeviceAgentDevicesList = ({
   devices,
-  isCurrentUserOwner,
 }: DeviceAgentDevicesListProps) => {
   const { orgId } = useParams<{ orgId: string }>();
   const { removeDeviceAgent } = usePeopleActions();
+  const { hasPermission } = usePermissions();
+  const canRemoveDevice = hasPermission('member', 'delete');
   const { mutate } = useSWRConfig();
   const [selectedDevice, setSelectedDevice] = useState<DeviceWithChecks | null>(null);
   const [actionDevice, setActionDevice] = useState<DeviceWithChecks | null>(null);
@@ -356,7 +357,7 @@ export const DeviceAgentDevicesList = ({
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end" style={{ width: 'auto' }}>
                         <DropdownMenuItem
-                          disabled={!isCurrentUserOwner}
+                          disabled={!canRemoveDevice}
                           onClick={(e) => {
                             e.stopPropagation();
                             setActionDevice(device);

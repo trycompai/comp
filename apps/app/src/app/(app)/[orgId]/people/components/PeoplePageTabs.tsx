@@ -2,6 +2,11 @@
 
 import {
   Button,
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+  HStack,
   PageHeader,
   PageLayout,
   Tabs,
@@ -9,7 +14,8 @@ import {
   TabsList,
   TabsTrigger,
 } from '@trycompai/design-system';
-import { Add } from '@trycompai/design-system/icons';
+import { Add, Download, OverflowMenuVertical } from '@trycompai/design-system/icons';
+import type { Role } from '@db';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import type { ReactNode } from 'react';
 import { useCallback, useState } from 'react';
@@ -28,6 +34,7 @@ interface PeoplePageTabsProps {
   showSettings: boolean;
   canInviteUsers: boolean;
   canManageMembers: boolean;
+  allowedBuiltInRoles: Role[];
   organizationId: string;
 }
 
@@ -89,6 +96,7 @@ export function PeoplePageTabs({
   showSettings,
   canInviteUsers,
   canManageMembers,
+  allowedBuiltInRoles,
   organizationId,
 }: PeoplePageTabsProps) {
   const pathname = usePathname();
@@ -135,13 +143,34 @@ export function PeoplePageTabs({
               </TabsList>
             }
             actions={
-              <Button
-                iconLeft={<Add size={16} />}
-                onClick={() => setIsInviteModalOpen(true)}
-                disabled={!canInviteUsers}
-              >
-                Add User
-              </Button>
+              <HStack gap="2">
+                <div>
+                  <Button
+                    iconLeft={<Add size={16} />}
+                    onClick={() => setIsInviteModalOpen(true)}
+                    disabled={!canInviteUsers}
+                  >
+                    Add User
+                  </Button>
+                </div>
+                <DropdownMenu>
+                  <DropdownMenuTrigger
+                    render={<Button variant="outline" size="icon" />}
+                  >
+                    <OverflowMenuVertical size={16} />
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem
+                      onClick={() => {
+                        window.open('/api/offboarding-export?all=true', '_blank', 'noopener,noreferrer');
+                      }}
+                    >
+                      <Download size={14} className="mr-2" />
+                      Export offboarding
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </HStack>
             }
           />
         }
@@ -164,9 +193,7 @@ export function PeoplePageTabs({
         open={isInviteModalOpen}
         onOpenChange={setIsInviteModalOpen}
         organizationId={organizationId}
-        allowedBuiltInRoles={
-          canManageMembers ? ['admin', 'auditor', 'employee', 'contractor'] : ['auditor']
-        }
+        allowedBuiltInRoles={allowedBuiltInRoles}
       />
     </Tabs>
   );

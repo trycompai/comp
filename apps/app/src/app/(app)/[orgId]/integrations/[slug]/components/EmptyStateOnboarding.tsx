@@ -14,6 +14,11 @@ import {
 import { ArrowRight, Shield } from 'lucide-react';
 import { useCallback, useMemo, useState } from 'react';
 import { toast } from 'sonner';
+import {
+  AwsScanModeStep,
+  DEFAULT_AWS_SCAN_MODE_CHOICE,
+  type AwsScanModeChoice,
+} from './AwsScanModeStep';
 
 // ─── Primitives ─────────────────────────────────────────────────────────
 
@@ -497,6 +502,12 @@ function CloudSetup({
   const [connecting, setConnecting] = useState(false);
   const [credentials, setCredentials] = useState<Record<string, string | string[]>>({});
   const [errors, setErrors] = useState<Record<string, string>>({});
+  // AWS only — which scan engine the customer is choosing for this
+  // connection. Sent in createConnection's credentials payload as the
+  // `awsScanMode` variable, then read on every scan in cloud-security.service.
+  const [awsScanMode, setAwsScanMode] = useState<AwsScanModeChoice>(
+    DEFAULT_AWS_SCAN_MODE_CHOICE,
+  );
 
   const allFields = provider.credentialFields ?? [];
   const visibleFields = allFields.filter(
@@ -524,6 +535,13 @@ function CloudSetup({
     if (!finalCredentials.connectionName) {
       const arnMatch = String(finalCredentials.roleArn ?? '').match(/:(\d{12}):/);
       finalCredentials.connectionName = arnMatch ? `AWS ${arnMatch[1]}` : 'AWS Account';
+    }
+    // AWS only — persist the customer's scan engine choice on the
+    // connection. The scan service reads this from variables on every
+    // run. resolveAwsScanMode() handles the missing-field case for
+    // every other provider and for pre-feature historical connections.
+    if (provider.id === 'aws') {
+      finalCredentials.awsScanMode = awsScanMode;
     }
 
     const newErrors: Record<string, string> = {};
@@ -558,7 +576,7 @@ function CloudSetup({
     } finally {
       setConnecting(false);
     }
-  }, [allFields, credentials, createConnection, provider, orgId, onConnected]);
+  }, [allFields, awsScanMode, credentials, createConnection, provider, orgId, onConnected]);
 
   const connectionFields = visibleFields.filter(
     (f) => f.id !== 'remediationRoleArn' && f.id !== 'regions' && f.id !== 'awsType',
@@ -601,25 +619,42 @@ function CloudSetup({
       >
         {/* ─── Left: Unified setup flow ─── */}
         <div className="rounded-xl border bg-background shadow-sm">
-          {awsTypeFields.length > 0 && (
+          {/* Step 1 — AWS only — Scan engine choice. Mutually exclusive
+              between Comp AI scanners (default) and AWS Security Hub.
+              Customers can switch later from CloudSettingsModal. */}
+          {provider.id === 'aws' && (
             <div className="p-6 space-y-4">
-              {/* Step 1 */}
-              <StepHeader step={1} title="AWS Environment" />
-              {awsTypeFields.map((field) => (
-                <FieldRow
-                  key={field.id}
-                  field={field}
-                  value={credentials[field.id] || ''}
-                  error={errors[field.id]}
-                  onChange={(v) => updateCredential(field.id, v)}
-                />
-              ))}
+              <StepHeader step={1} title="Scan Engine" />
+              <AwsScanModeStep
+                value={awsScanMode}
+                onChange={setAwsScanMode}
+                disabled={connecting}
+              />
             </div>
           )}
-          {/* Step 2 */}
+
+          {/* Step 2 — AWS only — Commercial vs GovCloud */}
+          {awsTypeFields.length > 0 && (
+            <>
+              {provider.id === 'aws' && <div className="border-t" />}
+              <div className="p-6 space-y-4">
+                <StepHeader step={2} title="AWS Environment" />
+                {awsTypeFields.map((field) => (
+                  <FieldRow
+                    key={field.id}
+                    field={field}
+                    value={credentials[field.id] || ''}
+                    error={errors[field.id]}
+                    onChange={(v) => updateCredential(field.id, v)}
+                  />
+                ))}
+              </div>
+            </>
+          )}
+          {/* Step 3 — AWS only — IAM role creation script */}
           {provider.setupScript && (
             <div className="p-6 space-y-4">
-              <StepHeader step={2} title="Create IAM Role" />
+              <StepHeader step={3} title="Create IAM Role" />
               <CloudShellSetup
                 script={setupScript}
                 externalId={orgId}
@@ -635,9 +670,9 @@ function CloudSetup({
 
           <div className="border-t" />
 
-          {/* Step 3 */}
+          {/* Step 4 — Connection details (Role ARN etc.) */}
           <div className="p-6 space-y-4">
-            <StepHeader step={3} title="Connection Details" />
+            <StepHeader step={4} title="Connection Details" />
             {connectionFields.map((field) => (
               <FieldRow
                 key={field.id}
@@ -649,12 +684,12 @@ function CloudSetup({
             ))}
           </div>
 
-          {/* Step 4 */}
+          {/* Step 5 — Scan configuration (regions) */}
           {regionFields.length > 0 && (
             <>
               <div className="border-t" />
               <div className="p-6 space-y-4">
-                <StepHeader step={4} title="Scan Configuration" />
+                <StepHeader step={5} title="Scan Configuration" />
                 {regionFields.map((field) => (
                   <FieldRow
                     key={field.id}

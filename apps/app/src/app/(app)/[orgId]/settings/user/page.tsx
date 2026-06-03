@@ -1,6 +1,8 @@
 import { serverApi } from '@/lib/api-server';
 import type { Metadata } from 'next';
 import { EmailNotificationPreferences } from './components/EmailNotificationPreferences';
+import { McpOrganizationSelector } from './components/McpOrganizationSelector';
+import type { McpOrganizationData } from './hooks/useMcpOrganization';
 
 export default async function UserSettings({
   params,
@@ -9,38 +11,46 @@ export default async function UserSettings({
 }) {
   const { orgId } = await params;
 
-  const res = await serverApi.get<{
-    email: string;
-    preferences: {
-      policyNotifications: boolean;
-      taskReminders: boolean;
-      weeklyTaskDigest: boolean;
-      unassignedItemsNotifications: boolean;
-      taskMentions: boolean;
-      taskAssignments: boolean;
-    };
-    isAdminOrOwner: boolean;
-    roleNotifications: {
-      policyNotifications: boolean;
-      taskReminders: boolean;
-      taskAssignments: boolean;
-      taskMentions: boolean;
-      weeklyTaskDigest: boolean;
-      findingNotifications: boolean;
-    } | null;
-  }>('/v1/people/me/email-preferences');
+  const [emailRes, mcpRes] = await Promise.all([
+    serverApi.get<{
+      email: string;
+      preferences: {
+        policyNotifications: boolean;
+        taskReminders: boolean;
+        weeklyTaskDigest: boolean;
+        unassignedItemsNotifications: boolean;
+        taskMentions: boolean;
+        taskAssignments: boolean;
+      };
+      isAdminOrOwner: boolean;
+      roleNotifications: {
+        policyNotifications: boolean;
+        taskReminders: boolean;
+        taskAssignments: boolean;
+        taskMentions: boolean;
+        weeklyTaskDigest: boolean;
+        findingNotifications: boolean;
+      } | null;
+    }>('/v1/people/me/email-preferences'),
+    serverApi.get<McpOrganizationData>('/v1/mcp/organization'),
+  ]);
 
-  if (!res.data?.email) {
+  if (!emailRes.data?.email) {
     return null;
   }
 
   return (
-    <EmailNotificationPreferences
-      initialPreferences={res.data.preferences}
-      email={res.data.email}
-      isAdminOrOwner={res.data.isAdminOrOwner}
-      roleNotifications={res.data.roleNotifications}
-    />
+    <div className="space-y-6">
+      <EmailNotificationPreferences
+        initialPreferences={emailRes.data.preferences}
+        email={emailRes.data.email}
+        isAdminOrOwner={emailRes.data.isAdminOrOwner}
+        roleNotifications={emailRes.data.roleNotifications}
+      />
+      {mcpRes.data ? (
+        <McpOrganizationSelector initialData={mcpRes.data} />
+      ) : null}
+    </div>
   );
 }
 

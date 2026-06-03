@@ -132,4 +132,44 @@ describe('filterDigestMembersByCompliance', () => {
     );
     expect(result.map((m) => m.id)).toEqual(['m4']);
   });
+
+  it('respects per-org override that turns OFF compliance on a built-in role', async () => {
+    // employee defaults to compliance:true — an organization can opt out by
+    // storing an obligation override row for the built-in role name.
+    mockDb.organizationRole.findMany.mockResolvedValueOnce([
+      { name: 'employee', obligations: { compliance: false } },
+    ]);
+    const member: DigestMember = {
+      id: 'm6', role: 'employee', department: 'it',
+      user: { id: 'u6', name: 'F', email: 'f@x', role: null },
+    };
+    const result = await filterDigestMembersByCompliance(mockDb, [member], 'org_1');
+    expect(result).toEqual([]);
+  });
+
+  it('respects per-org override that turns ON compliance on a built-in role', async () => {
+    // admin defaults to no compliance — an org can opt in via override.
+    mockDb.organizationRole.findMany.mockResolvedValueOnce([
+      { name: 'admin', obligations: { compliance: true } },
+    ]);
+    const member: DigestMember = {
+      id: 'm7', role: 'admin', department: 'it',
+      user: { id: 'u7', name: 'G', email: 'g@x', role: null },
+    };
+    const result = await filterDigestMembersByCompliance(mockDb, [member], 'org_1');
+    expect(result).toEqual([member]);
+  });
+
+  it('falls back to built-in default when override row has no compliance key', async () => {
+    // A row with `{}` should NOT silently disable the owner default.
+    mockDb.organizationRole.findMany.mockResolvedValueOnce([
+      { name: 'owner', obligations: {} },
+    ]);
+    const member: DigestMember = {
+      id: 'm8', role: 'owner', department: 'it',
+      user: { id: 'u8', name: 'H', email: 'h@x', role: null },
+    };
+    const result = await filterDigestMembersByCompliance(mockDb, [member], 'org_1');
+    expect(result).toEqual([member]);
+  });
 });

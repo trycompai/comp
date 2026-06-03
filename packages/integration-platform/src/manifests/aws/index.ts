@@ -1,4 +1,14 @@
 import type { IntegrationManifest } from '../../types';
+import {
+  cloudTrailEnabledCheck,
+  ec2SecurityGroupsCheck,
+  iamAccountSecurityCheck,
+  kmsKeyRotationCheck,
+  rdsBackupsCheck,
+  rdsEncryptionCheck,
+  s3EncryptionCheck,
+  s3PublicAccessCheck,
+} from './checks';
 import { awsCredentialFields, awsCredentialSchema, awsSetupInstructions, awsCloudShellScript } from './credentials';
 
 export const awsManifest: IntegrationManifest = {
@@ -80,5 +90,14 @@ export const awsManifest: IntegrationManifest = {
     { id: 'appflow', name: 'AppFlow', description: 'Flow encryption, VPC configuration, and data transfer security checks', enabledByDefault: false, implemented: true },
   ],
 
-  checks: [],
+  checks: [
+    iamAccountSecurityCheck,
+    s3EncryptionCheck,
+    s3PublicAccessCheck,
+    ec2SecurityGroupsCheck,
+    rdsEncryptionCheck,
+    rdsBackupsCheck,
+    kmsKeyRotationCheck,
+    cloudTrailEnabledCheck,
+  ],
 };

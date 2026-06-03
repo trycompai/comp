@@ -5,6 +5,8 @@ import {
 } from '@nestjs/common';
 import { db, EvidenceFormType, Prisma } from '@db';
 import { CreateControlDto } from './dto/create-control.dto';
+import { deduplicateById, deduplicateByFormType } from '../utils/deduplicate';
+import { syncDirectLinksToCustomFrameworks } from './sync-custom-framework-links';
 
 // A CustomRequirement is valid for a given FrameworkInstance when its parent
 // matches: either it lives on the FI's CustomFramework, or it was attached
@@ -93,7 +95,15 @@ export class ControlsService {
     };
   }
 
-  async findOne(controlId: string, organizationId: string) {
+  async findOne(
+    controlId: string,
+    organizationId: string,
+    frameworkInstanceId?: string,
+  ) {
+    if (frameworkInstanceId) {
+      return this.findOneForFramework(controlId, organizationId, frameworkInstanceId);
+    }
+
     const control = await db.control.findUnique({
       where: { id: controlId, organizationId },
       include: {
@@ -117,7 +127,11 @@ export class ControlsService {
       throw new NotFoundException('Control not found');
     }
 
-    const formTypes = (control.controlDocumentTypes ?? []).map(
+    const policies = control.policies || [];
+    const tasks = control.tasks || [];
+    const controlDocumentTypes = control.controlDocumentTypes || [];
+
+    const formTypes = controlDocumentTypes.map(
       (d) => d.formType,
     );
     const notRelevantSettings =
@@ -150,8 +164,6 @@ export class ControlsService {
     }
 
     // Compute progress
-    const policies = control.policies || [];
-    const tasks = control.tasks || [];
     const totalItems = policies.length + tasks.length;
 
     let policyCompleted = 0;
@@ -168,12 +180,141 @@ export class ControlsService {
 
     return {
       ...control,
-      controlDocumentTypes: (control.controlDocumentTypes ?? []).map(
+      policies,
+      tasks,
+      controlDocumentTypes: controlDocumentTypes.map(
         (documentType) => ({
           ...documentType,
           isNotRelevant: notRelevantFormTypes.has(documentType.formType),
         }),
       ),
+      submissionCountsByFormType,
+      progress: {
+        total: totalItems,
+        completed,
+        progress:
+          totalItems > 0 ? Math.round((completed / totalItems) * 100) : 0,
+        byType: {
+          policy: { total: policies.length, completed: policyCompleted },
+          task: { total: tasks.length, completed: taskCompleted },
+        },
+      },
+    };
+  }
+
+  private async findOneForFramework(
+    controlId: string,
+    organizationId: string,
+    frameworkInstanceId: string,
+  ) {
+    const fi = await this.ensureFrameworkInstance(frameworkInstanceId, organizationId);
+    const isCustomFramework = fi.customFrameworkId !== null;
+    const control = await db.control.findUnique({
+      where: { id: controlId, organizationId },
+      include: {
+        policies: { where: { archivedAt: null } },
+        tasks: { where: { archivedAt: null } },
+        controlDocumentTypes: true,
+        frameworkPolicyLinks: {
+          where: {
+            frameworkInstanceId,
+            policy: { archivedAt: null },
+          },
+          include: { policy: true },
+        },
+        frameworkTaskLinks: {
+          where: {
+            frameworkInstanceId,
+            task: { archivedAt: null },
+          },
+          include: { task: true },
+        },
+        frameworkDocumentLinks: {
+          where: { frameworkInstanceId },
+        },
+        requirementsMapped: {
+          where: { archivedAt: null },
+          include: {
+            frameworkInstance: {
+              include: { framework: true, customFramework: true },
+            },
+            requirement: true,
+            customRequirement: true,
+          },
+        },
+      },
+    });
+
+    if (!control) {
+      throw new NotFoundException('Control not found');
+    }
+
+    const frameworkPolicies = control.frameworkPolicyLinks.map((link) => link.policy);
+    const frameworkTasks = control.frameworkTaskLinks.map((link) => link.task);
+    const directPolicies = isCustomFramework ? (control.policies ?? []) : [];
+    const directTasks = isCustomFramework ? (control.tasks ?? []) : [];
+    const policies = deduplicateById([...frameworkPolicies, ...directPolicies]);
+    const tasks = deduplicateById([...frameworkTasks, ...directTasks]);
+    const directDocTypes = isCustomFramework ? control.controlDocumentTypes : [];
+    const controlDocumentTypes = deduplicateByFormType([
+      ...control.frameworkDocumentLinks,
+      ...directDocTypes,
+    ]);
+    const formTypes = controlDocumentTypes.map((d) => d.formType);
+    const notRelevantSettings =
+      formTypes.length > 0
+        ? await db.evidenceFormSetting.findMany({
+            where: {
+              organizationId,
+              formType: { in: formTypes },
+              isNotRelevant: true,
+            },
+            select: { formType: true },
+          })
+        : [];
+    const notRelevantFormTypes = new Set(
+      notRelevantSettings.map((setting) => setting.formType),
+    );
+    const submissionCountsByFormType: Record<string, number> = {};
+    if (formTypes.length > 0) {
+      const grouped = await db.evidenceSubmission.groupBy({
+        by: ['formType'],
+        where: {
+          organizationId,
+          formType: { in: formTypes },
+        },
+        _count: { _all: true },
+      });
+      for (const g of grouped) {
+        submissionCountsByFormType[g.formType] = g._count._all;
+      }
+    }
+
+    const policyCompleted = policies.filter((p) => p.status === 'published').length;
+    const taskCompleted = tasks.filter(
+      (t) => t.status === 'done' || t.status === 'not_relevant',
+    ).length;
+    const completed = policyCompleted + taskCompleted;
+    const totalItems = policies.length + tasks.length;
+
+    const {
+      frameworkPolicyLinks,
+      frameworkTaskLinks,
+      frameworkDocumentLinks,
+      policies: _policies,
+      tasks: _tasks,
+      controlDocumentTypes: _controlDocumentTypes,
+      ...controlData
+    } = control;
+
+    return {
+      ...controlData,
+      policies,
+      tasks,
+      controlDocumentTypes: controlDocumentTypes.map((documentType) => ({
+        ...documentType,
+        isNotRelevant: notRelevantFormTypes.has(documentType.formType),
+      })),
       submissionCountsByFormType,
       progress: {
         total: totalItems,
@@ -336,6 +477,14 @@ export class ControlsService {
         });
       }
 
+      if (scopedRequirementMappings.length > 0) {
+        await syncDirectLinksToCustomFrameworks({
+          controlId: control.id,
+          organizationId,
+          client: tx,
+        });
+      }
+
       return control;
     });
   }
@@ -480,10 +629,25 @@ export class ControlsService {
     return control;
   }
 
+  private async ensureFrameworkInstance(
+    frameworkInstanceId: string,
+    organizationId: string,
+  ) {
+    const frameworkInstance = await db.frameworkInstance.findUnique({
+      where: { id: frameworkInstanceId, organizationId },
+      select: { id: true, customFrameworkId: true },
+    });
+    if (!frameworkInstance) {
+      throw new NotFoundException('Framework instance not found');
+    }
+    return frameworkInstance;
+  }
+
   async linkPolicies(
     controlId: string,
     organizationId: string,
     policyIds: string[],
+    frameworkInstanceId?: string,
   ) {
     await this.ensureControl(controlId, organizationId);
 
@@ -495,10 +659,23 @@ export class ControlsService {
       throw new BadRequestException('No valid policies to link');
     }
 
-    await db.control.update({
-      where: { id: controlId },
-      data: { policies: { connect: policies.map((p) => ({ id: p.id })) } },
-    });
+    if (frameworkInstanceId) {
+      await this.ensureFrameworkInstance(frameworkInstanceId, organizationId);
+      await db.frameworkControlPolicyLink.createMany({
+        data: policies.map((policy) => ({
+          frameworkInstanceId,
+          controlId,
+          policyId: policy.id,
+        })),
+        skipDuplicates: true,
+      });
+    } else {
+      await db.control.update({
+        where: { id: controlId },
+        data: { policies: { connect: policies.map((p) => ({ id: p.id })) } },
+      });
+      await syncDirectLinksToCustomFrameworks({ controlId, organizationId });
+    }
 
     return { count: policies.length };
   }
@@ -507,6 +684,7 @@ export class ControlsService {
     controlId: string,
     organizationId: string,
     taskIds: string[],
+    frameworkInstanceId?: string,
   ) {
     await this.ensureControl(controlId, organizationId);
 
@@ -518,10 +696,23 @@ export class ControlsService {
       throw new BadRequestException('No valid tasks to link');
     }
 
-    await db.control.update({
-      where: { id: controlId },
-      data: { tasks: { connect: tasks.map((t) => ({ id: t.id })) } },
-    });
+    if (frameworkInstanceId) {
+      await this.ensureFrameworkInstance(frameworkInstanceId, organizationId);
+      await db.frameworkControlTaskLink.createMany({
+        data: tasks.map((task) => ({
+          frameworkInstanceId,
+          controlId,
+          taskId: task.id,
+        })),
+        skipDuplicates: true,
+      });
+    } else {
+      await db.control.update({
+        where: { id: controlId },
+        data: { tasks: { connect: tasks.map((t) => ({ id: t.id })) } },
+      });
+      await syncDirectLinksToCustomFrameworks({ controlId, organizationId });
+    }
 
     return { count: tasks.length };
   }
@@ -627,12 +818,26 @@ export class ControlsService {
     controlId: string,
     organizationId: string,
     formTypes: EvidenceFormType[],
+    frameworkInstanceId?: string,
   ) {
     await this.ensureControl(controlId, organizationId);
+    if (frameworkInstanceId) {
+      await this.ensureFrameworkInstance(frameworkInstanceId, organizationId);
+      const result = await db.frameworkControlDocumentTypeLink.createMany({
+        data: formTypes.map((formType) => ({
+          frameworkInstanceId,
+          controlId,
+          formType,
+        })),
+        skipDuplicates: true,
+      });
+      return { count: result.count };
+    }
     const result = await db.controlDocumentType.createMany({
       data: formTypes.map((formType) => ({ controlId, formType })),
       skipDuplicates: true,
     });
+    await syncDirectLinksToCustomFrameworks({ controlId, organizationId });
     return { count: result.count };
   }
 
@@ -640,12 +845,46 @@ export class ControlsService {
     controlId: string,
     organizationId: string,
     formType: EvidenceFormType,
+    frameworkInstanceId?: string,
   ) {
     await this.ensureControl(controlId, organizationId);
-    await db.controlDocumentType.deleteMany({
-      where: { controlId, formType },
+    if (frameworkInstanceId) {
+      await this.ensureFrameworkInstance(frameworkInstanceId, organizationId);
+      await db.frameworkControlDocumentTypeLink.deleteMany({
+        where: { frameworkInstanceId, controlId, formType },
+      });
+      return { success: true };
+    }
+    return db.$transaction(async (tx) => {
+      const deleted = await tx.controlDocumentType.deleteMany({
+        where: { controlId, formType },
+      });
+      if (deleted.count === 0) return { success: true };
+      const customFiIds = await tx.requirementMap.findMany({
+        where: {
+          controlId,
+          archivedAt: null,
+          frameworkInstance: {
+            organizationId,
+            customFrameworkId: { not: null },
+          },
+        },
+        select: { frameworkInstanceId: true },
+        distinct: ['frameworkInstanceId'],
+      });
+      if (customFiIds.length > 0) {
+        await tx.frameworkControlDocumentTypeLink.deleteMany({
+          where: {
+            controlId,
+            formType,
+            frameworkInstanceId: {
+              in: customFiIds.map((r) => r.frameworkInstanceId),
+            },
+          },
+        });
+      }
+      return { success: true };
     });
-    return { success: true };
   }
 
   async delete(controlId: string, organizationId: string) {

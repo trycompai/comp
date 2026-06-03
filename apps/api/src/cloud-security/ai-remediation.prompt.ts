@@ -178,6 +178,20 @@ A human will ALWAYS review your plan before execution. Be precise and correct.
 - Service delivery roles MUST have a trust policy for the AWS service principal (e.g., cloudtrail.amazonaws.com, config.amazonaws.com).
 - Service-linked roles (GuardDuty, Config, Inspector, Macie): use CreateServiceLinkedRole — AWS manages them.
 
+## SERVICE-LINKED ROLE AWSServiceName VALUES (MANDATORY)
+When emitting iam:CreateServiceLinkedRoleCommand you MUST populate the
+AWSServiceName param. Leaving it null or empty causes AWS to reject the
+call with "Member must not be null". Use exactly these values:
+- AWS Config           → "config.amazonaws.com"
+- GuardDuty            → "guardduty.amazonaws.com"
+- Inspector v2         → "inspector2.amazonaws.com"
+- Macie                → "macie.amazonaws.com"
+- IAM Access Analyzer  → "access-analyzer.amazonaws.com"
+- Security Hub         → "securityhub.amazonaws.com"
+- Detective            → "detective.amazonaws.com"
+- AWS Backup           → "backup.amazonaws.com"
+NEVER omit AWSServiceName, leave it as null, or use a placeholder string.
+
 ## NAMING CONVENTIONS FOR NEW RESOURCES (FOLLOW EXACTLY)
 - S3 bucket names MUST: be lowercase only, no underscores, 3-63 chars, globally unique
   - Format: compai-{purpose}-{accountId}-{region} (e.g., compai-cloudtrail-013388577167-us-east-1)
@@ -277,7 +291,21 @@ A human will ALWAYS review your plan before execution. Be precise and correct.
   - Example: { "versioning": "Enabled" }
   - Example: { "metricFilterExists": true, "filterName": "cis-4.8-s3-bucket-policy-changes", "alarmExists": true, "alarmName": "cis-4.8-s3-bucket-policy-changes" }
 - Both must use the SAME keys so the user can compare side by side
-- Do NOT include fields you don't know the value of`;
+- Do NOT include fields you don't know the value of
+
+## CREATE-FROM-SCRATCH REMEDIATIONS
+Some fixes create a resource that doesn't exist yet — e.g. "No CloudTrail trails configured", "No AWS Config recorder", "No GuardDuty detector", "No S3 bucket for log storage". For these:
+- currentState MUST include "exists: false" so the user sees that nothing is there today.
+  - Add other known-from-evidence absence facts when relevant.
+  - Example: { "exists": false }
+  - Example: { "exists": false, "trailsCount": 0 }
+- proposedState MUST describe the resource that will be created, in concrete terms.
+  - Use the fixSteps you generated as the source of truth — the values you'll pass to CreateTrail / CreateBucket / etc. go here.
+  - Include "exists: true" plus the key configuration the user is being asked to accept.
+  - Example: { "exists": true, "trailName": "compai-cloudtrail", "multiRegion": true, "logFileValidation": true, "s3Bucket": "compai-cloudtrail-logs-013388577167-us-east-1" } — use the concrete AWS account ID and region from evidence, never a placeholder
+  - Example: { "exists": true, "detectorEnabled": true, "findingPublishingFrequency": "FIFTEEN_MINUTES" }
+- Both blocks STILL must share the same keys so the user can see "false → true" diffs at a glance.
+- NEVER leave both currentState and proposedState empty. An empty diff is unreadable for the user — if you cannot describe the resource concretely, at minimum return { "exists": false } / { "exists": true }.`;
 
 export function buildFixPlanPrompt(finding: {
   title: string;

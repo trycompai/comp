@@ -282,28 +282,27 @@ export async function upsertOrgFrameworkStructure({
 
   const requirementMapEntries: Prisma.RequirementMapCreateManyInput[] = [];
   const controlDocumentTypeEntries: Prisma.ControlDocumentTypeCreateManyInput[] = [];
+  const frameworkControlPolicyEntries: Prisma.FrameworkControlPolicyLinkCreateManyInput[] = [];
+  const frameworkControlTaskEntries: Prisma.FrameworkControlTaskLinkCreateManyInput[] = [];
+  const frameworkControlDocumentTypeEntries: Prisma.FrameworkControlDocumentTypeLinkCreateManyInput[] = [];
+  const frameworkControlFamilyEntries: Prisma.FrameworkControlFamilyCreateManyInput[] = [];
   const controlTemplateById = new Map(controlTemplates.map((c) => [c.id, c]));
 
   for (const relation of groupedRelations) {
     const controlId = controlMap.get(relation.controlTemplateId);
     if (!controlId) continue;
+    const frameworkInstanceId = editorToInstanceMap.get(relation.frameworkId);
+    if (!frameworkInstanceId) continue;
 
     const updateData: Prisma.ControlUpdateInput = {};
     let needsUpdate = false;
 
     for (const reqTemplateId of relation.requirementTemplateIds) {
-      const frameworkEditorId = requirementToFrameworkId.get(reqTemplateId);
-      const frameworkInstanceId = frameworkEditorId
-        ? editorToInstanceMap.get(frameworkEditorId)
-        : undefined;
-
-      if (frameworkInstanceId) {
-        requirementMapEntries.push({
-          controlId,
-          requirementId: reqTemplateId,
-          frameworkInstanceId,
-        });
-      }
+      requirementMapEntries.push({
+        controlId,
+        requirementId: reqTemplateId,
+        frameworkInstanceId,
+      });
     }
 
     const policiesToConnect = relation.policyTemplateIds
@@ -315,6 +314,13 @@ export async function upsertOrgFrameworkStructure({
       updateData.policies = { connect: policiesToConnect };
       needsUpdate = true;
     }
+    for (const policy of policiesToConnect) {
+      frameworkControlPolicyEntries.push({
+        frameworkInstanceId,
+        controlId,
+        policyId: policy.id,
+      });
+    }
 
     const tasksToConnect = relation.taskTemplateIds
       .map((ttId) => taskMap.get(ttId))
@@ -324,6 +330,13 @@ export async function upsertOrgFrameworkStructure({
     if (tasksToConnect.length > 0) {
       updateData.tasks = { connect: tasksToConnect };
       needsUpdate = true;
+    }
+    for (const task of tasksToConnect) {
+      frameworkControlTaskEntries.push({
+        frameworkInstanceId,
+        controlId,
+        taskId: task.id,
+      });
     }
 
     if (needsUpdate) {
@@ -337,9 +350,26 @@ export async function upsertOrgFrameworkStructure({
     // documentTypes so the new org starts with the same evidence form types
     // the published version specified. Skip duplicates against existing rows
     // via the unique constraint at create time.
-    const ct = controlTemplateById.get(relation.controlTemplateId);
-    for (const formType of ct?.documentTypes ?? []) {
+    const documentTypes = relation.documentTypes.length > 0
+      ? relation.documentTypes
+      : (controlTemplateById.get(relation.controlTemplateId)?.documentTypes ?? []);
+    for (const formType of documentTypes) {
       controlDocumentTypeEntries.push({ controlId, formType });
+      frameworkControlDocumentTypeEntries.push({
+        frameworkInstanceId,
+        controlId,
+        formType,
+      });
+    }
+
+    // FrameworkControlFamily: per-instance family grouping from the template.
+    const template = controlTemplateById.get(relation.controlTemplateId);
+    if (template?.controlFamily) {
+      frameworkControlFamilyEntries.push({
+        frameworkInstanceId,
+        controlId,
+        controlFamily: template.controlFamily,
+      });
     }
   }
 
@@ -353,6 +383,34 @@ export async function upsertOrgFrameworkStructure({
   if (controlDocumentTypeEntries.length > 0) {
     await tx.controlDocumentType.createMany({
       data: controlDocumentTypeEntries,
+      skipDuplicates: true,
+    });
+  }
+
+  if (frameworkControlPolicyEntries.length > 0) {
+    await tx.frameworkControlPolicyLink.createMany({
+      data: frameworkControlPolicyEntries,
+      skipDuplicates: true,
+    });
+  }
+
+  if (frameworkControlTaskEntries.length > 0) {
+    await tx.frameworkControlTaskLink.createMany({
+      data: frameworkControlTaskEntries,
+      skipDuplicates: true,
+    });
+  }
+
+  if (frameworkControlDocumentTypeEntries.length > 0) {
+    await tx.frameworkControlDocumentTypeLink.createMany({
+      data: frameworkControlDocumentTypeEntries,
+      skipDuplicates: true,
+    });
+  }
+
+  if (frameworkControlFamilyEntries.length > 0) {
+    await tx.frameworkControlFamily.createMany({
+      data: frameworkControlFamilyEntries,
       skipDuplicates: true,
     });
   }

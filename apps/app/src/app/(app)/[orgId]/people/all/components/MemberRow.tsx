@@ -1,5 +1,6 @@
 'use client';
 
+import { format } from 'date-fns';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { useState } from 'react';
@@ -148,6 +149,7 @@ export function MemberRow({
   const currentRoles = parseRoles(member.role);
 
   const isOwner = currentRoles.includes('owner');
+  const isAuditorOnly = currentRoles.length > 0 && currentRoles.every((role) => role === 'auditor');
   const isPlatformAdmin = member.user.role === 'admin';
   const canRemove = !isOwner;
   const isDeactivated = member.deactivated || !member.isActive;
@@ -189,7 +191,7 @@ export function MemberRow({
     });
   }
 
-  if (shouldShowTaskRequirements && backgroundCheckStepEnabled && !memberExempt) {
+  if (shouldShowTaskRequirements && backgroundCheckStepEnabled && !memberExempt && !isAuditorOnly) {
     taskItems.push({
       label: 'Background check',
       completed: hasCompletedBackgroundCheck ? 1 : 0,
@@ -325,6 +327,28 @@ export function MemberRow({
               ))}
             </div>
           </div>
+        </TableCell>
+
+        {/* ONBOARDED */}
+        <TableCell>
+          {member.onboardDate ? (
+            <Text size="sm" variant="muted">
+              {format(member.onboardDate, 'MMM d, yyyy')}
+            </Text>
+          ) : (
+            <Text size="sm" variant="muted">—</Text>
+          )}
+        </TableCell>
+
+        {/* OFFBOARDED */}
+        <TableCell>
+          {member.offboardDate ? (
+            <Text size="sm" variant="muted">
+              {format(member.offboardDate, 'MMM d, yyyy')}
+            </Text>
+          ) : (
+            <Text size="sm" variant="muted">—</Text>
+          )}
         </TableCell>
 
         {/* TASKS */}

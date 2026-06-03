@@ -75,6 +75,9 @@ model IntegrationConnection {
   syncLogs           IntegrationSyncLog[]
   remediationActions RemediationAction[]
   remediationBatches RemediationBatch[]
+  findingExceptions  FindingException[]
+  findingResolutions FindingResolution[]
+  findingRegressions FindingRegression[]
 
   @@index([organizationId])
   @@index([providerId])
@@ -332,6 +335,28 @@ model IntegrationCheckRun {
 
   /// Full execution logs (JSON array)
   logs Json?
+
+  /// Service IDs (e.g. "s3", "iam") successfully scanned in this run.
+  /// Used by reconciliation to distinguish a passing finding from a
+  /// service that simply wasn't re-scanned (e.g. rate limit, transient
+  /// API failure) — prevents false "resolved" events on partial scans.
+  scannedServices String[] @default([])
+
+  /// Service IDs that errored out mid-scan. Findings under these services
+  /// are NOT considered for resolution detection on this run.
+  failedServices String[] @default([])
+
+  /// AWS-only: which scan engine produced this run.
+  ///   'comp_scanners' — our service adapters (default).
+  ///   'security_hub' — AWS Security Hub findings.
+  /// Null for GCP / Azure runs (no scan-mode concept). Pre-feature AWS
+  /// rows were backfilled to 'comp_scanners' in the
+  /// 20260519143715_integration_check_run_scan_mode migration, so every
+  /// AWS run has an explicit value. Reconciliation uses this to only
+  /// diff like-for-like — findingKeys live in different namespaces
+  /// across modes, so cross-mode diffs would produce false
+  /// resolutions/regressions.
+  scanMode String?
 
   createdAt DateTime @default(now())
 

@@ -1,11 +1,13 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { generateObject } from 'ai';
 import { anthropic } from '@ai-sdk/anthropic';
+import { z } from 'zod';
 import {
   type FixPlan,
   type PermissionFix,
   type AwsCommandStep,
   fixPlanSchema,
+  awsCommandStepSchema,
   permissionFixSchema,
   completePermissionsSchema,
   SYSTEM_PROMPT,
@@ -24,11 +26,16 @@ import {
   AZURE_SYSTEM_PROMPT,
   buildAzureFixPlanPrompt,
 } from './azure-ai-remediation.prompt';
+import { normalizeFixPlan } from './plan-normalizer';
 
 const MODEL = anthropic('claude-opus-4-6');
+// Cheaper, faster model for the manual-steps fallback. The output is pure
+// natural language with no SDK-call shape to validate, so the strongest
+// model is overkill — we just need clear instructions.
+const FALLBACK_MODEL = anthropic('claude-sonnet-4-5');
 const REMEDIATION_ROLE_NAME = 'CompAI-Remediator';
 
-interface FindingContext {
+export interface FindingContext {
   title: string;
   description: string | null;
   severity: string | null;
@@ -57,7 +64,9 @@ export class AiRemediationService {
       this.logger.log(
         `AI plan for ${finding.findingKey}: canAutoFix=${object.canAutoFix}, risk=${object.risk}`,
       );
-      return object;
+      return normalizeFixPlan(enrichEmptyState(object), {
+        resourceId: finding.resourceId,
+      });
     } catch (err) {
       this.logger.error(
         `AI plan failed: ${err instanceof Error ? err.message : String(err)}`,
@@ -99,13 +108,17 @@ Generate the complete fix plan with EXACT values from the real AWS state.`,
       });
 
       this.logger.log(`AI refined plan for ${params.finding.findingKey}`);
-      return object;
+      return normalizeFixPlan(enrichEmptyState(object), {
+        resourceId: params.finding.resourceId,
+      });
     } catch (err) {
       this.logger.error(
         `AI refine failed: ${err instanceof Error ? err.message : String(err)}`,
       );
       // Fall back to original plan
-      return params.originalPlan;
+      return normalizeFixPlan(enrichEmptyState(params.originalPlan), {
+        resourceId: params.finding.resourceId,
+      });
     }
   }
 
@@ -222,6 +235,199 @@ OVERESTIMATE. Better to have 5 extra permissions than to miss one.`,
         },
         fixScript: `aws iam put-role-policy --role-name ${REMEDIATION_ROLE_NAME} --policy-name CompAI-AutoFix --policy-document '${policy}'`,
       };
+    }
+  }
+
+  /**
+   * Universal step-level repair. Called by the executor when AWS rejects
+   * a step with a validation-class error AND the rules-based fixer in
+   * `tryAutoFixValidationError` couldn't resolve it.
+   *
+   * The AI sees the failing step, AWS's exact error message, the
+   * surrounding plan, and the finding context, and returns a corrected
+   * step (same service + command, refined params). Returns null when the
+   * model declines to refine — the executor then surfaces AWS's error
+   * unchanged.
+   *
+   * This is the universal escape hatch for "AI omitted a required AWS
+   * param" bugs: no per-command map, no hardcoded principal table — the
+   * AI uses AWS's own validation message as ground truth.
+   */
+  async refineStepFromError(params: {
+    step: AwsCommandStep;
+    awsError: string;
+    finding: FindingContext;
+    planContext: Pick<FixPlan, 'fixSteps' | 'readSteps'>;
+  }): Promise<AwsCommandStep | null> {
+    try {
+      const neighbors = [
+        ...params.planContext.readSteps.map((s) => ({ role: 'read', ...s })),
+        ...params.planContext.fixSteps.map((s) => ({ role: 'fix', ...s })),
+      ].filter(
+        (s) =>
+          s.command !== params.step.command ||
+          s.purpose !== params.step.purpose,
+      );
+
+      const { object } = await generateObject({
+        model: MODEL,
+        schema: awsCommandStepSchema,
+        system:
+          'You are repairing a single AWS auto-remediation step that the AWS SDK rejected with a validation error. Return a corrected step with the SAME service and SAME command — only the params should change. Use the AWS error message to identify exactly which field is wrong and why. Use neighbor steps and the finding context to infer the right value. If you cannot fix it without external information, return the original step unchanged.',
+        prompt: `FAILING STEP:
+service: ${params.step.service}
+command: ${params.step.command}
+purpose: ${params.step.purpose}
+params: ${JSON.stringify(params.step.params ?? {}, null, 2)}
+
+AWS SDK ERROR (verbatim):
+${params.awsError}
+
+OTHER STEPS IN THE SAME PLAN (for context — DO NOT include their params in the output):
+${JSON.stringify(neighbors, null, 2)}
+
+FINDING BEING FIXED:
+title: ${params.finding.title}
+description: ${params.finding.description ?? '(none)'}
+resourceType: ${params.finding.resourceType}
+resourceId: ${params.finding.resourceId}
+remediation guidance: ${params.finding.remediation ?? '(none)'}
+evidence: ${JSON.stringify(params.finding.evidence ?? {}, null, 2)}
+
+INSTRUCTIONS:
+1. Read the AWS error carefully — it tells you which field is wrong.
+2. If the error says "Member must not be null" or "must not be empty" for a field X, populate X with the correct value (from finding evidence, neighbor steps, or AWS conventions like service principals).
+3. If the error says "failed to satisfy constraint" or "regular expression pattern", fix the value to match.
+4. Keep the same service and command — do not switch to a different API.
+5. Return a complete AwsCommandStep with all required schema fields.`,
+        temperature: 0,
+      });
+
+      this.logger.log(
+        `Step repair for ${params.step.command}: returned ${JSON.stringify(
+          object.params ?? {},
+        ).slice(0, 200)}`,
+      );
+
+      // Defensive: if the AI swapped the service or command (against
+      // instructions), discard the refinement — the executor would
+      // reject it anyway and we don't want to retry with a different API.
+      if (
+        object.service !== params.step.service ||
+        object.command !== params.step.command
+      ) {
+        this.logger.warn(
+          `Step repair returned a different service/command — ` +
+            `expected ${params.step.service}:${params.step.command}, got ` +
+            `${object.service}:${object.command}. Discarding refinement.`,
+        );
+        return null;
+      }
+
+      return object;
+    } catch (err) {
+      this.logger.error(
+        `AI step repair failed: ${err instanceof Error ? err.message : String(err)}`,
+      );
+      return null;
+    }
+  }
+
+  /**
+   * Generate real, user-actionable manual steps when auto-fix cannot
+   * proceed for a finding. Called by the remediation service as a
+   * fallback so customers never see a raw "Fix could not be applied —
+   * <cryptic error>" — they get clear instructions instead.
+   *
+   * Inputs:
+   *  - the finding (so the AI knows what's actually broken),
+   *  - the fix plan we tried to apply (so steps reference the same
+   *    resources / commands the customer expected),
+   *  - the concrete failure reason from validation or AWS execution.
+   *
+   * Output: ordered list of steps that the customer can copy-paste
+   * into AWS Console / CLI to resolve the finding manually.
+   *
+   * Uses Sonnet for cost — this only fires on the failure path and
+   * the output is plain natural language. On AI failure, falls back
+   * to the finding's `remediation` text so the customer at least sees
+   * the adapter's pre-baked guidance instead of an error.
+   */
+  async generateManualSteps(params: {
+    finding: FindingContext;
+    failedPlan?: FixPlan;
+    failureReason: string;
+  }): Promise<{ guidedSteps: string[]; reason: string }> {
+    const fallback = (): { guidedSteps: string[]; reason: string } => ({
+      guidedSteps: params.finding.remediation
+        ? [params.finding.remediation]
+        : [
+            'Review the finding in your AWS Console and apply the recommended remediation manually.',
+          ],
+      reason:
+        'Automatic fix is not available for this finding. Follow the guided steps to resolve it manually.',
+    });
+
+    try {
+      const stepsSummary = params.failedPlan?.fixSteps
+        ? params.failedPlan.fixSteps
+            .map(
+              (s, i) =>
+                `${i + 1}. ${s.service}:${s.command} — ${s.purpose}`,
+            )
+            .join('\n')
+        : '(no fix steps were generated)';
+
+      const { object } = await generateObject({
+        model: FALLBACK_MODEL,
+        schema: z.object({
+          guidedSteps: z
+            .array(z.string())
+            .min(1)
+            .describe(
+              'Ordered list of clear, copy-pasteable manual instructions the customer can follow in AWS Console or CLI. Each step is one concrete action.',
+            ),
+          reason: z
+            .string()
+            .describe(
+              'One-sentence summary of WHY automatic fix could not proceed — phrased for the customer, not for an engineer.',
+            ),
+        }),
+        system:
+          'You are an AWS security expert writing manual remediation steps for a customer whose automatic fix failed. Be concrete: name exact services, exact resources, and exact actions. Prefer AWS Console clicks over CLI when the path is short, but include CLI commands when they are clearer. Never reference SDK class names. Never apologize. Never speculate about "if the issue persists" — just give the steps.',
+        prompt: `A finding could not be auto-remediated. Generate clear manual steps the customer can follow.
+
+FINDING:
+- title: ${params.finding.title}
+- description: ${params.finding.description ?? '(none)'}
+- severity: ${params.finding.severity ?? '(unknown)'}
+- resource type: ${params.finding.resourceType}
+- resource id: ${params.finding.resourceId}
+- adapter remediation guidance: ${params.finding.remediation ?? '(none)'}
+- evidence: ${JSON.stringify(params.finding.evidence ?? {}, null, 2)}
+
+WHAT WE TRIED TO DO AUTOMATICALLY (do not just repeat — translate into customer-facing actions):
+${stepsSummary}
+
+WHY IT FAILED:
+${params.failureReason}
+
+Produce 3-8 ordered steps. Each step is a single concrete action the customer can perform in AWS Console or CLI. Reference the EXACT resource (${params.finding.resourceType} ${params.finding.resourceId}) and the EXACT region from evidence when relevant. End with a verification step so the customer knows they fixed it.`,
+        temperature: 0.2,
+      });
+
+      this.logger.log(
+        `Manual-steps fallback for ${params.finding.findingKey}: ${object.guidedSteps.length} step(s)`,
+      );
+      return {
+        guidedSteps: object.guidedSteps,
+        reason: object.reason,
+      };
+    } catch (err) {
+      this.logger.warn(
+        `Manual-steps AI call failed for ${params.finding.findingKey}; using adapter remediation as fallback. ${err instanceof Error ? err.message : String(err)}`,
+      );
+      return fallback();
     }
   }
 
@@ -382,9 +588,7 @@ Generate the complete fix plan with EXACT values from the real Azure state.`,
 
     const steps: string[] = [];
     if (externalUri) {
-      steps.push(
-        `Open the resource in GCP Console: ${externalUri}`,
-      );
+      steps.push(`Open the resource in GCP Console: ${externalUri}`);
     }
     if (finding.remediation) {
       // Split SCC remediation text into separate steps if it contains "More info:" or multiple sentences
@@ -443,4 +647,103 @@ Generate the complete fix plan with EXACT values from the real Azure state.`,
       reason: 'AI analysis unavailable. Follow the guided steps.',
     };
   }
+}
+
+/** Action-style prefixes the AI uses for steps that change AWS state. */
+const ACTIONABLE_PREFIXES = [
+  'Create',
+  'Put',
+  'Update',
+  'Modify',
+  'Start',
+  'Enable',
+  'Attach',
+  'Set',
+  'Authorize',
+  'Revoke',
+  'Allow',
+  'Deny',
+  'Disable',
+  'Detach',
+  'Add',
+  'Remove',
+  'Register',
+  'Deregister',
+  'Tag',
+  'Untag',
+] as const;
+
+/**
+ * Deterministic backstop: if the AI returns BOTH currentState and
+ * proposedState as empty (rendering as `{} → {}` in the Auto-Remediate
+ * dialog), derive a meaningful diff from the plan's actionable fix steps.
+ *
+ * - When the plan contains `Create*` commands, emit
+ *   `{ exists: false }` → `{ exists: true, willCreate: [...] }` so the UI
+ *   keeps the existing create-from-scratch language for findings like
+ *   "No CloudTrail trails configured".
+ * - When the plan contains only configure/enable-style commands
+ *   (`PutConfigurationRecorderCommand`, `StartConfigurationRecorderCommand`,
+ *   `EnableMacieCommand`, ...), emit
+ *   `{ configured: false }` → `{ configured: true, willChange: [...] }`
+ *   instead of claiming creation.
+ *
+ * Only kicks in when BOTH states are empty — verify-only plans that
+ * legitimately have one side blank are untouched.
+ */
+function enrichEmptyState(plan: FixPlan): FixPlan {
+  const currentEmpty = isEmptyState(plan.currentState);
+  const proposedEmpty = isEmptyState(plan.proposedState);
+  if (!currentEmpty || !proposedEmpty) return plan;
+
+  const willCreate: string[] = [];
+  const willChange: string[] = [];
+  for (const step of plan.fixSteps ?? []) {
+    const command = typeof step?.command === 'string' ? step.command : '';
+    const prefix = ACTIONABLE_PREFIXES.find((p) => command.startsWith(p));
+    if (!prefix) continue;
+    const resource = command
+      .replace(/Command$/, '')
+      .replace(/^[A-Z][a-z]+/, '');
+    const label = step.service ? `${step.service}:${resource}` : resource;
+    if (prefix === 'Create') {
+      if (!willCreate.includes(label)) willCreate.push(label);
+    } else if (!willChange.includes(label)) {
+      willChange.push(label);
+    }
+  }
+
+  // Create-from-scratch plan: emit exists:false → exists:true so the UI
+  // keeps the existing "we'll create this" language for findings like
+  // "No CloudTrail trails configured". Non-Create steps in the same plan
+  // (e.g., StartLoggingCommand on the just-created trail) are bundled
+  // into the resource being created, so we don't double-list them.
+  if (willCreate.length > 0) {
+    return {
+      ...plan,
+      currentState: { exists: false },
+      proposedState: { exists: true, willCreate },
+    };
+  }
+
+  // Pure configure / enable / update flow: surface what will change
+  // without claiming creation. This is the Bug B fix — previously plans
+  // with only Put*/Start*/Update* steps left both states empty.
+  if (willChange.length > 0) {
+    return {
+      ...plan,
+      currentState: { configured: false },
+      proposedState: { configured: true, willChange },
+    };
+  }
+
+  // No actionable steps detected — leave the plan alone rather than
+  // fabricating state.
+  return plan;
+}
+
+function isEmptyState(
+  state: Record<string, unknown> | null | undefined,
+): boolean {
+  return !state || Object.keys(state).length === 0;
 }

@@ -9,6 +9,16 @@
  */
 
 // Mock better-auth ESM modules before importing @trycompai/auth
+jest.mock('better-auth', () => ({ betterAuth: jest.fn() }));
+jest.mock('better-auth/adapters/prisma', () => ({ prismaAdapter: jest.fn() }));
+jest.mock('better-auth/plugins', () => ({
+  bearer: jest.fn(),
+  emailOTP: jest.fn(),
+  jwt: jest.fn(),
+  magicLink: jest.fn(),
+  multiSession: jest.fn(),
+  organization: jest.fn(),
+}));
 jest.mock('better-auth/plugins/access', () => ({
   createAccessControl: (stmt: Record<string, readonly string[]>) => ({
     newRole: (statements: Record<string, readonly string[]>) => ({
@@ -66,12 +76,18 @@ describe('Built-in role permissions — regression', () => {
         'vendor',
         'task',
         'framework',
-        'finding',
         'questionnaire',
         'integration',
       ]) {
         expect(perms[resource]).toEqual(expect.arrayContaining(fullCrud));
       }
+    });
+
+    it('should have finding read/update only', () => {
+      expect(perms.finding).toEqual(
+        expect.arrayContaining(['read', 'update']),
+      );
+      expect(perms.finding).not.toContain('create');
     });
 
     it('should have audit create/read/update (no delete)', () => {
@@ -148,12 +164,18 @@ describe('Built-in role permissions — regression', () => {
         'vendor',
         'task',
         'framework',
-        'finding',
         'questionnaire',
         'integration',
       ]) {
         expect(perms[resource]).toEqual(expect.arrayContaining(fullCrud));
       }
+    });
+
+    it('should have finding read/update only', () => {
+      expect(perms.finding).toEqual(
+        expect.arrayContaining(['read', 'update']),
+      );
+      expect(perms.finding).not.toContain('create');
     });
 
     it('should NOT have organization:delete', () => {
@@ -173,8 +195,8 @@ describe('Built-in role permissions — regression', () => {
       );
     });
 
-    it('should have portal read/update', () => {
-      expect(perms.portal).toEqual(expect.arrayContaining(['read', 'update']));
+    it('should NOT have portal permissions', () => {
+      expect(perms.portal).toBeUndefined();
     });
 
     it('should have pentest create/read/delete', () => {
@@ -321,8 +343,8 @@ describe('Built-in role permissions — regression', () => {
       expect(BUILT_IN_ROLE_OBLIGATIONS.owner).toEqual({ compliance: true });
     });
 
-    it('admin should have compliance obligation', () => {
-      expect(BUILT_IN_ROLE_OBLIGATIONS.admin).toEqual({ compliance: true });
+    it('admin should NOT have compliance obligation', () => {
+      expect(BUILT_IN_ROLE_OBLIGATIONS.admin).toEqual({});
     });
 
     it('auditor should have NO obligations', () => {

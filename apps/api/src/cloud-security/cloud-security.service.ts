@@ -8,6 +8,8 @@ import { GCPSecurityService } from './providers/gcp-security.service';
 import { AWSSecurityService } from './providers/aws-security.service';
 import { AzureSecurityService } from './providers/azure-security.service';
 import { AWS_SERVICE_TASK_MAPPINGS } from './aws-task-mappings';
+import { CloudReconciliationService } from './reconciliation.service';
+import { type AwsScanMode, resolveAwsScanMode } from './aws-scan-mode';
 
 export interface SecurityFinding {
   id: string;
@@ -46,6 +48,7 @@ export class CloudSecurityService {
     private readonly gcpService: GCPSecurityService,
     private readonly awsService: AWSSecurityService,
     private readonly azureService: AzureSecurityService,
+    private readonly reconciliation: CloudReconciliationService,
   ) {}
 
   async scan(
@@ -110,9 +113,12 @@ export class CloudSecurityService {
         const accessToken =
           await this.credentialVaultService.getValidAccessToken(connectionId, {
             tokenUrl: oauthConfig.tokenUrl,
+            refreshUrl: oauthConfig.refreshUrl,
             clientId: oauthCreds.clientId,
             clientSecret: oauthCreds.clientSecret,
             clientAuthMethod: oauthConfig.clientAuthMethod,
+            scope: oauthCreds.scopes.join(' '),
+            tokenParams: oauthConfig.tokenParams,
           });
 
         if (!accessToken) {
@@ -243,6 +249,11 @@ export class CloudSecurityService {
         }
       }
 
+      // AWS-only — which engine produced this scan. Persisted on the run
+      // so reconciliation only diffs like-for-like (cross-mode findingKeys
+      // live in different namespaces). Null for GCP / Azure runs.
+      let awsScanMode: AwsScanMode | null = null;
+
       switch (providerSlug) {
         case 'gcp':
           findings = await this.gcpService.scanSecurityFindings(
@@ -251,13 +262,21 @@ export class CloudSecurityService {
             enabledServices,
           );
           break;
-        case 'aws':
+        case 'aws': {
+          // AWS scan-mode lives on connection.metadata (non-secret, frontend-
+          // readable); credentials are encrypted blobs intended for the AWS
+          // SDK. Read from metadata so a single source of truth.
+          const metadata =
+            (connection.metadata as Record<string, unknown> | null) ?? {};
+          awsScanMode = resolveAwsScanMode(metadata.awsScanMode);
           findings = await this.awsService.scanSecurityFindings(
             credentials,
             variables,
             enabledServices,
+            awsScanMode,
           );
           break;
+        }
         case 'azure':
           findings = await this.azureService.scanSecurityFindings(
             credentials,
@@ -276,7 +295,23 @@ export class CloudSecurityService {
       }
 
       // Store findings in database
-      await this.storeFindings(connectionId, providerSlug, findings);
+      const currentRunId = await this.storeFindings(
+        connectionId,
+        providerSlug,
+        findings,
+        awsScanMode,
+      );
+
+      // Reconcile against the prior scan to record resolutions and regressions.
+      // Failures must NOT fail the scan — log and continue so customers always
+      // see fresh findings even if the audit trail step hits an edge case.
+      try {
+        await this.reconciliation.reconcile({ currentRunId });
+      } catch (err) {
+        this.logger.error(
+          `Reconciliation failed for run ${currentRunId}: ${err instanceof Error ? err.message : String(err)}`,
+        );
+      }
 
       // Auto-satisfy evidence tasks based on passing scan results (AWS only)
       if (providerSlug === 'aws') {
@@ -556,12 +591,30 @@ export class CloudSecurityService {
     connectionId: string,
     provider: string,
     findings: SecurityFinding[],
-  ): Promise<void> {
+    // AWS only — which engine produced these findings. Stored on the run so
+    // reconciliation can avoid cross-mode diffs. Null for GCP / Azure runs.
+    awsScanMode: AwsScanMode | null,
+  ): Promise<string> {
     const passedCount = findings.filter((f) => f.passed).length;
     const failedCount = findings.filter((f) => !f.passed).length;
 
+    // Derive successfully-scanned service IDs from finding evidence. Used by
+    // Phase 5 reconciliation to avoid false "resolved" events when a service
+    // wasn't actually scanned this run.
+    const scannedServices = Array.from(
+      new Set(
+        findings
+          .map((f) => {
+            const evidence = f.evidence as Record<string, unknown> | undefined;
+            const serviceId = evidence?.serviceId;
+            return typeof serviceId === 'string' ? serviceId : null;
+          })
+          .filter((id): id is string => Boolean(id)),
+      ),
+    );
+
     // Use a transaction to ensure atomicity - both run and results are created together
-    await db.$transaction(async (tx) => {
+    const runId = await db.$transaction(async (tx) => {
       // Create a scan run record
       const scanRun = await tx.integrationCheckRun.create({
         data: {
@@ -574,6 +627,8 @@ export class CloudSecurityService {
           totalChecked: findings.length,
           passedCount,
           failedCount,
+          scannedServices,
+          scanMode: awsScanMode,
         },
       });
 
@@ -594,7 +649,11 @@ export class CloudSecurityService {
           })),
         });
       }
+
+      return scanRun.id;
     });
+
+    return runId;
   }
 
   /**

@@ -20,10 +20,12 @@ export interface ExportedFramework {
     name: string;
     identifier: string;
     description: string;
+    requirementFamily?: string | null;
   }>;
   controlTemplates: Array<{
     name: string;
     description: string;
+    controlFamily: string | null;
     documentTypes: string[];
     requirementIndices: number[];
     policyTemplateIndices: number[];
@@ -67,17 +69,31 @@ export class FrameworkExportService {
       where: { requirements: { some: { frameworkId } } },
       include: {
         requirements: { select: { id: true }, where: { frameworkId } },
-        policyTemplates: { select: { id: true } },
-        taskTemplates: { select: { id: true } },
+        frameworkPolicyLinks: {
+          where: { frameworkId },
+          select: { policyTemplateId: true },
+        },
+        frameworkTaskLinks: {
+          where: { frameworkId },
+          select: { taskTemplateId: true },
+        },
+        frameworkDocumentLinks: {
+          where: { frameworkId },
+          select: { formType: true },
+        },
       },
       orderBy: { name: 'asc' },
     });
 
     const policyIds = new Set(
-      controlTemplates.flatMap((ct) => ct.policyTemplates.map((p) => p.id)),
+      controlTemplates.flatMap((ct) =>
+        ct.frameworkPolicyLinks.map((link) => link.policyTemplateId),
+      ),
     );
     const taskIds = new Set(
-      controlTemplates.flatMap((ct) => ct.taskTemplates.map((t) => t.id)),
+      controlTemplates.flatMap((ct) =>
+        ct.frameworkTaskLinks.map((link) => link.taskTemplateId),
+      ),
     );
 
     const policyTemplates = await db.frameworkEditorPolicyTemplate.findMany({
@@ -113,19 +129,21 @@ export class FrameworkExportService {
         name: r.name,
         identifier: r.identifier,
         description: r.description,
+        requirementFamily: r.requirementFamily || null,
       })),
       controlTemplates: controlTemplates.map((ct) => ({
         name: ct.name,
         description: ct.description,
-        documentTypes: ct.documentTypes as string[],
+        controlFamily: ct.controlFamily ?? null,
+        documentTypes: ct.frameworkDocumentLinks.map((link) => link.formType),
         requirementIndices: ct.requirements
           .map((r) => reqIdToIndex.get(r.id))
           .filter((i): i is number => i !== undefined),
-        policyTemplateIndices: ct.policyTemplates
-          .map((p) => policyIdToIndex.get(p.id))
+        policyTemplateIndices: ct.frameworkPolicyLinks
+          .map((link) => policyIdToIndex.get(link.policyTemplateId))
           .filter((i): i is number => i !== undefined),
-        taskTemplateIndices: ct.taskTemplates
-          .map((t) => taskIdToIndex.get(t.id))
+        taskTemplateIndices: ct.frameworkTaskLinks
+          .map((link) => taskIdToIndex.get(link.taskTemplateId))
           .filter((i): i is number => i !== undefined),
       })),
       policyTemplates: policyTemplates.map((p) => ({
@@ -172,6 +190,7 @@ export class FrameworkExportService {
               name: r.name,
               identifier: r.identifier ?? '',
               description: r.description,
+              requirementFamily: r.requirementFamily || null,
             },
           }),
         ),
@@ -205,32 +224,63 @@ export class FrameworkExportService {
         ),
       );
 
-      await Promise.all(
+      const createdControls = await Promise.all(
         (dto.controlTemplates ?? []).map((ct) =>
           tx.frameworkEditorControlTemplate.create({
             data: {
               name: ct.name,
               description: ct.description,
-              documentTypes: ct.documentTypes ?? [],
+              controlFamily: ct.controlFamily ?? null,
               requirements: {
                 connect: (ct.requirementIndices ?? []).map((i) => ({
                   id: createdRequirements[i].id,
-                })),
-              },
-              policyTemplates: {
-                connect: (ct.policyTemplateIndices ?? []).map((i) => ({
-                  id: createdPolicies[i].id,
-                })),
-              },
-              taskTemplates: {
-                connect: (ct.taskTemplateIndices ?? []).map((i) => ({
-                  id: createdTasks[i].id,
                 })),
               },
             },
           }),
         ),
       );
+
+      const policyLinks = (dto.controlTemplates ?? []).flatMap((ct, controlIndex) =>
+        (ct.policyTemplateIndices ?? []).map((policyIndex) => ({
+          frameworkId: framework.id,
+          controlTemplateId: createdControls[controlIndex].id,
+          policyTemplateId: createdPolicies[policyIndex].id,
+        })),
+      );
+      const taskLinks = (dto.controlTemplates ?? []).flatMap((ct, controlIndex) =>
+        (ct.taskTemplateIndices ?? []).map((taskIndex) => ({
+          frameworkId: framework.id,
+          controlTemplateId: createdControls[controlIndex].id,
+          taskTemplateId: createdTasks[taskIndex].id,
+        })),
+      );
+      const documentLinks = (dto.controlTemplates ?? []).flatMap((ct, controlIndex) =>
+        (ct.documentTypes ?? []).map((formType) => ({
+          frameworkId: framework.id,
+          controlTemplateId: createdControls[controlIndex].id,
+          formType: formType as EvidenceFormType,
+        })),
+      );
+
+      if (policyLinks.length > 0) {
+        await tx.frameworkEditorControlPolicyTemplateLink.createMany({
+          data: policyLinks,
+          skipDuplicates: true,
+        });
+      }
+      if (taskLinks.length > 0) {
+        await tx.frameworkEditorControlTaskTemplateLink.createMany({
+          data: taskLinks,
+          skipDuplicates: true,
+        });
+      }
+      if (documentLinks.length > 0) {
+        await tx.frameworkEditorControlDocumentTypeLink.createMany({
+          data: documentLinks,
+          skipDuplicates: true,
+        });
+      }
 
       this.logger.log(
         `Imported framework "${framework.name}" (${framework.id}): ` +

@@ -1,5 +1,6 @@
 import {
   Controller,
+  Delete,
   Get,
   Post,
   Patch,
@@ -86,10 +87,20 @@ export class AdminFindingsController {
       orgId,
       findingId,
       updateDto,
-      [],
+      true,
       true,
       req.userId,
       null,
     );
+  }
+
+  @Delete(':orgId/findings/:findingId')
+  @ApiOperation({ summary: 'Delete a finding for an organization (admin)' })
+  async remove(
+    @Param('orgId') orgId: string,
+    @Param('findingId') findingId: string,
+    @Req() req: AdminRequest,
+  ) {
+    return this.findingsService.delete(orgId, findingId, req.userId, null);
   }
 }

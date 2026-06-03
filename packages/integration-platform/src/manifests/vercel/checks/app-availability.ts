@@ -23,6 +23,7 @@ export const appAvailabilityCheck: IntegrationCheck = {
   id: 'app-availability',
   name: 'App Availability',
   description: 'Verify Vercel projects have active, healthy deployments',
+  service: 'monitoring',
   taskMapping: TASK_TEMPLATES.appAvailability,
   variables: [projectFilterModeVariable, filteredProjectsVariable],
 

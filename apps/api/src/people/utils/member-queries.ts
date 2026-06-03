@@ -21,6 +21,10 @@ export class MemberQueries {
     isActive: true,
     deactivated: true,
     backgroundCheckExempt: true,
+    backgroundCheckExemptReason: true,
+    backgroundCheckExemptJustification: true,
+    onboardDate: true,
+    offboardDate: true,
     fleetDmLabelId: true,
     user: {
       select: {
@@ -52,11 +56,33 @@ export class MemberQueries {
   static async findAllByOrganization(
     organizationId: string,
     includeDeactivated = false,
+    filters?: {
+      onboardAfter?: Date;
+      onboardBefore?: Date;
+      offboardAfter?: Date;
+      offboardBefore?: Date;
+    },
   ): Promise<PeopleResponseDto[]> {
     return db.member.findMany({
       where: {
         organizationId,
         ...(includeDeactivated ? {} : { deactivated: false }),
+        ...(filters?.onboardAfter || filters?.onboardBefore
+          ? {
+              onboardDate: {
+                ...(filters.onboardAfter ? { gte: filters.onboardAfter } : {}),
+                ...(filters.onboardBefore ? { lte: filters.onboardBefore } : {}),
+              },
+            }
+          : {}),
+        ...(filters?.offboardAfter || filters?.offboardBefore
+          ? {
+              offboardDate: {
+                ...(filters.offboardAfter ? { gte: filters.offboardAfter } : {}),
+                ...(filters.offboardBefore ? { lte: filters.offboardBefore } : {}),
+              },
+            }
+          : {}),
       },
       select: this.MEMBER_SELECT,
       orderBy: { createdAt: 'desc' },
@@ -110,7 +136,7 @@ export class MemberQueries {
     updateData: UpdatePeopleDto,
   ): Promise<PeopleResponseDto> {
     // Separate user-level fields from member-level fields
-    const { name, email, createdAt, ...memberFields } = updateData;
+    const { name, email, createdAt, onboardDate, offboardDate, ...memberFields } = updateData;
 
     // Prepare member update data
     const updatePayload: any = { ...memberFields };
@@ -120,12 +146,27 @@ export class MemberQueries {
       updatePayload.createdAt = new Date(createdAt);
     }
 
+    if (onboardDate !== undefined) {
+      updatePayload.onboardDate = onboardDate ? new Date(onboardDate) : null;
+    }
+    if (offboardDate !== undefined) {
+      updatePayload.offboardDate = offboardDate ? new Date(offboardDate) : null;
+    }
+
     // Handle fleetDmLabelId: convert undefined to null for database
     if (
       memberFields.fleetDmLabelId === undefined &&
       'fleetDmLabelId' in memberFields
     ) {
       updatePayload.fleetDmLabelId = null;
+    }
+
+    // Un-exempting clears reason + justification so a future re-exemption
+    // starts from a clean state. The audit log retains the prior values
+    // from the original exempt-true request.
+    if (updatePayload.backgroundCheckExempt === false) {
+      updatePayload.backgroundCheckExemptReason = null;
+      updatePayload.backgroundCheckExemptJustification = null;
     }
 
     const hasUserUpdates = name !== undefined || email !== undefined;

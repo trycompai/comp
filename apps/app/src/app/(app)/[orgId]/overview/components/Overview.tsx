@@ -69,40 +69,42 @@ export const Overview = ({
   });
 
   return (
-    <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
-      <ComplianceOverview
-        organizationId={organizationId}
-        overallComplianceScore={overallComplianceScore}
-        totalPolicies={publishedPoliciesScore.totalPolicies}
-        publishedPolicies={publishedPoliciesScore.publishedPolicies}
-        totalTasks={doneTasksScore.totalTasks}
-        doneTasks={doneTasksScore.doneTasks}
-        totalDocuments={documentsScore.totalDocuments}
-        completedDocuments={documentsScore.completedDocuments}
-        totalMembers={peopleScore.totalMembers}
-        completedMembers={peopleScore.completedMembers}
-      />
-      <FrameworksOverview
-        frameworksWithControls={frameworksWithControls}
-        frameworksWithCompliance={frameworksWithCompliance}
-        overallComplianceScore={overallComplianceScore}
-        allFrameworks={allFrameworks}
-        organizationId={organizationId}
-      />
-      <ToDoOverview
-        totalPolicies={publishedPoliciesScore.totalPolicies}
-        totalTasks={doneTasksScore.totalTasks}
-        remainingPolicies={
-          publishedPoliciesScore.totalPolicies - publishedPoliciesScore.publishedPolicies
-        }
-        remainingTasks={doneTasksScore.totalTasks - doneTasksScore.doneTasks}
-        unpublishedPolicies={publishedPoliciesScore.unpublishedPolicies}
-        incompleteTasks={doneTasksScore.incompleteTasks}
-        policiesInReview={publishedPoliciesScore.policiesInReview}
-        organizationId={organizationId}
-        currentMember={currentMember}
-        onboardingTriggerJobId={onboardingTriggerJobId}
-      />
+    <div className="flex flex-col gap-6">
+      <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
+        <ComplianceOverview
+          organizationId={organizationId}
+          overallComplianceScore={overallComplianceScore}
+          totalPolicies={publishedPoliciesScore.totalPolicies}
+          publishedPolicies={publishedPoliciesScore.publishedPolicies}
+          totalTasks={doneTasksScore.totalTasks}
+          doneTasks={doneTasksScore.doneTasks}
+          totalDocuments={documentsScore.totalDocuments}
+          completedDocuments={documentsScore.completedDocuments}
+          totalMembers={peopleScore.totalMembers}
+          completedMembers={peopleScore.completedMembers}
+        />
+        <FrameworksOverview
+          frameworksWithControls={frameworksWithControls}
+          frameworksWithCompliance={frameworksWithCompliance}
+          overallComplianceScore={overallComplianceScore}
+          allFrameworks={allFrameworks}
+          organizationId={organizationId}
+        />
+        <ToDoOverview
+          totalPolicies={publishedPoliciesScore.totalPolicies}
+          totalTasks={doneTasksScore.totalTasks}
+          remainingPolicies={
+            publishedPoliciesScore.totalPolicies - publishedPoliciesScore.publishedPolicies
+          }
+          remainingTasks={doneTasksScore.totalTasks - doneTasksScore.doneTasks}
+          unpublishedPolicies={publishedPoliciesScore.unpublishedPolicies}
+          incompleteTasks={doneTasksScore.incompleteTasks}
+          policiesInReview={publishedPoliciesScore.policiesInReview}
+          organizationId={organizationId}
+          currentMember={currentMember}
+          onboardingTriggerJobId={onboardingTriggerJobId}
+        />
+      </div>
     </div>
   );
 };

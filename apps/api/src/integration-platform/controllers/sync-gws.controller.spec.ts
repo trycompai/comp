@@ -6,6 +6,9 @@ import { ConnectionRepository } from '../repositories/connection.repository';
 import { CredentialVaultService } from '../services/credential-vault.service';
 import { OAuthCredentialsService } from '../services/oauth-credentials.service';
 import { IntegrationSyncLoggerService } from '../services/integration-sync-logger.service';
+import { GenericEmployeeSyncService } from '../services/generic-employee-sync.service';
+import { DynamicIntegrationRepository } from '../repositories/dynamic-integration.repository';
+import { CheckRunRepository } from '../repositories/check-run.repository';
 import { db } from '@db';
 
 jest.mock('@db', () => ({
@@ -78,6 +81,7 @@ describe('SyncController - Google Workspace employees', () => {
     mockConnectionRepo = {
       findById: jest.fn(),
       findBySlugAndOrg: jest.fn(),
+      update: jest.fn(),
     } as unknown as jest.Mocked<ConnectionRepository>;
 
     mockCredentialVault = {
@@ -99,6 +103,9 @@ describe('SyncController - Google Workspace employees', () => {
           provide: IntegrationSyncLoggerService,
           useValue: { logSync: jest.fn() },
         },
+        { provide: GenericEmployeeSyncService, useValue: {} },
+        { provide: DynamicIntegrationRepository, useValue: {} },
+        { provide: CheckRunRepository, useValue: {} },
       ],
     })
       .overrideGuard(HybridAuthGuard)
@@ -265,19 +272,26 @@ describe('SyncController - Google Workspace employees', () => {
     });
   });
 
-  // ── Deactivated members must NOT be reactivated ────────────────
+  // ── Deactivated members get reactivated when they reappear in GWS ──
+  // Mirrors the JumpCloud + Rippling sync behavior so a user
+  // un-suspended in Google Workspace returns to the People tab on the
+  // next sync instead of staying invisible forever. Trade-off: a member
+  // manually deactivated by an admin will also be reactivated if they
+  // are still an active GWS user — admins must remove the user from
+  // GWS (or add them to `sync_excluded_emails`) to keep them deactivated.
 
-  describe('deactivated member handling (no reactivation)', () => {
-    it('should NOT reactivate a member deactivated manually by an admin', async () => {
-      setupSync({ gwUsers: [makeGwUser('manual@example.com')] });
+  describe('reactivation of deactivated members', () => {
+    it('should reactivate a deactivated member who is active in GWS', async () => {
+      setupSync({ gwUsers: [makeGwUser('back@example.com')] });
 
       (mockedDb.user.findUnique as jest.Mock).mockResolvedValue({
-        id: 'user_manual',
-        email: 'manual@example.com',
+        id: 'user_back',
+        email: 'back@example.com',
       });
       (mockedDb.member.findFirst as jest.Mock).mockResolvedValue(
-        makeMember('manual@example.com', {
-          userId: 'user_manual',
+        makeMember('back@example.com', {
+          id: 'mem_back',
+          userId: 'user_back',
           deactivated: true,
         }),
       );
@@ -288,49 +302,24 @@ describe('SyncController - Google Workspace employees', () => {
         connectionId,
       );
 
-      expect(result.reactivated).toBe(0);
-      expect(result.skipped).toBe(1);
-      expect(mockedDb.member.update).not.toHaveBeenCalledWith(
-        expect.objectContaining({
-          data: expect.objectContaining({ deactivated: false }),
-        }),
-      );
+      expect(result.reactivated).toBe(1);
+      expect(result.skipped).toBe(0);
+      expect(mockedDb.member.update).toHaveBeenCalledWith({
+        where: { id: 'mem_back' },
+        data: { deactivated: false, isActive: true },
+      });
     });
 
-    it('should NOT reactivate a member previously deactivated by sync', async () => {
-      setupSync({ gwUsers: [makeGwUser('synced@example.com')] });
+    it('should report the reactivation in details with a clear reason', async () => {
+      setupSync({ gwUsers: [makeGwUser('back@example.com')] });
 
       (mockedDb.user.findUnique as jest.Mock).mockResolvedValue({
-        id: 'user_synced',
-        email: 'synced@example.com',
+        id: 'user_back',
+        email: 'back@example.com',
       });
       (mockedDb.member.findFirst as jest.Mock).mockResolvedValue(
-        makeMember('synced@example.com', {
-          userId: 'user_synced',
-          deactivated: true,
-        }),
-      );
-      (mockedDb.member.findMany as jest.Mock).mockResolvedValue([]);
-
-      const result = await controller.syncGoogleWorkspaceEmployees(
-        orgId,
-        connectionId,
-      );
-
-      expect(result.reactivated).toBe(0);
-      expect(result.skipped).toBe(1);
-    });
-
-    it('should report correct skip reason for deactivated members', async () => {
-      setupSync({ gwUsers: [makeGwUser('deact@example.com')] });
-
-      (mockedDb.user.findUnique as jest.Mock).mockResolvedValue({
-        id: 'user_deact',
-        email: 'deact@example.com',
-      });
-      (mockedDb.member.findFirst as jest.Mock).mockResolvedValue(
-        makeMember('deact@example.com', {
-          userId: 'user_deact',
+        makeMember('back@example.com', {
+          userId: 'user_back',
           deactivated: true,
         }),
       );
@@ -342,12 +331,12 @@ describe('SyncController - Google Workspace employees', () => {
       );
 
       const detail = result.details.find(
-        (d) => d.email === 'deact@example.com',
+        (d) => d.email === 'back@example.com',
       );
       expect(detail).toEqual({
-        email: 'deact@example.com',
-        status: 'skipped',
-        reason: 'Member is deactivated',
+        email: 'back@example.com',
+        status: 'reactivated',
+        reason: 'User is active again in Google Workspace',
       });
     });
 
@@ -596,9 +585,12 @@ describe('SyncController - Google Workspace employees', () => {
   // ── Exclude filter mode ────────────────────────────────────────
 
   describe('exclude filter mode', () => {
-    it('should NOT deactivate excluded members in exclude mode', async () => {
+    it('should deactivate existing non-privileged members excluded from sync', async () => {
       setupSync({
-        gwUsers: [makeGwUser('kept@example.com')],
+        gwUsers: [
+          makeGwUser('kept@example.com'),
+          makeGwUser('excluded@example.com'),
+        ],
         variables: {
           sync_user_filter_mode: 'exclude',
           sync_excluded_emails: 'excluded@example.com',
@@ -613,7 +605,6 @@ describe('SyncController - Google Workspace employees', () => {
         makeMember('kept@example.com', { userId: 'user_kept' }),
       );
 
-      // Excluded member is in the org but not in the GWS active list
       (mockedDb.member.findMany as jest.Mock).mockResolvedValue([
         makeMember('kept@example.com'),
         makeMember('excluded@example.com'),
@@ -629,7 +620,14 @@ describe('SyncController - Google Workspace employees', () => {
       const deactivatedEmails = result.details
         .filter((d) => d.status === 'deactivated')
         .map((d) => d.email);
-      expect(deactivatedEmails).not.toContain('excluded@example.com');
+      expect(deactivatedEmails).toContain('excluded@example.com');
+      expect(result.details).toContainEqual(
+        expect.objectContaining({
+          email: 'excluded@example.com',
+          status: 'deactivated',
+          reason: 'User is excluded from Google Workspace sync',
+        }),
+      );
     });
 
     it('should exclude users from import by email match', async () => {
@@ -733,8 +731,8 @@ describe('SyncController - Google Workspace employees', () => {
       );
 
       expect(result.imported).toBe(1); // new@example.com
-      expect(result.skipped).toBe(2); // active + deactivated
-      expect(result.reactivated).toBe(0); // deactivated stays deactivated
+      expect(result.skipped).toBe(1); // active@example.com
+      expect(result.reactivated).toBe(1); // deactivated@example.com comes back
       expect(result.deactivated).toBe(1); // suspended@example.com
     });
   });
@@ -763,6 +761,42 @@ describe('SyncController - Google Workspace employees', () => {
           errors: 0,
           details: [],
         }),
+      );
+    });
+  });
+
+  // ── lastSyncAt bookkeeping ─────────────────────────────────────
+
+  describe('lastSyncAt update', () => {
+    it('should record lastSyncAt on the connection after a successful sync', async () => {
+      setupSync({ gwUsers: [makeGwUser('new@example.com')] });
+
+      (mockedDb.user.findUnique as jest.Mock).mockResolvedValue(null);
+      (mockedDb.user.create as jest.Mock).mockResolvedValue({
+        id: 'user_new',
+        email: 'new@example.com',
+      });
+      (mockedDb.member.findFirst as jest.Mock).mockResolvedValue(null);
+      (mockedDb.member.create as jest.Mock).mockResolvedValue({ id: 'mem_new' });
+      (mockedDb.member.findMany as jest.Mock).mockResolvedValue([]);
+
+      await controller.syncGoogleWorkspaceEmployees(orgId, connectionId);
+
+      expect(mockConnectionRepo.update).toHaveBeenCalledWith(
+        connectionId,
+        expect.objectContaining({ lastSyncAt: expect.any(Date) }),
+      );
+    });
+
+    it('should record lastSyncAt even when the sync finds zero users', async () => {
+      setupSync({ gwUsers: [] });
+      (mockedDb.member.findMany as jest.Mock).mockResolvedValue([]);
+
+      await controller.syncGoogleWorkspaceEmployees(orgId, connectionId);
+
+      expect(mockConnectionRepo.update).toHaveBeenCalledWith(
+        connectionId,
+        expect.objectContaining({ lastSyncAt: expect.any(Date) }),
       );
     });
   });

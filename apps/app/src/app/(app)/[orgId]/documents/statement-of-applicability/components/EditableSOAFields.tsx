@@ -1,24 +1,22 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { Button } from '@trycompai/design-system';
-import { Textarea } from '@trycompai/ui/textarea';
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@trycompai/ui/select';
-import {
+  Button,
   Dialog,
   DialogContent,
   DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@trycompai/ui/dialog';
-import { X, Loader2, Edit2 } from 'lucide-react';
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+  Textarea,
+} from '@trycompai/design-system';
+import { Close, Edit } from '@trycompai/design-system/icons';
 import { toast } from 'sonner';
 import { useSOADocument } from '../hooks/useSOADocument';
 import { ApplicableReadOnlyDisplay, ApplicableSwatchRow } from './ApplicableSwatch';
@@ -80,16 +78,14 @@ export function EditableSOAFields({
   const executeSave = async (
     nextIsApplicable: boolean | null,
     nextJustification: string | null,
-  ) => {
+  ): Promise<boolean> => {
     setIsSaving(true);
     try {
-      const answerValue = nextIsApplicable === false ? nextJustification : null;
-
       await saveAnswer({
         questionId,
-        answer: answerValue,
+        answer: nextJustification,
         isApplicable: nextIsApplicable,
-        justification: nextIsApplicable === false ? nextJustification : null,
+        justification: nextJustification,
       });
 
       // Update local state
@@ -100,8 +96,9 @@ export function EditableSOAFields({
       toast.success('Answer saved successfully');
       onUpdate?.({
         isApplicable: nextIsApplicable,
-        justification: nextIsApplicable === false ? nextJustification : null,
+        justification: nextJustification,
       });
+      return true;
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to save answer';
       if (!isJustificationDialogOpen) {
@@ -111,6 +108,7 @@ export function EditableSOAFields({
       }
       setError(message);
       toast.error(message);
+      return false;
     } finally {
       setIsSaving(false);
     }
@@ -128,19 +126,16 @@ export function EditableSOAFields({
     setIsEditing(true);
   };
 
-  const handleSelectChange = (value: 'yes' | 'no' | 'null') => {
+  const handleSelectChange = (value: string | null) => {
+    if (value !== 'yes' && value !== 'no' && value !== 'null') {
+      return;
+    }
+
     const newValue = value === 'yes' ? true : value === 'no' ? false : null;
     setIsApplicable(newValue);
     setError(null);
 
-    if (newValue === true) {
-      setJustification(null);
-      setJustificationDialogOpen(false);
-      void executeSave(true, null);
-      return;
-    }
-
-    if (newValue === false) {
+    if (newValue === true || newValue === false) {
       setJustificationDialogOpen(true);
       return;
     }
@@ -150,13 +145,16 @@ export function EditableSOAFields({
   };
 
   const handleJustificationSave = async () => {
-    if (!justification || justification.trim().length === 0) {
+    if (isApplicable === false && (!justification || justification.trim().length === 0)) {
       setError('Justification is required when Applicable is NO');
       justificationTextareaRef.current?.focus();
       return;
     }
 
-    await executeSave(false, justification);
+    const success = await executeSave(isApplicable, justification);
+    if (!success) {
+      return;
+    }
     dialogSavedRef.current = true;
     setJustificationDialogOpen(false);
   };
@@ -191,10 +189,11 @@ export function EditableSOAFields({
         <button
           type="button"
           onClick={handleEditClick}
-          className="absolute right-0 h-6 w-6 flex items-center justify-center rounded text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100 focus-visible:opacity-100 hover:bg-muted"
+          className="absolute right-0 flex h-6 w-6 items-center justify-center rounded border border-border bg-background text-muted-foreground opacity-100 shadow-sm transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           aria-label="Edit answer"
+          title="Edit answer"
         >
-          <Edit2 className="h-3 w-3" />
+          <Edit size={12} />
         </button>
       </div>
     );
@@ -203,25 +202,27 @@ export function EditableSOAFields({
   return (
     <div className="flex flex-col gap-3">
       <div className="flex items-center justify-between gap-2">
-        <Select
-          value={isApplicable === null ? 'null' : isApplicable ? 'yes' : 'no'}
-          onValueChange={handleSelectChange}
-        >
-          <SelectTrigger className="w-32" disabled={isSaving}>
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="null" disabled>
-              <ApplicableSwatchRow isApplicable={null} />
-            </SelectItem>
-            <SelectItem value="yes">
-              <ApplicableSwatchRow isApplicable />
-            </SelectItem>
-            <SelectItem value="no">
-              <ApplicableSwatchRow isApplicable={false} />
-            </SelectItem>
-          </SelectContent>
-        </Select>
+        <div className="w-32">
+          <Select
+            value={isApplicable === null ? 'null' : isApplicable ? 'yes' : 'no'}
+            onValueChange={handleSelectChange}
+          >
+            <SelectTrigger disabled={isSaving}>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="null" disabled>
+                <ApplicableSwatchRow isApplicable={null} />
+              </SelectItem>
+              <SelectItem value="yes">
+                <ApplicableSwatchRow isApplicable />
+              </SelectItem>
+              <SelectItem value="no">
+                <ApplicableSwatchRow isApplicable={false} />
+              </SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
         <Button
           variant="ghost"
           size="icon"
@@ -229,7 +230,7 @@ export function EditableSOAFields({
           disabled={isSaving}
           aria-label="Close editing"
         >
-          <X className="h-3 w-3" />
+          <Close size={12} />
           <span className="sr-only">Close editing</span>
         </Button>
       </div>
@@ -237,9 +238,13 @@ export function EditableSOAFields({
       <Dialog open={isJustificationDialogOpen} onOpenChange={handleDialogOpenChange}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Justification Required</DialogTitle>
+            <DialogTitle>
+              {isApplicable === false ? 'Justification Required' : 'Edit Justification'}
+            </DialogTitle>
             <DialogDescription>
-              Explain why this control is not applicable to your organization.
+              {isApplicable === false
+                ? 'Explain why this control is not applicable to your organization.'
+                : 'Explain why this control is applicable to your organization.'}
             </DialogDescription>
           </DialogHeader>
           <Textarea
@@ -249,14 +254,19 @@ export function EditableSOAFields({
               setJustification(e.target.value);
               setError(null);
             }}
-            placeholder="Enter justification (required)"
-            className="min-h-[120px]"
-            required
+            placeholder={
+              isApplicable === false
+                ? 'Enter justification (required)'
+                : 'Enter justification'
+            }
+            rows={5}
+            size="full"
+            required={isApplicable === false}
           />
           {error && (
             <p className="text-xs text-destructive">{error}</p>
           )}
-          <DialogFooter className="gap-2">
+          <DialogFooter>
             <Button
               variant="ghost"
               onClick={() => handleDialogOpenChange(false)}
@@ -266,16 +276,9 @@ export function EditableSOAFields({
             </Button>
             <Button
               onClick={handleJustificationSave}
-              disabled={isSaving}
+              loading={isSaving}
             >
-              {isSaving ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Saving...
-                </>
-              ) : (
-                'Save justification'
-              )}
+              {isSaving ? 'Saving...' : 'Save justification'}
             </Button>
           </DialogFooter>
         </DialogContent>

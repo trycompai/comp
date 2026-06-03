@@ -27,6 +27,9 @@ enum AttachmentEntityType {
   trust_nda
   task_item
   background_check
+  employment_onboard
+  employment_offboard
+  offboarding_checklist
 }
 
 enum AttachmentType {

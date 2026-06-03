@@ -1,9 +1,17 @@
-import { Injectable, Logger, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  Logger,
+  NotFoundException,
+} from '@nestjs/common';
+import { UploadsService } from '../uploads/uploads.service';
 import type { AnswerQuestionResult } from '@/trigger/questionnaire/answer-question';
 import { answerQuestion } from '@/trigger/questionnaire/answer-question';
 import { generateAnswerWithRAGBatch } from '@/trigger/questionnaire/answer-question-helpers';
 import { tasks } from '@trigger.dev/sdk';
 import type { parseQuestionnaireTask } from '@/trigger/questionnaire/parse-questionnaire';
+import type { autoAnswerQuestionnaireTask } from '@/trigger/questionnaire/auto-answer-questionnaire';
+import { TriggerAutoAnswerResponseDto } from './dto/trigger-auto-answer-response.dto';
 import { ParseQuestionnaireDto } from './dto/parse-questionnaire.dto';
 import { ExportQuestionnaireDto } from './dto/export-questionnaire.dto';
 import { AnswerSingleQuestionDto } from './dto/answer-single-question.dto';
@@ -59,6 +67,8 @@ export interface QuestionnaireExportResult {
 @Injectable()
 export class QuestionnaireService {
   private readonly logger = new Logger(QuestionnaireService.name);
+
+  constructor(private readonly uploadsService: UploadsService) {}
 
   private get contentLogger(): ContentExtractionLogger {
     return {
@@ -219,12 +229,30 @@ export class QuestionnaireService {
   async uploadAndParse(
     dto: UploadAndParseDto,
   ): Promise<{ runId: string; publicAccessToken: string }> {
+    // Accept either base64 fileData (UI/direct callers) or an s3Key from a
+    // presigned upload (AI/MCP clients). When an s3Key is given we fetch the
+    // bytes server-side so the binary never travels through the request/LLM.
+    const fileData =
+      dto.fileData ??
+      (dto.s3Key
+        ? await this.uploadsService.readUploadAsBase64(
+            dto.organizationId,
+            dto.s3Key,
+          )
+        : undefined);
+
+    if (!fileData) {
+      throw new BadRequestException(
+        'Provide either fileData (base64) or s3Key from /v1/uploads/presign.',
+      );
+    }
+
     // Upload file to S3 first
     const uploadInfo = await uploadQuestionnaireFile({
       organizationId: dto.organizationId,
       fileName: dto.fileName,
       fileType: dto.fileType,
-      fileData: dto.fileData,
+      fileData,
       source: dto.source || 'internal',
     });
 
@@ -254,6 +282,54 @@ export class QuestionnaireService {
     return {
       runId: handle.id,
       publicAccessToken: handle.publicAccessToken,
+    };
+  }
+
+  /**
+   * Kicks off background answer generation for an already-parsed questionnaire
+   * and returns immediately. Non-streaming counterpart to the SSE `autoAnswer`
+   * endpoint, so a single JSON-RPC client (MCP/agent) can drive it: trigger
+   * here, then poll findById until answeredQuestions === totalQuestions.
+   */
+  async triggerAutoAnswer(
+    questionnaireId: string,
+    organizationId: string,
+  ): Promise<TriggerAutoAnswerResponseDto> {
+    const questionnaire = await db.questionnaire.findFirst({
+      where: { id: questionnaireId, organizationId },
+      select: { id: true, totalQuestions: true, answeredQuestions: true },
+    });
+
+    if (!questionnaire) {
+      throw new NotFoundException(
+        `Questionnaire ${questionnaireId} not found`,
+      );
+    }
+
+    if (questionnaire.totalQuestions === 0) {
+      throw new BadRequestException(
+        'This questionnaire has no parsed questions yet. Upload and parse a file first.',
+      );
+    }
+
+    const handle = await tasks.trigger<typeof autoAnswerQuestionnaireTask>(
+      'auto-answer-questionnaire',
+      { questionnaireId, organizationId },
+    );
+
+    this.logger.log('Triggered async questionnaire auto-answer', {
+      runId: handle.id,
+      questionnaireId,
+    });
+
+    return {
+      questionnaireId,
+      runId: handle.id,
+      publicAccessToken: handle.publicAccessToken,
+      status: 'generating',
+      totalQuestions: questionnaire.totalQuestions,
+      answeredQuestions: questionnaire.answeredQuestions,
+      message: `Generating answers for ${questionnaire.totalQuestions} questions. Poll GET /v1/questionnaire/${questionnaireId} until answeredQuestions reaches totalQuestions.`,
     };
   }
 
