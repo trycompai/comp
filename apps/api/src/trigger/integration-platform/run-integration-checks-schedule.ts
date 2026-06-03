@@ -180,6 +180,7 @@ export const integrationChecksSchedule = schedules.task({
     });
 
     let deviceSyncsTriggered = 0;
+    let deviceSyncFailures = 0;
 
     for (const org of orgsWithDeviceSync) {
       const connection = await db.integrationConnection.findFirst({
@@ -206,6 +207,7 @@ export const integrationChecksSchedule = schedules.task({
         });
         deviceSyncsTriggered++;
       } catch (error) {
+        deviceSyncFailures++;
         logger.error(
           `Failed to trigger device sync for org ${org.id}`,
           { error: error instanceof Error ? error.message : String(error) },
@@ -216,9 +218,9 @@ export const integrationChecksSchedule = schedules.task({
     logger.info(`Triggered ${deviceSyncsTriggered} device syncs`);
 
     return {
-      // Report failure when not every queued task batch was dispatched, so a
-      // partial/failed batchTrigger is not masked as a successful run.
-      success: totalTriggered === tasksToRun.length,
+      // Report failure when not every queued task batch was dispatched OR a
+      // device-sync dispatch threw, so partial/failed runs aren't masked.
+      success: totalTriggered === tasksToRun.length && deviceSyncFailures === 0,
       tasksTriggered: totalTriggered,
       deviceSyncsTriggered,
     };

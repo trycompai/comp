@@ -65,7 +65,7 @@ export function useDeviceSync({
   );
 
   // Fetch available device sync providers
-  const { data: availableData, isLoading } = useSWR<{ providers: DeviceSyncProviderInfo[] }>(
+  const { data: availableData, isLoading, mutate: mutateAvailable } = useSWR<{ providers: DeviceSyncProviderInfo[] }>(
     enabled
       ? `/v1/integrations/sync/available-providers?organizationId=${organizationId}&syncType=device`
       : null,
@@ -143,6 +143,9 @@ export function useDeviceSync({
       // sync returns HTTP 200 with success=false (errors > 0) but still imports
       // some devices — we must surface both the summary and the warning.
       if (response.data) {
+        // The sync updated connection.lastSyncAt server-side; revalidate so the
+        // selector's "Last synced" reflects it instead of staying stale.
+        void mutateAvailable();
         const { totalFound, imported, updated, removed, skipped, errors } =
           response.data;
         const parts: string[] = [];

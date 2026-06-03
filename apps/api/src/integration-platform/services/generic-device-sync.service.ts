@@ -170,6 +170,10 @@ export class GenericDeviceSyncService {
           source: 'integration' as const,
           integrationConnectionId: connectionId,
           externalDeviceId: device.externalId,
+          // Backfill the serial on updates too, so an externalId-matched row
+          // becomes serial-linkable once the provider reports one. When the
+          // device has no serial, Prisma omits `undefined` and leaves it as-is.
+          serialNumber: device.serialNumber,
         };
 
         if (existingDevice) {
@@ -184,7 +188,6 @@ export class GenericDeviceSyncService {
             await db.device.create({
               data: {
                 ...updateData,
-                serialNumber: device.serialNumber,
                 memberId: member.id,
                 organizationId,
               },

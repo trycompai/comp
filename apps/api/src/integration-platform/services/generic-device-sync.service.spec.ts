@@ -235,6 +235,31 @@ describe('GenericDeviceSyncService', () => {
       expect(result.errors).toBe(0);
     });
 
+    it('backfills serialNumber when updating a device matched by externalId', async () => {
+      // No serial match, but an externalId match exists; the update should
+      // backfill the now-reported serial so the row becomes serial-linkable.
+      mockDeviceFindFirst
+        .mockResolvedValueOnce(null) // serial lookup → no match
+        .mockResolvedValueOnce({ id: 'dev_ext', source: 'integration' }); // externalId match
+
+      const result = await service.processDevices({
+        organizationId: ORG_ID,
+        connectionId: CONN_ID,
+        devices: [baseDevice({ serialNumber: 'SN-NEW', externalId: 'ext-1' })],
+      });
+
+      expect(mockDeviceUpdate).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { id: 'dev_ext' },
+          data: expect.objectContaining({
+            serialNumber: 'SN-NEW',
+            externalDeviceId: 'ext-1',
+          }),
+        }),
+      );
+      expect(result.updated).toBe(1);
+    });
+
     it('skips a device whose serial is already managed by the agent (no hijack)', async () => {
       mockDeviceFindFirst.mockResolvedValue({
         id: 'dev_agent',
