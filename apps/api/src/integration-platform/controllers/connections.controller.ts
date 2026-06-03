@@ -21,7 +21,13 @@ import {
   ApiSecurity,
   ApiTags,
 } from '@nestjs/swagger';
-import { IsArray, IsObject, IsOptional, IsString } from 'class-validator';
+import {
+  IsArray,
+  IsBoolean,
+  IsObject,
+  IsOptional,
+  IsString,
+} from 'class-validator';
 import { db } from '@db';
 import {
   AssumeRoleCommand,
@@ -184,11 +190,46 @@ class UpdateConnectionCredentialsDto {
   credentials!: Record<string, string | string[]>;
 }
 
+class EnsureValidCredentialsDto {
+  @ApiPropertyOptional({
+    description:
+      'Force an OAuth token refresh even when the stored expiry has not been reached. Use after a provider returns 401.',
+    default: false,
+  })
+  @IsOptional()
+  @IsBoolean()
+  forceRefresh?: boolean;
+}
+
 const hasCredentialValue = (value?: string | string[]): boolean => {
   if (Array.isArray(value)) {
     return value.length > 0;
   }
   return typeof value === 'string' && value.trim().length > 0;
+};
+
+const getProviderSummary = (
+  value: unknown,
+): { slug?: string; name?: string } | undefined => {
+  if (!value || typeof value !== 'object' || !('provider' in value)) {
+    return undefined;
+  }
+
+  const provider = (value as { provider?: unknown }).provider;
+  if (!provider || typeof provider !== 'object') {
+    return undefined;
+  }
+
+  const slug =
+    'slug' in provider && typeof provider.slug === 'string'
+      ? provider.slug
+      : undefined;
+  const name =
+    'name' in provider && typeof provider.name === 'string'
+      ? provider.name
+      : undefined;
+
+  return { slug, name };
 };
 
 @Controller({ path: 'integrations/connections', version: '1' })
@@ -438,20 +479,24 @@ export class ConnectionsController {
 
     return connections
       .filter((c) => c.status !== 'disconnected')
-      .map((c) => ({
-        id: c.id,
-        providerId: c.providerId,
-        providerSlug: (c as any).provider?.slug,
-        providerName: (c as any).provider?.name,
-        status: c.status,
-        authStrategy: c.authStrategy,
-        lastSyncAt: c.lastSyncAt,
-        nextSyncAt: c.nextSyncAt,
-        errorMessage: c.errorMessage,
-        variables: c.variables,
-        metadata: c.metadata,
-        createdAt: c.createdAt,
-      }));
+      .map((c) => {
+        const provider = getProviderSummary(c);
+
+        return {
+          id: c.id,
+          providerId: c.providerId,
+          providerSlug: provider?.slug,
+          providerName: provider?.name,
+          status: c.status,
+          authStrategy: c.authStrategy,
+          lastSyncAt: c.lastSyncAt,
+          nextSyncAt: c.nextSyncAt,
+          errorMessage: c.errorMessage,
+          variables: c.variables,
+          metadata: c.metadata,
+          createdAt: c.createdAt,
+        };
+      });
   }
 
   /**
@@ -468,8 +513,7 @@ export class ConnectionsController {
       id,
       organizationId,
     );
-    const providerSlug = (connection as { provider?: { slug: string } })
-      .provider?.slug;
+    const providerSlug = getProviderSummary(connection)?.slug;
 
     // Get credential fields for custom auth integrations
     let credentialFields: Array<{
@@ -889,7 +933,7 @@ export class ConnectionsController {
       id,
       organizationId,
     );
-    const providerSlug = (connection as any).provider?.slug;
+    const providerSlug = getProviderSummary(connection)?.slug;
 
     if (!providerSlug) {
       throw new HttpException(
@@ -1072,10 +1116,12 @@ export class ConnectionsController {
    */
   @Post(':id/ensure-valid-credentials')
   @ApiOperation({ summary: 'Ensure valid credentials for a connection' })
+  @ApiBody({ type: EnsureValidCredentialsDto, required: false })
   @RequirePermission('integration', 'update')
   async ensureValidCredentials(
     @Param('id') id: string,
     @OrganizationId() organizationId: string,
+    @Body() body?: EnsureValidCredentialsDto,
   ) {
     const connection = await this.connectionService.getConnectionForOrg(
       id,
@@ -1089,8 +1135,7 @@ export class ConnectionsController {
       );
     }
 
-    const providerSlug = (connection as { provider?: { slug: string } })
-      .provider?.slug;
+    const providerSlug = getProviderSummary(connection)?.slug;
     if (!providerSlug) {
       throw new HttpException(
         'Provider not found for connection',
@@ -1114,11 +1159,15 @@ export class ConnectionsController {
       const supportsRefresh = oauthConfig.supportsRefreshToken !== false;
 
       if (supportsRefresh) {
-        const needsRefresh = await this.credentialVaultService.needsRefresh(id);
+        const forceRefresh = body?.forceRefresh === true;
+        const needsRefresh =
+          forceRefresh || (await this.credentialVaultService.needsRefresh(id));
 
         if (needsRefresh) {
           this.logger.log(
-            `Token needs refresh for connection ${id}, attempting refresh...`,
+            forceRefresh
+              ? `Force refreshing token for connection ${id}...`
+              : `Token needs refresh for connection ${id}, attempting refresh...`,
           );
 
           const oauthCredentials =
@@ -1142,6 +1191,8 @@ export class ConnectionsController {
               clientId: oauthCredentials.clientId,
               clientSecret: oauthCredentials.clientSecret,
               clientAuthMethod: oauthConfig.clientAuthMethod,
+              scope: oauthCredentials.scopes.join(' '),
+              tokenParams: oauthConfig.tokenParams,
             },
           );
 
@@ -1317,8 +1368,7 @@ export class ConnectionsController {
       organizationId,
     );
 
-    const providerSlug = (connection as { provider?: { slug: string } })
-      .provider?.slug;
+    const providerSlug = getProviderSummary(connection)?.slug;
     if (!providerSlug) {
       throw new HttpException(
         'Provider not found for connection',

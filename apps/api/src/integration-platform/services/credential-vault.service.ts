@@ -37,6 +37,8 @@ export interface TokenRefreshConfig {
   clientId: string;
   clientSecret: string;
   clientAuthMethod?: 'body' | 'header';
+  scope?: string;
+  tokenParams?: Record<string, string>;
   /** If provider has a separate refresh URL (rare) */
   refreshUrl?: string;
 }
@@ -323,6 +325,16 @@ export class CredentialVaultService {
       grant_type: 'refresh_token',
       refresh_token: refreshToken,
     });
+
+    if (config.scope) {
+      body.set('scope', config.scope);
+    }
+
+    if (config.tokenParams) {
+      for (const [key, value] of Object.entries(config.tokenParams)) {
+        body.set(key, value);
+      }
+    }
 
     const headers: Record<string, string> = {
       'Content-Type': 'application/x-www-form-urlencoded',

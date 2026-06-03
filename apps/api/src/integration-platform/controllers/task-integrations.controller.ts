@@ -118,6 +118,30 @@ class ToggleCheckForTaskDto {
   checkId!: string;
 }
 
+const getProviderSummary = (
+  value: unknown,
+): { slug?: string; name?: string } | undefined => {
+  if (!value || typeof value !== 'object' || !('provider' in value)) {
+    return undefined;
+  }
+
+  const provider = (value as { provider?: unknown }).provider;
+  if (!provider || typeof provider !== 'object') {
+    return undefined;
+  }
+
+  const slug =
+    'slug' in provider && typeof provider.slug === 'string'
+      ? provider.slug
+      : undefined;
+  const name =
+    'name' in provider && typeof provider.name === 'string'
+      ? provider.name
+      : undefined;
+
+  return { slug, name };
+};
+
 @Controller({ path: 'integrations/tasks', version: '1' })
 @ApiTags('Integrations')
 @UseGuards(HybridAuthGuard, PermissionGuard)
@@ -411,6 +435,8 @@ export class TaskIntegrationsController {
                 clientId: oauthCredentials.clientId,
                 clientSecret: oauthCredentials.clientSecret,
                 clientAuthMethod: oauthConfig.clientAuthMethod,
+                scope: oauthCredentials.scopes.join(' '),
+                tokenParams: oauthConfig.tokenParams,
               },
             );
           };
@@ -644,37 +670,41 @@ export class TaskIntegrationsController {
     );
 
     return {
-      runs: runs.map((run) => ({
-        id: run.id,
-        checkId: run.checkId,
-        checkName: run.checkName,
-        status: run.status,
-        startedAt: run.startedAt,
-        completedAt: run.completedAt,
-        durationMs: run.durationMs,
-        totalChecked: run.totalChecked,
-        passedCount: run.passedCount,
-        failedCount: run.failedCount,
-        errorMessage: run.errorMessage,
-        logs: run.logs,
-        provider: {
-          slug: (run.connection as any).provider?.slug,
-          name: (run.connection as any).provider?.name,
-        },
-        results: run.results.map((r) => ({
-          id: r.id,
-          passed: r.passed,
-          resourceType: r.resourceType,
-          resourceId: r.resourceId,
-          title: r.title,
-          description: r.description,
-          severity: r.severity,
-          remediation: r.remediation,
-          evidence: r.evidence,
-          collectedAt: r.collectedAt,
-        })),
-        createdAt: run.createdAt,
-      })),
+      runs: runs.map((run) => {
+        const provider = getProviderSummary(run.connection);
+
+        return {
+          id: run.id,
+          checkId: run.checkId,
+          checkName: run.checkName,
+          status: run.status,
+          startedAt: run.startedAt,
+          completedAt: run.completedAt,
+          durationMs: run.durationMs,
+          totalChecked: run.totalChecked,
+          passedCount: run.passedCount,
+          failedCount: run.failedCount,
+          errorMessage: run.errorMessage,
+          logs: run.logs,
+          provider: {
+            slug: provider?.slug,
+            name: provider?.name,
+          },
+          results: run.results.map((r) => ({
+            id: r.id,
+            passed: r.passed,
+            resourceType: r.resourceType,
+            resourceId: r.resourceId,
+            title: r.title,
+            description: r.description,
+            severity: r.severity,
+            remediation: r.remediation,
+            evidence: r.evidence,
+            collectedAt: r.collectedAt,
+          })),
+          createdAt: run.createdAt,
+        };
+      }),
     };
   }
 }

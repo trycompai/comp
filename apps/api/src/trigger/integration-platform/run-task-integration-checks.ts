@@ -5,6 +5,11 @@ import { triggerEmail } from '../../email/trigger-email';
 import { TaskStatusChangedEmail } from '../../email/templates/task-status-changed';
 import { isUserUnsubscribed } from '@trycompai/email';
 import { parseDisabledTaskChecks } from '../../integration-platform/utils/disabled-task-checks';
+import {
+  getAccessToken,
+  requestValidCredentials,
+  type IntegrationCredentialValues,
+} from './ensure-valid-credentials';
 
 /**
  * Send email notifications for task status change
@@ -214,59 +219,57 @@ export const runTaskIntegrationChecks = task({
 
     // Ensure we have valid credentials (refresh OAuth tokens if needed)
     const apiUrl = process.env.BASE_URL || 'http://localhost:3333';
-    let credentials: Record<string, string>;
+    let credentials: IntegrationCredentialValues;
 
-    try {
-      logger.info('Ensuring valid credentials (refreshing if needed)...');
-      const response = await fetch(
-        `${apiUrl}/v1/integrations/connections/${connectionId}/ensure-valid-credentials`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'x-service-token': process.env.SERVICE_TOKEN_TRIGGER!,
-            'x-organization-id': organizationId,
+    logger.info('Ensuring valid credentials (refreshing if needed)...');
+    const credentialsResult = await requestValidCredentials({
+      apiUrl,
+      connectionId,
+      organizationId,
+    });
+
+    if (!credentialsResult.success || !credentialsResult.credentials) {
+      const errorMessage =
+        credentialsResult.error || 'Failed to validate credentials';
+      logger.error(errorMessage);
+
+      // If unauthorized, mark connection as error
+      if (credentialsResult.status === 401) {
+        await db.integrationConnection.update({
+          where: { id: connectionId },
+          data: {
+            status: 'error',
+            errorMessage:
+              'OAuth token expired. Please reconnect the integration.',
           },
-        },
-      );
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        const errorMessage =
-          (errorData as { message?: string }).message ||
-          `Failed to get valid credentials: ${response.status}`;
-        logger.error(errorMessage);
-
-        // If unauthorized, mark connection as error
-        if (response.status === 401) {
-          await db.integrationConnection.update({
-            where: { id: connectionId },
-            data: {
-              status: 'error',
-              errorMessage:
-                'OAuth token expired. Please reconnect the integration.',
-            },
-          });
-        }
-
-        return { success: false, error: errorMessage };
+        });
       }
 
-      const result = (await response.json()) as {
-        success: boolean;
-        credentials: Record<string, string>;
-      };
-      credentials = result.credentials;
-      logger.info('Credentials validated successfully');
-    } catch (error) {
-      logger.error('Failed to ensure valid credentials', {
-        error: error instanceof Error ? error.message : String(error),
-      });
-      return { success: false, error: 'Failed to validate credentials' };
+      return { success: false, error: errorMessage };
     }
+    credentials = credentialsResult.credentials;
+    logger.info('Credentials validated successfully');
+
+    const handleTokenRefresh = async (): Promise<string | null> => {
+      logger.info('Force refreshing OAuth credentials after provider 401...');
+      const refreshResult = await requestValidCredentials({
+        apiUrl,
+        connectionId,
+        organizationId,
+        forceRefresh: true,
+      });
+
+      if (!refreshResult.success || !refreshResult.credentials) {
+        logger.error(refreshResult.error || 'Forced token refresh failed');
+        return null;
+      }
+
+      credentials = refreshResult.credentials;
+      return getAccessToken(credentials) ?? null;
+    };
 
     // Validate credentials based on auth type
-    if (manifest.auth.type === 'oauth2' && !credentials.access_token) {
+    if (manifest.auth.type === 'oauth2' && !getAccessToken(credentials)) {
       logger.error(
         `No OAuth access token found for connection: ${connectionId}`,
       );
@@ -326,12 +329,14 @@ export const runTaskIntegrationChecks = task({
       for (const checkId of effectiveCheckIds) {
         const result = await runAllChecks({
           manifest,
-          accessToken: credentials.access_token ?? undefined,
+          accessToken: getAccessToken(credentials),
           credentials,
           variables,
           connectionId,
           organizationId,
           checkId, // Run specific check
+          onTokenRefresh:
+            manifest.auth.type === 'oauth2' ? handleTokenRefresh : undefined,
           logger: {
             info: (msg, data) => logger.info(msg, data),
             warn: (msg, data) => logger.warn(msg, data),

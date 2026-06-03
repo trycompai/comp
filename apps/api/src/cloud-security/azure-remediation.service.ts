@@ -643,9 +643,12 @@ export class AzureRemediationService {
           connectionId,
           {
             tokenUrl: oauthConfig.tokenUrl,
+            refreshUrl: oauthConfig.refreshUrl,
             clientId: oauthCreds.clientId,
             clientSecret: oauthCreds.clientSecret,
             clientAuthMethod: oauthConfig.clientAuthMethod,
+            scope: oauthCreds.scopes.join(' '),
+            tokenParams: oauthConfig.tokenParams,
           },
         );
         if (token) return token;
