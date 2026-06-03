@@ -38,16 +38,19 @@ export class IsmsDocumentControlService {
 
     // Mutating an approved document's control mappings invalidates its sign-off,
     // so revert it to draft in the same transaction as the write (mirrors the
-    // register/narrative edits) — a failed write must not leave it reverted.
+    // register/narrative edits). Only a REAL change invalidates — an idempotent
+    // re-link that inserts nothing must not downgrade an approved document.
     await db.$transaction(async (tx) => {
-      await invalidateApprovalIfNeeded({ tx, documentId });
-      await tx.ismsDocumentControlLink.createMany({
+      const { count } = await tx.ismsDocumentControlLink.createMany({
         data: uniqueControlIds.map((controlId) => ({
           ismsDocumentId: documentId,
           controlId,
         })),
         skipDuplicates: true,
       });
+      if (count > 0) {
+        await invalidateApprovalIfNeeded({ tx, documentId });
+      }
     });
     return { message: 'Controls linked' };
   }
@@ -62,14 +65,15 @@ export class IsmsDocumentControlService {
     controlId: string;
   }) {
     await this.requireDocument({ documentId, organizationId });
-    // Mutating an approved document's control mappings invalidates its sign-off,
-    // so revert it to draft in the same transaction as the write (mirrors the
-    // register/narrative edits) — a failed write must not leave it reverted.
+    // Only a real unlink (a row actually deleted) invalidates sign-off; removing
+    // a control that wasn't linked must not downgrade an approved document.
     await db.$transaction(async (tx) => {
-      await invalidateApprovalIfNeeded({ tx, documentId });
-      await tx.ismsDocumentControlLink.deleteMany({
+      const { count } = await tx.ismsDocumentControlLink.deleteMany({
         where: { ismsDocumentId: documentId, controlId },
       });
+      if (count > 0) {
+        await invalidateApprovalIfNeeded({ tx, documentId });
+      }
     });
     return { message: 'Control unlinked' };
   }

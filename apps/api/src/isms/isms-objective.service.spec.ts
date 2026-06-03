@@ -14,6 +14,7 @@ jest.mock('@db', () => {
       delete: jest.fn(),
     },
     // Run the callback with the same mock as the transaction client.
+    $executeRaw: jest.fn(),
     $transaction: jest.fn((cb: (tx: unknown) => unknown) => cb(db)),
   };
   return { db };

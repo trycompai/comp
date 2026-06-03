@@ -160,5 +160,40 @@ describe('IsmsDocumentControlService', () => {
 
       expect(mockDb.ismsDocument.update).not.toHaveBeenCalled();
     });
+
+    it('does not invalidate an approved document on an idempotent add (no rows inserted)', async () => {
+      (mockDb.ismsDocument.findUnique as jest.Mock).mockResolvedValue({
+        status: 'approved',
+      });
+      // createMany inserts nothing because the links already exist.
+      (mockDb.ismsDocumentControlLink.createMany as jest.Mock).mockResolvedValue({
+        count: 0,
+      });
+
+      await service.addControls({
+        documentId: 'doc_1',
+        organizationId: 'org_1',
+        controlIds: ['ctl_1', 'ctl_2'],
+      });
+
+      expect(mockDb.ismsDocument.update).not.toHaveBeenCalled();
+    });
+
+    it('does not invalidate an approved document on a no-op remove (no rows deleted)', async () => {
+      (mockDb.ismsDocument.findUnique as jest.Mock).mockResolvedValue({
+        status: 'approved',
+      });
+      (mockDb.ismsDocumentControlLink.deleteMany as jest.Mock).mockResolvedValue({
+        count: 0,
+      });
+
+      await service.removeControl({
+        documentId: 'doc_1',
+        organizationId: 'org_1',
+        controlId: 'ctl_1',
+      });
+
+      expect(mockDb.ismsDocument.update).not.toHaveBeenCalled();
+    });
   });
 });
