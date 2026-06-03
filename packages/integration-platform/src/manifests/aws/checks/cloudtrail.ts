@@ -34,7 +34,7 @@ export function evaluateCloudTrail(trails: TrailInfo[]): CheckOutcome[] {
         description: `Trail "${good.name}" is multi-region, actively logging, with log file validation enabled.`,
         resourceType: 'aws-cloudtrail',
         resourceId: good.name,
-        evidence: { trail: good.name },
+        evidence: { trail: good.name, multiRegion: good.multiRegion, logging: good.logging, logValidation: good.logValidation },
       },
     ];
   }
@@ -71,6 +71,7 @@ export function evaluateCloudTrail(trails: TrailInfo[]): CheckOutcome[] {
         resourceId: 'account',
         severity: 'high',
         remediation: 'Create a multi-region CloudTrail trail with log file validation enabled.',
+        evidence: { trailsFound: 0 },
       },
     ];
   }
@@ -85,7 +86,14 @@ export function evaluateCloudTrail(trails: TrailInfo[]): CheckOutcome[] {
       severity: 'medium',
       remediation:
         'Ensure a CloudTrail trail is multi-region, logging is started, and log file validation is enabled.',
-      evidence: { trails: trails.map((t) => t.name) },
+      evidence: {
+        trails: trails.map((t) => ({
+          name: t.name,
+          multiRegion: t.multiRegion,
+          logging: t.logging,
+          logValidation: t.logValidation,
+        })),
+      },
     },
   ];
 }

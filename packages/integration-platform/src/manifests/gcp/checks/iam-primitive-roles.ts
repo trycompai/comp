@@ -151,7 +151,13 @@ export const iamPrimitiveRolesCheck: IntegrationCheck = {
               description: `Project "${projectId}" and its inherited folders/organization have no primitive (owner/editor) role bindings.`,
               resourceType: 'gcp-project',
               resourceId: projectId,
-              evidence: { projectId, scope: 'project+inherited', inheritedBindingsEvaluated: true },
+              evidence: {
+                projectId,
+                scope: 'project+inherited',
+                inheritedBindingsEvaluated: true,
+                scopesEvaluated: scopes.length,
+                primitiveRoleBindingsFound: 0,
+              },
             });
           } else {
             // Inherited bindings couldn't be fully read — don't satisfy the task

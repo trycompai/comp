@@ -314,3 +314,62 @@ describe('AWS CloudTrail evaluator', () => {
     expect(out[0]!.title).toMatch(/Could not verify/);
   });
 });
+
+describe('IAM/CloudTrail outcomes carry evidence (so the UI shows "View Evidence")', () => {
+  const hasEvidence = (o: { evidence?: Record<string, unknown> }) =>
+    !!o.evidence && Object.keys(o.evidence).length > 0;
+
+  it('every password-policy outcome has evidence (none / weak / strong)', () => {
+    expect(evaluatePasswordPolicy(null).every(hasEvidence)).toBe(true);
+    expect(
+      evaluatePasswordPolicy({ MinimumPasswordLength: 8 }).every(hasEvidence),
+    ).toBe(true);
+    expect(
+      evaluatePasswordPolicy({
+        MinimumPasswordLength: 14,
+        RequireSymbols: true,
+        RequireNumbers: true,
+        RequireUppercaseCharacters: true,
+        RequireLowercaseCharacters: true,
+      }).every(hasEvidence),
+    ).toBe(true);
+  });
+
+  it('every root-account-summary outcome has evidence (both states)', () => {
+    expect(
+      evaluateAccountSummary({
+        AccountMFAEnabled: 0,
+        AccountAccessKeysPresent: 1,
+      }).every(hasEvidence),
+    ).toBe(true);
+    expect(
+      evaluateAccountSummary({
+        AccountMFAEnabled: 1,
+        AccountAccessKeysPresent: 0,
+      }).every(hasEvidence),
+    ).toBe(true);
+  });
+
+  it('the "No CloudTrail configured" outcome has evidence', () => {
+    const out = evaluateCloudTrail([]);
+    expect(out).toHaveLength(1);
+    expect(out[0]!.title).toMatch(/No CloudTrail configured/);
+    expect(hasEvidence(out[0]!)).toBe(true);
+  });
+
+  it('pass/fail evidence carries the determining value (S3 encryption, KMS rotation)', () => {
+    const enc = evaluateS3Encryption([
+      { name: 'enc', encrypted: true, encryptionDetermined: true, publicAccessDetermined: true, bucketBpa: null },
+      { name: 'plain', encrypted: false, encryptionDetermined: true, publicAccessDetermined: true, bucketBpa: null },
+    ]);
+    expect(enc[0]!.evidence?.encrypted).toBe(true);
+    expect(enc[1]!.evidence?.encrypted).toBe(false);
+
+    const rot = evaluateKmsRotation([
+      { keyId: 'on', region: 'us-east-1', rotationEligible: true, rotationStatusKnown: true, rotationEnabled: true },
+      { keyId: 'off', region: 'us-east-1', rotationEligible: true, rotationStatusKnown: true, rotationEnabled: false },
+    ]);
+    expect(rot[0]!.evidence?.rotationEnabled).toBe(true);
+    expect(rot[1]!.evidence?.rotationEnabled).toBe(false);
+  });
+});

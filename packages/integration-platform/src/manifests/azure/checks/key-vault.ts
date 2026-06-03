@@ -78,7 +78,12 @@ export const keyVaultProtectionCheck: IntegrationCheck = {
           description: `Key Vault "${v.name}" has soft delete + purge protection and restricts public access.`,
           resourceType: 'azure-key-vault',
           resourceId: v.id,
-          evidence: { vault: v.name },
+          evidence: {
+            vault: v.name,
+            enableSoftDelete: p.enableSoftDelete,
+            enablePurgeProtection: p.enablePurgeProtection,
+            publicNetworkAccess: p.publicNetworkAccess ?? null,
+          },
         });
       }
     }
@@ -106,7 +111,7 @@ export const keyVaultRbacCheck: IntegrationCheck = {
           description: `Key Vault "${v.name}" uses Azure RBAC for access control.`,
           resourceType: 'azure-key-vault',
           resourceId: v.id,
-          evidence: { vault: v.name },
+          evidence: { vault: v.name, enableRbacAuthorization: true },
         });
       } else {
         ctx.fail({
@@ -117,7 +122,10 @@ export const keyVaultRbacCheck: IntegrationCheck = {
           severity: 'low',
           remediation:
             'Migrate to the Azure RBAC permission model for finer-grained, auditable access control.',
-          evidence: { vault: v.name },
+          evidence: {
+            vault: v.name,
+            enableRbacAuthorization: v.properties?.enableRbacAuthorization ?? false,
+          },
         });
       }
     }

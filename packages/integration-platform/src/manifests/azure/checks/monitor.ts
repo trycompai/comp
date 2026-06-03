@@ -69,7 +69,10 @@ export const monitorLoggingAlertingCheck: IntegrationCheck = {
           description: 'All recommended activity log alerts are configured.',
           resourceType: 'azure-subscription',
           resourceId: sub,
-          evidence: { recommended: RECOMMENDED_ALERTS.length },
+          evidence: {
+            recommended: RECOMMENDED_ALERTS.map((r) => r.op),
+            configuredOperations: [...ops],
+          },
         });
       }
     } else {
@@ -96,12 +99,18 @@ export const monitorLoggingAlertingCheck: IntegrationCheck = {
     if (diag !== null) {
       evaluated = true;
       const settings = diag.value ?? [];
+      // A setting only exports when it targets a destination AND has at least
+      // one enabled log category. Reuse this for both the verdict and the
+      // evidence so the destination flags reflect what actually exports (a
+      // destination whose logs are disabled must not be reported as exporting).
+      const hasEnabledLogs = (s: DiagnosticSetting) =>
+        (s.properties?.logs ?? []).some((l) => l.enabled);
       const hasExport = settings.some(
         (s) =>
           (s.properties?.workspaceId ||
             s.properties?.storageAccountId ||
             s.properties?.eventHubAuthorizationRuleId) &&
-          (s.properties?.logs ?? []).some((l) => l.enabled),
+          hasEnabledLogs(s),
       );
       if (hasExport) {
         ctx.pass({
@@ -109,7 +118,18 @@ export const monitorLoggingAlertingCheck: IntegrationCheck = {
           description: 'Subscription activity logs are exported.',
           resourceType: 'azure-subscription',
           resourceId: sub,
-          evidence: { settings: settings.length },
+          evidence: {
+            settingsCount: settings.length,
+            exportsToLogAnalytics: settings.some(
+              (s) => !!s.properties?.workspaceId && hasEnabledLogs(s),
+            ),
+            exportsToStorage: settings.some(
+              (s) => !!s.properties?.storageAccountId && hasEnabledLogs(s),
+            ),
+            exportsToEventHub: settings.some(
+              (s) => !!s.properties?.eventHubAuthorizationRuleId && hasEnabledLogs(s),
+            ),
+          },
         });
       } else {
         ctx.fail({
@@ -121,7 +141,7 @@ export const monitorLoggingAlertingCheck: IntegrationCheck = {
           severity: 'medium',
           remediation:
             'Configure a diagnostic setting to export subscription activity logs.',
-          evidence: {},
+          evidence: { diagnosticSettingsFound: settings.length },
         });
       }
     } else {

@@ -57,7 +57,7 @@ export function evaluateS3Encryption(buckets: S3BucketInfo[]): CheckOutcome[] {
         severity: 'medium',
         remediation:
           'Grant s3:GetEncryptionConfiguration to the integration role so default encryption can be verified, then re-run.',
-        evidence: { bucket: b.name },
+        evidence: { bucket: b.name, encryptionDetermined: false },
       };
     }
     return b.encrypted
@@ -67,7 +67,7 @@ export function evaluateS3Encryption(buckets: S3BucketInfo[]): CheckOutcome[] {
           description: `Bucket "${b.name}" has default encryption enabled.`,
           resourceType: 'aws-s3-bucket',
           resourceId: b.name,
-          evidence: { bucket: b.name },
+          evidence: { bucket: b.name, encrypted: true },
         }
       : {
           kind: 'fail',
@@ -77,7 +77,7 @@ export function evaluateS3Encryption(buckets: S3BucketInfo[]): CheckOutcome[] {
           resourceId: b.name,
           severity: 'high',
           remediation: 'Enable default encryption (SSE-S3 or SSE-KMS) on the bucket.',
-          evidence: { bucket: b.name },
+          evidence: { bucket: b.name, encrypted: false },
         };
   });
 }
@@ -97,7 +97,7 @@ export function evaluateS3PublicAccess(
         severity: 'medium',
         remediation:
           'Grant s3:GetBucketPublicAccessBlock to the integration role so public-access settings can be verified, then re-run.',
-        evidence: { bucket: b.name },
+        evidence: { bucket: b.name, publicAccessDetermined: false },
       };
     }
     return isFullyBlocked(b.bucketBpa, accountBpa)
@@ -107,7 +107,7 @@ export function evaluateS3PublicAccess(
           description: `Bucket "${b.name}" has S3 Block Public Access fully enabled (account and/or bucket level).`,
           resourceType: 'aws-s3-bucket',
           resourceId: b.name,
-          evidence: { bucket: b.name },
+          evidence: { bucket: b.name, bucketBpa: b.bucketBpa, accountBpa },
         }
       : {
           kind: 'fail',
@@ -117,7 +117,7 @@ export function evaluateS3PublicAccess(
           resourceId: b.name,
           severity: 'high',
           remediation: 'Enable all four S3 Block Public Access settings on the bucket (or account).',
-          evidence: { bucket: b.name },
+          evidence: { bucket: b.name, bucketBpa: b.bucketBpa, accountBpa },
         };
   });
 }

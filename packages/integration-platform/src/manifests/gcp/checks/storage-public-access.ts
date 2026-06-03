@@ -150,7 +150,7 @@ async function evaluateBucket(
       severity: 'medium',
       remediation:
         'Enable uniform bucket-level access so permissions are managed exclusively through IAM.',
-      evidence: { projectId, bucket: bucket.name },
+      evidence: { projectId, bucket: bucket.name, uniformBucketLevelAccess: false, publicMembers: 0 },
     });
     return;
   }
@@ -160,6 +160,6 @@ async function evaluateBucket(
     description: `Bucket "${bucket.name}" has no allUsers/allAuthenticatedUsers IAM bindings and enforces uniform bucket-level access.`,
     resourceType: 'gcp-storage-bucket',
     resourceId,
-    evidence: { projectId, bucket: bucket.name },
+    evidence: { projectId, bucket: bucket.name, publicMembers: 0, uniformBucketLevelAccess: true },
   });
 }

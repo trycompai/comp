@@ -154,7 +154,12 @@ export const rbacLeastPrivilegeCheck: IntegrationCheck = {
         severity: 'high',
         remediation:
           'Review privileged role assignments and remove unnecessary ones; use just-in-time access via Azure PIM.',
-        evidence: { count: privileged.length },
+        evidence: {
+          privilegedCount: privileged.length,
+          threshold: 5,
+          principalIds: privileged.map((a) => a.properties.principalId),
+          principalTypes: privileged.map((a) => a.properties.principalType),
+        },
       });
     }
 
@@ -171,7 +176,10 @@ export const rbacLeastPrivilegeCheck: IntegrationCheck = {
         severity: 'medium',
         remediation:
           'Replace broad roles with scoped custom roles for service principals.',
-        evidence: { count: spPrivileged.length },
+        evidence: {
+          count: spPrivileged.length,
+          principalIds: spPrivileged.map((a) => a.properties.principalId),
+        },
       });
     }
 
@@ -196,6 +204,11 @@ export const rbacLeastPrivilegeCheck: IntegrationCheck = {
     );
     for (const role of wildcardRoles) {
       violations++;
+      const wildcardActions = role.properties.permissions.flatMap((perm) =>
+        [...(perm.actions ?? []), ...(perm.dataActions ?? [])].filter(
+          isWildcardAction,
+        ),
+      );
       ctx.fail({
         title: `Custom role with wildcard permissions: ${role.properties.roleName}`,
         description: `Custom role "${role.properties.roleName}" grants wildcard (*) permissions, which is overly permissive.`,
@@ -204,7 +217,7 @@ export const rbacLeastPrivilegeCheck: IntegrationCheck = {
         severity: 'high',
         remediation:
           'Restrict the custom role to only the specific actions required.',
-        evidence: { roleName: role.properties.roleName },
+        evidence: { roleName: role.properties.roleName, wildcardActions },
       });
     }
 
@@ -214,7 +227,13 @@ export const rbacLeastPrivilegeCheck: IntegrationCheck = {
         description: `${privileged.length} privileged assignment(s); no wildcard custom roles or privileged service principals.`,
         resourceType: 'azure-subscription',
         resourceId: sub,
-        evidence: { privilegedCount: privileged.length },
+        evidence: {
+          privilegedCount: privileged.length,
+          threshold: 5,
+          wildcardCustomRoles: wildcardRoles.length,
+          privilegedServicePrincipals: spPrivileged.length,
+          assignmentsEvaluated: assignments.length,
+        },
       });
     }
   },
