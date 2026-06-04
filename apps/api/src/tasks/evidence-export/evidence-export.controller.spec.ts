@@ -253,10 +253,29 @@ describe('AuditorEvidenceExportController', () => {
     expect(mockTrigger).toHaveBeenCalledWith(
       'export-organization-evidence',
       { organizationId: 'org_1', includeJson: true },
+      {
+        concurrencyKey: 'org_1',
+        idempotencyKey: 'evidence-export:org_1:true',
+        idempotencyKeyTTL: '30m',
+      },
     );
     expect(result).toEqual({
       runId: 'run_123',
       publicAccessToken: 'tok_abc',
     });
+  });
+
+  it('serializes per-org and dedupes on org + includeJson (includeJson=false)', async () => {
+    await controller.exportAllEvidence('org_2', undefined as unknown as string);
+
+    expect(mockTrigger).toHaveBeenCalledWith(
+      'export-organization-evidence',
+      { organizationId: 'org_2', includeJson: false },
+      {
+        concurrencyKey: 'org_2',
+        idempotencyKey: 'evidence-export:org_2:false',
+        idempotencyKeyTTL: '30m',
+      },
+    );
   });
 });

@@ -234,15 +234,26 @@ export class AuditorEvidenceExportController {
     @OrganizationId() organizationId: string,
     @Query('includeJson') includeJson: string,
   ) {
+    const includeJsonBool = includeJson === 'true';
     this.logger.log('Auditor triggering bulk evidence export', {
       organizationId,
-      includeJson: includeJson === 'true',
+      includeJson: includeJsonBool,
     });
 
-    const handle = await tasks.trigger('export-organization-evidence', {
-      organizationId,
-      includeJson: includeJson === 'true',
-    });
+    const handle = await tasks.trigger(
+      'export-organization-evidence',
+      { organizationId, includeJson: includeJsonBool },
+      {
+        // Serialize exports per org (the task queue's concurrencyLimit is 1, and
+        // concurrencyKey gives each org its own lane) so a burst of clicks can
+        // never run multiple heavy exports for the same org at once.
+        concurrencyKey: organizationId,
+        // Collapse rapid duplicate triggers (double-click / retry) for the same
+        // org + options into a single run for the TTL window.
+        idempotencyKey: `evidence-export:${organizationId}:${includeJsonBool}`,
+        idempotencyKeyTTL: '30m',
+      },
+    );
 
     return {
       runId: handle.id,

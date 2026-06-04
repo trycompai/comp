@@ -1,10 +1,8 @@
 import { metadata, schemaTask } from '@trigger.dev/sdk';
 import { z } from 'zod';
-import {
-  S3Client,
-  PutObjectCommand,
-  GetObjectCommand,
-} from '@aws-sdk/client-s3';
+import { PassThrough } from 'node:stream';
+import { S3Client, GetObjectCommand } from '@aws-sdk/client-s3';
+import { Upload } from '@aws-sdk/lib-storage';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import archiver from 'archiver';
 import { db } from '@db';
@@ -34,6 +32,10 @@ const safeStringify = configureStringify({
 });
 
 const PRESIGNED_URL_EXPIRY = 3600;
+// 10 MB parts; the multipart uploader buffers at most queueSize * partSize (~40 MB),
+// so worker memory stays flat regardless of total ZIP size.
+const UPLOAD_PART_SIZE = 10 * 1024 * 1024;
+const UPLOAD_QUEUE_SIZE = 4;
 
 function createS3Client(): S3Client {
   const region = process.env.APP_AWS_REGION || 'us-east-1';
@@ -50,10 +52,7 @@ function createS3Client(): S3Client {
     region,
     credentials: { accessKeyId, secretAccessKey },
     ...(process.env.APP_AWS_ENDPOINT
-      ? {
-          endpoint: process.env.APP_AWS_ENDPOINT,
-          forcePathStyle: true,
-        }
+      ? { endpoint: process.env.APP_AWS_ENDPOINT, forcePathStyle: true }
       : {}),
   });
 }
@@ -66,13 +65,19 @@ function getBucketName(): string {
 
 export const exportOrganizationEvidenceTask = schemaTask({
   id: 'export-organization-evidence',
+  // Runs on an isolated worker; 8 GB / 4 vCPU gives ample headroom for jsPDF +
+  // zlib across the largest orgs now that the ZIP streams to S3 (never buffered).
+  machine: { preset: 'large-1x' },
+  // concurrencyLimit 1 + a per-org concurrencyKey (passed at trigger time) means
+  // at most one export runs per org at a time; different orgs still run in parallel.
+  queue: { name: 'evidence-export', concurrencyLimit: 1 },
   maxDuration: 60 * 30,
   retry: { maxAttempts: 0 },
   schema: z.object({
     organizationId: z.string(),
     includeJson: z.boolean().default(false),
   }),
-  run: async ({ organizationId, includeJson }) => {
+  run: async ({ organizationId, includeJson }, { ctx }) => {
     metadata.set('status', 'starting');
     metadata.set('progress', 0);
 
@@ -91,32 +96,25 @@ export const exportOrganizationEvidenceTask = schemaTask({
 
     const orgFolder = sanitizeFilename(organization.name);
     const exportDate = format(new Date(), 'yyyy-MM-dd');
-    const runId = metadata.get('runId') ?? crypto.randomUUID().slice(0, 8);
-    const s3Key = `${organizationId}/exports/evidence-${exportDate}-${runId}.zip`;
+    const s3Key = `${organizationId}/exports/evidence-${exportDate}-${ctx.run.id}.zip`;
 
     const s3Client = createS3Client();
     const bucket = getBucketName();
 
-    const archive = archiver('zip', { zlib: { level: 6 } });
-    const zipBuffer = await buildZipBuffer({
-      archive,
-      organizationId,
-      organizationName: organization.name,
-      orgFolder,
-      taskIds,
-      includeJson,
+    await streamArchiveToS3({
+      s3Client,
+      bucket,
+      key: s3Key,
+      populate: (archive) =>
+        populateArchive({
+          archive,
+          organizationId,
+          organizationName: organization.name,
+          orgFolder,
+          taskIds,
+          includeJson,
+        }),
     });
-
-    metadata.set('status', 'uploading');
-
-    await s3Client.send(
-      new PutObjectCommand({
-        Bucket: bucket,
-        Key: s3Key,
-        Body: zipBuffer,
-        ContentType: 'application/zip',
-      }),
-    );
 
     metadata.set('status', 'generating-link');
     metadata.set('progress', 95);
@@ -135,23 +133,68 @@ export const exportOrganizationEvidenceTask = schemaTask({
   },
 });
 
-async function buildZipBuffer(params: {
-  archive: archiver.Archiver;
-  organizationId: string;
-  organizationName: string;
-  orgFolder: string;
-  taskIds: string[];
-  includeJson: boolean;
-}): Promise<Buffer> {
-  const chunks: Buffer[] = [];
-  params.archive.on('data', (chunk: Buffer) => chunks.push(chunk));
-  const finished = new Promise<void>((resolve, reject) => {
-    params.archive.on('end', resolve);
-    params.archive.on('error', reject);
+/**
+ * Pipe a freshly-built ZIP archive straight to S3 via multipart upload. The
+ * archive is populated and uploaded concurrently, so peak memory is bounded by
+ * one automation's PDF plus the uploader's part buffer — never the whole ZIP.
+ */
+export async function streamArchiveToS3(params: {
+  s3Client: S3Client;
+  bucket: string;
+  key: string;
+  populate: (archive: archiver.Archiver) => Promise<void>;
+}): Promise<void> {
+  const { s3Client, bucket, key, populate } = params;
+
+  const archive = archiver('zip', { zlib: { level: 6 } });
+  const passThrough = new PassThrough();
+
+  archive.on('warning', (err) => {
+    console.warn(`Archive warning (${key}): ${err.message}`);
   });
-  await populateArchive(params);
-  await finished;
-  return Buffer.concat(chunks);
+  // pipe() does not forward source errors to the destination — do it explicitly
+  // so a failed archive ends the upload stream and upload.done() rejects.
+  archive.on('error', (err) => passThrough.destroy(err));
+  archive.pipe(passThrough);
+
+  const upload = new Upload({
+    client: s3Client,
+    params: {
+      Bucket: bucket,
+      Key: key,
+      Body: passThrough,
+      ContentType: 'application/zip',
+    },
+    queueSize: UPLOAD_QUEUE_SIZE,
+    partSize: UPLOAD_PART_SIZE,
+  });
+
+  const populatePromise = (async () => {
+    try {
+      await populate(archive);
+      await archive.finalize();
+    } catch (err) {
+      archive.abort();
+      passThrough.destroy(err instanceof Error ? err : new Error(String(err)));
+      throw err;
+    }
+  })();
+
+  // allSettled so a populate failure cannot leave upload.done() pending forever.
+  const [populateResult, uploadResult] = await Promise.allSettled([
+    populatePromise,
+    upload.done(),
+  ]);
+
+  if (populateResult.status === 'rejected') {
+    await upload.abort().catch(() => {});
+    throw populateResult.reason;
+  }
+  if (uploadResult.status === 'rejected') {
+    // Cancel the multipart upload so no orphaned parts linger on S3.
+    await upload.abort().catch(() => {});
+    throw uploadResult.reason;
+  }
 }
 
 async function populateArchive({
@@ -175,6 +218,7 @@ async function populateArchive({
     automations: number;
     attachments: number;
   }> = [];
+  const failedTasks: Array<{ taskId: string; reason: string }> = [];
   let totalAttachments = 0;
 
   for (let i = 0; i < taskIds.length; i++) {
@@ -244,32 +288,33 @@ async function populateArchive({
       });
       totalAttachments += attachments.length;
     } catch (error) {
-      console.warn(
-        `Failed to export task ${taskId}: ${error instanceof Error ? error.message : String(error)}`,
-      );
+      const reason = error instanceof Error ? error.message : String(error);
+      console.warn(`Failed to export task ${taskId}: ${reason}`);
+      failedTasks.push({ taskId, reason });
     }
 
     metadata.set('tasksCompleted', i + 1);
-    metadata.set(
-      'progress',
-      Math.round(((i + 1) / taskIds.length) * 90),
-    );
+    metadata.set('tasksFailed', failedTasks.length);
+    metadata.set('progress', Math.round(((i + 1) / taskIds.length) * 90));
   }
 
   manifestEntries.sort((a, b) => a.title.localeCompare(b.title));
 
+  // Surface partial failures inside the ZIP itself so an auditor reading only the
+  // archive can tell the export is incomplete (not just via the Trigger run UI).
   const manifest = {
     organization: organizationName,
     organizationId,
     exportedAt: new Date().toISOString(),
     tasksCount: manifestEntries.length,
     totalAttachments,
+    hasFailures: failedTasks.length > 0,
+    failedTasks,
     tasks: manifestEntries,
   };
   archive.append(
     Buffer.from(safeStringify(manifest, null, 2) ?? '{}', 'utf-8'),
     { name: `${orgFolder}/manifest.json` },
   );
-
-  await archive.finalize();
+  // Note: archive.finalize() is owned by streamArchiveToS3 (the caller).
 }
