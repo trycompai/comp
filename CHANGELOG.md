@@ -1,3 +1,10 @@
+## [3.70.3](https://github.com/trycompai/comp/compare/v3.70.2...v3.70.3) (2026-06-04)
+
+
+### Bug Fixes
+
+* **api:** revert oauth2 spec scheme to restore the MCP generator ([64978f5](https://github.com/trycompai/comp/commit/64978f542adcfb4747fe204dabf5de7d5b1e5ae3)), closes [#2961](https://github.com/trycompai/comp/issues/2961) [#2961](https://github.com/trycompai/comp/issues/2961) [pre-#2961](https://github.com/pre-/issues/2961) [#2955](https://github.com/trycompai/comp/issues/2955) [hi#value](https://github.com/hi/issues/value)
+
 ## [3.70.2](https://github.com/trycompai/comp/compare/v3.70.1...v3.70.2) (2026-06-04)
 
 
