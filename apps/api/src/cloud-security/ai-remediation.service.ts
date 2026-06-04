@@ -460,13 +460,19 @@ Produce 3-8 ordered steps. Each step is a single concrete action the customer ca
   async generateGcpFixPlan(finding: FindingContext): Promise<GcpFixPlan> {
     for (let attempt = 0; attempt < 2; attempt++) {
       try {
-        const { object } = await generateObject({
-          model: MODEL,
-          schema: gcpFixPlanSchema,
-          system: GCP_SYSTEM_PROMPT,
-          prompt: buildGcpFixPlanPrompt(finding),
-          temperature: 0,
-        });
+        let object = await this.requestGcpFixPlan(finding, 0);
+
+        // canAutoFix=true with zero fixSteps surfaces as "AI generated an
+        // empty fix plan" and (with caching) a Retry that does nothing.
+        // Generation is non-deterministic — retry once at a higher
+        // temperature to force a genuinely different sample.
+        if (object.canAutoFix && object.fixSteps.length === 0) {
+          this.logger.warn(
+            `Empty GCP fix plan for ${finding.findingKey}; regenerating once at higher temperature`,
+          );
+          const retry = await this.requestGcpFixPlan(finding, 0.5);
+          if (retry.fixSteps.length > 0) object = retry;
+        }
 
         this.logger.log(
           `GCP AI plan for ${finding.findingKey}: canAutoFix=${object.canAutoFix}, risk=${object.risk}`,
@@ -481,6 +487,21 @@ Produce 3-8 ordered steps. Each step is a single concrete action the customer ca
       }
     }
     return this.fallbackGcpPlan(finding);
+  }
+
+  /** Single GCP fix-plan generation pass. */
+  private async requestGcpFixPlan(
+    finding: FindingContext,
+    temperature: number,
+  ): Promise<GcpFixPlan> {
+    const { object } = await generateObject({
+      model: MODEL,
+      schema: gcpFixPlanSchema,
+      system: GCP_SYSTEM_PROMPT,
+      prompt: buildGcpFixPlanPrompt(finding),
+      temperature,
+    });
+    return object;
   }
 
   async refineGcpFixPlan(params: {
@@ -527,13 +548,19 @@ Generate the complete fix plan with EXACT JSON values from the real GCP state.`,
 
   async generateAzureFixPlan(finding: FindingContext): Promise<AzureFixPlan> {
     try {
-      const { object } = await generateObject({
-        model: MODEL,
-        schema: azureFixPlanSchema,
-        system: AZURE_SYSTEM_PROMPT,
-        prompt: buildAzureFixPlanPrompt(finding),
-        temperature: 0,
-      });
+      let object = await this.requestAzureFixPlan(finding, 0);
+
+      // canAutoFix=true with zero fixSteps surfaces as "AI generated an empty
+      // fix plan" and (with caching) a Retry that does nothing. Generation is
+      // non-deterministic — retry once at a higher temperature to force a
+      // genuinely different sample.
+      if (object.canAutoFix && object.fixSteps.length === 0) {
+        this.logger.warn(
+          `Empty Azure fix plan for ${finding.findingKey}; regenerating once at higher temperature`,
+        );
+        const retry = await this.requestAzureFixPlan(finding, 0.5);
+        if (retry.fixSteps.length > 0) object = retry;
+      }
 
       this.logger.log(
         `Azure AI plan for ${finding.findingKey}: canAutoFix=${object.canAutoFix}, risk=${object.risk}`,
@@ -545,6 +572,21 @@ Generate the complete fix plan with EXACT JSON values from the real GCP state.`,
       );
       return this.fallbackAzurePlan(finding);
     }
+  }
+
+  /** Single Azure fix-plan generation pass. */
+  private async requestAzureFixPlan(
+    finding: FindingContext,
+    temperature: number,
+  ): Promise<AzureFixPlan> {
+    const { object } = await generateObject({
+      model: MODEL,
+      schema: azureFixPlanSchema,
+      system: AZURE_SYSTEM_PROMPT,
+      prompt: buildAzureFixPlanPrompt(finding),
+      temperature,
+    });
+    return object;
   }
 
   async refineAzureFixPlan(params: {

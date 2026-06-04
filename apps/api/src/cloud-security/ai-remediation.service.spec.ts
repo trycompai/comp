@@ -603,3 +603,78 @@ describe('AiRemediationService.generateFixPlan empty-plan retry', () => {
     expect(generateObjectMock).toHaveBeenCalledTimes(1);
   });
 });
+
+describe('AiRemediationService GCP/Azure empty-plan retry', () => {
+  const generateObjectMock = generateObject as unknown as jest.Mock;
+
+  beforeEach(() => {
+    generateObjectMock.mockReset();
+  });
+
+  const finding = {
+    title: 'finding',
+    description: null,
+    severity: 'high',
+    resourceType: 'CloudResource',
+    resourceId: 'r',
+    remediation: null,
+    findingKey: 'fk',
+    evidence: {},
+  };
+
+  it('GCP: retries once at higher temperature when the first plan is empty', async () => {
+    generateObjectMock.mockResolvedValueOnce({
+      object: { canAutoFix: true, fixSteps: [] },
+    });
+    generateObjectMock.mockResolvedValueOnce({
+      object: { canAutoFix: true, fixSteps: [{ method: 'PATCH' }] },
+    });
+
+    const service = new AiRemediationService();
+    const plan = await service.generateGcpFixPlan(finding);
+
+    expect(generateObjectMock).toHaveBeenCalledTimes(2);
+    expect(generateObjectMock.mock.calls[0][0].temperature).toBe(0);
+    expect(generateObjectMock.mock.calls[1][0].temperature).toBeGreaterThan(0);
+    expect(plan.fixSteps).toHaveLength(1);
+  });
+
+  it('GCP: does not retry when the first plan already has steps', async () => {
+    generateObjectMock.mockResolvedValueOnce({
+      object: { canAutoFix: true, fixSteps: [{ method: 'PATCH' }] },
+    });
+
+    const service = new AiRemediationService();
+    await service.generateGcpFixPlan(finding);
+
+    expect(generateObjectMock).toHaveBeenCalledTimes(1);
+  });
+
+  it('Azure: retries once at higher temperature when the first plan is empty', async () => {
+    generateObjectMock.mockResolvedValueOnce({
+      object: { canAutoFix: true, fixSteps: [] },
+    });
+    generateObjectMock.mockResolvedValueOnce({
+      object: { canAutoFix: true, fixSteps: [{ method: 'PATCH' }] },
+    });
+
+    const service = new AiRemediationService();
+    const plan = await service.generateAzureFixPlan(finding);
+
+    expect(generateObjectMock).toHaveBeenCalledTimes(2);
+    expect(generateObjectMock.mock.calls[0][0].temperature).toBe(0);
+    expect(generateObjectMock.mock.calls[1][0].temperature).toBeGreaterThan(0);
+    expect(plan.fixSteps).toHaveLength(1);
+  });
+
+  it('Azure: does not retry when the first plan already has steps', async () => {
+    generateObjectMock.mockResolvedValueOnce({
+      object: { canAutoFix: true, fixSteps: [{ method: 'PATCH' }] },
+    });
+
+    const service = new AiRemediationService();
+    await service.generateAzureFixPlan(finding);
+
+    expect(generateObjectMock).toHaveBeenCalledTimes(1);
+  });
+});
