@@ -66,7 +66,12 @@ export class AiRemediationService {
           `Empty fix plan for ${finding.findingKey}; regenerating once at higher temperature`,
         );
         const retry = await this.requestFixPlan(finding, 0.5);
-        if (retry.fixSteps.length > 0) plan = retry;
+        // Prefer the retry if it is usable (has steps) OR if it correctly
+        // concludes the finding is not auto-fixable — either is better than
+        // returning the original empty canAutoFix=true plan (which only yields
+        // the "empty fix plan" dead end). Keep the original only when the
+        // retry is no improvement (still empty + still canAutoFix).
+        if (retry.fixSteps.length > 0 || !retry.canAutoFix) plan = retry;
       }
 
       return plan;
@@ -471,7 +476,9 @@ Produce 3-8 ordered steps. Each step is a single concrete action the customer ca
             `Empty GCP fix plan for ${finding.findingKey}; regenerating once at higher temperature`,
           );
           const retry = await this.requestGcpFixPlan(finding, 0.5);
-          if (retry.fixSteps.length > 0) object = retry;
+          // Prefer a retry that is usable OR correctly non-auto-fixable —
+          // either beats returning the original empty canAutoFix=true plan.
+          if (retry.fixSteps.length > 0 || !retry.canAutoFix) object = retry;
         }
 
         this.logger.log(
@@ -559,7 +566,9 @@ Generate the complete fix plan with EXACT JSON values from the real GCP state.`,
           `Empty Azure fix plan for ${finding.findingKey}; regenerating once at higher temperature`,
         );
         const retry = await this.requestAzureFixPlan(finding, 0.5);
-        if (retry.fixSteps.length > 0) object = retry;
+        // Prefer a retry that is usable OR correctly non-auto-fixable —
+        // either beats returning the original empty canAutoFix=true plan.
+        if (retry.fixSteps.length > 0 || !retry.canAutoFix) object = retry;
       }
 
       this.logger.log(

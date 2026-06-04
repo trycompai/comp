@@ -678,3 +678,44 @@ describe('AiRemediationService GCP/Azure empty-plan retry', () => {
     expect(generateObjectMock).toHaveBeenCalledTimes(1);
   });
 });
+
+describe('AiRemediationService.generateFixPlan retry selection', () => {
+  const generateObjectMock = generateObject as unknown as jest.Mock;
+
+  beforeEach(() => {
+    generateObjectMock.mockReset();
+  });
+
+  it('prefers a canAutoFix=false retry over the original empty canAutoFix=true plan', async () => {
+    // First pass: the degenerate empty plan (canAutoFix true, no steps).
+    generateObjectMock.mockResolvedValueOnce({
+      object: basePlan({ canAutoFix: true, fixSteps: [] }),
+    });
+    // Retry: the model correctly concludes the finding is not auto-fixable.
+    generateObjectMock.mockResolvedValueOnce({
+      object: basePlan({
+        canAutoFix: false,
+        fixSteps: [],
+        reason: 'Requires manual setup',
+        guidedSteps: ['Do the thing in the console'],
+      }),
+    });
+
+    const service = new AiRemediationService();
+    const plan = await service.generateFixPlan({
+      title: 't',
+      description: null,
+      severity: null,
+      resourceType: 'X',
+      resourceId: 'y',
+      remediation: null,
+      findingKey: 'fk',
+      evidence: {},
+    });
+
+    expect(generateObjectMock).toHaveBeenCalledTimes(2);
+    // The non-auto-fixable retry is used → routes to guided steps instead of
+    // the "AI generated an empty fix plan" dead end.
+    expect(plan.canAutoFix).toBe(false);
+  });
+});
