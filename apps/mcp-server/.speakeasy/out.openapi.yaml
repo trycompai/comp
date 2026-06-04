@@ -90,6 +90,7 @@ paths:
                     example: "Invalid or expired API key"
       security:
         - apikey: []
+        - oauth2: []
       summary: "Get organization profile"
       tags:
         - "Organization"
@@ -266,6 +267,7 @@ paths:
                     example: "Organization with ID org_abc123def456 not found"
       security:
         - apikey: []
+        - oauth2: []
       summary: "Update organization"
       tags:
         - "Organization"
@@ -333,6 +335,7 @@ paths:
                     example: "Organization with ID org_abc123def456 not found"
       security:
         - apikey: []
+        - oauth2: []
       summary: "Delete organization"
       tags:
         - "Organization"
@@ -354,6 +357,7 @@ paths:
           description: ""
       security:
         - apikey: []
+        - oauth2: []
       summary: "Get organization onboarding status"
       tags:
         - "Organization"
@@ -446,6 +450,7 @@ paths:
                           - "owner"
       security:
         - apikey: []
+        - oauth2: []
       summary: "Transfer organization ownership"
       tags:
         - "Organization"
@@ -503,6 +508,7 @@ paths:
           description: ""
       security:
         - apikey: []
+        - oauth2: []
       summary: "Update role notification settings"
       tags:
         - "Organization"
@@ -524,6 +530,7 @@ paths:
           description: ""
       security:
         - apikey: []
+        - oauth2: []
       summary: "Get role notification settings"
       tags:
         - "Organization"
@@ -546,6 +553,7 @@ paths:
           description: ""
       security:
         - apikey: []
+        - oauth2: []
       summary: "List API keys"
       tags:
         - "Organization"
@@ -567,6 +575,7 @@ paths:
           description: ""
       security:
         - apikey: []
+        - oauth2: []
       summary: "Create API key"
       tags:
         - "Organization"
@@ -589,6 +598,7 @@ paths:
           description: ""
       security:
         - apikey: []
+        - oauth2: []
       summary: "List API key scopes"
       tags:
         - "Organization"
@@ -654,6 +664,7 @@ paths:
                     example: "Organization with ID org_abc123def456 not found"
       security:
         - apikey: []
+        - oauth2: []
       summary: "Get organization brand color"
       tags:
         - "Organization"
@@ -675,6 +686,7 @@ paths:
           description: ""
       security:
         - apikey: []
+        - oauth2: []
       summary: "Upload organization logo"
       tags:
         - "Organization"
@@ -696,6 +708,7 @@ paths:
           description: ""
       security:
         - apikey: []
+        - oauth2: []
       summary: "Remove organization logo"
       tags:
         - "Organization"
@@ -718,6 +731,7 @@ paths:
           description: ""
       security:
         - apikey: []
+        - oauth2: []
       summary: "Revoke API key"
       tags:
         - "Organization"
@@ -767,6 +781,7 @@ paths:
           description: ""
       security:
         - apikey: []
+        - oauth2: []
       summary: "Invite workforce members"
       tags:
         - "People"
@@ -898,6 +913,7 @@ paths:
                     example: "Failed to retrieve members"
       security:
         - apikey: []
+        - oauth2: []
       summary: "List workforce members"
       tags:
         - "People"
@@ -988,6 +1004,7 @@ paths:
                     example: "Failed to create member"
       security:
         - apikey: []
+        - oauth2: []
       summary: "Create a new member"
       tags:
         - "People"
@@ -1009,6 +1026,7 @@ paths:
           description: ""
       security:
         - apikey: []
+        - oauth2: []
       summary: "Get all employee devices with fleet compliance data"
       tags:
         - "People"
@@ -1031,6 +1049,7 @@ paths:
           description: ""
       security:
         - apikey: []
+        - oauth2: []
       summary: "Get integration test statistics grouped by assignee"
       tags:
         - "People"
@@ -1192,6 +1211,7 @@ paths:
                     example: "Bulk creation failed"
       security:
         - apikey: []
+        - oauth2: []
       summary: "Add multiple members to organization"
       tags:
         - "People"
@@ -1218,6 +1238,7 @@ paths:
           description: ""
       security:
         - apikey: []
+        - oauth2: []
       summary: "Get members who can read a specific resource type"
       tags:
         - "People"
@@ -1247,6 +1268,7 @@ paths:
           description: ""
       security:
         - apikey: []
+        - oauth2: []
       summary: "Reactivate a deactivated member"
       tags:
         - "People"
@@ -1329,6 +1351,7 @@ paths:
                     example: "Internal server error"
       security:
         - apikey: []
+        - oauth2: []
       summary: "Get person by ID"
       tags:
         - "People"
@@ -1426,6 +1449,7 @@ paths:
                     example: "Internal server error"
       security:
         - apikey: []
+        - oauth2: []
       summary: "Update workforce member"
       tags:
         - "People"
@@ -1514,6 +1538,7 @@ paths:
                     example: "Failed to delete member"
       security:
         - apikey: []
+        - oauth2: []
       summary: "Delete member"
       tags:
         - "People"
@@ -1542,6 +1567,7 @@ paths:
           description: ""
       security:
         - apikey: []
+        - oauth2: []
       summary: "Get training video completions for a member"
       tags:
         - "People"
@@ -1571,6 +1597,7 @@ paths:
           description: ""
       security:
         - apikey: []
+        - oauth2: []
       summary: "Get fleet compliance"
       tags:
         - "People"
@@ -1653,6 +1680,7 @@ paths:
                     example: "Failed to remove host"
       security:
         - apikey: []
+        - oauth2: []
       summary: "Remove host (device) from Fleet"
       tags:
         - "People"
@@ -1681,6 +1709,7 @@ paths:
           description: ""
       security:
         - apikey: []
+        - oauth2: []
       summary: "Resend portal invite email to a member"
       tags:
         - "People"
@@ -1773,6 +1802,7 @@ paths:
                     example: "Internal server error"
       security:
         - apikey: []
+        - oauth2: []
       summary: "Unlink device from member"
       tags:
         - "People"
@@ -1809,6 +1839,7 @@ paths:
           description: ""
       security:
         - apikey: []
+        - oauth2: []
       summary: "Get employment evidence attachments"
       tags:
         - "People"
@@ -1851,6 +1882,7 @@ paths:
           description: ""
       security:
         - apikey: []
+        - oauth2: []
       summary: "Upload employment evidence"
       tags:
         - "People"
@@ -1894,6 +1926,7 @@ paths:
           description: ""
       security:
         - apikey: []
+        - oauth2: []
       summary: "Delete employment evidence"
       tags:
         - "People"
@@ -1916,6 +1949,7 @@ paths:
           description: ""
       security:
         - apikey: []
+        - oauth2: []
       summary: "Get current user email notification preferences"
       tags:
         - "People"
@@ -1943,6 +1977,7 @@ paths:
           description: ""
       security:
         - apikey: []
+        - oauth2: []
       summary: "Update current user email notification preferences"
       tags:
         - "People"
@@ -1996,6 +2031,7 @@ paths:
                     example: "Unauthorized"
       security:
         - apikey: []
+        - oauth2: []
       summary: "Upload an attachment to any supported entity"
       tags:
         - "Attachments"
@@ -2038,6 +2074,7 @@ paths:
                     example: 900
       security:
         - apikey: []
+        - oauth2: []
       summary: "Get shared attachment download URL"
       tags:
         - "Attachments"
@@ -2372,6 +2409,7 @@ paths:
                     example: "Internal server error"
       security:
         - apikey: []
+        - oauth2: []
       summary: "List organization risks"
       tags:
         - "Risks"
@@ -2582,6 +2620,7 @@ paths:
                     example: "Internal server error"
       security:
         - apikey: []
+        - oauth2: []
       summary: "Create organization risk"
       tags:
         - "Risks"
@@ -2603,6 +2642,7 @@ paths:
           description: ""
       security:
         - apikey: []
+        - oauth2: []
       summary: "Get risk statistics grouped by assignee"
       tags:
         - "Risks"
@@ -2625,6 +2665,7 @@ paths:
           description: ""
       security:
         - apikey: []
+        - oauth2: []
       summary: "Get risk counts grouped by department"
       tags:
         - "Risks"
@@ -2826,6 +2867,7 @@ paths:
                     example: "Internal server error"
       security:
         - apikey: []
+        - oauth2: []
       summary: "Get organization risk"
       tags:
         - "Risks"
@@ -3043,6 +3085,7 @@ paths:
                     example: "Internal server error"
       security:
         - apikey: []
+        - oauth2: []
       summary: "Update organization risk"
       tags:
         - "Risks"
@@ -3136,6 +3179,7 @@ paths:
                     example: "Internal server error"
       security:
         - apikey: []
+        - oauth2: []
       summary: "Delete organization risk"
       tags:
         - "Risks"
@@ -3163,6 +3207,7 @@ paths:
           description: ""
       security:
         - apikey: []
+        - oauth2: []
       summary: "Search global vendors"
       tags:
         - "Vendors"
@@ -3330,6 +3375,7 @@ paths:
                     example: "Internal server error"
       security:
         - apikey: []
+        - oauth2: []
       summary: "List vendors"
       tags:
         - "Vendors"
@@ -3518,6 +3564,7 @@ paths:
                     example: "Internal server error"
       security:
         - apikey: []
+        - oauth2: []
       summary: "Create vendor"
       tags:
         - "Vendors"
@@ -3685,6 +3732,7 @@ paths:
                     example: "Internal server error"
       security:
         - apikey: []
+        - oauth2: []
       summary: "Get vendor details"
       tags:
         - "Vendors"
@@ -3880,6 +3928,7 @@ paths:
                     example: "Internal server error"
       security:
         - apikey: []
+        - oauth2: []
       summary: "Update vendor record"
       tags:
         - "Vendors"
@@ -3973,6 +4022,7 @@ paths:
                     example: "Internal server error"
       security:
         - apikey: []
+        - oauth2: []
       summary: "Delete vendor"
       tags:
         - "Vendors"
@@ -4001,6 +4051,7 @@ paths:
           description: ""
       security:
         - apikey: []
+        - oauth2: []
       summary: "Trigger vendor risk assessment"
       tags:
         - "Vendors"
@@ -4148,6 +4199,7 @@ paths:
                 statusCode: 500
       security:
         - apikey: []
+        - oauth2: []
       summary: "List organization context"
       tags:
         - "Context"
@@ -4302,6 +4354,7 @@ paths:
                 statusCode: 500
       security:
         - apikey: []
+        - oauth2: []
       summary: "Create a new context entry"
       tags:
         - "Context"
@@ -4423,6 +4476,7 @@ paths:
                 statusCode: 500
       security:
         - apikey: []
+        - oauth2: []
       summary: "Get organization context"
       tags:
         - "Context"
@@ -4516,6 +4570,7 @@ paths:
                 statusCode: 500
       security:
         - apikey: []
+        - oauth2: []
       summary: "Update organization context"
       tags:
         - "Context"
@@ -4614,6 +4669,7 @@ paths:
                 statusCode: 500
       security:
         - apikey: []
+        - oauth2: []
       summary: "Delete context entry"
       tags:
         - "Context"
@@ -4696,6 +4752,7 @@ paths:
                     example: "Organization does not have FleetDM configured"
       security:
         - apikey: []
+        - oauth2: []
       summary: "List managed devices"
       tags:
         - "Devices"
@@ -4751,6 +4808,7 @@ paths:
           description: "Internal server error - FleetDM integration issue"
       security:
         - apikey: []
+        - oauth2: []
       summary: "Get devices by member ID"
       tags:
         - "Devices"
@@ -4784,6 +4842,7 @@ paths:
           description: "Organization or device not found"
       security:
         - apikey: []
+        - oauth2: []
       summary: "Delete device"
       tags:
         - "Devices"
@@ -4798,7 +4857,7 @@ paths:
         name: "delete-device"
   /v1/policies:
     get:
-      description: "Lists compliance policies for the organization. Use this to find a policy by name, look up a policy ID, browse drafts, or get an overview of all policies for SOC 2, ISO 27001, HIPAA, and GDPR workflows. Returns id, name, status, department, and other metadata for each policy. Pass excludeContent=true to skip the heavy TipTap content fields — recommended when you only need to identify a policy. To read or edit a single policy in detail, fetch it by ID via get-compliance-policy."
+      description: "Lists active compliance policies by default. Use includeArchived=true to include archived rows and excludeContent=true when you only need policy metadata."
       operationId: "PoliciesController_getAllPolicies_v1"
       parameters:
         - name: "X-Organization-Id"
@@ -4811,6 +4870,12 @@ paths:
           required: false
           in: "query"
           description: "When true, omits `content` and `draftContent` from each policy in the response. Use this when listing policies to find one by name/ID — fetch the full content via GET /v1/policies/{id} after."
+          schema:
+            type: "boolean"
+        - name: "includeArchived"
+          required: false
+          in: "query"
+          description: "When true, includes user-archived and framework-sync-archived policies in the response. Defaults to false."
           schema:
             type: "boolean"
       responses:
@@ -4866,6 +4931,7 @@ paths:
                     signedBy: []
                     reviewDate: "2024-12-31T00:00:00.000Z"
                     isArchived: false
+                    archivedAt: null
                     createdAt: "2024-01-01T00:00:00.000Z"
                     updatedAt: "2024-01-15T00:00:00.000Z"
                     lastArchivedAt: null
@@ -4890,6 +4956,7 @@ paths:
                     example: "Unauthorized"
       security:
         - apikey: []
+        - oauth2: []
       summary: "List compliance policies"
       tags:
         - "Policies"
@@ -4899,9 +4966,9 @@ paths:
         metadata:
           title: "List compliance policies | Comp AI API"
           sidebarTitle: "List compliance policies"
-          description: "Lists compliance policies for the organization. Use this to find a policy by name, look up a policy ID, browse drafts, or get an overview of all policies."
+          description: "Lists active compliance policies by default. Use includeArchived=true to include archived rows."
           og:title: "List compliance policies | Comp AI API"
-          og:description: "Lists compliance policies for the organization. Use this to find a policy by name, look up a policy ID, browse drafts, or get an overview of all policies."
+          og:description: "Lists active compliance policies by default. Use includeArchived=true to include archived rows."
       x-codeSamples:
         - lang: "bash"
           label: "List policies"
@@ -4909,6 +4976,9 @@ paths:
         - lang: "bash"
           label: "List policies (lightweight, no content)"
           source: "curl --request GET --url \"https://api.trycomp.ai/v1/policies?excludeContent=true\" --header \"X-API-Key: $COMP_AI_API_KEY\""
+        - lang: "bash"
+          label: "List policies including archived"
+          source: "curl --request GET --url \"https://api.trycomp.ai/v1/policies?includeArchived=true\" --header \"X-API-Key: $COMP_AI_API_KEY\""
     post:
       description: "Create a policy record that can be reviewed, versioned, published, linked to controls, and used as source evidence for questionnaires."
       operationId: "PoliciesController_createPolicy_v1"
@@ -4949,6 +5019,7 @@ paths:
                 signedBy: []
                 reviewDate: "2024-12-31T00:00:00.000Z"
                 isArchived: false
+                archivedAt: null
                 createdAt: "2024-01-01T00:00:00.000Z"
                 updatedAt: "2024-01-15T00:00:00.000Z"
                 organizationId: "org_abc123def456"
@@ -4976,6 +5047,7 @@ paths:
                     example: "Unauthorized"
       security:
         - apikey: []
+        - oauth2: []
       summary: "Create compliance policy"
       tags:
         - "Policies"
@@ -5003,6 +5075,7 @@ paths:
           description: ""
       security:
         - apikey: []
+        - oauth2: []
       summary: "Publish all draft policies"
       tags:
         - "Policies"
@@ -5034,6 +5107,7 @@ paths:
           description: "No published policies found"
       security:
         - apikey: []
+        - oauth2: []
       summary: "Download all published policies"
       tags:
         - "Policies"
@@ -5068,6 +5142,7 @@ paths:
           description: ""
       security:
         - apikey: []
+        - oauth2: []
       summary: "Get mapped and all controls for a policy"
       tags:
         - "Policies"
@@ -5102,6 +5177,7 @@ paths:
           description: ""
       security:
         - apikey: []
+        - oauth2: []
       summary: "Map controls to a policy"
       tags:
         - "Policies"
@@ -5137,6 +5213,7 @@ paths:
           description: ""
       security:
         - apikey: []
+        - oauth2: []
       summary: "Get tasks that serve as evidence for a policy, grouped by control"
       tags:
         - "Policies"
@@ -5172,6 +5249,7 @@ paths:
           description: ""
       security:
         - apikey: []
+        - oauth2: []
       summary: "Regenerate policy with AI"
       tags:
         - "Policies"
@@ -5212,6 +5290,7 @@ paths:
           description: ""
       security:
         - apikey: []
+        - oauth2: []
       summary: "Get a signed URL for the policy PDF"
       tags:
         - "Policies"
@@ -5313,6 +5392,7 @@ paths:
           description: ""
       security:
         - apikey: []
+        - oauth2: []
       summary: "Upload a PDF to a policy version (UI-only)"
       tags:
         - "Policies"
@@ -5353,6 +5433,7 @@ paths:
           description: ""
       security:
         - apikey: []
+        - oauth2: []
       summary: "Delete a policy version PDF"
       tags:
         - "Policies"
@@ -5398,6 +5479,7 @@ paths:
                 $ref: "#/components/schemas/PolicyPdfUploadUrlResponseDto"
       security:
         - apikey: []
+        - oauth2: []
       summary: "Request a presigned URL to upload a policy PDF"
       tags:
         - "Policies"
@@ -5439,6 +5521,7 @@ paths:
           description: ""
       security:
         - apikey: []
+        - oauth2: []
       summary: "Confirm a policy PDF upload completed"
       tags:
         - "Policies"
@@ -5478,6 +5561,7 @@ paths:
           description: ""
       security:
         - apikey: []
+        - oauth2: []
       summary: "Get signed URL for policy PDF (alternate path)"
       tags:
         - "Policies"
@@ -5518,6 +5602,7 @@ paths:
           description: ""
       security:
         - apikey: []
+        - oauth2: []
       summary: "Remove a control mapping from a policy"
       tags:
         - "Policies"
@@ -5592,6 +5677,7 @@ paths:
                     example: "Policy with ID pol_abc123def456 not found"
       security:
         - apikey: []
+        - oauth2: []
       summary: "Get compliance policy"
       tags:
         - "Policies"
@@ -5654,6 +5740,7 @@ paths:
                   - "usr_123"
                 reviewDate: "2024-12-31T00:00:00.000Z"
                 isArchived: false
+                archivedAt: null
                 createdAt: "2024-01-01T00:00:00.000Z"
                 updatedAt: "2024-01-15T00:00:00.000Z"
                 organizationId: "org_abc123def456"
@@ -5691,6 +5778,7 @@ paths:
                     example: "Policy with ID pol_abc123def456 not found"
       security:
         - apikey: []
+        - oauth2: []
       summary: "Update compliance policy"
       tags:
         - "Policies"
@@ -5771,6 +5859,7 @@ paths:
                     example: "Policy with ID pol_abc123def456 not found"
       security:
         - apikey: []
+        - oauth2: []
       summary: "Delete compliance policy"
       tags:
         - "Policies"
@@ -5841,6 +5930,7 @@ paths:
                     example: "Resource not found"
       security:
         - apikey: []
+        - oauth2: []
       summary: "Get policy versions"
       tags:
         - "Policies"
@@ -5921,6 +6011,7 @@ paths:
                     example: "Resource not found"
       security:
         - apikey: []
+        - oauth2: []
       summary: "Create policy version"
       tags:
         - "Policies"
@@ -5996,6 +6087,7 @@ paths:
                     example: "Resource not found"
       security:
         - apikey: []
+        - oauth2: []
       summary: "Get policy version by ID"
       tags:
         - "Policies"
@@ -6081,6 +6173,7 @@ paths:
                     example: "Resource not found"
       security:
         - apikey: []
+        - oauth2: []
       summary: "Update version content"
       tags:
         - "Policies"
@@ -6159,6 +6252,7 @@ paths:
                     example: "Resource not found"
       security:
         - apikey: []
+        - oauth2: []
       summary: "Delete policy version"
       tags:
         - "Policies"
@@ -6240,6 +6334,7 @@ paths:
                     example: "Resource not found"
       security:
         - apikey: []
+        - oauth2: []
       summary: "Publish policy version"
       tags:
         - "Policies"
@@ -6321,6 +6416,7 @@ paths:
                     example: "Resource not found"
       security:
         - apikey: []
+        - oauth2: []
       summary: "Set active policy version"
       tags:
         - "Policies"
@@ -6409,6 +6505,7 @@ paths:
                     example: "Resource not found"
       security:
         - apikey: []
+        - oauth2: []
       summary: "Submit version for approval"
       tags:
         - "Policies"
@@ -6443,6 +6540,7 @@ paths:
           description: ""
       security:
         - apikey: []
+        - oauth2: []
       summary: "Accept pending policy changes and publish the version"
       tags:
         - "Policies"
@@ -6478,6 +6576,7 @@ paths:
           description: ""
       security:
         - apikey: []
+        - oauth2: []
       summary: "Deny pending policy changes"
       tags:
         - "Policies"
@@ -6528,6 +6627,7 @@ paths:
           description: "Policy not found"
       security:
         - apikey: []
+        - oauth2: []
       summary: "Chat with AI about a policy"
       tags:
         - "Policies"
@@ -6770,6 +6870,7 @@ paths:
                 example: "application/x-apple-diskimage"
       security:
         - apikey: []
+        - oauth2: []
       summary: "Download macOS Device Agent"
       tags:
         - "Device Agent"
@@ -6809,6 +6910,7 @@ paths:
                 example: "application/zip"
       security:
         - apikey: []
+        - oauth2: []
       summary: "Download Windows Device Agent ZIP"
       tags:
         - "Device Agent"
@@ -6872,6 +6974,7 @@ paths:
                 $ref: "#/components/schemas/UploadUrlResponseDto"
       security:
         - apikey: []
+        - oauth2: []
       summary: "Get a presigned URL to upload a file"
       tags:
         - "Uploads"
@@ -6923,6 +7026,7 @@ paths:
                     example: "Unauthorized"
       security:
         - apikey: []
+        - oauth2: []
       summary: "List compliance tasks"
       tags:
         - "Tasks"
@@ -7011,6 +7115,7 @@ paths:
           description: "Invalid request body"
       security:
         - apikey: []
+        - oauth2: []
       summary: "Create compliance task"
       tags:
         - "Tasks"
@@ -7039,6 +7144,7 @@ paths:
           description: ""
       security:
         - apikey: []
+        - oauth2: []
       summary: "Get task templates"
       tags:
         - "Tasks"
@@ -7107,6 +7213,7 @@ paths:
           description: "Invalid request body"
       security:
         - apikey: []
+        - oauth2: []
       summary: "Update status for multiple tasks"
       tags:
         - "Tasks"
@@ -7154,6 +7261,7 @@ paths:
           description: "Invalid request body"
       security:
         - apikey: []
+        - oauth2: []
       summary: "Delete multiple tasks"
       tags:
         - "Tasks"
@@ -7207,6 +7315,7 @@ paths:
           description: "Invalid request body"
       security:
         - apikey: []
+        - oauth2: []
       summary: "Update assignee for multiple tasks"
       tags:
         - "Tasks"
@@ -7262,6 +7371,7 @@ paths:
           description: "Invalid request body"
       security:
         - apikey: []
+        - oauth2: []
       summary: "Reorder tasks"
       tags:
         - "Tasks"
@@ -7307,6 +7417,7 @@ paths:
           description: "Invalid request"
       security:
         - apikey: []
+        - oauth2: []
       summary: "Bulk submit tasks for review"
       tags:
         - "Tasks"
@@ -7328,6 +7439,7 @@ paths:
           description: ""
       security:
         - apikey: []
+        - oauth2: []
       summary: "Get page options for tasks overview"
       tags:
         - "Tasks"
@@ -7381,6 +7493,7 @@ paths:
                     example: "Task with ID tsk_abc123def456 not found"
       security:
         - apikey: []
+        - oauth2: []
       summary: "Get task by ID"
       tags:
         - "Tasks"
@@ -7490,6 +7603,7 @@ paths:
           description: "Task not found"
       security:
         - apikey: []
+        - oauth2: []
       summary: "Update a task"
       tags:
         - "Tasks"
@@ -7531,6 +7645,7 @@ paths:
           description: "Task not found"
       security:
         - apikey: []
+        - oauth2: []
       summary: "Delete a task"
       tags:
         - "Tasks"
@@ -7559,6 +7674,7 @@ paths:
           description: ""
       security:
         - apikey: []
+        - oauth2: []
       summary: "Get policies that reference a task via shared controls"
       tags:
         - "Tasks"
@@ -7601,6 +7717,7 @@ paths:
           description: "Task not found"
       security:
         - apikey: []
+        - oauth2: []
       summary: "Get task activity"
       tags:
         - "Tasks"
@@ -7634,6 +7751,7 @@ paths:
           description: "Task not found"
       security:
         - apikey: []
+        - oauth2: []
       summary: "Regenerate task from template"
       tags:
         - "Tasks"
@@ -7678,6 +7796,7 @@ paths:
           description: "Invalid request"
       security:
         - apikey: []
+        - oauth2: []
       summary: "Submit task for review"
       tags:
         - "Tasks"
@@ -7711,6 +7830,7 @@ paths:
           description: "Not the assigned approver"
       security:
         - apikey: []
+        - oauth2: []
       summary: "Approve a task"
       tags:
         - "Tasks"
@@ -7744,6 +7864,7 @@ paths:
           description: "Not the assigned approver"
       security:
         - apikey: []
+        - oauth2: []
       summary: "Reject a task review"
       tags:
         - "Tasks"
@@ -7806,6 +7927,7 @@ paths:
                     example: "Task with ID tsk_abc123def456 not found"
       security:
         - apikey: []
+        - oauth2: []
       summary: "Get task attachments"
       tags:
         - "Tasks"
@@ -7883,6 +8005,7 @@ paths:
                     example: "Task with ID tsk_abc123def456 not found"
       security:
         - apikey: []
+        - oauth2: []
       summary: "Upload task evidence"
       tags:
         - "Tasks"
@@ -7952,6 +8075,7 @@ paths:
                     example: "Task or attachment not found"
       security:
         - apikey: []
+        - oauth2: []
       summary: "Get task attachment download URL"
       tags:
         - "Tasks"
@@ -8022,6 +8146,7 @@ paths:
                     example: "Task or attachment not found"
       security:
         - apikey: []
+        - oauth2: []
       summary: "Delete task attachment"
       tags:
         - "Tasks"
@@ -8051,6 +8176,7 @@ paths:
           description: "Automations retrieved successfully"
       security:
         - apikey: []
+        - oauth2: []
       summary: "Get all automations for a task"
       tags:
         - "Task Automations"
@@ -8126,6 +8252,7 @@ paths:
                     example: "Task not found"
       security:
         - apikey: []
+        - oauth2: []
       summary: "Create evidence automation"
       tags:
         - "Task Automations"
@@ -8162,6 +8289,7 @@ paths:
           description: "Automation details retrieved successfully"
       security:
         - apikey: []
+        - oauth2: []
       summary: "Get automation details"
       tags:
         - "Task Automations"
@@ -8253,6 +8381,7 @@ paths:
                     example: "Automation not found"
       security:
         - apikey: []
+        - oauth2: []
       summary: "Update an existing automation"
       tags:
         - "Task Automations"
@@ -8288,6 +8417,7 @@ paths:
           description: "Automation deleted successfully"
       security:
         - apikey: []
+        - oauth2: []
       summary: "Delete an automation"
       tags:
         - "Task Automations"
@@ -8322,6 +8452,7 @@ paths:
           description: "Runs retrieved successfully"
       security:
         - apikey: []
+        - oauth2: []
       summary: "Get all runs for a specific automation"
       tags:
         - "Task Automations"
@@ -8393,6 +8524,7 @@ paths:
                           format: "date-time"
       security:
         - apikey: []
+        - oauth2: []
       summary: "Get all versions for an automation"
       tags:
         - "Task Automations"
@@ -8425,6 +8557,7 @@ paths:
           description: ""
       security:
         - apikey: []
+        - oauth2: []
       summary: "Create a published version record for an automation"
       tags:
         - "Task Automations"
@@ -8488,6 +8621,7 @@ paths:
                       nullable: true
       security:
         - apikey: []
+        - oauth2: []
       summary: "Get all automation runs for a task"
       tags:
         - "Task Automations"
@@ -8519,6 +8653,7 @@ paths:
           description: "Task not found"
       security:
         - apikey: []
+        - oauth2: []
       summary: "Get task evidence summary"
       tags:
         - "Evidence Export"
@@ -8557,6 +8692,7 @@ paths:
           description: "Task or automation not found"
       security:
         - apikey: []
+        - oauth2: []
       summary: "Export automation evidence as PDF"
       tags:
         - "Evidence Export"
@@ -8595,6 +8731,7 @@ paths:
           description: "Task not found"
       security:
         - apikey: []
+        - oauth2: []
       summary: "Export task evidence as ZIP"
       tags:
         - "Evidence Export"
@@ -8627,6 +8764,7 @@ paths:
           description: "Access denied - Auditor role required"
       security:
         - apikey: []
+        - oauth2: []
       summary: "Export all organization evidence as ZIP (Auditor only)"
       tags:
         - "Evidence Export (Auditor)"
@@ -8674,6 +8812,7 @@ paths:
                   $ref: "#/components/schemas/CommentResponseDto"
       security:
         - apikey: []
+        - oauth2: []
       summary: "Get comments for an entity"
       tags:
         - "Comments"
@@ -8705,6 +8844,7 @@ paths:
                 $ref: "#/components/schemas/CommentResponseDto"
       security:
         - apikey: []
+        - oauth2: []
       summary: "Create a new comment"
       tags:
         - "Comments"
@@ -8744,6 +8884,7 @@ paths:
                 $ref: "#/components/schemas/CommentResponseDto"
       security:
         - apikey: []
+        - oauth2: []
       summary: "Update a comment"
       tags:
         - "Comments"
@@ -8818,6 +8959,7 @@ paths:
                     example: "Comment with ID cmt_abc123def456 not found"
       security:
         - apikey: []
+        - oauth2: []
       summary: "Delete a comment"
       tags:
         - "Comments"
@@ -8839,6 +8981,7 @@ paths:
           description: "Trust portal settings retrieved successfully"
       security:
         - apikey: []
+        - oauth2: []
       summary: "Get Trust Center settings"
       tags:
         - "Trust Portal"
@@ -8861,6 +9004,7 @@ paths:
           description: "Favicon uploaded successfully"
       security:
         - apikey: []
+        - oauth2: []
       summary: "Upload a favicon for the trust portal"
       tags:
         - "Trust Portal"
@@ -8882,6 +9026,7 @@ paths:
           description: "Favicon removed successfully"
       security:
         - apikey: []
+        - oauth2: []
       summary: "Remove the trust portal favicon"
       tags:
         - "Trust Portal"
@@ -8920,6 +9065,7 @@ paths:
           description: "Failed to retrieve domain status from Vercel"
       security:
         - apikey: []
+        - oauth2: []
       summary: "Get domain verification status"
       tags:
         - "Trust Portal"
@@ -8954,6 +9100,7 @@ paths:
           description: "Framework not compliant, PDF validation failed, or organization mismatch"
       security:
         - apikey: []
+        - oauth2: []
       summary: "Upload compliance certificate"
       tags:
         - "Trust Portal"
@@ -8985,6 +9132,7 @@ paths:
                 $ref: "#/components/schemas/ComplianceResourceUrlResponseDto"
       security:
         - apikey: []
+        - oauth2: []
       summary: "Generate a temporary signed URL for a compliance certificate"
       tags:
         - "Trust Portal"
@@ -9019,6 +9167,7 @@ paths:
                   $ref: "#/components/schemas/ComplianceResourceResponseDto"
       security:
         - apikey: []
+        - oauth2: []
       summary: "List uploaded compliance certificates for the organization"
       tags:
         - "Trust Portal"
@@ -9052,6 +9201,7 @@ paths:
                 $ref: "#/components/schemas/TrustDocumentResponseDto"
       security:
         - apikey: []
+        - oauth2: []
       summary: "Upload an additional trust portal document"
       tags:
         - "Trust Portal"
@@ -9085,6 +9235,7 @@ paths:
                   $ref: "#/components/schemas/TrustDocumentResponseDto"
       security:
         - apikey: []
+        - oauth2: []
       summary: "List additional trust portal documents for the organization"
       tags:
         - "Trust Portal"
@@ -9122,6 +9273,7 @@ paths:
                 $ref: "#/components/schemas/TrustDocumentUrlResponseDto"
       security:
         - apikey: []
+        - oauth2: []
       summary: "Generate a temporary signed URL for a trust portal document"
       tags:
         - "Trust Portal"
@@ -9162,6 +9314,7 @@ paths:
                     type: "boolean"
       security:
         - apikey: []
+        - oauth2: []
       summary: "Delete (deactivate) a trust portal document"
       tags:
         - "Trust Portal"
@@ -9184,6 +9337,7 @@ paths:
           description: ""
       security:
         - apikey: []
+        - oauth2: []
       summary: "Enable or disable the trust portal"
       tags:
         - "Trust Portal"
@@ -9206,6 +9360,7 @@ paths:
           description: ""
       security:
         - apikey: []
+        - oauth2: []
       summary: "Add or update a custom domain for the trust portal"
       tags:
         - "Trust Portal"
@@ -9228,6 +9383,7 @@ paths:
           description: ""
       security:
         - apikey: []
+        - oauth2: []
       summary: "Check DNS records for a custom domain"
       tags:
         - "Trust Portal"
@@ -9250,6 +9406,7 @@ paths:
           description: ""
       security:
         - apikey: []
+        - oauth2: []
       summary: "Update trust portal FAQs"
       tags:
         - "Trust Portal"
@@ -9272,6 +9429,7 @@ paths:
           description: ""
       security:
         - apikey: []
+        - oauth2: []
       summary: "Update allowed domains for the trust portal"
       tags:
         - "Trust Portal"
@@ -9294,6 +9452,7 @@ paths:
           description: ""
       security:
         - apikey: []
+        - oauth2: []
       summary: "Update trust portal framework settings"
       tags:
         - "Trust Portal"
@@ -9316,6 +9475,7 @@ paths:
           description: "Overview updated successfully"
       security:
         - apikey: []
+        - oauth2: []
       summary: "Update Trust Center overview"
       tags:
         - "Trust Portal"
@@ -9342,6 +9502,7 @@ paths:
           description: ""
       security:
         - apikey: []
+        - oauth2: []
       summary: "Get trust portal overview"
       tags:
         - "Trust Portal"
@@ -9364,6 +9525,7 @@ paths:
           description: "Custom link created successfully"
       security:
         - apikey: []
+        - oauth2: []
       summary: "Create a custom link for trust portal"
       tags:
         - "Trust Portal"
@@ -9390,6 +9552,7 @@ paths:
           description: ""
       security:
         - apikey: []
+        - oauth2: []
       summary: "List custom links for trust portal"
       tags:
         - "Trust Portal"
@@ -9417,6 +9580,7 @@ paths:
           description: "Custom link updated successfully"
       security:
         - apikey: []
+        - oauth2: []
       summary: "Update a custom link"
       tags:
         - "Trust Portal"
@@ -9444,6 +9608,7 @@ paths:
           description: "Custom link deleted successfully"
       security:
         - apikey: []
+        - oauth2: []
       summary: "Delete a custom link"
       tags:
         - "Trust Portal"
@@ -9466,6 +9631,7 @@ paths:
           description: "Custom links reordered successfully"
       security:
         - apikey: []
+        - oauth2: []
       summary: "Reorder custom links"
       tags:
         - "Trust Portal"
@@ -9493,6 +9659,7 @@ paths:
           description: "Vendor settings updated successfully"
       security:
         - apikey: []
+        - oauth2: []
       summary: "Update vendor trust portal settings"
       tags:
         - "Trust Portal"
@@ -9521,6 +9688,7 @@ paths:
           description: ""
       security:
         - apikey: []
+        - oauth2: []
       summary: "List vendors configured for trust portal"
       tags:
         - "Trust Portal"
@@ -9586,6 +9754,7 @@ paths:
           description: "Access requests retrieved"
       security:
         - apikey: []
+        - oauth2: []
       summary: "List Trust Access requests"
       tags:
         - "Trust Access"
@@ -9613,6 +9782,7 @@ paths:
           description: "Request details returned"
       security:
         - apikey: []
+        - oauth2: []
       summary: "Get Trust Access request"
       tags:
         - "Trust Access"
@@ -9646,6 +9816,7 @@ paths:
           description: "Request approved successfully"
       security:
         - apikey: []
+        - oauth2: []
       summary: "Approve Trust Access request"
       tags:
         - "Trust Access"
@@ -9679,6 +9850,7 @@ paths:
           description: "Request denied"
       security:
         - apikey: []
+        - oauth2: []
       summary: "Deny Trust Access request"
       tags:
         - "Trust Access"
@@ -9701,6 +9873,7 @@ paths:
           description: "Grants retrieved"
       security:
         - apikey: []
+        - oauth2: []
       summary: "List Trust Access grants"
       tags:
         - "Trust Access"
@@ -9734,6 +9907,7 @@ paths:
           description: "Grant revoked"
       security:
         - apikey: []
+        - oauth2: []
       summary: "Revoke Trust Access grant"
       tags:
         - "Trust Access"
@@ -9761,6 +9935,7 @@ paths:
           description: "Access email resent"
       security:
         - apikey: []
+        - oauth2: []
       summary: "Resend Trust Access email"
       tags:
         - "Trust Access"
@@ -9788,6 +9963,7 @@ paths:
           description: "NDA email resent"
       security:
         - apikey: []
+        - oauth2: []
       summary: "Resend Trust Access NDA"
       tags:
         - "Trust Access"
@@ -9815,6 +9991,7 @@ paths:
           description: "Preview NDA generated"
       security:
         - apikey: []
+        - oauth2: []
       summary: "Preview Trust Access NDA"
       tags:
         - "Trust Access"
@@ -10121,6 +10298,7 @@ paths:
           description: ""
       security:
         - apikey: []
+        - oauth2: []
       summary: "List audit findings"
       tags:
         - "Findings"
@@ -10148,6 +10326,7 @@ paths:
           description: ""
       security:
         - apikey: []
+        - oauth2: []
       summary: "Create audit finding"
       tags:
         - "Findings"
@@ -10180,6 +10359,7 @@ paths:
           description: ""
       security:
         - apikey: []
+        - oauth2: []
       summary: "List all findings for the organization"
       tags:
         - "Findings"
@@ -10208,6 +10388,7 @@ paths:
           description: ""
       security:
         - apikey: []
+        - oauth2: []
       summary: "Get finding by ID"
       tags:
         - "Findings"
@@ -10241,6 +10422,7 @@ paths:
           description: ""
       security:
         - apikey: []
+        - oauth2: []
       summary: "Update a finding (status transition rules apply)"
       tags:
         - "Findings"
@@ -10268,6 +10450,7 @@ paths:
           description: ""
       security:
         - apikey: []
+        - oauth2: []
       summary: "Delete a finding (auditor or platform admin only)"
       tags:
         - "Findings"
@@ -10296,6 +10479,7 @@ paths:
           description: ""
       security:
         - apikey: []
+        - oauth2: []
       summary: "Get activity history for a finding"
       tags:
         - "Findings"
@@ -10357,6 +10541,7 @@ paths:
           description: "Forbidden - cannot grant permissions you do not have"
       security:
         - apikey: []
+        - oauth2: []
       summary: "Create a custom role"
       tags:
         - "Roles"
@@ -10415,6 +10600,7 @@ paths:
           description: "Unauthorized"
       security:
         - apikey: []
+        - oauth2: []
       summary: "List all roles"
       tags:
         - "Roles"
@@ -10455,6 +10641,7 @@ paths:
           description: "Unauthorized"
       security:
         - apikey: []
+        - oauth2: []
       summary: "Resolve permissions for custom roles"
       tags:
         - "Roles"
@@ -10496,6 +10683,7 @@ paths:
                         type: "boolean"
       security:
         - apikey: []
+        - oauth2: []
       summary: "Get obligations for a built-in role"
       tags:
         - "Roles"
@@ -10544,6 +10732,7 @@ paths:
           description: "Not a built-in role"
       security:
         - apikey: []
+        - oauth2: []
       summary: "Update obligations for a built-in role"
       tags:
         - "Roles"
@@ -10596,6 +10785,7 @@ paths:
           description: "Role not found"
       security:
         - apikey: []
+        - oauth2: []
       summary: "Get a role by ID"
       tags:
         - "Roles"
@@ -10657,6 +10847,7 @@ paths:
           description: "Role not found"
       security:
         - apikey: []
+        - oauth2: []
       summary: "Update a custom role"
       tags:
         - "Roles"
@@ -10700,6 +10891,7 @@ paths:
           description: "Role not found"
       security:
         - apikey: []
+        - oauth2: []
       summary: "Delete a custom role"
       tags:
         - "Roles"
@@ -10721,6 +10913,7 @@ paths:
           description: "List of questionnaires"
       security:
         - apikey: []
+        - oauth2: []
       summary: "List security questionnaires"
       tags:
         - "Questionnaire"
@@ -10749,6 +10942,7 @@ paths:
           description: "Questionnaire details"
       security:
         - apikey: []
+        - oauth2: []
       summary: "Get security questionnaire details"
       tags:
         - "Questionnaire"
@@ -10776,6 +10970,7 @@ paths:
           description: "Questionnaire deleted"
       security:
         - apikey: []
+        - oauth2: []
       summary: "Delete a security questionnaire"
       tags:
         - "Questionnaire"
@@ -10809,6 +11004,7 @@ paths:
                 $ref: "#/components/schemas/TriggerAutoAnswerResponseDto"
       security:
         - apikey: []
+        - oauth2: []
       summary: "Generate answers for a questionnaire"
       tags:
         - "Questionnaire"
@@ -10840,6 +11036,7 @@ paths:
                 type: "object"
       security:
         - apikey: []
+        - oauth2: []
       summary: "Parse questionnaire content"
       tags:
         - "Questionnaire"
@@ -10893,6 +11090,7 @@ paths:
                         nullable: true
       security:
         - apikey: []
+        - oauth2: []
       summary: "Answer one questionnaire question"
       tags:
         - "Questionnaire"
@@ -10932,6 +11130,7 @@ paths:
                     nullable: true
       security:
         - apikey: []
+        - oauth2: []
       summary: "Save questionnaire answer"
       tags:
         - "Questionnaire"
@@ -10971,6 +11170,7 @@ paths:
                     nullable: true
       security:
         - apikey: []
+        - oauth2: []
       summary: "Delete questionnaire answer"
       tags:
         - "Questionnaire"
@@ -11000,6 +11200,7 @@ paths:
           description: "Export questionnaire by ID to specified format"
       security:
         - apikey: []
+        - oauth2: []
       summary: "Export a security questionnaire"
       tags:
         - "Questionnaire"
@@ -11038,6 +11239,7 @@ paths:
                     type: "string"
       security:
         - apikey: []
+        - oauth2: []
       summary: "Start questionnaire parsing"
       tags:
         - "Questionnaire"
@@ -11094,6 +11296,7 @@ paths:
                     type: "number"
       security:
         - apikey: []
+        - oauth2: []
       summary: "Upload and parse questionnaire file"
       tags:
         - "Questionnaire"
@@ -11150,6 +11353,7 @@ paths:
           description: ""
       security:
         - apikey: []
+        - oauth2: []
       summary: "Auto-answer uploaded questionnaire"
       tags:
         - "Questionnaire"
@@ -11180,6 +11384,7 @@ paths:
           description: ""
       security:
         - apikey: []
+        - oauth2: []
       summary: "Export generated questionnaire answers"
       tags:
         - "Questionnaire"
@@ -11229,6 +11434,7 @@ paths:
           description: ""
       security:
         - apikey: []
+        - oauth2: []
       summary: "Upload and export generated answers"
       tags:
         - "Questionnaire"
@@ -11259,6 +11465,7 @@ paths:
           description: ""
       security:
         - apikey: []
+        - oauth2: []
       summary: "Stream generated questionnaire answers"
       tags:
         - "Questionnaire"
@@ -11283,6 +11490,7 @@ paths:
           description: "List of knowledge base documents"
       security:
         - apikey: []
+        - oauth2: []
       summary: "List knowledge base documents"
       tags:
         - "Knowledge Base"
@@ -11305,6 +11513,7 @@ paths:
           description: "List of manual answers"
       security:
         - apikey: []
+        - oauth2: []
       summary: "List all manual answers for an organization"
       tags:
         - "Knowledge Base"
@@ -11332,6 +11541,7 @@ paths:
           description: "Manual answer saved"
       security:
         - apikey: []
+        - oauth2: []
       summary: "Save reusable manual answer"
       tags:
         - "Knowledge Base"
@@ -11360,6 +11570,7 @@ paths:
           description: "Document uploaded successfully"
       security:
         - apikey: []
+        - oauth2: []
       summary: "Upload knowledge base document"
       tags:
         - "Knowledge Base"
@@ -11387,6 +11598,7 @@ paths:
           description: "Signed download URL generated"
       security:
         - apikey: []
+        - oauth2: []
       summary: "Get a signed download URL for a document"
       tags:
         - "Knowledge Base"
@@ -11414,6 +11626,7 @@ paths:
           description: "Signed view URL generated"
       security:
         - apikey: []
+        - oauth2: []
       summary: "Get a signed view URL for a document"
       tags:
         - "Knowledge Base"
@@ -11441,6 +11654,7 @@ paths:
           description: "Document deleted successfully"
       security:
         - apikey: []
+        - oauth2: []
       summary: "Delete a knowledge base document"
       tags:
         - "Knowledge Base"
@@ -11469,6 +11683,7 @@ paths:
           description: "Document processing triggered"
       security:
         - apikey: []
+        - oauth2: []
       summary: "Process knowledge base documents"
       tags:
         - "Knowledge Base"
@@ -11496,6 +11711,7 @@ paths:
           description: "Public access token created"
       security:
         - apikey: []
+        - oauth2: []
       summary: "Create a public access token for a run"
       tags:
         - "Knowledge Base"
@@ -11529,6 +11745,7 @@ paths:
           description: "Manual answer deleted"
       security:
         - apikey: []
+        - oauth2: []
       summary: "Delete a manual answer"
       tags:
         - "Knowledge Base"
@@ -11557,6 +11774,7 @@ paths:
           description: "All manual answers deleted"
       security:
         - apikey: []
+        - oauth2: []
       summary: "Delete all manual answers for an organization"
       tags:
         - "Knowledge Base"
@@ -11592,6 +11810,7 @@ paths:
                     type: "boolean"
       security:
         - apikey: []
+        - oauth2: []
       summary: "Save a SOA answer"
       tags:
         - "SOA"
@@ -11621,6 +11840,7 @@ paths:
           description: ""
       security:
         - apikey: []
+        - oauth2: []
       summary: "Auto-fill ISO 27001 SOA"
       tags:
         - "SOA"
@@ -11648,6 +11868,7 @@ paths:
           description: "Document created successfully"
       security:
         - apikey: []
+        - oauth2: []
       summary: "Create a new SOA document"
       tags:
         - "SOA"
@@ -11676,6 +11897,7 @@ paths:
           description: "Setup ensured"
       security:
         - apikey: []
+        - oauth2: []
       summary: "Ensure SOA configuration and document exist"
       tags:
         - "SOA"
@@ -11704,6 +11926,7 @@ paths:
           description: "Document approved successfully"
       security:
         - apikey: []
+        - oauth2: []
       summary: "Approve a SOA document"
       tags:
         - "SOA"
@@ -11732,6 +11955,7 @@ paths:
           description: "Document declined successfully"
       security:
         - apikey: []
+        - oauth2: []
       summary: "Decline a SOA document"
       tags:
         - "SOA"
@@ -11760,6 +11984,7 @@ paths:
           description: "Document submitted for approval successfully"
       security:
         - apikey: []
+        - oauth2: []
       summary: "Submit SOA document for approval"
       tags:
         - "SOA"
@@ -11788,6 +12013,7 @@ paths:
           description: "Export SOA document to PDF"
       security:
         - apikey: []
+        - oauth2: []
       summary: "Export ISO 27001 SOA"
       tags:
         - "SOA"
@@ -11815,6 +12041,7 @@ paths:
           description: ""
       security:
         - apikey: []
+        - oauth2: []
       summary: "List integration providers"
       tags:
         - "Integrations"
@@ -11842,6 +12069,7 @@ paths:
           description: ""
       security:
         - apikey: []
+        - oauth2: []
       summary: "Get an integration provider by slug"
       tags:
         - "Integrations"
@@ -11864,6 +12092,7 @@ paths:
           description: ""
       security:
         - apikey: []
+        - oauth2: []
       summary: "List integration connections"
       tags:
         - "Integrations"
@@ -11891,6 +12120,7 @@ paths:
           description: ""
       security:
         - apikey: []
+        - oauth2: []
       summary: "Create integration connection"
       tags:
         - "Integrations"
@@ -11918,6 +12148,7 @@ paths:
           description: ""
       security:
         - apikey: []
+        - oauth2: []
       summary: "Get an integration connection by ID"
       tags:
         - "Integrations"
@@ -11944,6 +12175,7 @@ paths:
           description: ""
       security:
         - apikey: []
+        - oauth2: []
       summary: "Delete an integration connection"
       tags:
         - "Integrations"
@@ -11976,6 +12208,7 @@ paths:
           description: ""
       security:
         - apikey: []
+        - oauth2: []
       summary: "Update an integration connection"
       tags:
         - "Integrations"
@@ -12003,6 +12236,7 @@ paths:
           description: ""
       security:
         - apikey: []
+        - oauth2: []
       summary: "Test an integration connection"
       tags:
         - "Integrations"
@@ -12030,6 +12264,7 @@ paths:
           description: ""
       security:
         - apikey: []
+        - oauth2: []
       summary: "Pause an integration connection"
       tags:
         - "Integrations"
@@ -12057,6 +12292,7 @@ paths:
           description: ""
       security:
         - apikey: []
+        - oauth2: []
       summary: "Resume an integration connection"
       tags:
         - "Integrations"
@@ -12084,6 +12320,7 @@ paths:
           description: ""
       security:
         - apikey: []
+        - oauth2: []
       summary: "Disconnect an integration"
       tags:
         - "Integrations"
@@ -12117,6 +12354,7 @@ paths:
           description: ""
       security:
         - apikey: []
+        - oauth2: []
       summary: "Set services enabled on a connection"
       tags:
         - "Integrations"
@@ -12143,6 +12381,7 @@ paths:
           description: ""
       security:
         - apikey: []
+        - oauth2: []
       summary: "List services enabled on a connection"
       tags:
         - "Integrations"
@@ -12170,6 +12409,7 @@ paths:
           description: ""
       security:
         - apikey: []
+        - oauth2: []
       summary: "List check definitions for a provider"
       tags:
         - "Integrations"
@@ -12197,6 +12437,7 @@ paths:
           description: ""
       security:
         - apikey: []
+        - oauth2: []
       summary: "List checks for a connection"
       tags:
         - "Integrations"
@@ -12230,6 +12471,7 @@ paths:
           description: ""
       security:
         - apikey: []
+        - oauth2: []
       summary: "Run integration checks"
       tags:
         - "Integrations"
@@ -12262,6 +12504,7 @@ paths:
           description: ""
       security:
         - apikey: []
+        - oauth2: []
       summary: "Run a single check on a connection"
       tags:
         - "Integrations"
@@ -12289,6 +12532,7 @@ paths:
           description: ""
       security:
         - apikey: []
+        - oauth2: []
       summary: "List variable definitions for a provider"
       tags:
         - "Integrations"
@@ -12316,6 +12560,7 @@ paths:
           description: ""
       security:
         - apikey: []
+        - oauth2: []
       summary: "List connection variables"
       tags:
         - "Integrations"
@@ -12348,6 +12593,7 @@ paths:
           description: ""
       security:
         - apikey: []
+        - oauth2: []
       summary: "Update connection variables"
       tags:
         - "Integrations"
@@ -12380,6 +12626,7 @@ paths:
           description: ""
       security:
         - apikey: []
+        - oauth2: []
       summary: "Get options for a connection variable"
       tags:
         - "Integrations"
@@ -12407,6 +12654,7 @@ paths:
           description: ""
       security:
         - apikey: []
+        - oauth2: []
       summary: "List checks for a task template"
       tags:
         - "Integrations"
@@ -12434,6 +12682,7 @@ paths:
           description: ""
       security:
         - apikey: []
+        - oauth2: []
       summary: "List checks attached to a task"
       tags:
         - "Integrations"
@@ -12467,6 +12716,7 @@ paths:
           description: ""
       security:
         - apikey: []
+        - oauth2: []
       summary: "Run a check for a task"
       tags:
         - "Integrations"
@@ -12500,6 +12750,7 @@ paths:
           description: ""
       security:
         - apikey: []
+        - oauth2: []
       summary: "Disconnect checks from a task"
       tags:
         - "Integrations"
@@ -12533,6 +12784,7 @@ paths:
           description: ""
       security:
         - apikey: []
+        - oauth2: []
       summary: "Reconnect checks to a task"
       tags:
         - "Integrations"
@@ -12565,6 +12817,7 @@ paths:
           description: ""
       security:
         - apikey: []
+        - oauth2: []
       summary: "List check runs for a task"
       tags:
         - "Integrations"
@@ -12592,6 +12845,7 @@ paths:
           description: ""
       security:
         - apikey: []
+        - oauth2: []
       summary: "Sync Google Workspace employees"
       tags:
         - "Integrations"
@@ -12614,6 +12868,7 @@ paths:
           description: ""
       security:
         - apikey: []
+        - oauth2: []
       summary: "Get Google Workspace sync status"
       tags:
         - "Integrations"
@@ -12641,6 +12896,7 @@ paths:
           description: ""
       security:
         - apikey: []
+        - oauth2: []
       summary: "Sync Rippling employees"
       tags:
         - "Integrations"
@@ -12663,6 +12919,7 @@ paths:
           description: ""
       security:
         - apikey: []
+        - oauth2: []
       summary: "Get Rippling sync status"
       tags:
         - "Integrations"
@@ -12690,6 +12947,7 @@ paths:
           description: ""
       security:
         - apikey: []
+        - oauth2: []
       summary: "Sync JumpCloud employees"
       tags:
         - "Integrations"
@@ -12712,6 +12970,7 @@ paths:
           description: ""
       security:
         - apikey: []
+        - oauth2: []
       summary: "Get JumpCloud sync status"
       tags:
         - "Integrations"
@@ -12734,6 +12993,7 @@ paths:
           description: ""
       security:
         - apikey: []
+        - oauth2: []
       summary: "Get the currently configured employee sync provider"
       tags:
         - "Integrations"
@@ -12761,6 +13021,7 @@ paths:
           description: ""
       security:
         - apikey: []
+        - oauth2: []
       summary: "Set the employee sync provider"
       tags:
         - "Integrations"
@@ -12783,6 +13044,7 @@ paths:
           description: ""
       security:
         - apikey: []
+        - oauth2: []
       summary: "List employee sync providers available to the org"
       tags:
         - "Integrations"
@@ -12815,6 +13077,7 @@ paths:
           description: ""
       security:
         - apikey: []
+        - oauth2: []
       summary: "Sync employees for a dynamic provider"
       tags:
         - "Integrations"
@@ -13331,6 +13594,7 @@ paths:
                         type: "number"
       security:
         - apikey: []
+        - oauth2: []
       summary: "Get task items statistics for an entity"
       tags:
         - "Task Management"
@@ -13450,6 +13714,7 @@ paths:
                 $ref: "#/components/schemas/PaginatedTaskItemResponseDto"
       security:
         - apikey: []
+        - oauth2: []
       summary: "Get task items for an entity"
       tags:
         - "Task Management"
@@ -13481,6 +13746,7 @@ paths:
                 $ref: "#/components/schemas/TaskItemResponseDto"
       security:
         - apikey: []
+        - oauth2: []
       summary: "Create a new task item"
       tags:
         - "Task Management"
@@ -13520,6 +13786,7 @@ paths:
                 $ref: "#/components/schemas/TaskItemResponseDto"
       security:
         - apikey: []
+        - oauth2: []
       summary: "Update a task item"
       tags:
         - "Task Management"
@@ -13548,6 +13815,7 @@ paths:
           description: "Task item deleted successfully"
       security:
         - apikey: []
+        - oauth2: []
       summary: "Delete a task item"
       tags:
         - "Task Management"
@@ -13580,6 +13848,7 @@ paths:
                 $ref: "#/components/schemas/AttachmentResponseDto"
       security:
         - apikey: []
+        - oauth2: []
       summary: "Upload attachment to task item"
       tags:
         - "Task Management"
@@ -13609,6 +13878,7 @@ paths:
           description: "Attachment deleted successfully"
       security:
         - apikey: []
+        - oauth2: []
       summary: "Delete attachment from task item"
       tags:
         - "Task Management"
@@ -13638,6 +13908,7 @@ paths:
           description: "Activity logs retrieved successfully"
       security:
         - apikey: []
+        - oauth2: []
       summary: "Get task item activity log"
       tags:
         - "Task Management"
@@ -13660,6 +13931,7 @@ paths:
           description: "List of training video completion records"
       security:
         - apikey: []
+        - oauth2: []
       summary: "List training completions"
       tags:
         - "Training"
@@ -13687,6 +13959,7 @@ paths:
           description: "The updated completion record"
       security:
         - apikey: []
+        - oauth2: []
       summary: "Mark a training video as complete"
       tags:
         - "Training"
@@ -13719,6 +13992,7 @@ paths:
                 $ref: "#/components/schemas/SendTrainingCompletionResponseDto"
       security:
         - apikey: []
+        - oauth2: []
       summary: "Send training completion email with certificate"
       tags:
         - "Training"
@@ -13749,6 +14023,7 @@ paths:
           description: "Training not complete or member not found"
       security:
         - apikey: []
+        - oauth2: []
       summary: "Generate training certificate"
       tags:
         - "Training"
@@ -13779,6 +14054,7 @@ paths:
           description: "HIPAA training not complete or member not found"
       security:
         - apikey: []
+        - oauth2: []
       summary: "Generate HIPAA training certificate PDF"
       tags:
         - "Training"
@@ -13806,6 +14082,7 @@ paths:
           description: "The organization chart"
       security:
         - apikey: []
+        - oauth2: []
       summary: "Get the organization chart"
       tags:
         - "Org Chart"
@@ -13833,6 +14110,7 @@ paths:
           description: "The saved organization chart"
       security:
         - apikey: []
+        - oauth2: []
       summary: "Create or update an interactive organization chart"
       tags:
         - "Org Chart"
@@ -13860,6 +14138,7 @@ paths:
           description: "Deletion confirmation"
       security:
         - apikey: []
+        - oauth2: []
       summary: "Delete the organization chart"
       tags:
         - "Org Chart"
@@ -13894,6 +14173,7 @@ paths:
           description: "The uploaded organization chart"
       security:
         - apikey: []
+        - oauth2: []
       summary: "Upload an image as the organization chart"
       tags:
         - "Org Chart"
@@ -13923,6 +14203,7 @@ paths:
           description: ""
       security:
         - apikey: []
+        - oauth2: []
       summary: "List evidence forms"
       tags:
         - "Evidence Forms"
@@ -13951,6 +14232,7 @@ paths:
           description: ""
       security:
         - apikey: []
+        - oauth2: []
       summary: "Get submission statuses for all forms"
       tags:
         - "Evidence Forms"
@@ -13979,6 +14261,7 @@ paths:
           description: ""
       security:
         - apikey: []
+        - oauth2: []
       summary: "Get document relevance settings"
       tags:
         - "Evidence Forms"
@@ -14012,6 +14295,7 @@ paths:
           description: ""
       security:
         - apikey: []
+        - oauth2: []
       summary: "Update document relevance setting"
       tags:
         - "Evidence Forms"
@@ -14045,6 +14329,7 @@ paths:
           description: ""
       security:
         - apikey: []
+        - oauth2: []
       summary: "Get current user submissions"
       tags:
         - "Evidence Forms"
@@ -14073,6 +14358,7 @@ paths:
           description: ""
       security:
         - apikey: []
+        - oauth2: []
       summary: "Get pending submission count for current user"
       tags:
         - "Evidence Forms"
@@ -14121,6 +14407,7 @@ paths:
           description: ""
       security:
         - apikey: []
+        - oauth2: []
       summary: "Get form definition and submissions"
       tags:
         - "Evidence Forms"
@@ -14159,6 +14446,7 @@ paths:
           description: ""
       security:
         - apikey: []
+        - oauth2: []
       summary: "Get a single submission"
       tags:
         - "Evidence Forms"
@@ -14196,6 +14484,7 @@ paths:
           description: ""
       security:
         - apikey: []
+        - oauth2: []
       summary: "Delete a submission"
       tags:
         - "Evidence Forms"
@@ -14229,6 +14518,7 @@ paths:
           description: ""
       security:
         - apikey: []
+        - oauth2: []
       summary: "Submit evidence form"
       tags:
         - "Evidence Forms"
@@ -14262,6 +14552,7 @@ paths:
           description: ""
       security:
         - apikey: []
+        - oauth2: []
       summary: "Upload a file as an evidence submission"
       tags:
         - "Evidence Forms"
@@ -14300,6 +14591,7 @@ paths:
           description: ""
       security:
         - apikey: []
+        - oauth2: []
       summary: "Review evidence submission"
       tags:
         - "Evidence Forms"
@@ -14328,6 +14620,7 @@ paths:
           description: ""
       security:
         - apikey: []
+        - oauth2: []
       summary: "Upload evidence form file"
       tags:
         - "Evidence Forms"
@@ -14361,6 +14654,7 @@ paths:
           description: ""
       security:
         - apikey: []
+        - oauth2: []
       summary: "Export evidence submissions"
       tags:
         - "Evidence Forms"
@@ -14895,6 +15189,7 @@ paths:
           description: ""
       security:
         - apikey: []
+        - oauth2: []
       summary: "List audit logs"
       tags:
         - "Audit Logs"
@@ -15281,6 +15576,7 @@ paths:
           description: "Penetration tests returned"
       security:
         - apikey: []
+        - oauth2: []
       summary: "List penetration test runs"
       tags:
         - "Security Penetration Tests"
@@ -15316,6 +15612,7 @@ paths:
           description: "Invalid request payload"
       security:
         - apikey: []
+        - oauth2: []
       summary: "Create penetration test"
       tags:
         - "Security Penetration Tests"
@@ -15351,6 +15648,7 @@ paths:
           description: "Penetration test not found"
       security:
         - apikey: []
+        - oauth2: []
       summary: "Get penetration test status"
       tags:
         - "Security Penetration Tests"
@@ -15384,6 +15682,7 @@ paths:
           description: "Progress returned"
       security:
         - apikey: []
+        - oauth2: []
       summary: "Get penetration test progress"
       tags:
         - "Security Penetration Tests"
@@ -15417,6 +15716,7 @@ paths:
           description: "Issues returned"
       security:
         - apikey: []
+        - oauth2: []
       summary: "Get penetration test issues"
       tags:
         - "Security Penetration Tests"
@@ -15450,6 +15750,7 @@ paths:
           description: "Events returned"
       security:
         - apikey: []
+        - oauth2: []
       summary: "Get penetration test agent events"
       tags:
         - "Security Penetration Tests"
@@ -15483,6 +15784,7 @@ paths:
           description: "Markdown report output"
       security:
         - apikey: []
+        - oauth2: []
       summary: "Get penetration test output"
       tags:
         - "Security Penetration Tests"
@@ -15516,6 +15818,7 @@ paths:
           description: "PDF report artifact"
       security:
         - apikey: []
+        - oauth2: []
       summary: "Get penetration test PDF"
       tags:
         - "Security Penetration Tests"
@@ -15538,6 +15841,7 @@ paths:
           description: ""
       security:
         - apikey: []
+        - oauth2: []
       summary: "Get members with pending offboarding checklists"
       tags:
         - "Offboarding Checklist"
@@ -15560,6 +15864,7 @@ paths:
           description: ""
       security:
         - apikey: []
+        - oauth2: []
       summary: "Get the offboarding checklist template"
       tags:
         - "Offboarding Checklist"
@@ -15587,6 +15892,7 @@ paths:
           description: ""
       security:
         - apikey: []
+        - oauth2: []
       summary: "Add an offboarding checklist template item"
       tags:
         - "Offboarding Checklist"
@@ -15620,6 +15926,7 @@ paths:
           description: ""
       security:
         - apikey: []
+        - oauth2: []
       summary: "Update an offboarding checklist template item"
       tags:
         - "Offboarding Checklist"
@@ -15646,6 +15953,7 @@ paths:
           description: ""
       security:
         - apikey: []
+        - oauth2: []
       summary: "Delete an offboarding checklist template item"
       tags:
         - "Offboarding Checklist"
@@ -15673,6 +15981,7 @@ paths:
           description: ""
       security:
         - apikey: []
+        - oauth2: []
       summary: "Get a member's offboarding checklist"
       tags:
         - "Offboarding Checklist"
@@ -15695,6 +16004,7 @@ paths:
           description: ""
       security:
         - apikey: []
+        - oauth2: []
       summary: "Export all offboarding evidence as a zip file"
       tags:
         - "Offboarding Checklist"
@@ -15723,6 +16033,7 @@ paths:
           description: ""
       security:
         - apikey: []
+        - oauth2: []
       summary: "Export offboarding evidence as a zip file"
       tags:
         - "Offboarding Checklist"
@@ -15761,6 +16072,7 @@ paths:
           description: ""
       security:
         - apikey: []
+        - oauth2: []
       summary: "Complete an offboarding checklist item"
       tags:
         - "Offboarding Checklist"
@@ -15792,6 +16104,7 @@ paths:
           description: ""
       security:
         - apikey: []
+        - oauth2: []
       summary: "Reopen an offboarding checklist item"
       tags:
         - "Offboarding Checklist"
@@ -15830,6 +16143,7 @@ paths:
           description: ""
       security:
         - apikey: []
+        - oauth2: []
       summary: "Upload evidence for an offboarding checklist item"
       tags:
         - "Offboarding Checklist"
@@ -15858,6 +16172,7 @@ paths:
           description: ""
       security:
         - apikey: []
+        - oauth2: []
       summary: "Get vendor access revocation status for a member"
       tags:
         - "Offboarding Checklist"
@@ -15886,6 +16201,7 @@ paths:
           description: ""
       security:
         - apikey: []
+        - oauth2: []
       summary: "Confirm all vendor access as revoked"
       tags:
         - "Offboarding Checklist"
@@ -15920,6 +16236,7 @@ paths:
           description: ""
       security:
         - apikey: []
+        - oauth2: []
       summary: "Mark vendor access as revoked"
       tags:
         - "Offboarding Checklist"
@@ -15953,6 +16270,7 @@ paths:
           description: ""
       security:
         - apikey: []
+        - oauth2: []
       summary: "Undo vendor access revocation"
       tags:
         - "Offboarding Checklist"
@@ -16049,6 +16367,19 @@ components:
       in: "header"
       name: "X-API-Key"
       description: "API key for authentication"
+    oauth2:
+      type: "oauth2"
+      description: "OAuth 2.1 authorization code flow. Sign in with your Comp AI account — tokens are issued by the Comp AI authorization server and scoped to your organization, role, and permissions."
+      flows:
+        authorizationCode:
+          authorizationUrl: "https://api.trycomp.ai/api/auth/mcp/authorize"
+          tokenUrl: "https://api.trycomp.ai/api/auth/mcp/token"
+          refreshUrl: "https://api.trycomp.ai/api/auth/mcp/token"
+          scopes:
+            openid: "OpenID Connect authentication"
+            profile: "Basic profile information"
+            email: "Email address"
+            offline_access: "Maintain access via refresh tokens"
   schemas:
     UserResponseDto:
       type: "object"
@@ -17546,6 +17877,12 @@ components:
           type: "boolean"
           description: "Whether this policy is archived"
           example: false
+        archivedAt:
+          format: "date-time"
+          type: "string"
+          description: "When the policy was archived by framework sync"
+          example: "2024-02-01T00:00:00.000Z"
+          nullable: true
         createdAt:
           format: "date-time"
           type: "string"
@@ -17599,6 +17936,7 @@ components:
         - "signedBy"
         - "reviewDate"
         - "isArchived"
+        - "archivedAt"
         - "createdAt"
         - "updatedAt"
         - "lastArchivedAt"

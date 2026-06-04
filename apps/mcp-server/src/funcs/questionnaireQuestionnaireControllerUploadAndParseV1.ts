@@ -7,7 +7,7 @@ import { encodeJSON } from "../lib/encodings.js";
 import { compactMap } from "../lib/primitives.js";
 import { safeParse } from "../lib/schemas.js";
 import { RequestOptions } from "../lib/sdks.js";
-import { extractSecurity, resolveGlobalSecurity } from "../lib/security.js";
+import { resolveSecurity } from "../lib/security.js";
 import { pathToFunc } from "../lib/url.js";
 import { APIError } from "../models/errors/apierror.js";
 import {
@@ -18,6 +18,7 @@ import {
   UnexpectedClientError,
 } from "../models/errors/httpclienterrors.js";
 import { SDKValidationError } from "../models/errors/sdkvalidationerror.js";
+import { QuestionnaireControllerUploadAndParseV1Security } from "../models/questionnairecontrolleruploadandparsev1op.js";
 import {
   UploadAndParseDto,
   UploadAndParseDto$zodSchema,
@@ -30,11 +31,10 @@ import { Result } from "../types/fp.js";
  *
  * @remarks
  * Upload a questionnaire payload and start asynchronous parsing, returning a run ID for real-time progress tracking.
- *
- * If set, this operation will use {@link Security.apikey} from the global security.
  */
 export function questionnaireQuestionnaireControllerUploadAndParseV1(
   client$: CompAiCore,
+  security: QuestionnaireControllerUploadAndParseV1Security,
   request: UploadAndParseDto,
   options?: RequestOptions,
 ): APIPromise<
@@ -51,6 +51,7 @@ export function questionnaireQuestionnaireControllerUploadAndParseV1(
 > {
   return new APIPromise($do(
     client$,
+    security,
     request,
     options,
   ));
@@ -58,6 +59,7 @@ export function questionnaireQuestionnaireControllerUploadAndParseV1(
 
 async function $do(
   client$: CompAiCore,
+  security: QuestionnaireControllerUploadAndParseV1Security,
   request: UploadAndParseDto,
   options?: RequestOptions,
 ): Promise<
@@ -91,8 +93,23 @@ async function $do(
     "Content-Type": "application/json",
     Accept: "application/json",
   }));
-  const securityInput = await extractSecurity(client$._options.security);
-  const requestSecurity = resolveGlobalSecurity(securityInput, [0]);
+
+  const requestSecurity = resolveSecurity(
+    [
+      {
+        fieldName: "X-API-Key",
+        type: "apiKey:header",
+        value: security?.apikey,
+      },
+    ],
+    [
+      {
+        fieldName: "Authorization",
+        type: "oauth2",
+        value: security?.oauth2,
+      },
+    ],
+  );
 
   const context = {
     options: client$._options,
@@ -100,7 +117,7 @@ async function $do(
     operationID: "QuestionnaireController_uploadAndParse_v1",
     oAuth2Scopes: null,
     resolvedSecurity: requestSecurity,
-    securitySource: client$._options.security,
+    securitySource: security,
     retryConfig: options?.retries
       || client$._options.retryConfig
       || { strategy: "none" },
