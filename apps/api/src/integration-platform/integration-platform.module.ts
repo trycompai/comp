@@ -31,6 +31,7 @@ import { DynamicIntegrationRepository } from './repositories/dynamic-integration
 import { DynamicCheckRepository } from './repositories/dynamic-check.repository';
 import { IntegrationSyncLoggerService } from './services/integration-sync-logger.service';
 import { GenericEmployeeSyncService } from './services/generic-employee-sync.service';
+import { GenericDeviceSyncService } from './services/generic-device-sync.service';
 
 @Module({
   imports: [AuthModule, forwardRef(() => CloudSecurityModule)],
@@ -59,6 +60,7 @@ import { GenericEmployeeSyncService } from './services/generic-employee-sync.ser
     TaskIntegrationChecksService,
     IntegrationSyncLoggerService,
     GenericEmployeeSyncService,
+    GenericDeviceSyncService,
     // Repositories
     ProviderRepository,
     ConnectionRepository,
