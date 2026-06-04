@@ -1,3 +1,12 @@
+## [3.70.2](https://github.com/trycompai/comp/compare/v3.70.1...v3.70.2) (2026-06-04)
+
+
+### Bug Fixes
+
+* **api:** update endpoint to skip offboarding when removing the member ([69464a2](https://github.com/trycompai/comp/commit/69464a2b0f328f2afea378b6480bad631175e04a))
+* **app:** skip offboarding when removing the member ([16a60b6](https://github.com/trycompai/comp/commit/16a60b623bc903a8d02c19f8752f6a8eccbafe00))
+* **integration-platform:** pass storage check when firewall denies by default ([225cd6b](https://github.com/trycompai/comp/commit/225cd6bb9baec891f1c3295fda7b85193420ff65))
+
 ## [3.70.1](https://github.com/trycompai/comp/compare/v3.70.0...v3.70.1) (2026-06-04)
 
 
