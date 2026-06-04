@@ -2,6 +2,7 @@ import type { AwsCommandStep } from './ai-remediation.prompt';
 import {
   REQUIRED_PARAMS,
   looksLikeValidationError,
+  normalizeConfigRecordingGroup,
   validatePlanSteps,
 } from './aws-command-executor';
 
@@ -300,5 +301,103 @@ describe('validatePlanSteps — pre-existing behavior preserved', () => {
     expect(
       errors.find((e) => /Contains placeholder values/.test(e)),
     ).toBeDefined();
+  });
+});
+
+/**
+ * AWS Config recorder: `allSupported:true` is mutually exclusive with
+ * `recordingStrategy` / `exclusionByResourceTypes` / `resourceTypes`. The AI
+ * (and a customer's existing exclusion-based recorder) frequently echoes those
+ * fields back alongside allSupported:true, which AWS rejects with a
+ * ValidationException. normalizeConfigRecordingGroup collapses the group to the
+ * single valid "record everything (incl. global IAM)" shape.
+ */
+describe('normalizeConfigRecordingGroup', () => {
+  it('strips conflicting fields when an exclusion-based group is converted to all-supported', () => {
+    const input: Record<string, unknown> = {
+      ConfigurationRecorder: {
+        name: 'default',
+        roleARN: 'arn:aws:iam::123:role/aws-service-role/config',
+        recordingGroup: {
+          allSupported: true,
+          recordingStrategy: { useOnly: 'EXCLUSION_BY_RESOURCE_TYPES' },
+          exclusionByResourceTypes: {
+            resourceTypes: ['AWS::IAM::User', 'AWS::IAM::Role'],
+          },
+        },
+      },
+    };
+    normalizeConfigRecordingGroup(input);
+    const recorder = input.ConfigurationRecorder as Record<string, unknown>;
+    expect(recorder.recordingGroup).toEqual({
+      allSupported: true,
+      includeGlobalResourceTypes: true,
+    });
+    // name + roleARN are preserved untouched.
+    expect(recorder.name).toBe('default');
+    expect(recorder.roleARN).toBe(
+      'arn:aws:iam::123:role/aws-service-role/config',
+    );
+  });
+
+  it('converts a pure exclusion strategy (allSupported absent) to all-supported', () => {
+    const input: Record<string, unknown> = {
+      ConfigurationRecorder: {
+        name: 'default',
+        recordingGroup: {
+          recordingStrategy: { useOnly: 'EXCLUSION_BY_RESOURCE_TYPES' },
+          exclusionByResourceTypes: { resourceTypes: ['AWS::IAM::Role'] },
+        },
+      },
+    };
+    normalizeConfigRecordingGroup(input);
+    const recorder = input.ConfigurationRecorder as Record<string, unknown>;
+    expect(recorder.recordingGroup).toEqual({
+      allSupported: true,
+      includeGlobalResourceTypes: true,
+    });
+  });
+
+  it('cleans an ALL_SUPPORTED_RESOURCE_TYPES strategy to the minimal valid shape', () => {
+    const input: Record<string, unknown> = {
+      ConfigurationRecorder: {
+        name: 'default',
+        recordingGroup: {
+          allSupported: true,
+          recordingStrategy: { useOnly: 'ALL_SUPPORTED_RESOURCE_TYPES' },
+        },
+      },
+    };
+    normalizeConfigRecordingGroup(input);
+    expect(
+      (input.ConfigurationRecorder as Record<string, unknown>).recordingGroup,
+    ).toEqual({ allSupported: true, includeGlobalResourceTypes: true });
+  });
+
+  it('leaves an INCLUSION_BY_RESOURCE_TYPES recorder untouched (records only specific types)', () => {
+    const recordingGroup = {
+      allSupported: false,
+      recordingStrategy: { useOnly: 'INCLUSION_BY_RESOURCE_TYPES' },
+      resourceTypes: ['AWS::S3::Bucket'],
+    };
+    const input: Record<string, unknown> = {
+      ConfigurationRecorder: { name: 'default', recordingGroup },
+    };
+    normalizeConfigRecordingGroup(input);
+    expect(
+      (input.ConfigurationRecorder as Record<string, unknown>).recordingGroup,
+    ).toEqual(recordingGroup);
+  });
+
+  it('is a no-op when there is no ConfigurationRecorder/recordingGroup', () => {
+    const input: Record<string, unknown> = {};
+    expect(() => normalizeConfigRecordingGroup(input)).not.toThrow();
+    expect(input).toEqual({});
+
+    const input2: Record<string, unknown> = {
+      ConfigurationRecorder: { name: 'default' },
+    };
+    normalizeConfigRecordingGroup(input2);
+    expect(input2).toEqual({ ConfigurationRecorder: { name: 'default' } });
   });
 });

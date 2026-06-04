@@ -75,3 +75,34 @@ describe('RemediationService.previewRemediation', () => {
     expect(getDecryptedCredentials).not.toHaveBeenCalled();
   });
 });
+
+describe('RemediationService.isUsablePlan (plan-cache guard)', () => {
+  const service = makeService();
+  const callIsUsable = (plan: unknown): boolean =>
+    (
+      service as unknown as { isUsablePlan: (p: unknown) => boolean }
+    ).isUsablePlan(plan);
+
+  it('treats an empty fix plan as unusable so it is never cached/reused (Retry can regenerate)', () => {
+    expect(callIsUsable({ canAutoFix: true, fixSteps: [] })).toBe(false);
+  });
+
+  it('treats a non-auto-fixable plan as unusable', () => {
+    expect(
+      callIsUsable({ canAutoFix: false, fixSteps: [{ command: 'X' }] }),
+    ).toBe(false);
+  });
+
+  it('treats undefined as unusable', () => {
+    expect(callIsUsable(undefined)).toBe(false);
+  });
+
+  it('treats an auto-fixable plan with at least one fix step as usable', () => {
+    expect(
+      callIsUsable({
+        canAutoFix: true,
+        fixSteps: [{ command: 'PutConfigurationRecorderCommand' }],
+      }),
+    ).toBe(true);
+  });
+});

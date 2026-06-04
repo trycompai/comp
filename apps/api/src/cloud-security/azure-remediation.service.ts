@@ -23,6 +23,17 @@ export class AzureRemediationService {
   >();
   private readonly PLAN_CACHE_MAX = 100;
 
+  /**
+   * A plan is only worth caching/reusing if it can actually be auto-applied.
+   * Caching an empty or non-auto-fixable plan makes "Retry" a guaranteed
+   * no-op: execute would reload the same dead plan and fail identically.
+   */
+  private isUsablePlan(plan: AzureFixPlan | undefined): boolean {
+    return Boolean(
+      plan?.canAutoFix && plan.fixSteps && plan.fixSteps.length > 0,
+    );
+  }
+
   private evictStalePlans() {
     if (this.planCache.size <= this.PLAN_CACHE_MAX) return;
     const now = Date.now();
@@ -101,6 +112,12 @@ export class AzureRemediationService {
       }
     }
 
+    // The refined plan can flip canAutoFix to false after seeing real state —
+    // surface guided steps instead of a misleading auto-fix preview.
+    if (!plan.canAutoFix) {
+      return this.buildGuidedResponse(plan);
+    }
+
     // Validate fix steps
     const validationErrors = validateAzurePlanSteps(plan.fixSteps);
     if (validationErrors.length > 0) {
@@ -110,10 +127,14 @@ export class AzureRemediationService {
       return this.buildGuidedResponse(plan);
     }
 
-    // Cache plan for execute
+    // Cache plan for execute. Never cache an unusable (empty / non-auto-
+    // fixable) plan — caching one turns "Retry" into a no-op that reloads the
+    // same dead plan.
     const cacheKey = `${params.connectionId}:${params.checkResultId}:${params.remediationKey}`;
-    this.evictStalePlans();
-    this.planCache.set(cacheKey, { plan, timestamp: Date.now() });
+    if (this.isUsablePlan(plan)) {
+      this.evictStalePlans();
+      this.planCache.set(cacheKey, { plan, timestamp: Date.now() });
+    }
 
     return this.buildPreviewResponse(plan);
   }
@@ -141,9 +162,17 @@ export class AzureRemediationService {
     const cached = this.planCache.get(cacheKey);
     let plan: AzureFixPlan;
 
-    if (cached && Date.now() - cached.timestamp < PLAN_CACHE_TTL) {
+    // Only reuse a fresh AND usable plan — reusing a stale empty / non-auto-
+    // fixable plan is what makes "Retry" a no-op (execute reloads the same
+    // dead plan and fails identically).
+    if (
+      cached &&
+      Date.now() - cached.timestamp < PLAN_CACHE_TTL &&
+      this.isUsablePlan(cached.plan)
+    ) {
       plan = cached.plan;
     } else {
+      this.planCache.delete(cacheKey);
       plan = await this.aiRemediationService.generateAzureFixPlan(finding);
       if (!plan.canAutoFix) {
         throw new Error(
@@ -418,6 +447,9 @@ export class AzureRemediationService {
       };
     } catch (error) {
       const msg = error instanceof Error ? error.message : String(error);
+      // Drop the cached plan so a subsequent "Retry" regenerates instead of
+      // reloading the plan that just failed.
+      this.planCache.delete(cacheKey);
       await db.remediationAction.update({
         where: { id: action.id },
         data: {

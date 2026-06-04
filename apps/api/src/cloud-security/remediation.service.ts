@@ -37,6 +37,18 @@ export class RemediationService {
   private readonly PLAN_CACHE_MAX = 100;
   private readonly PLAN_CACHE_TTL = 5 * 60 * 1000;
 
+  /**
+   * A plan is only worth caching/reusing if it can actually be auto-applied.
+   * Caching an empty or non-auto-fixable plan makes "Retry" a guaranteed
+   * no-op: execute would reload the same dead plan and fail identically,
+   * never re-running the (non-deterministic) AI generation that might succeed.
+   */
+  private isUsablePlan(plan: FixPlan | undefined): boolean {
+    return Boolean(
+      plan?.canAutoFix && plan.fixSteps && plan.fixSteps.length > 0,
+    );
+  }
+
   private evictStalePlans() {
     if (this.planCache.size <= this.PLAN_CACHE_MAX) return;
     const now = Date.now();
@@ -350,12 +362,16 @@ export class RemediationService {
               this.buildStaticPermissionScript(permissionsList);
           }
 
-          // Cache the refined plan + permissions for execute and Recheck
-          this.evictStalePlans();
-          this.planCache.set(
-            `${params.connectionId}:${params.checkResultId}:${params.remediationKey}`,
-            { plan: refined, timestamp: Date.now(), permissionsList },
-          );
+          // Cache the refined plan + permissions for execute and Recheck.
+          // Never cache an unusable (empty / non-auto-fixable) plan — caching
+          // one turns "Retry" into a no-op that reloads the same dead plan.
+          if (this.isUsablePlan(refined)) {
+            this.evictStalePlans();
+            this.planCache.set(
+              `${params.connectionId}:${params.checkResultId}:${params.remediationKey}`,
+              { plan: refined, timestamp: Date.now(), permissionsList },
+            );
+          }
 
           return {
             currentState: refined.currentState,
@@ -381,16 +397,19 @@ export class RemediationService {
       }
     }
 
-    // Fallback: show initial AI plan without real data
-    this.evictStalePlans();
-    this.planCache.set(
-      `${params.connectionId}:${params.checkResultId}:${params.remediationKey}`,
-      {
-        plan,
-        timestamp: Date.now(),
-        permissionsList: plan.requiredPermissions,
-      },
-    );
+    // Fallback: show initial AI plan without real data. Only cache it when
+    // usable — caching an empty/non-auto-fixable plan makes Retry a no-op.
+    if (this.isUsablePlan(plan)) {
+      this.evictStalePlans();
+      this.planCache.set(
+        `${params.connectionId}:${params.checkResultId}:${params.remediationKey}`,
+        {
+          plan,
+          timestamp: Date.now(),
+          permissionsList: plan.requiredPermissions,
+        },
+      );
+    }
 
     return {
       currentState: plan.currentState,
@@ -440,12 +459,21 @@ export class RemediationService {
 
     // Get plan from cache or regenerate
     let plan: FixPlan;
-    const cached = this.planCache.get(
-      `${params.connectionId}:${params.checkResultId}:${params.remediationKey}`,
-    );
-    if (cached && Date.now() - cached.timestamp < 5 * 60 * 1000) {
+    const cacheKey = `${params.connectionId}:${params.checkResultId}:${params.remediationKey}`;
+    const cached = this.planCache.get(cacheKey);
+    // Only reuse a cached plan if it is still fresh AND usable. Reusing a
+    // stale empty / non-auto-fixable plan is exactly what made "Retry" a
+    // no-op — execute reloaded the same dead plan and failed identically.
+    // Falling through (and dropping the dead entry) regenerates a fresh plan,
+    // which is what gives Retry a chance to succeed.
+    if (
+      cached &&
+      Date.now() - cached.timestamp < this.PLAN_CACHE_TTL &&
+      this.isUsablePlan(cached.plan)
+    ) {
       plan = cached.plan;
     } else {
+      this.planCache.delete(cacheKey);
       const evidence = (finding.evidence ?? {}) as Record<string, unknown>;
       plan = await this.aiRemediationService.generateFixPlan({
         title: finding.title ?? 'Unknown',
