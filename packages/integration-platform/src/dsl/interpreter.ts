@@ -4,6 +4,7 @@ import type {
   CheckDefinition,
   SyncDefinition,
   SyncEmployee,
+  SyncDevice,
   FetchStep,
   FetchPagesStep,
   ForEachStep,
@@ -12,7 +13,7 @@ import type {
   EmitStep,
   CodeStep,
 } from './types';
-import { SyncEmployeeSchema } from './types';
+import { SyncEmployeeSchema, SyncDeviceSchema } from './types';
 import { evaluateCondition, evaluateOperator, resolvePath } from './expression-evaluator';
 import { interpolate, interpolateTemplate } from './template-engine';
 
@@ -111,6 +112,65 @@ export function interpretDeclarativeSync(opts: {
 
       ctx.log(`Sync produced ${employees.length} validated employees`);
       return employees;
+    },
+  };
+}
+
+/**
+ * Converts a declarative SyncDefinition (JSON DSL) into a function that
+ * produces a validated list of SyncDevice objects.
+ *
+ * Mirrors interpretDeclarativeSync but resolves the device list at
+ * `scope[devicesPath]` (default `devices`) and validates each item with
+ * SyncDeviceSchema. Kept separate from the employee interpreter so the two
+ * validation paths never bleed into each other.
+ */
+export function interpretDeclarativeDeviceSync(opts: {
+  definition: SyncDefinition;
+  defaultSeverity?: FindingSeverity;
+}): {
+  run: (ctx: CheckContext) => Promise<SyncDevice[]>;
+} {
+  return {
+    run: async (ctx: CheckContext) => {
+      const scope: Record<string, unknown> = {
+        variables: ctx.variables,
+        credentials: ctx.credentials,
+        accessToken: ctx.accessToken,
+        connectionId: ctx.connectionId,
+        organizationId: ctx.organizationId,
+        metadata: ctx.metadata,
+      };
+
+      ctx.log('Running declarative device sync');
+
+      for (const step of opts.definition.steps) {
+        await executeStep(step, scope, ctx, opts.defaultSeverity || 'medium');
+      }
+
+      const devicesPath = opts.definition.devicesPath || 'devices';
+      const raw = resolvePath(scope, devicesPath);
+
+      if (!Array.isArray(raw)) {
+        throw new Error(
+          `Device sync definition did not produce an array at scope.${devicesPath}`,
+        );
+      }
+
+      const devices: SyncDevice[] = [];
+      for (let i = 0; i < raw.length; i++) {
+        const parsed = SyncDeviceSchema.safeParse(raw[i]);
+        if (!parsed.success) {
+          ctx.warn(
+            `Device at index ${i} failed validation: ${parsed.error.issues.map((iss) => iss.message).join(', ')}`,
+          );
+          continue;
+        }
+        devices.push(parsed.data);
+      }
+
+      ctx.log(`Device sync produced ${devices.length} validated devices`);
+      return devices;
     },
   };
 }

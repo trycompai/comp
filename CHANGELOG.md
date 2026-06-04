@@ -1,3 +1,27 @@
+# [3.70.0](https://github.com/trycompai/comp/compare/v3.69.0...v3.70.0) (2026-06-04)
+
+
+### Bug Fixes
+
+* **api:** address code review issues in GenericDeviceSyncService ([8a87d91](https://github.com/trycompai/comp/commit/8a87d91f8937a7ad2917f300d4eb7d5add6a2553))
+* **device-sync:** address Cubic review feedback on device sync ([601f70a](https://github.com/trycompai/comp/commit/601f70a2d7be15ab3c3c8d70c60f10dacf2e92d8))
+* **integration-platform:** address device-sync review round 2 ([7559906](https://github.com/trycompai/comp/commit/75599066f01fcd68e8c0e6e2fda3609db78a50d8))
+* **integration-platform:** address device-sync review round 3 ([40a8b25](https://github.com/trycompai/comp/commit/40a8b25dbd03dd17997f7bbb718e95f5b510a36d))
+* **integration-platform:** make dynamic device sync functional and safe ([68f8012](https://github.com/trycompai/comp/commit/68f8012b74fb4dee2da87326b707678bd1adb4aa)), closes [#2802](https://github.com/trycompai/comp/issues/2802)
+* **integration-platform:** reject malformed device-sync provider with 400 ([5c4d7af](https://github.com/trycompai/comp/commit/5c4d7af54171c9b824b8ec1ff25ac3739f642cab))
+* **trigger:** remove duplicate success field in device sync task ([7e1b680](https://github.com/trycompai/comp/commit/7e1b680955603b5387348c71e78b37bab7c743a0))
+
+
+### Features
+
+* **api:** add device sync discovery, provider selection, and trigger endpoints ([7adc931](https://github.com/trycompai/comp/commit/7adc9317d9647d61f0078cb5130050591fd9d1c6))
+* **api:** add GenericDeviceSyncService with tests ([4602f99](https://github.com/trycompai/comp/commit/4602f9978c3b4c5106e69a9f223bef39993ffa0d))
+* **api:** validate deviceSyncDefinition on dynamic integration upsert ([6c44c18](https://github.com/trycompai/comp/commit/6c44c184b315bbdf7337e83faee491cf42e992a3))
+* **app:** add device sync provider selector to Devices tab ([6b1456f](https://github.com/trycompai/comp/commit/6b1456f7778f788ce453ef7f0c5bdd35305594ae))
+* **db:** add device sync fields to Device, Organization, and DynamicIntegration ([b9e7188](https://github.com/trycompai/comp/commit/b9e7188e2ddad66f780237e52020b994171a126d))
+* **integration-platform:** add device_sync capability and SyncDevice schema ([31975ff](https://github.com/trycompai/comp/commit/31975ff3c4af28d41d51fe9b676ef0deaa42e2e6))
+* **trigger:** add scheduled device sync to daily integration checks ([59c57df](https://github.com/trycompai/comp/commit/59c57dfbff5599e920cce8634fc7b2a53f6d8df5))
+
 # [3.69.0](https://github.com/trycompai/comp/compare/v3.68.0...v3.69.0) (2026-06-03)
 
 
