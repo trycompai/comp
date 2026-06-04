@@ -6,7 +6,6 @@ import { ApiResponse } from '@/lib/api-client';
 import { useCallback, useMemo } from 'react';
 import type {
   RiskCategory,
-  Departments,
   RiskStatus,
   Likelihood,
   Impact,
@@ -39,7 +38,7 @@ export interface Risk {
   title: string;
   description: string;
   category: RiskCategory;
-  department: Departments | null;
+  department: string | null;
   status: RiskStatus;
   likelihood: Likelihood;
   impact: Impact;
@@ -83,7 +82,7 @@ interface CreateRiskData {
   title: string;
   description?: string;
   category?: RiskCategory;
-  department?: Departments;
+  department?: string;
   status?: RiskStatus;
   likelihood?: Likelihood;
   impact?: Impact;
@@ -98,7 +97,7 @@ interface UpdateRiskData {
   title?: string;
   description?: string;
   category?: RiskCategory;
-  department?: Departments | null;
+  department?: string | null;
   status?: RiskStatus;
   likelihood?: Likelihood;
   impact?: Impact;
