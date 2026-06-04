@@ -7,7 +7,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { filterDescriptionByFrameworks } from './description-framework-filter';
-import { db, TaskStatus, Prisma, TaskFrequency, Departments } from '@db';
+import { db, TaskStatus, Prisma, TaskFrequency } from '@db';
 import { TaskResponseDto } from './dto/task-responses.dto';
 import { TaskNotifierService } from './task-notifier.service';
 import { checkAutoCompletePhases } from '../frameworks/frameworks-timeline.helper';
@@ -566,7 +566,7 @@ export class TasksService {
       approverId?: string | null;
       frequency?: TaskFrequency;
       integrationScheduleFrequency?: TaskFrequency;
-      department?: string;
+      department?: string | null;
       reviewDate?: Date | null;
       notRelevantJustification?: string;
     },
@@ -602,7 +602,7 @@ export class TasksService {
         approverId?: string | null;
         frequency?: TaskFrequency;
         integrationScheduleFrequency?: TaskFrequency;
-        department?: string;
+        department?: string | null;
         reviewDate?: Date | null;
         notRelevantJustification?: string | null;
       } = {};
@@ -871,7 +871,7 @@ export class TasksService {
           status: 'todo',
           order: 0,
           frequency: (createData.frequency as TaskFrequency) || null,
-          department: (createData.department as Departments) || null,
+          department: createData.department || null,
           automationStatus,
           taskTemplateId: createData.taskTemplateId || null,
           ...(createData.controlIds &&
