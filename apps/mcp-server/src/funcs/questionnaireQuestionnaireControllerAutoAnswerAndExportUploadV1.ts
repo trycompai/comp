@@ -12,7 +12,7 @@ import {
 import { compactMap } from "../lib/primitives.js";
 import { safeParse } from "../lib/schemas.js";
 import { RequestOptions } from "../lib/sdks.js";
-import { extractSecurity, resolveGlobalSecurity } from "../lib/security.js";
+import { resolveSecurity } from "../lib/security.js";
 import { pathToFunc } from "../lib/url.js";
 import { APIError } from "../models/errors/apierror.js";
 import {
@@ -26,6 +26,7 @@ import { SDKValidationError } from "../models/errors/sdkvalidationerror.js";
 import {
   QuestionnaireControllerAutoAnswerAndExportUploadV1Request,
   QuestionnaireControllerAutoAnswerAndExportUploadV1Request$zodSchema,
+  QuestionnaireControllerAutoAnswerAndExportUploadV1Security,
 } from "../models/questionnairecontrollerautoanswerandexportuploadv1op.js";
 import { APICall, APIPromise } from "../types/async.js";
 import { isBlobLike } from "../types/blobs.js";
@@ -37,11 +38,10 @@ import { isReadableStream } from "../types/streams.js";
  *
  * @remarks
  * Upload a questionnaire file and return generated answer exports in PDF, CSV, or XLSX format.
- *
- * If set, this operation will use {@link Security.apikey} from the global security.
  */
 export function questionnaireQuestionnaireControllerAutoAnswerAndExportUploadV1(
   client$: CompAiCore,
+  security: QuestionnaireControllerAutoAnswerAndExportUploadV1Security,
   request: QuestionnaireControllerAutoAnswerAndExportUploadV1Request,
   options?: RequestOptions,
 ): APIPromise<
@@ -58,6 +58,7 @@ export function questionnaireQuestionnaireControllerAutoAnswerAndExportUploadV1(
 > {
   return new APIPromise($do(
     client$,
+    security,
     request,
     options,
   ));
@@ -65,6 +66,7 @@ export function questionnaireQuestionnaireControllerAutoAnswerAndExportUploadV1(
 
 async function $do(
   client$: CompAiCore,
+  security: QuestionnaireControllerAutoAnswerAndExportUploadV1Security,
   request: QuestionnaireControllerAutoAnswerAndExportUploadV1Request,
   options?: RequestOptions,
 ): Promise<
@@ -129,8 +131,23 @@ async function $do(
   const headers$ = new Headers(compactMap({
     Accept: "*/*",
   }));
-  const securityInput = await extractSecurity(client$._options.security);
-  const requestSecurity = resolveGlobalSecurity(securityInput, [0]);
+
+  const requestSecurity = resolveSecurity(
+    [
+      {
+        fieldName: "X-API-Key",
+        type: "apiKey:header",
+        value: security?.apikey,
+      },
+    ],
+    [
+      {
+        fieldName: "Authorization",
+        type: "oauth2",
+        value: security?.oauth2,
+      },
+    ],
+  );
 
   const context = {
     options: client$._options,
@@ -138,7 +155,7 @@ async function $do(
     operationID: "QuestionnaireController_autoAnswerAndExportUpload_v1",
     oAuth2Scopes: null,
     resolvedSecurity: requestSecurity,
-    securitySource: client$._options.security,
+    securitySource: security,
     retryConfig: options?.retries
       || client$._options.retryConfig
       || { strategy: "none" },

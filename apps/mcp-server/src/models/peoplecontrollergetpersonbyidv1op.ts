@@ -8,6 +8,20 @@ import {
   PeopleResponseDto$zodSchema,
 } from "./peopleresponsedto.js";
 
+export type PeopleControllerGetPersonByIdV1Security = {
+  apikey?: string | undefined;
+  oauth2?: string | undefined;
+};
+
+export const PeopleControllerGetPersonByIdV1Security$zodSchema: z.ZodType<
+  PeopleControllerGetPersonByIdV1Security
+> = z.object({
+  apikey: z.string().describe("API key for authentication").optional(),
+  oauth2: z.string().describe(
+    "OAuth 2.1 authorization code flow. Sign in with your Comp AI account — tokens are issued by the Comp AI authorization server and scoped to your organization, role, and permissions.",
+  ).optional(),
+});
+
 export type PeopleControllerGetPersonByIdV1Request = { id: string };
 
 export const PeopleControllerGetPersonByIdV1Request$zodSchema: z.ZodType<
