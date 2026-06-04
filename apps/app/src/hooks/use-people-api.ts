@@ -47,11 +47,12 @@ export function usePeopleActions() {
   );
 
   const removeMember = useCallback(
-    async (memberId: string) => {
+    async (memberId: string, options?: { skipOffboarding?: boolean }) => {
+      const query = options?.skipOffboarding ? '?skipOffboarding=true' : '';
       const response = await api.delete<{
         success: boolean;
         deletedMember: { id: string; name: string; email: string };
-      }>(`/v1/people/${memberId}`);
+      }>(`/v1/people/${memberId}${query}`);
       if (response.error) {
         throw new Error(response.error);
       }

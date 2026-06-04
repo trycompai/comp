@@ -10,12 +10,14 @@ import {
   AlertDialogTitle,
 } from '@trycompai/ui/alert-dialog';
 import { Button } from '@trycompai/ui/button';
+import { Checkbox, Label } from '@trycompai/design-system';
+import { useEffect, useState } from 'react';
 
 interface RemoveMemberAlertProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   memberName: string;
-  onRemove: () => void;
+  onRemove: (options: { skipOffboarding: boolean }) => void;
   isRemoving: boolean;
 }
 
@@ -26,6 +28,18 @@ export function RemoveMemberAlert({
   onRemove,
   isRemoving,
 }: RemoveMemberAlertProps) {
+  const [skipOffboarding, setSkipOffboarding] = useState(false);
+
+  useEffect(() => {
+    if (!open) {
+      setSkipOffboarding(false);
+    }
+  }, [open]);
+
+  const handleRemoveClick = () => {
+    onRemove({ skipOffboarding });
+  };
+
   return (
     <AlertDialog open={open} onOpenChange={onOpenChange}>
       <AlertDialogContent>
@@ -36,9 +50,17 @@ export function RemoveMemberAlert({
             {'They will no longer have access to this organization.'}
           </AlertDialogDescription>
         </AlertDialogHeader>
+        <div className="flex items-center gap-2 py-2">
+          <Checkbox
+            id="skip-offboarding"
+            checked={skipOffboarding}
+            onCheckedChange={(checked) => setSkipOffboarding(checked === true)}
+          />
+          <Label htmlFor="skip-offboarding">Skip offboarding</Label>
+        </div>
         <AlertDialogFooter>
           <AlertDialogCancel>{'Cancel'}</AlertDialogCancel>
-          <Button variant="destructive" onClick={onRemove} disabled={isRemoving}>
+          <Button variant="destructive" onClick={handleRemoveClick} disabled={isRemoving}>
             {'Remove'}
           </Button>
         </AlertDialogFooter>
