@@ -1,3 +1,12 @@
+## [3.70.4](https://github.com/trycompai/comp/compare/v3.70.3...v3.70.4) (2026-06-04)
+
+
+### Bug Fixes
+
+* **cloud-security:** address cubic review — prompt command consistency + retry selection ([432fd39](https://github.com/trycompai/comp/commit/432fd391c3123787f6f788f8043ffbb9fc32aca5))
+* **cloud-security:** port remediation robustness fixes to GCP and Azure ([10611bc](https://github.com/trycompai/comp/commit/10611bcd527fe6bda914ae9a367b8a7fbb85c40e))
+* **cloud-security:** support AWS Config new recording model in checks + auto-remediation ([d30d98b](https://github.com/trycompai/comp/commit/d30d98bbef23df15d9c64093f5a79c61ef814848))
+
 ## [3.70.3](https://github.com/trycompai/comp/compare/v3.70.2...v3.70.3) (2026-06-04)
 
 
