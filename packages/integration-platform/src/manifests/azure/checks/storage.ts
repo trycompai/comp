@@ -106,14 +106,15 @@ export const storagePublicAccessCheck: IntegrationCheck = {
       const p = a.properties ?? {};
       const publicBlob = p.allowBlobPublicAccess === true;
       // publicNetworkAccess 'Disabled' or 'SecuredByPerimeter' (network security
-      // perimeter) overrides the firewall default action and is not public.
-      const networkRestricted =
+      // perimeter) takes the endpoint off the public internet entirely. When it
+      // is 'Enabled', networkAcls.defaultAction === 'Deny' still restricts
+      // traffic to the explicit IP/VNet allowlist (Azure's "Selected networks"
+      // mode) and is not public.
+      const networkDisabled =
         p.publicNetworkAccess === 'Disabled' ||
         p.publicNetworkAccess === 'SecuredByPerimeter';
-      const publicNetwork =
-        !networkRestricted &&
-        (p.publicNetworkAccess === 'Enabled' ||
-          p.networkAcls?.defaultAction === 'Allow');
+      const firewallEnforced = p.networkAcls?.defaultAction === 'Deny';
+      const publicNetwork = !networkDisabled && !firewallEnforced;
       if (publicBlob || publicNetwork) {
         ctx.fail({
           title: `Public access enabled: ${a.name}`,
@@ -122,11 +123,12 @@ export const storagePublicAccessCheck: IntegrationCheck = {
           resourceId: a.id,
           severity: publicBlob ? 'high' : 'medium',
           remediation:
-            'Disable "Allow Blob public access" and restrict network access to specific VNets/IPs or private endpoints.',
+            'Disable "Allow Blob public access" and restrict network access to specific VNets/IPs or private endpoints (set networkAcls.defaultAction to "Deny").',
           evidence: {
             account: a.name,
             allowBlobPublicAccess: p.allowBlobPublicAccess,
             publicNetworkAccess: p.publicNetworkAccess ?? null,
+            networkDefaultAction: p.networkAcls?.defaultAction ?? null,
           },
         });
       } else {
