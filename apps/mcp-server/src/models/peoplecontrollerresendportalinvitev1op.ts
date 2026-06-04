@@ -4,6 +4,20 @@
 
 import * as z from "zod";
 
+export type PeopleControllerResendPortalInviteV1Security = {
+  apikey?: string | undefined;
+  oauth2?: string | undefined;
+};
+
+export const PeopleControllerResendPortalInviteV1Security$zodSchema: z.ZodType<
+  PeopleControllerResendPortalInviteV1Security
+> = z.object({
+  apikey: z.string().describe("API key for authentication").optional(),
+  oauth2: z.string().describe(
+    "OAuth 2.1 authorization code flow. Sign in with your Comp AI account — tokens are issued by the Comp AI authorization server and scoped to your organization, role, and permissions.",
+  ).optional(),
+});
+
 export type PeopleControllerResendPortalInviteV1Request = { id: string };
 
 export const PeopleControllerResendPortalInviteV1Request$zodSchema: z.ZodType<

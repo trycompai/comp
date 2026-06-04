@@ -8,6 +8,19 @@ import {
   TrustDocumentSignedUrlDto$zodSchema,
 } from "./trustdocumentsignedurldto.js";
 
+export type TrustPortalControllerGetTrustDocumentUrlV1Security = {
+  apikey?: string | undefined;
+  oauth2?: string | undefined;
+};
+
+export const TrustPortalControllerGetTrustDocumentUrlV1Security$zodSchema:
+  z.ZodType<TrustPortalControllerGetTrustDocumentUrlV1Security> = z.object({
+    apikey: z.string().describe("API key for authentication").optional(),
+    oauth2: z.string().describe(
+      "OAuth 2.1 authorization code flow. Sign in with your Comp AI account — tokens are issued by the Comp AI authorization server and scoped to your organization, role, and permissions.",
+    ).optional(),
+  });
+
 export type TrustPortalControllerGetTrustDocumentUrlV1Request = {
   documentId: string;
   body: TrustDocumentSignedUrlDto;

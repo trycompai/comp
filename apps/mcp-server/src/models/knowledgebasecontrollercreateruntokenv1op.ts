@@ -4,6 +4,19 @@
 
 import * as z from "zod";
 
+export type KnowledgeBaseControllerCreateRunTokenV1Security = {
+  apikey?: string | undefined;
+  oauth2?: string | undefined;
+};
+
+export const KnowledgeBaseControllerCreateRunTokenV1Security$zodSchema:
+  z.ZodType<KnowledgeBaseControllerCreateRunTokenV1Security> = z.object({
+    apikey: z.string().describe("API key for authentication").optional(),
+    oauth2: z.string().describe(
+      "OAuth 2.1 authorization code flow. Sign in with your Comp AI account — tokens are issued by the Comp AI authorization server and scoped to your organization, role, and permissions.",
+    ).optional(),
+  });
+
 export type KnowledgeBaseControllerCreateRunTokenV1Request = { runId: string };
 
 export const KnowledgeBaseControllerCreateRunTokenV1Request$zodSchema:

@@ -5,7 +5,7 @@
 import { CompAiCore } from "../core.js";
 import { compactMap } from "../lib/primitives.js";
 import { RequestOptions } from "../lib/sdks.js";
-import { extractSecurity, resolveGlobalSecurity } from "../lib/security.js";
+import { resolveSecurity } from "../lib/security.js";
 import { pathToFunc } from "../lib/url.js";
 import { DeleteAnswerDto } from "../models/deleteanswerdto.js";
 import { APIError } from "../models/errors/apierror.js";
@@ -17,6 +17,7 @@ import {
   UnexpectedClientError,
 } from "../models/errors/httpclienterrors.js";
 import { SDKValidationError } from "../models/errors/sdkvalidationerror.js";
+import { QuestionnaireControllerDeleteAnswerV1Security } from "../models/questionnairecontrollerdeleteanswerv1op.js";
 import { APICall, APIPromise } from "../types/async.js";
 import { Result } from "../types/fp.js";
 
@@ -25,11 +26,10 @@ import { Result } from "../types/fp.js";
  *
  * @remarks
  * Delete a stored questionnaire answer when it should be removed from the active response set.
- *
- * If set, this operation will use {@link Security.apikey} from the global security.
  */
 export function questionnaireQuestionnaireControllerDeleteAnswerV1(
   client$: CompAiCore,
+  security: QuestionnaireControllerDeleteAnswerV1Security,
   _request: DeleteAnswerDto,
   options?: RequestOptions,
 ): APIPromise<
@@ -46,6 +46,7 @@ export function questionnaireQuestionnaireControllerDeleteAnswerV1(
 > {
   return new APIPromise($do(
     client$,
+    security,
     _request,
     options,
   ));
@@ -53,6 +54,7 @@ export function questionnaireQuestionnaireControllerDeleteAnswerV1(
 
 async function $do(
   client$: CompAiCore,
+  security: QuestionnaireControllerDeleteAnswerV1Security,
   _request: DeleteAnswerDto,
   options?: RequestOptions,
 ): Promise<
@@ -76,8 +78,23 @@ async function $do(
     "Content-Type": "application/json",
     Accept: "application/json",
   }));
-  const securityInput = await extractSecurity(client$._options.security);
-  const requestSecurity = resolveGlobalSecurity(securityInput, [0]);
+
+  const requestSecurity = resolveSecurity(
+    [
+      {
+        fieldName: "X-API-Key",
+        type: "apiKey:header",
+        value: security?.apikey,
+      },
+    ],
+    [
+      {
+        fieldName: "Authorization",
+        type: "oauth2",
+        value: security?.oauth2,
+      },
+    ],
+  );
 
   const context = {
     options: client$._options,
@@ -85,7 +102,7 @@ async function $do(
     operationID: "QuestionnaireController_deleteAnswer_v1",
     oAuth2Scopes: null,
     resolvedSecurity: requestSecurity,
-    securitySource: client$._options.security,
+    securitySource: security,
     retryConfig: options?.retries
       || client$._options.retryConfig
       || { strategy: "none" },

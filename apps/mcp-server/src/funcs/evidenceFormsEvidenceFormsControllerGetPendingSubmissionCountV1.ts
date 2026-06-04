@@ -7,7 +7,7 @@ import { encodeSimple } from "../lib/encodings.js";
 import { compactMap } from "../lib/primitives.js";
 import { safeParse } from "../lib/schemas.js";
 import { RequestOptions } from "../lib/sdks.js";
-import { extractSecurity, resolveGlobalSecurity } from "../lib/security.js";
+import { resolveSecurity } from "../lib/security.js";
 import { pathToFunc } from "../lib/url.js";
 import { APIError } from "../models/errors/apierror.js";
 import {
@@ -21,6 +21,7 @@ import { SDKValidationError } from "../models/errors/sdkvalidationerror.js";
 import {
   EvidenceFormsControllerGetPendingSubmissionCountV1Request,
   EvidenceFormsControllerGetPendingSubmissionCountV1Request$zodSchema,
+  EvidenceFormsControllerGetPendingSubmissionCountV1Security,
 } from "../models/evidenceformscontrollergetpendingsubmissioncountv1op.js";
 import { APICall, APIPromise } from "../types/async.js";
 import { Result } from "../types/fp.js";
@@ -30,11 +31,10 @@ import { Result } from "../types/fp.js";
  *
  * @remarks
  * Get pending submission count for current user in Comp AI. Collect, review, upload, and export structured evidence submissions for compliance tasks and document requirements.
- *
- * If set, this operation will use {@link Security.apikey} from the global security.
  */
 export function evidenceFormsEvidenceFormsControllerGetPendingSubmissionCountV1(
   client$: CompAiCore,
+  security: EvidenceFormsControllerGetPendingSubmissionCountV1Security,
   request?:
     | EvidenceFormsControllerGetPendingSubmissionCountV1Request
     | undefined,
@@ -53,6 +53,7 @@ export function evidenceFormsEvidenceFormsControllerGetPendingSubmissionCountV1(
 > {
   return new APIPromise($do(
     client$,
+    security,
     request,
     options,
   ));
@@ -60,6 +61,7 @@ export function evidenceFormsEvidenceFormsControllerGetPendingSubmissionCountV1(
 
 async function $do(
   client$: CompAiCore,
+  security: EvidenceFormsControllerGetPendingSubmissionCountV1Security,
   request?:
     | EvidenceFormsControllerGetPendingSubmissionCountV1Request
     | undefined,
@@ -101,8 +103,23 @@ async function $do(
       { explode: false, charEncoding: "none" },
     ),
   }));
-  const securityInput = await extractSecurity(client$._options.security);
-  const requestSecurity = resolveGlobalSecurity(securityInput, [0]);
+
+  const requestSecurity = resolveSecurity(
+    [
+      {
+        fieldName: "X-API-Key",
+        type: "apiKey:header",
+        value: security?.apikey,
+      },
+    ],
+    [
+      {
+        fieldName: "Authorization",
+        type: "oauth2",
+        value: security?.oauth2,
+      },
+    ],
+  );
 
   const context = {
     options: client$._options,
@@ -110,7 +127,7 @@ async function $do(
     operationID: "EvidenceFormsController_getPendingSubmissionCount_v1",
     oAuth2Scopes: null,
     resolvedSecurity: requestSecurity,
-    securitySource: client$._options.security,
+    securitySource: security,
     retryConfig: options?.retries
       || client$._options.retryConfig
       || { strategy: "none" },
