@@ -1,3 +1,21 @@
+## [3.70.1](https://github.com/trycompai/comp/compare/v3.70.0...v3.70.1) (2026-06-04)
+
+
+### Bug Fixes
+
+* **api:** reject whitespace-only department filter in GetRisksQueryDto ([289ffee](https://github.com/trycompai/comp/commit/289ffee4a0a909992c5c330ab24a46dc87440abd))
+* **api:** update member, risk and task endpoints to support custom departments ([cc9611a](https://github.com/trycompai/comp/commit/cc9611ac1d374dd2b562fb9c4c8f78d8ebf64a4e))
+* **api:** update policy endpoints to support custom departments ([2d9f2ea](https://github.com/trycompai/comp/commit/2d9f2ea80d17554a70d970903041498725c6de78))
+* **api:** update validation of department in CreateTaskDto ([25bc02a](https://github.com/trycompai/comp/commit/25bc02a5eabf8a50fb1d08098d95e26e3276cf1f))
+* **app:** allow custom department strings in risk/policy forms and embedding ([dd01c64](https://github.com/trycompai/comp/commit/dd01c640c3f5a7a1d47a64a2e21fd269fe0c756d))
+* **app:** enforce 64-char limit on custom department input ([75856a2](https://github.com/trycompai/comp/commit/75856a2f7bba91c82b0b6e6d22eb151a41f2c21b))
+* **app:** prevent custom department sentinel from colliding with real values ([88a8420](https://github.com/trycompai/comp/commit/88a842020befe162d52b25892fe843cca56474ff))
+* **app:** update departments select in policy details page ([84510e0](https://github.com/trycompai/comp/commit/84510e0cad188ef2a898d02fcb4b2024b61963c4))
+* **app:** update departments validation for updatePolicyFormSchema ([5be7e52](https://github.com/trycompai/comp/commit/5be7e525b3f4a9835d9b012095b611e250a92110))
+* **app:** update UI to support cusotm departments on People, Task, and Risk pages ([c879d4e](https://github.com/trycompai/comp/commit/c879d4e14e81183517bb902d960dc0494bedaaed))
+* **db:** change departments field type to string for member, risk and task models ([1409aae](https://github.com/trycompai/comp/commit/1409aae9a45a9f2215b8c2c0702432a27ef53f02))
+* **db:** change departments type of policy model ([cb456c6](https://github.com/trycompai/comp/commit/cb456c608233a78e728e4f9c09da24fc23411534))
+
 # [3.70.0](https://github.com/trycompai/comp/compare/v3.69.0...v3.70.0) (2026-06-04)
 
 
