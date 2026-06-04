@@ -1,5 +1,6 @@
 'use client';
 
+import { DepartmentSelect } from '@/components/DepartmentSelect';
 import { SelectAssignee } from '@/components/SelectAssignee';
 import {
   Departments,
@@ -69,12 +70,12 @@ export function UpdatePolicyOverview({
   const [isStatusChangeDialogOpen, setIsStatusChangeDialogOpen] = useState(false);
   const [pendingChanges, setPendingChanges] = useState<{
     assigneeId: { from: string | null; to: string | null } | null;
-    department: { from: Departments | null; to: Departments } | null;
+    department: { from: string | null; to: string } | null;
     reviewFrequency: { from: Frequency | null; to: Frequency } | null;
     formData: {
       status: PolicyStatus;
       assigneeId: string | null;
-      department: Departments;
+      department: string;
       reviewFrequency: Frequency;
     };
   } | null>(null);
@@ -82,9 +83,9 @@ export function UpdatePolicyOverview({
   // Display the current policy status from the database
   // This always reflects the actual status stored in the Policy table
   const displayStatus = policy.status ?? PolicyStatus.draft;
-  
+
   const [selectedAssigneeId, setSelectedAssigneeId] = useState<string | null>(policy.assigneeId);
-  const [selectedDepartment, setSelectedDepartment] = useState<Departments>(
+  const [selectedDepartment, setSelectedDepartment] = useState<string>(
     policy.department || Departments.admin,
   );
   const [selectedFrequency, setSelectedFrequency] = useState<Frequency>(
@@ -190,26 +191,11 @@ export function UpdatePolicyOverview({
             <Stack gap="sm">
               <Label htmlFor="department">Department</Label>
               <input type="hidden" name="department" value={selectedDepartment} />
-              <Select
+              <DepartmentSelect
                 value={selectedDepartment}
+                onChange={setSelectedDepartment}
                 disabled={fieldsDisabled}
-                onValueChange={(value) => {
-                  setSelectedDepartment(value as Departments);
-                }}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select department">
-                    {selectedDepartment.toUpperCase()}
-                  </SelectValue>
-                </SelectTrigger>
-                <SelectContent>
-                  {Object.values(Departments).map((dept) => (
-                    <SelectItem key={dept} value={dept}>
-                      {dept.toUpperCase()}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              />
             </Stack>
 
             {/* Assignee Field */}

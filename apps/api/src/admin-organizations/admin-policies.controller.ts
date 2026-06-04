@@ -17,7 +17,7 @@ import { db } from '@db';
 import {
   PolicyStatus,
   Frequency,
-  Departments,
+  DEPARTMENT_MAX_LENGTH,
 } from '../policies/dto/create-policy.dto';
 import { auth as triggerAuth, tasks } from '@trigger.dev/sdk';
 import type { updatePolicy } from '../trigger/policies/update-policy';
@@ -89,14 +89,19 @@ export class AdminPoliciesController {
     }
 
     if (body.department !== undefined) {
-      if (
-        !Object.values(Departments).includes(body.department as Departments)
-      ) {
+      if (typeof body.department !== 'string') {
+        throw new BadRequestException('department must be a string');
+      }
+      const trimmed = body.department.trim();
+      if (trimmed.length === 0) {
+        throw new BadRequestException('department must not be empty');
+      }
+      if (trimmed.length > DEPARTMENT_MAX_LENGTH) {
         throw new BadRequestException(
-          `Invalid department. Must be one of: ${Object.values(Departments).join(', ')}`,
+          `department must be at most ${DEPARTMENT_MAX_LENGTH} characters`,
         );
       }
-      updateData.department = body.department as Departments;
+      updateData.department = trimmed;
     }
 
     if (body.frequency !== undefined) {

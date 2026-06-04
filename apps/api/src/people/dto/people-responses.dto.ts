@@ -110,11 +110,12 @@ export class PeopleResponseDto {
   createdAt: Date;
 
   @ApiProperty({
-    description: 'Member department',
-    enum: Departments,
+    description:
+      'Member department. May be one of the built-in values (none, admin, gov, hr, it, itsm, qms) or a custom department name.',
     example: Departments.it,
+    type: 'string',
   })
-  department: Departments;
+  department: string;
 
   @ApiProperty({
     description: 'Job title for the member',

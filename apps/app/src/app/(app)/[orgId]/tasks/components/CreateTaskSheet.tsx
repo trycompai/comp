@@ -1,11 +1,12 @@
 'use client';
 
+import { DepartmentSelect } from '@/components/DepartmentSelect';
 import { SelectAssignee } from '@/components/SelectAssignee';
 import { useTaskTemplates } from '@/hooks/use-task-template-api';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@trycompai/ui/form';
 import { useMediaQuery } from '@trycompai/ui/hooks';
 import MultipleSelector, { Option } from '@trycompai/ui/multiple-selector';
-import { Departments, Member, TaskFrequency, User } from '@db';
+import { Member, TaskFrequency, User } from '@db';
 import { zodResolver } from '@hookform/resolvers/zod';
 import {
   Button,
@@ -30,7 +31,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import { z } from 'zod';
-import { taskDepartments, taskFrequencies } from '../[taskId]/components/constants';
+import { taskFrequencies } from '../[taskId]/components/constants';
 
 const createTaskSchema = z.object({
   title: z.string().min(1, {
@@ -41,7 +42,12 @@ const createTaskSchema = z.object({
   }),
   assigneeId: z.string().nullable().optional(),
   frequency: z.nativeEnum(TaskFrequency).nullable().optional(),
-  department: z.nativeEnum(Departments).nullable().optional(),
+  department: z
+    .string()
+    .trim()
+    .max(64, { message: 'Department must be at most 64 characters' })
+    .nullable()
+    .optional(),
   controlIds: z.array(z.string()).optional(),
   taskTemplateId: z.string().nullable().optional(),
 });
@@ -133,7 +139,7 @@ export function CreateTaskSheet({ members, controls, open, onOpenChange, createT
       form.setValue('title', selectedTaskTemplate.name);
       form.setValue('description', selectedTaskTemplate.description);
       form.setValue('frequency', selectedTaskTemplate.frequency as TaskFrequency);
-      form.setValue('department', selectedTaskTemplate.department as Departments);
+      form.setValue('department', selectedTaskTemplate.department ?? null);
     }
   }, [selectedTaskTemplate, form]);
 
@@ -152,13 +158,6 @@ export function CreateTaskSheet({ members, controls, open, onOpenChange, createT
 
   // Memoize select handlers
   const handleFrequencyChange = useCallback(
-    (value: string | null, onChange: (value: any) => void) => {
-      onChange(!value || value === 'none' ? null : value);
-    },
-    [],
-  );
-
-  const handleDepartmentChange = useCallback(
     (value: string | null, onChange: (value: any) => void) => {
       onChange(!value || value === 'none' ? null : value);
     },
@@ -306,33 +305,18 @@ export function CreateTaskSheet({ members, controls, open, onOpenChange, createT
         <FormField
           control={form.control}
           name="department"
-          render={({ field }) => {
-            const displayValue = field.value ? field.value.toUpperCase() : 'Select department';
-            return (
-              <FormItem className="w-full">
-                <FormLabel>Department (Optional)</FormLabel>
-                <Select
+          render={({ field }) => (
+            <FormItem className="w-full">
+              <FormLabel>Department (Optional)</FormLabel>
+              <FormControl>
+                <DepartmentSelect
                   value={field.value || 'none'}
-                  onValueChange={(value) => handleDepartmentChange(value, field.onChange)}
-                >
-                  <SelectTrigger>
-                    <span className="capitalize">{displayValue}</span>
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="none">None</SelectItem>
-                    {taskDepartments
-                      .filter((dept) => dept !== 'none')
-                      .map((department) => (
-                        <SelectItem key={department} value={department}>
-                          {department.toUpperCase()}
-                        </SelectItem>
-                      ))}
-                  </SelectContent>
-                </Select>
-                <FormMessage />
-              </FormItem>
-            );
-          }}
+                  onChange={(value) => field.onChange(value === 'none' ? null : value)}
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
         />
 
         <FormField

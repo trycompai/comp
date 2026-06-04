@@ -1,3 +1,45 @@
+## [3.70.1](https://github.com/trycompai/comp/compare/v3.70.0...v3.70.1) (2026-06-04)
+
+
+### Bug Fixes
+
+* **api:** reject whitespace-only department filter in GetRisksQueryDto ([289ffee](https://github.com/trycompai/comp/commit/289ffee4a0a909992c5c330ab24a46dc87440abd))
+* **api:** update member, risk and task endpoints to support custom departments ([cc9611a](https://github.com/trycompai/comp/commit/cc9611ac1d374dd2b562fb9c4c8f78d8ebf64a4e))
+* **api:** update policy endpoints to support custom departments ([2d9f2ea](https://github.com/trycompai/comp/commit/2d9f2ea80d17554a70d970903041498725c6de78))
+* **api:** update validation of department in CreateTaskDto ([25bc02a](https://github.com/trycompai/comp/commit/25bc02a5eabf8a50fb1d08098d95e26e3276cf1f))
+* **app:** allow custom department strings in risk/policy forms and embedding ([dd01c64](https://github.com/trycompai/comp/commit/dd01c640c3f5a7a1d47a64a2e21fd269fe0c756d))
+* **app:** enforce 64-char limit on custom department input ([75856a2](https://github.com/trycompai/comp/commit/75856a2f7bba91c82b0b6e6d22eb151a41f2c21b))
+* **app:** prevent custom department sentinel from colliding with real values ([88a8420](https://github.com/trycompai/comp/commit/88a842020befe162d52b25892fe843cca56474ff))
+* **app:** update departments select in policy details page ([84510e0](https://github.com/trycompai/comp/commit/84510e0cad188ef2a898d02fcb4b2024b61963c4))
+* **app:** update departments validation for updatePolicyFormSchema ([5be7e52](https://github.com/trycompai/comp/commit/5be7e525b3f4a9835d9b012095b611e250a92110))
+* **app:** update UI to support cusotm departments on People, Task, and Risk pages ([c879d4e](https://github.com/trycompai/comp/commit/c879d4e14e81183517bb902d960dc0494bedaaed))
+* **db:** change departments field type to string for member, risk and task models ([1409aae](https://github.com/trycompai/comp/commit/1409aae9a45a9f2215b8c2c0702432a27ef53f02))
+* **db:** change departments type of policy model ([cb456c6](https://github.com/trycompai/comp/commit/cb456c608233a78e728e4f9c09da24fc23411534))
+
+# [3.70.0](https://github.com/trycompai/comp/compare/v3.69.0...v3.70.0) (2026-06-04)
+
+
+### Bug Fixes
+
+* **api:** address code review issues in GenericDeviceSyncService ([8a87d91](https://github.com/trycompai/comp/commit/8a87d91f8937a7ad2917f300d4eb7d5add6a2553))
+* **device-sync:** address Cubic review feedback on device sync ([601f70a](https://github.com/trycompai/comp/commit/601f70a2d7be15ab3c3c8d70c60f10dacf2e92d8))
+* **integration-platform:** address device-sync review round 2 ([7559906](https://github.com/trycompai/comp/commit/75599066f01fcd68e8c0e6e2fda3609db78a50d8))
+* **integration-platform:** address device-sync review round 3 ([40a8b25](https://github.com/trycompai/comp/commit/40a8b25dbd03dd17997f7bbb718e95f5b510a36d))
+* **integration-platform:** make dynamic device sync functional and safe ([68f8012](https://github.com/trycompai/comp/commit/68f8012b74fb4dee2da87326b707678bd1adb4aa)), closes [#2802](https://github.com/trycompai/comp/issues/2802)
+* **integration-platform:** reject malformed device-sync provider with 400 ([5c4d7af](https://github.com/trycompai/comp/commit/5c4d7af54171c9b824b8ec1ff25ac3739f642cab))
+* **trigger:** remove duplicate success field in device sync task ([7e1b680](https://github.com/trycompai/comp/commit/7e1b680955603b5387348c71e78b37bab7c743a0))
+
+
+### Features
+
+* **api:** add device sync discovery, provider selection, and trigger endpoints ([7adc931](https://github.com/trycompai/comp/commit/7adc9317d9647d61f0078cb5130050591fd9d1c6))
+* **api:** add GenericDeviceSyncService with tests ([4602f99](https://github.com/trycompai/comp/commit/4602f9978c3b4c5106e69a9f223bef39993ffa0d))
+* **api:** validate deviceSyncDefinition on dynamic integration upsert ([6c44c18](https://github.com/trycompai/comp/commit/6c44c184b315bbdf7337e83faee491cf42e992a3))
+* **app:** add device sync provider selector to Devices tab ([6b1456f](https://github.com/trycompai/comp/commit/6b1456f7778f788ce453ef7f0c5bdd35305594ae))
+* **db:** add device sync fields to Device, Organization, and DynamicIntegration ([b9e7188](https://github.com/trycompai/comp/commit/b9e7188e2ddad66f780237e52020b994171a126d))
+* **integration-platform:** add device_sync capability and SyncDevice schema ([31975ff](https://github.com/trycompai/comp/commit/31975ff3c4af28d41d51fe9b676ef0deaa42e2e6))
+* **trigger:** add scheduled device sync to daily integration checks ([59c57df](https://github.com/trycompai/comp/commit/59c57dfbff5599e920cce8634fc7b2a53f6d8df5))
+
 # [3.69.0](https://github.com/trycompai/comp/compare/v3.68.0...v3.69.0) (2026-06-03)
 
 

@@ -1,6 +1,8 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { PolicyStatus, Frequency, Departments } from './create-policy.dto';
 
+const DEPARTMENT_EXAMPLE = Departments.IT;
+
 export class PolicyResponseDto {
   @ApiProperty({
     description: 'The policy ID',
@@ -61,12 +63,13 @@ export class PolicyResponseDto {
   frequency?: Frequency;
 
   @ApiProperty({
-    description: 'Department this policy applies to',
-    enum: Departments,
-    example: Departments.IT,
+    description:
+      'Department this policy applies to. May be one of the built-in values (none, admin, gov, hr, it, itsm, qms) or a custom department name.',
+    example: DEPARTMENT_EXAMPLE,
     nullable: true,
+    type: 'string',
   })
-  department?: Departments;
+  department?: string;
 
   @ApiProperty({
     description: 'Whether this policy requires a signature',

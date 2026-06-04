@@ -36,12 +36,13 @@ export class RiskResponseDto {
   category: RiskCategory;
 
   @ApiProperty({
-    description: 'Department responsible for the risk',
-    enum: Departments,
+    description:
+      'Department responsible for the risk. May be one of the built-in values (none, admin, gov, hr, it, itsm, qms) or a custom department name.',
     nullable: true,
     example: Departments.it,
+    type: 'string',
   })
-  department: Departments | null;
+  department: string | null;
 
   @ApiProperty({
     description: 'Current status of the risk',
