@@ -99,6 +99,37 @@ describe('Azure storage checks', () => {
     expect(passed).toHaveLength(1);
   });
 
+  it("public-access: 'Selected networks' (publicNetworkAccess Enabled + defaultAction Deny) passes", async () => {
+    const { passed, failed } = await run(
+      storagePublicAccessCheck,
+      storageList({
+        allowBlobPublicAccess: false,
+        publicNetworkAccess: 'Enabled',
+        networkAcls: {
+          defaultAction: 'Deny',
+          bypass: 'AzureServices',
+          ipRules: [{ value: '203.0.113.0/24', action: 'Allow' }],
+        },
+      }),
+    );
+    expect(failed).toHaveLength(0);
+    expect(passed).toHaveLength(1);
+  });
+
+  it('public-access: publicNetworkAccess Enabled with default Allow fails', async () => {
+    const { passed, failed } = await run(
+      storagePublicAccessCheck,
+      storageList({
+        allowBlobPublicAccess: false,
+        publicNetworkAccess: 'Enabled',
+        networkAcls: { defaultAction: 'Allow' },
+      }),
+    );
+    expect(passed).toHaveLength(0);
+    expect(failed).toHaveLength(1);
+    expect(failed[0]!.severity).toBe('medium');
+  });
+
   it('encryption fails when a service is disabled, passes when enabled', async () => {
     const bad = await run(
       storageEncryptionCheck,
