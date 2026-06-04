@@ -142,9 +142,12 @@ describe('AiRemediationService.generateFixPlan empty-state backstop', () => {
 
   it('leaves the plan untouched when AI returns {}/{} but the plan has no actionable steps', async () => {
     // Verify-only plans (only readSteps) should still be left alone —
-    // we never fabricate state when there's nothing to act on.
+    // we never fabricate state when there's nothing to act on. A plan with no
+    // fix steps is not auto-fixable, so canAutoFix is false (which also means
+    // the empty-plan retry does not apply to it).
     generateObjectMock.mockResolvedValueOnce({
       object: basePlan({
+        canAutoFix: false,
         readSteps: [
           { service: 's3', command: 'GetBucketVersioningCommand', params: {}, purpose: 'check' },
         ],
@@ -172,6 +175,17 @@ describe('AiRemediationService.generateFixPlan empty-state backstop', () => {
       object: basePlan({
         currentState: { versioning: 'Disabled' },
         proposedState: { versioning: 'Enabled' },
+        fixSteps: [
+          {
+            service: 's3',
+            command: 'PutBucketVersioningCommand',
+            params: {
+              Bucket: 'logs-archive',
+              VersioningConfiguration: { Status: 'Enabled' },
+            },
+            purpose: 'enable versioning',
+          },
+        ],
       }),
     });
 
@@ -226,8 +240,11 @@ describe('AiRemediationService.generateFixPlan empty-state backstop', () => {
   });
 
   it('leaves a plan alone when only one side is empty (legitimate verify-only case)', async () => {
+    // Verify-only: no fix steps, so the plan is not auto-fixable (canAutoFix
+    // false) and the empty-plan retry does not apply.
     generateObjectMock.mockResolvedValueOnce({
       object: basePlan({
+        canAutoFix: false,
         currentState: { someField: 'X' },
         proposedState: {},
       }),
@@ -506,5 +523,83 @@ describe('AiRemediationService.generateManualSteps', () => {
     expect(callArgs.prompt).toContain('Required param "Bucket" is missing');
     expect(callArgs.prompt).toContain('s3:CreateBucketCommand');
     expect(callArgs.prompt).toContain('account-level');
+  });
+});
+
+describe('AiRemediationService.generateFixPlan empty-plan retry', () => {
+  const generateObjectMock = generateObject as unknown as jest.Mock;
+
+  beforeEach(() => {
+    generateObjectMock.mockReset();
+  });
+
+  it('retries once when the first plan has canAutoFix=true but zero fixSteps, and uses the non-empty retry', async () => {
+    // First pass: empty fix plan (the "AI generated an empty fix plan" case).
+    generateObjectMock.mockResolvedValueOnce({
+      object: basePlan({ canAutoFix: true, fixSteps: [] }),
+    });
+    // Second pass (higher temperature): a real plan.
+    generateObjectMock.mockResolvedValueOnce({
+      object: basePlan({
+        canAutoFix: true,
+        fixSteps: [
+          {
+            service: 'config-service',
+            command: 'PutConfigurationRecorderCommand',
+            params: { ConfigurationRecorder: { name: 'default' } },
+            purpose: 'Record all resources',
+          },
+        ],
+      }),
+    });
+
+    const service = new AiRemediationService();
+    const plan = await service.generateFixPlan({
+      title: 'AWS Config recorder not fully active',
+      description: null,
+      severity: 'high',
+      resourceType: 'AwsConfigRecorder',
+      resourceId: 'default',
+      remediation: null,
+      findingKey: 'config-recorder-incomplete',
+      evidence: {},
+    });
+
+    expect(generateObjectMock).toHaveBeenCalledTimes(2);
+    // The retry runs at a non-zero temperature so it is a genuinely different sample.
+    expect(generateObjectMock.mock.calls[0][0].temperature).toBe(0);
+    expect(generateObjectMock.mock.calls[1][0].temperature).toBeGreaterThan(0);
+    expect(plan.fixSteps).toHaveLength(1);
+    expect(plan.fixSteps[0].command).toBe('PutConfigurationRecorderCommand');
+  });
+
+  it('does not retry when the first plan already has fix steps', async () => {
+    generateObjectMock.mockResolvedValueOnce({
+      object: basePlan({
+        canAutoFix: true,
+        fixSteps: [
+          {
+            service: 'iam',
+            command: 'UpdateAccountPasswordPolicyCommand',
+            params: {},
+            purpose: 'fix',
+          },
+        ],
+      }),
+    });
+
+    const service = new AiRemediationService();
+    await service.generateFixPlan({
+      title: 'Weak password policy',
+      description: null,
+      severity: null,
+      resourceType: 'AwsIamPolicy',
+      resourceId: 'account-level',
+      remediation: null,
+      findingKey: 'iam-weak-password',
+      evidence: {},
+    });
+
+    expect(generateObjectMock).toHaveBeenCalledTimes(1);
   });
 });

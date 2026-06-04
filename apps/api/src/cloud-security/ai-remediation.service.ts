@@ -53,26 +53,50 @@ export class AiRemediationService {
   /** Phase 1: Generate initial plan (read steps + preliminary fix plan). */
   async generateFixPlan(finding: FindingContext): Promise<FixPlan> {
     try {
-      const { object } = await generateObject({
-        model: MODEL,
-        schema: fixPlanSchema,
-        system: SYSTEM_PROMPT,
-        prompt: buildFixPlanPrompt(finding),
-        temperature: 0,
-      });
+      let plan = await this.requestFixPlan(finding, 0);
 
-      this.logger.log(
-        `AI plan for ${finding.findingKey}: canAutoFix=${object.canAutoFix}, risk=${object.risk}`,
-      );
-      return normalizeFixPlan(enrichEmptyState(object), {
-        resourceId: finding.resourceId,
-      });
+      // The model occasionally returns canAutoFix=true with zero fixSteps, or
+      // the normalizer strips every step (e.g. unsupported S3 ACL calls). That
+      // surfaces to the user as "AI generated an empty fix plan. Cannot
+      // proceed." and — combined with plan caching — a Retry that does
+      // nothing. Generation is non-deterministic, so retry ONCE at a higher
+      // temperature to force a genuinely different sample before giving up.
+      if (plan.canAutoFix && plan.fixSteps.length === 0) {
+        this.logger.warn(
+          `Empty fix plan for ${finding.findingKey}; regenerating once at higher temperature`,
+        );
+        const retry = await this.requestFixPlan(finding, 0.5);
+        if (retry.fixSteps.length > 0) plan = retry;
+      }
+
+      return plan;
     } catch (err) {
       this.logger.error(
         `AI plan failed: ${err instanceof Error ? err.message : String(err)}`,
       );
       return this.fallbackPlan(finding);
     }
+  }
+
+  /** Single fix-plan generation pass (generate → enrich → normalize). */
+  private async requestFixPlan(
+    finding: FindingContext,
+    temperature: number,
+  ): Promise<FixPlan> {
+    const { object } = await generateObject({
+      model: MODEL,
+      schema: fixPlanSchema,
+      system: SYSTEM_PROMPT,
+      prompt: buildFixPlanPrompt(finding),
+      temperature,
+    });
+
+    this.logger.log(
+      `AI plan for ${finding.findingKey}: canAutoFix=${object.canAutoFix}, risk=${object.risk}`,
+    );
+    return normalizeFixPlan(enrichEmptyState(object), {
+      resourceId: finding.resourceId,
+    });
   }
 
   /**
@@ -394,7 +418,7 @@ INSTRUCTIONS:
             ),
         }),
         system:
-          'You are an AWS security expert writing manual remediation steps for a customer whose automatic fix failed. Be concrete: name exact services, exact resources, and exact actions. Prefer AWS Console clicks over CLI when the path is short, but include CLI commands when they are clearer. Never reference SDK class names. Never apologize. Never speculate about "if the issue persists" — just give the steps.',
+          'You are an AWS security expert writing manual remediation steps for a customer whose automatic fix failed. Be concrete: name exact services, exact resources, and exact actions. Prefer AWS Console clicks over CLI when the path is short, but include CLI commands when they are clearer. Never reference SDK class names. Never apologize. Never speculate about "if the issue persists" — just give the steps. Base every instruction on the CURRENT AWS Console; do NOT describe deprecated layouts or removed menu options. For AWS Config recorder settings specifically: the current console is Config → Settings, which shows a "Recording method"/"Recording strategy" under a customer managed recorder — to record everything, click Edit, choose to record all resource types, enable "Include global resource types (IAM resources)", and remove any per-resource-type overrides or exclusions. Do not instruct the user to select an old "Record all resource types supported in this region" radio option if it is not present in the current console.',
         prompt: `A finding could not be auto-remediated. Generate clear manual steps the customer can follow.
 
 FINDING:

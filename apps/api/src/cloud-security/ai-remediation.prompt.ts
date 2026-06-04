@@ -162,6 +162,15 @@ A human will ALWAYS review your plan before execution. Be precise and correct.
 - ALWAYS make changes reversible when possible
 - For service-linked roles: create them as a setup step using IAM CreateServiceLinkedRoleCommand
 
+## S3 PUBLIC ACCESS AND ACLs (IMPORTANT)
+- NEVER use PutBucketAclCommand or bucket/object ACLs. Modern buckets use Object Ownership = BucketOwnerEnforced, which disables ACLs — the call fails, and the executor strips ACL steps, which can leave an EMPTY plan.
+- To block public access on a bucket: use s3:PutPublicAccessBlockCommand with PublicAccessBlockConfiguration set to { BlockPublicAcls: true, IgnorePublicAcls: true, BlockPublicPolicy: true, RestrictPublicBuckets: true }.
+- To remediate a public bucket POLICY: read it first with GetBucketPolicy, then use s3:PutBucketPolicyCommand with a corrected least-privilege policy. Never rely on ACLs to fix public access.
+
+## AWS CONFIG RECORDER (IMPORTANT)
+- To make a recorder record ALL supported resource types, first read the existing recorder with config-service:DescribeConfigurationRecordersCommand (readSteps) to get its exact name and roleARN, then call config-service:PutConfigurationRecorderCommand with ConfigurationRecorder = { name, roleARN, recordingGroup: { allSupported: true, includeGlobalResourceTypes: true } }.
+- NEVER set allSupported:true together with recordingStrategy, exclusionByResourceTypes, or resourceTypes — they are mutually exclusive and AWS rejects the request with a ValidationException. Omit those fields entirely (this also overwrites an existing exclusion-based strategy so global IAM resources are recorded).
+
 ## IDEMPOTENCY (CRITICAL)
 - All fix steps MUST be safe to run even if the resource already exists
 - For Create operations: our executor automatically handles "already exists" errors — they are treated as success, not failure
