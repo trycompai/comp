@@ -7,11 +7,12 @@ import { encodeJSON, encodeSimple } from "../lib/encodings.js";
 import { compactMap } from "../lib/primitives.js";
 import { safeParse } from "../lib/schemas.js";
 import { RequestOptions } from "../lib/sdks.js";
-import { extractSecurity, resolveGlobalSecurity } from "../lib/security.js";
+import { resolveSecurity } from "../lib/security.js";
 import { pathToFunc } from "../lib/url.js";
 import {
   ChecksControllerRunConnectionChecksV1Request,
   ChecksControllerRunConnectionChecksV1Request$zodSchema,
+  ChecksControllerRunConnectionChecksV1Security,
 } from "../models/checkscontrollerrunconnectionchecksv1op.js";
 import { APIError } from "../models/errors/apierror.js";
 import {
@@ -30,11 +31,10 @@ import { Result } from "../types/fp.js";
  *
  * @remarks
  * Run all compliance checks for an integration connection and capture results as automated evidence.
- *
- * If set, this operation will use {@link Security.apikey} from the global security.
  */
 export function integrationsChecksControllerRunConnectionChecksV1(
   client$: CompAiCore,
+  security: ChecksControllerRunConnectionChecksV1Security,
   request: ChecksControllerRunConnectionChecksV1Request,
   options?: RequestOptions,
 ): APIPromise<
@@ -51,6 +51,7 @@ export function integrationsChecksControllerRunConnectionChecksV1(
 > {
   return new APIPromise($do(
     client$,
+    security,
     request,
     options,
   ));
@@ -58,6 +59,7 @@ export function integrationsChecksControllerRunConnectionChecksV1(
 
 async function $do(
   client$: CompAiCore,
+  security: ChecksControllerRunConnectionChecksV1Security,
   request: ChecksControllerRunConnectionChecksV1Request,
   options?: RequestOptions,
 ): Promise<
@@ -103,8 +105,23 @@ async function $do(
     "Content-Type": "application/json",
     Accept: "*/*",
   }));
-  const securityInput = await extractSecurity(client$._options.security);
-  const requestSecurity = resolveGlobalSecurity(securityInput, [0]);
+
+  const requestSecurity = resolveSecurity(
+    [
+      {
+        fieldName: "X-API-Key",
+        type: "apiKey:header",
+        value: security?.apikey,
+      },
+    ],
+    [
+      {
+        fieldName: "Authorization",
+        type: "oauth2",
+        value: security?.oauth2,
+      },
+    ],
+  );
 
   const context = {
     options: client$._options,
@@ -112,7 +129,7 @@ async function $do(
     operationID: "ChecksController_runConnectionChecks_v1",
     oAuth2Scopes: null,
     resolvedSecurity: requestSecurity,
-    securitySource: client$._options.security,
+    securitySource: security,
     retryConfig: options?.retries
       || client$._options.retryConfig
       || { strategy: "none" },
