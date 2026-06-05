@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsOptional, IsString } from 'class-validator';
+import { IsBase64, IsOptional, IsString, MaxLength } from 'class-validator';
 
 export class UploadDocumentDto {
   @ApiProperty({ description: 'Organization ID that owns the document' })
@@ -25,6 +25,10 @@ export class UploadDocumentDto {
   })
   @IsOptional()
   @IsString()
+  // ~128MB of base64 ≈ 100MB decoded — caps the inline payload at the validation
+  // layer (before it is decoded), matching the other migrated upload DTOs.
+  @MaxLength(134_217_728)
+  @IsBase64()
   fileData?: string; // base64 encoded
 
   @ApiProperty({
