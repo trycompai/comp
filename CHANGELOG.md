@@ -1,3 +1,16 @@
+# [3.71.0](https://github.com/trycompai/comp/compare/v3.70.4...v3.71.0) (2026-06-05)
+
+
+### Bug Fixes
+
+* **cloud-security:** scan neptune via rds api with the rds: iam namespace ([64b9137](https://github.com/trycompai/comp/commit/64b9137e8c0e172caf963d3874027732ee8549f2))
+
+
+### Features
+
+* **cloud-security:** add Amazon Neptune as an AWS Cloud Tests service ([66f5c46](https://github.com/trycompai/comp/commit/66f5c468c00df0e5d5282fd632369a050af8e8bc))
+* **cloud-security:** add Vertex AI as a GCP Cloud Tests service ([d4161b1](https://github.com/trycompai/comp/commit/d4161b17c74c2d07a70c98a276c2610199088b6a))
+
 ## [3.70.4](https://github.com/trycompai/comp/compare/v3.70.3...v3.70.4) (2026-06-04)
 
 
