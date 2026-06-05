@@ -290,7 +290,7 @@ NEVER omit AWSServiceName, leave it as null, or use a placeholder string.
 - NEVER use placeholder values like "{{variable}}", "<PLACEHOLDER>", or template syntax
 - ALWAYS use concrete values in fix step params
 - If a value depends on the account (like a log group name), put the discovery in readSteps and use a reasonable default or convention in fixSteps:
-  - CloudTrail log group: use "CloudTrail/DefaultLogGroup" (the system will resolve the real one from readSteps)
+  - CloudTrail log group: discover the trail's CloudWatch Logs log group in a read step (e.g. from the trail's CloudWatchLogsLogGroupArn) and use that exact, real log group name in fixSteps — do not invent a name
   - SNS topic: use "CompAI-CIS-Alerts" (will be created if it doesn't exist)
   - KMS keys: use "alias/aws/service-name" for AWS-managed keys
 - The finding evidence contains REAL data from the AWS account scan — use those values
