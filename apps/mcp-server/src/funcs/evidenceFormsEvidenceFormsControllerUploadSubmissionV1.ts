@@ -29,7 +29,7 @@ import { Result } from "../types/fp.js";
  * Upload a file as an evidence submission
  *
  * @remarks
- * Upload a file as an evidence submission in Comp AI. Collect, review, upload, and export structured evidence submissions for compliance tasks and document requirements.
+ * Upload a PDF or image file and create a submission for the given form type, bypassing form-specific validation. Accepts session, API key, or service token auth. For API key / service token callers without an explicit user attribution, the.
  *
  * If set, this operation will use {@link Security.apikey} from the global security.
  */
@@ -136,7 +136,7 @@ async function $do(
     body: body$,
     userAgent: client$._options.userAgent,
     timeoutMs: options?.timeoutMs || client$._options.timeoutMs
-      || -1,
+      || 120000,
   }, options);
   if (!requestRes.ok) {
     return [requestRes, { status: "invalid" }];

@@ -3,14 +3,19 @@
  */
 
 import { integrationsSyncControllerGetAvailableSyncProvidersV1 } from "../../funcs/integrationsSyncControllerGetAvailableSyncProvidersV1.js";
+import { SyncControllerGetAvailableSyncProvidersV1Request$zodSchema } from "../../models/synccontrollergetavailablesyncprovidersv1op.js";
 import { formatResult, ToolDefinition } from "../tools.js";
 
-export const tool$integrationsSyncControllerGetAvailableSyncProvidersV1:
-  ToolDefinition = {
-    name: "get-available-sync-providers",
-    description: `List employee sync providers available to the org
+const args = {
+  request: SyncControllerGetAvailableSyncProvidersV1Request$zodSchema,
+};
 
-List employee sync providers available to the org in Comp AI. Connect vendor systems, configure OAuth apps, run compliance checks, sync employees, manage variables, and collect automated evidence.`,
+export const tool$integrationsSyncControllerGetAvailableSyncProvidersV1:
+  ToolDefinition<typeof args> = {
+    name: "get-available-sync-providers",
+    description: `List sync providers available to the org
+
+List sync providers available to the org in Comp AI. Connect vendor systems, configure OAuth apps, run compliance checks, sync employees, manage variables, and collect automated evidence.`,
     annotations: {
       "title": "",
       "destructiveHint": false,
@@ -18,10 +23,12 @@ List employee sync providers available to the org in Comp AI. Connect vendor sys
       "openWorldHint": false,
       "readOnlyHint": false,
     },
-    tool: async (client, ctx) => {
+    args,
+    tool: async (client, args, ctx) => {
       const [result] =
         await integrationsSyncControllerGetAvailableSyncProvidersV1(
           client,
+          args.request,
           { fetchOptions: { signal: ctx.signal } },
         ).$inspect();
 

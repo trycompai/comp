@@ -7,11 +7,10 @@ import * as z from "zod";
 /**
  * Member department
  */
-export type MemberResponseDtoDepartment = {};
+export type Department = {};
 
-export const MemberResponseDtoDepartment$zodSchema: z.ZodType<
-  MemberResponseDtoDepartment
-> = z.object({}).describe("Member department");
+export const Department$zodSchema: z.ZodType<Department> = z.object({})
+  .describe("Member department");
 
 /**
  * FleetDM label ID for member devices
@@ -26,7 +25,7 @@ export type MemberResponseDto = {
   id: string;
   userId: string;
   role: string;
-  department: MemberResponseDtoDepartment | null;
+  department: Department | null;
   isActive: boolean;
   fleetDmLabelId: MemberResponseDtoFleetDmLabelId | null;
   organizationId: string;
@@ -38,8 +37,9 @@ export const MemberResponseDto$zodSchema: z.ZodType<MemberResponseDto> = z
     createdAt: z.iso.datetime({ offset: true }).describe(
       "When the member was created",
     ),
-    department: z.lazy(() => MemberResponseDtoDepartment$zodSchema).nullable()
-      .describe("Member department"),
+    department: z.lazy(() => Department$zodSchema).nullable().describe(
+      "Member department",
+    ),
     fleetDmLabelId: z.lazy(() => MemberResponseDtoFleetDmLabelId$zodSchema)
       .nullable().describe("FleetDM label ID for member devices"),
     id: z.string().describe("Member ID"),

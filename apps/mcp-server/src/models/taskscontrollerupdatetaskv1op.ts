@@ -72,29 +72,6 @@ export const TasksControllerUpdateTaskV1IntegrationScheduleFrequency$zodSchema =
     "Cadence for running the integration check attached to this task",
   );
 
-export const TasksControllerUpdateTaskV1Department = {
-  None: "none",
-  Admin: "admin",
-  Gov: "gov",
-  Hr: "hr",
-  It: "it",
-  Itsm: "itsm",
-  Qms: "qms",
-} as const;
-export type TasksControllerUpdateTaskV1Department = ClosedEnum<
-  typeof TasksControllerUpdateTaskV1Department
->;
-
-export const TasksControllerUpdateTaskV1Department$zodSchema = z.enum([
-  "none",
-  "admin",
-  "gov",
-  "hr",
-  "it",
-  "itsm",
-  "qms",
-]);
-
 export type TasksControllerUpdateTaskV1RequestBody = {
   title?: string | undefined;
   description?: string | undefined;
@@ -105,7 +82,7 @@ export type TasksControllerUpdateTaskV1RequestBody = {
   integrationScheduleFrequency?:
     | TasksControllerUpdateTaskV1IntegrationScheduleFrequency
     | undefined;
-  department?: TasksControllerUpdateTaskV1Department | undefined;
+  department?: string | undefined;
   reviewDate?: string | undefined;
   notRelevantJustification?: string | undefined;
 };
@@ -119,7 +96,9 @@ export const TasksControllerUpdateTaskV1RequestBody$zodSchema: z.ZodType<
   assigneeId: z.string().nullable().optional().describe(
     "Assignee member ID, or null to unassign",
   ),
-  department: TasksControllerUpdateTaskV1Department$zodSchema.optional(),
+  department: z.string().optional().describe(
+    "Built-in values: none, admin, gov, hr, it, itsm, qms. Custom department names are also accepted.",
+  ),
   description: z.string().optional().describe("Task description"),
   frequency: TasksControllerUpdateTaskV1Frequency$zodSchema.optional(),
   integrationScheduleFrequency:

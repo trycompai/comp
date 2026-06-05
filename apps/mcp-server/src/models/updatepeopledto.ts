@@ -3,36 +3,6 @@
  */
 
 import * as z from "zod";
-import { ClosedEnum } from "../types/enums.js";
-
-/**
- * Member department
- */
-export const UpdatePeopleDtoDepartment = {
-  None: "none",
-  Admin: "admin",
-  Gov: "gov",
-  Hr: "hr",
-  It: "it",
-  Itsm: "itsm",
-  Qms: "qms",
-} as const;
-/**
- * Member department
- */
-export type UpdatePeopleDtoDepartment = ClosedEnum<
-  typeof UpdatePeopleDtoDepartment
->;
-
-export const UpdatePeopleDtoDepartment$zodSchema = z.enum([
-  "none",
-  "admin",
-  "gov",
-  "hr",
-  "it",
-  "itsm",
-  "qms",
-]).describe("Member department");
 
 /**
  * Employee onboard date
@@ -53,7 +23,7 @@ export const OffboardDate$zodSchema: z.ZodType<OffboardDate> = z.object({})
 export type UpdatePeopleDto = {
   userId?: string | undefined;
   role?: string | undefined;
-  department?: UpdatePeopleDtoDepartment | undefined;
+  department?: string | undefined;
   isActive?: boolean | undefined;
   fleetDmLabelId?: number | undefined;
   jobTitle?: string | undefined;
@@ -80,8 +50,8 @@ export const UpdatePeopleDto$zodSchema: z.ZodType<UpdatePeopleDto> = z.object({
   createdAt: z.string().optional().describe(
     "Member join date (createdAt override)",
   ),
-  department: UpdatePeopleDtoDepartment$zodSchema.optional().describe(
-    "Member department",
+  department: z.string().optional().describe(
+    "Member department. Built-in values: none, admin, gov, hr, it, itsm, qms. Custom department names are also accepted.",
   ),
   email: z.string().optional().describe("Email of the associated user"),
   fleetDmLabelId: z.number().optional().describe(
