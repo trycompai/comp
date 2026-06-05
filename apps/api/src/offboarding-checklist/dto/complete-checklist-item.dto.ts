@@ -1,6 +1,7 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { IsOptional, IsString, MaxLength, IsBase64 } from 'class-validator';
 import { IsMimeTypeField } from '../../utils/mime-type.validator';
+import { MAX_UPLOAD_BASE64_LENGTH } from '../../uploads/upload-limits';
 
 export class CompleteChecklistItemDto {
   @ApiProperty({ description: 'Optional notes', required: false })
@@ -25,7 +26,7 @@ export class CompleteChecklistItemDto {
   })
   @IsOptional()
   @IsString()
-  @MaxLength(134_217_728)
+  @MaxLength(MAX_UPLOAD_BASE64_LENGTH)
   @IsBase64()
   fileData?: string;
 

@@ -11,6 +11,7 @@ import {
   CreateUploadUrlDto,
   UploadUrlResponseDto,
 } from './dto/create-upload-url.dto';
+import { MAX_UPLOAD_BYTES } from './upload-limits';
 
 /**
  * ============================================================================
@@ -56,10 +57,10 @@ export class UploadsService {
   /**
    * Default ceiling for files read back from S3 via the presigned flow. A plain
    * presigned PUT cannot enforce a size limit, so this is the backstop that
-   * stops an oversized upload from being loaded into memory. Matches the 100MB
-   * limit the feature services enforce on the decoded buffer.
+   * stops an oversized upload from being loaded into memory. Shares the 100MB
+   * limit the feature services / DTOs enforce (see upload-limits.ts).
    */
-  static readonly DEFAULT_MAX_UPLOAD_BYTES = 100 * 1024 * 1024;
+  static readonly DEFAULT_MAX_UPLOAD_BYTES = MAX_UPLOAD_BYTES;
 
   /**
    * Generate a presigned S3 PUT URL plus the org-scoped key the file will land

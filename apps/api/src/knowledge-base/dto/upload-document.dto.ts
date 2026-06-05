@@ -1,5 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { IsBase64, IsOptional, IsString, MaxLength } from 'class-validator';
+import { MAX_UPLOAD_BASE64_LENGTH } from '../../uploads/upload-limits';
 
 export class UploadDocumentDto {
   @ApiProperty({ description: 'Organization ID that owns the document' })
@@ -25,9 +26,10 @@ export class UploadDocumentDto {
   })
   @IsOptional()
   @IsString()
-  // ~128MB of base64 ≈ 100MB decoded — caps the inline payload at the validation
-  // layer (before it is decoded), matching the other migrated upload DTOs.
-  @MaxLength(134_217_728)
+  // Cap the inline payload at the validation layer (before it is decoded),
+  // matching the other migrated upload DTOs. The limit is the base64 length of
+  // the 100 MiB file ceiling — see upload-limits.ts.
+  @MaxLength(MAX_UPLOAD_BASE64_LENGTH)
   @IsBase64()
   fileData?: string; // base64 encoded
 

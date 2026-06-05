@@ -8,6 +8,7 @@ import {
   MaxLength,
 } from 'class-validator';
 import { IsMimeTypeField } from '../utils/mime-type.validator';
+import { MAX_UPLOAD_BASE64_LENGTH } from '../uploads/upload-limits';
 
 export class UploadAttachmentDto {
   @ApiProperty({
@@ -38,7 +39,7 @@ export class UploadAttachmentDto {
   @IsOptional()
   @IsString()
   @IsNotEmpty()
-  @MaxLength(134_217_728)
+  @MaxLength(MAX_UPLOAD_BASE64_LENGTH)
   @IsBase64()
   fileData?: string;
 
