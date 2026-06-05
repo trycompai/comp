@@ -1,8 +1,9 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { BadRequestException, Injectable, Logger } from '@nestjs/common';
 import { db } from '@db';
 import { tasks, auth } from '@trigger.dev/sdk';
 import { syncManualAnswerToVector } from '@/vector-store/lib';
 import { UploadDocumentDto } from './dto/upload-document.dto';
+import { UploadsService } from '../uploads/uploads.service';
 import { DeleteDocumentDto } from './dto/delete-document.dto';
 import { GetDocumentUrlDto } from './dto/get-document-url.dto';
 import { ProcessDocumentsDto } from './dto/process-documents.dto';
@@ -25,6 +26,8 @@ import {
 export class KnowledgeBaseService {
   private readonly logger = new Logger(KnowledgeBaseService.name);
 
+  constructor(private readonly uploadsService: UploadsService) {}
+
   async listDocuments(organizationId: string) {
     return db.knowledgeBaseDocument.findMany({
       where: { organizationId },
@@ -44,12 +47,30 @@ export class KnowledgeBaseService {
   }
 
   async uploadDocument(dto: UploadDocumentDto) {
+    // Resolve content from inline base64 (UI/direct) or a presigned-upload
+    // s3Key (AI/MCP clients — avoids slow base64 through an LLM). The read
+    // enforces that the key belongs to this org.
+    const fileData =
+      dto.fileData ??
+      (dto.s3Key
+        ? await this.uploadsService.readUploadAsBase64(
+            dto.organizationId,
+            dto.s3Key,
+          )
+        : undefined);
+
+    if (!fileData) {
+      throw new BadRequestException(
+        'Provide either fileData (base64) or s3Key from /v1/uploads/presign.',
+      );
+    }
+
     // Upload to S3
     const { s3Key, fileSize } = await uploadToS3(
       dto.organizationId,
       dto.fileName,
       dto.fileType,
-      dto.fileData,
+      fileData,
     );
 
     // Create database record

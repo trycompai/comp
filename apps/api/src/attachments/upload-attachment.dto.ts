@@ -29,15 +29,29 @@ export class UploadAttachmentDto {
   fileType: string;
 
   @ApiProperty({
-    description: 'Base64 encoded file data',
+    description:
+      'Base64-encoded file contents. For the web UI / direct callers. AI/MCP clients should instead upload via /v1/uploads/presign (purpose=attachment) and pass `s3Key` — base64 through an LLM is impractically slow and times out. Provide exactly one of fileData or s3Key.',
+    required: false,
     example:
       'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8/5+hHgAHggJ/PchI7wAAAABJRU5ErkJggg==',
   })
+  @IsOptional()
   @IsString()
   @IsNotEmpty()
   @MaxLength(134_217_728)
   @IsBase64()
-  fileData: string;
+  fileData?: string;
+
+  @ApiProperty({
+    description:
+      'Key of a file already uploaded via /v1/uploads/presign (purpose=attachment). The server fetches the bytes from storage — no base64 needed. Provide exactly one of fileData or s3Key.',
+    required: false,
+    example: 'org_abc123/uploads/attachment/1700000000000-rbac-matrix.xlsx',
+  })
+  @IsOptional()
+  @IsString()
+  @IsNotEmpty()
+  s3Key?: string;
 
   @ApiProperty({
     description: 'Description of the attachment',
