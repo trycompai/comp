@@ -14,6 +14,7 @@ import {
   ScanSearch,
   Server,
   Shield,
+  Sparkles,
   Terminal,
   Workflow,
 } from 'lucide-react';
@@ -41,6 +42,7 @@ const SERVICE_ICONS: Record<string, React.ElementType> = {
   'sns-sqs': Workflow,
   'ecr': Server,
   'opensearch': Database,
+  'neptune': Database,
   'redshift': Database,
   'macie': ScanSearch,
   'route53': Globe,
@@ -78,6 +80,7 @@ const SERVICE_ICONS: Record<string, React.ElementType> = {
   'bigquery': Database,
   'pubsub': Workflow,
   'cloud-armor': Shield,
+  'vertex-ai': Sparkles,
   'security-command-center': Shield,
 };
 

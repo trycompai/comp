@@ -40,6 +40,7 @@ import { LambdaAdapter } from './aws/lambda.adapter';
 import { DynamoDbAdapter } from './aws/dynamodb.adapter';
 import { SnsSqsAdapter } from './aws/sns-sqs.adapter';
 import { EcrAdapter } from './aws/ecr.adapter';
+import { NeptuneAdapter } from './aws/neptune.adapter';
 import { OpenSearchAdapter } from './aws/opensearch.adapter';
 import { RedshiftAdapter } from './aws/redshift.adapter';
 import { MacieAdapter } from './aws/macie.adapter';
@@ -110,6 +111,7 @@ export class AWSSecurityService {
     new SnsSqsAdapter(),
     new EcrAdapter(),
     new OpenSearchAdapter(),
+    new NeptuneAdapter(),
     new RedshiftAdapter(),
     new MacieAdapter(),
     new Route53Adapter(),
@@ -711,6 +713,7 @@ const AWS_COST_SERVICE_MAPPING: Record<string, string[]> = {
   'Amazon Elastic Container Registry': ['ecr'],
   'Amazon OpenSearch Service': ['opensearch'],
   'Amazon Elasticsearch Service': ['opensearch'], // legacy name
+  'Amazon Neptune': ['neptune'],
   'Amazon Redshift': ['redshift'],
   'Amazon Macie': ['macie'],
   'Amazon Route 53': ['route53'],

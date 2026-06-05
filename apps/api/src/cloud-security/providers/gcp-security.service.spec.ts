@@ -4,7 +4,10 @@
 // importing the service.
 jest.mock('@db', () => ({ db: {} }));
 
-import { GCPSecurityService } from './gcp-security.service';
+import {
+  GCPSecurityService,
+  resolveGcpServiceId,
+} from './gcp-security.service';
 
 /**
  * Helper: build a Response-like object for a single page of the GCP
@@ -637,5 +640,61 @@ describe('GCPSecurityService — project detection', () => {
       const result = await service.detectProjectsForOrg('token', '777');
       expect(result.map((p) => p.id)).toEqual(['good-proj']);
     });
+  });
+});
+
+describe('resolveGcpServiceId — Vertex AI grouping', () => {
+  it('maps an aiplatform resource type to vertex-ai (regardless of category)', () => {
+    expect(
+      resolveGcpServiceId(
+        'SOME_UNMAPPED_AI_CATEGORY',
+        'aiplatform.googleapis.com/Dataset',
+        '//aiplatform.googleapis.com/projects/p/locations/l/datasets/123',
+      ),
+    ).toBe('vertex-ai');
+  });
+
+  it('maps a Workbench (notebooks) resource type to vertex-ai', () => {
+    expect(
+      resolveGcpServiceId(
+        'NOTEBOOK_PUBLIC_IP',
+        'notebooks.googleapis.com/Instance',
+        undefined,
+      ),
+    ).toBe('vertex-ai');
+  });
+
+  it('matches on resourceName when resource type is absent', () => {
+    expect(
+      resolveGcpServiceId(
+        'X',
+        undefined,
+        '//aiplatform.googleapis.com/projects/p/locations/l/models/m',
+      ),
+    ).toBe('vertex-ai');
+  });
+
+  it('resource type takes precedence over a category mapping', () => {
+    // PUBLIC_BUCKET_ACL maps to cloud-storage, but an aiplatform resource
+    // must still group under vertex-ai (resource type is authoritative).
+    expect(
+      resolveGcpServiceId(
+        'PUBLIC_BUCKET_ACL',
+        'aiplatform.googleapis.com/Endpoint',
+        undefined,
+      ),
+    ).toBe('vertex-ai');
+  });
+
+  it('falls back to the category mapping for non-AI findings', () => {
+    expect(
+      resolveGcpServiceId('PUBLIC_BUCKET_ACL', 'storage.googleapis.com/Bucket', undefined),
+    ).toBe('cloud-storage');
+  });
+
+  it('falls back to security-command-center for unmapped, non-AI findings', () => {
+    expect(resolveGcpServiceId('TOTALLY_UNKNOWN', 'compute.googleapis.com/Foo', undefined)).toBe(
+      'security-command-center',
+    );
   });
 });
