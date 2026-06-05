@@ -1,3 +1,12 @@
+## [3.73.1](https://github.com/trycompai/comp/compare/v3.73.0...v3.73.1) (2026-06-05)
+
+
+### Bug Fixes
+
+* **cloud-security:** allow an empty filterPattern for PutMetricFilter validation ([f8f2908](https://github.com/trycompai/comp/commit/f8f2908f64080d9510d2473690934f75052d0fb7))
+* **cloud-security:** make cloudwatch metric-filter auto-fix reliable ([837ecde](https://github.com/trycompai/comp/commit/837ecde24df60453cdd331e672385a69e9842c7b))
+* **cloud-security:** reconcile conflicting logGroupName guidance in fix prompt ([e7af1ec](https://github.com/trycompai/comp/commit/e7af1ec0e4edc473cabffb5e9336e8fae87a47e5))
+
 # [3.73.0](https://github.com/trycompai/comp/compare/v3.72.0...v3.73.0) (2026-06-05)
 
 
