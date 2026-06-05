@@ -1,3 +1,20 @@
+# [3.72.0](https://github.com/trycompai/comp/compare/v3.71.0...v3.72.0) (2026-06-05)
+
+
+### Bug Fixes
+
+* **api:** accept presigned s3Key for MCP uploads (attachment/document/evidence) ([a7ffbb7](https://github.com/trycompai/comp/commit/a7ffbb792b2e5fdb881708ed0c35f0f62d8018f0))
+* **api:** cap inline upload base64 at the true 100MB limit (UI-safe) ([f076789](https://github.com/trycompai/comp/commit/f07678999e0efe5b74531f6b925ddeb877427c3e))
+* **api:** guard presigned-upload reads against oversized files ([4e167b0](https://github.com/trycompai/comp/commit/4e167b0f662ff1aed52c85391950a7856237e66d))
+* **api:** harden task automations for MCP/API clients ([0f92e4e](https://github.com/trycompai/comp/commit/0f92e4e6b9add712e9a1513ac586f8d99e55ccc4)), closes [#3042](https://github.com/trycompai/comp/issues/3042)
+* **api:** reject whitespace-only scriptKey in CreateVersionDto ([4bf5454](https://github.com/trycompai/comp/commit/4bf5454e34eca1bbfe5bdc9f231c62932b612c66))
+* **cloud-security:** scope cloud tests findings to the selected account ([98a4fa2](https://github.com/trycompai/comp/commit/98a4fa20a38047f8d5d6d6e3c68f332139f99179))
+
+
+### Features
+
+* **cloud-security:** label the cloud tests connection selector ([2d1404e](https://github.com/trycompai/comp/commit/2d1404ed5abfcc0fa28a95ada5680365ee55535b))
+
 # [3.71.0](https://github.com/trycompai/comp/compare/v3.70.4...v3.71.0) (2026-06-05)
 
 
