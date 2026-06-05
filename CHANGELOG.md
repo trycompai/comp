@@ -1,3 +1,17 @@
+# [3.73.0](https://github.com/trycompai/comp/compare/v3.72.0...v3.73.0) (2026-06-05)
+
+
+### Bug Fixes
+
+* **evidence-export:** harden bulk-export trigger task against worker OOM + retry storms ([5fe1538](https://github.com/trycompai/comp/commit/5fe153891c3c7cb3988c2d91517a9de3bb96699b))
+* **evidence-export:** repair bulk-export progress UI (dialog trap, silent failures, invalid hook option) ([e91c547](https://github.com/trycompai/comp/commit/e91c547053d6a82e8ac4b0a1f5dbb1593b0252f1))
+* **evidence-export:** stream runs through PDF/JSON generation to prevent OOM ([15b40aa](https://github.com/trycompai/comp/commit/15b40aa17ef674f5760f5caf715d573281abcb35))
+
+
+### Features
+
+* **evidence-export:** offload bulk export to Trigger.dev background task ([dd5a2f0](https://github.com/trycompai/comp/commit/dd5a2f059d2d1121548d3c0fdd783550818bbab1))
+
 # [3.72.0](https://github.com/trycompai/comp/compare/v3.71.0...v3.72.0) (2026-06-05)
 
 
