@@ -165,6 +165,12 @@ export const REQUIRED_PARAMS: Record<string, readonly string[]> = {
   StartConfigurationRecorderCommand: ['ConfigurationRecorderName'],
   PutBucketPolicyCommand: ['Bucket', 'Policy'],
   CreateTrailCommand: ['Name', 'S3BucketName'],
+  PutMetricFilterCommand: [
+    'logGroupName',
+    'filterName',
+    'filterPattern',
+    'metricTransformations',
+  ],
 };
 
 const REQUIRED_PARAM_ONE_OF: Record<string, readonly (readonly string[])[]> = {
@@ -276,6 +282,50 @@ function normaliseInputParams(
   if (command === 'PutConfigurationRecorderCommand') {
     normalizeConfigRecordingGroup(input);
   }
+
+  // Rule 5: CloudWatch Logs metric filters — `metricTransformations` is a
+  // required, NON-EMPTY ARRAY of { metricName, metricNamespace, metricValue }
+  // where `metricValue` must be a STRING. The model frequently emits it as a
+  // single object instead of an array, or as a number `1` instead of `"1"`,
+  // which AWS rejects (the customer-visible "metric transformations were not
+  // properly provided to the CloudWatch Logs API" failure that sends the
+  // auto-fix to manual steps). Coerce to the one valid shape.
+  if (command === 'PutMetricFilterCommand') {
+    normalizeMetricFilterTransformations(input);
+  }
+}
+
+export function normalizeMetricFilterTransformations(
+  input: Record<string, unknown>,
+): void {
+  let transformations = input.metricTransformations;
+
+  // A single transformation object → wrap in an array (AWS expects a list).
+  if (
+    transformations &&
+    typeof transformations === 'object' &&
+    !Array.isArray(transformations)
+  ) {
+    transformations = [transformations];
+    input.metricTransformations = transformations;
+  }
+
+  if (!Array.isArray(transformations)) return;
+
+  input.metricTransformations = transformations.map((entry) => {
+    if (!entry || typeof entry !== 'object' || Array.isArray(entry)) {
+      return entry;
+    }
+    const transform = entry as Record<string, unknown>;
+    // metricValue must be a string (e.g. "1"); the model often emits a number.
+    if (
+      transform.metricValue != null &&
+      typeof transform.metricValue !== 'string'
+    ) {
+      return { ...transform, metricValue: String(transform.metricValue) };
+    }
+    return transform;
+  });
 }
 
 export function normalizeConfigRecordingGroup(
