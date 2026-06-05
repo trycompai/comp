@@ -78,10 +78,20 @@ export function TasksPageClient({
   } | null>(null);
   const [isTriggering, setIsTriggering] = useState(false);
 
-  const { run: realtimeRun } = useRealtimeRun(exportRun?.runId ?? '', {
+  // Subscribe for the onComplete side effect (download / error toast); the
+  // returned run isn't rendered here, so we don't destructure it.
+  useRealtimeRun(exportRun?.runId ?? '', {
     accessToken: exportRun?.accessToken,
     enabled: !!exportRun,
-    onComplete: (run) => {
+    onComplete: (run, err) => {
+      // useRealtimeRun fires onComplete on any terminal state (and surfaces
+      // subscription errors via `err`), so treat anything that isn't a clean
+      // COMPLETED run as a failure.
+      if (err || run.status !== 'COMPLETED') {
+        toast.error('Evidence export failed. Please try again.');
+        setExportRun(null);
+        return;
+      }
       const downloadUrl =
         run.output?.downloadUrl ??
         (run.metadata?.downloadUrl as string | undefined);
@@ -93,13 +103,11 @@ export function TasksPageClient({
         link.click();
         document.body.removeChild(link);
         toast.success('Evidence package downloaded successfully');
+      } else {
+        toast.error('Export completed but download link was not available.');
       }
       setExportRun(null);
       setIsPopoverOpen(false);
-    },
-    onError: () => {
-      toast.error('Evidence export failed. Please try again.');
-      setExportRun(null);
     },
   });
 

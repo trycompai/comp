@@ -36,9 +36,6 @@ export function ExportEvidenceButton({
     phase: 'idle',
   });
 
-  const isRunning =
-    exportState.phase === 'triggering' || exportState.phase === 'running';
-
   const handleTrigger = async () => {
     setExportState({ phase: 'triggering' });
     try {
@@ -54,7 +51,23 @@ export function ExportEvidenceButton({
   };
 
   const handleComplete = useCallback(
-    (run: { output?: { downloadUrl?: string } | null; metadata?: Record<string, unknown> }) => {
+    (
+      run: {
+        status?: string;
+        output?: { downloadUrl?: string } | null;
+        metadata?: Record<string, unknown>;
+      },
+      err?: Error,
+    ) => {
+      // useRealtimeRun fires onComplete on any terminal state (and surfaces
+      // subscription errors via `err`), so treat anything that isn't a clean
+      // COMPLETED run as a failure.
+      if (err || (run.status && run.status !== 'COMPLETED')) {
+        toast.error('Evidence export failed. Please try again.');
+        setExportState({ phase: 'idle' });
+        return;
+      }
+
       const downloadUrl =
         run.output?.downloadUrl ??
         (run.metadata?.downloadUrl as string | undefined);
@@ -77,18 +90,34 @@ export function ExportEvidenceButton({
     [organizationName],
   );
 
-  const handleError = useCallback(() => {
-    toast.error('Evidence export failed. Please try again.');
-    setExportState({ phase: 'idle' });
-  }, []);
+  // Subscribe to the run from the parent (not from the progress UI inside the
+  // sheet) so the export keeps streaming — and still auto-downloads on
+  // completion — even after the user dismisses the sheet, which the copy below
+  // explicitly invites them to do.
+  const { run } = useRealtimeRun(
+    exportState.phase === 'running' ? exportState.runId : '',
+    {
+      accessToken:
+        exportState.phase === 'running' ? exportState.accessToken : undefined,
+      enabled: exportState.phase === 'running',
+      onComplete: handleComplete,
+    },
+  );
+
+  const meta = run?.metadata as
+    | {
+        status?: string;
+        progress?: number;
+        tasksCompleted?: number;
+        tasksTotal?: number;
+      }
+    | undefined;
 
   return (
     <>
       <Button onClick={() => setIsOpen(true)}>Export All Evidence</Button>
 
-      <Sheet open={isOpen} onOpenChange={(open) => {
-        if (!isRunning) setIsOpen(open);
-      }}>
+      <Sheet open={isOpen} onOpenChange={setIsOpen}>
         <SheetContent>
           <SheetHeader>
             <SheetTitle>Export All Evidence</SheetTitle>
@@ -97,10 +126,10 @@ export function ExportEvidenceButton({
             <Stack gap="lg">
               {exportState.phase === 'running' ? (
                 <ExportProgress
-                  runId={exportState.runId}
-                  accessToken={exportState.accessToken}
-                  onComplete={handleComplete}
-                  onError={handleError}
+                  status={meta?.status ?? 'starting'}
+                  progress={meta?.progress ?? 0}
+                  tasksCompleted={meta?.tasksCompleted ?? 0}
+                  tasksTotal={meta?.tasksTotal ?? 0}
                 />
               ) : (
                 <>
@@ -150,37 +179,16 @@ export function ExportEvidenceButton({
 }
 
 function ExportProgress({
-  runId,
-  accessToken,
-  onComplete,
-  onError,
+  status,
+  progress,
+  tasksCompleted,
+  tasksTotal,
 }: {
-  runId: string;
-  accessToken: string;
-  onComplete: (run: { output?: { downloadUrl?: string } | null; metadata?: Record<string, unknown> }) => void;
-  onError: () => void;
+  status: string;
+  progress: number;
+  tasksCompleted: number;
+  tasksTotal: number;
 }) {
-  const { run } = useRealtimeRun(runId, {
-    accessToken,
-    enabled: true,
-    onComplete: (run) => onComplete(run),
-    onError: () => onError(),
-  });
-
-  const meta = run?.metadata as
-    | {
-        status?: string;
-        progress?: number;
-        tasksCompleted?: number;
-        tasksTotal?: number;
-      }
-    | undefined;
-
-  const progress = meta?.progress ?? 0;
-  const status = meta?.status ?? 'starting';
-  const tasksCompleted = meta?.tasksCompleted ?? 0;
-  const tasksTotal = meta?.tasksTotal ?? 0;
-
   const statusLabel =
     status === 'starting'
       ? 'Starting export...'
