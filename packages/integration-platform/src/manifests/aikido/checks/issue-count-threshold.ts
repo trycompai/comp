@@ -35,6 +35,7 @@ export const issueCountThresholdCheck: IntegrationCheck = {
   id: 'issue_count_threshold',
   name: 'Issue Count Within Threshold',
   description: 'Verify that the total number of open security issues is within acceptable limits',
+  service: 'issue-tracking',
   taskMapping: TASK_TEMPLATES.monitoringAlerting,
   defaultSeverity: 'medium',
 

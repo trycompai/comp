@@ -58,6 +58,7 @@ function makeFakeResponse() {
   const emitter = new EventEmitter();
   const res = Object.assign(emitter, {
     setHeader: jest.fn(),
+    flushHeaders: jest.fn(),
     status: jest.fn(function (this: unknown) {
       return res;
     }),
@@ -140,6 +141,7 @@ describe('EvidenceExportController', () => {
       'Content-Disposition',
       `attachment; filename="acme_mytask_evidence_2026-04-22.zip"`,
     );
+    expect(res.flushHeaders).toHaveBeenCalledTimes(1);
     expect(archive.pipe).toHaveBeenCalledWith(res);
   });
 

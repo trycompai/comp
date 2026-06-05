@@ -1,13 +1,15 @@
 import { ApiProperty } from '@nestjs/swagger';
+import { Transform } from 'class-transformer';
 import {
   IsString,
   IsNotEmpty,
   IsOptional,
-  IsEnum,
   IsBoolean,
   IsNumber,
+  MaxLength,
 } from 'class-validator';
 import { Departments } from '@db';
+import { DEPARTMENT_MAX_LENGTH } from '../../policies/dto/create-policy.dto';
 
 export class CreatePeopleDto {
   @ApiProperty({
@@ -27,14 +29,19 @@ export class CreatePeopleDto {
   role: string;
 
   @ApiProperty({
-    description: 'Member department',
-    enum: Departments,
+    description:
+      'Member department. Built-in values: none, admin, gov, hr, it, itsm, qms. Custom department names are also accepted.',
     example: Departments.it,
     required: false,
+    type: 'string',
+    maxLength: DEPARTMENT_MAX_LENGTH,
   })
   @IsOptional()
-  @IsEnum(Departments)
-  department?: Departments;
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(DEPARTMENT_MAX_LENGTH)
+  @Transform(({ value }) => (typeof value === 'string' ? value.trim() : value))
+  department?: string;
 
   @ApiProperty({
     description: 'Whether member is active',

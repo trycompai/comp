@@ -1,7 +1,9 @@
 'use client';
 
 import { useConnectionServices } from '@/hooks/use-integration-platform';
+import { ChevronRight } from '@trycompai/design-system/icons';
 import { Badge } from '@trycompai/ui/badge';
+import Link from 'next/link';
 import {
   Cloud,
   Database,
@@ -72,6 +74,7 @@ interface ServiceMeta {
   description: string;
   enabledByDefault?: boolean;
   implemented?: boolean;
+  mappedTasks?: Array<{ id: string; name: string }>;
 }
 
 function ServiceIcon({ serviceId }: { serviceId: string }) {
@@ -87,80 +90,100 @@ function ServiceIcon({ serviceId }: { serviceId: string }) {
 interface ServiceCardProps {
   service: ServiceMeta;
   connectionId: string | null;
-  isConnected: boolean;
-  onToggle?: (id: string, enabled: boolean) => void | Promise<boolean | void>;
-  toggling?: boolean;
+  orgId: string;
+  slug: string;
+  /**
+   * Template ids that have a live task in this org. When provided, the evidence
+   * count shows only added tasks — matching the service detail page, which
+   * hides mappings the org hasn't added. Falls back to all mapped tasks when
+   * absent.
+   */
+  addedTemplateIds?: Set<string>;
 }
 
+/**
+ * A service row inside a cloud integration's detail page. Clicking navigates to
+ * the per-service detail page (where the Cloud Tests scan toggle + the evidence
+ * tasks it satisfies live). The row itself shows current scan status + the
+ * count of evidence tasks the service maps to — it is NOT a toggle.
+ */
 export function ServiceCard({
   service,
   connectionId,
-  isConnected,
-  onToggle,
-  toggling,
+  orgId,
+  slug,
+  addedTemplateIds,
 }: ServiceCardProps) {
-  const { services } = useConnectionServices(connectionId);
-
+  const { services, isLoading, error } = useConnectionServices(connectionId);
   const isImplemented = service.implemented !== false;
   const liveService = services.find((s) => s.id === service.id);
+  const inServiceList = Boolean(liveService);
   const isEnabled = liveService?.enabled ?? false;
-  const showToggle = isImplemented && isConnected && onToggle;
+  // Don't assert a scan status until the connection's live services have
+  // loaded. A service absent from the loaded list (e.g. AWS baseline services)
+  // is always scanned — but only treat "absent" as "always scanned" once the
+  // fetch has actually succeeded.
+  const servicesLoaded = Boolean(connectionId) && !isLoading && !error;
+  let scanningOn = false;
+  let scanningLabel: string;
+  if (!servicesLoaded) {
+    scanningLabel = error ? 'Status unavailable' : 'Checking status…';
+  } else if (!inServiceList) {
+    scanningOn = true;
+    scanningLabel = 'Always scanned';
+  } else {
+    scanningOn = isEnabled;
+    scanningLabel = isEnabled ? 'Scanning on' : 'Scanning off';
+  }
+  const mappedTasks = service.mappedTasks ?? [];
+  const taskCount = addedTemplateIds
+    ? mappedTasks.filter((m) => addedTemplateIds.has(m.id)).length
+    : mappedTasks.length;
+
+  const href =
+    `/${encodeURIComponent(orgId)}/integrations/${encodeURIComponent(slug)}/services/${encodeURIComponent(service.id)}` +
+    (connectionId ? `?connectionId=${encodeURIComponent(connectionId)}` : '');
 
   return (
-    <div
-      className={`relative rounded-lg border p-4 ${
-        !isImplemented
-          ? 'opacity-50'
-          : isEnabled && isConnected
-            ? 'border-primary/30 bg-primary/5 dark:border-primary/20 dark:bg-primary/5'
-            : ''
+    <Link
+      href={href}
+      className={`group relative flex items-start gap-3 rounded-lg border p-4 transition-colors hover:border-primary/40 hover:bg-muted/40 ${
+        !isImplemented ? 'opacity-50' : ''
       }`}
     >
-      <div className="flex items-start gap-3 min-w-0">
-        <ServiceIcon serviceId={service.id} />
-        <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-2">
-            <span className="text-sm font-medium">{service.name}</span>
-            {!isImplemented && (
-              <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
-                Coming Soon
-              </Badge>
-            )}
-          </div>
-          <p className="text-muted-foreground mt-0.5 text-xs leading-relaxed">
-            {service.description}
-          </p>
-          {liveService?.projects && liveService.projects.length > 0 && (
-            <div className="mt-1.5 flex flex-wrap gap-1">
-              {liveService.projects.map((pid) => (
-                <span
-                  key={pid}
-                  className="rounded bg-muted px-1.5 py-0.5 text-[10px] text-muted-foreground"
-                >
-                  {pid}
-                </span>
-              ))}
-            </div>
+      <ServiceIcon serviceId={service.id} />
+      <div className="min-w-0 flex-1">
+        <div className="flex items-center gap-2">
+          <span className="text-sm font-medium">{service.name}</span>
+          {!isImplemented && (
+            <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
+              Coming Soon
+            </Badge>
           )}
         </div>
-        {showToggle && (
-          <button
-            role="switch"
-            aria-checked={isEnabled}
-            disabled={toggling}
-            onClick={() => void Promise.resolve(onToggle?.(service.id, !isEnabled)).catch(() => {})}
-            className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer items-center rounded-full transition-colors disabled:opacity-50 ${
-              isEnabled ? 'bg-primary' : 'bg-muted-foreground/30'
-            }`}
-          >
+        <p className="text-muted-foreground mt-0.5 line-clamp-2 text-xs leading-relaxed">
+          {service.description}
+        </p>
+        <div className="mt-2 flex items-center gap-3 text-[11px] text-muted-foreground">
+          <span className="inline-flex items-center gap-1">
             <span
-              className={`inline-block h-3.5 w-3.5 rounded-full bg-white shadow-sm transition-transform ${
-                isEnabled ? 'translate-x-[18px]' : 'translate-x-[3px]'
+              className={`h-1.5 w-1.5 rounded-full ${
+                scanningOn ? 'bg-primary' : 'bg-muted-foreground/40'
               }`}
             />
-          </button>
-        )}
+            {scanningLabel}
+          </span>
+          {taskCount > 0 && (
+            <span>
+              {taskCount} evidence task{taskCount === 1 ? '' : 's'}
+            </span>
+          )}
+        </div>
       </div>
-    </div>
+      <ChevronRight
+        size={16}
+        className="mt-0.5 shrink-0 text-muted-foreground/50 transition-transform group-hover:translate-x-0.5"
+      />
+    </Link>
   );
 }

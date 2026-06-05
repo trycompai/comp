@@ -26,6 +26,31 @@ export const PUBLIC_OPENAPI_DESCRIPTION =
 
 export const PUBLIC_SERVER_URL = 'https://api.trycomp.ai';
 
+/**
+ * Default request timeout (ms) baked into the generated SDK + MCP server via the
+ * `x-speakeasy-timeout` document-root extension.
+ *
+ * Speakeasy-generated request functions resolve their timeout to
+ * `operationTimeoutMs || clientTimeoutMs || -1`, and `-1` means "no timeout".
+ * Without this, a slow/hung upstream call leaves the MCP server's fetch dangling
+ * forever; the MCP client eventually gives up and marks the whole connection
+ * unhealthy (customer-reported wedging). A finite timeout makes the SDK abort
+ * the request and return a clean error instead, keeping the connection alive.
+ *
+ * 120s comfortably covers our slowest endpoints while staying under the ALB's
+ * 300s idle timeout (comp-private infra/modules/loadbalancer.ts).
+ */
+export const PUBLIC_OPENAPI_TIMEOUT_MS = 120_000;
+
+/**
+ * OpenAPIObject (from @nestjs/swagger) has no index signature for `x-*`
+ * extensions at the document root, so we widen it locally instead of reaching
+ * for `as any`.
+ */
+type OpenApiDocumentWithExtensions = OpenAPIObject & {
+  'x-speakeasy-timeout'?: number;
+};
+
 function getVisibilityForOperation(
   operation: OpenApiOperation,
   metadata?: PublicOperationMetadata,
@@ -183,6 +208,97 @@ function removeExcludedPaths(paths: Record<string, unknown>): void {
   }
 }
 
+type SpeakeasyMcpExtension = {
+  name?: string;
+  disabled?: boolean;
+};
+
+function toKebabCase(input: string): string {
+  return input
+    .replace(/([a-z0-9])([A-Z])/g, '$1-$2')
+    .replace(/[_\s]+/g, '-')
+    .replace(/-+/g, '-')
+    .toLowerCase();
+}
+
+/**
+ * Derive a human/LLM-friendly tool name from a NestJS-generated operationId.
+ * e.g. "PeopleController_inviteMembers_v1" -> { resource: "People", method: "inviteMembers" }
+ */
+function splitOperationId(operationId: string): {
+  resource: string;
+  method: string;
+} {
+  const withoutVersion = operationId.replace(/_v\d+$/i, '');
+  const firstUnderscore = withoutVersion.indexOf('_');
+  if (firstUnderscore === -1) {
+    return { resource: '', method: withoutVersion };
+  }
+  const controller = withoutVersion.slice(0, firstUnderscore);
+  const method = withoutVersion.slice(firstUnderscore + 1);
+  return { resource: controller.replace(/Controller$/i, ''), method };
+}
+
+/**
+ * Assign a clean `x-speakeasy-mcp.name` to every MCP-exposed operation so the
+ * generated MCP tools have readable, searchable names (e.g. `invite-members`)
+ * instead of cryptic auto-generated ones (`people-people-controller-invite-members-v1`).
+ *
+ * - Operations with a manually-set name (via @ApiExtension) are preserved.
+ * - Operations marked disabled are left alone (they won't become tools).
+ * - Names are derived from the method name; collisions fall back to a
+ *   resource-prefixed name, then a numeric suffix, guaranteeing uniqueness.
+ *
+ * This does NOT touch operationId — only the Speakeasy-specific extension —
+ * so OpenAPI consumers and the docs site are unaffected.
+ */
+function applyMcpToolNames(
+  paths: Record<string, Record<string, OpenApiOperation>>,
+): void {
+  const used = new Set<string>();
+
+  // Reserve manually-assigned names first so auto-generated ones never clash.
+  for (const methods of Object.values(paths)) {
+    for (const operation of Object.values(methods)) {
+      const ext = operation?.['x-speakeasy-mcp'] as
+        | SpeakeasyMcpExtension
+        | undefined;
+      if (ext?.name) used.add(ext.name);
+    }
+  }
+
+  for (const methods of Object.values(paths)) {
+    for (const operation of Object.values(methods)) {
+      if (!operation || typeof operation !== 'object') continue;
+
+      const ext = operation['x-speakeasy-mcp'] as
+        | SpeakeasyMcpExtension
+        | undefined;
+      // Keep hand-picked names and skip disabled (non-tool) operations.
+      if (ext?.name || ext?.disabled) continue;
+
+      const operationId = operation.operationId;
+      if (!operationId) continue;
+
+      const { resource, method } = splitOperationId(operationId);
+      let candidate = toKebabCase(method);
+      if (!candidate || used.has(candidate)) {
+        candidate = toKebabCase(`${resource}-${method}`);
+      }
+
+      let finalName = candidate;
+      let suffix = 2;
+      while (used.has(finalName)) {
+        finalName = `${candidate}-${suffix}`;
+        suffix += 1;
+      }
+      used.add(finalName);
+
+      operation['x-speakeasy-mcp'] = { ...(ext ?? {}), name: finalName };
+    }
+  }
+}
+
 export function applyPublicOpenApiMetadata(document: OpenAPIObject): void {
   document.info.title = PUBLIC_OPENAPI_TITLE;
   document.info.description = PUBLIC_OPENAPI_DESCRIPTION;
@@ -192,6 +308,12 @@ export function applyPublicOpenApiMetadata(document: OpenAPIObject): void {
       description: 'Production API Server',
     },
   ];
+
+  // Bake a finite default request timeout into the generated SDK + MCP server
+  // so a hung upstream call can never wedge the MCP connection. See
+  // PUBLIC_OPENAPI_TIMEOUT_MS for the full rationale.
+  (document as OpenApiDocumentWithExtensions)['x-speakeasy-timeout'] =
+    PUBLIC_OPENAPI_TIMEOUT_MS;
 
   const paths = document.paths as Record<
     string,
@@ -230,6 +352,9 @@ export function applyPublicOpenApiMetadata(document: OpenAPIObject): void {
       delete paths[routePath];
     }
   }
+
+  // Assign clean MCP tool names to every remaining (public) operation.
+  applyMcpToolNames(paths);
 
   addTagMetadata(document);
   removeUnusedSchemas(document);

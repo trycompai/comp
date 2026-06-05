@@ -113,9 +113,12 @@ export class CloudSecurityService {
         const accessToken =
           await this.credentialVaultService.getValidAccessToken(connectionId, {
             tokenUrl: oauthConfig.tokenUrl,
+            refreshUrl: oauthConfig.refreshUrl,
             clientId: oauthCreds.clientId,
             clientSecret: oauthCreds.clientSecret,
             clientAuthMethod: oauthConfig.clientAuthMethod,
+            scope: oauthCreds.scopes.join(' '),
+            tokenParams: oauthConfig.tokenParams,
           });
 
         if (!accessToken) {

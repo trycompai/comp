@@ -1,5 +1,6 @@
 import {
   GetObjectCommand,
+  HeadObjectCommand,
   PutObjectCommand,
   S3Client,
   type GetObjectCommandOutput,
@@ -166,4 +167,56 @@ export async function getFleetAgent({
 
   const response = await s3Client.send(getFleetAgentCommand);
   return response.Body;
+}
+
+/**
+ * Fetch an S3 object's full contents as a Buffer.
+ *
+ * Used by the presigned-upload pattern: after a client uploads a file directly
+ * to S3 (via a presigned URL), a feature service reads the bytes back here by
+ * key — so the binary never has to travel through the request body (or an LLM
+ * tool call). See `UploadsService` for the upload-URL side of this flow.
+ */
+export async function getObjectAsBuffer(
+  bucket: string,
+  key: string,
+): Promise<Buffer> {
+  if (!s3Client) {
+    throw new Error('S3 client not configured');
+  }
+
+  const response = await s3Client.send(
+    new GetObjectCommand({ Bucket: bucket, Key: key }),
+  );
+
+  if (!response.Body) {
+    throw new Error(`S3 object ${key} has no body`);
+  }
+
+  const bytes = await response.Body.transformToByteArray();
+  return Buffer.from(bytes);
+}
+
+/**
+ * Fetch an S3 object's size (in bytes) via a HEAD request, WITHOUT downloading
+ * the body. Used to reject oversized uploads before loading them into memory —
+ * `getObjectAsBuffer` would otherwise buffer the entire object (and base64
+ * callers expand it ~1.33x on top), so a single huge file could OOM the API.
+ *
+ * Returns `undefined` if S3 doesn't report a ContentLength (callers should treat
+ * that as "size unknown" rather than "zero").
+ */
+export async function getObjectContentLength(
+  bucket: string,
+  key: string,
+): Promise<number | undefined> {
+  if (!s3Client) {
+    throw new Error('S3 client not configured');
+  }
+
+  const response = await s3Client.send(
+    new HeadObjectCommand({ Bucket: bucket, Key: key }),
+  );
+
+  return response.ContentLength;
 }

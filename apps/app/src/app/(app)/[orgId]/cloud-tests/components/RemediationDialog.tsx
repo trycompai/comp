@@ -512,6 +512,11 @@ export function RemediationDialog({
   };
 
   const isGuided = preview?.guidedOnly;
+  // An auto-fix plan with no API calls has nothing to apply (the AI returned
+  // an empty/unusable plan). Block Apply so the user can't submit a no-op that
+  // fails server-side — they can Cancel and re-open to regenerate.
+  const hasNothingToApply =
+    !isGuided && (preview?.apiCalls?.length ?? 0) === 0;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -766,6 +771,14 @@ export function RemediationDialog({
                     </label>
                   )}
 
+                  {hasNothingToApply && (
+                    <p className="text-xs text-muted-foreground">
+                      We couldn&apos;t build an automatic fix for this finding.
+                      Close this dialog and try again, or follow the manual
+                      remediation guidance for this finding.
+                    </p>
+                  )}
+
                   <div className="flex justify-end gap-2 pt-2">
                     <Button
                       variant="outline"
@@ -778,7 +791,7 @@ export function RemediationDialog({
                     <Button
                       size="sm"
                       onClick={handleExecute}
-                      disabled={isExecuting || acknowledgment !== 'acknowledged' || (preview.missingPermissions?.length ?? 0) > 0}
+                      disabled={isExecuting || acknowledgment !== 'acknowledged' || (preview.missingPermissions?.length ?? 0) > 0 || hasNothingToApply}
                     >
                       {isExecuting ? (
                         <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />

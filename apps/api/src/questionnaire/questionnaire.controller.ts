@@ -19,6 +19,7 @@ import { FileInterceptor } from '@nestjs/platform-express';
 import {
   ApiBody,
   ApiConsumes,
+  ApiExtension,
   ApiOkResponse,
   ApiOperation,
   ApiProduces,
@@ -41,6 +42,7 @@ import { SaveAnswerDto } from './dto/save-answer.dto';
 import { DeleteAnswerDto } from './dto/delete-answer.dto';
 import { UploadAndParseDto } from './dto/upload-and-parse.dto';
 import { ExportByIdDto } from './dto/export-by-id.dto';
+import { TriggerAutoAnswerResponseDto } from './dto/trigger-auto-answer-response.dto';
 import {
   QuestionnaireService,
   type ParsedQuestionnaireResult,
@@ -122,6 +124,27 @@ export class QuestionnaireController {
           },
         }),
     };
+  }
+
+  // Non-streaming auto-answer for MCP/agent clients. The interactive UI uses the
+  // SSE POST /auto-answer below; an SSE stream can't be consumed by a single
+  // JSON-RPC tool call, so this triggers the same generation in the background
+  // and the caller polls GET /:id for progress. Keep the description <= 240 chars
+  // (trimmed by openapi/seo-text.ts) so the "poll until answered" step survives.
+  @Post(':id/auto-answer')
+  @RequirePermission('questionnaire', 'update')
+  @ApiOperation({
+    summary: 'Generate answers for a questionnaire',
+    description:
+      'Starts background answer generation for an already-parsed questionnaire and returns a run handle immediately. Poll GET /v1/questionnaire/:id until answeredQuestions equals totalQuestions, then read the answers from its questions.',
+  })
+  @ApiExtension('x-speakeasy-mcp', { name: 'generate-questionnaire-answers' })
+  @ApiOkResponse({ type: TriggerAutoAnswerResponseDto })
+  async triggerAutoAnswer(
+    @Param('id') id: string,
+    @OrganizationId() organizationId: string,
+  ): Promise<TriggerAutoAnswerResponseDto> {
+    return this.questionnaireService.triggerAutoAnswer(id, organizationId);
   }
 
   @Delete(':id')

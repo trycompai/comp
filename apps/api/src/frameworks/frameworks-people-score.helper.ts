@@ -8,6 +8,20 @@ const COMPLETED_BACKGROUND_CHECK_STATUSES = [
   BackgroundCheckStatus.completed_with_flags,
 ];
 
+/**
+ * Auditor-only members are not subject to people-security requirements like
+ * background checks (CS-416). A member counts as auditor-only when every one of
+ * their roles is `auditor` — a member with `auditor` plus another role still
+ * carries that other role's obligations.
+ */
+function isAuditorOnly(role: string): boolean {
+  const roles = role
+    .split(',')
+    .map((r) => r.trim())
+    .filter(Boolean);
+  return roles.length > 0 && roles.every((r) => r === 'auditor');
+}
+
 interface ScorePolicy {
   isRequiredToSign: boolean;
   status: string;
@@ -106,7 +120,9 @@ export async function computePeopleScore({
       ? membersWithInstalledDevices.has(employee.id)
       : true;
     const memberRequiresBgCheck =
-      backgroundCheckStepEnabled && !exemptMemberIds.has(employee.id);
+      backgroundCheckStepEnabled &&
+      !exemptMemberIds.has(employee.id) &&
+      !isAuditorOnly(employee.role);
     const hasCompletedBackgroundCheck = memberRequiresBgCheck
       ? membersWithCompletedBackgroundChecks.has(employee.id)
       : true;

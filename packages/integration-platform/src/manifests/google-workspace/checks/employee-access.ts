@@ -21,6 +21,7 @@ export const employeeAccessCheck: IntegrationCheck = {
   id: 'employee-access',
   name: 'Employee Access Review',
   description: 'Fetch all employees and their roles from Google Workspace for access review',
+  service: 'user-sync',
   taskMapping: TASK_TEMPLATES.employeeAccess,
   variables: [targetOrgUnitsVariable, includeSuspendedVariable],
 

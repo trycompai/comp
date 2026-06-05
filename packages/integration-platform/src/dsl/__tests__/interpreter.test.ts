@@ -1,7 +1,10 @@
 import { describe, it, expect, beforeEach } from 'bun:test';
-import { interpretDeclarativeCheck } from '../interpreter';
+import {
+  interpretDeclarativeCheck,
+  interpretDeclarativeDeviceSync,
+} from '../interpreter';
 import type { CheckContext } from '../../types';
-import type { CheckDefinition } from '../types';
+import type { CheckDefinition, SyncDefinition } from '../types';
 
 /**
  * Creates a mock CheckContext for testing.
@@ -1081,5 +1084,74 @@ describe('interpretDeclarativeCheck', () => {
       expect(ctx._fails).toHaveLength(1);
       expect(ctx._fails[0]!.title).toBe('bob@test.com has unknown role');
     });
+  });
+});
+
+describe('interpretDeclarativeDeviceSync', () => {
+  const deviceDef = (code: string, devicesPath = 'devices'): SyncDefinition => ({
+    steps: [{ type: 'code', code }],
+    employeesPath: 'employees',
+    devicesPath,
+    isDirectorySource: false,
+  });
+
+  it('returns devices validated against the DEVICE schema (regression: not the employee schema)', async () => {
+    // A device object has userEmail + platform but no `email`; the employee
+    // interpreter would drop/strip it. The device interpreter keeps it intact.
+    const runner = interpretDeclarativeDeviceSync({
+      definition: deviceDef(`scope.devices = [
+        { name: 'MB Pro', platform: 'macos', serialNumber: 'SN1', userEmail: 'alice@x.com', status: 'active' },
+      ];`),
+    });
+
+    const devices = await runner.run(createMockContext());
+
+    expect(devices).toHaveLength(1);
+    expect(devices[0]).toMatchObject({
+      platform: 'macos',
+      userEmail: 'alice@x.com',
+      serialNumber: 'SN1',
+    });
+  });
+
+  it('drops entries that fail SyncDeviceSchema and keeps the valid ones', async () => {
+    const runner = interpretDeclarativeDeviceSync({
+      definition: deviceDef(`scope.devices = [
+        { name: 'Good', platform: 'macos', userEmail: 'a@x.com', status: 'active' },
+        { name: 'Missing platform + email', status: 'active' },
+        { name: 'Bad platform', platform: 'ios', userEmail: 'b@x.com', status: 'active' },
+      ];`),
+    });
+
+    const devices = await runner.run(createMockContext());
+
+    expect(devices).toHaveLength(1);
+    expect(devices[0]!.name).toBe('Good');
+  });
+
+  it('reads from a custom devicesPath', async () => {
+    const runner = interpretDeclarativeDeviceSync({
+      definition: deviceDef(
+        `scope.fleet = [
+          { name: 'PC', platform: 'windows', userEmail: 'c@x.com', status: 'active' },
+        ];`,
+        'fleet',
+      ),
+    });
+
+    const devices = await runner.run(createMockContext());
+
+    expect(devices).toHaveLength(1);
+    expect(devices[0]!.platform).toBe('windows');
+  });
+
+  it('throws when the devices path does not resolve to an array', async () => {
+    const runner = interpretDeclarativeDeviceSync({
+      definition: deviceDef(`scope.devices = { not: 'an array' };`),
+    });
+
+    await expect(runner.run(createMockContext())).rejects.toThrow(
+      'did not produce an array',
+    );
   });
 });

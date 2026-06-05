@@ -179,7 +179,8 @@ export function SingleTask({
   };
 
   const handleUpdateTask = async (
-    updates: Partial<Pick<Task, 'status' | 'assigneeId' | 'approverId' | 'frequency' | 'department' | 'reviewDate'>> & {
+    updates: Partial<Pick<Task, 'status' | 'assigneeId' | 'approverId' | 'frequency' | 'reviewDate'>> & {
+      department?: string | null;
       notRelevantJustification?: string;
     },
   ) => {

@@ -264,6 +264,46 @@ function normaliseInputParams(
     if (!input.IsMultiRegionTrail) input.IsMultiRegionTrail = true;
     if (!input.EnableLogFileValidation) input.EnableLogFileValidation = true;
   }
+
+  // Rule 4: AWS Config recorder — `allSupported: true` is mutually exclusive
+  // with `recordingStrategy`, `exclusionByResourceTypes`, and `resourceTypes`.
+  // AWS rejects the combination with a ValidationException. The AI (and a
+  // customer's existing exclusion-based recorder, e.g. one that excludes the
+  // IAM resource types) frequently echoes those fields back alongside
+  // allSupported:true. When the intent is "record all supported types",
+  // collapse recordingGroup to the single valid shape that records everything,
+  // including the global IAM resource types.
+  if (command === 'PutConfigurationRecorderCommand') {
+    normalizeConfigRecordingGroup(input);
+  }
+}
+
+export function normalizeConfigRecordingGroup(
+  input: Record<string, unknown>,
+): void {
+  const recorder = input.ConfigurationRecorder;
+  if (!recorder || typeof recorder !== 'object' || Array.isArray(recorder)) {
+    return;
+  }
+  const recorderObj = recorder as Record<string, unknown>;
+  const group = recorderObj.recordingGroup;
+  if (!group || typeof group !== 'object' || Array.isArray(group)) return;
+
+  const groupObj = group as Record<string, unknown>;
+  const strategy = groupObj.recordingStrategy as
+    | { useOnly?: string }
+    | undefined;
+  const wantsAllSupported =
+    groupObj.allSupported === true ||
+    strategy?.useOnly === 'ALL_SUPPORTED_RESOURCE_TYPES' ||
+    groupObj.exclusionByResourceTypes != null;
+
+  if (!wantsAllSupported) return;
+
+  recorderObj.recordingGroup = {
+    allSupported: true,
+    includeGlobalResourceTypes: true,
+  };
 }
 
 /**

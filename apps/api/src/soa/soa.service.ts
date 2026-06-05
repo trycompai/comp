@@ -319,6 +319,47 @@ export class SOAService {
     return { success: true, configuration, document };
   }
 
+  async getSetup(dto: EnsureSOASetupDto) {
+    const framework = await db.frameworkEditorFramework.findUnique({
+      where: { id: dto.frameworkId },
+    });
+
+    if (!framework) {
+      throw new NotFoundException('Framework not found');
+    }
+
+    const isISO27001 = ISO27001_FRAMEWORK_NAMES.includes(framework.name);
+
+    if (!isISO27001) {
+      return {
+        success: false,
+        error: 'Only ISO 27001 framework is currently supported',
+        configuration: null,
+        document: null,
+      };
+    }
+
+    const configuration = await db.sOAFrameworkConfiguration.findFirst({
+      where: {
+        frameworkId: dto.frameworkId,
+        isLatest: true,
+      },
+    });
+
+    const document = await db.sOADocument.findFirst({
+      where: {
+        frameworkId: dto.frameworkId,
+        organizationId: dto.organizationId,
+        isLatest: true,
+      },
+      include: {
+        answers: { where: { isLatestAnswer: true } },
+      },
+    });
+
+    return { success: true, configuration, document };
+  }
+
   async approveDocument(dto: ApproveSOADocumentDto, userId: string) {
     const member = await this.validateOwnerOrAdmin(dto.organizationId, userId);
 
@@ -557,12 +598,18 @@ export class SOAService {
     // Generate answer from pre-fetched content
     const soaResult = await generateSOAControlAnswer(question, similarContent);
 
-    // If no answer, default to YES
+    // If no answer, default to YES with a family-appropriate justification
     if (!soaResult.answer) {
-      return createDefaultYesResult(question.id, index, send);
+      return createDefaultYesResult(question.id, index, send, controlClosure);
     }
 
-    return parseAndProcessSOAAnswer(question.id, index, soaResult.answer, send);
+    return parseAndProcessSOAAnswer(
+      question.id,
+      index,
+      soaResult.answer,
+      send,
+      controlClosure,
+    );
   }
 
   async saveAnswersToDatabase(

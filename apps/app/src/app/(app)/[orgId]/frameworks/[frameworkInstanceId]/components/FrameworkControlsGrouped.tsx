@@ -23,6 +23,12 @@ import { parseAsArrayOf, parseAsString, useQueryState } from 'nuqs';
 import { useCallback, useMemo, useState } from 'react';
 import { FamilyFilterDropdown } from './FamilyFilterDropdown';
 import {
+  areAllFamiliesExpanded,
+  isFamilyExpanded,
+  toggleAllFamilyExpansion,
+  toggleFamilyExpansion,
+} from './family-expansion-state';
+import {
   buildControlItems,
   buildRequirementMap,
   getFamilyDisplayLabel,
@@ -57,7 +63,7 @@ export function FrameworkControlsGrouped({
 
   const [searchTerm, setSearchTerm] = useQueryState('q', parseAsString.withDefault('').withOptions({ shallow: true, throttleMs: 300 }));
   const [familyFilterParam, setFamilyFilterParam] = useQueryState('families', parseAsArrayOf(parseAsString, '|').withDefault([]).withOptions({ shallow: true }));
-  const [collapsedFamilies, setCollapsedFamilies] = useState<Set<string>>(new Set());
+  const [expandedFamilies, setExpandedFamilies] = useState<Set<string>>(new Set());
 
   const selectedFamilyFilter = useMemo(() => new Set(familyFilterParam), [familyFilterParam]);
 
@@ -95,36 +101,26 @@ export function FrameworkControlsGrouped({
   const familyCounts = useMemo(() => new Map(allGroups.map((g) => [g.family, g.items.length])), [allGroups]);
 
   const isSearching = searchTerm.trim().length > 0;
-  const allCollapsed = groups.length > 0 && groups.every((g) => collapsedFamilies.has(g.family));
+  const visibleFamilyNames = useMemo(() => groups.map((g) => g.family), [groups]);
+  const allExpanded = areAllFamiliesExpanded({
+    expandedFamilies,
+    familyNames: visibleFamilyNames,
+  });
 
   const handleToggleFamily = (family: string) => {
-    setCollapsedFamilies((prev) => {
-      const next = new Set(prev);
-      if (next.has(family)) {
-        next.delete(family);
-      } else {
-        next.add(family);
-      }
-      return next;
-    });
+    setExpandedFamilies((prev) =>
+      toggleFamilyExpansion({ expandedFamilies: prev, family }),
+    );
   };
 
-  const visibleFamilyNames = useMemo(() => groups.map((g) => g.family), [groups]);
-
   const handleToggleAll = () => {
-    if (allCollapsed) {
-      setCollapsedFamilies((prev) => {
-        const next = new Set(prev);
-        for (const name of visibleFamilyNames) next.delete(name);
-        return next;
-      });
-    } else {
-      setCollapsedFamilies((prev) => {
-        const next = new Set(prev);
-        for (const name of visibleFamilyNames) next.add(name);
-        return next;
-      });
-    }
+    setExpandedFamilies((prev) =>
+      toggleAllFamilyExpansion({
+        expandedFamilies: prev,
+        familyNames: visibleFamilyNames,
+        shouldExpand: !allExpanded,
+      }),
+    );
   };
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -145,7 +141,8 @@ export function FrameworkControlsGrouped({
     setFamilyFilterParam(null);
   };
 
-  const isFamilyExpanded = (family: string) => isSearching || !collapsedFamilies.has(family);
+  const getIsFamilyExpanded = (family: string) =>
+    isFamilyExpanded({ expandedFamilies, family, isSearching });
 
   return (
     <div className="space-y-4">
@@ -172,7 +169,7 @@ export function FrameworkControlsGrouped({
         />
         {!isSearching && (
           <Button variant="ghost" onClick={handleToggleAll}>
-            {allCollapsed ? 'Expand All' : 'Collapse All'}
+            {allExpanded ? 'Collapse All' : 'Expand All'}
           </Button>
         )}
       </div>
@@ -202,7 +199,7 @@ export function FrameworkControlsGrouped({
               <FamilySection
                 key={group.family}
                 group={group}
-                expanded={isFamilyExpanded(group.family)}
+                expanded={getIsFamilyExpanded(group.family)}
                 onToggle={() => handleToggleFamily(group.family)}
                 tasks={tasks}
                 evidenceSubmissions={evidenceSubmissions}

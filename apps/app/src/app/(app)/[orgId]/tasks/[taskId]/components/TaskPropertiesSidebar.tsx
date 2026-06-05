@@ -1,9 +1,10 @@
 'use client';
 
+import { DepartmentSelect } from '@/components/DepartmentSelect';
 import { SelectAssignee } from '@/components/SelectAssignee';
 import { useOrganizationMembers } from '@/hooks/use-organization-members';
 import { usePermissions } from '@/hooks/use-permissions';
-import type { Departments, Member, Task, TaskFrequency, TaskStatus, User } from '@db';
+import type { Member, Task, TaskFrequency, TaskStatus, User } from '@db';
 import { format } from 'date-fns';
 import { useParams } from 'next/navigation';
 import {
@@ -25,11 +26,12 @@ import { Calendar } from 'lucide-react';
 import { useState } from 'react';
 import { NotRelevantJustificationDialog } from '../../components/NotRelevantJustificationDialog';
 import { useTask } from '../hooks/use-task';
-import { taskStatuses, taskFrequencies, taskDepartments } from './constants';
+import { taskStatuses, taskFrequencies } from './constants';
 
 interface TaskPropertiesSidebarProps {
   handleUpdateTask: (
-    data: Partial<Pick<Task, 'status' | 'assigneeId' | 'approverId' | 'frequency' | 'department' | 'reviewDate'>> & {
+    data: Partial<Pick<Task, 'status' | 'assigneeId' | 'approverId' | 'frequency' | 'reviewDate'>> & {
+      department?: string | null;
       notRelevantJustification?: string;
     },
   ) => void;
@@ -137,23 +139,13 @@ export function TaskPropertiesSidebar({
           {/* Department */}
           <Stack gap="sm">
             <Label>Department</Label>
-            <Select
+            <DepartmentSelect
               value={task.department || 'none'}
-              onValueChange={(value) => handleUpdateTask({ department: (value === 'none' ? null : value) as Departments | null })}
+              onChange={(value) =>
+                handleUpdateTask({ department: value === 'none' ? null : value })
+              }
               disabled={!canUpdate}
-            >
-              <SelectTrigger>
-                {task.department ? task.department.toUpperCase() : 'None'}
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="none">None</SelectItem>
-                {taskDepartments.filter((d) => d !== 'none').map((dept) => (
-                  <SelectItem key={dept} value={dept}>
-                    {dept.toUpperCase()}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            />
           </Stack>
 
           {/* Review Date */}
