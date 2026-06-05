@@ -2119,6 +2119,14 @@
               "example": "mem_abc123def456",
               "type": "string"
             }
+          },
+          {
+            "name": "skipOffboarding",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
           }
         ],
         "responses": {
@@ -3034,6 +3042,66 @@
         }
       }
     },
+    "/v1/uploads/presign": {
+      "post": {
+        "description": "Returns a presigned S3 URL plus the s3Key the file lands at. PUT the raw file bytes to that URL, then call the feature tool (e.g. upload-and-parse) with the s3Key instead of sending file data. Bytes never pass through the LLM.",
+        "operationId": "UploadsController_createUploadUrl_v1",
+        "parameters": [
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "description": "Organization ID (required for session auth, optional for API key auth)",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateUploadUrlDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UploadUrlResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Get a presigned URL to upload a file",
+        "tags": [
+          "Uploads"
+        ],
+        "x-mint": {
+          "metadata": {
+            "title": "Get a presigned URL to upload a file | Comp AI API",
+            "sidebarTitle": "Get a presigned URL to upload a file",
+            "description": "Returns a presigned S3 URL plus the s3Key the file lands at. PUT the raw file bytes to that URL, then call the feature tool (e.g. upload-and-parse) with the.",
+            "og:title": "Get a presigned URL to upload a file | Comp AI API",
+            "og:description": "Returns a presigned S3 URL plus the s3Key the file lands at. PUT the raw file bytes to that URL, then call the feature tool (e.g. upload-and-parse) with the."
+          }
+        },
+        "x-speakeasy-mcp": {
+          "name": "create-upload-url"
+        }
+      }
+    },
     "/v1/timelines": {
       "get": {
         "operationId": "TimelinesController_findAll_v1",
@@ -3270,18 +3338,11 @@
             "name": "department",
             "required": false,
             "in": "query",
-            "description": "Filter by department",
+            "description": "Filter by department. Built-in values: none, admin, gov, hr, it, itsm, qms. Custom department names are also accepted.",
             "schema": {
-              "type": "string",
-              "enum": [
-                "none",
-                "admin",
-                "gov",
-                "hr",
-                "it",
-                "itsm",
-                "qms"
-              ]
+              "maxLength": 64,
+              "example": "it",
+              "type": "string"
             }
           },
           {
@@ -7107,9 +7168,9 @@
           "metadata": {
             "title": "List compliance policies | Comp AI API",
             "sidebarTitle": "List compliance policies",
-            "description": "Lists active compliance policies by default. Use includeArchived=true to include archived rows.",
+            "description": "Lists active compliance policies by default. Use includeArchived=true to include archived rows and excludeContent=true when you only need policy metadata.",
             "og:title": "List compliance policies | Comp AI API",
-            "og:description": "Lists active compliance policies by default. Use includeArchived=true to include archived rows."
+            "og:description": "Lists active compliance policies by default. Use includeArchived=true to include archived rows and excludeContent=true when you only need policy metadata."
           }
         },
         "x-codeSamples": [
@@ -7185,7 +7246,6 @@
                   "signedBy": [],
                   "reviewDate": "2024-12-31T00:00:00.000Z",
                   "isArchived": false,
-                  "archivedAt": null,
                   "createdAt": "2024-01-01T00:00:00.000Z",
                   "updatedAt": "2024-01-15T00:00:00.000Z",
                   "organizationId": "org_abc123def456",
@@ -8262,7 +8322,6 @@
                   ],
                   "reviewDate": "2024-12-31T00:00:00.000Z",
                   "isArchived": false,
-                  "archivedAt": null,
                   "createdAt": "2024-01-01T00:00:00.000Z",
                   "updatedAt": "2024-01-15T00:00:00.000Z",
                   "organizationId": "org_abc123def456",
@@ -10087,66 +10146,6 @@
         }
       }
     },
-    "/v1/uploads/presign": {
-      "post": {
-        "description": "Returns a presigned S3 URL plus the s3Key the file lands at. PUT the raw file bytes to that URL, then call the feature tool (e.g. upload-and-parse) with the s3Key instead of sending file data. Bytes never pass through the LLM.",
-        "operationId": "UploadsController_createUploadUrl_v1",
-        "parameters": [
-          {
-            "name": "X-Organization-Id",
-            "in": "header",
-            "description": "Organization ID (required for session auth, optional for API key auth)",
-            "required": false,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/CreateUploadUrlDto"
-              }
-            }
-          }
-        },
-        "responses": {
-          "201": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/UploadUrlResponseDto"
-                }
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "apikey": []
-          }
-        ],
-        "summary": "Get a presigned URL to upload a file",
-        "tags": [
-          "Uploads"
-        ],
-        "x-mint": {
-          "metadata": {
-            "title": "Get a presigned URL to upload a file | Comp AI API",
-            "sidebarTitle": "Get a presigned URL to upload a file",
-            "description": "Returns a presigned S3 URL plus the s3Key the file lands at. PUT the raw file bytes to that URL, then call the feature tool (e.g. upload-and-parse) with the.",
-            "og:title": "Get a presigned URL to upload a file | Comp AI API",
-            "og:description": "Returns a presigned S3 URL plus the s3Key the file lands at. PUT the raw file bytes to that URL, then call the feature tool (e.g. upload-and-parse) with the."
-          }
-        },
-        "x-speakeasy-mcp": {
-          "name": "create-upload-url"
-        }
-      }
-    },
     "/v1/tasks": {
       "get": {
         "description": "List compliance tasks with assignments and status so teams can track audit readiness, evidence work, and control implementation.",
@@ -10270,17 +10269,10 @@
                   },
                   "department": {
                     "type": "string",
-                    "enum": [
-                      "none",
-                      "admin",
-                      "gov",
-                      "hr",
-                      "it",
-                      "itsm",
-                      "qms"
-                    ],
                     "nullable": true,
-                    "example": "it"
+                    "example": "it",
+                    "maxLength": 64,
+                    "description": "Built-in values: none, admin, gov, hr, it, itsm, qms. Custom department names are also accepted."
                   },
                   "controlIds": {
                     "type": "array",
@@ -10981,16 +10973,9 @@
                   },
                   "department": {
                     "type": "string",
-                    "enum": [
-                      "none",
-                      "admin",
-                      "gov",
-                      "hr",
-                      "it",
-                      "itsm",
-                      "qms"
-                    ],
-                    "example": "it"
+                    "example": "it",
+                    "maxLength": 64,
+                    "description": "Built-in values: none, admin, gov, hr, it, itsm, qms. Custom department names are also accepted."
                   },
                   "reviewDate": {
                     "type": "string",
@@ -17422,6 +17407,49 @@
         }
       }
     },
+    "/v1/soa/get-setup": {
+      "post": {
+        "operationId": "SOAController_getSetup_v1",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EnsureSOASetupDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Setup returned (configuration/document may be null)"
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Read SOA configuration and document without creating either",
+        "tags": [
+          "SOA"
+        ],
+        "description": "Read SOA configuration and document without creating either in Comp AI. Create, auto-fill, review, approve, and export ISO 27001 Statement of Applicability documents.",
+        "x-mint": {
+          "metadata": {
+            "title": "Read SOA configuration and document without | Comp AI API",
+            "sidebarTitle": "Read SOA configuration and document without creating either",
+            "description": "Read SOA configuration and document without creating either in Comp AI. Create, auto-fill, review, approve, and export ISO 27001 Statement of Applicability.",
+            "og:title": "Read SOA configuration and document without | Comp AI API",
+            "og:description": "Read SOA configuration and document without creating either in Comp AI. Create, auto-fill, review, approve, and export ISO 27001 Statement of Applicability."
+          }
+        },
+        "x-speakeasy-mcp": {
+          "name": "get-setup"
+        }
+      }
+    },
     "/v1/soa/approve": {
       "post": {
         "operationId": "SOAController_approveDocument_v1",
@@ -19103,9 +19131,9 @@
         }
       }
     },
-    "/v1/integrations/sync/available-providers": {
+    "/v1/integrations/sync/device-sync-provider": {
       "get": {
-        "operationId": "SyncController_getAvailableSyncProviders_v1",
+        "operationId": "SyncController_getDeviceSyncProvider_v1",
         "parameters": [],
         "responses": {
           "200": {
@@ -19117,18 +19145,91 @@
             "apikey": []
           }
         ],
-        "summary": "List employee sync providers available to the org",
+        "summary": "Get the currently configured device sync provider",
         "tags": [
           "Integrations"
         ],
-        "description": "List employee sync providers available to the org in Comp AI. Connect vendor systems, configure OAuth apps, run compliance checks, sync employees, manage variables, and collect automated evidence.",
+        "description": "Get the currently configured device sync provider in Comp AI. Connect vendor systems, configure OAuth apps, run compliance checks, sync employees, manage variables, and collect automated evidence.",
         "x-mint": {
           "metadata": {
-            "title": "List employee sync providers available to the | Comp AI API",
-            "sidebarTitle": "List employee sync providers available to the org",
-            "description": "List employee sync providers available to the org in Comp AI. Connect vendor systems, configure OAuth apps, run compliance checks, sync employees, manage.",
-            "og:title": "List employee sync providers available to the | Comp AI API",
-            "og:description": "List employee sync providers available to the org in Comp AI. Connect vendor systems, configure OAuth apps, run compliance checks, sync employees, manage."
+            "title": "Get the currently configured device sync | Comp AI API",
+            "sidebarTitle": "Get the currently configured device sync provider",
+            "description": "Get the currently configured device sync provider in Comp AI. Connect vendor systems, configure OAuth apps, run compliance checks, sync employees, manage.",
+            "og:title": "Get the currently configured device sync | Comp AI API",
+            "og:description": "Get the currently configured device sync provider in Comp AI. Connect vendor systems, configure OAuth apps, run compliance checks, sync employees, manage."
+          }
+        },
+        "x-speakeasy-mcp": {
+          "name": "get-device-sync-provider"
+        }
+      },
+      "post": {
+        "operationId": "SyncController_setDeviceSyncProvider_v1",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Set the device sync provider",
+        "tags": [
+          "Integrations"
+        ],
+        "description": "Set the device sync provider in Comp AI. Connect vendor systems, configure OAuth apps, run compliance checks, sync employees, manage variables, and collect automated evidence.",
+        "x-mint": {
+          "metadata": {
+            "title": "Set the device sync provider | Comp AI API",
+            "sidebarTitle": "Set the device sync provider",
+            "description": "Set the device sync provider in Comp AI. Connect vendor systems, configure OAuth apps, run compliance checks, sync employees, manage variables, and collect.",
+            "og:title": "Set the device sync provider | Comp AI API",
+            "og:description": "Set the device sync provider in Comp AI. Connect vendor systems, configure OAuth apps, run compliance checks, sync employees, manage variables, and collect."
+          }
+        },
+        "x-speakeasy-mcp": {
+          "name": "set-device-sync-provider"
+        }
+      }
+    },
+    "/v1/integrations/sync/available-providers": {
+      "get": {
+        "operationId": "SyncController_getAvailableSyncProviders_v1",
+        "parameters": [
+          {
+            "name": "syncType",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "List sync providers available to the org",
+        "tags": [
+          "Integrations"
+        ],
+        "description": "List sync providers available to the org in Comp AI. Connect vendor systems, configure OAuth apps, run compliance checks, sync employees, manage variables, and collect automated evidence.",
+        "x-mint": {
+          "metadata": {
+            "title": "List sync providers available to the org | Comp AI API",
+            "sidebarTitle": "List sync providers available to the org",
+            "description": "List sync providers available to the org in Comp AI. Connect vendor systems, configure OAuth apps, run compliance checks, sync employees, manage variables.",
+            "og:title": "List sync providers available to the org | Comp AI API",
+            "og:description": "List sync providers available to the org in Comp AI. Connect vendor systems, configure OAuth apps, run compliance checks, sync employees, manage variables."
           }
         },
         "x-speakeasy-mcp": {
@@ -19183,6 +19284,56 @@
         },
         "x-speakeasy-mcp": {
           "name": "sync-dynamic-provider-employees"
+        }
+      }
+    },
+    "/v1/integrations/sync/dynamic/{providerSlug}/devices": {
+      "post": {
+        "operationId": "SyncController_syncDynamicProviderDevices_v1",
+        "parameters": [
+          {
+            "name": "providerSlug",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "connectionId",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Sync devices for a dynamic provider",
+        "tags": [
+          "Integrations"
+        ],
+        "description": "Sync devices for a dynamic provider in Comp AI. Connect vendor systems, configure OAuth apps, run compliance checks, sync employees, manage variables, and collect automated evidence.",
+        "x-mint": {
+          "metadata": {
+            "title": "Sync devices for a dynamic provider | Comp AI API",
+            "sidebarTitle": "Sync devices for a dynamic provider",
+            "description": "Sync devices for a dynamic provider in Comp AI. Connect vendor systems, configure OAuth apps, run compliance checks, sync employees, manage variables.",
+            "og:title": "Sync devices for a dynamic provider | Comp AI API",
+            "og:description": "Sync devices for a dynamic provider in Comp AI. Connect vendor systems, configure OAuth apps, run compliance checks, sync employees, manage variables."
+          }
+        },
+        "x-speakeasy-mcp": {
+          "name": "sync-dynamic-provider-devices"
         }
       }
     },
@@ -21319,7 +21470,7 @@
     },
     "/v1/evidence-forms/{formType}/upload-submission": {
       "post": {
-        "description": "Upload a file as an evidence submission in Comp AI. Collect, review, upload, and export structured evidence submissions for compliance tasks and document requirements.",
+        "description": "Upload a PDF or image file and create a submission for the given form type, bypassing form-specific validation. Accepts session, API key, or service token auth. For API key / service token callers without an explicit user attribution, the.",
         "operationId": "EvidenceFormsController_uploadSubmission_v1",
         "parameters": [
           {
@@ -21358,9 +21509,9 @@
           "metadata": {
             "title": "Upload a file as an evidence submission | Comp AI API",
             "sidebarTitle": "Upload a file as an evidence submission",
-            "description": "Upload a file as an evidence submission in Comp AI. Collect, review, upload, and export structured evidence submissions for compliance tasks and document.",
+            "description": "Upload a PDF or image file and create a submission for the given form type, bypassing form-specific validation. Accepts session, API key, or service token.",
             "og:title": "Upload a file as an evidence submission | Comp AI API",
-            "og:description": "Upload a file as an evidence submission in Comp AI. Collect, review, upload, and export structured evidence submissions for compliance tasks and document."
+            "og:description": "Upload a PDF or image file and create a submission for the given form type, bypassing form-specific validation. Accepts session, API key, or service token."
           }
         },
         "x-speakeasy-mcp": {
@@ -24263,16 +24414,7 @@
           },
           "department": {
             "type": "string",
-            "description": "Member department",
-            "enum": [
-              "none",
-              "admin",
-              "gov",
-              "hr",
-              "it",
-              "itsm",
-              "qms"
-            ],
+            "description": "Member department. May be one of the built-in values (none, admin, gov, hr, it, itsm, qms) or a custom department name.",
             "example": "it"
           },
           "jobTitle": {
@@ -24382,17 +24524,9 @@
           },
           "department": {
             "type": "string",
-            "description": "Member department",
-            "enum": [
-              "none",
-              "admin",
-              "gov",
-              "hr",
-              "it",
-              "itsm",
-              "qms"
-            ],
-            "example": "it"
+            "description": "Member department. Built-in values: none, admin, gov, hr, it, itsm, qms. Custom department names are also accepted.",
+            "example": "it",
+            "maxLength": 64
           },
           "isActive": {
             "type": "boolean",
@@ -24460,17 +24594,9 @@
           },
           "department": {
             "type": "string",
-            "description": "Member department",
-            "enum": [
-              "none",
-              "admin",
-              "gov",
-              "hr",
-              "it",
-              "itsm",
-              "qms"
-            ],
-            "example": "it"
+            "description": "Member department. Built-in values: none, admin, gov, hr, it, itsm, qms. Custom department names are also accepted.",
+            "example": "it",
+            "maxLength": 64
           },
           "isActive": {
             "type": "boolean",
@@ -24545,8 +24671,13 @@
           },
           "fileData": {
             "type": "string",
-            "description": "Base64 encoded file data",
+            "description": "Base64-encoded file contents. For the web UI / direct callers. AI/MCP clients should instead upload via /v1/uploads/presign (purpose=attachment) and pass `s3Key` — base64 through an LLM is impractically slow and times out. Provide exactly one of fileData or s3Key.",
             "example": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8/5+hHgAHggJ/PchI7wAAAABJRU5ErkJggg=="
+          },
+          "s3Key": {
+            "type": "string",
+            "description": "Key of a file already uploaded via /v1/uploads/presign (purpose=attachment). The server fetches the bytes from storage — no base64 needed. Provide exactly one of fileData or s3Key.",
+            "example": "org_abc123/uploads/attachment/1700000000000-rbac-matrix.xlsx"
           },
           "description": {
             "type": "string",
@@ -24562,8 +24693,7 @@
         },
         "required": [
           "fileName",
-          "fileType",
-          "fileData"
+          "fileType"
         ]
       },
       "EmailPreferencesDto": {
@@ -24646,8 +24776,13 @@
           },
           "fileData": {
             "type": "string",
-            "description": "Base64 encoded file data",
+            "description": "Base64-encoded file contents. For the web UI / direct callers. AI/MCP clients should instead upload via /v1/uploads/presign (purpose=attachment) and pass `s3Key` — base64 through an LLM is impractically slow and times out. Provide exactly one of fileData or s3Key.",
             "example": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8/5+hHgAHggJ/PchI7wAAAABJRU5ErkJggg=="
+          },
+          "s3Key": {
+            "type": "string",
+            "description": "Key of a file already uploaded via /v1/uploads/presign (purpose=attachment). The server fetches the bytes from storage — no base64 needed. Provide exactly one of fileData or s3Key.",
+            "example": "org_abc123/uploads/attachment/1700000000000-rbac-matrix.xlsx"
           },
           "description": {
             "type": "string",
@@ -24678,7 +24813,6 @@
         "required": [
           "fileName",
           "fileType",
-          "fileData",
           "entityId",
           "entityType"
         ]
@@ -24727,6 +24861,64 @@
           "createdAt"
         ]
       },
+      "CreateUploadUrlDto": {
+        "type": "object",
+        "properties": {
+          "purpose": {
+            "type": "string",
+            "enum": [
+              "questionnaire",
+              "policy_pdf",
+              "evidence",
+              "attachment",
+              "document",
+              "general"
+            ],
+            "description": "What the file is for. Controls where the file is stored and which feature is expected to consume the returned s3Key.",
+            "example": "questionnaire"
+          },
+          "fileName": {
+            "type": "string",
+            "description": "Original filename, used for the stored object name. Non-alphanumeric characters are replaced with underscores.",
+            "example": "vendor-security-questionnaire.xlsx"
+          },
+          "fileType": {
+            "type": "string",
+            "description": "MIME type of the file (e.g. application/pdf, text/csv). Recorded as metadata and passed to the feature endpoint; the PUT itself is content-type agnostic, so the upload never fails on a header mismatch.",
+            "example": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+          }
+        },
+        "required": [
+          "purpose",
+          "fileName",
+          "fileType"
+        ]
+      },
+      "UploadUrlResponseDto": {
+        "type": "object",
+        "properties": {
+          "uploadUrl": {
+            "type": "string",
+            "description": "Presigned S3 URL. Send the raw file bytes with a plain HTTP PUT to this URL — no Content-Type or auth headers are required (the signature is in the URL). Then call the feature endpoint with the s3Key below.",
+            "example": "https://bucket.s3.us-east-1.amazonaws.com/org_x/uploads/...?X-Amz-Signature=..."
+          },
+          "s3Key": {
+            "type": "string",
+            "description": "The S3 key the file will land at. Pass this to the feature endpoint (e.g. questionnaire upload-and-parse) instead of base64 file data.",
+            "example": "org_abc/uploads/questionnaire/1735000000-questionnaire.xlsx"
+          },
+          "expiresIn": {
+            "type": "number",
+            "description": "Seconds until the presigned URL expires.",
+            "example": 900
+          }
+        },
+        "required": [
+          "uploadUrl",
+          "s3Key",
+          "expiresIn"
+        ]
+      },
       "CreateRiskDto": {
         "type": "object",
         "properties": {
@@ -24760,17 +24952,9 @@
           },
           "department": {
             "type": "string",
-            "description": "Department responsible for the risk",
-            "enum": [
-              "none",
-              "admin",
-              "gov",
-              "hr",
-              "it",
-              "itsm",
-              "qms"
-            ],
-            "example": "it"
+            "description": "Department responsible for the risk. Built-in values: none, admin, gov, hr, it, itsm, qms. Custom department names are also accepted.",
+            "example": "it",
+            "maxLength": 64
           },
           "status": {
             "type": "string",
@@ -24904,17 +25088,9 @@
           },
           "department": {
             "type": "string",
-            "description": "Department responsible for the risk",
-            "enum": [
-              "none",
-              "admin",
-              "gov",
-              "hr",
-              "it",
-              "itsm",
-              "qms"
-            ],
-            "example": "it"
+            "description": "Department responsible for the risk. Built-in values: none, admin, gov, hr, it, itsm, qms. Custom department names are also accepted.",
+            "example": "it",
+            "maxLength": 64
           },
           "status": {
             "type": "string",
@@ -25979,16 +26155,7 @@
           },
           "department": {
             "type": "string",
-            "description": "Department this policy applies to",
-            "enum": [
-              "none",
-              "admin",
-              "gov",
-              "hr",
-              "it",
-              "itsm",
-              "qms"
-            ],
+            "description": "Department this policy applies to. May be one of the built-in values (none, admin, gov, hr, it, itsm, qms) or a custom department name.",
             "example": "it",
             "nullable": true
           },
@@ -26237,17 +26404,9 @@
           },
           "department": {
             "type": "string",
-            "description": "Department this policy applies to",
-            "enum": [
-              "none",
-              "admin",
-              "gov",
-              "hr",
-              "it",
-              "itsm",
-              "qms"
-            ],
-            "example": "it"
+            "description": "Department this policy applies to. Built-in values: none, admin, gov, hr, it, itsm, qms. Custom department names are also accepted.",
+            "example": "it",
+            "maxLength": 64
           },
           "isRequiredToSign": {
             "type": "boolean",
@@ -26361,17 +26520,9 @@
           },
           "department": {
             "type": "string",
-            "description": "Department this policy applies to",
-            "enum": [
-              "none",
-              "admin",
-              "gov",
-              "hr",
-              "it",
-              "itsm",
-              "qms"
-            ],
-            "example": "it"
+            "description": "Department this policy applies to. Built-in values: none, admin, gov, hr, it, itsm, qms. Custom department names are also accepted.",
+            "example": "it",
+            "maxLength": 64
           },
           "isRequiredToSign": {
             "type": "boolean",
@@ -26561,63 +26712,6 @@
       "CheckInDto": {
         "type": "object",
         "properties": {}
-      },
-      "CreateUploadUrlDto": {
-        "type": "object",
-        "properties": {
-          "purpose": {
-            "type": "string",
-            "enum": [
-              "questionnaire",
-              "policy_pdf",
-              "evidence",
-              "attachment",
-              "general"
-            ],
-            "description": "What the file is for. Controls where the file is stored and which feature is expected to consume the returned s3Key.",
-            "example": "questionnaire"
-          },
-          "fileName": {
-            "type": "string",
-            "description": "Original filename, used for the stored object name. Non-alphanumeric characters are replaced with underscores.",
-            "example": "vendor-security-questionnaire.xlsx"
-          },
-          "fileType": {
-            "type": "string",
-            "description": "MIME type of the file (e.g. application/pdf, text/csv). Recorded as metadata and passed to the feature endpoint; the PUT itself is content-type agnostic, so the upload never fails on a header mismatch.",
-            "example": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-          }
-        },
-        "required": [
-          "purpose",
-          "fileName",
-          "fileType"
-        ]
-      },
-      "UploadUrlResponseDto": {
-        "type": "object",
-        "properties": {
-          "uploadUrl": {
-            "type": "string",
-            "description": "Presigned S3 URL. Send the raw file bytes with a plain HTTP PUT to this URL — no Content-Type or auth headers are required (the signature is in the URL). Then call the feature endpoint with the s3Key below.",
-            "example": "https://bucket.s3.us-east-1.amazonaws.com/org_x/uploads/...?X-Amz-Signature=..."
-          },
-          "s3Key": {
-            "type": "string",
-            "description": "The S3 key the file will land at. Pass this to the feature endpoint (e.g. questionnaire upload-and-parse) instead of base64 file data.",
-            "example": "org_abc/uploads/questionnaire/1735000000-questionnaire.xlsx"
-          },
-          "expiresIn": {
-            "type": "number",
-            "description": "Seconds until the presigned URL expires.",
-            "example": 900
-          }
-        },
-        "required": [
-          "uploadUrl",
-          "s3Key",
-          "expiresIn"
-        ]
       },
       "TaskResponseDto": {
         "type": "object",
@@ -27680,7 +27774,39 @@
       },
       "UploadDocumentDto": {
         "type": "object",
-        "properties": {}
+        "properties": {
+          "organizationId": {
+            "type": "string",
+            "description": "Organization ID that owns the document"
+          },
+          "fileName": {
+            "type": "string",
+            "description": "File name",
+            "example": "rbac-matrix.xlsx"
+          },
+          "fileType": {
+            "type": "string",
+            "description": "MIME type of the file",
+            "example": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+          },
+          "fileData": {
+            "type": "string",
+            "description": "Base64-encoded file contents. For the web UI / direct callers. AI/MCP clients should instead upload via /v1/uploads/presign (purpose=document) and pass `s3Key` — base64 through an LLM is impractically slow and times out. Provide exactly one of fileData or s3Key."
+          },
+          "s3Key": {
+            "type": "string",
+            "description": "Key of a file already uploaded via /v1/uploads/presign (purpose=document). The server fetches the bytes from storage — no base64 needed. Provide exactly one of fileData or s3Key."
+          },
+          "description": {
+            "type": "string",
+            "description": "Optional description"
+          }
+        },
+        "required": [
+          "organizationId",
+          "fileName",
+          "fileType"
+        ]
       },
       "ProcessDocumentsDto": {
         "type": "object",
@@ -28712,7 +28838,11 @@
           },
           "fileData": {
             "type": "string",
-            "description": "Base64 encoded evidence file"
+            "description": "Base64-encoded evidence file. For the web UI / direct callers. AI/MCP clients should instead upload via /v1/uploads/presign (purpose=evidence) and pass `s3Key` — base64 through an LLM is impractically slow and times out. Provide fileData or s3Key (not both)."
+          },
+          "s3Key": {
+            "type": "string",
+            "description": "Key of an evidence file already uploaded via /v1/uploads/presign (purpose=evidence). The server fetches the bytes from storage — no base64 needed. Provide fileData or s3Key (not both)."
           }
         }
       }

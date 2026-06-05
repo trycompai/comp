@@ -1,10 +1,11 @@
 import { Module } from '@nestjs/common';
 import { AuthModule } from '../auth/auth.module';
+import { UploadsModule } from '../uploads/uploads.module';
 import { KnowledgeBaseController } from './knowledge-base.controller';
 import { KnowledgeBaseService } from './knowledge-base.service';
 
 @Module({
-  imports: [AuthModule],
+  imports: [AuthModule, UploadsModule],
   controllers: [KnowledgeBaseController],
   providers: [KnowledgeBaseService],
 })

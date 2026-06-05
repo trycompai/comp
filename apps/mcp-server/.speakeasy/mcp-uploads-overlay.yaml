@@ -80,7 +80,21 @@ actions:
       x-speakeasy-mcp:
         disabled: true
 
-  # 7-8. Disable the automation-authoring tools for MCP. Creating a working
+  # 7-9. Force presigned uploads for task attachments, knowledge-base documents,
+  #   and offboarding evidence — same reason as the questionnaire tools above:
+  #   base64 through an LLM is impractically slow and times out (customer-reported).
+  #   Strip the inline base64 `fileData` from the MCP tool surface so agents must
+  #   use create-upload-url (purpose=attachment|document|evidence) -> PUT to S3 ->
+  #   pass the returned `s3Key`. The base spec keeps `fileData` for the web UI /
+  #   direct callers; only the MCP tools lose it.
+  - target: "$.components.schemas.UploadAttachmentDto.properties.fileData"
+    remove: true
+  - target: "$.components.schemas.UploadDocumentDto.properties.fileData"
+    remove: true
+  - target: "$.components.schemas.CompleteChecklistItemDto.properties.fileData"
+    remove: true
+
+  # 10-11. Disable the automation-authoring tools for MCP. Creating a working
   #   automation requires generating its evidence-collection SCRIPT, and that
   #   step lives ONLY in the enterprise-api browser chat (an AI tool writes the
   #   .draft.js to S3, then publish copies it to .vN.js). Neither the public API

@@ -1,5 +1,11 @@
+import { BadRequestException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { KnowledgeBaseService } from './knowledge-base.service';
+import { UploadsService } from '../uploads/uploads.service';
+
+const mockUploadsService = {
+  readUploadAsBase64: jest.fn(),
+};
 
 jest.mock('@db', () => ({
   db: {
@@ -68,7 +74,10 @@ describe('KnowledgeBaseService', () => {
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
-      providers: [KnowledgeBaseService],
+      providers: [
+        KnowledgeBaseService,
+        { provide: UploadsService, useValue: mockUploadsService },
+      ],
     }).compile();
 
     service = module.get<KnowledgeBaseService>(KnowledgeBaseService);
@@ -214,6 +223,49 @@ describe('KnowledgeBaseService', () => {
         'application/pdf',
         'base64data',
       );
+    });
+
+    it('resolves content from s3Key (presigned upload) when no fileData', async () => {
+      mockUploadsService.readUploadAsBase64.mockResolvedValue('fromS3base64');
+      (uploadToS3 as jest.Mock).mockResolvedValue({
+        s3Key: 'org_1/doc.pdf',
+        fileSize: 2048,
+      });
+      (mockDb.knowledgeBaseDocument.create as jest.Mock).mockResolvedValue({
+        id: 'd2',
+        name: 'doc.pdf',
+        s3Key: 'org_1/doc.pdf',
+      });
+
+      await service.uploadDocument({
+        organizationId: 'org_1',
+        fileName: 'doc.pdf',
+        fileType: 'application/pdf',
+        s3Key: 'org_1/uploads/document/123-doc.pdf',
+      } as any);
+
+      // Fetched the bytes from the presigned key (org-scoped, no base64 via LLM)
+      expect(mockUploadsService.readUploadAsBase64).toHaveBeenCalledWith(
+        'org_1',
+        'org_1/uploads/document/123-doc.pdf',
+      );
+      expect(uploadToS3).toHaveBeenCalledWith(
+        'org_1',
+        'doc.pdf',
+        'application/pdf',
+        'fromS3base64',
+      );
+    });
+
+    it('throws when neither fileData nor s3Key is provided', async () => {
+      await expect(
+        service.uploadDocument({
+          organizationId: 'org_1',
+          fileName: 'doc.pdf',
+          fileType: 'application/pdf',
+        } as any),
+      ).rejects.toBeInstanceOf(BadRequestException);
+      expect(uploadToS3).not.toHaveBeenCalled();
     });
   });
 
