@@ -26,6 +26,31 @@ export const PUBLIC_OPENAPI_DESCRIPTION =
 
 export const PUBLIC_SERVER_URL = 'https://api.trycomp.ai';
 
+/**
+ * Default request timeout (ms) baked into the generated SDK + MCP server via the
+ * `x-speakeasy-timeout` document-root extension.
+ *
+ * Speakeasy-generated request functions resolve their timeout to
+ * `operationTimeoutMs || clientTimeoutMs || -1`, and `-1` means "no timeout".
+ * Without this, a slow/hung upstream call leaves the MCP server's fetch dangling
+ * forever; the MCP client eventually gives up and marks the whole connection
+ * unhealthy (customer-reported wedging). A finite timeout makes the SDK abort
+ * the request and return a clean error instead, keeping the connection alive.
+ *
+ * 120s comfortably covers our slowest endpoints while staying under the ALB's
+ * 300s idle timeout (comp-private infra/modules/loadbalancer.ts).
+ */
+export const PUBLIC_OPENAPI_TIMEOUT_MS = 120_000;
+
+/**
+ * OpenAPIObject (from @nestjs/swagger) has no index signature for `x-*`
+ * extensions at the document root, so we widen it locally instead of reaching
+ * for `as any`.
+ */
+type OpenApiDocumentWithExtensions = OpenAPIObject & {
+  'x-speakeasy-timeout'?: number;
+};
+
 function getVisibilityForOperation(
   operation: OpenApiOperation,
   metadata?: PublicOperationMetadata,
@@ -283,6 +308,12 @@ export function applyPublicOpenApiMetadata(document: OpenAPIObject): void {
       description: 'Production API Server',
     },
   ];
+
+  // Bake a finite default request timeout into the generated SDK + MCP server
+  // so a hung upstream call can never wedge the MCP connection. See
+  // PUBLIC_OPENAPI_TIMEOUT_MS for the full rationale.
+  (document as OpenApiDocumentWithExtensions)['x-speakeasy-timeout'] =
+    PUBLIC_OPENAPI_TIMEOUT_MS;
 
   const paths = document.paths as Record<
     string,

@@ -113,6 +113,7 @@ import { AppModule } from './app.module';
 import {
   applyPublicOpenApiMetadata,
   PUBLIC_OPENAPI_DESCRIPTION,
+  PUBLIC_OPENAPI_TIMEOUT_MS,
   PUBLIC_OPENAPI_TITLE,
   PUBLIC_SERVER_URL,
 } from './openapi/public-docs-metadata';
@@ -154,6 +155,14 @@ describe('OpenAPI document', () => {
           description: 'Production API Server',
         },
       ]);
+    });
+
+    it('bakes a finite default request timeout into the generated SDK + MCP server', () => {
+      // Without x-speakeasy-timeout the generated request funcs use -1 ("no
+      // timeout") and a hung upstream wedges the MCP connection forever.
+      expect(
+        (document as { 'x-speakeasy-timeout'?: number })['x-speakeasy-timeout'],
+      ).toBe(PUBLIC_OPENAPI_TIMEOUT_MS);
     });
 
     it('keeps the public spec complete, SEO-ready, and free of private surfaces', () => {
