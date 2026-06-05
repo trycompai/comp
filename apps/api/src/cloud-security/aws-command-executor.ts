@@ -14,6 +14,7 @@ import * as ecr from '@aws-sdk/client-ecr';
 import * as glue from '@aws-sdk/client-glue';
 import * as athena from '@aws-sdk/client-athena';
 import * as opensearch from '@aws-sdk/client-opensearch';
+import * as neptune from '@aws-sdk/client-neptune';
 import * as secretsManager from '@aws-sdk/client-secrets-manager';
 import * as kms from '@aws-sdk/client-kms';
 import * as cloudtrail from '@aws-sdk/client-cloudtrail';
@@ -65,6 +66,7 @@ const SDK_MODULES: Record<string, SdkModule> = {
   glue: glue,
   athena: athena,
   opensearch: opensearch,
+  neptune: neptune,
   'secrets-manager': secretsManager,
   kms: kms,
   cloudtrail: cloudtrail,

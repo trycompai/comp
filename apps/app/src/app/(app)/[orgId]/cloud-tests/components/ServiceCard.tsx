@@ -42,6 +42,7 @@ const SERVICE_ICONS: Record<string, React.ElementType> = {
   'sns-sqs': Workflow,
   'ecr': Server,
   'opensearch': Database,
+  'neptune': Database,
   'redshift': Database,
   'macie': ScanSearch,
   'route53': Globe,
