@@ -1,20 +1,20 @@
 lockVersion: 2.0.0
 id: f7130d09-dac4-4515-9162-6095782b6bb6
 management:
-  docChecksum: 168b4c41897b8f5abffdc17ff97a05a3
+  docChecksum: cd928eea9e0463208e5fd45ed9abe08c
   docVersion: "1.0"
-  speakeasyVersion: 1.768.2
-  generationVersion: 2.889.1
-  releaseVersion: 0.0.2
-  configChecksum: 7ddc47fd982c5d0d611eb9e1186a9181
+  speakeasyVersion: 1.770.0
+  generationVersion: 2.893.0
+  releaseVersion: 0.0.3
+  configChecksum: 5c075d0e527355b0800a24fac67cd7b8
   repoURL: https://github.com/trycompai/comp.git
   repoSubDirectory: apps/mcp-server
   installationURL: https://github.com/trycompai/comp
   published: true
 persistentEdits:
-  generation_id: 2009b26c-98fa-47b6-8d1d-b5b0f7886d7b
-  pristine_commit_hash: 65444167cba8e031ff3673603bce6cc69b36ede4
-  pristine_tree_hash: 298662eb9f6395847372db6704ff73fa259798b4
+  generation_id: 4e35a732-743f-4072-8e4e-2cc3bca18fe4
+  pristine_commit_hash: e8130b2bf5268547be55fc26f0e2c0d8396c5c87
+  pristine_tree_hash: c3e1bb20d6fab9aaec8ea07c88246025c8847b7c
 features:
   mcp-typescript:
     additionalDependencies: 0.1.0
@@ -50,12 +50,12 @@ trackedFiles:
     pristine_git_object: 4f9e60a9462fc4def738d60c3aaadf8232ef185f
   manifest.json:
     id: ca642a226869
-    last_write_checksum: sha1:beeffc0fe73dc4f29a043030a5b91fc05cd56415
-    pristine_git_object: 59e02e90e95927a75762c1c85a5af0de3d094453
+    last_write_checksum: sha1:3872ac35c283dbd4db6b1acae6e7303c2a2ac633
+    pristine_git_object: 765178c7c84f4f3277b1bf7f28a999bd074d03f1
   package.json:
     id: 7030d0b2f71b
-    last_write_checksum: sha1:107e731390e35b922f5c42776966d853ab5d12ca
-    pristine_git_object: d0ea244896b9860d1cb116fde9ab646373022bed
+    last_write_checksum: sha1:37986422654005c0c4b67a3960fbf6417655b930
+    pristine_git_object: c4fa45461d50f0ecb51bafa2b8aa0e1d1e37c870
   src/core.ts:
     id: f431fdbcd144
     last_write_checksum: sha1:3c1fe2275a0f345cf54298150f100299284b3f0e
@@ -902,8 +902,8 @@ trackedFiles:
     pristine_git_object: ff5c7b069563703631cf790af932aa70eaa7b754
   src/funcs/policiesPoliciesControllerGetAllPoliciesV1.ts:
     id: 3fe3562e5532
-    last_write_checksum: sha1:2025e4f7e7c709d4e5d1a8561e08543b8eec8213
-    pristine_git_object: 8e922db7e215a851521b273bc88fb9ee09012b1b
+    last_write_checksum: sha1:d7725dd3200f1ec380e4467dcffc35a2552d18f1
+    pristine_git_object: c261c2c2581d085e00cb932915ad6ea6ffe81c1b
   src/funcs/policiesPoliciesControllerGetPdfSignedUrlV1.ts:
     id: 605c541f9063
     last_write_checksum: sha1:741d14eb311f1b14c1ace5151b76ff56d8a3268a
@@ -1558,16 +1558,16 @@ trackedFiles:
     pristine_git_object: 9c36bf01332084f735909a71036c3544cc4c7e3a
   src/landing-page.ts:
     id: ef64a6ee46d7
-    last_write_checksum: sha1:978345d7e4e9068faff49cd8e2b66021db5fcf93
-    pristine_git_object: c1835e9b058d0fb49496f8da3644be6fcdcf20a3
+    last_write_checksum: sha1:341ceefcc31d770be32f9d2057899e26033068c1
+    pristine_git_object: 589e21066eb59f7ae509c3ff3400b0cfa65d955e
   src/lib/base64.ts:
     id: "598522066688"
     last_write_checksum: sha1:e9f04a037018040361043104960982f7c22db52d
     pristine_git_object: d4bd8b341290e7a828a171d840bd0b0fff7c7cd7
   src/lib/config.ts:
     id: 320761608fb3
-    last_write_checksum: sha1:d6fe284ea05ca965ad72da95792d91dbdd1e9665
-    pristine_git_object: 447fe5655b5546b1f9faf47766a9794e1a048496
+    last_write_checksum: sha1:8d21bee4528e702c8b1744f0aeef3dbf064e4e21
+    pristine_git_object: 9dc56999ac9e17f26269d5cdb8466cea4460fb1a
   src/lib/dlv.ts:
     id: b1988214835a
     last_write_checksum: sha1:1dd3e3fbb4550c4bf31f5ef997faff355d6f3250
@@ -1662,8 +1662,8 @@ trackedFiles:
     pristine_git_object: 35c8713b6f8c7f17e2545423d3e74401ff77d04b
   src/mcp-server/mcp-server.ts:
     id: aabbc4ab07c1
-    last_write_checksum: sha1:48b132d86040a131b63f6ca93ceb876a51f46635
-    pristine_git_object: a97bfc6bd1c6b011bd88e1dbbf52d380a0daf7e2
+    last_write_checksum: sha1:3eaf586acbefe2ede969eb8b7f4f7cd6ba290920
+    pristine_git_object: 1dee0340121dc3d20f272a1ac6c1078bc9f0c9cd
   src/mcp-server/prompts.ts:
     id: 26f3d73cbf31
     last_write_checksum: sha1:cadb036e04534a6d9d765809eebb266d188c499b
@@ -1678,8 +1678,8 @@ trackedFiles:
     pristine_git_object: c25696d4c4f70e081fa5d87ad6891874c509a577
   src/mcp-server/server.ts:
     id: 2784dd48e82a
-    last_write_checksum: sha1:14e81bd043d72b24e458dcb860972e7f39534cad
-    pristine_git_object: 892d8599ded0ddc69230d26ac36930458c909970
+    last_write_checksum: sha1:8a9aa63a766d3c40591be00554aa8be53db0f9d0
+    pristine_git_object: abd600ab0255d85043ea6cbb2bcbac6974a8a142
   src/mcp-server/shared.ts:
     id: 074e80d4be1e
     last_write_checksum: sha1:19c9034032819a14f15c430de4350c8aba99d725
@@ -2422,8 +2422,8 @@ trackedFiles:
     pristine_git_object: 9b52cde4889872eafc5023da2a98b43192874d3a
   src/mcp-server/tools/policiesPoliciesControllerGetAllPoliciesV1.ts:
     id: 4c7a30037219
-    last_write_checksum: sha1:b1a33bcf03324597f8ccff0a08f9cc6bfccdbb27
-    pristine_git_object: 92a9a37892df1cde8ad645ab14b7d1111fb794e4
+    last_write_checksum: sha1:c993419a76fc45eeb3e7004d6a5873a217d0b10f
+    pristine_git_object: c8157368deb684f4e9c42e54df7ff2c8f6365c42
   src/mcp-server/tools/policiesPoliciesControllerGetPdfSignedUrlV1.ts:
     id: 49b6aac4d2d5
     last_write_checksum: sha1:59be14c1bdcc6af43fc6febb1cec247e18e05a69
@@ -3986,8 +3986,8 @@ trackedFiles:
     pristine_git_object: de5114bdbda3a16a18d8b5bb6f6f087727905dd5
   src/models/policiescontrollergetallpoliciesv1op.ts:
     id: 6dc8b529c8aa
-    last_write_checksum: sha1:1977b57fa9d0701a30f4cf49c5980c115173fac1
-    pristine_git_object: 38633ad56c58b76f4ac6f7109ffca7ac9930f2eb
+    last_write_checksum: sha1:dcc03b827c667bf66003a729eac7e0d110782ef3
+    pristine_git_object: 44e52242ac32fc90f38a376a6a8e30b182311166
   src/models/policiescontrollergetpdfsignedurlv1op.ts:
     id: 365c82d72274
     last_write_checksum: sha1:dc7b842c258f3e64ae616fa11a00435bb98e555a
@@ -4066,8 +4066,8 @@ trackedFiles:
     pristine_git_object: 87eff95eba1c0e8c806ad19d4669b557a68fe999
   src/models/policyresponsedto.ts:
     id: 52dd9c053bc2
-    last_write_checksum: sha1:c0f06fe6ff1005d629cae47d9b028a93b95b91df
-    pristine_git_object: f6a2253517aeb33d70199ffadfda220f9736c4be
+    last_write_checksum: sha1:3ae9a1559fe40bb106e9afb82147705b55c46170
+    pristine_git_object: b24b44fcae6dc7ec0865a8896340bb90422415c3
   src/models/processdocumentsdto.ts:
     id: fd749f0da38f
     last_write_checksum: sha1:845d1cca5b6e29d5ed7f2ee7b59b00247ade1691
@@ -4734,8 +4734,8 @@ trackedFiles:
     pristine_git_object: d89990b1a39878e9651513ee19fcba40b01670b4
   src/tool-names.ts:
     id: a9977280f9eb
-    last_write_checksum: sha1:ed627f1fd2552b15a24b48d2d0be0bff9e824cab
-    pristine_git_object: 0bdb58d6119cef6e0370f0195f450647554fc3b3
+    last_write_checksum: sha1:f4edf2d928f0adee85eb32c93b877de423e571e3
+    pristine_git_object: 4072ffc99e121839c06abf6fbbb3f05737265c27
   src/types/async.ts:
     id: fac8da972f86
     last_write_checksum: sha1:3ff07b3feaf390ec1aeb18ff938e139c6c4a9585
@@ -5336,7 +5336,7 @@ examples:
         application/json: {"name": "Data Privacy Policy", "description": "This policy outlines how we handle and protect personal data", "status": "draft", "content": [{"type": "heading", "attrs": {"level": 2, "textAlign": null}, "content": [{"type": "text", "text": "Purpose"}]}, {"type": "paragraph", "attrs": {"textAlign": null}, "content": [{"type": "text", "text": "Verify workforce integrity and grant the right access at start, revoke at end."}]}], "frequency": "yearly", "department": "it", "isRequiredToSign": true, "reviewDate": "2024-12-31T00:00:00.000Z", "assigneeId": "usr_abc123def456", "approverId": "usr_xyz789abc123", "policyTemplateId": "plt_template123", "signedBy": ["usr_123", "usr_456"]}
       responses:
         "201":
-          application/json: {"id": "pol_abc123def456", "name": "Data Privacy Policy", "description": "This policy outlines how we handle and protect personal data", "status": "draft", "content": [{"type": "heading", "attrs": {"level": 2, "textAlign": null}, "content": [{"type": "text", "text": "Purpose"}]}, {"type": "paragraph", "attrs": {"textAlign": null}, "content": [{"type": "text", "text": "Verify workforce integrity and grant the right access at start, revoke at end."}]}], "frequency": "yearly", "department": "it", "isRequiredToSign": true, "signedBy": ["usr_123", "usr_456"], "reviewDate": "2024-12-31T00:00:00.000Z", "isArchived": false, "createdAt": "2024-01-01T00:00:00.000Z", "updatedAt": "2024-01-15T00:00:00.000Z", "lastArchivedAt": "2024-02-01T00:00:00.000Z", "lastPublishedAt": "2024-01-10T00:00:00.000Z", "organizationId": "org_abc123def456", "assigneeId": "usr_abc123def456", "approverId": "usr_xyz789abc123", "policyTemplateId": "plt_template123"}
+          application/json: {"id": "pol_abc123def456", "name": "Data Privacy Policy", "description": "This policy outlines how we handle and protect personal data", "status": "draft", "content": [{"type": "heading", "attrs": {"level": 2, "textAlign": null}, "content": [{"type": "text", "text": "Purpose"}]}, {"type": "paragraph", "attrs": {"textAlign": null}, "content": [{"type": "text", "text": "Verify workforce integrity and grant the right access at start, revoke at end."}]}], "frequency": "yearly", "department": "it", "isRequiredToSign": true, "signedBy": ["usr_123", "usr_456"], "reviewDate": "2024-12-31T00:00:00.000Z", "isArchived": false, "archivedAt": "2024-02-01T00:00:00.000Z", "createdAt": "2024-01-01T00:00:00.000Z", "updatedAt": "2024-01-15T00:00:00.000Z", "lastArchivedAt": "2024-02-01T00:00:00.000Z", "lastPublishedAt": "2024-01-10T00:00:00.000Z", "organizationId": "org_abc123def456", "assigneeId": "usr_abc123def456", "approverId": "usr_xyz789abc123", "policyTemplateId": "plt_template123"}
         "400":
           application/json: {"message": "Invalid policy content format"}
         "401":
@@ -5404,7 +5404,7 @@ examples:
           id: "pol_abc123def456"
       responses:
         "200":
-          application/json: {"id": "pol_abc123def456", "name": "Data Privacy Policy", "description": "This policy outlines how we handle and protect personal data", "status": "draft", "content": [{"type": "heading", "attrs": {"level": 2, "textAlign": null}, "content": [{"type": "text", "text": "Purpose"}]}, {"type": "paragraph", "attrs": {"textAlign": null}, "content": [{"type": "text", "text": "Verify workforce integrity and grant the right access at start, revoke at end."}]}], "frequency": "yearly", "department": "it", "isRequiredToSign": true, "signedBy": ["usr_123", "usr_456"], "reviewDate": "2024-12-31T00:00:00.000Z", "isArchived": false, "createdAt": "2024-01-01T00:00:00.000Z", "updatedAt": "2024-01-15T00:00:00.000Z", "lastArchivedAt": "2024-02-01T00:00:00.000Z", "lastPublishedAt": "2024-01-10T00:00:00.000Z", "organizationId": "org_abc123def456", "assigneeId": "usr_abc123def456", "approverId": "usr_xyz789abc123", "policyTemplateId": "plt_template123"}
+          application/json: {"id": "pol_abc123def456", "name": "Data Privacy Policy", "description": "This policy outlines how we handle and protect personal data", "status": "draft", "content": [{"type": "heading", "attrs": {"level": 2, "textAlign": null}, "content": [{"type": "text", "text": "Purpose"}]}, {"type": "paragraph", "attrs": {"textAlign": null}, "content": [{"type": "text", "text": "Verify workforce integrity and grant the right access at start, revoke at end."}]}], "frequency": "yearly", "department": "it", "isRequiredToSign": true, "signedBy": ["usr_123", "usr_456"], "reviewDate": "2024-12-31T00:00:00.000Z", "isArchived": false, "archivedAt": "2024-02-01T00:00:00.000Z", "createdAt": "2024-01-01T00:00:00.000Z", "updatedAt": "2024-01-15T00:00:00.000Z", "lastArchivedAt": "2024-02-01T00:00:00.000Z", "lastPublishedAt": "2024-01-10T00:00:00.000Z", "organizationId": "org_abc123def456", "assigneeId": "usr_abc123def456", "approverId": "usr_xyz789abc123", "policyTemplateId": "plt_template123"}
         "401":
           application/json: {"message": "Unauthorized"}
         "404":
@@ -5418,7 +5418,7 @@ examples:
         application/json: {"name": "Data Privacy Policy", "description": "This policy outlines how we handle and protect personal data", "status": "draft", "content": [{"type": "heading", "attrs": {"level": 2, "textAlign": null}, "content": [{"type": "text", "text": "Purpose"}]}, {"type": "paragraph", "attrs": {"textAlign": null}, "content": [{"type": "text", "text": "Verify workforce integrity and grant the right access at start, revoke at end."}]}], "frequency": "yearly", "department": "it", "isRequiredToSign": true, "reviewDate": "2024-12-31T00:00:00.000Z", "assigneeId": "usr_abc123def456", "approverId": "usr_xyz789abc123", "policyTemplateId": "plt_template123", "signedBy": ["usr_123", "usr_456"], "isArchived": false, "displayFormat": "EDITOR"}
       responses:
         "200":
-          application/json: {"id": "pol_abc123def456", "name": "Data Privacy Policy", "description": "This policy outlines how we handle and protect personal data", "status": "draft", "content": [{"type": "heading", "attrs": {"level": 2, "textAlign": null}, "content": [{"type": "text", "text": "Purpose"}]}, {"type": "paragraph", "attrs": {"textAlign": null}, "content": [{"type": "text", "text": "Verify workforce integrity and grant the right access at start, revoke at end."}]}], "frequency": "yearly", "department": "it", "isRequiredToSign": true, "signedBy": ["usr_123", "usr_456"], "reviewDate": "2024-12-31T00:00:00.000Z", "isArchived": false, "createdAt": "2024-01-01T00:00:00.000Z", "updatedAt": "2024-01-15T00:00:00.000Z", "lastArchivedAt": "2024-02-01T00:00:00.000Z", "lastPublishedAt": "2024-01-10T00:00:00.000Z", "organizationId": "org_abc123def456", "assigneeId": "usr_abc123def456", "approverId": "usr_xyz789abc123", "policyTemplateId": "plt_template123"}
+          application/json: {"id": "pol_abc123def456", "name": "Data Privacy Policy", "description": "This policy outlines how we handle and protect personal data", "status": "draft", "content": [{"type": "heading", "attrs": {"level": 2, "textAlign": null}, "content": [{"type": "text", "text": "Purpose"}]}, {"type": "paragraph", "attrs": {"textAlign": null}, "content": [{"type": "text", "text": "Verify workforce integrity and grant the right access at start, revoke at end."}]}], "frequency": "yearly", "department": "it", "isRequiredToSign": true, "signedBy": ["usr_123", "usr_456"], "reviewDate": "2024-12-31T00:00:00.000Z", "isArchived": false, "archivedAt": "2024-02-01T00:00:00.000Z", "createdAt": "2024-01-01T00:00:00.000Z", "updatedAt": "2024-01-15T00:00:00.000Z", "lastArchivedAt": "2024-02-01T00:00:00.000Z", "lastPublishedAt": "2024-01-10T00:00:00.000Z", "organizationId": "org_abc123def456", "assigneeId": "usr_abc123def456", "approverId": "usr_xyz789abc123", "policyTemplateId": "plt_template123"}
         "400":
           application/json: {"message": "Validation failed"}
         "401":
@@ -7069,3 +7069,4 @@ examples:
         "200":
           application/json: {}
 examplesVersion: 1.0.2
+releaseNotes: "## Mcp-typescript SDK Changes:\n* `CompAi.Policies.PoliciesController_getAllPolicies_v1()`: \n  *  `request.includeArchived` **Added**\n  *  `response.data[].archivedAt` **Added**\n* `CompAi.Policies.PoliciesController_createPolicy_v1()`:  `response.archivedAt` **Added**\n* `CompAi.Policies.PoliciesController_getPolicy_v1()`:  `response.archivedAt` **Added**\n* `CompAi.Policies.PoliciesController_updatePolicy_v1()`:  `response.archivedAt` **Added**\n"
