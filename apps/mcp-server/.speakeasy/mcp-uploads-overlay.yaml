@@ -79,3 +79,22 @@ actions:
     update:
       x-speakeasy-mcp:
         disabled: true
+
+  # 7-8. Disable the automation-authoring tools for MCP. Creating a working
+  #   automation requires generating its evidence-collection SCRIPT, and that
+  #   step lives ONLY in the enterprise-api browser chat (an AI tool writes the
+  #   .draft.js to S3, then publish copies it to .vN.js). Neither the public API
+  #   nor MCP can produce that script. So over MCP these two POSTs only ever
+  #   create an empty automation shell + a version row pointing at a script that
+  #   was never generated — a dead end that confuses agents. Hide them until the
+  #   script-generation step is exposed as a first-class (async) endpoint.
+  #   The HTTP endpoints stay live for the web UI, which drives the full flow.
+  #   Read/list/update automation tools remain available over MCP.
+  - target: "$.paths['/v1/tasks/{taskId}/automations'].post"
+    update:
+      x-speakeasy-mcp:
+        disabled: true
+  - target: "$.paths['/v1/tasks/{taskId}/automations/{automationId}/versions'].post"
+    update:
+      x-speakeasy-mcp:
+        disabled: true

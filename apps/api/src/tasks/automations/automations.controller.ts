@@ -10,6 +10,7 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import {
+  ApiBody,
   ApiOperation,
   ApiParam,
   ApiResponse,
@@ -22,6 +23,7 @@ import { PermissionGuard } from '../../auth/permission.guard';
 import { RequirePermission } from '../../auth/require-permission.decorator';
 import { TasksService } from '../tasks.service';
 import { AutomationsService } from './automations.service';
+import { CreateVersionDto } from './dto/create-version.dto';
 import { UpdateAutomationDto } from './dto/update-automation.dto';
 import { AUTOMATION_OPERATIONS } from './schemas/automation-operations';
 import { CREATE_AUTOMATION_RESPONSES } from './schemas/create-automation.responses';
@@ -255,11 +257,12 @@ export class AutomationsController {
   })
   @ApiParam({ name: 'taskId', description: 'Task ID' })
   @ApiParam({ name: 'automationId', description: 'Automation ID' })
+  @ApiBody({ type: CreateVersionDto })
   async createVersion(
     @OrganizationId() organizationId: string,
     @Param('taskId') taskId: string,
     @Param('automationId') automationId: string,
-    @Body() body: { version: number; scriptKey: string; changelog?: string },
+    @Body() body: CreateVersionDto,
   ) {
     await this.tasksService.verifyTaskAccess(organizationId, taskId);
     return this.automationsService.createVersion(automationId, body);

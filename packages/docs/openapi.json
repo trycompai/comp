@@ -1,5 +1,6 @@
 {
   "openapi": "3.0.0",
+  "x-speakeasy-timeout": 120000,
   "paths": {
     "/v1/organization": {
       "get": {
