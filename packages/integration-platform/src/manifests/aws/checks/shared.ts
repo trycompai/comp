@@ -17,6 +17,70 @@ export interface AwsCredentialInputs {
 }
 
 /**
+ * Which hop of the role-assumption chain failed:
+ *  - `config`        — Comp-side config (missing roleAssumer ARN env var)
+ *  - `role-assumer`  — Comp-side (could not assume our own roleAssumer role)
+ *  - `customer-role` — customer-side (their role's trust policy / external ID)
+ *
+ * `config` and `role-assumer` are internal failures — the customer's AWS setup
+ * is fine and they should NOT be told to change their IAM.
+ */
+export type AssumeHop = 'config' | 'role-assumer' | 'customer-role';
+
+/** Error raised while assuming the customer's role, tagged with the failed hop. */
+export class AwsAssumeError extends Error {
+  constructor(
+    message: string,
+    readonly hop: AssumeHop,
+    readonly cause?: unknown,
+  ) {
+    super(message);
+    this.name = 'AwsAssumeError';
+  }
+}
+
+function errorMessage(err: unknown): string {
+  return err instanceof Error ? err.message : String(err);
+}
+
+export interface AssumeFailureClassification {
+  hop: AssumeHop;
+  /** true when the failure is on Comp's side, not the customer's AWS config. */
+  isInternal: boolean;
+  error: string;
+  description: string;
+  remediation: string;
+}
+
+/**
+ * Turn an assume-role failure into accurate, customer-facing copy. The key
+ * point: only a `customer-role` (hop 2) failure means the customer needs to
+ * check their role ARN / external ID / trust policy. A `config` or
+ * `role-assumer` failure is on us — telling the customer to "verify your role
+ * ARN" there is wrong and is exactly what confused this customer. The real
+ * underlying error is always included so the failure is diagnosable.
+ */
+export function describeAssumeFailure(
+  err: unknown,
+): AssumeFailureClassification {
+  const hop: AssumeHop =
+    err instanceof AwsAssumeError ? err.hop : 'customer-role';
+  const error = errorMessage(err);
+  const isInternal = hop === 'config' || hop === 'role-assumer';
+  return {
+    hop,
+    isInternal,
+    error,
+    description: isInternal
+      ? `This check could not run due to an internal issue on Comp's side, not your AWS configuration (${error}). Our team has been notified.`
+      : `The cross-account IAM role could not be assumed, so this check could not be verified (${error}).`,
+    remediation: isInternal
+      ? 'No action is needed on your side — Comp will resolve this and the check will pass on the next run.'
+      : "Verify the role ARN and external ID are correct and the role's trust policy allows Comp's roleAssumer to assume it with that external ID, then re-run the check.",
+  };
+}
+
+/**
  * Resolve role ARN, external ID, and regions from raw connection credentials.
  * Returns null when any is missing (treated as "connection not configured").
  *
@@ -105,32 +169,49 @@ export async function assumeAwsSession(
       partition === 'aws-us-gov'
         ? 'SECURITY_HUB_GOVCLOUD_ROLE_ASSUMER_ARN'
         : 'SECURITY_HUB_ROLE_ASSUMER_ARN';
-    throw new Error(`Missing ${envName} (Comp roleAssumer ARN).`);
+    throw new AwsAssumeError(
+      `Missing ${envName} (Comp roleAssumer ARN).`,
+      'config',
+    );
   }
 
-  // Hop 1: task/base creds -> Comp roleAssumer.
+  // Hop 1: task/base creds -> Comp roleAssumer. A failure here is on Comp's
+  // side (our runtime can't assume our own roleAssumer), not the customer's.
   const baseSts = new STSClient({
     region,
     credentials: awsBaseCredentials(partition),
   });
-  const assumerResp = await baseSts.send(
-    new AssumeRoleCommand({
-      RoleArn: roleAssumerArn,
-      RoleSessionName: 'CompRoleAssumer',
-      DurationSeconds: 3600,
-    }),
-  );
+  let assumerResp;
+  try {
+    assumerResp = await baseSts.send(
+      new AssumeRoleCommand({
+        RoleArn: roleAssumerArn,
+        RoleSessionName: 'CompRoleAssumer',
+        DurationSeconds: 3600,
+      }),
+    );
+  } catch (err) {
+    throw new AwsAssumeError(
+      `Failed to assume Comp roleAssumer: ${errorMessage(err)}`,
+      'role-assumer',
+      err,
+    );
+  }
   const assumer = assumerResp.Credentials;
   if (
     !assumer?.AccessKeyId ||
     !assumer.SecretAccessKey ||
     !assumer.SessionToken
   ) {
-    return null;
+    throw new AwsAssumeError(
+      'Comp roleAssumer returned no credentials.',
+      'role-assumer',
+    );
   }
 
   // Hop 2: roleAssumer -> customer role (trust policy whitelists the roleAssumer
-  // ARN + external ID).
+  // ARN + external ID). A failure here points at the customer's trust policy /
+  // external ID.
   const assumerSts = new STSClient({
     region,
     credentials: {
@@ -139,16 +220,30 @@ export async function assumeAwsSession(
       sessionToken: assumer.SessionToken,
     },
   });
-  const res = await assumerSts.send(
-    new AssumeRoleCommand({
-      RoleArn: roleArn,
-      ExternalId: externalId,
-      RoleSessionName: 'CompEvidenceCheck',
-      DurationSeconds: 3600,
-    }),
-  );
+  let res;
+  try {
+    res = await assumerSts.send(
+      new AssumeRoleCommand({
+        RoleArn: roleArn,
+        ExternalId: externalId,
+        RoleSessionName: 'CompEvidenceCheck',
+        DurationSeconds: 3600,
+      }),
+    );
+  } catch (err) {
+    throw new AwsAssumeError(
+      `Failed to assume the customer role: ${errorMessage(err)}`,
+      'customer-role',
+      err,
+    );
+  }
   const c = res.Credentials;
-  if (!c?.AccessKeyId || !c.SecretAccessKey || !c.SessionToken) return null;
+  if (!c?.AccessKeyId || !c.SecretAccessKey || !c.SessionToken) {
+    throw new AwsAssumeError(
+      'The customer role returned no credentials.',
+      'customer-role',
+    );
+  }
 
   return {
     credentials: {
@@ -174,16 +269,15 @@ export async function resolveAwsSessionOrFail(
   try {
     return await assumeAwsSession(ctx);
   } catch (err) {
+    const classified = describeAssumeFailure(err);
     ctx.fail({
       title: 'Could not assume AWS role',
-      description:
-        'The cross-account IAM role could not be assumed, so this check could not be verified.',
+      description: classified.description,
       resourceType: 'aws-account',
       resourceId: 'account',
       severity: 'medium',
-      remediation:
-        'Verify the role ARN and external ID are correct and the role trust policy allows Comp to assume it, then re-run the check.',
-      evidence: { error: err instanceof Error ? err.message : String(err) },
+      remediation: classified.remediation,
+      evidence: { hop: classified.hop, error: classified.error },
     });
     return null;
   }

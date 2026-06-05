@@ -14,7 +14,11 @@ import {
   evaluateRdsEncryption,
 } from '../rds';
 import { evaluateS3Encryption, evaluateS3PublicAccess } from '../s3';
-import { resolveAwsCredentialInputs } from '../shared';
+import {
+  AwsAssumeError,
+  describeAssumeFailure,
+  resolveAwsCredentialInputs,
+} from '../shared';
 
 const kinds = (os: { kind: string }[]) => os.map((o) => o.kind);
 
@@ -371,5 +375,45 @@ describe('IAM/CloudTrail outcomes carry evidence (so the UI shows "View Evidence
     ]);
     expect(rot[0]!.evidence?.rotationEnabled).toBe(true);
     expect(rot[1]!.evidence?.rotationEnabled).toBe(false);
+  });
+});
+
+describe('AWS assume-role failure classification (describeAssumeFailure)', () => {
+  it('treats a customer-role (hop 2) failure as customer-side with actionable IAM guidance', () => {
+    const c = describeAssumeFailure(
+      new AwsAssumeError('AccessDenied: not authorized', 'customer-role'),
+    );
+    expect(c.isInternal).toBe(false);
+    expect(c.hop).toBe('customer-role');
+    expect(c.remediation).toContain('Verify the role ARN and external ID');
+    expect(c.description).toContain('AccessDenied: not authorized');
+  });
+
+  it('treats a roleAssumer (hop 1) failure as internal and does NOT blame the customer', () => {
+    const c = describeAssumeFailure(
+      new AwsAssumeError('not authorized to assume roleAssumer', 'role-assumer'),
+    );
+    expect(c.isInternal).toBe(true);
+    expect(c.hop).toBe('role-assumer');
+    expect(c.remediation).toContain('No action is needed on your side');
+    expect(c.remediation).not.toContain('Verify the role ARN');
+    expect(c.description).toContain("Comp's side");
+    expect(c.description).toContain('not authorized to assume roleAssumer');
+  });
+
+  it('treats a missing-config failure as internal', () => {
+    const c = describeAssumeFailure(
+      new AwsAssumeError('Missing SECURITY_HUB_ROLE_ASSUMER_ARN', 'config'),
+    );
+    expect(c.isInternal).toBe(true);
+    expect(c.hop).toBe('config');
+    expect(c.remediation).toContain('No action is needed on your side');
+  });
+
+  it('defaults a non-tagged error to customer-role and surfaces the real message', () => {
+    const c = describeAssumeFailure(new Error('boom'));
+    expect(c.hop).toBe('customer-role');
+    expect(c.error).toBe('boom');
+    expect(c.description).toContain('boom');
   });
 });
