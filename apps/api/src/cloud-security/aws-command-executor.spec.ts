@@ -422,10 +422,30 @@ describe('PutMetricFilterCommand required params + normalization', () => {
     ]);
     expect(errors).toEqual(
       expect.arrayContaining([
-        expect.stringMatching(/Required param "filterPattern" is missing/),
+        // filterPattern must be PRESENT (but may be empty), so a missing one is
+        // reported via the present-check, not the non-empty REQUIRED_PARAMS one.
+        expect.stringMatching(/Required param "filterPattern" must be provided/),
         expect.stringMatching(/Required param "metricTransformations" is missing/),
       ]),
     );
+  });
+
+  it('allows an empty filterPattern (AWS accepts "" — it matches all events)', () => {
+    const errors = validatePlanSteps([
+      step({
+        service: 'cloudwatch-logs',
+        command: 'PutMetricFilterCommand',
+        params: {
+          logGroupName: 'lg',
+          filterName: 'fn',
+          filterPattern: '',
+          metricTransformations: [
+            { metricName: 'm', metricNamespace: 'CloudTrailMetrics', metricValue: '1' },
+          ],
+        },
+      }),
+    ]);
+    expect(errors.filter((e) => /filterPattern/.test(e))).toHaveLength(0);
   });
 
   it('does not error when all PutMetricFilter params are present', () => {

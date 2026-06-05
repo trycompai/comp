@@ -165,12 +165,18 @@ export const REQUIRED_PARAMS: Record<string, readonly string[]> = {
   StartConfigurationRecorderCommand: ['ConfigurationRecorderName'],
   PutBucketPolicyCommand: ['Bucket', 'Policy'],
   CreateTrailCommand: ['Name', 'S3BucketName'],
-  PutMetricFilterCommand: [
-    'logGroupName',
-    'filterName',
-    'filterPattern',
-    'metricTransformations',
-  ],
+  PutMetricFilterCommand: ['logGroupName', 'filterName', 'metricTransformations'],
+};
+
+/**
+ * Params that must be PRESENT in the request but may legitimately be an empty
+ * string — unlike REQUIRED_PARAMS, which also rejects "". For example, AWS
+ * CloudWatch Logs PutMetricFilter requires `filterPattern` to be supplied but
+ * accepts an empty pattern (an empty filterPattern matches all log events), so
+ * we must reject only a missing/null value, not "".
+ */
+const REQUIRED_PRESENT_PARAMS: Record<string, readonly string[]> = {
+  PutMetricFilterCommand: ['filterPattern'],
 };
 
 const REQUIRED_PARAM_ONE_OF: Record<string, readonly (readonly string[])[]> = {
@@ -645,6 +651,18 @@ export function validatePlanSteps(steps: AwsCommandStep[]): string[] {
         const value = step.params?.[key];
         if (!hasRequiredParamValue(value)) {
           errors.push(`${prefix}: Required param "${key}" is missing or empty`);
+        }
+      }
+    }
+
+    const requiredPresent = REQUIRED_PRESENT_PARAMS[step.command];
+    if (requiredPresent) {
+      for (const key of requiredPresent) {
+        const value = step.params?.[key];
+        // Must be supplied, but an empty string is valid (e.g. an empty
+        // CloudWatch filterPattern matches all log events).
+        if (value === undefined || value === null) {
+          errors.push(`${prefix}: Required param "${key}" must be provided`);
         }
       }
     }
