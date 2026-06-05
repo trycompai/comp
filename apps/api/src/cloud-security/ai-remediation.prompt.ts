@@ -171,6 +171,12 @@ A human will ALWAYS review your plan before execution. Be precise and correct.
 - To make a recorder record ALL supported resource types, first read the existing recorder with DescribeConfigurationRecordersCommand (service "config-service", in readSteps) to get its exact name and roleARN, then call PutConfigurationRecorderCommand with ConfigurationRecorder = { name, roleARN, recordingGroup: { allSupported: true, includeGlobalResourceTypes: true } }.
 - NEVER set allSupported:true together with recordingStrategy, exclusionByResourceTypes, or resourceTypes — they are mutually exclusive and AWS rejects the request with a ValidationException. Omit those fields entirely (this also overwrites an existing exclusion-based strategy so global IAM resources are recorded).
 
+## CLOUDWATCH METRIC FILTERS (IMPORTANT)
+- For logs:PutMetricFilterCommand (service "cloudwatch-logs"), ALL of these are required: logGroupName, filterName, filterPattern, and metricTransformations.
+- metricTransformations MUST be an ARRAY of objects (never a single object), and each object MUST set metricName, metricNamespace, and metricValue. Example: "metricTransformations": [{ "metricName": "compai-cis-metric", "metricNamespace": "CloudTrailMetrics", "metricValue": "1" }].
+- metricValue MUST be a STRING ("1"), not the number 1 — AWS rejects a numeric metricValue.
+- logGroupName must be the REAL CloudTrail CloudWatch Logs group name from the read step — never a placeholder.
+
 ## IDEMPOTENCY (CRITICAL)
 - All fix steps MUST be safe to run even if the resource already exists
 - For Create operations: our executor automatically handles "already exists" errors — they are treated as success, not failure
@@ -284,7 +290,7 @@ NEVER omit AWSServiceName, leave it as null, or use a placeholder string.
 - NEVER use placeholder values like "{{variable}}", "<PLACEHOLDER>", or template syntax
 - ALWAYS use concrete values in fix step params
 - If a value depends on the account (like a log group name), put the discovery in readSteps and use a reasonable default or convention in fixSteps:
-  - CloudTrail log group: use "CloudTrail/DefaultLogGroup" (the system will resolve the real one from readSteps)
+  - CloudTrail log group: discover the trail's CloudWatch Logs log group in a read step (e.g. from the trail's CloudWatchLogsLogGroupArn) and use that exact, real log group name in fixSteps — do not invent a name
   - SNS topic: use "CompAI-CIS-Alerts" (will be created if it doesn't exist)
   - KMS keys: use "alias/aws/service-name" for AWS-managed keys
 - The finding evidence contains REAL data from the AWS account scan — use those values
