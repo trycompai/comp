@@ -1,7 +1,7 @@
 const sendMock = jest.fn();
 
-jest.mock('@aws-sdk/client-neptune', () => ({
-  NeptuneClient: jest.fn().mockImplementation(() => ({ send: sendMock })),
+jest.mock('@aws-sdk/client-rds', () => ({
+  RDSClient: jest.fn().mockImplementation(() => ({ send: sendMock })),
   DescribeDBClustersCommand: jest
     .fn()
     .mockImplementation((input: unknown) => ({ input })),
@@ -57,7 +57,7 @@ describe('NeptuneAdapter', () => {
     const enc = failed.find((f) => f.title.includes('not encrypted at rest'));
     expect(enc?.remediation).toContain('[MANUAL]');
     const del = failed.find((f) => f.title.includes('deletion protection'));
-    expect(del?.remediation).toContain('neptune:ModifyDBClusterCommand');
+    expect(del?.remediation).toContain('rds:ModifyDBClusterCommand');
     expect(del?.remediation).toContain('DeletionProtection set to true');
   });
 

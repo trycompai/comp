@@ -1,10 +1,12 @@
-import {
-  DescribeDBClustersCommand,
-  NeptuneClient,
-} from '@aws-sdk/client-neptune';
+import { DescribeDBClustersCommand, RDSClient } from '@aws-sdk/client-rds';
 
 import type { SecurityFinding } from '../../cloud-security.service';
 import type { AwsCredentials, AwsServiceAdapter } from './aws-service-adapter';
+
+// Neptune is managed through the RDS API surface — its DB clusters are returned
+// by rds:DescribeDBClusters (filtered by Engine) and modified by
+// rds:ModifyDBCluster. The `neptune-db:` IAM namespace is data-plane only, so
+// all management/remediation here uses the `rds:` service + IAM actions.
 
 /** Minimum automated-backup retention (days) we consider compliant. */
 const MIN_BACKUP_RETENTION_DAYS = 7;
@@ -21,7 +23,7 @@ export class NeptuneAdapter implements AwsServiceAdapter {
     region: string;
     accountId?: string;
   }): Promise<SecurityFinding[]> {
-    const client = new NeptuneClient({ credentials, region });
+    const client = new RDSClient({ credentials, region });
     const findings: SecurityFinding[] = [];
 
     try {
@@ -32,8 +34,8 @@ export class NeptuneAdapter implements AwsServiceAdapter {
         );
 
         for (const cluster of resp.DBClusters ?? []) {
-          // DescribeDBClusters on the Neptune endpoint can still surface
-          // non-Neptune engines in some accounts — only assess Neptune.
+          // DescribeDBClusters returns every DB-cluster engine (Aurora,
+          // Neptune, DocumentDB) — only assess Neptune clusters here.
           if (cluster.Engine !== 'neptune') continue;
 
           const id = cluster.DBClusterIdentifier ?? 'unknown';
@@ -76,7 +78,7 @@ export class NeptuneAdapter implements AwsServiceAdapter {
                 'medium',
                 { clusterId: id, deletionProtection: false },
                 false,
-                `Use neptune:ModifyDBClusterCommand with DBClusterIdentifier "${id}" and DeletionProtection set to true. Rollback by setting DeletionProtection to false.`,
+                `Use rds:ModifyDBClusterCommand with DBClusterIdentifier "${id}" and DeletionProtection set to true. Rollback by setting DeletionProtection to false.`,
               ),
             );
           } else {
@@ -103,7 +105,7 @@ export class NeptuneAdapter implements AwsServiceAdapter {
                 'medium',
                 { clusterId: id, backupRetentionPeriod: retention },
                 false,
-                `Use neptune:ModifyDBClusterCommand with DBClusterIdentifier "${id}" and BackupRetentionPeriod set to ${MIN_BACKUP_RETENTION_DAYS}. Rollback by restoring the original BackupRetentionPeriod value (${retention}).`,
+                `Use rds:ModifyDBClusterCommand with DBClusterIdentifier "${id}" and BackupRetentionPeriod set to ${MIN_BACKUP_RETENTION_DAYS}. Rollback by restoring the original BackupRetentionPeriod value (${retention}).`,
               ),
             );
           } else {
@@ -129,7 +131,7 @@ export class NeptuneAdapter implements AwsServiceAdapter {
                 'medium',
                 { clusterId: id, iamDatabaseAuthentication: false },
                 false,
-                `Use neptune:ModifyDBClusterCommand with DBClusterIdentifier "${id}" and EnableIAMDatabaseAuthentication set to true. Rollback by setting EnableIAMDatabaseAuthentication to false.`,
+                `Use rds:ModifyDBClusterCommand with DBClusterIdentifier "${id}" and EnableIAMDatabaseAuthentication set to true. Rollback by setting EnableIAMDatabaseAuthentication to false.`,
               ),
             );
           } else {
@@ -158,7 +160,7 @@ export class NeptuneAdapter implements AwsServiceAdapter {
                 'medium',
                 { clusterId: id, auditLogsToCloudWatch: false },
                 false,
-                `Use neptune:ModifyDBClusterCommand with DBClusterIdentifier "${id}" and CloudwatchLogsExportConfiguration set to { EnableLogTypes: ["audit"] }. Rollback by setting CloudwatchLogsExportConfiguration to { DisableLogTypes: ["audit"] }.`,
+                `Use rds:ModifyDBClusterCommand with DBClusterIdentifier "${id}" and CloudwatchLogsExportConfiguration set to { EnableLogTypes: ["audit"] }. Rollback by setting CloudwatchLogsExportConfiguration to { DisableLogTypes: ["audit"] }.`,
               ),
             );
           } else {

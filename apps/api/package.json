@@ -41,7 +41,6 @@
         "@aws-sdk/client-kms": "^3.948.0",
         "@aws-sdk/client-lambda": "^3.948.0",
         "@aws-sdk/client-macie2": "^3.948.0",
-        "@aws-sdk/client-neptune": "^3.948.0",
         "@aws-sdk/client-network-firewall": "^3.948.0",
         "@aws-sdk/client-opensearch": "^3.948.0",
         "@aws-sdk/client-rds": "^3.948.0",
