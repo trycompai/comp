@@ -42,6 +42,23 @@ describe('CreateVersionDto', () => {
     expect(errors.some((e) => e.property === 'scriptKey')).toBe(true);
   });
 
+  it('rejects a whitespace-only scriptKey (would otherwise persist a blank key)', async () => {
+    for (const scriptKey of ['   ', '\t\n', '     ']) {
+      const errors = await validatePayload({ version: 1, scriptKey });
+      expect(errors.some((e) => e.property === 'scriptKey')).toBe(true);
+    }
+  });
+
+  it('trims surrounding whitespace from a valid scriptKey', async () => {
+    const dto = plainToInstance(CreateVersionDto, {
+      version: 1,
+      scriptKey: '  org_1/tsk_1/aut_1.v1.js  ',
+    });
+    const errors = await validate(dto);
+    expect(errors).toHaveLength(0);
+    expect(dto.scriptKey).toBe('org_1/tsk_1/aut_1.v1.js');
+  });
+
   it('treats changelog as optional', async () => {
     const errors = await validatePayload({ version: 2, scriptKey: 'k' });
     expect(errors.some((e) => e.property === 'changelog')).toBe(false);

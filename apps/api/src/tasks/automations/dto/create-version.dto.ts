@@ -1,4 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
+import { Transform } from 'class-transformer';
 import { IsInt, IsNotEmpty, IsOptional, IsString, Min } from 'class-validator';
 
 /**
@@ -22,6 +23,10 @@ export class CreateVersionDto {
     example: 'org_abc123/tsk_abc123/aut_abc123.v1.js',
   })
   @IsString()
+  // Trim first so a whitespace-only key collapses to '' and @IsNotEmpty rejects
+  // it — otherwise a blank key would persist and the automation would later
+  // fail to fetch a script at that key. Non-strings pass through for @IsString.
+  @Transform(({ value }) => (typeof value === 'string' ? value.trim() : value))
   @IsNotEmpty()
   scriptKey!: string;
 
