@@ -104,11 +104,14 @@ import { tool$integrationsConnectionsControllerUpdateConnectionServicesV1 } from
 import { tool$integrationsConnectionsControllerUpdateConnectionV1 } from "./tools/integrationsConnectionsControllerUpdateConnectionV1.js";
 import { tool$integrationsServicesControllerGetConnectionServicesV1 } from "./tools/integrationsServicesControllerGetConnectionServicesV1.js";
 import { tool$integrationsSyncControllerGetAvailableSyncProvidersV1 } from "./tools/integrationsSyncControllerGetAvailableSyncProvidersV1.js";
+import { tool$integrationsSyncControllerGetDeviceSyncProviderV1 } from "./tools/integrationsSyncControllerGetDeviceSyncProviderV1.js";
 import { tool$integrationsSyncControllerGetEmployeeSyncProviderV1 } from "./tools/integrationsSyncControllerGetEmployeeSyncProviderV1.js";
 import { tool$integrationsSyncControllerGetGoogleWorkspaceStatusV1 } from "./tools/integrationsSyncControllerGetGoogleWorkspaceStatusV1.js";
 import { tool$integrationsSyncControllerGetJumpCloudStatusV1 } from "./tools/integrationsSyncControllerGetJumpCloudStatusV1.js";
 import { tool$integrationsSyncControllerGetRipplingStatusV1 } from "./tools/integrationsSyncControllerGetRipplingStatusV1.js";
+import { tool$integrationsSyncControllerSetDeviceSyncProviderV1 } from "./tools/integrationsSyncControllerSetDeviceSyncProviderV1.js";
 import { tool$integrationsSyncControllerSetEmployeeSyncProviderV1 } from "./tools/integrationsSyncControllerSetEmployeeSyncProviderV1.js";
+import { tool$integrationsSyncControllerSyncDynamicProviderDevicesV1 } from "./tools/integrationsSyncControllerSyncDynamicProviderDevicesV1.js";
 import { tool$integrationsSyncControllerSyncDynamicProviderEmployeesV1 } from "./tools/integrationsSyncControllerSyncDynamicProviderEmployeesV1.js";
 import { tool$integrationsSyncControllerSyncGoogleWorkspaceEmployeesV1 } from "./tools/integrationsSyncControllerSyncGoogleWorkspaceEmployeesV1.js";
 import { tool$integrationsSyncControllerSyncJumpCloudEmployeesV1 } from "./tools/integrationsSyncControllerSyncJumpCloudEmployeesV1.js";
@@ -256,10 +259,9 @@ import { tool$soaSOAControllerCreateDocumentV1 } from "./tools/soaSOAControllerC
 import { tool$soaSOAControllerDeclineDocumentV1 } from "./tools/soaSOAControllerDeclineDocumentV1.js";
 import { tool$soaSOAControllerEnsureSetupV1 } from "./tools/soaSOAControllerEnsureSetupV1.js";
 import { tool$soaSOAControllerExportDocumentV1 } from "./tools/soaSOAControllerExportDocumentV1.js";
+import { tool$soaSOAControllerGetSetupV1 } from "./tools/soaSOAControllerGetSetupV1.js";
 import { tool$soaSOAControllerSaveAnswerV1 } from "./tools/soaSOAControllerSaveAnswerV1.js";
 import { tool$soaSOAControllerSubmitForApprovalV1 } from "./tools/soaSOAControllerSubmitForApprovalV1.js";
-import { tool$taskAutomationsAutomationsControllerCreateAutomationV1 } from "./tools/taskAutomationsAutomationsControllerCreateAutomationV1.js";
-import { tool$taskAutomationsAutomationsControllerCreateVersionV1 } from "./tools/taskAutomationsAutomationsControllerCreateVersionV1.js";
 import { tool$taskAutomationsAutomationsControllerDeleteAutomationV1 } from "./tools/taskAutomationsAutomationsControllerDeleteAutomationV1.js";
 import { tool$taskAutomationsAutomationsControllerGetAutomationRunsV1 } from "./tools/taskAutomationsAutomationsControllerGetAutomationRunsV1.js";
 import { tool$taskAutomationsAutomationsControllerGetAutomationV1 } from "./tools/taskAutomationsAutomationsControllerGetAutomationV1.js";
@@ -366,7 +368,7 @@ export function createMCPServer(deps: {
 }) {
   const server = new McpServer({
     name: "CompAi",
-    version: "0.0.3",
+    version: "0.1.0",
   });
 
   const getClient = deps.getSDK || (() =>
@@ -449,6 +451,7 @@ export function createMCPServer(deps: {
   tool(tool$peoplePeopleControllerUpdateEmailPreferencesV1);
   tool(tool$attachmentsAttachmentsControllerCreateAttachmentV1);
   tool(tool$attachmentsAttachmentsControllerGetAttachmentDownloadUrlV1);
+  tool(tool$uploadsUploadsControllerCreateUploadUrlV1);
   tool(tool$risksRisksControllerGetAllRisksV1);
   tool(tool$risksRisksControllerCreateRiskV1);
   tool(tool$risksRisksControllerGetStatsByAssigneeV1);
@@ -510,7 +513,6 @@ export function createMCPServer(deps: {
   tool(tool$deviceAgentDeviceAgentControllerDownloadMacAgentV1);
   tool(tool$deviceAgentDeviceAgentControllerDownloadWindowsAgentV1);
   tool(tool$deviceAgentDeviceAgentControllerRevokeAgentAccessV1);
-  tool(tool$uploadsUploadsControllerCreateUploadUrlV1);
   tool(tool$tasksTasksControllerGetTasksV1);
   tool(tool$tasksTasksControllerCreateTaskV1);
   tool(tool$tasksTasksControllerGetTaskTemplatesV1);
@@ -534,13 +536,11 @@ export function createMCPServer(deps: {
   tool(tool$tasksTasksControllerGetTaskAttachmentDownloadUrlV1);
   tool(tool$tasksTasksControllerDeleteTaskAttachmentV1);
   tool(tool$taskAutomationsAutomationsControllerGetTaskAutomationsV1);
-  tool(tool$taskAutomationsAutomationsControllerCreateAutomationV1);
   tool(tool$taskAutomationsAutomationsControllerGetAutomationV1);
   tool(tool$taskAutomationsAutomationsControllerUpdateAutomationV1);
   tool(tool$taskAutomationsAutomationsControllerDeleteAutomationV1);
   tool(tool$taskAutomationsAutomationsControllerGetAutomationRunsV1);
   tool(tool$taskAutomationsAutomationsControllerGetAutomationVersionsV1);
-  tool(tool$taskAutomationsAutomationsControllerCreateVersionV1);
   tool(tool$taskAutomationsAutomationsControllerGetTaskAutomationRunsV1);
   tool(tool$evidenceExportEvidenceExportControllerGetTaskEvidenceSummaryV1);
   tool(tool$evidenceExportEvidenceExportControllerExportAutomationPDFV1);
@@ -634,6 +634,7 @@ export function createMCPServer(deps: {
   tool(tool$soaSOAControllerAutoFillV1);
   tool(tool$soaSOAControllerCreateDocumentV1);
   tool(tool$soaSOAControllerEnsureSetupV1);
+  tool(tool$soaSOAControllerGetSetupV1);
   tool(tool$soaSOAControllerApproveDocumentV1);
   tool(tool$soaSOAControllerDeclineDocumentV1);
   tool(tool$soaSOAControllerSubmitForApprovalV1);
@@ -673,8 +674,11 @@ export function createMCPServer(deps: {
   tool(tool$integrationsSyncControllerGetJumpCloudStatusV1);
   tool(tool$integrationsSyncControllerGetEmployeeSyncProviderV1);
   tool(tool$integrationsSyncControllerSetEmployeeSyncProviderV1);
+  tool(tool$integrationsSyncControllerGetDeviceSyncProviderV1);
+  tool(tool$integrationsSyncControllerSetDeviceSyncProviderV1);
   tool(tool$integrationsSyncControllerGetAvailableSyncProvidersV1);
   tool(tool$integrationsSyncControllerSyncDynamicProviderEmployeesV1);
+  tool(tool$integrationsSyncControllerSyncDynamicProviderDevicesV1);
   tool(tool$cloudSecurityCloudSecurityControllerGetActivityV1);
   tool(tool$cloudSecurityCloudSecurityControllerGetProvidersV1);
   tool(tool$cloudSecurityCloudSecurityControllerGetFindingsV1);

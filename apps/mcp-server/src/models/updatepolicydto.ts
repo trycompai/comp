@@ -46,35 +46,6 @@ export const UpdatePolicyDtoFrequency$zodSchema = z.enum([
 ]).describe("Review frequency of the policy");
 
 /**
- * Department this policy applies to
- */
-export const UpdatePolicyDtoDepartment = {
-  None: "none",
-  Admin: "admin",
-  Gov: "gov",
-  Hr: "hr",
-  It: "it",
-  Itsm: "itsm",
-  Qms: "qms",
-} as const;
-/**
- * Department this policy applies to
- */
-export type UpdatePolicyDtoDepartment = ClosedEnum<
-  typeof UpdatePolicyDtoDepartment
->;
-
-export const UpdatePolicyDtoDepartment$zodSchema = z.enum([
-  "none",
-  "admin",
-  "gov",
-  "hr",
-  "it",
-  "itsm",
-  "qms",
-]).describe("Department this policy applies to");
-
-/**
  * Display format for this policy
  */
 export const DisplayFormat = {
@@ -97,7 +68,7 @@ export type UpdatePolicyDto = {
   status?: UpdatePolicyDtoStatus | undefined;
   content?: Array<{ [k: string]: any }> | undefined;
   frequency?: UpdatePolicyDtoFrequency | undefined;
-  department?: UpdatePolicyDtoDepartment | undefined;
+  department?: string | undefined;
   isRequiredToSign?: boolean | undefined;
   reviewDate?: string | undefined;
   assigneeId?: string | undefined;
@@ -118,8 +89,8 @@ export const UpdatePolicyDto$zodSchema: z.ZodType<UpdatePolicyDto> = z.object({
   content: z.array(z.record(z.string(), z.any())).optional().describe(
     "Content of the policy as TipTap JSON (array of nodes)",
   ),
-  department: UpdatePolicyDtoDepartment$zodSchema.optional().describe(
-    "Department this policy applies to",
+  department: z.string().optional().describe(
+    "Department this policy applies to. Built-in values: none, admin, gov, hr, it, itsm, qms. Custom department names are also accepted.",
   ),
   description: z.string().optional().describe("Description of the policy"),
   displayFormat: DisplayFormat$zodSchema.optional().describe(

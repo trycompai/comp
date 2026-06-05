@@ -5,12 +5,16 @@
 import * as z from "zod";
 import { ClosedEnum } from "../types/enums.js";
 
-export type PeopleControllerDeleteMemberV1Request = { id: string };
+export type PeopleControllerDeleteMemberV1Request = {
+  id: string;
+  skipOffboarding: string;
+};
 
 export const PeopleControllerDeleteMemberV1Request$zodSchema: z.ZodType<
   PeopleControllerDeleteMemberV1Request
 > = z.object({
   id: z.string().describe("Member ID"),
+  skipOffboarding: z.string(),
 });
 
 /**

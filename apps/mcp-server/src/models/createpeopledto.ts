@@ -3,49 +3,19 @@
  */
 
 import * as z from "zod";
-import { ClosedEnum } from "../types/enums.js";
-
-/**
- * Member department
- */
-export const CreatePeopleDtoDepartment = {
-  None: "none",
-  Admin: "admin",
-  Gov: "gov",
-  Hr: "hr",
-  It: "it",
-  Itsm: "itsm",
-  Qms: "qms",
-} as const;
-/**
- * Member department
- */
-export type CreatePeopleDtoDepartment = ClosedEnum<
-  typeof CreatePeopleDtoDepartment
->;
-
-export const CreatePeopleDtoDepartment$zodSchema = z.enum([
-  "none",
-  "admin",
-  "gov",
-  "hr",
-  "it",
-  "itsm",
-  "qms",
-]).describe("Member department");
 
 export type CreatePeopleDto = {
   userId: string;
   role: string;
-  department?: CreatePeopleDtoDepartment | undefined;
+  department?: string | undefined;
   isActive?: boolean | undefined;
   fleetDmLabelId?: number | undefined;
   jobTitle?: string | undefined;
 };
 
 export const CreatePeopleDto$zodSchema: z.ZodType<CreatePeopleDto> = z.object({
-  department: CreatePeopleDtoDepartment$zodSchema.optional().describe(
-    "Member department",
+  department: z.string().optional().describe(
+    "Member department. Built-in values: none, admin, gov, hr, it, itsm, qms. Custom department names are also accepted.",
   ),
   fleetDmLabelId: z.number().optional().describe(
     "FleetDM label ID for member devices",

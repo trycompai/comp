@@ -15,7 +15,7 @@ export const tool$evidenceFormsEvidenceFormsControllerUploadSubmissionV1:
     name: "upload-submission",
     description: `Upload a file as an evidence submission
 
-Upload a file as an evidence submission in Comp AI. Collect, review, upload, and export structured evidence submissions for compliance tasks and document requirements.`,
+Upload a PDF or image file and create a submission for the given form type, bypassing form-specific validation. Accepts session, API key, or service token auth. For API key / service token callers without an explicit user attribution, the.`,
     annotations: {
       "title": "",
       "destructiveHint": false,
