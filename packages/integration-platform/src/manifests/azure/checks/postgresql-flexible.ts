@@ -74,21 +74,26 @@ async function listPgFlexibleServers(
 }
 
 /**
- * Read a single server configuration value. Returns null when the read fails
- * (permission/transient) or the value is absent.
+ * Read a single server configuration, distinguishing a genuine read FAILURE
+ * (the fetch threw — permission/transient) from a successful read whose value is
+ * absent/unset. This separation matters: a read failure must surface as "could
+ * not verify", whereas an unset ssl_min_protocol_version is a legitimate TLS 1.2
+ * floor (compliant) — the two must never be collapsed into the same outcome.
  */
-async function readConfigValue(
+async function readConfig(
   ctx: CheckContext,
   serverId: string,
   name: string,
-): Promise<string | null> {
-  const res = await ctx
-    .fetch<PgConfiguration>(
+): Promise<{ ok: true; value: string } | { ok: false }> {
+  try {
+    const res = await ctx.fetch<PgConfiguration>(
       `${ARM_BASE}${serverId}/configurations/${name}?api-version=${POSTGRES_API_VERSION}`,
-    )
-    .catch(() => null);
-  const value = res?.properties?.value;
-  return typeof value === 'string' ? value : null;
+    );
+    const value = res?.properties?.value;
+    return { ok: true, value: typeof value === 'string' ? value : '' };
+  } catch {
+    return { ok: false };
+  }
 }
 
 /**
@@ -113,14 +118,14 @@ export const postgresqlFlexibleTlsCheck: IntegrationCheck = {
     if (!servers) return;
     if (servers.length === 0) return;
     for (const s of servers) {
-      // require_secure_transport is the primary TLS-enforcement gate and always
-      // carries a value — a null read means we genuinely could not read it.
-      const requireSecureTransport = await readConfigValue(
-        ctx,
-        s.id,
-        'require_secure_transport',
-      );
-      if (requireSecureTransport === null) {
+      const requireSecure = await readConfig(ctx, s.id, 'require_secure_transport');
+      const sslMin = await readConfig(ctx, s.id, 'ssl_min_protocol_version');
+
+      // A genuine read FAILURE on either parameter surfaces as "could not
+      // verify" — never a silent pass. (An unset ssl_min_protocol_version reads
+      // back as an empty string on a SUCCESSFUL response, which evaluatePgTls
+      // treats as a compliant TLS 1.2 floor; that is distinct from a failed read.)
+      if (!requireSecure.ok || !sslMin.ok) {
         ctx.fail({
           title: `Could not verify PostgreSQL TLS settings: ${s.name}`,
           description: `Unable to read the TLS server parameters for PostgreSQL flexible server "${s.name}", so TLS enforcement cannot be verified.`,
@@ -134,29 +139,19 @@ export const postgresqlFlexibleTlsCheck: IntegrationCheck = {
         continue;
       }
 
-      // ssl_min_protocol_version may be unset (null) by default — that still
-      // means a TLS 1.2 floor, so treat null as "" (compliant) rather than a
-      // read failure.
-      const sslMinProtocolVersion = await readConfigValue(
-        ctx,
-        s.id,
-        'ssl_min_protocol_version',
-      );
-      const { compliant, issues } = evaluatePgTls(
-        requireSecureTransport,
-        sslMinProtocolVersion ?? '',
-      );
+      const { compliant, issues } = evaluatePgTls(requireSecure.value, sslMin.value);
+      const evidence = {
+        server: s.name,
+        requireSecureTransport: requireSecure.value,
+        sslMinProtocolVersion: sslMin.value,
+      };
       if (compliant) {
         ctx.pass({
           title: `TLS 1.2 enforced: ${s.name}`,
           description: `PostgreSQL flexible server "${s.name}" requires secure transport and a minimum TLS version of 1.2.`,
           resourceType: 'azure-postgresql-flexible-server',
           resourceId: s.id,
-          evidence: {
-            server: s.name,
-            requireSecureTransport,
-            sslMinProtocolVersion,
-          },
+          evidence,
         });
       } else {
         ctx.fail({
@@ -167,11 +162,7 @@ export const postgresqlFlexibleTlsCheck: IntegrationCheck = {
           severity: 'medium',
           remediation:
             'Set require_secure_transport to ON and ssl_min_protocol_version to TLSv1.2 (or TLSv1.3).',
-          evidence: {
-            server: s.name,
-            requireSecureTransport,
-            sslMinProtocolVersion,
-          },
+          evidence,
         });
       }
     }

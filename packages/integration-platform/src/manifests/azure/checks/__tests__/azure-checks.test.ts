@@ -576,6 +576,34 @@ describe('Azure PostgreSQL Flexible Server TLS check', () => {
     expect(failed[0]!.title).toMatch(/Could not verify/);
   });
 
+  it('emits "could not verify" when the ssl_min_protocol_version READ fails (not a silent pass)', async () => {
+    // Regression for the cubic finding: a thrown ssl read (permission/transient)
+    // must NOT be coalesced into a compliant result. Distinct from an unset
+    // value, which reads back as "" on a successful response (compliant floor).
+    const { passed, failed } = await run(postgresqlFlexibleTlsCheck, (url: string) => {
+      if (url.includes('/configurations/require_secure_transport')) {
+        return { properties: { value: 'ON' } };
+      }
+      if (url.includes('/configurations/ssl_min_protocol_version')) {
+        throw new Error('HTTP 403');
+      }
+      if (url.includes('/flexibleServers?')) {
+        return {
+          value: [
+            {
+              id: '/subscriptions/sub-1/resourceGroups/rg/providers/Microsoft.DBforPostgreSQL/flexibleServers/pg1',
+              name: 'pg1',
+            },
+          ],
+        };
+      }
+      return {};
+    });
+    expect(passed).toHaveLength(0);
+    expect(failed).toHaveLength(1);
+    expect(failed[0]!.title).toMatch(/Could not verify/);
+  });
+
   it('no-ops when there are no PostgreSQL flexible servers', async () => {
     const { passed, failed } = await run(postgresqlFlexibleTlsCheck, pgFetch('ON', 'TLSv1.2', []));
     expect(passed).toHaveLength(0);
