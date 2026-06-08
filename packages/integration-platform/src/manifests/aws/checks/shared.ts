@@ -1,5 +1,6 @@
 import { AssumeRoleCommand, STSClient } from '@aws-sdk/client-sts';
 import type { CheckContext, FindingSeverity } from '../../../types';
+import { retryAssume } from './assume-retry';
 
 export interface AwsSession {
   credentials: {
@@ -113,12 +114,14 @@ export async function assumeAwsSession(
     region,
     credentials: awsBaseCredentials(partition),
   });
-  const assumerResp = await baseSts.send(
-    new AssumeRoleCommand({
-      RoleArn: roleAssumerArn,
-      RoleSessionName: 'CompRoleAssumer',
-      DurationSeconds: 3600,
-    }),
+  const assumerResp = await retryAssume(() =>
+    baseSts.send(
+      new AssumeRoleCommand({
+        RoleArn: roleAssumerArn,
+        RoleSessionName: 'CompRoleAssumer',
+        DurationSeconds: 3600,
+      }),
+    ),
   );
   const assumer = assumerResp.Credentials;
   if (
@@ -139,13 +142,15 @@ export async function assumeAwsSession(
       sessionToken: assumer.SessionToken,
     },
   });
-  const res = await assumerSts.send(
-    new AssumeRoleCommand({
-      RoleArn: roleArn,
-      ExternalId: externalId,
-      RoleSessionName: 'CompEvidenceCheck',
-      DurationSeconds: 3600,
-    }),
+  const res = await retryAssume(() =>
+    assumerSts.send(
+      new AssumeRoleCommand({
+        RoleArn: roleArn,
+        ExternalId: externalId,
+        RoleSessionName: 'CompEvidenceCheck',
+        DurationSeconds: 3600,
+      }),
+    ),
   );
   const c = res.Credentials;
   if (!c?.AccessKeyId || !c.SecretAccessKey || !c.SessionToken) return null;
