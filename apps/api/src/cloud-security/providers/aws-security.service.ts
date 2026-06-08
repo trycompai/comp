@@ -1,5 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { AssumeRoleCommand, STSClient } from '@aws-sdk/client-sts';
+import { retryAssume } from '@trycompai/integration-platform';
 import {
   CostExplorerClient,
   GetCostAndUsageCommand,
@@ -568,12 +569,14 @@ export class AWSSecurityService {
       region,
       credentials: getAwsBaseCredentials(partition),
     });
-    const roleAssumerResp = await baseSts.send(
-      new AssumeRoleCommand({
-        RoleArn: roleAssumerArn,
-        RoleSessionName: 'CompRoleAssumer',
-        DurationSeconds: 3600,
-      }),
+    const roleAssumerResp = await retryAssume(() =>
+      baseSts.send(
+        new AssumeRoleCommand({
+          RoleArn: roleAssumerArn,
+          RoleSessionName: 'CompRoleAssumer',
+          DurationSeconds: 3600,
+        }),
+      ),
     );
 
     const roleAssumerCreds = roleAssumerResp.Credentials;
@@ -595,13 +598,15 @@ export class AWSSecurityService {
 
     this.logger.log(`Assuming customer role ${roleArn} in region ${region}`);
 
-    const customerResp = await roleAssumerSts.send(
-      new AssumeRoleCommand({
-        RoleArn: roleArn,
-        ExternalId: externalId,
-        RoleSessionName: sessionName ?? 'CompSecurityAudit',
-        DurationSeconds: 3600,
-      }),
+    const customerResp = await retryAssume(() =>
+      roleAssumerSts.send(
+        new AssumeRoleCommand({
+          RoleArn: roleArn,
+          ExternalId: externalId,
+          RoleSessionName: sessionName ?? 'CompSecurityAudit',
+          DurationSeconds: 3600,
+        }),
+      ),
     );
 
     const customerCreds = customerResp.Credentials;
