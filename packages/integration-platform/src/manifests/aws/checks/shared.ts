@@ -48,6 +48,43 @@ export function resolveAwsCredentialInputs(
   return { roleArn, externalId, regions };
 }
 
+/**
+ * Short-lived AWS session credentials (or an error) injected into the connection
+ * credentials by the Cloud Tests CHECK runner (apps/api `checks-aws-session.ts`)
+ * when the cross-account assume was performed in ECS. The underscore-prefixed
+ * keys never collide with real connection fields. When present, the check uses
+ * these directly instead of assuming the role itself — it runs in the Trigger.dev
+ * runtime, which has no base AWS credentials or roleAssumer ARN.
+ */
+function readInjectedAwsSession(
+  credentials: Record<string, unknown>,
+):
+  | {
+      credentials: {
+        accessKeyId: string;
+        secretAccessKey: string;
+        sessionToken: string;
+      };
+    }
+  | { error: string }
+  | null {
+  const error = credentials.__resolvedSessionError;
+  if (typeof error === 'string' && error.length > 0) {
+    return { error };
+  }
+  const accessKeyId = credentials.__resolvedAccessKeyId;
+  const secretAccessKey = credentials.__resolvedSecretAccessKey;
+  const sessionToken = credentials.__resolvedSessionToken;
+  if (
+    typeof accessKeyId === 'string' &&
+    typeof secretAccessKey === 'string' &&
+    typeof sessionToken === 'string'
+  ) {
+    return { credentials: { accessKeyId, secretAccessKey, sessionToken } };
+  }
+  return null;
+}
+
 type AwsPartition = 'aws' | 'aws-us-gov';
 
 function awsPartitionForRegion(region: string): AwsPartition {
@@ -95,6 +132,18 @@ export async function assumeAwsSession(
   );
   if (!inputs) return null;
   const { roleArn, externalId, regions } = inputs;
+
+  // If the CHECK runner already resolved a session in ECS (the cross-account
+  // assume cannot run in the Trigger.dev runtime, which lacks base AWS creds and
+  // the roleAssumer ARN), use it directly. An injected error surfaces the real
+  // failure reason via the caller's "Could not assume AWS role" finding.
+  const injected = readInjectedAwsSession(
+    ctx.credentials as Record<string, unknown>,
+  );
+  if (injected) {
+    if ('error' in injected) throw new Error(injected.error);
+    return { credentials: injected.credentials, regions };
+  }
 
   // IAM is global — assume once in the first region; the creds work everywhere.
   const region = regions[0];

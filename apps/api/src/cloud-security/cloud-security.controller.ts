@@ -17,6 +17,7 @@ import { ApiOperation } from '@nestjs/swagger';
 import { SkipThrottle } from '@nestjs/throttler';
 import { HybridAuthGuard } from '../auth/hybrid-auth.guard';
 import { PermissionGuard } from '../auth/permission.guard';
+import { ServiceTokenOnlyGuard } from '../auth/service-token-only.guard';
 import { RequirePermission } from '../auth/require-permission.decorator';
 import { OrganizationId } from '../auth/auth-context.decorator';
 import {
@@ -252,6 +253,31 @@ export class CloudSecurityController {
       organizationId,
     );
     return { data: definition };
+  }
+
+  @Post('resolve-session/:connectionId')
+  @SkipThrottle()
+  @UseGuards(HybridAuthGuard, ServiceTokenOnlyGuard, PermissionGuard)
+  @RequirePermission('integration', 'update')
+  @ApiOperation({
+    summary:
+      'Resolve short-lived AWS credentials for a connection (internal only)',
+  })
+  async resolveSession(
+    @Param('connectionId') connectionId: string,
+    @OrganizationId() organizationId: string,
+  ) {
+    try {
+      return await this.cloudSecurityService.resolveAwsSession(
+        connectionId,
+        organizationId,
+      );
+    } catch (error) {
+      if (error instanceof ConnectionNotFoundError) {
+        throw new HttpException('Connection not found', HttpStatus.NOT_FOUND);
+      }
+      throw error;
+    }
   }
 
   @Post('scan/:connectionId')

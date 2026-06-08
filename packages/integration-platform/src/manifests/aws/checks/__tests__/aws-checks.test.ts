@@ -14,9 +14,77 @@ import {
   evaluateRdsEncryption,
 } from '../rds';
 import { evaluateS3Encryption, evaluateS3PublicAccess } from '../s3';
-import { resolveAwsCredentialInputs } from '../shared';
+import { assumeAwsSession, resolveAwsCredentialInputs } from '../shared';
 
 const kinds = (os: { kind: string }[]) => os.map((o) => o.kind);
+
+// Minimal CheckContext stub — assumeAwsSession only reads ctx.credentials.
+const ctxWith = (credentials: Record<string, unknown>) =>
+  ({ credentials }) as unknown as Parameters<typeof assumeAwsSession>[0];
+
+describe('assumeAwsSession — ECS-resolved session injection (CHECK path)', () => {
+  const base = {
+    roleArn: 'arn:aws:iam::123456789012:role/x',
+    externalId: 'eid',
+    regions: ['us-east-1', 'eu-west-1'],
+  };
+
+  it('uses injected ECS-resolved credentials directly (no STS, no env needed)', async () => {
+    const session = await assumeAwsSession(
+      ctxWith({
+        ...base,
+        __resolvedAccessKeyId: 'AKIA_TEMP',
+        __resolvedSecretAccessKey: 'secret_temp',
+        __resolvedSessionToken: 'token_temp',
+      }),
+    );
+    expect(session).toEqual({
+      credentials: {
+        accessKeyId: 'AKIA_TEMP',
+        secretAccessKey: 'secret_temp',
+        sessionToken: 'token_temp',
+      },
+      regions: ['us-east-1', 'eu-west-1'],
+    });
+  });
+
+  it('throws the injected error so the caller surfaces the real reason', async () => {
+    await expect(
+      assumeAwsSession(
+        ctxWith({
+          ...base,
+          __resolvedSessionError: 'The cross-account IAM role could not be assumed.',
+        }),
+      ),
+    ).rejects.toThrow('The cross-account IAM role could not be assumed.');
+  });
+
+  it('returns null for a not-configured connection even if creds are injected', async () => {
+    const session = await assumeAwsSession(
+      ctxWith({
+        externalId: 'eid', // roleArn missing -> not configured
+        __resolvedAccessKeyId: 'AKIA_TEMP',
+        __resolvedSecretAccessKey: 'secret_temp',
+        __resolvedSessionToken: 'token_temp',
+      }),
+    );
+    expect(session).toBeNull();
+  });
+
+  it('falls back to the in-runtime two-hop when nothing is injected (ECS/dev path)', async () => {
+    const prev = process.env.SECURITY_HUB_ROLE_ASSUMER_ARN;
+    delete process.env.SECURITY_HUB_ROLE_ASSUMER_ARN;
+    try {
+      // No injected creds + no roleAssumer env -> the fallback runs and fails
+      // fast (before any STS call), proving the original path is preserved.
+      await expect(assumeAwsSession(ctxWith(base))).rejects.toThrow(
+        /SECURITY_HUB_ROLE_ASSUMER_ARN/,
+      );
+    } finally {
+      if (prev !== undefined) process.env.SECURITY_HUB_ROLE_ASSUMER_ARN = prev;
+    }
+  });
+});
 
 describe('AWS credential resolution (regions shape)', () => {
   const base = { roleArn: 'arn:aws:iam::123456789012:role/x', externalId: 'eid' };
