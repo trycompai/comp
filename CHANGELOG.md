@@ -1,3 +1,18 @@
+# [3.74.0](https://github.com/trycompai/comp/compare/v3.73.3...v3.74.0) (2026-06-08)
+
+
+### Bug Fixes
+
+* **cloud-security:** deterministically pin the metric-filter log group (remove AI dependency) ([2e7e6ba](https://github.com/trycompai/comp/commit/2e7e6bab04e5958da27e41730c5a7dfcf2443e2b))
+* **cloud-security:** resolve the real CloudTrail log group for cloudwatch metric-filter auto-fix ([04c45e9](https://github.com/trycompai/comp/commit/04c45e970a22ece15b37554890f6884ee1535769))
+* **integration-platform:** surface postgres ssl-config read failures as "could not verify" ([bec693a](https://github.com/trycompai/comp/commit/bec693a33ad62ef3c7902ef4772ceb3cc638035f))
+
+
+### Features
+
+* **integration-platform:** add azure mysql flexible server tls check ([030d25c](https://github.com/trycompai/comp/commit/030d25c644f31700476a8f96df0cdfb2a90ffce3))
+* **integration-platform:** add azure postgresql flexible server tls check ([a992862](https://github.com/trycompai/comp/commit/a992862af3b40a6da1de74a5d467c1f4b97bf738))
+
 ## [3.73.3](https://github.com/trycompai/comp/compare/v3.73.2...v3.73.3) (2026-06-08)
 
 
