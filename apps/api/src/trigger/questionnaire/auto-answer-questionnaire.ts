@@ -96,6 +96,7 @@ export const autoAnswerQuestionnaireTask = task({
       }
       await saveGeneratedAnswer({
         questionnaireId,
+        organizationId,
         questionIndex: toAnswer[i].questionIndex,
         answer: result.answer,
         sources: result.sources,

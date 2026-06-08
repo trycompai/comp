@@ -1,0 +1,191 @@
+:root {
+  --comp-primary: #00dc73;
+  --comp-primary-strong: #009e54;
+  color: #111827;
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+body {
+  margin: 0;
+  width: 360px;
+}
+
+button,
+select {
+  font: inherit;
+}
+
+.shell {
+  display: grid;
+  gap: 14px;
+  padding: 16px;
+}
+
+.header {
+  align-items: center;
+  display: flex;
+  gap: 12px;
+}
+
+.brand-mark {
+  display: inline-flex;
+  flex: none;
+  height: 24px;
+  width: 24px;
+}
+
+.brand-mark svg {
+  display: block;
+  fill: #16171b;
+  height: 100%;
+  width: 100%;
+}
+
+.title {
+  font-size: 15px;
+  font-weight: 750;
+  margin: 0;
+}
+
+.subtitle,
+.muted {
+  color: #6b7280;
+  font-size: 12px;
+  line-height: 1.4;
+  margin: 4px 0 0;
+}
+
+.connected {
+  background: #d7f9e7;
+  border-radius: 2px;
+  color: var(--comp-primary-strong);
+  font-size: 10px;
+  font-weight: 800;
+  margin-left: auto;
+  padding: 3px 6px;
+  text-transform: uppercase;
+}
+
+.section {
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  display: grid;
+  gap: 10px;
+  padding: 12px;
+}
+
+.label {
+  color: #374151;
+  display: block;
+  font-size: 12px;
+  font-weight: 700;
+  margin-bottom: 6px;
+}
+
+.no-margin {
+  margin-bottom: 0;
+}
+
+.select {
+  background: #ffffff;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  box-sizing: border-box;
+  color: #111827;
+  min-height: 34px;
+  padding: 6px 8px;
+  width: 100%;
+}
+
+.actions {
+  display: flex;
+  gap: 8px;
+}
+
+.toggle-row {
+  align-items: center;
+  display: flex;
+  justify-content: space-between;
+}
+
+.toggle {
+  background: var(--comp-primary);
+  border: 0;
+  border-radius: 999px;
+  cursor: pointer;
+  height: 22px;
+  padding: 2px;
+  position: relative;
+  width: 38px;
+}
+
+.toggle::after {
+  background: #ffffff;
+  border-radius: 999px;
+  content: "";
+  height: 18px;
+  position: absolute;
+  right: 2px;
+  top: 2px;
+  width: 18px;
+}
+
+.toggle.off {
+  background: #d1d5db;
+}
+
+.toggle.off::after {
+  left: 2px;
+  right: auto;
+}
+
+.button {
+  align-items: center;
+  border-radius: 6px;
+  cursor: pointer;
+  display: inline-flex;
+  font-size: 12px;
+  font-weight: 700;
+  justify-content: center;
+  min-height: 34px;
+  padding: 7px 10px;
+}
+
+.block {
+  width: 100%;
+}
+
+.button-primary {
+  background: #111827;
+  border: 1px solid #111827;
+  color: #ffffff;
+}
+
+.button-secondary {
+  background: #ffffff;
+  border: 1px solid #d1d5db;
+  color: #374151;
+}
+
+.button:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.status {
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  color: #374151;
+  font-size: 12px;
+  line-height: 1.4;
+  padding: 8px;
+}
+
+.helper {
+  color: #6b7280;
+  font-size: 10.5px;
+  line-height: 1.45;
+  margin: 0;
+  text-align: center;
+}

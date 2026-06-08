@@ -7286,9 +7286,9 @@
           "metadata": {
             "title": "List compliance policies | Comp AI API",
             "sidebarTitle": "List compliance policies",
-            "description": "Lists active compliance policies by default. Use includeArchived=true to include archived rows.",
+            "description": "Lists active compliance policies by default. Use includeArchived=true to include archived rows and excludeContent=true when you only need policy metadata.",
             "og:title": "List compliance policies | Comp AI API",
-            "og:description": "Lists active compliance policies by default. Use includeArchived=true to include archived rows."
+            "og:description": "Lists active compliance policies by default. Use includeArchived=true to include archived rows and excludeContent=true when you only need policy metadata."
           }
         },
         "x-codeSamples": [
@@ -7364,7 +7364,6 @@
                   "signedBy": [],
                   "reviewDate": "2024-12-31T00:00:00.000Z",
                   "isArchived": false,
-                  "archivedAt": null,
                   "createdAt": "2024-01-01T00:00:00.000Z",
                   "updatedAt": "2024-01-15T00:00:00.000Z",
                   "organizationId": "org_abc123def456",
@@ -8486,7 +8485,6 @@
                   ],
                   "reviewDate": "2024-12-31T00:00:00.000Z",
                   "isArchived": false,
-                  "archivedAt": null,
                   "createdAt": "2024-01-01T00:00:00.000Z",
                   "updatedAt": "2024-01-15T00:00:00.000Z",
                   "organizationId": "org_abc123def456",
@@ -16716,6 +16714,7 @@
     },
     "/v1/questionnaire/answer-single": {
       "post": {
+        "description": "Generate an answer for one security questionnaire item using the organization evidence library and return source references for review.",
         "operationId": "QuestionnaireController_answerSingleQuestion_v1",
         "parameters": [],
         "requestBody": {
@@ -16782,7 +16781,6 @@
         "tags": [
           "Questionnaire"
         ],
-        "description": "Generate an answer for one security questionnaire item using the organization evidence library and return source references for review.",
         "x-mint": {
           "href": "/api-reference/questionnaire/answer-a-single-questionnaire-question",
           "metadata": {
@@ -22152,7 +22150,7 @@
     },
     "/v1/evidence-forms/{formType}/upload-submission": {
       "post": {
-        "description": "Upload a file as an evidence submission in Comp AI. Collect, review, upload, and export structured evidence submissions for compliance tasks and document requirements.",
+        "description": "Upload a PDF or image file and create a submission for the given form type, bypassing form-specific validation. Accepts session, API key, or service token auth. For API key / service token callers without an explicit user attribution, the.",
         "operationId": "EvidenceFormsController_uploadSubmission_v1",
         "parameters": [
           {
@@ -22194,9 +22192,9 @@
           "metadata": {
             "title": "Upload a file as an evidence submission | Comp AI API",
             "sidebarTitle": "Upload a file as an evidence submission",
-            "description": "Upload a file as an evidence submission in Comp AI. Collect, review, upload, and export structured evidence submissions for compliance tasks and document.",
+            "description": "Upload a PDF or image file and create a submission for the given form type, bypassing form-specific validation. Accepts session, API key, or service token.",
             "og:title": "Upload a file as an evidence submission | Comp AI API",
-            "og:description": "Upload a file as an evidence submission in Comp AI. Collect, review, upload, and export structured evidence submissions for compliance tasks and document."
+            "og:description": "Upload a PDF or image file and create a submission for the given form type, bypassing form-specific validation. Accepts session, API key, or service token."
           }
         },
         "x-speakeasy-mcp": {
@@ -23686,14 +23684,6 @@
             }
           },
           {
-            "name": "frameworkInstanceId",
-            "required": true,
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
             "name": "formType",
             "required": true,
             "in": "path",
@@ -23713,6 +23703,14 @@
                 "network_diagram",
                 "tabletop_exercise"
               ],
+              "type": "string"
+            }
+          },
+          {
+            "name": "frameworkInstanceId",
+            "required": true,
+            "in": "query",
+            "schema": {
               "type": "string"
             }
           }
@@ -28552,7 +28550,41 @@
       },
       "AnswerSingleQuestionDto": {
         "type": "object",
-        "properties": {}
+        "properties": {
+          "question": {
+            "type": "string",
+            "description": "Security questionnaire question to answer.",
+            "example": "Do you encrypt customer data at rest?"
+          },
+          "questionIndex": {
+            "type": "number",
+            "description": "Zero-based index of this question in the questionnaire or page batch.",
+            "example": 0,
+            "minimum": 0
+          },
+          "totalQuestions": {
+            "type": "number",
+            "description": "Total number of questions in the current questionnaire or page batch.",
+            "example": 12,
+            "minimum": 1
+          },
+          "organizationId": {
+            "type": "string",
+            "description": "Organization ID for validation. The API uses the authenticated active organization and overwrites this value server-side.",
+            "example": "org_abc123"
+          },
+          "questionnaireId": {
+            "type": "string",
+            "description": "Optional questionnaire record to save the generated answer into. Omit for webpage-only answer generation.",
+            "example": "qst_abc123"
+          }
+        },
+        "required": [
+          "question",
+          "questionIndex",
+          "totalQuestions",
+          "organizationId"
+        ]
       },
       "SaveAnswerDto": {
         "type": "object",

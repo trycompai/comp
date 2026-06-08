@@ -168,6 +168,7 @@ export async function uploadQuestionnaireFile(params: {
  */
 export async function saveGeneratedAnswer(params: {
   questionnaireId: string;
+  organizationId: string;
   questionIndex: number;
   answer: string;
   sources?: unknown;
@@ -176,8 +177,29 @@ export async function saveGeneratedAnswer(params: {
     where: {
       questionnaireId: params.questionnaireId,
       questionIndex: params.questionIndex,
+      questionnaire: {
+        is: {
+          organizationId: params.organizationId,
+        },
+      },
     },
   });
+
+  if (!question) {
+    const questionnaire = await db.questionnaire.findFirst({
+      where: {
+        id: params.questionnaireId,
+        organizationId: params.organizationId,
+      },
+      select: { id: true },
+    });
+
+    if (!questionnaire) {
+      throw new Error(
+        `Questionnaire ${params.questionnaireId} not found for organization ${params.organizationId}`,
+      );
+    }
+  }
 
   if (question) {
     await db.questionnaireQuestionAnswer.update({

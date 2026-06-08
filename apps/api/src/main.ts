@@ -13,7 +13,7 @@ import {
   PUBLIC_OPENAPI_DESCRIPTION,
   PUBLIC_OPENAPI_TITLE,
 } from './openapi/public-docs-metadata';
-import { isTrustedOrigin } from './auth/auth.server';
+import { corsOriginMiddleware } from './auth/cors-origin.middleware';
 import { adminAuthRateLimiter } from './auth/admin-rate-limit.middleware';
 import { originCheckMiddleware } from './auth/origin-check.middleware';
 import { mkdirSync, writeFileSync, existsSync } from 'fs';
@@ -40,22 +40,9 @@ async function bootstrap(): Promise<void> {
     bodyParser: false,
   });
 
-  // Enable CORS with origin validation.
-  // Uses a callback to support dynamic trust portal subdomains
-  // (e.g. security.trycomp.ai, acme.trust.inc) and verified custom domains.
-  app.enableCors({
-    origin: (origin, callback) => {
-      // Allow requests with no origin (non-browser clients, same-origin, etc.)
-      if (!origin) {
-        return callback(null, true);
-      }
-      isTrustedOrigin(origin)
-        .then((trusted) => callback(null, trusted))
-        .catch(() => callback(null, false));
-    },
-    credentials: true,
-    exposedHeaders: ['Content-Disposition'],
-  });
+  // Enable path-aware CORS with origin validation.
+  // Comp extension origins are allowed only on explicitly supported routes.
+  app.use(corsOriginMiddleware);
 
   // STEP 2: Security headers
   app.use(

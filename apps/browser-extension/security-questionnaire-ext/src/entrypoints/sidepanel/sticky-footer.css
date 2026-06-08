@@ -1,0 +1,26 @@
+body {
+  overflow: hidden;
+}
+
+.shell,
+.panel {
+  height: 100vh;
+  min-height: 0;
+}
+
+.panel {
+  overflow: hidden;
+}
+
+.list {
+  min-height: 0;
+}
+
+.foot {
+  background: #fff;
+  box-shadow: 0 -8px 18px -16px rgb(9 9 11 / 35%);
+  flex: none;
+  position: sticky;
+  bottom: 0;
+  z-index: 2;
+}
