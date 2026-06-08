@@ -290,6 +290,12 @@ export type SyncEmployee = z.infer<typeof SyncEmployeeSchema>;
 export const SyncDefinitionSchema = z.object({
   steps: z.array(DSLStepSchema),
   employeesPath: z.string().default('employees'),
+  /**
+   * For device sync definitions: the scope path that the DSL steps populate
+   * with the standardized device list. Defaults to `devices`. Ignored by the
+   * employee interpreter (which uses `employeesPath`).
+   */
+  devicesPath: z.string().optional().default('devices'),
   variables: z.array(VariableSchema).optional(),
   /**
    * Whether this provider is authoritative for "who works here" (directory of record).
@@ -307,6 +313,25 @@ export const SyncDefinitionSchema = z.object({
 });
 
 export type SyncDefinition = z.infer<typeof SyncDefinitionSchema>;
+
+// ============================================================================
+// Sync Device Schema (for dynamic device sync)
+// ============================================================================
+
+export const SyncDeviceSchema = z.object({
+  name: z.string(),
+  platform: z.enum(['macos', 'windows', 'linux']),
+  serialNumber: z.string().optional(),
+  hostname: z.string().optional(),
+  osVersion: z.string().optional(),
+  hardwareModel: z.string().optional(),
+  userEmail: z.string(),
+  status: z.enum(['active', 'inactive']),
+  externalId: z.string().optional(),
+  metadata: z.record(z.string(), z.unknown()).optional(),
+});
+
+export type SyncDevice = z.infer<typeof SyncDeviceSchema>;
 
 // ============================================================================
 // Dynamic Integration Definition (full manifest + checks as JSON)
@@ -335,9 +360,12 @@ export const DynamicIntegrationDefinitionSchema = z.object({
     type: z.enum(['oauth2', 'api_key', 'basic', 'jwt', 'custom']),
     config: z.record(z.string(), z.unknown()),
   }),
-  capabilities: z.array(z.enum(['checks', 'webhook', 'sync'])).default(['checks']),
+  capabilities: z
+    .array(z.enum(['checks', 'webhook', 'sync', 'device_sync']))
+    .default(['checks']),
   supportsMultipleConnections: z.boolean().optional(),
   syncDefinition: SyncDefinitionSchema.optional(),
+  deviceSyncDefinition: SyncDefinitionSchema.optional(),
   services: z.array(
     z.object({
       id: z.string(),

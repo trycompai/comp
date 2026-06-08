@@ -1,4 +1,11 @@
 import type { IntegrationManifest } from '../../types';
+import {
+  cloudSqlBackupsCheck,
+  cloudSqlSslCheck,
+  iamPrimitiveRolesCheck,
+  storagePublicAccessCheck,
+  vpcOpenFirewallsCheck,
+} from './checks';
 
 export const gcpManifest: IntegrationManifest = {
   id: 'gcp',
@@ -82,6 +89,7 @@ This is industry standard - all GCP security monitoring tools use the same scope
     { id: 'bigquery', name: 'BigQuery', description: 'Dataset encryption and public access checks', enabledByDefault: false, implemented: true },
     { id: 'pubsub', name: 'Pub/Sub', description: 'Topic encryption configuration checks', enabledByDefault: false, implemented: true },
     { id: 'cloud-armor', name: 'Cloud Armor', description: 'SSL policy strength and WAF configuration checks', enabledByDefault: false, implemented: true },
+    { id: 'vertex-ai', name: 'Vertex AI', description: 'Vertex AI and Workbench checks — encryption (CMEK), public access, and notebook exposure. Requires SCC Premium or Enterprise.', enabledByDefault: false, implemented: true },
   ],
 
   // Integration-level variables (used by cloud security scanning)
@@ -145,5 +153,11 @@ This is industry standard - all GCP security monitoring tools use the same scope
     },
   ],
 
-  checks: [],
+  checks: [
+    iamPrimitiveRolesCheck,
+    storagePublicAccessCheck,
+    vpcOpenFirewallsCheck,
+    cloudSqlSslCheck,
+    cloudSqlBackupsCheck,
+  ],
 };

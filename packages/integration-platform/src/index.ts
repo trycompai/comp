@@ -99,6 +99,7 @@ export {
 export {
   interpretDeclarativeCheck,
   interpretDeclarativeSync,
+  interpretDeclarativeDeviceSync,
   evaluateCondition,
   evaluateOperator,
   resolvePath,
@@ -107,6 +108,7 @@ export {
   validateIntegrationDefinition,
   CheckDefinitionSchema,
   SyncEmployeeSchema,
+  SyncDeviceSchema,
   SyncDefinitionSchema,
   DynamicIntegrationDefinitionSchema,
   ConditionSchema,
@@ -119,6 +121,7 @@ export type {
   CodeStep,
   CheckDefinition,
   SyncEmployee,
+  SyncDevice,
   SyncDefinition,
   Condition,
   DynamicIntegrationDefinition,
@@ -141,6 +144,13 @@ export {
   normalizeAwsEnvironment,
 } from './manifests/aws/credentials';
 export type { AwsEnvironment } from './manifests/aws/credentials';
+
+// Shared AWS STS AssumeRole retry (transient / IAM-eventual-consistency safe),
+// reused by the Cloud Tests scanner in apps/api.
+export {
+  retryAssume,
+  isRetryableAssumeError,
+} from './manifests/aws/checks/assume-retry';
 
 
 // API Response types (for frontend and API type sharing)

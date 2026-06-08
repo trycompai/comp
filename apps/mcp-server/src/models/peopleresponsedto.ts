@@ -3,7 +3,6 @@
  */
 
 import * as z from "zod";
-import { ClosedEnum } from "../types/enums.js";
 import {
   BackgroundCheckSummaryDto,
   BackgroundCheckSummaryDto$zodSchema,
@@ -12,35 +11,6 @@ import {
   UserResponseDto,
   UserResponseDto$zodSchema,
 } from "./userresponsedto.js";
-
-/**
- * Member department
- */
-export const PeopleResponseDtoDepartment = {
-  None: "none",
-  Admin: "admin",
-  Gov: "gov",
-  Hr: "hr",
-  It: "it",
-  Itsm: "itsm",
-  Qms: "qms",
-} as const;
-/**
- * Member department
- */
-export type PeopleResponseDtoDepartment = ClosedEnum<
-  typeof PeopleResponseDtoDepartment
->;
-
-export const PeopleResponseDtoDepartment$zodSchema = z.enum([
-  "none",
-  "admin",
-  "gov",
-  "hr",
-  "it",
-  "itsm",
-  "qms",
-]).describe("Member department");
 
 /**
  * Job title for the member
@@ -66,7 +36,7 @@ export type PeopleResponseDto = {
   userId: string;
   role: string;
   createdAt: string;
-  department: PeopleResponseDtoDepartment;
+  department: string;
   jobTitle: JobTitle | null;
   isActive: boolean;
   deactivated: boolean;
@@ -83,8 +53,8 @@ export const PeopleResponseDto$zodSchema: z.ZodType<PeopleResponseDto> = z
       "When the member was created",
     ),
     deactivated: z.boolean().describe("Whether member is deactivated"),
-    department: PeopleResponseDtoDepartment$zodSchema.describe(
-      "Member department",
+    department: z.string().describe(
+      "Member department. May be one of the built-in values (none, admin, gov, hr, it, itsm, qms) or a custom department name.",
     ),
     fleetDmLabelId: z.lazy(() => PeopleResponseDtoFleetDmLabelId$zodSchema)
       .nullable().describe("FleetDM label ID for member devices"),

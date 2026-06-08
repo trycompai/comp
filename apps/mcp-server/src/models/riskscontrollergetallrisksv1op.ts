@@ -101,35 +101,6 @@ export const QueryParamCategory$zodSchema = z.enum([
   "vendor_management",
 ]).describe("Filter by category");
 
-/**
- * Filter by department
- */
-export const RisksControllerGetAllRisksV1Department = {
-  None: "none",
-  Admin: "admin",
-  Gov: "gov",
-  Hr: "hr",
-  It: "it",
-  Itsm: "itsm",
-  Qms: "qms",
-} as const;
-/**
- * Filter by department
- */
-export type RisksControllerGetAllRisksV1Department = ClosedEnum<
-  typeof RisksControllerGetAllRisksV1Department
->;
-
-export const RisksControllerGetAllRisksV1Department$zodSchema = z.enum([
-  "none",
-  "admin",
-  "gov",
-  "hr",
-  "it",
-  "itsm",
-  "qms",
-]).describe("Filter by department");
-
 export type RisksControllerGetAllRisksV1Request = {
   title?: string | undefined;
   page?: number | undefined;
@@ -138,7 +109,7 @@ export type RisksControllerGetAllRisksV1Request = {
   sortDirection?: SortDirection | undefined;
   status?: RisksControllerGetAllRisksV1QueryParamStatus | undefined;
   category?: QueryParamCategory | undefined;
-  department?: RisksControllerGetAllRisksV1Department | undefined;
+  department?: string | undefined;
   assigneeId?: string | undefined;
 };
 
@@ -149,8 +120,9 @@ export const RisksControllerGetAllRisksV1Request$zodSchema: z.ZodType<
   category: QueryParamCategory$zodSchema.optional().describe(
     "Filter by category",
   ),
-  department: RisksControllerGetAllRisksV1Department$zodSchema.optional()
-    .describe("Filter by department"),
+  department: z.string().describe(
+    "Filter by department. Built-in values: none, admin, gov, hr, it, itsm, qms. Custom department names are also accepted.",
+  ).optional(),
   page: z.number().default(1).describe("Page number (1-indexed)"),
   perPage: z.number().default(50).describe("Number of items per page"),
   sort: Sort$zodSchema.default("createdAt").describe("Sort by field"),

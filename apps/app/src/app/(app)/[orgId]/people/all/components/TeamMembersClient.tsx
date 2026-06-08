@@ -205,9 +205,12 @@ export function TeamMembersClient({
     }
   };
 
-  const handleRemoveMember = async (memberId: string) => {
+  const handleRemoveMember = async (
+    memberId: string,
+    options: { skipOffboarding: boolean },
+  ) => {
     try {
-      await removeMember(memberId);
+      await removeMember(memberId, options);
       toast.success('Member has been removed from the organization');
       router.refresh();
     } catch (error) {

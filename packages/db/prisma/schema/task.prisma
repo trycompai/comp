@@ -8,7 +8,7 @@ model Task {
   frequency                    TaskFrequency?
   integrationScheduleFrequency TaskFrequency        @default(daily)
   integrationLastRunAt         DateTime?
-  department                   Departments?         @default(none)
+  department                   String?              @default("none")
   order                        Int                  @default(0)
 
   // Dates

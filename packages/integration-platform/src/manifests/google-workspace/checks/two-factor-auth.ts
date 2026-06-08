@@ -15,6 +15,7 @@ export const twoFactorAuthCheck: IntegrationCheck = {
   id: 'two-factor-auth',
   name: '2-Step Verification Enabled',
   description: 'Verify all users have 2-Step Verification (2FA) enabled in Google Workspace',
+  service: 'mfa-compliance',
   taskMapping: TASK_TEMPLATES.twoFactorAuth,
   variables: [targetOrgUnitsVariable, includeSuspendedVariable],
 

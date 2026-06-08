@@ -1,3 +1,189 @@
+## [3.73.3](https://github.com/trycompai/comp/compare/v3.73.2...v3.73.3) (2026-06-08)
+
+
+### Bug Fixes
+
+* **cloud-tests:** scroll connection-settings account tabs when they overflow ([75f8360](https://github.com/trycompai/comp/commit/75f836006744adfa8aa2f7a0414dfec696c6fde0))
+
+## [3.73.2](https://github.com/trycompai/comp/compare/v3.73.1...v3.73.2) (2026-06-08)
+
+
+### Bug Fixes
+
+* **cloud-security:** resolve aws check-path session in ecs, not trigger.dev ([b0bcd21](https://github.com/trycompai/comp/commit/b0bcd2118dc195fb2ba6c1057c70bfcdebc1bc98))
+* **cloud-security:** retry transient AssumeRole failures (first-scan "could not assume role") ([28ca06e](https://github.com/trycompai/comp/commit/28ca06e56c350230cae6444348bbbcb25a962f80))
+
+## [3.73.1](https://github.com/trycompai/comp/compare/v3.73.0...v3.73.1) (2026-06-05)
+
+
+### Bug Fixes
+
+* **cloud-security:** allow an empty filterPattern for PutMetricFilter validation ([f8f2908](https://github.com/trycompai/comp/commit/f8f2908f64080d9510d2473690934f75052d0fb7))
+* **cloud-security:** make cloudwatch metric-filter auto-fix reliable ([837ecde](https://github.com/trycompai/comp/commit/837ecde24df60453cdd331e672385a69e9842c7b))
+* **cloud-security:** reconcile conflicting logGroupName guidance in fix prompt ([e7af1ec](https://github.com/trycompai/comp/commit/e7af1ec0e4edc473cabffb5e9336e8fae87a47e5))
+
+# [3.73.0](https://github.com/trycompai/comp/compare/v3.72.0...v3.73.0) (2026-06-05)
+
+
+### Bug Fixes
+
+* **evidence-export:** harden bulk-export trigger task against worker OOM + retry storms ([5fe1538](https://github.com/trycompai/comp/commit/5fe153891c3c7cb3988c2d91517a9de3bb96699b))
+* **evidence-export:** repair bulk-export progress UI (dialog trap, silent failures, invalid hook option) ([e91c547](https://github.com/trycompai/comp/commit/e91c547053d6a82e8ac4b0a1f5dbb1593b0252f1))
+* **evidence-export:** stream runs through PDF/JSON generation to prevent OOM ([15b40aa](https://github.com/trycompai/comp/commit/15b40aa17ef674f5760f5caf715d573281abcb35))
+
+
+### Features
+
+* **evidence-export:** offload bulk export to Trigger.dev background task ([dd5a2f0](https://github.com/trycompai/comp/commit/dd5a2f059d2d1121548d3c0fdd783550818bbab1))
+
+# [3.72.0](https://github.com/trycompai/comp/compare/v3.71.0...v3.72.0) (2026-06-05)
+
+
+### Bug Fixes
+
+* **api:** accept presigned s3Key for MCP uploads (attachment/document/evidence) ([a7ffbb7](https://github.com/trycompai/comp/commit/a7ffbb792b2e5fdb881708ed0c35f0f62d8018f0))
+* **api:** cap inline upload base64 at the true 100MB limit (UI-safe) ([f076789](https://github.com/trycompai/comp/commit/f07678999e0efe5b74531f6b925ddeb877427c3e))
+* **api:** guard presigned-upload reads against oversized files ([4e167b0](https://github.com/trycompai/comp/commit/4e167b0f662ff1aed52c85391950a7856237e66d))
+* **api:** harden task automations for MCP/API clients ([0f92e4e](https://github.com/trycompai/comp/commit/0f92e4e6b9add712e9a1513ac586f8d99e55ccc4)), closes [#3042](https://github.com/trycompai/comp/issues/3042)
+* **api:** reject whitespace-only scriptKey in CreateVersionDto ([4bf5454](https://github.com/trycompai/comp/commit/4bf5454e34eca1bbfe5bdc9f231c62932b612c66))
+* **cloud-security:** scope cloud tests findings to the selected account ([98a4fa2](https://github.com/trycompai/comp/commit/98a4fa20a38047f8d5d6d6e3c68f332139f99179))
+
+
+### Features
+
+* **cloud-security:** label the cloud tests connection selector ([2d1404e](https://github.com/trycompai/comp/commit/2d1404ed5abfcc0fa28a95ada5680365ee55535b))
+
+# [3.71.0](https://github.com/trycompai/comp/compare/v3.70.4...v3.71.0) (2026-06-05)
+
+
+### Bug Fixes
+
+* **cloud-security:** scan neptune via rds api with the rds: iam namespace ([64b9137](https://github.com/trycompai/comp/commit/64b9137e8c0e172caf963d3874027732ee8549f2))
+
+
+### Features
+
+* **cloud-security:** add Amazon Neptune as an AWS Cloud Tests service ([66f5c46](https://github.com/trycompai/comp/commit/66f5c468c00df0e5d5282fd632369a050af8e8bc))
+* **cloud-security:** add Vertex AI as a GCP Cloud Tests service ([d4161b1](https://github.com/trycompai/comp/commit/d4161b17c74c2d07a70c98a276c2610199088b6a))
+
+## [3.70.4](https://github.com/trycompai/comp/compare/v3.70.3...v3.70.4) (2026-06-04)
+
+
+### Bug Fixes
+
+* **cloud-security:** address cubic review — prompt command consistency + retry selection ([432fd39](https://github.com/trycompai/comp/commit/432fd391c3123787f6f788f8043ffbb9fc32aca5))
+* **cloud-security:** port remediation robustness fixes to GCP and Azure ([10611bc](https://github.com/trycompai/comp/commit/10611bcd527fe6bda914ae9a367b8a7fbb85c40e))
+* **cloud-security:** support AWS Config new recording model in checks + auto-remediation ([d30d98b](https://github.com/trycompai/comp/commit/d30d98bbef23df15d9c64093f5a79c61ef814848))
+
+## [3.70.3](https://github.com/trycompai/comp/compare/v3.70.2...v3.70.3) (2026-06-04)
+
+
+### Bug Fixes
+
+* **api:** revert oauth2 spec scheme to restore the MCP generator ([64978f5](https://github.com/trycompai/comp/commit/64978f542adcfb4747fe204dabf5de7d5b1e5ae3)), closes [#2961](https://github.com/trycompai/comp/issues/2961) [#2961](https://github.com/trycompai/comp/issues/2961) [pre-#2961](https://github.com/pre-/issues/2961) [#2955](https://github.com/trycompai/comp/issues/2955) [hi#value](https://github.com/hi/issues/value)
+
+## [3.70.2](https://github.com/trycompai/comp/compare/v3.70.1...v3.70.2) (2026-06-04)
+
+
+### Bug Fixes
+
+* **api:** update endpoint to skip offboarding when removing the member ([69464a2](https://github.com/trycompai/comp/commit/69464a2b0f328f2afea378b6480bad631175e04a))
+* **app:** skip offboarding when removing the member ([16a60b6](https://github.com/trycompai/comp/commit/16a60b623bc903a8d02c19f8752f6a8eccbafe00))
+* **integration-platform:** pass storage check when firewall denies by default ([225cd6b](https://github.com/trycompai/comp/commit/225cd6bb9baec891f1c3295fda7b85193420ff65))
+
+## [3.70.1](https://github.com/trycompai/comp/compare/v3.70.0...v3.70.1) (2026-06-04)
+
+
+### Bug Fixes
+
+* **api:** reject whitespace-only department filter in GetRisksQueryDto ([289ffee](https://github.com/trycompai/comp/commit/289ffee4a0a909992c5c330ab24a46dc87440abd))
+* **api:** update member, risk and task endpoints to support custom departments ([cc9611a](https://github.com/trycompai/comp/commit/cc9611ac1d374dd2b562fb9c4c8f78d8ebf64a4e))
+* **api:** update policy endpoints to support custom departments ([2d9f2ea](https://github.com/trycompai/comp/commit/2d9f2ea80d17554a70d970903041498725c6de78))
+* **api:** update validation of department in CreateTaskDto ([25bc02a](https://github.com/trycompai/comp/commit/25bc02a5eabf8a50fb1d08098d95e26e3276cf1f))
+* **app:** allow custom department strings in risk/policy forms and embedding ([dd01c64](https://github.com/trycompai/comp/commit/dd01c640c3f5a7a1d47a64a2e21fd269fe0c756d))
+* **app:** enforce 64-char limit on custom department input ([75856a2](https://github.com/trycompai/comp/commit/75856a2f7bba91c82b0b6e6d22eb151a41f2c21b))
+* **app:** prevent custom department sentinel from colliding with real values ([88a8420](https://github.com/trycompai/comp/commit/88a842020befe162d52b25892fe843cca56474ff))
+* **app:** update departments select in policy details page ([84510e0](https://github.com/trycompai/comp/commit/84510e0cad188ef2a898d02fcb4b2024b61963c4))
+* **app:** update departments validation for updatePolicyFormSchema ([5be7e52](https://github.com/trycompai/comp/commit/5be7e525b3f4a9835d9b012095b611e250a92110))
+* **app:** update UI to support cusotm departments on People, Task, and Risk pages ([c879d4e](https://github.com/trycompai/comp/commit/c879d4e14e81183517bb902d960dc0494bedaaed))
+* **db:** change departments field type to string for member, risk and task models ([1409aae](https://github.com/trycompai/comp/commit/1409aae9a45a9f2215b8c2c0702432a27ef53f02))
+* **db:** change departments type of policy model ([cb456c6](https://github.com/trycompai/comp/commit/cb456c608233a78e728e4f9c09da24fc23411534))
+
+# [3.70.0](https://github.com/trycompai/comp/compare/v3.69.0...v3.70.0) (2026-06-04)
+
+
+### Bug Fixes
+
+* **api:** address code review issues in GenericDeviceSyncService ([8a87d91](https://github.com/trycompai/comp/commit/8a87d91f8937a7ad2917f300d4eb7d5add6a2553))
+* **device-sync:** address Cubic review feedback on device sync ([601f70a](https://github.com/trycompai/comp/commit/601f70a2d7be15ab3c3c8d70c60f10dacf2e92d8))
+* **integration-platform:** address device-sync review round 2 ([7559906](https://github.com/trycompai/comp/commit/75599066f01fcd68e8c0e6e2fda3609db78a50d8))
+* **integration-platform:** address device-sync review round 3 ([40a8b25](https://github.com/trycompai/comp/commit/40a8b25dbd03dd17997f7bbb718e95f5b510a36d))
+* **integration-platform:** make dynamic device sync functional and safe ([68f8012](https://github.com/trycompai/comp/commit/68f8012b74fb4dee2da87326b707678bd1adb4aa)), closes [#2802](https://github.com/trycompai/comp/issues/2802)
+* **integration-platform:** reject malformed device-sync provider with 400 ([5c4d7af](https://github.com/trycompai/comp/commit/5c4d7af54171c9b824b8ec1ff25ac3739f642cab))
+* **trigger:** remove duplicate success field in device sync task ([7e1b680](https://github.com/trycompai/comp/commit/7e1b680955603b5387348c71e78b37bab7c743a0))
+
+
+### Features
+
+* **api:** add device sync discovery, provider selection, and trigger endpoints ([7adc931](https://github.com/trycompai/comp/commit/7adc9317d9647d61f0078cb5130050591fd9d1c6))
+* **api:** add GenericDeviceSyncService with tests ([4602f99](https://github.com/trycompai/comp/commit/4602f9978c3b4c5106e69a9f223bef39993ffa0d))
+* **api:** validate deviceSyncDefinition on dynamic integration upsert ([6c44c18](https://github.com/trycompai/comp/commit/6c44c184b315bbdf7337e83faee491cf42e992a3))
+* **app:** add device sync provider selector to Devices tab ([6b1456f](https://github.com/trycompai/comp/commit/6b1456f7778f788ce453ef7f0c5bdd35305594ae))
+* **db:** add device sync fields to Device, Organization, and DynamicIntegration ([b9e7188](https://github.com/trycompai/comp/commit/b9e7188e2ddad66f780237e52020b994171a126d))
+* **integration-platform:** add device_sync capability and SyncDevice schema ([31975ff](https://github.com/trycompai/comp/commit/31975ff3c4af28d41d51fe9b676ef0deaa42e2e6))
+* **trigger:** add scheduled device sync to daily integration checks ([59c57df](https://github.com/trycompai/comp/commit/59c57dfbff5599e920cce8634fc7b2a53f6d8df5))
+
+# [3.69.0](https://github.com/trycompai/comp/compare/v3.68.0...v3.69.0) (2026-06-03)
+
+
+### Bug Fixes
+
+* **api:** pass trusted organization to getSetup service ([5108839](https://github.com/trycompai/comp/commit/5108839ecfe8988f96cadac8ddc42bb1b47d3fe3))
+* **api:** update permission of ensure-setup endpoint to allow auditor to access SoA ([dd5a801](https://github.com/trycompai/comp/commit/dd5a801749128a3b5a60198682ebd3f3a33417f4))
+* **app:** show empty state instead of spinner when soa setup missing ([eace526](https://github.com/trycompai/comp/commit/eace5265e2b94843343727a9502b4f19b150ba6e))
+* **app:** use get-setup endpoint for auditor role on SoA ([0256e81](https://github.com/trycompai/comp/commit/0256e81cb904db4f7913b496d0521efa7fd5b783))
+
+
+### Features
+
+* **api:** create get-setup endpoint for audit:read permission ([c1e6215](https://github.com/trycompai/comp/commit/c1e62158573d8adfb5135691ce0c87d15d2d7926))
+
+# [3.68.0](https://github.com/trycompai/comp/compare/v3.67.0...v3.68.0) (2026-06-03)
+
+
+### Bug Fixes
+
+* **app:** count only added evidence tasks on the service card ([f6048a2](https://github.com/trycompai/comp/commit/f6048a218cffc8ec9698c3f3ad3ba602dc4125bb))
+* **app:** hide evidence tasks not added to the org in integration views ([0b55cd2](https://github.com/trycompai/comp/commit/0b55cd2a048dc989ba83ba98baf13d6ed7a54700))
+* **app:** keep addedTemplateIds undefined when taskTemplates absent ([8e6f4ef](https://github.com/trycompai/comp/commit/8e6f4efdf6349003255306b13cdcd239f1818853))
+* **app:** keep integration check dropdowns open ([0d7c7fe](https://github.com/trycompai/comp/commit/0d7c7fe601bfb2b69af7998f4600d6ca0213685b))
+* **integration-platform:** address cubic review of d59e4c7ca (2 P2s) ([4a6b64a](https://github.com/trycompai/comp/commit/4a6b64a8003f8c801a93279c0ae48a1465ea8a66))
+* **integration-platform:** address cubic round-4 review (27 findings) ([a467ff9](https://github.com/trycompai/comp/commit/a467ff9edf878de396bdd2e3a9182690b288f20d))
+* **integration-platform:** align Azure diagnostic-export evidence with enabled logs ([ecc98cf](https://github.com/trycompai/comp/commit/ecc98cf8615037535bdb0f939e3cdb9004e68b8e))
+* **integration-platform:** assume AWS customer role via the roleAssumer (two-hop) ([23e68d2](https://github.com/trycompai/comp/commit/23e68d293d989e58ad1b739747080f47ff93c7e4)), closes [#3003](https://github.com/trycompai/comp/issues/3003)
+* **integration-platform:** attach evidence to all IAM/CloudTrail check outcomes ([7624405](https://github.com/trycompai/comp/commit/762440511406a787cd48dba9d48fcffb14285544))
+* **integration-platform:** close GCP IAM silent pass, harden CloudTrail region, tag per-service checks ([cdde662](https://github.com/trycompai/comp/commit/cdde66214e95259c4d6fe1b926ce976b6916c841))
+* **integration-platform:** enrich evidence with the determining value on every check outcome ([2d09795](https://github.com/trycompai/comp/commit/2d09795db4f5aa6a7e49ec830777144f1cb2c923))
+* **integration-platform:** extend round-4 patterns to sibling check files ([6ef7ad0](https://github.com/trycompai/comp/commit/6ef7ad0705afc525e0337a5ecea689419cd3ca45))
+* **integration-platform:** include out-of-scope role defs in azure rbac wildcard scan ([05d1cce](https://github.com/trycompai/comp/commit/05d1cce0a7ebc90f9564c82b7221941f5772d5a6)), closes [hi#privilege](https://github.com/hi/issues/privilege)
+* **integration-platform:** never let a read failure end as a silent/false verdict ([d59e4c7](https://github.com/trycompai/comp/commit/d59e4c7ca5f2b754fe553d92fca568e62cc1dace))
+* **integration-platform:** preserve array credential fields so AWS evidence checks see regions ([777fe9d](https://github.com/trycompai/comp/commit/777fe9d8c5d86075ee6e2505049a1dab3a38c171))
+* **integration-platform:** resolve 3 P1s from cubic review of fix commits ([3ec918a](https://github.com/trycompai/comp/commit/3ec918ad14a57b59cace4805673cbac303d14096))
+* **integration-platform:** resolve 4 cubic findings (RBAC gate + read-error states) ([b1b5579](https://github.com/trycompai/comp/commit/b1b55791eddd69ecb15f6a30de15f060b0ac7080))
+* **integration-platform:** resolve cubic findings on latest commit (4 of 5) ([239aea4](https://github.com/trycompai/comp/commit/239aea4b131ac5492afc26c9fc23d2b5208753c9))
+* **integrations:** address cubic 2nd-pass review (10 findings) ([d1c6368](https://github.com/trycompai/comp/commit/d1c63688278febad0f5ee8d98151ea3a8efe008f))
+* **integrations:** address cubic review — fix 30 verified cloud-check bugs ([5f6bebc](https://github.com/trycompai/comp/commit/5f6bebc9329e2e6dfc8e8ffd5d39de03cd43bf6d))
+* **integrations:** cubic 3rd-pass — scan continuity, Aurora backups, IPv6 wording ([220982b](https://github.com/trycompai/comp/commit/220982bc7c734824b544a3fd2b9f1728cc39021d))
+* **integrations:** harden oauth refresh handling ([20041cf](https://github.com/trycompai/comp/commit/20041cf0e3a3a918950c7ff2e6a5293b33fc2bf5))
+* **integrations:** make config dropdown clickable via pointer-events, not portal={false} ([ffa5c91](https://github.com/trycompai/comp/commit/ffa5c917d57c01ec2f3a8e1aee3af28d8cbc8e5e))
+* **integrations:** refresh oauth tokens during checks ([8960820](https://github.com/trycompai/comp/commit/89608203c2ee396f0d388a52be09b9e00d652f4d))
+* **integrations:** render config dropdowns inline so they work inside the modal ([a93f479](https://github.com/trycompai/comp/commit/a93f4793f1bb9e658b30f8349f1cc5225965ce51))
+
+
+### Features
+
+* **integrations:** add cloud services as evidence integrations (GCP/Azure/AWS) ([665f454](https://github.com/trycompai/comp/commit/665f4549184879e35f2ae8288827d72ffbf9de23))
+
 # [3.67.0](https://github.com/trycompai/comp/compare/v3.66.2...v3.67.0) (2026-06-02)
 
 

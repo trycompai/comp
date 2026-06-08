@@ -24,6 +24,7 @@ export const monitoringAlertingCheck: IntegrationCheck = {
   id: 'monitoring-alerting',
   name: 'Monitoring & Alerting Review',
   description: 'Verify webhooks and notifications are configured for deployment monitoring',
+  service: 'monitoring',
   taskMapping: TASK_TEMPLATES.monitoringAlerting,
   variables: [projectFilterModeVariable, filteredProjectsVariable],
 

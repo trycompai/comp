@@ -11,6 +11,7 @@ export enum UploadPurpose {
   policyPdf = 'policy_pdf',
   evidence = 'evidence',
   attachment = 'attachment',
+  document = 'document',
   general = 'general',
 }
 

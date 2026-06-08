@@ -41,35 +41,6 @@ export const UpdateRiskDtoCategory$zodSchema = z.enum([
 ]).describe("Risk category");
 
 /**
- * Department responsible for the risk
- */
-export const UpdateRiskDtoDepartment = {
-  None: "none",
-  Admin: "admin",
-  Gov: "gov",
-  Hr: "hr",
-  It: "it",
-  Itsm: "itsm",
-  Qms: "qms",
-} as const;
-/**
- * Department responsible for the risk
- */
-export type UpdateRiskDtoDepartment = ClosedEnum<
-  typeof UpdateRiskDtoDepartment
->;
-
-export const UpdateRiskDtoDepartment$zodSchema = z.enum([
-  "none",
-  "admin",
-  "gov",
-  "hr",
-  "it",
-  "itsm",
-  "qms",
-]).describe("Department responsible for the risk");
-
-/**
  * Current status of the risk
  */
 export const UpdateRiskDtoStatus = {
@@ -215,7 +186,7 @@ export type UpdateRiskDto = {
   title?: string | undefined;
   description?: string | undefined;
   category?: UpdateRiskDtoCategory | undefined;
-  department?: UpdateRiskDtoDepartment | undefined;
+  department?: string | undefined;
   status?: UpdateRiskDtoStatus | undefined;
   likelihood?: UpdateRiskDtoLikelihood | undefined;
   impact?: UpdateRiskDtoImpact | undefined;
@@ -233,8 +204,8 @@ export const UpdateRiskDto$zodSchema: z.ZodType<UpdateRiskDto> = z.object({
   category: UpdateRiskDtoCategory$zodSchema.optional().describe(
     "Risk category",
   ),
-  department: UpdateRiskDtoDepartment$zodSchema.optional().describe(
-    "Department responsible for the risk",
+  department: z.string().optional().describe(
+    "Department responsible for the risk. Built-in values: none, admin, gov, hr, it, itsm, qms. Custom department names are also accepted.",
   ),
   description: z.string().optional().describe(
     "Detailed description of the risk",

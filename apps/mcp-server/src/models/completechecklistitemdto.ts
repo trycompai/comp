@@ -8,14 +8,16 @@ export type CompleteChecklistItemDto = {
   notes?: string | undefined;
   fileName?: string | undefined;
   fileType?: string | undefined;
-  fileData?: string | undefined;
+  s3Key?: string | undefined;
 };
 
 export const CompleteChecklistItemDto$zodSchema: z.ZodType<
   CompleteChecklistItemDto
 > = z.object({
-  fileData: z.string().optional().describe("Base64 encoded evidence file"),
   fileName: z.string().optional().describe("Evidence file name"),
   fileType: z.string().optional().describe("Evidence file MIME type"),
   notes: z.string().optional().describe("Optional notes"),
+  s3Key: z.string().optional().describe(
+    "Key of an evidence file already uploaded via /v1/uploads/presign (purpose=evidence). The server fetches the bytes from storage — no base64 needed. Provide fileData or s3Key (not both).",
+  ),
 });

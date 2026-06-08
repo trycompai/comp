@@ -7,7 +7,7 @@ import * as z from "zod";
 export type UploadAttachmentDto = {
   fileName: string;
   fileType: string;
-  fileData: string;
+  s3Key?: string | undefined;
   description?: string | undefined;
   userId?: string | undefined;
 };
@@ -17,9 +17,11 @@ export const UploadAttachmentDto$zodSchema: z.ZodType<UploadAttachmentDto> = z
     description: z.string().optional().describe(
       "Description of the attachment",
     ),
-    fileData: z.string().describe("Base64 encoded file data"),
     fileName: z.string().describe("Name of the file"),
     fileType: z.string().describe("MIME type of the file"),
+    s3Key: z.string().optional().describe(
+      "Key of a file already uploaded via /v1/uploads/presign (purpose=attachment). The server fetches the bytes from storage — no base64 needed. Provide exactly one of fileData or s3Key.",
+    ),
     userId: z.string().optional().describe(
       "User ID of the user uploading the attachment (required for API key auth, ignored for JWT auth)",
     ),

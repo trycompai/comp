@@ -1,5 +1,12 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsString, IsNotEmpty, IsOptional, IsEnum } from 'class-validator';
+import { Transform } from 'class-transformer';
+import {
+  IsString,
+  IsNotEmpty,
+  IsOptional,
+  IsEnum,
+  MaxLength,
+} from 'class-validator';
 import {
   RiskCategory,
   Departments,
@@ -8,6 +15,7 @@ import {
   Impact,
   RiskTreatmentType,
 } from '@db';
+import { DEPARTMENT_MAX_LENGTH } from '../../policies/dto/create-policy.dto';
 
 export class CreateRiskDto {
   @ApiProperty({
@@ -36,14 +44,19 @@ export class CreateRiskDto {
   category: RiskCategory;
 
   @ApiProperty({
-    description: 'Department responsible for the risk',
-    enum: Departments,
+    description:
+      'Department responsible for the risk. Built-in values: none, admin, gov, hr, it, itsm, qms. Custom department names are also accepted.',
     required: false,
     example: Departments.it,
+    type: 'string',
+    maxLength: DEPARTMENT_MAX_LENGTH,
   })
   @IsOptional()
-  @IsEnum(Departments)
-  department?: Departments;
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(DEPARTMENT_MAX_LENGTH)
+  @Transform(({ value }) => (typeof value === 'string' ? value.trim() : value))
+  department?: string;
 
   @ApiProperty({
     description: 'Current status of the risk',

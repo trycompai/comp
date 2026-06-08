@@ -34,6 +34,10 @@ jest.mock('./run-task-integration-checks', () => ({
   runTaskIntegrationChecks: { batchTrigger: jest.fn() },
 }));
 
+jest.mock('./run-device-sync', () => ({
+  runDeviceSync: { trigger: jest.fn() },
+}));
+
 const atUtc = (iso: string) => new Date(`${iso}T00:00:00.000Z`);
 
 describe('filterDueTasks (integration orchestrator)', () => {

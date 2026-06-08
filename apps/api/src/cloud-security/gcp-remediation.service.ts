@@ -21,6 +21,17 @@ export class GcpRemediationService {
   private readonly PLAN_CACHE_MAX = 100;
   private readonly PLAN_CACHE_TTL = 5 * 60 * 1000;
 
+  /**
+   * A plan is only worth caching/reusing if it can actually be auto-applied.
+   * Caching an empty or non-auto-fixable plan makes "Retry" a guaranteed
+   * no-op: execute would reload the same dead plan and fail identically.
+   */
+  private isUsablePlan(plan: GcpFixPlan | undefined): boolean {
+    return Boolean(
+      plan?.canAutoFix && plan.fixSteps && plan.fixSteps.length > 0,
+    );
+  }
+
   private evictStalePlans() {
     if (this.planCache.size <= this.PLAN_CACHE_MAX) return;
     const now = Date.now();
@@ -137,14 +148,18 @@ export class GcpRemediationService {
             };
           }
 
-          this.evictStalePlans();
-          this.planCache.set(
-            `${params.connectionId}:${params.checkResultId}:${params.remediationKey}`,
-            {
-              plan: refined,
-              timestamp: Date.now(),
-            },
-          );
+          // Never cache an unusable (empty / non-auto-fixable) plan — caching
+          // one turns "Retry" into a no-op that reloads the same dead plan.
+          if (this.isUsablePlan(refined)) {
+            this.evictStalePlans();
+            this.planCache.set(
+              `${params.connectionId}:${params.checkResultId}:${params.remediationKey}`,
+              {
+                plan: refined,
+                timestamp: Date.now(),
+              },
+            );
+          }
 
           return this.buildPreviewResponse(refined);
         } catch {
@@ -153,15 +168,18 @@ export class GcpRemediationService {
       }
     }
 
-    // Fallback: show initial AI plan without real data
-    this.evictStalePlans();
-    this.planCache.set(
-      `${params.connectionId}:${params.checkResultId}:${params.remediationKey}`,
-      {
-        plan,
-        timestamp: Date.now(),
-      },
-    );
+    // Fallback: show initial AI plan without real data. Only cache it when
+    // usable — caching an empty/non-auto-fixable plan makes Retry a no-op.
+    if (this.isUsablePlan(plan)) {
+      this.evictStalePlans();
+      this.planCache.set(
+        `${params.connectionId}:${params.checkResultId}:${params.remediationKey}`,
+        {
+          plan,
+          timestamp: Date.now(),
+        },
+      );
+    }
     return this.buildPreviewResponse(plan);
   }
 
@@ -175,14 +193,20 @@ export class GcpRemediationService {
   }) {
     const { finding, accessToken } = await this.resolveContext(params);
 
-    // Get plan from cache or regenerate
+    // Get plan from cache or regenerate. Only reuse a fresh AND usable plan —
+    // reusing a stale empty / non-auto-fixable plan is what makes "Retry" a
+    // no-op (execute reloads the same dead plan and fails identically).
     let plan: GcpFixPlan;
-    const cached = this.planCache.get(
-      `${params.connectionId}:${params.checkResultId}:${params.remediationKey}`,
-    );
-    if (cached && Date.now() - cached.timestamp < 5 * 60 * 1000) {
+    const cacheKey = `${params.connectionId}:${params.checkResultId}:${params.remediationKey}`;
+    const cached = this.planCache.get(cacheKey);
+    if (
+      cached &&
+      Date.now() - cached.timestamp < this.PLAN_CACHE_TTL &&
+      this.isUsablePlan(cached.plan)
+    ) {
       plan = cached.plan;
     } else {
+      this.planCache.delete(cacheKey);
       const evidence = (finding.evidence ?? {}) as Record<string, unknown>;
       plan = await this.aiRemediationService.generateGcpFixPlan({
         title: finding.title ?? 'Unknown',
@@ -677,9 +701,12 @@ export class GcpRemediationService {
           connectionId,
           {
             tokenUrl: oauthConfig.tokenUrl,
+            refreshUrl: oauthConfig.refreshUrl,
             clientId: oauthCreds.clientId,
             clientSecret: oauthCreds.clientSecret,
             clientAuthMethod: oauthConfig.clientAuthMethod,
+            scope: oauthCreds.scopes.join(' '),
+            tokenParams: oauthConfig.tokenParams,
           },
         );
         if (token) return token;

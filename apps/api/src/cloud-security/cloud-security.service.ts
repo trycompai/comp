@@ -32,6 +32,23 @@ export interface ScanResult {
   error?: string;
 }
 
+/**
+ * Outcome of resolving short-lived AWS session credentials for a connection.
+ * `not_configured` = nothing to do (check should no-op); `assume_failed` = the
+ * assume genuinely failed and the check should surface a finding.
+ */
+export type ResolveAwsSessionResult =
+  | {
+      ok: true;
+      session: {
+        accessKeyId: string;
+        secretAccessKey: string;
+        sessionToken: string;
+      };
+    }
+  | { ok: false; reason: 'not_configured' }
+  | { ok: false; reason: 'assume_failed'; error: string };
+
 export class ConnectionNotFoundError extends Error {
   constructor() {
     super('Connection not found');
@@ -113,9 +130,12 @@ export class CloudSecurityService {
         const accessToken =
           await this.credentialVaultService.getValidAccessToken(connectionId, {
             tokenUrl: oauthConfig.tokenUrl,
+            refreshUrl: oauthConfig.refreshUrl,
             clientId: oauthCreds.clientId,
             clientSecret: oauthCreds.clientSecret,
             clientAuthMethod: oauthConfig.clientAuthMethod,
+            scope: oauthCreds.scopes.join(' '),
+            tokenParams: oauthConfig.tokenParams,
           });
 
         if (!accessToken) {
@@ -385,6 +405,59 @@ export class CloudSecurityService {
         findings: [],
         scannedAt: new Date().toISOString(),
         error: errorMessage,
+      };
+    }
+  }
+
+  /**
+   * Resolve short-lived, customer-scoped AWS credentials for a connection's
+   * IAM role — performed here in ECS, which holds the roleAssumer task role and
+   * the SECURITY_HUB_ROLE_ASSUMER_ARN env.
+   *
+   * The Cloud Tests CHECK path runs in the Trigger.dev runtime, which has no
+   * base AWS credentials or roleAssumer ARN, so it cannot assume the
+   * cross-account role itself. It calls this (via the internal `resolve-session`
+   * endpoint) and injects the returned temp creds into the check credentials,
+   * so the cross-tenant master credential never leaves ECS.
+   *
+   * Org-scoped: a service-token caller cannot resolve another org's connection.
+   */
+  async resolveAwsSession(
+    connectionId: string,
+    organizationId: string,
+  ): Promise<ResolveAwsSessionResult> {
+    const connection = await db.integrationConnection.findFirst({
+      where: { id: connectionId, organizationId, status: 'active' },
+      include: { provider: true },
+    });
+
+    if (!connection) {
+      throw new ConnectionNotFoundError();
+    }
+
+    if (connection.provider.slug !== 'aws') {
+      return { ok: false, reason: 'not_configured' };
+    }
+
+    const decrypted =
+      await this.credentialVaultService.getDecryptedCredentials(connectionId);
+    if (!decrypted || !(decrypted.roleArn && decrypted.externalId)) {
+      return { ok: false, reason: 'not_configured' };
+    }
+
+    const variables = (connection.variables as Record<string, unknown>) || {};
+
+    try {
+      const session = await this.awsService.resolveRoleSession(
+        decrypted,
+        variables,
+      );
+      return { ok: true, session };
+    } catch (error) {
+      return {
+        ok: false,
+        reason: 'assume_failed',
+        error: error instanceof Error ? error.message : String(error),
       };
     }
   }

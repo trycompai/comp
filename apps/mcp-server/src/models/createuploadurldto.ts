@@ -13,6 +13,7 @@ export const Purpose = {
   PolicyPdf: "policy_pdf",
   Evidence: "evidence",
   Attachment: "attachment",
+  Document: "document",
   General: "general",
 } as const;
 /**
@@ -25,6 +26,7 @@ export const Purpose$zodSchema = z.enum([
   "policy_pdf",
   "evidence",
   "attachment",
+  "document",
   "general",
 ]).describe(
   "What the file is for. Controls where the file is stored and which feature is expected to consume the returned s3Key.",

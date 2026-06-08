@@ -24,35 +24,12 @@ export const TasksControllerCreateTaskV1Frequency$zodSchema = z.enum([
   "yearly",
 ]);
 
-export const TasksControllerCreateTaskV1Department = {
-  None: "none",
-  Admin: "admin",
-  Gov: "gov",
-  Hr: "hr",
-  It: "it",
-  Itsm: "itsm",
-  Qms: "qms",
-} as const;
-export type TasksControllerCreateTaskV1Department = ClosedEnum<
-  typeof TasksControllerCreateTaskV1Department
->;
-
-export const TasksControllerCreateTaskV1Department$zodSchema = z.enum([
-  "none",
-  "admin",
-  "gov",
-  "hr",
-  "it",
-  "itsm",
-  "qms",
-]);
-
 export type TasksControllerCreateTaskV1Request = {
   title: string;
   description: string;
   assigneeId?: string | null | undefined;
   frequency?: TasksControllerCreateTaskV1Frequency | null | undefined;
-  department?: TasksControllerCreateTaskV1Department | null | undefined;
+  department?: string | null | undefined;
   controlIds?: Array<string> | undefined;
   taskTemplateId?: string | null | undefined;
   vendorId?: string | null | undefined;
@@ -63,8 +40,9 @@ export const TasksControllerCreateTaskV1Request$zodSchema: z.ZodType<
 > = z.object({
   assigneeId: z.string().nullable().optional(),
   controlIds: z.array(z.string()).optional(),
-  department: TasksControllerCreateTaskV1Department$zodSchema.nullable()
-    .optional(),
+  department: z.string().nullable().optional().describe(
+    "Built-in values: none, admin, gov, hr, it, itsm, qms. Custom department names are also accepted.",
+  ),
   description: z.string(),
   frequency: TasksControllerCreateTaskV1Frequency$zodSchema.nullable()
     .optional(),

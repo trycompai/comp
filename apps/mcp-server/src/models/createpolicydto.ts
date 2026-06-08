@@ -45,42 +45,13 @@ export const CreatePolicyDtoFrequency$zodSchema = z.enum([
   "yearly",
 ]).describe("Review frequency of the policy");
 
-/**
- * Department this policy applies to
- */
-export const CreatePolicyDtoDepartment = {
-  None: "none",
-  Admin: "admin",
-  Gov: "gov",
-  Hr: "hr",
-  It: "it",
-  Itsm: "itsm",
-  Qms: "qms",
-} as const;
-/**
- * Department this policy applies to
- */
-export type CreatePolicyDtoDepartment = ClosedEnum<
-  typeof CreatePolicyDtoDepartment
->;
-
-export const CreatePolicyDtoDepartment$zodSchema = z.enum([
-  "none",
-  "admin",
-  "gov",
-  "hr",
-  "it",
-  "itsm",
-  "qms",
-]).describe("Department this policy applies to");
-
 export type CreatePolicyDto = {
   name: string;
   description?: string | undefined;
   status?: CreatePolicyDtoStatus | undefined;
   content: Array<{ [k: string]: any }>;
   frequency?: CreatePolicyDtoFrequency | undefined;
-  department?: CreatePolicyDtoDepartment | undefined;
+  department?: string | undefined;
   isRequiredToSign?: boolean | undefined;
   reviewDate?: string | undefined;
   assigneeId?: string | undefined;
@@ -99,8 +70,8 @@ export const CreatePolicyDto$zodSchema: z.ZodType<CreatePolicyDto> = z.object({
   content: z.array(z.record(z.string(), z.any())).describe(
     "Content of the policy as TipTap JSON (array of nodes)",
   ),
-  department: CreatePolicyDtoDepartment$zodSchema.optional().describe(
-    "Department this policy applies to",
+  department: z.string().optional().describe(
+    "Department this policy applies to. Built-in values: none, admin, gov, hr, it, itsm, qms. Custom department names are also accepted.",
   ),
   description: z.string().optional().describe("Description of the policy"),
   frequency: CreatePolicyDtoFrequency$zodSchema.optional().describe(

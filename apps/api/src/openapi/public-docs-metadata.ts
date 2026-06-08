@@ -27,13 +27,29 @@ export const PUBLIC_OPENAPI_DESCRIPTION =
 export const PUBLIC_SERVER_URL = 'https://api.trycomp.ai';
 
 /**
- * Name of the OAuth2 security scheme advertised in the public spec. MCP hosts
- * (e.g. Speakeasy Gram) only surface "Sign in with Comp AI" + forward the
- * caller's bearer token to the API when the spec declares an oauth2 scheme;
- * with only the API key, every MCP user would hit the API as one shared
- * identity, bypassing per-user RBAC.
+ * Default request timeout (ms) baked into the generated SDK + MCP server via the
+ * `x-speakeasy-timeout` document-root extension.
+ *
+ * Speakeasy-generated request functions resolve their timeout to
+ * `operationTimeoutMs || clientTimeoutMs || -1`, and `-1` means "no timeout".
+ * Without this, a slow/hung upstream call leaves the MCP server's fetch dangling
+ * forever; the MCP client eventually gives up and marks the whole connection
+ * unhealthy (customer-reported wedging). A finite timeout makes the SDK abort
+ * the request and return a clean error instead, keeping the connection alive.
+ *
+ * 120s comfortably covers our slowest endpoints while staying under the ALB's
+ * 300s idle timeout (comp-private infra/modules/loadbalancer.ts).
  */
-export const MCP_OAUTH_SECURITY_SCHEME = 'oauth2';
+export const PUBLIC_OPENAPI_TIMEOUT_MS = 120_000;
+
+/**
+ * OpenAPIObject (from @nestjs/swagger) has no index signature for `x-*`
+ * extensions at the document root, so we widen it locally instead of reaching
+ * for `as any`.
+ */
+type OpenApiDocumentWithExtensions = OpenAPIObject & {
+  'x-speakeasy-timeout'?: number;
+};
 
 function getVisibilityForOperation(
   operation: OpenApiOperation,
@@ -283,67 +299,6 @@ function applyMcpToolNames(
   }
 }
 
-/**
- * Declare the OAuth2 (authorization code) security scheme and offer it on every
- * operation that already accepts the API key. The scheme points at the
- * better-auth MCP authorization server; the per-operation `security` entries use
- * OR semantics, so an API key OR a Comp AI OAuth token satisfies the request.
- * This is what lets MCP hosts forward each user's bearer token to the API so the
- * existing per-user/per-org RBAC applies, rather than a single shared key.
- */
-function applyMcpOAuthSecurity(document: OpenAPIObject): void {
-  document.components ??= {};
-  document.components.securitySchemes ??= {};
-  document.components.securitySchemes[MCP_OAUTH_SECURITY_SCHEME] = {
-    type: 'oauth2',
-    description:
-      'OAuth 2.1 authorization code flow. Sign in with your Comp AI account — tokens are issued by the Comp AI authorization server and scoped to your organization, role, and permissions.',
-    flows: {
-      authorizationCode: {
-        authorizationUrl: `${PUBLIC_SERVER_URL}/api/auth/mcp/authorize`,
-        tokenUrl: `${PUBLIC_SERVER_URL}/api/auth/mcp/token`,
-        refreshUrl: `${PUBLIC_SERVER_URL}/api/auth/mcp/token`,
-        scopes: {
-          openid: 'OpenID Connect authentication',
-          profile: 'Basic profile information',
-          email: 'Email address',
-          offline_access: 'Maintain access via refresh tokens',
-        },
-      },
-    },
-  };
-
-  for (const methods of Object.values(document.paths)) {
-    for (const operation of Object.values(
-      methods as Record<string, OpenApiOperation>,
-    )) {
-      if (!operation || typeof operation !== 'object') {
-        continue;
-      }
-
-      const security = operation.security;
-      if (!Array.isArray(security)) {
-        continue;
-      }
-
-      const requirements = security as Array<Record<string, string[]>>;
-      const hasApiKey = requirements.some(
-        (req) => req && typeof req === 'object' && 'apikey' in req,
-      );
-      const hasOAuth = requirements.some(
-        (req) =>
-          req && typeof req === 'object' && MCP_OAUTH_SECURITY_SCHEME in req,
-      );
-
-      // Mirror OAuth onto API-key operations only — endpoints that are
-      // intentionally public (empty security) must stay unauthenticated.
-      if (hasApiKey && !hasOAuth) {
-        requirements.push({ [MCP_OAUTH_SECURITY_SCHEME]: [] });
-      }
-    }
-  }
-}
-
 export function applyPublicOpenApiMetadata(document: OpenAPIObject): void {
   document.info.title = PUBLIC_OPENAPI_TITLE;
   document.info.description = PUBLIC_OPENAPI_DESCRIPTION;
@@ -353,6 +308,12 @@ export function applyPublicOpenApiMetadata(document: OpenAPIObject): void {
       description: 'Production API Server',
     },
   ];
+
+  // Bake a finite default request timeout into the generated SDK + MCP server
+  // so a hung upstream call can never wedge the MCP connection. See
+  // PUBLIC_OPENAPI_TIMEOUT_MS for the full rationale.
+  (document as OpenApiDocumentWithExtensions)['x-speakeasy-timeout'] =
+    PUBLIC_OPENAPI_TIMEOUT_MS;
 
   const paths = document.paths as Record<
     string,
@@ -398,7 +359,4 @@ export function applyPublicOpenApiMetadata(document: OpenAPIObject): void {
   addTagMetadata(document);
   removeUnusedSchemas(document);
   sanitizePublicSchemas(document);
-
-  // Add OAuth last so its security scheme isn't touched by schema pruning.
-  applyMcpOAuthSecurity(document);
 }

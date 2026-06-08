@@ -305,6 +305,24 @@ describe('PeopleController', () => {
         'mem_1',
         'org_123',
         'usr_123',
+        { skipOffboarding: false },
+      );
+    });
+
+    it('should pass skipOffboarding=true when query param is "true"', async () => {
+      const deleteResult = {
+        success: true,
+        deletedMember: { id: 'mem_1', name: 'Alice', email: 'alice@test.com' },
+      };
+      mockPeopleService.deleteById.mockResolvedValue(deleteResult);
+
+      await controller.deleteMember('mem_1', 'org_123', mockAuthContext, 'true');
+
+      expect(peopleService.deleteById).toHaveBeenCalledWith(
+        'mem_1',
+        'org_123',
+        'usr_123',
+        { skipOffboarding: true },
       );
     });
   });
