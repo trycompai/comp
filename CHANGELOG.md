@@ -1,3 +1,10 @@
+## [3.73.3](https://github.com/trycompai/comp/compare/v3.73.2...v3.73.3) (2026-06-08)
+
+
+### Bug Fixes
+
+* **cloud-tests:** scroll connection-settings account tabs when they overflow ([75f8360](https://github.com/trycompai/comp/commit/75f836006744adfa8aa2f7a0414dfec696c6fde0))
+
 ## [3.73.2](https://github.com/trycompai/comp/compare/v3.73.1...v3.73.2) (2026-06-08)
 
 
