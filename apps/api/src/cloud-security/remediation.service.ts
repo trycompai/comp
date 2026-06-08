@@ -22,6 +22,7 @@ import {
   buildManualRemediationPreview,
   isManualRemediation,
 } from './manual-remediation';
+import { applyResolvedMetricFilterLogGroup } from './metric-filter-loggroup';
 import type { FixPlan, AwsCommandStep } from './ai-remediation.prompt';
 
 const UNSUPPORTED_S3_ACL_PERMISSIONS = new Set(['s3:PutBucketAcl']);
@@ -278,6 +279,11 @@ export class RemediationService {
               requiresAcknowledgment: undefined,
             };
           }
+
+          // Pin the real CloudTrail log group on metric-filter steps so the
+          // preview matches what execution will actually apply (deterministic,
+          // not AI-dependent).
+          applyResolvedMetricFilterLogGroup(refined.fixSteps, evidence);
 
           // Build the COMPLETE permission list from ALL sources
           const aiPermissions =
@@ -645,6 +651,11 @@ export class RemediationService {
           resourceId: finding.resourceId,
         });
       }
+
+      // Deterministically pin the CloudTrail log group on any PutMetricFilter
+      // step from the finding evidence — the AI must never be the source of
+      // truth for it (this is what failed for the customer before).
+      applyResolvedMetricFilterLogGroup(plannedFix.fixSteps, findingCtx.evidence);
 
       // Phase 3: Execute the refined fix steps (now with REAL values).
       // Pass rollback steps for automatic undo on partial failure.
