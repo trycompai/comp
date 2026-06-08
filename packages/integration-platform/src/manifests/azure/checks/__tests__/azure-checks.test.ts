@@ -13,6 +13,11 @@ import {
   mysqlFlexibleTlsCheck,
 } from '../mysql-flexible';
 import { nsgNoOpenPortsCheck } from '../network';
+import {
+  evaluatePgTls,
+  isPgTlsVersionCompliant,
+  postgresqlFlexibleTlsCheck,
+} from '../postgresql-flexible';
 import { sqlAuditingCheck, sqlPublicAccessCheck, sqlTlsCheck } from '../sql';
 import {
   storageEncryptionCheck,
@@ -489,6 +494,90 @@ describe('Azure MySQL Flexible Server TLS check', () => {
       mysqlFlexibleTlsCheck,
       mysqlFetch('ON', 'TLSv1.2', []),
     );
+    expect(passed).toHaveLength(0);
+    expect(failed).toHaveLength(0);
+  });
+});
+
+// ── PostgreSQL Flexible Server TLS ─────────────────────────────────────────
+
+// Mock fetch for the PostgreSQL TLS check. Pass null for a config to simulate a
+// read failure; pass '' for ssl to simulate an unset floor.
+function pgFetch(
+  requireSecureTransport: string | null,
+  sslMinProtocolVersion: string | null,
+  servers: Array<{ id: string; name: string }> = [
+    {
+      id: '/subscriptions/sub-1/resourceGroups/rg/providers/Microsoft.DBforPostgreSQL/flexibleServers/pg1',
+      name: 'pg1',
+    },
+  ],
+) {
+  return (url: string) => {
+    if (url.includes('/configurations/require_secure_transport')) {
+      if (requireSecureTransport === null) throw new Error('HTTP 403');
+      return { properties: { value: requireSecureTransport } };
+    }
+    if (url.includes('/configurations/ssl_min_protocol_version')) {
+      if (sslMinProtocolVersion === null) return {}; // unset → no value field
+      return { properties: { value: sslMinProtocolVersion } };
+    }
+    if (url.includes('/flexibleServers?')) {
+      return { value: servers };
+    }
+    return {};
+  };
+}
+
+describe('isPgTlsVersionCompliant', () => {
+  it('accepts TLSv1.2 / TLSv1.3 and treats unset as compliant (platform floor is 1.2)', () => {
+    expect(isPgTlsVersionCompliant('TLSv1.2')).toBe(true);
+    expect(isPgTlsVersionCompliant('TLSv1.3')).toBe(true);
+    expect(isPgTlsVersionCompliant('')).toBe(true);
+  });
+
+  it('rejects an explicit sub-1.2 floor', () => {
+    expect(isPgTlsVersionCompliant('TLSv1.1')).toBe(false);
+    expect(isPgTlsVersionCompliant('TLSv1')).toBe(false);
+  });
+});
+
+describe('evaluatePgTls', () => {
+  it('is compliant when secure transport is ON (with set or unset SSL floor)', () => {
+    expect(evaluatePgTls('ON', 'TLSv1.2').compliant).toBe(true);
+    expect(evaluatePgTls('ON', '').compliant).toBe(true);
+    expect(evaluatePgTls('OFF', 'TLSv1.2').compliant).toBe(false);
+  });
+});
+
+describe('Azure PostgreSQL Flexible Server TLS check', () => {
+  it('passes when secure transport is ON and SSL floor is 1.2', async () => {
+    const { passed, failed } = await run(postgresqlFlexibleTlsCheck, pgFetch('ON', 'TLSv1.2'));
+    expect(failed).toHaveLength(0);
+    expect(passed).toHaveLength(1);
+  });
+
+  it('passes when secure transport is ON and ssl_min_protocol_version is unset', async () => {
+    const { passed, failed } = await run(postgresqlFlexibleTlsCheck, pgFetch('ON', null));
+    expect(failed).toHaveLength(0);
+    expect(passed).toHaveLength(1);
+  });
+
+  it('fails when secure transport is OFF', async () => {
+    const { passed, failed } = await run(postgresqlFlexibleTlsCheck, pgFetch('OFF', 'TLSv1.2'));
+    expect(passed).toHaveLength(0);
+    expect(failed).toHaveLength(1);
+  });
+
+  it('emits "could not verify" when require_secure_transport cannot be read', async () => {
+    const { passed, failed } = await run(postgresqlFlexibleTlsCheck, pgFetch(null, 'TLSv1.2'));
+    expect(passed).toHaveLength(0);
+    expect(failed).toHaveLength(1);
+    expect(failed[0]!.title).toMatch(/Could not verify/);
+  });
+
+  it('no-ops when there are no PostgreSQL flexible servers', async () => {
+    const { passed, failed } = await run(postgresqlFlexibleTlsCheck, pgFetch('ON', 'TLSv1.2', []));
     expect(passed).toHaveLength(0);
     expect(failed).toHaveLength(0);
   });
