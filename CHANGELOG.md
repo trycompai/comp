@@ -1,3 +1,11 @@
+## [3.73.2](https://github.com/trycompai/comp/compare/v3.73.1...v3.73.2) (2026-06-08)
+
+
+### Bug Fixes
+
+* **cloud-security:** resolve aws check-path session in ecs, not trigger.dev ([b0bcd21](https://github.com/trycompai/comp/commit/b0bcd2118dc195fb2ba6c1057c70bfcdebc1bc98))
+* **cloud-security:** retry transient AssumeRole failures (first-scan "could not assume role") ([28ca06e](https://github.com/trycompai/comp/commit/28ca06e56c350230cae6444348bbbcb25a962f80))
+
 ## [3.73.1](https://github.com/trycompai/comp/compare/v3.73.0...v3.73.1) (2026-06-05)
 
 
