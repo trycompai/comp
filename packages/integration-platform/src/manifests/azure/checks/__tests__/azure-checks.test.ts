@@ -7,7 +7,17 @@ import type {
 import { rbacLeastPrivilegeCheck } from '../entra-id';
 import { keyVaultProtectionCheck, keyVaultRbacCheck } from '../key-vault';
 import { monitorLoggingAlertingCheck } from '../monitor';
+import {
+  evaluateMySqlTls,
+  isMySqlTlsVersionCompliant,
+  mysqlFlexibleTlsCheck,
+} from '../mysql-flexible';
 import { nsgNoOpenPortsCheck } from '../network';
+import {
+  evaluatePgTls,
+  isPgTlsVersionCompliant,
+  postgresqlFlexibleTlsCheck,
+} from '../postgresql-flexible';
 import { sqlAuditingCheck, sqlPublicAccessCheck, sqlTlsCheck } from '../sql';
 import {
   storageEncryptionCheck,
@@ -382,5 +392,221 @@ describe('Azure ARM pagination safety', () => {
       return { value: [] };
     });
     expect(fetched.some((u) => u.includes('evil'))).toBe(false);
+  });
+});
+
+// ── MySQL Flexible Server TLS ──────────────────────────────────────────────
+
+// Mock fetch for the MySQL TLS check: returns the server list for the
+// flexibleServers list call, and the two configuration GETs (passing null to
+// simulate a config read failure).
+function mysqlFetch(
+  requireSecureTransport: string | null,
+  tlsVersion: string | null,
+  servers: Array<{ id: string; name: string }> = [
+    {
+      id: '/subscriptions/sub-1/resourceGroups/rg/providers/Microsoft.DBforMySQL/flexibleServers/db1',
+      name: 'db1',
+    },
+  ],
+) {
+  return (url: string) => {
+    if (url.includes('/configurations/require_secure_transport')) {
+      if (requireSecureTransport === null) throw new Error('HTTP 403');
+      return { properties: { value: requireSecureTransport } };
+    }
+    if (url.includes('/configurations/tls_version')) {
+      if (tlsVersion === null) throw new Error('HTTP 403');
+      return { properties: { value: tlsVersion } };
+    }
+    if (url.includes('/flexibleServers?')) {
+      return { value: servers };
+    }
+    return {};
+  };
+}
+
+describe('isMySqlTlsVersionCompliant', () => {
+  it('accepts only TLS 1.2+ (single or comma-separated set), case-insensitive', () => {
+    expect(isMySqlTlsVersionCompliant('TLSv1.2')).toBe(true);
+    expect(isMySqlTlsVersionCompliant('TLSv1.2,TLSv1.3')).toBe(true);
+    expect(isMySqlTlsVersionCompliant('tlsv1.3')).toBe(true);
+  });
+
+  it('rejects any set that enables TLS 1.0/1.1, or is empty/unknown', () => {
+    expect(isMySqlTlsVersionCompliant('TLSv1.1,TLSv1.2')).toBe(false);
+    expect(isMySqlTlsVersionCompliant('TLSv1')).toBe(false);
+    expect(isMySqlTlsVersionCompliant('')).toBe(false);
+    expect(isMySqlTlsVersionCompliant('TLSv1.2,Foo')).toBe(false);
+  });
+});
+
+describe('evaluateMySqlTls', () => {
+  it('is compliant only when secure transport is ON and TLS floor is 1.2+', () => {
+    expect(evaluateMySqlTls('ON', 'TLSv1.2').compliant).toBe(true);
+    expect(evaluateMySqlTls('on', 'TLSv1.2,TLSv1.3').compliant).toBe(true);
+    expect(evaluateMySqlTls('OFF', 'TLSv1.2').compliant).toBe(false);
+    expect(evaluateMySqlTls('ON', 'TLSv1.1,TLSv1.2').compliant).toBe(false);
+  });
+});
+
+describe('Azure MySQL Flexible Server TLS check', () => {
+  it('passes when secure transport is ON and TLS >= 1.2', async () => {
+    const { passed, failed } = await run(mysqlFlexibleTlsCheck, mysqlFetch('ON', 'TLSv1.2'));
+    expect(failed).toHaveLength(0);
+    expect(passed).toHaveLength(1);
+  });
+
+  it('passes with the comma-separated TLSv1.2,TLSv1.3 set', async () => {
+    const { passed, failed } = await run(
+      mysqlFlexibleTlsCheck,
+      mysqlFetch('ON', 'TLSv1.2,TLSv1.3'),
+    );
+    expect(failed).toHaveLength(0);
+    expect(passed).toHaveLength(1);
+  });
+
+  it('fails when secure transport is OFF', async () => {
+    const { passed, failed } = await run(mysqlFlexibleTlsCheck, mysqlFetch('OFF', 'TLSv1.2'));
+    expect(passed).toHaveLength(0);
+    expect(failed).toHaveLength(1);
+    expect(failed[0]!.severity).toBe('medium');
+  });
+
+  it('fails when TLS 1.1 is still enabled', async () => {
+    const { passed, failed } = await run(
+      mysqlFlexibleTlsCheck,
+      mysqlFetch('ON', 'TLSv1.1,TLSv1.2'),
+    );
+    expect(passed).toHaveLength(0);
+    expect(failed).toHaveLength(1);
+  });
+
+  it('emits "could not verify" when a config read fails (no false pass)', async () => {
+    const { passed, failed } = await run(mysqlFlexibleTlsCheck, mysqlFetch(null, 'TLSv1.2'));
+    expect(passed).toHaveLength(0);
+    expect(failed).toHaveLength(1);
+    expect(failed[0]!.title).toMatch(/Could not verify/);
+  });
+
+  it('no-ops when there are no MySQL flexible servers (0 passed, 0 failed)', async () => {
+    const { passed, failed } = await run(
+      mysqlFlexibleTlsCheck,
+      mysqlFetch('ON', 'TLSv1.2', []),
+    );
+    expect(passed).toHaveLength(0);
+    expect(failed).toHaveLength(0);
+  });
+});
+
+// ── PostgreSQL Flexible Server TLS ─────────────────────────────────────────
+
+// Mock fetch for the PostgreSQL TLS check. Pass null for a config to simulate a
+// read failure; pass '' for ssl to simulate an unset floor.
+function pgFetch(
+  requireSecureTransport: string | null,
+  sslMinProtocolVersion: string | null,
+  servers: Array<{ id: string; name: string }> = [
+    {
+      id: '/subscriptions/sub-1/resourceGroups/rg/providers/Microsoft.DBforPostgreSQL/flexibleServers/pg1',
+      name: 'pg1',
+    },
+  ],
+) {
+  return (url: string) => {
+    if (url.includes('/configurations/require_secure_transport')) {
+      if (requireSecureTransport === null) throw new Error('HTTP 403');
+      return { properties: { value: requireSecureTransport } };
+    }
+    if (url.includes('/configurations/ssl_min_protocol_version')) {
+      if (sslMinProtocolVersion === null) return {}; // unset → no value field
+      return { properties: { value: sslMinProtocolVersion } };
+    }
+    if (url.includes('/flexibleServers?')) {
+      return { value: servers };
+    }
+    return {};
+  };
+}
+
+describe('isPgTlsVersionCompliant', () => {
+  it('accepts TLSv1.2 / TLSv1.3 and treats unset as compliant (platform floor is 1.2)', () => {
+    expect(isPgTlsVersionCompliant('TLSv1.2')).toBe(true);
+    expect(isPgTlsVersionCompliant('TLSv1.3')).toBe(true);
+    expect(isPgTlsVersionCompliant('')).toBe(true);
+  });
+
+  it('rejects an explicit sub-1.2 floor', () => {
+    expect(isPgTlsVersionCompliant('TLSv1.1')).toBe(false);
+    expect(isPgTlsVersionCompliant('TLSv1')).toBe(false);
+  });
+});
+
+describe('evaluatePgTls', () => {
+  it('is compliant when secure transport is ON (with set or unset SSL floor)', () => {
+    expect(evaluatePgTls('ON', 'TLSv1.2').compliant).toBe(true);
+    expect(evaluatePgTls('ON', '').compliant).toBe(true);
+    expect(evaluatePgTls('OFF', 'TLSv1.2').compliant).toBe(false);
+  });
+});
+
+describe('Azure PostgreSQL Flexible Server TLS check', () => {
+  it('passes when secure transport is ON and SSL floor is 1.2', async () => {
+    const { passed, failed } = await run(postgresqlFlexibleTlsCheck, pgFetch('ON', 'TLSv1.2'));
+    expect(failed).toHaveLength(0);
+    expect(passed).toHaveLength(1);
+  });
+
+  it('passes when secure transport is ON and ssl_min_protocol_version is unset', async () => {
+    const { passed, failed } = await run(postgresqlFlexibleTlsCheck, pgFetch('ON', null));
+    expect(failed).toHaveLength(0);
+    expect(passed).toHaveLength(1);
+  });
+
+  it('fails when secure transport is OFF', async () => {
+    const { passed, failed } = await run(postgresqlFlexibleTlsCheck, pgFetch('OFF', 'TLSv1.2'));
+    expect(passed).toHaveLength(0);
+    expect(failed).toHaveLength(1);
+  });
+
+  it('emits "could not verify" when require_secure_transport cannot be read', async () => {
+    const { passed, failed } = await run(postgresqlFlexibleTlsCheck, pgFetch(null, 'TLSv1.2'));
+    expect(passed).toHaveLength(0);
+    expect(failed).toHaveLength(1);
+    expect(failed[0]!.title).toMatch(/Could not verify/);
+  });
+
+  it('emits "could not verify" when the ssl_min_protocol_version READ fails (not a silent pass)', async () => {
+    // Regression for the cubic finding: a thrown ssl read (permission/transient)
+    // must NOT be coalesced into a compliant result. Distinct from an unset
+    // value, which reads back as "" on a successful response (compliant floor).
+    const { passed, failed } = await run(postgresqlFlexibleTlsCheck, (url: string) => {
+      if (url.includes('/configurations/require_secure_transport')) {
+        return { properties: { value: 'ON' } };
+      }
+      if (url.includes('/configurations/ssl_min_protocol_version')) {
+        throw new Error('HTTP 403');
+      }
+      if (url.includes('/flexibleServers?')) {
+        return {
+          value: [
+            {
+              id: '/subscriptions/sub-1/resourceGroups/rg/providers/Microsoft.DBforPostgreSQL/flexibleServers/pg1',
+              name: 'pg1',
+            },
+          ],
+        };
+      }
+      return {};
+    });
+    expect(passed).toHaveLength(0);
+    expect(failed).toHaveLength(1);
+    expect(failed[0]!.title).toMatch(/Could not verify/);
+  });
+
+  it('no-ops when there are no PostgreSQL flexible servers', async () => {
+    const { passed, failed } = await run(postgresqlFlexibleTlsCheck, pgFetch('ON', 'TLSv1.2', []));
+    expect(passed).toHaveLength(0);
+    expect(failed).toHaveLength(0);
   });
 });
