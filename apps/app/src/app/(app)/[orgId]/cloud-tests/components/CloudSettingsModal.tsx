@@ -121,13 +121,20 @@ export function CloudSettingsModal({
         {/* Provider selector (if multiple) */}
         {connectedProviders.length > 1 && (
           <Tabs value={activeProvider} onValueChange={setActiveProvider}>
-            <TabsList variant="default">
-              {connectedProviders.map((p) => (
-                <TabsTrigger key={p.connectionId} value={p.connectionId}>
-                  {p.name}
-                </TabsTrigger>
-              ))}
-            </TabsList>
+            {/* Scroll the account strip horizontally so connections beyond the
+                modal width stay reachable. TabsList is `w-fit`, so without a
+                width-constrained scroll container it overflows the dialog and
+                the extra accounts get clipped (the modal has overflow-hidden).
+                TabsList doesn't accept className, hence the wrapper. */}
+            <div className="w-full overflow-x-auto">
+              <TabsList variant="default">
+                {connectedProviders.map((p) => (
+                  <TabsTrigger key={p.connectionId} value={p.connectionId}>
+                    {p.name}
+                  </TabsTrigger>
+                ))}
+              </TabsList>
+            </div>
           </Tabs>
         )}
 
