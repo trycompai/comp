@@ -7,6 +7,11 @@ import type {
 import { rbacLeastPrivilegeCheck } from '../entra-id';
 import { keyVaultProtectionCheck, keyVaultRbacCheck } from '../key-vault';
 import { monitorLoggingAlertingCheck } from '../monitor';
+import {
+  evaluateMySqlTls,
+  isMySqlTlsVersionCompliant,
+  mysqlFlexibleTlsCheck,
+} from '../mysql-flexible';
 import { nsgNoOpenPortsCheck } from '../network';
 import { sqlAuditingCheck, sqlPublicAccessCheck, sqlTlsCheck } from '../sql';
 import {
@@ -382,5 +387,109 @@ describe('Azure ARM pagination safety', () => {
       return { value: [] };
     });
     expect(fetched.some((u) => u.includes('evil'))).toBe(false);
+  });
+});
+
+// ── MySQL Flexible Server TLS ──────────────────────────────────────────────
+
+// Mock fetch for the MySQL TLS check: returns the server list for the
+// flexibleServers list call, and the two configuration GETs (passing null to
+// simulate a config read failure).
+function mysqlFetch(
+  requireSecureTransport: string | null,
+  tlsVersion: string | null,
+  servers: Array<{ id: string; name: string }> = [
+    {
+      id: '/subscriptions/sub-1/resourceGroups/rg/providers/Microsoft.DBforMySQL/flexibleServers/db1',
+      name: 'db1',
+    },
+  ],
+) {
+  return (url: string) => {
+    if (url.includes('/configurations/require_secure_transport')) {
+      if (requireSecureTransport === null) throw new Error('HTTP 403');
+      return { properties: { value: requireSecureTransport } };
+    }
+    if (url.includes('/configurations/tls_version')) {
+      if (tlsVersion === null) throw new Error('HTTP 403');
+      return { properties: { value: tlsVersion } };
+    }
+    if (url.includes('/flexibleServers?')) {
+      return { value: servers };
+    }
+    return {};
+  };
+}
+
+describe('isMySqlTlsVersionCompliant', () => {
+  it('accepts only TLS 1.2+ (single or comma-separated set), case-insensitive', () => {
+    expect(isMySqlTlsVersionCompliant('TLSv1.2')).toBe(true);
+    expect(isMySqlTlsVersionCompliant('TLSv1.2,TLSv1.3')).toBe(true);
+    expect(isMySqlTlsVersionCompliant('tlsv1.3')).toBe(true);
+  });
+
+  it('rejects any set that enables TLS 1.0/1.1, or is empty/unknown', () => {
+    expect(isMySqlTlsVersionCompliant('TLSv1.1,TLSv1.2')).toBe(false);
+    expect(isMySqlTlsVersionCompliant('TLSv1')).toBe(false);
+    expect(isMySqlTlsVersionCompliant('')).toBe(false);
+    expect(isMySqlTlsVersionCompliant('TLSv1.2,Foo')).toBe(false);
+  });
+});
+
+describe('evaluateMySqlTls', () => {
+  it('is compliant only when secure transport is ON and TLS floor is 1.2+', () => {
+    expect(evaluateMySqlTls('ON', 'TLSv1.2').compliant).toBe(true);
+    expect(evaluateMySqlTls('on', 'TLSv1.2,TLSv1.3').compliant).toBe(true);
+    expect(evaluateMySqlTls('OFF', 'TLSv1.2').compliant).toBe(false);
+    expect(evaluateMySqlTls('ON', 'TLSv1.1,TLSv1.2').compliant).toBe(false);
+  });
+});
+
+describe('Azure MySQL Flexible Server TLS check', () => {
+  it('passes when secure transport is ON and TLS >= 1.2', async () => {
+    const { passed, failed } = await run(mysqlFlexibleTlsCheck, mysqlFetch('ON', 'TLSv1.2'));
+    expect(failed).toHaveLength(0);
+    expect(passed).toHaveLength(1);
+  });
+
+  it('passes with the comma-separated TLSv1.2,TLSv1.3 set', async () => {
+    const { passed, failed } = await run(
+      mysqlFlexibleTlsCheck,
+      mysqlFetch('ON', 'TLSv1.2,TLSv1.3'),
+    );
+    expect(failed).toHaveLength(0);
+    expect(passed).toHaveLength(1);
+  });
+
+  it('fails when secure transport is OFF', async () => {
+    const { passed, failed } = await run(mysqlFlexibleTlsCheck, mysqlFetch('OFF', 'TLSv1.2'));
+    expect(passed).toHaveLength(0);
+    expect(failed).toHaveLength(1);
+    expect(failed[0]!.severity).toBe('medium');
+  });
+
+  it('fails when TLS 1.1 is still enabled', async () => {
+    const { passed, failed } = await run(
+      mysqlFlexibleTlsCheck,
+      mysqlFetch('ON', 'TLSv1.1,TLSv1.2'),
+    );
+    expect(passed).toHaveLength(0);
+    expect(failed).toHaveLength(1);
+  });
+
+  it('emits "could not verify" when a config read fails (no false pass)', async () => {
+    const { passed, failed } = await run(mysqlFlexibleTlsCheck, mysqlFetch(null, 'TLSv1.2'));
+    expect(passed).toHaveLength(0);
+    expect(failed).toHaveLength(1);
+    expect(failed[0]!.title).toMatch(/Could not verify/);
+  });
+
+  it('no-ops when there are no MySQL flexible servers (0 passed, 0 failed)', async () => {
+    const { passed, failed } = await run(
+      mysqlFlexibleTlsCheck,
+      mysqlFetch('ON', 'TLSv1.2', []),
+    );
+    expect(passed).toHaveLength(0);
+    expect(failed).toHaveLength(0);
   });
 });
