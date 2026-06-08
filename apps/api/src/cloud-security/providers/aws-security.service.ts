@@ -1,5 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { AssumeRoleCommand, STSClient } from '@aws-sdk/client-sts';
+import { retryAssume } from '@trycompai/integration-platform';
 import {
   CostExplorerClient,
   GetCostAndUsageCommand,
@@ -250,6 +251,60 @@ export class AWSSecurityService {
       region: params.primaryRegion,
       partition: params.partition,
     });
+  }
+
+  /**
+   * Resolve short-lived, customer-scoped AWS credentials for a role-auth
+   * connection, using the SAME partition/region normalization and two-hop
+   * assume as a scan. Returns ONLY the temporary session credentials.
+   *
+   * This exists so the Cloud Tests CHECK path can perform the cross-account
+   * assume in ECS (which holds the roleAssumer task role + env), instead of in
+   * the Trigger.dev runtime where no base AWS credentials or roleAssumer ARN
+   * are available. Throws when the connection is not role-auth or the assume
+   * fails — the caller maps those to "not_configured" / "assume_failed".
+   */
+  async resolveRoleSession(
+    credentials: Record<string, unknown>,
+    variables: Record<string, unknown>,
+  ): Promise<{
+    accessKeyId: string;
+    secretAccessKey: string;
+    sessionToken: string;
+  }> {
+    const isRoleAuth = Boolean(credentials.roleArn && credentials.externalId);
+    if (!isRoleAuth) {
+      throw new Error(
+        'AWS connection is not configured for IAM role access (roleArn/externalId missing).',
+      );
+    }
+
+    const partition = normalizeAwsPartition(
+      credentials.awsType ?? variables.awsType,
+    );
+    const configuredRegions = this.getConfiguredRegions(
+      credentials,
+      variables,
+      partition,
+    );
+
+    const session = await this.resolveRoleCredentials({
+      roleArn: credentials.roleArn as string,
+      externalId: credentials.externalId as string,
+      partition,
+      regions: configuredRegions,
+      primaryRegion: configuredRegions[0],
+    });
+
+    if (!session.sessionToken) {
+      throw new Error('Assumed role returned no session token.');
+    }
+
+    return {
+      accessKeyId: session.accessKeyId,
+      secretAccessKey: session.secretAccessKey,
+      sessionToken: session.sessionToken,
+    };
   }
 
   /**
@@ -514,12 +569,14 @@ export class AWSSecurityService {
       region,
       credentials: getAwsBaseCredentials(partition),
     });
-    const roleAssumerResp = await baseSts.send(
-      new AssumeRoleCommand({
-        RoleArn: roleAssumerArn,
-        RoleSessionName: 'CompRoleAssumer',
-        DurationSeconds: 3600,
-      }),
+    const roleAssumerResp = await retryAssume(() =>
+      baseSts.send(
+        new AssumeRoleCommand({
+          RoleArn: roleAssumerArn,
+          RoleSessionName: 'CompRoleAssumer',
+          DurationSeconds: 3600,
+        }),
+      ),
     );
 
     const roleAssumerCreds = roleAssumerResp.Credentials;
@@ -541,13 +598,15 @@ export class AWSSecurityService {
 
     this.logger.log(`Assuming customer role ${roleArn} in region ${region}`);
 
-    const customerResp = await roleAssumerSts.send(
-      new AssumeRoleCommand({
-        RoleArn: roleArn,
-        ExternalId: externalId,
-        RoleSessionName: sessionName ?? 'CompSecurityAudit',
-        DurationSeconds: 3600,
-      }),
+    const customerResp = await retryAssume(() =>
+      roleAssumerSts.send(
+        new AssumeRoleCommand({
+          RoleArn: roleArn,
+          ExternalId: externalId,
+          RoleSessionName: sessionName ?? 'CompSecurityAudit',
+          DurationSeconds: 3600,
+        }),
+      ),
     );
 
     const customerCreds = customerResp.Credentials;
