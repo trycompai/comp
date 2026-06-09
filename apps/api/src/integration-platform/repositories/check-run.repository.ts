@@ -2,6 +2,10 @@ import { Injectable } from '@nestjs/common';
 import { db } from '@db';
 import type { Prisma } from '@db';
 
+/** Default / hard cap for run-history depth per (connection, check) group. */
+const DEFAULT_HISTORY_PER_GROUP = 5;
+const MAX_HISTORY_PER_GROUP = 50;
+
 export interface CreateCheckRunDto {
   connectionId: string;
   taskId?: string;
@@ -164,8 +168,18 @@ export class CheckRunRepository {
    */
   async findLatestPerConnectionAndCheckByTask(
     taskId: string,
-    { historyPerGroup = 5 }: { historyPerGroup?: number } = {},
+    {
+      historyPerGroup = DEFAULT_HISTORY_PER_GROUP,
+    }: { historyPerGroup?: number } = {},
   ) {
+    // `historyPerGroup` can originate from a user-supplied `?limit=` query param
+    // (parsed with parseInt → possibly NaN/negative/huge). Clamp it so it never
+    // produces an invalid `take` (500) or an unbounded, expensive read.
+    const perGroup =
+      Number.isInteger(historyPerGroup) && historyPerGroup > 0
+        ? Math.min(historyPerGroup, MAX_HISTORY_PER_GROUP)
+        : DEFAULT_HISTORY_PER_GROUP;
+
     const include = {
       results: true,
       connection: { include: { provider: true } },
@@ -211,7 +225,7 @@ export class CheckRunRepository {
       where,
       include,
       orderBy: { createdAt: 'desc' },
-      take: groups.length * historyPerGroup,
+      take: groups.length * perGroup,
     });
 
     // Merge + dedupe by id, newest-first (preserves the /runs ordering contract).

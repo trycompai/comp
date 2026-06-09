@@ -199,6 +199,7 @@ describe('TaskIntegrationsController', () => {
         id: 'conn_1',
         organizationId: 'org_1',
         providerId: 'prov_aws',
+        status: 'active',
       });
       mockConnectionRepository.findActiveByProviderAndOrg.mockResolvedValue([
         {
@@ -236,6 +237,7 @@ describe('TaskIntegrationsController', () => {
         id: 'conn_1',
         organizationId: 'org_1',
         providerId: 'prov_aws',
+        status: 'active',
       });
       mockConnectionRepository.findActiveByProviderAndOrg.mockResolvedValue([
         {
@@ -274,6 +276,7 @@ describe('TaskIntegrationsController', () => {
         id: 'conn_1',
         organizationId: 'org_1',
         providerId: 'prov_aws',
+        status: 'active',
       });
       mockConnectionRepository.findActiveByProviderAndOrg.mockResolvedValue([
         {
@@ -309,6 +312,23 @@ describe('TaskIntegrationsController', () => {
       );
       expect(result.accountsRun).toBe(2);
       expect(result.success).toBe(true);
+    });
+
+    it('rejects an inactive referenced connection (never runs a non-active account)', async () => {
+      mockConnectionRepository.findById.mockResolvedValue({
+        id: 'conn_1',
+        organizationId: 'org_1',
+        providerId: 'prov_aws',
+        status: 'paused',
+      });
+
+      await expect(
+        controller.runCheckForTask('task_1', 'org_1', body),
+      ).rejects.toThrow('Connection is not active');
+      expect(
+        mockConnectionRepository.findActiveByProviderAndOrg,
+      ).not.toHaveBeenCalled();
+      expect(mockedRunAllChecks).not.toHaveBeenCalled();
     });
   });
 

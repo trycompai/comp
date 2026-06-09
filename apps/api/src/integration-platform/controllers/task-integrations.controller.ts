@@ -339,6 +339,15 @@ export class TaskIntegrationsController {
       throw new HttpException('Connection not found', HttpStatus.NOT_FOUND);
     }
 
+    // Reject inactive connections up front. This also keeps the fallback below
+    // safe: it can only ever contain a connection we've verified is active.
+    if (referencedConnection.status !== 'active') {
+      throw new HttpException(
+        'Connection is not active',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
     const provider = await this.providerRepository.findById(
       referencedConnection.providerId,
     );
@@ -365,7 +374,7 @@ export class TaskIntegrationsController {
         organizationId,
       );
     // Never run zero accounts: if a status race leaves the active query empty,
-    // fall back to the referenced connection.
+    // fall back to the referenced connection (verified active above).
     const connections =
       activeConnections.length > 0 ? activeConnections : [referencedConnection];
 

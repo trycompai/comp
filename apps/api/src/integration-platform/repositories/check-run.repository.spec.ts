@@ -161,4 +161,47 @@ describe('CheckRunRepository.findLatestPerConnectionAndCheckByTask', () => {
       });
     }
   });
+
+  it('clamps an oversized historyPerGroup to the cap (no unbounded read)', async () => {
+    mockGroupBy.mockResolvedValue([
+      {
+        connectionId: 'A',
+        checkId: 'c',
+        _max: { createdAt: new Date('2026-06-09T15:00:00Z') },
+      },
+    ]);
+    mockFindMany.mockResolvedValue([]);
+
+    await repo.findLatestPerConnectionAndCheckByTask('task_1', {
+      historyPerGroup: 100000,
+    });
+
+    // recent-window query = the findMany WITHOUT an OR clause.
+    const recentCall = mockFindMany.mock.calls.find((c) => !c[0].where.OR);
+    expect(recentCall?.[0].take).toBe(1 * 50); // groups.length(1) * MAX(50)
+  });
+
+  it('falls back to the default for an invalid historyPerGroup (NaN/negative)', async () => {
+    mockGroupBy.mockResolvedValue([
+      {
+        connectionId: 'A',
+        checkId: 'c',
+        _max: { createdAt: new Date('2026-06-09T15:00:00Z') },
+      },
+    ]);
+    mockFindMany.mockResolvedValue([]);
+
+    await repo.findLatestPerConnectionAndCheckByTask('task_1', {
+      historyPerGroup: Number.NaN,
+    });
+    let recentCall = mockFindMany.mock.calls.find((c) => !c[0].where.OR);
+    expect(recentCall?.[0].take).toBe(1 * 5); // default 5
+
+    mockFindMany.mockClear();
+    await repo.findLatestPerConnectionAndCheckByTask('task_1', {
+      historyPerGroup: -10,
+    });
+    recentCall = mockFindMany.mock.calls.find((c) => !c[0].where.OR);
+    expect(recentCall?.[0].take).toBe(1 * 5); // default 5
+  });
 });
