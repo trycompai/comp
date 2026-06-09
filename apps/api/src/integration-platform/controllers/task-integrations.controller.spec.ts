@@ -383,7 +383,7 @@ describe('TaskIntegrationsController', () => {
         ],
       );
 
-      const { runs } = await controller.getTaskCheckRuns('task_1');
+      const { runs } = await controller.getTaskCheckRuns('task_1', 'org_1');
 
       expect(runs).toHaveLength(2);
       expect(runs[0]).toMatchObject({
@@ -394,6 +394,18 @@ describe('TaskIntegrationsController', () => {
         connectionId: 'conn_2',
         connectionLabel: 'AWS 222222222222',
       });
+    });
+
+    it('rejects a task that does not belong to the caller’s org (no cross-tenant leak)', async () => {
+      // Task lookup scoped to { id, organizationId } returns nothing.
+      mockTaskFindUnique.mockResolvedValue(null);
+
+      await expect(
+        controller.getTaskCheckRuns('task_other_org', 'org_1'),
+      ).rejects.toThrow('Task not found');
+      expect(
+        mockCheckRunRepository.findLatestPerConnectionAndCheckByTask,
+      ).not.toHaveBeenCalled();
     });
   });
 });

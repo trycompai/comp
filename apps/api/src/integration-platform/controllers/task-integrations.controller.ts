@@ -705,8 +705,20 @@ export class TaskIntegrationsController {
   @RequirePermission('integration', 'read')
   async getTaskCheckRuns(
     @Param('taskId') taskId: string,
+    @OrganizationId() organizationId: string,
     @Query('limit') limit?: string,
   ) {
+    // Tenant scoping: confirm the task belongs to the caller's org before
+    // returning its check runs. The runs carry account ids, connection labels,
+    // and logs — without this an arbitrary taskId would leak cross-tenant data.
+    const task = await db.task.findUnique({
+      where: { id: taskId, organizationId },
+      select: { id: true },
+    });
+    if (!task) {
+      throw new HttpException('Task not found', HttpStatus.NOT_FOUND);
+    }
+
     // Latest run per (connection, check) is guaranteed present — so a customer
     // with multiple accounts always sees every account, never just the most
     // recently re-run one. `connectionId` + `connectionLabel` let the UI show
