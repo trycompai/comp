@@ -32,6 +32,10 @@ interface StoredCheckRun {
   passedCount: number;
   failedCount: number;
   errorMessage?: string;
+  /** The connection (account) this run belongs to — checks run once per account. */
+  connectionId: string;
+  /** Human-readable account label (e.g. "AWS 123456789012" or a custom name). */
+  connectionLabel: string;
   logs?: Array<{
     level: string;
     message: string;
