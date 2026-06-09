@@ -27,7 +27,6 @@ import {
   getActiveManifests,
   getManifest,
   runAllChecks,
-  type CheckRunResult,
 } from '@trycompai/integration-platform';
 import { ConnectionRepository } from '../repositories/connection.repository';
 import { ProviderRepository } from '../repositories/provider.repository';
@@ -38,8 +37,22 @@ import { TaskIntegrationChecksService } from '../services/task-integration-check
 import { getStringValue } from '../utils/credential-utils';
 import { isCheckDisabledForTask } from '../utils/disabled-task-checks';
 import { getProviderSummary } from '../utils/provider-summary';
+import { getConnectionLabel } from '../utils/connection-label';
 import { db } from '@db';
-import type { Prisma } from '@db';
+import type { IntegrationConnection, Prisma } from '@db';
+
+/** Manifest + check types derived from the integration-platform registry. */
+type IntegrationManifest = NonNullable<ReturnType<typeof getManifest>>;
+type IntegrationCheckDef = NonNullable<IntegrationManifest['checks']>[number];
+
+/** Outcome of running one check against one connection (account). */
+interface ConnectionCheckOutcome {
+  connectionId: string;
+  checkRunId: string;
+  status: 'success' | 'failed' | 'error';
+  findings: number;
+  passing: number;
+}
 
 interface TaskIntegrationCheck {
   integrationId: string;
@@ -291,8 +304,12 @@ export class TaskIntegrationsController {
     @Body() body: RunCheckForTaskDto,
   ): Promise<{
     success: boolean;
-    result?: CheckRunResult;
     error?: string;
+    accountsRun?: number;
+    totalPassing?: number;
+    totalFindings?: number;
+    /** True when at least one account could not be checked (e.g. bad creds). */
+    hadErrors?: boolean;
     checkRunId?: string;
     taskStatus?: string | null;
   }> {
@@ -307,30 +324,23 @@ export class TaskIntegrationsController {
       throw new HttpException('Task not found', HttpStatus.NOT_FOUND);
     }
 
-    // Get connection
-    const connection = await this.connectionRepository.findById(connectionId);
-    if (!connection || connection.organizationId !== organizationId) {
+    // The UI references one connection, but a customer may have several
+    // accounts connected for the same provider (e.g. multiple AWS accounts).
+    // Use the referenced connection only to resolve the provider, then run the
+    // check against EVERY active account of that provider — matching the
+    // scheduler, which already runs each connection. This is why running once
+    // checked only the first account.
+    const referencedConnection =
+      await this.connectionRepository.findById(connectionId);
+    if (
+      !referencedConnection ||
+      referencedConnection.organizationId !== organizationId
+    ) {
       throw new HttpException('Connection not found', HttpStatus.NOT_FOUND);
     }
 
-    if (connection.status !== 'active') {
-      throw new HttpException(
-        'Connection is not active',
-        HttpStatus.BAD_REQUEST,
-      );
-    }
-
-    // Reject runs for checks that have been disconnected from this task.
-    if (isCheckDisabledForTask(connection.metadata, taskId, checkId)) {
-      throw new HttpException(
-        'This check is disconnected from the task. Reconnect it before running.',
-        HttpStatus.BAD_REQUEST,
-      );
-    }
-
-    // Get provider and manifest
     const provider = await this.providerRepository.findById(
-      connection.providerId,
+      referencedConnection.providerId,
     );
     if (!provider) {
       throw new HttpException('Provider not found', HttpStatus.NOT_FOUND);
@@ -341,44 +351,6 @@ export class TaskIntegrationsController {
       throw new HttpException('Manifest not found', HttpStatus.NOT_FOUND);
     }
 
-    // Get credentials
-    const credentials =
-      await this.credentialVaultService.getDecryptedCredentials(connectionId);
-
-    // Validate credentials based on auth type
-    if (!credentials) {
-      throw new HttpException(
-        'No credentials found for connection',
-        HttpStatus.BAD_REQUEST,
-      );
-    }
-
-    // For OAuth, require access_token. For custom auth (like AWS), check for required fields
-    if (manifest.auth.type === 'oauth2' && !credentials.access_token) {
-      throw new HttpException(
-        'No valid OAuth credentials found. Please reconnect.',
-        HttpStatus.BAD_REQUEST,
-      );
-    }
-
-    // For custom auth, the credentials are the form field values directly
-    if (
-      manifest.auth.type === 'custom' &&
-      Object.keys(credentials).length === 0
-    ) {
-      throw new HttpException(
-        'No valid credentials found for custom integration',
-        HttpStatus.BAD_REQUEST,
-      );
-    }
-
-    const variables =
-      (connection.variables as Record<
-        string,
-        string | number | boolean | string[] | undefined
-      >) || {};
-
-    // Find the check definition to get the name
     const checkDef = manifest.checks?.find((c) => c.id === checkId);
     if (!checkDef) {
       throw new HttpException(
@@ -387,26 +359,161 @@ export class TaskIntegrationsController {
       );
     }
 
-    // Build token refresh callback for OAuth integrations that support it
-    let onTokenRefresh: (() => Promise<string | null>) | undefined;
-    if (manifest.auth.type === 'oauth2') {
-      const oauthConfig = manifest.auth.config;
+    const activeConnections =
+      await this.connectionRepository.findActiveByProviderAndOrg(
+        provider.id,
+        organizationId,
+      );
+    // Never run zero accounts: if a status race leaves the active query empty,
+    // fall back to the referenced connection.
+    const connections =
+      activeConnections.length > 0 ? activeConnections : [referencedConnection];
 
-      // Only set up refresh callback if provider supports refresh tokens
-      const supportsRefresh = oauthConfig.supportsRefreshToken !== false;
+    let totalFindings = 0;
+    let totalPassing = 0;
+    let accountsRun = 0;
+    let hasExecutionError = false;
+    let lastCheckRunId: string | undefined;
 
-      if (supportsRefresh) {
-        const oauthCredentials =
-          await this.oauthCredentialsService.getCredentials(
-            provider.slug,
-            organizationId,
-          );
+    // Sequential so each per-account run commits as it completes — a slow or
+    // failing account still leaves the earlier accounts' results persisted.
+    for (const conn of connections) {
+      // Respect a check that was disconnected from this task for this account.
+      if (isCheckDisabledForTask(conn.metadata, taskId, checkId)) {
+        continue;
+      }
+      const outcome = await this.runCheckForConnection({
+        connection: conn,
+        manifest,
+        checkDef,
+        taskId,
+        organizationId,
+      });
+      accountsRun += 1;
+      totalFindings += outcome.findings;
+      totalPassing += outcome.passing;
+      if (outcome.status === 'error') hasExecutionError = true;
+      lastCheckRunId = outcome.checkRunId;
+    }
 
-        if (oauthCredentials) {
-          onTokenRefresh = async () => {
-            return this.credentialVaultService.refreshOAuthTokens(
-              connectionId,
-              {
+    if (accountsRun === 0) {
+      throw new HttpException(
+        'This check is disconnected from the task. Reconnect it before running.',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    // Aggregate task status across ALL accounts: any finding anywhere → failed;
+    // else any passing result → done; else leave unchanged. This replaces the
+    // old single-run update and removes the previous last-writer race.
+    const newStatus =
+      totalFindings > 0 ? 'failed' : totalPassing > 0 ? 'done' : null;
+
+    if (newStatus) {
+      const isTransitioningToDone =
+        newStatus === 'done' && task.status !== 'done';
+
+      let reviewDate: Date | undefined;
+      if (isTransitioningToDone && task.frequency) {
+        reviewDate = new Date();
+        switch (task.frequency) {
+          case 'monthly':
+            reviewDate.setMonth(reviewDate.getMonth() + 1);
+            break;
+          case 'quarterly':
+            reviewDate.setMonth(reviewDate.getMonth() + 3);
+            break;
+          case 'yearly':
+            reviewDate.setFullYear(reviewDate.getFullYear() + 1);
+            break;
+        }
+      }
+
+      await db.task.update({
+        where: { id: taskId },
+        data: {
+          status: newStatus,
+          ...(reviewDate ? { reviewDate } : {}),
+        },
+      });
+      this.logger.log(
+        `Updated task ${taskId} status to ${newStatus} across ${accountsRun} account(s)${reviewDate ? `, next review: ${reviewDate.toISOString()}` : ''}`,
+      );
+    }
+
+    return {
+      success: true,
+      accountsRun,
+      totalPassing,
+      totalFindings,
+      hadErrors: hasExecutionError,
+      checkRunId: lastCheckRunId,
+      taskStatus: newStatus,
+    };
+  }
+
+  /**
+   * Run one check against ONE connection (account) and persist the run +
+   * results. Resilient: any failure (missing credentials, execution error) is
+   * recorded on the check run and returned as an outcome rather than thrown, so
+   * a caller looping over multiple accounts is never aborted by one bad
+   * account. Does NOT update task status — the caller aggregates across
+   * accounts.
+   */
+  private async runCheckForConnection(params: {
+    connection: IntegrationConnection;
+    manifest: IntegrationManifest;
+    checkDef: IntegrationCheckDef;
+    taskId: string;
+    organizationId: string;
+  }): Promise<ConnectionCheckOutcome> {
+    const { connection, manifest, checkDef, taskId, organizationId } = params;
+    const connectionId = connection.id;
+
+    // Create the run up front so even an account that fails credential
+    // validation still produces a visible (failed) run row for that account.
+    const checkRun = await this.checkRunRepository.create({
+      connectionId,
+      taskId,
+      checkId: checkDef.id,
+      checkName: checkDef.name,
+    });
+
+    try {
+      const credentials =
+        await this.credentialVaultService.getDecryptedCredentials(connectionId);
+
+      if (
+        !credentials ||
+        (manifest.auth.type === 'oauth2' && !credentials.access_token) ||
+        (manifest.auth.type === 'custom' &&
+          Object.keys(credentials).length === 0)
+      ) {
+        throw new Error(
+          'No valid credentials found for this connection. Reconnect the integration.',
+        );
+      }
+
+      const variables =
+        (connection.variables as Record<
+          string,
+          string | number | boolean | string[] | undefined
+        >) || {};
+
+      // Build token refresh callback for OAuth integrations that support it.
+      let onTokenRefresh: (() => Promise<string | null>) | undefined;
+      if (manifest.auth.type === 'oauth2') {
+        const oauthConfig = manifest.auth.config;
+        const supportsRefresh = oauthConfig.supportsRefreshToken !== false;
+        if (supportsRefresh) {
+          const oauthCredentials =
+            await this.oauthCredentialsService.getCredentials(
+              manifest.id,
+              organizationId,
+            );
+          if (oauthCredentials) {
+            onTokenRefresh = async () =>
+              this.credentialVaultService.refreshOAuthTokens(connectionId, {
                 tokenUrl: oauthConfig.tokenUrl,
                 refreshUrl: oauthConfig.refreshUrl,
                 clientId: oauthCredentials.clientId,
@@ -414,23 +521,11 @@ export class TaskIntegrationsController {
                 clientAuthMethod: oauthConfig.clientAuthMethod,
                 scope: oauthCredentials.scopes.join(' '),
                 tokenParams: oauthConfig.tokenParams,
-              },
-            );
-          };
+              });
+          }
         }
       }
-    }
 
-    // Create check run record
-    const checkRun = await this.checkRunRepository.create({
-      connectionId,
-      taskId,
-      checkId,
-      checkName: checkDef.name,
-    });
-
-    try {
-      // Run the specific check
       const accessToken = getStringValue(credentials.access_token);
       const result = await runAllChecks({
         manifest,
@@ -442,7 +537,7 @@ export class TaskIntegrationsController {
         variables,
         connectionId,
         organizationId,
-        checkId, // Only run this specific check
+        checkId: checkDef.id, // Only run this specific check
         onTokenRefresh,
         logger: {
           info: (msg, data) => this.logger.log(msg, data),
@@ -452,7 +547,6 @@ export class TaskIntegrationsController {
       });
 
       const checkResult = result.results[0];
-
       if (!checkResult) {
         await this.checkRunRepository.complete(checkRun.id, {
           status: 'failed',
@@ -462,12 +556,16 @@ export class TaskIntegrationsController {
           failedCount: 0,
           errorMessage: 'Check not found in manifest',
         });
-        return { success: false, error: 'Check not found' };
+        return {
+          connectionId,
+          checkRunId: checkRun.id,
+          status: 'error',
+          findings: 0,
+          passing: 0,
+        };
       }
 
-      // Store individual results
       const resultsToStore = [
-        // Passing results
         ...checkResult.result.passingResults.map((r) => ({
           checkRunId: checkRun.id,
           passed: true,
@@ -477,7 +575,6 @@ export class TaskIntegrationsController {
           description: r.description,
           evidence: r.evidence as Prisma.InputJsonValue,
         })),
-        // Findings (failures)
         ...checkResult.result.findings.map((f) => ({
           checkRunId: checkRun.id,
           passed: false,
@@ -485,12 +582,7 @@ export class TaskIntegrationsController {
           resourceId: f.resourceId,
           title: f.title,
           description: f.description,
-          severity: f.severity as
-            | 'info'
-            | 'low'
-            | 'medium'
-            | 'high'
-            | 'critical',
+          severity: f.severity,
           remediation: f.remediation,
           evidence: f.evidence as Prisma.InputJsonValue,
         })),
@@ -500,7 +592,6 @@ export class TaskIntegrationsController {
         await this.checkRunRepository.addResults(resultsToStore);
       }
 
-      // Complete the check run
       await this.checkRunRepository.complete(checkRun.id, {
         status: checkResult.status === 'error' ? 'failed' : checkResult.status,
         durationMs: checkResult.durationMs,
@@ -517,70 +608,36 @@ export class TaskIntegrationsController {
       });
 
       this.logger.log(
-        `Check ${checkId} for task ${taskId}: ${checkResult.status} - ${checkResult.result.findings.length} findings, ${checkResult.result.passingResults.length} passing`,
+        `Check ${checkDef.id} for task ${taskId} (connection ${connectionId}): ${checkResult.status} - ${checkResult.result.findings.length} findings, ${checkResult.result.passingResults.length} passing`,
       );
 
-      // Update task status based on check results
-      const hasFindings = checkResult.result.findings.length > 0;
-      const hasPassing = checkResult.result.passingResults.length > 0;
-      const newStatus = hasFindings ? 'failed' : hasPassing ? 'done' : null;
-
-      if (newStatus) {
-        // Only update review date if transitioning to done from a different status
-        const isTransitioningToDone =
-          newStatus === 'done' && task.status !== 'done';
-
-        // Calculate next review date based on frequency
-        let reviewDate: Date | undefined;
-        if (isTransitioningToDone && task.frequency) {
-          reviewDate = new Date();
-          switch (task.frequency) {
-            case 'monthly':
-              reviewDate.setMonth(reviewDate.getMonth() + 1);
-              break;
-            case 'quarterly':
-              reviewDate.setMonth(reviewDate.getMonth() + 3);
-              break;
-            case 'yearly':
-              reviewDate.setFullYear(reviewDate.getFullYear() + 1);
-              break;
-          }
-        }
-
-        await db.task.update({
-          where: { id: taskId },
-          data: {
-            status: newStatus,
-            ...(reviewDate ? { reviewDate } : {}),
-          },
-        });
-        this.logger.log(
-          `Updated task ${taskId} status to ${newStatus}${reviewDate ? `, next review: ${reviewDate.toISOString()}` : ''}`,
-        );
-      }
-
       return {
-        success: true,
-        result: checkResult,
+        connectionId,
         checkRunId: checkRun.id,
-        taskStatus: newStatus,
+        status: checkResult.status,
+        findings: checkResult.result.findings.length,
+        passing: checkResult.result.passingResults.length,
       };
     } catch (error) {
-      // Mark run as failed
       await this.checkRunRepository.complete(checkRun.id, {
         status: 'failed',
-        durationMs: Date.now() - checkRun.startedAt!.getTime(),
+        durationMs: checkRun.startedAt
+          ? Date.now() - checkRun.startedAt.getTime()
+          : 0,
         totalChecked: 0,
         passedCount: 0,
         failedCount: 0,
         errorMessage: error instanceof Error ? error.message : String(error),
       });
-
-      this.logger.error(`Failed to run check: ${error}`);
+      this.logger.error(
+        `Failed to run check ${checkDef.id} for connection ${connectionId}: ${error}`,
+      );
       return {
-        success: false,
-        error: error instanceof Error ? error.message : String(error),
+        connectionId,
         checkRunId: checkRun.id,
+        status: 'error',
+        findings: 0,
+        passing: 0,
       };
     }
   }
@@ -641,10 +698,15 @@ export class TaskIntegrationsController {
     @Param('taskId') taskId: string,
     @Query('limit') limit?: string,
   ) {
-    const runs = await this.checkRunRepository.findByTask(
-      taskId,
-      limit ? parseInt(limit, 10) : 10,
-    );
+    // Latest run per (connection, check) is guaranteed present — so a customer
+    // with multiple accounts always sees every account, never just the most
+    // recently re-run one. `connectionId` + `connectionLabel` let the UI show
+    // which account each run belongs to.
+    const runs =
+      await this.checkRunRepository.findLatestPerConnectionAndCheckByTask(
+        taskId,
+        { historyPerGroup: limit ? parseInt(limit, 10) : 5 },
+      );
 
     return {
       runs: runs.map((run) => {
@@ -663,6 +725,8 @@ export class TaskIntegrationsController {
           failedCount: run.failedCount,
           errorMessage: run.errorMessage,
           logs: run.logs,
+          connectionId: run.connectionId,
+          connectionLabel: getConnectionLabel(run.connection),
           provider: {
             slug: provider?.slug,
             name: provider?.name,

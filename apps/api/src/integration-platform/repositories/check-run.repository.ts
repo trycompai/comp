@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { db } from '@db';
-import type { IntegrationRunStatus, Prisma } from '@db';
+import type { Prisma } from '@db';
 
 export interface CreateCheckRunDto {
   connectionId: string;
@@ -147,6 +147,79 @@ export class CheckRunRepository {
       orderBy: { createdAt: 'desc' },
       take: limit,
     });
+  }
+
+  /**
+   * Get check runs for a task, GUARANTEEING every (connection, check) group's
+   * most recent run is included (plus a bounded history tail).
+   *
+   * Why not just `findByTask` with a row limit: checks run once per connected
+   * account, so a customer with multiple AWS accounts has one run per account.
+   * A flat "newest N rows" limit can silently drop an account whose latest run
+   * predates a burst of re-runs on a busier account — that account then
+   * vanishes from the task UI. Here we first establish the per-group maxima via
+   * `groupBy`, fetch each group's latest run explicitly (completeness), then add
+   * a recent window for history. Used by the task UI so manual and scheduled
+   * runs both surface every account.
+   */
+  async findLatestPerConnectionAndCheckByTask(
+    taskId: string,
+    { historyPerGroup = 5 }: { historyPerGroup?: number } = {},
+  ) {
+    const include = {
+      results: true,
+      connection: { include: { provider: true } },
+    } as const;
+
+    const where = {
+      taskId,
+      connection: { status: { not: 'disconnected' } },
+    } satisfies Prisma.IntegrationCheckRunWhereInput;
+
+    // Every (connection, check) group that has runs for this task, with its
+    // most recent run timestamp.
+    const groups = await db.integrationCheckRun.groupBy({
+      by: ['connectionId', 'checkId'],
+      where,
+      _max: { createdAt: true },
+    });
+    if (groups.length === 0) return [];
+
+    // Completeness guarantee: explicitly fetch each group's latest run.
+    const tuples = groups.flatMap((g) =>
+      g._max.createdAt
+        ? [
+            {
+              connectionId: g.connectionId,
+              checkId: g.checkId,
+              createdAt: g._max.createdAt,
+            },
+          ]
+        : [],
+    );
+    const latest = tuples.length
+      ? await db.integrationCheckRun.findMany({
+          where: { ...where, OR: tuples },
+          include,
+        })
+      : [];
+
+    // History tail: a bounded recent window. Combined with the guaranteed
+    // latest set, every account shows its current result and recently-active
+    // accounts also show past runs.
+    const recent = await db.integrationCheckRun.findMany({
+      where,
+      include,
+      orderBy: { createdAt: 'desc' },
+      take: groups.length * historyPerGroup,
+    });
+
+    // Merge + dedupe by id, newest-first (preserves the /runs ordering contract).
+    const byId = new Map<string, (typeof recent)[number]>();
+    for (const run of [...latest, ...recent]) byId.set(run.id, run);
+    return Array.from(byId.values()).sort(
+      (a, b) => b.createdAt.getTime() - a.createdAt.getTime(),
+    );
   }
 
   /**
