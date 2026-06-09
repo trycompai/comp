@@ -106,7 +106,10 @@ export class PeopleInviteService {
           results.push({
             email: invite.email,
             success: true,
-            emailSent: result.emailSent,
+            // Only surface email status when we actually attempted to send, so
+            // the UI's "invite email could not be sent" warning never fires for
+            // an intentional skip (portal invite unchecked).
+            ...(shouldSendPortalEmail ? { emailSent: result.emailSent } : {}),
           });
         } else {
           await this.inviteWithCheck({
@@ -208,10 +211,12 @@ export class PeopleInviteService {
       await this.createTrainingVideoEntries(member.id, organizationId);
     }
 
-    // Send invite email (non-fatal)
-    let emailSent = true;
-    try {
-      if (sendPortalEmail) {
+    // Send the portal invite email only when requested (non-fatal). When the
+    // admin opts out ("Send portal invite email" unchecked) we add the member
+    // silently and send no email at all.
+    let emailSent = false;
+    if (sendPortalEmail) {
+      try {
         const inviteLink = this.buildPortalUrl(organizationId);
         await triggerEmail({
           to: email,
@@ -222,20 +227,14 @@ export class PeopleInviteService {
             email,
           }),
         });
-      } else {
-        const inviteLink = this.buildPortalUrl(organizationId);
-        await triggerEmail({
-          to: email,
-          subject: `You've been invited to join ${organization.name} on Comp AI`,
-          react: InviteEmail({ organizationName: organization.name, inviteLink }),
-        });
+        emailSent = true;
+      } catch (emailErr) {
+        emailSent = false;
+        this.logger.error(
+          `Portal invite email failed after member was added: ${email}`,
+          emailErr instanceof Error ? emailErr.message : 'Unknown error',
+        );
       }
-    } catch (emailErr) {
-      emailSent = false;
-      this.logger.error(
-        `Invite email failed after member was added: ${email}`,
-        emailErr instanceof Error ? emailErr.message : 'Unknown error',
-      );
     }
 
     return { emailSent };
