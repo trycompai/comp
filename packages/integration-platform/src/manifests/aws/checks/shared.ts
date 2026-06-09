@@ -269,6 +269,19 @@ export function awsAccountIdFromCtx(ctx: CheckContext): string | null {
 }
 
 /**
+ * The friendly connection name the customer gave this AWS account when they
+ * connected it (the "Connection Name" field, e.g. "Production AWS"). It is the
+ * customer's OWN label — we do not infer prod/stage from AWS — so it's shown
+ * alongside the account id when present. Returns null when unset.
+ */
+export function awsConnectionNameFromCtx(ctx: CheckContext): string | null {
+  const name = (ctx.credentials as Record<string, unknown>).connectionName;
+  return typeof name === 'string' && name.trim().length > 0
+    ? name.trim()
+    : null;
+}
+
+/**
  * Map pure evaluator outcomes onto ctx.pass / ctx.fail.
  *
  * Every finding is attributed to the AWS account it came from: checks run once
@@ -279,8 +292,21 @@ export function awsAccountIdFromCtx(ctx: CheckContext): string | null {
  */
 export function emitOutcomes(ctx: CheckContext, outcomes: CheckOutcome[]): void {
   const accountId = awsAccountIdFromCtx(ctx);
+  const connectionName = awsConnectionNameFromCtx(ctx);
+  // "AWS account 123456789012 — Production AWS" (name only shown when set).
+  const label = accountId
+    ? `AWS account ${accountId}${connectionName ? ` — ${connectionName}` : ''}`
+    : null;
   const describe = (description: string) =>
-    accountId ? `${description} (AWS account ${accountId})` : description;
+    label ? `${description} (${label})` : description;
+  const stamp = (evidence: Record<string, unknown> | undefined) =>
+    accountId
+      ? {
+          ...(evidence ?? {}),
+          awsAccountId: accountId,
+          ...(connectionName ? { awsConnectionName: connectionName } : {}),
+        }
+      : evidence;
 
   for (const o of outcomes) {
     if (o.kind === 'pass') {
@@ -289,9 +315,7 @@ export function emitOutcomes(ctx: CheckContext, outcomes: CheckOutcome[]): void 
         description: describe(o.description),
         resourceType: o.resourceType,
         resourceId: o.resourceId,
-        evidence: accountId
-          ? { ...(o.evidence ?? {}), awsAccountId: accountId }
-          : (o.evidence ?? {}),
+        evidence: stamp(o.evidence) ?? {},
       });
     } else {
       ctx.fail({
@@ -301,9 +325,7 @@ export function emitOutcomes(ctx: CheckContext, outcomes: CheckOutcome[]): void 
         resourceId: o.resourceId,
         severity: o.severity ?? 'medium',
         remediation: o.remediation ?? 'Review and remediate this finding.',
-        evidence: accountId
-          ? { ...(o.evidence ?? {}), awsAccountId: accountId }
-          : o.evidence,
+        evidence: stamp(o.evidence),
       });
     }
   }

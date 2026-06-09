@@ -524,4 +524,16 @@ describe('emitOutcomes — attributes findings to the AWS account', () => {
     expect(passed[0]!.evidence?.awsAccountId).toBeUndefined();
     expect(passed[0]!.description).toBe(PASS_OUTCOME.description); // unchanged
   });
+
+  it("includes the customer's connection name alongside the account when set", () => {
+    const { ctx, passed } = captureCtx({
+      roleArn: 'arn:aws:iam::123456789012:role/CompAIAuditor',
+      connectionName: 'Production AWS',
+    });
+    emitOutcomes(ctx, [PASS_OUTCOME]);
+    expect(passed[0]!.evidence?.awsConnectionName).toBe('Production AWS');
+    expect(passed[0]!.description).toContain(
+      '(AWS account 123456789012 — Production AWS)',
+    );
+  });
 });
