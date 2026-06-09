@@ -1,3 +1,11 @@
+## [3.74.1](https://github.com/trycompai/comp/compare/v3.74.0...v3.74.1) (2026-06-09)
+
+
+### Bug Fixes
+
+* **integration-platform:** attribute AWS check findings to their AWS account ([06a237d](https://github.com/trycompai/comp/commit/06a237d772beca1147ec1e3eed9d08d4c5dc5611))
+* **integration-platform:** show the customer's AWS connection name alongside the account ([69c84c8](https://github.com/trycompai/comp/commit/69c84c85badc226c40d9773d561548e20b84b6b0))
+
 # [3.74.0](https://github.com/trycompai/comp/compare/v3.73.3...v3.74.0) (2026-06-08)
 
 
