@@ -10,7 +10,12 @@ import {
 } from '@aws-sdk/client-s3-control';
 import { TASK_TEMPLATES } from '../../../task-mappings';
 import type { CheckContext, IntegrationCheck } from '../../../types';
-import { resolveAwsSessionOrFail, type CheckOutcome, emitOutcomes } from './shared';
+import {
+  awsAccountIdFromCtx,
+  resolveAwsSessionOrFail,
+  type CheckOutcome,
+  emitOutcomes,
+} from './shared';
 
 export interface BpaFlags {
   blockPublicAcls: boolean;
@@ -184,14 +189,6 @@ async function gatherBuckets(
   return infos;
 }
 
-/** Account ID from the connection's role ARN (arn:aws:iam::ACCOUNT:role/...). */
-function accountIdFromCtx(ctx: CheckContext): string | null {
-  const arn = (ctx.credentials as Record<string, unknown>).roleArn;
-  if (typeof arn !== 'string') return null;
-  const parts = arn.split(':');
-  return parts.length >= 5 && parts[4] ? parts[4] : null;
-}
-
 export const s3EncryptionCheck: IntegrationCheck = {
   id: 'aws-s3-encryption',
   name: 'S3 — default encryption enabled',
@@ -252,7 +249,7 @@ export const s3PublicAccessCheck: IntegrationCheck = {
     // Account-level Block Public Access applies to every bucket. Read it once;
     // if denied/absent, fall back to bucket-level only (graceful).
     let accountBpa: BpaFlags | null = null;
-    const accountId = accountIdFromCtx(ctx);
+    const accountId = awsAccountIdFromCtx(ctx);
     if (accountId) {
       try {
         const s3control = new S3ControlClient({

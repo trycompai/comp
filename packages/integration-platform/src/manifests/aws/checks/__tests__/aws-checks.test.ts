@@ -14,7 +14,14 @@ import {
   evaluateRdsEncryption,
 } from '../rds';
 import { evaluateS3Encryption, evaluateS3PublicAccess } from '../s3';
-import { assumeAwsSession, resolveAwsCredentialInputs } from '../shared';
+import {
+  assumeAwsSession,
+  awsAccountIdFromCtx,
+  emitOutcomes,
+  resolveAwsCredentialInputs,
+  type CheckOutcome,
+} from '../shared';
+import type { CheckContext } from '../../../../types';
 
 const kinds = (os: { kind: string }[]) => os.map((o) => o.kind);
 
@@ -439,5 +446,82 @@ describe('IAM/CloudTrail outcomes carry evidence (so the UI shows "View Evidence
     ]);
     expect(rot[0]!.evidence?.rotationEnabled).toBe(true);
     expect(rot[1]!.evidence?.rotationEnabled).toBe(false);
+  });
+});
+
+// ── AWS account attribution (multi-account findings) ───────────────────────
+
+function captureCtx(credentials: Record<string, unknown>) {
+  const passed: Array<{ description: string; evidence?: Record<string, unknown> }> = [];
+  const failed: Array<{ description: string; evidence?: Record<string, unknown> }> = [];
+  const ctx = {
+    credentials,
+    pass: (r: { description: string; evidence?: Record<string, unknown> }) =>
+      passed.push(r),
+    fail: (r: { description: string; evidence?: Record<string, unknown> }) =>
+      failed.push(r),
+  } as unknown as CheckContext;
+  return { ctx, passed, failed };
+}
+
+const PASS_OUTCOME: CheckOutcome = {
+  kind: 'pass',
+  title: 'Default encryption enabled: my-bucket',
+  description: 'Bucket "my-bucket" has default encryption enabled.',
+  resourceType: 'aws-s3-bucket',
+  resourceId: 'my-bucket',
+  evidence: { bucket: 'my-bucket', encrypted: true },
+};
+
+describe('awsAccountIdFromCtx', () => {
+  it('extracts the 12-digit account id from the role ARN', () => {
+    expect(
+      awsAccountIdFromCtx({
+        credentials: { roleArn: 'arn:aws:iam::123456789012:role/CompAIAuditor' },
+      } as unknown as CheckContext),
+    ).toBe('123456789012');
+  });
+
+  it('returns null when the role ARN is missing or malformed', () => {
+    expect(
+      awsAccountIdFromCtx({ credentials: {} } as unknown as CheckContext),
+    ).toBeNull();
+    expect(
+      awsAccountIdFromCtx({
+        credentials: { roleArn: 'not-an-arn' },
+      } as unknown as CheckContext),
+    ).toBeNull();
+  });
+});
+
+describe('emitOutcomes — attributes findings to the AWS account', () => {
+  it('stamps the account id into evidence and the visible description', () => {
+    const { ctx, passed } = captureCtx({
+      roleArn: 'arn:aws:iam::123456789012:role/CompAIAuditor',
+    });
+    emitOutcomes(ctx, [PASS_OUTCOME]);
+    expect(passed).toHaveLength(1);
+    expect(passed[0]!.evidence?.awsAccountId).toBe('123456789012');
+    expect(passed[0]!.evidence?.bucket).toBe('my-bucket'); // original evidence preserved
+    expect(passed[0]!.description).toContain('(AWS account 123456789012)');
+  });
+
+  it('attributes a fail outcome too', () => {
+    const { ctx, failed } = captureCtx({
+      roleArn: 'arn:aws:iam::999988887777:role/x',
+    });
+    emitOutcomes(ctx, [{ ...PASS_OUTCOME, kind: 'fail', severity: 'high' }]);
+    expect(failed[0]!.evidence?.awsAccountId).toBe('999988887777');
+    expect(failed[0]!.description).toContain('(AWS account 999988887777)');
+  });
+
+  it('leaves findings unattributed for key-auth connections (no role ARN)', () => {
+    const { ctx, passed } = captureCtx({
+      access_key_id: 'AKIA',
+      secret_access_key: 'secret',
+    });
+    emitOutcomes(ctx, [PASS_OUTCOME]);
+    expect(passed[0]!.evidence?.awsAccountId).toBeUndefined();
+    expect(passed[0]!.description).toBe(PASS_OUTCOME.description); // unchanged
   });
 });

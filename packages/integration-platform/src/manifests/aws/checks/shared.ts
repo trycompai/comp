@@ -255,26 +255,55 @@ export interface CheckOutcome {
   evidence?: Record<string, unknown>;
 }
 
-/** Map pure evaluator outcomes onto ctx.pass / ctx.fail. */
+/**
+ * The 12-digit AWS account ID from the connection's role ARN
+ * (`arn:aws:iam::ACCOUNT_ID:role/...`). Returns null for key-auth connections or
+ * when no role ARN is present. Used to attribute every finding to the AWS
+ * account it came from — essential when a customer connects multiple accounts.
+ */
+export function awsAccountIdFromCtx(ctx: CheckContext): string | null {
+  const arn = (ctx.credentials as Record<string, unknown>).roleArn;
+  if (typeof arn !== 'string') return null;
+  const parts = arn.split(':');
+  return parts.length >= 5 && parts[4] ? parts[4] : null;
+}
+
+/**
+ * Map pure evaluator outcomes onto ctx.pass / ctx.fail.
+ *
+ * Every finding is attributed to the AWS account it came from: checks run once
+ * per connected account, so without this the UI shows a single merged list with
+ * no way to tell which account each resource belongs to (a customer-reported
+ * gap when multiple AWS accounts are connected). The account id is added to the
+ * evidence and surfaced in the visible description.
+ */
 export function emitOutcomes(ctx: CheckContext, outcomes: CheckOutcome[]): void {
+  const accountId = awsAccountIdFromCtx(ctx);
+  const describe = (description: string) =>
+    accountId ? `${description} (AWS account ${accountId})` : description;
+
   for (const o of outcomes) {
     if (o.kind === 'pass') {
       ctx.pass({
         title: o.title,
-        description: o.description,
+        description: describe(o.description),
         resourceType: o.resourceType,
         resourceId: o.resourceId,
-        evidence: o.evidence ?? {},
+        evidence: accountId
+          ? { ...(o.evidence ?? {}), awsAccountId: accountId }
+          : (o.evidence ?? {}),
       });
     } else {
       ctx.fail({
         title: o.title,
-        description: o.description,
+        description: describe(o.description),
         resourceType: o.resourceType,
         resourceId: o.resourceId,
         severity: o.severity ?? 'medium',
         remediation: o.remediation ?? 'Review and remediate this finding.',
-        evidence: o.evidence,
+        evidence: accountId
+          ? { ...(o.evidence ?? {}), awsAccountId: accountId }
+          : o.evidence,
       });
     }
   }
