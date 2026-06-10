@@ -533,6 +533,24 @@ export class TrustAccessService {
     );
   }
 
+  /**
+   * Check if the email address is in the allow list (bypasses NDA requirement)
+   */
+  private isEmailInAllowList(email: string, allowedEmails: string[]): boolean {
+    if (!allowedEmails || allowedEmails.length === 0) {
+      return false;
+    }
+
+    const normalizedEmail = email.toLowerCase().trim();
+    if (!normalizedEmail) {
+      return false;
+    }
+
+    return allowedEmails.some(
+      (allowed) => allowed.toLowerCase().trim() === normalizedEmail,
+    );
+  }
+
   async approveRequest(
     organizationId: string,
     requestId: string,
@@ -573,25 +591,30 @@ export class TrustAccessService {
       throw new BadRequestException('Invalid member ID');
     }
 
-    // Check if email domain is in the allow list
+    // Check if the email or its domain is in the allow list
     const trust = await db.trust.findUnique({
       where: { organizationId },
-      select: { allowedDomains: true },
+      select: { allowedDomains: true, allowedEmails: true },
     });
 
     const isAllowedDomain = this.isDomainInAllowList(
       request.email,
       trust?.allowedDomains ?? [],
     );
+    const isAllowedEmail = this.isEmailInAllowList(
+      request.email,
+      trust?.allowedEmails ?? [],
+    );
 
-    // If domain is in allow list, skip NDA and grant access directly
-    if (isAllowedDomain) {
+    // If the email or domain is in the allow list, skip NDA and grant access directly
+    if (isAllowedDomain || isAllowedEmail) {
       return this.approveWithoutNda({
         organizationId,
         requestId,
         request,
         member,
         durationDays,
+        bypassReason: isAllowedEmail ? 'allowed email' : 'allowed domain',
       });
     }
 
@@ -657,7 +680,7 @@ export class TrustAccessService {
   }
 
   /**
-   * Approve request without NDA for allowed domains - grants immediate access
+   * Approve request without NDA for allowlisted domains/emails - grants immediate access
    */
   private async approveWithoutNda({
     organizationId,
@@ -665,6 +688,7 @@ export class TrustAccessService {
     request,
     member,
     durationDays,
+    bypassReason,
   }: {
     organizationId: string;
     requestId: string;
@@ -675,6 +699,7 @@ export class TrustAccessService {
     };
     member: { id: string; userId: string };
     durationDays: number;
+    bypassReason: 'allowed domain' | 'allowed email';
   }) {
     const expiresAt = new Date();
     expiresAt.setDate(expiresAt.getDate() + durationDays);
@@ -712,12 +737,13 @@ export class TrustAccessService {
           memberId: member.id,
           entityType: 'trust',
           entityId: requestId,
-          description: `Access request approved for ${request.email} (allowed domain - NDA bypassed)`,
+          description: `Access request approved for ${request.email} (${bypassReason} - NDA bypassed)`,
           data: {
             requestId,
             grantId: grant.id,
             durationDays,
             ndaBypassed: true,
+            bypassReason,
           },
         },
       });
@@ -742,7 +768,7 @@ export class TrustAccessService {
     return {
       request: result.request,
       grant: result.grant,
-      message: 'Access granted', // NDA bypassed for allowed domain
+      message: 'Access granted', // NDA bypassed for allowlisted domain/email
     };
   }
 
