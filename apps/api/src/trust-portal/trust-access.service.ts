@@ -1916,6 +1916,74 @@ export class TrustAccessService {
     return { faqs: Array.isArray(faqs) ? faqs : null };
   }
 
+  /**
+   * Shared certificate-download pipeline for trust-portal resources (native
+   * and custom frameworks): fetch the stored PDF from S3, watermark it for the
+   * requesting grant, re-upload the watermarked copy, and return a signed URL.
+   * The two callers differ only in the trustResource lookup and the doc/file
+   * naming, which they pass in.
+   */
+  private async watermarkAndSignTrustResource(params: {
+    s3Key: string;
+    fileName: string;
+    recipientName: string;
+    recipientEmail: string;
+    organizationId: string;
+    grantId: string;
+    docId: string;
+    downloadFileName: string;
+  }): Promise<{ signedUrl: string; fileName: string; fileSize: number }> {
+    if (!s3Client || !APP_AWS_ORG_ASSETS_BUCKET) {
+      throw new InternalServerErrorException(
+        'Organization assets bucket is not configured',
+      );
+    }
+
+    const response = await s3Client.send(
+      new GetObjectCommand({
+        Bucket: APP_AWS_ORG_ASSETS_BUCKET,
+        Key: params.s3Key,
+      }),
+    );
+    if (!response.Body) {
+      throw new InternalServerErrorException('No file data received from S3');
+    }
+
+    const chunks: Uint8Array[] = [];
+    for await (const chunk of response.Body as Readable) {
+      chunks.push(chunk);
+    }
+    const originalPdfBuffer = Buffer.concat(chunks);
+
+    const watermarked = await this.ndaPdfService.watermarkExistingPdf(
+      originalPdfBuffer,
+      {
+        name: params.recipientName,
+        email: params.recipientEmail,
+        docId: params.docId,
+        watermarkText: 'Comp AI',
+      },
+    );
+
+    const key = await this.attachmentsService.uploadToS3(
+      watermarked,
+      params.downloadFileName,
+      'application/pdf',
+      params.organizationId,
+      'trust_compliance_downloads',
+      params.grantId,
+    );
+
+    const downloadUrl =
+      await this.attachmentsService.getPresignedDownloadUrl(key);
+
+    return {
+      signedUrl: downloadUrl,
+      fileName: params.fileName,
+      fileSize: watermarked.length,
+    };
+  }
+
   async getComplianceResourceUrlByAccessToken(
     token: string,
     framework: TrustFramework,
@@ -1993,56 +2061,17 @@ export class TrustAccessService {
       });
     }
 
-    // Download the original PDF from S3
-    const getCommand = new GetObjectCommand({
-      Bucket: APP_AWS_ORG_ASSETS_BUCKET,
-      Key: record.s3Key,
-    });
-
-    const response = await s3Client.send(getCommand);
-    const chunks: Uint8Array[] = [];
-
-    if (!response.Body) {
-      throw new InternalServerErrorException('No file data received from S3');
-    }
-
-    for await (const chunk of response.Body as any) {
-      chunks.push(chunk);
-    }
-
-    const originalPdfBuffer = Buffer.concat(chunks);
-
-    // Watermark the PDF
-    const docId = `compliance-${grant.id}-${framework}-${Date.now()}`;
-    const watermarked = await this.ndaPdfService.watermarkExistingPdf(
-      originalPdfBuffer,
-      {
-        name: grant.accessRequest.name,
-        email: grant.subjectEmail,
-        docId,
-        watermarkText: 'Comp AI',
-      },
-    );
-
-    // Upload watermarked PDF to S3
-    const key = await this.attachmentsService.uploadToS3(
-      watermarked,
-      `compliance-${framework}-grant-${grant.id}-${Date.now()}.pdf`,
-      'application/pdf',
-      grant.accessRequest.organizationId,
-      'trust_compliance_downloads',
-      `${grant.id}`,
-    );
-
-    // Generate signed URL for the watermarked PDF
-    const downloadUrl =
-      await this.attachmentsService.getPresignedDownloadUrl(key);
-
-    return {
-      signedUrl: downloadUrl,
+    // Download → watermark → re-upload → signed URL (shared pipeline).
+    return this.watermarkAndSignTrustResource({
+      s3Key: record.s3Key,
       fileName: record.fileName,
-      fileSize: watermarked.length,
-    };
+      recipientName: grant.accessRequest.name,
+      recipientEmail: grant.subjectEmail,
+      organizationId: grant.accessRequest.organizationId,
+      grantId: `${grant.id}`,
+      docId: `compliance-${grant.id}-${framework}-${Date.now()}`,
+      downloadFileName: `compliance-${framework}-grant-${grant.id}-${Date.now()}.pdf`,
+    });
   }
 
   /**
@@ -2078,52 +2107,17 @@ export class TrustAccessService {
       );
     }
 
-    const getCommand = new GetObjectCommand({
-      Bucket: APP_AWS_ORG_ASSETS_BUCKET,
-      Key: record.s3Key,
-    });
-
-    const response = await s3Client.send(getCommand);
-    const chunks: Uint8Array[] = [];
-
-    if (!response.Body) {
-      throw new InternalServerErrorException('No file data received from S3');
-    }
-
-    for await (const chunk of response.Body as Readable) {
-      chunks.push(chunk);
-    }
-
-    const originalPdfBuffer = Buffer.concat(chunks);
-
-    const docId = `compliance-${grant.id}-custom-${customFrameworkId}-${Date.now()}`;
-    const watermarked = await this.ndaPdfService.watermarkExistingPdf(
-      originalPdfBuffer,
-      {
-        name: grant.accessRequest.name,
-        email: grant.subjectEmail,
-        docId,
-        watermarkText: 'Comp AI',
-      },
-    );
-
-    const key = await this.attachmentsService.uploadToS3(
-      watermarked,
-      `compliance-custom-${customFrameworkId}-grant-${grant.id}-${Date.now()}.pdf`,
-      'application/pdf',
-      grant.accessRequest.organizationId,
-      'trust_compliance_downloads',
-      `${grant.id}`,
-    );
-
-    const downloadUrl =
-      await this.attachmentsService.getPresignedDownloadUrl(key);
-
-    return {
-      signedUrl: downloadUrl,
+    // Download → watermark → re-upload → signed URL (shared pipeline).
+    return this.watermarkAndSignTrustResource({
+      s3Key: record.s3Key,
       fileName: record.fileName,
-      fileSize: watermarked.length,
-    };
+      recipientName: grant.accessRequest.name,
+      recipientEmail: grant.subjectEmail,
+      organizationId: grant.accessRequest.organizationId,
+      grantId: `${grant.id}`,
+      docId: `compliance-${grant.id}-custom-${customFrameworkId}-${Date.now()}`,
+      downloadFileName: `compliance-custom-${customFrameworkId}-grant-${grant.id}-${Date.now()}.pdf`,
+    });
   }
 
   /** Custom frameworks shown on the public portal (delegates to the dedicated service). */
