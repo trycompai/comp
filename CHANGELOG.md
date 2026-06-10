@@ -1,3 +1,11 @@
+## [3.74.4](https://github.com/trycompai/comp/compare/v3.74.3...v3.74.4) (2026-06-10)
+
+
+### Bug Fixes
+
+* **framework-editor:** drop @vitejs/plugin-react from vitest config ([716205c](https://github.com/trycompai/comp/commit/716205c3e63f7d6595ee0b82d5976ff1059e6726))
+* **framework-editor:** prevent silent loss of new requirements and controls ([e231fcc](https://github.com/trycompai/comp/commit/e231fcc31d16d1e561574f41309784aa8086f3b3))
+
 ## [3.74.3](https://github.com/trycompai/comp/compare/v3.74.2...v3.74.3) (2026-06-09)
 
 
