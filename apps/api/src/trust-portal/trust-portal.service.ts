@@ -630,6 +630,20 @@ export class TrustPortalService {
     return { success: true };
   }
 
+  async updateAllowedEmails(organizationId: string, emails: string[]) {
+    const normalizedEmails = [
+      ...new Set(emails.map((e) => e.toLowerCase().trim())),
+    ];
+
+    await db.trust.upsert({
+      where: { organizationId },
+      update: { allowedEmails: normalizedEmails },
+      create: { organizationId, allowedEmails: normalizedEmails },
+    });
+
+    return { success: true };
+  }
+
   async updateFrameworks(
     organizationId: string,
     frameworks: Record<string, boolean | string | undefined>,
@@ -1682,6 +1696,7 @@ export class TrustPortalService {
       vercelVerification: trust.vercelVerification ?? null,
       contactEmail: trust.contactEmail ?? null,
       allowedDomains: trust.allowedDomains ?? [],
+      allowedEmails: trust.allowedEmails ?? [],
       // Framework flags
       soc2type1: trust.soc2type1 ?? false,
       soc2type2: trust.soc2type2 || trust.soc2 || false,

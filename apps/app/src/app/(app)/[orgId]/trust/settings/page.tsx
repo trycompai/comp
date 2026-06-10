@@ -10,6 +10,7 @@ interface TrustPortalSettings {
   isVercelDomain: boolean;
   vercelVerification: string | null;
   allowedDomains: string[];
+  allowedEmails: string[];
 }
 
 export default async function TrustSettingsPage({
@@ -35,6 +36,7 @@ export default async function TrustSettingsPage({
         isVercelDomain={trustPortal?.isVercelDomain ?? false}
         vercelVerification={trustPortal?.vercelVerification ?? null}
         allowedDomains={trustPortal?.allowedDomains ?? []}
+        allowedEmails={trustPortal?.allowedEmails ?? []}
       />
     </PageLayout>
   );

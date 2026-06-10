@@ -188,6 +188,15 @@ export function useTrustPortalSettings() {
     [api],
   );
 
+  const updateAllowedEmails = useCallback(
+    async (emails: string[]) => {
+      const response = await api.put('/v1/trust-portal/settings/allowed-emails', { emails });
+      if (response.error) throw new Error(response.error);
+      return response.data;
+    },
+    [api],
+  );
+
   const uploadFavicon = useCallback(
     async (fileName: string, fileType: string, fileData: string) => {
       const response = await api.post<FaviconUploadResponse>('/v1/trust-portal/favicon', {
@@ -249,6 +258,7 @@ export function useTrustPortalSettings() {
     saveOverview,
     updateVendorTrustSettings,
     updateAllowedDomains,
+    updateAllowedEmails,
     uploadFavicon,
     removeFavicon,
     submitCustomDomain,
