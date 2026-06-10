@@ -161,6 +161,8 @@ export function FrameworkRequirementsClientPage({
             rowId={row.original.id}
             columnId="description"
             onUpdate={updateCell}
+            expandable
+            expandTitle="Edit Requirement Description"
           />
         ),
       }),
