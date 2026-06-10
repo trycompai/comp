@@ -1,3 +1,14 @@
+## [3.74.5](https://github.com/trycompai/comp/compare/v3.74.4...v3.74.5) (2026-06-10)
+
+
+### Bug Fixes
+
+* **framework-editor:** let "Add Existing Control" pick requirements instead of linking all ([dde15af](https://github.com/trycompai/comp/commit/dde15af3fce38ace12762f55b19d12c83010347d))
+* **framework-editor:** treat null requirementIds as link-all, not a crash ([7b24fb6](https://github.com/trycompai/comp/commit/7b24fb6c1a1a1dd983778e073f4b9ad073255156))
+* **integration-platform:** log degraded region routing when paginated ListBuckets is rejected ([5f3e4f2](https://github.com/trycompai/comp/commit/5f3e4f2eca7555e92ba3c152a5999c58bb10fede))
+* **integration-platform:** route S3 bucket reads to each bucket's own region ([9f6e6f6](https://github.com/trycompai/comp/commit/9f6e6f65f1b0804096b54cf49b86edc8c33dc4dd))
+* **integration-platform:** surface real S3 read errors instead of claiming missing permissions ([8f2bb19](https://github.com/trycompai/comp/commit/8f2bb19be21aa36be29dc0294871230b96e5dd30))
+
 ## [3.74.4](https://github.com/trycompai/comp/compare/v3.74.3...v3.74.4) (2026-06-10)
 
 
