@@ -13,7 +13,9 @@ import type { CheckContext, IntegrationCheck } from '../../../types';
 import {
   awsAccountIdFromCtx,
   resolveAwsSessionOrFail,
+  toReadFailure,
   type CheckOutcome,
+  type ReadFailure,
   emitOutcomes,
 } from './shared';
 
@@ -33,7 +35,14 @@ export interface S3BucketInfo {
   bucketBpa: BpaFlags | null;
   /** false when bucket-level Block Public Access couldn't be read (error) → excluded from eval */
   publicAccessDetermined: boolean;
+  /** set when the encryption read failed — the real error, surfaced in evidence */
+  encryptionReadFailure?: ReadFailure;
+  /** set when the Block Public Access read failed — the real error, surfaced in evidence */
+  publicAccessReadFailure?: ReadFailure;
 }
+
+const TRANSIENT_READ_REMEDIATION =
+  'The read failed with the error shown in the evidence — not a missing permission. Re-run the check; if it keeps failing, contact support.';
 
 const FLAG_KEYS: Array<keyof BpaFlags> = [
   'blockPublicAcls',
@@ -52,17 +61,27 @@ export function evaluateS3Encryption(buckets: S3BucketInfo[]): CheckOutcome[] {
     if (!b.encryptionDetermined) {
       // Read failed → unverified. Don't assert a false "no encryption" (high),
       // but don't silently drop it either (that would let an all-unreadable
-      // account pass with no findings).
+      // account pass with no findings). Only claim a missing permission when
+      // the error actually was one — otherwise surface the real error.
+      const failure = b.encryptionReadFailure;
+      const transient = failure !== undefined && !failure.denied;
       return {
         kind: 'fail',
         title: `Could not verify encryption: ${b.name}`,
-        description: `Encryption status for bucket "${b.name}" could not be read, so it is unverified.`,
+        description: failure
+          ? `Encryption status for bucket "${b.name}" could not be read (${failure.error}), so it is unverified.`
+          : `Encryption status for bucket "${b.name}" could not be read, so it is unverified.`,
         resourceType: 'aws-s3-bucket',
         resourceId: b.name,
         severity: 'medium',
-        remediation:
-          'Grant s3:GetEncryptionConfiguration to the integration role so default encryption can be verified, then re-run.',
-        evidence: { bucket: b.name, encryptionDetermined: false },
+        remediation: transient
+          ? TRANSIENT_READ_REMEDIATION
+          : 'Grant s3:GetEncryptionConfiguration to the integration role so default encryption can be verified, then re-run.',
+        evidence: {
+          bucket: b.name,
+          encryptionDetermined: false,
+          ...(failure ? { readError: failure.error } : {}),
+        },
       };
     }
     return b.encrypted
@@ -93,16 +112,25 @@ export function evaluateS3PublicAccess(
 ): CheckOutcome[] {
   return buckets.map((b): CheckOutcome => {
     if (!b.publicAccessDetermined) {
+      const failure = b.publicAccessReadFailure;
+      const transient = failure !== undefined && !failure.denied;
       return {
         kind: 'fail',
         title: `Could not verify public access: ${b.name}`,
-        description: `Block Public Access status for bucket "${b.name}" could not be read, so its public-access posture is unverified.`,
+        description: failure
+          ? `Block Public Access status for bucket "${b.name}" could not be read (${failure.error}), so its public-access posture is unverified.`
+          : `Block Public Access status for bucket "${b.name}" could not be read, so its public-access posture is unverified.`,
         resourceType: 'aws-s3-bucket',
         resourceId: b.name,
         severity: 'medium',
-        remediation:
-          'Grant s3:GetBucketPublicAccessBlock to the integration role so public-access settings can be verified, then re-run.',
-        evidence: { bucket: b.name, publicAccessDetermined: false },
+        remediation: transient
+          ? TRANSIENT_READ_REMEDIATION
+          : 'Grant s3:GetBucketPublicAccessBlock to the integration role so public-access settings can be verified, then re-run.',
+        evidence: {
+          bucket: b.name,
+          publicAccessDetermined: false,
+          ...(failure ? { readError: failure.error } : {}),
+        },
       };
     }
     return isFullyBlocked(b.bucketBpa, accountBpa)
@@ -129,7 +157,11 @@ export function evaluateS3PublicAccess(
 
 async function gatherBuckets(
   s3: S3Client,
-  opts: { encryption: boolean; publicAccess: boolean },
+  opts: {
+    encryption: boolean;
+    publicAccess: boolean;
+    log?: (message: string) => void;
+  },
 ): Promise<S3BucketInfo[]> {
   const list = await s3.send(new ListBucketsCommand({}));
   const names = (list.Buckets ?? [])
@@ -140,8 +172,10 @@ async function gatherBuckets(
   for (const name of names) {
     let encrypted = false;
     let encryptionDetermined = true;
+    let encryptionReadFailure: ReadFailure | undefined;
     let bucketBpa: BpaFlags | null = null;
     let publicAccessDetermined = true;
+    let publicAccessReadFailure: ReadFailure | undefined;
 
     if (opts.encryption) {
       try {
@@ -157,6 +191,10 @@ async function gatherBuckets(
           encrypted = false;
         } else {
           encryptionDetermined = false;
+          encryptionReadFailure = toReadFailure(err);
+          opts.log?.(
+            `S3 ${name}: encryption read failed — ${encryptionReadFailure.error}`,
+          );
         }
       }
     }
@@ -181,10 +219,22 @@ async function gatherBuckets(
           bucketBpa = null; // no bucket-level config
         } else {
           publicAccessDetermined = false;
+          publicAccessReadFailure = toReadFailure(err);
+          opts.log?.(
+            `S3 ${name}: Block Public Access read failed — ${publicAccessReadFailure.error}`,
+          );
         }
       }
     }
-    infos.push({ name, encrypted, encryptionDetermined, bucketBpa, publicAccessDetermined });
+    infos.push({
+      name,
+      encrypted,
+      encryptionDetermined,
+      encryptionReadFailure,
+      bucketBpa,
+      publicAccessDetermined,
+      publicAccessReadFailure,
+    });
   }
   return infos;
 }
@@ -205,10 +255,17 @@ export const s3EncryptionCheck: IntegrationCheck = {
       region: session.regions[0],
       credentials: session.credentials,
       followRegionRedirects: true,
+      // Reads are idempotent; extra attempts ride out transient network or
+      // throttling failures during the scheduled-run herd.
+      maxAttempts: 5,
     });
     let buckets: S3BucketInfo[];
     try {
-      buckets = await gatherBuckets(s3, { encryption: true, publicAccess: false });
+      buckets = await gatherBuckets(s3, {
+        encryption: true,
+        publicAccess: false,
+        log: (message) => ctx.log(message),
+      });
     } catch (err) {
       ctx.fail({
         title: 'Could not verify S3 encryption',
@@ -244,6 +301,9 @@ export const s3PublicAccessCheck: IntegrationCheck = {
       region: session.regions[0],
       credentials: session.credentials,
       followRegionRedirects: true,
+      // Reads are idempotent; extra attempts ride out transient network or
+      // throttling failures during the scheduled-run herd.
+      maxAttempts: 5,
     });
 
     // Account-level Block Public Access applies to every bucket. Read it once;
@@ -255,6 +315,7 @@ export const s3PublicAccessCheck: IntegrationCheck = {
         const s3control = new S3ControlClient({
           region: session.regions[0],
           credentials: session.credentials,
+          maxAttempts: 5,
         });
         const resp = await s3control.send(
           new GetAccountPublicAccessBlockCommand({ AccountId: accountId }),
@@ -275,7 +336,11 @@ export const s3PublicAccessCheck: IntegrationCheck = {
 
     let buckets: S3BucketInfo[];
     try {
-      buckets = await gatherBuckets(s3, { encryption: false, publicAccess: true });
+      buckets = await gatherBuckets(s3, {
+        encryption: false,
+        publicAccess: true,
+        log: (message) => ctx.log(message),
+      });
     } catch (err) {
       ctx.fail({
         title: 'Could not verify S3 public access',

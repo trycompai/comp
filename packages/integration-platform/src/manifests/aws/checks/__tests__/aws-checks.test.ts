@@ -19,6 +19,7 @@ import {
   awsAccountIdFromCtx,
   emitOutcomes,
   resolveAwsCredentialInputs,
+  toReadFailure,
   type CheckOutcome,
 } from '../shared';
 import type { CheckContext } from '../../../../types';
@@ -216,6 +217,109 @@ describe('AWS S3 evaluators', () => {
       ALL_BLOCKED,
     );
     expect(out[0]!.kind).toBe('pass');
+  });
+
+  it('public access: a non-permission read failure surfaces the real error instead of claiming a missing permission', () => {
+    const out = evaluateS3PublicAccess(
+      [
+        {
+          name: 'b',
+          encrypted: false,
+          encryptionDetermined: true,
+          publicAccessDetermined: false,
+          bucketBpa: null,
+          publicAccessReadFailure: { error: 'TimeoutError: socket hang up', denied: false },
+        },
+      ],
+      null,
+    );
+    expect(out[0]!.kind).toBe('fail');
+    expect(out[0]!.severity).toBe('medium');
+    expect(out[0]!.evidence).toMatchObject({ readError: 'TimeoutError: socket hang up' });
+    expect(out[0]!.description).toContain('TimeoutError: socket hang up');
+    // must NOT send the customer on a permissions hunt for a transient failure
+    expect(out[0]!.remediation).not.toContain('Grant s3:GetBucketPublicAccessBlock');
+    expect(out[0]!.remediation).toMatch(/re-run/i);
+  });
+
+  it('public access: an AccessDenied read failure keeps the grant-permission remediation and records the error', () => {
+    const out = evaluateS3PublicAccess(
+      [
+        {
+          name: 'b',
+          encrypted: false,
+          encryptionDetermined: true,
+          publicAccessDetermined: false,
+          bucketBpa: null,
+          publicAccessReadFailure: { error: 'AccessDenied: Access Denied', denied: true },
+        },
+      ],
+      null,
+    );
+    expect(out[0]!.kind).toBe('fail');
+    expect(out[0]!.remediation).toContain('Grant s3:GetBucketPublicAccessBlock');
+    expect(out[0]!.evidence).toMatchObject({ readError: 'AccessDenied: Access Denied' });
+  });
+
+  it('public access: indeterminate without failure detail keeps the legacy permission hint', () => {
+    const out = evaluateS3PublicAccess(
+      [{ name: 'b', encrypted: false, encryptionDetermined: true, publicAccessDetermined: false, bucketBpa: null }],
+      null,
+    );
+    expect(out[0]!.kind).toBe('fail');
+    expect(out[0]!.remediation).toContain('Grant s3:GetBucketPublicAccessBlock');
+  });
+
+  it('encryption: read failures carry the real error and remediation matches the failure kind', () => {
+    const out = evaluateS3Encryption([
+      {
+        name: 'transient',
+        encrypted: false,
+        encryptionDetermined: false,
+        publicAccessDetermined: true,
+        bucketBpa: null,
+        encryptionReadFailure: { error: 'TimeoutError: socket hang up', denied: false },
+      },
+      {
+        name: 'denied',
+        encrypted: false,
+        encryptionDetermined: false,
+        publicAccessDetermined: true,
+        bucketBpa: null,
+        encryptionReadFailure: { error: 'AccessDenied: Access Denied', denied: true },
+      },
+    ]);
+    expect(out[0]!.evidence).toMatchObject({ readError: 'TimeoutError: socket hang up' });
+    expect(out[0]!.remediation).not.toContain('Grant s3:GetEncryptionConfiguration');
+    expect(out[0]!.remediation).toMatch(/re-run/i);
+    expect(out[1]!.remediation).toContain('Grant s3:GetEncryptionConfiguration');
+    expect(out[1]!.evidence).toMatchObject({ readError: 'AccessDenied: Access Denied' });
+  });
+});
+
+describe('toReadFailure — read-error classification', () => {
+  it('classifies AccessDenied by error name', () => {
+    const err = new Error('Access Denied');
+    err.name = 'AccessDenied';
+    expect(toReadFailure(err)).toEqual({ error: 'AccessDenied: Access Denied', denied: true });
+  });
+
+  it('classifies 403 by http status even with a generic name', () => {
+    const err = Object.assign(new Error('nope'), {
+      name: 'S3ServiceException',
+      $metadata: { httpStatusCode: 403 },
+    });
+    expect(toReadFailure(err).denied).toBe(true);
+  });
+
+  it('treats network/timeout errors as not denied', () => {
+    const err = new Error('socket hang up');
+    err.name = 'TimeoutError';
+    expect(toReadFailure(err)).toEqual({ error: 'TimeoutError: socket hang up', denied: false });
+  });
+
+  it('stringifies non-Error throwables', () => {
+    expect(toReadFailure('boom')).toEqual({ error: 'boom', denied: false });
   });
 });
 
