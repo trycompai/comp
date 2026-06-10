@@ -102,7 +102,7 @@ Our integration only makes read-only API calls for security scanning.`,
       type: 'multi-select',
       required: false,
       helpText:
-        'Select which subscriptions to scan. Leave empty to scan all enabled subscriptions.',
+        'Select which subscriptions to scan (select all to scan everything). Leave empty to keep scanning the single auto-detected subscription.',
       fetchOptions: async (ctx) => {
         try {
           const data = await ctx.fetch<{

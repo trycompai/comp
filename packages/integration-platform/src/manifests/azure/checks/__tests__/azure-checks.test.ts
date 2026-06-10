@@ -690,7 +690,7 @@ describe('Azure multi-subscription scanning', () => {
     ],
   });
 
-  it('scans every Enabled subscription when none are selected (Disabled excluded)', async () => {
+  it('without a selection, keeps the pre-picker single-subscription behavior (first Enabled)', async () => {
     const seen: string[] = [];
     const out = await run(
       sqlTlsCheck,
@@ -705,9 +705,28 @@ describe('Azure multi-subscription scanning', () => {
       },
       {},
     );
+    // scope expansion is strictly opt-in: only the first Enabled sub is scanned
+    expect(seen).toEqual(['sub-a']);
+    expect(out.passed).toHaveLength(1);
+    expect(out.failed).toHaveLength(0);
+  });
+
+  it('scans multiple subscriptions ONLY when explicitly selected', async () => {
+    const seen: string[] = [];
+    const out = await run(
+      sqlTlsCheck,
+      (url: string) => {
+        const m = url.match(/subscriptions\/(sub-\w+)\/providers\/Microsoft.Sql\/servers\?/);
+        if (m) {
+          seen.push(m[1]!);
+          return serverIn(m[1]!);
+        }
+        return {};
+      },
+      { subscription_ids: ['sub-a', 'sub-b'] },
+    );
     expect(seen).toEqual(['sub-a', 'sub-b']);
     expect(out.passed).toHaveLength(2);
-    expect(out.failed).toHaveLength(0);
   });
 
   it('scopes to the selected subscription_ids when set', async () => {
@@ -728,13 +747,13 @@ describe('Azure multi-subscription scanning', () => {
     expect(out.passed).toHaveLength(1);
   });
 
-  it('falls back to the legacy subscription_id when subscriptions cannot be listed', async () => {
+  it('a saved subscription_id keeps exactly its previous scope (no list call needed)', async () => {
     const seen: string[] = [];
     const out = await run(
       sqlTlsCheck,
       (url: string) => {
         if (url.includes('/subscriptions?api-version')) {
-          throw new Error('HTTP 403: Forbidden');
+          throw new Error('must not list subscriptions when legacy value is set');
         }
         const m = url.match(/subscriptions\/(sub-\w+)\/providers\/Microsoft.Sql\/servers\?/);
         if (m) {
@@ -772,14 +791,6 @@ describe('entra-id multi-subscription wildcard isolation (cubic finding on #3090
     const { failed } = await run(
       rbacLeastPrivilegeCheck,
       (url: string) => {
-        if (url.includes('/subscriptions?api-version')) {
-          return {
-            value: [
-              { subscriptionId: 'sub-a', state: 'Enabled' },
-              { subscriptionId: 'sub-b', state: 'Enabled' },
-            ],
-          };
-        }
         if (url.startsWith(MG_DEF_ID)) {
           mgDefFetches++;
           return {
@@ -802,7 +813,7 @@ describe('entra-id multi-subscription wildcard isolation (cubic finding on #3090
         }
         return { value: [] };
       },
-      {},
+      { subscription_ids: ['sub-a', 'sub-b'] },
     );
     const wildcardFindings = failed.filter((f) => f.title.match(/[Ww]ildcard/));
     expect(wildcardFindings).toHaveLength(1);

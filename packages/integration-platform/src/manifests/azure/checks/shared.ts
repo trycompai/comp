@@ -6,9 +6,9 @@ const ARM = 'https://management.azure.com';
 /** Fan-out bound for auto-discovered subscriptions (13 checks × N subs). */
 const MAX_SUBSCRIPTIONS = 50;
 
-/** The legacy single-subscription variable, auto-saved by the Cloud Tests
- * setup. It is a detection cache, not a deliberate scope choice, so the
- * evidence checks only use it when subscriptions cannot be listed. */
+/** The legacy single-subscription variable (auto-saved by Cloud Tests
+ * detection or typed manually). Kept as the no-selection default so existing
+ * connections keep their exact pre-picker scan scope. */
 function legacySubscriptionId(ctx: CheckContext): string | null {
   const configured = ctx.variables.subscription_id;
   return typeof configured === 'string' && configured.trim().length > 0
@@ -17,14 +17,16 @@ function legacySubscriptionId(ctx: CheckContext): string | null {
 }
 
 /**
- * Resolve the Azure subscriptions a check should evaluate: the user-selected
- * `subscription_ids` variable if present, otherwise ALL Enabled subscriptions
- * the token can see (mirrors how GCP scans all active projects). Previously
- * only the first Enabled subscription was scanned — silently skipping the
- * rest in multi-subscription tenants.
+ * Resolve the Azure subscriptions a check should evaluate.
  *
- * Returns [] only after emitting an explicit "could not verify" finding, so
- * a scope failure never leaves the mapped tasks silently stale.
+ * Scanning MORE than one subscription is strictly opt-in: customers select
+ * subscriptions (one, several, or all) via the `subscription_ids` variable.
+ * Without a selection the behavior is identical to before the picker existed —
+ * the saved `subscription_id`, else the first Enabled subscription — so a
+ * deploy never silently expands an existing customer's scan scope.
+ *
+ * Returns [] only after emitting an explicit "could not verify" finding, so a
+ * scope failure never leaves the mapped tasks silently stale.
  */
 export async function resolveAzureSubscriptionIds(
   ctx: CheckContext,
@@ -35,10 +37,22 @@ export async function resolveAzureSubscriptionIds(
       .filter((s): s is string => typeof s === 'string')
       .map((s) => s.trim())
       .filter((s) => s.length > 0);
+    if (cleaned.length > MAX_SUBSCRIPTIONS) {
+      // Bound the fan-out (13 checks x N subs) — loudly, so capped coverage
+      // is never mistaken for full coverage.
+      ctx.warn(
+        `Azure: ${cleaned.length} subscriptions selected; scanning the first ${MAX_SUBSCRIPTIONS}`,
+        { selected: cleaned.length, scanned: MAX_SUBSCRIPTIONS },
+      );
+      return cleaned.slice(0, MAX_SUBSCRIPTIONS);
+    }
     if (cleaned.length > 0) return cleaned;
   }
 
+  // No explicit selection: preserve the pre-picker behavior exactly.
   const legacy = legacySubscriptionId(ctx);
+  if (legacy) return [legacy];
+
   try {
     const data = await ctx.fetch<{
       value?: Array<{ subscriptionId: string; state?: string }>;
@@ -49,25 +63,13 @@ export async function resolveAzureSubscriptionIds(
       .filter((s) => s.state === 'Enabled')
       .map((s) => s.subscriptionId);
     if (enabled.length > 0) {
-      if (legacy && (enabled.length > 1 || enabled[0] !== legacy)) {
+      if (enabled.length > 1) {
         ctx.log(
-          `Azure: scanning all ${enabled.length} enabled subscription(s); set subscription_ids to scope explicitly (legacy subscription_id is no longer used for scoping)`,
+          `Azure: ${enabled.length} enabled subscriptions visible but none selected — scanning "${enabled[0]}" only. Select subscriptions in the integration settings to scan more.`,
         );
       }
-      // Bound the fan-out so a giant tenant can't blow the run budget —
-      // loudly, so capped coverage is never mistaken for full coverage.
-      if (enabled.length > MAX_SUBSCRIPTIONS) {
-        ctx.warn(
-          `Azure: ${enabled.length} enabled subscriptions found; scanning the first ${MAX_SUBSCRIPTIONS} — set subscription_ids to scope explicitly`,
-          { enabled: enabled.length, scanned: MAX_SUBSCRIPTIONS },
-        );
-        return enabled.slice(0, MAX_SUBSCRIPTIONS);
-      }
-      return enabled;
+      return [enabled[0]!];
     }
-    // Nothing visible via the list call — the token may lack list permission
-    // at root scope while still having Reader on one subscription.
-    if (legacy) return [legacy];
     ctx.fail({
       title: 'Could not verify Azure subscription scope',
       description:
@@ -81,12 +83,6 @@ export async function resolveAzureSubscriptionIds(
     });
     return [];
   } catch (err) {
-    if (legacy) {
-      ctx.log(
-        `Azure: could not list subscriptions (${err instanceof Error ? err.message : String(err)}); falling back to the detected subscription_id`,
-      );
-      return [legacy];
-    }
     const failure = toHttpReadFailure(err);
     ctx.fail({
       title: 'Could not verify Azure subscription scope',
