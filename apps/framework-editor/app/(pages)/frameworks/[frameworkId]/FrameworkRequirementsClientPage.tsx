@@ -161,6 +161,8 @@ export function FrameworkRequirementsClientPage({
             rowId={row.original.id}
             columnId="description"
             onUpdate={updateCell}
+            expandable
+            expandTitle="Edit Requirement Description"
           />
         ),
       }),
@@ -174,6 +176,7 @@ export function FrameworkRequirementsClientPage({
               items={getValue()}
               rowId={row.original.id}
               isNewRow={createdIds.has(row.original.id)}
+              allowSelectOnNewRows
               getAllItems={fetchAllControlTemplates}
               onLink={linkControlToRequirement}
               onUnlink={unlinkControlFromRequirement}

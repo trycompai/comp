@@ -1,5 +1,6 @@
 'use client';
 
+import { confirmDiscardUnsavedChanges } from '@/app/lib/unsaved-changes';
 import { Tabs, TabsList, TabsTrigger } from '@trycompai/ui';
 import Link from 'next/link';
 import { useParams, useSelectedLayoutSegment } from 'next/navigation';
@@ -29,7 +30,14 @@ export function FrameworkTabs() {
             className="flex-1"
             asChild
           >
-            <Link href={tab.href}>{tab.name}</Link>
+            <Link
+              href={tab.href}
+              onClick={(event) => {
+                if (!confirmDiscardUnsavedChanges()) event.preventDefault();
+              }}
+            >
+              {tab.name}
+            </Link>
           </TabsTrigger>
         ))}
       </TabsList>

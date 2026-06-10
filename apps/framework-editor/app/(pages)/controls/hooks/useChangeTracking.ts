@@ -1,3 +1,5 @@
+import { useUnsavedChangesGuard } from '@/app/lib/unsaved-changes';
+import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import type { ControlsPageGridData } from '../types';
@@ -16,12 +18,29 @@ export interface ControlMutations {
     data: { name: string; description: string; controlFamily: string | null; documentTypes: string[] },
   ) => Promise<unknown>;
   deleteControl: (id: string) => Promise<unknown>;
+  /** Persist links picked on uncommitted rows. Optional per page context. */
+  linkRequirement?: (controlId: string, requirementId: string) => Promise<unknown>;
+  linkPolicyTemplate?: (controlId: string, policyTemplateId: string) => Promise<unknown>;
+  linkTaskTemplate?: (controlId: string, taskTemplateId: string) => Promise<unknown>;
+}
+
+export interface ChangeTrackingOptions {
+  /**
+   * On a framework's Controls tab the listing only shows controls linked to
+   * one of the framework's requirements — committing an unlinked control
+   * would make it silently vanish from the tab. When set, new rows must
+   * have at least one requirement link before they can be committed.
+   */
+  requireRequirementLink?: boolean;
 }
 
 export const useChangeTracking = (
   initialData: ControlsPageGridData[],
   mutations: ControlMutations,
+  options: ChangeTrackingOptions = {},
 ) => {
+  const router = useRouter();
+  const { requireRequirementLink = false } = options;
   const [data, setData] = useState<ControlsPageGridData[]>(() => initialData);
   const [prevData, setPrevData] = useState<ControlsPageGridData[]>(() => initialData);
 
@@ -179,7 +198,17 @@ export const useChangeTracking = (
 
       for (const tempId of createdIds) {
         const row = currentData.find((r) => r.id === tempId);
-        if (!row?.name) continue;
+        if (!row) continue;
+        if (!row.name?.trim()) {
+          results.errors.push('New control: name is required');
+          continue;
+        }
+        if (requireRequirementLink && row.requirements.length === 0) {
+          results.errors.push(
+            `"${row.name}": link at least one requirement (Linked Requirements column) — controls only appear on this framework's page through their requirement links`,
+          );
+          continue;
+        }
 
         try {
           const newControl = await mutations.createControl({
@@ -188,21 +217,39 @@ export const useChangeTracking = (
             controlFamily: row.controlFamily,
             documentTypes: row.documentTypes,
           });
-          results.successes.push(`Created: ${row.name}`);
+
+          // Persist links the user picked on the uncommitted row.
+          const failedLinks: string[] = [];
+          const linkSelections = [
+            { items: row.requirements, link: mutations.linkRequirement, noun: 'requirement' },
+            { items: row.policyTemplates, link: mutations.linkPolicyTemplate, noun: 'policy' },
+            { items: row.taskTemplates, link: mutations.linkTaskTemplate, noun: 'task' },
+          ];
+          for (const { items, link, noun } of linkSelections) {
+            for (const item of items) {
+              if (!link) {
+                failedLinks.push(`${noun} "${item.name}"`);
+                continue;
+              }
+              try {
+                await link(newControl.id, item.id);
+              } catch {
+                failedLinks.push(`${noun} "${item.name}"`);
+              }
+            }
+          }
+
+          if (failedLinks.length > 0) {
+            results.errors.push(
+              `Created "${row.name}" but failed to link: ${failedLinks.join(', ')}`,
+            );
+          } else {
+            results.successes.push(`Created: ${row.name}`);
+          }
           successfullyCreatedIds.add(tempId);
 
           setData((prev) =>
-            prev.map((r) =>
-              r.id === tempId
-                ? {
-                    ...r,
-                    id: newControl.id,
-                    policyTemplates: [],
-                    requirements: [],
-                    taskTemplates: [],
-                  }
-                : r,
-            ),
+            prev.map((r) => (r.id === tempId ? { ...r, id: newControl.id } : r)),
           );
         } catch (error) {
           results.errors.push(
@@ -275,11 +322,22 @@ export const useChangeTracking = (
         toast.success('Changes saved', {
           description: `${results.successes.length} operation(s) completed`,
         });
+        // Re-sync the grid with server truth (ids, timestamps, links).
+        router.refresh();
       }
     } finally {
       setIsCommitting(false);
     }
-  }, [data, createdIds, updatedIds, deletedIds, mutations, isCommitting]);
+  }, [
+    data,
+    createdIds,
+    updatedIds,
+    deletedIds,
+    mutations,
+    isCommitting,
+    requireRequirementLink,
+    router,
+  ]);
 
   const handleCancel = useCallback(() => {
     if (isCommitting) return;
@@ -292,6 +350,10 @@ export const useChangeTracking = (
   const isDirty = useMemo(() => {
     return createdIds.size > 0 || updatedIds.size > 0 || deletedIds.size > 0;
   }, [createdIds, updatedIds, deletedIds]);
+
+  // Uncommitted rows only live in this grid's state — warn before they are
+  // discarded by a reload or a tab switch.
+  useUnsavedChangesGuard('controls-grid', isDirty);
 
   const changesSummary = useMemo(() => {
     const total = createdIds.size + updatedIds.size + deletedIds.size;

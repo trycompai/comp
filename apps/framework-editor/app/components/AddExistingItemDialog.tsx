@@ -16,23 +16,17 @@ import { Loader2, Search } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
+import {
+  extractApiErrorMessage,
+  extractFrameworkNames,
+  type ExistingItemRaw,
+} from './add-existing-item-helpers';
+import {
+  ControlRequirementSelect,
+  type RequirementOption,
+} from './ControlRequirementSelect';
 
-interface ControlTemplateWithFrameworks {
-  id: string;
-  name: string;
-  requirements?: Array<{
-    framework?: { id: string; name: string | null } | null;
-  }>;
-}
-
-export interface ExistingItemRaw {
-  id: string;
-  name: string;
-  controlTemplates?: ControlTemplateWithFrameworks[];
-  requirements?: Array<{
-    framework?: { id: string; name: string | null } | null;
-  }>;
-}
+export type { ExistingItemRaw };
 
 interface ExistingItemDisplay {
   id: string;
@@ -56,28 +50,9 @@ interface AddExistingItemDialogProps {
   itemType: ItemType;
   existingItemIds: Set<string>;
   fetchAllItems: () => Promise<ExistingItemRaw[]>;
-}
-
-function extractFrameworkNames(item: ExistingItemRaw): string[] {
-  const names = new Set<string>();
-
-  if (item.controlTemplates) {
-    for (const ct of item.controlTemplates) {
-      if (ct.requirements) {
-        for (const req of ct.requirements) {
-          if (req.framework?.name) names.add(req.framework.name);
-        }
-      }
-    }
-  }
-
-  if (item.requirements) {
-    for (const req of item.requirements) {
-      if (req.framework?.name) names.add(req.framework.name);
-    }
-  }
-
-  return Array.from(names);
+  // When provided (controls only), linking runs a second step where the user
+  // picks which requirements to link to — instead of linking to all of them.
+  fetchRequirements?: () => Promise<RequirementOption[]>;
 }
 
 export function AddExistingItemDialog({
@@ -87,6 +62,7 @@ export function AddExistingItemDialog({
   itemType,
   existingItemIds,
   fetchAllItems,
+  fetchRequirements,
 }: AddExistingItemDialogProps) {
   const router = useRouter();
   const config = ITEM_TYPE_CONFIG[itemType];
@@ -97,11 +73,20 @@ export function AddExistingItemDialog({
   const [search, setSearch] = useState('');
   const [linkedIds, setLinkedIds] = useState<Set<string>>(new Set());
 
+  // Requirement-selection step (controls only).
+  const [pendingControl, setPendingControl] = useState<ExistingItemDisplay | null>(
+    null,
+  );
+  const [requirements, setRequirements] = useState<RequirementOption[]>([]);
+  const [isLoadingRequirements, setIsLoadingRequirements] = useState(false);
+
   useEffect(() => {
     if (!isOpen) {
       setSearch('');
       setAllItems([]);
       setLinkedIds(new Set());
+      setPendingControl(null);
+      setRequirements([]);
       return;
     }
 
@@ -132,23 +117,50 @@ export function AddExistingItemDialog({
       );
   }, [allItems, existingItemIds, linkedIds, search]);
 
-  const handleLink = useCallback(
-    async (item: ExistingItemDisplay) => {
-      setLinkingId(item.id);
+  const linkControl = useCallback(
+    async (controlId: string, controlName: string, requirementIds?: string[]) => {
+      setLinkingId(controlId);
       try {
-        await apiClient(`/framework/${frameworkId}/${config.linkPath}/${item.id}`, {
+        await apiClient(`/framework/${frameworkId}/${config.linkPath}/${controlId}`, {
           method: 'POST',
+          ...(requirementIds ? { body: JSON.stringify({ requirementIds }) } : {}),
         });
-        setLinkedIds((prev) => new Set(prev).add(item.id));
-        toast.success(`${config.label} "${item.name}" linked successfully`);
+        setLinkedIds((prev) => new Set(prev).add(controlId));
+        setPendingControl(null);
+        toast.success(`${config.label} "${controlName}" linked successfully`);
         router.refresh();
-      } catch {
-        toast.error(`Failed to link ${config.label.toLowerCase()}`);
+      } catch (error) {
+        toast.error(
+          extractApiErrorMessage(error) ??
+            `Failed to link ${config.label.toLowerCase()}`,
+        );
       } finally {
         setLinkingId(null);
       }
     },
     [frameworkId, config, router],
+  );
+
+  const handleLink = useCallback(
+    async (item: ExistingItemDisplay) => {
+      // Controls get a requirement-selection step so they link only to the
+      // chosen requirements rather than all of them.
+      if (fetchRequirements) {
+        setPendingControl(item);
+        setIsLoadingRequirements(true);
+        try {
+          setRequirements(await fetchRequirements());
+        } catch {
+          toast.error('Failed to load requirements');
+          setPendingControl(null);
+        } finally {
+          setIsLoadingRequirements(false);
+        }
+        return;
+      }
+      await linkControl(item.id, item.name);
+    },
+    [fetchRequirements, linkControl],
   );
 
   return (
@@ -162,6 +174,19 @@ export function AddExistingItemDialog({
           </DialogDescription>
         </DialogHeader>
 
+        {pendingControl ? (
+          <ControlRequirementSelect
+            controlName={pendingControl.name}
+            requirements={requirements}
+            isLoading={isLoadingRequirements}
+            isLinking={linkingId === pendingControl.id}
+            onBack={() => setPendingControl(null)}
+            onConfirm={(requirementIds) =>
+              linkControl(pendingControl.id, pendingControl.name, requirementIds)
+            }
+          />
+        ) : (
+          <>
         <div className="relative">
           <Search className="text-muted-foreground absolute left-2.5 top-2.5 h-4 w-4" />
           <Input
@@ -226,6 +251,8 @@ export function AddExistingItemDialog({
             </div>
           )}
         </ScrollArea>
+          </>
+        )}
       </DialogContent>
     </Dialog>
   );

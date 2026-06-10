@@ -1,4 +1,6 @@
 import { apiClient } from '@/app/lib/api-client';
+import { useUnsavedChangesGuard } from '@/app/lib/unsaved-changes';
+import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 
@@ -20,6 +22,7 @@ export function useRequirementChangeTracking(
   initialData: RequirementGridRow[],
   frameworkId: string,
 ) {
+  const router = useRouter();
   const [data, setData] = useState<RequirementGridRow[]>(() => initialData);
   const [prevData, setPrevData] = useState<RequirementGridRow[]>(() => initialData);
 
@@ -123,7 +126,13 @@ export function useRequirementChangeTracking(
 
     for (const tempId of createdIds) {
       const row = currentData.find((r) => r.id === tempId);
-      if (!row?.name) continue;
+      if (!row) continue;
+      if (!row.name?.trim()) {
+        results.errors.push(
+          `New requirement${row.identifier ? ` "${row.identifier}"` : ''}: name is required`,
+        );
+        continue;
+      }
       try {
         const created = await apiClient<{ id: string }>('/requirement', {
           method: 'POST',
@@ -135,7 +144,25 @@ export function useRequirementChangeTracking(
             requirementFamily: row.requirementFamily ?? undefined,
           }),
         });
-        results.successes.push(`Created: ${row.name}`);
+        // Persist control links the user picked on the uncommitted row.
+        const failedLinks: string[] = [];
+        for (const controlTemplate of row.controlTemplates) {
+          try {
+            await apiClient(
+              `/control-template/${controlTemplate.id}/requirements/${created.id}`,
+              { method: 'POST' },
+            );
+          } catch {
+            failedLinks.push(controlTemplate.name);
+          }
+        }
+        if (failedLinks.length > 0) {
+          results.errors.push(
+            `Created "${row.name}" but failed to link control(s): ${failedLinks.join(', ')}`,
+          );
+        } else {
+          results.successes.push(`Created: ${row.name}`);
+        }
         okCreated.add(tempId);
         setData((prev) =>
           prev.map((r) => (r.id === tempId ? { ...r, id: created.id } : r)),
@@ -226,8 +253,10 @@ export function useRequirementChangeTracking(
       toast.success('Changes saved', {
         description: `${results.successes.length} operation(s) completed`,
       });
+      // Re-sync the grid with server truth (ids, timestamps, links).
+      router.refresh();
     }
-  }, [data, createdIds, updatedIds, deletedIds, frameworkId]);
+  }, [data, createdIds, updatedIds, deletedIds, frameworkId, router]);
 
   const handleCancel = useCallback(() => {
     setData(prevData);
@@ -240,6 +269,10 @@ export function useRequirementChangeTracking(
     () => createdIds.size > 0 || updatedIds.size > 0 || deletedIds.size > 0,
     [createdIds, updatedIds, deletedIds],
   );
+
+  // Uncommitted rows only live in this grid's state — warn before they are
+  // discarded by a reload or a tab switch.
+  useUnsavedChangesGuard('framework-requirements-grid', isDirty);
 
   const changesSummary = useMemo(() => {
     const total = createdIds.size + updatedIds.size + deletedIds.size;

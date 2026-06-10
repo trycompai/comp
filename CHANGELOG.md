@@ -1,3 +1,76 @@
+# [3.77.0](https://github.com/trycompai/comp/compare/v3.76.0...v3.77.0) (2026-06-10)
+
+
+### Bug Fixes
+
+* **evidence-forms:** hide Account Types from the global Documents browse list ([628b220](https://github.com/trycompai/comp/commit/628b22004905db8aae7651d923182eac4691a5d2))
+* **evidence-forms:** mark Account Types optional so it doesn't change org scores ([680e47d](https://github.com/trycompai/comp/commit/680e47d5b86c109d6cbd921868e2e5be70a1d898))
+* **framework-editor:** default Controls tab to Name A-Z sort (CS-511) ([2b30fa7](https://github.com/trycompai/comp/commit/2b30fa74b0422505203d9b0b760f02608c64697e))
+
+
+### Features
+
+* **evidence-forms:** add Account Types document type (CS-513) ([9b6e610](https://github.com/trycompai/comp/commit/9b6e610afcde183fe5fc177933fef60867cf6464))
+* **framework-editor:** remove Control Family column from Controls tab (CS-512) ([f60775c](https://github.com/trycompai/comp/commit/f60775c0cab4f4aa28c13e18a7ec3ef127c698d0))
+
+# [3.76.0](https://github.com/trycompai/comp/compare/v3.75.0...v3.76.0) (2026-06-10)
+
+
+### Features
+
+* **framework-editor:** multi-line editor for Requirement descriptions (CS-513) ([750fa17](https://github.com/trycompai/comp/commit/750fa177c680a8a6023e4e6d250e503e386deb48)), closes [#3078](https://github.com/trycompai/comp/issues/3078)
+
+# [3.75.0](https://github.com/trycompai/comp/compare/v3.74.5...v3.75.0) (2026-06-10)
+
+
+### Features
+
+* **framework-editor:** multi-line editor for long control descriptions ([4896365](https://github.com/trycompai/comp/commit/4896365bd5bb41392498dfdc4691eb6ecc056128))
+
+## [3.74.5](https://github.com/trycompai/comp/compare/v3.74.4...v3.74.5) (2026-06-10)
+
+
+### Bug Fixes
+
+* **framework-editor:** let "Add Existing Control" pick requirements instead of linking all ([dde15af](https://github.com/trycompai/comp/commit/dde15af3fce38ace12762f55b19d12c83010347d))
+* **framework-editor:** treat null requirementIds as link-all, not a crash ([7b24fb6](https://github.com/trycompai/comp/commit/7b24fb6c1a1a1dd983778e073f4b9ad073255156))
+* **integration-platform:** log degraded region routing when paginated ListBuckets is rejected ([5f3e4f2](https://github.com/trycompai/comp/commit/5f3e4f2eca7555e92ba3c152a5999c58bb10fede))
+* **integration-platform:** route S3 bucket reads to each bucket's own region ([9f6e6f6](https://github.com/trycompai/comp/commit/9f6e6f65f1b0804096b54cf49b86edc8c33dc4dd))
+* **integration-platform:** surface real S3 read errors instead of claiming missing permissions ([8f2bb19](https://github.com/trycompai/comp/commit/8f2bb19be21aa36be29dc0294871230b96e5dd30))
+
+## [3.74.4](https://github.com/trycompai/comp/compare/v3.74.3...v3.74.4) (2026-06-10)
+
+
+### Bug Fixes
+
+* **framework-editor:** drop @vitejs/plugin-react from vitest config ([716205c](https://github.com/trycompai/comp/commit/716205c3e63f7d6595ee0b82d5976ff1059e6726))
+* **framework-editor:** prevent silent loss of new requirements and controls ([e231fcc](https://github.com/trycompai/comp/commit/e231fcc31d16d1e561574f41309784aa8086f3b3))
+
+## [3.74.3](https://github.com/trycompai/comp/compare/v3.74.2...v3.74.3) (2026-06-09)
+
+
+### Bug Fixes
+
+* **policies:** show a draft version's own content when editing it ([a10aa2a](https://github.com/trycompai/comp/commit/a10aa2a6a9621a2d1fd6501098795e7052486d1e))
+
+## [3.74.2](https://github.com/trycompai/comp/compare/v3.74.1...v3.74.2) (2026-06-09)
+
+
+### Bug Fixes
+
+* **cloud-security:** run task evidence checks against all connected accounts ([bdb6b3b](https://github.com/trycompai/comp/commit/bdb6b3b0d7976b2f3c098edf13d8fda8a57c13ab))
+* **cloud-security:** tenant-scope the task check-runs endpoint ([612d624](https://github.com/trycompai/comp/commit/612d62403be69d11420cd767367cd0389d5f6c63)), closes [#3067](https://github.com/trycompai/comp/issues/3067)
+* **cloud-security:** validate run-history limit and reject inactive connections ([c82f9fc](https://github.com/trycompai/comp/commit/c82f9fc3d4d130cb2a483bb52a314cbbcb297c29))
+* **people:** respect "Send portal invite email" opt-out when adding users ([18144fd](https://github.com/trycompai/comp/commit/18144fd7622b20a9db271b7357f3107d1ca080c7))
+
+## [3.74.1](https://github.com/trycompai/comp/compare/v3.74.0...v3.74.1) (2026-06-09)
+
+
+### Bug Fixes
+
+* **integration-platform:** attribute AWS check findings to their AWS account ([06a237d](https://github.com/trycompai/comp/commit/06a237d772beca1147ec1e3eed9d08d4c5dc5611))
+* **integration-platform:** show the customer's AWS connection name alongside the account ([69c84c8](https://github.com/trycompai/comp/commit/69c84c85badc226c40d9773d561548e20b84b6b0))
+
 # [3.74.0](https://github.com/trycompai/comp/compare/v3.73.3...v3.74.0) (2026-06-08)
 
 
