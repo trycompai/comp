@@ -56,6 +56,7 @@ import {
 } from './dto/trust-custom-link.dto';
 import type { UpdateTrustOverviewDto } from './dto/update-trust-overview.dto';
 import { UpdateTrustOverviewSchema } from './dto/update-trust-overview.dto';
+import { UpdateAllowedEmailsDto } from './dto/update-allowed-emails.dto';
 import type { UpdateVendorTrustSettingsDto } from './dto/trust-vendor.dto';
 import { UpdateVendorTrustSettingsSchema } from './dto/trust-vendor.dto';
 import { UpdateTrustCustomFrameworkSchema } from './dto/trust-custom-framework.dto';
@@ -389,9 +390,10 @@ export class TrustPortalController {
   @Put('settings/allowed-emails')
   @RequirePermission('trust', 'update')
   @ApiOperation({ summary: 'Update allowed emails for the trust portal' })
+  @ApiBody({ type: UpdateAllowedEmailsDto })
   async updateAllowedEmails(
     @OrganizationId() organizationId: string,
-    @Body() body: { emails: string[] },
+    @Body() body: UpdateAllowedEmailsDto,
   ) {
     return this.trustPortalService.updateAllowedEmails(
       organizationId,
