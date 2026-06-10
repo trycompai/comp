@@ -242,23 +242,26 @@ function failUnverifiedRegions(
     }
   }
   const regions = [...byRegion.keys()];
-  ctx.fail({
-    title: `Could not verify RDS ${what} in some regions`,
-    description: `RDS resources could not be listed in: ${regions.join(', ')}, so ${what} in those regions is unverified.`,
-    resourceType: 'aws-rds',
-    resourceId: `regions:${regions.join(',')}`,
-    severity: 'medium',
-    remediation: remediationForReadFailure(
-      combineReadFailures([...byRegion.values()]),
-      'Grant rds:DescribeDBInstances and rds:DescribeDBClusters to the integration role in all enabled regions, then re-run the check.',
-    ),
-    evidence: {
-      failedRegions: [...byRegion.entries()].map(([region, failure]) => ({
-        region,
-        error: failure.error,
-      })),
+  emitOutcomes(ctx, [
+    {
+      kind: 'fail',
+      title: `Could not verify RDS ${what} in some regions`,
+      description: `RDS resources could not be listed in: ${regions.join(', ')}, so ${what} in those regions is unverified.`,
+      resourceType: 'aws-rds',
+      resourceId: `regions:${regions.join(',')}`,
+      severity: 'medium',
+      remediation: remediationForReadFailure(
+        combineReadFailures([...byRegion.values()]),
+        'Grant rds:DescribeDBInstances and rds:DescribeDBClusters to the integration role in all enabled regions, then re-run the check.',
+      ),
+      evidence: {
+        failedRegions: [...byRegion.entries()].map(([region, failure]) => ({
+          region,
+          error: failure.error,
+        })),
+      },
     },
-  });
+  ]);
 }
 
 export const rdsEncryptionCheck: IntegrationCheck = {

@@ -201,25 +201,28 @@ export const kmsKeyRotationCheck: IntegrationCheck = {
       if (failedKeys.length > 0) {
         parts.push(`metadata could not be read for ${failedKeys.length} key(s)`);
       }
-      ctx.fail({
-        title: 'Could not verify KMS keys',
-        description: `${parts.join('; ')} — rotation eligibility/status is unverified.`,
-        resourceType: 'aws-kms-key',
-        resourceId: 'account',
-        severity: 'medium',
-        remediation: remediationForReadFailure(
-          combineReadFailures(unreadable.map((u) => u.failure)),
-          'Grant kms:ListKeys, kms:DescribeKey, and kms:GetKeyRotationStatus to the integration role in all enabled regions, then re-run the check.',
-        ),
-        evidence: {
-          failedRegions,
-          failedKeyCount: failedKeys.length,
-          // first few per-key errors so the cause is visible without log digging
-          keyReadErrors: failedKeys
-            .slice(0, 5)
-            .map((u) => ({ keyId: u.id, error: u.failure.error })),
+      emitOutcomes(ctx, [
+        {
+          kind: 'fail',
+          title: 'Could not verify KMS keys',
+          description: `${parts.join('; ')} — rotation eligibility/status is unverified.`,
+          resourceType: 'aws-kms-key',
+          resourceId: 'account',
+          severity: 'medium',
+          remediation: remediationForReadFailure(
+            combineReadFailures(unreadable.map((u) => u.failure)),
+            'Grant kms:ListKeys, kms:DescribeKey, and kms:GetKeyRotationStatus to the integration role in all enabled regions, then re-run the check.',
+          ),
+          evidence: {
+            failedRegions,
+            failedKeyCount: failedKeys.length,
+            // first few per-key errors so the cause is visible without log digging
+            keyReadErrors: failedKeys
+              .slice(0, 5)
+              .map((u) => ({ keyId: u.id, error: u.failure.error })),
+          },
         },
-      });
+      ]);
     }
 
     // Rotation-eligible keys each produce an outcome (incl. could-not-verify for

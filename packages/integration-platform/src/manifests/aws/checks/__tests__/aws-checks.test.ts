@@ -20,6 +20,7 @@ import {
   awsAccountIdFromCtx,
   emitOutcomes,
   resolveAwsCredentialInputs,
+  resolveAwsSessionOrFail,
   combineReadFailures,
   remediationForReadFailure,
   toReadFailure,
@@ -884,5 +885,33 @@ describe('emitOutcomes — attributes findings to the AWS account', () => {
     expect(passed[0]!.description).toContain(
       '(AWS account 123456789012 — Production AWS)',
     );
+  });
+});
+
+describe('account-level findings carry AWS account attribution (cubic finding on CS-533)', () => {
+  it('resolveAwsSessionOrFail failures are stamped with the account from the role ARN', async () => {
+    const failed: Array<{ description: string; evidence?: Record<string, unknown> }> = [];
+    const ctx = {
+      credentials: {
+        roleArn: 'arn:aws:iam::123456789012:role/x',
+        externalId: 'eid',
+        regions: ['us-east-1'],
+        connectionName: 'Prod AWS',
+        __resolvedSessionError: 'assume failed for test',
+      },
+      fail: (r: { description: string; evidence?: Record<string, unknown> }) => failed.push(r),
+      pass: () => {},
+      log: () => {},
+    } as unknown as Parameters<typeof resolveAwsSessionOrFail>[0];
+
+    const session = await resolveAwsSessionOrFail(ctx);
+    expect(session).toBeNull();
+    expect(failed).toHaveLength(1);
+    expect(failed[0]!.evidence).toMatchObject({
+      awsAccountId: '123456789012',
+      awsConnectionName: 'Prod AWS',
+      error: 'assume failed for test',
+    });
+    expect(failed[0]!.description).toContain('AWS account 123456789012');
   });
 });

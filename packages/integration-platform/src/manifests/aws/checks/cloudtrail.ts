@@ -228,23 +228,26 @@ export const cloudTrailEnabledCheck: IntegrationCheck = {
     // permissions/transient error) — report it as unverified instead.
     if (trails.length === 0 && regionFailures.length > 0) {
       const combined = combineReadFailures(regionFailures.map((r) => r.failure));
-      ctx.fail({
-        title: 'Could not verify CloudTrail configuration',
-        description: `CloudTrail trails could not be listed in: ${regionFailures.map((r) => r.region).join(', ')}, so trail configuration is unverified.`,
-        resourceType: 'aws-cloudtrail',
-        resourceId: 'account',
-        severity: 'medium',
-        remediation: remediationForReadFailure(
-          combined,
-          'Grant cloudtrail:DescribeTrails to the integration role in all enabled regions, then re-run the check.',
-        ),
-        evidence: {
-          failedRegions: regionFailures.map((r) => ({
-            region: r.region,
-            error: r.failure.error,
-          })),
+      emitOutcomes(ctx, [
+        {
+          kind: 'fail',
+          title: 'Could not verify CloudTrail configuration',
+          description: `CloudTrail trails could not be listed in: ${regionFailures.map((r) => r.region).join(', ')}, so trail configuration is unverified.`,
+          resourceType: 'aws-cloudtrail',
+          resourceId: 'account',
+          severity: 'medium',
+          remediation: remediationForReadFailure(
+            combined,
+            'Grant cloudtrail:DescribeTrails to the integration role in all enabled regions, then re-run the check.',
+          ),
+          evidence: {
+            failedRegions: regionFailures.map((r) => ({
+              region: r.region,
+              error: r.failure.error,
+            })),
+          },
         },
-      });
+      ]);
       return;
     }
 

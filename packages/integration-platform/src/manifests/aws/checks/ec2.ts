@@ -148,23 +148,26 @@ export const ec2SecurityGroupsCheck: IntegrationCheck = {
     // total/partial read failure end as a silent clean run (no findings).
     if (regionFailures.length > 0) {
       const regions = regionFailures.map((r) => r.region);
-      ctx.fail({
-        title: 'Could not verify security groups in some regions',
-        description: `Security groups could not be listed in: ${regions.join(', ')}. Internet exposure in those regions is unverified.`,
-        resourceType: 'aws-security-group',
-        resourceId: `regions:${regions.join(',')}`,
-        severity: 'medium',
-        remediation: remediationForReadFailure(
-          combineReadFailures(regionFailures.map((r) => r.failure)),
-          'Grant ec2:DescribeSecurityGroups to the integration role in all enabled regions, then re-run the check.',
-        ),
-        evidence: {
-          failedRegions: regionFailures.map((r) => ({
-            region: r.region,
-            error: r.failure.error,
-          })),
+      emitOutcomes(ctx, [
+        {
+          kind: 'fail',
+          title: 'Could not verify security groups in some regions',
+          description: `Security groups could not be listed in: ${regions.join(', ')}. Internet exposure in those regions is unverified.`,
+          resourceType: 'aws-security-group',
+          resourceId: `regions:${regions.join(',')}`,
+          severity: 'medium',
+          remediation: remediationForReadFailure(
+            combineReadFailures(regionFailures.map((r) => r.failure)),
+            'Grant ec2:DescribeSecurityGroups to the integration role in all enabled regions, then re-run the check.',
+          ),
+          evidence: {
+            failedRegions: regionFailures.map((r) => ({
+              region: r.region,
+              error: r.failure.error,
+            })),
+          },
         },
-      });
+      ]);
     }
     if (sgs.length === 0) return;
     emitOutcomes(ctx, evaluateSecurityGroups(sgs));
