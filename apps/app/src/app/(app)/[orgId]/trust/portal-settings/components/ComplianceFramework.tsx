@@ -190,6 +190,9 @@ export function ComplianceFramework({
   const handleDragEnter = (e: React.DragEvent) => {
     e.preventDefault();
     e.stopPropagation();
+    // Read-only / mid-upload: no drag affordance, no drop (mirrors the
+    // disabled click path).
+    if (disabled || isUploading) return;
     dragCounterRef.current++;
     if (e.dataTransfer.items && e.dataTransfer.items.length > 0) {
       setIsDragging(true);
@@ -215,6 +218,10 @@ export function ComplianceFramework({
     e.stopPropagation();
     setIsDragging(false);
     dragCounterRef.current = 0;
+
+    // Gate uploads the same way the click path is gated — drag-and-drop must
+    // not bypass the read-only / uploading state.
+    if (disabled || isUploading) return;
 
     const files = e.dataTransfer.files;
     if (files && files.length > 0) {
