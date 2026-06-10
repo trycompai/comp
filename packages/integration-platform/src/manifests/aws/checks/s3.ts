@@ -1,45 +1,23 @@
 import {
-  GetBucketEncryptionCommand,
-  GetPublicAccessBlockCommand,
-  ListBucketsCommand,
-  S3Client,
-} from '@aws-sdk/client-s3';
-import {
   GetPublicAccessBlockCommand as GetAccountPublicAccessBlockCommand,
   S3ControlClient,
 } from '@aws-sdk/client-s3-control';
 import { TASK_TEMPLATES } from '../../../task-mappings';
 import type { CheckContext, IntegrationCheck } from '../../../types';
 import {
+  gatherBuckets,
+  regionalS3Clients,
+  type BpaFlags,
+  type S3BucketInfo,
+} from './s3-buckets';
+import {
   awsAccountIdFromCtx,
   resolveAwsSessionOrFail,
-  toReadFailure,
   type CheckOutcome,
-  type ReadFailure,
   emitOutcomes,
 } from './shared';
 
-export interface BpaFlags {
-  blockPublicAcls: boolean;
-  ignorePublicAcls: boolean;
-  blockPublicPolicy: boolean;
-  restrictPublicBuckets: boolean;
-}
-
-export interface S3BucketInfo {
-  name: string;
-  encrypted: boolean;
-  /** false when encryption status couldn't be read (error) → excluded from eval */
-  encryptionDetermined: boolean;
-  /** bucket-level Block Public Access flags, or null when none configured */
-  bucketBpa: BpaFlags | null;
-  /** false when bucket-level Block Public Access couldn't be read (error) → excluded from eval */
-  publicAccessDetermined: boolean;
-  /** set when the encryption read failed — the real error, surfaced in evidence */
-  encryptionReadFailure?: ReadFailure;
-  /** set when the Block Public Access read failed — the real error, surfaced in evidence */
-  publicAccessReadFailure?: ReadFailure;
-}
+export type { BpaFlags, S3BucketInfo } from './s3-buckets';
 
 const TRANSIENT_READ_REMEDIATION =
   'The read failed with the error shown in the evidence — not a missing permission. Re-run the check; if it keeps failing, contact support.';
@@ -155,90 +133,6 @@ export function evaluateS3PublicAccess(
   });
 }
 
-async function gatherBuckets(
-  s3: S3Client,
-  opts: {
-    encryption: boolean;
-    publicAccess: boolean;
-    log?: (message: string) => void;
-  },
-): Promise<S3BucketInfo[]> {
-  const list = await s3.send(new ListBucketsCommand({}));
-  const names = (list.Buckets ?? [])
-    .map((b) => b.Name)
-    .filter((n): n is string => typeof n === 'string');
-
-  const infos: S3BucketInfo[] = [];
-  for (const name of names) {
-    let encrypted = false;
-    let encryptionDetermined = true;
-    let encryptionReadFailure: ReadFailure | undefined;
-    let bucketBpa: BpaFlags | null = null;
-    let publicAccessDetermined = true;
-    let publicAccessReadFailure: ReadFailure | undefined;
-
-    if (opts.encryption) {
-      try {
-        const enc = await s3.send(new GetBucketEncryptionCommand({ Bucket: name }));
-        encrypted = (enc.ServerSideEncryptionConfiguration?.Rules?.length ?? 0) > 0;
-      } catch (err) {
-        // "no encryption configured" is a genuine finding; any other error
-        // (permissions/transient) is indeterminate → exclude from evaluation.
-        if (
-          err instanceof Error &&
-          /ServerSideEncryptionConfigurationNotFound/i.test(err.name)
-        ) {
-          encrypted = false;
-        } else {
-          encryptionDetermined = false;
-          encryptionReadFailure = toReadFailure(err);
-          opts.log?.(
-            `S3 ${name}: encryption read failed — ${encryptionReadFailure.error}`,
-          );
-        }
-      }
-    }
-    if (opts.publicAccess) {
-      try {
-        const pab = await s3.send(new GetPublicAccessBlockCommand({ Bucket: name }));
-        const c = pab.PublicAccessBlockConfiguration;
-        bucketBpa = {
-          blockPublicAcls: Boolean(c?.BlockPublicAcls),
-          ignorePublicAcls: Boolean(c?.IgnorePublicAcls),
-          blockPublicPolicy: Boolean(c?.BlockPublicPolicy),
-          restrictPublicBuckets: Boolean(c?.RestrictPublicBuckets),
-        };
-      } catch (err) {
-        // "no bucket-level config" is a genuine finding (account-level may still
-        // cover it); any other error (AccessDenied/transient) is indeterminate →
-        // exclude from evaluation so we don't report a false public-access failure.
-        if (
-          err instanceof Error &&
-          /NoSuchPublicAccessBlockConfiguration/i.test(err.name)
-        ) {
-          bucketBpa = null; // no bucket-level config
-        } else {
-          publicAccessDetermined = false;
-          publicAccessReadFailure = toReadFailure(err);
-          opts.log?.(
-            `S3 ${name}: Block Public Access read failed — ${publicAccessReadFailure.error}`,
-          );
-        }
-      }
-    }
-    infos.push({
-      name,
-      encrypted,
-      encryptionDetermined,
-      encryptionReadFailure,
-      bucketBpa,
-      publicAccessDetermined,
-      publicAccessReadFailure,
-    });
-  }
-  return infos;
-}
-
 export const s3EncryptionCheck: IntegrationCheck = {
   id: 'aws-s3-encryption',
   name: 'S3 — default encryption enabled',
@@ -251,20 +145,14 @@ export const s3EncryptionCheck: IntegrationCheck = {
       ctx.log('AWS S3 encryption check: connection not configured — skipping');
       return;
     }
-    const s3 = new S3Client({
-      region: session.regions[0],
-      credentials: session.credentials,
-      followRegionRedirects: true,
-      // Reads are idempotent; extra attempts ride out transient network or
-      // throttling failures during the scheduled-run herd.
-      maxAttempts: 5,
-    });
+    const { s3, clientForRegion } = regionalS3Clients(session);
     let buckets: S3BucketInfo[];
     try {
       buckets = await gatherBuckets(s3, {
         encryption: true,
         publicAccess: false,
         log: (message) => ctx.log(message),
+        clientForRegion,
       });
     } catch (err) {
       ctx.fail({
@@ -297,14 +185,7 @@ export const s3PublicAccessCheck: IntegrationCheck = {
       ctx.log('AWS S3 public-access check: connection not configured — skipping');
       return;
     }
-    const s3 = new S3Client({
-      region: session.regions[0],
-      credentials: session.credentials,
-      followRegionRedirects: true,
-      // Reads are idempotent; extra attempts ride out transient network or
-      // throttling failures during the scheduled-run herd.
-      maxAttempts: 5,
-    });
+    const { s3, clientForRegion } = regionalS3Clients(session);
 
     // Account-level Block Public Access applies to every bucket. Read it once;
     // if denied/absent, fall back to bucket-level only (graceful).
@@ -340,6 +221,7 @@ export const s3PublicAccessCheck: IntegrationCheck = {
         encryption: false,
         publicAccess: true,
         log: (message) => ctx.log(message),
+        clientForRegion,
       });
     } catch (err) {
       ctx.fail({

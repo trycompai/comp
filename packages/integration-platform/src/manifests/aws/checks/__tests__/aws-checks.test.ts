@@ -14,6 +14,7 @@ import {
   evaluateRdsEncryption,
 } from '../rds';
 import { evaluateS3Encryption, evaluateS3PublicAccess } from '../s3';
+import { gatherBuckets } from '../s3-buckets';
 import {
   assumeAwsSession,
   awsAccountIdFromCtx,
@@ -294,6 +295,158 @@ describe('AWS S3 evaluators', () => {
     expect(out[0]!.remediation).toMatch(/re-run/i);
     expect(out[1]!.remediation).toContain('Grant s3:GetEncryptionConfiguration');
     expect(out[1]!.evidence).toMatchObject({ readError: 'AccessDenied: Access Denied' });
+  });
+});
+
+describe('gatherBuckets — per-bucket region routing', () => {
+  type FakeClient = { send: (cmd: { constructor: { name: string }; input: Record<string, unknown> }) => Promise<unknown> };
+  const asS3 = (c: FakeClient) => c as unknown as import('@aws-sdk/client-s3').S3Client;
+
+  const BPA_OK = {
+    PublicAccessBlockConfiguration: {
+      BlockPublicAcls: true,
+      IgnorePublicAcls: true,
+      BlockPublicPolicy: true,
+      RestrictPublicBuckets: true,
+    },
+  };
+
+  it('routes reads for cross-region buckets to that region client (customer bug: cross-region 301 dependence)', async () => {
+    const calls: Array<{ client: string; bucket: unknown }> = [];
+    const defaultClient: FakeClient = {
+      send: async (cmd) => {
+        if (cmd.constructor.name === 'ListBucketsCommand') {
+          return {
+            Buckets: [
+              { Name: 'local-bucket', BucketRegion: 'us-east-2' },
+              { Name: 'remote-bucket', BucketRegion: 'us-east-1' },
+            ],
+          };
+        }
+        calls.push({ client: 'default', bucket: cmd.input.Bucket });
+        return BPA_OK;
+      },
+    };
+    const remoteClient: FakeClient = {
+      send: async (cmd) => {
+        calls.push({ client: 'us-east-1', bucket: cmd.input.Bucket });
+        return BPA_OK;
+      },
+    };
+
+    const requestedRegions: string[] = [];
+    const buckets = await gatherBuckets(asS3(defaultClient), {
+      encryption: false,
+      publicAccess: true,
+      clientForRegion: (region) => {
+        requestedRegions.push(region);
+        return region === 'us-east-1' ? asS3(remoteClient) : asS3(defaultClient);
+      },
+    });
+
+    expect(buckets).toHaveLength(2);
+    expect(buckets.every((b) => b.publicAccessDetermined)).toBe(true);
+    expect(calls).toEqual([
+      { client: 'default', bucket: 'local-bucket' },
+      { client: 'us-east-1', bucket: 'remote-bucket' },
+    ]);
+    expect(requestedRegions).toEqual(['us-east-2', 'us-east-1']);
+  });
+
+  it('falls back to the legacy ListBuckets (no regions, default client) when MaxBuckets is rejected', async () => {
+    let sawLegacyList = false;
+    const client: FakeClient = {
+      send: async (cmd) => {
+        if (cmd.constructor.name === 'ListBucketsCommand') {
+          if (cmd.input.MaxBuckets) {
+            const err = new Error('MaxBuckets not supported');
+            err.name = 'InvalidArgument';
+            throw err;
+          }
+          sawLegacyList = true;
+          return { Buckets: [{ Name: 'b1' }] };
+        }
+        return BPA_OK;
+      },
+    };
+
+    const buckets = await gatherBuckets(asS3(client), {
+      encryption: false,
+      publicAccess: true,
+      clientForRegion: () => {
+        throw new Error('must not be called when bucket region is unknown');
+      },
+    });
+
+    expect(sawLegacyList).toBe(true);
+    expect(buckets).toEqual([
+      {
+        name: 'b1',
+        encrypted: false,
+        encryptionDetermined: true,
+        encryptionReadFailure: undefined,
+        bucketBpa: {
+          blockPublicAcls: true,
+          ignorePublicAcls: true,
+          blockPublicPolicy: true,
+          restrictPublicBuckets: true,
+        },
+        publicAccessDetermined: true,
+        publicAccessReadFailure: undefined,
+      },
+    ]);
+  });
+
+  it('paginates ListBuckets via ContinuationToken', async () => {
+    const client: FakeClient = {
+      send: async (cmd) => {
+        if (cmd.constructor.name === 'ListBucketsCommand') {
+          return cmd.input.ContinuationToken
+            ? { Buckets: [{ Name: 'page2', BucketRegion: 'us-east-2' }] }
+            : {
+                Buckets: [{ Name: 'page1', BucketRegion: 'us-east-2' }],
+                ContinuationToken: 'next',
+              };
+        }
+        return BPA_OK;
+      },
+    };
+
+    const buckets = await gatherBuckets(asS3(client), {
+      encryption: false,
+      publicAccess: true,
+    });
+    expect(buckets.map((b) => b.name)).toEqual(['page1', 'page2']);
+  });
+
+  it('records the read failure and keeps going when a per-bucket read throws', async () => {
+    const client: FakeClient = {
+      send: async (cmd) => {
+        if (cmd.constructor.name === 'ListBucketsCommand') {
+          return { Buckets: [{ Name: 'bad' }, { Name: 'good' }] };
+        }
+        if (cmd.input.Bucket === 'bad') {
+          const err = new Error('socket hang up');
+          err.name = 'TimeoutError';
+          throw err;
+        }
+        return BPA_OK;
+      },
+    };
+
+    const logs: string[] = [];
+    const buckets = await gatherBuckets(asS3(client), {
+      encryption: false,
+      publicAccess: true,
+      log: (m) => logs.push(m),
+    });
+    expect(buckets[0]).toMatchObject({
+      name: 'bad',
+      publicAccessDetermined: false,
+      publicAccessReadFailure: { error: 'TimeoutError: socket hang up', denied: false },
+    });
+    expect(buckets[1]!.publicAccessDetermined).toBe(true);
+    expect(logs.some((m) => m.includes('TimeoutError: socket hang up'))).toBe(true);
   });
 });
 
