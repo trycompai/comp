@@ -146,10 +146,12 @@ export function ComplianceFramework({
   // refreshes (SWR revalidation, another tab/user) — otherwise the row shows
   // stale enabled/status values forever. Single guarded sync: skipped while a
   // mutation is in flight so a concurrent revalidation can't clobber the
-  // optimistic value before the request settles.
-  const mutationInFlightRef = useRef(false);
+  // optimistic value before the request settles. A counter (not a boolean)
+  // so overlapping toggle + status mutations both keep resync gated until the
+  // last one settles.
+  const inFlightCountRef = useRef(0);
   useEffect(() => {
-    if (mutationInFlightRef.current) return;
+    if (inFlightCountRef.current > 0) return;
     setIsEnabled(isEnabledProp);
     setStatus(statusProp);
   }, [isEnabledProp, statusProp]);
@@ -249,13 +251,13 @@ export function ComplianceFramework({
                     if (!value) return;
                     const prev = status;
                     setStatus(value);
-                    mutationInFlightRef.current = true;
+                    inFlightCountRef.current += 1;
                     try {
                       await onStatusChange(value);
                     } catch {
                       setStatus(prev);
                     } finally {
-                      mutationInFlightRef.current = false;
+                      inFlightCountRef.current -= 1;
                     }
                   }}
                 >
@@ -304,13 +306,13 @@ export function ComplianceFramework({
                 checked={isEnabled}
                 onCheckedChange={async (checked) => {
                   setIsEnabled(checked);
-                  mutationInFlightRef.current = true;
+                  inFlightCountRef.current += 1;
                   try {
                     await onToggle(checked);
                   } catch {
                     setIsEnabled(!checked);
                   } finally {
-                    mutationInFlightRef.current = false;
+                    inFlightCountRef.current -= 1;
                   }
                 }}
               />

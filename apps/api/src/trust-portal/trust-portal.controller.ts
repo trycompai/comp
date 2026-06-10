@@ -418,6 +418,9 @@ export class TrustPortalController {
     schema: {
       type: 'object',
       required: ['customFrameworkId'],
+      // Mirrors UpdateTrustCustomFrameworkSchema's .refine(): the id is
+      // required and at least one mutable field must be present.
+      anyOf: [{ required: ['enabled'] }, { required: ['status'] }],
       properties: {
         customFrameworkId: { type: 'string', minLength: 1 },
         enabled: { type: 'boolean' },
