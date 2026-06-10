@@ -83,18 +83,62 @@ enum TrustFramework {
 }
 
 model TrustResource {
-  id             String         @id @default(dbgenerated("generate_prefixed_cuid('tcr'::text)"))
+  id             String       @id @default(dbgenerated("generate_prefixed_cuid('tcr'::text)"))
   organizationId String
-  organization   Organization   @relation("OrganizationTrustResources", fields: [organizationId], references: [id], onDelete: Cascade)
-  framework      TrustFramework
-  s3Key          String
-  fileName       String
-  fileSize       Int
-  createdAt      DateTime       @default(now())
-  updatedAt      DateTime       @updatedAt
+  organization   Organization @relation("OrganizationTrustResources", fields: [organizationId], references: [id], onDelete: Cascade)
 
+  // A trust resource (compliance certificate PDF) belongs to EITHER a native
+  // framework (TrustFramework enum) OR an org-authored custom framework. Exactly
+  // one of `framework` / `customFrameworkId` is set — enforced by a DB CHECK
+  // constraint (TrustResource_one_framework_check).
+  framework TrustFramework?
+
+  customFrameworkId String?
+  // Composite FK onto (id, organizationId) so a custom-framework certificate can
+  // only reference a CustomFramework in its own org. Enforced at the DB level.
+  customFramework   CustomFramework? @relation(fields: [customFrameworkId, organizationId], references: [id, organizationId], onDelete: Cascade)
+
+  s3Key     String
+  fileName  String
+  fileSize  Int
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Postgres treats NULLs as distinct in unique indexes, so the inactive parent
+  // column doesn't collide across rows (native rows have customFrameworkId NULL,
+  // custom rows have framework NULL).
   @@unique([organizationId, framework])
+  @@unique([organizationId, customFrameworkId])
   @@index([organizationId])
+  @@index([customFrameworkId])
+}
+
+/// Links an org-authored CustomFramework to the public Trust Portal so it can be
+/// displayed alongside native frameworks. Native frameworks store their
+/// enabled/status as columns on `Trust`; custom frameworks are dynamic per-org
+/// rows, so their portal selection lives here instead.
+model TrustCustomFramework {
+  id String @id @default(dbgenerated("generate_prefixed_cuid('tcf'::text)"))
+
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  customFrameworkId String
+  // Composite FK onto (id, organizationId) so a selection can only reference a
+  // CustomFramework in its own org. Enforced at the DB level.
+  customFramework   CustomFramework @relation(fields: [customFrameworkId, organizationId], references: [id, organizationId], onDelete: Cascade)
+
+  // Whether the framework is shown on the public portal, and its displayed
+  // status — mirrors the per-framework enabled + *_status columns on `Trust`.
+  enabled Boolean         @default(true)
+  status  FrameworkStatus @default(started)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([organizationId, customFrameworkId])
+  @@index([organizationId])
+  @@index([customFrameworkId])
 }
 
 model TrustAccessRequest {

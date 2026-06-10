@@ -2,6 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { BadRequestException } from '@nestjs/common';
 import { TrustPortalController } from './trust-portal.controller';
 import { TrustPortalService } from './trust-portal.service';
+import { TrustCustomFrameworkService } from './trust-custom-framework.service';
 import { HybridAuthGuard } from '../auth/hybrid-auth.guard';
 import { PermissionGuard } from '../auth/permission.guard';
 import type { AuthContext as AuthContextType } from '../auth/types';
@@ -51,6 +52,12 @@ describe('TrustPortalController', () => {
     getAllVendorsWithSync: jest.fn(),
   };
 
+  const mockCustomFrameworkService = {
+    listForOrg: jest.fn(),
+    updateSelection: jest.fn(),
+    getPublicCustomFrameworks: jest.fn(),
+  };
+
   const mockGuard = { canActivate: jest.fn().mockReturnValue(true) };
 
   const orgId = 'org_test123';
@@ -71,7 +78,13 @@ describe('TrustPortalController', () => {
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       controllers: [TrustPortalController],
-      providers: [{ provide: TrustPortalService, useValue: mockService }],
+      providers: [
+        { provide: TrustPortalService, useValue: mockService },
+        {
+          provide: TrustCustomFrameworkService,
+          useValue: mockCustomFrameworkService,
+        },
+      ],
     })
       .overrideGuard(HybridAuthGuard)
       .useValue(mockGuard)

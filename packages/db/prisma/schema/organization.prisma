@@ -55,6 +55,7 @@ model Organization {
   trustDocuments                     TrustDocument[]
   trustResources                     TrustResource[]                     @relation("OrganizationTrustResources")
   trustCustomLinks                   TrustCustomLink[]
+  trustCustomFrameworks              TrustCustomFramework[]
   knowledgeBaseDocuments             KnowledgeBaseDocument[]
   questionnaires                     Questionnaire[]
   securityQuestionnaireManualAnswers SecurityQuestionnaireManualAnswer[]
