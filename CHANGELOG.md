@@ -1,3 +1,10 @@
+# [3.76.0](https://github.com/trycompai/comp/compare/v3.75.0...v3.76.0) (2026-06-10)
+
+
+### Features
+
+* **framework-editor:** multi-line editor for Requirement descriptions (CS-513) ([750fa17](https://github.com/trycompai/comp/commit/750fa177c680a8a6023e4e6d250e503e386deb48)), closes [#3078](https://github.com/trycompai/comp/issues/3078)
+
 # [3.75.0](https://github.com/trycompai/comp/compare/v3.74.5...v3.75.0) (2026-06-10)
 
 
