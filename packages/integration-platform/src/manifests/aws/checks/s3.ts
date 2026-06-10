@@ -153,17 +153,20 @@ export const s3EncryptionCheck: IntegrationCheck = {
         clientForRegion,
       });
     } catch (err) {
-      ctx.fail({
-        title: 'Could not verify S3 encryption',
-        description:
-          'S3 buckets could not be listed, so default encryption could not be verified.',
-        resourceType: 'aws-account',
-        resourceId: 'account',
-        severity: 'medium',
-        remediation:
-          'Grant s3:ListAllMyBuckets (and s3:GetEncryptionConfiguration) to the integration role, then re-run the check.',
-        evidence: { error: err instanceof Error ? err.message : String(err) },
-      });
+      emitOutcomes(ctx, [
+        {
+          kind: 'fail',
+          title: 'Could not verify S3 encryption',
+          description:
+            'S3 buckets could not be listed, so default encryption could not be verified.',
+          resourceType: 'aws-account',
+          resourceId: 'account',
+          severity: 'medium',
+          remediation:
+            'Grant s3:ListAllMyBuckets (and s3:GetEncryptionConfiguration) to the integration role, then re-run the check.',
+          evidence: { error: err instanceof Error ? err.message : String(err) },
+        },
+      ]);
       return;
     }
     if (buckets.length === 0) return;
@@ -222,17 +225,20 @@ export const s3PublicAccessCheck: IntegrationCheck = {
         clientForRegion,
       });
     } catch (err) {
-      ctx.fail({
-        title: 'Could not verify S3 public access',
-        description:
-          'S3 buckets could not be listed, so Block Public Access could not be verified.',
-        resourceType: 'aws-account',
-        resourceId: 'account',
-        severity: 'medium',
-        remediation:
-          'Grant s3:ListAllMyBuckets (and s3:GetBucketPublicAccessBlock) to the integration role, then re-run the check.',
-        evidence: { error: err instanceof Error ? err.message : String(err) },
-      });
+      emitOutcomes(ctx, [
+        {
+          kind: 'fail',
+          title: 'Could not verify S3 public access',
+          description:
+            'S3 buckets could not be listed, so Block Public Access could not be verified.',
+          resourceType: 'aws-account',
+          resourceId: 'account',
+          severity: 'medium',
+          remediation:
+            'Grant s3:ListAllMyBuckets (and s3:GetBucketPublicAccessBlock) to the integration role, then re-run the check.',
+          evidence: { error: err instanceof Error ? err.message : String(err) },
+        },
+      ]);
       return;
     }
     if (buckets.length === 0) return;

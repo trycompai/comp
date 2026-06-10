@@ -228,17 +228,20 @@ export async function resolveAwsSessionOrFail(
   try {
     return await assumeAwsSession(ctx);
   } catch (err) {
-    ctx.fail({
-      title: 'Could not assume AWS role',
-      description:
-        'The cross-account IAM role could not be assumed, so this check could not be verified.',
-      resourceType: 'aws-account',
-      resourceId: 'account',
-      severity: 'medium',
-      remediation:
-        'Verify the role ARN and external ID are correct and the role trust policy allows Comp to assume it, then re-run the check.',
-      evidence: { error: err instanceof Error ? err.message : String(err) },
-    });
+    emitOutcomes(ctx, [
+      {
+        kind: 'fail',
+        title: 'Could not assume AWS role',
+        description:
+          'The cross-account IAM role could not be assumed, so this check could not be verified.',
+        resourceType: 'aws-account',
+        resourceId: 'account',
+        severity: 'medium',
+        remediation:
+          'Verify the role ARN and external ID are correct and the role trust policy allows Comp to assume it, then re-run the check.',
+        evidence: { error: err instanceof Error ? err.message : String(err) },
+      },
+    ]);
     return null;
   }
 }

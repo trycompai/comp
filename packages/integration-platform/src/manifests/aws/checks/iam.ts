@@ -187,18 +187,21 @@ export const iamAccountSecurityCheck: IntegrationCheck = {
     // password-policy findings now so they aren't lost if the summary read
     // fails below.
     if (policyReadFailure) {
-      ctx.fail({
-        title: 'Could not verify IAM password policy',
-        description: `The IAM account password policy could not be read (${policyReadFailure.error}), so password-policy strength is unverified.`,
-        resourceType: 'aws-account',
-        resourceId: 'account',
-        severity: 'medium',
-        remediation: remediationForReadFailure(
-          policyReadFailure,
-          'Grant iam:GetAccountPasswordPolicy to the integration role, then re-run the check.',
-        ),
-        evidence: { readError: policyReadFailure.error },
-      });
+      emitOutcomes(ctx, [
+        {
+          kind: 'fail',
+          title: 'Could not verify IAM password policy',
+          description: `The IAM account password policy could not be read (${policyReadFailure.error}), so password-policy strength is unverified.`,
+          resourceType: 'aws-account',
+          resourceId: 'account',
+          severity: 'medium',
+          remediation: remediationForReadFailure(
+            policyReadFailure,
+            'Grant iam:GetAccountPasswordPolicy to the integration role, then re-run the check.',
+          ),
+          evidence: { readError: policyReadFailure.error },
+        },
+      ]);
     } else {
       emitOutcomes(ctx, evaluatePasswordPolicy(passwordPolicy));
     }
@@ -213,18 +216,21 @@ export const iamAccountSecurityCheck: IntegrationCheck = {
       // check with a bare error (or omitting those critical findings).
       const failure = toReadFailure(err);
       ctx.log(`IAM: could not read account summary: ${failure.error}`);
-      ctx.fail({
-        title: 'Could not verify IAM account summary',
-        description: `The IAM account summary (root MFA, root access keys) could not be read (${failure.error}), so root-account security is unverified.`,
-        resourceType: 'aws-account',
-        resourceId: 'account',
-        severity: 'medium',
-        remediation: remediationForReadFailure(
-          failure,
-          'Grant iam:GetAccountSummary to the integration role, then re-run the check.',
-        ),
-        evidence: { readError: failure.error },
-      });
+      emitOutcomes(ctx, [
+        {
+          kind: 'fail',
+          title: 'Could not verify IAM account summary',
+          description: `The IAM account summary (root MFA, root access keys) could not be read (${failure.error}), so root-account security is unverified.`,
+          resourceType: 'aws-account',
+          resourceId: 'account',
+          severity: 'medium',
+          remediation: remediationForReadFailure(
+            failure,
+            'Grant iam:GetAccountSummary to the integration role, then re-run the check.',
+          ),
+          evidence: { readError: failure.error },
+        },
+      ]);
     }
   },
 };
