@@ -483,6 +483,14 @@ describe('toReadFailure — read-error classification', () => {
     optIn.name = 'OptInRequired';
     expect(toReadFailure(optIn)).toMatchObject({ denied: false, regionDisabled: true });
 
+    // OptInRequired arrives as HTTP 403 in the real SDK — the status check
+    // must NOT win over the region classification (cubic finding on #3087)
+    const optIn403 = Object.assign(new Error('not subscribed to this region'), {
+      name: 'OptInRequired',
+      $metadata: { httpStatusCode: 403 },
+    });
+    expect(toReadFailure(optIn403)).toMatchObject({ denied: false, regionDisabled: true });
+
     const authFailure = new Error('AWS was not able to validate the provided access credentials');
     authFailure.name = 'AuthFailure';
     expect(toReadFailure(authFailure)).toMatchObject({ denied: false, regionDisabled: true });

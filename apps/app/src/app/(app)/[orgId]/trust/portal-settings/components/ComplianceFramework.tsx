@@ -17,7 +17,7 @@ import {
   TooltipTrigger,
 } from '@trycompai/design-system';
 import { CertificateCheck, Download, Upload, View } from '@trycompai/design-system/icons';
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import {
   CCPA,
@@ -141,6 +141,20 @@ export function ComplianceFramework({
 }) {
   const [isEnabled, setIsEnabled] = useState(isEnabledProp);
   const [status, setStatus] = useState(statusProp);
+
+  // State is optimistic-first, but must follow the parent's data when it
+  // refreshes (SWR revalidation, another tab/user) — otherwise the row shows
+  // stale enabled/status values forever. Single guarded sync: skipped while a
+  // mutation is in flight so a concurrent revalidation can't clobber the
+  // optimistic value before the request settles. A counter (not a boolean)
+  // so overlapping toggle + status mutations both keep resync gated until the
+  // last one settles.
+  const inFlightCountRef = useRef(0);
+  useEffect(() => {
+    if (inFlightCountRef.current > 0) return;
+    setIsEnabled(isEnabledProp);
+    setStatus(statusProp);
+  }, [isEnabledProp, statusProp]);
   const [isUploading, setIsUploading] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -163,9 +177,6 @@ export function ComplianceFramework({
       try {
         await onFileUpload(file, frameworkKey);
         toast.success('Certificate uploaded successfully');
-        if (fileInputRef.current) {
-          fileInputRef.current.value = '';
-        }
       } catch (error) {
         const message = error instanceof Error ? error.message : 'Failed to upload certificate';
         toast.error(message);
@@ -240,10 +251,13 @@ export function ComplianceFramework({
                     if (!value) return;
                     const prev = status;
                     setStatus(value);
+                    inFlightCountRef.current += 1;
                     try {
                       await onStatusChange(value);
                     } catch {
                       setStatus(prev);
+                    } finally {
+                      inFlightCountRef.current -= 1;
                     }
                   }}
                 >
@@ -292,10 +306,13 @@ export function ComplianceFramework({
                 checked={isEnabled}
                 onCheckedChange={async (checked) => {
                   setIsEnabled(checked);
+                  inFlightCountRef.current += 1;
                   try {
                     await onToggle(checked);
                   } catch {
                     setIsEnabled(!checked);
+                  } finally {
+                    inFlightCountRef.current -= 1;
                   }
                 }}
               />
@@ -312,6 +329,10 @@ export function ComplianceFramework({
                 className="hidden"
                 onChange={async (e) => {
                   const file = e.target.files?.[0];
+                  // Always reset the input: browsers skip onChange when the
+                  // same file is re-selected, which would block retrying after
+                  // a failed upload or a rejected (non-PDF/too-large) file.
+                  e.target.value = '';
                   if (file) {
                     await processFile(file);
                   }

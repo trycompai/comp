@@ -99,6 +99,14 @@ export function CustomFrameworksSection({
   };
 
   const handleFileUpload = async (file: File, customFrameworkId: string) => {
+    // Defense-in-depth size cap at the API-call boundary: the raw file is
+    // limited to 100MB (server decodes and re-checks), and base64 inflates it
+    // ~33% — guarding here avoids building a ~133MB string and surfaces a clean
+    // error if this handler is ever invoked outside the validated row flow.
+    const MAX_FILE_SIZE = 100 * 1024 * 1024;
+    if (file.size > MAX_FILE_SIZE) {
+      throw new Error('File size must be less than 100MB');
+    }
     const fileData = await convertFileToBase64(file);
     const payload = await uploadCustomComplianceResource(
       orgId,

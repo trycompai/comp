@@ -850,6 +850,40 @@ describe('entra-id multi-subscription wildcard isolation (cubic finding on #3090
 });
 
 describe('azure subscription picker fetchOptions', () => {
+  it('follows nextLink so every subscription page is selectable', async () => {
+    const variable = azureManifest.variables?.find((v) => v.id === 'subscription_ids');
+    const ctx = {
+      fetch: async (url: string) => {
+        if (url.includes('skiptoken')) {
+          return { value: [{ subscriptionId: 'sub-2', displayName: 'B', state: 'Enabled' }] };
+        }
+        return {
+          value: [{ subscriptionId: 'sub-1', displayName: 'A', state: 'Enabled' }],
+          nextLink: 'https://management.azure.com/subscriptions?api-version=2020-01-01&skiptoken=x',
+        };
+      },
+    } as unknown as Parameters<NonNullable<typeof variable.fetchOptions>>[0];
+    const options = await variable!.fetchOptions!(ctx);
+    expect(options.map((o) => o.value)).toEqual(['sub-1', 'sub-2']);
+  });
+
+  it('does not follow a nextLink that leaves the ARM host', async () => {
+    const variable = azureManifest.variables?.find((v) => v.id === 'subscription_ids');
+    const fetched: string[] = [];
+    const ctx = {
+      fetch: async (url: string) => {
+        fetched.push(url);
+        return {
+          value: [{ subscriptionId: 'sub-1', displayName: 'A', state: 'Enabled' }],
+          nextLink: 'https://evil.example.com/subscriptions',
+        };
+      },
+    } as unknown as Parameters<NonNullable<typeof variable.fetchOptions>>[0];
+    const options = await variable!.fetchOptions!(ctx);
+    expect(fetched).toHaveLength(1);
+    expect(options.map((o) => o.value)).toEqual(['sub-1']);
+  });
+
   it('returns [] instead of throwing when subscriptions cannot be listed', async () => {
     const variable = azureManifest.variables?.find((v) => v.id === 'subscription_ids');
     expect(variable?.fetchOptions).toBeDefined();
