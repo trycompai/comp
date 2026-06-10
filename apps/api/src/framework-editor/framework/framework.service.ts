@@ -235,7 +235,7 @@ export class FrameworkEditorFrameworkService {
   async linkControl(
     frameworkId: string,
     controlId: string,
-    requirementIds?: string[],
+    requirementIds?: string[] | null,
   ) {
     await this.findById(frameworkId);
 
@@ -253,9 +253,10 @@ export class FrameworkEditorFrameworkService {
     // A control belongs to a framework only through its requirement links. When
     // the caller passes requirementIds, link just those — this is the UI path,
     // so adding an existing control no longer fans out to every requirement.
-    // When omitted, link all: the documented legacy bulk behavior the CLI uses.
+    // When omitted (undefined/null), link all: the documented legacy bulk
+    // behavior the CLI uses. (@IsOptional lets a JSON null through, so guard it.)
     let targetIds: { id: string }[];
-    if (requirementIds === undefined) {
+    if (requirementIds === undefined || requirementIds === null) {
       targetIds = frameworkRequirements.map((r) => ({ id: r.id }));
     } else {
       const frameworkRequirementIds = new Set(

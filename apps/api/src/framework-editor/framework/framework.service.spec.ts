@@ -59,6 +59,18 @@ describe('FrameworkEditorFrameworkService.linkControl', () => {
     });
   });
 
+  it('treats a null requirementIds (JSON null past @IsOptional) as link-all, not a crash', async () => {
+    await expect(service.linkControl('frk_1', 'ct_1', null)).resolves.toEqual({
+      message: 'Control linked to framework',
+    });
+    expect(mockDb.frameworkEditorControlTemplate.update).toHaveBeenCalledWith({
+      where: { id: 'ct_1' },
+      data: {
+        requirements: { connect: [{ id: 'req_1' }, { id: 'req_2' }, { id: 'req_3' }] },
+      },
+    });
+  });
+
   it('rejects requirement ids that do not belong to the framework', async () => {
     await expect(
       service.linkControl('frk_1', 'ct_1', ['req_2', 'req_outsider']),
