@@ -590,6 +590,11 @@ Injects: At 10:30, media contacts the company about the incident.`,
     category: 'Security',
     submissionDateMode: 'custom',
     portalAccessible: false,
+    // NIST-specific: relevant only to orgs that link it to a control, so it is
+    // NOT counted in the org-wide "expected documents" score (which would ding
+    // every org). It still appears in the documents UI and counts for any
+    // control it is linked to (per-control scoring uses the linked types).
+    optional: true,
     fields: [
       {
         key: 'accountTypeRows',
