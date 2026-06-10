@@ -57,14 +57,16 @@ export class UploadComplianceResourceDto extends ComplianceResourceBaseDto {
 export class ComplianceResourceSignedUrlDto extends ComplianceResourceBaseDto {}
 
 export class ComplianceResourceResponseDto {
-  @ApiPropertyOptional({
+  // Always present in the response (one of the two is null), so these are
+  // required-but-nullable — not optional.
+  @ApiProperty({
     enum: TrustFramework,
     description: 'Set for native-framework certificates; null for custom ones',
     nullable: true,
   })
   framework!: TrustFramework | null;
 
-  @ApiPropertyOptional({
+  @ApiProperty({
     description: 'Set for custom-framework certificates; null for native ones',
     nullable: true,
   })
