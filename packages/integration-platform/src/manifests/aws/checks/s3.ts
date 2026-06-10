@@ -14,6 +14,7 @@ import {
   awsAccountIdFromCtx,
   remediationForReadFailure,
   resolveAwsSessionOrFail,
+  toReadFailure,
   type CheckOutcome,
   emitOutcomes,
 } from './shared';
@@ -153,18 +154,20 @@ export const s3EncryptionCheck: IntegrationCheck = {
         clientForRegion,
       });
     } catch (err) {
+      const failure = toReadFailure(err);
       emitOutcomes(ctx, [
         {
           kind: 'fail',
           title: 'Could not verify S3 encryption',
-          description:
-            'S3 buckets could not be listed, so default encryption could not be verified.',
+          description: `S3 buckets could not be listed (${failure.error}), so default encryption could not be verified.`,
           resourceType: 'aws-account',
           resourceId: 'account',
           severity: 'medium',
-          remediation:
+          remediation: remediationForReadFailure(
+            failure,
             'Grant s3:ListAllMyBuckets (and s3:GetEncryptionConfiguration) to the integration role, then re-run the check.',
-          evidence: { error: err instanceof Error ? err.message : String(err) },
+          ),
+          evidence: { readError: failure.error },
         },
       ]);
       return;
@@ -225,18 +228,20 @@ export const s3PublicAccessCheck: IntegrationCheck = {
         clientForRegion,
       });
     } catch (err) {
+      const failure = toReadFailure(err);
       emitOutcomes(ctx, [
         {
           kind: 'fail',
           title: 'Could not verify S3 public access',
-          description:
-            'S3 buckets could not be listed, so Block Public Access could not be verified.',
+          description: `S3 buckets could not be listed (${failure.error}), so Block Public Access could not be verified.`,
           resourceType: 'aws-account',
           resourceId: 'account',
           severity: 'medium',
-          remediation:
+          remediation: remediationForReadFailure(
+            failure,
             'Grant s3:ListAllMyBuckets (and s3:GetBucketPublicAccessBlock) to the integration role, then re-run the check.',
-          evidence: { error: err instanceof Error ? err.message : String(err) },
+          ),
+          evidence: { readError: failure.error },
         },
       ]);
       return;

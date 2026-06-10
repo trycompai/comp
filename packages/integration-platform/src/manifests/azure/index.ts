@@ -105,14 +105,33 @@ Our integration only makes read-only API calls for security scanning.`,
         'Select which subscriptions to scan (select all to scan everything). Leave empty to keep scanning the single auto-detected subscription.',
       fetchOptions: async (ctx) => {
         try {
-          const data = await ctx.fetch<{
+          type SubsPage = {
             value?: Array<{
               subscriptionId: string;
               displayName?: string;
               state?: string;
             }>;
-          }>('https://management.azure.com/subscriptions?api-version=2020-01-01');
-          return (data.value ?? [])
+            nextLink?: string;
+          };
+          const subs: NonNullable<SubsPage['value']> = [];
+          // ARM paginates via nextLink — follow it (bounded) so large tenants
+          // can see and select every subscription, not just the first page.
+          let url: string | undefined =
+            'https://management.azure.com/subscriptions?api-version=2020-01-01';
+          let pages = 0;
+          while (url && pages < 10) {
+            const data: SubsPage = await ctx.fetch<SubsPage>(url);
+            subs.push(...(data.value ?? []));
+            // only follow nextLink on the ARM host, so the bearer token can't
+            // be sent elsewhere
+            url =
+              data.nextLink &&
+              data.nextLink.startsWith('https://management.azure.com/')
+                ? data.nextLink
+                : undefined;
+            pages++;
+          }
+          return subs
             .filter((s) => s.state === 'Enabled')
             .sort((a, b) => (a.displayName ?? '').localeCompare(b.displayName ?? ''))
             .map((s) => ({
@@ -123,7 +142,7 @@ Our integration only makes read-only API calls for security scanning.`,
             }));
         } catch {
           // Graceful empty picker (matches the GCP project_ids precedent) —
-          // the user can still rely on scan-all or the legacy subscription_id.
+          // the user can still rely on the saved subscription_id default.
           return [];
         }
       },

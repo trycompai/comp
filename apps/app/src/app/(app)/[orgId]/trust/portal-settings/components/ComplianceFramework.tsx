@@ -17,7 +17,7 @@ import {
   TooltipTrigger,
 } from '@trycompai/design-system';
 import { CertificateCheck, Download, Upload, View } from '@trycompai/design-system/icons';
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import {
   CCPA,
@@ -141,6 +141,16 @@ export function ComplianceFramework({
 }) {
   const [isEnabled, setIsEnabled] = useState(isEnabledProp);
   const [status, setStatus] = useState(statusProp);
+
+  // State is optimistic-first, but must follow the parent's data when it
+  // refreshes (SWR revalidation, another tab/user) — otherwise the row shows
+  // stale enabled/status values forever.
+  useEffect(() => {
+    setIsEnabled(isEnabledProp);
+  }, [isEnabledProp]);
+  useEffect(() => {
+    setStatus(statusProp);
+  }, [statusProp]);
   const [isUploading, setIsUploading] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);

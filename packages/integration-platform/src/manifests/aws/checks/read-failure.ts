@@ -28,18 +28,19 @@ export function toReadFailure(err: unknown): ReadFailure {
       : String(err).slice(0, 300);
   const status = (err as { $metadata?: { httpStatusCode?: number } } | null)
     ?.$metadata?.httpStatusCode;
-  const denied =
-    status === 403 ||
-    (err instanceof Error &&
-      /AccessDenied|UnauthorizedOperation|Forbidden|NotAuthorized/i.test(
-        err.name,
-      ));
   // OptInRequired / AuthFailure are what opted-out or disabled regions throw —
-  // a permanent condition for this connection, not something a re-run fixes.
+  // a permanent condition for this connection, not something a re-run or an
+  // IAM grant fixes. Classified BEFORE denied: OptInRequired arrives as HTTP
+  // 403, so the status check alone would mislabel it as a permission gap.
   const regionDisabled =
-    !denied &&
-    err instanceof Error &&
-    /OptInRequired|AuthFailure/i.test(err.name);
+    err instanceof Error && /OptInRequired|AuthFailure/i.test(err.name);
+  const denied =
+    !regionDisabled &&
+    (status === 403 ||
+      (err instanceof Error &&
+        /AccessDenied|UnauthorizedOperation|Forbidden|NotAuthorized/i.test(
+          err.name,
+        )));
   return { error, denied, regionDisabled };
 }
 
