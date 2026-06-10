@@ -1,5 +1,9 @@
 import { TASK_TEMPLATES } from '../../../task-mappings';
 import type { CheckContext, FindingSeverity, IntegrationCheck } from '../../../types';
+import {
+  remediationForReadFailure,
+  toHttpReadFailure,
+} from '../../http-read-failure';
 import { gcpListItems, portsCover, resolveGcpProjectIds } from './shared';
 
 interface FirewallRule {
@@ -113,17 +117,20 @@ export const vpcOpenFirewallsCheck: IntegrationCheck = {
         // A read failure for this project is unverified — emit a finding rather
         // than warn-and-skip, otherwise an all-projects-failed run emits no
         // outcomes and leaves the mapped task stale (a silent clean run).
+        const failure = toHttpReadFailure(err);
         ctx.fail({
           title: `Could not verify VPC firewall rules: ${projectId}`,
-          description: `Firewall rules for project "${projectId}" could not be read, so internet exposure is unverified.`,
+          description: `Firewall rules for project "${projectId}" could not be read (${failure.error}), so internet exposure is unverified.`,
           resourceType: 'gcp-project',
           resourceId: projectId,
           severity: 'medium',
-          remediation:
+          remediation: remediationForReadFailure(
+            failure,
             'Grant compute.firewalls.list (e.g. roles/compute.viewer) to the connection for this project, then re-run.',
+          ),
           evidence: {
             projectId,
-            error: err instanceof Error ? err.message : String(err),
+            error: failure.error,
           },
         });
       }

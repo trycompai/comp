@@ -1,5 +1,9 @@
 import { TASK_TEMPLATES } from '../../../task-mappings';
 import type { CheckContext, IntegrationCheck } from '../../../types';
+import {
+  remediationForReadFailure,
+  toHttpReadFailure,
+} from '../../http-read-failure';
 import { gcpListItems, resolveGcpProjectIds } from './shared';
 
 interface SqlInstance {
@@ -74,15 +78,18 @@ export const cloudSqlBackupsCheck: IntegrationCheck = {
       } catch (err) {
         // Unverified project → emit a finding, not a warn-and-skip, so an
         // all-projects-failed run doesn't leave the task stale (silent pass).
+        const failure = toHttpReadFailure(err);
         ctx.fail({
           title: `Could not verify Cloud SQL backups: ${projectId}`,
-          description: `Cloud SQL instances for project "${projectId}" could not be listed, so backup configuration is unverified.`,
+          description: `Cloud SQL instances for project "${projectId}" could not be listed (${failure.error}), so backup configuration is unverified.`,
           resourceType: 'gcp-project',
           resourceId: projectId,
           severity: 'medium',
-          remediation:
+          remediation: remediationForReadFailure(
+            failure,
             'Grant cloudsql.instances.list (e.g. roles/cloudsql.viewer) to the connection for this project, then re-run.',
-          evidence: { projectId, error: err instanceof Error ? err.message : String(err) },
+          ),
+          evidence: { projectId, error: failure.error },
         });
         continue;
       }

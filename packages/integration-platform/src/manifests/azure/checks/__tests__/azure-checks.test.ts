@@ -27,7 +27,12 @@ import {
 
 interface Captured {
   passed: string[];
-  failed: Array<{ title: string; severity: string }>;
+  failed: Array<{
+    title: string;
+    severity: string;
+    remediation?: string;
+    evidence?: Record<string, unknown>;
+  }>;
 }
 
 async function run(
@@ -48,7 +53,13 @@ async function run(
     warn: () => {},
     error: () => {},
     pass: (r) => passed.push(r.title),
-    fail: (r) => failed.push({ title: r.title, severity: r.severity }),
+    fail: (r) =>
+      failed.push({
+        title: r.title,
+        severity: r.severity,
+        remediation: r.remediation,
+        evidence: r.evidence,
+      }),
     fetch: (async <T,>(url: string): Promise<T> => fetchFn(url) as T) as CheckContext['fetch'],
     post: (async () => ({})) as CheckContext['post'],
     put: (async () => ({})) as CheckContext['put'],
@@ -608,5 +619,54 @@ describe('Azure PostgreSQL Flexible Server TLS check', () => {
     const { passed, failed } = await run(postgresqlFlexibleTlsCheck, pgFetch('ON', 'TLSv1.2', []));
     expect(passed).toHaveLength(0);
     expect(failed).toHaveLength(0);
+  });
+});
+
+describe('Azure read-failure remediation gating', () => {
+  const httpError = (status: number, message: string) => {
+    const err = new Error(message);
+    (err as Error & { status: number }).status = status;
+    return err;
+  };
+  const SERVER = {
+    id: '/subscriptions/sub-1/resourceGroups/rg/providers/Microsoft.Sql/servers/s1',
+    name: 's1',
+    properties: {},
+  };
+
+  it('sql auditing: transient read says re-run; denied keeps the grant hint', async () => {
+    const transient = await run(sqlAuditingCheck, (url: string) => {
+      if (url.includes('/providers/Microsoft.Sql/servers?')) return { value: [SERVER] };
+      if (url.includes('/auditingSettings/')) throw httpError(500, 'HTTP 500: Internal Server Error');
+      return {};
+    });
+    const f = transient.failed.find((x) => x.title.includes('Could not read SQL auditing settings'));
+    expect(f).toBeDefined();
+    expect(f!.remediation).toMatch(/re-run/i);
+    expect(f!.remediation).not.toContain('auditingSettings/read');
+    expect(f!.evidence).toMatchObject({ readError: 'HTTP 500: Internal Server Error' });
+
+    const denied = await run(sqlAuditingCheck, (url: string) => {
+      if (url.includes('/providers/Microsoft.Sql/servers?')) return { value: [SERVER] };
+      if (url.includes('/auditingSettings/')) throw httpError(403, 'HTTP 403: Forbidden - AuthorizationFailed');
+      return {};
+    });
+    const fd = denied.failed.find((x) => x.title.includes('Could not read SQL auditing settings'));
+    expect(fd).toBeDefined();
+    expect(fd!.remediation).toContain('Microsoft.Sql/servers/auditingSettings/read');
+    expect(fd!.evidence).toMatchObject({ readError: 'HTTP 403: Forbidden - AuthorizationFailed' });
+  });
+
+  it('monitor: unreadable alerts carry readError and a gated (transient) remediation', async () => {
+    const out = await run(monitorLoggingAlertingCheck, (url: string) => {
+      if (url.includes('activityLogAlerts')) throw httpError(500, 'HTTP 500: boom');
+      if (url.includes('diagnosticSettings')) return { value: [] };
+      return {};
+    });
+    const f = out.failed.find((x) => x.title === 'Could not read activity log alerts');
+    expect(f).toBeDefined();
+    expect(f!.remediation).toMatch(/re-run/i);
+    expect(f!.remediation).not.toContain('Monitoring Reader');
+    expect(f!.evidence).toMatchObject({ readError: 'HTTP 500: boom' });
   });
 });

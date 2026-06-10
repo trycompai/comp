@@ -1,5 +1,10 @@
 import { TASK_TEMPLATES } from '../../../task-mappings';
 import type { CheckContext, IntegrationCheck } from '../../../types';
+import {
+  remediationForReadFailure,
+  toHttpReadFailure,
+  type ReadFailure,
+} from '../../http-read-failure';
 import { ARM_BASE, armListAll, armListAllOrFail, resolveAzureSubscriptionId } from './shared';
 
 interface SqlServer {
@@ -93,10 +98,15 @@ export const sqlPublicAccessCheck: IntegrationCheck = {
       }
 
       // null = firewall read failed → do NOT treat as "no wide-open rules".
+      let rulesReadFailure: ReadFailure | undefined;
       const rules = await armListAll<SqlFirewallRule>(
         ctx,
         `${ARM_BASE}${s.id}/firewallRules?api-version=2023-05-01-preview`,
-      ).catch(() => null);
+      ).catch((err) => {
+        rulesReadFailure = toHttpReadFailure(err);
+        ctx.log(`SQL ${s.name}: firewall rules read failed — ${rulesReadFailure.error}`);
+        return null;
+      });
 
       if (rules) {
         const wideOpen = rules.find(
@@ -146,13 +156,19 @@ export const sqlPublicAccessCheck: IntegrationCheck = {
         // satisfied by other servers passing.
         ctx.fail({
           title: `Could not read SQL firewall rules: ${s.name}`,
-          description: `Unable to read firewall rules for SQL Server "${s.name}", so wide-open access cannot be ruled out.`,
+          description: `Unable to read firewall rules for SQL Server "${s.name}"${rulesReadFailure ? ` (${rulesReadFailure.error})` : ''}, so wide-open access cannot be ruled out.`,
           resourceType: 'azure-sql-server',
           resourceId: s.id,
           severity: 'medium',
-          remediation:
+          remediation: remediationForReadFailure(
+            rulesReadFailure,
             'Grant read access to SQL firewall rules (Microsoft.Sql/servers/firewallRules/read) so public access can be verified.',
-          evidence: { server: s.name, publicNetworkAccess: s.properties?.publicNetworkAccess ?? null },
+          ),
+          evidence: {
+            server: s.name,
+            publicNetworkAccess: s.properties?.publicNetworkAccess ?? null,
+            ...(rulesReadFailure ? { readError: rulesReadFailure.error } : {}),
+          },
         });
       } else {
         ctx.pass({
@@ -189,23 +205,33 @@ export const sqlAuditingCheck: IntegrationCheck = {
     if (!servers) return;
     if (servers.length === 0) return;
     for (const s of servers) {
+      let auditingReadFailure: ReadFailure | undefined;
       const auditing = await ctx
         .fetch<AuditingSetting>(
           `${ARM_BASE}${s.id}/auditingSettings/default?api-version=2021-11-01`,
         )
-        .catch(() => null);
+        .catch((err) => {
+          auditingReadFailure = toHttpReadFailure(err);
+          ctx.log(`SQL ${s.name}: auditing settings read failed — ${auditingReadFailure.error}`);
+          return null;
+        });
       if (auditing === null) {
         // Couldn't read auditing settings — fail explicitly so the Monitoring
         // task isn't falsely passed by other servers that read successfully.
         ctx.fail({
           title: `Could not read SQL auditing settings: ${s.name}`,
-          description: `Unable to read auditing settings for SQL Server "${s.name}", so auditing state cannot be verified.`,
+          description: `Unable to read auditing settings for SQL Server "${s.name}"${auditingReadFailure ? ` (${auditingReadFailure.error})` : ''}, so auditing state cannot be verified.`,
           resourceType: 'azure-sql-server',
           resourceId: s.id,
           severity: 'medium',
-          remediation:
+          remediation: remediationForReadFailure(
+            auditingReadFailure,
             'Grant read access to SQL auditing settings (Microsoft.Sql/servers/auditingSettings/read) so auditing can be verified.',
-          evidence: { server: s.name },
+          ),
+          evidence: {
+            server: s.name,
+            ...(auditingReadFailure ? { readError: auditingReadFailure.error } : {}),
+          },
         });
         continue;
       }
