@@ -1,3 +1,18 @@
+# [3.77.0](https://github.com/trycompai/comp/compare/v3.76.0...v3.77.0) (2026-06-10)
+
+
+### Bug Fixes
+
+* **evidence-forms:** hide Account Types from the global Documents browse list ([628b220](https://github.com/trycompai/comp/commit/628b22004905db8aae7651d923182eac4691a5d2))
+* **evidence-forms:** mark Account Types optional so it doesn't change org scores ([680e47d](https://github.com/trycompai/comp/commit/680e47d5b86c109d6cbd921868e2e5be70a1d898))
+* **framework-editor:** default Controls tab to Name A-Z sort (CS-511) ([2b30fa7](https://github.com/trycompai/comp/commit/2b30fa74b0422505203d9b0b760f02608c64697e))
+
+
+### Features
+
+* **evidence-forms:** add Account Types document type (CS-513) ([9b6e610](https://github.com/trycompai/comp/commit/9b6e610afcde183fe5fc177933fef60867cf6464))
+* **framework-editor:** remove Control Family column from Controls tab (CS-512) ([f60775c](https://github.com/trycompai/comp/commit/f60775c0cab4f4aa28c13e18a7ec3ef127c698d0))
+
 # [3.76.0](https://github.com/trycompai/comp/compare/v3.75.0...v3.76.0) (2026-06-10)
 
 
