@@ -114,12 +114,13 @@ Our integration only makes read-only API calls for security scanning.`,
             nextLink?: string;
           };
           const subs: NonNullable<SubsPage['value']> = [];
-          // ARM paginates via nextLink — follow it (bounded) so large tenants
-          // can see and select every subscription, not just the first page.
+          // ARM paginates via nextLink — follow it so large tenants can see
+          // and select every subscription. The page cap matches armListAll's
+          // (a loop guard against malformed nextLink chains, not a budget).
           let url: string | undefined =
             'https://management.azure.com/subscriptions?api-version=2020-01-01';
           let pages = 0;
-          while (url && pages < 10) {
+          while (url && pages < 50) {
             const data: SubsPage = await ctx.fetch<SubsPage>(url);
             subs.push(...(data.value ?? []));
             // only follow nextLink on the ARM host, so the bearer token can't
