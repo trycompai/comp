@@ -20,6 +20,8 @@ import {
   awsAccountIdFromCtx,
   emitOutcomes,
   resolveAwsCredentialInputs,
+  combineReadFailures,
+  remediationForReadFailure,
   toReadFailure,
   type CheckOutcome,
 } from '../shared';
@@ -454,7 +456,7 @@ describe('toReadFailure — read-error classification', () => {
   it('classifies AccessDenied by error name', () => {
     const err = new Error('Access Denied');
     err.name = 'AccessDenied';
-    expect(toReadFailure(err)).toEqual({ error: 'AccessDenied: Access Denied', denied: true });
+    expect(toReadFailure(err)).toEqual({ error: 'AccessDenied: Access Denied', denied: true, regionDisabled: false });
   });
 
   it('classifies 403 by http status even with a generic name', () => {
@@ -468,11 +470,44 @@ describe('toReadFailure — read-error classification', () => {
   it('treats network/timeout errors as not denied', () => {
     const err = new Error('socket hang up');
     err.name = 'TimeoutError';
-    expect(toReadFailure(err)).toEqual({ error: 'TimeoutError: socket hang up', denied: false });
+    expect(toReadFailure(err)).toEqual({ error: 'TimeoutError: socket hang up', denied: false, regionDisabled: false });
   });
 
   it('stringifies non-Error throwables', () => {
-    expect(toReadFailure('boom')).toEqual({ error: 'boom', denied: false });
+    expect(toReadFailure('boom')).toEqual({ error: 'boom', denied: false, regionDisabled: false });
+  });
+
+  it('classifies opted-out region errors as regionDisabled, not transient', () => {
+    const optIn = new Error('region is not opted in');
+    optIn.name = 'OptInRequired';
+    expect(toReadFailure(optIn)).toMatchObject({ denied: false, regionDisabled: true });
+
+    const authFailure = new Error('AWS was not able to validate the provided access credentials');
+    authFailure.name = 'AuthFailure';
+    expect(toReadFailure(authFailure)).toMatchObject({ denied: false, regionDisabled: true });
+  });
+});
+
+describe('combineReadFailures / remediationForReadFailure', () => {
+  const denied = { error: 'AccessDenied: nope', denied: true };
+  const transient = { error: 'TimeoutError: hang', denied: false };
+  const disabled = { error: 'OptInRequired: not opted in', denied: false, regionDisabled: true };
+
+  it('combine: any denied wins; regionDisabled only when ALL are', () => {
+    expect(combineReadFailures([])).toBeUndefined();
+    expect(combineReadFailures([transient, denied])!.denied).toBe(true);
+    expect(combineReadFailures([disabled, disabled])).toMatchObject({ regionDisabled: true, denied: false });
+    // mixed disabled + transient must NOT advise removing a region
+    expect(combineReadFailures([disabled, transient])!.regionDisabled).toBe(false);
+  });
+
+  it('remediation: grant hint only for denied (or missing detail); region message for disabled; re-run otherwise', () => {
+    const grant = 'Grant x:Read to the role.';
+    expect(remediationForReadFailure(undefined, grant)).toBe(grant);
+    expect(remediationForReadFailure(denied, grant)).toBe(grant);
+    expect(remediationForReadFailure(disabled, grant)).toMatch(/disabled or not opted in/i);
+    expect(remediationForReadFailure(transient, grant)).toMatch(/re-run/i);
+    expect(remediationForReadFailure(transient, grant)).not.toContain(grant);
   });
 });
 
@@ -604,6 +639,38 @@ describe('AWS KMS rotation evaluator', () => {
   });
 });
 
+describe('KMS rotation read-failure gating', () => {
+  it('transient rotation-status failure surfaces readError and avoids the permission claim', () => {
+    const out = evaluateKmsRotation([
+      {
+        keyId: 'k1', region: 'us-east-1', rotationEligible: true, rotationStatusKnown: false, rotationEnabled: false,
+        rotationReadFailure: { error: 'ThrottlingException: Rate exceeded', denied: false },
+      },
+    ]);
+    expect(out[0]!.kind).toBe('fail');
+    expect(out[0]!.evidence).toMatchObject({ readError: 'ThrottlingException: Rate exceeded' });
+    expect(out[0]!.remediation).not.toContain('Grant kms:GetKeyRotationStatus');
+    expect(out[0]!.remediation).toMatch(/re-run/i);
+  });
+
+  it('denied rotation-status failure keeps the grant remediation', () => {
+    const out = evaluateKmsRotation([
+      {
+        keyId: 'k1', region: 'us-east-1', rotationEligible: true, rotationStatusKnown: false, rotationEnabled: false,
+        rotationReadFailure: { error: 'AccessDeniedException: no kms:GetKeyRotationStatus', denied: true },
+      },
+    ]);
+    expect(out[0]!.remediation).toContain('Grant kms:GetKeyRotationStatus');
+  });
+
+  it('without failure detail the legacy permission hint is kept', () => {
+    const out = evaluateKmsRotation([
+      { keyId: 'k1', region: 'us-east-1', rotationEligible: true, rotationStatusKnown: false, rotationEnabled: false },
+    ]);
+    expect(out[0]!.remediation).toContain('Grant kms:GetKeyRotationStatus');
+  });
+});
+
 describe('AWS CloudTrail evaluator', () => {
   it('passes when a multi-region trail with validation is actively logging', () => {
     const out = evaluateCloudTrail([
@@ -645,6 +712,30 @@ describe('AWS CloudTrail evaluator', () => {
     expect(out[0]!.kind).toBe('fail');
     expect(out[0]!.title).toMatch(/Could not verify/);
   });
+
+  it('status-read failure: transient error surfaces readError and does not claim a missing permission', () => {
+    const out = evaluateCloudTrail([
+      {
+        name: 't1', multiRegion: true, logValidation: true, logging: false, loggingKnown: false,
+        statusReadFailure: { error: 'TimeoutError: socket hang up', denied: false },
+      },
+    ]);
+    expect(out[0]!.evidence).toMatchObject({ readError: 'TimeoutError: socket hang up' });
+    expect(out[0]!.description).toContain('TimeoutError: socket hang up');
+    expect(out[0]!.remediation).not.toContain('Grant cloudtrail:GetTrailStatus');
+    expect(out[0]!.remediation).toMatch(/re-run/i);
+  });
+
+  it('status-read failure: AccessDenied keeps the grant-permission remediation', () => {
+    const out = evaluateCloudTrail([
+      {
+        name: 't1', multiRegion: true, logValidation: true, logging: false, loggingKnown: false,
+        statusReadFailure: { error: 'AccessDeniedException: nope', denied: true },
+      },
+    ]);
+    expect(out[0]!.remediation).toContain('Grant cloudtrail:GetTrailStatus');
+    expect(out[0]!.evidence).toMatchObject({ readError: 'AccessDeniedException: nope' });
+  });
 });
 
 describe('IAM/CloudTrail outcomes carry evidence (so the UI shows "View Evidence")', () => {
@@ -682,10 +773,11 @@ describe('IAM/CloudTrail outcomes carry evidence (so the UI shows "View Evidence
     ).toBe(true);
   });
 
-  it('the "No CloudTrail configured" outcome has evidence', () => {
-    const out = evaluateCloudTrail([]);
+  it('the "No CloudTrail trail found" outcome has evidence incl. scanned regions', () => {
+    const out = evaluateCloudTrail([], { scannedRegions: ['us-east-1', 'eu-west-1'] });
     expect(out).toHaveLength(1);
-    expect(out[0]!.title).toMatch(/No CloudTrail configured/);
+    expect(out[0]!.title).toMatch(/No CloudTrail trail found/);
+    expect(out[0]!.evidence).toMatchObject({ trailsFound: 0, scannedRegions: ['us-east-1', 'eu-west-1'] });
     expect(hasEvidence(out[0]!)).toBe(true);
   });
 
