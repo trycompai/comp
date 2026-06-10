@@ -1,4 +1,5 @@
 import type { CheckContext } from '../../../types';
+import { remediationForReadFailure, toHttpReadFailure } from '../../http-read-failure';
 
 const ARM = 'https://management.azure.com';
 
@@ -79,15 +80,18 @@ export async function armListAllOrFail<T>(
   try {
     return await armListAll<T>(ctx, url);
   } catch (err) {
+    const failure = toHttpReadFailure(err);
     ctx.fail({
       title: `Could not verify ${opts.what}`,
-      description: `${opts.what} could not be listed from Azure, so this check is unverified.`,
+      description: `${opts.what} could not be listed from Azure (${failure.error}), so this check is unverified.`,
       resourceType: opts.resourceType,
       resourceId: opts.subscriptionId,
       severity: 'medium',
-      remediation:
+      remediation: remediationForReadFailure(
+        failure,
         'Ensure the connection has Reader access to the subscription, then re-run the check.',
-      evidence: { error: err instanceof Error ? err.message : String(err) },
+      ),
+      evidence: { readError: failure.error },
     });
     return null;
   }

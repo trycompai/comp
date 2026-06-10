@@ -12,7 +12,13 @@ import { vpcOpenFirewallsCheck } from '../vpc-open-firewalls';
 
 interface Captured {
   passed: Array<{ resourceId: string; title: string }>;
-  failed: Array<{ resourceId: string; title: string; severity: string }>;
+  failed: Array<{
+    resourceId: string;
+    title: string;
+    severity: string;
+    remediation?: string;
+    evidence?: Record<string, unknown>;
+  }>;
 }
 
 async function runCheck(
@@ -42,6 +48,8 @@ async function runCheck(
         resourceId: r.resourceId,
         title: r.title,
         severity: r.severity,
+        remediation: r.remediation,
+        evidence: r.evidence,
       }),
     fetch: (async <T,>(url: string): Promise<T> =>
       (opts.fetch ? opts.fetch(url) : {}) as T) as CheckContext['fetch'],
@@ -61,6 +69,60 @@ async function runCheck(
   await check.run(ctx);
   return { passed, failed };
 }
+
+describe('GCP read-failure remediation gating', () => {
+  const httpError = (status: number, message: string) => {
+    const err = new Error(message);
+    (err as Error & { status: number }).status = status;
+    return err;
+  };
+
+  it('iam: a 403 policy read keeps the grant remediation and carries the error', async () => {
+    const out = await runCheck(iamPrimitiveRolesCheck, {
+      post: () => {
+        throw httpError(403, 'HTTP 403: Forbidden - PERMISSION_DENIED');
+      },
+    });
+    expect(out.failed).toHaveLength(1);
+    expect(out.failed[0]!.title).toMatch(/Could not verify IAM primitive roles/);
+    expect(out.failed[0]!.remediation).toContain('resourcemanager.projects.getIamPolicy');
+    expect(out.failed[0]!.evidence).toMatchObject({
+      error: 'HTTP 403: Forbidden - PERMISSION_DENIED',
+    });
+  });
+
+  it('iam: a transient 500 policy read says re-run instead of claiming a missing permission', async () => {
+    const out = await runCheck(iamPrimitiveRolesCheck, {
+      post: () => {
+        throw httpError(500, 'HTTP 500: Internal Server Error');
+      },
+    });
+    expect(out.failed).toHaveLength(1);
+    expect(out.failed[0]!.remediation).not.toContain('resourcemanager.projects.getIamPolicy');
+    expect(out.failed[0]!.remediation).toMatch(/re-run/i);
+    expect(out.failed[0]!.evidence).toMatchObject({
+      error: 'HTTP 500: Internal Server Error',
+    });
+  });
+
+  it('storage: a transient bucket-list failure says re-run; a denied one keeps the grant hint', async () => {
+    const transient = await runCheck(storagePublicAccessCheck, {
+      fetch: () => {
+        throw httpError(503, 'HTTP 503: Service Unavailable');
+      },
+    });
+    expect(transient.failed[0]!.title).toMatch(/Could not verify Cloud Storage/);
+    expect(transient.failed[0]!.remediation).toMatch(/re-run/i);
+    expect(transient.failed[0]!.remediation).not.toContain('storage.buckets.list');
+
+    const denied = await runCheck(storagePublicAccessCheck, {
+      fetch: () => {
+        throw httpError(403, 'HTTP 403: Forbidden');
+      },
+    });
+    expect(denied.failed[0]!.remediation).toContain('storage.buckets.list');
+  });
+});
 
 describe('GCP IAM primitive roles check', () => {
   it('fails on roles/owner binding (high)', async () => {

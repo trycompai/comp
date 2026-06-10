@@ -1,5 +1,11 @@
 import { TASK_TEMPLATES } from '../../../task-mappings';
 import type { CheckContext, IntegrationCheck } from '../../../types';
+import {
+  combineReadFailures,
+  remediationForReadFailure,
+  toHttpReadFailure,
+  type ReadFailure,
+} from '../../http-read-failure';
 import { ARM_BASE, armListAllOrFail, resolveAzureSubscriptionId } from './shared';
 
 interface RoleAssignment {
@@ -92,6 +98,7 @@ export const rbacLeastPrivilegeCheck: IntegrationCheck = {
     // Resolve any missing definition directly so privileged principals aren't
     // undercounted. Cache by id to avoid refetching shared definitions.
     const resolvedDefs = new Map<string, RoleDefinition>();
+    const resolveFailures: ReadFailure[] = [];
     const resolveDef = async (
       roleDefinitionId: string,
     ): Promise<RoleDefinition | null> => {
@@ -107,9 +114,11 @@ export const rbacLeastPrivilegeCheck: IntegrationCheck = {
         }
         return null;
       } catch (err) {
+        const failure = toHttpReadFailure(err);
+        resolveFailures.push(failure);
         ctx.warn('Failed to resolve Azure role definition for assignment', {
           roleDefinitionId,
-          error: err instanceof Error ? err.message : String(err),
+          error: failure.error,
         });
         return null;
       }
@@ -138,9 +147,15 @@ export const rbacLeastPrivilegeCheck: IntegrationCheck = {
         resourceType: 'azure-subscription',
         resourceId: sub,
         severity: 'medium',
-        remediation:
+        remediation: remediationForReadFailure(
+          combineReadFailures(resolveFailures),
           'Ensure the integration principal has read access to all role definitions in scope (including management-group and resource-group scopes), then re-run the check.',
-        evidence: { unresolvedAssignments },
+        ),
+        evidence: {
+          unresolvedAssignments,
+          // first few real errors so the cause is visible without log digging
+          readErrors: resolveFailures.slice(0, 3).map((f) => f.error),
+        },
       });
     }
 

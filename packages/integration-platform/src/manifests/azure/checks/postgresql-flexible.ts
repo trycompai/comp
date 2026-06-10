@@ -1,5 +1,11 @@
 import { TASK_TEMPLATES } from '../../../task-mappings';
 import type { CheckContext, IntegrationCheck } from '../../../types';
+import {
+  combineReadFailures,
+  remediationForReadFailure,
+  toHttpReadFailure,
+  type ReadFailure,
+} from '../../http-read-failure';
 import { ARM_BASE, armListAllOrFail, resolveAzureSubscriptionId } from './shared';
 
 // Pinned stable api-version for Azure Database for PostgreSQL Flexible Server.
@@ -84,15 +90,17 @@ async function readConfig(
   ctx: CheckContext,
   serverId: string,
   name: string,
-): Promise<{ ok: true; value: string } | { ok: false }> {
+): Promise<{ ok: true; value: string } | { ok: false; failure: ReadFailure }> {
   try {
     const res = await ctx.fetch<PgConfiguration>(
       `${ARM_BASE}${serverId}/configurations/${name}?api-version=${POSTGRES_API_VERSION}`,
     );
     const value = res?.properties?.value;
     return { ok: true, value: typeof value === 'string' ? value : '' };
-  } catch {
-    return { ok: false };
+  } catch (err) {
+    const failure = toHttpReadFailure(err);
+    ctx.log(`PostgreSQL ${serverId}: could not read ${name} — ${failure.error}`);
+    return { ok: false, failure };
   }
 }
 
@@ -126,15 +134,23 @@ export const postgresqlFlexibleTlsCheck: IntegrationCheck = {
       // back as an empty string on a SUCCESSFUL response, which evaluatePgTls
       // treats as a compliant TLS 1.2 floor; that is distinct from a failed read.)
       if (!requireSecure.ok || !sslMin.ok) {
+        const combined = combineReadFailures(
+          [requireSecure, sslMin].flatMap((r) => (r.ok ? [] : [r.failure])),
+        );
         ctx.fail({
           title: `Could not verify PostgreSQL TLS settings: ${s.name}`,
-          description: `Unable to read the TLS server parameters for PostgreSQL flexible server "${s.name}", so TLS enforcement cannot be verified.`,
+          description: `Unable to read the TLS server parameters for PostgreSQL flexible server "${s.name}"${combined ? ` (${combined.error})` : ''}, so TLS enforcement cannot be verified.`,
           resourceType: 'azure-postgresql-flexible-server',
           resourceId: s.id,
           severity: 'medium',
-          remediation:
+          remediation: remediationForReadFailure(
+            combined,
             'Grant read access to server configurations (Microsoft.DBforPostgreSQL/flexibleServers/configurations/read), then re-run the check.',
-          evidence: { server: s.name },
+          ),
+          evidence: {
+            server: s.name,
+            ...(combined ? { readError: combined.error } : {}),
+          },
         });
         continue;
       }
