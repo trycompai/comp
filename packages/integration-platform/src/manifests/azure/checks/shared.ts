@@ -3,35 +3,104 @@ import { remediationForReadFailure, toHttpReadFailure } from '../../http-read-fa
 
 const ARM = 'https://management.azure.com';
 
-/**
- * Resolve the Azure subscription to scan: the user-set `subscription_id`
- * variable, else the first enabled subscription the token can see. Returns
- * null when none — the check should then no-op (no false pass).
- */
-export async function resolveAzureSubscriptionId(
-  ctx: CheckContext,
-): Promise<string | null> {
+/** Fan-out bound for auto-discovered subscriptions (13 checks × N subs). */
+const MAX_SUBSCRIPTIONS = 50;
+
+/** The legacy single-subscription variable, auto-saved by the Cloud Tests
+ * setup. It is a detection cache, not a deliberate scope choice, so the
+ * evidence checks only use it when subscriptions cannot be listed. */
+function legacySubscriptionId(ctx: CheckContext): string | null {
   const configured = ctx.variables.subscription_id;
-  if (typeof configured === 'string' && configured.trim().length > 0) {
-    return configured.trim();
+  return typeof configured === 'string' && configured.trim().length > 0
+    ? configured.trim()
+    : null;
+}
+
+/**
+ * Resolve the Azure subscriptions a check should evaluate: the user-selected
+ * `subscription_ids` variable if present, otherwise ALL Enabled subscriptions
+ * the token can see (mirrors how GCP scans all active projects). Previously
+ * only the first Enabled subscription was scanned — silently skipping the
+ * rest in multi-subscription tenants.
+ *
+ * Returns [] only after emitting an explicit "could not verify" finding, so
+ * a scope failure never leaves the mapped tasks silently stale.
+ */
+export async function resolveAzureSubscriptionIds(
+  ctx: CheckContext,
+): Promise<string[]> {
+  const selected = ctx.variables.subscription_ids;
+  if (Array.isArray(selected)) {
+    const cleaned = selected
+      .filter((s): s is string => typeof s === 'string')
+      .map((s) => s.trim())
+      .filter((s) => s.length > 0);
+    if (cleaned.length > 0) return cleaned;
   }
+
+  const legacy = legacySubscriptionId(ctx);
   try {
     const data = await ctx.fetch<{
       value?: Array<{ subscriptionId: string; state?: string }>;
     }>(`${ARM}/subscriptions?api-version=2020-01-01`);
-    const subs = data.value ?? [];
-    // Only auto-select an Enabled subscription. Falling back to the first
-    // subscription regardless of state could pick a Disabled/PastDue one whose
-    // API calls fail; returning null instead makes the check no-op cleanly (the
-    // user can set subscription_id explicitly).
-    const active = subs.find((s) => s.state === 'Enabled');
-    return active?.subscriptionId ?? null;
+    // Only Enabled subscriptions — a Disabled/PastDue one would fail every
+    // API call and drown the run in false "could not verify" findings.
+    const enabled = (data.value ?? [])
+      .filter((s) => s.state === 'Enabled')
+      .map((s) => s.subscriptionId);
+    if (enabled.length > 0) {
+      if (legacy && (enabled.length > 1 || enabled[0] !== legacy)) {
+        ctx.log(
+          `Azure: scanning all ${enabled.length} enabled subscription(s); set subscription_ids to scope explicitly (legacy subscription_id is no longer used for scoping)`,
+        );
+      }
+      // Bound the fan-out so a giant tenant can't blow the run budget —
+      // loudly, so capped coverage is never mistaken for full coverage.
+      if (enabled.length > MAX_SUBSCRIPTIONS) {
+        ctx.warn(
+          `Azure: ${enabled.length} enabled subscriptions found; scanning the first ${MAX_SUBSCRIPTIONS} — set subscription_ids to scope explicitly`,
+          { enabled: enabled.length, scanned: MAX_SUBSCRIPTIONS },
+        );
+        return enabled.slice(0, MAX_SUBSCRIPTIONS);
+      }
+      return enabled;
+    }
+    // Nothing visible via the list call — the token may lack list permission
+    // at root scope while still having Reader on one subscription.
+    if (legacy) return [legacy];
+    ctx.fail({
+      title: 'Could not verify Azure subscription scope',
+      description:
+        'No enabled Azure subscription is visible to the connection, so nothing could be scanned.',
+      resourceType: 'azure-subscription',
+      resourceId: 'unknown',
+      severity: 'medium',
+      remediation:
+        'Grant the connection Reader access to at least one subscription (or select subscriptions in the integration settings), then re-run the check.',
+      evidence: { enabledSubscriptionsVisible: 0 },
+    });
+    return [];
   } catch (err) {
-    ctx.warn(
-      'Failed to auto-detect Azure subscription; set subscription_id manually',
-      { error: err instanceof Error ? err.message : String(err) },
-    );
-    return null;
+    if (legacy) {
+      ctx.log(
+        `Azure: could not list subscriptions (${err instanceof Error ? err.message : String(err)}); falling back to the detected subscription_id`,
+      );
+      return [legacy];
+    }
+    const failure = toHttpReadFailure(err);
+    ctx.fail({
+      title: 'Could not verify Azure subscription scope',
+      description: `Azure subscriptions could not be listed (${failure.error}), so nothing could be scanned.`,
+      resourceType: 'azure-subscription',
+      resourceId: 'unknown',
+      severity: 'medium',
+      remediation: remediationForReadFailure(
+        failure,
+        'Grant the connection Reader access to the subscription(s), then re-run the check.',
+      ),
+      evidence: { readError: failure.error },
+    });
+    return [];
   }
 }
 

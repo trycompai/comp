@@ -5,7 +5,7 @@ import {
   toHttpReadFailure,
   type ReadFailure,
 } from '../../http-read-failure';
-import { ARM_BASE, armListAll, armListAllOrFail, resolveAzureSubscriptionId } from './shared';
+import { ARM_BASE, armListAll, armListAllOrFail, resolveAzureSubscriptionIds } from './shared';
 
 interface SqlServer {
   id: string;
@@ -32,15 +32,7 @@ async function listSqlServers(
 }
 
 /** SQL Server minimum TLS 1.2 → TLS / HTTPS. */
-export const sqlTlsCheck: IntegrationCheck = {
-  id: 'azure-sql-tls',
-  name: 'SQL Database — TLS 1.2 enforced',
-  description: 'Verify SQL Servers require a minimum TLS version of 1.2.',
-  service: 'sql-database',
-  taskMapping: TASK_TEMPLATES.tlsHttps,
-  run: async (ctx: CheckContext) => {
-    const sub = await resolveAzureSubscriptionId(ctx);
-    if (!sub) return;
+async function runSqlTlsForSubscription(ctx: CheckContext, sub: string): Promise<void> {
     const servers = await listSqlServers(ctx, sub);
     if (!servers) return;
     if (servers.length === 0) return;
@@ -68,20 +60,24 @@ export const sqlTlsCheck: IntegrationCheck = {
         });
       }
     }
+}
+
+export const sqlTlsCheck: IntegrationCheck = {
+  id: 'azure-sql-tls',
+  name: 'SQL Database — TLS 1.2 enforced',
+  description: 'Verify SQL Servers require a minimum TLS version of 1.2.',
+  service: 'sql-database',
+  taskMapping: TASK_TEMPLATES.tlsHttps,
+  run: async (ctx: CheckContext) => {
+    const subs = await resolveAzureSubscriptionIds(ctx);
+    for (const sub of subs) {
+      await runSqlTlsForSubscription(ctx, sub);
+    }
   },
 };
 
 /** SQL Server no public network / wide-open firewall → Production Firewall / no public access. */
-export const sqlPublicAccessCheck: IntegrationCheck = {
-  id: 'azure-sql-no-public-access',
-  name: 'SQL Database — no public access',
-  description:
-    'Verify SQL Servers disable public network access and have no wide-open firewall rules.',
-  service: 'sql-database',
-  taskMapping: TASK_TEMPLATES.productionFirewallNopublicaccessControls,
-  run: async (ctx: CheckContext) => {
-    const sub = await resolveAzureSubscriptionId(ctx);
-    if (!sub) return;
+async function runSqlPublicAccessForSubscription(ctx: CheckContext, sub: string): Promise<void> {
     const servers = await listSqlServers(ctx, sub);
     if (!servers) return;
     if (servers.length === 0) return;
@@ -184,6 +180,20 @@ export const sqlPublicAccessCheck: IntegrationCheck = {
         });
       }
     }
+}
+
+export const sqlPublicAccessCheck: IntegrationCheck = {
+  id: 'azure-sql-no-public-access',
+  name: 'SQL Database — no public access',
+  description:
+    'Verify SQL Servers disable public network access and have no wide-open firewall rules.',
+  service: 'sql-database',
+  taskMapping: TASK_TEMPLATES.productionFirewallNopublicaccessControls,
+  run: async (ctx: CheckContext) => {
+    const subs = await resolveAzureSubscriptionIds(ctx);
+    for (const sub of subs) {
+      await runSqlPublicAccessForSubscription(ctx, sub);
+    }
   },
 };
 
@@ -192,15 +202,7 @@ interface AuditingSetting {
 }
 
 /** SQL Server auditing enabled → Monitoring & Alerting. */
-export const sqlAuditingCheck: IntegrationCheck = {
-  id: 'azure-sql-auditing',
-  name: 'SQL Database — auditing enabled',
-  description: 'Verify SQL Servers have auditing enabled to track database operations.',
-  service: 'sql-database',
-  taskMapping: TASK_TEMPLATES.monitoringAlerting,
-  run: async (ctx: CheckContext) => {
-    const sub = await resolveAzureSubscriptionId(ctx);
-    if (!sub) return;
+async function runSqlAuditingForSubscription(ctx: CheckContext, sub: string): Promise<void> {
     const servers = await listSqlServers(ctx, sub);
     if (!servers) return;
     if (servers.length === 0) return;
@@ -254,6 +256,19 @@ export const sqlAuditingCheck: IntegrationCheck = {
           evidence: { server: s.name, state: auditing.properties?.state ?? null },
         });
       }
+    }
+}
+
+export const sqlAuditingCheck: IntegrationCheck = {
+  id: 'azure-sql-auditing',
+  name: 'SQL Database — auditing enabled',
+  description: 'Verify SQL Servers have auditing enabled to track database operations.',
+  service: 'sql-database',
+  taskMapping: TASK_TEMPLATES.monitoringAlerting,
+  run: async (ctx: CheckContext) => {
+    const subs = await resolveAzureSubscriptionIds(ctx);
+    for (const sub of subs) {
+      await runSqlAuditingForSubscription(ctx, sub);
     }
   },
 };

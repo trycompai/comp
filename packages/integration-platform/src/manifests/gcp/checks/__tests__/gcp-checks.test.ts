@@ -124,6 +124,23 @@ describe('GCP read-failure remediation gating', () => {
   });
 });
 
+describe('GCP project scope failure', () => {
+  it('emits an explicit scope finding when project discovery fails', async () => {
+    const err = new Error('HTTP 500: boom');
+    (err as Error & { status: number }).status = 500;
+    const out = await runCheck(vpcOpenFirewallsCheck, {
+      variables: {},
+      fetch: () => {
+        throw err;
+      },
+    });
+    expect(out.failed).toHaveLength(1);
+    expect(out.failed[0]!.title).toMatch(/Could not verify GCP project scope/);
+    expect(out.failed[0]!.remediation).toMatch(/re-run/i);
+    expect(out.failed[0]!.evidence).toMatchObject({ readError: 'HTTP 500: boom' });
+  });
+});
+
 describe('GCP IAM primitive roles check', () => {
   it('fails on roles/owner binding (high)', async () => {
     const { passed, failed } = await runCheck(iamPrimitiveRolesCheck, {

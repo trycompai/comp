@@ -138,17 +138,24 @@ export function IntegrationProviderHero({
                               />
                             </div>
                           )}
-                          <div className="flex shrink-0 items-center p-0.5">
-                            <Button
-                              variant="ghost"
-                              size="xs"
-                              onClick={onAddAccount}
-                              iconLeft={<Add size={12} />}
-                              aria-label="Add another account"
-                            >
-                              Add
-                            </Button>
-                          </div>
+                          {/* The OAuth callback reuses the org's existing
+                              connection, so a second OAuth connect silently
+                              merges into the first — only offer "Add" where
+                              the connect flow can actually create another. */}
+                          {provider.supportsMultipleConnections &&
+                            provider.authType !== 'oauth2' && (
+                              <div className="flex shrink-0 items-center p-0.5">
+                                <Button
+                                  variant="ghost"
+                                  size="xs"
+                                  onClick={onAddAccount}
+                                  iconLeft={<Add size={12} />}
+                                  aria-label="Add another account"
+                                >
+                                  Add
+                                </Button>
+                              </div>
+                            )}
                         </div>
                       </div>
                     </div>
