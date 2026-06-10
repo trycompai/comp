@@ -58,6 +58,23 @@ interface AddExistingItemDialogProps {
   fetchAllItems: () => Promise<ExistingItemRaw[]>;
 }
 
+// apiClient throws Error(<raw response body>); pull the NestJS `message`
+// field out so the user sees e.g. "Framework has no requirements to link
+// the control to" instead of a generic failure.
+function extractApiErrorMessage(error: unknown): string | null {
+  if (!(error instanceof Error) || !error.message) return null;
+  try {
+    const parsed: unknown = JSON.parse(error.message);
+    if (parsed && typeof parsed === 'object' && 'message' in parsed) {
+      const message = (parsed as { message?: unknown }).message;
+      if (typeof message === 'string') return message;
+    }
+  } catch {
+    // Not JSON — fall through to the raw message.
+  }
+  return error.message;
+}
+
 function extractFrameworkNames(item: ExistingItemRaw): string[] {
   const names = new Set<string>();
 
@@ -142,8 +159,11 @@ export function AddExistingItemDialog({
         setLinkedIds((prev) => new Set(prev).add(item.id));
         toast.success(`${config.label} "${item.name}" linked successfully`);
         router.refresh();
-      } catch {
-        toast.error(`Failed to link ${config.label.toLowerCase()}`);
+      } catch (error) {
+        toast.error(
+          extractApiErrorMessage(error) ??
+            `Failed to link ${config.label.toLowerCase()}`,
+        );
       } finally {
         setLinkingId(null);
       }
