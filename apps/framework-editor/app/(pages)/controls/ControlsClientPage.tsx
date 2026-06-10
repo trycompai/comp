@@ -408,7 +408,9 @@ export function ControlsClientPage({ initialControls, emptyMessage, frameworkId 
     [uniqueFamilies, updateCell, updateRelational, deleteRow, createdIds, handleDocumentTypesUpdate, frameworkId, getRequirementItems],
   );
 
-  const [sorting, setSorting] = useState<SortingState>([]);
+  // Default to Name A–Z so the tab always opens in a predictable order
+  // (the grid remounts on every tab switch, resetting this state).
+  const [sorting, setSorting] = useState<SortingState>([{ id: 'name', desc: false }]);
 
   const table = useReactTable({
     data,
