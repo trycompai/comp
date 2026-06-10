@@ -253,6 +253,8 @@ export function ControlsClientPage({ initialControls, emptyMessage, frameworkId 
             rowId={row.original.id}
             columnId="description"
             onUpdate={updateCell}
+            expandable
+            expandTitle="Edit Control Description"
           />
         ),
       }),
