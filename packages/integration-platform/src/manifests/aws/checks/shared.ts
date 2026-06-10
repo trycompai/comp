@@ -243,6 +243,36 @@ export async function resolveAwsSessionOrFail(
   }
 }
 
+/** Why a per-resource read failed: the real error plus whether it was an authorization failure. */
+export interface ReadFailure {
+  /** "ErrorName: message" — preserved in finding evidence so the failure is diagnosable. */
+  error: string;
+  /** true for authorization failures (403/AccessDenied); false for transient/network errors. */
+  denied: boolean;
+}
+
+/**
+ * Classify a thrown read error so an "unverified" finding can tell a
+ * permissions problem ("grant X to the role") apart from a transient one
+ * ("re-run") — asserting a missing permission for what was actually a
+ * transient failure sends customers on a wild-goose IAM audit.
+ */
+export function toReadFailure(err: unknown): ReadFailure {
+  const error =
+    err instanceof Error
+      ? `${err.name}: ${err.message}`.slice(0, 300)
+      : String(err).slice(0, 300);
+  const status = (err as { $metadata?: { httpStatusCode?: number } } | null)
+    ?.$metadata?.httpStatusCode;
+  const denied =
+    status === 403 ||
+    (err instanceof Error &&
+      /AccessDenied|UnauthorizedOperation|Forbidden|NotAuthorized/i.test(
+        err.name,
+      ));
+  return { error, denied };
+}
+
 /** A provider-agnostic pass/fail outcome produced by a pure evaluator. */
 export interface CheckOutcome {
   kind: 'pass' | 'fail';
