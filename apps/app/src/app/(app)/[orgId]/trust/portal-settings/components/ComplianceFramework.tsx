@@ -175,9 +175,6 @@ export function ComplianceFramework({
       try {
         await onFileUpload(file, frameworkKey);
         toast.success('Certificate uploaded successfully');
-        if (fileInputRef.current) {
-          fileInputRef.current.value = '';
-        }
       } catch (error) {
         const message = error instanceof Error ? error.message : 'Failed to upload certificate';
         toast.error(message);
@@ -330,6 +327,10 @@ export function ComplianceFramework({
                 className="hidden"
                 onChange={async (e) => {
                   const file = e.target.files?.[0];
+                  // Always reset the input: browsers skip onChange when the
+                  // same file is re-selected, which would block retrying after
+                  // a failed upload or a rejected (non-PDF/too-large) file.
+                  e.target.value = '';
                   if (file) {
                     await processFile(file);
                   }
