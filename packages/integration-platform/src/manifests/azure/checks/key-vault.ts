@@ -1,6 +1,6 @@
 import { TASK_TEMPLATES } from '../../../task-mappings';
 import type { CheckContext, FindingSeverity, IntegrationCheck } from '../../../types';
-import { ARM_BASE, armListAllOrFail, resolveAzureSubscriptionId } from './shared';
+import { ARM_BASE, armListAllOrFail, resolveAzureSubscriptionIds } from './shared';
 
 interface KeyVault {
   id: string;
@@ -26,16 +26,7 @@ async function listVaults(
 }
 
 /** Soft delete + purge protection + no public access on Key Vaults → Secure Secrets. */
-export const keyVaultProtectionCheck: IntegrationCheck = {
-  id: 'azure-key-vault-protection',
-  name: 'Key Vault — soft delete, purge protection, no public access',
-  description:
-    'Verify Key Vaults enable soft delete and purge protection and restrict public network access.',
-  service: 'key-vault',
-  taskMapping: TASK_TEMPLATES.secureSecrets,
-  run: async (ctx: CheckContext) => {
-    const sub = await resolveAzureSubscriptionId(ctx);
-    if (!sub) return;
+async function runKeyVaultProtectionForSubscription(ctx: CheckContext, sub: string): Promise<void> {
     const vaults = await listVaults(ctx, sub);
     if (!vaults) return;
     if (vaults.length === 0) return;
@@ -87,20 +78,25 @@ export const keyVaultProtectionCheck: IntegrationCheck = {
         });
       }
     }
+}
+
+export const keyVaultProtectionCheck: IntegrationCheck = {
+  id: 'azure-key-vault-protection',
+  name: 'Key Vault — soft delete, purge protection, no public access',
+  description:
+    'Verify Key Vaults enable soft delete and purge protection and restrict public network access.',
+  service: 'key-vault',
+  taskMapping: TASK_TEMPLATES.secureSecrets,
+  run: async (ctx: CheckContext) => {
+    const subs = await resolveAzureSubscriptionIds(ctx);
+    for (const sub of subs) {
+      await runKeyVaultProtectionForSubscription(ctx, sub);
+    }
   },
 };
 
 /** Azure RBAC authorization (not legacy access policies) on Key Vaults → Role-based Access Controls. */
-export const keyVaultRbacCheck: IntegrationCheck = {
-  id: 'azure-key-vault-rbac',
-  name: 'Key Vault — RBAC authorization',
-  description:
-    'Verify Key Vaults use Azure RBAC instead of legacy vault access policies.',
-  service: 'key-vault',
-  taskMapping: TASK_TEMPLATES.rolebasedAccessControls,
-  run: async (ctx: CheckContext) => {
-    const sub = await resolveAzureSubscriptionId(ctx);
-    if (!sub) return;
+async function runKeyVaultRbacForSubscription(ctx: CheckContext, sub: string): Promise<void> {
     const vaults = await listVaults(ctx, sub);
     if (!vaults) return;
     if (vaults.length === 0) return;
@@ -128,6 +124,20 @@ export const keyVaultRbacCheck: IntegrationCheck = {
           },
         });
       }
+    }
+}
+
+export const keyVaultRbacCheck: IntegrationCheck = {
+  id: 'azure-key-vault-rbac',
+  name: 'Key Vault — RBAC authorization',
+  description:
+    'Verify Key Vaults use Azure RBAC instead of legacy vault access policies.',
+  service: 'key-vault',
+  taskMapping: TASK_TEMPLATES.rolebasedAccessControls,
+  run: async (ctx: CheckContext) => {
+    const subs = await resolveAzureSubscriptionIds(ctx);
+    for (const sub of subs) {
+      await runKeyVaultRbacForSubscription(ctx, sub);
     }
   },
 };

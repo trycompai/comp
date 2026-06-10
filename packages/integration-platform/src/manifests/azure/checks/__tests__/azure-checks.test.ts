@@ -670,3 +670,96 @@ describe('Azure read-failure remediation gating', () => {
     expect(f!.evidence).toMatchObject({ readError: 'HTTP 500: boom' });
   });
 });
+
+describe('Azure multi-subscription scanning', () => {
+  const SUBS = {
+    value: [
+      { subscriptionId: 'sub-a', state: 'Enabled', displayName: 'A' },
+      { subscriptionId: 'sub-b', state: 'Enabled', displayName: 'B' },
+      { subscriptionId: 'sub-old', state: 'Disabled', displayName: 'Old' },
+    ],
+  };
+  const serverIn = (sub: string) => ({
+    value: [
+      {
+        id: `/subscriptions/${sub}/resourceGroups/rg/providers/Microsoft.Sql/servers/s-${sub}`,
+        name: `s-${sub}`,
+        properties: { minimalTlsVersion: '1.2' },
+      },
+    ],
+  });
+
+  it('scans every Enabled subscription when none are selected (Disabled excluded)', async () => {
+    const seen: string[] = [];
+    const out = await run(
+      sqlTlsCheck,
+      (url: string) => {
+        if (url.includes('/subscriptions?api-version')) return SUBS;
+        const m = url.match(/subscriptions\/(sub-\w+)\/providers\/Microsoft.Sql\/servers\?/);
+        if (m) {
+          seen.push(m[1]!);
+          return serverIn(m[1]!);
+        }
+        return {};
+      },
+      {},
+    );
+    expect(seen).toEqual(['sub-a', 'sub-b']);
+    expect(out.passed).toHaveLength(2);
+    expect(out.failed).toHaveLength(0);
+  });
+
+  it('scopes to the selected subscription_ids when set', async () => {
+    const seen: string[] = [];
+    const out = await run(
+      sqlTlsCheck,
+      (url: string) => {
+        const m = url.match(/subscriptions\/(sub-\w+)\/providers\/Microsoft.Sql\/servers\?/);
+        if (m) {
+          seen.push(m[1]!);
+          return serverIn(m[1]!);
+        }
+        return {};
+      },
+      { subscription_ids: ['sub-b'] },
+    );
+    expect(seen).toEqual(['sub-b']);
+    expect(out.passed).toHaveLength(1);
+  });
+
+  it('falls back to the legacy subscription_id when subscriptions cannot be listed', async () => {
+    const seen: string[] = [];
+    const out = await run(
+      sqlTlsCheck,
+      (url: string) => {
+        if (url.includes('/subscriptions?api-version')) {
+          throw new Error('HTTP 403: Forbidden');
+        }
+        const m = url.match(/subscriptions\/(sub-\w+)\/providers\/Microsoft.Sql\/servers\?/);
+        if (m) {
+          seen.push(m[1]!);
+          return serverIn(m[1]!);
+        }
+        return {};
+      },
+      { subscription_id: 'sub-legacy' },
+    );
+    expect(seen).toEqual(['sub-legacy']);
+    expect(out.passed).toHaveLength(1);
+    expect(out.failed).toHaveLength(0);
+  });
+
+  it('emits an explicit scope finding when nothing is visible and no legacy value exists', async () => {
+    const out = await run(
+      sqlTlsCheck,
+      (url: string) => {
+        if (url.includes('/subscriptions?api-version')) return { value: [] };
+        return {};
+      },
+      {},
+    );
+    expect(out.passed).toHaveLength(0);
+    expect(out.failed).toHaveLength(1);
+    expect(out.failed[0]!.title).toMatch(/Could not verify Azure subscription scope/);
+  });
+});

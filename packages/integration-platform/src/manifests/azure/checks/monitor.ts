@@ -5,7 +5,7 @@ import {
   toHttpReadFailure,
   type ReadFailure,
 } from '../../http-read-failure';
-import { ARM_BASE, armListAll, resolveAzureSubscriptionId } from './shared';
+import { ARM_BASE, armListAll, resolveAzureSubscriptionIds } from './shared';
 
 interface ActivityLogAlert {
   properties?: {
@@ -31,16 +31,7 @@ const RECOMMENDED_ALERTS = [
 ];
 
 /** Activity log alerts for critical ops + subscription log export → Monitoring & Alerting. */
-export const monitorLoggingAlertingCheck: IntegrationCheck = {
-  id: 'azure-monitor-logging-alerting',
-  name: 'Azure Monitor — alerts and log export',
-  description:
-    'Verify activity log alerts exist for critical operations and subscription logs are exported.',
-  service: 'monitor',
-  taskMapping: TASK_TEMPLATES.monitoringAlerting,
-  run: async (ctx: CheckContext) => {
-    const sub = await resolveAzureSubscriptionId(ctx);
-    if (!sub) return;
+async function runMonitorLoggingAlertingForSubscription(ctx: CheckContext, sub: string): Promise<void> {
     let evaluated = false;
 
     let alertsReadFailure: ReadFailure | undefined;
@@ -179,6 +170,20 @@ export const monitorLoggingAlertingCheck: IntegrationCheck = {
 
     if (!evaluated) {
       ctx.log('Azure monitor check: could not read monitor data — skipping');
+    }
+}
+
+export const monitorLoggingAlertingCheck: IntegrationCheck = {
+  id: 'azure-monitor-logging-alerting',
+  name: 'Azure Monitor — alerts and log export',
+  description:
+    'Verify activity log alerts exist for critical operations and subscription logs are exported.',
+  service: 'monitor',
+  taskMapping: TASK_TEMPLATES.monitoringAlerting,
+  run: async (ctx: CheckContext) => {
+    const subs = await resolveAzureSubscriptionIds(ctx);
+    for (const sub of subs) {
+      await runMonitorLoggingAlertingForSubscription(ctx, sub);
     }
   },
 };

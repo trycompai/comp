@@ -6,7 +6,7 @@ import {
   toHttpReadFailure,
   type ReadFailure,
 } from '../../http-read-failure';
-import { ARM_BASE, armListAllOrFail, resolveAzureSubscriptionId } from './shared';
+import { ARM_BASE, armListAllOrFail, resolveAzureSubscriptionIds } from './shared';
 
 // Pinned stable api-version for Azure Database for PostgreSQL Flexible Server.
 // NOTE: PostgreSQL is a SEPARATE resource provider from MySQL with its own
@@ -112,16 +112,7 @@ async function readConfig(
  * customer running only PostgreSQL Flexible Server gets 0 servers found by the
  * Azure SQL check → "0 passed" for the TLS task (the reported bug class).
  */
-export const postgresqlFlexibleTlsCheck: IntegrationCheck = {
-  id: 'azure-postgresql-flexible-tls',
-  name: 'Database for PostgreSQL — TLS 1.2 enforced',
-  description:
-    'Verify Azure Database for PostgreSQL Flexible Servers require secure transport and a minimum TLS version of 1.2.',
-  service: 'postgresql-flexible',
-  taskMapping: TASK_TEMPLATES.tlsHttps,
-  run: async (ctx: CheckContext) => {
-    const sub = await resolveAzureSubscriptionId(ctx);
-    if (!sub) return;
+async function runPostgresqlFlexibleTlsForSubscription(ctx: CheckContext, sub: string): Promise<void> {
     const servers = await listPgFlexibleServers(ctx, sub);
     if (!servers) return;
     if (servers.length === 0) return;
@@ -181,6 +172,20 @@ export const postgresqlFlexibleTlsCheck: IntegrationCheck = {
           evidence,
         });
       }
+    }
+}
+
+export const postgresqlFlexibleTlsCheck: IntegrationCheck = {
+  id: 'azure-postgresql-flexible-tls',
+  name: 'Database for PostgreSQL — TLS 1.2 enforced',
+  description:
+    'Verify Azure Database for PostgreSQL Flexible Servers require secure transport and a minimum TLS version of 1.2.',
+  service: 'postgresql-flexible',
+  taskMapping: TASK_TEMPLATES.tlsHttps,
+  run: async (ctx: CheckContext) => {
+    const subs = await resolveAzureSubscriptionIds(ctx);
+    for (const sub of subs) {
+      await runPostgresqlFlexibleTlsForSubscription(ctx, sub);
     }
   },
 };

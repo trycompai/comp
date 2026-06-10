@@ -97,6 +97,35 @@ Our integration only makes read-only API calls for security scanning.`,
 
   variables: [
     {
+      id: 'subscription_ids',
+      label: 'Azure Subscriptions',
+      type: 'multi-select',
+      required: false,
+      helpText:
+        'Select which subscriptions to scan. Leave empty to scan all enabled subscriptions.',
+      fetchOptions: async (ctx) => {
+        const data = await ctx.fetch<{
+          value?: Array<{
+            subscriptionId: string;
+            displayName?: string;
+            state?: string;
+          }>;
+        }>('https://management.azure.com/subscriptions?api-version=2020-01-01');
+        return (data.value ?? [])
+          .filter((s) => s.state === 'Enabled')
+          .sort((a, b) => (a.displayName ?? '').localeCompare(b.displayName ?? ''))
+          .map((s) => ({
+            value: s.subscriptionId,
+            label: s.displayName
+              ? `${s.displayName} (${s.subscriptionId})`
+              : s.subscriptionId,
+          }));
+      },
+    },
+    {
+      // Kept for the Cloud Tests product, which auto-detects and reads this
+      // value on its own path. The evidence checks scope via subscription_ids
+      // and only fall back to this when subscriptions cannot be listed.
       id: 'subscription_id',
       label: 'Azure Subscription ID',
       type: 'text',
