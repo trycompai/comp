@@ -1,6 +1,6 @@
 import { TASK_TEMPLATES } from '../../../task-mappings';
 import type { CheckContext, FindingSeverity, IntegrationCheck } from '../../../types';
-import { ARM_BASE, armListAllOrFail, resolveAzureSubscriptionId } from './shared';
+import { ARM_BASE, armListAllOrFail, resolveAzureSubscriptionIds } from './shared';
 
 interface SecurityRule {
   name: string;
@@ -71,16 +71,7 @@ function rulePorts(r: SecurityRule): string[] {
 }
 
 /** NSG inbound rules open to the internet on sensitive ports → Production Firewall / no public access. */
-export const nsgNoOpenPortsCheck: IntegrationCheck = {
-  id: 'azure-nsg-no-open-ports',
-  name: 'Network — no NSG ports open to the internet',
-  description:
-    'Flags NSG inbound rules that allow SSH, RDP, database ports, or all ports from the internet.',
-  service: 'network-watcher',
-  taskMapping: TASK_TEMPLATES.productionFirewallNopublicaccessControls,
-  run: async (ctx: CheckContext) => {
-    const sub = await resolveAzureSubscriptionId(ctx);
-    if (!sub) return;
+async function runNsgNoOpenPortsForSubscription(ctx: CheckContext, sub: string): Promise<void> {
     const nsgs = await armListAllOrFail<Nsg>(
       ctx,
       `${ARM_BASE}/subscriptions/${sub}/providers/Microsoft.Network/networkSecurityGroups?api-version=2023-11-01`,
@@ -148,6 +139,20 @@ export const nsgNoOpenPortsCheck: IntegrationCheck = {
           },
         });
       }
+    }
+}
+
+export const nsgNoOpenPortsCheck: IntegrationCheck = {
+  id: 'azure-nsg-no-open-ports',
+  name: 'Network — no NSG ports open to the internet',
+  description:
+    'Flags NSG inbound rules that allow SSH, RDP, database ports, or all ports from the internet.',
+  service: 'network-watcher',
+  taskMapping: TASK_TEMPLATES.productionFirewallNopublicaccessControls,
+  run: async (ctx: CheckContext) => {
+    const subs = await resolveAzureSubscriptionIds(ctx);
+    for (const sub of subs) {
+      await runNsgNoOpenPortsForSubscription(ctx, sub);
     }
   },
 };
