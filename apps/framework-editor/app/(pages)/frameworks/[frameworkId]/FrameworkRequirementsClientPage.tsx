@@ -174,6 +174,7 @@ export function FrameworkRequirementsClientPage({
               items={getValue()}
               rowId={row.original.id}
               isNewRow={createdIds.has(row.original.id)}
+              allowSelectOnNewRows
               getAllItems={fetchAllControlTemplates}
               onLink={linkControlToRequirement}
               onUnlink={unlinkControlFromRequirement}
