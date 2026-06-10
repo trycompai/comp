@@ -98,6 +98,8 @@ export type MatrixColumnDefinition = {
   required?: boolean;
   placeholder?: string;
   description?: string;
+  type?: 'text' | 'select';
+  options?: ReadonlyArray<{ label: string; value: string }>;
 };
 
 export function isMatrixField(
