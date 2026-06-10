@@ -413,6 +413,21 @@ export class TrustPortalController {
     summary:
       'Enable/disable a custom framework on the trust portal and set its status',
   })
+  @ApiBody({
+    description: 'At least one of `enabled` or `status` must be provided.',
+    schema: {
+      type: 'object',
+      required: ['customFrameworkId'],
+      properties: {
+        customFrameworkId: { type: 'string', minLength: 1 },
+        enabled: { type: 'boolean' },
+        status: {
+          type: 'string',
+          enum: ['started', 'in_progress', 'compliant'],
+        },
+      },
+    },
+  })
   async updateCustomFramework(
     @OrganizationId() organizationId: string,
     @Body() body: unknown,

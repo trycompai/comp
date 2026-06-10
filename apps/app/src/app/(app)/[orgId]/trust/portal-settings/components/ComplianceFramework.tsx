@@ -17,7 +17,7 @@ import {
   TooltipTrigger,
 } from '@trycompai/design-system';
 import { CertificateCheck, Download, Upload, View } from '@trycompai/design-system/icons';
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import {
   CCPA,
@@ -141,6 +141,18 @@ export function ComplianceFramework({
 }) {
   const [isEnabled, setIsEnabled] = useState(isEnabledProp);
   const [status, setStatus] = useState(statusProp);
+
+  // State is optimistic-first, but must follow the parent's data when it
+  // refreshes (SWR revalidation, another tab/user) — otherwise the row shows
+  // stale enabled/status values forever. Single guarded sync: skipped while a
+  // mutation is in flight so a concurrent revalidation can't clobber the
+  // optimistic value before the request settles.
+  const mutationInFlightRef = useRef(false);
+  useEffect(() => {
+    if (mutationInFlightRef.current) return;
+    setIsEnabled(isEnabledProp);
+    setStatus(statusProp);
+  }, [isEnabledProp, statusProp]);
   const [isUploading, setIsUploading] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -240,10 +252,13 @@ export function ComplianceFramework({
                     if (!value) return;
                     const prev = status;
                     setStatus(value);
+                    mutationInFlightRef.current = true;
                     try {
                       await onStatusChange(value);
                     } catch {
                       setStatus(prev);
+                    } finally {
+                      mutationInFlightRef.current = false;
                     }
                   }}
                 >
@@ -292,10 +307,13 @@ export function ComplianceFramework({
                 checked={isEnabled}
                 onCheckedChange={async (checked) => {
                   setIsEnabled(checked);
+                  mutationInFlightRef.current = true;
                   try {
                     await onToggle(checked);
                   } catch {
                     setIsEnabled(!checked);
+                  } finally {
+                    mutationInFlightRef.current = false;
                   }
                 }}
               />
