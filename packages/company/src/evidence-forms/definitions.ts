@@ -590,10 +590,13 @@ Injects: At 10:30, media contacts the company about the incident.`,
     category: 'Security',
     submissionDateMode: 'custom',
     portalAccessible: false,
-    // NIST-specific: relevant only to orgs that link it to a control, so it is
-    // NOT counted in the org-wide "expected documents" score (which would ding
-    // every org). It still appears in the documents UI and counts for any
-    // control it is linked to (per-control scoring uses the linked types).
+    // NIST-specific: it should not appear in the global Documents browse list
+    // (hidden) and must not affect the org-wide "expected documents" score
+    // (optional). It stays fully usable where it matters: CS links it to a
+    // control in the Framework Editor, and the customer reaches/submits it from
+    // that control's Documents tab (the form route and per-control scoring use
+    // the linked types, not these flags).
+    hidden: true,
     optional: true,
     fields: [
       {

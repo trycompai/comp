@@ -17,12 +17,13 @@ describe('account-types document type definition', () => {
     expect(definition.description).toBe('Document allowed Account types, with justification.');
   });
 
-  it('is optional so it does not change the org-wide expected-documents score', () => {
-    // The global documents-progress scorers count `!hidden && !optional` forms.
-    // Account Types is NIST-specific and must stay out of that count for every
-    // org; it still counts for any control it is explicitly linked to.
+  it('is hidden + optional so it stays out of the global browse list and scores', () => {
+    // NIST-specific: must not appear in every org's Documents browse list
+    // (hidden) and must not change the org-wide expected-documents score
+    // (the scorers count `!hidden && !optional`). It is still reachable and
+    // counted via any control it is explicitly linked to.
+    expect(definition.hidden).toBe(true);
     expect(definition.optional).toBe(true);
-    expect(definition.hidden).toBeFalsy();
   });
 
   it('exposes an Allowed/Disallowed dropdown column and a justification column', () => {
