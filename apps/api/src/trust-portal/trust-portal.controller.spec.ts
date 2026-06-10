@@ -39,6 +39,7 @@ describe('TrustPortalController', () => {
     checkDnsRecords: jest.fn(),
     updateFaqs: jest.fn(),
     updateAllowedDomains: jest.fn(),
+    updateAllowedEmails: jest.fn(),
     updateFrameworks: jest.fn(),
     updateOverview: jest.fn(),
     getOverview: jest.fn(),
@@ -428,6 +429,26 @@ describe('TrustPortalController', () => {
       await controller.updateAllowedDomains(orgId, {} as any);
 
       expect(service.updateAllowedDomains).toHaveBeenCalledWith(orgId, []);
+    });
+  });
+
+  describe('updateAllowedEmails', () => {
+    it('should call service.updateAllowedEmails with organizationId and emails', async () => {
+      const emails = ['person@example.com', 'other@test.com'];
+      mockService.updateAllowedEmails.mockResolvedValue({ success: true });
+
+      const result = await controller.updateAllowedEmails(orgId, { emails });
+
+      expect(result).toEqual({ success: true });
+      expect(service.updateAllowedEmails).toHaveBeenCalledWith(orgId, emails);
+    });
+
+    it('should default to empty array when emails is undefined', async () => {
+      mockService.updateAllowedEmails.mockResolvedValue({ success: true });
+
+      await controller.updateAllowedEmails(orgId, {} as any);
+
+      expect(service.updateAllowedEmails).toHaveBeenCalledWith(orgId, []);
     });
   });
 

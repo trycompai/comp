@@ -386,6 +386,19 @@ export class TrustPortalController {
     );
   }
 
+  @Put('settings/allowed-emails')
+  @RequirePermission('trust', 'update')
+  @ApiOperation({ summary: 'Update allowed emails for the trust portal' })
+  async updateAllowedEmails(
+    @OrganizationId() organizationId: string,
+    @Body() body: { emails: string[] },
+  ) {
+    return this.trustPortalService.updateAllowedEmails(
+      organizationId,
+      body.emails ?? [],
+    );
+  }
+
   @Put('settings/frameworks')
   @RequirePermission('trust', 'update')
   @ApiOperation({ summary: 'Update trust portal framework settings' })
