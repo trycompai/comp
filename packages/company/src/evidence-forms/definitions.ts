@@ -583,6 +583,58 @@ Injects: At 10:30, media contacts the company about the incident.`,
       },
     ],
   },
+  'account-types': {
+    type: 'account-types',
+    title: 'New Account Types Submission',
+    description: 'Document allowed Account types, with justification.',
+    category: 'Security',
+    submissionDateMode: 'custom',
+    portalAccessible: false,
+    fields: [
+      {
+        key: 'accountTypeRows',
+        label: 'Account Types',
+        type: 'matrix',
+        required: true,
+        addRowLabel: 'Add account type',
+        columns: [
+          {
+            key: 'accountType',
+            label: 'Account Type',
+            required: true,
+            placeholder: 'e.g. Individual',
+          },
+          {
+            key: 'status',
+            label: 'Allowed / Disallowed',
+            required: true,
+            type: 'select',
+            options: [
+              { label: 'Allowed', value: 'Allowed' },
+              { label: 'Disallowed', value: 'Disallowed' },
+            ],
+          },
+          {
+            key: 'justification',
+            label: 'Justification',
+            placeholder: 'Required when Allowed',
+          },
+        ],
+        defaultRows: [
+          { accountType: 'Individual', status: 'Allowed', justification: 'Needed by each employee/worker' },
+          { accountType: 'System/Sysadmin', status: 'Allowed', justification: 'Required by administrators' },
+          { accountType: 'Developer', status: 'Disallowed', justification: '' },
+          { accountType: 'Service account', status: 'Allowed', justification: 'Needed for background services' },
+          { accountType: 'Shared account', status: 'Disallowed', justification: '' },
+          { accountType: 'Group account', status: 'Disallowed', justification: '' },
+          { accountType: 'Emergency account', status: 'Disallowed', justification: '' },
+          { accountType: 'Anonymous account', status: 'Disallowed', justification: '' },
+          { accountType: 'Temporary account', status: 'Disallowed', justification: '' },
+          { accountType: 'Guest account', status: 'Disallowed', justification: '' },
+        ],
+      },
+    ],
+  },
 };
 
 export const evidenceFormDefinitionList = Object.values(evidenceFormDefinitions);
