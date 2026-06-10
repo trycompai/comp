@@ -15,6 +15,8 @@ interface RelationalCellProps {
   items: RelationalItem[];
   rowId: string;
   isNewRow: boolean;
+  /** Let uncommitted rows pick links locally; they are persisted on commit. */
+  allowSelectOnNewRows?: boolean;
   getAllItems: () => Promise<RelationalItem[]>;
   onLink: (parentId: string, itemId: string) => Promise<void>;
   onUnlink: (parentId: string, itemId: string) => Promise<void>;
@@ -27,6 +29,7 @@ export function RelationalCell({
   items,
   rowId,
   isNewRow,
+  allowSelectOnNewRows = false,
   getAllItems,
   onLink,
   onUnlink,
@@ -183,7 +186,7 @@ export function RelationalCell({
       </div>
 
       {/* Add section */}
-      {!isNewRow && (
+      {(!isNewRow || allowSelectOnNewRows) && (
         <div className="border-border border-t p-2">
           {isSearching ? (
             <>
@@ -235,7 +238,7 @@ export function RelationalCell({
         </div>
       )}
 
-      {isNewRow && (
+      {isNewRow && !allowSelectOnNewRows && (
         <div className="border-border text-muted-foreground border-t p-2 text-center text-xs">
           Save row first to link items
         </div>

@@ -41,21 +41,37 @@ async function fetchAllPolicyTemplates(): Promise<RelationalItem[]> {
   return apiClient<RelationalItem[]>('/policy-template');
 }
 
+function toRequirementItem(r: RequirementApiItem): RelationalItem {
+  let displayName = r.identifier;
+  if (r.identifier && r.name) {
+    displayName = `${r.identifier} - ${r.name}`;
+  } else if (r.name) {
+    displayName = r.name;
+  }
+  return {
+    id: r.id,
+    name: displayName || 'Unnamed Requirement',
+    sublabel: r.framework?.name,
+  };
+}
+
 async function fetchAllRequirements(): Promise<RelationalItem[]> {
   const reqs = await apiClient<RequirementApiItem[]>('/requirement');
-  return reqs.map((r) => {
-    let displayName = r.identifier;
-    if (r.identifier && r.name) {
-      displayName = `${r.identifier} - ${r.name}`;
-    } else if (r.name) {
-      displayName = r.name;
-    }
-    return {
-      id: r.id,
-      name: displayName || 'Unnamed Requirement',
-      sublabel: r.framework?.name,
-    };
-  });
+  return reqs.map(toRequirementItem);
+}
+
+// On a framework's Controls tab only this framework's requirements are
+// linkable — links to them are what makes a control show up on the tab.
+async function fetchRequirementsForFramework(
+  frameworkId: string,
+): Promise<RelationalItem[]> {
+  const framework = await apiClient<{
+    name: string;
+    requirements: Array<{ id: string; name: string; identifier: string }>;
+  }>(`/framework/${frameworkId}`);
+  return framework.requirements.map((r) =>
+    toRequirementItem({ ...r, framework: { name: framework.name } }),
+  );
 }
 
 async function fetchAllTaskTemplates(): Promise<RelationalItem[]> {
@@ -115,6 +131,17 @@ export function ControlsClientPage({ initialControls, emptyMessage, frameworkId 
         apiClient(`/control-template/${id}`, {
           method: 'DELETE',
         }),
+      linkRequirement: (controlId: string, requirementId: string) =>
+        linkControlRelation(controlId, 'requirements', requirementId),
+      // Policy/task links are framework-scoped; only offered on a framework tab.
+      ...(frameworkId
+        ? {
+            linkPolicyTemplate: (controlId: string, policyTemplateId: string) =>
+              linkControlRelation(controlId, 'policy-templates', policyTemplateId, frameworkId),
+            linkTaskTemplate: (controlId: string, taskTemplateId: string) =>
+              linkControlRelation(controlId, 'task-templates', taskTemplateId, frameworkId),
+          }
+        : {}),
     }),
     [frameworkId],
   );
@@ -157,7 +184,9 @@ export function ControlsClientPage({ initialControls, emptyMessage, frameworkId 
     isDirty,
     createdIds,
     changesSummary,
-  } = useChangeTracking(initialGridData, mutations);
+  } = useChangeTracking(initialGridData, mutations, {
+    requireRequirementLink: !!frameworkId,
+  });
 
   const {
     families,
@@ -173,6 +202,12 @@ export function ControlsClientPage({ initialControls, emptyMessage, frameworkId 
       updateCell(rowId, 'documentTypes', values);
     },
     [updateCell],
+  );
+
+  const getRequirementItems = useCallback(
+    () =>
+      frameworkId ? fetchRequirementsForFramework(frameworkId) : fetchAllRequirements(),
+    [frameworkId],
   );
 
   const columns = useMemo(
@@ -226,6 +261,7 @@ export function ControlsClientPage({ initialControls, emptyMessage, frameworkId 
               items={getValue()}
               rowId={row.original.id}
               isNewRow={createdIds.has(row.original.id)}
+              allowSelectOnNewRows={!!frameworkId}
               getAllItems={fetchAllPolicyTemplates}
               onLink={(controlId: string, ptId: string) =>
                 linkControlRelation(controlId, 'policy-templates', ptId, frameworkId)
@@ -252,7 +288,8 @@ export function ControlsClientPage({ initialControls, emptyMessage, frameworkId 
               items={getValue()}
               rowId={row.original.id}
               isNewRow={createdIds.has(row.original.id)}
-              getAllItems={fetchAllRequirements}
+              allowSelectOnNewRows
+              getAllItems={getRequirementItems}
               onLink={(controlId: string, reqId: string) =>
                 linkControlRelation(controlId, 'requirements', reqId)
               }
@@ -278,6 +315,7 @@ export function ControlsClientPage({ initialControls, emptyMessage, frameworkId 
               items={getValue()}
               rowId={row.original.id}
               isNewRow={createdIds.has(row.original.id)}
+              allowSelectOnNewRows={!!frameworkId}
               getAllItems={fetchAllTaskTemplates}
               onLink={(controlId: string, ttId: string) =>
                 linkControlRelation(controlId, 'task-templates', ttId, frameworkId)
@@ -346,7 +384,7 @@ export function ControlsClientPage({ initialControls, emptyMessage, frameworkId 
         ),
       }),
     ],
-    [uniqueFamilies, updateCell, updateRelational, deleteRow, createdIds, handleDocumentTypesUpdate, frameworkId],
+    [uniqueFamilies, updateCell, updateRelational, deleteRow, createdIds, handleDocumentTypesUpdate, frameworkId, getRequirementItems],
   );
 
   const [sorting, setSorting] = useState<SortingState>([]);
