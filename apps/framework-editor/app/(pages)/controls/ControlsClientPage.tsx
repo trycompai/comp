@@ -10,16 +10,14 @@ import {
   type SortingState,
 } from '@tanstack/react-table';
 import { Button } from '@trycompai/ui';
-import { ArrowDown, ArrowUp, ArrowUpDown, Link, Plus, Settings, Trash2 } from 'lucide-react';
+import { ArrowDown, ArrowUp, ArrowUpDown, Link, Plus, Trash2 } from 'lucide-react';
 import { useCallback, useMemo, useState } from 'react';
 import {
   AddExistingItemDialog,
   type ExistingItemRaw,
 } from '../../components/AddExistingItemDialog';
 import type { RequirementOption } from '../../components/ControlRequirementSelect';
-import { ManageFamiliesDialog } from './ManageFamiliesDialog';
 import {
-  ComboboxCell,
   DateCell,
   EditableCell,
   MultiSelectCell,
@@ -28,7 +26,6 @@ import {
 } from '../../components/table';
 import { DOCUMENT_TYPE_OPTIONS } from './document-type-options';
 import { simpleUUID, useChangeTracking, type ControlMutations } from './hooks/useChangeTracking';
-import { useFamiliesManagement } from './hooks/useFamiliesManagement';
 import type { ControlsPageGridData, FrameworkEditorControlTemplateWithRelatedData } from './types';
 
 interface RequirementApiItem {
@@ -193,7 +190,6 @@ export function ControlsClientPage({ initialControls, emptyMessage, frameworkId 
   const {
     data,
     updateCell,
-    batchUpdateCells,
     updateRelational,
     addRow,
     deleteRow,
@@ -206,15 +202,6 @@ export function ControlsClientPage({ initialControls, emptyMessage, frameworkId 
   } = useChangeTracking(initialGridData, mutations, {
     requireRequirementLink: !!frameworkId,
   });
-
-  const {
-    families,
-    uniqueFamilies,
-    manageFamiliesOpen,
-    setManageFamiliesOpen,
-    handleRenameFamily,
-    handleDeleteFamily,
-  } = useFamiliesManagement({ data, batchUpdateCells });
 
   const handleDocumentTypesUpdate = useCallback(
     (rowId: string, values: string[]) => {
@@ -255,20 +242,6 @@ export function ControlsClientPage({ initialControls, emptyMessage, frameworkId 
             onUpdate={updateCell}
             expandable
             expandTitle="Edit Control Description"
-          />
-        ),
-      }),
-      columnHelper.accessor('controlFamily', {
-        header: 'Control Family',
-        size: 200,
-        cell: ({ row, getValue }) => (
-          <ComboboxCell
-            value={getValue()}
-            rowId={row.original.id}
-            columnId="controlFamily"
-            options={uniqueFamilies}
-            onUpdate={updateCell}
-            placeholder="Select family..."
           />
         ),
       }),
@@ -405,7 +378,7 @@ export function ControlsClientPage({ initialControls, emptyMessage, frameworkId 
         ),
       }),
     ],
-    [uniqueFamilies, updateCell, updateRelational, deleteRow, createdIds, handleDocumentTypesUpdate, frameworkId, getRequirementItems],
+    [updateCell, updateRelational, deleteRow, createdIds, handleDocumentTypesUpdate, frameworkId, getRequirementItems],
   );
 
   // Default to Name A–Z so the tab always opens in a predictable order
@@ -470,17 +443,6 @@ export function ControlsClientPage({ initialControls, emptyMessage, frameworkId 
           )}
         </div>
         <div className="flex items-center gap-2">
-          {families.length > 0 && (
-            <Button
-              variant="outline"
-              onClick={() => setManageFamiliesOpen(true)}
-              size="sm"
-              className="rounded-xs"
-            >
-              <Settings className="mr-1 h-4 w-4" />
-              Manage Families
-            </Button>
-          )}
           {frameworkId && (
             <Button
               variant="outline"
@@ -511,13 +473,6 @@ export function ControlsClientPage({ initialControls, emptyMessage, frameworkId 
         />
       )}
 
-      <ManageFamiliesDialog
-        open={manageFamiliesOpen}
-        onOpenChange={setManageFamiliesOpen}
-        families={families}
-        onRename={handleRenameFamily}
-        onDelete={handleDeleteFamily}
-      />
 
       <div className="scrollbar-primary border-border min-h-0 flex-1 overflow-auto rounded-xs border">
         <table className="w-full border-collapse">

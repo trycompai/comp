@@ -4,12 +4,10 @@ import { describe, expect, it, vi } from 'vitest';
 // Stub heavy deps; render each cell's value as text so we can read row order.
 vi.mock('@/app/lib/api-client', () => ({ apiClient: vi.fn() }));
 vi.mock('../../components/AddExistingItemDialog', () => ({ AddExistingItemDialog: () => null }));
-vi.mock('./ManageFamiliesDialog', () => ({ ManageFamiliesDialog: () => null }));
 vi.mock('@trycompai/ui', () => ({
   Button: ({ children, ...props }: any) => <button {...props}>{children}</button>,
 }));
 vi.mock('../../components/table', () => ({
-  ComboboxCell: () => null,
   DateCell: () => null,
   MultiSelectCell: () => null,
   RelationalCell: () => null,
@@ -56,24 +54,21 @@ vi.mock('./hooks/useChangeTracking', () => ({
   }),
 }));
 
-vi.mock('./hooks/useFamiliesManagement', () => ({
-  useFamiliesManagement: () => ({
-    families: [],
-    uniqueFamilies: [],
-    manageFamiliesOpen: false,
-    setManageFamiliesOpen: vi.fn(),
-    handleRenameFamily: vi.fn(),
-    handleDeleteFamily: vi.fn(),
-  }),
-}));
-
 import { ControlsClientPage } from './ControlsClientPage';
 
-describe('ControlsClientPage default sort (CS-511)', () => {
-  it('opens with controls sorted by Name A–Z regardless of input order', () => {
+describe('ControlsClientPage', () => {
+  it('opens with controls sorted by Name A–Z regardless of input order (CS-511)', () => {
     render(<ControlsClientPage initialControls={[]} frameworkId="frk_1" />);
 
     const names = screen.getAllByTestId('cell-name').map((el) => el.textContent);
     expect(names).toEqual(['Apple control', 'Mango control', 'Zebra control']);
+  });
+
+  it('does not render the Control Family column or Manage Families control (CS-512)', () => {
+    render(<ControlsClientPage initialControls={[]} frameworkId="frk_1" />);
+
+    expect(screen.queryAllByTestId('cell-controlFamily')).toHaveLength(0);
+    expect(screen.queryByText('Control Family')).toBeNull();
+    expect(screen.queryByText('Manage Families')).toBeNull();
   });
 });
