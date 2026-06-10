@@ -38,12 +38,23 @@ export async function resolveAzureSubscriptionIds(
       .map((s) => s.trim())
       .filter((s) => s.length > 0);
     if (cleaned.length > MAX_SUBSCRIPTIONS) {
-      // Bound the fan-out (13 checks x N subs) — loudly, so capped coverage
-      // is never mistaken for full coverage.
-      ctx.warn(
-        `Azure: ${cleaned.length} subscriptions selected; scanning the first ${MAX_SUBSCRIPTIONS}`,
-        { selected: cleaned.length, scanned: MAX_SUBSCRIPTIONS },
-      );
+      // Bound the fan-out (13 checks x N subs) to protect the run budget —
+      // and surface the gap as a FINDING: scanning less than the customer
+      // selected must never hide in a run log.
+      const unscanned = cleaned.slice(MAX_SUBSCRIPTIONS);
+      ctx.fail({
+        title: `Subscription selection exceeds the scan limit (${cleaned.length} selected, ${MAX_SUBSCRIPTIONS} scanned)`,
+        description: `${unscanned.length} selected subscription(s) were not scanned because runs are limited to ${MAX_SUBSCRIPTIONS} subscriptions. Resources in the unscanned subscriptions are unverified.`,
+        resourceType: 'azure-subscription',
+        resourceId: 'subscription-scope',
+        severity: 'medium',
+        remediation: `Reduce the selection to at most ${MAX_SUBSCRIPTIONS} subscriptions, or contact support to raise the limit for this connection.`,
+        evidence: {
+          selected: cleaned.length,
+          scanned: MAX_SUBSCRIPTIONS,
+          unscannedSubscriptionIds: unscanned,
+        },
+      });
       return cleaned.slice(0, MAX_SUBSCRIPTIONS);
     }
     if (cleaned.length > 0) return cleaned;

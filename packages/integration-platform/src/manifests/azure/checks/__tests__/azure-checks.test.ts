@@ -784,6 +784,33 @@ describe('Azure multi-subscription scanning', () => {
   });
 });
 
+describe('Azure subscription cap', () => {
+  it('selecting more than the limit scans the first 50 AND emits an explicit coverage finding', async () => {
+    const selected = Array.from({ length: 53 }, (_, i) => `sub-${i}`);
+    const seen = new Set<string>();
+    const out = await run(
+      sqlTlsCheck,
+      (url: string) => {
+        const m = url.match(/subscriptions\/(sub-\d+)\/providers\/Microsoft.Sql\/servers\?/);
+        if (m) {
+          seen.add(m[1]!);
+          return { value: [] };
+        }
+        return {};
+      },
+      { subscription_ids: selected },
+    );
+    expect(seen.size).toBe(50);
+    const capFinding = out.failed.find((f) => f.title.includes('exceeds the scan limit'));
+    expect(capFinding).toBeDefined();
+    expect(capFinding!.evidence).toMatchObject({
+      selected: 53,
+      scanned: 50,
+      unscannedSubscriptionIds: ['sub-50', 'sub-51', 'sub-52'],
+    });
+  });
+});
+
 describe('entra-id multi-subscription wildcard isolation (cubic finding on #3090)', () => {
   it('an MG wildcard role referenced only by one subscription is reported exactly once', async () => {
     const MG_DEF_ID = '/providers/Microsoft.Management/managementGroups/mg1/providers/Microsoft.Authorization/roleDefinitions/wild';
