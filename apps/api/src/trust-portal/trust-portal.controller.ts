@@ -58,7 +58,11 @@ import type { UpdateTrustOverviewDto } from './dto/update-trust-overview.dto';
 import { UpdateTrustOverviewSchema } from './dto/update-trust-overview.dto';
 import type { UpdateVendorTrustSettingsDto } from './dto/trust-vendor.dto';
 import { UpdateVendorTrustSettingsSchema } from './dto/trust-vendor.dto';
-import { UpdateTrustCustomFrameworkSchema } from './dto/trust-custom-framework.dto';
+import {
+  UpdateTrustCustomFrameworkSchema,
+  type UpdateTrustCustomFrameworkDto,
+} from './dto/trust-custom-framework.dto';
+import { ZodValidationPipe } from '../common/pipes/zod-validation.pipe';
 import { TrustPortalService } from './trust-portal.service';
 import { TrustCustomFrameworkService } from './trust-custom-framework.service';
 
@@ -433,9 +437,12 @@ export class TrustPortalController {
   })
   async updateCustomFramework(
     @OrganizationId() organizationId: string,
-    @Body() body: unknown,
+    // Validate via the pipe so a malformed body returns 400 (matching the
+    // @ApiBody/MCP contract) instead of an inline .parse() throwing a raw
+    // ZodError that surfaces as a 500.
+    @Body(new ZodValidationPipe(UpdateTrustCustomFrameworkSchema))
+    dto: UpdateTrustCustomFrameworkDto,
   ) {
-    const dto = UpdateTrustCustomFrameworkSchema.parse(body);
     return this.trustCustomFrameworkService.updateSelection(
       organizationId,
       dto,
