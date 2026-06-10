@@ -1,3 +1,10 @@
+# [3.75.0](https://github.com/trycompai/comp/compare/v3.74.5...v3.75.0) (2026-06-10)
+
+
+### Features
+
+* **framework-editor:** multi-line editor for long control descriptions ([4896365](https://github.com/trycompai/comp/commit/4896365bd5bb41392498dfdc4691eb6ecc056128))
+
 ## [3.74.5](https://github.com/trycompai/comp/compare/v3.74.4...v3.74.5) (2026-06-10)
 
 
