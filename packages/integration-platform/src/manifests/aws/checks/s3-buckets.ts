@@ -66,6 +66,7 @@ export function regionalS3Clients(session: AwsSession): {
  */
 export async function listAllBuckets(
   s3: S3Client,
+  log?: (message: string) => void,
 ): Promise<Array<{ name: string; region?: string }>> {
   try {
     const out: Array<{ name: string; region?: string }> = [];
@@ -82,7 +83,10 @@ export async function listAllBuckets(
       token = page.ContinuationToken;
     } while (token);
     return out;
-  } catch {
+  } catch (err) {
+    log?.(
+      `S3: paginated ListBuckets failed (${toReadFailure(err).error}); falling back to legacy form — bucket regions unknown, cross-region reads depend on S3 redirects`,
+    );
     const list = await s3.send(new ListBucketsCommand({}));
     return (list.Buckets ?? [])
       .map((b) => b.Name)
@@ -101,7 +105,7 @@ export async function gatherBuckets(
     clientForRegion?: (region: string) => S3Client;
   },
 ): Promise<S3BucketInfo[]> {
-  const buckets = await listAllBuckets(s3);
+  const buckets = await listAllBuckets(s3, opts.log);
 
   const infos: S3BucketInfo[] = [];
   for (const { name, region } of buckets) {
