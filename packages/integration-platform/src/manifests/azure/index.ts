@@ -104,22 +104,28 @@ Our integration only makes read-only API calls for security scanning.`,
       helpText:
         'Select which subscriptions to scan. Leave empty to scan all enabled subscriptions.',
       fetchOptions: async (ctx) => {
-        const data = await ctx.fetch<{
-          value?: Array<{
-            subscriptionId: string;
-            displayName?: string;
-            state?: string;
-          }>;
-        }>('https://management.azure.com/subscriptions?api-version=2020-01-01');
-        return (data.value ?? [])
-          .filter((s) => s.state === 'Enabled')
-          .sort((a, b) => (a.displayName ?? '').localeCompare(b.displayName ?? ''))
-          .map((s) => ({
-            value: s.subscriptionId,
-            label: s.displayName
-              ? `${s.displayName} (${s.subscriptionId})`
-              : s.subscriptionId,
-          }));
+        try {
+          const data = await ctx.fetch<{
+            value?: Array<{
+              subscriptionId: string;
+              displayName?: string;
+              state?: string;
+            }>;
+          }>('https://management.azure.com/subscriptions?api-version=2020-01-01');
+          return (data.value ?? [])
+            .filter((s) => s.state === 'Enabled')
+            .sort((a, b) => (a.displayName ?? '').localeCompare(b.displayName ?? ''))
+            .map((s) => ({
+              value: s.subscriptionId,
+              label: s.displayName
+                ? `${s.displayName} (${s.subscriptionId})`
+                : s.subscriptionId,
+            }));
+        } catch {
+          // Graceful empty picker (matches the GCP project_ids precedent) —
+          // the user can still rely on scan-all or the legacy subscription_id.
+          return [];
+        }
       },
     },
     {

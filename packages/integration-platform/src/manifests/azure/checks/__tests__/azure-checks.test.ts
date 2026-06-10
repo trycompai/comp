@@ -4,6 +4,7 @@ import type {
   CheckVariableValues,
   IntegrationCheck,
 } from '../../../../types';
+import { azureManifest } from '../../index';
 import { rbacLeastPrivilegeCheck } from '../entra-id';
 import { keyVaultProtectionCheck, keyVaultRbacCheck } from '../key-vault';
 import { monitorLoggingAlertingCheck } from '../monitor';
@@ -761,5 +762,65 @@ describe('Azure multi-subscription scanning', () => {
     expect(out.passed).toHaveLength(0);
     expect(out.failed).toHaveLength(1);
     expect(out.failed[0]!.title).toMatch(/Could not verify Azure subscription scope/);
+  });
+});
+
+describe('entra-id multi-subscription wildcard isolation (cubic finding on #3090)', () => {
+  it('an MG wildcard role referenced only by one subscription is reported exactly once', async () => {
+    const MG_DEF_ID = '/providers/Microsoft.Management/managementGroups/mg1/providers/Microsoft.Authorization/roleDefinitions/wild';
+    let mgDefFetches = 0;
+    const { failed } = await run(
+      rbacLeastPrivilegeCheck,
+      (url: string) => {
+        if (url.includes('/subscriptions?api-version')) {
+          return {
+            value: [
+              { subscriptionId: 'sub-a', state: 'Enabled' },
+              { subscriptionId: 'sub-b', state: 'Enabled' },
+            ],
+          };
+        }
+        if (url.startsWith(MG_DEF_ID)) {
+          mgDefFetches++;
+          return {
+            id: MG_DEF_ID,
+            properties: {
+              roleName: 'MG Wildcard',
+              type: 'CustomRole',
+              permissions: [{ actions: ['*'], dataActions: [] }],
+            },
+          };
+        }
+        if (url.includes('roleDefinitions')) {
+          return { value: [{ id: 'reader', properties: { roleName: 'Reader', type: 'BuiltInRole', permissions: [] } }] };
+        }
+        if (url.includes('roleAssignments')) {
+          // only sub-a has an assignment referencing the MG wildcard role
+          return url.includes('sub-a')
+            ? { value: [{ properties: { roleDefinitionId: MG_DEF_ID, principalId: 'p1', principalType: 'User' } }] }
+            : { value: [] };
+        }
+        return { value: [] };
+      },
+      {},
+    );
+    const wildcardFindings = failed.filter((f) => f.title.match(/[Ww]ildcard/));
+    expect(wildcardFindings).toHaveLength(1);
+    // the shared cache still prevents refetching across subscriptions
+    expect(mgDefFetches).toBe(1);
+  });
+});
+
+describe('azure subscription picker fetchOptions', () => {
+  it('returns [] instead of throwing when subscriptions cannot be listed', async () => {
+    const variable = azureManifest.variables?.find((v) => v.id === 'subscription_ids');
+    expect(variable?.fetchOptions).toBeDefined();
+    const ctx = {
+      fetch: async () => {
+        throw new Error('HTTP 403: Forbidden');
+      },
+    } as unknown as Parameters<NonNullable<typeof variable.fetchOptions>>[0];
+    const options = await variable!.fetchOptions!(ctx);
+    expect(options).toEqual([]);
   });
 });

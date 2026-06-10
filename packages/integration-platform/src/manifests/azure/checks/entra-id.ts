@@ -94,19 +94,29 @@ async function runRbacLeastPrivilegeForSubscription(
     // Assignments can reference role definitions scoped to a management group or
     // resource group, which won't appear in the subscription-scope list above.
     // Resolve any missing definition directly so privileged principals aren't
-    // undercounted. Cache by id to avoid refetching shared definitions.
+    // undercounted. The shared cross-subscription cache (resolvedDefs) only
+    // avoids refetching; the wildcard scan below must see ONLY definitions
+    // referenced by THIS subscription's assignments (subResolvedDefs), or a
+    // wildcard role from another subscription's loop would be re-reported here.
     const resolveFailures: ReadFailure[] = [];
+    const subResolvedDefs = new Map<string, RoleDefinition>();
     const resolveDef = async (
       roleDefinitionId: string,
     ): Promise<RoleDefinition | null> => {
-      const cached = defMap.get(roleDefinitionId) ?? resolvedDefs.get(roleDefinitionId);
-      if (cached) return cached;
+      const own = defMap.get(roleDefinitionId);
+      if (own) return own;
+      const shared = resolvedDefs.get(roleDefinitionId);
+      if (shared) {
+        subResolvedDefs.set(roleDefinitionId, shared);
+        return shared;
+      }
       try {
         const def = await ctx.fetch<RoleDefinition>(
           `${roleDefinitionId}?api-version=2022-04-01`,
         );
         if (def?.properties) {
           resolvedDefs.set(roleDefinitionId, def);
+          subResolvedDefs.set(roleDefinitionId, def);
           return def;
         }
         return null;
@@ -203,7 +213,7 @@ async function runRbacLeastPrivilegeForSubscription(
     const allDefs = new Map<string, RoleDefinition>(
       definitions.map((d) => [d.id, d]),
     );
-    for (const [id, def] of resolvedDefs) allDefs.set(id, def);
+    for (const [id, def] of subResolvedDefs) allDefs.set(id, def);
 
     const wildcardRoles = [...allDefs.values()].filter(
       (d) =>
