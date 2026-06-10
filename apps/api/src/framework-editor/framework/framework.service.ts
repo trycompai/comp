@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Injectable,
   NotFoundException,
   ConflictException,
@@ -231,25 +232,55 @@ export class FrameworkEditorFrameworkService {
     }));
   }
 
-  async linkControl(frameworkId: string, controlId: string) {
+  async linkControl(
+    frameworkId: string,
+    controlId: string,
+    requirementIds?: string[] | null,
+  ) {
     await this.findById(frameworkId);
 
-    const requirementIds = await db.frameworkEditorRequirement
-      .findMany({ where: { frameworkId }, select: { id: true } })
-      .then((reqs) => reqs.map((r) => ({ id: r.id })));
+    const frameworkRequirements = await db.frameworkEditorRequirement.findMany({
+      where: { frameworkId },
+      select: { id: true },
+    });
 
-    if (requirementIds.length === 0) {
+    if (frameworkRequirements.length === 0) {
       throw new ConflictException(
         'Framework has no requirements to link the control to',
       );
     }
 
+    // A control belongs to a framework only through its requirement links. When
+    // the caller passes requirementIds, link just those — this is the UI path,
+    // so adding an existing control no longer fans out to every requirement.
+    // When omitted (undefined/null), link all: the documented legacy bulk
+    // behavior the CLI uses. (@IsOptional lets a JSON null through, so guard it.)
+    let targetIds: { id: string }[];
+    if (requirementIds === undefined || requirementIds === null) {
+      targetIds = frameworkRequirements.map((r) => ({ id: r.id }));
+    } else {
+      const frameworkRequirementIds = new Set(
+        frameworkRequirements.map((r) => r.id),
+      );
+      const invalid = requirementIds.filter(
+        (id) => !frameworkRequirementIds.has(id),
+      );
+      if (invalid.length > 0) {
+        throw new BadRequestException(
+          `Requirement(s) not in this framework: ${invalid.join(', ')}`,
+        );
+      }
+      targetIds = requirementIds.map((id) => ({ id }));
+    }
+
     await db.frameworkEditorControlTemplate.update({
       where: { id: controlId },
-      data: { requirements: { connect: requirementIds } },
+      data: { requirements: { connect: targetIds } },
     });
 
-    this.logger.log(`Linked control ${controlId} to framework ${frameworkId}`);
+    this.logger.log(
+      `Linked control ${controlId} to framework ${frameworkId} (${targetIds.length} requirement(s))`,
+    );
     return { message: 'Control linked to framework' };
   }
 

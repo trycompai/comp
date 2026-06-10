@@ -16,6 +16,7 @@ import {
   AddExistingItemDialog,
   type ExistingItemRaw,
 } from '../../components/AddExistingItemDialog';
+import type { RequirementOption } from '../../components/ControlRequirementSelect';
 import { ManageFamiliesDialog } from './ManageFamiliesDialog';
 import {
   ComboboxCell,
@@ -72,6 +73,24 @@ async function fetchRequirementsForFramework(
   return framework.requirements.map((r) =>
     toRequirementItem({ ...r, framework: { name: framework.name } }),
   );
+}
+
+// Requirement options for the "Add Existing Control" picker, oldest-first so
+// the just-created requirement sits at the bottom of the list.
+async function fetchFrameworkRequirementOptions(
+  frameworkId: string,
+): Promise<RequirementOption[]> {
+  const framework = await apiClient<{
+    requirements: Array<{
+      id: string;
+      name: string;
+      identifier: string | null;
+      createdAt?: string;
+    }>;
+  }>(`/framework/${frameworkId}`);
+  return [...framework.requirements]
+    .sort((a, b) => (a.createdAt ?? '').localeCompare(b.createdAt ?? ''))
+    .map((r) => ({ id: r.id, name: r.name, identifier: r.identifier }));
 }
 
 async function fetchAllTaskTemplates(): Promise<RelationalItem[]> {
@@ -484,6 +503,7 @@ export function ControlsClientPage({ initialControls, emptyMessage, frameworkId 
           itemType="control"
           existingItemIds={existingControlIds}
           fetchAllItems={fetchAllControlsForDialog}
+          fetchRequirements={() => fetchFrameworkRequirementOptions(frameworkId)}
         />
       )}
 
