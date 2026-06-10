@@ -58,7 +58,9 @@ import type { UpdateTrustOverviewDto } from './dto/update-trust-overview.dto';
 import { UpdateTrustOverviewSchema } from './dto/update-trust-overview.dto';
 import type { UpdateVendorTrustSettingsDto } from './dto/trust-vendor.dto';
 import { UpdateVendorTrustSettingsSchema } from './dto/trust-vendor.dto';
+import { UpdateTrustCustomFrameworkSchema } from './dto/trust-custom-framework.dto';
 import { TrustPortalService } from './trust-portal.service';
+import { TrustCustomFrameworkService } from './trust-custom-framework.service';
 
 class ListComplianceResourcesDto {
   @ApiProperty({
@@ -74,7 +76,10 @@ class ListComplianceResourcesDto {
 @UseGuards(HybridAuthGuard, PermissionGuard)
 @ApiSecurity('apikey')
 export class TrustPortalController {
-  constructor(private readonly trustPortalService: TrustPortalService) {}
+  constructor(
+    private readonly trustPortalService: TrustPortalService,
+    private readonly trustCustomFrameworkService: TrustCustomFrameworkService,
+  ) {}
 
   @Get('settings')
   @HttpCode(HttpStatus.OK)
@@ -389,6 +394,34 @@ export class TrustPortalController {
     @Body() body: Record<string, boolean | string | undefined>,
   ) {
     return this.trustPortalService.updateFrameworks(organizationId, body);
+  }
+
+  @Get('custom-frameworks')
+  @HttpCode(HttpStatus.OK)
+  @RequirePermission('trust', 'read')
+  @ApiOperation({
+    summary:
+      'List org-authored custom frameworks with their trust portal selection',
+  })
+  async listCustomFrameworks(@OrganizationId() organizationId: string) {
+    return this.trustCustomFrameworkService.listForOrg(organizationId);
+  }
+
+  @Put('custom-frameworks')
+  @RequirePermission('trust', 'update')
+  @ApiOperation({
+    summary:
+      'Enable/disable a custom framework on the trust portal and set its status',
+  })
+  async updateCustomFramework(
+    @OrganizationId() organizationId: string,
+    @Body() body: unknown,
+  ) {
+    const dto = UpdateTrustCustomFrameworkSchema.parse(body);
+    return this.trustCustomFrameworkService.updateSelection(
+      organizationId,
+      dto,
+    );
   }
 
   @Post('overview')

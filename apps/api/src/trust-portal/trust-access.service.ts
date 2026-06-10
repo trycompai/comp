@@ -17,6 +17,8 @@ import { TrustEmailService } from './email.service';
 import { NdaPdfService } from './nda-pdf.service';
 import { AttachmentsService } from '../attachments/attachments.service';
 import { PolicyPdfRendererService } from './policy-pdf-renderer.service';
+import { TrustCustomFrameworkService } from './trust-custom-framework.service';
+import type { TrustCustomFrameworkPublicItem } from './dto/trust-custom-framework.dto';
 import { GetObjectCommand, PutObjectCommand } from '@aws-sdk/client-s3';
 import { APP_AWS_ORG_ASSETS_BUCKET, s3Client, getSignedUrl } from '../app/s3';
 import { Prisma, TrustFramework } from '@db';
@@ -234,6 +236,7 @@ export class TrustAccessService {
     private readonly emailService: TrustEmailService,
     private readonly attachmentsService: AttachmentsService,
     private readonly pdfRendererService: PolicyPdfRendererService,
+    private readonly trustCustomFrameworkService: TrustCustomFrameworkService,
   ) {
     if (
       !process.env.TRUST_APP_URL &&
@@ -1661,6 +1664,8 @@ export class TrustAccessService {
       },
       select: {
         framework: true,
+        customFrameworkId: true,
+        customFramework: { select: { name: true } },
         fileName: true,
         fileSize: true,
         updatedAt: true,
@@ -1670,9 +1675,13 @@ export class TrustAccessService {
       },
     });
 
-    // Return all resources - the download endpoint will auto-enable frameworks as needed
+    // Return all resources - the download endpoint will auto-enable frameworks as needed.
+    // Custom-framework certificates carry customFrameworkId + the framework name so the
+    // gated access page can label and download them (native ones keep `framework`).
     return complianceResources.map((resource) => ({
       framework: resource.framework,
+      customFrameworkId: resource.customFrameworkId,
+      customFrameworkName: resource.customFramework?.name ?? null,
       fileName: resource.fileName,
       fileSize: resource.fileSize,
       updatedAt: resource.updatedAt.toISOString(),
@@ -2034,6 +2043,96 @@ export class TrustAccessService {
       fileName: record.fileName,
       fileSize: watermarked.length,
     };
+  }
+
+  /**
+   * Gated download of a custom-framework certificate (token + NDA required).
+   * Mirrors getComplianceResourceUrlByAccessToken but keyed by customFrameworkId.
+   * No framework auto-enable: custom display visibility is governed separately by
+   * TrustCustomFramework.enabled.
+   */
+  async getCustomComplianceResourceUrlByAccessToken(
+    token: string,
+    customFrameworkId: string,
+  ) {
+    const grant = await this.validateAccessToken(token);
+
+    if (!s3Client || !APP_AWS_ORG_ASSETS_BUCKET) {
+      throw new InternalServerErrorException(
+        'Organization assets bucket is not configured',
+      );
+    }
+
+    const record = await db.trustResource.findUnique({
+      where: {
+        organizationId_customFrameworkId: {
+          organizationId: grant.accessRequest.organizationId,
+          customFrameworkId,
+        },
+      },
+    });
+
+    if (!record) {
+      throw new NotFoundException(
+        'No certificate uploaded for this custom framework',
+      );
+    }
+
+    const getCommand = new GetObjectCommand({
+      Bucket: APP_AWS_ORG_ASSETS_BUCKET,
+      Key: record.s3Key,
+    });
+
+    const response = await s3Client.send(getCommand);
+    const chunks: Uint8Array[] = [];
+
+    if (!response.Body) {
+      throw new InternalServerErrorException('No file data received from S3');
+    }
+
+    for await (const chunk of response.Body as Readable) {
+      chunks.push(chunk);
+    }
+
+    const originalPdfBuffer = Buffer.concat(chunks);
+
+    const docId = `compliance-${grant.id}-custom-${customFrameworkId}-${Date.now()}`;
+    const watermarked = await this.ndaPdfService.watermarkExistingPdf(
+      originalPdfBuffer,
+      {
+        name: grant.accessRequest.name,
+        email: grant.subjectEmail,
+        docId,
+        watermarkText: 'Comp AI',
+      },
+    );
+
+    const key = await this.attachmentsService.uploadToS3(
+      watermarked,
+      `compliance-custom-${customFrameworkId}-grant-${grant.id}-${Date.now()}.pdf`,
+      'application/pdf',
+      grant.accessRequest.organizationId,
+      'trust_compliance_downloads',
+      `${grant.id}`,
+    );
+
+    const downloadUrl =
+      await this.attachmentsService.getPresignedDownloadUrl(key);
+
+    return {
+      signedUrl: downloadUrl,
+      fileName: record.fileName,
+      fileSize: watermarked.length,
+    };
+  }
+
+  /** Custom frameworks shown on the public portal (delegates to the dedicated service). */
+  async getPublicCustomFrameworks(
+    friendlyUrl: string,
+  ): Promise<TrustCustomFrameworkPublicItem[]> {
+    return this.trustCustomFrameworkService.getPublicCustomFrameworks(
+      friendlyUrl,
+    );
   }
 
   async downloadAllPoliciesByAccessToken(token: string) {

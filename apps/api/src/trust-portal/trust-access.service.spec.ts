@@ -70,6 +70,7 @@ describe('TrustAccessService favicon branding', () => {
     {} as any,
     {} as any,
     {} as any,
+    {} as any,
   );
 
   beforeEach(() => {
