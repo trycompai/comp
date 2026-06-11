@@ -37,6 +37,11 @@ import {
   buildAdditionalContext,
   normalizeTargetUrl,
 } from './finding-context.util';
+import {
+  appendContextNotesToMarkdown,
+  appendContextNotesToPdf,
+  type ReportContextNote,
+} from './report-appendix.util';
 import { PentestCreditsService } from './pentest-credits.service';
 
 /**
@@ -530,15 +535,24 @@ export class SecurityPenetrationTestsService {
     organizationId: string,
     id: string,
   ): Promise<BinaryArtifact> {
-    await this.getReport(organizationId, id);
+    const run = await this.getReport(organizationId, id);
 
     const report = await this.callMaced(
       () => this.macedClient.pentests.report(id),
       `fetching penetration test report ${id}`,
     );
 
+    const notes = await this.findContextNotesQuietly(
+      organizationId,
+      run.targetUrl,
+    );
+    const markdown =
+      notes.length > 0
+        ? appendContextNotesToMarkdown({ markdown: report.markdown, notes })
+        : report.markdown;
+
     return {
-      buffer: Buffer.from(report.markdown, 'utf-8'),
+      buffer: Buffer.from(markdown, 'utf-8'),
       contentType: 'text/markdown; charset=utf-8',
       contentDisposition: null,
     };
@@ -548,18 +562,67 @@ export class SecurityPenetrationTestsService {
     organizationId: string,
     id: string,
   ): Promise<BinaryArtifact> {
-    await this.getReport(organizationId, id);
+    const run = await this.getReport(organizationId, id);
 
     const blob = await this.callMaced(
       () => this.macedClient.pentests.reportPdf(id),
       `fetching penetration test PDF ${id}`,
     );
 
+    const original = Buffer.from(await blob.arrayBuffer());
+    const notes = await this.findContextNotesQuietly(
+      organizationId,
+      run.targetUrl,
+    );
+
+    let buffer: Buffer = original;
+    if (notes.length > 0) {
+      try {
+        buffer = await appendContextNotesToPdf({ pdfBytes: original, notes });
+      } catch (error) {
+        // The appendix is additive — a malformed/unparseable provider PDF
+        // must never break the download. Serve the original bytes.
+        this.logger.error(
+          `Unable to append context notes to PDF for run ${id}: ${
+            error instanceof Error ? error.message : String(error)
+          }`,
+        );
+      }
+    }
+
     return {
-      buffer: Buffer.from(await blob.arrayBuffer()),
+      buffer,
       contentType: blob.type || 'application/pdf',
       contentDisposition: `attachment; filename="penetration-test-${id}.pdf"`,
     };
+  }
+
+  /**
+   * Context notes for a target, for the report appendix. Quiet: a notes
+   * lookup failure must never break a report download, so errors are
+   * logged and an empty list is returned (appendix simply omitted).
+   */
+  private async findContextNotesQuietly(
+    organizationId: string,
+    targetUrl: string,
+  ): Promise<ReportContextNote[]> {
+    if (!targetUrl) {
+      return [];
+    }
+    try {
+      return await db.securityPenetrationTestFindingContext.findMany({
+        where: { organizationId, targetUrl: normalizeTargetUrl(targetUrl) },
+        orderBy: { createdAt: 'asc' },
+        select: { issueTitle: true, context: true, updatedAt: true },
+      });
+    } catch (error) {
+      this.logger.error(
+        `Unable to load finding context notes for report appendix: ${
+          error instanceof Error ? error.message : String(error)
+        }`,
+      );
+      return [];
+    }
   }
 
   async handleWebhook(params: {
