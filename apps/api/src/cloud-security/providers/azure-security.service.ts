@@ -106,41 +106,82 @@ export class AzureSecurityService {
 
     this.logger.log(`Scanning Azure subscription ${subscriptionId}`);
     const findings: SecurityFinding[] = [];
+    // Track unit failures so a scan that comes back EMPTY because every unit
+    // (Defender + each adapter) errored fails loudly instead of being stored as
+    // a fresh "success" run with 0 findings — which would hide the previous good
+    // results (the UI shows only the latest run). A healthy subscription still
+    // emits passing findings, so "empty result + a failure" is the real tell.
+    let failedUnits = 0;
+    let firstError: Error | null = null;
 
     // 1. Defender alerts + assessments (always runs)
     if (!enabledServices || enabledServices.includes('defender')) {
-      const defenderFindings = await this.scanDefender(token, subscriptionId);
-      findings.push(...defenderFindings);
+      const defender = await this.scanDefender(token, subscriptionId);
+      findings.push(...defender.findings);
+      if (!defender.anySucceeded) {
+        failedUnits++;
+        if (defender.firstError && !firstError) firstError = defender.firstError;
+      }
     }
 
     // 2. Run service adapters in parallel
-    const adapterPromises = SERVICE_ADAPTERS.filter(
+    const activeAdapters = SERVICE_ADAPTERS.filter(
       (a) => !enabledServices || enabledServices.includes(a.serviceId),
-    ).map(async (adapter) => {
-      try {
-        return await adapter.scan({ accessToken: token, subscriptionId });
-      } catch (error) {
-        const msg = error instanceof Error ? error.message : String(error);
-        this.logger.warn(`Azure ${adapter.serviceId} scan failed: ${msg}`);
-        return [];
-      }
-    });
-
-    const adapterResults = await Promise.all(adapterPromises);
+    );
+    const adapterResults = await Promise.all(
+      activeAdapters.map(async (adapter) => {
+        try {
+          const scanned = await adapter.scan({
+            accessToken: token,
+            subscriptionId,
+          });
+          return { ok: true as const, findings: scanned };
+        } catch (error) {
+          const err = error instanceof Error ? error : new Error(String(error));
+          this.logger.warn(`Azure ${adapter.serviceId} scan failed: ${err.message}`);
+          return { ok: false as const, error: err };
+        }
+      }),
+    );
     for (const result of adapterResults) {
-      findings.push(...result);
+      if (result.ok) {
+        findings.push(...result.findings);
+      } else {
+        failedUnits++;
+        if (!firstError) firstError = result.error;
+      }
+    }
+
+    // An empty result combined with a failed unit is a degenerate/broken scan,
+    // not a genuinely-clean subscription (a clean scan still emits passing
+    // findings). Throw so nothing is stored and the prior good run stays
+    // visible. Mirrors the AWS all-regions-failed and GCP all-scopes-failed
+    // guards. A truly-empty subscription (every unit succeeded, no failures)
+    // still returns [] normally.
+    if (findings.length === 0 && failedUnits > 0) {
+      throw firstError ?? new Error('All Azure service scans failed');
     }
 
     this.logger.log(`Azure scan complete: ${findings.length} total findings`);
     return findings;
   }
 
-  /** Scan Defender for Cloud alerts and assessments. */
+  /**
+   * Scan Defender for Cloud alerts and assessments. Reports whether at least
+   * one query succeeded so the caller can tell a genuinely-clean subscription
+   * (anySucceeded=true, no findings) apart from a total failure.
+   */
   private async scanDefender(
     accessToken: string,
     subscriptionId: string,
-  ): Promise<SecurityFinding[]> {
+  ): Promise<{
+    findings: SecurityFinding[];
+    anySucceeded: boolean;
+    firstError: Error | null;
+  }> {
     const findings: SecurityFinding[] = [];
+    let anySucceeded = false;
+    let firstError: Error | null = null;
 
     // Alerts
     try {
@@ -173,6 +214,7 @@ export class AzureSecurityService {
           createdAt: alert.properties.startTimeUtc || new Date().toISOString(),
         });
       }
+      anySucceeded = true;
     } catch (error) {
       this.handlePermissionError(
         findings,
@@ -180,6 +222,9 @@ export class AzureSecurityService {
         'Security Alerts',
         subscriptionId,
       );
+      if (!firstError) {
+        firstError = error instanceof Error ? error : new Error(String(error));
+      }
     }
 
     // Assessments
@@ -227,6 +272,7 @@ export class AzureSecurityService {
           createdAt: new Date().toISOString(),
         });
       }
+      anySucceeded = true;
     } catch (error) {
       this.handlePermissionError(
         findings,
@@ -234,9 +280,12 @@ export class AzureSecurityService {
         'Security Assessments',
         subscriptionId,
       );
+      if (!firstError) {
+        firstError = error instanceof Error ? error : new Error(String(error));
+      }
     }
 
-    return findings;
+    return { findings, anySucceeded, firstError };
   }
 
   private handlePermissionError(

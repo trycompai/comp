@@ -698,3 +698,128 @@ describe('resolveGcpServiceId — Vertex AI grouping', () => {
     );
   });
 });
+
+// ── SCC findings response helpers ───────────────────────────────────────────
+function sccPage(
+  findings: Array<Record<string, unknown>>,
+  nextPageToken?: string,
+): { ok: true; json: () => Promise<unknown> } {
+  return {
+    ok: true,
+    json: async () => ({
+      listFindingsResults: findings,
+      ...(nextPageToken ? { nextPageToken } : {}),
+    }),
+  };
+}
+
+function sccError(
+  status: number,
+  text: string,
+): { ok: false; status: number; text: () => Promise<string> } {
+  return { ok: false, status, text: async () => text };
+}
+
+function sccFinding(project: string): Record<string, unknown> {
+  return {
+    finding: {
+      name: `organizations/1/sources/-/findings/${project}-1`,
+      category: 'PUBLIC_BUCKET_ACL',
+      description: 'desc',
+      severity: 'HIGH',
+      state: 'ACTIVE',
+      resourceName: `//storage.googleapis.com/projects/${project}/buckets/b`,
+      eventTime: '2026-01-01T00:00:00Z',
+      createTime: '2026-01-01T00:00:00Z',
+    },
+    resource: {
+      type: 'storage.googleapis.com/Bucket',
+      projectDisplayName: project,
+    },
+  };
+}
+
+describe('GCPSecurityService.scanSecurityFindings — all-scopes-failed guard', () => {
+  let service: GCPSecurityService;
+  let fetchMock: jest.Mock;
+  const originalFetch = global.fetch;
+
+  beforeEach(() => {
+    fetchMock = jest.fn();
+    // @ts-expect-error replacing global fetch with a mock for these tests
+    global.fetch = fetchMock;
+    service = new GCPSecurityService();
+  });
+
+  afterAll(() => {
+    global.fetch = originalFetch;
+  });
+
+  // The bug: when the only scope errored, the scan used to swallow the error and
+  // return [] — which got stored as a fresh "success" run with 0 findings,
+  // hiding the previous good results. It must now throw so nothing is stored.
+  it('throws (re-throwing the actionable SCC error) when the only scope errors, instead of returning []', async () => {
+    fetchMock.mockResolvedValue(
+      sccError(403, 'PERMISSION_DENIED: caller lacks securitycenter.findings.list'),
+    );
+
+    await expect(
+      service.scanSecurityFindings(
+        { access_token: 'tok' },
+        { project_ids: ['wasimil-prod'] },
+      ),
+    ).rejects.toThrow(/Permission denied/);
+  });
+
+  // The exact case from the customer report: project-scoped SCC query on a
+  // no-org account returns 404 NOT_FOUND (SCC never activated for the project).
+  it('maps a 404 NOT_FOUND to the actionable SCC_NOT_ACTIVATED error', async () => {
+    fetchMock.mockResolvedValue(
+      sccError(404, '{"error":{"code":404,"message":"Requested entity was not found.","status":"NOT_FOUND"}}'),
+    );
+
+    await expect(
+      service.scanSecurityFindings(
+        { access_token: 'tok' },
+        { project_ids: ['wasimil-prod'] },
+      ),
+    ).rejects.toThrow(/SCC_NOT_ACTIVATED/);
+  });
+
+  it('throws when EVERY configured scope errors', async () => {
+    fetchMock.mockResolvedValue(sccError(500, 'internal error'));
+
+    await expect(
+      service.scanSecurityFindings(
+        { access_token: 'tok' },
+        { project_ids: ['p1', 'p2'] },
+      ),
+    ).rejects.toThrow();
+  });
+
+  it('does NOT throw when at least one scope succeeds — returns the surviving scope’s findings', async () => {
+    fetchMock.mockImplementation(async (url: string) => {
+      if (url.includes('projects/p1')) return sccError(403, 'PERMISSION_DENIED');
+      return sccPage([sccFinding('p2')]);
+    });
+
+    const findings = await service.scanSecurityFindings(
+      { access_token: 'tok' },
+      { project_ids: ['p1', 'p2'] },
+    );
+
+    expect(findings).toHaveLength(1);
+    expect(findings[0].resourceId).toContain('projects/p2');
+  });
+
+  it('does NOT throw when a scope succeeds with zero findings (genuinely clean account)', async () => {
+    fetchMock.mockResolvedValue(sccPage([]));
+
+    const findings = await service.scanSecurityFindings(
+      { access_token: 'tok' },
+      { project_ids: ['wasimil-prod'] },
+    );
+
+    expect(findings).toEqual([]);
+  });
+});
