@@ -4,10 +4,21 @@ import type {
   CheckVariableValues,
   IntegrationCheck,
 } from '../../../../types';
+import { azureManifest } from '../../index';
 import { rbacLeastPrivilegeCheck } from '../entra-id';
 import { keyVaultProtectionCheck, keyVaultRbacCheck } from '../key-vault';
 import { monitorLoggingAlertingCheck } from '../monitor';
+import {
+  evaluateMySqlTls,
+  isMySqlTlsVersionCompliant,
+  mysqlFlexibleTlsCheck,
+} from '../mysql-flexible';
 import { nsgNoOpenPortsCheck } from '../network';
+import {
+  evaluatePgTls,
+  isPgTlsVersionCompliant,
+  postgresqlFlexibleTlsCheck,
+} from '../postgresql-flexible';
 import { sqlAuditingCheck, sqlPublicAccessCheck, sqlTlsCheck } from '../sql';
 import {
   storageEncryptionCheck,
@@ -17,7 +28,12 @@ import {
 
 interface Captured {
   passed: string[];
-  failed: Array<{ title: string; severity: string }>;
+  failed: Array<{
+    title: string;
+    severity: string;
+    remediation?: string;
+    evidence?: Record<string, unknown>;
+  }>;
 }
 
 async function run(
@@ -38,7 +54,13 @@ async function run(
     warn: () => {},
     error: () => {},
     pass: (r) => passed.push(r.title),
-    fail: (r) => failed.push({ title: r.title, severity: r.severity }),
+    fail: (r) =>
+      failed.push({
+        title: r.title,
+        severity: r.severity,
+        remediation: r.remediation,
+        evidence: r.evidence,
+      }),
     fetch: (async <T,>(url: string): Promise<T> => fetchFn(url) as T) as CheckContext['fetch'],
     post: (async () => ({})) as CheckContext['post'],
     put: (async () => ({})) as CheckContext['put'],
@@ -97,6 +119,37 @@ describe('Azure storage checks', () => {
     );
     expect(failed).toHaveLength(0);
     expect(passed).toHaveLength(1);
+  });
+
+  it("public-access: 'Selected networks' (publicNetworkAccess Enabled + defaultAction Deny) passes", async () => {
+    const { passed, failed } = await run(
+      storagePublicAccessCheck,
+      storageList({
+        allowBlobPublicAccess: false,
+        publicNetworkAccess: 'Enabled',
+        networkAcls: {
+          defaultAction: 'Deny',
+          bypass: 'AzureServices',
+          ipRules: [{ value: '203.0.113.0/24', action: 'Allow' }],
+        },
+      }),
+    );
+    expect(failed).toHaveLength(0);
+    expect(passed).toHaveLength(1);
+  });
+
+  it('public-access: publicNetworkAccess Enabled with default Allow fails', async () => {
+    const { passed, failed } = await run(
+      storagePublicAccessCheck,
+      storageList({
+        allowBlobPublicAccess: false,
+        publicNetworkAccess: 'Enabled',
+        networkAcls: { defaultAction: 'Allow' },
+      }),
+    );
+    expect(passed).toHaveLength(0);
+    expect(failed).toHaveLength(1);
+    expect(failed[0]!.severity).toBe('medium');
   });
 
   it('encryption fails when a service is disabled, passes when enabled', async () => {
@@ -351,5 +404,495 @@ describe('Azure ARM pagination safety', () => {
       return { value: [] };
     });
     expect(fetched.some((u) => u.includes('evil'))).toBe(false);
+  });
+});
+
+// ── MySQL Flexible Server TLS ──────────────────────────────────────────────
+
+// Mock fetch for the MySQL TLS check: returns the server list for the
+// flexibleServers list call, and the two configuration GETs (passing null to
+// simulate a config read failure).
+function mysqlFetch(
+  requireSecureTransport: string | null,
+  tlsVersion: string | null,
+  servers: Array<{ id: string; name: string }> = [
+    {
+      id: '/subscriptions/sub-1/resourceGroups/rg/providers/Microsoft.DBforMySQL/flexibleServers/db1',
+      name: 'db1',
+    },
+  ],
+) {
+  return (url: string) => {
+    if (url.includes('/configurations/require_secure_transport')) {
+      if (requireSecureTransport === null) throw new Error('HTTP 403');
+      return { properties: { value: requireSecureTransport } };
+    }
+    if (url.includes('/configurations/tls_version')) {
+      if (tlsVersion === null) throw new Error('HTTP 403');
+      return { properties: { value: tlsVersion } };
+    }
+    if (url.includes('/flexibleServers?')) {
+      return { value: servers };
+    }
+    return {};
+  };
+}
+
+describe('isMySqlTlsVersionCompliant', () => {
+  it('accepts only TLS 1.2+ (single or comma-separated set), case-insensitive', () => {
+    expect(isMySqlTlsVersionCompliant('TLSv1.2')).toBe(true);
+    expect(isMySqlTlsVersionCompliant('TLSv1.2,TLSv1.3')).toBe(true);
+    expect(isMySqlTlsVersionCompliant('tlsv1.3')).toBe(true);
+  });
+
+  it('rejects any set that enables TLS 1.0/1.1, or is empty/unknown', () => {
+    expect(isMySqlTlsVersionCompliant('TLSv1.1,TLSv1.2')).toBe(false);
+    expect(isMySqlTlsVersionCompliant('TLSv1')).toBe(false);
+    expect(isMySqlTlsVersionCompliant('')).toBe(false);
+    expect(isMySqlTlsVersionCompliant('TLSv1.2,Foo')).toBe(false);
+  });
+});
+
+describe('evaluateMySqlTls', () => {
+  it('is compliant only when secure transport is ON and TLS floor is 1.2+', () => {
+    expect(evaluateMySqlTls('ON', 'TLSv1.2').compliant).toBe(true);
+    expect(evaluateMySqlTls('on', 'TLSv1.2,TLSv1.3').compliant).toBe(true);
+    expect(evaluateMySqlTls('OFF', 'TLSv1.2').compliant).toBe(false);
+    expect(evaluateMySqlTls('ON', 'TLSv1.1,TLSv1.2').compliant).toBe(false);
+  });
+});
+
+describe('Azure MySQL Flexible Server TLS check', () => {
+  it('passes when secure transport is ON and TLS >= 1.2', async () => {
+    const { passed, failed } = await run(mysqlFlexibleTlsCheck, mysqlFetch('ON', 'TLSv1.2'));
+    expect(failed).toHaveLength(0);
+    expect(passed).toHaveLength(1);
+  });
+
+  it('passes with the comma-separated TLSv1.2,TLSv1.3 set', async () => {
+    const { passed, failed } = await run(
+      mysqlFlexibleTlsCheck,
+      mysqlFetch('ON', 'TLSv1.2,TLSv1.3'),
+    );
+    expect(failed).toHaveLength(0);
+    expect(passed).toHaveLength(1);
+  });
+
+  it('fails when secure transport is OFF', async () => {
+    const { passed, failed } = await run(mysqlFlexibleTlsCheck, mysqlFetch('OFF', 'TLSv1.2'));
+    expect(passed).toHaveLength(0);
+    expect(failed).toHaveLength(1);
+    expect(failed[0]!.severity).toBe('medium');
+  });
+
+  it('fails when TLS 1.1 is still enabled', async () => {
+    const { passed, failed } = await run(
+      mysqlFlexibleTlsCheck,
+      mysqlFetch('ON', 'TLSv1.1,TLSv1.2'),
+    );
+    expect(passed).toHaveLength(0);
+    expect(failed).toHaveLength(1);
+  });
+
+  it('emits "could not verify" when a config read fails (no false pass)', async () => {
+    const { passed, failed } = await run(mysqlFlexibleTlsCheck, mysqlFetch(null, 'TLSv1.2'));
+    expect(passed).toHaveLength(0);
+    expect(failed).toHaveLength(1);
+    expect(failed[0]!.title).toMatch(/Could not verify/);
+  });
+
+  it('no-ops when there are no MySQL flexible servers (0 passed, 0 failed)', async () => {
+    const { passed, failed } = await run(
+      mysqlFlexibleTlsCheck,
+      mysqlFetch('ON', 'TLSv1.2', []),
+    );
+    expect(passed).toHaveLength(0);
+    expect(failed).toHaveLength(0);
+  });
+});
+
+// ── PostgreSQL Flexible Server TLS ─────────────────────────────────────────
+
+// Mock fetch for the PostgreSQL TLS check. Pass null for a config to simulate a
+// read failure; pass '' for ssl to simulate an unset floor.
+function pgFetch(
+  requireSecureTransport: string | null,
+  sslMinProtocolVersion: string | null,
+  servers: Array<{ id: string; name: string }> = [
+    {
+      id: '/subscriptions/sub-1/resourceGroups/rg/providers/Microsoft.DBforPostgreSQL/flexibleServers/pg1',
+      name: 'pg1',
+    },
+  ],
+) {
+  return (url: string) => {
+    if (url.includes('/configurations/require_secure_transport')) {
+      if (requireSecureTransport === null) throw new Error('HTTP 403');
+      return { properties: { value: requireSecureTransport } };
+    }
+    if (url.includes('/configurations/ssl_min_protocol_version')) {
+      if (sslMinProtocolVersion === null) return {}; // unset → no value field
+      return { properties: { value: sslMinProtocolVersion } };
+    }
+    if (url.includes('/flexibleServers?')) {
+      return { value: servers };
+    }
+    return {};
+  };
+}
+
+describe('isPgTlsVersionCompliant', () => {
+  it('accepts TLSv1.2 / TLSv1.3 and treats unset as compliant (platform floor is 1.2)', () => {
+    expect(isPgTlsVersionCompliant('TLSv1.2')).toBe(true);
+    expect(isPgTlsVersionCompliant('TLSv1.3')).toBe(true);
+    expect(isPgTlsVersionCompliant('')).toBe(true);
+  });
+
+  it('rejects an explicit sub-1.2 floor', () => {
+    expect(isPgTlsVersionCompliant('TLSv1.1')).toBe(false);
+    expect(isPgTlsVersionCompliant('TLSv1')).toBe(false);
+  });
+});
+
+describe('evaluatePgTls', () => {
+  it('is compliant when secure transport is ON (with set or unset SSL floor)', () => {
+    expect(evaluatePgTls('ON', 'TLSv1.2').compliant).toBe(true);
+    expect(evaluatePgTls('ON', '').compliant).toBe(true);
+    expect(evaluatePgTls('OFF', 'TLSv1.2').compliant).toBe(false);
+  });
+});
+
+describe('Azure PostgreSQL Flexible Server TLS check', () => {
+  it('passes when secure transport is ON and SSL floor is 1.2', async () => {
+    const { passed, failed } = await run(postgresqlFlexibleTlsCheck, pgFetch('ON', 'TLSv1.2'));
+    expect(failed).toHaveLength(0);
+    expect(passed).toHaveLength(1);
+  });
+
+  it('passes when secure transport is ON and ssl_min_protocol_version is unset', async () => {
+    const { passed, failed } = await run(postgresqlFlexibleTlsCheck, pgFetch('ON', null));
+    expect(failed).toHaveLength(0);
+    expect(passed).toHaveLength(1);
+  });
+
+  it('fails when secure transport is OFF', async () => {
+    const { passed, failed } = await run(postgresqlFlexibleTlsCheck, pgFetch('OFF', 'TLSv1.2'));
+    expect(passed).toHaveLength(0);
+    expect(failed).toHaveLength(1);
+  });
+
+  it('emits "could not verify" when require_secure_transport cannot be read', async () => {
+    const { passed, failed } = await run(postgresqlFlexibleTlsCheck, pgFetch(null, 'TLSv1.2'));
+    expect(passed).toHaveLength(0);
+    expect(failed).toHaveLength(1);
+    expect(failed[0]!.title).toMatch(/Could not verify/);
+  });
+
+  it('emits "could not verify" when the ssl_min_protocol_version READ fails (not a silent pass)', async () => {
+    // Regression for the cubic finding: a thrown ssl read (permission/transient)
+    // must NOT be coalesced into a compliant result. Distinct from an unset
+    // value, which reads back as "" on a successful response (compliant floor).
+    const { passed, failed } = await run(postgresqlFlexibleTlsCheck, (url: string) => {
+      if (url.includes('/configurations/require_secure_transport')) {
+        return { properties: { value: 'ON' } };
+      }
+      if (url.includes('/configurations/ssl_min_protocol_version')) {
+        throw new Error('HTTP 403');
+      }
+      if (url.includes('/flexibleServers?')) {
+        return {
+          value: [
+            {
+              id: '/subscriptions/sub-1/resourceGroups/rg/providers/Microsoft.DBforPostgreSQL/flexibleServers/pg1',
+              name: 'pg1',
+            },
+          ],
+        };
+      }
+      return {};
+    });
+    expect(passed).toHaveLength(0);
+    expect(failed).toHaveLength(1);
+    expect(failed[0]!.title).toMatch(/Could not verify/);
+  });
+
+  it('no-ops when there are no PostgreSQL flexible servers', async () => {
+    const { passed, failed } = await run(postgresqlFlexibleTlsCheck, pgFetch('ON', 'TLSv1.2', []));
+    expect(passed).toHaveLength(0);
+    expect(failed).toHaveLength(0);
+  });
+});
+
+describe('Azure read-failure remediation gating', () => {
+  const httpError = (status: number, message: string) => {
+    const err = new Error(message);
+    (err as Error & { status: number }).status = status;
+    return err;
+  };
+  const SERVER = {
+    id: '/subscriptions/sub-1/resourceGroups/rg/providers/Microsoft.Sql/servers/s1',
+    name: 's1',
+    properties: {},
+  };
+
+  it('sql auditing: transient read says re-run; denied keeps the grant hint', async () => {
+    const transient = await run(sqlAuditingCheck, (url: string) => {
+      if (url.includes('/providers/Microsoft.Sql/servers?')) return { value: [SERVER] };
+      if (url.includes('/auditingSettings/')) throw httpError(500, 'HTTP 500: Internal Server Error');
+      return {};
+    });
+    const f = transient.failed.find((x) => x.title.includes('Could not read SQL auditing settings'));
+    expect(f).toBeDefined();
+    expect(f!.remediation).toMatch(/re-run/i);
+    expect(f!.remediation).not.toContain('auditingSettings/read');
+    expect(f!.evidence).toMatchObject({ readError: 'HTTP 500: Internal Server Error' });
+
+    const denied = await run(sqlAuditingCheck, (url: string) => {
+      if (url.includes('/providers/Microsoft.Sql/servers?')) return { value: [SERVER] };
+      if (url.includes('/auditingSettings/')) throw httpError(403, 'HTTP 403: Forbidden - AuthorizationFailed');
+      return {};
+    });
+    const fd = denied.failed.find((x) => x.title.includes('Could not read SQL auditing settings'));
+    expect(fd).toBeDefined();
+    expect(fd!.remediation).toContain('Microsoft.Sql/servers/auditingSettings/read');
+    expect(fd!.evidence).toMatchObject({ readError: 'HTTP 403: Forbidden - AuthorizationFailed' });
+  });
+
+  it('monitor: unreadable alerts carry readError and a gated (transient) remediation', async () => {
+    const out = await run(monitorLoggingAlertingCheck, (url: string) => {
+      if (url.includes('activityLogAlerts')) throw httpError(500, 'HTTP 500: boom');
+      if (url.includes('diagnosticSettings')) return { value: [] };
+      return {};
+    });
+    const f = out.failed.find((x) => x.title === 'Could not read activity log alerts');
+    expect(f).toBeDefined();
+    expect(f!.remediation).toMatch(/re-run/i);
+    expect(f!.remediation).not.toContain('Monitoring Reader');
+    expect(f!.evidence).toMatchObject({ readError: 'HTTP 500: boom' });
+  });
+});
+
+describe('Azure multi-subscription scanning', () => {
+  const SUBS = {
+    value: [
+      { subscriptionId: 'sub-a', state: 'Enabled', displayName: 'A' },
+      { subscriptionId: 'sub-b', state: 'Enabled', displayName: 'B' },
+      { subscriptionId: 'sub-old', state: 'Disabled', displayName: 'Old' },
+    ],
+  };
+  const serverIn = (sub: string) => ({
+    value: [
+      {
+        id: `/subscriptions/${sub}/resourceGroups/rg/providers/Microsoft.Sql/servers/s-${sub}`,
+        name: `s-${sub}`,
+        properties: { minimalTlsVersion: '1.2' },
+      },
+    ],
+  });
+
+  it('without a selection, keeps the pre-picker single-subscription behavior (first Enabled)', async () => {
+    const seen: string[] = [];
+    const out = await run(
+      sqlTlsCheck,
+      (url: string) => {
+        if (url.includes('/subscriptions?api-version')) return SUBS;
+        const m = url.match(/subscriptions\/(sub-\w+)\/providers\/Microsoft.Sql\/servers\?/);
+        if (m) {
+          seen.push(m[1]!);
+          return serverIn(m[1]!);
+        }
+        return {};
+      },
+      {},
+    );
+    // scope expansion is strictly opt-in: only the first Enabled sub is scanned
+    expect(seen).toEqual(['sub-a']);
+    expect(out.passed).toHaveLength(1);
+    expect(out.failed).toHaveLength(0);
+  });
+
+  it('scans multiple subscriptions ONLY when explicitly selected', async () => {
+    const seen: string[] = [];
+    const out = await run(
+      sqlTlsCheck,
+      (url: string) => {
+        const m = url.match(/subscriptions\/(sub-\w+)\/providers\/Microsoft.Sql\/servers\?/);
+        if (m) {
+          seen.push(m[1]!);
+          return serverIn(m[1]!);
+        }
+        return {};
+      },
+      { subscription_ids: ['sub-a', 'sub-b'] },
+    );
+    expect(seen).toEqual(['sub-a', 'sub-b']);
+    expect(out.passed).toHaveLength(2);
+  });
+
+  it('scopes to the selected subscription_ids when set', async () => {
+    const seen: string[] = [];
+    const out = await run(
+      sqlTlsCheck,
+      (url: string) => {
+        const m = url.match(/subscriptions\/(sub-\w+)\/providers\/Microsoft.Sql\/servers\?/);
+        if (m) {
+          seen.push(m[1]!);
+          return serverIn(m[1]!);
+        }
+        return {};
+      },
+      { subscription_ids: ['sub-b'] },
+    );
+    expect(seen).toEqual(['sub-b']);
+    expect(out.passed).toHaveLength(1);
+  });
+
+  it('a saved subscription_id keeps exactly its previous scope (no list call needed)', async () => {
+    const seen: string[] = [];
+    const out = await run(
+      sqlTlsCheck,
+      (url: string) => {
+        if (url.includes('/subscriptions?api-version')) {
+          throw new Error('must not list subscriptions when legacy value is set');
+        }
+        const m = url.match(/subscriptions\/(sub-\w+)\/providers\/Microsoft.Sql\/servers\?/);
+        if (m) {
+          seen.push(m[1]!);
+          return serverIn(m[1]!);
+        }
+        return {};
+      },
+      { subscription_id: 'sub-legacy' },
+    );
+    expect(seen).toEqual(['sub-legacy']);
+    expect(out.passed).toHaveLength(1);
+    expect(out.failed).toHaveLength(0);
+  });
+
+  it('emits an explicit scope finding when nothing is visible and no legacy value exists', async () => {
+    const out = await run(
+      sqlTlsCheck,
+      (url: string) => {
+        if (url.includes('/subscriptions?api-version')) return { value: [] };
+        return {};
+      },
+      {},
+    );
+    expect(out.passed).toHaveLength(0);
+    expect(out.failed).toHaveLength(1);
+    expect(out.failed[0]!.title).toMatch(/Could not verify Azure subscription scope/);
+  });
+});
+
+describe('Azure subscription cap', () => {
+  it('selecting more than the limit scans the first 50 AND emits an explicit coverage finding', async () => {
+    const selected = Array.from({ length: 53 }, (_, i) => `sub-${i}`);
+    const seen = new Set<string>();
+    const out = await run(
+      sqlTlsCheck,
+      (url: string) => {
+        const m = url.match(/subscriptions\/(sub-\d+)\/providers\/Microsoft.Sql\/servers\?/);
+        if (m) {
+          seen.add(m[1]!);
+          return { value: [] };
+        }
+        return {};
+      },
+      { subscription_ids: selected },
+    );
+    expect(seen.size).toBe(50);
+    const capFinding = out.failed.find((f) => f.title.includes('exceeds the scan limit'));
+    expect(capFinding).toBeDefined();
+    expect(capFinding!.evidence).toMatchObject({
+      selected: 53,
+      scanned: 50,
+      unscannedSubscriptionIds: ['sub-50', 'sub-51', 'sub-52'],
+    });
+  });
+});
+
+describe('entra-id multi-subscription wildcard isolation (cubic finding on #3090)', () => {
+  it('an MG wildcard role referenced only by one subscription is reported exactly once', async () => {
+    const MG_DEF_ID = '/providers/Microsoft.Management/managementGroups/mg1/providers/Microsoft.Authorization/roleDefinitions/wild';
+    let mgDefFetches = 0;
+    const { failed } = await run(
+      rbacLeastPrivilegeCheck,
+      (url: string) => {
+        if (url.startsWith(MG_DEF_ID)) {
+          mgDefFetches++;
+          return {
+            id: MG_DEF_ID,
+            properties: {
+              roleName: 'MG Wildcard',
+              type: 'CustomRole',
+              permissions: [{ actions: ['*'], dataActions: [] }],
+            },
+          };
+        }
+        if (url.includes('roleDefinitions')) {
+          return { value: [{ id: 'reader', properties: { roleName: 'Reader', type: 'BuiltInRole', permissions: [] } }] };
+        }
+        if (url.includes('roleAssignments')) {
+          // only sub-a has an assignment referencing the MG wildcard role
+          return url.includes('sub-a')
+            ? { value: [{ properties: { roleDefinitionId: MG_DEF_ID, principalId: 'p1', principalType: 'User' } }] }
+            : { value: [] };
+        }
+        return { value: [] };
+      },
+      { subscription_ids: ['sub-a', 'sub-b'] },
+    );
+    const wildcardFindings = failed.filter((f) => f.title.match(/[Ww]ildcard/));
+    expect(wildcardFindings).toHaveLength(1);
+    // the shared cache still prevents refetching across subscriptions
+    expect(mgDefFetches).toBe(1);
+  });
+});
+
+describe('azure subscription picker fetchOptions', () => {
+  it('follows nextLink so every subscription page is selectable', async () => {
+    const variable = azureManifest.variables?.find((v) => v.id === 'subscription_ids');
+    const ctx = {
+      fetch: async (url: string) => {
+        if (url.includes('skiptoken')) {
+          return { value: [{ subscriptionId: 'sub-2', displayName: 'B', state: 'Enabled' }] };
+        }
+        return {
+          value: [{ subscriptionId: 'sub-1', displayName: 'A', state: 'Enabled' }],
+          nextLink: 'https://management.azure.com/subscriptions?api-version=2020-01-01&skiptoken=x',
+        };
+      },
+    } as unknown as Parameters<NonNullable<typeof variable.fetchOptions>>[0];
+    const options = await variable!.fetchOptions!(ctx);
+    expect(options.map((o) => o.value)).toEqual(['sub-1', 'sub-2']);
+  });
+
+  it('does not follow a nextLink that leaves the ARM host', async () => {
+    const variable = azureManifest.variables?.find((v) => v.id === 'subscription_ids');
+    const fetched: string[] = [];
+    const ctx = {
+      fetch: async (url: string) => {
+        fetched.push(url);
+        return {
+          value: [{ subscriptionId: 'sub-1', displayName: 'A', state: 'Enabled' }],
+          nextLink: 'https://evil.example.com/subscriptions',
+        };
+      },
+    } as unknown as Parameters<NonNullable<typeof variable.fetchOptions>>[0];
+    const options = await variable!.fetchOptions!(ctx);
+    expect(fetched).toHaveLength(1);
+    expect(options.map((o) => o.value)).toEqual(['sub-1']);
+  });
+
+  it('returns [] instead of throwing when subscriptions cannot be listed', async () => {
+    const variable = azureManifest.variables?.find((v) => v.id === 'subscription_ids');
+    expect(variable?.fetchOptions).toBeDefined();
+    const ctx = {
+      fetch: async () => {
+        throw new Error('HTTP 403: Forbidden');
+      },
+    } as unknown as Parameters<NonNullable<typeof variable.fetchOptions>>[0];
+    const options = await variable!.fetchOptions!(ctx);
+    expect(options).toEqual([]);
   });
 });

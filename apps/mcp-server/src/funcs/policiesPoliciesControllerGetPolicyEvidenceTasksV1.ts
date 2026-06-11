@@ -136,7 +136,7 @@ async function $do(
     body: body$,
     userAgent: client$._options.userAgent,
     timeoutMs: options?.timeoutMs || client$._options.timeoutMs
-      || -1,
+      || 120000,
   }, options);
   if (!requestRes.ok) {
     return [requestRes, { status: "invalid" }];

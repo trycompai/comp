@@ -15,6 +15,13 @@ jest.mock('@db', () => ({
     trustAccessGrant: {
       findUnique: jest.fn(),
     },
+    trustAccessRequest: {
+      findFirst: jest.fn(),
+    },
+    member: {
+      findFirst: jest.fn(),
+    },
+    $transaction: jest.fn(),
   },
   Prisma: {
     PrismaClientKnownRequestError: class PrismaClientKnownRequestError extends Error {
@@ -56,6 +63,13 @@ const mockDb = db as unknown as {
   trustAccessGrant: {
     findUnique: jest.Mock;
   };
+  trustAccessRequest: {
+    findFirst: jest.Mock;
+  };
+  member: {
+    findFirst: jest.Mock;
+  };
+  $transaction: jest.Mock;
 };
 
 const mockGetSignedUrl = getSignedUrl as jest.MockedFunction<
@@ -67,6 +81,7 @@ describe('TrustAccessService favicon branding', () => {
     {
       getSignedUrl: jest.fn(),
     } as any,
+    {} as any,
     {} as any,
     {} as any,
     {} as any,
@@ -170,5 +185,128 @@ describe('TrustAccessService favicon branding', () => {
       faviconUrl: 'https://cdn.example.com/favicon.png',
     });
     expect(result.portalUrl).toContain('/acme-security');
+  });
+});
+
+describe('TrustAccessService approveRequest NDA bypass', () => {
+  const emailService = {
+    sendAccessGrantedEmail: jest.fn(),
+    sendNdaSigningEmail: jest.fn(),
+  };
+  const service = new TrustAccessService(
+    {} as any,
+    emailService as any,
+    {} as any,
+    {} as any,
+    {} as any,
+  );
+  const buildPortalAccessUrlSpy = jest.spyOn(
+    service as any,
+    'buildPortalAccessUrl',
+  );
+
+  const baseRequest = {
+    id: 'tar_1',
+    status: 'under_review',
+    email: 'chang.liu@client.com',
+    name: 'Chang Liu',
+    requestedDurationDays: 30,
+    organization: { name: 'Acme Security' },
+  };
+
+  let txMock: {
+    trustAccessRequest: { update: jest.Mock };
+    trustAccessGrant: { create: jest.Mock };
+    trustNDAAgreement: { create: jest.Mock };
+    auditLog: { create: jest.Mock };
+  };
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    txMock = {
+      trustAccessRequest: {
+        update: jest
+          .fn()
+          .mockResolvedValue({ id: 'tar_1', status: 'approved' }),
+      },
+      trustAccessGrant: {
+        create: jest
+          .fn()
+          .mockResolvedValue({ id: 'tag_1', expiresAt: new Date() }),
+      },
+      trustNDAAgreement: {
+        create: jest
+          .fn()
+          .mockResolvedValue({ id: 'tna_1', signToken: 'sign-token' }),
+      },
+      auditLog: { create: jest.fn().mockResolvedValue({}) },
+    };
+    mockDb.trustAccessRequest.findFirst.mockResolvedValue(baseRequest);
+    mockDb.member.findFirst.mockResolvedValue({ id: 'mem_1', userId: 'usr_1' });
+    mockDb.$transaction.mockImplementation(
+      (cb: (tx: typeof txMock) => Promise<unknown>) => cb(txMock),
+    );
+    buildPortalAccessUrlSpy.mockResolvedValue(
+      'https://portal.example.com/access/token',
+    );
+  });
+
+  it('bypasses NDA when the exact email is allow-listed', async () => {
+    mockDb.trust.findUnique.mockResolvedValue({
+      allowedDomains: [],
+      allowedEmails: ['chang.liu@client.com'],
+    });
+
+    const result = await service.approveRequest('org_1', 'tar_1', {}, 'mem_1');
+
+    expect(txMock.trustAccessGrant.create).toHaveBeenCalledTimes(1);
+    expect(txMock.trustNDAAgreement.create).not.toHaveBeenCalled();
+    expect(emailService.sendAccessGrantedEmail).toHaveBeenCalledTimes(1);
+    expect(emailService.sendNdaSigningEmail).not.toHaveBeenCalled();
+    expect(txMock.auditLog.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          data: expect.objectContaining({
+            ndaBypassed: true,
+            bypassReason: 'allowed email',
+          }),
+        }),
+      }),
+    );
+    expect(result.message).toBe('Access granted');
+  });
+
+  it('bypasses NDA via domain match and records the domain reason', async () => {
+    mockDb.trust.findUnique.mockResolvedValue({
+      allowedDomains: ['client.com'],
+      allowedEmails: [],
+    });
+
+    await service.approveRequest('org_1', 'tar_1', {}, 'mem_1');
+
+    expect(txMock.trustAccessGrant.create).toHaveBeenCalledTimes(1);
+    expect(emailService.sendAccessGrantedEmail).toHaveBeenCalledTimes(1);
+    expect(txMock.auditLog.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          data: expect.objectContaining({ bypassReason: 'allowed domain' }),
+        }),
+      }),
+    );
+  });
+
+  it('requires NDA signing when neither email nor domain is allow-listed', async () => {
+    mockDb.trust.findUnique.mockResolvedValue({
+      allowedDomains: ['other.com'],
+      allowedEmails: ['someone@else.com'],
+    });
+
+    const result = await service.approveRequest('org_1', 'tar_1', {}, 'mem_1');
+
+    expect(txMock.trustNDAAgreement.create).toHaveBeenCalledTimes(1);
+    expect(txMock.trustAccessGrant.create).not.toHaveBeenCalled();
+    expect(emailService.sendNdaSigningEmail).toHaveBeenCalledTimes(1);
+    expect(emailService.sendAccessGrantedEmail).not.toHaveBeenCalled();
+    expect(result.message).toBe('NDA signing email sent');
   });
 });

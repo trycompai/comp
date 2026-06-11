@@ -15,6 +15,7 @@ import {
 import { randomBytes } from 'crypto';
 import { AttachmentResponseDto } from '../tasks/dto/task-responses.dto';
 import { UploadAttachmentDto } from './upload-attachment.dto';
+import { UploadsService } from '../uploads/uploads.service';
 import { validateFileContent } from '../utils/file-type-validation';
 
 @Injectable()
@@ -24,7 +25,7 @@ export class AttachmentsService {
   private readonly MAX_FILE_SIZE_BYTES = 100 * 1024 * 1024; // 100MB
   private readonly SIGNED_URL_EXPIRY = 900; // 15 minutes
 
-  constructor() {
+  constructor(private readonly uploadsService: UploadsService) {
     // AWS configuration is validated at startup via ConfigModule
     // Safe to access environment variables directly since they're validated
     this.bucketName = process.env.APP_AWS_BUCKET_NAME!;
@@ -115,8 +116,26 @@ export class AttachmentsService {
         );
       }
 
+      // Resolve the file content from either inline base64 (UI/direct callers)
+      // or a presigned-upload s3Key (AI/MCP clients — avoids slow base64 through
+      // an LLM). readUploadAsBase64 enforces that the key belongs to this org.
+      const fileData =
+        uploadDto.fileData ??
+        (uploadDto.s3Key
+          ? await this.uploadsService.readUploadAsBase64(
+              organizationId,
+              uploadDto.s3Key,
+            )
+          : undefined);
+
+      if (!fileData) {
+        throw new BadRequestException(
+          'Provide either fileData (base64) or s3Key from /v1/uploads/presign.',
+        );
+      }
+
       // Validate file size
-      const fileBuffer = Buffer.from(uploadDto.fileData, 'base64');
+      const fileBuffer = Buffer.from(fileData, 'base64');
       if (fileBuffer.length > this.MAX_FILE_SIZE_BYTES) {
         throw new BadRequestException(
           `File size exceeds maximum allowed size of ${this.MAX_FILE_SIZE_BYTES / (1024 * 1024)}MB`,

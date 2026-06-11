@@ -48,6 +48,13 @@ jest.mock('@db', () => ({
       update: jest.fn(),
     },
   },
+  BackgroundCheckStatus: {
+    pending: 'pending',
+    in_progress: 'in_progress',
+    completed: 'completed',
+    completed_with_flags: 'completed_with_flags',
+    cancelled: 'cancelled',
+  },
   FindingType: { soc2: 'soc2', iso27001: 'iso27001' },
   FindingStatus: { open: 'open', closed: 'closed' },
   PhaseCompletionType: { manual: 'manual', auto: 'auto' },
@@ -556,10 +563,14 @@ describe('PeopleService', () => {
 
       expect(result.success).toBe(true);
       expect(result.deletedMember.id).toBe('mem_1');
-      expect(db.member.update).toHaveBeenCalledWith({
-        where: { id: 'mem_1', organizationId: 'org_123' },
-        data: { deactivated: true, isActive: false },
+      const updateCall = (db.member.update as jest.Mock).mock.calls[0]?.[0];
+      expect(updateCall.where).toEqual({
+        id: 'mem_1',
+        organizationId: 'org_123',
       });
+      expect(updateCall.data.deactivated).toBe(true);
+      expect(updateCall.data.isActive).toBe(false);
+      expect(updateCall.data.offboardDate).toBeInstanceOf(Date);
       expect(db.session.deleteMany).toHaveBeenCalledWith({
         where: { userId: 'usr_1' },
       });
@@ -632,6 +643,46 @@ describe('PeopleService', () => {
       await service.deleteById('mem_1', 'org_123', 'usr_actor');
 
       expect(fleetService.removeHostsByLabel).toHaveBeenCalledWith(42);
+    });
+
+    describe('when skipOffboarding is true', () => {
+      it('should not set offboardDate', async () => {
+        await service.deleteById('mem_1', 'org_123', 'usr_actor', {
+          skipOffboarding: true,
+        });
+
+        const updateCall = (db.member.update as jest.Mock).mock.calls[0]?.[0];
+        expect(updateCall.data).toEqual({ deactivated: true, isActive: false });
+        expect(updateCall.data).not.toHaveProperty('offboardDate');
+      });
+
+      it('should not collect assigned items or notify the owner', async () => {
+        await service.deleteById('mem_1', 'org_123', 'usr_actor', {
+          skipOffboarding: true,
+        });
+
+        // collectAssignedItems is skipped — no findMany on tasks/policies/risks/vendors
+        expect(db.task.findMany).not.toHaveBeenCalled();
+        expect(db.policy.findMany).not.toHaveBeenCalled();
+        expect(db.risk.findMany).not.toHaveBeenCalled();
+        expect(db.vendor.findMany).not.toHaveBeenCalled();
+        // notifyOwnerOfUnassignedItems is skipped — no owner lookup
+        expect(db.organization.findUnique).not.toHaveBeenCalled();
+      });
+
+      it('should still clear assignments and delete sessions', async () => {
+        await service.deleteById('mem_1', 'org_123', 'usr_actor', {
+          skipOffboarding: true,
+        });
+
+        expect(db.task.updateMany).toHaveBeenCalledWith({
+          where: { assigneeId: 'mem_1', organizationId: 'org_123' },
+          data: { assigneeId: null },
+        });
+        expect(db.session.deleteMany).toHaveBeenCalledWith({
+          where: { userId: 'usr_1' },
+        });
+      });
     });
   });
 

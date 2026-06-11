@@ -13,12 +13,15 @@ interface CompleteChecklistItemDto {
   fileName?: string;
   fileType?: string;
   fileData?: string;
+  s3Key?: string;
 }
 
 interface UploadEvidenceDto {
   fileName: string;
   fileType: string;
-  fileData: string;
+  // Either inline base64 (UI/direct) or a presigned-upload s3Key (AI/MCP).
+  fileData?: string;
+  s3Key?: string;
   description?: string;
 }
 
@@ -211,7 +214,14 @@ export class OffboardingChecklistService {
       throw new NotFoundException('Template item not found');
     }
 
-    if (template.evidenceRequired && (!dto.fileData || !dto.fileName || !dto.fileType)) {
+    // Evidence can arrive as inline base64 (fileData) or a presigned-upload
+    // s3Key (AI/MCP clients — avoids slow base64 through an LLM).
+    const hasEvidenceFile = Boolean(dto.fileData || dto.s3Key);
+
+    if (
+      template.evidenceRequired &&
+      (!hasEvidenceFile || !dto.fileName || !dto.fileType)
+    ) {
       throw new BadRequestException('Evidence is required to complete this item');
     }
 
@@ -225,8 +235,10 @@ export class OffboardingChecklistService {
       },
     });
 
-    if (dto.fileName && dto.fileData && dto.fileType) {
+    if (dto.fileName && hasEvidenceFile && dto.fileType) {
       try {
+        // AttachmentsService.uploadAttachment resolves the bytes from whichever
+        // of fileData / s3Key is provided.
         await this.attachmentsService.uploadAttachment(
           organizationId,
           completion.id,
@@ -234,6 +246,7 @@ export class OffboardingChecklistService {
           {
             fileName: dto.fileName,
             fileData: dto.fileData,
+            s3Key: dto.s3Key,
             fileType: dto.fileType,
           },
           completedById,

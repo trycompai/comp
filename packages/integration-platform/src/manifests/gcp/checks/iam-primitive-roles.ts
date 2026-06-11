@@ -1,5 +1,10 @@
 import { TASK_TEMPLATES } from '../../../task-mappings';
 import type { CheckContext, FindingSeverity, IntegrationCheck } from '../../../types';
+import {
+  remediationForReadFailure,
+  toHttpReadFailure,
+  type ReadFailure,
+} from '../../http-read-failure';
 import { resolveGcpProjectIds } from './shared';
 
 /** Primitive roles grant broad, non-least-privilege access. */
@@ -17,6 +22,7 @@ interface IamBinding {
 async function getBindings(
   ctx: CheckContext,
   resourcePath: string,
+  onReadError?: (failure: ReadFailure) => void,
 ): Promise<IamBinding[] | null> {
   try {
     const policy = await ctx.post<{ bindings?: IamBinding[] }>(
@@ -24,7 +30,10 @@ async function getBindings(
       { options: { requestedPolicyVersion: 3 } },
     );
     return policy.bindings ?? [];
-  } catch {
+  } catch (err) {
+    const failure = toHttpReadFailure(err);
+    ctx.log(`GCP IAM: could not read policy for ${resourcePath} — ${failure.error}`);
+    onReadError?.(failure);
     return null;
   }
 }
@@ -39,21 +48,21 @@ async function getBindings(
 function failUnverifiedProject(
   ctx: CheckContext,
   projectId: string,
-  error?: unknown,
+  failure?: ReadFailure,
 ): void {
   ctx.fail({
     title: `Could not verify IAM primitive roles: ${projectId}`,
-    description: `IAM policy for project "${projectId}" could not be read, so primitive-role usage is unverified.`,
+    description: `IAM policy for project "${projectId}" could not be read${failure ? ` (${failure.error})` : ''}, so primitive-role usage is unverified.`,
     resourceType: 'gcp-project',
     resourceId: projectId,
     severity: 'medium',
-    remediation:
+    remediation: remediationForReadFailure(
+      failure,
       'Grant resourcemanager.projects.getIamPolicy (e.g. roles/iam.securityReviewer) to the connection for this project, then re-run.',
+    ),
     evidence: {
       projectId,
-      ...(error !== undefined
-        ? { error: error instanceof Error ? error.message : String(error) }
-        : {}),
+      ...(failure ? { error: failure.error } : {}),
     },
   });
 }
@@ -82,14 +91,18 @@ export const iamPrimitiveRolesCheck: IntegrationCheck = {
 
     for (const projectId of projectIds) {
       try {
+        let projectReadFailure: ReadFailure | undefined;
         const projectBindings = await getBindings(
           ctx,
           `v3/projects/${encodeURIComponent(projectId)}`,
+          (failure) => {
+            projectReadFailure = failure;
+          },
         );
         if (projectBindings === null) {
           // Couldn't read the project's own IAM policy (getBindings swallowed
           // the throw → null). Fail closed rather than silently skipping.
-          failUnverifiedProject(ctx, projectId);
+          failUnverifiedProject(ctx, projectId, projectReadFailure);
           continue;
         }
 
@@ -120,8 +133,11 @@ export const iamPrimitiveRolesCheck: IntegrationCheck = {
             }
             scopes.push({ label: `${type} ${id}`, bindings });
           }
-        } catch {
+        } catch (err) {
           hierarchyFullyEvaluated = false;
+          ctx.log(
+            `GCP IAM: could not resolve ancestry for "${projectId}" — ${toHttpReadFailure(err).error}`,
+          );
         }
 
         let violations = 0;
@@ -171,7 +187,7 @@ export const iamPrimitiveRolesCheck: IntegrationCheck = {
         // One project's API error must not abort the whole check — but it is
         // unverified, so emit a finding rather than warn-and-skip (an
         // all-projects-failed run would otherwise leave the task stale).
-        failUnverifiedProject(ctx, projectId, error);
+        failUnverifiedProject(ctx, projectId, toHttpReadFailure(error));
         continue;
       }
     }

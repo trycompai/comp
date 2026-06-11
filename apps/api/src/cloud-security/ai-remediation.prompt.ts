@@ -162,6 +162,21 @@ A human will ALWAYS review your plan before execution. Be precise and correct.
 - ALWAYS make changes reversible when possible
 - For service-linked roles: create them as a setup step using IAM CreateServiceLinkedRoleCommand
 
+## S3 PUBLIC ACCESS AND ACLs (IMPORTANT)
+- NEVER use PutBucketAclCommand or bucket/object ACLs. Modern buckets use Object Ownership = BucketOwnerEnforced, which disables ACLs — the call fails, and the executor strips ACL steps, which can leave an EMPTY plan.
+- To block public access on a bucket: use PutPublicAccessBlockCommand (service "s3") with PublicAccessBlockConfiguration set to { BlockPublicAcls: true, IgnorePublicAcls: true, BlockPublicPolicy: true, RestrictPublicBuckets: true }.
+- To remediate a public bucket POLICY: read it first with GetBucketPolicyCommand, then use PutBucketPolicyCommand with a corrected least-privilege policy (service "s3"). Never rely on ACLs to fix public access.
+
+## AWS CONFIG RECORDER (IMPORTANT)
+- To make a recorder record ALL supported resource types, first read the existing recorder with DescribeConfigurationRecordersCommand (service "config-service", in readSteps) to get its exact name and roleARN, then call PutConfigurationRecorderCommand with ConfigurationRecorder = { name, roleARN, recordingGroup: { allSupported: true, includeGlobalResourceTypes: true } }.
+- NEVER set allSupported:true together with recordingStrategy, exclusionByResourceTypes, or resourceTypes — they are mutually exclusive and AWS rejects the request with a ValidationException. Omit those fields entirely (this also overwrites an existing exclusion-based strategy so global IAM resources are recorded).
+
+## CLOUDWATCH METRIC FILTERS (IMPORTANT)
+- For logs:PutMetricFilterCommand (service "cloudwatch-logs"), ALL of these are required: logGroupName, filterName, filterPattern, and metricTransformations.
+- metricTransformations MUST be an ARRAY of objects (never a single object), and each object MUST set metricName, metricNamespace, and metricValue. Example: "metricTransformations": [{ "metricName": "compai-cis-metric", "metricNamespace": "CloudTrailMetrics", "metricValue": "1" }].
+- metricValue MUST be a STRING ("1"), not the number 1 — AWS rejects a numeric metricValue.
+- logGroupName must be the REAL CloudTrail CloudWatch Logs group name from the read step — never a placeholder.
+
 ## IDEMPOTENCY (CRITICAL)
 - All fix steps MUST be safe to run even if the resource already exists
 - For Create operations: our executor automatically handles "already exists" errors — they are treated as success, not failure
@@ -259,7 +274,7 @@ NEVER omit AWSServiceName, leave it as null, or use a placeholder string.
 
 ## REQUIRED PERMISSIONS (VERY IMPORTANT — GET THIS RIGHT FIRST TIME)
 - List EVERY IAM action needed for the COMPLETE operation, not just the direct API calls
-- Think through the FULL chain: if you CreateBucket, you also need PutBucketPolicy, GetBucketPolicy, PutBucketAcl
+- Think through the FULL chain: if you CreateBucket, you also need PutBucketPolicy, GetBucketPolicy, PutPublicAccessBlock (do NOT use PutBucketAcl — ACLs are disabled on modern buckets)
 - Include iam:CreateRole and iam:PutRolePolicy when creating AWS service delivery roles
 - Include iam:PassRole when attaching a role to an AWS service (CloudTrail, Config, etc.)
 - NEVER include iam:AttachRolePolicy — use iam:PutRolePolicy (inline policies) instead
@@ -275,7 +290,7 @@ NEVER omit AWSServiceName, leave it as null, or use a placeholder string.
 - NEVER use placeholder values like "{{variable}}", "<PLACEHOLDER>", or template syntax
 - ALWAYS use concrete values in fix step params
 - If a value depends on the account (like a log group name), put the discovery in readSteps and use a reasonable default or convention in fixSteps:
-  - CloudTrail log group: use "CloudTrail/DefaultLogGroup" (the system will resolve the real one from readSteps)
+  - CloudTrail log group: the finding evidence provides the real log group as "cloudWatchLogGroupName" — use that exact value for logGroupName in fixSteps. Only if it is absent, discover it in a read step (from the trail's CloudWatchLogsLogGroupArn) and use that exact, real name. Never invent a name and never use a placeholder like "CloudTrail/DefaultLogGroup"
   - SNS topic: use "CompAI-CIS-Alerts" (will be created if it doesn't exist)
   - KMS keys: use "alias/aws/service-name" for AWS-managed keys
 - The finding evidence contains REAL data from the AWS account scan — use those values

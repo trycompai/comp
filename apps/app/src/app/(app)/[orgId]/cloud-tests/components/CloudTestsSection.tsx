@@ -47,6 +47,7 @@ import type { Finding } from '../types';
 import { CheckDefinitionPanel } from './CheckDefinitionPanel';
 import { CheckGroupBlock } from './CheckGroupBlock';
 import { buildCheckGroups } from './check-groups';
+import { filterFindingsByConnection } from './finding-filters';
 import { EvidenceJsonViewer } from './EvidenceJsonViewer';
 import { MarkExceptionModal } from './MarkExceptionModal';
 import { RemediationSection } from './RemediationSection';
@@ -285,28 +286,26 @@ export function CloudTestsSection({
   );
 
   const findings = useMemo(() => {
-    return allFindings
-      .filter((f) => f.providerSlug === providerSlug || f.connectionId === connectionId)
+    // Scope to the selected connection (= the selected cloud account) so
+    // picking a different account narrows the list to that account's findings.
+    return filterFindingsByConnection(allFindings, connectionId)
       .filter((f) => !projectFilter || f.projectDisplayName === projectFilter)
       .sort(
         (a, b) =>
           (SEVERITY_ORDER[a.severity ?? 'info'] ?? 5) - (SEVERITY_ORDER[b.severity ?? 'info'] ?? 5),
       );
-  }, [allFindings, providerSlug, connectionId, projectFilter]);
+  }, [allFindings, connectionId, projectFilter]);
 
-  // Unique project names across all findings (for filter pills)
+  // Unique project names for the selected connection (for filter pills)
   const projectNames = useMemo(() => {
     const names = new Set<string>();
-    for (const f of allFindings) {
-      if (
-        (f.providerSlug === providerSlug || f.connectionId === connectionId) &&
-        f.projectDisplayName
-      ) {
+    for (const f of filterFindingsByConnection(allFindings, connectionId)) {
+      if (f.projectDisplayName) {
         names.add(f.projectDisplayName);
       }
     }
     return [...names].sort((a, b) => a.localeCompare(b));
-  }, [allFindings, providerSlug, connectionId]);
+  }, [allFindings, connectionId]);
 
   const failedFindings = findings.filter((f) => f.status === 'failed' || f.status === 'FAILED');
   const passedFindings = findings.filter((f) => f.status === 'passed' || f.status === 'success');

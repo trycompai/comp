@@ -3,7 +3,9 @@
  */
 
 import { CompAiCore } from "../core.js";
+import { encodeFormQuery } from "../lib/encodings.js";
 import { compactMap } from "../lib/primitives.js";
+import { safeParse } from "../lib/schemas.js";
 import { RequestOptions } from "../lib/sdks.js";
 import { extractSecurity, resolveGlobalSecurity } from "../lib/security.js";
 import { pathToFunc } from "../lib/url.js";
@@ -16,19 +18,24 @@ import {
   UnexpectedClientError,
 } from "../models/errors/httpclienterrors.js";
 import { SDKValidationError } from "../models/errors/sdkvalidationerror.js";
+import {
+  SyncControllerGetAvailableSyncProvidersV1Request,
+  SyncControllerGetAvailableSyncProvidersV1Request$zodSchema,
+} from "../models/synccontrollergetavailablesyncprovidersv1op.js";
 import { APICall, APIPromise } from "../types/async.js";
 import { Result } from "../types/fp.js";
 
 /**
- * List employee sync providers available to the org
+ * List sync providers available to the org
  *
  * @remarks
- * List employee sync providers available to the org in Comp AI. Connect vendor systems, configure OAuth apps, run compliance checks, sync employees, manage variables, and collect automated evidence.
+ * List sync providers available to the org in Comp AI. Connect vendor systems, configure OAuth apps, run compliance checks, sync employees, manage variables, and collect automated evidence.
  *
  * If set, this operation will use {@link Security.apikey} from the global security.
  */
 export function integrationsSyncControllerGetAvailableSyncProvidersV1(
   client$: CompAiCore,
+  request: SyncControllerGetAvailableSyncProvidersV1Request,
   options?: RequestOptions,
 ): APIPromise<
   Result<
@@ -44,12 +51,14 @@ export function integrationsSyncControllerGetAvailableSyncProvidersV1(
 > {
   return new APIPromise($do(
     client$,
+    request,
     options,
   ));
 }
 
 async function $do(
   client$: CompAiCore,
+  request: SyncControllerGetAvailableSyncProvidersV1Request,
   options?: RequestOptions,
 ): Promise<
   [
@@ -66,7 +75,21 @@ async function $do(
     APICall,
   ]
 > {
+  const parsed$ = safeParse(
+    request,
+    (value$) =>
+      SyncControllerGetAvailableSyncProvidersV1Request$zodSchema.parse(value$),
+    "Input validation failed",
+  );
+  if (!parsed$.ok) {
+    return [parsed$, { status: "invalid" }];
+  }
+  const payload$ = parsed$.value;
+  const body$ = null;
   const path$ = pathToFunc("/v1/integrations/sync/available-providers")();
+  const query$ = encodeFormQuery({
+    "syncType": payload$.syncType,
+  });
 
   const headers$ = new Headers(compactMap({
     Accept: "*/*",
@@ -99,9 +122,11 @@ async function $do(
     baseURL: options?.serverURL,
     path: path$,
     headers: headers$,
+    query: query$,
+    body: body$,
     userAgent: client$._options.userAgent,
     timeoutMs: options?.timeoutMs || client$._options.timeoutMs
-      || -1,
+      || 120000,
   }, options);
   if (!requestRes.ok) {
     return [requestRes, { status: "invalid" }];

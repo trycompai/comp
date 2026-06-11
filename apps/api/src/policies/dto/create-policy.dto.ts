@@ -8,6 +8,8 @@ import {
   IsArray,
   IsDateString,
   IsObject,
+  IsNotEmpty,
+  MaxLength,
 } from 'class-validator';
 
 export enum PolicyStatus {
@@ -22,6 +24,10 @@ export enum Frequency {
   YEARLY = 'yearly',
 }
 
+/**
+ * Built-in department values. Organizations may also use custom department
+ * names — the `department` field accepts any non-empty string.
+ */
 export enum Departments {
   NONE = 'none',
   ADMIN = 'admin',
@@ -31,6 +37,8 @@ export enum Departments {
   ITSM = 'itsm',
   QMS = 'qms',
 }
+
+export const DEPARTMENT_MAX_LENGTH = 64;
 
 export class CreatePolicyDto {
   @ApiProperty({
@@ -96,14 +104,19 @@ export class CreatePolicyDto {
   frequency?: Frequency;
 
   @ApiProperty({
-    description: 'Department this policy applies to',
-    enum: Departments,
+    description:
+      'Department this policy applies to. Built-in values: none, admin, gov, hr, it, itsm, qms. Custom department names are also accepted.',
     example: Departments.IT,
     required: false,
+    type: 'string',
+    maxLength: DEPARTMENT_MAX_LENGTH,
   })
   @IsOptional()
-  @IsEnum(Departments)
-  department?: Departments;
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(DEPARTMENT_MAX_LENGTH)
+  @Transform(({ value }) => (typeof value === 'string' ? value.trim() : value))
+  department?: string;
 
   @ApiProperty({
     description: 'Whether this policy requires a signature',

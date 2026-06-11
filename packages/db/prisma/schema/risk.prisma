@@ -4,7 +4,7 @@ model Risk {
   title                        String
   description                  String
   category                     RiskCategory
-  department                   Departments?
+  department                   String?
   status                       RiskStatus        @default(open)
   likelihood                   Likelihood        @default(very_unlikely)
   impact                       Impact            @default(insignificant)

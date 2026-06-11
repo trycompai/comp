@@ -10,6 +10,7 @@ import {
   requestValidCredentials,
   type IntegrationCredentialValues,
 } from './ensure-valid-credentials';
+import { injectAwsResolvedSession } from './checks-aws-session';
 
 /**
  * Send email notifications for task status change
@@ -291,6 +292,17 @@ export const runTaskIntegrationChecks = task({
         error: 'No credentials found for custom integration',
       };
     }
+
+    // For AWS, resolve the cross-account session in ECS and inject the temp
+    // creds — the checks run in the Trigger.dev runtime, which cannot assume the
+    // role itself (no base creds / roleAssumer ARN there).
+    credentials = await injectAwsResolvedSession({
+      credentials,
+      apiUrl,
+      connectionId,
+      organizationId,
+      providerSlug,
+    });
 
     const variables =
       (connection.variables as Record<

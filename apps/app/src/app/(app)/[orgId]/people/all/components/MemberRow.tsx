@@ -49,7 +49,7 @@ import type { BackgroundCheckStatus, MemberWithUser, TaskCompletion } from './Te
 
 interface MemberRowProps {
   member: MemberWithUser;
-  onRemove: (memberId: string) => void;
+  onRemove: (memberId: string, options: { skipOffboarding: boolean }) => void;
   onRemoveDevice: (memberId: string) => void;
   onUpdateRole: (memberId: string, roles: string[]) => void;
   onReactivate: (memberId: string) => void;
@@ -226,12 +226,12 @@ export function MemberRow({
     setIsUpdateRolesOpen(false);
   };
 
-  const handleRemoveClick = async () => {
+  const handleRemoveClick = async (options: { skipOffboarding: boolean }) => {
     if (!canRemove) return;
     setIsRemoveAlertOpen(false);
     setIsRemoving(true);
     try {
-      await onRemove(memberId);
+      await onRemove(memberId, options);
     } finally {
       setIsRemoving(false);
     }

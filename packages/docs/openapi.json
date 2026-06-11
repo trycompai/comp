@@ -1,5 +1,6 @@
 {
   "openapi": "3.0.0",
+  "x-speakeasy-timeout": 120000,
   "paths": {
     "/v1/organization": {
       "get": {
@@ -122,9 +123,6 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
         "summary": "Get organization profile",
@@ -367,9 +365,6 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
         "summary": "Update organization",
@@ -470,9 +465,6 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
         "summary": "Delete organization",
@@ -505,9 +497,6 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
         "summary": "Get organization onboarding status",
@@ -643,9 +632,6 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
         "summary": "Transfer organization ownership",
@@ -731,9 +717,6 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
         "summary": "Update role notification settings",
@@ -765,9 +748,6 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
         "summary": "Get role notification settings",
@@ -801,9 +781,6 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
         "summary": "List API keys",
@@ -835,9 +812,6 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
         "summary": "Create API key",
@@ -871,9 +845,6 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
         "summary": "List API key scopes",
@@ -973,9 +944,6 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
         "summary": "Get organization brand color",
@@ -1008,9 +976,6 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
         "summary": "Upload organization logo",
@@ -1042,9 +1007,6 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
         "summary": "Remove organization logo",
@@ -1078,9 +1040,6 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
         "summary": "Revoke API key",
@@ -1153,9 +1112,6 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
         "summary": "Invite workforce members",
@@ -1351,9 +1307,6 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
         "summary": "List workforce members",
@@ -1487,9 +1440,6 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
         "summary": "Create a new member",
@@ -1522,9 +1472,6 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
         "summary": "Get all employee devices with fleet compliance data",
@@ -1558,9 +1505,6 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
         "summary": "Get integration test statistics grouped by assignee",
@@ -1794,9 +1738,6 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
         "summary": "Add multiple members to organization",
@@ -1838,9 +1779,6 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
         "summary": "Get members who can read a specific resource type",
@@ -1885,9 +1823,6 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
         "summary": "Reactivate a deactivated member",
@@ -2008,9 +1943,6 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
         "summary": "Get person by ID",
@@ -2155,9 +2087,6 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
         "summary": "Update workforce member",
@@ -2188,6 +2117,14 @@
             "description": "Member ID",
             "schema": {
               "example": "mem_abc123def456",
+              "type": "string"
+            }
+          },
+          {
+            "name": "skipOffboarding",
+            "required": true,
+            "in": "query",
+            "schema": {
               "type": "string"
             }
           }
@@ -2290,9 +2227,6 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
         "summary": "Delete member",
@@ -2336,9 +2270,6 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
         "summary": "Get training video completions for a member",
@@ -2383,9 +2314,6 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
         "summary": "Get fleet compliance",
@@ -2511,9 +2439,6 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
         "summary": "Remove host (device) from Fleet",
@@ -2557,9 +2482,6 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
         "summary": "Resend portal invite email to a member",
@@ -2696,9 +2618,6 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
         "summary": "Unlink device from member",
@@ -2754,9 +2673,6 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
         "summary": "Get employment evidence attachments",
@@ -2821,9 +2737,6 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
         "summary": "Upload employment evidence",
@@ -2889,9 +2802,6 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
         "summary": "Delete employment evidence",
@@ -2925,9 +2835,6 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
         "summary": "Get current user email notification preferences",
@@ -2969,9 +2876,6 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
         "summary": "Update current user email notification preferences",
@@ -3055,9 +2959,6 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
         "summary": "Upload an attachment to any supported entity",
@@ -3121,9 +3022,6 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
         "summary": "Get shared attachment download URL",
@@ -3141,6 +3039,66 @@
         },
         "x-speakeasy-mcp": {
           "name": "get-attachment-download-url"
+        }
+      }
+    },
+    "/v1/uploads/presign": {
+      "post": {
+        "description": "Returns a presigned S3 URL plus the s3Key the file lands at. PUT the raw file bytes to that URL, then call the feature tool (e.g. upload-and-parse) with the s3Key instead of sending file data. Bytes never pass through the LLM.",
+        "operationId": "UploadsController_createUploadUrl_v1",
+        "parameters": [
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "description": "Organization ID (required for session auth, optional for API key auth)",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateUploadUrlDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UploadUrlResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Get a presigned URL to upload a file",
+        "tags": [
+          "Uploads"
+        ],
+        "x-mint": {
+          "metadata": {
+            "title": "Get a presigned URL to upload a file | Comp AI API",
+            "sidebarTitle": "Get a presigned URL to upload a file",
+            "description": "Returns a presigned S3 URL plus the s3Key the file lands at. PUT the raw file bytes to that URL, then call the feature tool (e.g. upload-and-parse) with the.",
+            "og:title": "Get a presigned URL to upload a file | Comp AI API",
+            "og:description": "Returns a presigned S3 URL plus the s3Key the file lands at. PUT the raw file bytes to that URL, then call the feature tool (e.g. upload-and-parse) with the."
+          }
+        },
+        "x-speakeasy-mcp": {
+          "name": "create-upload-url"
         }
       }
     },
@@ -3380,18 +3338,11 @@
             "name": "department",
             "required": false,
             "in": "query",
-            "description": "Filter by department",
+            "description": "Filter by department. Built-in values: none, admin, gov, hr, it, itsm, qms. Custom department names are also accepted.",
             "schema": {
-              "type": "string",
-              "enum": [
-                "none",
-                "admin",
-                "gov",
-                "hr",
-                "it",
-                "itsm",
-                "qms"
-              ]
+              "maxLength": 64,
+              "example": "it",
+              "type": "string"
             }
           },
           {
@@ -3594,9 +3545,6 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
         "summary": "List organization risks",
@@ -3883,9 +3831,6 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
         "summary": "Create organization risk",
@@ -3918,9 +3863,6 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
         "summary": "Get risk statistics grouped by assignee",
@@ -3954,9 +3896,6 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
         "summary": "Get risk counts grouped by department",
@@ -4231,9 +4170,6 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
         "summary": "Get organization risk",
@@ -4531,9 +4467,6 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
         "summary": "Update organization risk",
@@ -4674,9 +4607,6 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
         "summary": "Delete organization risk",
@@ -4719,9 +4649,6 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
         "summary": "Search global vendors",
@@ -4951,9 +4878,6 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
         "summary": "List vendors",
@@ -5214,9 +5138,6 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
         "summary": "Create vendor",
@@ -5447,9 +5368,6 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
         "summary": "Get vendor details",
@@ -5721,9 +5639,6 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
         "summary": "Update vendor record",
@@ -5864,9 +5779,6 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
         "summary": "Delete vendor",
@@ -5910,9 +5822,6 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
         "summary": "Trigger vendor risk assessment",
@@ -6131,9 +6040,6 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
         "summary": "List organization context",
@@ -6360,9 +6266,6 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
         "summary": "Create a new context entry",
@@ -6540,9 +6443,6 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
         "summary": "Get organization context",
@@ -6681,9 +6581,6 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
         "summary": "Update organization context",
@@ -6833,9 +6730,6 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
         "summary": "Delete context entry",
@@ -6960,9 +6854,6 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
         "summary": "List managed devices",
@@ -7049,9 +6940,6 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
         "summary": "Get devices by member ID",
@@ -7102,9 +6990,6 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
         "summary": "Delete device",
@@ -7270,9 +7155,6 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
         "summary": "List compliance policies",
@@ -7286,9 +7168,9 @@
           "metadata": {
             "title": "List compliance policies | Comp AI API",
             "sidebarTitle": "List compliance policies",
-            "description": "Lists active compliance policies by default. Use includeArchived=true to include archived rows.",
+            "description": "Lists active compliance policies by default. Use includeArchived=true to include archived rows and excludeContent=true when you only need policy metadata.",
             "og:title": "List compliance policies | Comp AI API",
-            "og:description": "Lists active compliance policies by default. Use includeArchived=true to include archived rows."
+            "og:description": "Lists active compliance policies by default. Use includeArchived=true to include archived rows and excludeContent=true when you only need policy metadata."
           }
         },
         "x-codeSamples": [
@@ -7364,7 +7246,6 @@
                   "signedBy": [],
                   "reviewDate": "2024-12-31T00:00:00.000Z",
                   "isArchived": false,
-                  "archivedAt": null,
                   "createdAt": "2024-01-01T00:00:00.000Z",
                   "updatedAt": "2024-01-15T00:00:00.000Z",
                   "organizationId": "org_abc123def456",
@@ -7410,9 +7291,6 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
         "summary": "Create compliance policy",
@@ -7455,9 +7333,6 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
         "summary": "Publish all draft policies",
@@ -7505,9 +7380,6 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
         "summary": "Download all published policies",
@@ -7560,9 +7432,6 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
         "summary": "Get mapped and all controls for a policy",
@@ -7614,9 +7483,6 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
         "summary": "Map controls to a policy",
@@ -7670,9 +7536,6 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
         "summary": "Get tasks that serve as evidence for a policy, grouped by control",
@@ -7726,9 +7589,6 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
         "summary": "Regenerate policy with AI",
@@ -7790,9 +7650,6 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
         "summary": "Get a signed URL for the policy PDF",
@@ -7948,9 +7805,6 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
         "summary": "Upload a PDF to a policy version (UI-only)",
@@ -8011,9 +7865,6 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
         "summary": "Delete a policy version PDF",
@@ -8084,9 +7935,6 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
         "summary": "Request a presigned URL to upload a policy PDF",
@@ -8150,9 +7998,6 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
         "summary": "Confirm a policy PDF upload completed",
@@ -8213,9 +8058,6 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
         "summary": "Get signed URL for policy PDF (alternate path)",
@@ -8277,9 +8119,6 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
         "summary": "Remove a control mapping from a policy",
@@ -8394,9 +8233,6 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
         "summary": "Get compliance policy",
@@ -8486,7 +8322,6 @@
                   ],
                   "reviewDate": "2024-12-31T00:00:00.000Z",
                   "isArchived": false,
-                  "archivedAt": null,
                   "createdAt": "2024-01-01T00:00:00.000Z",
                   "updatedAt": "2024-01-15T00:00:00.000Z",
                   "organizationId": "org_abc123def456",
@@ -8548,9 +8383,6 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
         "summary": "Update compliance policy",
@@ -8671,9 +8503,6 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
         "summary": "Delete compliance policy",
@@ -8782,9 +8611,6 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
         "summary": "Get policy versions",
@@ -8910,9 +8736,6 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
         "summary": "Create policy version",
@@ -9028,9 +8851,6 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
         "summary": "Get policy version by ID",
@@ -9163,9 +8983,6 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
         "summary": "Update version content",
@@ -9287,9 +9104,6 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
         "summary": "Delete policy version",
@@ -9417,9 +9231,6 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
         "summary": "Publish policy version",
@@ -9546,9 +9357,6 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
         "summary": "Set active policy version",
@@ -9686,9 +9494,6 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
         "summary": "Submit version for approval",
@@ -9741,9 +9546,6 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
         "summary": "Accept pending policy changes and publish the version",
@@ -9797,9 +9599,6 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
         "summary": "Deny pending policy changes",
@@ -9877,9 +9676,6 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
         "summary": "Chat with AI about a policy",
@@ -10235,9 +10031,6 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
         "summary": "Download macOS Device Agent",
@@ -10296,9 +10089,6 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
         "summary": "Download Windows Device Agent ZIP",
@@ -10353,69 +10143,6 @@
         },
         "x-speakeasy-mcp": {
           "name": "revoke-agent-access"
-        }
-      }
-    },
-    "/v1/uploads/presign": {
-      "post": {
-        "description": "Returns a presigned S3 URL plus the s3Key the file lands at. PUT the raw file bytes to that URL, then call the feature tool (e.g. upload-and-parse) with the s3Key instead of sending file data. Bytes never pass through the LLM.",
-        "operationId": "UploadsController_createUploadUrl_v1",
-        "parameters": [
-          {
-            "name": "X-Organization-Id",
-            "in": "header",
-            "description": "Organization ID (required for session auth, optional for API key auth)",
-            "required": false,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/CreateUploadUrlDto"
-              }
-            }
-          }
-        },
-        "responses": {
-          "201": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/UploadUrlResponseDto"
-                }
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "apikey": []
-          },
-          {
-            "oauth2": []
-          }
-        ],
-        "summary": "Get a presigned URL to upload a file",
-        "tags": [
-          "Uploads"
-        ],
-        "x-mint": {
-          "metadata": {
-            "title": "Get a presigned URL to upload a file | Comp AI API",
-            "sidebarTitle": "Get a presigned URL to upload a file",
-            "description": "Returns a presigned S3 URL plus the s3Key the file lands at. PUT the raw file bytes to that URL, then call the feature tool (e.g. upload-and-parse) with the.",
-            "og:title": "Get a presigned URL to upload a file | Comp AI API",
-            "og:description": "Returns a presigned S3 URL plus the s3Key the file lands at. PUT the raw file bytes to that URL, then call the feature tool (e.g. upload-and-parse) with the."
-          }
-        },
-        "x-speakeasy-mcp": {
-          "name": "create-upload-url"
         }
       }
     },
@@ -10478,9 +10205,6 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
         "summary": "List compliance tasks",
@@ -10545,17 +10269,10 @@
                   },
                   "department": {
                     "type": "string",
-                    "enum": [
-                      "none",
-                      "admin",
-                      "gov",
-                      "hr",
-                      "it",
-                      "itsm",
-                      "qms"
-                    ],
                     "nullable": true,
-                    "example": "it"
+                    "example": "it",
+                    "maxLength": 64,
+                    "description": "Built-in values: none, admin, gov, hr, it, itsm, qms. Custom department names are also accepted."
                   },
                   "controlIds": {
                     "type": "array",
@@ -10604,9 +10321,6 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
         "summary": "Create compliance task",
@@ -10650,9 +10364,6 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
         "summary": "Get task templates",
@@ -10751,9 +10462,6 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
         "summary": "Update status for multiple tasks",
@@ -10826,9 +10534,6 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
         "summary": "Delete multiple tasks",
@@ -10909,9 +10614,6 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
         "summary": "Update assignee for multiple tasks",
@@ -10993,9 +10695,6 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
         "summary": "Reorder tasks",
@@ -11063,9 +10762,6 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
         "summary": "Bulk submit tasks for review",
@@ -11098,9 +10794,6 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
         "summary": "Get page options for tasks overview",
@@ -11180,9 +10873,6 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
         "summary": "Get task by ID",
@@ -11283,16 +10973,9 @@
                   },
                   "department": {
                     "type": "string",
-                    "enum": [
-                      "none",
-                      "admin",
-                      "gov",
-                      "hr",
-                      "it",
-                      "itsm",
-                      "qms"
-                    ],
-                    "example": "it"
+                    "example": "it",
+                    "maxLength": 64,
+                    "description": "Built-in values: none, admin, gov, hr, it, itsm, qms. Custom department names are also accepted."
                   },
                   "reviewDate": {
                     "type": "string",
@@ -11330,9 +11013,6 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
         "summary": "Update a task",
@@ -11395,9 +11075,6 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
         "summary": "Delete a task",
@@ -11441,9 +11118,6 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
         "summary": "Get policies that reference a task via shared controls",
@@ -11508,9 +11182,6 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
         "summary": "Get task activity",
@@ -11561,9 +11232,6 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
         "summary": "Regenerate task from template",
@@ -11631,9 +11299,6 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
         "summary": "Submit task for review",
@@ -11684,9 +11349,6 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
         "summary": "Approve a task",
@@ -11737,9 +11399,6 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
         "summary": "Reject a task review",
@@ -11836,9 +11495,6 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
         "summary": "Get task attachments",
@@ -11956,9 +11612,6 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
         "summary": "Upload task evidence",
@@ -12064,9 +11717,6 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
         "summary": "Get task attachment download URL",
@@ -12174,9 +11824,6 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
         "summary": "Delete task attachment",
@@ -12221,9 +11868,6 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
         "summary": "Get all automations for a task",
@@ -12340,9 +11984,6 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
         "summary": "Create evidence automation",
@@ -12397,9 +12038,6 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
         "summary": "Get automation details",
@@ -12540,9 +12178,6 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
         "summary": "Update an existing automation",
@@ -12595,9 +12230,6 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
         "summary": "Delete an automation",
@@ -12650,9 +12282,6 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
         "summary": "Get all runs for a specific automation",
@@ -12762,9 +12391,6 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
         "summary": "Get all versions for an automation",
@@ -12814,9 +12440,6 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
         "summary": "Create a published version record for an automation",
@@ -12908,9 +12531,6 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
         "summary": "Get all automation runs for a task",
@@ -12958,9 +12578,6 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
         "summary": "Get task evidence summary",
@@ -13019,9 +12636,6 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
         "summary": "Export automation evidence as PDF",
@@ -13080,9 +12694,6 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
         "summary": "Export task evidence as ZIP",
@@ -13132,9 +12743,6 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
         "summary": "Export all organization evidence as ZIP (Auditor only)",
@@ -13205,9 +12813,6 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
         "summary": "Get comments for an entity",
@@ -13256,9 +12861,6 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
         "summary": "Create a new comment",
@@ -13320,9 +12922,6 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
         "summary": "Update a comment",
@@ -13436,9 +13035,6 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
         "summary": "Delete a comment",
@@ -13471,9 +13067,6 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
         "summary": "Get Trust Center settings",
@@ -13507,9 +13100,6 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
         "summary": "Upload a favicon for the trust portal",
@@ -13541,9 +13131,6 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
         "summary": "Remove the trust portal favicon",
@@ -13602,9 +13189,6 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
         "summary": "Get domain verification status",
@@ -13658,9 +13242,6 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
         "summary": "Upload compliance certificate",
@@ -13710,9 +13291,6 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
         "summary": "Generate a temporary signed URL for a compliance certificate",
@@ -13766,9 +13344,6 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
         "summary": "List uploaded compliance certificates for the organization",
@@ -13820,9 +13395,6 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
         "summary": "Upload an additional trust portal document",
@@ -13875,9 +13447,6 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
         "summary": "List additional trust portal documents for the organization",
@@ -13937,9 +13506,6 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
         "summary": "Generate a temporary signed URL for a trust portal document",
@@ -14004,9 +13570,6 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
         "summary": "Delete (deactivate) a trust portal document",
@@ -14040,9 +13603,6 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
         "summary": "Enable or disable the trust portal",
@@ -14076,9 +13636,6 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
         "summary": "Add or update a custom domain for the trust portal",
@@ -14112,9 +13669,6 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
         "summary": "Check DNS records for a custom domain",
@@ -14148,9 +13702,6 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
         "summary": "Update trust portal FAQs",
@@ -14184,9 +13735,6 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
         "summary": "Update allowed domains for the trust portal",
@@ -14220,9 +13768,6 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
         "summary": "Update trust portal framework settings",
@@ -14256,9 +13801,6 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
         "summary": "Update Trust Center overview",
@@ -14299,9 +13841,6 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
         "summary": "Get trust portal overview",
@@ -14335,9 +13874,6 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
         "summary": "Create a custom link for trust portal",
@@ -14378,9 +13914,6 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
         "summary": "List custom links for trust portal",
@@ -14423,9 +13956,6 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
         "summary": "Update a custom link",
@@ -14468,9 +13998,6 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
         "summary": "Delete a custom link",
@@ -14504,9 +14031,6 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
         "summary": "Reorder custom links",
@@ -14549,9 +14073,6 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
         "summary": "Update vendor trust portal settings",
@@ -14595,9 +14116,6 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
         "summary": "List vendors configured for trust portal",
@@ -14695,9 +14213,6 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
         "summary": "List Trust Access requests",
@@ -14740,9 +14255,6 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
         "summary": "Get Trust Access request",
@@ -14795,9 +14307,6 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
         "summary": "Approve Trust Access request",
@@ -14850,9 +14359,6 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
         "summary": "Deny Trust Access request",
@@ -14886,9 +14392,6 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
         "summary": "List Trust Access grants",
@@ -14941,9 +14444,6 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
         "summary": "Revoke Trust Access grant",
@@ -14986,9 +14486,6 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
         "summary": "Resend Trust Access email",
@@ -15031,9 +14528,6 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
         "summary": "Resend Trust Access NDA",
@@ -15076,9 +14570,6 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
         "summary": "Preview Trust Access NDA",
@@ -15530,9 +15021,6 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
         "summary": "List audit findings",
@@ -15574,9 +15062,6 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
         "summary": "Create audit finding",
@@ -15625,9 +15110,6 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
         "summary": "List all findings for the organization",
@@ -15671,9 +15153,6 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
         "summary": "Get finding by ID",
@@ -15725,9 +15204,6 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
         "summary": "Update a finding (status transition rules apply)",
@@ -15769,9 +15245,6 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
         "summary": "Delete a finding (auditor or platform admin only)",
@@ -15815,9 +15288,6 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
         "summary": "Get activity history for a finding",
@@ -15909,9 +15379,6 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
         "summary": "Create a custom role",
@@ -16000,9 +15467,6 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
         "summary": "List all roles",
@@ -16066,9 +15530,6 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
         "summary": "Resolve permissions for custom roles",
@@ -16133,9 +15594,6 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
         "summary": "Get obligations for a built-in role",
@@ -16211,9 +15669,6 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
         "summary": "Update obligations for a built-in role",
@@ -16293,9 +15748,6 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
         "summary": "Get a role by ID",
@@ -16389,9 +15841,6 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
         "summary": "Update a custom role",
@@ -16458,9 +15907,6 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
         "summary": "Delete a custom role",
@@ -16493,9 +15939,6 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
         "summary": "List security questionnaires",
@@ -16539,9 +15982,6 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
         "summary": "Get security questionnaire details",
@@ -16583,9 +16023,6 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
         "summary": "Delete a security questionnaire",
@@ -16637,9 +16074,6 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
         "summary": "Generate answers for a questionnaire",
@@ -16689,9 +16123,6 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
         "summary": "Parse questionnaire content",
@@ -16773,9 +16204,6 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
         "summary": "Answer one questionnaire question",
@@ -16836,9 +16264,6 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
         "summary": "Save questionnaire answer",
@@ -16899,9 +16324,6 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
         "summary": "Delete questionnaire answer",
@@ -16946,9 +16368,6 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
         "summary": "Export a security questionnaire",
@@ -17008,9 +16427,6 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
         "summary": "Start questionnaire parsing",
@@ -17094,9 +16510,6 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
         "summary": "Upload and parse questionnaire file",
@@ -17175,9 +16588,6 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
         "summary": "Auto-answer uploaded questionnaire",
@@ -17222,9 +16632,6 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
         "summary": "Export generated questionnaire answers",
@@ -17294,9 +16701,6 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
         "summary": "Upload and export generated answers",
@@ -17341,9 +16745,6 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
         "summary": "Stream generated questionnaire answers",
@@ -17378,9 +16779,6 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
         "summary": "List knowledge base documents",
@@ -17414,9 +16812,6 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
         "summary": "List all manual answers for an organization",
@@ -17458,9 +16853,6 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
         "summary": "Save reusable manual answer",
@@ -17504,9 +16896,6 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
         "summary": "Upload knowledge base document",
@@ -17549,9 +16938,6 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
         "summary": "Get a signed download URL for a document",
@@ -17594,9 +16980,6 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
         "summary": "Get a signed view URL for a document",
@@ -17639,9 +17022,6 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
         "summary": "Delete a knowledge base document",
@@ -17685,9 +17065,6 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
         "summary": "Process knowledge base documents",
@@ -17730,9 +17107,6 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
         "summary": "Create a public access token for a run",
@@ -17785,9 +17159,6 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
         "summary": "Delete a manual answer",
@@ -17831,9 +17202,6 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
         "summary": "Delete all manual answers for an organization",
@@ -17889,9 +17257,6 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
         "summary": "Save a SOA answer",
@@ -17936,9 +17301,6 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
         "summary": "Auto-fill ISO 27001 SOA",
@@ -17981,9 +17343,6 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
         "summary": "Create a new SOA document",
@@ -18027,9 +17386,6 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
         "summary": "Ensure SOA configuration and document exist",
@@ -18048,6 +17404,49 @@
         },
         "x-speakeasy-mcp": {
           "name": "ensure-setup"
+        }
+      }
+    },
+    "/v1/soa/get-setup": {
+      "post": {
+        "operationId": "SOAController_getSetup_v1",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EnsureSOASetupDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Setup returned (configuration/document may be null)"
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Read SOA configuration and document without creating either",
+        "tags": [
+          "SOA"
+        ],
+        "description": "Read SOA configuration and document without creating either in Comp AI. Create, auto-fill, review, approve, and export ISO 27001 Statement of Applicability documents.",
+        "x-mint": {
+          "metadata": {
+            "title": "Read SOA configuration and document without | Comp AI API",
+            "sidebarTitle": "Read SOA configuration and document without creating either",
+            "description": "Read SOA configuration and document without creating either in Comp AI. Create, auto-fill, review, approve, and export ISO 27001 Statement of Applicability.",
+            "og:title": "Read SOA configuration and document without | Comp AI API",
+            "og:description": "Read SOA configuration and document without creating either in Comp AI. Create, auto-fill, review, approve, and export ISO 27001 Statement of Applicability."
+          }
+        },
+        "x-speakeasy-mcp": {
+          "name": "get-setup"
         }
       }
     },
@@ -18073,9 +17472,6 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
         "summary": "Approve a SOA document",
@@ -18119,9 +17515,6 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
         "summary": "Decline a SOA document",
@@ -18165,9 +17558,6 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
         "summary": "Submit SOA document for approval",
@@ -18211,9 +17601,6 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
         "summary": "Export ISO 27001 SOA",
@@ -19527,9 +18914,6 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
         "summary": "List integration providers",
@@ -19572,9 +18956,6 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
         "summary": "Get an integration provider by slug",
@@ -19608,9 +18989,6 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
         "summary": "List integration connections",
@@ -19652,9 +19030,6 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
         "summary": "Create integration connection",
@@ -19697,9 +19072,6 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
         "summary": "Get an integration connection by ID",
@@ -19740,9 +19112,6 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
         "summary": "Delete an integration connection",
@@ -19793,9 +19162,6 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
         "summary": "Update an integration connection",
@@ -19838,9 +19204,6 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
         "summary": "Test an integration connection",
@@ -19883,9 +19246,6 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
         "summary": "Pause an integration connection",
@@ -19928,9 +19288,6 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
         "summary": "Resume an integration connection",
@@ -19973,9 +19330,6 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
         "summary": "Disconnect an integration",
@@ -20028,9 +19382,6 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
         "summary": "Set services enabled on a connection",
@@ -20071,9 +19422,6 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
         "summary": "List services enabled on a connection",
@@ -20116,9 +19464,6 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
         "summary": "List check definitions for a provider",
@@ -20161,9 +19506,6 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
         "summary": "List checks for a connection",
@@ -20216,9 +19558,6 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
         "summary": "Run integration checks",
@@ -20269,9 +19608,6 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
         "summary": "Run a single check on a connection",
@@ -20314,9 +19650,6 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
         "summary": "List variable definitions for a provider",
@@ -20359,9 +19692,6 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
         "summary": "List connection variables",
@@ -20412,9 +19742,6 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
         "summary": "Update connection variables",
@@ -20465,9 +19792,6 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
         "summary": "Get options for a connection variable",
@@ -20510,9 +19834,6 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
         "summary": "List checks for a task template",
@@ -20555,9 +19876,6 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
         "summary": "List checks attached to a task",
@@ -20610,9 +19928,6 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
         "summary": "Run a check for a task",
@@ -20665,9 +19980,6 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
         "summary": "Disconnect checks from a task",
@@ -20720,9 +20032,6 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
         "summary": "Reconnect checks to a task",
@@ -20773,9 +20082,6 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
         "summary": "List check runs for a task",
@@ -20818,9 +20124,6 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
         "summary": "Sync Google Workspace employees",
@@ -20854,9 +20157,6 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
         "summary": "Get Google Workspace sync status",
@@ -20899,9 +20199,6 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
         "summary": "Sync Rippling employees",
@@ -20935,9 +20232,6 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
         "summary": "Get Rippling sync status",
@@ -20980,9 +20274,6 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
         "summary": "Sync JumpCloud employees",
@@ -21016,9 +20307,6 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
         "summary": "Get JumpCloud sync status",
@@ -21052,9 +20340,6 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
         "summary": "Get the currently configured employee sync provider",
@@ -21096,9 +20381,6 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
         "summary": "Set the employee sync provider",
@@ -21120,9 +20402,9 @@
         }
       }
     },
-    "/v1/integrations/sync/available-providers": {
+    "/v1/integrations/sync/device-sync-provider": {
       "get": {
-        "operationId": "SyncController_getAvailableSyncProviders_v1",
+        "operationId": "SyncController_getDeviceSyncProvider_v1",
         "parameters": [],
         "responses": {
           "200": {
@@ -21132,23 +20414,93 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
-        "summary": "List employee sync providers available to the org",
+        "summary": "Get the currently configured device sync provider",
         "tags": [
           "Integrations"
         ],
-        "description": "List employee sync providers available to the org in Comp AI. Connect vendor systems, configure OAuth apps, run compliance checks, sync employees, manage variables, and collect automated evidence.",
+        "description": "Get the currently configured device sync provider in Comp AI. Connect vendor systems, configure OAuth apps, run compliance checks, sync employees, manage variables, and collect automated evidence.",
         "x-mint": {
           "metadata": {
-            "title": "List employee sync providers available to the | Comp AI API",
-            "sidebarTitle": "List employee sync providers available to the org",
-            "description": "List employee sync providers available to the org in Comp AI. Connect vendor systems, configure OAuth apps, run compliance checks, sync employees, manage.",
-            "og:title": "List employee sync providers available to the | Comp AI API",
-            "og:description": "List employee sync providers available to the org in Comp AI. Connect vendor systems, configure OAuth apps, run compliance checks, sync employees, manage."
+            "title": "Get the currently configured device sync | Comp AI API",
+            "sidebarTitle": "Get the currently configured device sync provider",
+            "description": "Get the currently configured device sync provider in Comp AI. Connect vendor systems, configure OAuth apps, run compliance checks, sync employees, manage.",
+            "og:title": "Get the currently configured device sync | Comp AI API",
+            "og:description": "Get the currently configured device sync provider in Comp AI. Connect vendor systems, configure OAuth apps, run compliance checks, sync employees, manage."
+          }
+        },
+        "x-speakeasy-mcp": {
+          "name": "get-device-sync-provider"
+        }
+      },
+      "post": {
+        "operationId": "SyncController_setDeviceSyncProvider_v1",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Set the device sync provider",
+        "tags": [
+          "Integrations"
+        ],
+        "description": "Set the device sync provider in Comp AI. Connect vendor systems, configure OAuth apps, run compliance checks, sync employees, manage variables, and collect automated evidence.",
+        "x-mint": {
+          "metadata": {
+            "title": "Set the device sync provider | Comp AI API",
+            "sidebarTitle": "Set the device sync provider",
+            "description": "Set the device sync provider in Comp AI. Connect vendor systems, configure OAuth apps, run compliance checks, sync employees, manage variables, and collect.",
+            "og:title": "Set the device sync provider | Comp AI API",
+            "og:description": "Set the device sync provider in Comp AI. Connect vendor systems, configure OAuth apps, run compliance checks, sync employees, manage variables, and collect."
+          }
+        },
+        "x-speakeasy-mcp": {
+          "name": "set-device-sync-provider"
+        }
+      }
+    },
+    "/v1/integrations/sync/available-providers": {
+      "get": {
+        "operationId": "SyncController_getAvailableSyncProviders_v1",
+        "parameters": [
+          {
+            "name": "syncType",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "List sync providers available to the org",
+        "tags": [
+          "Integrations"
+        ],
+        "description": "List sync providers available to the org in Comp AI. Connect vendor systems, configure OAuth apps, run compliance checks, sync employees, manage variables, and collect automated evidence.",
+        "x-mint": {
+          "metadata": {
+            "title": "List sync providers available to the org | Comp AI API",
+            "sidebarTitle": "List sync providers available to the org",
+            "description": "List sync providers available to the org in Comp AI. Connect vendor systems, configure OAuth apps, run compliance checks, sync employees, manage variables.",
+            "og:title": "List sync providers available to the org | Comp AI API",
+            "og:description": "List sync providers available to the org in Comp AI. Connect vendor systems, configure OAuth apps, run compliance checks, sync employees, manage variables."
           }
         },
         "x-speakeasy-mcp": {
@@ -21185,9 +20537,6 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
         "summary": "Sync employees for a dynamic provider",
@@ -21206,6 +20555,56 @@
         },
         "x-speakeasy-mcp": {
           "name": "sync-dynamic-provider-employees"
+        }
+      }
+    },
+    "/v1/integrations/sync/dynamic/{providerSlug}/devices": {
+      "post": {
+        "operationId": "SyncController_syncDynamicProviderDevices_v1",
+        "parameters": [
+          {
+            "name": "providerSlug",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "connectionId",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Sync devices for a dynamic provider",
+        "tags": [
+          "Integrations"
+        ],
+        "description": "Sync devices for a dynamic provider in Comp AI. Connect vendor systems, configure OAuth apps, run compliance checks, sync employees, manage variables, and collect automated evidence.",
+        "x-mint": {
+          "metadata": {
+            "title": "Sync devices for a dynamic provider | Comp AI API",
+            "sidebarTitle": "Sync devices for a dynamic provider",
+            "description": "Sync devices for a dynamic provider in Comp AI. Connect vendor systems, configure OAuth apps, run compliance checks, sync employees, manage variables.",
+            "og:title": "Sync devices for a dynamic provider | Comp AI API",
+            "og:description": "Sync devices for a dynamic provider in Comp AI. Connect vendor systems, configure OAuth apps, run compliance checks, sync employees, manage variables."
+          }
+        },
+        "x-speakeasy-mcp": {
+          "name": "sync-dynamic-provider-devices"
         }
       }
     },
@@ -21954,9 +21353,6 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
         "summary": "Get task items statistics for an entity",
@@ -22123,9 +21519,6 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
         "summary": "Get task items for an entity",
@@ -22174,9 +21567,6 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
         "summary": "Create a new task item",
@@ -22238,9 +21628,6 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
         "summary": "Update a task item",
@@ -22283,9 +21670,6 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
         "summary": "Delete a task item",
@@ -22336,9 +21720,6 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
         "summary": "Upload attachment to task item",
@@ -22383,9 +21764,6 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
         "summary": "Delete attachment from task item",
@@ -22430,9 +21808,6 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
         "summary": "Get task item activity log",
@@ -22466,9 +21841,6 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
         "summary": "List training completions",
@@ -22511,9 +21883,6 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
         "summary": "Mark a training video as complete",
@@ -22564,9 +21933,6 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
         "summary": "Send training completion email with certificate",
@@ -22613,9 +21979,6 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
         "summary": "Generate training certificate",
@@ -22662,9 +22025,6 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
         "summary": "Generate HIPAA training certificate PDF",
@@ -22707,9 +22067,6 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
         "summary": "Get the organization chart",
@@ -22751,9 +22108,6 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
         "summary": "Create or update an interactive organization chart",
@@ -22795,9 +22149,6 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
         "summary": "Delete the organization chart",
@@ -22851,9 +22202,6 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
         "summary": "Upload an image as the organization chart",
@@ -22898,9 +22246,6 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
         "summary": "List evidence forms",
@@ -22944,9 +22289,6 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
         "summary": "Get submission statuses for all forms",
@@ -22990,9 +22332,6 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
         "summary": "Get document relevance settings",
@@ -23044,9 +22383,6 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
         "summary": "Update document relevance setting",
@@ -23098,9 +22434,6 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
         "summary": "Get current user submissions",
@@ -23144,9 +22477,6 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
         "summary": "Get pending submission count for current user",
@@ -23222,9 +22552,6 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
         "summary": "Get form definition and submissions",
@@ -23284,9 +22611,6 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
         "summary": "Get a single submission",
@@ -23344,9 +22668,6 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
         "summary": "Delete a submission",
@@ -23398,9 +22719,6 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
         "summary": "Submit evidence form",
@@ -23423,7 +22741,7 @@
     },
     "/v1/evidence-forms/{formType}/upload-submission": {
       "post": {
-        "description": "Upload a file as an evidence submission in Comp AI. Collect, review, upload, and export structured evidence submissions for compliance tasks and document requirements.",
+        "description": "Upload a PDF or image file and create a submission for the given form type, bypassing form-specific validation. Accepts session, API key, or service token auth. For API key / service token callers without an explicit user attribution, the.",
         "operationId": "EvidenceFormsController_uploadSubmission_v1",
         "parameters": [
           {
@@ -23452,9 +22770,6 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
         "summary": "Upload a file as an evidence submission",
@@ -23465,9 +22780,9 @@
           "metadata": {
             "title": "Upload a file as an evidence submission | Comp AI API",
             "sidebarTitle": "Upload a file as an evidence submission",
-            "description": "Upload a file as an evidence submission in Comp AI. Collect, review, upload, and export structured evidence submissions for compliance tasks and document.",
+            "description": "Upload a PDF or image file and create a submission for the given form type, bypassing form-specific validation. Accepts session, API key, or service token.",
             "og:title": "Upload a file as an evidence submission | Comp AI API",
-            "og:description": "Upload a file as an evidence submission in Comp AI. Collect, review, upload, and export structured evidence submissions for compliance tasks and document."
+            "og:description": "Upload a PDF or image file and create a submission for the given form type, bypassing form-specific validation. Accepts session, API key, or service token."
           }
         },
         "x-speakeasy-mcp": {
@@ -23514,9 +22829,6 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
         "summary": "Review evidence submission",
@@ -23560,9 +22872,6 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
         "summary": "Upload evidence form file",
@@ -23614,9 +22923,6 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
         "summary": "Export evidence submissions",
@@ -24445,9 +23751,6 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
         "summary": "List audit logs",
@@ -25040,9 +24343,6 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
         "summary": "List penetration test runs",
@@ -25097,9 +24397,6 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
         "summary": "Create penetration test",
@@ -25154,9 +24451,6 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
         "summary": "Get penetration test status",
@@ -25208,9 +24502,6 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
         "summary": "Get penetration test progress",
@@ -25262,9 +24553,6 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
         "summary": "Get penetration test issues",
@@ -25316,9 +24604,6 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
         "summary": "Get penetration test agent events",
@@ -25370,9 +24655,6 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
         "summary": "Get penetration test output",
@@ -25424,9 +24706,6 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
         "summary": "Get penetration test PDF",
@@ -25460,9 +24739,6 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
         "summary": "Get members with pending offboarding checklists",
@@ -25496,9 +24772,6 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
         "summary": "Get the offboarding checklist template",
@@ -25540,9 +24813,6 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
         "summary": "Add an offboarding checklist template item",
@@ -25595,9 +24865,6 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
         "summary": "Update an offboarding checklist template item",
@@ -25638,9 +24905,6 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
         "summary": "Delete an offboarding checklist template item",
@@ -25683,9 +24947,6 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
         "summary": "Get a member's offboarding checklist",
@@ -25719,9 +24980,6 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
         "summary": "Export all offboarding evidence as a zip file",
@@ -25765,9 +25023,6 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
         "summary": "Export offboarding evidence as a zip file",
@@ -25828,9 +25083,6 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
         "summary": "Complete an offboarding checklist item",
@@ -25879,9 +25131,6 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
         "summary": "Reopen an offboarding checklist item",
@@ -25942,9 +25191,6 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
         "summary": "Upload evidence for an offboarding checklist item",
@@ -25988,9 +25234,6 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
         "summary": "Get vendor access revocation status for a member",
@@ -26034,9 +25277,6 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
         "summary": "Confirm all vendor access as revoked",
@@ -26089,9 +25329,6 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
         "summary": "Mark vendor access as revoked",
@@ -26142,9 +25379,6 @@
         "security": [
           {
             "apikey": []
-          },
-          {
-            "oauth2": []
           }
         ],
         "summary": "Undo vendor access revocation",
@@ -26326,23 +25560,6 @@
         "in": "header",
         "name": "X-API-Key",
         "description": "API key for authentication"
-      },
-      "oauth2": {
-        "type": "oauth2",
-        "description": "OAuth 2.1 authorization code flow. Sign in with your Comp AI account — tokens are issued by the Comp AI authorization server and scoped to your organization, role, and permissions.",
-        "flows": {
-          "authorizationCode": {
-            "authorizationUrl": "https://api.trycomp.ai/api/auth/mcp/authorize",
-            "tokenUrl": "https://api.trycomp.ai/api/auth/mcp/token",
-            "refreshUrl": "https://api.trycomp.ai/api/auth/mcp/token",
-            "scopes": {
-              "openid": "OpenID Connect authentication",
-              "profile": "Basic profile information",
-              "email": "Email address",
-              "offline_access": "Maintain access via refresh tokens"
-            }
-          }
-        }
       }
     },
     "schemas": {
@@ -26471,16 +25688,7 @@
           },
           "department": {
             "type": "string",
-            "description": "Member department",
-            "enum": [
-              "none",
-              "admin",
-              "gov",
-              "hr",
-              "it",
-              "itsm",
-              "qms"
-            ],
+            "description": "Member department. May be one of the built-in values (none, admin, gov, hr, it, itsm, qms) or a custom department name.",
             "example": "it"
           },
           "jobTitle": {
@@ -26590,17 +25798,9 @@
           },
           "department": {
             "type": "string",
-            "description": "Member department",
-            "enum": [
-              "none",
-              "admin",
-              "gov",
-              "hr",
-              "it",
-              "itsm",
-              "qms"
-            ],
-            "example": "it"
+            "description": "Member department. Built-in values: none, admin, gov, hr, it, itsm, qms. Custom department names are also accepted.",
+            "example": "it",
+            "maxLength": 64
           },
           "isActive": {
             "type": "boolean",
@@ -26668,17 +25868,9 @@
           },
           "department": {
             "type": "string",
-            "description": "Member department",
-            "enum": [
-              "none",
-              "admin",
-              "gov",
-              "hr",
-              "it",
-              "itsm",
-              "qms"
-            ],
-            "example": "it"
+            "description": "Member department. Built-in values: none, admin, gov, hr, it, itsm, qms. Custom department names are also accepted.",
+            "example": "it",
+            "maxLength": 64
           },
           "isActive": {
             "type": "boolean",
@@ -26753,8 +25945,13 @@
           },
           "fileData": {
             "type": "string",
-            "description": "Base64 encoded file data",
+            "description": "Base64-encoded file contents. For the web UI / direct callers. AI/MCP clients should instead upload via /v1/uploads/presign (purpose=attachment) and pass `s3Key` — base64 through an LLM is impractically slow and times out. Provide exactly one of fileData or s3Key.",
             "example": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8/5+hHgAHggJ/PchI7wAAAABJRU5ErkJggg=="
+          },
+          "s3Key": {
+            "type": "string",
+            "description": "Key of a file already uploaded via /v1/uploads/presign (purpose=attachment). The server fetches the bytes from storage — no base64 needed. Provide exactly one of fileData or s3Key.",
+            "example": "org_abc123/uploads/attachment/1700000000000-rbac-matrix.xlsx"
           },
           "description": {
             "type": "string",
@@ -26770,8 +25967,7 @@
         },
         "required": [
           "fileName",
-          "fileType",
-          "fileData"
+          "fileType"
         ]
       },
       "EmailPreferencesDto": {
@@ -26854,8 +26050,13 @@
           },
           "fileData": {
             "type": "string",
-            "description": "Base64 encoded file data",
+            "description": "Base64-encoded file contents. For the web UI / direct callers. AI/MCP clients should instead upload via /v1/uploads/presign (purpose=attachment) and pass `s3Key` — base64 through an LLM is impractically slow and times out. Provide exactly one of fileData or s3Key.",
             "example": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8/5+hHgAHggJ/PchI7wAAAABJRU5ErkJggg=="
+          },
+          "s3Key": {
+            "type": "string",
+            "description": "Key of a file already uploaded via /v1/uploads/presign (purpose=attachment). The server fetches the bytes from storage — no base64 needed. Provide exactly one of fileData or s3Key.",
+            "example": "org_abc123/uploads/attachment/1700000000000-rbac-matrix.xlsx"
           },
           "description": {
             "type": "string",
@@ -26886,7 +26087,6 @@
         "required": [
           "fileName",
           "fileType",
-          "fileData",
           "entityId",
           "entityType"
         ]
@@ -26935,6 +26135,64 @@
           "createdAt"
         ]
       },
+      "CreateUploadUrlDto": {
+        "type": "object",
+        "properties": {
+          "purpose": {
+            "type": "string",
+            "enum": [
+              "questionnaire",
+              "policy_pdf",
+              "evidence",
+              "attachment",
+              "document",
+              "general"
+            ],
+            "description": "What the file is for. Controls where the file is stored and which feature is expected to consume the returned s3Key.",
+            "example": "questionnaire"
+          },
+          "fileName": {
+            "type": "string",
+            "description": "Original filename, used for the stored object name. Non-alphanumeric characters are replaced with underscores.",
+            "example": "vendor-security-questionnaire.xlsx"
+          },
+          "fileType": {
+            "type": "string",
+            "description": "MIME type of the file (e.g. application/pdf, text/csv). Recorded as metadata and passed to the feature endpoint; the PUT itself is content-type agnostic, so the upload never fails on a header mismatch.",
+            "example": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+          }
+        },
+        "required": [
+          "purpose",
+          "fileName",
+          "fileType"
+        ]
+      },
+      "UploadUrlResponseDto": {
+        "type": "object",
+        "properties": {
+          "uploadUrl": {
+            "type": "string",
+            "description": "Presigned S3 URL. Send the raw file bytes with a plain HTTP PUT to this URL — no Content-Type or auth headers are required (the signature is in the URL). Then call the feature endpoint with the s3Key below.",
+            "example": "https://bucket.s3.us-east-1.amazonaws.com/org_x/uploads/...?X-Amz-Signature=..."
+          },
+          "s3Key": {
+            "type": "string",
+            "description": "The S3 key the file will land at. Pass this to the feature endpoint (e.g. questionnaire upload-and-parse) instead of base64 file data.",
+            "example": "org_abc/uploads/questionnaire/1735000000-questionnaire.xlsx"
+          },
+          "expiresIn": {
+            "type": "number",
+            "description": "Seconds until the presigned URL expires.",
+            "example": 900
+          }
+        },
+        "required": [
+          "uploadUrl",
+          "s3Key",
+          "expiresIn"
+        ]
+      },
       "CreateRiskDto": {
         "type": "object",
         "properties": {
@@ -26968,17 +26226,9 @@
           },
           "department": {
             "type": "string",
-            "description": "Department responsible for the risk",
-            "enum": [
-              "none",
-              "admin",
-              "gov",
-              "hr",
-              "it",
-              "itsm",
-              "qms"
-            ],
-            "example": "it"
+            "description": "Department responsible for the risk. Built-in values: none, admin, gov, hr, it, itsm, qms. Custom department names are also accepted.",
+            "example": "it",
+            "maxLength": 64
           },
           "status": {
             "type": "string",
@@ -27112,17 +26362,9 @@
           },
           "department": {
             "type": "string",
-            "description": "Department responsible for the risk",
-            "enum": [
-              "none",
-              "admin",
-              "gov",
-              "hr",
-              "it",
-              "itsm",
-              "qms"
-            ],
-            "example": "it"
+            "description": "Department responsible for the risk. Built-in values: none, admin, gov, hr, it, itsm, qms. Custom department names are also accepted.",
+            "example": "it",
+            "maxLength": 64
           },
           "status": {
             "type": "string",
@@ -28187,16 +27429,7 @@
           },
           "department": {
             "type": "string",
-            "description": "Department this policy applies to",
-            "enum": [
-              "none",
-              "admin",
-              "gov",
-              "hr",
-              "it",
-              "itsm",
-              "qms"
-            ],
+            "description": "Department this policy applies to. May be one of the built-in values (none, admin, gov, hr, it, itsm, qms) or a custom department name.",
             "example": "it",
             "nullable": true
           },
@@ -28445,17 +27678,9 @@
           },
           "department": {
             "type": "string",
-            "description": "Department this policy applies to",
-            "enum": [
-              "none",
-              "admin",
-              "gov",
-              "hr",
-              "it",
-              "itsm",
-              "qms"
-            ],
-            "example": "it"
+            "description": "Department this policy applies to. Built-in values: none, admin, gov, hr, it, itsm, qms. Custom department names are also accepted.",
+            "example": "it",
+            "maxLength": 64
           },
           "isRequiredToSign": {
             "type": "boolean",
@@ -28569,17 +27794,9 @@
           },
           "department": {
             "type": "string",
-            "description": "Department this policy applies to",
-            "enum": [
-              "none",
-              "admin",
-              "gov",
-              "hr",
-              "it",
-              "itsm",
-              "qms"
-            ],
-            "example": "it"
+            "description": "Department this policy applies to. Built-in values: none, admin, gov, hr, it, itsm, qms. Custom department names are also accepted.",
+            "example": "it",
+            "maxLength": 64
           },
           "isRequiredToSign": {
             "type": "boolean",
@@ -28769,63 +27986,6 @@
       "CheckInDto": {
         "type": "object",
         "properties": {}
-      },
-      "CreateUploadUrlDto": {
-        "type": "object",
-        "properties": {
-          "purpose": {
-            "type": "string",
-            "enum": [
-              "questionnaire",
-              "policy_pdf",
-              "evidence",
-              "attachment",
-              "general"
-            ],
-            "description": "What the file is for. Controls where the file is stored and which feature is expected to consume the returned s3Key.",
-            "example": "questionnaire"
-          },
-          "fileName": {
-            "type": "string",
-            "description": "Original filename, used for the stored object name. Non-alphanumeric characters are replaced with underscores.",
-            "example": "vendor-security-questionnaire.xlsx"
-          },
-          "fileType": {
-            "type": "string",
-            "description": "MIME type of the file (e.g. application/pdf, text/csv). Recorded as metadata and passed to the feature endpoint; the PUT itself is content-type agnostic, so the upload never fails on a header mismatch.",
-            "example": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-          }
-        },
-        "required": [
-          "purpose",
-          "fileName",
-          "fileType"
-        ]
-      },
-      "UploadUrlResponseDto": {
-        "type": "object",
-        "properties": {
-          "uploadUrl": {
-            "type": "string",
-            "description": "Presigned S3 URL. Send the raw file bytes with a plain HTTP PUT to this URL — no Content-Type or auth headers are required (the signature is in the URL). Then call the feature endpoint with the s3Key below.",
-            "example": "https://bucket.s3.us-east-1.amazonaws.com/org_x/uploads/...?X-Amz-Signature=..."
-          },
-          "s3Key": {
-            "type": "string",
-            "description": "The S3 key the file will land at. Pass this to the feature endpoint (e.g. questionnaire upload-and-parse) instead of base64 file data.",
-            "example": "org_abc/uploads/questionnaire/1735000000-questionnaire.xlsx"
-          },
-          "expiresIn": {
-            "type": "number",
-            "description": "Seconds until the presigned URL expires.",
-            "example": 900
-          }
-        },
-        "required": [
-          "uploadUrl",
-          "s3Key",
-          "expiresIn"
-        ]
       },
       "TaskResponseDto": {
         "type": "object",
@@ -29896,7 +29056,39 @@
       },
       "UploadDocumentDto": {
         "type": "object",
-        "properties": {}
+        "properties": {
+          "organizationId": {
+            "type": "string",
+            "description": "Organization ID that owns the document"
+          },
+          "fileName": {
+            "type": "string",
+            "description": "File name",
+            "example": "rbac-matrix.xlsx"
+          },
+          "fileType": {
+            "type": "string",
+            "description": "MIME type of the file",
+            "example": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+          },
+          "fileData": {
+            "type": "string",
+            "description": "Base64-encoded file contents. For the web UI / direct callers. AI/MCP clients should instead upload via /v1/uploads/presign (purpose=document) and pass `s3Key` — base64 through an LLM is impractically slow and times out. Provide exactly one of fileData or s3Key."
+          },
+          "s3Key": {
+            "type": "string",
+            "description": "Key of a file already uploaded via /v1/uploads/presign (purpose=document). The server fetches the bytes from storage — no base64 needed. Provide exactly one of fileData or s3Key."
+          },
+          "description": {
+            "type": "string",
+            "description": "Optional description"
+          }
+        },
+        "required": [
+          "organizationId",
+          "fileName",
+          "fileType"
+        ]
       },
       "ProcessDocumentsDto": {
         "type": "object",
@@ -30972,7 +30164,11 @@
           },
           "fileData": {
             "type": "string",
-            "description": "Base64 encoded evidence file"
+            "description": "Base64-encoded evidence file. For the web UI / direct callers. AI/MCP clients should instead upload via /v1/uploads/presign (purpose=evidence) and pass `s3Key` — base64 through an LLM is impractically slow and times out. Provide fileData or s3Key (not both)."
+          },
+          "s3Key": {
+            "type": "string",
+            "description": "Key of an evidence file already uploaded via /v1/uploads/presign (purpose=evidence). The server fetches the bytes from storage — no base64 needed. Provide fileData or s3Key (not both)."
           }
         }
       }

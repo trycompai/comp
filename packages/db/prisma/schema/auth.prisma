@@ -200,7 +200,7 @@ model Member {
   role           String // Purposefully a string, since BetterAuth doesn't support enums this way
   createdAt      DateTime     @default(now())
 
-  department                      Departments                       @default(none)
+  department                      String                            @default("none")
   jobTitle                        String?
   isActive                        Boolean                           @default(true)
   deactivated                     Boolean                           @default(false)

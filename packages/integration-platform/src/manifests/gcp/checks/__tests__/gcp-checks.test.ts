@@ -9,10 +9,17 @@ import { cloudSqlSslCheck } from '../cloud-sql-ssl';
 import { iamPrimitiveRolesCheck } from '../iam-primitive-roles';
 import { storagePublicAccessCheck } from '../storage-public-access';
 import { vpcOpenFirewallsCheck } from '../vpc-open-firewalls';
+import { isGcpApiDisabled } from '../shared';
 
 interface Captured {
   passed: Array<{ resourceId: string; title: string }>;
-  failed: Array<{ resourceId: string; title: string; severity: string }>;
+  failed: Array<{
+    resourceId: string;
+    title: string;
+    severity: string;
+    remediation?: string;
+    evidence?: Record<string, unknown>;
+  }>;
 }
 
 async function runCheck(
@@ -42,6 +49,8 @@ async function runCheck(
         resourceId: r.resourceId,
         title: r.title,
         severity: r.severity,
+        remediation: r.remediation,
+        evidence: r.evidence,
       }),
     fetch: (async <T,>(url: string): Promise<T> =>
       (opts.fetch ? opts.fetch(url) : {}) as T) as CheckContext['fetch'],
@@ -61,6 +70,131 @@ async function runCheck(
   await check.run(ctx);
   return { passed, failed };
 }
+
+describe('isGcpApiDisabled — service-not-enabled detection', () => {
+  const httpErr = (status: number, message: string) => {
+    const e = new Error(`HTTP ${status}: Forbidden - ${message}`);
+    (e as Error & { status: number }).status = status;
+    return e;
+  };
+  it('matches the real SERVICE_DISABLED 403 body', () => {
+    expect(
+      isGcpApiDisabled(
+        httpErr(403, '{"error":{"code":403,"message":"Cloud SQL Admin API has not been used in project gen-lang-client-0670714718 before or it is disabled.","status":"PERMISSION_DENIED","details":[{"reason":"SERVICE_DISABLED"}]}}'),
+      ),
+    ).toBe(true);
+  });
+  it('does NOT match a genuine permission denial', () => {
+    expect(
+      isGcpApiDisabled(
+        httpErr(403, '{"error":{"code":403,"message":"The caller does not have permission","status":"PERMISSION_DENIED"}}'),
+      ),
+    ).toBe(false);
+  });
+  it('does NOT match a transient 500', () => {
+    expect(isGcpApiDisabled(httpErr(500, 'Internal error'))).toBe(false);
+  });
+});
+
+describe('GCP checks skip projects whose service API is disabled', () => {
+  const apiDisabled = () => {
+    const e = new Error('HTTP 403: Forbidden - Cloud SQL Admin API has not been used in project p before or it is disabled. (SERVICE_DISABLED)');
+    (e as Error & { status: number }).status = 403;
+    return e;
+  };
+  it('cloud-sql-ssl emits NO finding when the API is disabled (vs a false "grant permission")', async () => {
+    const out = await runCheck(cloudSqlSslCheck, {
+      variables: { project_ids: ['p'] },
+      fetch: () => { throw apiDisabled(); },
+    });
+    expect(out.failed).toHaveLength(0);
+    expect(out.passed).toHaveLength(0);
+  });
+  it('still reports a finding for a genuine permission denial', async () => {
+    const denied = () => {
+      const e = new Error('HTTP 403: Forbidden - The caller does not have permission');
+      (e as Error & { status: number }).status = 403;
+      return e;
+    };
+    const out = await runCheck(cloudSqlSslCheck, {
+      variables: { project_ids: ['p'] },
+      fetch: () => { throw denied(); },
+    });
+    expect(out.failed).toHaveLength(1);
+    expect(out.failed[0]!.title).toMatch(/Could not verify Cloud SQL SSL/);
+  });
+});
+
+describe('GCP read-failure remediation gating', () => {
+  const httpError = (status: number, message: string) => {
+    const err = new Error(message);
+    (err as Error & { status: number }).status = status;
+    return err;
+  };
+
+  it('iam: a 403 policy read keeps the grant remediation and carries the error', async () => {
+    const out = await runCheck(iamPrimitiveRolesCheck, {
+      post: () => {
+        throw httpError(403, 'HTTP 403: Forbidden - PERMISSION_DENIED');
+      },
+    });
+    expect(out.failed).toHaveLength(1);
+    expect(out.failed[0]!.title).toMatch(/Could not verify IAM primitive roles/);
+    expect(out.failed[0]!.remediation).toContain('resourcemanager.projects.getIamPolicy');
+    expect(out.failed[0]!.evidence).toMatchObject({
+      error: 'HTTP 403: Forbidden - PERMISSION_DENIED',
+    });
+  });
+
+  it('iam: a transient 500 policy read says re-run instead of claiming a missing permission', async () => {
+    const out = await runCheck(iamPrimitiveRolesCheck, {
+      post: () => {
+        throw httpError(500, 'HTTP 500: Internal Server Error');
+      },
+    });
+    expect(out.failed).toHaveLength(1);
+    expect(out.failed[0]!.remediation).not.toContain('resourcemanager.projects.getIamPolicy');
+    expect(out.failed[0]!.remediation).toMatch(/re-run/i);
+    expect(out.failed[0]!.evidence).toMatchObject({
+      error: 'HTTP 500: Internal Server Error',
+    });
+  });
+
+  it('storage: a transient bucket-list failure says re-run; a denied one keeps the grant hint', async () => {
+    const transient = await runCheck(storagePublicAccessCheck, {
+      fetch: () => {
+        throw httpError(503, 'HTTP 503: Service Unavailable');
+      },
+    });
+    expect(transient.failed[0]!.title).toMatch(/Could not verify Cloud Storage/);
+    expect(transient.failed[0]!.remediation).toMatch(/re-run/i);
+    expect(transient.failed[0]!.remediation).not.toContain('storage.buckets.list');
+
+    const denied = await runCheck(storagePublicAccessCheck, {
+      fetch: () => {
+        throw httpError(403, 'HTTP 403: Forbidden');
+      },
+    });
+    expect(denied.failed[0]!.remediation).toContain('storage.buckets.list');
+  });
+});
+
+describe('GCP project scope failure', () => {
+  it('emits an explicit scope finding when project discovery fails', async () => {
+    const err = new Error('HTTP 500: boom');
+    (err as Error & { status: number }).status = 500;
+    const out = await runCheck(vpcOpenFirewallsCheck, {
+      variables: {},
+      fetch: () => {
+        throw err;
+      },
+    });
+    expect(out.failed).toHaveLength(1);
+    expect(out.failed[0]!.title).toMatch(/Could not verify GCP project scope/);
+    expect(out.failed[0]!.remediation).toMatch(/re-run/i);
+    expect(out.failed[0]!.evidence).toMatchObject({ readError: 'HTTP 500: boom' });
+  });
+});
 
 describe('GCP IAM primitive roles check', () => {
   it('fails on roles/owner binding (high)', async () => {

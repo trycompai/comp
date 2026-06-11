@@ -1,6 +1,7 @@
 import {
   Controller,
   Get,
+  Post,
   Param,
   Query,
   Req,
@@ -16,6 +17,7 @@ import {
   ApiSecurity,
   ApiTags,
 } from '@nestjs/swagger';
+import { tasks } from '@trigger.dev/sdk';
 import type { Request, Response } from 'express';
 import type { Archiver } from 'archiver';
 import { AuditRead } from '../../audit/skip-audit-log.decorator';
@@ -205,7 +207,8 @@ export class EvidenceExportController {
 }
 
 /**
- * Auditor-only controller for bulk evidence export
+ * Auditor-only controller for bulk evidence export.
+ * The heavy work runs in a Trigger.dev background task to avoid OOM in the API.
  */
 @ApiTags('Evidence Export (Auditor)')
 @Controller({ path: 'evidence-export', version: '1' })
@@ -214,18 +217,13 @@ export class EvidenceExportController {
 export class AuditorEvidenceExportController {
   private readonly logger = new Logger(AuditorEvidenceExportController.name);
 
-  constructor(private readonly evidenceExportService: EvidenceExportService) {}
-
-  /**
-   * Export all evidence for the organization (auditor only)
-   */
-  @Get('all')
+  @Post('all')
   @RequirePermission('evidence', 'read')
   @AuditRead()
   @ApiOperation({
-    summary: 'Export all organization evidence as ZIP (Auditor only)',
+    summary: 'Trigger bulk evidence export (Auditor only)',
     description:
-      'Generate and download a ZIP file containing all automation evidence across all tasks. Only accessible by auditors.',
+      'Starts a background job that generates a ZIP of all evidence. Returns a run ID for progress tracking.',
   })
   @ApiQuery({
     name: 'includeJson',
@@ -234,49 +232,38 @@ export class AuditorEvidenceExportController {
     required: false,
   })
   @ApiResponse({
-    status: 200,
-    description: 'ZIP file generated successfully',
-    content: {
-      'application/zip': {},
-    },
-  })
-  @ApiResponse({
-    status: 403,
-    description: 'Access denied - Auditor role required',
+    status: 201,
+    description: 'Export job started',
   })
   async exportAllEvidence(
     @OrganizationId() organizationId: string,
     @Query('includeJson') includeJson: string,
-    @Req() req: Request,
-    @Res() res: Response,
   ) {
-    this.logger.log('Auditor exporting all evidence', {
+    const includeJsonBool = includeJson === 'true';
+    this.logger.log('Auditor triggering bulk evidence export', {
       organizationId,
-      includeJson: includeJson === 'true',
+      includeJson: includeJsonBool,
     });
 
-    const { archive, filename } =
-      await this.evidenceExportService.streamOrganizationEvidenceZip(
-        organizationId,
-        { includeRawJson: includeJson === 'true' },
-      );
-
-    res.setHeader('Content-Type', 'application/zip');
-    res.setHeader(
-      'Content-Disposition',
-      `attachment; filename="${filename}"`,
+    const handle = await tasks.trigger(
+      'export-organization-evidence',
+      { organizationId, includeJson: includeJsonBool },
+      {
+        // Serialize exports per org (the task queue's concurrencyLimit is 1, and
+        // concurrencyKey gives each org its own lane) so a burst of clicks can
+        // never run multiple heavy exports for the same org at once.
+        concurrencyKey: organizationId,
+        // Collapse rapid duplicate triggers (double-click / retry) for the same
+        // org + options into a single run for the TTL window.
+        idempotencyKey: `evidence-export:${organizationId}:${includeJsonBool}`,
+        idempotencyKeyTTL: '30m',
+      },
     );
-    // See note on the task variant above — flush early so a slow first task
-    // doesn't blow past the proxy idle timeout for large orgs.
-    res.flushHeaders();
 
-    pipeArchiveToResponse({
-      archive,
-      req,
-      res,
-      logger: this.logger,
-      tag: `org ${organizationId}`,
-    });
+    return {
+      runId: handle.id,
+      publicAccessToken: handle.publicAccessToken,
+    };
   }
 }
 

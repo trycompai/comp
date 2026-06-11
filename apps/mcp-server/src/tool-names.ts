@@ -153,6 +153,10 @@ export const toolNames: Array<{ name: string; description: string }>= [
     "description": "Get shared attachment download URL\n\nGenerate a signed download URL for a shared attachment linked to comments, evidence records, or compliance workflow reviews."
   },
   {
+    "name": "create-upload-url",
+    "description": "Get a presigned URL to upload a file\n\nReturns a presigned S3 URL plus the s3Key the file lands at. PUT the raw file bytes to that URL, then call the feature tool (e.g. upload-and-parse) with the s3Key instead of sending file data. Bytes never pass through the LLM."
+  },
+  {
     "name": "get-all-risks",
     "description": "List organization risks\n\nList organization risks with owners, departments, severity, mitigation status, and evidence for risk management reporting."
   },
@@ -242,7 +246,7 @@ export const toolNames: Array<{ name: string; description: string }>= [
   },
   {
     "name": "list-policies",
-    "description": "List compliance policies\n\nLists compliance policies for the organization. Use this to find a policy by name, look up a policy ID, browse drafts, or get an overview of all policies for SOC 2, ISO 27001, HIPAA, and GDPR workflows. Returns id, name, status, department, and other metadata for each policy. Pass excludeContent=true to skip the heavy TipTap content fields — recommended when you only need to identify a policy. To read or edit a single policy in detail, fetch it by ID via get-compliance-policy."
+    "description": "List compliance policies\n\nLists active compliance policies by default. Use includeArchived=true to include archived rows and excludeContent=true when you only need policy metadata."
   },
   {
     "name": "create-policy",
@@ -397,10 +401,6 @@ export const toolNames: Array<{ name: string; description: string }>= [
     "description": "Revoke a device agent session\n\nRevoke a device agent session in Comp AI. Register employee devices, submit device compliance check-ins, download agent builds, and manage endpoint security status."
   },
   {
-    "name": "create-upload-url",
-    "description": "Get a presigned URL to upload a file\n\nReturns a presigned S3 URL plus the s3Key the file lands at. PUT the raw file bytes to that URL, then call the feature tool (e.g. upload-and-parse) with the s3Key instead of sending file data. Bytes never pass through the LLM."
-  },
-  {
     "name": "get-tasks",
     "description": "List compliance tasks\n\nList compliance tasks with assignments and status so teams can track audit readiness, evidence work, and control implementation."
   },
@@ -493,10 +493,6 @@ export const toolNames: Array<{ name: string; description: string }>= [
     "description": "Get all automations for a task\n\nGet all automations for a task in Comp AI. Create, version, run, and inspect automated evidence collection workflows attached to compliance tasks."
   },
   {
-    "name": "create-automation",
-    "description": "Create evidence automation\n\nCreate an automated evidence workflow attached to a task so Comp AI can collect recurring proof from connected systems."
-  },
-  {
     "name": "get-automation",
     "description": "Get automation details\n\nGet automation details in Comp AI. Create, version, run, and inspect automated evidence collection workflows attached to compliance tasks."
   },
@@ -515,10 +511,6 @@ export const toolNames: Array<{ name: string; description: string }>= [
   {
     "name": "get-automation-versions",
     "description": "Get all versions for an automation\n\nGet all versions for an automation in Comp AI. Create, version, run, and inspect automated evidence collection workflows attached to compliance tasks."
-  },
-  {
-    "name": "create-version",
-    "description": "Create a published version record for an automation\n\nCreate a published version record for an automation in Comp AI. Create, version, run, and inspect automated evidence collection workflows attached to compliance tasks."
   },
   {
     "name": "get-task-automation-runs",
@@ -885,6 +877,10 @@ export const toolNames: Array<{ name: string; description: string }>= [
     "description": "Ensure SOA configuration and document exist\n\nEnsure SOA configuration and document exist in Comp AI. Create, auto-fill, review, approve, and export ISO 27001 Statement of Applicability documents."
   },
   {
+    "name": "get-setup",
+    "description": "Read SOA configuration and document without creating either\n\nRead SOA configuration and document without creating either in Comp AI. Create, auto-fill, review, approve, and export ISO 27001 Statement of Applicability documents."
+  },
+  {
     "name": "approve-document",
     "description": "Approve a SOA document\n\nApprove a SOA document in Comp AI. Create, auto-fill, review, approve, and export ISO 27001 Statement of Applicability documents."
   },
@@ -1041,12 +1037,24 @@ export const toolNames: Array<{ name: string; description: string }>= [
     "description": "Set the employee sync provider\n\nSet the employee sync provider in Comp AI. Connect vendor systems, configure OAuth apps, run compliance checks, sync employees, manage variables, and collect automated evidence."
   },
   {
+    "name": "get-device-sync-provider",
+    "description": "Get the currently configured device sync provider\n\nGet the currently configured device sync provider in Comp AI. Connect vendor systems, configure OAuth apps, run compliance checks, sync employees, manage variables, and collect automated evidence."
+  },
+  {
+    "name": "set-device-sync-provider",
+    "description": "Set the device sync provider\n\nSet the device sync provider in Comp AI. Connect vendor systems, configure OAuth apps, run compliance checks, sync employees, manage variables, and collect automated evidence."
+  },
+  {
     "name": "get-available-sync-providers",
-    "description": "List employee sync providers available to the org\n\nList employee sync providers available to the org in Comp AI. Connect vendor systems, configure OAuth apps, run compliance checks, sync employees, manage variables, and collect automated evidence."
+    "description": "List sync providers available to the org\n\nList sync providers available to the org in Comp AI. Connect vendor systems, configure OAuth apps, run compliance checks, sync employees, manage variables, and collect automated evidence."
   },
   {
     "name": "sync-dynamic-provider-employees",
     "description": "Sync employees for a dynamic provider\n\nSync employees for a dynamic provider in Comp AI. Connect vendor systems, configure OAuth apps, run compliance checks, sync employees, manage variables, and collect automated evidence."
+  },
+  {
+    "name": "sync-dynamic-provider-devices",
+    "description": "Sync devices for a dynamic provider\n\nSync devices for a dynamic provider in Comp AI. Connect vendor systems, configure OAuth apps, run compliance checks, sync employees, manage variables, and collect automated evidence."
   },
   {
     "name": "get-activity",
@@ -1230,7 +1238,7 @@ export const toolNames: Array<{ name: string; description: string }>= [
   },
   {
     "name": "upload-submission",
-    "description": "Upload a file as an evidence submission\n\nUpload a file as an evidence submission in Comp AI. Collect, review, upload, and export structured evidence submissions for compliance tasks and document requirements."
+    "description": "Upload a file as an evidence submission\n\nUpload a PDF or image file and create a submission for the given form type, bypassing form-specific validation. Accepts session, API key, or service token auth. For API key / service token callers without an explicit user attribution, the."
   },
   {
     "name": "review-submission",

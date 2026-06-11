@@ -1,5 +1,3 @@
-import { Departments } from '@db';
-
 const DEFAULT_THRESHOLD = 0.65;
 const DEFAULT_TOP_K = 5;
 const DEFAULT_DEPARTMENT_BOOST = 0.05;
@@ -7,11 +5,11 @@ const DEFAULT_DEPARTMENT_BOOST = 0.05;
 export interface Candidate {
   id: string;
   score: number; // raw cosine similarity from the vector store
-  department?: Departments;
+  department?: string;
 }
 
 export interface LinkSuggestionsOptions {
-  source: { department?: Departments };
+  source: { department?: string };
   candidates: Candidate[];
   threshold?: number;
   topK?: number;
@@ -39,10 +37,10 @@ export function linkSuggestions({
   if (candidates.length === 0) return [];
 
   const sourceDept = source.department;
-  const shouldBoost = (candidateDept?: Departments) =>
+  const shouldBoost = (candidateDept?: string) =>
     sourceDept !== undefined &&
     candidateDept !== undefined &&
-    candidateDept !== Departments.none &&
+    candidateDept !== 'none' &&
     sourceDept === candidateDept;
 
   const boosted: LinkSuggestion[] = candidates.map((c) => ({

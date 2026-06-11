@@ -1,5 +1,5 @@
-import { render, screen } from '@testing-library/react';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   setMockPermissions,
   mockHasPermission,
@@ -35,9 +35,43 @@ vi.mock('./TaskList', () => ({
   TaskList: () => <div data-testid="task-list" />,
 }));
 
-// Mock evidence download
+// Mock evidence download (bulk export is triggered as a background job)
+const mockTriggerBulkEvidenceExport = vi.fn();
 vi.mock('@/lib/evidence-download', () => ({
-  downloadAllEvidenceZip: vi.fn(),
+  triggerBulkEvidenceExport: (args: { includeJson?: boolean }) =>
+    mockTriggerBulkEvidenceExport(args),
+}));
+
+// Capture useRealtimeRun's onComplete so tests can simulate a finished run.
+const mockRealtime: {
+  onComplete?: (
+    run: {
+      status?: string;
+      output?: { downloadUrl?: string } | null;
+      metadata?: Record<string, unknown>;
+    },
+    err?: Error,
+  ) => void;
+} = {};
+vi.mock('@trigger.dev/react-hooks', () => ({
+  useRealtimeRun: (
+    _runId: string,
+    options: { onComplete?: typeof mockRealtime.onComplete },
+  ) => {
+    mockRealtime.onComplete = options.onComplete;
+    return { run: undefined };
+  },
+}));
+
+const mockToastSuccess = vi.fn();
+const mockToastError = vi.fn();
+const mockToastInfo = vi.fn();
+vi.mock('sonner', () => ({
+  toast: {
+    success: (msg: string) => mockToastSuccess(msg),
+    error: (msg: string) => mockToastError(msg),
+    info: (msg: string) => mockToastInfo(msg),
+  },
 }));
 
 // Mock UpdateOrganizationEvidenceApproval
@@ -162,5 +196,76 @@ describe('TasksPageClient permission gating', () => {
     render(<TasksPageClient {...defaultProps} />);
 
     expect(screen.getByTestId('task-list')).toBeInTheDocument();
+  });
+});
+
+describe('TasksPageClient evidence export', () => {
+  const exportProps = { ...defaultProps, hasEvidenceExportAccess: true };
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockRealtime.onComplete = undefined;
+    setMockPermissions({});
+    mockTriggerBulkEvidenceExport.mockResolvedValue({
+      runId: 'run_1',
+      publicAccessToken: 'tok_1',
+    });
+    vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {});
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  async function startExport() {
+    fireEvent.click(screen.getByRole('button', { name: 'Export' }));
+    await waitFor(() => expect(mockToastInfo).toHaveBeenCalled());
+  }
+
+  it('downloads and toasts success when the run completes with a URL', async () => {
+    const clickSpy = vi.spyOn(HTMLAnchorElement.prototype, 'click');
+    render(<TasksPageClient {...exportProps} />);
+    await startExport();
+
+    act(() => {
+      mockRealtime.onComplete?.({
+        status: 'COMPLETED',
+        output: { downloadUrl: 'https://example.com/e.zip' },
+      });
+    });
+
+    expect(clickSpy).toHaveBeenCalledTimes(1);
+    expect(mockToastSuccess).toHaveBeenCalledWith(
+      'Evidence package downloaded successfully',
+    );
+    expect(mockToastError).not.toHaveBeenCalled();
+  });
+
+  it('toasts an error when the run completes without a download URL', async () => {
+    render(<TasksPageClient {...exportProps} />);
+    await startExport();
+
+    act(() => {
+      mockRealtime.onComplete?.({ status: 'COMPLETED', output: null, metadata: {} });
+    });
+
+    expect(mockToastError).toHaveBeenCalledWith(
+      'Export completed but download link was not available.',
+    );
+    expect(mockToastSuccess).not.toHaveBeenCalled();
+  });
+
+  it('toasts a failure error when the run does not complete cleanly', async () => {
+    render(<TasksPageClient {...exportProps} />);
+    await startExport();
+
+    act(() => {
+      mockRealtime.onComplete?.({ status: 'FAILED' });
+    });
+
+    expect(mockToastError).toHaveBeenCalledWith(
+      'Evidence export failed. Please try again.',
+    );
+    expect(mockToastSuccess).not.toHaveBeenCalled();
   });
 });

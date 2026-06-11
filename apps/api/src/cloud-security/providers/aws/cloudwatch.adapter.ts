@@ -87,6 +87,24 @@ const CIS_CHECKS: CisCheck[] = [
   },
 ];
 
+/**
+ * Derive the bare CloudWatch Logs log-group NAME from a CloudWatchLogsLogGroupArn.
+ * e.g. "arn:aws:logs:us-east-1:123456789012:log-group:aws-cloudtrail-logs-xyz:*"
+ *   -> "aws-cloudtrail-logs-xyz"
+ * Log-group names cannot contain ":", so the trailing ":*" (all log streams) suffix
+ * is stripped safely. Returns null when the ARN is missing or malformed.
+ */
+export function logGroupNameFromArn(arn: string | undefined): string | null {
+  if (!arn) return null;
+  const marker = ':log-group:';
+  const idx = arn.indexOf(marker);
+  if (idx === -1) return null;
+  let name = arn.slice(idx + marker.length);
+  if (name.endsWith(':*')) name = name.slice(0, -2);
+  name = name.trim();
+  return name.length > 0 ? name : null;
+}
+
 export class CloudWatchAdapter implements AwsServiceAdapter {
   readonly serviceId = 'cloudwatch';
   readonly isGlobal = false;
@@ -103,16 +121,24 @@ export class CloudWatchAdapter implements AwsServiceAdapter {
     const cwClient = new CloudWatchClient({ credentials, region });
     const findings: SecurityFinding[] = [];
 
-    // Prerequisite: check if any CloudTrail trail has CloudWatch Logs integration
+    // Prerequisite: find a CloudTrail trail that delivers to CloudWatch Logs, and
+    // capture the exact log group so the metric-filter auto-fix can target it.
+    // PutMetricFilter requires a real logGroupName — the AI cannot guess it, so we
+    // resolve it here (zero extra AWS calls: DescribeTrails is already invoked)
+    // and surface it in each finding's remediation text + evidence.
+    let cloudWatchLogGroupName: string | null = null;
     try {
       const ctClient = new CloudTrailClient({ credentials, region });
       const trailsResp = await ctClient.send(new DescribeTrailsCommand({}));
       const trails = trailsResp.trailList ?? [];
-      const hasCloudWatchIntegration = trails.some(
+      const integratedTrail = trails.find(
         (trail) => !!trail.CloudWatchLogsLogGroupArn,
       );
+      cloudWatchLogGroupName = logGroupNameFromArn(
+        integratedTrail?.CloudWatchLogsLogGroupArn,
+      );
 
-      if (!hasCloudWatchIntegration) {
+      if (!integratedTrail) {
         return [
           this.makeFinding({
             checkId: 'cloudwatch-no-cloudtrail-integration',
@@ -146,14 +172,24 @@ export class CloudWatchAdapter implements AwsServiceAdapter {
         });
 
         if (!matchingFilter) {
+          // Give the auto-fix the concrete log group to attach the filter to. The
+          // generic phrase "the CloudTrail log group" forced the AI to guess and
+          // fail ("could not determine which CloudTrail log group ...").
+          const logGroupClause = cloudWatchLogGroupName
+            ? `logGroupName set to "${cloudWatchLogGroupName}"`
+            : `logGroupName set to your CloudTrail trail's CloudWatch Logs log group`;
           findings.push(
             this.makeFinding({
               checkId: check.id,
               title: `${check.name} — metric filter missing`,
               description: `No CloudWatch metric filter found for CIS ${check.id} (${check.name}). A metric filter matching keywords [${check.keywords.join(', ')}] is required.`,
               severity: 'medium',
-              remediation: `Step 1: Create a CloudWatch Logs metric filter using logs:PutMetricFilterCommand with logGroupName set to the CloudTrail log group, filterName set to "compai-cis-${check.id}-${check.name.toLowerCase().replace(/\s+/g, '-')}", filterPattern set to the required CIS pattern for ${check.name} matching keywords [${check.keywords.join(', ')}], and metricTransformations containing metricName, metricNamespace "CloudTrailMetrics", and metricValue "1". Step 2: Create an SNS topic using sns:CreateTopicCommand with Name "compai-cis-alerts" if one does not already exist. Step 3: Create a CloudWatch alarm using cloudwatch:PutMetricAlarmCommand with AlarmName "compai-cis-${check.id}-alarm", MetricName matching the filter metric, Namespace "CloudTrailMetrics", Statistic "Sum", Period 300, EvaluationPeriods 1, Threshold 1, ComparisonOperator "GreaterThanOrEqualToThreshold", and AlarmActions set to the SNS topic ARN. Rollback by deleting the alarm with cloudwatch:DeleteAlarmsCommand, deleting the metric filter with logs:DeleteMetricFilterCommand, and optionally deleting the SNS topic with sns:DeleteTopicCommand.`,
-              evidence: { keywords: check.keywords, filterFound: false },
+              remediation: `Step 1: Create a CloudWatch Logs metric filter using logs:PutMetricFilterCommand with ${logGroupClause}, filterName set to "compai-cis-${check.id}-${check.name.toLowerCase().replace(/\s+/g, '-')}", filterPattern set to the required CIS pattern for ${check.name} matching keywords [${check.keywords.join(', ')}], and metricTransformations containing metricName, metricNamespace "CloudTrailMetrics", and metricValue "1". Step 2: Create an SNS topic using sns:CreateTopicCommand with Name "compai-cis-alerts" if one does not already exist. Step 3: Create a CloudWatch alarm using cloudwatch:PutMetricAlarmCommand with AlarmName "compai-cis-${check.id}-alarm", MetricName matching the filter metric, Namespace "CloudTrailMetrics", Statistic "Sum", Period 300, EvaluationPeriods 1, Threshold 1, ComparisonOperator "GreaterThanOrEqualToThreshold", and AlarmActions set to the SNS topic ARN. Rollback by deleting the alarm with cloudwatch:DeleteAlarmsCommand, deleting the metric filter with logs:DeleteMetricFilterCommand, and optionally deleting the SNS topic with sns:DeleteTopicCommand.`,
+              evidence: {
+                keywords: check.keywords,
+                filterFound: false,
+                cloudWatchLogGroupName: cloudWatchLogGroupName ?? undefined,
+              },
               passed: false,
             }),
           );
@@ -165,15 +201,23 @@ export class CloudWatchAdapter implements AwsServiceAdapter {
           matchingFilter.metricTransformations?.[0]?.metricName;
 
         if (!metricName) {
+          // An existing filter is updated in place — target its own log group
+          // (fall back to the trail's resolved log group if unavailable).
+          const updateLogGroup =
+            matchingFilter.logGroupName ?? cloudWatchLogGroupName;
+          const updateLogGroupClause = updateLogGroup
+            ? `logGroupName set to "${updateLogGroup}"`
+            : `logGroupName set to the metric filter's existing log group`;
           findings.push(
             this.makeFinding({
               checkId: check.id,
               title: `${check.name} — no metric transformation`,
               description: `Metric filter for CIS ${check.id} (${check.name}) exists but has no metric transformation configured.`,
               severity: 'medium',
-              remediation: `Step 1: Update the existing metric filter using logs:PutMetricFilterCommand with logGroupName, filterName set to the existing filter name, filterPattern preserved, and metricTransformations containing metricName "compai-cis-${check.id}-metric", metricNamespace "CloudTrailMetrics", and metricValue "1". Step 2: Create an SNS topic using sns:CreateTopicCommand with Name "compai-cis-alerts" if one does not already exist. Step 3: Create a CloudWatch alarm using cloudwatch:PutMetricAlarmCommand with AlarmName "compai-cis-${check.id}-alarm", MetricName "compai-cis-${check.id}-metric", Namespace "CloudTrailMetrics", Statistic "Sum", Period 300, EvaluationPeriods 1, Threshold 1, ComparisonOperator "GreaterThanOrEqualToThreshold", and AlarmActions set to the SNS topic ARN. Rollback by deleting the alarm with cloudwatch:DeleteAlarmsCommand and removing the metric transformation by calling logs:PutMetricFilterCommand with the original filter settings.`,
+              remediation: `Step 1: Update the existing metric filter using logs:PutMetricFilterCommand with ${updateLogGroupClause}, filterName set to the existing filter name, filterPattern preserved, and metricTransformations containing metricName "compai-cis-${check.id}-metric", metricNamespace "CloudTrailMetrics", and metricValue "1". Step 2: Create an SNS topic using sns:CreateTopicCommand with Name "compai-cis-alerts" if one does not already exist. Step 3: Create a CloudWatch alarm using cloudwatch:PutMetricAlarmCommand with AlarmName "compai-cis-${check.id}-alarm", MetricName "compai-cis-${check.id}-metric", Namespace "CloudTrailMetrics", Statistic "Sum", Period 300, EvaluationPeriods 1, Threshold 1, ComparisonOperator "GreaterThanOrEqualToThreshold", and AlarmActions set to the SNS topic ARN. Rollback by deleting the alarm with cloudwatch:DeleteAlarmsCommand and removing the metric transformation by calling logs:PutMetricFilterCommand with the original filter settings.`,
               evidence: {
                 filterName: matchingFilter.filterName,
+                logGroupName: updateLogGroup ?? undefined,
                 metricTransformations: null,
               },
               passed: false,
@@ -231,12 +275,14 @@ export class CloudWatchAdapter implements AwsServiceAdapter {
     {
       filterName?: string;
       filterPattern?: string;
+      logGroupName?: string;
       metricTransformations?: { metricName?: string }[];
     }[]
   > {
     const filters: {
       filterName?: string;
       filterPattern?: string;
+      logGroupName?: string;
       metricTransformations?: { metricName?: string }[];
     }[] = [];
 
@@ -251,6 +297,7 @@ export class CloudWatchAdapter implements AwsServiceAdapter {
         filters.push({
           filterName: filter.filterName,
           filterPattern: filter.filterPattern,
+          logGroupName: filter.logGroupName,
           metricTransformations: filter.metricTransformations?.map((t) => ({
             metricName: t.metricName,
           })),

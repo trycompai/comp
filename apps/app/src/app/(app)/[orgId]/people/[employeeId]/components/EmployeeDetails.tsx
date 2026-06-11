@@ -1,8 +1,9 @@
 'use client';
 
+import { DepartmentSelect } from '@/components/DepartmentSelect';
 import { useApi } from '@/hooks/use-api';
 import { Popover, PopoverContent, PopoverTrigger } from '@trycompai/ui/popover';
-import type { Departments, Member, User } from '@db';
+import type { Member, User } from '@db';
 import {
   Button,
   Calendar,
@@ -22,16 +23,6 @@ import { Calendar as CalendarIcon } from '@trycompai/design-system/icons';
 import { format } from 'date-fns';
 import { useMemo, useState } from 'react';
 import { toast } from 'sonner';
-
-const DEPARTMENTS: { value: string; label: string }[] = [
-  { value: 'admin', label: 'Admin' },
-  { value: 'gov', label: 'Governance' },
-  { value: 'hr', label: 'HR' },
-  { value: 'it', label: 'IT' },
-  { value: 'itsm', label: 'IT Service Management' },
-  { value: 'qms', label: 'Quality Management' },
-  { value: 'none', label: 'None' },
-];
 
 const STATUS_OPTIONS = [
   { value: 'active', label: 'Active' },
@@ -187,24 +178,11 @@ export const EmployeeDetails = ({
             {/* Department Field */}
             <Stack gap="sm">
               <Label htmlFor="department">Department</Label>
-              <Select
+              <DepartmentSelect
                 value={department}
+                onChange={setDepartment}
                 disabled={!canEdit}
-                onValueChange={(value) => value && setDepartment(value)}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select department">
-                    {DEPARTMENTS.find((d) => d.value === department)?.label ?? 'None'}
-                  </SelectValue>
-                </SelectTrigger>
-                <SelectContent>
-                  {DEPARTMENTS.map((dept) => (
-                    <SelectItem key={dept.value} value={dept.value}>
-                      {dept.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              />
             </Stack>
 
             {/* Status Field */}

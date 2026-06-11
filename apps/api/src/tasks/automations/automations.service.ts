@@ -1,5 +1,10 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
-import { db } from '@db';
+import {
+  ConflictException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
+import { db, Prisma } from '@db';
+import { CreateVersionDto } from './dto/create-version.dto';
 import { UpdateAutomationDto } from './dto/update-automation.dto';
 
 @Injectable()
@@ -135,26 +140,40 @@ export class AutomationsService {
     };
   }
 
-  async createVersion(
-    automationId: string,
-    data: { version: number; scriptKey: string; changelog?: string },
-  ) {
-    const [version] = await db.$transaction([
-      db.evidenceAutomationVersion.create({
-        data: {
-          evidenceAutomationId: automationId,
-          version: data.version,
-          scriptKey: data.scriptKey,
-          changelog: data.changelog,
-        },
-      }),
-      // Enable automation on publish if not already enabled
-      db.evidenceAutomation.update({
-        where: { id: automationId },
-        data: { isEnabled: true },
-      }),
-    ]);
-    return { success: true, version };
+  async createVersion(automationId: string, data: CreateVersionDto) {
+    try {
+      const [version] = await db.$transaction([
+        db.evidenceAutomationVersion.create({
+          data: {
+            evidenceAutomationId: automationId,
+            version: data.version,
+            scriptKey: data.scriptKey,
+            changelog: data.changelog,
+          },
+        }),
+        // Enable automation on publish if not already enabled
+        db.evidenceAutomation.update({
+          where: { id: automationId },
+          data: { isEnabled: true },
+        }),
+      ]);
+      return { success: true, version };
+    } catch (err) {
+      if (err instanceof Prisma.PrismaClientKnownRequestError) {
+        // Duplicate (evidenceAutomationId, version) — version already published.
+        if (err.code === 'P2002') {
+          throw new ConflictException(
+            `Version ${data.version} already exists for this automation`,
+          );
+        }
+        // Automation row missing — FK on create (P2003) or update target gone
+        // (P2025). Surface a clean 404 instead of a raw 500.
+        if (err.code === 'P2003' || err.code === 'P2025') {
+          throw new NotFoundException(`Automation ${automationId} not found`);
+        }
+      }
+      throw err;
+    }
   }
 
   async findRunsByAutomationId(automationId: string) {

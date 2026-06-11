@@ -130,6 +130,7 @@ const SERVICE_NAMES: Record<string, string> = {
   bigquery: 'BigQuery',
   pubsub: 'Pub/Sub',
   'cloud-armor': 'Cloud Armor',
+  'vertex-ai': 'Vertex AI',
   'security-command-center': 'Security Command Center',
 };
 
@@ -151,7 +152,39 @@ const GCP_API_TO_SERVICE: Record<string, string[]> = {
   'networksecurity.googleapis.com': ['cloud-armor'],
   'iam.googleapis.com': ['iam'],
   'iamcredentials.googleapis.com': ['iam'],
+  'aiplatform.googleapis.com': ['vertex-ai'],
+  'notebooks.googleapis.com': ['vertex-ai'],
 };
+
+/**
+ * GCP resource-type hosts that map to a Cloud Tests service, checked BEFORE the
+ * finding category. SCC names AI detector categories inconsistently across
+ * resources (Dataset/Model/Endpoint/Workbench, CMEK/access/policy, etc.), so
+ * grouping by the authoritative resource type is far more robust than trying to
+ * enumerate every category string. Any finding on an `aiplatform`/`notebooks`
+ * resource is grouped under "Vertex AI".
+ */
+const RESOURCE_TYPE_HOST_TO_SERVICE: Array<[string, string]> = [
+  ['aiplatform.googleapis.com', 'vertex-ai'],
+  ['notebooks.googleapis.com', 'vertex-ai'],
+];
+
+/**
+ * Resolve the Cloud Tests service ID for an SCC finding. Prefer the resource
+ * type (authoritative) over the category, then fall back to the generic
+ * Security Command Center bucket so nothing is ever dropped.
+ */
+export function resolveGcpServiceId(
+  category: string,
+  resourceType: string | undefined,
+  resourceName: string | undefined,
+): string {
+  const haystack = `${resourceType ?? ''} ${resourceName ?? ''}`;
+  for (const [host, service] of RESOURCE_TYPE_HOST_TO_SERVICE) {
+    if (haystack.includes(host)) return service;
+  }
+  return CATEGORY_TO_SERVICE[category] ?? 'security-command-center';
+}
 
 export type GcpSetupStepId =
   | 'enable_security_command_center_api'
@@ -1359,8 +1392,11 @@ export class GCPSecurityService {
             if (seenIds.has(f.name)) continue;
             seenIds.add(f.name);
 
-            const serviceId =
-              CATEGORY_TO_SERVICE[f.category] ?? 'security-command-center';
+            const serviceId = resolveGcpServiceId(
+              f.category,
+              result.resource?.type,
+              f.resourceName,
+            );
             if (enabledServiceSet && !enabledServiceSet.has(serviceId)) {
               continue;
             }

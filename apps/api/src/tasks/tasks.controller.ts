@@ -40,6 +40,31 @@ import {
   TaskResponseDto,
 } from './dto/task-responses.dto';
 import { TasksService } from './tasks.service';
+import { DEPARTMENT_MAX_LENGTH } from '../policies/dto/create-policy.dto';
+
+/**
+ * Normalises a free-form department value from a request body: trims whitespace,
+ * enforces the shared max length, and rejects empty strings (use `null` to clear).
+ */
+function normalizeDepartment(
+  value: string | null | undefined,
+): string | null | undefined {
+  if (value === undefined) return undefined;
+  if (value === null) return null;
+  if (typeof value !== 'string') {
+    throw new BadRequestException('department must be a string');
+  }
+  const trimmed = value.trim();
+  if (trimmed.length === 0) {
+    throw new BadRequestException('department must not be empty (use null to clear)');
+  }
+  if (trimmed.length > DEPARTMENT_MAX_LENGTH) {
+    throw new BadRequestException(
+      `department must be at most ${DEPARTMENT_MAX_LENGTH} characters`,
+    );
+  }
+  return trimmed;
+}
 
 @ApiTags('Tasks')
 @ApiExtraModels(TaskResponseDto, AttachmentResponseDto)
@@ -180,9 +205,11 @@ export class TasksController {
         },
         department: {
           type: 'string',
-          enum: ['none', 'admin', 'gov', 'hr', 'it', 'itsm', 'qms'],
           nullable: true,
           example: 'it',
+          maxLength: 64,
+          description:
+            'Built-in values: none, admin, gov, hr, it, itsm, qms. Custom department names are also accepted.',
         },
         controlIds: {
           type: 'array',
@@ -235,7 +262,12 @@ export class TasksController {
       throw new BadRequestException('title and description are required');
     }
 
-    return await this.tasksService.createTask(organizationId, body);
+    const department = normalizeDepartment(body.department);
+
+    return await this.tasksService.createTask(organizationId, {
+      ...body,
+      ...(department !== undefined && { department }),
+    });
   }
 
   @Patch('bulk')
@@ -811,8 +843,10 @@ export class TasksController {
         },
         department: {
           type: 'string',
-          enum: ['none', 'admin', 'gov', 'hr', 'it', 'itsm', 'qms'],
           example: 'it',
+          maxLength: 64,
+          description:
+            'Built-in values: none, admin, gov, hr, it, itsm, qms. Custom department names are also accepted.',
         },
         reviewDate: {
           type: 'string',
@@ -858,7 +892,7 @@ export class TasksController {
       approverId?: string | null;
       frequency?: string;
       integrationScheduleFrequency?: string;
-      department?: string;
+      department?: string | null;
       reviewDate?: string;
       notRelevantJustification?: string;
     },
@@ -868,6 +902,8 @@ export class TasksController {
       organizationId,
       'User ID is required. Task updates require authenticated user session.',
     );
+
+    const normalizedDepartment = normalizeDepartment(body.department);
 
     let parsedReviewDate: Date | null | undefined;
     if (body.reviewDate !== undefined) {
@@ -897,7 +933,7 @@ export class TasksController {
         integrationScheduleFrequency: body.integrationScheduleFrequency as
           | TaskFrequency
           | undefined,
-        department: body.department,
+        department: normalizedDepartment,
         reviewDate: parsedReviewDate,
         notRelevantJustification: body.notRelevantJustification,
       },

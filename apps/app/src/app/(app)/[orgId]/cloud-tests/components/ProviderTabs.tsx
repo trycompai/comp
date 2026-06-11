@@ -279,6 +279,15 @@ export function ProviderTabs({
       {providerTypes.map((providerType) => {
         const connections = providerGroups[providerType] || [];
         const activeConnId = activeConnectionTabs[providerType] || connections[0]?.id;
+        // The connection selector also filters the findings list, so label it
+        // with the provider's term for a connection (AWS account, Azure
+        // subscription, etc.) to make that clear.
+        const connectionNoun =
+          providerType === 'aws'
+            ? 'Account'
+            : providerType === 'azure'
+              ? 'Subscription'
+              : 'Connection';
 
         if (connections.length === 0) {
           return <TabsContent key={providerType} value={providerType} />;
@@ -292,27 +301,32 @@ export function ProviderTabs({
                 onValueChange={(value) => onConnectionTabChange(providerType, value)}
               >
                 <div className="mb-3 flex items-center justify-between">
-                  <Select
-                    value={activeConnId}
-                    onValueChange={(value) => {
-                      if (value) onConnectionTabChange(providerType, value);
-                    }}
-                  >
-                    <div className="w-[240px]">
-                      <SelectTrigger size="sm">
-                        {connections.find((c) => c.id === activeConnId)?.displayName
-                          || connections.find((c) => c.id === activeConnId)?.name
-                          || 'Select connection'}
-                      </SelectTrigger>
-                    </div>
-                    <SelectContent>
-                      {connections.map((connection) => (
-                        <SelectItem key={connection.id} value={connection.id}>
-                          {connection.displayName || connection.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <div className="flex items-center gap-2">
+                    <span className="shrink-0 text-xs font-medium text-muted-foreground">
+                      {connectionNoun}:
+                    </span>
+                    <Select
+                      value={activeConnId}
+                      onValueChange={(value) => {
+                        if (value) onConnectionTabChange(providerType, value);
+                      }}
+                    >
+                      <div className="w-[240px]">
+                        <SelectTrigger size="sm">
+                          {connections.find((c) => c.id === activeConnId)?.displayName
+                            || connections.find((c) => c.id === activeConnId)?.name
+                            || `Select ${connectionNoun.toLowerCase()}`}
+                        </SelectTrigger>
+                      </div>
+                      <SelectContent>
+                        {connections.map((connection) => (
+                          <SelectItem key={connection.id} value={connection.id}>
+                            {connection.displayName || connection.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
                   {/* Only show "Add connection" button for providers that support multiple connections */}
                   {canAddConnection !== false && connections.some((c) => c.supportsMultipleConnections) && (
                     <Button
