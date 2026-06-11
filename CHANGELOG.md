@@ -1,3 +1,10 @@
+## [3.78.1](https://github.com/trycompai/comp/compare/v3.78.0...v3.78.1) (2026-06-11)
+
+
+### Bug Fixes
+
+* **integration-platform:** skip GCP projects whose service API is disabled instead of a false permission finding ([e554269](https://github.com/trycompai/comp/commit/e554269c02f6432473e8e0bf168dd2d475f6311f))
+
 # [3.78.0](https://github.com/trycompai/comp/compare/v3.77.0...v3.78.0) (2026-06-11)
 
 
