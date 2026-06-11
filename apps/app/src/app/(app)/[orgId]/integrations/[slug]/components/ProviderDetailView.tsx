@@ -8,6 +8,7 @@ import {
   type ConnectionListItem,
   type IntegrationProvider,
 } from '@/hooks/use-integration-platform';
+import { usePermissions } from '@/hooks/use-permissions';
 import { api } from '@/lib/api-client';
 import { CLOUD_RECONNECT_CUTOFF_LABEL, requiresCloudReconnect } from '@/lib/cloud-reconnect-policy';
 import { Breadcrumb, Button, Stack } from '@trycompai/design-system';
@@ -42,6 +43,8 @@ export function ProviderDetailView({
   const searchParams = useSearchParams();
   const { connections: allConnections, refresh: refreshConnections } = useIntegrationConnections();
   const { startOAuth } = useIntegrationMutations();
+  const { hasPermission } = usePermissions();
+  const canCreateConnection = hasPermission('integration', 'create');
   const [showAddAccount, setShowAddAccount] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [reconnectDialogOpen, setReconnectDialogOpen] = useState(false);
@@ -240,6 +243,7 @@ export function ProviderDetailView({
         <IntegrationProviderHero
           provider={provider}
           isConnected={isConnected}
+          canCreateConnection={canCreateConnection}
           activeConnections={activeConnections}
           selectedConnection={selectedConnection}
           onSelectConnection={(id) => setSelectedConnectionId(id)}

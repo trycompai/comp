@@ -12,15 +12,14 @@ import {
 } from './s3-buckets';
 import {
   awsAccountIdFromCtx,
+  remediationForReadFailure,
   resolveAwsSessionOrFail,
+  toReadFailure,
   type CheckOutcome,
   emitOutcomes,
 } from './shared';
 
 export type { BpaFlags, S3BucketInfo } from './s3-buckets';
-
-const TRANSIENT_READ_REMEDIATION =
-  'The read failed with the error shown in the evidence — not a missing permission. Re-run the check; if it keeps failing, contact support.';
 
 const FLAG_KEYS: Array<keyof BpaFlags> = [
   'blockPublicAcls',
@@ -42,7 +41,6 @@ export function evaluateS3Encryption(buckets: S3BucketInfo[]): CheckOutcome[] {
       // account pass with no findings). Only claim a missing permission when
       // the error actually was one — otherwise surface the real error.
       const failure = b.encryptionReadFailure;
-      const transient = failure !== undefined && !failure.denied;
       return {
         kind: 'fail',
         title: `Could not verify encryption: ${b.name}`,
@@ -52,9 +50,10 @@ export function evaluateS3Encryption(buckets: S3BucketInfo[]): CheckOutcome[] {
         resourceType: 'aws-s3-bucket',
         resourceId: b.name,
         severity: 'medium',
-        remediation: transient
-          ? TRANSIENT_READ_REMEDIATION
-          : 'Grant s3:GetEncryptionConfiguration to the integration role so default encryption can be verified, then re-run.',
+        remediation: remediationForReadFailure(
+          failure,
+          'Grant s3:GetEncryptionConfiguration to the integration role so default encryption can be verified, then re-run.',
+        ),
         evidence: {
           bucket: b.name,
           encryptionDetermined: false,
@@ -91,7 +90,6 @@ export function evaluateS3PublicAccess(
   return buckets.map((b): CheckOutcome => {
     if (!b.publicAccessDetermined) {
       const failure = b.publicAccessReadFailure;
-      const transient = failure !== undefined && !failure.denied;
       return {
         kind: 'fail',
         title: `Could not verify public access: ${b.name}`,
@@ -101,9 +99,10 @@ export function evaluateS3PublicAccess(
         resourceType: 'aws-s3-bucket',
         resourceId: b.name,
         severity: 'medium',
-        remediation: transient
-          ? TRANSIENT_READ_REMEDIATION
-          : 'Grant s3:GetBucketPublicAccessBlock to the integration role so public-access settings can be verified, then re-run.',
+        remediation: remediationForReadFailure(
+          failure,
+          'Grant s3:GetBucketPublicAccessBlock to the integration role so public-access settings can be verified, then re-run.',
+        ),
         evidence: {
           bucket: b.name,
           publicAccessDetermined: false,
@@ -155,17 +154,22 @@ export const s3EncryptionCheck: IntegrationCheck = {
         clientForRegion,
       });
     } catch (err) {
-      ctx.fail({
-        title: 'Could not verify S3 encryption',
-        description:
-          'S3 buckets could not be listed, so default encryption could not be verified.',
-        resourceType: 'aws-account',
-        resourceId: 'account',
-        severity: 'medium',
-        remediation:
-          'Grant s3:ListAllMyBuckets (and s3:GetEncryptionConfiguration) to the integration role, then re-run the check.',
-        evidence: { error: err instanceof Error ? err.message : String(err) },
-      });
+      const failure = toReadFailure(err);
+      emitOutcomes(ctx, [
+        {
+          kind: 'fail',
+          title: 'Could not verify S3 encryption',
+          description: `S3 buckets could not be listed (${failure.error}), so default encryption could not be verified.`,
+          resourceType: 'aws-account',
+          resourceId: 'account',
+          severity: 'medium',
+          remediation: remediationForReadFailure(
+            failure,
+            'Grant s3:ListAllMyBuckets (and s3:GetEncryptionConfiguration) to the integration role, then re-run the check.',
+          ),
+          evidence: { readError: failure.error },
+        },
+      ]);
       return;
     }
     if (buckets.length === 0) return;
@@ -224,17 +228,22 @@ export const s3PublicAccessCheck: IntegrationCheck = {
         clientForRegion,
       });
     } catch (err) {
-      ctx.fail({
-        title: 'Could not verify S3 public access',
-        description:
-          'S3 buckets could not be listed, so Block Public Access could not be verified.',
-        resourceType: 'aws-account',
-        resourceId: 'account',
-        severity: 'medium',
-        remediation:
-          'Grant s3:ListAllMyBuckets (and s3:GetBucketPublicAccessBlock) to the integration role, then re-run the check.',
-        evidence: { error: err instanceof Error ? err.message : String(err) },
-      });
+      const failure = toReadFailure(err);
+      emitOutcomes(ctx, [
+        {
+          kind: 'fail',
+          title: 'Could not verify S3 public access',
+          description: `S3 buckets could not be listed (${failure.error}), so Block Public Access could not be verified.`,
+          resourceType: 'aws-account',
+          resourceId: 'account',
+          severity: 'medium',
+          remediation: remediationForReadFailure(
+            failure,
+            'Grant s3:ListAllMyBuckets (and s3:GetBucketPublicAccessBlock) to the integration role, then re-run the check.',
+          ),
+          evidence: { readError: failure.error },
+        },
+      ]);
       return;
     }
     if (buckets.length === 0) return;

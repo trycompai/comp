@@ -244,6 +244,7 @@ describe('TrustPortalSwitch permission gating', () => {
     },
     customLinks: [],
     vendors: [],
+    customFrameworks: [],
   };
 
   beforeEach(() => {

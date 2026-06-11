@@ -1,11 +1,12 @@
 import type { CheckContext } from '../../../types';
+import { remediationForReadFailure, toHttpReadFailure } from '../../http-read-failure';
 
 /**
  * Resolve which GCP projects a check should evaluate: the user-selected
  * `project_ids` variable if present, otherwise a bounded best-effort
- * detection of active projects. Returns [] when none can be resolved — the
- * check should then no-op (emit neither pass nor fail) rather than produce a
- * false pass.
+ * detection of active projects. Returns [] when none can be resolved; a
+ * discovery FAILURE emits an explicit "could not verify" finding first, so
+ * the mapped task never goes silently stale.
  */
 export async function resolveGcpProjectIds(ctx: CheckContext): Promise<string[]> {
   const selected = ctx.variables.project_ids;
@@ -54,8 +55,20 @@ export async function resolveGcpProjectIds(ctx: CheckContext): Promise<string[]>
     }
     return projectIds;
   } catch (err) {
-    ctx.warn('GCP project auto-discovery failed; checks will be skipped', {
-      error: err instanceof Error ? err.message : String(err),
+    // Surface the scope failure as an explicit finding — a silent [] would
+    // leave every mapped task stale with no signal anything went wrong.
+    const failure = toHttpReadFailure(err);
+    ctx.fail({
+      title: 'Could not verify GCP project scope',
+      description: `GCP projects could not be listed (${failure.error}), so nothing could be scanned.`,
+      resourceType: 'gcp-project',
+      resourceId: 'unknown',
+      severity: 'medium',
+      remediation: remediationForReadFailure(
+        failure,
+        'Grant resourcemanager.projects.get to the connection (or select projects in the integration settings), then re-run the check.',
+      ),
+      evidence: { readError: failure.error },
     });
     return [];
   }

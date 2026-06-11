@@ -1,6 +1,12 @@
 import { TASK_TEMPLATES } from '../../../task-mappings';
 import type { CheckContext, IntegrationCheck } from '../../../types';
-import { ARM_BASE, armListAllOrFail, resolveAzureSubscriptionId } from './shared';
+import {
+  combineReadFailures,
+  remediationForReadFailure,
+  toHttpReadFailure,
+  type ReadFailure,
+} from '../../http-read-failure';
+import { ARM_BASE, armListAllOrFail, resolveAzureSubscriptionIds } from './shared';
 
 interface RoleAssignment {
   properties: { roleDefinitionId: string; principalId: string; principalType: string };
@@ -60,16 +66,14 @@ function defIsPrivileged(def: RoleDefinition): boolean {
  * Role-based Access Controls. Flags excessive privileged assignments, wildcard
  * custom roles, and service principals holding privileged roles.
  */
-export const rbacLeastPrivilegeCheck: IntegrationCheck = {
-  id: 'azure-rbac-least-privilege',
-  name: 'Azure RBAC — least privilege',
-  description:
-    'Flags excessive privileged role assignments, custom roles with wildcard permissions, and service principals with privileged roles.',
-  service: 'entra-id',
-  taskMapping: TASK_TEMPLATES.rolebasedAccessControls,
-  run: async (ctx: CheckContext) => {
-    const sub = await resolveAzureSubscriptionId(ctx);
-    if (!sub) return;
+async function runRbacLeastPrivilegeForSubscription(
+  ctx: CheckContext,
+  sub: string,
+  // Shared across subscriptions: management-group/resource-group role
+  // definitions are tenant-level, so re-fetching them per subscription only
+  // burns budget.
+  resolvedDefs: Map<string, RoleDefinition>,
+): Promise<void> {
 
     const [assignments, definitions] = await Promise.all([
       armListAllOrFail<RoleAssignment>(
@@ -90,26 +94,38 @@ export const rbacLeastPrivilegeCheck: IntegrationCheck = {
     // Assignments can reference role definitions scoped to a management group or
     // resource group, which won't appear in the subscription-scope list above.
     // Resolve any missing definition directly so privileged principals aren't
-    // undercounted. Cache by id to avoid refetching shared definitions.
-    const resolvedDefs = new Map<string, RoleDefinition>();
+    // undercounted. The shared cross-subscription cache (resolvedDefs) only
+    // avoids refetching; the wildcard scan below must see ONLY definitions
+    // referenced by THIS subscription's assignments (subResolvedDefs), or a
+    // wildcard role from another subscription's loop would be re-reported here.
+    const resolveFailures: ReadFailure[] = [];
+    const subResolvedDefs = new Map<string, RoleDefinition>();
     const resolveDef = async (
       roleDefinitionId: string,
     ): Promise<RoleDefinition | null> => {
-      const cached = defMap.get(roleDefinitionId) ?? resolvedDefs.get(roleDefinitionId);
-      if (cached) return cached;
+      const own = defMap.get(roleDefinitionId);
+      if (own) return own;
+      const shared = resolvedDefs.get(roleDefinitionId);
+      if (shared) {
+        subResolvedDefs.set(roleDefinitionId, shared);
+        return shared;
+      }
       try {
         const def = await ctx.fetch<RoleDefinition>(
           `${roleDefinitionId}?api-version=2022-04-01`,
         );
         if (def?.properties) {
           resolvedDefs.set(roleDefinitionId, def);
+          subResolvedDefs.set(roleDefinitionId, def);
           return def;
         }
         return null;
       } catch (err) {
+        const failure = toHttpReadFailure(err);
+        resolveFailures.push(failure);
         ctx.warn('Failed to resolve Azure role definition for assignment', {
           roleDefinitionId,
-          error: err instanceof Error ? err.message : String(err),
+          error: failure.error,
         });
         return null;
       }
@@ -138,9 +154,15 @@ export const rbacLeastPrivilegeCheck: IntegrationCheck = {
         resourceType: 'azure-subscription',
         resourceId: sub,
         severity: 'medium',
-        remediation:
+        remediation: remediationForReadFailure(
+          combineReadFailures(resolveFailures),
           'Ensure the integration principal has read access to all role definitions in scope (including management-group and resource-group scopes), then re-run the check.',
-        evidence: { unresolvedAssignments },
+        ),
+        evidence: {
+          unresolvedAssignments,
+          // first few real errors so the cause is visible without log digging
+          readErrors: resolveFailures.slice(0, 3).map((f) => f.error),
+        },
       });
     }
 
@@ -191,7 +213,7 @@ export const rbacLeastPrivilegeCheck: IntegrationCheck = {
     const allDefs = new Map<string, RoleDefinition>(
       definitions.map((d) => [d.id, d]),
     );
-    for (const [id, def] of resolvedDefs) allDefs.set(id, def);
+    for (const [id, def] of subResolvedDefs) allDefs.set(id, def);
 
     const wildcardRoles = [...allDefs.values()].filter(
       (d) =>
@@ -235,6 +257,21 @@ export const rbacLeastPrivilegeCheck: IntegrationCheck = {
           assignmentsEvaluated: assignments.length,
         },
       });
+    }
+}
+
+export const rbacLeastPrivilegeCheck: IntegrationCheck = {
+  id: 'azure-rbac-least-privilege',
+  name: 'Azure RBAC — least privilege',
+  description:
+    'Flags excessive privileged role assignments, custom roles with wildcard permissions, and service principals with privileged roles.',
+  service: 'entra-id',
+  taskMapping: TASK_TEMPLATES.rolebasedAccessControls,
+  run: async (ctx: CheckContext) => {
+    const subs = await resolveAzureSubscriptionIds(ctx);
+    const resolvedDefs = new Map<string, RoleDefinition>();
+    for (const sub of subs) {
+      await runRbacLeastPrivilegeForSubscription(ctx, sub, resolvedDefs);
     }
   },
 };
