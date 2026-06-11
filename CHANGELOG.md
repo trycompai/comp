@@ -1,3 +1,10 @@
+## [3.78.3](https://github.com/trycompai/comp/compare/v3.78.2...v3.78.3) (2026-06-11)
+
+
+### Bug Fixes
+
+* **trust-portal:** use NDA-free copy in access-granted email when NDA is bypassed ([9920760](https://github.com/trycompai/comp/commit/99207602754943c41374f6bd9c0860bceed0e0ae))
+
 ## [3.78.2](https://github.com/trycompai/comp/compare/v3.78.1...v3.78.2) (2026-06-11)
 
 
