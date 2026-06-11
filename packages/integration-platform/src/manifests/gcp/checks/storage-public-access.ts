@@ -4,7 +4,7 @@ import {
   remediationForReadFailure,
   toHttpReadFailure,
 } from '../../http-read-failure';
-import { gcpListItems, resolveGcpProjectIds } from './shared';
+import { gcpListItems, resolveGcpProjectIds, isGcpApiDisabled } from './shared';
 
 interface Bucket {
   name: string;
@@ -56,8 +56,14 @@ export const storagePublicAccessCheck: IntegrationCheck = {
           await evaluateBucket(ctx, projectId, bucket);
         }
       } catch (err) {
-        // Unverified project → emit a finding, not a warn-and-skip, so an
-        // all-projects-failed run doesn't leave the task stale (silent pass).
+        // The service's API simply isn't enabled on this project (403
+        // SERVICE_DISABLED) — nothing of this type exists here to evaluate,
+        // so skip it like a zero-resource project instead of emitting a
+        // false "grant permission" finding.
+        if (isGcpApiDisabled(err)) {
+          ctx.log(`GCP Cloud Storage: API not enabled in project "${projectId}" — no buckets to evaluate; skipping`);
+          continue;
+        }
         const failure = toHttpReadFailure(err);
         ctx.fail({
           title: `Could not verify Cloud Storage: ${projectId}`,

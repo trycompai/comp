@@ -9,6 +9,7 @@ import { cloudSqlSslCheck } from '../cloud-sql-ssl';
 import { iamPrimitiveRolesCheck } from '../iam-primitive-roles';
 import { storagePublicAccessCheck } from '../storage-public-access';
 import { vpcOpenFirewallsCheck } from '../vpc-open-firewalls';
+import { isGcpApiDisabled } from '../shared';
 
 interface Captured {
   passed: Array<{ resourceId: string; title: string }>;
@@ -69,6 +70,60 @@ async function runCheck(
   await check.run(ctx);
   return { passed, failed };
 }
+
+describe('isGcpApiDisabled — service-not-enabled detection', () => {
+  const httpErr = (status: number, message: string) => {
+    const e = new Error(`HTTP ${status}: Forbidden - ${message}`);
+    (e as Error & { status: number }).status = status;
+    return e;
+  };
+  it('matches the real SERVICE_DISABLED 403 body', () => {
+    expect(
+      isGcpApiDisabled(
+        httpErr(403, '{"error":{"code":403,"message":"Cloud SQL Admin API has not been used in project gen-lang-client-0670714718 before or it is disabled.","status":"PERMISSION_DENIED","details":[{"reason":"SERVICE_DISABLED"}]}}'),
+      ),
+    ).toBe(true);
+  });
+  it('does NOT match a genuine permission denial', () => {
+    expect(
+      isGcpApiDisabled(
+        httpErr(403, '{"error":{"code":403,"message":"The caller does not have permission","status":"PERMISSION_DENIED"}}'),
+      ),
+    ).toBe(false);
+  });
+  it('does NOT match a transient 500', () => {
+    expect(isGcpApiDisabled(httpErr(500, 'Internal error'))).toBe(false);
+  });
+});
+
+describe('GCP checks skip projects whose service API is disabled', () => {
+  const apiDisabled = () => {
+    const e = new Error('HTTP 403: Forbidden - Cloud SQL Admin API has not been used in project p before or it is disabled. (SERVICE_DISABLED)');
+    (e as Error & { status: number }).status = 403;
+    return e;
+  };
+  it('cloud-sql-ssl emits NO finding when the API is disabled (vs a false "grant permission")', async () => {
+    const out = await runCheck(cloudSqlSslCheck, {
+      variables: { project_ids: ['p'] },
+      fetch: () => { throw apiDisabled(); },
+    });
+    expect(out.failed).toHaveLength(0);
+    expect(out.passed).toHaveLength(0);
+  });
+  it('still reports a finding for a genuine permission denial', async () => {
+    const denied = () => {
+      const e = new Error('HTTP 403: Forbidden - The caller does not have permission');
+      (e as Error & { status: number }).status = 403;
+      return e;
+    };
+    const out = await runCheck(cloudSqlSslCheck, {
+      variables: { project_ids: ['p'] },
+      fetch: () => { throw denied(); },
+    });
+    expect(out.failed).toHaveLength(1);
+    expect(out.failed[0]!.title).toMatch(/Could not verify Cloud SQL SSL/);
+  });
+});
 
 describe('GCP read-failure remediation gating', () => {
   const httpError = (status: number, message: string) => {
