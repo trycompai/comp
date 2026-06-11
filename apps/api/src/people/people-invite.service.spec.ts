@@ -309,7 +309,11 @@ describe('PeopleInviteService', () => {
       });
 
       expect(results[0].success).toBe(true);
-      expect(results[0].emailSent).toBe(true);
+      // No portal invite was requested (sendPortalEmail omitted = false), so no
+      // email is sent and emailSent is not surfaced (the UI only warns on an
+      // actual send failure, never on an intentional skip).
+      expect(mockTriggerEmail).not.toHaveBeenCalled();
+      expect(results[0].emailSent).toBeUndefined();
       expect(mockDb.member.create).toHaveBeenCalledWith(
         expect.objectContaining({
           data: expect.objectContaining({
@@ -437,9 +441,13 @@ describe('PeopleInviteService', () => {
 
       const results = await service.inviteMembers({
         ...baseParams,
-        invites: [{ email: 'emp@example.com', roles: ['employee'] }],
+        invites: [
+          { email: 'emp@example.com', roles: ['employee'], sendPortalEmail: true },
+        ],
       });
 
+      // A portal email was requested but the send failed — the member is still
+      // added and emailSent: false signals the UI to offer a resend.
       expect(results[0].success).toBe(true);
       expect(results[0].emailSent).toBe(false);
     });
@@ -543,6 +551,46 @@ describe('PeopleInviteService', () => {
           }),
         );
         expect(mockInviteEmail).not.toHaveBeenCalled();
+      });
+
+      // Regression: unchecking "Send portal invite email" when adding an
+      // employee via "+ Add User" must add the member WITHOUT emailing them.
+      // Previously the else-branch still sent an InviteEmail with a portal link.
+      it('employee only with portal UNchecked: adds member silently, sends no email', async () => {
+        (mockDb.organization.findUnique as jest.Mock).mockResolvedValue({
+          name: 'Test Org',
+        });
+        (mockDb.user.findFirst as jest.Mock).mockResolvedValue(null);
+        (mockDb.user.create as jest.Mock).mockResolvedValue({
+          id: 'usr_emp',
+          email: 'emp@example.com',
+        });
+        (mockDb.member.findFirst as jest.Mock).mockResolvedValue(null);
+        (mockDb.member.create as jest.Mock).mockResolvedValue({ id: 'mem_emp' });
+        (
+          mockDb.employeeTrainingVideoCompletion.createMany as jest.Mock
+        ).mockResolvedValue({ count: 5 });
+
+        const results = await service.inviteMembers({
+          ...baseParams,
+          invites: [
+            {
+              email: 'emp@example.com',
+              roles: ['employee'],
+              sendPortalEmail: false,
+            },
+          ],
+        });
+
+        // Member is still created...
+        expect(results[0].success).toBe(true);
+        expect(mockDb.member.create).toHaveBeenCalled();
+        // ...but NO email of any kind goes out when the portal invite is off.
+        expect(mockTriggerEmail).not.toHaveBeenCalled();
+        expect(mockInvitePortalEmail).not.toHaveBeenCalled();
+        expect(mockInviteEmail).not.toHaveBeenCalled();
+        // And no false "could not be sent" warning leaks to the UI.
+        expect(results[0].emailSent).toBeUndefined();
       });
 
       it('admin only (no portal): sends app email without portal link', async () => {

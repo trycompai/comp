@@ -6,36 +6,36 @@ import Link from 'next/link';
 import { TrustPortalGettingStarted } from './components/TrustPortalGettingStarted';
 import { TrustPortalSwitch } from './portal-settings/components/TrustPortalSwitch';
 
-export default async function TrustPage({
-  params,
-}: {
-  params: Promise<{ orgId: string }>;
-}) {
+export default async function TrustPage({ params }: { params: Promise<{ orgId: string }> }) {
   const { orgId } = await params;
 
-  const [settingsRes, customLinksRes, vendorsRes, certificatesRes, documentsRes] =
-    await Promise.all([
-      serverApi.get('/v1/trust-portal/settings'),
-      serverApi.get('/v1/trust-portal/custom-links?organizationId=' + orgId),
-      serverApi.get('/v1/trust-portal/vendors?all=true'),
-      serverApi.post('/v1/trust-portal/compliance-resources/list', {
-        organizationId: orgId,
-      }),
-      serverApi.post('/v1/trust-portal/documents/list', {
-        organizationId: orgId,
-      }),
-    ]);
+  const [
+    settingsRes,
+    customLinksRes,
+    vendorsRes,
+    certificatesRes,
+    documentsRes,
+    customFrameworksRes,
+  ] = await Promise.all([
+    serverApi.get('/v1/trust-portal/settings'),
+    serverApi.get('/v1/trust-portal/custom-links?organizationId=' + orgId),
+    serverApi.get('/v1/trust-portal/vendors?all=true'),
+    serverApi.post('/v1/trust-portal/compliance-resources/list', {
+      organizationId: orgId,
+    }),
+    serverApi.post('/v1/trust-portal/documents/list', {
+      organizationId: orgId,
+    }),
+    serverApi.get('/v1/trust-portal/custom-frameworks'),
+  ]);
 
   const settings = settingsRes.data as any;
   const isTrustConfigured = settings?.isConfigured ?? true;
-  const customLinks = Array.isArray(customLinksRes.data)
-    ? customLinksRes.data
-    : [];
+  const customLinks = Array.isArray(customLinksRes.data) ? customLinksRes.data : [];
   const vendors = Array.isArray(vendorsRes.data) ? vendorsRes.data : [];
-  const certificateResources = Array.isArray(certificatesRes.data)
-    ? certificatesRes.data
-    : [];
+  const certificateResources = Array.isArray(certificatesRes.data) ? certificatesRes.data : [];
   const documents = Array.isArray(documentsRes.data) ? documentsRes.data : [];
+  const customFrameworks = Array.isArray(customFrameworksRes.data) ? customFrameworksRes.data : [];
 
   // Map compliance resources to fileName props
   const API_FRAMEWORK_TO_PROP: Record<string, string> = {
@@ -69,9 +69,7 @@ export default async function TrustPage({
   };
 
   for (const resource of certificateResources) {
-    const propKey = resource?.framework
-      ? API_FRAMEWORK_TO_PROP[resource.framework]
-      : undefined;
+    const propKey = resource?.framework ? API_FRAMEWORK_TO_PROP[resource.framework] : undefined;
     if (propKey) {
       certificateFiles[propKey] = resource.fileName ?? null;
     }
@@ -158,6 +156,7 @@ export default async function TrustPage({
         }}
         customLinks={customLinks}
         vendors={vendors}
+        customFrameworks={customFrameworks}
         faviconUrl={settings?.faviconUrl ?? null}
       />
     </PageLayout>

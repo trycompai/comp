@@ -57,6 +57,7 @@ import type { PolicyChatUIMessage } from '../types';
 import { PolicyAiAssistant } from './ai/policy-ai-assistant';
 import { useSuggestions } from '../hooks/use-suggestions';
 import { buildPositionMap } from '../lib/build-position-map';
+import { resolveInitialPolicyContent } from '../lib/resolve-initial-content';
 import { InlineEditBubble } from './ai/inline-edit-bubble';
 import { markdownToTipTapJSON } from './ai/markdown-utils';
 
@@ -197,12 +198,13 @@ export function PolicyContentManager({
   const [editorKey, setEditorKey] = useState(0);
   const [activeTab, setActiveTab] = useState<string>(displayFormat);
   const previousTabRef = useRef<string>(displayFormat);
-  const [currentContent, setCurrentContent] = useState<Array<JSONContent>>(() => {
-    const formattedContent = Array.isArray(policyContent)
-      ? policyContent
-      : [policyContent as JSONContent];
-    return formattedContent;
-  });
+  const [currentContent, setCurrentContent] = useState<Array<JSONContent>>(() =>
+    // When opening directly on a specific version (e.g. "Edit" a draft from the
+    // Versions tab, which remounts this tab fresh with a versionId in the URL),
+    // seed from that version's content — not the published policyContent — so a
+    // draft's saved edits don't appear to vanish. See resolve-initial-content.ts.
+    resolveInitialPolicyContent({ initialVersionId, versions, policyContent }),
+  );
 
   const [dismissedProposalKey, setDismissedProposalKey] = useState<string | null>(null);
   const [editorInstance, setEditorInstance] = useState<TipTapEditor | null>(null);

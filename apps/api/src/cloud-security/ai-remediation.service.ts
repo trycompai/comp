@@ -28,11 +28,11 @@ import {
 } from './azure-ai-remediation.prompt';
 import { normalizeFixPlan } from './plan-normalizer';
 
-const MODEL = anthropic('claude-opus-4-6');
+const MODEL = anthropic('claude-opus-4-8');
 // Cheaper, faster model for the manual-steps fallback. The output is pure
 // natural language with no SDK-call shape to validate, so the strongest
 // model is overkill — we just need clear instructions.
-const FALLBACK_MODEL = anthropic('claude-sonnet-4-5');
+const FALLBACK_MODEL = anthropic('claude-sonnet-4-6');
 const REMEDIATION_ROLE_NAME = 'CompAI-Remediator';
 
 export interface FindingContext {
@@ -53,26 +53,55 @@ export class AiRemediationService {
   /** Phase 1: Generate initial plan (read steps + preliminary fix plan). */
   async generateFixPlan(finding: FindingContext): Promise<FixPlan> {
     try {
-      const { object } = await generateObject({
-        model: MODEL,
-        schema: fixPlanSchema,
-        system: SYSTEM_PROMPT,
-        prompt: buildFixPlanPrompt(finding),
-        temperature: 0,
-      });
+      let plan = await this.requestFixPlan(finding, 0);
 
-      this.logger.log(
-        `AI plan for ${finding.findingKey}: canAutoFix=${object.canAutoFix}, risk=${object.risk}`,
-      );
-      return normalizeFixPlan(enrichEmptyState(object), {
-        resourceId: finding.resourceId,
-      });
+      // The model occasionally returns canAutoFix=true with zero fixSteps, or
+      // the normalizer strips every step (e.g. unsupported S3 ACL calls). That
+      // surfaces to the user as "AI generated an empty fix plan. Cannot
+      // proceed." and — combined with plan caching — a Retry that does
+      // nothing. Generation is non-deterministic, so retry ONCE at a higher
+      // temperature to force a genuinely different sample before giving up.
+      if (plan.canAutoFix && plan.fixSteps.length === 0) {
+        this.logger.warn(
+          `Empty fix plan for ${finding.findingKey}; regenerating once at higher temperature`,
+        );
+        const retry = await this.requestFixPlan(finding, 0.5);
+        // Prefer the retry if it is usable (has steps) OR if it correctly
+        // concludes the finding is not auto-fixable — either is better than
+        // returning the original empty canAutoFix=true plan (which only yields
+        // the "empty fix plan" dead end). Keep the original only when the
+        // retry is no improvement (still empty + still canAutoFix).
+        if (retry.fixSteps.length > 0 || !retry.canAutoFix) plan = retry;
+      }
+
+      return plan;
     } catch (err) {
       this.logger.error(
         `AI plan failed: ${err instanceof Error ? err.message : String(err)}`,
       );
       return this.fallbackPlan(finding);
     }
+  }
+
+  /** Single fix-plan generation pass (generate → enrich → normalize). */
+  private async requestFixPlan(
+    finding: FindingContext,
+    temperature: number,
+  ): Promise<FixPlan> {
+    const { object } = await generateObject({
+      model: MODEL,
+      schema: fixPlanSchema,
+      system: SYSTEM_PROMPT,
+      prompt: buildFixPlanPrompt(finding),
+      temperature,
+    });
+
+    this.logger.log(
+      `AI plan for ${finding.findingKey}: canAutoFix=${object.canAutoFix}, risk=${object.risk}`,
+    );
+    return normalizeFixPlan(enrichEmptyState(object), {
+      resourceId: finding.resourceId,
+    });
   }
 
   /**
@@ -394,7 +423,7 @@ INSTRUCTIONS:
             ),
         }),
         system:
-          'You are an AWS security expert writing manual remediation steps for a customer whose automatic fix failed. Be concrete: name exact services, exact resources, and exact actions. Prefer AWS Console clicks over CLI when the path is short, but include CLI commands when they are clearer. Never reference SDK class names. Never apologize. Never speculate about "if the issue persists" — just give the steps.',
+          'You are an AWS security expert writing manual remediation steps for a customer whose automatic fix failed. Be concrete: name exact services, exact resources, and exact actions. Prefer AWS Console clicks over CLI when the path is short, but include CLI commands when they are clearer. Never reference SDK class names. Never apologize. Never speculate about "if the issue persists" — just give the steps. Base every instruction on the CURRENT AWS Console; do NOT describe deprecated layouts or removed menu options. For AWS Config recorder settings specifically: the current console is Config → Settings, which shows a "Recording method"/"Recording strategy" under a customer managed recorder — to record everything, click Edit, choose to record all resource types, enable "Include global resource types (IAM resources)", and remove any per-resource-type overrides or exclusions. Do not instruct the user to select an old "Record all resource types supported in this region" radio option if it is not present in the current console.',
         prompt: `A finding could not be auto-remediated. Generate clear manual steps the customer can follow.
 
 FINDING:
@@ -436,13 +465,21 @@ Produce 3-8 ordered steps. Each step is a single concrete action the customer ca
   async generateGcpFixPlan(finding: FindingContext): Promise<GcpFixPlan> {
     for (let attempt = 0; attempt < 2; attempt++) {
       try {
-        const { object } = await generateObject({
-          model: MODEL,
-          schema: gcpFixPlanSchema,
-          system: GCP_SYSTEM_PROMPT,
-          prompt: buildGcpFixPlanPrompt(finding),
-          temperature: 0,
-        });
+        let object = await this.requestGcpFixPlan(finding, 0);
+
+        // canAutoFix=true with zero fixSteps surfaces as "AI generated an
+        // empty fix plan" and (with caching) a Retry that does nothing.
+        // Generation is non-deterministic — retry once at a higher
+        // temperature to force a genuinely different sample.
+        if (object.canAutoFix && object.fixSteps.length === 0) {
+          this.logger.warn(
+            `Empty GCP fix plan for ${finding.findingKey}; regenerating once at higher temperature`,
+          );
+          const retry = await this.requestGcpFixPlan(finding, 0.5);
+          // Prefer a retry that is usable OR correctly non-auto-fixable —
+          // either beats returning the original empty canAutoFix=true plan.
+          if (retry.fixSteps.length > 0 || !retry.canAutoFix) object = retry;
+        }
 
         this.logger.log(
           `GCP AI plan for ${finding.findingKey}: canAutoFix=${object.canAutoFix}, risk=${object.risk}`,
@@ -457,6 +494,21 @@ Produce 3-8 ordered steps. Each step is a single concrete action the customer ca
       }
     }
     return this.fallbackGcpPlan(finding);
+  }
+
+  /** Single GCP fix-plan generation pass. */
+  private async requestGcpFixPlan(
+    finding: FindingContext,
+    temperature: number,
+  ): Promise<GcpFixPlan> {
+    const { object } = await generateObject({
+      model: MODEL,
+      schema: gcpFixPlanSchema,
+      system: GCP_SYSTEM_PROMPT,
+      prompt: buildGcpFixPlanPrompt(finding),
+      temperature,
+    });
+    return object;
   }
 
   async refineGcpFixPlan(params: {
@@ -503,13 +555,21 @@ Generate the complete fix plan with EXACT JSON values from the real GCP state.`,
 
   async generateAzureFixPlan(finding: FindingContext): Promise<AzureFixPlan> {
     try {
-      const { object } = await generateObject({
-        model: MODEL,
-        schema: azureFixPlanSchema,
-        system: AZURE_SYSTEM_PROMPT,
-        prompt: buildAzureFixPlanPrompt(finding),
-        temperature: 0,
-      });
+      let object = await this.requestAzureFixPlan(finding, 0);
+
+      // canAutoFix=true with zero fixSteps surfaces as "AI generated an empty
+      // fix plan" and (with caching) a Retry that does nothing. Generation is
+      // non-deterministic — retry once at a higher temperature to force a
+      // genuinely different sample.
+      if (object.canAutoFix && object.fixSteps.length === 0) {
+        this.logger.warn(
+          `Empty Azure fix plan for ${finding.findingKey}; regenerating once at higher temperature`,
+        );
+        const retry = await this.requestAzureFixPlan(finding, 0.5);
+        // Prefer a retry that is usable OR correctly non-auto-fixable —
+        // either beats returning the original empty canAutoFix=true plan.
+        if (retry.fixSteps.length > 0 || !retry.canAutoFix) object = retry;
+      }
 
       this.logger.log(
         `Azure AI plan for ${finding.findingKey}: canAutoFix=${object.canAutoFix}, risk=${object.risk}`,
@@ -521,6 +581,21 @@ Generate the complete fix plan with EXACT JSON values from the real GCP state.`,
       );
       return this.fallbackAzurePlan(finding);
     }
+  }
+
+  /** Single Azure fix-plan generation pass. */
+  private async requestAzureFixPlan(
+    finding: FindingContext,
+    temperature: number,
+  ): Promise<AzureFixPlan> {
+    const { object } = await generateObject({
+      model: MODEL,
+      schema: azureFixPlanSchema,
+      system: AZURE_SYSTEM_PROMPT,
+      prompt: buildAzureFixPlanPrompt(finding),
+      temperature,
+    });
+    return object;
   }
 
   async refineAzureFixPlan(params: {

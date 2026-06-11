@@ -1,6 +1,10 @@
 import { TASK_TEMPLATES } from '../../../task-mappings';
 import type { CheckContext, IntegrationCheck } from '../../../types';
-import { gcpListItems, resolveGcpProjectIds } from './shared';
+import {
+  remediationForReadFailure,
+  toHttpReadFailure,
+} from '../../http-read-failure';
+import { gcpListItems, resolveGcpProjectIds, isGcpApiDisabled } from './shared';
 
 interface Bucket {
   name: string;
@@ -52,19 +56,28 @@ export const storagePublicAccessCheck: IntegrationCheck = {
           await evaluateBucket(ctx, projectId, bucket);
         }
       } catch (err) {
-        // Unverified project → emit a finding, not a warn-and-skip, so an
-        // all-projects-failed run doesn't leave the task stale (silent pass).
+        // The service's API simply isn't enabled on this project (403
+        // SERVICE_DISABLED) — nothing of this type exists here to evaluate,
+        // so skip it like a zero-resource project instead of emitting a
+        // false "grant permission" finding.
+        if (isGcpApiDisabled(err)) {
+          ctx.log(`GCP Cloud Storage: API not enabled in project "${projectId}" — no buckets to evaluate; skipping`);
+          continue;
+        }
+        const failure = toHttpReadFailure(err);
         ctx.fail({
           title: `Could not verify Cloud Storage: ${projectId}`,
-          description: `Buckets for project "${projectId}" could not be listed, so public access is unverified.`,
+          description: `Buckets for project "${projectId}" could not be listed (${failure.error}), so public access is unverified.`,
           resourceType: 'gcp-project',
           resourceId: projectId,
           severity: 'medium',
-          remediation:
+          remediation: remediationForReadFailure(
+            failure,
             'Grant storage.buckets.list (e.g. roles/storage.legacyBucketReader or Viewer) to the connection for this project, then re-run.',
+          ),
           evidence: {
             projectId,
-            error: err instanceof Error ? err.message : String(err),
+            error: failure.error,
           },
         });
       }
@@ -103,18 +116,23 @@ async function evaluateBucket(
     );
   } catch (err) {
     // Couldn't read the policy → unverified, never a silent pass.
+    const failure = toHttpReadFailure(err);
     ctx.fail({
       title: `Could not verify public access: ${bucket.name}`,
-      description: `Bucket "${bucket.name}" IAM policy could not be read, so public access is unverified.`,
+      description: `Bucket "${bucket.name}" IAM policy could not be read (${failure.error}), so public access is unverified.`,
       resourceType: 'gcp-storage-bucket',
       resourceId,
       severity: 'medium',
-      remediation:
-        'Grant storage.buckets.getIamPolicy (e.g. roles/storage.legacyBucketReader or Viewer) to the connection, then re-run.',
+      // legacyBucketReader/Viewer do NOT contain storage.buckets.getIamPolicy —
+      // iam.securityReviewer is the documented read-only role that does.
+      remediation: remediationForReadFailure(
+        failure,
+        'Grant storage.buckets.getIamPolicy (e.g. roles/iam.securityReviewer) to the connection, then re-run.',
+      ),
       evidence: {
         projectId,
         bucket: bucket.name,
-        error: err instanceof Error ? err.message : String(err),
+        error: failure.error,
       },
     });
     return;

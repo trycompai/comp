@@ -526,11 +526,13 @@ export class PeopleController {
     @Param('id') memberId: string,
     @OrganizationId() organizationId: string,
     @AuthContext() authContext: AuthContextType,
+    @Query('skipOffboarding') skipOffboarding?: string,
   ) {
     const result = await this.peopleService.deleteById(
       memberId,
       organizationId,
       authContext.userId,
+      { skipOffboarding: skipOffboarding === 'true' },
     );
 
     return {

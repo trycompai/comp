@@ -47,35 +47,6 @@ export const PolicyResponseDtoFrequency$zodSchema = z.enum([
   "yearly",
 ]).describe("Review frequency of the policy");
 
-/**
- * Department this policy applies to
- */
-export const PolicyResponseDtoDepartment = {
-  None: "none",
-  Admin: "admin",
-  Gov: "gov",
-  Hr: "hr",
-  It: "it",
-  Itsm: "itsm",
-  Qms: "qms",
-} as const;
-/**
- * Department this policy applies to
- */
-export type PolicyResponseDtoDepartment = ClosedEnum<
-  typeof PolicyResponseDtoDepartment
->;
-
-export const PolicyResponseDtoDepartment$zodSchema = z.enum([
-  "none",
-  "admin",
-  "gov",
-  "hr",
-  "it",
-  "itsm",
-  "qms",
-]).describe("Department this policy applies to");
-
 export type PolicyResponseDto = {
   id: string;
   name: string;
@@ -83,11 +54,12 @@ export type PolicyResponseDto = {
   status: PolicyResponseDtoStatus;
   content: Array<{ [k: string]: any }>;
   frequency: PolicyResponseDtoFrequency | null;
-  department: PolicyResponseDtoDepartment | null;
+  department: string | null;
   isRequiredToSign: boolean;
   signedBy: Array<string>;
   reviewDate: string | null;
   isArchived: boolean;
+  archivedAt: string | null;
   createdAt: string;
   updatedAt: string;
   lastArchivedAt: string | null;
@@ -103,6 +75,9 @@ export const PolicyResponseDto$zodSchema: z.ZodType<PolicyResponseDto> = z
     approverId: z.string().nullable().describe(
       "ID of the user who approved this policy",
     ),
+    archivedAt: z.iso.datetime({ offset: true }).nullable().describe(
+      "When the policy was archived by framework sync",
+    ),
     assigneeId: z.string().nullable().describe(
       "ID of the user assigned to this policy",
     ),
@@ -112,8 +87,8 @@ export const PolicyResponseDto$zodSchema: z.ZodType<PolicyResponseDto> = z
     createdAt: z.iso.datetime({ offset: true }).describe(
       "When the policy was created",
     ),
-    department: PolicyResponseDtoDepartment$zodSchema.nullable().describe(
-      "Department this policy applies to",
+    department: z.string().nullable().describe(
+      "Department this policy applies to. May be one of the built-in values (none, admin, gov, hr, it, itsm, qms) or a custom department name.",
     ),
     description: z.string().nullable().describe("Description of the policy"),
     frequency: PolicyResponseDtoFrequency$zodSchema.nullable().describe(

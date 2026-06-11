@@ -1,7 +1,8 @@
 'use client';
 
 import { UpdateOrganizationEvidenceApproval } from '@/components/forms/organization/update-organization-evidence-approval';
-import { downloadAllEvidenceZip } from '@/lib/evidence-download';
+import { triggerBulkEvidenceExport } from '@/lib/evidence-download';
+import { useRealtimeRun } from '@trigger.dev/react-hooks';
 import type { Member, Task, User } from '@db';
 import {
   Button,
@@ -68,31 +69,72 @@ export function TasksPageClient({
   const { tasks, createTask, mutate: mutateTasks } = useTasks({ initialData: initialTasks });
   const { hasPermission } = usePermissions();
   const [isCreateSheetOpen, setIsCreateSheetOpen] = useState(false);
-  const [isDownloadingAll, setIsDownloadingAll] = useState(false);
   const [includeRawJson, setIncludeRawJson] = useState(false);
   const [isPopoverOpen, setIsPopoverOpen] = useState(false);
   const [mainTab, setMainTab] = useState('evidence-list');
+  const [exportRun, setExportRun] = useState<{
+    runId: string;
+    accessToken: string;
+  } | null>(null);
+  const [isTriggering, setIsTriggering] = useState(false);
+
+  // Subscribe for the onComplete side effect (download / error toast); the
+  // returned run isn't rendered here, so we don't destructure it.
+  useRealtimeRun(exportRun?.runId ?? '', {
+    accessToken: exportRun?.accessToken,
+    enabled: !!exportRun,
+    onComplete: (run, err) => {
+      // useRealtimeRun fires onComplete on any terminal state (and surfaces
+      // subscription errors via `err`), so treat anything that isn't a clean
+      // COMPLETED run as a failure.
+      if (err || run.status !== 'COMPLETED') {
+        toast.error('Evidence export failed. Please try again.');
+        setExportRun(null);
+        return;
+      }
+      const downloadUrl =
+        run.output?.downloadUrl ??
+        (run.metadata?.downloadUrl as string | undefined);
+      if (downloadUrl) {
+        const link = document.createElement('a');
+        link.href = downloadUrl;
+        link.download = `${organizationName || 'evidence'}-export.zip`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        toast.success('Evidence package downloaded successfully');
+      } else {
+        toast.error('Export completed but download link was not available.');
+      }
+      setExportRun(null);
+      setIsPopoverOpen(false);
+    },
+  });
+
+  const isDownloadingAll = isTriggering || !!exportRun;
 
   const handleDownloadAllEvidence = async () => {
-    setIsDownloadingAll(true);
+    setIsTriggering(true);
     try {
-      await downloadAllEvidenceZip({
-        organizationName: organizationName ?? undefined,
+      const result = await triggerBulkEvidenceExport({
         includeJson: includeRawJson,
       });
-      toast.success('Evidence package downloaded successfully');
-      setIsPopoverOpen(false);
+      setExportRun({
+        runId: result.runId,
+        accessToken: result.publicAccessToken,
+      });
+      toast.info('Evidence export started. You\'ll be notified when it\'s ready.');
     } catch (err) {
       const noEvidence =
         err instanceof Error && err.message?.includes('No tasks with evidence found');
       if (noEvidence) {
         toast.info('No tasks with evidence found to export.');
       } else {
-        toast.error('Failed to download evidence. Please try again.');
+        toast.error('Failed to start evidence export. Please try again.');
       }
-      console.error('Evidence download error:', err);
+      console.error('Evidence export error:', err);
     } finally {
-      setIsDownloadingAll(false);
+      setIsTriggering(false);
     }
   };
 

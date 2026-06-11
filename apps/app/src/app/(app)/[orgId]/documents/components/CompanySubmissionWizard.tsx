@@ -64,6 +64,46 @@ function createEmptyMatrixRow(columns: ReadonlyArray<MatrixColumnDefinition>): M
   return Object.fromEntries(columns.map((column) => [column.key, '']));
 }
 
+// A single matrix cell: a dropdown when the column declares `type: 'select'`,
+// otherwise a free-text input.
+function MatrixCellControl({
+  id,
+  column,
+  value,
+  onChange,
+}: {
+  id: string;
+  column: MatrixColumnDefinition;
+  value: string;
+  onChange: (value: string) => void;
+}) {
+  if (column.type === 'select' && column.options) {
+    return (
+      <Select value={value} onValueChange={(next) => onChange(next ?? '')}>
+        <SelectTrigger id={id}>
+          <SelectValue placeholder={column.placeholder ?? 'Select...'} />
+        </SelectTrigger>
+        <SelectContent>
+          {column.options.map((option) => (
+            <SelectItem key={option.value} value={option.value}>
+              {option.label}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+    );
+  }
+
+  return (
+    <Input
+      id={id}
+      value={value}
+      onChange={(event) => onChange(event.target.value)}
+      placeholder={column.placeholder}
+    />
+  );
+}
+
 export function CompanySubmissionWizard({
   organizationId,
   formType,
@@ -150,7 +190,11 @@ export function CompanySubmissionWizard({
     }
 
     for (const matrixField of matrixFields) {
-      defaults[matrixField.key] = [createEmptyMatrixRow(matrixField.columns)];
+      const seedRows = matrixField.defaultRows;
+      defaults[matrixField.key] =
+        seedRows && seedRows.length > 0
+          ? seedRows.map((row) => ({ ...createEmptyMatrixRow(matrixField.columns), ...row }))
+          : [createEmptyMatrixRow(matrixField.columns)];
     }
 
     return defaults;
@@ -783,18 +827,13 @@ export function CompanySubmissionWizard({
                                       {column.description}
                                     </Text>
                                   )}
-                                  <Input
+                                  <MatrixCellControl
                                     id={`${field.key}-${rowIndex}-${column.key}`}
+                                    column={column}
                                     value={row[column.key] ?? ''}
-                                    onChange={(event) =>
-                                      updateMatrixCell(
-                                        field,
-                                        rowIndex,
-                                        column.key,
-                                        event.target.value,
-                                      )
+                                    onChange={(value) =>
+                                      updateMatrixCell(field, rowIndex, column.key, value)
                                     }
-                                    placeholder={column.placeholder}
                                   />
                                 </Field>
                               ))}
@@ -948,13 +987,13 @@ export function CompanySubmissionWizard({
                                   {column.description}
                                 </Text>
                               )}
-                              <Input
+                              <MatrixCellControl
                                 id={`${field.key}-${rowIndex}-${column.key}`}
+                                column={column}
                                 value={row[column.key] ?? ''}
-                                onChange={(event) =>
-                                  updateMatrixCell(field, rowIndex, column.key, event.target.value)
+                                onChange={(value) =>
+                                  updateMatrixCell(field, rowIndex, column.key, value)
                                 }
-                                placeholder={column.placeholder}
                               />
                             </Field>
                           ))}

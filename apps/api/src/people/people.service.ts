@@ -363,6 +363,7 @@ export class PeopleService {
     memberId: string,
     organizationId: string,
     callerUserId?: string,
+    options?: { skipOffboarding?: boolean },
   ): Promise<{
     success: boolean;
     deletedMember: { id: string; name: string; email: string };
@@ -392,10 +393,11 @@ export class PeopleService {
       throw new ForbiddenException('Cannot remove a platform admin');
     }
 
-    const unassignedItems = await collectAssignedItems({
-      memberId,
-      organizationId,
-    });
+    const skipOffboarding = options?.skipOffboarding === true;
+
+    const unassignedItems = skipOffboarding
+      ? []
+      : await collectAssignedItems({ memberId, organizationId });
 
     await clearAssignments({ memberId, organizationId });
     await removeMemberFromOrgChart({ organizationId, memberId });
@@ -405,7 +407,9 @@ export class PeopleService {
       data: {
         deactivated: true,
         isActive: false,
-        offboardDate: member.offboardDate ?? new Date(),
+        ...(skipOffboarding
+          ? {}
+          : { offboardDate: member.offboardDate ?? new Date() }),
       },
     });
 
@@ -422,11 +426,13 @@ export class PeopleService {
       }
     }
 
-    await notifyOwnerOfUnassignedItems({
-      organizationId,
-      removedMemberName: member.user.name || member.user.email || 'Member',
-      unassignedItems,
-    });
+    if (!skipOffboarding) {
+      await notifyOwnerOfUnassignedItems({
+        organizationId,
+        removedMemberName: member.user.name || member.user.email || 'Member',
+        unassignedItems,
+      });
+    }
 
     this.logger.log(
       `Deactivated member: ${member.user.name} (${memberId}) from organization ${organizationId}`,

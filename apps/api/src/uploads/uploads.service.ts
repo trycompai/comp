@@ -1,10 +1,17 @@
 import { BadRequestException, Injectable, Logger } from '@nestjs/common';
 import { PutObjectCommand } from '@aws-sdk/client-s3';
-import { BUCKET_NAME, getObjectAsBuffer, getSignedUrl, s3Client } from '../app/s3';
+import {
+  BUCKET_NAME,
+  getObjectAsBuffer,
+  getObjectContentLength,
+  getSignedUrl,
+  s3Client,
+} from '../app/s3';
 import {
   CreateUploadUrlDto,
   UploadUrlResponseDto,
 } from './dto/create-upload-url.dto';
+import { MAX_UPLOAD_BYTES } from './upload-limits';
 
 /**
  * ============================================================================
@@ -46,6 +53,14 @@ export class UploadsService {
   /** Seconds a presigned upload URL stays valid. Short enough to limit exposure
    * of a leaked URL, long enough for a real upload. */
   private static readonly UPLOAD_URL_TTL_SECONDS = 900;
+
+  /**
+   * Default ceiling for files read back from S3 via the presigned flow. A plain
+   * presigned PUT cannot enforce a size limit, so this is the backstop that
+   * stops an oversized upload from being loaded into memory. Shares the 100MB
+   * limit the feature services / DTOs enforce (see upload-limits.ts).
+   */
+  static readonly DEFAULT_MAX_UPLOAD_BYTES = MAX_UPLOAD_BYTES;
 
   /**
    * Generate a presigned S3 PUT URL plus the org-scoped key the file will land
@@ -97,11 +112,38 @@ export class UploadsService {
   async readUploadAsBase64(
     organizationId: string,
     s3Key: string,
+    maxBytes: number = UploadsService.DEFAULT_MAX_UPLOAD_BYTES,
   ): Promise<string> {
     if (!BUCKET_NAME) {
       throw new BadRequestException('File storage is not configured');
     }
     this.assertKeyBelongsToOrg(organizationId, s3Key);
+
+    // Reject oversized uploads via a HEAD request BEFORE downloading and
+    // base64-encoding the object. A presigned PUT can't cap upload size, so
+    // without this an authenticated client could PUT a multi-GB file and have
+    // the API load it fully into memory (buffer + ~1.33x base64) and OOM.
+    let contentLength: number | undefined;
+    try {
+      contentLength = await getObjectContentLength(BUCKET_NAME, s3Key);
+    } catch (error) {
+      this.logger.warn(
+        `Failed to stat uploaded file ${s3Key}: ${
+          error instanceof Error ? error.message : 'unknown error'
+        }`,
+      );
+      throw new BadRequestException(
+        'No file found at the given s3Key — upload it via the presigned URL first.',
+      );
+    }
+
+    if (contentLength !== undefined && contentLength > maxBytes) {
+      throw new BadRequestException(
+        `File exceeds the maximum allowed size of ${Math.floor(
+          maxBytes / (1024 * 1024),
+        )}MB`,
+      );
+    }
 
     try {
       const buffer = await getObjectAsBuffer(BUCKET_NAME, s3Key);

@@ -3,7 +3,9 @@
  */
 
 import { CompAiCore } from "../core.js";
+import { encodeJSON } from "../lib/encodings.js";
 import { compactMap } from "../lib/primitives.js";
+import { safeParse } from "../lib/schemas.js";
 import { RequestOptions } from "../lib/sdks.js";
 import { extractSecurity, resolveGlobalSecurity } from "../lib/security.js";
 import { pathToFunc } from "../lib/url.js";
@@ -16,7 +18,10 @@ import {
   UnexpectedClientError,
 } from "../models/errors/httpclienterrors.js";
 import { SDKValidationError } from "../models/errors/sdkvalidationerror.js";
-import { UploadDocumentDto } from "../models/uploaddocumentdto.js";
+import {
+  UploadDocumentDto,
+  UploadDocumentDto$zodSchema,
+} from "../models/uploaddocumentdto.js";
 import { APICall, APIPromise } from "../types/async.js";
 import { Result } from "../types/fp.js";
 
@@ -30,7 +35,7 @@ import { Result } from "../types/fp.js";
  */
 export function knowledgeBaseKnowledgeBaseControllerUploadDocumentV1(
   client$: CompAiCore,
-  _request: UploadDocumentDto,
+  request: UploadDocumentDto,
   options?: RequestOptions,
 ): APIPromise<
   Result<
@@ -46,14 +51,14 @@ export function knowledgeBaseKnowledgeBaseControllerUploadDocumentV1(
 > {
   return new APIPromise($do(
     client$,
-    _request,
+    request,
     options,
   ));
 }
 
 async function $do(
   client$: CompAiCore,
-  _request: UploadDocumentDto,
+  request: UploadDocumentDto,
   options?: RequestOptions,
 ): Promise<
   [
@@ -70,6 +75,16 @@ async function $do(
     APICall,
   ]
 > {
+  const parsed$ = safeParse(
+    request,
+    (value$) => UploadDocumentDto$zodSchema.parse(value$),
+    "Input validation failed",
+  );
+  if (!parsed$.ok) {
+    return [parsed$, { status: "invalid" }];
+  }
+  const payload$ = parsed$.value;
+  const body$ = encodeJSON("body", payload$, { explode: true });
   const path$ = pathToFunc("/v1/knowledge-base/documents/upload")();
 
   const headers$ = new Headers(compactMap({
@@ -104,9 +119,10 @@ async function $do(
     baseURL: options?.serverURL,
     path: path$,
     headers: headers$,
+    body: body$,
     userAgent: client$._options.userAgent,
     timeoutMs: options?.timeoutMs || client$._options.timeoutMs
-      || -1,
+      || 120000,
   }, options);
   if (!requestRes.ok) {
     return [requestRes, { status: "invalid" }];

@@ -456,10 +456,7 @@ export class TrustAccessController {
     @Param('token') token: string,
     @Param('policyId') policyId: string,
   ) {
-    return this.trustAccessService.downloadPolicyByAccessToken(
-      token,
-      policyId,
-    );
+    return this.trustAccessService.downloadPolicyByAccessToken(token, policyId);
   }
 
   @Get('access/:token/policies/download-all-zip')
@@ -555,6 +552,37 @@ export class TrustAccessController {
     return this.trustAccessService.getTrustDocumentUrlByAccessToken(
       token,
       documentId,
+    );
+  }
+
+  @Get('access/:token/compliance-resources/custom/:customFrameworkId')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary:
+      'Download a custom-framework compliance certificate by access token',
+    description:
+      'Get a signed URL to download a specific custom-framework certificate file',
+  })
+  @ApiParam({
+    name: 'customFrameworkId',
+    description: 'Org-authored custom framework ID',
+    example: 'cfrm_abc123',
+  })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Signed URL for the custom-framework certificate returned',
+  })
+  @ApiResponse({
+    status: HttpStatus.NOT_FOUND,
+    description: 'Certificate not found',
+  })
+  async getCustomComplianceResourceUrlByAccessToken(
+    @Param('token') token: string,
+    @Param('customFrameworkId') customFrameworkId: string,
+  ) {
+    return this.trustAccessService.getCustomComplianceResourceUrlByAccessToken(
+      token,
+      customFrameworkId,
     );
   }
 
@@ -718,5 +746,24 @@ export class TrustAccessController {
   })
   async getPublicVendors(@Param('friendlyUrl') friendlyUrl: string) {
     return this.trustAccessService.getPublicVendors(friendlyUrl);
+  }
+
+  @Get(':friendlyUrl/custom-frameworks')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Get org-authored custom frameworks shown on a trust portal',
+    description:
+      'Retrieve the list of custom frameworks the org has chosen to display on its public trust portal.',
+  })
+  @ApiParam({
+    name: 'friendlyUrl',
+    description: 'Trust Portal friendly URL or Organization ID',
+  })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Custom frameworks retrieved successfully',
+  })
+  async getPublicCustomFrameworks(@Param('friendlyUrl') friendlyUrl: string) {
+    return this.trustAccessService.getPublicCustomFrameworks(friendlyUrl);
   }
 }

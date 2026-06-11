@@ -88,6 +88,28 @@ export class ConnectionRepository {
     });
   }
 
+  /**
+   * All active connections for a single provider in an org. Used to run a
+   * check against every connected account (e.g. each AWS account a customer
+   * has connected) rather than only the first one.
+   */
+  async findActiveByProviderAndOrg(
+    providerId: string,
+    organizationId: string,
+  ): Promise<IntegrationConnection[]> {
+    return db.integrationConnection.findMany({
+      where: {
+        providerId,
+        organizationId,
+        status: 'active',
+      },
+      include: {
+        provider: true,
+      },
+      orderBy: { createdAt: 'asc' },
+    });
+  }
+
   async create(data: CreateConnectionDto): Promise<IntegrationConnection> {
     return db.integrationConnection.create({
       data: {

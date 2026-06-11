@@ -16,7 +16,10 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { HttpException, HttpStatus } from '@nestjs/common';
 
 import { CloudSecurityController } from './cloud-security.controller';
-import { CloudSecurityService } from './cloud-security.service';
+import {
+  CloudSecurityService,
+  ConnectionNotFoundError,
+} from './cloud-security.service';
 import { CloudSecurityQueryService } from './cloud-security-query.service';
 import { CloudSecurityLegacyService } from './cloud-security-legacy.service';
 import { CloudSecurityActivityService } from './cloud-security-activity.service';
@@ -29,6 +32,7 @@ import { CloudAwsScanModeService } from './aws-scan-mode.service';
 import { ActingUserResolver } from '../auth/acting-user.service';
 import { HybridAuthGuard } from '../auth/hybrid-auth.guard';
 import { PermissionGuard } from '../auth/permission.guard';
+import { ServiceTokenOnlyGuard } from '../auth/service-token-only.guard';
 import type { AuthenticatedRequest } from '../auth/types';
 
 /**
@@ -86,6 +90,8 @@ describe('CloudSecurityController — API-key mutation support', () => {
       .overrideGuard(HybridAuthGuard)
       .useValue(mockGuard)
       .overrideGuard(PermissionGuard)
+      .useValue(mockGuard)
+      .overrideGuard(ServiceTokenOnlyGuard)
       .useValue(mockGuard)
       .compile();
 
@@ -307,5 +313,90 @@ describe('CloudSecurityController — API-key mutation support', () => {
       expect((error as HttpException).getStatus()).toBe(HttpStatus.BAD_REQUEST);
       expect(exceptionService.revokeException).not.toHaveBeenCalled();
     });
+  });
+});
+
+describe('CloudSecurityController — resolveSession (internal)', () => {
+  let controller: CloudSecurityController;
+  let cloudSecurityService: { resolveAwsSession: jest.Mock };
+  const mockGuard = { canActivate: jest.fn().mockReturnValue(true) };
+
+  beforeEach(async () => {
+    cloudSecurityService = { resolveAwsSession: jest.fn() };
+
+    const module: TestingModule = await Test.createTestingModule({
+      controllers: [CloudSecurityController],
+      providers: [
+        { provide: CloudSecurityService, useValue: cloudSecurityService },
+        { provide: CloudSecurityQueryService, useValue: {} },
+        { provide: CloudSecurityLegacyService, useValue: {} },
+        { provide: CloudSecurityActivityService, useValue: {} },
+        { provide: GCPSecurityService, useValue: {} },
+        { provide: AzureSecurityService, useValue: {} },
+        { provide: CheckDefinitionService, useValue: {} },
+        { provide: CloudExceptionService, useValue: {} },
+        { provide: CloudHistoryService, useValue: {} },
+        { provide: CloudAwsScanModeService, useValue: {} },
+        { provide: ActingUserResolver, useValue: {} },
+      ],
+    })
+      .overrideGuard(HybridAuthGuard)
+      .useValue(mockGuard)
+      .overrideGuard(PermissionGuard)
+      .useValue(mockGuard)
+      .overrideGuard(ServiceTokenOnlyGuard)
+      .useValue(mockGuard)
+      .compile();
+
+    controller = module.get(CloudSecurityController);
+    jest.clearAllMocks();
+  });
+
+  it('returns the resolved session from the service', async () => {
+    const session = {
+      ok: true,
+      session: {
+        accessKeyId: 'AKIA_TEMP',
+        secretAccessKey: 'secret',
+        sessionToken: 'token',
+      },
+    };
+    cloudSecurityService.resolveAwsSession.mockResolvedValueOnce(session);
+
+    const result = await controller.resolveSession('conn_1', 'org_1');
+
+    expect(cloudSecurityService.resolveAwsSession).toHaveBeenCalledWith(
+      'conn_1',
+      'org_1',
+    );
+    expect(result).toEqual(session);
+  });
+
+  it('passes through not_configured / assume_failed results', async () => {
+    cloudSecurityService.resolveAwsSession.mockResolvedValueOnce({
+      ok: false,
+      reason: 'assume_failed',
+      error: 'denied',
+    });
+
+    const result = await controller.resolveSession('conn_1', 'org_1');
+    expect(result).toEqual({
+      ok: false,
+      reason: 'assume_failed',
+      error: 'denied',
+    });
+  });
+
+  it('maps ConnectionNotFoundError to a 404', async () => {
+    cloudSecurityService.resolveAwsSession.mockRejectedValueOnce(
+      new ConnectionNotFoundError(),
+    );
+
+    const error = await controller
+      .resolveSession('conn_missing', 'org_1')
+      .catch((e) => e);
+
+    expect(error).toBeInstanceOf(HttpException);
+    expect((error as HttpException).getStatus()).toBe(HttpStatus.NOT_FOUND);
   });
 });

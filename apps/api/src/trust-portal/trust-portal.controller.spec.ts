@@ -2,6 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { BadRequestException } from '@nestjs/common';
 import { TrustPortalController } from './trust-portal.controller';
 import { TrustPortalService } from './trust-portal.service';
+import { TrustCustomFrameworkService } from './trust-custom-framework.service';
 import { HybridAuthGuard } from '../auth/hybrid-auth.guard';
 import { PermissionGuard } from '../auth/permission.guard';
 import type { AuthContext as AuthContextType } from '../auth/types';
@@ -38,6 +39,7 @@ describe('TrustPortalController', () => {
     checkDnsRecords: jest.fn(),
     updateFaqs: jest.fn(),
     updateAllowedDomains: jest.fn(),
+    updateAllowedEmails: jest.fn(),
     updateFrameworks: jest.fn(),
     updateOverview: jest.fn(),
     getOverview: jest.fn(),
@@ -49,6 +51,12 @@ describe('TrustPortalController', () => {
     updateVendorTrustSettings: jest.fn(),
     getPublicVendors: jest.fn(),
     getAllVendorsWithSync: jest.fn(),
+  };
+
+  const mockCustomFrameworkService = {
+    listForOrg: jest.fn(),
+    updateSelection: jest.fn(),
+    getPublicCustomFrameworks: jest.fn(),
   };
 
   const mockGuard = { canActivate: jest.fn().mockReturnValue(true) };
@@ -71,7 +79,13 @@ describe('TrustPortalController', () => {
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       controllers: [TrustPortalController],
-      providers: [{ provide: TrustPortalService, useValue: mockService }],
+      providers: [
+        { provide: TrustPortalService, useValue: mockService },
+        {
+          provide: TrustCustomFrameworkService,
+          useValue: mockCustomFrameworkService,
+        },
+      ],
     })
       .overrideGuard(HybridAuthGuard)
       .useValue(mockGuard)
@@ -415,6 +429,26 @@ describe('TrustPortalController', () => {
       await controller.updateAllowedDomains(orgId, {} as any);
 
       expect(service.updateAllowedDomains).toHaveBeenCalledWith(orgId, []);
+    });
+  });
+
+  describe('updateAllowedEmails', () => {
+    it('should call service.updateAllowedEmails with organizationId and emails', async () => {
+      const emails = ['person@example.com', 'other@test.com'];
+      mockService.updateAllowedEmails.mockResolvedValue({ success: true });
+
+      const result = await controller.updateAllowedEmails(orgId, { emails });
+
+      expect(result).toEqual({ success: true });
+      expect(service.updateAllowedEmails).toHaveBeenCalledWith(orgId, emails);
+    });
+
+    it('should default to empty array when emails is undefined', async () => {
+      mockService.updateAllowedEmails.mockResolvedValue({ success: true });
+
+      await controller.updateAllowedEmails(orgId, {} as any);
+
+      expect(service.updateAllowedEmails).toHaveBeenCalledWith(orgId, []);
     });
   });
 

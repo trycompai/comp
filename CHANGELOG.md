@@ -1,3 +1,219 @@
+## [3.78.1](https://github.com/trycompai/comp/compare/v3.78.0...v3.78.1) (2026-06-11)
+
+
+### Bug Fixes
+
+* **integration-platform:** skip GCP projects whose service API is disabled instead of a false permission finding ([e554269](https://github.com/trycompai/comp/commit/e554269c02f6432473e8e0bf168dd2d475f6311f))
+
+# [3.78.0](https://github.com/trycompai/comp/compare/v3.77.0...v3.78.0) (2026-06-11)
+
+
+### Bug Fixes
+
+* guard optimistic state sync and align picker page cap (cubic on [#3095](https://github.com/trycompai/comp/issues/3095)) ([c39011f](https://github.com/trycompai/comp/commit/c39011fe803c01855558361b8b658fb028545cb1))
+* **integration-platform:** isolate per-subscription wildcard scan + graceful subscription picker ([62fd692](https://github.com/trycompai/comp/commit/62fd6927be813c3592075ca801b77ae9f3f61d9b))
+* **integration-platform:** make multi-subscription scanning strictly opt-in ([c1bce47](https://github.com/trycompai/comp/commit/c1bce471fad128a1100f4fb142938ed27e343165))
+* **integration-platform:** stamp account attribution on account-level AWS findings ([1493c5c](https://github.com/trycompai/comp/commit/1493c5c50eb48d057bfba411bd52eed8f229e7ce)), closes [#3086](https://github.com/trycompai/comp/issues/3086) [#3065](https://github.com/trycompai/comp/issues/3065)
+* **integration-platform:** surface real read errors in azure/gcp checks (CS-534 part 1) ([91135b2](https://github.com/trycompai/comp/commit/91135b2adb80851c309e3023c8beee69063e7be4))
+* **integration-platform:** surface real read errors in cloudtrail/kms/iam/ec2/rds checks (CS-533) ([5d7e2a0](https://github.com/trycompai/comp/commit/5d7e2a001dc2cdfe00ed68b2fafd3a6bfc3bb83b)), closes [#3075](https://github.com/trycompai/comp/issues/3075)
+* **integration-platform:** surface the subscription scan cap as an explicit finding ([e6dda8c](https://github.com/trycompai/comp/commit/e6dda8c14ba88536e8336b3a343c70c9f8e939c5))
+* **integrations:** gate the Add-account CTA on integration:create RBAC ([6c35625](https://github.com/trycompai/comp/commit/6c35625d6dd38cd77b44322cf1c21ccedc3c37c5))
+* resolve cubic findings from the production deploy review ([#3087](https://github.com/trycompai/comp/issues/3087)) ([9f30138](https://github.com/trycompai/comp/commit/9f3013854bc2a86bffc35c57ad2fb9c570c117b0))
+* **trust-portal:** resync custom-framework state + mark response fields nullable ([ec5ba44](https://github.com/trycompai/comp/commit/ec5ba440965293de95de03b6ba104ca4d70e46fc))
+* **trust-portal:** validate allowed-emails body with a DTO ([06ed9bd](https://github.com/trycompai/comp/commit/06ed9bd3da20245e22ac57531f19518b132f83b3))
+* **trust:** gate certificate drag-and-drop behind the read-only permission ([086bf7c](https://github.com/trycompai/comp/commit/086bf7c4f6396f8f4a13281fd2678ed72e4686e0))
+* **trust:** reset the certificate file input on every selection, not only success ([7d51e2c](https://github.com/trycompai/comp/commit/7d51e2cce240395bccf2e42a19843a6486fc9713))
+* **trust:** resolve 4 cubic findings from the production deploy review ([c2b9122](https://github.com/trycompai/comp/commit/c2b91222c3f0c3dbce37433809426a37ef65657f))
+* **trust:** return 400 not 500 on malformed PUT /custom-frameworks body ([bb30749](https://github.com/trycompai/comp/commit/bb3074948e8d6de94d45fc6eb2533bae0086fae0))
+
+
+### Features
+
+* **integration-platform:** scan all enabled Azure subscriptions (CS-534 part 2) ([9912b9a](https://github.com/trycompai/comp/commit/9912b9a54a220c33c62fdb8ebac453958a2dbdba))
+* **trust-portal:** add per-email NDA-bypass allowlist ([3e3ed70](https://github.com/trycompai/comp/commit/3e3ed70d59af17a3189065804f33e4ef20aaee67))
+* **trust-portal:** display custom frameworks on the trust portal ([e9ed93d](https://github.com/trycompai/comp/commit/e9ed93df7740d23279ca461550a6c5cbe2187351))
+
+# [3.77.0](https://github.com/trycompai/comp/compare/v3.76.0...v3.77.0) (2026-06-10)
+
+
+### Bug Fixes
+
+* **evidence-forms:** hide Account Types from the global Documents browse list ([628b220](https://github.com/trycompai/comp/commit/628b22004905db8aae7651d923182eac4691a5d2))
+* **evidence-forms:** mark Account Types optional so it doesn't change org scores ([680e47d](https://github.com/trycompai/comp/commit/680e47d5b86c109d6cbd921868e2e5be70a1d898))
+* **framework-editor:** default Controls tab to Name A-Z sort (CS-511) ([2b30fa7](https://github.com/trycompai/comp/commit/2b30fa74b0422505203d9b0b760f02608c64697e))
+
+
+### Features
+
+* **evidence-forms:** add Account Types document type (CS-513) ([9b6e610](https://github.com/trycompai/comp/commit/9b6e610afcde183fe5fc177933fef60867cf6464))
+* **framework-editor:** remove Control Family column from Controls tab (CS-512) ([f60775c](https://github.com/trycompai/comp/commit/f60775c0cab4f4aa28c13e18a7ec3ef127c698d0))
+
+# [3.76.0](https://github.com/trycompai/comp/compare/v3.75.0...v3.76.0) (2026-06-10)
+
+
+### Features
+
+* **framework-editor:** multi-line editor for Requirement descriptions (CS-513) ([750fa17](https://github.com/trycompai/comp/commit/750fa177c680a8a6023e4e6d250e503e386deb48)), closes [#3078](https://github.com/trycompai/comp/issues/3078)
+
+# [3.75.0](https://github.com/trycompai/comp/compare/v3.74.5...v3.75.0) (2026-06-10)
+
+
+### Features
+
+* **framework-editor:** multi-line editor for long control descriptions ([4896365](https://github.com/trycompai/comp/commit/4896365bd5bb41392498dfdc4691eb6ecc056128))
+
+## [3.74.5](https://github.com/trycompai/comp/compare/v3.74.4...v3.74.5) (2026-06-10)
+
+
+### Bug Fixes
+
+* **framework-editor:** let "Add Existing Control" pick requirements instead of linking all ([dde15af](https://github.com/trycompai/comp/commit/dde15af3fce38ace12762f55b19d12c83010347d))
+* **framework-editor:** treat null requirementIds as link-all, not a crash ([7b24fb6](https://github.com/trycompai/comp/commit/7b24fb6c1a1a1dd983778e073f4b9ad073255156))
+* **integration-platform:** log degraded region routing when paginated ListBuckets is rejected ([5f3e4f2](https://github.com/trycompai/comp/commit/5f3e4f2eca7555e92ba3c152a5999c58bb10fede))
+* **integration-platform:** route S3 bucket reads to each bucket's own region ([9f6e6f6](https://github.com/trycompai/comp/commit/9f6e6f65f1b0804096b54cf49b86edc8c33dc4dd))
+* **integration-platform:** surface real S3 read errors instead of claiming missing permissions ([8f2bb19](https://github.com/trycompai/comp/commit/8f2bb19be21aa36be29dc0294871230b96e5dd30))
+
+## [3.74.4](https://github.com/trycompai/comp/compare/v3.74.3...v3.74.4) (2026-06-10)
+
+
+### Bug Fixes
+
+* **framework-editor:** drop @vitejs/plugin-react from vitest config ([716205c](https://github.com/trycompai/comp/commit/716205c3e63f7d6595ee0b82d5976ff1059e6726))
+* **framework-editor:** prevent silent loss of new requirements and controls ([e231fcc](https://github.com/trycompai/comp/commit/e231fcc31d16d1e561574f41309784aa8086f3b3))
+
+## [3.74.3](https://github.com/trycompai/comp/compare/v3.74.2...v3.74.3) (2026-06-09)
+
+
+### Bug Fixes
+
+* **policies:** show a draft version's own content when editing it ([a10aa2a](https://github.com/trycompai/comp/commit/a10aa2a6a9621a2d1fd6501098795e7052486d1e))
+
+## [3.74.2](https://github.com/trycompai/comp/compare/v3.74.1...v3.74.2) (2026-06-09)
+
+
+### Bug Fixes
+
+* **cloud-security:** run task evidence checks against all connected accounts ([bdb6b3b](https://github.com/trycompai/comp/commit/bdb6b3b0d7976b2f3c098edf13d8fda8a57c13ab))
+* **cloud-security:** tenant-scope the task check-runs endpoint ([612d624](https://github.com/trycompai/comp/commit/612d62403be69d11420cd767367cd0389d5f6c63)), closes [#3067](https://github.com/trycompai/comp/issues/3067)
+* **cloud-security:** validate run-history limit and reject inactive connections ([c82f9fc](https://github.com/trycompai/comp/commit/c82f9fc3d4d130cb2a483bb52a314cbbcb297c29))
+* **people:** respect "Send portal invite email" opt-out when adding users ([18144fd](https://github.com/trycompai/comp/commit/18144fd7622b20a9db271b7357f3107d1ca080c7))
+
+## [3.74.1](https://github.com/trycompai/comp/compare/v3.74.0...v3.74.1) (2026-06-09)
+
+
+### Bug Fixes
+
+* **integration-platform:** attribute AWS check findings to their AWS account ([06a237d](https://github.com/trycompai/comp/commit/06a237d772beca1147ec1e3eed9d08d4c5dc5611))
+* **integration-platform:** show the customer's AWS connection name alongside the account ([69c84c8](https://github.com/trycompai/comp/commit/69c84c85badc226c40d9773d561548e20b84b6b0))
+
+# [3.74.0](https://github.com/trycompai/comp/compare/v3.73.3...v3.74.0) (2026-06-08)
+
+
+### Bug Fixes
+
+* **cloud-security:** deterministically pin the metric-filter log group (remove AI dependency) ([2e7e6ba](https://github.com/trycompai/comp/commit/2e7e6bab04e5958da27e41730c5a7dfcf2443e2b))
+* **cloud-security:** resolve the real CloudTrail log group for cloudwatch metric-filter auto-fix ([04c45e9](https://github.com/trycompai/comp/commit/04c45e970a22ece15b37554890f6884ee1535769))
+* **integration-platform:** surface postgres ssl-config read failures as "could not verify" ([bec693a](https://github.com/trycompai/comp/commit/bec693a33ad62ef3c7902ef4772ceb3cc638035f))
+
+
+### Features
+
+* **integration-platform:** add azure mysql flexible server tls check ([030d25c](https://github.com/trycompai/comp/commit/030d25c644f31700476a8f96df0cdfb2a90ffce3))
+* **integration-platform:** add azure postgresql flexible server tls check ([a992862](https://github.com/trycompai/comp/commit/a992862af3b40a6da1de74a5d467c1f4b97bf738))
+
+## [3.73.3](https://github.com/trycompai/comp/compare/v3.73.2...v3.73.3) (2026-06-08)
+
+
+### Bug Fixes
+
+* **cloud-tests:** scroll connection-settings account tabs when they overflow ([75f8360](https://github.com/trycompai/comp/commit/75f836006744adfa8aa2f7a0414dfec696c6fde0))
+
+## [3.73.2](https://github.com/trycompai/comp/compare/v3.73.1...v3.73.2) (2026-06-08)
+
+
+### Bug Fixes
+
+* **cloud-security:** resolve aws check-path session in ecs, not trigger.dev ([b0bcd21](https://github.com/trycompai/comp/commit/b0bcd2118dc195fb2ba6c1057c70bfcdebc1bc98))
+* **cloud-security:** retry transient AssumeRole failures (first-scan "could not assume role") ([28ca06e](https://github.com/trycompai/comp/commit/28ca06e56c350230cae6444348bbbcb25a962f80))
+
+## [3.73.1](https://github.com/trycompai/comp/compare/v3.73.0...v3.73.1) (2026-06-05)
+
+
+### Bug Fixes
+
+* **cloud-security:** allow an empty filterPattern for PutMetricFilter validation ([f8f2908](https://github.com/trycompai/comp/commit/f8f2908f64080d9510d2473690934f75052d0fb7))
+* **cloud-security:** make cloudwatch metric-filter auto-fix reliable ([837ecde](https://github.com/trycompai/comp/commit/837ecde24df60453cdd331e672385a69e9842c7b))
+* **cloud-security:** reconcile conflicting logGroupName guidance in fix prompt ([e7af1ec](https://github.com/trycompai/comp/commit/e7af1ec0e4edc473cabffb5e9336e8fae87a47e5))
+
+# [3.73.0](https://github.com/trycompai/comp/compare/v3.72.0...v3.73.0) (2026-06-05)
+
+
+### Bug Fixes
+
+* **evidence-export:** harden bulk-export trigger task against worker OOM + retry storms ([5fe1538](https://github.com/trycompai/comp/commit/5fe153891c3c7cb3988c2d91517a9de3bb96699b))
+* **evidence-export:** repair bulk-export progress UI (dialog trap, silent failures, invalid hook option) ([e91c547](https://github.com/trycompai/comp/commit/e91c547053d6a82e8ac4b0a1f5dbb1593b0252f1))
+* **evidence-export:** stream runs through PDF/JSON generation to prevent OOM ([15b40aa](https://github.com/trycompai/comp/commit/15b40aa17ef674f5760f5caf715d573281abcb35))
+
+
+### Features
+
+* **evidence-export:** offload bulk export to Trigger.dev background task ([dd5a2f0](https://github.com/trycompai/comp/commit/dd5a2f059d2d1121548d3c0fdd783550818bbab1))
+
+# [3.72.0](https://github.com/trycompai/comp/compare/v3.71.0...v3.72.0) (2026-06-05)
+
+
+### Bug Fixes
+
+* **api:** accept presigned s3Key for MCP uploads (attachment/document/evidence) ([a7ffbb7](https://github.com/trycompai/comp/commit/a7ffbb792b2e5fdb881708ed0c35f0f62d8018f0))
+* **api:** cap inline upload base64 at the true 100MB limit (UI-safe) ([f076789](https://github.com/trycompai/comp/commit/f07678999e0efe5b74531f6b925ddeb877427c3e))
+* **api:** guard presigned-upload reads against oversized files ([4e167b0](https://github.com/trycompai/comp/commit/4e167b0f662ff1aed52c85391950a7856237e66d))
+* **api:** harden task automations for MCP/API clients ([0f92e4e](https://github.com/trycompai/comp/commit/0f92e4e6b9add712e9a1513ac586f8d99e55ccc4)), closes [#3042](https://github.com/trycompai/comp/issues/3042)
+* **api:** reject whitespace-only scriptKey in CreateVersionDto ([4bf5454](https://github.com/trycompai/comp/commit/4bf5454e34eca1bbfe5bdc9f231c62932b612c66))
+* **cloud-security:** scope cloud tests findings to the selected account ([98a4fa2](https://github.com/trycompai/comp/commit/98a4fa20a38047f8d5d6d6e3c68f332139f99179))
+
+
+### Features
+
+* **cloud-security:** label the cloud tests connection selector ([2d1404e](https://github.com/trycompai/comp/commit/2d1404ed5abfcc0fa28a95ada5680365ee55535b))
+
+# [3.71.0](https://github.com/trycompai/comp/compare/v3.70.4...v3.71.0) (2026-06-05)
+
+
+### Bug Fixes
+
+* **cloud-security:** scan neptune via rds api with the rds: iam namespace ([64b9137](https://github.com/trycompai/comp/commit/64b9137e8c0e172caf963d3874027732ee8549f2))
+
+
+### Features
+
+* **cloud-security:** add Amazon Neptune as an AWS Cloud Tests service ([66f5c46](https://github.com/trycompai/comp/commit/66f5c468c00df0e5d5282fd632369a050af8e8bc))
+* **cloud-security:** add Vertex AI as a GCP Cloud Tests service ([d4161b1](https://github.com/trycompai/comp/commit/d4161b17c74c2d07a70c98a276c2610199088b6a))
+
+## [3.70.4](https://github.com/trycompai/comp/compare/v3.70.3...v3.70.4) (2026-06-04)
+
+
+### Bug Fixes
+
+* **cloud-security:** address cubic review — prompt command consistency + retry selection ([432fd39](https://github.com/trycompai/comp/commit/432fd391c3123787f6f788f8043ffbb9fc32aca5))
+* **cloud-security:** port remediation robustness fixes to GCP and Azure ([10611bc](https://github.com/trycompai/comp/commit/10611bcd527fe6bda914ae9a367b8a7fbb85c40e))
+* **cloud-security:** support AWS Config new recording model in checks + auto-remediation ([d30d98b](https://github.com/trycompai/comp/commit/d30d98bbef23df15d9c64093f5a79c61ef814848))
+
+## [3.70.3](https://github.com/trycompai/comp/compare/v3.70.2...v3.70.3) (2026-06-04)
+
+
+### Bug Fixes
+
+* **api:** revert oauth2 spec scheme to restore the MCP generator ([64978f5](https://github.com/trycompai/comp/commit/64978f542adcfb4747fe204dabf5de7d5b1e5ae3)), closes [#2961](https://github.com/trycompai/comp/issues/2961) [#2961](https://github.com/trycompai/comp/issues/2961) [pre-#2961](https://github.com/pre-/issues/2961) [#2955](https://github.com/trycompai/comp/issues/2955) [hi#value](https://github.com/hi/issues/value)
+
+## [3.70.2](https://github.com/trycompai/comp/compare/v3.70.1...v3.70.2) (2026-06-04)
+
+
+### Bug Fixes
+
+* **api:** update endpoint to skip offboarding when removing the member ([69464a2](https://github.com/trycompai/comp/commit/69464a2b0f328f2afea378b6480bad631175e04a))
+* **app:** skip offboarding when removing the member ([16a60b6](https://github.com/trycompai/comp/commit/16a60b623bc903a8d02c19f8752f6a8eccbafe00))
+* **integration-platform:** pass storage check when firewall denies by default ([225cd6b](https://github.com/trycompai/comp/commit/225cd6bb9baec891f1c3295fda7b85193420ff65))
+
 ## [3.70.1](https://github.com/trycompai/comp/compare/v3.70.0...v3.70.1) (2026-06-04)
 
 

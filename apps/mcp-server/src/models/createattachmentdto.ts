@@ -43,7 +43,8 @@ export const CreateAttachmentDtoEntityType$zodSchema = z.enum([
 export type CreateAttachmentDto = {
   fileName: string;
   fileType: string;
-  fileData: string;
+  fileData?: string | undefined;
+  s3Key?: string | undefined;
   description?: string | undefined;
   userId?: string | undefined;
   entityId: string;
@@ -59,9 +60,14 @@ export const CreateAttachmentDto$zodSchema: z.ZodType<CreateAttachmentDto> = z
     entityType: CreateAttachmentDtoEntityType$zodSchema.describe(
       "Type of entity the attachment belongs to",
     ),
-    fileData: z.string().describe("Base64 encoded file data"),
+    fileData: z.string().optional().describe(
+      "Base64-encoded file contents. For the web UI / direct callers. AI/MCP clients should instead upload via /v1/uploads/presign (purpose=attachment) and pass `s3Key` — base64 through an LLM is impractically slow and times out. Provide exactly one of fileData or s3Key.",
+    ),
     fileName: z.string().describe("Name of the file"),
     fileType: z.string().describe("MIME type of the file"),
+    s3Key: z.string().optional().describe(
+      "Key of a file already uploaded via /v1/uploads/presign (purpose=attachment). The server fetches the bytes from storage — no base64 needed. Provide exactly one of fileData or s3Key.",
+    ),
     userId: z.string().optional().describe(
       "User ID of the user uploading the attachment (required for API key auth, ignored for JWT auth)",
     ),

@@ -1,5 +1,6 @@
 import { AssumeRoleCommand, STSClient } from '@aws-sdk/client-sts';
 import type { CheckContext, FindingSeverity } from '../../../types';
+import { retryAssume } from './assume-retry';
 
 export interface AwsSession {
   credentials: {
@@ -45,6 +46,43 @@ export function resolveAwsCredentialInputs(
 
   if (!roleArn || !externalId || regions.length === 0) return null;
   return { roleArn, externalId, regions };
+}
+
+/**
+ * Short-lived AWS session credentials (or an error) injected into the connection
+ * credentials by the Cloud Tests CHECK runner (apps/api `checks-aws-session.ts`)
+ * when the cross-account assume was performed in ECS. The underscore-prefixed
+ * keys never collide with real connection fields. When present, the check uses
+ * these directly instead of assuming the role itself — it runs in the Trigger.dev
+ * runtime, which has no base AWS credentials or roleAssumer ARN.
+ */
+function readInjectedAwsSession(
+  credentials: Record<string, unknown>,
+):
+  | {
+      credentials: {
+        accessKeyId: string;
+        secretAccessKey: string;
+        sessionToken: string;
+      };
+    }
+  | { error: string }
+  | null {
+  const error = credentials.__resolvedSessionError;
+  if (typeof error === 'string' && error.length > 0) {
+    return { error };
+  }
+  const accessKeyId = credentials.__resolvedAccessKeyId;
+  const secretAccessKey = credentials.__resolvedSecretAccessKey;
+  const sessionToken = credentials.__resolvedSessionToken;
+  if (
+    typeof accessKeyId === 'string' &&
+    typeof secretAccessKey === 'string' &&
+    typeof sessionToken === 'string'
+  ) {
+    return { credentials: { accessKeyId, secretAccessKey, sessionToken } };
+  }
+  return null;
 }
 
 type AwsPartition = 'aws' | 'aws-us-gov';
@@ -95,6 +133,18 @@ export async function assumeAwsSession(
   if (!inputs) return null;
   const { roleArn, externalId, regions } = inputs;
 
+  // If the CHECK runner already resolved a session in ECS (the cross-account
+  // assume cannot run in the Trigger.dev runtime, which lacks base AWS creds and
+  // the roleAssumer ARN), use it directly. An injected error surfaces the real
+  // failure reason via the caller's "Could not assume AWS role" finding.
+  const injected = readInjectedAwsSession(
+    ctx.credentials as Record<string, unknown>,
+  );
+  if (injected) {
+    if ('error' in injected) throw new Error(injected.error);
+    return { credentials: injected.credentials, regions };
+  }
+
   // IAM is global — assume once in the first region; the creds work everywhere.
   const region = regions[0];
   const partition = awsPartitionForRegion(region);
@@ -113,12 +163,14 @@ export async function assumeAwsSession(
     region,
     credentials: awsBaseCredentials(partition),
   });
-  const assumerResp = await baseSts.send(
-    new AssumeRoleCommand({
-      RoleArn: roleAssumerArn,
-      RoleSessionName: 'CompRoleAssumer',
-      DurationSeconds: 3600,
-    }),
+  const assumerResp = await retryAssume(() =>
+    baseSts.send(
+      new AssumeRoleCommand({
+        RoleArn: roleAssumerArn,
+        RoleSessionName: 'CompRoleAssumer',
+        DurationSeconds: 3600,
+      }),
+    ),
   );
   const assumer = assumerResp.Credentials;
   if (
@@ -139,13 +191,15 @@ export async function assumeAwsSession(
       sessionToken: assumer.SessionToken,
     },
   });
-  const res = await assumerSts.send(
-    new AssumeRoleCommand({
-      RoleArn: roleArn,
-      ExternalId: externalId,
-      RoleSessionName: 'CompEvidenceCheck',
-      DurationSeconds: 3600,
-    }),
+  const res = await retryAssume(() =>
+    assumerSts.send(
+      new AssumeRoleCommand({
+        RoleArn: roleArn,
+        ExternalId: externalId,
+        RoleSessionName: 'CompEvidenceCheck',
+        DurationSeconds: 3600,
+      }),
+    ),
   );
   const c = res.Credentials;
   if (!c?.AccessKeyId || !c.SecretAccessKey || !c.SessionToken) return null;
@@ -174,20 +228,34 @@ export async function resolveAwsSessionOrFail(
   try {
     return await assumeAwsSession(ctx);
   } catch (err) {
-    ctx.fail({
-      title: 'Could not assume AWS role',
-      description:
-        'The cross-account IAM role could not be assumed, so this check could not be verified.',
-      resourceType: 'aws-account',
-      resourceId: 'account',
-      severity: 'medium',
-      remediation:
-        'Verify the role ARN and external ID are correct and the role trust policy allows Comp to assume it, then re-run the check.',
-      evidence: { error: err instanceof Error ? err.message : String(err) },
-    });
+    emitOutcomes(ctx, [
+      {
+        kind: 'fail',
+        title: 'Could not assume AWS role',
+        description:
+          'The cross-account IAM role could not be assumed, so this check could not be verified.',
+        resourceType: 'aws-account',
+        resourceId: 'account',
+        severity: 'medium',
+        remediation:
+          'Verify the role ARN and external ID are correct and the role trust policy allows Comp to assume it, then re-run the check.',
+        evidence: { error: err instanceof Error ? err.message : String(err) },
+      },
+    ]);
     return null;
   }
 }
+
+// Read-failure classification lives in read-failure.ts; re-exported here so
+// existing imports from './shared' keep working.
+export {
+  combineReadFailures,
+  remediationForReadFailure,
+  toReadFailure,
+  REGION_DISABLED_REMEDIATION,
+  TRANSIENT_READ_REMEDIATION,
+  type ReadFailure,
+} from './read-failure';
 
 /** A provider-agnostic pass/fail outcome produced by a pure evaluator. */
 export interface CheckOutcome {
@@ -201,26 +269,77 @@ export interface CheckOutcome {
   evidence?: Record<string, unknown>;
 }
 
-/** Map pure evaluator outcomes onto ctx.pass / ctx.fail. */
+/**
+ * The 12-digit AWS account ID from the connection's role ARN
+ * (`arn:aws:iam::ACCOUNT_ID:role/...`). Returns null for key-auth connections or
+ * when no role ARN is present. Used to attribute every finding to the AWS
+ * account it came from — essential when a customer connects multiple accounts.
+ */
+export function awsAccountIdFromCtx(ctx: CheckContext): string | null {
+  const arn = (ctx.credentials as Record<string, unknown>).roleArn;
+  if (typeof arn !== 'string') return null;
+  const parts = arn.split(':');
+  return parts.length >= 5 && parts[4] ? parts[4] : null;
+}
+
+/**
+ * The friendly connection name the customer gave this AWS account when they
+ * connected it (the "Connection Name" field, e.g. "Production AWS"). It is the
+ * customer's OWN label — we do not infer prod/stage from AWS — so it's shown
+ * alongside the account id when present. Returns null when unset.
+ */
+export function awsConnectionNameFromCtx(ctx: CheckContext): string | null {
+  const name = (ctx.credentials as Record<string, unknown>).connectionName;
+  return typeof name === 'string' && name.trim().length > 0
+    ? name.trim()
+    : null;
+}
+
+/**
+ * Map pure evaluator outcomes onto ctx.pass / ctx.fail.
+ *
+ * Every finding is attributed to the AWS account it came from: checks run once
+ * per connected account, so without this the UI shows a single merged list with
+ * no way to tell which account each resource belongs to (a customer-reported
+ * gap when multiple AWS accounts are connected). The account id is added to the
+ * evidence and surfaced in the visible description.
+ */
 export function emitOutcomes(ctx: CheckContext, outcomes: CheckOutcome[]): void {
+  const accountId = awsAccountIdFromCtx(ctx);
+  const connectionName = awsConnectionNameFromCtx(ctx);
+  // "AWS account 123456789012 — Production AWS" (name only shown when set).
+  const label = accountId
+    ? `AWS account ${accountId}${connectionName ? ` — ${connectionName}` : ''}`
+    : null;
+  const describe = (description: string) =>
+    label ? `${description} (${label})` : description;
+  const stamp = (evidence: Record<string, unknown> | undefined) =>
+    accountId
+      ? {
+          ...(evidence ?? {}),
+          awsAccountId: accountId,
+          ...(connectionName ? { awsConnectionName: connectionName } : {}),
+        }
+      : evidence;
+
   for (const o of outcomes) {
     if (o.kind === 'pass') {
       ctx.pass({
         title: o.title,
-        description: o.description,
+        description: describe(o.description),
         resourceType: o.resourceType,
         resourceId: o.resourceId,
-        evidence: o.evidence ?? {},
+        evidence: stamp(o.evidence) ?? {},
       });
     } else {
       ctx.fail({
         title: o.title,
-        description: o.description,
+        description: describe(o.description),
         resourceType: o.resourceType,
         resourceId: o.resourceId,
         severity: o.severity ?? 'medium',
         remediation: o.remediation ?? 'Review and remediate this finding.',
-        evidence: o.evidence,
+        evidence: stamp(o.evidence),
       });
     }
   }
