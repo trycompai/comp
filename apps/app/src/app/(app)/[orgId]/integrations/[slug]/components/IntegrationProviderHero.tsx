@@ -10,6 +10,7 @@ import { getConnectionDisplayLabel } from './connection-display';
 type HeroProps = {
   provider: IntegrationProvider;
   isConnected: boolean;
+  canCreateConnection: boolean;
   activeConnections: ConnectionListItem[];
   selectedConnection: ConnectionListItem | null;
   onSelectConnection: (id: string) => void;
@@ -20,6 +21,7 @@ type HeroProps = {
 export function IntegrationProviderHero({
   provider,
   isConnected,
+  canCreateConnection,
   activeConnections,
   selectedConnection,
   onSelectConnection,
@@ -142,7 +144,11 @@ export function IntegrationProviderHero({
                               connection, so a second OAuth connect silently
                               merges into the first — only offer "Add" where
                               the connect flow can actually create another. */}
-                          {provider.supportsMultipleConnections &&
+                          {/* Adding a connection is a create action — gate on
+                              RBAC, not just provider metadata, so users without
+                              integration:create aren't offered the flow. */}
+                          {canCreateConnection &&
+                            provider.supportsMultipleConnections &&
                             provider.authType !== 'oauth2' && (
                               <div className="flex shrink-0 items-center p-0.5">
                                 <Button
