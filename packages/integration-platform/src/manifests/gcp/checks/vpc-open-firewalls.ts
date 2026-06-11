@@ -4,7 +4,7 @@ import {
   remediationForReadFailure,
   toHttpReadFailure,
 } from '../../http-read-failure';
-import { gcpListItems, portsCover, resolveGcpProjectIds } from './shared';
+import { gcpListItems, portsCover, resolveGcpProjectIds, isGcpApiDisabled } from './shared';
 
 interface FirewallRule {
   name: string;
@@ -114,9 +114,14 @@ export const vpcOpenFirewallsCheck: IntegrationCheck = {
           });
         }
       } catch (err) {
-        // A read failure for this project is unverified — emit a finding rather
-        // than warn-and-skip, otherwise an all-projects-failed run emits no
-        // outcomes and leaves the mapped task stale (a silent clean run).
+        // The service's API simply isn't enabled on this project (403
+        // SERVICE_DISABLED) — nothing of this type exists here to evaluate,
+        // so skip it like a zero-resource project instead of emitting a
+        // false "grant permission" finding.
+        if (isGcpApiDisabled(err)) {
+          ctx.log(`GCP Compute: API not enabled in project "${projectId}" — no firewall rules to evaluate; skipping`);
+          continue;
+        }
         const failure = toHttpReadFailure(err);
         ctx.fail({
           title: `Could not verify VPC firewall rules: ${projectId}`,

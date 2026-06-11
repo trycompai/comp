@@ -127,3 +127,25 @@ export function portsCover(
     return Number(spec) === target;
   });
 }
+
+/**
+ * True when a GCP API call failed only because the service's API is not
+ * enabled on the project (HTTP 403 with reason SERVICE_DISABLED, e.g. "Cloud
+ * SQL Admin API has not been used in project X ... or it is disabled").
+ *
+ * This is NOT a permission problem: a project that hasn't enabled the API has
+ * no resources of that type to evaluate, so the per-project check should skip
+ * it (like a project with zero instances) rather than emit a false "could not
+ * verify — grant <permission>" finding. A genuine PERMISSION_DENIED (API
+ * enabled, role missing) does NOT match and still surfaces as a finding.
+ */
+export function isGcpApiDisabled(err: unknown): boolean {
+  const message = err instanceof Error ? err.message : String(err);
+  // Match only Google's specific SERVICE_DISABLED signature, not any mention of
+  // "API"/"disabled" — over-broad matching could hide a genuine permission gap.
+  return (
+    /SERVICE_DISABLED/i.test(message) ||
+    /has not been used in project .* before or it is disabled/i.test(message) ||
+    /Enable it by visiting/i.test(message)
+  );
+}
