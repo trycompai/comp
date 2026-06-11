@@ -277,6 +277,28 @@ describe('SecurityPenetrationTestsService', () => {
     );
   });
 
+  it('creates the run even when the notes lookup fails (best-effort context)', async () => {
+    fetchMock.mockResolvedValueOnce(
+      new Response(JSON.stringify({ id: 'run_456', status: 'provisioning' }), {
+        status: 200,
+      }),
+    );
+    // e.g. transient outage, or the table missing mid-deploy before the
+    // migration has run — must never block pentest creation.
+    mockedDb.securityPenetrationTestFindingContext.findMany.mockRejectedValue(
+      new Error('relation does not exist'),
+    );
+
+    const result = await service.createReport('org_123', {
+      targetUrl: 'https://app.example.com',
+      additionalContext: 'User-typed context.',
+    });
+
+    expect(result.id).toBe('run_456');
+    const requestBody = await getRequestBody();
+    expect(requestBody.additionalContext).toBe('User-typed context.');
+  });
+
   it('appends stored finding-context notes for the normalized target to additionalContext', async () => {
     fetchMock.mockResolvedValueOnce(
       new Response(JSON.stringify({ id: 'run_456', status: 'provisioning' }), {

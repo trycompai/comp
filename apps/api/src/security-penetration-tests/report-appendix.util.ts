@@ -61,7 +61,38 @@ function sanitizePdfText(text: string): string {
     .replace(/[^\n\x20-\x7E¡-ÿ]/g, '?');
 }
 
-function wrapText(params: {
+// Character-level split for a single token wider than the line (long
+// URLs, IDs). Without this the token would be emitted as one overflowing
+// line and run off the page margin.
+function splitLongWord(params: {
+  word: string;
+  font: PDFFont;
+  fontSize: number;
+  maxWidth: number;
+}): string[] {
+  const parts: string[] = [];
+  let current = '';
+  for (const char of params.word) {
+    const candidate = current + char;
+    if (
+      params.font.widthOfTextAtSize(candidate, params.fontSize) >
+        params.maxWidth &&
+      current
+    ) {
+      parts.push(current);
+      current = char;
+    } else {
+      current = candidate;
+    }
+  }
+  if (current) {
+    parts.push(current);
+  }
+  return parts;
+}
+
+/** Exported for tests — every returned line fits within maxWidth. */
+export function wrapText(params: {
   text: string;
   font: PDFFont;
   fontSize: number;
@@ -77,6 +108,18 @@ function wrapText(params: {
 
     let currentLine = '';
     for (const word of paragraph.split(' ')) {
+      const wordWidth = params.font.widthOfTextAtSize(word, params.fontSize);
+      if (wordWidth > params.maxWidth) {
+        if (currentLine) {
+          lines.push(currentLine);
+          currentLine = '';
+        }
+        const parts = splitLongWord({ ...params, word });
+        lines.push(...parts.slice(0, -1));
+        currentLine = parts[parts.length - 1] ?? '';
+        continue;
+      }
+
       const candidate = currentLine ? `${currentLine} ${word}` : word;
       const candidateWidth = params.font.widthOfTextAtSize(
         candidate,

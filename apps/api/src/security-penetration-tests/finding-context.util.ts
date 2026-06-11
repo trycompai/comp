@@ -12,19 +12,26 @@ export interface FindingContextNote {
 /**
  * Canonical form of a scan target so notes written on a run match future
  * runs of the same target regardless of casing or a trailing slash
- * (`https://App.example.com/` ≡ `https://app.example.com`). Non-URL input
- * is returned trimmed — the create DTO already enforces a valid URL.
+ * (`https://App.example.com/` ≡ `https://app.example.com`). Only the
+ * path's trailing slashes are stripped — a `/` at the end of a query
+ * value belongs to that value and must survive. Non-URL input is
+ * returned trimmed — the create DTO already enforces a valid URL.
  */
 export function normalizeTargetUrl(value: string): string {
   const trimmed = value.trim();
   try {
     const url = new URL(trimmed);
     url.hash = '';
-    let normalized = url.toString();
-    while (normalized.endsWith('/')) {
-      normalized = normalized.slice(0, -1);
+    while (url.pathname.length > 1 && url.pathname.endsWith('/')) {
+      url.pathname = url.pathname.slice(0, -1);
     }
-    return normalized;
+    const normalized = url.toString();
+    // URL always renders the bare root path with a trailing slash
+    // (`https://x.com/`); drop it for origin-only targets so keys stay
+    // in the `https://x.com` form.
+    return url.pathname === '/' && !url.search
+      ? normalized.replace(/\/$/, '')
+      : normalized;
   } catch {
     return trimmed;
   }

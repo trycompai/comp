@@ -1,7 +1,8 @@
-import { PDFDocument } from 'pdf-lib';
+import { PDFDocument, StandardFonts } from 'pdf-lib';
 import {
   appendContextNotesToMarkdown,
   appendContextNotesToPdf,
+  wrapText,
   type ReportContextNote,
 } from './report-appendix.util';
 
@@ -106,6 +107,28 @@ describe('appendContextNotesToPdf', () => {
 
     const merged = await PDFDocument.load(result);
     expect(merged.getPageCount()).toBe(2);
+  });
+
+  it('hard-wraps unbroken tokens wider than the line (long URLs/IDs)', async () => {
+    const doc = await PDFDocument.create();
+    const font = await doc.embedFont(StandardFonts.Helvetica);
+    const maxWidth = 483; // appendix body width: 595 - 2 * 56
+    const longUrl = `https://app.example.com/api/v1/resources/${'a'.repeat(300)}`;
+
+    const lines = wrapText({
+      text: `Remediated, see ${longUrl} for the change.`,
+      font,
+      fontSize: 10,
+      maxWidth,
+    });
+
+    expect(lines.length).toBeGreaterThan(1);
+    for (const line of lines) {
+      expect(font.widthOfTextAtSize(line, 10)).toBeLessThanOrEqual(maxWidth);
+    }
+    // Nothing got dropped while splitting.
+    expect(lines.join('')).toContain('aaaaaaaaaa');
+    expect(lines.join(' ')).toContain('Remediated,');
   });
 
   it('throws on unparseable provider bytes (caller falls back to original)', async () => {
