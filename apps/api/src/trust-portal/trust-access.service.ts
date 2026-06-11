@@ -763,6 +763,7 @@ export class TrustAccessService {
       organizationName: request.organization.name,
       expiresAt: result.grant.expiresAt,
       portalUrl,
+      ndaBypassed: true,
     });
 
     return {
@@ -976,6 +977,9 @@ export class TrustAccessService {
             },
           },
         },
+        ndaAgreement: {
+          select: { status: true },
+        },
       },
     });
 
@@ -1028,6 +1032,9 @@ export class TrustAccessService {
       organizationName: grant.accessRequest.organization.name,
       expiresAt: grant.expiresAt,
       portalUrl,
+      // A bypassed grant has no NDA agreement; an NDA-signed grant links a
+      // 'signed' one. Mirror the original email's copy when resending.
+      ndaBypassed: grant.ndaAgreement?.status !== 'signed',
     });
 
     return { message: 'Access email resent successfully' };
@@ -1239,6 +1246,7 @@ export class TrustAccessService {
       organizationName: nda.accessRequest.organization.name,
       expiresAt: result.grant.expiresAt,
       portalUrl,
+      ndaBypassed: false,
     });
 
     const pdfUrl = await this.ndaPdfService.getSignedUrl(pdfKey);

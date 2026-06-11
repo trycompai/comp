@@ -18,6 +18,11 @@ interface Props {
   organizationName: string;
   expiresAt: Date;
   portalUrl: string;
+  /**
+   * When true, access was granted without an NDA (the requester's email or
+   * domain is on the trust portal allow list). NDA-specific copy is omitted.
+   */
+  ndaBypassed?: boolean;
 }
 
 export const AccessGrantedEmail = ({
@@ -25,6 +30,7 @@ export const AccessGrantedEmail = ({
   organizationName,
   expiresAt,
   portalUrl,
+  ndaBypassed = false,
 }: Props) => {
   return (
     <Html>
@@ -60,9 +66,18 @@ export const AccessGrantedEmail = ({
             </Text>
 
             <Text className="text-[14px] leading-[24px] text-[#121212]">
-              Your NDA has been signed and your access to{' '}
-              <strong>{organizationName}</strong>'s policy documentation is now
-              active.
+              {ndaBypassed ? (
+                <>
+                  Your access to <strong>{organizationName}</strong>'s policy
+                  documentation is now active.
+                </>
+              ) : (
+                <>
+                  Your NDA has been signed and your access to{' '}
+                  <strong>{organizationName}</strong>'s policy documentation is
+                  now active.
+                </>
+              )}
             </Text>
 
             <Text className="text-[14px] leading-[24px] text-[#121212]">
@@ -85,10 +100,12 @@ export const AccessGrantedEmail = ({
               </Button>
             </Section>
 
-            <Text className="text-[14px] leading-[24px] text-[#121212]">
-              You can download your signed NDA for your records from the
-              confirmation page or by accessing the portal above.
-            </Text>
+            {!ndaBypassed && (
+              <Text className="text-[14px] leading-[24px] text-[#121212]">
+                You can download your signed NDA for your records from the
+                confirmation page or by accessing the portal above.
+              </Text>
+            )}
 
             <Section
               className="mt-[30px] mb-[20px] rounded-[3px] border-l-4 p-[15px]"
