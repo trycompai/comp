@@ -1,3 +1,10 @@
+## [3.78.2](https://github.com/trycompai/comp/compare/v3.78.1...v3.78.2) (2026-06-11)
+
+
+### Bug Fixes
+
+* **assistant-chat:** scope chat to membership-verified org ([2294c2e](https://github.com/trycompai/comp/commit/2294c2eb26b49dfb34d3088dc2e8040e8505ce83))
+
 ## [3.78.1](https://github.com/trycompai/comp/compare/v3.78.0...v3.78.1) (2026-06-11)
 
 
