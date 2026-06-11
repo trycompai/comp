@@ -1,9 +1,9 @@
 import {
-  BadRequestException,
   Body,
   Controller,
   Delete,
   Get,
+  Header,
   HttpException,
   HttpStatus,
   Post,
@@ -40,6 +40,7 @@ import { buildTools } from './assistant-chat-tools';
 import type { AssistantChatMessage } from './assistant-chat.types';
 import { RolesService } from '../roles/roles.service';
 import { ASSISTANT_OPENAI_PROVIDER_OPTIONS } from './openai-options';
+import { resolveAssistantChatContext } from './assistant-chat-context';
 
 @ApiTags('Assistant Chat')
 @Controller({ path: 'assistant-chat', version: '1' })
@@ -54,19 +55,13 @@ export class AssistantChatController {
     private readonly rolesService: RolesService,
   ) {}
 
-  private getUserScopedContext(auth: AuthContextType): {
-    organizationId: string;
-    userId: string;
-  } {
-    if (!auth.organizationId) {
-      throw new BadRequestException('Organization ID is required');
-    }
-
-    if (!auth.userId) {
-      throw new BadRequestException('User ID is required');
-    }
-
-    return { organizationId: auth.organizationId, userId: auth.userId };
+  private resolveContext(auth: AuthContextType, req: Request) {
+    return resolveAssistantChatContext({
+      auth,
+      req,
+      rolesService: this.rolesService,
+      logger: this.logger,
+    });
   }
 
   @Post('completions')
@@ -91,16 +86,13 @@ export class AssistantChatController {
         return;
       }
 
-      const { organizationId, userId } = this.getUserScopedContext(auth);
+      const { organizationId, userId, permissions } = await this.resolveContext(
+        auth,
+        req,
+      );
 
       const body = req.body as { messages?: UIMessage[] };
       const messages = body?.messages ?? [];
-
-      const userRoles = auth.userRoles ?? [];
-      const permissions = await this.rolesService.resolvePermissions(
-        organizationId,
-        userRoles,
-      );
 
       const tools = buildTools({ organizationId, userId, permissions });
 
@@ -180,6 +172,7 @@ Important:
   }
 
   @Get('history')
+  @Header('Cache-Control', 'no-store')
   @ApiOperation({
     summary: 'Get assistant chat history',
     description:
@@ -197,8 +190,9 @@ Important:
   })
   async getHistory(
     @AuthContext() auth: AuthContextType,
+    @Req() req: Request,
   ): Promise<{ messages: AssistantChatMessage[] }> {
-    const { organizationId, userId } = this.getUserScopedContext(auth);
+    const { organizationId, userId } = await this.resolveContext(auth, req);
 
     const messages = await this.assistantChatService.getHistory({
       organizationId,
@@ -217,9 +211,10 @@ Important:
   })
   async saveHistory(
     @AuthContext() auth: AuthContextType,
+    @Req() req: Request,
     @Body() dto: SaveAssistantChatHistoryDto,
   ): Promise<{ success: true }> {
-    const { organizationId, userId } = this.getUserScopedContext(auth);
+    const { organizationId, userId } = await this.resolveContext(auth, req);
 
     await this.assistantChatService.saveHistory(
       { organizationId, userId },
@@ -237,8 +232,9 @@ Important:
   })
   async clearHistory(
     @AuthContext() auth: AuthContextType,
+    @Req() req: Request,
   ): Promise<{ success: true }> {
-    const { organizationId, userId } = this.getUserScopedContext(auth);
+    const { organizationId, userId } = await this.resolveContext(auth, req);
 
     await this.assistantChatService.clearHistory({
       organizationId,
