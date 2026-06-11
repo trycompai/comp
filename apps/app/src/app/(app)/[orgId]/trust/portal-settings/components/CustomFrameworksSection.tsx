@@ -166,7 +166,7 @@ export function CustomFrameworksSection({
                 throw error;
               }
             }}
-            onFileUpload={handleFileUpload}
+            onFileUpload={canUpdate ? handleFileUpload : undefined}
             onFilePreview={handleFilePreview}
           />
         ))}
