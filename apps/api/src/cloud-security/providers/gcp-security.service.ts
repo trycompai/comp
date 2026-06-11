@@ -1375,6 +1375,11 @@ export class GCPSecurityService {
     const allFindings: SecurityFinding[] = [];
     const enabledServiceSet = enabledServices ? new Set(enabledServices) : null;
     const seenIds = new Set<string>();
+    // Track per-scope outcomes so a scan where EVERY scope errored fails loudly
+    // instead of silently returning [] (see the all-scopes-failed guard below).
+    const successfulScopes = new Set<string>();
+    const failedScopes = new Set<string>();
+    let firstScopeError: Error | null = null;
 
     for (const scope of scopes) {
       try {
@@ -1434,12 +1439,32 @@ export class GCPSecurityService {
 
           pageToken = response.nextPageToken;
         } while (pageToken);
+        successfulScopes.add(scope.id);
       } catch (err) {
-        // Log and continue with remaining projects — don't fail the whole scan
+        // Log and continue with the remaining scopes — one bad project must not
+        // abort the others. But remember the failure: if EVERY scope fails we
+        // surface it below instead of reporting a misleading "0 findings".
+        const error = err instanceof Error ? err : new Error(String(err));
         this.logger.warn(
-          `GCP SCC query failed for ${scope.type} ${scope.id}: ${err instanceof Error ? err.message : String(err)}`,
+          `GCP SCC query failed for ${scope.type} ${scope.id}: ${error.message}`,
         );
+        failedScopes.add(scope.id);
+        if (!firstScopeError) firstScopeError = error;
       }
+    }
+
+    // If every configured scope errored, fail the scan instead of returning [].
+    // A silent [] is stored as a fresh "success" run with 0 findings, which
+    // (a) hides the previous good results — the UI shows only the latest run —
+    // and (b) makes reconciliation mark every prior finding as falsely
+    // "resolved". Re-throw the underlying SCC error so its actionable message
+    // (SCC_NOT_ACTIVATED / PERMISSION_DENIED / …) reaches the user. Mirrors the
+    // AWS all-regions-failed guard in aws-security.service.ts.
+    if (successfulScopes.size === 0 && failedScopes.size > 0) {
+      throw (
+        firstScopeError ??
+        new Error(`All ${failedScopes.size} GCP scope(s) failed to scan`)
+      );
     }
 
     this.logger.log(`Found ${allFindings.length} GCP security findings`);
