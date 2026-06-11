@@ -28,6 +28,18 @@ describe('normalizeTargetUrl', () => {
     );
   });
 
+  it('preserves a trailing slash that belongs to a query value', () => {
+    expect(
+      normalizeTargetUrl('https://app.example.com/?next=/portal/'),
+    ).toBe('https://app.example.com/?next=/portal/');
+  });
+
+  it('strips path trailing slashes while keeping the query intact', () => {
+    expect(normalizeTargetUrl('https://app.example.com/app/?v=2')).toBe(
+      'https://app.example.com/app?v=2',
+    );
+  });
+
   it('returns non-URL input trimmed', () => {
     expect(normalizeTargetUrl('  not a url  ')).toBe('not a url');
   });

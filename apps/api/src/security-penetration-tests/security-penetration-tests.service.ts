@@ -461,20 +461,20 @@ export class SecurityPenetrationTestsService {
    * context notes customers saved on findings from previous scans of the
    * same target (see PentestFindingContextsService). This is what makes a
    * re-run an informed retest instead of a blind one.
+   *
+   * The notes lookup is best-effort: a DB failure (transient outage, or
+   * the table missing mid-deploy before the migration runs) must never
+   * block creating a pentest — the run proceeds with whatever context
+   * the caller typed, and the miss is logged.
    */
   private async resolveAdditionalContext(
     organizationId: string,
     payload: CreatePenetrationTestDto,
   ): Promise<string | undefined> {
-    const findingContexts =
-      await db.securityPenetrationTestFindingContext.findMany({
-        where: {
-          organizationId,
-          targetUrl: normalizeTargetUrl(payload.targetUrl),
-        },
-        orderBy: { createdAt: 'asc' },
-        select: { issueTitle: true, context: true },
-      });
+    const findingContexts = await this.findContextNotesQuietly(
+      organizationId,
+      payload.targetUrl,
+    );
 
     return buildAdditionalContext({
       userProvidedContext: payload.additionalContext,
