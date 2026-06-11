@@ -1516,6 +1516,18 @@ export class GCPSecurityService {
             'Enable it at https://console.cloud.google.com/security/command-center — the Standard tier is free.',
         );
       }
+      // SCC v2 returns 404 NOT_FOUND when the scoped resource has no SCC
+      // activation record — e.g. a project-scoped query on a no-org account
+      // where SCC Standard was never activated for the project.
+      if (
+        response.status === 404 ||
+        errorText.includes('Requested entity was not found')
+      ) {
+        throw new Error(
+          `SCC_NOT_ACTIVATED: Security Command Center is not activated for ${parent.replace('/', ' ')}. ` +
+            'Enable it at https://console.cloud.google.com/security/command-center — the Standard tier is free.',
+        );
+      }
       if (
         errorText.includes('PERMISSION_DENIED') ||
         errorText.includes('403')

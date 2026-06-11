@@ -771,6 +771,21 @@ describe('GCPSecurityService.scanSecurityFindings — all-scopes-failed guard', 
     ).rejects.toThrow(/Permission denied/);
   });
 
+  // The exact case from the customer report: project-scoped SCC query on a
+  // no-org account returns 404 NOT_FOUND (SCC never activated for the project).
+  it('maps a 404 NOT_FOUND to the actionable SCC_NOT_ACTIVATED error', async () => {
+    fetchMock.mockResolvedValue(
+      sccError(404, '{"error":{"code":404,"message":"Requested entity was not found.","status":"NOT_FOUND"}}'),
+    );
+
+    await expect(
+      service.scanSecurityFindings(
+        { access_token: 'tok' },
+        { project_ids: ['wasimil-prod'] },
+      ),
+    ).rejects.toThrow(/SCC_NOT_ACTIVATED/);
+  });
+
   it('throws when EVERY configured scope errors', async () => {
     fetchMock.mockResolvedValue(sccError(500, 'internal error'));
 
