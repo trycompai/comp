@@ -1,3 +1,31 @@
+# [3.78.0](https://github.com/trycompai/comp/compare/v3.77.0...v3.78.0) (2026-06-11)
+
+
+### Bug Fixes
+
+* guard optimistic state sync and align picker page cap (cubic on [#3095](https://github.com/trycompai/comp/issues/3095)) ([c39011f](https://github.com/trycompai/comp/commit/c39011fe803c01855558361b8b658fb028545cb1))
+* **integration-platform:** isolate per-subscription wildcard scan + graceful subscription picker ([62fd692](https://github.com/trycompai/comp/commit/62fd6927be813c3592075ca801b77ae9f3f61d9b))
+* **integration-platform:** make multi-subscription scanning strictly opt-in ([c1bce47](https://github.com/trycompai/comp/commit/c1bce471fad128a1100f4fb142938ed27e343165))
+* **integration-platform:** stamp account attribution on account-level AWS findings ([1493c5c](https://github.com/trycompai/comp/commit/1493c5c50eb48d057bfba411bd52eed8f229e7ce)), closes [#3086](https://github.com/trycompai/comp/issues/3086) [#3065](https://github.com/trycompai/comp/issues/3065)
+* **integration-platform:** surface real read errors in azure/gcp checks (CS-534 part 1) ([91135b2](https://github.com/trycompai/comp/commit/91135b2adb80851c309e3023c8beee69063e7be4))
+* **integration-platform:** surface real read errors in cloudtrail/kms/iam/ec2/rds checks (CS-533) ([5d7e2a0](https://github.com/trycompai/comp/commit/5d7e2a001dc2cdfe00ed68b2fafd3a6bfc3bb83b)), closes [#3075](https://github.com/trycompai/comp/issues/3075)
+* **integration-platform:** surface the subscription scan cap as an explicit finding ([e6dda8c](https://github.com/trycompai/comp/commit/e6dda8c14ba88536e8336b3a343c70c9f8e939c5))
+* **integrations:** gate the Add-account CTA on integration:create RBAC ([6c35625](https://github.com/trycompai/comp/commit/6c35625d6dd38cd77b44322cf1c21ccedc3c37c5))
+* resolve cubic findings from the production deploy review ([#3087](https://github.com/trycompai/comp/issues/3087)) ([9f30138](https://github.com/trycompai/comp/commit/9f3013854bc2a86bffc35c57ad2fb9c570c117b0))
+* **trust-portal:** resync custom-framework state + mark response fields nullable ([ec5ba44](https://github.com/trycompai/comp/commit/ec5ba440965293de95de03b6ba104ca4d70e46fc))
+* **trust-portal:** validate allowed-emails body with a DTO ([06ed9bd](https://github.com/trycompai/comp/commit/06ed9bd3da20245e22ac57531f19518b132f83b3))
+* **trust:** gate certificate drag-and-drop behind the read-only permission ([086bf7c](https://github.com/trycompai/comp/commit/086bf7c4f6396f8f4a13281fd2678ed72e4686e0))
+* **trust:** reset the certificate file input on every selection, not only success ([7d51e2c](https://github.com/trycompai/comp/commit/7d51e2cce240395bccf2e42a19843a6486fc9713))
+* **trust:** resolve 4 cubic findings from the production deploy review ([c2b9122](https://github.com/trycompai/comp/commit/c2b91222c3f0c3dbce37433809426a37ef65657f))
+* **trust:** return 400 not 500 on malformed PUT /custom-frameworks body ([bb30749](https://github.com/trycompai/comp/commit/bb3074948e8d6de94d45fc6eb2533bae0086fae0))
+
+
+### Features
+
+* **integration-platform:** scan all enabled Azure subscriptions (CS-534 part 2) ([9912b9a](https://github.com/trycompai/comp/commit/9912b9a54a220c33c62fdb8ebac453958a2dbdba))
+* **trust-portal:** add per-email NDA-bypass allowlist ([3e3ed70](https://github.com/trycompai/comp/commit/3e3ed70d59af17a3189065804f33e4ef20aaee67))
+* **trust-portal:** display custom frameworks on the trust portal ([e9ed93d](https://github.com/trycompai/comp/commit/e9ed93df7740d23279ca461550a6c5cbe2187351))
+
 # [3.77.0](https://github.com/trycompai/comp/compare/v3.76.0...v3.77.0) (2026-06-10)
 
 
