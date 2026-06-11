@@ -1,9 +1,25 @@
+// The controller's runtime import chain reaches `@db`, which instantiates
+// a Prisma client at module load. These tests never touch the database.
+jest.mock('@db', () => ({ db: {} }));
+
 jest.mock('../auth/hybrid-auth.guard', () => ({
   HybridAuthGuard: class {
     canActivate() {
       return true;
     }
   },
+}));
+
+// The real PermissionGuard transitively imports better-auth's ESM bundle,
+// which Jest cannot parse. PERMISSIONS_KEY keeps its real value so
+// @RequirePermission metadata stays intact for any metadata assertions.
+jest.mock('../auth/permission.guard', () => ({
+  PermissionGuard: class {
+    canActivate() {
+      return true;
+    }
+  },
+  PERMISSIONS_KEY: 'required_permissions',
 }));
 
 import { SecurityPenetrationTestsController } from './security-penetration-tests.controller';

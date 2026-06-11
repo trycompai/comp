@@ -33,6 +33,15 @@ import {
   type ScanDepth,
 } from './dto/create-penetration-test.dto';
 import { BillingEntitlementsService } from '../billing/billing-entitlements.service';
+import {
+  buildAdditionalContext,
+  normalizeTargetUrl,
+} from './finding-context.util';
+import {
+  appendContextNotesToMarkdown,
+  appendContextNotesToPdf,
+  type ReportContextNote,
+} from './report-appendix.util';
 import { PentestCreditsService } from './pentest-credits.service';
 
 /**
@@ -243,6 +252,12 @@ export class SecurityPenetrationTestsService {
     payload: CreatePenetrationTestDto,
   ): Promise<SecurityPenetrationTest> {
     const resolvedWebhookUrl = this.resolveWebhookUrl(payload.webhookUrl);
+    // Resolved before the billing reservation so a DB failure here can't
+    // leave a debited allowance behind.
+    const additionalContext = await this.resolveAdditionalContext(
+      organizationId,
+      payload,
+    );
     const billingUsageSourceId = `pending:${randomUUID()}`;
     let consumedSubscriptionAllowance = false;
 
@@ -322,6 +337,7 @@ export class SecurityPenetrationTestsService {
         ? { evidenceLevel: payload.evidenceLevel }
         : {}),
       ...(payload.checks ? { checks: payload.checks } : {}),
+      ...(additionalContext ? { additionalContext } : {}),
       // Attribution metadata — Maced persists this verbatim and returns it on
       // list/get. Gives us a second source of truth for the org↔run mapping
       // (our `security_penetration_test_runs` table is the primary one) so
@@ -439,6 +455,33 @@ export class SecurityPenetrationTestsService {
     };
   }
 
+  /**
+   * Composes the free-text briefing sent to the testing agent: the
+   * caller's own `additionalContext` (if any) plus the per-finding
+   * context notes customers saved on findings from previous scans of the
+   * same target (see PentestFindingContextsService). This is what makes a
+   * re-run an informed retest instead of a blind one.
+   */
+  private async resolveAdditionalContext(
+    organizationId: string,
+    payload: CreatePenetrationTestDto,
+  ): Promise<string | undefined> {
+    const findingContexts =
+      await db.securityPenetrationTestFindingContext.findMany({
+        where: {
+          organizationId,
+          targetUrl: normalizeTargetUrl(payload.targetUrl),
+        },
+        orderBy: { createdAt: 'asc' },
+        select: { issueTitle: true, context: true },
+      });
+
+    return buildAdditionalContext({
+      userProvidedContext: payload.additionalContext,
+      findingContexts,
+    });
+  }
+
   async getReport(
     organizationId: string,
     id: string,
@@ -492,15 +535,24 @@ export class SecurityPenetrationTestsService {
     organizationId: string,
     id: string,
   ): Promise<BinaryArtifact> {
-    await this.getReport(organizationId, id);
+    const run = await this.getReport(organizationId, id);
 
     const report = await this.callMaced(
       () => this.macedClient.pentests.report(id),
       `fetching penetration test report ${id}`,
     );
 
+    const notes = await this.findContextNotesQuietly(
+      organizationId,
+      run.targetUrl,
+    );
+    const markdown =
+      notes.length > 0
+        ? appendContextNotesToMarkdown({ markdown: report.markdown, notes })
+        : report.markdown;
+
     return {
-      buffer: Buffer.from(report.markdown, 'utf-8'),
+      buffer: Buffer.from(markdown, 'utf-8'),
       contentType: 'text/markdown; charset=utf-8',
       contentDisposition: null,
     };
@@ -510,18 +562,67 @@ export class SecurityPenetrationTestsService {
     organizationId: string,
     id: string,
   ): Promise<BinaryArtifact> {
-    await this.getReport(organizationId, id);
+    const run = await this.getReport(organizationId, id);
 
     const blob = await this.callMaced(
       () => this.macedClient.pentests.reportPdf(id),
       `fetching penetration test PDF ${id}`,
     );
 
+    const original = Buffer.from(await blob.arrayBuffer());
+    const notes = await this.findContextNotesQuietly(
+      organizationId,
+      run.targetUrl,
+    );
+
+    let buffer: Buffer = original;
+    if (notes.length > 0) {
+      try {
+        buffer = await appendContextNotesToPdf({ pdfBytes: original, notes });
+      } catch (error) {
+        // The appendix is additive — a malformed/unparseable provider PDF
+        // must never break the download. Serve the original bytes.
+        this.logger.error(
+          `Unable to append context notes to PDF for run ${id}: ${
+            error instanceof Error ? error.message : String(error)
+          }`,
+        );
+      }
+    }
+
     return {
-      buffer: Buffer.from(await blob.arrayBuffer()),
+      buffer,
       contentType: blob.type || 'application/pdf',
       contentDisposition: `attachment; filename="penetration-test-${id}.pdf"`,
     };
+  }
+
+  /**
+   * Context notes for a target, for the report appendix. Quiet: a notes
+   * lookup failure must never break a report download, so errors are
+   * logged and an empty list is returned (appendix simply omitted).
+   */
+  private async findContextNotesQuietly(
+    organizationId: string,
+    targetUrl: string,
+  ): Promise<ReportContextNote[]> {
+    if (!targetUrl) {
+      return [];
+    }
+    try {
+      return await db.securityPenetrationTestFindingContext.findMany({
+        where: { organizationId, targetUrl: normalizeTargetUrl(targetUrl) },
+        orderBy: { createdAt: 'asc' },
+        select: { issueTitle: true, context: true, updatedAt: true },
+      });
+    } catch (error) {
+      this.logger.error(
+        `Unable to load finding context notes for report appendix: ${
+          error instanceof Error ? error.message : String(error)
+        }`,
+      );
+      return [];
+    }
   }
 
   async handleWebhook(params: {
