@@ -45,6 +45,9 @@ jest.mock('@db', () => ({
       findUnique: jest.fn(),
       findMany: jest.fn(),
     },
+    securityPenetrationTestFindingContext: {
+      findMany: jest.fn(),
+    },
     secret: {
       upsert: jest.fn(),
       findUnique: jest.fn(),
@@ -63,6 +66,9 @@ type MockDb = {
   securityPenetrationTestRun: {
     upsert: jest.Mock;
     findUnique: jest.Mock;
+    findMany: jest.Mock;
+  };
+  securityPenetrationTestFindingContext: {
     findMany: jest.Mock;
   };
   secret: {
@@ -139,6 +145,10 @@ describe('SecurityPenetrationTestsService', () => {
     mockedDb.securityPenetrationTestRun.findMany.mockResolvedValue([
       { providerRunId: 'run_123' },
     ]);
+    // Default: no stored finding-context notes for the target.
+    mockedDb.securityPenetrationTestFindingContext.findMany.mockResolvedValue(
+      [],
+    );
     mockedDb.secret.upsert.mockResolvedValue({});
     mockedDb.secret.findUnique.mockResolvedValue({
       id: 'sec_default',
@@ -231,6 +241,86 @@ describe('SecurityPenetrationTestsService', () => {
     );
     expect(mockedDb.secret.upsert).not.toHaveBeenCalled();
     expect(mockedDb.securityPenetrationTestRun.upsert).toHaveBeenCalledTimes(1);
+  });
+
+  it('omits additionalContext when there is no context to send', async () => {
+    fetchMock.mockResolvedValueOnce(
+      new Response(JSON.stringify({ id: 'run_456', status: 'provisioning' }), {
+        status: 200,
+      }),
+    );
+
+    await service.createReport('org_123', {
+      targetUrl: 'https://app.example.com',
+    });
+
+    const requestBody = await getRequestBody();
+    expect(requestBody).not.toHaveProperty('additionalContext');
+  });
+
+  it('passes user-provided additional context to the provider', async () => {
+    fetchMock.mockResolvedValueOnce(
+      new Response(JSON.stringify({ id: 'run_456', status: 'provisioning' }), {
+        status: 200,
+      }),
+    );
+
+    await service.createReport('org_123', {
+      targetUrl: 'https://app.example.com',
+      additionalContext: 'We deployed fixes for the auth findings last week.',
+    });
+
+    const requestBody = await getRequestBody();
+    expect(requestBody.additionalContext).toBe(
+      'We deployed fixes for the auth findings last week.',
+    );
+  });
+
+  it('appends stored finding-context notes for the normalized target to additionalContext', async () => {
+    fetchMock.mockResolvedValueOnce(
+      new Response(JSON.stringify({ id: 'run_456', status: 'provisioning' }), {
+        status: 200,
+      }),
+    );
+    mockedDb.securityPenetrationTestFindingContext.findMany.mockResolvedValue([
+      {
+        issueTitle: 'appConfiguration read access',
+        context:
+          'Accepted by design — collection holds non-secret bootstrap config.',
+      },
+      {
+        issueTitle: 'Unverified email access',
+        context: 'Email verification is now enabled in the tested environment.',
+      },
+    ]);
+
+    await service.createReport('org_123', {
+      // Mixed-case host + trailing slash — the stored-notes lookup must
+      // normalize before matching rows keyed by canonical target URL.
+      targetUrl: 'https://App.example.com/',
+      additionalContext: 'Focus on the three previously reported findings.',
+    });
+
+    expect(
+      mockedDb.securityPenetrationTestFindingContext.findMany,
+    ).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: {
+          organizationId: 'org_123',
+          targetUrl: 'https://app.example.com',
+        },
+      }),
+    );
+
+    const requestBody = await getRequestBody();
+    const additionalContext = requestBody.additionalContext as string;
+    expect(additionalContext).toContain(
+      'Focus on the three previously reported findings.',
+    );
+    expect(additionalContext).toContain('"appConfiguration read access"');
+    expect(additionalContext).toContain(
+      'Email verification is now enabled in the tested environment.',
+    );
   });
 
   it('accepts valid scan profile fields in the create DTO', async () => {

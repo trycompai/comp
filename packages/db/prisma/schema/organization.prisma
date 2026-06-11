@@ -50,6 +50,7 @@ model Organization {
   context                            Context[]
   secrets                            Secret[]
   securityPenetrationTestRuns        SecurityPenetrationTestRun[]
+  securityPenetrationTestFindingContexts SecurityPenetrationTestFindingContext[]
   trustAccessRequests                TrustAccessRequest[]
   trustNdaAgreements                 TrustNDAAgreement[]
   trustDocuments                     TrustDocument[]

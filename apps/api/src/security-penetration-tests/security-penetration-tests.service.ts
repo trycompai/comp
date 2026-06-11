@@ -33,6 +33,10 @@ import {
   type ScanDepth,
 } from './dto/create-penetration-test.dto';
 import { BillingEntitlementsService } from '../billing/billing-entitlements.service';
+import {
+  buildAdditionalContext,
+  normalizeTargetUrl,
+} from './finding-context.util';
 import { PentestCreditsService } from './pentest-credits.service';
 
 /**
@@ -243,6 +247,12 @@ export class SecurityPenetrationTestsService {
     payload: CreatePenetrationTestDto,
   ): Promise<SecurityPenetrationTest> {
     const resolvedWebhookUrl = this.resolveWebhookUrl(payload.webhookUrl);
+    // Resolved before the billing reservation so a DB failure here can't
+    // leave a debited allowance behind.
+    const additionalContext = await this.resolveAdditionalContext(
+      organizationId,
+      payload,
+    );
     const billingUsageSourceId = `pending:${randomUUID()}`;
     let consumedSubscriptionAllowance = false;
 
@@ -322,6 +332,7 @@ export class SecurityPenetrationTestsService {
         ? { evidenceLevel: payload.evidenceLevel }
         : {}),
       ...(payload.checks ? { checks: payload.checks } : {}),
+      ...(additionalContext ? { additionalContext } : {}),
       // Attribution metadata — Maced persists this verbatim and returns it on
       // list/get. Gives us a second source of truth for the org↔run mapping
       // (our `security_penetration_test_runs` table is the primary one) so
@@ -437,6 +448,33 @@ export class SecurityPenetrationTestsService {
         : {}),
       ...(payload.checks ? { checks: payload.checks } : {}),
     };
+  }
+
+  /**
+   * Composes the free-text briefing sent to the testing agent: the
+   * caller's own `additionalContext` (if any) plus the per-finding
+   * context notes customers saved on findings from previous scans of the
+   * same target (see PentestFindingContextsService). This is what makes a
+   * re-run an informed retest instead of a blind one.
+   */
+  private async resolveAdditionalContext(
+    organizationId: string,
+    payload: CreatePenetrationTestDto,
+  ): Promise<string | undefined> {
+    const findingContexts =
+      await db.securityPenetrationTestFindingContext.findMany({
+        where: {
+          organizationId,
+          targetUrl: normalizeTargetUrl(payload.targetUrl),
+        },
+        orderBy: { createdAt: 'asc' },
+        select: { issueTitle: true, context: true },
+      });
+
+    return buildAdditionalContext({
+      userProvidedContext: payload.additionalContext,
+      findingContexts,
+    });
   }
 
   async getReport(
