@@ -1,3 +1,11 @@
+## [3.78.4](https://github.com/trycompai/comp/compare/v3.78.3...v3.78.4) (2026-06-11)
+
+
+### Bug Fixes
+
+* **cloud-security:** don't let a fully-failed GCP/Azure scan wipe good results ([d893eb6](https://github.com/trycompai/comp/commit/d893eb65aac033afdf57b0d0ee06b70d9710e2b7))
+* **cloud-security:** map SCC 404 NOT_FOUND to the actionable SCC_NOT_ACTIVATED error ([d36d908](https://github.com/trycompai/comp/commit/d36d9089bb59d3a6a481a58f02e65642a87fa6df))
+
 ## [3.78.3](https://github.com/trycompai/comp/compare/v3.78.2...v3.78.3) (2026-06-11)
 
 
