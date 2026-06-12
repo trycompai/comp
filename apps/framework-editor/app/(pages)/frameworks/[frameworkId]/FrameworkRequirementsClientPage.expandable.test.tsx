@@ -22,6 +22,12 @@ vi.mock('../../../components/table', () => ({
 
 vi.mock('./components/EditFrameworkDialog', () => ({ EditFrameworkDialog: () => null }));
 vi.mock('./components/DeleteFrameworkDialog', () => ({ DeleteFrameworkDialog: () => null }));
+vi.mock('./versions/components/PublishVersionDialog', () => ({
+  PublishVersionDialog: () => null,
+}));
+vi.mock('./versions/hooks/useFrameworkVersions', () => ({
+  useFrameworkVersions: () => ({ data: [], refetch: vi.fn() }),
+}));
 vi.mock('@/app/lib/api-client', () => ({ apiClient: vi.fn() }));
 vi.mock('next/navigation', () => ({ useRouter: () => ({ refresh: vi.fn(), push: vi.fn() }) }));
 vi.mock('sonner', () => ({ toast: { success: vi.fn(), error: vi.fn() } }));
@@ -71,7 +77,11 @@ describe('FrameworkRequirementsClientPage — Description column', () => {
 
     const description = editableCellProps.find((p) => p.columnId === 'description');
     expect(description?.expandable).toBe(true);
-    expect(description?.expandTitle).toBe('Edit Requirement Description');
+    // Identifier + name are appended so the editor dialog says which requirement
+    // is being edited (FRAME-7), e.g. "… - AC-2 - Account Management".
+    expect(description?.expandTitle).toBe(
+      'Edit Requirement Description - AC-2 - Account Management',
+    );
 
     // The short single-line columns stay as plain inline edits.
     for (const columnId of ['identifier', 'name']) {
