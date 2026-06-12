@@ -15,7 +15,7 @@ import type { OrganizationFromMe } from '@/types';
 import { auth } from '@/utils/auth';
 import { GetObjectCommand } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@/lib/s3-presigner';
-import { OrganizationIdentifier } from '@trycompai/analytics';
+import { OrganizationIdentifier, ServerFeatureFlagsProvider } from '@trycompai/analytics';
 import { db, Role } from '@db/server';
 import dynamic from 'next/dynamic';
 import { cookies, headers } from 'next/headers';
@@ -146,21 +146,21 @@ export default async function Layout({
   // Check feature flags for menu items. Security (penetration tests) is
   // always enabled now — the nav rail entry is gated solely by the
   // `pentest:read` permission downstream, matching `security/layout.tsx`.
-  let isQuestionnaireEnabled = false;
-  let isTrustNdaEnabled = false;
-  let isWebAutomationsEnabled = false;
+  // The full map is also provided to the client via ServerFeatureFlagsProvider
+  // so `useFeatureFlag` keeps working when posthog-js is blocked client-side.
+  const featureFlags = session?.user?.id
+    ? await getFeatureFlags(session.user.id, {
+        groups: { organization: organization.id },
+      })
+    : {};
+  const isQuestionnaireEnabled = featureFlags['ai-vendor-questionnaire'] === true;
+  const isTrustNdaEnabled =
+    featureFlags['is-trust-nda-enabled'] === true ||
+    featureFlags['is-trust-nda-enabled'] === 'true';
+  const isWebAutomationsEnabled =
+    featureFlags['is-web-automations-enabled'] === true ||
+    featureFlags['is-web-automations-enabled'] === 'true';
   const isSecurityEnabled = true;
-  if (session?.user?.id) {
-    const flags = await getFeatureFlags(session.user.id, {
-      groups: { organization: organization.id },
-    });
-    isQuestionnaireEnabled = flags['ai-vendor-questionnaire'] === true;
-    isTrustNdaEnabled =
-      flags['is-trust-nda-enabled'] === true || flags['is-trust-nda-enabled'] === 'true';
-    isWebAutomationsEnabled =
-      flags['is-web-automations-enabled'] === true ||
-      flags['is-web-automations-enabled'] === 'true';
-  }
 
   // Check auditor role
   const hasAuditorRole = roles.includes(Role.auditor);
@@ -192,25 +192,27 @@ export default async function Layout({
       initialToken={publicAccessToken || undefined}
     >
       <OrganizationIdentifier orgId={organization.id} orgName={organization.name} />
-      <AppShellWrapper
-        organization={organization}
-        organizations={organizations}
-        logoUrls={logoUrls}
-        onboarding={onboarding}
-        isCollapsed={isCollapsed}
-        isQuestionnaireEnabled={isQuestionnaireEnabled}
-        isTrustNdaEnabled={isTrustNdaEnabled}
-        isWebAutomationsEnabled={isWebAutomationsEnabled}
-        isSecurityEnabled={isSecurityEnabled}
-        hasAuditorRole={hasAuditorRole}
-        isOnlyAuditor={isOnlyAuditor}
-        canAccessAuditorView={auditorViewVisible}
-        permissions={permissions}
-        user={user}
-        isAdmin={isUserAdmin}
-      >
-        {children}
-      </AppShellWrapper>
+      <ServerFeatureFlagsProvider flags={featureFlags}>
+        <AppShellWrapper
+          organization={organization}
+          organizations={organizations}
+          logoUrls={logoUrls}
+          onboarding={onboarding}
+          isCollapsed={isCollapsed}
+          isQuestionnaireEnabled={isQuestionnaireEnabled}
+          isTrustNdaEnabled={isTrustNdaEnabled}
+          isWebAutomationsEnabled={isWebAutomationsEnabled}
+          isSecurityEnabled={isSecurityEnabled}
+          hasAuditorRole={hasAuditorRole}
+          isOnlyAuditor={isOnlyAuditor}
+          canAccessAuditorView={auditorViewVisible}
+          permissions={permissions}
+          user={user}
+          isAdmin={isUserAdmin}
+        >
+          {children}
+        </AppShellWrapper>
+      </ServerFeatureFlagsProvider>
       <HotKeys />
     </TriggerTokenProvider>
   );
