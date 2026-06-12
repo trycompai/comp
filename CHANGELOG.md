@@ -1,3 +1,25 @@
+# [3.82.0](https://github.com/trycompai/comp/compare/v3.81.0...v3.82.0) (2026-06-12)
+
+
+### Bug Fixes
+
+* **analytics:** fall back to server-evaluated feature flags when posthog-js is blocked ([0653950](https://github.com/trycompai/comp/commit/065395056e8608eb6989f57cd123178b2dfa7655))
+* **cloud-security:** address cubic review on AWS-on-server checks ([aa23647](https://github.com/trycompai/comp/commit/aa23647c29dd3a6fd6e2e4b963a0e11f5dc1ab32))
+* **cloud-security:** exempt internal check-run endpoint from throttle + validate creds by auth type ([91ca27b](https://github.com/trycompai/comp/commit/91ca27b8ac6ad4c14ec469c7a4a35d6eb43758f6))
+* **cloud-security:** re-throw non-AWS errors in the per-check catch ([577bc05](https://github.com/trycompai/comp/commit/577bc057f0c564a9193188c523a8951f50b2bbf5))
+* **cloud-security:** run AWS integration checks on our server (scheduled false-fails) ([ade4bfa](https://github.com/trycompai/comp/commit/ade4bfacbf6041a8b6d26f2d96debf1ba2bd4793))
+* **framework-editor:** detect framework name/description-only changes for publish ([b6e8240](https://github.com/trycompai/comp/commit/b6e824070d5283673cb429bdf818dbdfaee48812))
+* **framework-editor:** flip Linked Controls panel up when clipped at bottom ([0483f3c](https://github.com/trycompai/comp/commit/0483f3ce44941a42201838bf7cdfca318e16117e))
+
+
+### Features
+
+* **app:** add expand-to-read for long requirement descriptions ([a7d30f3](https://github.com/trycompai/comp/commit/a7d30f32254f9538e28bb533f29f52d6e716e650))
+* **framework-editor:** add dark mode ([cc03bc2](https://github.com/trycompai/comp/commit/cc03bc2beedac44219c2bf190ad057b4ec421d63))
+* **framework-editor:** add save-as-draft and save-and-commit buttons ([bb7064b](https://github.com/trycompai/comp/commit/bb7064b8f8d0ac14855b4afc85ff61ccc1043a31))
+* **framework-editor:** resizable + size-remembering description editor ([9ef22dc](https://github.com/trycompai/comp/commit/9ef22dc5efc60aca3d9a09bc7659b1f93503fd20))
+* **framework-editor:** show requirement context in edit dialog + highlight row ([aad9701](https://github.com/trycompai/comp/commit/aad970122e03ad4b15c02eb0b01932bb2e93f470))
+
 # [3.81.0](https://github.com/trycompai/comp/compare/v3.80.0...v3.81.0) (2026-06-12)
 
 
