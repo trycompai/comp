@@ -10,8 +10,10 @@ import {
   requestValidCredentials,
   type IntegrationCredentialValues,
 } from './ensure-valid-credentials';
-import { injectAwsResolvedSession } from './checks-aws-session';
-import { runChecksOnServer } from './run-checks-on-server';
+import {
+  runChecksOnServer,
+  type RunAllChecksResult,
+} from './run-checks-on-server';
 
 /**
  * Send email notifications for task status change
@@ -219,91 +221,88 @@ export const runTaskIntegrationChecks = task({
       return { success: false, error: 'Connection not found or inactive' };
     }
 
-    // Ensure we have valid credentials (refresh OAuth tokens if needed)
     const apiUrl = process.env.BASE_URL || 'http://localhost:3333';
-    let credentials: IntegrationCredentialValues;
 
-    logger.info('Ensuring valid credentials (refreshing if needed)...');
-    const credentialsResult = await requestValidCredentials({
-      apiUrl,
-      connectionId,
-      organizationId,
-    });
+    // AWS checks run ON OUR SERVER (see the loop below), which decrypts the
+    // credentials and assumes the cross-account role there. So the Trigger-side
+    // credential/session preflight is skipped for AWS — running it would add
+    // redundant failure points (a transient preflight error would falsely fail
+    // an AWS run that `runChecksOnServer` could have completed).
+    let credentials: IntegrationCredentialValues = {};
+    let handleTokenRefresh: (() => Promise<string | null>) | undefined;
 
-    if (!credentialsResult.success || !credentialsResult.credentials) {
-      const errorMessage =
-        credentialsResult.error || 'Failed to validate credentials';
-      logger.error(errorMessage);
-
-      // If unauthorized, mark connection as error
-      if (credentialsResult.status === 401) {
-        await db.integrationConnection.update({
-          where: { id: connectionId },
-          data: {
-            status: 'error',
-            errorMessage:
-              'OAuth token expired. Please reconnect the integration.',
-          },
-        });
-      }
-
-      return { success: false, error: errorMessage };
-    }
-    credentials = credentialsResult.credentials;
-    logger.info('Credentials validated successfully');
-
-    const handleTokenRefresh = async (): Promise<string | null> => {
-      logger.info('Force refreshing OAuth credentials after provider 401...');
-      const refreshResult = await requestValidCredentials({
+    if (providerSlug !== 'aws') {
+      logger.info('Ensuring valid credentials (refreshing if needed)...');
+      const credentialsResult = await requestValidCredentials({
         apiUrl,
         connectionId,
         organizationId,
-        forceRefresh: true,
       });
 
-      if (!refreshResult.success || !refreshResult.credentials) {
-        logger.error(refreshResult.error || 'Forced token refresh failed');
-        return null;
+      if (!credentialsResult.success || !credentialsResult.credentials) {
+        const errorMessage =
+          credentialsResult.error || 'Failed to validate credentials';
+        logger.error(errorMessage);
+
+        // If unauthorized, mark connection as error
+        if (credentialsResult.status === 401) {
+          await db.integrationConnection.update({
+            where: { id: connectionId },
+            data: {
+              status: 'error',
+              errorMessage:
+                'OAuth token expired. Please reconnect the integration.',
+            },
+          });
+        }
+
+        return { success: false, error: errorMessage };
+      }
+      credentials = credentialsResult.credentials;
+      logger.info('Credentials validated successfully');
+
+      handleTokenRefresh = async (): Promise<string | null> => {
+        logger.info('Force refreshing OAuth credentials after provider 401...');
+        const refreshResult = await requestValidCredentials({
+          apiUrl,
+          connectionId,
+          organizationId,
+          forceRefresh: true,
+        });
+
+        if (!refreshResult.success || !refreshResult.credentials) {
+          logger.error(refreshResult.error || 'Forced token refresh failed');
+          return null;
+        }
+
+        credentials = refreshResult.credentials;
+        return getAccessToken(credentials) ?? null;
+      };
+
+      // Validate credentials based on auth type
+      if (manifest.auth.type === 'oauth2' && !getAccessToken(credentials)) {
+        logger.error(
+          `No OAuth access token found for connection: ${connectionId}`,
+        );
+        return {
+          success: false,
+          error: 'No OAuth access token found. Please reconnect.',
+        };
       }
 
-      credentials = refreshResult.credentials;
-      return getAccessToken(credentials) ?? null;
-    };
-
-    // Validate credentials based on auth type
-    if (manifest.auth.type === 'oauth2' && !getAccessToken(credentials)) {
-      logger.error(
-        `No OAuth access token found for connection: ${connectionId}`,
-      );
-      return {
-        success: false,
-        error: 'No OAuth access token found. Please reconnect.',
-      };
+      if (
+        manifest.auth.type === 'custom' &&
+        Object.keys(credentials).length === 0
+      ) {
+        logger.error(
+          `No credentials found for custom integration: ${connectionId}`,
+        );
+        return {
+          success: false,
+          error: 'No credentials found for custom integration',
+        };
+      }
     }
-
-    if (
-      manifest.auth.type === 'custom' &&
-      Object.keys(credentials).length === 0
-    ) {
-      logger.error(
-        `No credentials found for custom integration: ${connectionId}`,
-      );
-      return {
-        success: false,
-        error: 'No credentials found for custom integration',
-      };
-    }
-
-    // For AWS, resolve the cross-account session in ECS and inject the temp
-    // creds — the checks run in the Trigger.dev runtime, which cannot assume the
-    // role itself (no base creds / roleAssumer ARN there).
-    credentials = await injectAwsResolvedSession({
-      credentials,
-      apiUrl,
-      connectionId,
-      organizationId,
-      providerSlug,
-    });
 
     const variables =
       (connection.variables as Record<
@@ -345,32 +344,68 @@ export const runTaskIntegrationChecks = task({
         // Every other provider keeps executing here in the Trigger.dev runtime,
         // unchanged. The result shape is identical either way, so all the
         // persistence / status / email logic below is shared.
-        const result =
-          providerSlug === 'aws'
-            ? await runChecksOnServer({
-                apiUrl,
-                connectionId,
-                organizationId,
-                checkId,
-              })
-            : await runAllChecks({
-                manifest,
-                accessToken: getAccessToken(credentials),
-                credentials,
-                variables,
-                connectionId,
-                organizationId,
-                checkId, // Run specific check
-                onTokenRefresh:
-                  manifest.auth.type === 'oauth2'
-                    ? handleTokenRefresh
-                    : undefined,
-                logger: {
-                  info: (msg, data) => logger.info(msg, data),
-                  warn: (msg, data) => logger.warn(msg, data),
-                  error: (msg, data) => logger.error(msg, data),
-                },
-              });
+        let result: RunAllChecksResult;
+        try {
+          result =
+            providerSlug === 'aws'
+              ? await runChecksOnServer({
+                  apiUrl,
+                  connectionId,
+                  organizationId,
+                  checkId,
+                })
+              : await runAllChecks({
+                  manifest,
+                  accessToken: getAccessToken(credentials),
+                  credentials,
+                  variables,
+                  connectionId,
+                  organizationId,
+                  checkId, // Run specific check
+                  onTokenRefresh:
+                    manifest.auth.type === 'oauth2'
+                      ? handleTokenRefresh
+                      : undefined,
+                  logger: {
+                    info: (msg, data) => logger.info(msg, data),
+                    warn: (msg, data) => logger.warn(msg, data),
+                    error: (msg, data) => logger.error(msg, data),
+                  },
+                });
+        } catch (error) {
+          // Only the AWS server-run path can throw here, and only on a transport
+          // blip (network/non-2xx) — per-check AWS execution errors come back
+          // inside the result, not thrown. Record THIS check as errored and keep
+          // going so one blip doesn't abort its sibling checks (multiple AWS
+          // checks share a task) or skip the lastSyncAt/status updates, mirroring
+          // runAllChecks' per-check resilience. hasExecutionErrors keeps
+          // integrationLastRunAt unwritten, so the next orchestrator tick retries.
+          const message =
+            error instanceof Error ? error.message : String(error);
+          const checkDef = manifest.checks?.find((c) => c.id === checkId);
+          hasFailedChecks = true;
+          hasExecutionErrors = true;
+          await db.integrationCheckRun.create({
+            data: {
+              connectionId,
+              taskId,
+              checkId,
+              checkName: checkDef?.name ?? checkId,
+              status: 'failed',
+              startedAt: new Date(),
+              completedAt: new Date(),
+              durationMs: 0,
+              totalChecked: 0,
+              passedCount: 0,
+              failedCount: 0,
+              errorMessage: message,
+            },
+          });
+          logger.error(
+            `Server-run failed for check ${checkId} on task ${taskId}: ${message}`,
+          );
+          continue;
+        }
 
         const checkResult = result.results[0];
         if (!checkResult) continue;

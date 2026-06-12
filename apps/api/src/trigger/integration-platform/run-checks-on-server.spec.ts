@@ -34,6 +34,9 @@ describe('runChecksOnServer', () => {
       'http://api/v1/integrations/internal/run-connection-checks/conn_1',
       expect.objectContaining({
         method: 'POST',
+        // An abort signal is wired up so a hung connection times out and the
+        // task can retry instead of blocking until maxDuration.
+        signal: expect.any(AbortSignal),
         headers: expect.objectContaining({
           'x-service-token': 'svc-token',
           'x-organization-id': 'org_1',
@@ -44,13 +47,31 @@ describe('runChecksOnServer', () => {
     expect(result).toEqual(runResult);
   });
 
+  it('throws a timeout error when the request is aborted (hung connection)', async () => {
+    jest.useFakeTimers();
+    jest.spyOn(global, 'fetch').mockImplementation(
+      (_url, opts) =>
+        new Promise((_resolve, reject) => {
+          (opts as RequestInit).signal?.addEventListener('abort', () =>
+            reject(new Error('aborted')),
+          );
+        }),
+    );
+
+    const promise = runChecksOnServer(params);
+    // Surface the rejection without an unhandled-rejection warning.
+    const assertion = expect(promise).rejects.toThrow('timed out');
+    await jest.advanceTimersByTimeAsync(10 * 60 * 1000);
+    await assertion;
+
+    jest.useRealTimers();
+  });
+
   it('sends an empty body when no checkId is given (run all)', async () => {
-    const fetchMock = jest
-      .spyOn(global, 'fetch')
-      .mockResolvedValue({
-        ok: true,
-        json: async () => ({}),
-      } as unknown as Response);
+    const fetchMock = jest.spyOn(global, 'fetch').mockResolvedValue({
+      ok: true,
+      json: async () => ({}),
+    } as unknown as Response);
 
     await runChecksOnServer(params);
 
