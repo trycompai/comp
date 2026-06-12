@@ -10,7 +10,8 @@ import {
   Textarea,
 } from '@trycompai/ui';
 import { Maximize2 } from 'lucide-react';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
+import { loadEditorSize, saveEditorSize, type EditorSize } from './editor-size-storage';
 
 interface EditableCellProps {
   value: string | null;
@@ -44,6 +45,10 @@ export function EditableCell({
   const [editValue, setEditValue] = useState(value ?? '');
   const [isExpanded, setIsExpanded] = useState(false);
   const [expandValue, setExpandValue] = useState(value ?? '');
+  // Remembered editor size (FRAME-3): the large editor is resizable in both
+  // directions and reopens at the size the user last left it.
+  const [editorSize, setEditorSize] = useState<EditorSize | null>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   // Keep local open state and the parent notification in lockstep so the row
   // highlight tracks the dialog exactly (open icon, right-click, save, cancel,
@@ -78,6 +83,7 @@ export function EditableCell({
   const handleOpenExpanded = () => {
     if (disabled) return;
     setExpandValue(value ?? '');
+    setEditorSize(loadEditorSize());
     setExpanded(true);
   };
 
@@ -86,6 +92,19 @@ export function EditableCell({
       onUpdate(rowId, columnId, expandValue);
     }
     setExpanded(false);
+  };
+
+  // Persist the editor size after a resize-handle drag (fires on pointer
+  // release). Skipped when unchanged so plain clicks don't thrash storage.
+  const handleEditorResizeEnd = () => {
+    const el = textareaRef.current;
+    if (!el) return;
+    const next: EditorSize = { width: el.offsetWidth, height: el.offsetHeight };
+    if (editorSize && next.width === editorSize.width && next.height === editorSize.height) {
+      return;
+    }
+    setEditorSize(next);
+    saveEditorSize(next);
   };
 
   if (disabled) {
@@ -149,15 +168,22 @@ export function EditableCell({
       </button>
 
       <Dialog open={isExpanded} onOpenChange={setExpanded}>
-        <DialogContent className="sm:max-w-[760px]">
+        <DialogContent className="max-h-[95vh] w-fit max-w-[95vw] overflow-y-auto sm:max-w-[95vw]">
           <DialogHeader>
             <DialogTitle>{expandTitle}</DialogTitle>
           </DialogHeader>
           <Textarea
+            ref={textareaRef}
             value={expandValue}
             onChange={(e) => setExpandValue(e.target.value)}
+            onMouseUp={handleEditorResizeEnd}
             autoFocus
-            className="min-h-[260px] font-mono text-sm"
+            className="max-h-[80vh] max-w-[92vw] min-h-[260px] min-w-[320px] resize font-mono text-sm"
+            style={
+              editorSize
+                ? { width: editorSize.width, height: editorSize.height }
+                : { width: 680 }
+            }
           />
           <DialogFooter>
             <Button variant="outline" onClick={() => setExpanded(false)}>
