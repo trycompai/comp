@@ -4,6 +4,7 @@ import { getRequirementStatus } from '@/lib/control-compliance';
 import { Badge, TableCell, TableRow, Text } from '@trycompai/design-system';
 import { Launch } from '@trycompai/design-system/icons';
 import Link from 'next/link';
+import { ExpandableDescription } from './ExpandableDescription';
 import type { RequirementItem } from './framework-controls-shared';
 
 export function GroupedRequirementRow({
@@ -42,9 +43,11 @@ export function GroupedRequirementRow({
         </span>
       </TableCell>
       <TableCell>
-        <span className="block truncate text-sm" title={item.description || ''}>
-          {item.description || '—'}
-        </span>
+        <ExpandableDescription
+          description={item.description}
+          identifier={item.identifier}
+          name={item.name}
+        />
       </TableCell>
       <TableCell>
         <div className="flex min-w-0 items-center gap-2">
