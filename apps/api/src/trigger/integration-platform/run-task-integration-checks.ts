@@ -11,6 +11,7 @@ import {
   type IntegrationCredentialValues,
 } from './ensure-valid-credentials';
 import { injectAwsResolvedSession } from './checks-aws-session';
+import { runChecksOnServer } from './run-checks-on-server';
 
 /**
  * Send email notifications for task status change
@@ -339,22 +340,37 @@ export const runTaskIntegrationChecks = task({
     // Run only the checks that apply to this task
     try {
       for (const checkId of effectiveCheckIds) {
-        const result = await runAllChecks({
-          manifest,
-          accessToken: getAccessToken(credentials),
-          credentials,
-          variables,
-          connectionId,
-          organizationId,
-          checkId, // Run specific check
-          onTokenRefresh:
-            manifest.auth.type === 'oauth2' ? handleTokenRefresh : undefined,
-          logger: {
-            info: (msg, data) => logger.info(msg, data),
-            warn: (msg, data) => logger.warn(msg, data),
-            error: (msg, data) => logger.error(msg, data),
-          },
-        });
+        // AWS checks run ON OUR SERVER so their S3 calls egress our VPC (whose
+        // endpoint allows the read) instead of Trigger.dev's (which blocks it).
+        // Every other provider keeps executing here in the Trigger.dev runtime,
+        // unchanged. The result shape is identical either way, so all the
+        // persistence / status / email logic below is shared.
+        const result =
+          providerSlug === 'aws'
+            ? await runChecksOnServer({
+                apiUrl,
+                connectionId,
+                organizationId,
+                checkId,
+              })
+            : await runAllChecks({
+                manifest,
+                accessToken: getAccessToken(credentials),
+                credentials,
+                variables,
+                connectionId,
+                organizationId,
+                checkId, // Run specific check
+                onTokenRefresh:
+                  manifest.auth.type === 'oauth2'
+                    ? handleTokenRefresh
+                    : undefined,
+                logger: {
+                  info: (msg, data) => logger.info(msg, data),
+                  warn: (msg, data) => logger.warn(msg, data),
+                  error: (msg, data) => logger.error(msg, data),
+                },
+              });
 
         const checkResult = result.results[0];
         if (!checkResult) continue;

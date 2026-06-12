@@ -7,6 +7,7 @@ import {
   type IntegrationCredentialValues,
 } from './ensure-valid-credentials';
 import { injectAwsResolvedSession } from './checks-aws-session';
+import { runChecksOnServer } from './run-checks-on-server';
 
 /**
  * Trigger task that runs all checks for a connection.
@@ -180,22 +181,30 @@ export const runConnectionChecks = task({
     let totalPassing = 0;
 
     try {
-      // Run all checks
-      const result = await runAllChecks({
-        manifest,
-        accessToken: getAccessToken(credentials),
-        credentials,
-        variables,
-        connectionId,
-        organizationId,
-        onTokenRefresh:
-          manifest.auth.type === 'oauth2' ? handleTokenRefresh : undefined,
-        logger: {
-          info: (msg, data) => logger.info(msg, data),
-          warn: (msg, data) => logger.warn(msg, data),
-          error: (msg, data) => logger.error(msg, data),
-        },
-      });
+      // AWS checks run ON OUR SERVER so their S3 calls egress our VPC (allowed)
+      // instead of Trigger.dev's (blocked). Every other provider keeps running
+      // here in the Trigger.dev runtime, unchanged. Same result shape either
+      // way, so the persistence below is shared.
+      const result =
+        providerSlug === 'aws'
+          ? await runChecksOnServer({ apiUrl, connectionId, organizationId })
+          : await runAllChecks({
+              manifest,
+              accessToken: getAccessToken(credentials),
+              credentials,
+              variables,
+              connectionId,
+              organizationId,
+              onTokenRefresh:
+                manifest.auth.type === 'oauth2'
+                  ? handleTokenRefresh
+                  : undefined,
+              logger: {
+                info: (msg, data) => logger.info(msg, data),
+                warn: (msg, data) => logger.warn(msg, data),
+                error: (msg, data) => logger.error(msg, data),
+              },
+            });
 
       totalFindings = result.totalFindings;
       totalPassing = result.totalPassing;
