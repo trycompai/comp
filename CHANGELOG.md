@@ -1,3 +1,18 @@
+# [3.79.0](https://github.com/trycompai/comp/compare/v3.78.4...v3.79.0) (2026-06-12)
+
+
+### Bug Fixes
+
+* **pentest:** address review findings on finding-context flow ([9bf3bb1](https://github.com/trycompai/comp/commit/9bf3bb1c5a1d7471b8f24da15095fd95263d7506))
+* **pentest:** cap the composed additionalContext briefing at 20k chars ([7485b03](https://github.com/trycompai/comp/commit/7485b03555432f60105686aa561d5f7c496e8e35))
+* **pentest:** reject whitespace-only provider target URLs in context upsert ([1a45397](https://github.com/trycompai/comp/commit/1a45397a27bb461e04b5a8b9102afdf997a6cd08))
+
+
+### Features
+
+* **pentest:** append customer context appendix to report downloads ([5f59df7](https://github.com/trycompai/comp/commit/5f59df71166bd88cc236076d7af261983227fd6c))
+* **pentest:** let customers add context to findings so retests are informed ([4f0dfc5](https://github.com/trycompai/comp/commit/4f0dfc5dca343eb613e72165e88e4018c90dacb8))
+
 ## [3.78.4](https://github.com/trycompai/comp/compare/v3.78.3...v3.78.4) (2026-06-11)
 
 
