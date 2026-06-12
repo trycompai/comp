@@ -26,10 +26,10 @@ import { APICall, APIPromise } from "../types/async.js";
 import { Result } from "../types/fp.js";
 
 /**
- * Export all organization evidence as ZIP (Auditor only)
+ * Trigger bulk evidence export (Auditor only)
  *
  * @remarks
- * Export all organization evidence as ZIP (Auditor only) in Comp AI. Export all organization evidence for an auditor review package.
+ * Trigger bulk evidence export (Auditor only) in Comp AI. Export all organization evidence for an auditor review package.
  *
  * If set, this operation will use {@link Security.apikey} from the global security.
  */
@@ -123,7 +123,7 @@ async function $do(
 
   const requestRes = client$._createRequest(context, {
     security: requestSecurity,
-    method: "GET",
+    method: "POST",
     baseURL: options?.serverURL,
     path: path$,
     headers: headers$,
