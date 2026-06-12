@@ -14,9 +14,9 @@ const args = {
 export const tool$evidenceExportAuditorAuditorEvidenceExportControllerExportAllEvidenceV1:
   ToolDefinition<typeof args> = {
     name: "export-all-evidence",
-    description: `Export all organization evidence as ZIP (Auditor only)
+    description: `Trigger bulk evidence export (Auditor only)
 
-Export all organization evidence as ZIP (Auditor only) in Comp AI. Export all organization evidence for an auditor review package.`,
+Trigger bulk evidence export (Auditor only) in Comp AI. Export all organization evidence for an auditor review package.`,
     annotations: {
       "title": "",
       "destructiveHint": false,

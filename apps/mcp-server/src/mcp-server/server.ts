@@ -30,6 +30,7 @@ import { tool$cloudSecurityCloudSecurityControllerGetProvidersV1 } from "./tools
 import { tool$cloudSecurityCloudSecurityControllerGetRunStatusV1 } from "./tools/cloudSecurityCloudSecurityControllerGetRunStatusV1.js";
 import { tool$cloudSecurityCloudSecurityControllerMarkFindingAsExceptionV1 } from "./tools/cloudSecurityCloudSecurityControllerMarkFindingAsExceptionV1.js";
 import { tool$cloudSecurityCloudSecurityControllerResolveGcpSetupStepV1 } from "./tools/cloudSecurityCloudSecurityControllerResolveGcpSetupStepV1.js";
+import { tool$cloudSecurityCloudSecurityControllerResolveSessionV1 } from "./tools/cloudSecurityCloudSecurityControllerResolveSessionV1.js";
 import { tool$cloudSecurityCloudSecurityControllerRevokeExceptionV1 } from "./tools/cloudSecurityCloudSecurityControllerRevokeExceptionV1.js";
 import { tool$cloudSecurityCloudSecurityControllerScanV1 } from "./tools/cloudSecurityCloudSecurityControllerScanV1.js";
 import { tool$cloudSecurityCloudSecurityControllerSelectGcpProjectsV1 } from "./tools/cloudSecurityCloudSecurityControllerSelectGcpProjectsV1.js";
@@ -245,6 +246,9 @@ import { tool$rolesRolesControllerGetRoleV1 } from "./tools/rolesRolesController
 import { tool$rolesRolesControllerListRolesV1 } from "./tools/rolesRolesControllerListRolesV1.js";
 import { tool$rolesRolesControllerUpdateBuiltInObligationsV1 } from "./tools/rolesRolesControllerUpdateBuiltInObligationsV1.js";
 import { tool$rolesRolesControllerUpdateRoleV1 } from "./tools/rolesRolesControllerUpdateRoleV1.js";
+import { tool$securityPenetrationTestsPentestFindingContextsControllerListV1 } from "./tools/securityPenetrationTestsPentestFindingContextsControllerListV1.js";
+import { tool$securityPenetrationTestsPentestFindingContextsControllerRemoveV1 } from "./tools/securityPenetrationTestsPentestFindingContextsControllerRemoveV1.js";
+import { tool$securityPenetrationTestsPentestFindingContextsControllerUpsertV1 } from "./tools/securityPenetrationTestsPentestFindingContextsControllerUpsertV1.js";
 import { tool$securityPenetrationTestsSecurityPenetrationTestsControllerCreateV1 } from "./tools/securityPenetrationTestsSecurityPenetrationTestsControllerCreateV1.js";
 import { tool$securityPenetrationTestsSecurityPenetrationTestsControllerGetByIdV1 } from "./tools/securityPenetrationTestsSecurityPenetrationTestsControllerGetByIdV1.js";
 import { tool$securityPenetrationTestsSecurityPenetrationTestsControllerGetEventsV1 } from "./tools/securityPenetrationTestsSecurityPenetrationTestsControllerGetEventsV1.js";
@@ -309,6 +313,7 @@ import { tool$trustAccessTrustAccessControllerCreateAccessRequestV1 } from "./to
 import { tool$trustAccessTrustAccessControllerDenyRequestV1 } from "./tools/trustAccessTrustAccessControllerDenyRequestV1.js";
 import { tool$trustAccessTrustAccessControllerGetAccessRequestV1 } from "./tools/trustAccessTrustAccessControllerGetAccessRequestV1.js";
 import { tool$trustAccessTrustAccessControllerGetFaqsV1 } from "./tools/trustAccessTrustAccessControllerGetFaqsV1.js";
+import { tool$trustAccessTrustAccessControllerGetPublicCustomFrameworksV1 } from "./tools/trustAccessTrustAccessControllerGetPublicCustomFrameworksV1.js";
 import { tool$trustAccessTrustAccessControllerGetPublicCustomLinksV1 } from "./tools/trustAccessTrustAccessControllerGetPublicCustomLinksV1.js";
 import { tool$trustAccessTrustAccessControllerGetPublicFaviconV1 } from "./tools/trustAccessTrustAccessControllerGetPublicFaviconV1.js";
 import { tool$trustAccessTrustAccessControllerGetPublicOverviewV1 } from "./tools/trustAccessTrustAccessControllerGetPublicOverviewV1.js";
@@ -331,6 +336,7 @@ import { tool$trustPortalTrustPortalControllerGetOverviewV1 } from "./tools/trus
 import { tool$trustPortalTrustPortalControllerGetSettingsV1 } from "./tools/trustPortalTrustPortalControllerGetSettingsV1.js";
 import { tool$trustPortalTrustPortalControllerGetTrustDocumentUrlV1 } from "./tools/trustPortalTrustPortalControllerGetTrustDocumentUrlV1.js";
 import { tool$trustPortalTrustPortalControllerListComplianceResourcesV1 } from "./tools/trustPortalTrustPortalControllerListComplianceResourcesV1.js";
+import { tool$trustPortalTrustPortalControllerListCustomFrameworksV1 } from "./tools/trustPortalTrustPortalControllerListCustomFrameworksV1.js";
 import { tool$trustPortalTrustPortalControllerListCustomLinksV1 } from "./tools/trustPortalTrustPortalControllerListCustomLinksV1.js";
 import { tool$trustPortalTrustPortalControllerListTrustDocumentsV1 } from "./tools/trustPortalTrustPortalControllerListTrustDocumentsV1.js";
 import { tool$trustPortalTrustPortalControllerListVendorsV1 } from "./tools/trustPortalTrustPortalControllerListVendorsV1.js";
@@ -338,6 +344,8 @@ import { tool$trustPortalTrustPortalControllerRemoveFaviconV1 } from "./tools/tr
 import { tool$trustPortalTrustPortalControllerReorderCustomLinksV1 } from "./tools/trustPortalTrustPortalControllerReorderCustomLinksV1.js";
 import { tool$trustPortalTrustPortalControllerTogglePortalV1 } from "./tools/trustPortalTrustPortalControllerTogglePortalV1.js";
 import { tool$trustPortalTrustPortalControllerUpdateAllowedDomainsV1 } from "./tools/trustPortalTrustPortalControllerUpdateAllowedDomainsV1.js";
+import { tool$trustPortalTrustPortalControllerUpdateAllowedEmailsV1 } from "./tools/trustPortalTrustPortalControllerUpdateAllowedEmailsV1.js";
+import { tool$trustPortalTrustPortalControllerUpdateCustomFrameworkV1 } from "./tools/trustPortalTrustPortalControllerUpdateCustomFrameworkV1.js";
 import { tool$trustPortalTrustPortalControllerUpdateCustomLinkV1 } from "./tools/trustPortalTrustPortalControllerUpdateCustomLinkV1.js";
 import { tool$trustPortalTrustPortalControllerUpdateFaqsV1 } from "./tools/trustPortalTrustPortalControllerUpdateFaqsV1.js";
 import { tool$trustPortalTrustPortalControllerUpdateFrameworksV1 } from "./tools/trustPortalTrustPortalControllerUpdateFrameworksV1.js";
@@ -368,7 +376,7 @@ export function createMCPServer(deps: {
 }) {
   const server = new McpServer({
     name: "CompAi",
-    version: "0.1.0",
+    version: "0.2.0",
   });
 
   const getClient = deps.getSDK || (() =>
@@ -568,7 +576,10 @@ export function createMCPServer(deps: {
   tool(tool$trustPortalTrustPortalControllerCheckDnsRecordsV1);
   tool(tool$trustPortalTrustPortalControllerUpdateFaqsV1);
   tool(tool$trustPortalTrustPortalControllerUpdateAllowedDomainsV1);
+  tool(tool$trustPortalTrustPortalControllerUpdateAllowedEmailsV1);
   tool(tool$trustPortalTrustPortalControllerUpdateFrameworksV1);
+  tool(tool$trustPortalTrustPortalControllerListCustomFrameworksV1);
+  tool(tool$trustPortalTrustPortalControllerUpdateCustomFrameworkV1);
   tool(tool$trustPortalTrustPortalControllerUpdateOverviewV1);
   tool(tool$trustPortalTrustPortalControllerGetOverviewV1);
   tool(tool$trustPortalTrustPortalControllerCreateCustomLinkV1);
@@ -594,6 +605,7 @@ export function createMCPServer(deps: {
   tool(tool$trustAccessTrustAccessControllerGetPublicCustomLinksV1);
   tool(tool$trustAccessTrustAccessControllerGetPublicFaviconV1);
   tool(tool$trustAccessTrustAccessControllerGetPublicVendorsV1);
+  tool(tool$trustAccessTrustAccessControllerGetPublicCustomFrameworksV1);
   tool(tool$findingsFindingsControllerListFindingsV1);
   tool(tool$findingsFindingsControllerCreateFindingV1);
   tool(tool$findingsFindingsControllerGetOrganizationFindingsV1);
@@ -687,6 +699,7 @@ export function createMCPServer(deps: {
   tool(tool$cloudSecurityCloudSecurityControllerRevokeExceptionV1);
   tool(tool$cloudSecurityCloudSecurityControllerGetHistoryV1);
   tool(tool$cloudSecurityCloudSecurityControllerGetCheckDefinitionV1);
+  tool(tool$cloudSecurityCloudSecurityControllerResolveSessionV1);
   tool(tool$cloudSecurityCloudSecurityControllerScanV1);
   tool(tool$cloudSecurityCloudSecurityControllerDetectServicesV1);
   tool(tool$cloudSecurityCloudSecurityControllerDetectGcpOrgV1);
@@ -747,6 +760,9 @@ export function createMCPServer(deps: {
     tool$securityPenetrationTestsSecurityPenetrationTestsControllerGetReportV1,
   );
   tool(tool$securityPenetrationTestsSecurityPenetrationTestsControllerGetPdfV1);
+  tool(tool$securityPenetrationTestsPentestFindingContextsControllerListV1);
+  tool(tool$securityPenetrationTestsPentestFindingContextsControllerUpsertV1);
+  tool(tool$securityPenetrationTestsPentestFindingContextsControllerRemoveV1);
   tool(
     tool$offboardingChecklistOffboardingChecklistControllerGetPendingOffboardingsV1,
   );
