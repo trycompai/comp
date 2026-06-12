@@ -6,7 +6,7 @@ import * as z from "zod";
 import { ClosedEnum } from "../types/enums.js";
 
 /**
- * Compliance framework identifier
+ * Native compliance framework identifier
  */
 export const ComplianceResourceSignedUrlDtoFramework = {
   Iso27001: "iso_27001",
@@ -23,7 +23,7 @@ export const ComplianceResourceSignedUrlDtoFramework = {
   Ccpa: "ccpa",
 } as const;
 /**
- * Compliance framework identifier
+ * Native compliance framework identifier
  */
 export type ComplianceResourceSignedUrlDtoFramework = ClosedEnum<
   typeof ComplianceResourceSignedUrlDtoFramework
@@ -42,19 +42,22 @@ export const ComplianceResourceSignedUrlDtoFramework$zodSchema = z.enum([
   "iso_9001",
   "pipeda",
   "ccpa",
-]).describe("Compliance framework identifier");
+]).describe("Native compliance framework identifier");
 
 export type ComplianceResourceSignedUrlDto = {
   organizationId: string;
-  framework: ComplianceResourceSignedUrlDtoFramework;
+  framework?: ComplianceResourceSignedUrlDtoFramework | undefined;
+  customFrameworkId?: string | undefined;
 };
 
 export const ComplianceResourceSignedUrlDto$zodSchema: z.ZodType<
   ComplianceResourceSignedUrlDto
 > = z.object({
-  framework: ComplianceResourceSignedUrlDtoFramework$zodSchema.describe(
-    "Compliance framework identifier",
+  customFrameworkId: z.string().optional().describe(
+    "Org-authored custom framework ID (alternative to `framework`)",
   ),
+  framework: ComplianceResourceSignedUrlDtoFramework$zodSchema.optional()
+    .describe("Native compliance framework identifier"),
   organizationId: z.string().describe(
     "Organization ID that owns the compliance resource",
   ),

@@ -3,16 +3,16 @@
  */
 
 import { CompAiCore } from "../core.js";
-import { encodeJSON, encodeSimple } from "../lib/encodings.js";
+import { encodeSimple } from "../lib/encodings.js";
 import { compactMap } from "../lib/primitives.js";
 import { safeParse } from "../lib/schemas.js";
 import { RequestOptions } from "../lib/sdks.js";
 import { extractSecurity, resolveGlobalSecurity } from "../lib/security.js";
 import { pathToFunc } from "../lib/url.js";
 import {
-  AutomationsControllerCreateVersionV1Request,
-  AutomationsControllerCreateVersionV1Request$zodSchema,
-} from "../models/automationscontrollercreateversionv1op.js";
+  CloudSecurityControllerResolveSessionV1Request,
+  CloudSecurityControllerResolveSessionV1Request$zodSchema,
+} from "../models/cloudsecuritycontrollerresolvesessionv1op.js";
 import { APIError } from "../models/errors/apierror.js";
 import {
   ConnectionError,
@@ -26,16 +26,14 @@ import { APICall, APIPromise } from "../types/async.js";
 import { Result } from "../types/fp.js";
 
 /**
- * Create a published version record for an automation
+ * Resolve short-lived AWS credentials for a connection (internal only)
  *
  * @remarks
- * Create a published version record for an automation in Comp AI. Create, version, run, and inspect automated evidence collection workflows attached to compliance tasks.
- *
- * If set, this operation will use {@link Security.apikey} from the global security.
+ * Resolve short-lived AWS credentials for a connection (internal only) in Comp AI. Run AWS, Azure, and GCP cloud security scans, detect enabled services, review findings, and connect cloud posture results to compliance work.
  */
-export function taskAutomationsAutomationsControllerCreateVersionV1(
+export function cloudSecurityCloudSecurityControllerResolveSessionV1(
   client$: CompAiCore,
-  request: AutomationsControllerCreateVersionV1Request,
+  request: CloudSecurityControllerResolveSessionV1Request,
   options?: RequestOptions,
 ): APIPromise<
   Result<
@@ -58,7 +56,7 @@ export function taskAutomationsAutomationsControllerCreateVersionV1(
 
 async function $do(
   client$: CompAiCore,
-  request: AutomationsControllerCreateVersionV1Request,
+  request: CloudSecurityControllerResolveSessionV1Request,
   options?: RequestOptions,
 ): Promise<
   [
@@ -78,42 +76,35 @@ async function $do(
   const parsed$ = safeParse(
     request,
     (value$) =>
-      AutomationsControllerCreateVersionV1Request$zodSchema.parse(value$),
+      CloudSecurityControllerResolveSessionV1Request$zodSchema.parse(value$),
     "Input validation failed",
   );
   if (!parsed$.ok) {
     return [parsed$, { status: "invalid" }];
   }
   const payload$ = parsed$.value;
-  const body$ = encodeJSON("body", payload$.body, { explode: true });
+  const body$ = null;
 
   const pathParams$ = {
-    automationId: encodeSimple("automationId", payload$.automationId, {
-      explode: false,
-      charEncoding: "percent",
-    }),
-    taskId: encodeSimple("taskId", payload$.taskId, {
+    connectionId: encodeSimple("connectionId", payload$.connectionId, {
       explode: false,
       charEncoding: "percent",
     }),
   };
-  const path$ = pathToFunc(
-    "/v1/tasks/{taskId}/automations/{automationId}/versions",
-  )(
+  const path$ = pathToFunc("/v1/cloud-security/resolve-session/{connectionId}")(
     pathParams$,
   );
 
   const headers$ = new Headers(compactMap({
-    "Content-Type": "application/json",
     Accept: "*/*",
   }));
   const securityInput = await extractSecurity(client$._options.security);
-  const requestSecurity = resolveGlobalSecurity(securityInput, [0]);
+  const requestSecurity = resolveGlobalSecurity(securityInput);
 
   const context = {
     options: client$._options,
     baseURL: options?.serverURL ?? client$._baseURL ?? "",
-    operationID: "AutomationsController_createVersion_v1",
+    operationID: "CloudSecurityController_resolveSession_v1",
     oAuth2Scopes: null,
     resolvedSecurity: requestSecurity,
     securitySource: client$._options.security,

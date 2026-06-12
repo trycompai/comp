@@ -3,15 +3,21 @@
  */
 
 import * as z from "zod";
+import {
+  CreateVersionDto,
+  CreateVersionDto$zodSchema,
+} from "./createversiondto.js";
 
 export type AutomationsControllerCreateVersionV1Request = {
   taskId: string;
   automationId: string;
+  body: CreateVersionDto;
 };
 
 export const AutomationsControllerCreateVersionV1Request$zodSchema: z.ZodType<
   AutomationsControllerCreateVersionV1Request
 > = z.object({
   automationId: z.string().describe("Automation ID"),
+  body: CreateVersionDto$zodSchema,
   taskId: z.string().describe("Task ID"),
 });
