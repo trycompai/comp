@@ -373,13 +373,21 @@ export const runTaskIntegrationChecks = task({
                   },
                 });
         } catch (error) {
-          // Only the AWS server-run path can throw here, and only on a transport
-          // blip (network/non-2xx) — per-check AWS execution errors come back
-          // inside the result, not thrown. Record THIS check as errored and keep
-          // going so one blip doesn't abort its sibling checks (multiple AWS
-          // checks share a task) or skip the lastSyncAt/status updates, mirroring
-          // runAllChecks' per-check resilience. hasExecutionErrors keeps
-          // integrationLastRunAt unwritten, so the next orchestrator tick retries.
+          // Only the AWS server-run path is degraded here. Non-AWS providers run
+          // in-process via runAllChecks, which catches per-check failures and
+          // returns status:'error' rather than throwing — so a throw on the
+          // non-AWS branch is unexpected and must NOT be silently downgraded.
+          // Re-throw it to preserve the pre-change behavior (it propagates to the
+          // outer catch and fails the task).
+          if (providerSlug !== 'aws') throw error;
+
+          // AWS server-run threw, and only on a transport blip (network/non-2xx)
+          // — per-check AWS execution errors come back inside the result, not
+          // thrown. Record THIS check as errored and keep going so one blip
+          // doesn't abort its sibling checks (multiple AWS checks share a task)
+          // or skip the lastSyncAt/status updates, mirroring runAllChecks'
+          // per-check resilience. hasExecutionErrors keeps integrationLastRunAt
+          // unwritten, so the next orchestrator tick retries.
           const message =
             error instanceof Error ? error.message : String(error);
           const checkDef = manifest.checks?.find((c) => c.id === checkId);
