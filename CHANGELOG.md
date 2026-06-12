@@ -1,3 +1,16 @@
+# [3.80.0](https://github.com/trycompai/comp/compare/v3.79.1...v3.80.0) (2026-06-12)
+
+
+### Bug Fixes
+
+* **api:** paginate + time-bound the MCP release lookup ([760ef2f](https://github.com/trycompai/comp/commit/760ef2f6c8b20c5cf04ba3425d61ce2dc45add54))
+* **frameworks:** let unpinned instances adopt version updates (FRAME-2) ([d4f1d49](https://github.com/trycompai/comp/commit/d4f1d49d07bf1aa3abe6290f30f9e833d357e2e1))
+
+
+### Features
+
+* **api:** stable download URLs for MCP server artifacts ([9420bf0](https://github.com/trycompai/comp/commit/9420bf025b213799d3f5754e184de911d24f4f3e))
+
 ## [3.79.1](https://github.com/trycompai/comp/compare/v3.79.0...v3.79.1) (2026-06-12)
 
 
