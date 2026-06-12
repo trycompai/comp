@@ -38,6 +38,21 @@ export function normalizeTargetUrl(value: string): string {
 }
 
 /**
+ * Budget for the composed briefing. The provider has no documented limit
+ * (verified against its OpenAPI spec and prompt-injection source), but an
+ * unbounded string composed from arbitrarily many notes shouldn't be sent
+ * to an external API or an agent prompt. When over budget, whole notes
+ * are dropped — never cut mid-sentence — and an explicit omission marker
+ * tells the agent the list is incomplete.
+ */
+export const MAX_ADDITIONAL_CONTEXT_LENGTH = 20_000;
+
+const NOTES_HEADER =
+  'Customer-provided context on findings reported in previous scans of this target. ' +
+  'Take it into account when validating and reporting findings (e.g. behavior that is ' +
+  'accepted by design, or issues the customer has since remediated):';
+
+/**
  * Composes the `additionalContext` string sent to the pentest provider on
  * run creation: the user's free-text context for this run (if any) followed
  * by the stored per-finding notes from previous scans of the same target.
@@ -47,24 +62,37 @@ export function buildAdditionalContext(params: {
   userProvidedContext?: string;
   findingContexts: FindingContextNote[];
 }): string | undefined {
-  const sections: string[] = [];
+  const userSection = params.userProvidedContext?.trim();
 
-  const userProvided = params.userProvidedContext?.trim();
-  if (userProvided) {
-    sections.push(userProvided);
+  if (params.findingContexts.length === 0) {
+    return userSection || undefined;
   }
 
-  if (params.findingContexts.length > 0) {
-    const header =
-      'Customer-provided context on findings reported in previous scans of this target. ' +
-      'Take it into account when validating and reporting findings (e.g. behavior that is ' +
-      'accepted by design, or issues the customer has since remediated):';
-    const lines = params.findingContexts.map(
-      (note, index) =>
-        `${index + 1}. "${note.issueTitle.trim()}": ${note.context.trim()}`,
-    );
-    sections.push([header, ...lines].join('\n'));
+  const noteLines = params.findingContexts.map(
+    (note, index) =>
+      `${index + 1}. "${note.issueTitle.trim()}": ${note.context.trim()}`,
+  );
+
+  const compose = (includedCount: number): string => {
+    const omitted = noteLines.length - includedCount;
+    const lines = noteLines.slice(0, includedCount);
+    if (omitted > 0) {
+      lines.push(
+        `(${omitted} more note${omitted === 1 ? '' : 's'} omitted for length — see the finding context notes in Comp AI)`,
+      );
+    }
+    const sections = userSection ? [userSection] : [];
+    sections.push([NOTES_HEADER, ...lines].join('\n'));
+    return sections.join('\n\n');
+  };
+
+  let included = noteLines.length;
+  while (
+    included > 0 &&
+    compose(included).length > MAX_ADDITIONAL_CONTEXT_LENGTH
+  ) {
+    included -= 1;
   }
 
-  return sections.length > 0 ? sections.join('\n\n') : undefined;
+  return compose(included);
 }

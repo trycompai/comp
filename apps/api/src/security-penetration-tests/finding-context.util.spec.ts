@@ -1,5 +1,6 @@
 import {
   buildAdditionalContext,
+  MAX_ADDITIONAL_CONTEXT_LENGTH,
   normalizeTargetUrl,
 } from './finding-context.util';
 
@@ -91,5 +92,39 @@ describe('buildAdditionalContext', () => {
     const notesIndex = (result as string).indexOf('1. "Issue A": Fixed.');
     expect(userIndex).toBeGreaterThanOrEqual(0);
     expect(notesIndex).toBeGreaterThan(userIndex);
+  });
+
+  it('does not add an omission marker when everything fits', () => {
+    const result = buildAdditionalContext({
+      userProvidedContext: 'User intent.',
+      findingContexts: [{ issueTitle: 'Issue A', context: 'Fixed.' }],
+    });
+
+    expect(result).not.toContain('omitted for length');
+  });
+
+  it('caps the composed briefing, keeping user context and marking omitted notes', () => {
+    const findingContexts = Array.from({ length: 30 }, (_, i) => ({
+      issueTitle: `Finding ${i + 1}`,
+      context: 'x'.repeat(1900),
+    }));
+
+    const result = buildAdditionalContext({
+      userProvidedContext: 'User intent.',
+      findingContexts,
+    });
+
+    expect(result).toBeDefined();
+    expect((result as string).length).toBeLessThanOrEqual(
+      MAX_ADDITIONAL_CONTEXT_LENGTH,
+    );
+    expect(result).toContain('User intent.');
+    expect(result).toContain('1. "Finding 1"');
+    expect(result).toMatch(/\d+ more notes omitted for length/);
+    // Whole notes are dropped, never cut: every included note line ends
+    // with its full 1900-char body.
+    const includedBodies = (result as string).match(/x{1900}/g) ?? [];
+    expect(includedBodies.length).toBeGreaterThan(0);
+    expect(result).not.toMatch(/x{1901,}/);
   });
 });
