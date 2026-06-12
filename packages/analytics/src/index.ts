@@ -27,4 +27,5 @@ export const Analytics = {
 export * from './components/page-view';
 export * from './components/provider';
 export * from './components/organization-identifier';
+export * from './components/server-feature-flags-provider';
 export * from './hooks/use-feature-flag';
