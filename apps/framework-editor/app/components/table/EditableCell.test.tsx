@@ -120,4 +120,23 @@ describe('EditableCell — expandable', () => {
     setup({ expandable: true, disabled: true });
     expect(screen.queryByRole('button', { name: /large editor/i })).toBeNull();
   });
+
+  it('notifies onExpandedChange when the editor opens and on Save', () => {
+    const onExpandedChange = vi.fn();
+    setup({ expandable: true, onExpandedChange });
+    fireEvent.click(screen.getByRole('button', { name: /large editor/i }));
+    expect(onExpandedChange).toHaveBeenLastCalledWith(true);
+    fireEvent.change(screen.getByRole('textbox'), { target: { value: 'changed' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Save' }));
+    expect(onExpandedChange).toHaveBeenLastCalledWith(false);
+  });
+
+  it('notifies onExpandedChange(false) on Cancel', () => {
+    const onExpandedChange = vi.fn();
+    setup({ expandable: true, onExpandedChange });
+    fireEvent.contextMenu(screen.getByText(/assign account managers/i));
+    expect(onExpandedChange).toHaveBeenLastCalledWith(true);
+    fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+    expect(onExpandedChange).toHaveBeenLastCalledWith(false);
+  });
 });
