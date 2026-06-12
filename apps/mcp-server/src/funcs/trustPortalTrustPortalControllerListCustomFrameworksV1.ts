@@ -3,16 +3,10 @@
  */
 
 import { CompAiCore } from "../core.js";
-import { encodeJSON, encodeSimple } from "../lib/encodings.js";
 import { compactMap } from "../lib/primitives.js";
-import { safeParse } from "../lib/schemas.js";
 import { RequestOptions } from "../lib/sdks.js";
 import { extractSecurity, resolveGlobalSecurity } from "../lib/security.js";
 import { pathToFunc } from "../lib/url.js";
-import {
-  AutomationsControllerCreateVersionV1Request,
-  AutomationsControllerCreateVersionV1Request$zodSchema,
-} from "../models/automationscontrollercreateversionv1op.js";
 import { APIError } from "../models/errors/apierror.js";
 import {
   ConnectionError,
@@ -26,16 +20,15 @@ import { APICall, APIPromise } from "../types/async.js";
 import { Result } from "../types/fp.js";
 
 /**
- * Create a published version record for an automation
+ * List org-authored custom frameworks with their trust portal selection
  *
  * @remarks
- * Create a published version record for an automation in Comp AI. Create, version, run, and inspect automated evidence collection workflows attached to compliance tasks.
+ * List org-authored custom frameworks with their trust portal selection in Comp AI. Configure the live Trust Center, custom domain, public overview, FAQs, compliance resources, documents, links, and vendor disclosures.
  *
  * If set, this operation will use {@link Security.apikey} from the global security.
  */
-export function taskAutomationsAutomationsControllerCreateVersionV1(
+export function trustPortalTrustPortalControllerListCustomFrameworksV1(
   client$: CompAiCore,
-  request: AutomationsControllerCreateVersionV1Request,
   options?: RequestOptions,
 ): APIPromise<
   Result<
@@ -51,14 +44,12 @@ export function taskAutomationsAutomationsControllerCreateVersionV1(
 > {
   return new APIPromise($do(
     client$,
-    request,
     options,
   ));
 }
 
 async function $do(
   client$: CompAiCore,
-  request: AutomationsControllerCreateVersionV1Request,
   options?: RequestOptions,
 ): Promise<
   [
@@ -75,36 +66,9 @@ async function $do(
     APICall,
   ]
 > {
-  const parsed$ = safeParse(
-    request,
-    (value$) =>
-      AutomationsControllerCreateVersionV1Request$zodSchema.parse(value$),
-    "Input validation failed",
-  );
-  if (!parsed$.ok) {
-    return [parsed$, { status: "invalid" }];
-  }
-  const payload$ = parsed$.value;
-  const body$ = encodeJSON("body", payload$.body, { explode: true });
-
-  const pathParams$ = {
-    automationId: encodeSimple("automationId", payload$.automationId, {
-      explode: false,
-      charEncoding: "percent",
-    }),
-    taskId: encodeSimple("taskId", payload$.taskId, {
-      explode: false,
-      charEncoding: "percent",
-    }),
-  };
-  const path$ = pathToFunc(
-    "/v1/tasks/{taskId}/automations/{automationId}/versions",
-  )(
-    pathParams$,
-  );
+  const path$ = pathToFunc("/v1/trust-portal/custom-frameworks")();
 
   const headers$ = new Headers(compactMap({
-    "Content-Type": "application/json",
     Accept: "*/*",
   }));
   const securityInput = await extractSecurity(client$._options.security);
@@ -113,7 +77,7 @@ async function $do(
   const context = {
     options: client$._options,
     baseURL: options?.serverURL ?? client$._baseURL ?? "",
-    operationID: "AutomationsController_createVersion_v1",
+    operationID: "TrustPortalController_listCustomFrameworks_v1",
     oAuth2Scopes: null,
     resolvedSecurity: requestSecurity,
     securitySource: client$._options.security,
@@ -131,11 +95,10 @@ async function $do(
 
   const requestRes = client$._createRequest(context, {
     security: requestSecurity,
-    method: "POST",
+    method: "GET",
     baseURL: options?.serverURL,
     path: path$,
     headers: headers$,
-    body: body$,
     userAgent: client$._options.userAgent,
     timeoutMs: options?.timeoutMs || client$._options.timeoutMs
       || 120000,

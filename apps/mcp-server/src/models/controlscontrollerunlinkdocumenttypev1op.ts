@@ -28,6 +28,7 @@ export const ControlsControllerUnlinkDocumentTypeV1FormType = {
   EmployeePerformanceEvaluation: "employee_performance_evaluation",
   NetworkDiagram: "network_diagram",
   TabletopExercise: "tabletop_exercise",
+  AccountTypes: "account_types",
 } as const;
 /**
  * Evidence form type to unlink from the control
@@ -49,12 +50,13 @@ export const ControlsControllerUnlinkDocumentTypeV1FormType$zodSchema = z.enum([
   "employee_performance_evaluation",
   "network_diagram",
   "tabletop_exercise",
+  "account_types",
 ]).describe("Evidence form type to unlink from the control");
 
 export type ControlsControllerUnlinkDocumentTypeV1Request = {
   id: string;
-  frameworkInstanceId: string;
   formType: ControlsControllerUnlinkDocumentTypeV1FormType;
+  frameworkInstanceId: string;
 };
 
 export const ControlsControllerUnlinkDocumentTypeV1Request$zodSchema: z.ZodType<

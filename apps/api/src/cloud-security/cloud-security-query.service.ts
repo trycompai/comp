@@ -3,7 +3,7 @@ import { db } from '@db';
 import { getManifest } from '@trycompai/integration-platform';
 import { sanitizeEvidence } from './evidence-sanitizer';
 import { getLegacyFindings } from './cloud-security-query.legacy';
-import { normalizeCheckId } from './check-definition.utils';
+import { resolveCheckKey } from './check-definition.utils';
 import type {
   CloudFinding,
   CloudProvider,
@@ -364,9 +364,13 @@ export class CloudSecurityQueryService {
         resourceId: result.resourceId ?? null,
         resourceType: result.resourceType ?? null,
         checkId: checkRun?.checkId ?? null,
-        checkKey: findingKey
-          ? normalizeCheckId(findingKey, result.resourceId)
-          : null,
+        // Same fallback as the exception resolver so a finding marked as an
+        // exception is also the one suppressed from this list.
+        checkKey: resolveCheckKey({
+          findingKey,
+          resourceId: result.resourceId,
+          runCheckId: checkRun?.checkId ?? null,
+        }),
         evidence: sanitizeEvidence(result.evidence ?? null),
         projectDisplayName: (() => {
           if (projectDisplayNameFromEvidence) {

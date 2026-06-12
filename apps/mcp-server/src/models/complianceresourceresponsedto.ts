@@ -5,6 +5,9 @@
 import * as z from "zod";
 import { ClosedEnum } from "../types/enums.js";
 
+/**
+ * Set for native-framework certificates; null for custom ones
+ */
 export const ComplianceResourceResponseDtoFramework = {
   Iso27001: "iso_27001",
   Iso42001: "iso_42001",
@@ -19,6 +22,9 @@ export const ComplianceResourceResponseDtoFramework = {
   Pipeda: "pipeda",
   Ccpa: "ccpa",
 } as const;
+/**
+ * Set for native-framework certificates; null for custom ones
+ */
 export type ComplianceResourceResponseDtoFramework = ClosedEnum<
   typeof ComplianceResourceResponseDtoFramework
 >;
@@ -36,10 +42,21 @@ export const ComplianceResourceResponseDtoFramework$zodSchema = z.enum([
   "iso_9001",
   "pipeda",
   "ccpa",
-]);
+]).describe("Set for native-framework certificates; null for custom ones");
+
+/**
+ * Set for custom-framework certificates; null for native ones
+ */
+export type CustomFrameworkId = {};
+
+export const CustomFrameworkId$zodSchema: z.ZodType<CustomFrameworkId> = z
+  .object({}).describe(
+    "Set for custom-framework certificates; null for native ones",
+  );
 
 export type ComplianceResourceResponseDto = {
-  framework: ComplianceResourceResponseDtoFramework;
+  framework: ComplianceResourceResponseDtoFramework | null;
+  customFrameworkId: CustomFrameworkId | null;
   fileName: string;
   fileSize: number;
   updatedAt: string;
@@ -48,9 +65,12 @@ export type ComplianceResourceResponseDto = {
 export const ComplianceResourceResponseDto$zodSchema: z.ZodType<
   ComplianceResourceResponseDto
 > = z.object({
+  customFrameworkId: z.lazy(() => CustomFrameworkId$zodSchema).nullable()
+    .describe("Set for custom-framework certificates; null for native ones"),
   fileName: z.string(),
   fileSize: z.number().describe("File size in bytes"),
-  framework: ComplianceResourceResponseDtoFramework$zodSchema,
+  framework: ComplianceResourceResponseDtoFramework$zodSchema.nullable()
+    .describe("Set for native-framework certificates; null for custom ones"),
   updatedAt: z.string().describe(
     "ISO timestamp when the certificate was last updated",
   ),
