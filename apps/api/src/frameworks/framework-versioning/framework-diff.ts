@@ -38,7 +38,19 @@ export interface ControlDocumentTypeEdge {
   formType: string;
 }
 
+/**
+ * Changes to the framework's own metadata (name / description). These don't
+ * live in any entity list, so without this the diff treats a name- or
+ * description-only edit as "no changes" and the Publish button stays disabled.
+ */
+export interface FrameworkMetaDiff {
+  changed: boolean;
+  name?: { from: string; to: string };
+  description?: { from: string | null; to: string | null };
+}
+
 export interface ManifestDiff {
+  framework: FrameworkMetaDiff;
   controls: EntityDiff<ManifestControl>;
   requirements: EntityDiff<ManifestRequirement>;
   policies: EntityDiff<ManifestPolicy>;
@@ -85,6 +97,7 @@ export function diffManifests(fromRaw: FrameworkManifest, toRaw: FrameworkManife
   const from = sanitizeManifestEdges(fromRaw);
   const to = sanitizeManifestEdges(toRaw);
   return {
+    framework: diffFrameworkMeta(from.framework, to.framework),
     controls: diffEntities(from.controls, to.controls, controlEqual),
     requirements: diffEntities(from.requirements, to.requirements, requirementEqual),
     policies: diffEntities(from.policies, to.policies, policyEqual),
@@ -166,6 +179,23 @@ function edgesFromControls<E>(
   extract: (c: ManifestControl) => E[],
 ): E[] {
   return controls.flatMap(extract);
+}
+
+function diffFrameworkMeta(
+  from: FrameworkManifest['framework'],
+  to: FrameworkManifest['framework'],
+): FrameworkMetaDiff {
+  const nameChanged = from.name !== to.name;
+  const fromDescription = from.description ?? null;
+  const toDescription = to.description ?? null;
+  const descriptionChanged = fromDescription !== toDescription;
+  return {
+    changed: nameChanged || descriptionChanged,
+    ...(nameChanged ? { name: { from: from.name, to: to.name } } : {}),
+    ...(descriptionChanged
+      ? { description: { from: fromDescription, to: toDescription } }
+      : {}),
+  };
 }
 
 function controlEqual(a: ManifestControl, b: ManifestControl): boolean {
