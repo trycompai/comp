@@ -6,7 +6,7 @@ import {
   requestValidCredentials,
   type IntegrationCredentialValues,
 } from './ensure-valid-credentials';
-import { injectAwsResolvedSession } from './checks-aws-session';
+import { runChecksOnServer } from './run-checks-on-server';
 
 /**
  * Trigger task that runs all checks for a connection.
@@ -93,71 +93,68 @@ export const runConnectionChecks = task({
       };
     }
 
-    // Ensure we have valid credentials
     const apiUrl = process.env.BASE_URL || 'http://localhost:3333';
-    let credentials: IntegrationCredentialValues;
 
-    logger.info('Ensuring valid credentials...');
-    const credentialsResult = await requestValidCredentials({
-      apiUrl,
-      connectionId,
-      organizationId,
-    });
+    // AWS checks run ON OUR SERVER (see below), which decrypts the credentials
+    // and assumes the cross-account role there. Skip the Trigger-side credential
+    // preflight for AWS — running it would add redundant failure points (a
+    // transient preflight error would falsely fail an AWS run that
+    // `runChecksOnServer` could have completed).
+    let credentials: IntegrationCredentialValues = {};
+    let handleTokenRefresh: (() => Promise<string | null>) | undefined;
 
-    if (!credentialsResult.success || !credentialsResult.credentials) {
-      const errorMessage =
-        credentialsResult.error || 'Failed to validate credentials';
-      logger.error(errorMessage);
-      return { success: false, error: errorMessage };
-    }
-    credentials = credentialsResult.credentials;
-
-    const handleTokenRefresh = async (): Promise<string | null> => {
-      logger.info('Force refreshing OAuth credentials after provider 401...');
-      const refreshResult = await requestValidCredentials({
+    if (providerSlug !== 'aws') {
+      logger.info('Ensuring valid credentials...');
+      const credentialsResult = await requestValidCredentials({
         apiUrl,
         connectionId,
         organizationId,
-        forceRefresh: true,
       });
 
-      if (!refreshResult.success || !refreshResult.credentials) {
-        logger.error(refreshResult.error || 'Forced token refresh failed');
-        return null;
+      if (!credentialsResult.success || !credentialsResult.credentials) {
+        const errorMessage =
+          credentialsResult.error || 'Failed to validate credentials';
+        logger.error(errorMessage);
+        return { success: false, error: errorMessage };
+      }
+      credentials = credentialsResult.credentials;
+
+      handleTokenRefresh = async (): Promise<string | null> => {
+        logger.info('Force refreshing OAuth credentials after provider 401...');
+        const refreshResult = await requestValidCredentials({
+          apiUrl,
+          connectionId,
+          organizationId,
+          forceRefresh: true,
+        });
+
+        if (!refreshResult.success || !refreshResult.credentials) {
+          logger.error(refreshResult.error || 'Forced token refresh failed');
+          return null;
+        }
+
+        credentials = refreshResult.credentials;
+        return getAccessToken(credentials) ?? null;
+      };
+
+      // Validate credentials based on auth type
+      if (manifest.auth.type === 'oauth2' && !getAccessToken(credentials)) {
+        logger.error(
+          `No OAuth access token found for connection: ${connectionId}`,
+        );
+        return { success: false, error: 'No OAuth access token found' };
       }
 
-      credentials = refreshResult.credentials;
-      return getAccessToken(credentials) ?? null;
-    };
-
-    // Validate credentials based on auth type
-    if (manifest.auth.type === 'oauth2' && !getAccessToken(credentials)) {
-      logger.error(
-        `No OAuth access token found for connection: ${connectionId}`,
-      );
-      return { success: false, error: 'No OAuth access token found' };
+      if (
+        manifest.auth.type === 'custom' &&
+        Object.keys(credentials).length === 0
+      ) {
+        logger.error(
+          `No credentials found for custom integration: ${connectionId}`,
+        );
+        return { success: false, error: 'No credentials found' };
+      }
     }
-
-    if (
-      manifest.auth.type === 'custom' &&
-      Object.keys(credentials).length === 0
-    ) {
-      logger.error(
-        `No credentials found for custom integration: ${connectionId}`,
-      );
-      return { success: false, error: 'No credentials found' };
-    }
-
-    // For AWS, resolve the cross-account session in ECS and inject the temp
-    // creds — the checks run in the Trigger.dev runtime, which cannot assume the
-    // role itself (no base creds / roleAssumer ARN there).
-    credentials = await injectAwsResolvedSession({
-      credentials,
-      apiUrl,
-      connectionId,
-      organizationId,
-      providerSlug,
-    });
 
     const variables =
       (connection.variables as Record<
@@ -180,22 +177,30 @@ export const runConnectionChecks = task({
     let totalPassing = 0;
 
     try {
-      // Run all checks
-      const result = await runAllChecks({
-        manifest,
-        accessToken: getAccessToken(credentials),
-        credentials,
-        variables,
-        connectionId,
-        organizationId,
-        onTokenRefresh:
-          manifest.auth.type === 'oauth2' ? handleTokenRefresh : undefined,
-        logger: {
-          info: (msg, data) => logger.info(msg, data),
-          warn: (msg, data) => logger.warn(msg, data),
-          error: (msg, data) => logger.error(msg, data),
-        },
-      });
+      // AWS checks run ON OUR SERVER so their S3 calls egress our VPC (allowed)
+      // instead of Trigger.dev's (blocked). Every other provider keeps running
+      // here in the Trigger.dev runtime, unchanged. Same result shape either
+      // way, so the persistence below is shared.
+      const result =
+        providerSlug === 'aws'
+          ? await runChecksOnServer({ apiUrl, connectionId, organizationId })
+          : await runAllChecks({
+              manifest,
+              accessToken: getAccessToken(credentials),
+              credentials,
+              variables,
+              connectionId,
+              organizationId,
+              onTokenRefresh:
+                manifest.auth.type === 'oauth2'
+                  ? handleTokenRefresh
+                  : undefined,
+              logger: {
+                info: (msg, data) => logger.info(msg, data),
+                warn: (msg, data) => logger.warn(msg, data),
+                error: (msg, data) => logger.error(msg, data),
+              },
+            });
 
       totalFindings = result.totalFindings;
       totalPassing = result.totalPassing;
