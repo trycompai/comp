@@ -1,6 +1,7 @@
 import { fireEvent, render, screen } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { EditableCell } from './EditableCell';
+import { clearEditorSize, saveEditorSize } from './editor-size-storage';
 
 // The ui package ships untranspiled JSX in dist; stub the bits the cell uses.
 vi.mock('@trycompai/ui', () => ({
@@ -55,7 +56,10 @@ describe('EditableCell — non-expandable (default)', () => {
 });
 
 describe('EditableCell — expandable', () => {
-  beforeEach(() => vi.clearAllMocks());
+  beforeEach(() => {
+    vi.clearAllMocks();
+    clearEditorSize();
+  });
 
   it('shows an expand affordance', () => {
     setup({ expandable: true });
@@ -119,5 +123,33 @@ describe('EditableCell — expandable', () => {
   it('does nothing expandable when disabled', () => {
     setup({ expandable: true, disabled: true });
     expect(screen.queryByRole('button', { name: /large editor/i })).toBeNull();
+  });
+
+  it('notifies onExpandedChange when the editor opens and on Save', () => {
+    const onExpandedChange = vi.fn();
+    setup({ expandable: true, onExpandedChange });
+    fireEvent.click(screen.getByRole('button', { name: /large editor/i }));
+    expect(onExpandedChange).toHaveBeenLastCalledWith(true);
+    fireEvent.change(screen.getByRole('textbox'), { target: { value: 'changed' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Save' }));
+    expect(onExpandedChange).toHaveBeenLastCalledWith(false);
+  });
+
+  it('notifies onExpandedChange(false) on Cancel', () => {
+    const onExpandedChange = vi.fn();
+    setup({ expandable: true, onExpandedChange });
+    fireEvent.contextMenu(screen.getByText(/assign account managers/i));
+    expect(onExpandedChange).toHaveBeenLastCalledWith(true);
+    fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+    expect(onExpandedChange).toHaveBeenLastCalledWith(false);
+  });
+
+  it('reopens the editor at the persisted size (FRAME-3)', () => {
+    saveEditorSize({ width: 900, height: 500 });
+    setup({ expandable: true });
+    fireEvent.click(screen.getByRole('button', { name: /large editor/i }));
+    const textarea = screen.getByRole('textbox') as HTMLTextAreaElement;
+    expect(textarea.style.width).toBe('900px');
+    expect(textarea.style.height).toBe('500px');
   });
 });
