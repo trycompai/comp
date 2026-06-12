@@ -24,6 +24,9 @@ interface EditableCellProps {
   // values like control descriptions.
   expandable?: boolean;
   expandTitle?: string;
+  // Notified when the large editor opens/closes so the parent can highlight
+  // the row currently being edited.
+  onExpandedChange?: (open: boolean) => void;
 }
 
 export function EditableCell({
@@ -35,11 +38,20 @@ export function EditableCell({
   placeholder = 'Click to edit',
   expandable = false,
   expandTitle = 'Edit',
+  onExpandedChange,
 }: EditableCellProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [editValue, setEditValue] = useState(value ?? '');
   const [isExpanded, setIsExpanded] = useState(false);
   const [expandValue, setExpandValue] = useState(value ?? '');
+
+  // Keep local open state and the parent notification in lockstep so the row
+  // highlight tracks the dialog exactly (open icon, right-click, save, cancel,
+  // Esc, and overlay click all route through here).
+  const setExpanded = (open: boolean) => {
+    setIsExpanded(open);
+    onExpandedChange?.(open);
+  };
 
   const handleBlur = () => {
     setIsEditing(false);
@@ -66,14 +78,14 @@ export function EditableCell({
   const handleOpenExpanded = () => {
     if (disabled) return;
     setExpandValue(value ?? '');
-    setIsExpanded(true);
+    setExpanded(true);
   };
 
   const handleExpandSave = () => {
     if (expandValue !== (value ?? '')) {
       onUpdate(rowId, columnId, expandValue);
     }
-    setIsExpanded(false);
+    setExpanded(false);
   };
 
   if (disabled) {
@@ -136,7 +148,7 @@ export function EditableCell({
         <Maximize2 className="h-3.5 w-3.5" />
       </button>
 
-      <Dialog open={isExpanded} onOpenChange={setIsExpanded}>
+      <Dialog open={isExpanded} onOpenChange={setExpanded}>
         <DialogContent className="sm:max-w-[760px]">
           <DialogHeader>
             <DialogTitle>{expandTitle}</DialogTitle>
@@ -148,7 +160,7 @@ export function EditableCell({
             className="min-h-[260px] font-mono text-sm"
           />
           <DialogFooter>
-            <Button variant="outline" onClick={() => setIsExpanded(false)}>
+            <Button variant="outline" onClick={() => setExpanded(false)}>
               Cancel
             </Button>
             <Button onClick={handleExpandSave} disabled={expandValue === (value ?? '')}>

@@ -73,6 +73,9 @@ export function FrameworkRequirementsClientPage({
   const router = useRouter();
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  // Row whose large description editor is currently open — highlighted so the
+  // edited row is obvious behind the (semi-transparent) editor dialog.
+  const [expandedRowId, setExpandedRowId] = useState<string | null>(null);
 
   const initialGridData: RequirementGridRow[] = useMemo(
     () =>
@@ -155,16 +158,27 @@ export function FrameworkRequirementsClientPage({
         header: 'Description',
         size: 300,
         maxSize: 300,
-        cell: ({ row, getValue }) => (
-          <EditableCell
-            value={getValue()}
-            rowId={row.original.id}
-            columnId="description"
-            onUpdate={updateCell}
-            expandable
-            expandTitle="Edit Requirement Description"
-          />
-        ),
+        cell: ({ row, getValue }) => {
+          const { identifier, name } = row.original;
+          const titleSuffix = [identifier, name].filter(Boolean).join(' - ');
+          return (
+            <EditableCell
+              value={getValue()}
+              rowId={row.original.id}
+              columnId="description"
+              onUpdate={updateCell}
+              expandable
+              expandTitle={
+                titleSuffix
+                  ? `Edit Requirement Description - ${titleSuffix}`
+                  : 'Edit Requirement Description'
+              }
+              onExpandedChange={(open) =>
+                setExpandedRowId(open ? row.original.id : null)
+              }
+            />
+          );
+        },
       }),
       columnHelper.accessor('controlTemplates', {
         header: 'Linked Controls',
@@ -369,7 +383,11 @@ export function FrameworkRequirementsClientPage({
             {table.getRowModel().rows.map((row) => (
               <tr
                 key={row.id}
-                className={`border-border hover:bg-muted/30 border-b transition-colors ${getRowClassName(row.original.id)}`}
+                className={`border-border hover:bg-muted/30 border-b transition-colors ${getRowClassName(row.original.id)} ${
+                  expandedRowId === row.original.id
+                    ? 'ring-primary !bg-primary/15 ring-2 ring-inset'
+                    : ''
+                }`}
               >
                 {row.getVisibleCells().map((cell) => (
                   <td
