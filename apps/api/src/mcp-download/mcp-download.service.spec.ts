@@ -101,6 +101,42 @@ describe('McpDownloadService', () => {
     ).rejects.toBeInstanceOf(NotFoundException);
   });
 
+  it('paginates beyond the first 100 releases to find the MCP release', async () => {
+    // Page 1: a full page of product releases, no MCP release.
+    const page1 = Array.from({ length: 100 }, (_, i) => ({
+      tag_name: `v3.${i}.0`,
+      draft: false,
+      assets: [],
+    }));
+    mockReleasesOnce(page1);
+    // Page 2: contains the MCP release.
+    mockReleasesOnce(releasesPayload());
+
+    const url = await service.resolveDownloadUrl('claude-desktop');
+
+    expect(url).toBe('https://gh/dl/v0.2.0/mcp-server.mcpb');
+    expect(fetchSpy).toHaveBeenCalledTimes(2);
+  });
+
+  it('bounds each GitHub request with an abort signal (no unbounded hang)', async () => {
+    mockReleasesOnce(releasesPayload());
+
+    await service.resolveDownloadUrl('claude-desktop');
+
+    const init = fetchSpy.mock.calls[0][1];
+    expect(init?.signal).toBeInstanceOf(AbortSignal);
+  });
+
+  it('handles a GitHub timeout/abort without hanging', async () => {
+    const timeout = new Error('The operation timed out');
+    timeout.name = 'TimeoutError';
+    fetchSpy.mockRejectedValueOnce(timeout);
+
+    await expect(
+      service.resolveDownloadUrl('claude-desktop'),
+    ).rejects.toBeInstanceOf(ServiceUnavailableException);
+  });
+
   it('caches the release lookup across requests', async () => {
     mockReleasesOnce(releasesPayload());
 

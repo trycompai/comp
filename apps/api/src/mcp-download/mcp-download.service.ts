@@ -18,11 +18,21 @@ const ASSET_BY_TARGET: Record<string, string> = {
 };
 
 // The MCP server ships its own release stream (tag `apps/mcp-server/vX.Y.Z`),
-// interleaved with the much more frequent product releases (`vX.Y.Z`). We page
-// through the newest releases and pick the first one on the MCP stream.
+// interleaved with the much more frequent product releases (`vX.Y.Z`) — the repo
+// cuts several product releases a day, so the latest MCP release can sit well
+// past the first page. We page through newest-first and stop at the first MCP
+// release (which, because the list is newest-first, is the latest one).
 const GITHUB_RELEASES_URL =
-  'https://api.github.com/repos/trycompai/comp/releases?per_page=100';
+  'https://api.github.com/repos/trycompai/comp/releases';
+const RELEASES_PER_PAGE = 100;
+// Bounds the work (and the GitHub API budget) while covering many months of
+// product-release velocity, so a slow MCP release cadence can't make downloads
+// look unavailable.
+const MAX_RELEASE_PAGES = 5;
 const MCP_TAG_PREFIX = 'apps/mcp-server/';
+
+// Bound each GitHub call so a stalled upstream can't tie up the endpoint.
+const GITHUB_TIMEOUT_MS = 5_000;
 
 // Cache the resolved release so a burst of downloads can't exhaust GitHub's
 // unauthenticated API budget (60 req/hr/IP). 10 min keeps us at a handful of
@@ -99,7 +109,39 @@ export class McpDownloadService {
   }
 
   private async fetchLatestMcpRelease(): Promise<ResolvedRelease> {
-    const response = await fetch(GITHUB_RELEASES_URL, {
+    for (let page = 1; page <= MAX_RELEASE_PAGES; page++) {
+      const releases = await this.fetchReleasesPage(page);
+
+      // Releases come back newest-first, so the first MCP-tagged, non-draft
+      // release on any page is the latest one.
+      const latest = releases.find(
+        (release) =>
+          !release.draft && release.tag_name.startsWith(MCP_TAG_PREFIX),
+      );
+      if (latest) {
+        const assets: Record<string, string> = {};
+        for (const asset of latest.assets) {
+          assets[asset.name] = asset.browser_download_url;
+        }
+        return { tag: latest.tag_name, assets, fetchedAt: Date.now() };
+      }
+
+      // A short page means we've reached the end of the release history.
+      if (releases.length < RELEASES_PER_PAGE) break;
+    }
+
+    throw new Error(
+      `No release with tag prefix '${MCP_TAG_PREFIX}' in the latest ${
+        MAX_RELEASE_PAGES * RELEASES_PER_PAGE
+      } releases.`,
+    );
+  }
+
+  private async fetchReleasesPage(page: number): Promise<GitHubRelease[]> {
+    const url = `${GITHUB_RELEASES_URL}?per_page=${RELEASES_PER_PAGE}&page=${page}`;
+    const response = await fetch(url, {
+      // Abort a stalled GitHub call instead of hanging the endpoint.
+      signal: AbortSignal.timeout(GITHUB_TIMEOUT_MS),
       headers: {
         // GitHub rejects API requests without a User-Agent.
         'User-Agent': 'comp-ai-mcp-download',
@@ -115,24 +157,6 @@ export class McpDownloadService {
       throw new Error(`GitHub releases API returned ${response.status}`);
     }
 
-    const releases = (await response.json()) as GitHubRelease[];
-    // Releases are returned newest-first, so the first MCP-tagged, non-draft
-    // release is the latest one.
-    const latest = releases.find(
-      (release) => !release.draft && release.tag_name.startsWith(MCP_TAG_PREFIX),
-    );
-
-    if (!latest) {
-      throw new Error(
-        `No release with tag prefix '${MCP_TAG_PREFIX}' in the latest 100 releases.`,
-      );
-    }
-
-    const assets: Record<string, string> = {};
-    for (const asset of latest.assets) {
-      assets[asset.name] = asset.browser_download_url;
-    }
-
-    return { tag: latest.tag_name, assets, fetchedAt: Date.now() };
+    return (await response.json()) as GitHubRelease[];
   }
 }
