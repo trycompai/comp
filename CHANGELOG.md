@@ -1,3 +1,10 @@
+## [3.79.1](https://github.com/trycompai/comp/compare/v3.79.0...v3.79.1) (2026-06-12)
+
+
+### Bug Fixes
+
+* **cloud-security:** stamp findingKey on AWS checks so findings can be excepted ([5b52c79](https://github.com/trycompai/comp/commit/5b52c79afd9566692f162d83d4757e20abb421c6))
+
 # [3.79.0](https://github.com/trycompai/comp/compare/v3.78.4...v3.79.0) (2026-06-12)
 
 
