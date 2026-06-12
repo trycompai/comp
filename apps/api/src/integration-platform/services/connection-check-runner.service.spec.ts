@@ -142,4 +142,13 @@ describe('ConnectionCheckRunnerService', () => {
     ).rejects.toBeInstanceOf(BadRequestException);
     expect(mockedRunAllChecks).not.toHaveBeenCalled();
   });
+
+  it('validates by auth type — rejects empty custom credentials (matches in-app run)', async () => {
+    // AWS uses custom auth; empty creds must be rejected up front, not executed.
+    mockCredentialVaultService.getDecryptedCredentials.mockResolvedValue({});
+    await expect(
+      service.runChecks({ connectionId: 'conn_1', organizationId: 'org_1' }),
+    ).rejects.toBeInstanceOf(BadRequestException);
+    expect(mockedRunAllChecks).not.toHaveBeenCalled();
+  });
 });

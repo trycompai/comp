@@ -5,6 +5,7 @@ import {
   ApiPropertyOptional,
   ApiTags,
 } from '@nestjs/swagger';
+import { SkipThrottle } from '@nestjs/throttler';
 import { IsOptional, IsString } from 'class-validator';
 import { HybridAuthGuard } from '../../auth/hybrid-auth.guard';
 import { PermissionGuard } from '../../auth/permission.guard';
@@ -40,6 +41,10 @@ export class InternalChecksController {
   constructor(private readonly runner: ConnectionCheckRunnerService) {}
 
   @Post('run-connection-checks/:connectionId')
+  // Called by the AWS Trigger tasks in bursts (the 6 AM schedule fans out across
+  // every AWS connection/check). Exempt from the global rate limiter so the burst
+  // doesn't hit 429s and re-fail the very checks this path exists to fix.
+  @SkipThrottle()
   @UseGuards(HybridAuthGuard, ServiceTokenOnlyGuard, PermissionGuard)
   @RequirePermission('integration', 'update')
   @ApiOperation({

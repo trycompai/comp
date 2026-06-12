@@ -82,6 +82,41 @@ export class ConnectionCheckRunnerService {
       throw new BadRequestException('No credentials found for connection');
     }
 
+    // Validate credentials by auth type, matching the in-app run paths
+    // (checks.controller / task-integrations.controller) so a server-run rejects
+    // malformed credentials up front with a clear error instead of executing the
+    // check on bad input and producing an inconsistent outcome.
+    if (manifest.auth.type === 'oauth2' && !credentials.access_token) {
+      throw new BadRequestException(
+        'No valid OAuth credentials found. Please reconnect.',
+      );
+    }
+    if (manifest.auth.type === 'api_key') {
+      const apiKeyField = manifest.auth.config.name;
+      if (!credentials[apiKeyField] && !credentials.api_key) {
+        throw new BadRequestException(
+          'API key not found. Please reconnect the integration.',
+        );
+      }
+    }
+    if (manifest.auth.type === 'basic') {
+      const usernameField = manifest.auth.config.usernameField || 'username';
+      const passwordField = manifest.auth.config.passwordField || 'password';
+      if (!credentials[usernameField] || !credentials[passwordField]) {
+        throw new BadRequestException(
+          'Username and password required. Please reconnect the integration.',
+        );
+      }
+    }
+    if (
+      manifest.auth.type === 'custom' &&
+      Object.keys(credentials).length === 0
+    ) {
+      throw new BadRequestException(
+        'No valid credentials found for custom integration',
+      );
+    }
+
     const variables =
       (connection.variables as Record<
         string,
