@@ -1,6 +1,36 @@
 @import '@trycompai/ui/globals.css';
 @config '../tailwind.config.ts';
 
+/*
+ * Real dark-mode palette (FRAME-5). @trycompai/ui ships a `.dark` block whose
+ * values are identical to light, so without this, toggling the `dark` class
+ * changes nothing. Declared after the import (and unlayered) so it wins the
+ * cascade over the library defaults.
+ */
+.dark {
+  --background: 0 0% 7%;
+  --foreground: 0 0% 95%;
+  --card: 0 0% 9%;
+  --card-foreground: 0 0% 95%;
+  --popover: 0 0% 9%;
+  --popover-foreground: 0 0% 95%;
+  --primary: 165 70% 42%;
+  --primary-foreground: 0 0% 100%;
+  --secondary: 0 0% 15%;
+  --secondary-foreground: 0 0% 95%;
+  --muted: 0 0% 15%;
+  --muted-foreground: 0 0% 64%;
+  --accent: 0 0% 18%;
+  --accent-foreground: 0 0% 98%;
+  --destructive: 0 72% 51%;
+  --destructive-foreground: 0 0% 98%;
+  --warning: 45 93% 47%;
+  --warning-foreground: 26 83% 14%;
+  --border: 0 0% 18%;
+  --input: 0 0% 18%;
+  --ring: 165 70% 42%;
+}
+
 @layer base {
   * {
     @apply border-border;
