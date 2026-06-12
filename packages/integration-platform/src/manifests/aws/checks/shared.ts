@@ -307,20 +307,33 @@ export function awsConnectionNameFromCtx(ctx: CheckContext): string | null {
 export function emitOutcomes(ctx: CheckContext, outcomes: CheckOutcome[]): void {
   const accountId = awsAccountIdFromCtx(ctx);
   const connectionName = awsConnectionNameFromCtx(ctx);
+  const checkId = ctx.checkId;
   // "AWS account 123456789012 — Production AWS" (name only shown when set).
   const label = accountId
     ? `AWS account ${accountId}${connectionName ? ` — ${connectionName}` : ''}`
     : null;
   const describe = (description: string) =>
     label ? `${description} (${label})` : description;
-  const stamp = (evidence: Record<string, unknown> | undefined) =>
-    accountId
-      ? {
-          ...(evidence ?? {}),
-          awsAccountId: accountId,
-          ...(connectionName ? { awsConnectionName: connectionName } : {}),
-        }
-      : evidence;
+  // Stamp a stable per-(check, resource) `findingKey` so the finding can be
+  // marked as an exception and matched across scans. normalizeCheckId() strips
+  // the "-<resourceId>" suffix back to the check id on the consuming side, so it
+  // must mirror this exact shape. Account attribution fields are added only when
+  // the account id is known (role-auth connections).
+  const stamp = (
+    evidence: Record<string, unknown> | undefined,
+    resourceId: string,
+  ): Record<string, unknown> | undefined => {
+    const findingKey = checkId ? `${checkId}-${resourceId}` : undefined;
+    if (!findingKey && !accountId) return evidence;
+    return {
+      ...(evidence ?? {}),
+      ...(findingKey ? { findingKey } : {}),
+      ...(accountId ? { awsAccountId: accountId } : {}),
+      ...(accountId && connectionName
+        ? { awsConnectionName: connectionName }
+        : {}),
+    };
+  };
 
   for (const o of outcomes) {
     if (o.kind === 'pass') {
@@ -329,7 +342,7 @@ export function emitOutcomes(ctx: CheckContext, outcomes: CheckOutcome[]): void 
         description: describe(o.description),
         resourceType: o.resourceType,
         resourceId: o.resourceId,
-        evidence: stamp(o.evidence) ?? {},
+        evidence: stamp(o.evidence, o.resourceId) ?? {},
       });
     } else {
       ctx.fail({
@@ -339,7 +352,7 @@ export function emitOutcomes(ctx: CheckContext, outcomes: CheckOutcome[]): void 
         resourceId: o.resourceId,
         severity: o.severity ?? 'medium',
         remediation: o.remediation ?? 'Review and remediate this finding.',
-        evidence: stamp(o.evidence),
+        evidence: stamp(o.evidence, o.resourceId),
       });
     }
   }

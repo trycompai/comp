@@ -286,6 +286,14 @@ export interface CheckContext {
   /** Organization ID */
   organizationId: string;
 
+  /**
+   * The id of the check currently running (e.g. "aws-s3-public-access").
+   * Set by the runner before `run()` is invoked. AWS `emitOutcomes` uses it
+   * to stamp a stable `findingKey` on each outcome so findings can be marked
+   * as exceptions and matched across scans.
+   */
+  checkId?: string;
+
   /** Connection metadata (e.g., OAuth team/user info from token response) */
   metadata?: Record<string, unknown>;
 

@@ -809,11 +809,12 @@ describe('IAM/CloudTrail outcomes carry evidence (so the UI shows "View Evidence
 
 // ── AWS account attribution (multi-account findings) ───────────────────────
 
-function captureCtx(credentials: Record<string, unknown>) {
+function captureCtx(credentials: Record<string, unknown>, checkId?: string) {
   const passed: Array<{ description: string; evidence?: Record<string, unknown> }> = [];
   const failed: Array<{ description: string; evidence?: Record<string, unknown> }> = [];
   const ctx = {
     credentials,
+    checkId,
     pass: (r: { description: string; evidence?: Record<string, unknown> }) =>
       passed.push(r),
     fail: (r: { description: string; evidence?: Record<string, unknown> }) =>
@@ -893,6 +894,35 @@ describe('emitOutcomes — attributes findings to the AWS account', () => {
     expect(passed[0]!.description).toContain(
       '(AWS account 123456789012 — Production AWS)',
     );
+  });
+
+  it('stamps a stable findingKey of `${checkId}-${resourceId}` so findings can be excepted', () => {
+    const { ctx, passed } = captureCtx(
+      { roleArn: 'arn:aws:iam::123456789012:role/CompAIAuditor' },
+      'aws-s3-public-access',
+    );
+    emitOutcomes(ctx, [PASS_OUTCOME]); // resourceId = 'my-bucket'
+    expect(passed[0]!.evidence?.findingKey).toBe('aws-s3-public-access-my-bucket');
+    // Account attribution still applied alongside.
+    expect(passed[0]!.evidence?.awsAccountId).toBe('123456789012');
+  });
+
+  it('stamps findingKey even for key-auth connections with no account id (the un-exceptable bug)', () => {
+    const { ctx, passed } = captureCtx(
+      { access_key_id: 'AKIA', secret_access_key: 'secret' },
+      'aws-s3-public-access',
+    );
+    emitOutcomes(ctx, [PASS_OUTCOME]);
+    expect(passed[0]!.evidence?.findingKey).toBe('aws-s3-public-access-my-bucket');
+    expect(passed[0]!.evidence?.awsAccountId).toBeUndefined();
+  });
+
+  it('omits findingKey when the runner did not set ctx.checkId', () => {
+    const { ctx, passed } = captureCtx({
+      roleArn: 'arn:aws:iam::123456789012:role/CompAIAuditor',
+    });
+    emitOutcomes(ctx, [PASS_OUTCOME]);
+    expect(passed[0]!.evidence?.findingKey).toBeUndefined();
   });
 });
 
