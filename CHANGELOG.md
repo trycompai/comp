@@ -1,3 +1,10 @@
+# [3.81.0](https://github.com/trycompai/comp/compare/v3.80.0...v3.81.0) (2026-06-12)
+
+
+### Features
+
+* **framework-editor:** raise requirement description limit to 10,000 chars ([75d9c5d](https://github.com/trycompai/comp/commit/75d9c5ddaf1e26889e8bc4fe52db71958c09cce8))
+
 # [3.80.0](https://github.com/trycompai/comp/compare/v3.79.1...v3.80.0) (2026-06-12)
 
 
