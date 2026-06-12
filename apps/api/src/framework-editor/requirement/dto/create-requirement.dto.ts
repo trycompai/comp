@@ -22,7 +22,7 @@ export class CreateRequirementDto {
 
   @ApiProperty({ example: 'Control environment requirements' })
   @IsString()
-  @MaxLength(5000)
+  @MaxLength(10000)
   description: string;
 
   @ApiPropertyOptional({ example: 'Access Control' })
