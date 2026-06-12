@@ -86,3 +86,35 @@ describe('RelationalCell on uncommitted rows', () => {
     );
   });
 });
+
+describe('RelationalCell panel placement (FRAME-8)', () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  it('opens downward when there is room below', () => {
+    renderCell();
+    fireEvent.click(screen.getByText('None'));
+    const panel = screen.getByText('Linked Controls').closest('.bg-popover');
+    expect(panel?.className).toContain('top-0');
+    expect(panel?.className).not.toContain('bottom-0');
+  });
+
+  it('flips upward when the cell is near the viewport bottom', () => {
+    renderCell();
+    const trigger = screen.getByText('None').closest('div') as HTMLDivElement;
+    // window.innerHeight is 768 in jsdom; a cell ending at 760 leaves 8px below.
+    vi.spyOn(trigger, 'getBoundingClientRect').mockReturnValue({
+      bottom: 760,
+      top: 740,
+      left: 0,
+      right: 100,
+      width: 100,
+      height: 20,
+      x: 0,
+      y: 740,
+      toJSON: () => ({}),
+    } as DOMRect);
+    fireEvent.click(trigger);
+    const panel = screen.getByText('Linked Controls').closest('.bg-popover');
+    expect(panel?.className).toContain('bottom-0');
+  });
+});
