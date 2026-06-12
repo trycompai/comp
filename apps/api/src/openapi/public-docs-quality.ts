@@ -19,6 +19,7 @@ export const PUBLIC_DOCS_EXCLUDED_PREFIXES = [
   '/v1/finding-template',
   '/v1/integrations/oauth',
   '/v1/integrations/oauth-apps',
+  '/v1/integrations/internal',
   '/v1/cloud-security/legacy',
   '/v1/cloud-security/remediation',
   '/v1/questionnaire/parse/upload/token',
