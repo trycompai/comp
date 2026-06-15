@@ -1,3 +1,11 @@
+## [3.82.3](https://github.com/trycompai/comp/compare/v3.82.2...v3.82.3) (2026-06-15)
+
+
+### Bug Fixes
+
+* **framework-editor:** raise all import description limits to 10k ([e2f22a2](https://github.com/trycompai/comp/commit/e2f22a2c6162069e79c611b5d0fbf9f8f5c6bbe1))
+* **framework-editor:** unblock framework import (10k requirement limit + content shape) ([09aeba6](https://github.com/trycompai/comp/commit/09aeba6787a4d9d398c9a3d5064361ef27554605))
+
 ## [3.82.2](https://github.com/trycompai/comp/compare/v3.82.1...v3.82.2) (2026-06-15)
 
 
