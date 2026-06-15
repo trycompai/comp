@@ -19,7 +19,7 @@
  */
 
 import { useParams } from 'next/navigation';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { sanitizeErrorMessage } from '../actions/sanitize-error';
 import { getAutomationRunStatus } from '../actions/task-automation-actions';
 import { useSharedChatContext } from '../lib/chat-context';
@@ -88,7 +88,6 @@ export function useTaskAutomationExecution({
   const [isExecuting, setIsExecuting] = useState(false);
   const [result, setResult] = useState<TaskAutomationExecutionResult | null>(null);
   const [error, setError] = useState<Error | null>(null);
-  const pollingIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
   // Import shared automation ID ref from context
   const { automationIdRef } = useSharedChatContext();
@@ -97,11 +96,24 @@ export function useTaskAutomationExecution({
   useEffect(() => {
     if (!runId || !isExecuting) return;
 
-    // Absolute deadline for this run. Stable for the lifetime of the effect —
-    // it only restarts when a new run begins (runId/isExecuting change).
-    const pollDeadline = Date.now() + POLL_TIMEOUT_MS;
+    // Resolve the run exactly once. `settled` blocks any in-flight poll or the
+    // deadline timer from resolving twice. The deadline timer is an INDEPENDENT
+    // backstop: it fires no matter where the poll loop is, so the dialog can
+    // never spin forever — not only when a poll returns a stuck in-progress
+    // status, but also if a single status request itself never resolves.
+    let settled = false;
+    let pollTimeout: ReturnType<typeof setTimeout> | null = null;
+    let deadlineTimer: ReturnType<typeof setTimeout> | null = null;
+
+    const settle = () => {
+      settled = true;
+      if (pollTimeout) clearTimeout(pollTimeout);
+      if (deadlineTimer) clearTimeout(deadlineTimer);
+    };
 
     const finishWithSuccess = (data: AutomationRunData, sanitizedError?: string) => {
+      if (settled) return;
+      settle();
       const output = data.output;
       const executionResult: TaskAutomationExecutionResult = {
         // A COMPLETED run is a successful execution; default to true if the
@@ -122,15 +134,26 @@ export function useTaskAutomationExecution({
     };
 
     const finishWithError = (message: string) => {
+      if (settled) return;
+      settle();
       const failure = new Error(message);
       setError(failure);
       setIsExecuting(false);
       onError?.(failure);
     };
 
+    // Absolute ceiling on the whole run. Fires independently of the poll loop,
+    // so a run stuck in the queue OR a status request that hangs still resolves.
+    deadlineTimer = setTimeout(() => {
+      finishWithError(
+        'The automation is taking longer than expected and may still be running in the background. Close this dialog and check back shortly.',
+      );
+    }, POLL_TIMEOUT_MS);
+
     const pollRunStatus = async () => {
       try {
         const res = await getAutomationRunStatus(runId);
+        if (settled) return;
         if (!res.success) {
           throw new Error(res.error || 'Failed to fetch run status');
         }
@@ -152,17 +175,9 @@ export function useTaskAutomationExecution({
           return;
         }
 
-        // Still running — keep polling, but never past the absolute deadline.
-        // This is the only branch that re-schedules a poll, so a run that gets
-        // stuck in the queue can no longer spin the dialog forever.
+        // Still running — keep polling. The deadline timer caps total wall time.
         if (IN_PROGRESS_RUN_STATUSES.has(data.status)) {
-          if (Date.now() >= pollDeadline) {
-            finishWithError(
-              'The automation is taking longer than expected and may still be running in the background. Close this dialog and check back shortly.',
-            );
-            return;
-          }
-          pollingIntervalRef.current = setTimeout(pollRunStatus, 1000);
+          pollTimeout = setTimeout(pollRunStatus, 1000);
           return;
         }
 
@@ -194,6 +209,7 @@ export function useTaskAutomationExecution({
 
         finishWithError(message);
       } catch (err) {
+        if (settled) return;
         // Sanitize with fallback to ensure state cleanup always happens
         const sanitizedMessage = await sanitizeErrorMessage(err).catch(() =>
           err instanceof Error ? err.message : 'An unexpected error occurred',
@@ -206,9 +222,7 @@ export function useTaskAutomationExecution({
     pollRunStatus();
 
     return () => {
-      if (pollingIntervalRef.current) {
-        clearTimeout(pollingIntervalRef.current);
-      }
+      settle();
     };
   }, [runId, isExecuting, onSuccess, onError]);
 

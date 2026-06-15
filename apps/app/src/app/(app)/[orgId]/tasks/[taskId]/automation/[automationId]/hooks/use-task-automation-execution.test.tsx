@@ -187,4 +187,22 @@ describe('useTaskAutomationExecution polling', () => {
     expect(result.current.isExecuting).toBe(false);
     expect(result.current.error?.message).toMatch(/taking longer than expected/i);
   });
+
+  // Robustness: even if a single status request never resolves (the API stalls
+  // mid-request), the independent backstop timer must still end the run.
+  it('gives up via the backstop even if a status request never resolves', async () => {
+    vi.useFakeTimers();
+    getAutomationRunStatus.mockImplementation(() => new Promise(() => {}));
+
+    const { result } = renderHook(() => useTaskAutomationExecution());
+    await act(async () => {
+      await result.current.execute();
+    });
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(6 * 60 * 1000 + 5000);
+    });
+
+    expect(result.current.isExecuting).toBe(false);
+    expect(result.current.error?.message).toMatch(/taking longer than expected/i);
+  });
 });
