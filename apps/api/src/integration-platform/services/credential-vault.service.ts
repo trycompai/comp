@@ -15,6 +15,14 @@ const KEY_LENGTH = 32;
 
 // Refresh tokens 5 minutes before expiry to avoid race conditions
 const REFRESH_BUFFER_SECONDS = 300;
+// Single-flight settings: serialize concurrent token refreshes per connection.
+// Concurrently refreshing the same OAuth refresh token can get it invalidated
+// by the provider (Google returns invalid_grant), so only one refresh runs at
+// a time and other callers reuse its result.
+// Lease TTL must exceed the worst-case refresh duration (2 attempts + 2s wait).
+const REFRESH_LEASE_TTL_SECONDS = 180;
+const CONCURRENT_REFRESH_POLL_MS = 300;
+const CONCURRENT_REFRESH_MAX_POLLS = 20; // ~6s total before falling back
 const RESERVED_REFRESH_TOKEN_PARAMS = new Set([
   'grant_type',
   'refresh_token',
@@ -393,11 +401,116 @@ export class CredentialVaultService {
   }
 
   /**
-   * Refresh OAuth tokens using the refresh token.
+   * Refresh OAuth tokens, serialized per connection (single-flight).
+   *
+   * The integration-checks scheduler fans out one job per task on the same
+   * connection, and sync runs independently — so the same connection can be
+   * refreshed concurrently. Concurrent refreshes of one OAuth refresh token can
+   * cause the provider to reject it (Google: invalid_grant → "OAuth token
+   * expired"). A short DB lease ensures only one caller refreshes at a time;
+   * the others wait and reuse its fresh token.
+   *
+   * Force-refresh semantics are preserved: a solitary caller (e.g. the 401
+   * retry or forceRefresh) always performs the refresh. Coalescing only reuses
+   * a token that was produced AFTER this call began.
+   */
+  async refreshOAuthTokens(
+    connectionId: string,
+    config: TokenRefreshConfig,
+  ): Promise<string | null> {
+    const startedAt = new Date();
+
+    let acquired = false;
+    try {
+      acquired = await this.connectionRepository.acquireRefreshLease(
+        connectionId,
+        REFRESH_LEASE_TTL_SECONDS,
+      );
+    } catch (error) {
+      // If the lease mechanism itself fails, degrade to a direct refresh rather
+      // than blocking the integration entirely.
+      this.logger.warn(
+        `Refresh lease acquisition failed for connection ${connectionId}; proceeding without single-flight: ${error}`,
+      );
+      return this.performTokenRefresh(connectionId, config);
+    }
+
+    if (!acquired) {
+      this.logger.log(
+        `Refresh already in progress for connection ${connectionId}; awaiting peer result`,
+      );
+      return this.awaitConcurrentRefresh(connectionId, startedAt);
+    }
+
+    try {
+      // A peer may have finished refreshing between our needsRefresh check and
+      // acquiring the lease — reuse its fresh token instead of refreshing again.
+      const fresh = await this.tokenRefreshedSince(connectionId, startedAt);
+      if (fresh) return fresh;
+
+      return await this.performTokenRefresh(connectionId, config);
+    } finally {
+      try {
+        await this.connectionRepository.releaseRefreshLease(connectionId);
+      } catch (error) {
+        // Non-fatal: the lease auto-expires after REFRESH_LEASE_TTL_SECONDS.
+        this.logger.warn(
+          `Failed to release refresh lease for connection ${connectionId}: ${error}`,
+        );
+      }
+    }
+  }
+
+  /**
+   * Return the current access token if a newer credential version was stored
+   * after `since` (i.e. a concurrent refresher just produced a fresh token),
+   * otherwise null.
+   */
+  private async tokenRefreshedSince(
+    connectionId: string,
+    since: Date,
+  ): Promise<string | null> {
+    const latest =
+      await this.credentialRepository.findLatestByConnection(connectionId);
+    if (!latest || latest.createdAt <= since) return null;
+
+    const credentials = await this.getDecryptedCredentials(connectionId);
+    return typeof credentials?.access_token === 'string'
+      ? credentials.access_token
+      : null;
+  }
+
+  /**
+   * Wait for an in-progress refresh on another worker to complete, then return
+   * its fresh access token. Falls back to the currently stored token if the
+   * peer does not finish in time (it may be stale — the caller handles that).
+   */
+  private async awaitConcurrentRefresh(
+    connectionId: string,
+    startedAt: Date,
+  ): Promise<string | null> {
+    for (let i = 0; i < CONCURRENT_REFRESH_MAX_POLLS; i++) {
+      await this.delay(CONCURRENT_REFRESH_POLL_MS);
+      const fresh = await this.tokenRefreshedSince(connectionId, startedAt);
+      if (fresh) return fresh;
+    }
+
+    const credentials = await this.getDecryptedCredentials(connectionId);
+    return typeof credentials?.access_token === 'string'
+      ? credentials.access_token
+      : null;
+  }
+
+  private delay(ms: number): Promise<void> {
+    return new Promise((resolve) => setTimeout(resolve, ms));
+  }
+
+  /**
+   * Perform the actual token refresh (the network calls + storage).
    * Retries once after a short delay before marking the connection as error.
    * Returns the new access token, or null if refresh failed.
    */
-  async refreshOAuthTokens(
+  private async performTokenRefresh(
     connectionId: string,
     config: TokenRefreshConfig,
   ): Promise<string | null> {
@@ -429,7 +542,7 @@ export class CredentialVaultService {
       this.logger.warn(
         `Token refresh attempt 1 failed for connection ${connectionId}: HTTP ${first.status} — ${first.errorBody ?? '(no body)'}. Retrying in 2s...`,
       );
-      await new Promise((r) => setTimeout(r, 2000));
+      await this.delay(2000);
 
       const second = await this.attemptTokenRefresh(
         connectionId,

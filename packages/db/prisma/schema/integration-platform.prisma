@@ -65,6 +65,11 @@ model IntegrationConnection {
   /// Error message if status is error
   errorMessage String?
 
+  /// Lease expiry used to serialize concurrent OAuth token refreshes across
+  /// processes. Set while a refresh is in flight; auto-expires so a crashed
+  /// worker cannot block future refreshes. Null = no refresh in progress.
+  refreshLeaseUntil DateTime?
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
