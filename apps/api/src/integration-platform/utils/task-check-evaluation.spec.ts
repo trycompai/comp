@@ -43,6 +43,35 @@ describe('task-check-evaluation', () => {
       ]);
       expect(countEffectiveFailures(failing, ex)).toBe(2);
     });
+
+    it('is provider-agnostic — works for AWS, GCP and Azure findings', () => {
+      const mixed = [
+        {
+          connectionId: 'aws_c',
+          checkId: 'aws-s3-public-access',
+          resourceId: 'bucket',
+        },
+        {
+          connectionId: 'gcp_c',
+          checkId: 'gcp-storage-no-public-access',
+          resourceId: 'gs-bucket',
+        },
+        {
+          connectionId: 'az_c',
+          checkId: 'azure-storage-secure-transfer',
+          resourceId: 'sa1',
+        },
+      ];
+      // Except only the GCP finding.
+      const ex = new ActiveExceptionSet([
+        ActiveExceptionSet.key(
+          'gcp_c',
+          'gcp-storage-no-public-access',
+          'gs-bucket',
+        ),
+      ]);
+      expect(countEffectiveFailures(mixed, ex)).toBe(2);
+    });
   });
 
   describe('decideTaskStatus', () => {
