@@ -70,6 +70,11 @@ model IntegrationConnection {
   /// worker cannot block future refreshes. Null = no refresh in progress.
   refreshLeaseUntil DateTime?
 
+  /// Owner token for the active refresh lease. The lease may only be released
+  /// by the holder whose token matches, so a holder whose work outlived the
+  /// lease TTL cannot wipe a lease another worker has since acquired.
+  refreshLeaseToken String?
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 

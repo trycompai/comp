@@ -64,9 +64,16 @@ describe('CredentialVaultService', () => {
     expect(connectionRepository.acquireRefreshLease).toHaveBeenCalledWith(
       'conn_1',
       expect.any(Number),
+      expect.any(String),
     );
+    // The lease must be released with the SAME owner token it was acquired with
+    // (so a holder can only release its own lease).
+    const acquireMock = connectionRepository.acquireRefreshLease as jest.Mock;
+    const leaseToken = acquireMock.mock.calls[0][2] as string;
+    expect(leaseToken).toBeTruthy();
     expect(connectionRepository.releaseRefreshLease).toHaveBeenCalledWith(
       'conn_1',
+      leaseToken,
     );
 
     if (typeof requestBody !== 'string') {
@@ -162,6 +169,116 @@ describe('CredentialVaultService', () => {
     expect(token).toBeNull();
     expect(connectionRepository.releaseRefreshLease).toHaveBeenCalledWith(
       'conn_1',
+      expect.any(String),
+    );
+  });
+
+  it('treats a token-request timeout/network error as transient — does NOT mark the connection expired', async () => {
+    const credentialRepository = {
+      findLatestByConnection: jest.fn().mockResolvedValue(null),
+    } as unknown as CredentialRepository;
+    const connectionRepository = {
+      acquireRefreshLease: jest.fn().mockResolvedValue(true),
+      releaseRefreshLease: jest.fn().mockResolvedValue(undefined),
+      update: jest.fn().mockResolvedValue(undefined),
+    } as unknown as ConnectionRepository;
+    const service = new CredentialVaultService(
+      credentialRepository,
+      connectionRepository,
+    );
+
+    jest.spyOn(service, 'getRefreshToken').mockResolvedValue('real-refresh');
+    // The provider call aborts/times out on both attempts (no HTTP status).
+    jest
+      .spyOn(globalThis, 'fetch')
+      .mockRejectedValue(new Error('The operation was aborted'));
+    jest
+      .spyOn(service as unknown as DelayInternal, 'delay')
+      .mockResolvedValue(undefined);
+
+    const token = await service.refreshOAuthTokens('conn_1', {
+      tokenUrl: 'https://oauth.example.com/token',
+      clientId: 'c',
+      clientSecret: 's',
+      clientAuthMethod: 'body',
+    });
+
+    expect(token).toBeNull();
+    // A transient failure must NOT flip the connection to error/expired —
+    // otherwise a brief provider hang would brick a healthy connection.
+    expect(connectionRepository.update).not.toHaveBeenCalled();
+  });
+
+  it('fails safe when the lease cannot be coordinated: returns the stored token without an unserialized refresh', async () => {
+    const credentialRepository = {} as unknown as CredentialRepository;
+    const connectionRepository = {
+      // DB blip — acquiring the lease throws.
+      acquireRefreshLease: jest.fn().mockRejectedValue(new Error('db down')),
+      releaseRefreshLease: jest.fn().mockResolvedValue(undefined),
+    } as unknown as ConnectionRepository;
+    const service = new CredentialVaultService(
+      credentialRepository,
+      connectionRepository,
+    );
+
+    jest
+      .spyOn(service, 'getDecryptedCredentials')
+      .mockResolvedValue({ access_token: 'stored-token' });
+    const refreshTokenSpy = jest.spyOn(service, 'getRefreshToken');
+    const fetchSpy = jest.spyOn(globalThis, 'fetch');
+
+    const token = await service.refreshOAuthTokens('conn_1', {
+      tokenUrl: 'https://oauth.example.com/token',
+      clientId: 'c',
+      clientSecret: 's',
+      clientAuthMethod: 'body',
+    });
+
+    expect(token).toBe('stored-token');
+    // No unserialized provider refresh, and no lease was held so none released.
+    expect(fetchSpy).not.toHaveBeenCalled();
+    expect(refreshTokenSpy).not.toHaveBeenCalled();
+    expect(connectionRepository.releaseRefreshLease).not.toHaveBeenCalled();
+  });
+
+  it('coalesces after winning the lease: reuses a peer token produced after the call began', async () => {
+    const credentialRepository = {
+      // A peer stored a fresh version after this call started.
+      findLatestByConnection: jest.fn().mockResolvedValue({
+        createdAt: new Date(Date.now() + 60_000),
+      }),
+    } as unknown as CredentialRepository;
+    const connectionRepository = {
+      acquireRefreshLease: jest.fn().mockResolvedValue(true),
+      releaseRefreshLease: jest.fn().mockResolvedValue(undefined),
+    } as unknown as ConnectionRepository;
+    const service = new CredentialVaultService(
+      credentialRepository,
+      connectionRepository,
+    );
+
+    jest
+      .spyOn(service, 'getDecryptedCredentials')
+      .mockResolvedValue({ access_token: 'peer-token' });
+    const refreshTokenSpy = jest.spyOn(service, 'getRefreshToken');
+    const fetchSpy = jest.spyOn(globalThis, 'fetch');
+
+    const token = await service.refreshOAuthTokens('conn_1', {
+      tokenUrl: 'https://oauth.example.com/token',
+      clientId: 'c',
+      clientSecret: 's',
+      clientAuthMethod: 'body',
+    });
+
+    expect(token).toBe('peer-token');
+    // Coalesced — no provider call — and the lease we won is released.
+    expect(fetchSpy).not.toHaveBeenCalled();
+    expect(refreshTokenSpy).not.toHaveBeenCalled();
+    const acquireMock = connectionRepository.acquireRefreshLease as jest.Mock;
+    const leaseToken = acquireMock.mock.calls[0][2] as string;
+    expect(connectionRepository.releaseRefreshLease).toHaveBeenCalledWith(
+      'conn_1',
+      leaseToken,
     );
   });
 });

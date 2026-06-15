@@ -3,6 +3,7 @@ import {
   createCipheriv,
   createDecipheriv,
   randomBytes,
+  randomUUID,
   scryptSync,
 } from 'crypto';
 import { CredentialRepository } from '../repositories/credential.repository';
@@ -23,6 +24,10 @@ const REFRESH_BUFFER_SECONDS = 300;
 const REFRESH_LEASE_TTL_SECONDS = 180;
 const CONCURRENT_REFRESH_POLL_MS = 300;
 const CONCURRENT_REFRESH_MAX_POLLS = 20; // ~6s total before falling back
+// Bound each token request so a hung provider call can't hold the lease (and a
+// connection slot) for the whole TTL. Worst case 2 attempts + 2s wait stays
+// well under REFRESH_LEASE_TTL_SECONDS.
+const REFRESH_HTTP_TIMEOUT_MS = 20_000;
 const RESERVED_REFRESH_TOKEN_PARAMS = new Set([
   'grant_type',
   'refresh_token',
@@ -375,11 +380,29 @@ export class CredentialVaultService {
     }
 
     const refreshEndpoint = config.refreshUrl || config.tokenUrl;
-    const response = await fetch(refreshEndpoint, {
-      method: 'POST',
-      headers,
-      body: body.toString(),
-    });
+    const controller = new AbortController();
+    const timeout = setTimeout(
+      () => controller.abort(),
+      REFRESH_HTTP_TIMEOUT_MS,
+    );
+    let response: Response;
+    try {
+      response = await fetch(refreshEndpoint, {
+        method: 'POST',
+        headers,
+        body: body.toString(),
+        signal: controller.signal,
+      });
+    } catch (error) {
+      // Network failure or timeout — transient, not a rejected token. Returning
+      // a status-less failure lets performTokenRefresh retry without wrongly
+      // marking the connection as expired.
+      return {
+        errorBody: error instanceof Error ? error.message : String(error),
+      };
+    } finally {
+      clearTimeout(timeout);
+    }
 
     if (!response.ok) {
       const errorBody = await response.text();
@@ -419,20 +442,29 @@ export class CredentialVaultService {
     config: TokenRefreshConfig,
   ): Promise<string | null> {
     const startedAt = new Date();
+    // Unique owner token for this attempt so release only clears OUR lease — a
+    // holder whose work outlived the TTL must not wipe a lease another worker
+    // has since acquired.
+    const leaseToken = randomUUID();
 
     let acquired = false;
     try {
       acquired = await this.connectionRepository.acquireRefreshLease(
         connectionId,
         REFRESH_LEASE_TTL_SECONDS,
+        leaseToken,
       );
     } catch (error) {
-      // If the lease mechanism itself fails, degrade to a direct refresh rather
-      // than blocking the integration entirely.
+      // The lease couldn't be coordinated (DB error). DB-write failures are
+      // correlated across the many concurrent callers per connection, so doing
+      // an UNSERIALIZED refresh here would fan all of them into the provider at
+      // once and invalidate the token — the exact failure this lease prevents.
+      // Fail safe: skip the refresh and return the currently stored token; the
+      // next scheduled run retries once the lease mechanism recovers.
       this.logger.warn(
-        `Refresh lease acquisition failed for connection ${connectionId}; proceeding without single-flight: ${error}`,
+        `Refresh lease unavailable for connection ${connectionId}; skipping refresh to avoid an unserialized concurrent refresh: ${error}`,
       );
-      return this.performTokenRefresh(connectionId, config);
+      return this.getStoredAccessToken(connectionId).catch(() => null);
     }
 
     if (!acquired) {
@@ -451,7 +483,10 @@ export class CredentialVaultService {
       return await this.performTokenRefresh(connectionId, config);
     } finally {
       try {
-        await this.connectionRepository.releaseRefreshLease(connectionId);
+        await this.connectionRepository.releaseRefreshLease(
+          connectionId,
+          leaseToken,
+        );
       } catch (error) {
         // Non-fatal: the lease auto-expires after REFRESH_LEASE_TTL_SECONDS.
         this.logger.warn(
@@ -474,6 +509,13 @@ export class CredentialVaultService {
       await this.credentialRepository.findLatestByConnection(connectionId);
     if (!latest || latest.createdAt <= since) return null;
 
+    return this.getStoredAccessToken(connectionId);
+  }
+
+  /** Best-effort read of the currently stored access token (no refresh). */
+  private async getStoredAccessToken(
+    connectionId: string,
+  ): Promise<string | null> {
     const credentials = await this.getDecryptedCredentials(connectionId);
     return typeof credentials?.access_token === 'string'
       ? credentials.access_token
@@ -495,10 +537,7 @@ export class CredentialVaultService {
       if (fresh) return fresh;
     }
 
-    const credentials = await this.getDecryptedCredentials(connectionId);
-    return typeof credentials?.access_token === 'string'
-      ? credentials.access_token
-      : null;
+    return this.getStoredAccessToken(connectionId);
   }
 
   private delay(ms: number): Promise<void> {
