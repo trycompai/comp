@@ -18,8 +18,9 @@ import {
   PromptInputSubmit,
 } from '@/components/ai-elements/prompt-input';
 import { Button } from '@trycompai/design-system';
-import { Close, MagicWand } from '@trycompai/design-system/icons';
+import { Close, MagicWand, Renew } from '@trycompai/design-system/icons';
 import type { ChatStatus } from 'ai';
+import { getProposalCardState } from '../../lib/proposal-card-state';
 import type { PolicyChatUIMessage } from '../../types';
 
 interface PolicyAiAssistantProps {
@@ -28,6 +29,8 @@ interface PolicyAiAssistantProps {
   errorMessage?: string | null;
   sendMessage: (payload: { text: string }) => void;
   stop?: () => void;
+  /** Re-run the last request (used to recover from interrupted/incomplete runs). */
+  retry?: () => void;
   close?: () => void;
 }
 
@@ -37,6 +40,7 @@ export function PolicyAiAssistant({
   errorMessage,
   sendMessage,
   stop,
+  retry,
   close,
 }: PolicyAiAssistantProps) {
   const isBusy = status === 'streaming' || status === 'submitted';
@@ -99,11 +103,21 @@ export function PolicyAiAssistant({
                       }
 
                       if (part.type === 'tool-proposePolicy') {
+                        // The proposed markdown lives in the tool INPUT. A
+                        // truncated run can complete with empty content while
+                        // the prose claims success (CS-256) — detect that here.
+                        const proposed =
+                          typeof part.input?.content === 'string'
+                            ? part.input.content
+                            : '';
+                        const hasContent = proposed.trim().length > 0;
                         return (
                           <PolicyToolCard
                             key={`${message.id}-${index}`}
                             state={part.state}
                             stopped={isMessageStopped}
+                            hasContent={hasContent}
+                            onRetry={isLastMessage ? retry : undefined}
                           />
                         );
                       }
@@ -175,25 +189,28 @@ export function PolicyAiAssistant({
 function PolicyToolCard({
   state,
   stopped,
+  hasContent,
+  onRetry,
 }: {
   state: string;
   stopped: boolean;
+  hasContent: boolean;
+  onRetry?: () => void;
 }) {
-  const isCompleted = state === 'output-available';
-  const isError = state === 'output-error';
-  const isWorking = !isCompleted && !isError;
+  const cardState = getProposalCardState(state, stopped, hasContent);
 
   // Interrupted — streaming stopped while tool was in progress
-  if (isWorking && stopped) {
+  if (cardState === 'interrupted') {
     return (
-      <div className="flex items-center gap-1.5 text-xs text-muted-foreground/70">
-        <span>Interrupted</span>
-      </div>
+      <ToolFailureRow
+        message="The update was interrupted before it finished."
+        onRetry={onRetry}
+      />
     );
   }
 
   // Working state: same compact style as data tool cards
-  if (isWorking) {
+  if (cardState === 'working') {
     return (
       <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
         <svg
@@ -212,11 +229,23 @@ function PolicyToolCard({
   }
 
   // Error state
-  if (isError) {
+  if (cardState === 'error') {
     return (
-      <p className="text-sm text-destructive">
-        Something went wrong while generating updates. Please try again.
-      </p>
+      <ToolFailureRow
+        message="Something went wrong while generating updates."
+        onRetry={onRetry}
+      />
+    );
+  }
+
+  // Completed, but no content actually materialized — the run was truncated
+  // (timeout / output-token cap). Don't claim success on a blank policy (CS-256).
+  if (cardState === 'incomplete') {
+    return (
+      <ToolFailureRow
+        message="The update didn't finish writing, so no changes were applied."
+        onRetry={onRetry}
+      />
     );
   }
 
@@ -228,6 +257,30 @@ function PolicyToolCard({
         <path d="M20 6L9 17l-5-5" />
       </svg>
       <span>Policy updated</span>
+    </div>
+  );
+}
+
+/**
+ * Compact failure row for the proposePolicy tool — interrupted, errored, or
+ * truncated-with-no-content. Offers a Retry affordance so a dead run isn't a
+ * permanent dead-end (the previous UI showed a static "Interrupted" forever).
+ */
+function ToolFailureRow({
+  message,
+  onRetry,
+}: {
+  message: string;
+  onRetry?: () => void;
+}) {
+  return (
+    <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground">
+      <span>{message}</span>
+      {onRetry && (
+        <Button variant="outline" size="sm" onClick={onRetry} iconLeft={<Renew size={12} />}>
+          Retry
+        </Button>
+      )}
     </div>
   );
 }

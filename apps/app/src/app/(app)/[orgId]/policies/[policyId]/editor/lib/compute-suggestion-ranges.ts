@@ -176,15 +176,21 @@ function computeWordDiff(oldText: string, newText: string): DiffSegment[] {
  * Aggressively normalize text for comparison:
  * - Strip list markers (- , * , 1. )
  * - Strip heading markers (# ## ### etc.)
+ * - Strip inline marks (bold/italic asterisks, code ticks; links -> text + href)
  * - Collapse all whitespace
  * - Lowercase
- * This catches formatting-only diffs the AI introduces.
+ * This catches formatting-only diffs the AI introduces, and ensures any residual
+ * asymmetry between our markdown encoder and the model's output never surfaces
+ * as a phantom suggestion (real content/href changes still differ).
  */
 function normalizeContent(text: string): string {
   return text
-    .replace(/^[\s]*[-*]\s+/gm, '')    // strip list markers
-    .replace(/^[\s]*#{1,6}\s+/gm, '')  // strip heading markers
-    .replace(/^[\s]*>\s+/gm, '')       // strip blockquote markers
+    .replace(/^[\s]*[-*]\s+/gm, '')               // strip list markers
+    .replace(/^[\s]*#{1,6}\s+/gm, '')             // strip heading markers
+    .replace(/^[\s]*>\s+/gm, '')                  // strip blockquote markers
+    .replace(/\[([^\]]*)\]\(([^)]*)\)/g, '$1 $2') // links -> text + href
+    .replace(/`+/g, '')                           // inline code ticks
+    .replace(/\*+/g, '')                          // bold/italic asterisks
     .replace(/\s+/g, ' ')
     .trim()
     .toLowerCase();

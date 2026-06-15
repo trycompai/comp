@@ -6,7 +6,10 @@ import { headers } from 'next/headers';
 import { NextResponse } from 'next/server';
 import { getPolicyTools } from '../../../../(app)/[orgId]/policies/[policyId]/editor/tools/policy-tools';
 
-export const maxDuration = 60;
+// Full-policy regenerations can be large; 60s was too tight and cut streams
+// mid-tool-call, leaving runs stuck "Interrupted". Hosting plans clamp this to
+// their own max, so raising it is safe (no-op where unsupported).
+export const maxDuration = 300;
 
 export async function POST(req: Request, { params }: { params: Promise<{ policyId: string }> }) {
   try {
@@ -193,6 +196,10 @@ You MUST produce the policy by starting from the <current_policy> text above and
       messages: await convertToModelMessages(cleanedMessages),
       toolChoice: 'auto',
       stopWhen: stepCountIs(5),
+      // The model must return the COMPLETE policy in the proposePolicy tool
+      // input. Without an explicit cap, large policies can be truncated mid-JSON
+      // (blank/partial content → CS-256). Give ample headroom for a full policy.
+      maxOutputTokens: 16000,
       tools: getPolicyTools({ currentPolicyId: policyId, cookieHeader: cookieStr }),
     });
 
