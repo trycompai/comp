@@ -1,3 +1,14 @@
+## [3.83.1](https://github.com/trycompai/comp/compare/v3.83.0...v3.83.1) (2026-06-15)
+
+
+### Bug Fixes
+
+* **policy-editor:** correct insert position, paragraph modify, and multi-edit merge ([7e6d073](https://github.com/trycompai/comp/commit/7e6d073acb5a6500fd083dcbad96babae439c936))
+* **policy-editor:** correct insert-fallback side for unmapped anchors ([789e0a1](https://github.com/trycompai/comp/commit/789e0a1d6c5fad1dc38303e186d4c37042dbf631))
+* **policy-editor:** don't swallow inline formatting-only edits ([750edcd](https://github.com/trycompai/comp/commit/750edcd211c650e0fdb2073b8469d22f8aac00ce))
+* **policy-editor:** stabilize AI Policy Assistant edit pipeline (CS-427) ([2812455](https://github.com/trycompai/comp/commit/2812455ba330edd4f443a31cf567a692af378214))
+* **policy-editor:** use node boundaries for blocks; fix section delete ([0350a9d](https://github.com/trycompai/comp/commit/0350a9d1592fc12102e56d4fa812f06cdb428452))
+
 # [3.83.0](https://github.com/trycompai/comp/compare/v3.82.3...v3.83.0) (2026-06-15)
 
 
