@@ -7,7 +7,6 @@ import {
   IsOptional,
   IsArray,
   IsInt,
-  IsObject,
   IsEnum,
   MaxLength,
   ValidateNested,
@@ -21,6 +20,7 @@ import {
   TaskAutomationStatus,
 } from '@db';
 import { MaxJsonSize } from '../../validators/max-json-size.validator';
+import { IsObjectOrArray } from '../../validators/is-object-or-array.validator';
 
 class ImportFrameworkMetaDto {
   @ApiProperty()
@@ -60,10 +60,12 @@ class ImportRequirementDto {
   @MaxLength(255)
   identifier?: string;
 
+  // Matches the standalone requirement DTOs (FRAME-2). NIST SP800-53 control
+  // text routinely exceeds 5000 chars (e.g. PL-2 > 6000).
   @ApiProperty()
   @IsString()
   @IsNotEmpty()
-  @MaxLength(5000)
+  @MaxLength(10000)
   description: string;
 
   @ApiPropertyOptional()
@@ -145,11 +147,13 @@ class ImportPolicyTemplateDto {
   @IsEnum(Departments)
   department: Departments;
 
+  // TipTap content is stored either as a `{ type: 'doc', … }` object or a bare
+  // node array (legacy data) — accept both; it's normalized on persist.
   @ApiPropertyOptional()
-  @IsObject()
+  @IsObjectOrArray()
   @IsOptional()
   @MaxJsonSize()
-  content?: Record<string, unknown>;
+  content?: Record<string, unknown> | unknown[];
 }
 
 class ImportTaskTemplateDto {
