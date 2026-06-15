@@ -3,7 +3,7 @@ import { EditorState } from '@tiptap/pm/state';
 import type { Node as ProseMirrorNode } from '@tiptap/pm/model';
 import { buildPositionMap } from '../build-position-map';
 import { computeSuggestionRanges } from '../compute-suggestion-ranges';
-import { buildReplacementNodes } from '../apply-suggestion';
+import { buildReplacementNodes, extendDeleteRangesToSections } from '../apply-suggestion';
 import { sanitizeMarkdown } from '../policy-markdown';
 import { schema } from '../test-helpers/editor-schema';
 
@@ -19,7 +19,10 @@ import { schema } from '../test-helpers/editor-schema';
 function acceptAll(startDoc: ProseMirrorNode, rawProposed: string) {
   const proposed = sanitizeMarkdown(rawProposed);
   const positionMap = buildPositionMap(startDoc);
-  const ranges = computeSuggestionRanges(positionMap, proposed);
+  const ranges = extendDeleteRangesToSections(
+    startDoc,
+    computeSuggestionRanges(positionMap, proposed),
+  );
 
   const state = EditorState.create({ doc: startDoc });
   const tr = state.tr;
@@ -355,6 +358,61 @@ describe('E2E pipeline: combined bold+italic', () => {
     const proposed = 'This is ***important*** text.';
     const { doc: result } = acceptAll(start, proposed);
     expect(marksOnPhrase(result, 'important')).toEqual(['bold', 'italic']);
+  });
+});
+
+describe('E2E pipeline: section delete', () => {
+  it('removes a whole section (heading + body + list) and keeps the rest', () => {
+    const start = doc(
+      h(2, 'Purpose'),
+      p('Purpose body.'),
+      h(2, 'Deprecated Section'),
+      p('Outdated guidance.'),
+      ul('Old item one.', 'Old item two.'),
+      h(2, 'Enforcement'),
+      p('Enforcement body.'),
+    );
+    const proposed = [
+      '## Purpose',
+      '',
+      'Purpose body.',
+      '',
+      '## Enforcement',
+      '',
+      'Enforcement body.',
+    ].join('\n');
+    const { doc: result } = acceptAll(start, proposed);
+    const text = result.textContent;
+    expect(text).toContain('Purpose body.');
+    expect(text).toContain('Enforcement body.');
+    expect(text).not.toContain('Deprecated Section');
+    expect(text).not.toContain('Outdated guidance.');
+    expect(text).not.toContain('Old item one.');
+    // Surviving headings intact
+    const headings: string[] = [];
+    result.forEach((n) => {
+      if (n.type.name === 'heading') headings.push(n.textContent);
+    });
+    expect(headings).toEqual(['Purpose', 'Enforcement']);
+  });
+});
+
+describe('E2E pipeline: no-op proposal', () => {
+  it('produces zero suggestions when content is unchanged', () => {
+    const start = doc(h(2, 'Purpose'), p('Stays the same.'), ul('One.', 'Two.'));
+    const proposed = ['## Purpose', '', 'Stays the same.', '', '- One.', '- Two.'].join('\n');
+    const { ranges, doc: result } = acceptAll(start, proposed);
+    expect(ranges.length).toBe(0);
+    expect(result.textContent).toBe(start.textContent);
+  });
+});
+
+describe('E2E pipeline: tolerant of stray whitespace from the model', () => {
+  it('normalizes extra spaces in a modified paragraph', () => {
+    const start = doc(p('Keep this tidy.'));
+    const proposed = 'Keep   this    much   tidier.';
+    const { doc: result } = acceptAll(start, proposed);
+    expect(result.textContent).toBe('Keep this much tidier.');
   });
 });
 

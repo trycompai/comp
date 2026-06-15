@@ -1,6 +1,47 @@
 import type { Node as ProseMirrorNode } from '@tiptap/pm/model';
 import type { EditorState } from '@tiptap/pm/state';
 import { markdownToTipTapJSON } from '../components/ai/markdown-utils';
+import type { SuggestionRange } from './suggestion-types';
+
+/**
+ * Extend delete ranges that start at a heading to cover the whole section (up to
+ * the next heading of the same or higher level), so "remove this section" takes
+ * the heading AND all its content even if the diff only flagged part of it.
+ */
+export function extendDeleteRangesToSections(
+  doc: ProseMirrorNode,
+  ranges: SuggestionRange[],
+): SuggestionRange[] {
+  return ranges.map((range) => {
+    if (range.type !== 'delete') return range;
+
+    // Is the start of the range a heading?
+    let headingLevel: number | null = null;
+    doc.nodesBetween(range.from, Math.min(range.from + 5, range.to), (node) => {
+      if (node.type.name === 'heading' && headingLevel === null) {
+        headingLevel = (node.attrs as { level?: number }).level ?? 1;
+      }
+    });
+    if (headingLevel === null) return range;
+
+    // Walk forward to the next heading of the same or higher level.
+    let nextHeadingPos: number | null = null;
+    doc.nodesBetween(range.to, doc.content.size, (node, pos) => {
+      if (nextHeadingPos !== null) return false;
+      if (node.type.name === 'heading') {
+        const level = (node.attrs as { level?: number }).level ?? 1;
+        if (headingLevel !== null && level <= headingLevel) {
+          nextHeadingPos = pos;
+          return false;
+        }
+      }
+      return true;
+    });
+
+    const extendTo = nextHeadingPos ?? doc.content.size;
+    return extendTo > range.to ? { ...range, to: extendTo } : range;
+  });
+}
 
 /**
  * Build the ProseMirror nodes to insert/replace for an accepted suggestion.
@@ -45,15 +86,7 @@ export function buildReplacementNodes(
     });
   }
 
-  // Inside a textblock (paragraph/heading): the diff range is a *content* range,
-  // so splice in the new block's INLINE content rather than a whole block node.
-  // Replacing content with a block splits the textblock and leaves an empty
-  // paragraph behind (CS-265). Only safe for a single same-shape block.
-  if (parent.isTextblock && pmNodes.length === 1 && pmNodes[0]!.isTextblock) {
-    const inline: ProseMirrorNode[] = [];
-    pmNodes[0]!.forEach((child) => inline.push(child));
-    return inline;
-  }
-
+  // Otherwise the range spans whole block boundaries (see build-position-map),
+  // so the block nodes replace cleanly as-is.
   return pmNodes;
 }

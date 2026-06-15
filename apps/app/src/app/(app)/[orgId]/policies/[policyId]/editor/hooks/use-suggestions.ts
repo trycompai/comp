@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { Editor } from '@tiptap/react';
 import { suggestionsPluginKey } from '@trycompai/ui/editor';
-import { buildReplacementNodes } from '../lib/apply-suggestion';
+import { buildReplacementNodes, extendDeleteRangesToSections } from '../lib/apply-suggestion';
 import { buildPositionMap } from '../lib/build-position-map';
 import { computeSuggestionRanges } from '../lib/compute-suggestion-ranges';
 import type { SuggestionRange } from '../lib/suggestion-types';
@@ -167,44 +167,9 @@ export function useSuggestions({
     }
     const positionMap = buildPositionMap(editor.state.doc);
     const initial = computeSuggestionRanges(positionMap, proposedMarkdown);
-    // For delete ranges that start at a heading, extend to the next heading
-    // of the same or higher level. This ensures full section deletions
-    // include all content between headings, even if the AI left some.
-    const doc = editor.state.doc;
-    const extended = initial.map((range) => {
-      if (range.type !== 'delete') return range;
-
-      // Find the first block node in the range to check if it's a heading.
-      // range.from may point inside a node, so resolve to find the parent.
-      let headingLevel: number | null = null;
-      doc.nodesBetween(range.from, Math.min(range.from + 5, range.to), (node) => {
-        if (node.type.name === 'heading' && headingLevel === null) {
-          headingLevel = (node.attrs as { level?: number }).level ?? 1;
-        }
-      });
-      if (headingLevel === null) return range;
-
-      // Walk forward from the end of the range to find the next heading
-      // of the same or higher level.
-      let nextHeadingPos: number | null = null;
-      doc.nodesBetween(range.to, doc.content.size, (node, pos) => {
-        if (nextHeadingPos !== null) return false;
-        if (node.type.name === 'heading') {
-          const level = (node.attrs as { level?: number }).level ?? 1;
-          if (headingLevel !== null && level <= headingLevel) {
-            nextHeadingPos = pos;
-            return false;
-          }
-        }
-        return true;
-      });
-
-      const extendTo = nextHeadingPos ?? doc.content.size;
-      if (extendTo > range.to) {
-        return { ...range, to: extendTo };
-      }
-      return range;
-    });
+    // Extend heading-led delete ranges to cover the whole section so full
+    // section deletions include all content between headings.
+    const extended = extendDeleteRangesToSections(editor.state.doc, initial);
     setRanges(extended);
     setCurrentIndex(0);
     rangesHistoryRef.current = [];
