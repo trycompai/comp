@@ -6,6 +6,7 @@ import {
 } from '@nestjs/common';
 import { db, Prisma, EvidenceFormType } from '@db';
 import type { ImportFrameworkDto } from './dto/import-framework.dto';
+import { normalizeTipTapDoc } from './normalize-tiptap-doc';
 
 export interface ExportedFramework {
   version: string;
@@ -36,7 +37,7 @@ export interface ExportedFramework {
     description: string;
     frequency: string;
     department: string;
-    content: Record<string, unknown>;
+    content: Prisma.InputJsonObject;
   }>;
   taskTemplates: Array<{
     name: string;
@@ -151,7 +152,9 @@ export class FrameworkExportService {
         description: p.description,
         frequency: p.frequency,
         department: p.department,
-        content: p.content as Record<string, unknown>,
+        // Emit a canonical doc node so every exported file is homogeneous,
+        // regardless of how the policy's content was stored.
+        content: normalizeTipTapDoc(p.content),
       })),
       taskTemplates: taskTemplates.map((t) => ({
         name: t.name,
@@ -204,7 +207,10 @@ export class FrameworkExportService {
               description: p.description,
               frequency: p.frequency,
               department: p.department,
-              content: (p.content ?? {}) as Prisma.InputJsonValue,
+              // Normalize array/object/empty content to a canonical doc node —
+              // accepts the array shape legacy exports emit and avoids writing a
+              // bare `{}` (which onboarding turns into an empty policy).
+              content: normalizeTipTapDoc(p.content),
             },
           }),
         ),
