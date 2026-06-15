@@ -416,6 +416,100 @@ describe('E2E pipeline: tolerant of stray whitespace from the model', () => {
   });
 });
 
+describe('E2E pipeline: heading level change', () => {
+  // KNOWN LIMITATION: normalizeContent strips block markers (#, -, >), so a
+  // change to ONLY a heading's level (or a block-type change like heading<->para
+  // or bullet<->para) with identical text is treated as "no change" and yields
+  // no suggestion. Text edits to headings work; pure structural changes do not.
+  // Loosening this is a deliberate behavioral choice (more sensitivity to the
+  // model reformatting block markers) — left out of scope pending a decision.
+  it.skip('changes ## to ### (whole-node replace) — known limitation', () => {
+    const start = doc(h(2, 'Sub Section'), p('Body.'));
+    const proposed = ['### Sub Section', '', 'Body.'].join('\n');
+    const { doc: result } = acceptAll(start, proposed);
+    expect(result.child(0).attrs.level).toBe(3);
+  });
+
+  it('applies a heading TEXT change (whole-node replace)', () => {
+    const start = doc(h(2, 'Old Heading'), p('Body.'));
+    const proposed = ['## New Heading', '', 'Body.'].join('\n');
+    const { doc: result } = acceptAll(start, proposed);
+    expect(result.child(0).type.name).toBe('heading');
+    expect(result.child(0).attrs.level).toBe(2);
+    expect(result.child(0).textContent).toBe('New Heading');
+  });
+});
+
+describe('E2E pipeline: delete first / last section', () => {
+  it('deletes the first section cleanly', () => {
+    const start = doc(h(2, 'First'), p('First body.'), h(2, 'Second'), p('Second body.'));
+    const proposed = ['## Second', '', 'Second body.'].join('\n');
+    const { doc: result } = acceptAll(start, proposed);
+    const headings: string[] = [];
+    result.forEach((n) => {
+      if (n.type.name === 'heading') headings.push(n.textContent);
+    });
+    expect(headings).toEqual(['Second']);
+    expect(result.textContent).not.toContain('First');
+  });
+
+  it('deletes the last section cleanly', () => {
+    const start = doc(h(2, 'First'), p('First body.'), h(2, 'Second'), p('Second body.'));
+    const proposed = ['## First', '', 'First body.'].join('\n');
+    const { doc: result } = acceptAll(start, proposed);
+    const headings: string[] = [];
+    result.forEach((n) => {
+      if (n.type.name === 'heading') headings.push(n.textContent);
+    });
+    expect(headings).toEqual(['First']);
+    expect(result.textContent).not.toContain('Second');
+  });
+});
+
+describe('E2E pipeline: two separate lists', () => {
+  it('edits a bullet in the second list, leaving the first untouched', () => {
+    const start = doc(
+      ul('A1', 'A2'),
+      p('Divider paragraph.'),
+      ul('B1', 'B2'),
+    );
+    const proposed = [
+      '- A1',
+      '- A2',
+      '',
+      'Divider paragraph.',
+      '',
+      '- B1',
+      '- B2 revised',
+    ].join('\n');
+    const { doc: result } = acceptAll(start, proposed);
+    const lists: string[][] = [];
+    result.forEach((n) => {
+      if (n.type.name === 'bulletList') {
+        const items: string[] = [];
+        n.forEach((it) => items.push(it.textContent));
+        lists.push(items);
+      }
+    });
+    expect(lists[0]).toEqual(['A1', 'A2']);
+    expect(lists[1]).toEqual(['B1', 'B2 revised']);
+    expect(result.textContent).toContain('Divider paragraph.');
+  });
+});
+
+describe('E2E pipeline: blockquote edit', () => {
+  it('edits a blockquote in place', () => {
+    const start = doc(
+      schema.node('blockquote', null, [p('Quoted guidance.')]),
+      p('After.'),
+    );
+    const proposed = ['> Updated quoted guidance.', '', 'After.'].join('\n');
+    const { doc: result } = acceptAll(start, proposed);
+    expect(result.textContent).toContain('Updated quoted guidance.');
+    expect(result.textContent).toContain('After.');
+  });
+});
+
 describe('E2E pipeline: generate full policy from a draft stub', () => {
   it('replaces a draft stub with a full multi-section policy', () => {
     const start = doc(p('This policy is a draft.'));
