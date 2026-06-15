@@ -1,0 +1,141 @@
+'use client';
+
+import {
+  HStack,
+  Section,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+  Switch,
+  Text,
+} from '@trycompai/design-system';
+import { Controller, type Control } from 'react-hook-form';
+import { WizardField } from './WizardField';
+import {
+  INTERNAL_AUDIT_APPROACHES,
+  INTERNAL_AUDIT_LABELS,
+  type WizardFormValues,
+  type WizardMemberOption,
+} from './wizard-types';
+
+interface WizardStepLeadershipProps {
+  control: Control<WizardFormValues>;
+  members: WizardMemberOption[];
+}
+
+const TO_BE_NAMED = '__to_be_named__';
+
+/**
+ * Step 1 — Leadership & accountability.
+ * Q1: Deputy Security & Privacy Owner (member picker or "to be named").
+ * Q2: Internal audit approach (in-house / external firm / training planned).
+ */
+export function WizardStepLeadership({ control, members }: WizardStepLeadershipProps) {
+  const memberOptions = Array.isArray(members) ? members : [];
+
+  // `items` lets the closed Select resolve the human label (name / "To be named")
+  // instead of rendering the raw value (`mem_...`).
+  const deputyItems = [
+    { value: TO_BE_NAMED, label: 'To be named' },
+    ...memberOptions.map((member) => ({ value: member.id, label: member.name })),
+  ];
+  const auditItems = INTERNAL_AUDIT_APPROACHES.map((approach) => ({
+    value: approach,
+    label: INTERNAL_AUDIT_LABELS[approach],
+  }));
+
+  return (
+    <Section
+      title="Leadership & accountability"
+      description="Who backs up your security & privacy decisions, and how you will run internal audits."
+      gap="8"
+    >
+      <Controller
+        control={control}
+        name="deputySpo"
+        render={({ field }) => {
+          const value = field.value ?? { memberId: null, toBeNamed: false };
+          // Always a string so the Select is controlled from first render
+          // ('' = nothing picked → placeholder shows, no controlled/uncontrolled warning).
+          const selectValue = value.toBeNamed ? TO_BE_NAMED : value.memberId ?? '';
+
+          return (
+            <WizardField
+              label="Deputy Security & Privacy Owner"
+              helper="The backup owner for security and privacy decisions. Pick a person, or mark it to be named later."
+            >
+              <Select
+                items={deputyItems}
+                value={selectValue}
+                onValueChange={(next) => {
+                  if (next === TO_BE_NAMED) {
+                    field.onChange({ memberId: null, toBeNamed: true });
+                    return;
+                  }
+                  field.onChange({ memberId: next, toBeNamed: false });
+                }}
+              >
+                <SelectTrigger aria-label="Deputy Security and Privacy Owner">
+                  <SelectValue placeholder="Select a deputy" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value={TO_BE_NAMED}>To be named</SelectItem>
+                  {memberOptions.map((member) => (
+                    <SelectItem key={member.id} value={member.id}>
+                      {member.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <HStack gap="2" align="center">
+                <Switch
+                  checked={value.toBeNamed}
+                  onCheckedChange={(checked) =>
+                    field.onChange({
+                      memberId: checked ? null : value.memberId,
+                      toBeNamed: checked,
+                    })
+                  }
+                  aria-label="Deputy to be named"
+                />
+                <Text size="sm" variant="muted">
+                  To be named later
+                </Text>
+              </HStack>
+            </WizardField>
+          );
+        }}
+      />
+
+      <Controller
+        control={control}
+        name="internalAuditApproach"
+        render={({ field }) => (
+          <WizardField
+            label="Internal audit approach"
+            helper="How you will run the internal ISMS audits required for certification."
+          >
+            <Select
+              items={auditItems}
+              value={field.value ?? ''}
+              onValueChange={(next) => field.onChange(next)}
+            >
+              <SelectTrigger aria-label="Internal audit approach">
+                <SelectValue placeholder="Select an approach" />
+              </SelectTrigger>
+              <SelectContent>
+                {INTERNAL_AUDIT_APPROACHES.map((approach) => (
+                  <SelectItem key={approach} value={approach}>
+                    {INTERNAL_AUDIT_LABELS[approach]}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </WizardField>
+        )}
+      />
+    </Section>
+  );
+}

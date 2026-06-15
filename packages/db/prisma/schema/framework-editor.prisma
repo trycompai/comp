@@ -22,6 +22,10 @@ model FrameworkEditorFramework {
   frameworkInstances   FrameworkInstance[]
   soaConfigurations    SOAFrameworkConfiguration[] // Multiple SOA config versions per framework
   soaDocuments         SOADocument[] // SOA documents from organizations
+  ismsDocuments        IsmsDocument[] // ISMS foundational documents from organizations
+  ismsProfiles         IsmsProfile[] // ISMS wizard profiles from organizations
+  ismsDocumentRequirementLinks FrameworkEditorIsmsDocumentRequirementLink[]
+  controlIsmsDocumentLinks FrameworkEditorControlIsmsDocumentLink[]
   timelineTemplates    TimelineTemplate[]
   versions             FrameworkVersion[]
   controlPolicyLinks   FrameworkEditorControlPolicyTemplateLink[]
@@ -45,10 +49,72 @@ model FrameworkEditorRequirement {
 
   controlTemplates FrameworkEditorControlTemplate[]
   requirementMaps  RequirementMap[]
+  ismsDocuments    IsmsDocument[] // ISMS foundational documents mapped to this clause requirement
+  ismsDocumentRequirementLinks FrameworkEditorIsmsDocumentRequirementLink[]
 
   // Dates
   createdAt DateTime @default(now())
   updatedAt DateTime @default(now()) @updatedAt
+}
+
+// --- ISMS foundational document types as first-class framework-editor parts (CS-437) ---
+// Authored centrally and mapped to clause requirements per framework, mirroring
+// how control/policy/task templates are mapped. ensure-setup instantiates one
+// IsmsDocument per template; the requirement comes from the per-framework link
+// below, falling back to clause-string matching.
+model FrameworkEditorIsmsDocumentTemplate {
+  id           String           @id @default(dbgenerated("generate_prefixed_cuid('frk_isd'::text)"))
+  name         String
+  description  String
+  documentType IsmsDocumentType @unique // one template per ISMS document type
+  clause       String // default ISO clause for requirement matching, e.g. "4.1"
+  sortOrder    Int              @default(0)
+
+  requirementLinks FrameworkEditorIsmsDocumentRequirementLink[]
+  controlLinks     FrameworkEditorControlIsmsDocumentLink[]
+  ismsDocuments    IsmsDocument[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
+}
+
+// Framework-scoped mapping of an ISMS document template to a clause requirement
+// (editable in the Framework Editor). Mirrors the other framework-scoped junctions.
+model FrameworkEditorIsmsDocumentRequirementLink {
+  id                     String                              @id @default(dbgenerated("generate_prefixed_cuid('frk_idr'::text)"))
+  frameworkId            String
+  framework              FrameworkEditorFramework            @relation(fields: [frameworkId], references: [id], onDelete: Cascade)
+  ismsDocumentTemplateId String
+  ismsDocumentTemplate   FrameworkEditorIsmsDocumentTemplate @relation(fields: [ismsDocumentTemplateId], references: [id], onDelete: Cascade)
+  requirementId          String
+  requirement            FrameworkEditorRequirement          @relation(fields: [requirementId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@unique([frameworkId, ismsDocumentTemplateId, requirementId])
+  @@index([ismsDocumentTemplateId])
+  @@index([requirementId])
+  @@index([frameworkId])
+}
+
+// Framework-scoped mapping of an ISMS document template to a control template
+// (editable in the Framework Editor) — mirrors FrameworkEditorControlPolicyTemplateLink
+// / FrameworkEditorControlDocumentTypeLink, i.e. how every other part links to controls.
+model FrameworkEditorControlIsmsDocumentLink {
+  id                     String                              @id @default(dbgenerated("generate_prefixed_cuid('fcid'::text)"))
+  frameworkId            String
+  framework              FrameworkEditorFramework            @relation(fields: [frameworkId], references: [id], onDelete: Cascade)
+  controlTemplateId      String
+  controlTemplate        FrameworkEditorControlTemplate      @relation(fields: [controlTemplateId], references: [id], onDelete: Cascade)
+  ismsDocumentTemplateId String
+  ismsDocumentTemplate   FrameworkEditorIsmsDocumentTemplate @relation(fields: [ismsDocumentTemplateId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@unique([frameworkId, controlTemplateId, ismsDocumentTemplateId])
+  @@index([controlTemplateId])
+  @@index([ismsDocumentTemplateId])
+  @@index([frameworkId])
 }
 
 model FrameworkEditorPolicyTemplate {
@@ -102,6 +168,7 @@ model FrameworkEditorControlTemplate {
   frameworkPolicyLinks   FrameworkEditorControlPolicyTemplateLink[]
   frameworkTaskLinks     FrameworkEditorControlTaskTemplateLink[]
   frameworkDocumentLinks FrameworkEditorControlDocumentTypeLink[]
+  frameworkIsmsDocumentLinks FrameworkEditorControlIsmsDocumentLink[]
 
   // Dates
   createdAt DateTime @default(now())
