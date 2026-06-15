@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { Editor } from '@tiptap/react';
 import { suggestionsPluginKey } from '@trycompai/ui/editor';
-import { markdownToTipTapJSON } from '../components/ai/markdown-utils';
+import { buildReplacementNodes } from '../lib/apply-suggestion';
 import { buildPositionMap } from '../lib/build-position-map';
 import { computeSuggestionRanges } from '../lib/compute-suggestion-ranges';
 import type { SuggestionRange } from '../lib/suggestion-types';
@@ -262,19 +262,13 @@ export function useSuggestions({
         tr.delete(range.from, range.to);
       } else if (range.type === 'insert') {
         // Insert at the end of the anchor position, not replacing it
-        const jsonNodes = markdownToTipTapJSON(range.proposedText);
-        const pmNodes = jsonNodes.map((json) =>
-          editor.state.schema.nodeFromJSON(json),
-        );
+        const pmNodes = buildReplacementNodes(editor.state, range.proposedText, range.to);
         if (pmNodes.length > 0) {
           tr.insert(range.to, pmNodes);
         }
       } else {
         // Modify: replace old content with new
-        const jsonNodes = markdownToTipTapJSON(range.proposedText);
-        const pmNodes = jsonNodes.map((json) =>
-          editor.state.schema.nodeFromJSON(json),
-        );
+        const pmNodes = buildReplacementNodes(editor.state, range.proposedText, range.from);
         if (pmNodes.length > 0) {
           tr.replaceWith(range.from, range.to, pmNodes);
         }
@@ -358,18 +352,12 @@ export function useSuggestions({
       if (range.type === 'delete') {
         tr.delete(range.from, range.to);
       } else if (range.type === 'insert') {
-        const jsonNodes = markdownToTipTapJSON(range.proposedText);
-        const pmNodes = jsonNodes.map((json) =>
-          editor.state.schema.nodeFromJSON(json),
-        );
+        const pmNodes = buildReplacementNodes(editor.state, range.proposedText, range.to);
         if (pmNodes.length > 0) {
           tr.insert(range.to, pmNodes);
         }
       } else {
-        const jsonNodes = markdownToTipTapJSON(range.proposedText);
-        const pmNodes = jsonNodes.map((json) =>
-          editor.state.schema.nodeFromJSON(json),
-        );
+        const pmNodes = buildReplacementNodes(editor.state, range.proposedText, range.from);
         if (pmNodes.length > 0) {
           tr.replaceWith(range.from, range.to, pmNodes);
         }
@@ -415,6 +403,11 @@ export function useSuggestions({
         ),
       );
 
+      // Abort a stuck request so the range can't stay 'loading' forever. The
+      // edit-section route caps at 30s (maxDuration), so 35s is a safe ceiling.
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 35_000);
+
       try {
         const policyId = window.location.pathname.match(/policies\/([^/]+)/)?.[1];
         const res = await fetch(`/api/policies/${policyId}/edit-section`, {
@@ -425,6 +418,7 @@ export function useSuggestions({
             sectionText: range.proposedText,
             feedback,
           }),
+          signal: controller.signal,
         });
 
         if (!res.ok) throw new Error('Failed to edit section');
@@ -444,6 +438,8 @@ export function useSuggestions({
             r.id === id ? { ...r, decision: 'pending' as const } : r,
           ),
         );
+      } finally {
+        clearTimeout(timeout);
       }
     },
     [],

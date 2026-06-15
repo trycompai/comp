@@ -59,6 +59,10 @@ export const schema = new Schema({
       parseDOM: [{ tag: 'em' }],
       toDOM: () => ['em', 0] as const,
     },
+    code: {
+      parseDOM: [{ tag: 'code' }],
+      toDOM: () => ['code', 0] as const,
+    },
     link: {
       attrs: { href: {} },
       parseDOM: [

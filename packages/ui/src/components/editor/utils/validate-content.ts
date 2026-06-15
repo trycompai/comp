@@ -193,6 +193,8 @@ function fixNode(node: any): JSONContent | null {
       return fixTableRow(node);
     case 'tableCell':
       return fixTableCell(node);
+    case 'tableHeader':
+      return fixTableHeader(node);
     case 'text':
       return fixTextNode(node);
     case 'heading':
@@ -408,7 +410,14 @@ function fixTableRow(node: any): JSONContent {
   let cells: JSONContent[] = [];
   if (Array.isArray(content)) {
     cells = content
-      .map((child: any) => (child?.type === 'tableCell' ? fixTableCell(child) : null))
+      .map((child: any) => {
+        // Preserve header cells. Previously only `tableCell` was handled, so
+        // pasted/AI-generated header rows (`tableHeader`, e.g. from <th>) were
+        // dropped and an all-header row collapsed to a single empty cell.
+        if (child?.type === 'tableHeader') return fixTableHeader(child);
+        if (child?.type === 'tableCell') return fixTableCell(child);
+        return null;
+      })
       .filter(Boolean) as JSONContent[];
   }
   if (cells.length === 0) {
@@ -417,7 +426,7 @@ function fixTableRow(node: any): JSONContent {
   return { type: 'tableRow', content: cells, ...(attrs && { attrs }), ...rest };
 }
 
-function fixTableCell(node: any): JSONContent {
+function fixTableCellLike(node: any, type: 'tableCell' | 'tableHeader'): JSONContent {
   const { content, attrs, ...rest } = node;
   let blocks: JSONContent[] = [];
   if (Array.isArray(content)) {
@@ -426,7 +435,15 @@ function fixTableCell(node: any): JSONContent {
   if (blocks.length === 0) {
     blocks = [createEmptyParagraph()];
   }
-  return { type: 'tableCell', content: blocks, ...(attrs && { attrs }), ...rest };
+  return { type, content: blocks, ...(attrs && { attrs }), ...rest };
+}
+
+function fixTableCell(node: any): JSONContent {
+  return fixTableCellLike(node, 'tableCell');
+}
+
+function fixTableHeader(node: any): JSONContent {
+  return fixTableCellLike(node, 'tableHeader');
 }
 
 /**
