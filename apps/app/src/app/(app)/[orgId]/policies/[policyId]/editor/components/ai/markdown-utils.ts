@@ -1,7 +1,10 @@
 import type { JSONContent } from '@tiptap/react';
+import { parseInline, sanitizeMarkdown } from '../../lib/policy-markdown';
 
 export function markdownToTipTapJSON(markdown: string): Array<JSONContent> {
-  const lines = markdown.split('\n');
+  // Strip control-char noise (e.g. stray "013" glyphs) before parsing so it
+  // never reaches a ProseMirror text node.
+  const lines = sanitizeMarkdown(markdown).split('\n');
   const content: Array<JSONContent> = [];
   let currentList: JSONContent | null = null;
   let listType: 'bulletList' | 'orderedList' | null = null;
@@ -28,7 +31,7 @@ export function markdownToTipTapJSON(markdown: string): Array<JSONContent> {
       content.push({
         type: 'heading',
         attrs: { level: headingMatch[1].length },
-        content: [{ type: 'text', text: headingMatch[2] }],
+        content: parseInline(headingMatch[2]),
       });
       continue;
     }
@@ -45,7 +48,7 @@ export function markdownToTipTapJSON(markdown: string): Array<JSONContent> {
         content: [
           {
             type: 'paragraph',
-            content: [{ type: 'text', text: bulletMatch[1] }],
+            content: parseInline(bulletMatch[1]),
           },
         ],
       });
@@ -64,7 +67,7 @@ export function markdownToTipTapJSON(markdown: string): Array<JSONContent> {
         content: [
           {
             type: 'paragraph',
-            content: [{ type: 'text', text: orderedMatch[1] }],
+            content: parseInline(orderedMatch[1]),
           },
         ],
       });
@@ -78,7 +81,7 @@ export function markdownToTipTapJSON(markdown: string): Array<JSONContent> {
     }
     content.push({
       type: 'paragraph',
-      content: [{ type: 'text', text: trimmed }],
+      content: parseInline(trimmed),
     });
   }
 

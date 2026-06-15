@@ -1,4 +1,5 @@
 import type { Node as ProseMirrorNode } from '@tiptap/pm/model';
+import { serializeInline } from './policy-markdown';
 import type { PositionMap } from './suggestion-types';
 
 export function buildPositionMap(doc: ProseMirrorNode): PositionMap {
@@ -17,33 +18,42 @@ export function buildPositionMap(doc: ProseMirrorNode): PositionMap {
     const nodeFrom = offset + 1; // +1 because doc node itself takes position 0
 
     if (node.type.name === 'bulletList' || node.type.name === 'orderedList') {
+      // `nodeFrom` (offset + 1) is already the position of the list's first
+      // child boundary, and `childOffset` is the listItem's offset within the
+      // list's content. The previous `+ 1` double-counted the boundary, pushing
+      // every range one position forward so `to` overshot into the NEXT item —
+      // which made single-bullet edits bleed into adjacent bullets (CS-265).
       node.forEach((listItem, childOffset) => {
-        const itemFrom = nodeFrom + 1 + childOffset;
+        const itemFrom = nodeFrom + childOffset;
         const itemTo = itemFrom + listItem.nodeSize;
-        const text = extractText(listItem);
+        const text = serializeInline(listItem);
         entries.push({ type: 'list-item', markdown: '- ' + text, from: itemFrom, to: itemTo });
       });
       return;
     }
 
-    const nodeTo = nodeFrom + node.nodeSize - 2;
+    // Use the node's outer boundaries [before, after] so accept/delete operate
+    // on the whole block. Using the inner content range instead leaves an empty
+    // block behind on delete, and splits the block on replace (CS-265).
+    const nodeStart = offset;
+    const nodeEnd = offset + node.nodeSize;
 
     if (node.type.name === 'heading') {
       const level = (node.attrs.level as number) || 1;
-      const text = extractText(node);
-      entries.push({ type: 'heading', markdown: '#'.repeat(level) + ' ' + text, from: nodeFrom, to: nodeTo });
+      const text = serializeInline(node);
+      entries.push({ type: 'heading', markdown: '#'.repeat(level) + ' ' + text, from: nodeStart, to: nodeEnd });
     } else if (node.type.name === 'paragraph') {
-      const text = extractText(node);
-      entries.push({ type: 'paragraph', markdown: text, from: nodeFrom, to: nodeTo });
+      const text = serializeInline(node);
+      entries.push({ type: 'paragraph', markdown: text, from: nodeStart, to: nodeEnd });
     } else if (node.type.name === 'blockquote') {
-      const text = extractText(node);
-      entries.push({ type: 'other', markdown: '> ' + text, from: nodeFrom, to: nodeTo });
+      const text = serializeInline(node);
+      entries.push({ type: 'other', markdown: '> ' + text, from: nodeStart, to: nodeEnd });
     } else if (node.type.name === 'horizontalRule') {
-      entries.push({ type: 'other', markdown: '---', from: nodeFrom, to: nodeTo });
+      entries.push({ type: 'other', markdown: '---', from: nodeStart, to: nodeEnd });
     } else {
-      const text = extractText(node);
+      const text = serializeInline(node);
       if (text) {
-        entries.push({ type: 'other', markdown: text, from: nodeFrom, to: nodeTo });
+        entries.push({ type: 'other', markdown: text, from: nodeStart, to: nodeEnd });
       }
     }
   });
@@ -65,8 +75,11 @@ export function buildPositionMap(doc: ProseMirrorNode): PositionMap {
       currentLine++;
     }
 
-    // Add blank line before first list item if previous wasn't a list item
-    if (entry.type === 'list-item' && prevType !== 'list-item') {
+    // Add blank line before a list group, but never when the list is the very
+    // first block: a leading blank line gets removed by the trailing .trim()
+    // below, which would shift every lineToPos key out of sync with the emitted
+    // markdown and mis-map edits in list-first documents.
+    if (entry.type === 'list-item' && prevType !== 'list-item' && prevType !== null) {
       markdownLines.push('');
       currentLine++;
     }
@@ -114,16 +127,4 @@ export function buildPositionMap(doc: ProseMirrorNode): PositionMap {
     lineToPos,
     markdown: markdownLines.join('\n').trim(),
   };
-}
-
-function extractText(node: ProseMirrorNode): string {
-  let text = '';
-  node.forEach((child) => {
-    if (child.isText) {
-      text += child.text ?? '';
-    } else {
-      text += extractText(child);
-    }
-  });
-  return text;
 }
