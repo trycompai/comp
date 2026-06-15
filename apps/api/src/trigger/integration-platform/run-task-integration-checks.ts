@@ -14,6 +14,12 @@ import {
   runChecksOnServer,
   type RunAllChecksResult,
 } from './run-checks-on-server';
+import { loadActiveExceptionSet } from '../../cloud-security/finding-exceptions';
+import {
+  countEffectiveFailures,
+  decideTaskStatus,
+  type FailingFinding,
+} from '../../integration-platform/utils/task-check-evaluation';
 
 /**
  * Send email notifications for task status change
@@ -333,8 +339,10 @@ export const runTaskIntegrationChecks = task({
     // Track overall results across all checks for this task
     let totalFindings = 0;
     let totalPassing = 0;
-    let hasFailedChecks = false;
     let hasExecutionErrors = false;
+    // Failing findings (keyed like an exception) so task status can exclude
+    // explicitly-excepted ones below.
+    const failingFindings: FailingFinding[] = [];
 
     // Run only the checks that apply to this task
     try {
@@ -391,7 +399,8 @@ export const runTaskIntegrationChecks = task({
           const message =
             error instanceof Error ? error.message : String(error);
           const checkDef = manifest.checks?.find((c) => c.id === checkId);
-          hasFailedChecks = true;
+          // A transport blip is indeterminate, not a finding: it gates
+          // integrationLastRunAt (retry next tick) but must not fail the task.
           hasExecutionErrors = true;
           await db.integrationCheckRun.create({
             data: {
@@ -418,11 +427,16 @@ export const runTaskIntegrationChecks = task({
         const checkResult = result.results[0];
         if (!checkResult) continue;
 
-        // Accumulate results
+        // Accumulate results. Record each failing finding (keyed like an
+        // exception) so task status can exclude explicitly-excepted ones.
         totalFindings += checkResult.result.findings.length;
         totalPassing += checkResult.result.passingResults.length;
-        if (checkResult.status === 'failed' || checkResult.status === 'error') {
-          hasFailedChecks = true;
+        for (const f of checkResult.result.findings) {
+          failingFindings.push({
+            connectionId,
+            checkId: checkResult.checkId,
+            resourceId: f.resourceId,
+          });
         }
         if (checkResult.status === 'error') {
           hasExecutionErrors = true;
@@ -508,10 +522,23 @@ export const runTaskIntegrationChecks = task({
         });
       }
 
-      // Update task status based on check results
-      // If any findings or check failures, mark as failed
-      // If all checks pass with no findings, mark as done (only if not already done)
-      if (totalFindings > 0 || hasFailedChecks) {
+      // Decide task status from the run, HONORING active finding exceptions so
+      // an explicitly-excepted finding does not fail the task — matched with the
+      // manual run-check path and the Cloud Tests findings view (one rule, via
+      // the shared helpers). Execution errors don't drive status here; they gate
+      // integrationLastRunAt above so the next tick retries.
+      const exceptions = await loadActiveExceptionSet(organizationId);
+      const effectiveFailures = countEffectiveFailures(
+        failingFindings,
+        exceptions,
+      );
+      const newStatus = decideTaskStatus(
+        effectiveFailures,
+        totalPassing,
+        totalFindings,
+      );
+
+      if (newStatus === 'failed') {
         // Get current status before updating
         const taskBeforeUpdate = await db.task.findUnique({
           where: { id: taskId },
@@ -524,7 +551,7 @@ export const runTaskIntegrationChecks = task({
           data: { status: 'failed' },
         });
         logger.info(
-          `Task ${taskId} marked as failed due to ${totalFindings} findings${hasFailedChecks ? ' and failed checks' : ''}`,
+          `Task ${taskId} marked as failed due to ${effectiveFailures} finding(s)`,
         );
 
         // Only send email notifications if status actually changed
@@ -541,7 +568,7 @@ export const runTaskIntegrationChecks = task({
             `Skipping notification: task ${taskId} was already in failed status`,
           );
         }
-      } else if (totalPassing > 0) {
+      } else if (newStatus === 'done') {
         // Only update to done if not already done
         const currentTask = await db.task.findUnique({
           where: { id: taskId },
@@ -584,12 +611,7 @@ export const runTaskIntegrationChecks = task({
         checksRun: effectiveCheckIds.length,
         totalPassing,
         totalFindings,
-        taskStatus:
-          totalFindings > 0 || hasFailedChecks
-            ? 'failed'
-            : totalPassing > 0
-              ? 'done'
-              : null,
+        taskStatus: newStatus,
       };
     } catch (error) {
       logger.error(`Failed to run checks for task ${taskId}`, {

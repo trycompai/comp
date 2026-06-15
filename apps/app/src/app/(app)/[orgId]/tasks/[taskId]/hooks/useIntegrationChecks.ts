@@ -30,7 +30,10 @@ interface StoredCheckRun {
   durationMs: number;
   totalChecked: number;
   passedCount: number;
+  /** Effective failures — excludes findings under an active exception. */
   failedCount: number;
+  /** Failing findings suppressed by an active exception. */
+  exceptedCount?: number;
   errorMessage?: string;
   /** The connection (account) this run belongs to — checks run once per account. */
   connectionId: string;
@@ -57,11 +60,13 @@ interface StoredCheckRun {
     remediation?: string;
     evidence?: Record<string, unknown>;
     collectedAt: string;
+    /** True when this failing result is suppressed by an active exception. */
+    excepted?: boolean;
   }>;
   createdAt: string;
 }
 
-export type { TaskIntegrationCheck, StoredCheckRun };
+export type { StoredCheckRun, TaskIntegrationCheck };
 
 export const integrationChecksKey = (taskId: string, orgId: string) =>
   ['/v1/integrations/tasks/checks', taskId, orgId] as const;
@@ -145,20 +150,17 @@ export function useIntegrationChecks({ taskId, orgId }: UseIntegrationChecksOpti
    * stays connected — only the (task, check) pair is affected. Applies an
    * optimistic update to the SWR cache and revalidates in the background.
    */
-  const disconnectCheckFromTask = async (
-    connectionId: string,
-    checkId: string,
-  ): Promise<void> => {
+  const disconnectCheckFromTask = async (connectionId: string, checkId: string): Promise<void> => {
     await mutateChecks(
       async (current) => {
         const response = await api.post<{
           success: boolean;
           disabled: true;
           error?: string;
-        }>(
-          `/v1/integrations/tasks/${taskId}/checks/disconnect?organizationId=${orgId}`,
-          { connectionId, checkId },
-        );
+        }>(`/v1/integrations/tasks/${taskId}/checks/disconnect?organizationId=${orgId}`, {
+          connectionId,
+          checkId,
+        });
 
         if (response.error || !response.data?.success) {
           throw new Error(response.error || 'Failed to disconnect check');
@@ -186,20 +188,17 @@ export function useIntegrationChecks({ taskId, orgId }: UseIntegrationChecksOpti
   /**
    * Re-enable a previously disconnected check for the current task.
    */
-  const reconnectCheckToTask = async (
-    connectionId: string,
-    checkId: string,
-  ): Promise<void> => {
+  const reconnectCheckToTask = async (connectionId: string, checkId: string): Promise<void> => {
     await mutateChecks(
       async (current) => {
         const response = await api.post<{
           success: boolean;
           disabled: false;
           error?: string;
-        }>(
-          `/v1/integrations/tasks/${taskId}/checks/reconnect?organizationId=${orgId}`,
-          { connectionId, checkId },
-        );
+        }>(`/v1/integrations/tasks/${taskId}/checks/reconnect?organizationId=${orgId}`, {
+          connectionId,
+          checkId,
+        });
 
         if (response.error || !response.data?.success) {
           throw new Error(response.error || 'Failed to reconnect check');

@@ -35,9 +35,7 @@ export function AccountRunGroups({
     <div className="space-y-5">
       {groups.map((group) => {
         const latest = group.runs[0];
-        const hasFailed = latest
-          ? latest.status === 'failed' || latest.failedCount > 0
-          : false;
+        const hasFailed = latest ? latest.status === 'failed' || latest.failedCount > 0 : false;
         return (
           <div key={group.connectionId} className="space-y-2">
             <div className="flex items-center gap-2">
@@ -47,9 +45,7 @@ export function AccountRunGroups({
                   hasFailed ? 'bg-destructive' : 'bg-primary',
                 )}
               />
-              <span className="text-xs font-semibold text-foreground">
-                {group.label}
-              </span>
+              <span className="text-xs font-semibold text-foreground">{group.label}</span>
               {latest && (
                 <span className="text-[11px] text-muted-foreground">
                   {latest.passedCount} passed
@@ -57,11 +53,7 @@ export function AccountRunGroups({
                 </span>
               )}
             </div>
-            <GroupedCheckRuns
-              runs={group.runs}
-              maxRuns={3}
-              organizationName={organizationName}
-            />
+            <GroupedCheckRuns runs={group.runs} maxRuns={3} organizationName={organizationName} />
           </div>
         );
       })}
@@ -162,7 +154,10 @@ export function CheckRunItem({
   const hasFailed = run.status === 'failed' || run.failedCount > 0;
   const hasError = run.status === 'failed' && run.errorMessage;
 
-  const findings = run.results.filter((r) => !r.passed);
+  // Excepted findings are surfaced separately (not as red issues) so the row
+  // matches the run's status, which the API already computes excluding them.
+  const findings = run.results.filter((r) => !r.passed && !r.excepted);
+  const excepted = run.results.filter((r) => r.excepted);
   const passing = run.results.filter((r) => r.passed);
 
   const statusColor = hasError ? 'text-destructive' : hasFailed ? 'text-warning' : 'text-primary';
@@ -271,6 +266,33 @@ export function CheckRunItem({
                 {findings.length > 3 && (
                   <p className="text-sm text-muted-foreground">
                     +{findings.length - 3} more issues
+                  </p>
+                )}
+              </div>
+            )}
+
+            {/* Excepted - failing findings the customer marked as an exception.
+                Shown muted (not an issue) so it's clear the exception applied. */}
+            {excepted.length > 0 && (
+              <div className="space-y-2">
+                {excepted.slice(0, 3).map((finding) => (
+                  <div key={finding.id}>
+                    <div className="flex items-center gap-2">
+                      <p className="text-sm font-medium text-muted-foreground">{finding.title}</p>
+                      <Badge variant="outline" className="text-xs">
+                        Exception
+                      </Badge>
+                    </div>
+                    <div className="mt-1">
+                      <Badge variant="secondary" className="font-mono text-xs">
+                        {finding.resourceId}
+                      </Badge>
+                    </div>
+                  </div>
+                ))}
+                {excepted.length > 3 && (
+                  <p className="text-sm text-muted-foreground">
+                    +{excepted.length - 3} more excepted
                   </p>
                 )}
               </div>
