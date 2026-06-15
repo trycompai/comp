@@ -134,8 +134,15 @@ function resolveHunkPositions(
     if (before) return { from: before.from, to: before.from };
     const after = lineToPos.get(oldStart - 1);
     if (after) return { from: after.to, to: after.to };
-    const near = findNearestPosition(oldStart, lineToPos);
-    return near ? { from: near.to, to: near.to } : null;
+    // Fallback: anchor to the nearest mapped line, choosing the side by its
+    // position relative to the insertion point. If the nearest line is at/after
+    // oldStart, insert BEFORE it (.from); otherwise insert AFTER it (.to).
+    // Using .to unconditionally would drop content on the wrong side.
+    const near = findNearestEntry(oldStart, lineToPos);
+    if (!near) return null;
+    return near.line >= oldStart
+      ? { from: near.from, to: near.from }
+      : { from: near.to, to: near.to };
   }
 
   let from: number | null = null;
@@ -156,20 +163,28 @@ function resolveHunkPositions(
   return { from, to };
 }
 
-function findNearestPosition(
+function findNearestEntry(
   targetLine: number,
   lineToPos: Map<number, { from: number; to: number }>,
-): { from: number; to: number } | null {
-  let closest: { from: number; to: number } | null = null;
+): { line: number; from: number; to: number } | null {
+  let closest: { line: number; from: number; to: number } | null = null;
   let closestDist = Infinity;
   for (const [line, pos] of lineToPos) {
     const dist = Math.abs(line - targetLine);
     if (dist < closestDist) {
       closestDist = dist;
-      closest = pos;
+      closest = { line, from: pos.from, to: pos.to };
     }
   }
   return closest;
+}
+
+function findNearestPosition(
+  targetLine: number,
+  lineToPos: Map<number, { from: number; to: number }>,
+): { from: number; to: number } | null {
+  const entry = findNearestEntry(targetLine, lineToPos);
+  return entry ? { from: entry.from, to: entry.to } : null;
 }
 
 function computeWordDiff(oldText: string, newText: string): DiffSegment[] {

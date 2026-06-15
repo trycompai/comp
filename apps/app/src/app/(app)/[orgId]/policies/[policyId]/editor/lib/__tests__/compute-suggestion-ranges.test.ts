@@ -390,6 +390,30 @@ describe('computeSuggestionRanges', () => {
       expect(ranges[0]!.proposedText).toContain('**brute-force**');
     });
 
+    it('inserts BEFORE the nearest mapped line when it is after the anchor', () => {
+      // Only line 3 is mapped; an insert anchored at the unmapped top (line 1)
+      // must land before that block (.from = 50), not after it (cubic P1).
+      const lineToPos = new Map<number, { from: number; to: number }>();
+      lineToPos.set(3, { from: 50, to: 60 });
+      const posMap: PositionMap = { lineToPos, markdown: 'aaa\nbbb\nTarget' };
+
+      const ranges = computeSuggestionRanges(posMap, 'NEW\naaa\nbbb\nTarget');
+      const insert = ranges.find((r) => r.type === 'insert');
+      expect(insert).toBeDefined();
+      expect(insert!.from).toBe(50);
+    });
+
+    it('inserts AFTER the nearest mapped line when it is before the anchor', () => {
+      const lineToPos = new Map<number, { from: number; to: number }>();
+      lineToPos.set(1, { from: 5, to: 10 });
+      const posMap: PositionMap = { lineToPos, markdown: 'Target\naaa\nbbb' };
+
+      const ranges = computeSuggestionRanges(posMap, 'Target\naaa\nbbb\nNEW');
+      const insert = ranges.find((r) => r.type === 'insert');
+      expect(insert).toBeDefined();
+      expect(insert!.from).toBe(10);
+    });
+
     it('produces a suggestion when only a link is added', () => {
       const current = 'Store passwords in an approved password manager.';
       const proposed =
