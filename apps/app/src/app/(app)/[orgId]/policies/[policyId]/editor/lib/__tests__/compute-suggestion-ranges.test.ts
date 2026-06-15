@@ -262,8 +262,8 @@ describe('computeSuggestionRanges', () => {
       expect(allOriginalText).toContain('Section B');
     });
 
-    it('does not merge distant ranges', () => {
-      // Manually create a position map with widely separated positions
+    it('never merges separate modifies across a gap (no content loss)', () => {
+      // Four separate single-line changes, each separated by unchanged context.
       const lineToPos = new Map<number, { from: number; to: number }>();
       lineToPos.set(1, { from: 1, to: 10 });
       lineToPos.set(3, { from: 12, to: 25 });
@@ -279,19 +279,14 @@ describe('computeSuggestionRanges', () => {
 
       const ranges = computeSuggestionRanges(posMap, proposed);
 
-      // The first two changes (positions 1-25) are close and may merge.
-      // The last two changes (positions 200-230) are close and may merge.
-      // But the two groups (25 vs 200) are >20 apart so should NOT merge.
-      if (ranges.length > 1) {
-        // Verify there's a gap between groups
-        const sorted = [...ranges].sort((a, b) => a.from - b.from);
-        for (let i = 1; i < sorted.length; i++) {
-          const gap = sorted[i]!.from - sorted[i - 1]!.to;
-          // If they didn't merge, the gap must be > 20
-          if (gap > 0) {
-            expect(gap).toBeGreaterThan(20);
-          }
-        }
+      // Modifies are no longer merged across a gap (even a small one), so each
+      // change stays its own suggestion and no unchanged content between them
+      // can be swallowed/deleted on apply.
+      expect(ranges.length).toBe(4);
+      const sorted = [...ranges].sort((a, b) => a.from - b.from);
+      for (let i = 1; i < sorted.length; i++) {
+        // Non-overlapping, ascending — distinct ranges.
+        expect(sorted[i]!.from).toBeGreaterThanOrEqual(sorted[i - 1]!.to);
       }
     });
 

@@ -87,13 +87,15 @@ function mergeOverlappingRanges(ranges: SuggestionRange[]): SuggestionRange[] {
       continue;
     }
 
-    // Merge if overlapping or adjacent (gap of ≤20 positions, which covers
-    // a few empty paragraphs / blank lines between hunks).
-    // Always merge two adjacent deletes — they're almost certainly one section.
+    // Merge only when it can't drop unchanged content between the ranges:
+    //  - overlapping ranges (any type), or
+    //  - adjacent deletes split by blank-line context (one logical section).
+    // Do NOT merge two modifies across a gap — the unchanged content in the gap
+    // (e.g. a heading between two edited paragraphs) is absent from the merged
+    // proposedText and would be deleted on apply.
     const gap = range.from - prev.to;
     const shouldMerge =
       gap <= 0 || // overlapping
-      (gap <= 20 && prev.type === range.type) || // same type, close together
       (gap <= 20 && prev.type === 'delete' && range.type === 'delete'); // adjacent deletes
 
     if (shouldMerge) {
@@ -125,9 +127,15 @@ function resolveHunkPositions(
   lineToPos: Map<number, { from: number; to: number }>,
 ): { from: number; to: number } | null {
   if (oldLines === 0) {
-    const anchor = lineToPos.get(oldStart) ?? lineToPos.get(oldStart - 1);
-    if (!anchor) return findNearestPosition(oldStart, lineToPos);
-    return anchor;
+    // Pure insertion: collapse to a zero-width point at the right boundary.
+    // jsdiff's oldStart is the old line the new content is inserted BEFORE, so
+    // anchor to that line's start; otherwise insert after the previous line.
+    const before = lineToPos.get(oldStart);
+    if (before) return { from: before.from, to: before.from };
+    const after = lineToPos.get(oldStart - 1);
+    if (after) return { from: after.to, to: after.to };
+    const near = findNearestPosition(oldStart, lineToPos);
+    return near ? { from: near.to, to: near.to } : null;
   }
 
   let from: number | null = null;
