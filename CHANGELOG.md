@@ -1,3 +1,18 @@
+# [3.83.0](https://github.com/trycompai/comp/compare/v3.82.3...v3.83.0) (2026-06-15)
+
+
+### Bug Fixes
+
+* **automation-builder:** make polling backstop independent of the poll loop ([6417018](https://github.com/trycompai/comp/commit/6417018de92f8ae924efe058fb7dcc1267a4be73))
+* **automation-builder:** stop test dialog hanging on "Running your automation" ([ddf7b34](https://github.com/trycompai/comp/commit/ddf7b34a7c304ad6bfd1ac25b09e036c4000ab2f))
+* **integration-platform:** make refresh lease release ownership-checked ([dc4b3f4](https://github.com/trycompai/comp/commit/dc4b3f4a5da88e298de6f23f2f836daf8caffd70))
+* **integration-platform:** serialize OAuth token refresh per connection ([1821eb2](https://github.com/trycompai/comp/commit/1821eb23830c8d835c1ddce28a5f03487fcce19a))
+
+
+### Features
+
+* **isms:** add CS-437 foundational documents ([5bf86d3](https://github.com/trycompai/comp/commit/5bf86d3987ca86ff9529c5637e4b75b36cb7c21e)), closes [#8](https://github.com/trycompai/comp/issues/8) [#9](https://github.com/trycompai/comp/issues/9) [#6](https://github.com/trycompai/comp/issues/6) [#7](https://github.com/trycompai/comp/issues/7) [#1](https://github.com/trycompai/comp/issues/1) [#2](https://github.com/trycompai/comp/issues/2) [#4](https://github.com/trycompai/comp/issues/4) [#5](https://github.com/trycompai/comp/issues/5) [#3](https://github.com/trycompai/comp/issues/3) [#11](https://github.com/trycompai/comp/issues/11) [#10](https://github.com/trycompai/comp/issues/10) [#2992](https://github.com/trycompai/comp/issues/2992) [mutation-throu#to-hook](https://github.com/mutation-throu/issues/to-hook)
+
 ## [3.82.3](https://github.com/trycompai/comp/compare/v3.82.2...v3.82.3) (2026-06-15)
 
 
