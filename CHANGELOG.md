@@ -1,3 +1,10 @@
+## [3.82.2](https://github.com/trycompai/comp/compare/v3.82.1...v3.82.2) (2026-06-15)
+
+
+### Bug Fixes
+
+* **sentry:** only report errors from the production environment ([f1e8e8f](https://github.com/trycompai/comp/commit/f1e8e8f30a963f07c6702d2ed8cf4852ff98cfe5))
+
 ## [3.82.1](https://github.com/trycompai/comp/compare/v3.82.0...v3.82.1) (2026-06-15)
 
 
