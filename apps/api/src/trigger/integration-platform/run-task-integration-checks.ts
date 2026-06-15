@@ -532,7 +532,11 @@ export const runTaskIntegrationChecks = task({
         failingFindings,
         exceptions,
       );
-      const newStatus = decideTaskStatus(effectiveFailures, totalPassing);
+      const newStatus = decideTaskStatus(
+        effectiveFailures,
+        totalPassing,
+        totalFindings,
+      );
 
       if (newStatus === 'failed') {
         // Get current status before updating

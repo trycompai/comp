@@ -439,7 +439,11 @@ export class TaskIntegrationsController {
       failingFindings,
       exceptions,
     );
-    const newStatus = decideTaskStatus(effectiveFailures, totalPassing);
+    const newStatus = decideTaskStatus(
+      effectiveFailures,
+      totalPassing,
+      totalFindings,
+    );
 
     if (newStatus) {
       const isTransitioningToDone =
@@ -786,8 +790,12 @@ export class TaskIntegrationsController {
 
         const exceptedCount = results.filter((r) => r.excepted).length;
         const effectiveFailed = Math.max(0, run.failedCount - exceptedCount);
+        // Only downgrade failed → success when the failures were actually
+        // EXCEPTED. A failed run with no findings (e.g. an execution error,
+        // which is persisted as failed with failedCount 0) must stay failed so
+        // real runtime errors aren't hidden.
         const displayStatus =
-          run.status === 'failed' && effectiveFailed === 0
+          run.status === 'failed' && effectiveFailed === 0 && exceptedCount > 0
             ? 'success'
             : run.status;
 

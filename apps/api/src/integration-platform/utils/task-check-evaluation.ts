@@ -24,16 +24,24 @@ export function countEffectiveFailures(
 
 /**
  * Decide a task's status from its check results. Canonical rule, shared by the
- * manual and scheduled paths: any real (non-excepted) failure → failed; else any
- * passing result → done; else leave unchanged (e.g. an all-errored run, which is
- * indeterminate, not a violation). `effectiveFailures` is the non-excepted
- * failure count from {@link countEffectiveFailures}.
+ * manual and scheduled paths:
+ *   - any real (non-excepted) failure → failed
+ *   - else if the check evaluated any resource (a passing result OR a finding,
+ *     including the case where every finding is excepted) → done
+ *   - else leave unchanged (nothing was evaluated, e.g. an all-errored run —
+ *     indeterminate, not a violation; it retries next tick)
+ *
+ * `effectiveFailures` is the non-excepted failure count from
+ * {@link countEffectiveFailures}; `totalFindings` is the RAW finding count so an
+ * all-excepted run (effectiveFailures 0, no passing results) still transitions
+ * to done instead of getting stuck in its prior status.
  */
 export function decideTaskStatus(
   effectiveFailures: number,
   totalPassing: number,
+  totalFindings: number,
 ): 'failed' | 'done' | null {
   if (effectiveFailures > 0) return 'failed';
-  if (totalPassing > 0) return 'done';
+  if (totalPassing > 0 || totalFindings > 0) return 'done';
   return null;
 }

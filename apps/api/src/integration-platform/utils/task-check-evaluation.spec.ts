@@ -75,14 +75,20 @@ describe('task-check-evaluation', () => {
   });
 
   describe('decideTaskStatus', () => {
+    // (effectiveFailures, totalPassing, totalFindings)
     it('failed when there is a real (non-excepted) failure', () => {
-      expect(decideTaskStatus(1, 5)).toBe('failed');
+      expect(decideTaskStatus(1, 5, 1)).toBe('failed');
     });
     it('done when no failures and something passed', () => {
-      expect(decideTaskStatus(0, 5)).toBe('done');
+      expect(decideTaskStatus(0, 5, 0)).toBe('done');
     });
-    it('null (leave unchanged) when nothing failed and nothing passed', () => {
-      expect(decideTaskStatus(0, 0)).toBeNull();
+    it('done when the only finding is excepted and there are NO passing results', () => {
+      // All findings excepted (effectiveFailures 0) with 0 passing must still
+      // transition to done, not stay stuck in the prior status.
+      expect(decideTaskStatus(0, 0, 1)).toBe('done');
+    });
+    it('null (leave unchanged) when the check evaluated nothing (e.g. all errored)', () => {
+      expect(decideTaskStatus(0, 0, 0)).toBeNull();
     });
   });
 });
