@@ -79,6 +79,27 @@ describe('ImportFrameworkDto', () => {
     expect(messages.some((m) => m.includes('10000'))).toBe(true);
   });
 
+  // Import is the bulk-load path for externally-authored frameworks (NIST), so
+  // every description field accepts 10,000 — not just requirements.
+  it('accepts 10,000-char control / policy / task descriptions', async () => {
+    const long = 'x'.repeat(10_000);
+    const payload = {
+      ...basePayload(),
+      controlTemplates: [{ name: 'C', description: long, controlFamily: 'AC' }],
+      policyTemplates: [
+        {
+          name: 'P',
+          description: long,
+          frequency: FREQUENCY,
+          department: DEPARTMENT,
+          content: { type: 'doc', content: [] },
+        },
+      ],
+      taskTemplates: [{ name: 'T', description: long, frequency: FREQUENCY, department: DEPARTMENT }],
+    };
+    expect(await validatePayload(payload)).toHaveLength(0);
+  });
+
   // Bug B — policy content may be a doc object OR a bare node array.
   it('accepts policy content as a bare node array', async () => {
     expect(

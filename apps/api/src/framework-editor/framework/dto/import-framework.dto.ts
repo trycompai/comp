@@ -85,7 +85,7 @@ class ImportControlTemplateDto {
   @ApiProperty()
   @IsString()
   @IsNotEmpty()
-  @MaxLength(5000)
+  @MaxLength(10000)
   description: string;
 
   @ApiPropertyOptional({ example: 'AC - Access Control' })
@@ -136,7 +136,7 @@ class ImportPolicyTemplateDto {
   @ApiProperty()
   @IsString()
   @IsNotEmpty()
-  @MaxLength(5000)
+  @MaxLength(10000)
   description: string;
 
   @ApiProperty()
@@ -166,7 +166,7 @@ class ImportTaskTemplateDto {
   @ApiProperty()
   @IsString()
   @IsNotEmpty()
-  @MaxLength(5000)
+  @MaxLength(10000)
   description: string;
 
   @ApiProperty()
