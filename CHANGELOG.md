@@ -1,3 +1,11 @@
+## [3.82.1](https://github.com/trycompai/comp/compare/v3.82.0...v3.82.1) (2026-06-15)
+
+
+### Bug Fixes
+
+* **cloud-security:** address cubic review on exception handling ([bd1b774](https://github.com/trycompai/comp/commit/bd1b774b48cde7cdeea856bc7421e99f40ae5f76))
+* **cloud-security:** honor finding exceptions in integration task checks ([10c89fa](https://github.com/trycompai/comp/commit/10c89fae9b3c783ec6246bf5ccbd989d70b2d8f6))
+
 # [3.82.0](https://github.com/trycompai/comp/compare/v3.81.0...v3.82.0) (2026-06-12)
 
 
