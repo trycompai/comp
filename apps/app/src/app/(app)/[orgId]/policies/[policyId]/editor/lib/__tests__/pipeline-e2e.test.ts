@@ -414,6 +414,21 @@ describe('E2E pipeline: tolerant of stray whitespace from the model', () => {
     const { doc: result } = acceptAll(start, proposed);
     expect(result.textContent).toBe('Keep this much tidier.');
   });
+
+  it('strips leading indentation the model adds to a paragraph', () => {
+    const start = doc(h(2, 'Purpose'), p('Old body.'));
+    const proposed = ['## Purpose', '', '    Indented   body   text.'].join('\n');
+    const { doc: result } = acceptAll(start, proposed);
+    // No leading spaces, internal runs collapsed to single spaces.
+    expect(result.child(1).textContent).toBe('Indented body text.');
+  });
+
+  it('normalizes indentation/extra spaces inside list items', () => {
+    const start = doc(ul('Item one.', 'Item two.'));
+    const proposed = ['-   Item one.', '-    Item   two   revised.'].join('\n');
+    const { doc: result } = acceptAll(start, proposed);
+    expect(listTexts(result)).toEqual(['Item one.', 'Item two revised.']);
+  });
 });
 
 describe('E2E pipeline: heading level change', () => {
