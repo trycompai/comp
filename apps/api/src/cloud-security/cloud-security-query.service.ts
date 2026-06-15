@@ -4,6 +4,7 @@ import { getManifest } from '@trycompai/integration-platform';
 import { sanitizeEvidence } from './evidence-sanitizer';
 import { getLegacyFindings } from './cloud-security-query.legacy';
 import { resolveCheckKey } from './check-definition.utils';
+import { loadActiveExceptionSet } from './finding-exceptions';
 import type {
   CloudFinding,
   CloudProvider,
@@ -198,36 +199,19 @@ export class CloudSecurityQueryService {
     if (options.includeExceptions) return combined;
 
     // Filter out findings under an active (non-revoked, non-expired)
-    // FindingException. Looked up in one query keyed by org so the cost
-    // stays constant regardless of finding count.
-    const activeExceptionKeys = await this.loadActiveExceptionKeys(organizationId);
-    if (activeExceptionKeys.size === 0) return combined;
+    // FindingException, via the shared exception set so this view stays matched
+    // with the task-check status/display (one source of truth).
+    const exceptions = await loadActiveExceptionSet(organizationId);
+    if (exceptions.size === 0) return combined;
 
     return combined.filter((finding) => {
       if (!finding.checkKey || !finding.resourceId) return true;
-      const key = `${finding.connectionId}::${finding.checkKey}::${finding.resourceId}`;
-      return !activeExceptionKeys.has(key);
+      return !exceptions.has(
+        finding.connectionId,
+        finding.checkKey,
+        finding.resourceId,
+      );
     });
-  }
-
-  /**
-   * Return the set of (connectionId, checkId, resourceId) tuples that have
-   * an active exception in this org. One DB query per getFindings call.
-   */
-  private async loadActiveExceptionKeys(
-    organizationId: string,
-  ): Promise<Set<string>> {
-    const active = await db.findingException.findMany({
-      where: {
-        organizationId,
-        revokedAt: null,
-        OR: [{ expiresAt: null }, { expiresAt: { gt: new Date() } }],
-      },
-      select: { connectionId: true, checkId: true, resourceId: true },
-    });
-    return new Set(
-      active.map((e) => `${e.connectionId}::${e.checkId}::${e.resourceId}`),
-    );
   }
 
   private async getLatestRunsByConnection(

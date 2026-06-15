@@ -38,6 +38,11 @@ import { getStringValue } from '../utils/credential-utils';
 import { isCheckDisabledForTask } from '../utils/disabled-task-checks';
 import { getProviderSummary } from '../utils/provider-summary';
 import { getConnectionLabel } from '../utils/connection-label';
+import { loadActiveExceptionSet } from '../../cloud-security/finding-exceptions';
+import {
+  countEffectiveFailures,
+  decideTaskStatus,
+} from '../utils/task-check-evaluation';
 import { db } from '@db';
 import type { IntegrationConnection, Prisma } from '@db';
 
@@ -52,6 +57,8 @@ interface ConnectionCheckOutcome {
   status: 'success' | 'failed' | 'error';
   findings: number;
   passing: number;
+  /** resourceIds of this account's failing findings, for exception filtering. */
+  failingResourceIds: string[];
 }
 
 interface TaskIntegrationCheck {
@@ -383,6 +390,13 @@ export class TaskIntegrationsController {
     let accountsRun = 0;
     let hasExecutionError = false;
     let lastCheckRunId: string | undefined;
+    // Failing findings across all accounts (keyed like an exception) so task
+    // status can exclude explicitly-excepted ones below.
+    const failingFindings: Array<{
+      connectionId: string;
+      checkId: string;
+      resourceId: string;
+    }> = [];
 
     // Sequential so each per-account run commits as it completes — a slow or
     // failing account still leaves the earlier accounts' results persisted.
@@ -402,6 +416,9 @@ export class TaskIntegrationsController {
       totalFindings += outcome.findings;
       totalPassing += outcome.passing;
       if (outcome.status === 'error') hasExecutionError = true;
+      for (const resourceId of outcome.failingResourceIds) {
+        failingFindings.push({ connectionId: conn.id, checkId, resourceId });
+      }
       lastCheckRunId = outcome.checkRunId;
     }
 
@@ -412,11 +429,21 @@ export class TaskIntegrationsController {
       );
     }
 
-    // Aggregate task status across ALL accounts: any finding anywhere → failed;
-    // else any passing result → done; else leave unchanged. This replaces the
-    // old single-run update and removes the previous last-writer race.
-    const newStatus =
-      totalFindings > 0 ? 'failed' : totalPassing > 0 ? 'done' : null;
+    // Aggregate task status across ALL accounts, HONORING active finding
+    // exceptions so an explicitly-excepted finding doesn't fail the task —
+    // matched with the scheduled run and the Cloud Tests findings view (one
+    // rule, via the shared helpers). Any real (non-excepted) finding → failed;
+    // else any passing result → done; else leave unchanged.
+    const exceptions = await loadActiveExceptionSet(organizationId);
+    const effectiveFailures = countEffectiveFailures(
+      failingFindings,
+      exceptions,
+    );
+    const newStatus = decideTaskStatus(
+      effectiveFailures,
+      totalPassing,
+      totalFindings,
+    );
 
     if (newStatus) {
       const isTransitioningToDone =
@@ -571,6 +598,7 @@ export class TaskIntegrationsController {
           status: 'error',
           findings: 0,
           passing: 0,
+          failingResourceIds: [],
         };
       }
 
@@ -626,6 +654,9 @@ export class TaskIntegrationsController {
         status: checkResult.status,
         findings: checkResult.result.findings.length,
         passing: checkResult.result.passingResults.length,
+        failingResourceIds: checkResult.result.findings.map(
+          (f) => f.resourceId,
+        ),
       };
     } catch (error) {
       await this.checkRunRepository.complete(checkRun.id, {
@@ -647,6 +678,7 @@ export class TaskIntegrationsController {
         status: 'error',
         findings: 0,
         passing: 0,
+        failingResourceIds: [],
       };
     }
   }
@@ -729,21 +761,56 @@ export class TaskIntegrationsController {
         { historyPerGroup: limit ? parseInt(limit, 10) : 5 },
       );
 
+    // Honor active finding exceptions in what the UI shows: a failing result
+    // under an active exception is surfaced as `excepted` and excluded from the
+    // run's failed count/status — matched with task status + the Cloud Tests
+    // findings view (one rule, via the shared exception set). Raw rows are left
+    // untouched in the DB; this only affects the response.
+    const exceptions = await loadActiveExceptionSet(organizationId);
+
     return {
       runs: runs.map((run) => {
         const provider = getProviderSummary(run.connection);
+
+        const results = run.results.map((r) => ({
+          id: r.id,
+          passed: r.passed,
+          resourceType: r.resourceType,
+          resourceId: r.resourceId,
+          title: r.title,
+          description: r.description,
+          severity: r.severity,
+          remediation: r.remediation,
+          evidence: r.evidence,
+          collectedAt: r.collectedAt,
+          excepted:
+            !r.passed &&
+            exceptions.has(run.connectionId, run.checkId, r.resourceId),
+        }));
+
+        const exceptedCount = results.filter((r) => r.excepted).length;
+        const effectiveFailed = Math.max(0, run.failedCount - exceptedCount);
+        // Only downgrade failed → success when the failures were actually
+        // EXCEPTED. A failed run with no findings (e.g. an execution error,
+        // which is persisted as failed with failedCount 0) must stay failed so
+        // real runtime errors aren't hidden.
+        const displayStatus =
+          run.status === 'failed' && effectiveFailed === 0 && exceptedCount > 0
+            ? 'success'
+            : run.status;
 
         return {
           id: run.id,
           checkId: run.checkId,
           checkName: run.checkName,
-          status: run.status,
+          status: displayStatus,
           startedAt: run.startedAt,
           completedAt: run.completedAt,
           durationMs: run.durationMs,
           totalChecked: run.totalChecked,
           passedCount: run.passedCount,
-          failedCount: run.failedCount,
+          failedCount: effectiveFailed,
+          exceptedCount,
           errorMessage: run.errorMessage,
           logs: run.logs,
           connectionId: run.connectionId,
@@ -752,18 +819,7 @@ export class TaskIntegrationsController {
             slug: provider?.slug,
             name: provider?.name,
           },
-          results: run.results.map((r) => ({
-            id: r.id,
-            passed: r.passed,
-            resourceType: r.resourceType,
-            resourceId: r.resourceId,
-            title: r.title,
-            description: r.description,
-            severity: r.severity,
-            remediation: r.remediation,
-            evidence: r.evidence,
-            collectedAt: r.collectedAt,
-          })),
+          results,
           createdAt: run.createdAt,
         };
       }),
