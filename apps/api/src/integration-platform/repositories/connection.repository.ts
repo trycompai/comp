@@ -155,6 +155,45 @@ export class ConnectionRepository {
     });
   }
 
+  /**
+   * Atomically try to acquire a short-lived lease that serializes token
+   * refreshes for a connection across processes. Returns true only if this
+   * caller now holds the lease. The conditional UPDATE means exactly one
+   * concurrent caller wins; the lease auto-expires after `ttlSeconds` so a
+   * crashed holder cannot block refreshes permanently. `leaseToken` records the
+   * owner so the lease can only be released by the holder.
+   */
+  async acquireRefreshLease(
+    id: string,
+    ttlSeconds: number,
+    leaseToken: string,
+  ): Promise<boolean> {
+    const affected = await db.$executeRaw`
+      UPDATE "IntegrationConnection"
+      SET "refreshLeaseUntil" = now() + make_interval(secs => ${ttlSeconds}),
+          "refreshLeaseToken" = ${leaseToken}
+      WHERE id = ${id}
+        AND ("refreshLeaseUntil" IS NULL OR "refreshLeaseUntil" < now())
+    `;
+    return affected === 1;
+  }
+
+  /**
+   * Release a refresh lease so waiting callers can proceed immediately rather
+   * than waiting for it to expire. Only clears the lease if `leaseToken` still
+   * matches the current owner — a holder whose work outlived the TTL must not
+   * wipe a lease another worker has since acquired.
+   */
+  async releaseRefreshLease(id: string, leaseToken: string): Promise<void> {
+    await db.$executeRaw`
+      UPDATE "IntegrationConnection"
+      SET "refreshLeaseUntil" = NULL,
+          "refreshLeaseToken" = NULL
+      WHERE id = ${id}
+        AND "refreshLeaseToken" = ${leaseToken}
+    `;
+  }
+
   async delete(id: string): Promise<void> {
     await db.integrationConnection.delete({
       where: { id },
