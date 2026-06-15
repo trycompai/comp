@@ -1,3 +1,112 @@
+## [3.82.3](https://github.com/trycompai/comp/compare/v3.82.2...v3.82.3) (2026-06-15)
+
+
+### Bug Fixes
+
+* **framework-editor:** raise all import description limits to 10k ([e2f22a2](https://github.com/trycompai/comp/commit/e2f22a2c6162069e79c611b5d0fbf9f8f5c6bbe1))
+* **framework-editor:** unblock framework import (10k requirement limit + content shape) ([09aeba6](https://github.com/trycompai/comp/commit/09aeba6787a4d9d398c9a3d5064361ef27554605))
+
+## [3.82.2](https://github.com/trycompai/comp/compare/v3.82.1...v3.82.2) (2026-06-15)
+
+
+### Bug Fixes
+
+* **sentry:** only report errors from the production environment ([f1e8e8f](https://github.com/trycompai/comp/commit/f1e8e8f30a963f07c6702d2ed8cf4852ff98cfe5))
+
+## [3.82.1](https://github.com/trycompai/comp/compare/v3.82.0...v3.82.1) (2026-06-15)
+
+
+### Bug Fixes
+
+* **cloud-security:** address cubic review on exception handling ([bd1b774](https://github.com/trycompai/comp/commit/bd1b774b48cde7cdeea856bc7421e99f40ae5f76))
+* **cloud-security:** honor finding exceptions in integration task checks ([10c89fa](https://github.com/trycompai/comp/commit/10c89fae9b3c783ec6246bf5ccbd989d70b2d8f6))
+
+# [3.82.0](https://github.com/trycompai/comp/compare/v3.81.0...v3.82.0) (2026-06-12)
+
+
+### Bug Fixes
+
+* **analytics:** fall back to server-evaluated feature flags when posthog-js is blocked ([0653950](https://github.com/trycompai/comp/commit/065395056e8608eb6989f57cd123178b2dfa7655))
+* **cloud-security:** address cubic review on AWS-on-server checks ([aa23647](https://github.com/trycompai/comp/commit/aa23647c29dd3a6fd6e2e4b963a0e11f5dc1ab32))
+* **cloud-security:** exempt internal check-run endpoint from throttle + validate creds by auth type ([91ca27b](https://github.com/trycompai/comp/commit/91ca27b8ac6ad4c14ec469c7a4a35d6eb43758f6))
+* **cloud-security:** re-throw non-AWS errors in the per-check catch ([577bc05](https://github.com/trycompai/comp/commit/577bc057f0c564a9193188c523a8951f50b2bbf5))
+* **cloud-security:** run AWS integration checks on our server (scheduled false-fails) ([ade4bfa](https://github.com/trycompai/comp/commit/ade4bfacbf6041a8b6d26f2d96debf1ba2bd4793))
+* **framework-editor:** detect framework name/description-only changes for publish ([b6e8240](https://github.com/trycompai/comp/commit/b6e824070d5283673cb429bdf818dbdfaee48812))
+* **framework-editor:** flip Linked Controls panel up when clipped at bottom ([0483f3c](https://github.com/trycompai/comp/commit/0483f3ce44941a42201838bf7cdfca318e16117e))
+
+
+### Features
+
+* **app:** add expand-to-read for long requirement descriptions ([a7d30f3](https://github.com/trycompai/comp/commit/a7d30f32254f9538e28bb533f29f52d6e716e650))
+* **framework-editor:** add dark mode ([cc03bc2](https://github.com/trycompai/comp/commit/cc03bc2beedac44219c2bf190ad057b4ec421d63))
+* **framework-editor:** add save-as-draft and save-and-commit buttons ([bb7064b](https://github.com/trycompai/comp/commit/bb7064b8f8d0ac14855b4afc85ff61ccc1043a31))
+* **framework-editor:** resizable + size-remembering description editor ([9ef22dc](https://github.com/trycompai/comp/commit/9ef22dc5efc60aca3d9a09bc7659b1f93503fd20))
+* **framework-editor:** show requirement context in edit dialog + highlight row ([aad9701](https://github.com/trycompai/comp/commit/aad970122e03ad4b15c02eb0b01932bb2e93f470))
+
+# [3.81.0](https://github.com/trycompai/comp/compare/v3.80.0...v3.81.0) (2026-06-12)
+
+
+### Features
+
+* **framework-editor:** raise requirement description limit to 10,000 chars ([75d9c5d](https://github.com/trycompai/comp/commit/75d9c5ddaf1e26889e8bc4fe52db71958c09cce8))
+
+# [3.80.0](https://github.com/trycompai/comp/compare/v3.79.1...v3.80.0) (2026-06-12)
+
+
+### Bug Fixes
+
+* **api:** paginate + time-bound the MCP release lookup ([760ef2f](https://github.com/trycompai/comp/commit/760ef2f6c8b20c5cf04ba3425d61ce2dc45add54))
+* **frameworks:** let unpinned instances adopt version updates (FRAME-2) ([d4f1d49](https://github.com/trycompai/comp/commit/d4f1d49d07bf1aa3abe6290f30f9e833d357e2e1))
+
+
+### Features
+
+* **api:** stable download URLs for MCP server artifacts ([9420bf0](https://github.com/trycompai/comp/commit/9420bf025b213799d3f5754e184de911d24f4f3e))
+
+## [3.79.1](https://github.com/trycompai/comp/compare/v3.79.0...v3.79.1) (2026-06-12)
+
+
+### Bug Fixes
+
+* **cloud-security:** stamp findingKey on AWS checks so findings can be excepted ([5b52c79](https://github.com/trycompai/comp/commit/5b52c79afd9566692f162d83d4757e20abb421c6))
+
+# [3.79.0](https://github.com/trycompai/comp/compare/v3.78.4...v3.79.0) (2026-06-12)
+
+
+### Bug Fixes
+
+* **pentest:** address review findings on finding-context flow ([9bf3bb1](https://github.com/trycompai/comp/commit/9bf3bb1c5a1d7471b8f24da15095fd95263d7506))
+* **pentest:** cap the composed additionalContext briefing at 20k chars ([7485b03](https://github.com/trycompai/comp/commit/7485b03555432f60105686aa561d5f7c496e8e35))
+* **pentest:** reject whitespace-only provider target URLs in context upsert ([1a45397](https://github.com/trycompai/comp/commit/1a45397a27bb461e04b5a8b9102afdf997a6cd08))
+
+
+### Features
+
+* **pentest:** append customer context appendix to report downloads ([5f59df7](https://github.com/trycompai/comp/commit/5f59df71166bd88cc236076d7af261983227fd6c))
+* **pentest:** let customers add context to findings so retests are informed ([4f0dfc5](https://github.com/trycompai/comp/commit/4f0dfc5dca343eb613e72165e88e4018c90dacb8))
+
+## [3.78.4](https://github.com/trycompai/comp/compare/v3.78.3...v3.78.4) (2026-06-11)
+
+
+### Bug Fixes
+
+* **cloud-security:** don't let a fully-failed GCP/Azure scan wipe good results ([d893eb6](https://github.com/trycompai/comp/commit/d893eb65aac033afdf57b0d0ee06b70d9710e2b7))
+* **cloud-security:** map SCC 404 NOT_FOUND to the actionable SCC_NOT_ACTIVATED error ([d36d908](https://github.com/trycompai/comp/commit/d36d9089bb59d3a6a481a58f02e65642a87fa6df))
+
+## [3.78.3](https://github.com/trycompai/comp/compare/v3.78.2...v3.78.3) (2026-06-11)
+
+
+### Bug Fixes
+
+* **trust-portal:** use NDA-free copy in access-granted email when NDA is bypassed ([9920760](https://github.com/trycompai/comp/commit/99207602754943c41374f6bd9c0860bceed0e0ae))
+
+## [3.78.2](https://github.com/trycompai/comp/compare/v3.78.1...v3.78.2) (2026-06-11)
+
+
+### Bug Fixes
+
+* **assistant-chat:** scope chat to membership-verified org ([2294c2e](https://github.com/trycompai/comp/commit/2294c2eb26b49dfb34d3088dc2e8040e8505ce83))
+
 ## [3.78.1](https://github.com/trycompai/comp/compare/v3.78.0...v3.78.1) (2026-06-11)
 
 

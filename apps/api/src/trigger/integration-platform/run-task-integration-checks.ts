@@ -10,7 +10,16 @@ import {
   requestValidCredentials,
   type IntegrationCredentialValues,
 } from './ensure-valid-credentials';
-import { injectAwsResolvedSession } from './checks-aws-session';
+import {
+  runChecksOnServer,
+  type RunAllChecksResult,
+} from './run-checks-on-server';
+import { loadActiveExceptionSet } from '../../cloud-security/finding-exceptions';
+import {
+  countEffectiveFailures,
+  decideTaskStatus,
+  type FailingFinding,
+} from '../../integration-platform/utils/task-check-evaluation';
 
 /**
  * Send email notifications for task status change
@@ -218,91 +227,88 @@ export const runTaskIntegrationChecks = task({
       return { success: false, error: 'Connection not found or inactive' };
     }
 
-    // Ensure we have valid credentials (refresh OAuth tokens if needed)
     const apiUrl = process.env.BASE_URL || 'http://localhost:3333';
-    let credentials: IntegrationCredentialValues;
 
-    logger.info('Ensuring valid credentials (refreshing if needed)...');
-    const credentialsResult = await requestValidCredentials({
-      apiUrl,
-      connectionId,
-      organizationId,
-    });
+    // AWS checks run ON OUR SERVER (see the loop below), which decrypts the
+    // credentials and assumes the cross-account role there. So the Trigger-side
+    // credential/session preflight is skipped for AWS — running it would add
+    // redundant failure points (a transient preflight error would falsely fail
+    // an AWS run that `runChecksOnServer` could have completed).
+    let credentials: IntegrationCredentialValues = {};
+    let handleTokenRefresh: (() => Promise<string | null>) | undefined;
 
-    if (!credentialsResult.success || !credentialsResult.credentials) {
-      const errorMessage =
-        credentialsResult.error || 'Failed to validate credentials';
-      logger.error(errorMessage);
-
-      // If unauthorized, mark connection as error
-      if (credentialsResult.status === 401) {
-        await db.integrationConnection.update({
-          where: { id: connectionId },
-          data: {
-            status: 'error',
-            errorMessage:
-              'OAuth token expired. Please reconnect the integration.',
-          },
-        });
-      }
-
-      return { success: false, error: errorMessage };
-    }
-    credentials = credentialsResult.credentials;
-    logger.info('Credentials validated successfully');
-
-    const handleTokenRefresh = async (): Promise<string | null> => {
-      logger.info('Force refreshing OAuth credentials after provider 401...');
-      const refreshResult = await requestValidCredentials({
+    if (providerSlug !== 'aws') {
+      logger.info('Ensuring valid credentials (refreshing if needed)...');
+      const credentialsResult = await requestValidCredentials({
         apiUrl,
         connectionId,
         organizationId,
-        forceRefresh: true,
       });
 
-      if (!refreshResult.success || !refreshResult.credentials) {
-        logger.error(refreshResult.error || 'Forced token refresh failed');
-        return null;
+      if (!credentialsResult.success || !credentialsResult.credentials) {
+        const errorMessage =
+          credentialsResult.error || 'Failed to validate credentials';
+        logger.error(errorMessage);
+
+        // If unauthorized, mark connection as error
+        if (credentialsResult.status === 401) {
+          await db.integrationConnection.update({
+            where: { id: connectionId },
+            data: {
+              status: 'error',
+              errorMessage:
+                'OAuth token expired. Please reconnect the integration.',
+            },
+          });
+        }
+
+        return { success: false, error: errorMessage };
+      }
+      credentials = credentialsResult.credentials;
+      logger.info('Credentials validated successfully');
+
+      handleTokenRefresh = async (): Promise<string | null> => {
+        logger.info('Force refreshing OAuth credentials after provider 401...');
+        const refreshResult = await requestValidCredentials({
+          apiUrl,
+          connectionId,
+          organizationId,
+          forceRefresh: true,
+        });
+
+        if (!refreshResult.success || !refreshResult.credentials) {
+          logger.error(refreshResult.error || 'Forced token refresh failed');
+          return null;
+        }
+
+        credentials = refreshResult.credentials;
+        return getAccessToken(credentials) ?? null;
+      };
+
+      // Validate credentials based on auth type
+      if (manifest.auth.type === 'oauth2' && !getAccessToken(credentials)) {
+        logger.error(
+          `No OAuth access token found for connection: ${connectionId}`,
+        );
+        return {
+          success: false,
+          error: 'No OAuth access token found. Please reconnect.',
+        };
       }
 
-      credentials = refreshResult.credentials;
-      return getAccessToken(credentials) ?? null;
-    };
-
-    // Validate credentials based on auth type
-    if (manifest.auth.type === 'oauth2' && !getAccessToken(credentials)) {
-      logger.error(
-        `No OAuth access token found for connection: ${connectionId}`,
-      );
-      return {
-        success: false,
-        error: 'No OAuth access token found. Please reconnect.',
-      };
+      if (
+        manifest.auth.type === 'custom' &&
+        Object.keys(credentials).length === 0
+      ) {
+        logger.error(
+          `No credentials found for custom integration: ${connectionId}`,
+        );
+        return {
+          success: false,
+          error: 'No credentials found for custom integration',
+        };
+      }
     }
-
-    if (
-      manifest.auth.type === 'custom' &&
-      Object.keys(credentials).length === 0
-    ) {
-      logger.error(
-        `No credentials found for custom integration: ${connectionId}`,
-      );
-      return {
-        success: false,
-        error: 'No credentials found for custom integration',
-      };
-    }
-
-    // For AWS, resolve the cross-account session in ECS and inject the temp
-    // creds — the checks run in the Trigger.dev runtime, which cannot assume the
-    // role itself (no base creds / roleAssumer ARN there).
-    credentials = await injectAwsResolvedSession({
-      credentials,
-      apiUrl,
-      connectionId,
-      organizationId,
-      providerSlug,
-    });
 
     const variables =
       (connection.variables as Record<
@@ -333,37 +339,104 @@ export const runTaskIntegrationChecks = task({
     // Track overall results across all checks for this task
     let totalFindings = 0;
     let totalPassing = 0;
-    let hasFailedChecks = false;
     let hasExecutionErrors = false;
+    // Failing findings (keyed like an exception) so task status can exclude
+    // explicitly-excepted ones below.
+    const failingFindings: FailingFinding[] = [];
 
     // Run only the checks that apply to this task
     try {
       for (const checkId of effectiveCheckIds) {
-        const result = await runAllChecks({
-          manifest,
-          accessToken: getAccessToken(credentials),
-          credentials,
-          variables,
-          connectionId,
-          organizationId,
-          checkId, // Run specific check
-          onTokenRefresh:
-            manifest.auth.type === 'oauth2' ? handleTokenRefresh : undefined,
-          logger: {
-            info: (msg, data) => logger.info(msg, data),
-            warn: (msg, data) => logger.warn(msg, data),
-            error: (msg, data) => logger.error(msg, data),
-          },
-        });
+        // AWS checks run ON OUR SERVER so their S3 calls egress our VPC (whose
+        // endpoint allows the read) instead of Trigger.dev's (which blocks it).
+        // Every other provider keeps executing here in the Trigger.dev runtime,
+        // unchanged. The result shape is identical either way, so all the
+        // persistence / status / email logic below is shared.
+        let result: RunAllChecksResult;
+        try {
+          result =
+            providerSlug === 'aws'
+              ? await runChecksOnServer({
+                  apiUrl,
+                  connectionId,
+                  organizationId,
+                  checkId,
+                })
+              : await runAllChecks({
+                  manifest,
+                  accessToken: getAccessToken(credentials),
+                  credentials,
+                  variables,
+                  connectionId,
+                  organizationId,
+                  checkId, // Run specific check
+                  onTokenRefresh:
+                    manifest.auth.type === 'oauth2'
+                      ? handleTokenRefresh
+                      : undefined,
+                  logger: {
+                    info: (msg, data) => logger.info(msg, data),
+                    warn: (msg, data) => logger.warn(msg, data),
+                    error: (msg, data) => logger.error(msg, data),
+                  },
+                });
+        } catch (error) {
+          // Only the AWS server-run path is degraded here. Non-AWS providers run
+          // in-process via runAllChecks, which catches per-check failures and
+          // returns status:'error' rather than throwing — so a throw on the
+          // non-AWS branch is unexpected and must NOT be silently downgraded.
+          // Re-throw it to preserve the pre-change behavior (it propagates to the
+          // outer catch and fails the task).
+          if (providerSlug !== 'aws') throw error;
+
+          // AWS server-run threw, and only on a transport blip (network/non-2xx)
+          // — per-check AWS execution errors come back inside the result, not
+          // thrown. Record THIS check as errored and keep going so one blip
+          // doesn't abort its sibling checks (multiple AWS checks share a task)
+          // or skip the lastSyncAt/status updates, mirroring runAllChecks'
+          // per-check resilience. hasExecutionErrors keeps integrationLastRunAt
+          // unwritten, so the next orchestrator tick retries.
+          const message =
+            error instanceof Error ? error.message : String(error);
+          const checkDef = manifest.checks?.find((c) => c.id === checkId);
+          // A transport blip is indeterminate, not a finding: it gates
+          // integrationLastRunAt (retry next tick) but must not fail the task.
+          hasExecutionErrors = true;
+          await db.integrationCheckRun.create({
+            data: {
+              connectionId,
+              taskId,
+              checkId,
+              checkName: checkDef?.name ?? checkId,
+              status: 'failed',
+              startedAt: new Date(),
+              completedAt: new Date(),
+              durationMs: 0,
+              totalChecked: 0,
+              passedCount: 0,
+              failedCount: 0,
+              errorMessage: message,
+            },
+          });
+          logger.error(
+            `Server-run failed for check ${checkId} on task ${taskId}: ${message}`,
+          );
+          continue;
+        }
 
         const checkResult = result.results[0];
         if (!checkResult) continue;
 
-        // Accumulate results
+        // Accumulate results. Record each failing finding (keyed like an
+        // exception) so task status can exclude explicitly-excepted ones.
         totalFindings += checkResult.result.findings.length;
         totalPassing += checkResult.result.passingResults.length;
-        if (checkResult.status === 'failed' || checkResult.status === 'error') {
-          hasFailedChecks = true;
+        for (const f of checkResult.result.findings) {
+          failingFindings.push({
+            connectionId,
+            checkId: checkResult.checkId,
+            resourceId: f.resourceId,
+          });
         }
         if (checkResult.status === 'error') {
           hasExecutionErrors = true;
@@ -449,10 +522,23 @@ export const runTaskIntegrationChecks = task({
         });
       }
 
-      // Update task status based on check results
-      // If any findings or check failures, mark as failed
-      // If all checks pass with no findings, mark as done (only if not already done)
-      if (totalFindings > 0 || hasFailedChecks) {
+      // Decide task status from the run, HONORING active finding exceptions so
+      // an explicitly-excepted finding does not fail the task — matched with the
+      // manual run-check path and the Cloud Tests findings view (one rule, via
+      // the shared helpers). Execution errors don't drive status here; they gate
+      // integrationLastRunAt above so the next tick retries.
+      const exceptions = await loadActiveExceptionSet(organizationId);
+      const effectiveFailures = countEffectiveFailures(
+        failingFindings,
+        exceptions,
+      );
+      const newStatus = decideTaskStatus(
+        effectiveFailures,
+        totalPassing,
+        totalFindings,
+      );
+
+      if (newStatus === 'failed') {
         // Get current status before updating
         const taskBeforeUpdate = await db.task.findUnique({
           where: { id: taskId },
@@ -465,7 +551,7 @@ export const runTaskIntegrationChecks = task({
           data: { status: 'failed' },
         });
         logger.info(
-          `Task ${taskId} marked as failed due to ${totalFindings} findings${hasFailedChecks ? ' and failed checks' : ''}`,
+          `Task ${taskId} marked as failed due to ${effectiveFailures} finding(s)`,
         );
 
         // Only send email notifications if status actually changed
@@ -482,7 +568,7 @@ export const runTaskIntegrationChecks = task({
             `Skipping notification: task ${taskId} was already in failed status`,
           );
         }
-      } else if (totalPassing > 0) {
+      } else if (newStatus === 'done') {
         // Only update to done if not already done
         const currentTask = await db.task.findUnique({
           where: { id: taskId },
@@ -525,12 +611,7 @@ export const runTaskIntegrationChecks = task({
         checksRun: effectiveCheckIds.length,
         totalPassing,
         totalFindings,
-        taskStatus:
-          totalFindings > 0 || hasFailedChecks
-            ? 'failed'
-            : totalPassing > 0
-              ? 'done'
-              : null,
+        taskStatus: newStatus,
       };
     } catch (error) {
       logger.error(`Failed to run checks for task ${taskId}`, {

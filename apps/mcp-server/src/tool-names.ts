@@ -530,7 +530,7 @@ export const toolNames: Array<{ name: string; description: string }>= [
   },
   {
     "name": "export-all-evidence",
-    "description": "Export all organization evidence as ZIP (Auditor only)\n\nExport all organization evidence as ZIP (Auditor only) in Comp AI. Export all organization evidence for an auditor review package."
+    "description": "Trigger bulk evidence export (Auditor only)\n\nTrigger bulk evidence export (Auditor only) in Comp AI. Export all organization evidence for an auditor review package."
   },
   {
     "name": "get-comments",
@@ -613,8 +613,20 @@ export const toolNames: Array<{ name: string; description: string }>= [
     "description": "Update allowed domains for the trust portal\n\nUpdate allowed domains for the trust portal in Comp AI. Configure the live Trust Center, custom domain, public overview, FAQs, compliance resources, documents, links, and vendor disclosures."
   },
   {
+    "name": "update-allowed-emails",
+    "description": "Update allowed emails for the trust portal\n\nUpdate allowed emails for the trust portal in Comp AI. Configure the live Trust Center, custom domain, public overview, FAQs, compliance resources, documents, links, and vendor disclosures."
+  },
+  {
     "name": "update-frameworks",
     "description": "Update trust portal framework settings\n\nUpdate trust portal framework settings in Comp AI. Configure the live Trust Center, custom domain, public overview, FAQs, compliance resources, documents, links, and vendor disclosures."
+  },
+  {
+    "name": "list-custom-frameworks",
+    "description": "List org-authored custom frameworks with their trust portal selection\n\nList org-authored custom frameworks with their trust portal selection in Comp AI. Configure the live Trust Center, custom domain, public overview, FAQs, compliance resources, documents, links, and vendor disclosures."
+  },
+  {
+    "name": "update-custom-framework",
+    "description": "Enable/disable a custom framework on the trust portal and set its status\n\nEnable/disable a custom framework on the trust portal and set its status in Comp AI. Configure the live Trust Center, custom domain, public overview, FAQs, compliance resources, documents, links, and vendor disclosures."
   },
   {
     "name": "update-overview",
@@ -715,6 +727,10 @@ export const toolNames: Array<{ name: string; description: string }>= [
   {
     "name": "get-public-vendors",
     "description": "List Trust Center vendors\n\nList published vendors and subprocessors for an organization Trust Center so reviewers can inspect third-party posture."
+  },
+  {
+    "name": "get-public-custom-frameworks",
+    "description": "Get org-authored custom frameworks shown on a trust portal\n\nGet org-authored custom frameworks shown on a trust portal in Comp AI. Manage external Trust Center access requests, NDA signing, grants, tokenized document downloads, public FAQs, and reviewer access."
   },
   {
     "name": "list-findings",
@@ -1089,6 +1105,10 @@ export const toolNames: Array<{ name: string; description: string }>= [
     "description": "Resolve the \"About this check\" description for a finding (AI-cached for AWS; provider-derived for GCP/Azure)\n\nResolve the \"About this check\" description for a finding (AI-cached for AWS; provider-derived for GCP/Azure) in Comp AI. Run AWS, Azure, and GCP cloud security scans, detect enabled services, review findings, and connect cloud posture."
   },
   {
+    "name": "resolve-session",
+    "description": "Resolve short-lived AWS credentials for a connection (internal only)\n\nResolve short-lived AWS credentials for a connection (internal only) in Comp AI. Run AWS, Azure, and GCP cloud security scans, detect enabled services, review findings, and connect cloud posture results to compliance work."
+  },
+  {
     "name": "scan",
     "description": "Run cloud security scan\n\nTrigger a cloud security scan for a connected AWS, Azure, or GCP account and collect findings for compliance remediation."
   },
@@ -1287,6 +1307,18 @@ export const toolNames: Array<{ name: string; description: string }>= [
   {
     "name": "get-pdf",
     "description": "Get penetration test PDF\n\nGet penetration test PDF in Comp AI. Create AI-powered penetration test runs, track progress, inspect findings and events, and download markdown or PDF reports."
+  },
+  {
+    "name": "list-pentest-finding-contexts",
+    "description": "List pentest finding context notes\n\nReturns the customer-written context notes attached to pentest findings for a target URL. These notes are shared with the testing agent on future scans of the same target so retests are informed, not blind."
+  },
+  {
+    "name": "set-pentest-finding-context",
+    "description": "Add context to a pentest finding\n\nSaves a customer context note on a pentest finding, e.g. an accepted-by-design rationale or remediation details. Future scans of the same target pass the note to the testing agent so the issue is retested with that context."
+  },
+  {
+    "name": "delete-pentest-finding-context",
+    "description": "Remove context from a pentest finding\n\nDeletes the customer context note attached to a pentest finding so future scans of the target no longer receive it from the testing agent briefing."
   },
   {
     "name": "get-pending-offboardings",

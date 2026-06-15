@@ -1022,9 +1022,6 @@ export class FrameworksService {
     if (!instance || instance.organizationId !== params.organizationId) {
       throw new NotFoundException('Framework instance not found');
     }
-    if (!instance.currentVersion) {
-      throw new BadRequestException('Instance is not on any version');
-    }
 
     const latest = await db.frameworkVersion.findFirst({
       where: { frameworkId: instance.frameworkId! },
@@ -1034,8 +1031,22 @@ export class FrameworksService {
       throw new NotFoundException('No update available');
     }
 
-    const fromManifest = instance.currentVersion
-      .manifest as unknown as FrameworkManifest;
+    // Instances that were never pinned to a version (e.g. created before
+    // versioning) have no currentVersion. Rather than dead-ending the update
+    // flow, diff from the framework's earliest published version so they can
+    // still adopt the latest — applying the sync pins currentVersionId, which
+    // heals the state for future updates.
+    const baseVersion =
+      instance.currentVersion ??
+      (await db.frameworkVersion.findFirst({
+        where: { frameworkId: instance.frameworkId! },
+        orderBy: { publishedAt: 'asc' },
+      }));
+    if (!baseVersion) {
+      throw new NotFoundException('No update available');
+    }
+
+    const fromManifest = baseVersion.manifest as unknown as FrameworkManifest;
     const toManifest = latest.manifest as unknown as FrameworkManifest;
     const templateControlIds = [
       ...new Set([
@@ -1109,8 +1120,8 @@ export class FrameworksService {
         status: p.status,
       })),
       fromVersionLabel: {
-        id: instance.currentVersion.id,
-        version: instance.currentVersion.version,
+        id: baseVersion.id,
+        version: baseVersion.version,
       },
       toVersionLabel: { id: latest.id, version: latest.version },
       releaseNotes: latest.releaseNotes,

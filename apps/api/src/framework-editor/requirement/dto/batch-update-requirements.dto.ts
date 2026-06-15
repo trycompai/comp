@@ -30,7 +30,7 @@ class BatchUpdateRequirementItem {
   @ApiProperty()
   @IsString()
   @IsOptional()
-  @MaxLength(5000)
+  @MaxLength(10000)
   description?: string;
 
   @ApiProperty()

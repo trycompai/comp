@@ -26,6 +26,7 @@ import {
 import { Search } from '@trycompai/design-system/icons';
 import { useParams, useRouter } from 'next/navigation';
 import { useEffect, useMemo, useState } from 'react';
+import { ExpandableDescription } from './ExpandableDescription';
 import {
   REQUIREMENTS_TABLE_COLUMN_COUNT,
   REQUIREMENTS_TABLE_STYLE,
@@ -215,9 +216,11 @@ export function FrameworkRequirements({
                     </span>
                   </TableCell>
                   <TableCell>
-                    <span className="block truncate text-sm" title={item.description || ''}>
-                      {item.description || '—'}
-                    </span>
+                    <ExpandableDescription
+                      description={item.description}
+                      identifier={item.identifier}
+                      name={item.name}
+                    />
                   </TableCell>
                   <TableCell>
                     <div className="flex min-w-0 items-center gap-2">

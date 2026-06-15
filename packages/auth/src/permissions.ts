@@ -42,7 +42,7 @@ export const statement = {
   app: ['read'], // Main app access
   trust: ['read', 'update'], // Trust center access
   // Security product resources
-  pentest: ['create', 'read', 'delete'],
+  pentest: ['create', 'read', 'update', 'delete'],
   // Training management
   training: ['read', 'update'],
   // Portal self-service
@@ -84,7 +84,7 @@ export const owner = ac.newRole({
   app: ['read'],
   trust: ['read', 'update'],
   // Security product
-  pentest: ['create', 'read', 'delete'],
+  pentest: ['create', 'read', 'update', 'delete'],
   // Training management
   training: ['read', 'update'],
   // Portal self-service
@@ -122,7 +122,7 @@ export const admin = ac.newRole({
   app: ['read'],
   trust: ['read', 'update'],
   // Security product
-  pentest: ['create', 'read', 'delete'],
+  pentest: ['create', 'read', 'update', 'delete'],
   // Training management
   training: ['read', 'update'],
   // Secrets manager — admin can fully manage decrypted credentials

@@ -14,6 +14,8 @@ jest.mock('@db', () => ({
     },
     trustAccessGrant: {
       findUnique: jest.fn(),
+      findFirst: jest.fn(),
+      update: jest.fn(),
     },
     trustAccessRequest: {
       findFirst: jest.fn(),
@@ -62,6 +64,8 @@ const mockDb = db as unknown as {
   };
   trustAccessGrant: {
     findUnique: jest.Mock;
+    findFirst: jest.Mock;
+    update: jest.Mock;
   };
   trustAccessRequest: {
     findFirst: jest.Mock;
@@ -262,6 +266,10 @@ describe('TrustAccessService approveRequest NDA bypass', () => {
     expect(txMock.trustAccessGrant.create).toHaveBeenCalledTimes(1);
     expect(txMock.trustNDAAgreement.create).not.toHaveBeenCalled();
     expect(emailService.sendAccessGrantedEmail).toHaveBeenCalledTimes(1);
+    // The granted email must omit NDA copy since no NDA was signed.
+    expect(emailService.sendAccessGrantedEmail).toHaveBeenCalledWith(
+      expect.objectContaining({ ndaBypassed: true }),
+    );
     expect(emailService.sendNdaSigningEmail).not.toHaveBeenCalled();
     expect(txMock.auditLog.create).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -286,6 +294,9 @@ describe('TrustAccessService approveRequest NDA bypass', () => {
 
     expect(txMock.trustAccessGrant.create).toHaveBeenCalledTimes(1);
     expect(emailService.sendAccessGrantedEmail).toHaveBeenCalledTimes(1);
+    expect(emailService.sendAccessGrantedEmail).toHaveBeenCalledWith(
+      expect.objectContaining({ ndaBypassed: true }),
+    );
     expect(txMock.auditLog.create).toHaveBeenCalledWith(
       expect.objectContaining({
         data: expect.objectContaining({
@@ -308,5 +319,129 @@ describe('TrustAccessService approveRequest NDA bypass', () => {
     expect(emailService.sendNdaSigningEmail).toHaveBeenCalledTimes(1);
     expect(emailService.sendAccessGrantedEmail).not.toHaveBeenCalled();
     expect(result.message).toBe('NDA signing email sent');
+  });
+});
+
+describe('TrustAccessService resendAccessGrantEmail NDA copy', () => {
+  const emailService = {
+    sendAccessGrantedEmail: jest.fn(),
+  };
+  const service = new TrustAccessService(
+    {} as any,
+    emailService as any,
+    {} as any,
+    {} as any,
+    {} as any,
+  );
+  jest
+    .spyOn(service as any, 'buildPortalAccessUrl')
+    .mockResolvedValue('https://portal.example.com/access/token');
+
+  const baseGrant = {
+    id: 'tag_1',
+    subjectEmail: 'chang.liu@client.com',
+    status: 'active',
+    expiresAt: new Date(Date.now() + 86_400_000),
+    accessToken: 'existing-token',
+    accessTokenExpiresAt: new Date(Date.now() + 86_400_000),
+    accessRequest: {
+      name: 'Chang Liu',
+      organization: { name: 'Acme Security' },
+    },
+  };
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  it('marks the resent email as bypassed when the grant has no NDA agreement', async () => {
+    mockDb.trustAccessGrant.findFirst.mockResolvedValue({
+      ...baseGrant,
+      ndaAgreement: null,
+    });
+
+    await service.resendAccessGrantEmail('org_1', 'tag_1');
+
+    expect(emailService.sendAccessGrantedEmail).toHaveBeenCalledWith(
+      expect.objectContaining({ ndaBypassed: true }),
+    );
+  });
+
+  it('keeps NDA copy when the grant has a signed NDA agreement', async () => {
+    mockDb.trustAccessGrant.findFirst.mockResolvedValue({
+      ...baseGrant,
+      ndaAgreement: { status: 'signed' },
+    });
+
+    await service.resendAccessGrantEmail('org_1', 'tag_1');
+
+    expect(emailService.sendAccessGrantedEmail).toHaveBeenCalledWith(
+      expect.objectContaining({ ndaBypassed: false }),
+    );
+  });
+});
+
+describe('TrustAccessService signNda NDA copy', () => {
+  const ndaPdfService = {
+    generateNdaPdf: jest.fn().mockResolvedValue(Buffer.from('pdf')),
+    uploadNdaPdf: jest.fn().mockResolvedValue('org_1/nda/nda_1.pdf'),
+    getSignedUrl: jest.fn().mockResolvedValue('https://s3.example.com/nda.pdf'),
+  };
+  const emailService = {
+    sendAccessGrantedEmail: jest.fn(),
+  };
+  const service = new TrustAccessService(
+    ndaPdfService as any,
+    emailService as any,
+    {} as any,
+    {} as any,
+    {} as any,
+  );
+  jest
+    .spyOn(service as any, 'buildPortalAccessUrl')
+    .mockResolvedValue('https://portal.example.com/access/token');
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    mockDb.trustNDAAgreement.findUnique.mockResolvedValue({
+      id: 'nda_1',
+      organizationId: 'org_1',
+      accessRequestId: 'tar_1',
+      status: 'pending',
+      signTokenExpiresAt: new Date(Date.now() + 86_400_000),
+      grant: null,
+      accessRequest: {
+        requestedDurationDays: 30,
+        organization: { name: 'Acme Security' },
+      },
+    });
+    mockDb.$transaction.mockImplementation(
+      (cb: (tx: unknown) => Promise<unknown>) =>
+        cb({
+          trustAccessGrant: {
+            create: jest
+              .fn()
+              .mockResolvedValue({ id: 'tag_1', expiresAt: new Date() }),
+          },
+          trustNDAAgreement: {
+            update: jest.fn().mockResolvedValue({ id: 'nda_1' }),
+          },
+        }),
+    );
+  });
+
+  it('sends the granted email with NDA copy (ndaBypassed: false) after signing', async () => {
+    await service.signNda(
+      'sign-token',
+      'Chang Liu',
+      'chang.liu@client.com',
+      '1.2.3.4',
+      'jest-agent',
+    );
+
+    expect(emailService.sendAccessGrantedEmail).toHaveBeenCalledTimes(1);
+    expect(emailService.sendAccessGrantedEmail).toHaveBeenCalledWith(
+      expect.objectContaining({ ndaBypassed: false }),
+    );
   });
 });

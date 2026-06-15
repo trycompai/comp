@@ -7,6 +7,7 @@ import { ConnectionsController } from './controllers/connections.controller';
 import { AdminIntegrationsController } from './controllers/admin-integrations.controller';
 import { DynamicIntegrationsController } from './controllers/dynamic-integrations.controller';
 import { ChecksController } from './controllers/checks.controller';
+import { InternalChecksController } from './controllers/internal-checks.controller';
 import { VariablesController } from './controllers/variables.controller';
 import { TaskIntegrationsController } from './controllers/task-integrations.controller';
 import { WebhookController } from './controllers/webhook.controller';
@@ -20,6 +21,7 @@ import { ConnectionAuthTeardownService } from './services/connection-auth-teardo
 import { OAuthTokenRevocationService } from './services/oauth-token-revocation.service';
 import { DynamicManifestLoaderService } from './services/dynamic-manifest-loader.service';
 import { TaskIntegrationChecksService } from './services/task-integration-checks.service';
+import { ConnectionCheckRunnerService } from './services/connection-check-runner.service';
 import { ProviderRepository } from './repositories/provider.repository';
 import { ConnectionRepository } from './repositories/connection.repository';
 import { CredentialRepository } from './repositories/credential.repository';
@@ -42,6 +44,7 @@ import { GenericDeviceSyncService } from './services/generic-device-sync.service
     AdminIntegrationsController,
     DynamicIntegrationsController,
     ChecksController,
+    InternalChecksController,
     VariablesController,
     TaskIntegrationsController,
     WebhookController,
@@ -58,6 +61,7 @@ import { GenericDeviceSyncService } from './services/generic-device-sync.service
     ConnectionAuthTeardownService,
     DynamicManifestLoaderService,
     TaskIntegrationChecksService,
+    ConnectionCheckRunnerService,
     IntegrationSyncLoggerService,
     GenericEmployeeSyncService,
     GenericDeviceSyncService,

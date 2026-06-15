@@ -21,6 +21,7 @@ jest.mock('@trycompai/auth', () => ({
 jest.mock('@db', () => ({
   db: {
     task: { findUnique: jest.fn(), update: jest.fn() },
+    findingException: { findMany: jest.fn() },
   },
 }));
 
@@ -42,6 +43,9 @@ const mockedTask = db.task as unknown as {
 };
 const mockTaskFindUnique = mockedTask.findUnique;
 const mockTaskUpdate = mockedTask.update;
+const mockFindingExceptionFindMany = (
+  db as unknown as { findingException: { findMany: jest.Mock } }
+).findingException.findMany;
 
 const MANIFEST = {
   id: 'aws',
@@ -107,6 +111,44 @@ function failingResult() {
           ],
           passingResults: [],
           summary: { totalChecked: 1 },
+          logs: [],
+        },
+      },
+    ],
+  };
+}
+
+// One passing bucket (b1) + one failing finding (b2) — mirrors the real
+// customer case (e.g. 18 pass, 1 fails) used to test exception handling.
+function mixedResult() {
+  return {
+    results: [
+      {
+        checkId: 'aws-s3-encryption',
+        checkName: 'S3 — default encryption enabled',
+        status: 'failed',
+        durationMs: 10,
+        error: undefined,
+        result: {
+          findings: [
+            {
+              resourceType: 'aws-s3-bucket',
+              resourceId: 'b2',
+              title: 'no enc',
+              description: 'x',
+              severity: 'high',
+              remediation: 'fix',
+            },
+          ],
+          passingResults: [
+            {
+              resourceType: 'aws-s3-bucket',
+              resourceId: 'b1',
+              title: 'ok',
+              description: 'ok',
+            },
+          ],
+          summary: { totalChecked: 2 },
           logs: [],
         },
       },
@@ -180,6 +222,8 @@ describe('TaskIntegrationsController', () => {
       slug: 'aws',
     });
     mockedGetManifest.mockReturnValue(MANIFEST);
+    // Default: no active exceptions (existing tests behave as before).
+    mockFindingExceptionFindMany.mockResolvedValue([]);
     mockCheckRunRepository.create.mockImplementation(() =>
       Promise.resolve({ id: 'icr_x', startedAt: new Date() }),
     );
@@ -267,6 +311,83 @@ describe('TaskIntegrationsController', () => {
       expect(mockTaskUpdate).toHaveBeenCalledWith(
         expect.objectContaining({
           data: expect.objectContaining({ status: 'failed' }),
+        }),
+      );
+    });
+
+    it('does NOT fail the task when the only finding is excepted (goes done)', async () => {
+      mockConnectionRepository.findById.mockResolvedValue({
+        id: 'conn_1',
+        organizationId: 'org_1',
+        providerId: 'prov_aws',
+        status: 'active',
+      });
+      mockConnectionRepository.findActiveByProviderAndOrg.mockResolvedValue([
+        {
+          id: 'conn_1',
+          organizationId: 'org_1',
+          providerId: 'prov_aws',
+          metadata: {},
+          variables: {},
+        },
+      ]);
+      // 1 passing (b1) + 1 finding (b2); b2 is under an active exception.
+      mockedRunAllChecks.mockResolvedValue(mixedResult());
+      mockFindingExceptionFindMany.mockResolvedValue([
+        {
+          connectionId: 'conn_1',
+          checkId: 'aws-s3-encryption',
+          resourceId: 'b2',
+        },
+      ]);
+
+      const result = await controller.runCheckForTask('task_1', 'org_1', body);
+
+      // The raw finding is still counted/persisted, but it must not fail the
+      // task — matching the Cloud Tests view + the scheduled run.
+      expect(result.totalFindings).toBe(1);
+      expect(result.taskStatus).toBe('done');
+      expect(mockTaskUpdate).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({ status: 'done' }),
+        }),
+      );
+    });
+
+    it('goes done when the only finding is excepted and there are NO passing results', async () => {
+      mockConnectionRepository.findById.mockResolvedValue({
+        id: 'conn_1',
+        organizationId: 'org_1',
+        providerId: 'prov_aws',
+        status: 'active',
+      });
+      mockConnectionRepository.findActiveByProviderAndOrg.mockResolvedValue([
+        {
+          id: 'conn_1',
+          organizationId: 'org_1',
+          providerId: 'prov_aws',
+          metadata: {},
+          variables: {},
+        },
+      ]);
+      // Only a failing finding (b2), zero passing results; b2 is excepted.
+      mockedRunAllChecks.mockResolvedValue(failingResult());
+      mockFindingExceptionFindMany.mockResolvedValue([
+        {
+          connectionId: 'conn_1',
+          checkId: 'aws-s3-encryption',
+          resourceId: 'b2',
+        },
+      ]);
+
+      const result = await controller.runCheckForTask('task_1', 'org_1', body);
+
+      // No effective failures + no passing — must still transition to done, not
+      // stay stuck in the prior status.
+      expect(result.taskStatus).toBe('done');
+      expect(mockTaskUpdate).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({ status: 'done' }),
         }),
       );
     });
@@ -394,6 +515,99 @@ describe('TaskIntegrationsController', () => {
         connectionId: 'conn_2',
         connectionLabel: 'AWS 222222222222',
       });
+    });
+
+    it('marks excepted results and drops them from the failed count + status', async () => {
+      mockCheckRunRepository.findLatestPerConnectionAndCheckByTask.mockResolvedValue(
+        [
+          {
+            id: 'icr_1',
+            checkId: 'aws-s3-public-access',
+            checkName: 'S3 public access',
+            status: 'failed',
+            startedAt: new Date(),
+            completedAt: new Date(),
+            durationMs: 10,
+            totalChecked: 1,
+            passedCount: 0,
+            failedCount: 1,
+            errorMessage: null,
+            logs: [],
+            connectionId: 'conn_1',
+            createdAt: new Date(),
+            results: [
+              {
+                id: 'res_1',
+                passed: false,
+                resourceType: 'aws-s3-bucket',
+                resourceId: 'reports-bucket',
+                title: 'Public access not fully blocked: reports-bucket',
+                description: 'x',
+                severity: 'high',
+                remediation: 'fix',
+                evidence: {},
+                collectedAt: new Date(),
+              },
+            ],
+            connection: {
+              id: 'conn_1',
+              metadata: { connectionName: 'PRIMER' },
+              provider: { slug: 'aws', name: 'AWS' },
+            },
+          },
+        ],
+      );
+      mockFindingExceptionFindMany.mockResolvedValue([
+        {
+          connectionId: 'conn_1',
+          checkId: 'aws-s3-public-access',
+          resourceId: 'reports-bucket',
+        },
+      ]);
+
+      const { runs } = await controller.getTaskCheckRuns('task_1', 'org_1');
+
+      expect(runs[0].failedCount).toBe(0);
+      expect(runs[0].exceptedCount).toBe(1);
+      expect(runs[0].status).toBe('success');
+      expect(runs[0].results[0].excepted).toBe(true);
+    });
+
+    it('keeps an execution-error run as failed (no findings, not excepted)', async () => {
+      // A failed run with zero findings is an execution error, not an
+      // all-excepted run — it must NOT be rewritten to success.
+      mockCheckRunRepository.findLatestPerConnectionAndCheckByTask.mockResolvedValue(
+        [
+          {
+            id: 'icr_err',
+            checkId: 'aws-s3-public-access',
+            checkName: 'S3 public access',
+            status: 'failed',
+            startedAt: new Date(),
+            completedAt: new Date(),
+            durationMs: 10,
+            totalChecked: 0,
+            passedCount: 0,
+            failedCount: 0,
+            errorMessage: 'Could not assume AWS role',
+            logs: [],
+            connectionId: 'conn_1',
+            createdAt: new Date(),
+            results: [],
+            connection: {
+              id: 'conn_1',
+              metadata: { connectionName: 'PRIMER' },
+              provider: { slug: 'aws', name: 'AWS' },
+            },
+          },
+        ],
+      );
+      mockFindingExceptionFindMany.mockResolvedValue([]);
+
+      const { runs } = await controller.getTaskCheckRuns('task_1', 'org_1');
+
+      expect(runs[0].status).toBe('failed');
+      expect(runs[0].exceptedCount).toBe(0);
     });
 
     it('rejects a task that does not belong to the caller’s org (no cross-tenant leak)', async () => {

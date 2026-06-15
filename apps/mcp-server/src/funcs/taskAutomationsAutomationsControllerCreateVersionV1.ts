@@ -3,7 +3,7 @@
  */
 
 import { CompAiCore } from "../core.js";
-import { encodeSimple } from "../lib/encodings.js";
+import { encodeJSON, encodeSimple } from "../lib/encodings.js";
 import { compactMap } from "../lib/primitives.js";
 import { safeParse } from "../lib/schemas.js";
 import { RequestOptions } from "../lib/sdks.js";
@@ -85,7 +85,7 @@ async function $do(
     return [parsed$, { status: "invalid" }];
   }
   const payload$ = parsed$.value;
-  const body$ = null;
+  const body$ = encodeJSON("body", payload$.body, { explode: true });
 
   const pathParams$ = {
     automationId: encodeSimple("automationId", payload$.automationId, {
@@ -104,6 +104,7 @@ async function $do(
   );
 
   const headers$ = new Headers(compactMap({
+    "Content-Type": "application/json",
     Accept: "*/*",
   }));
   const securityInput = await extractSecurity(client$._options.security);

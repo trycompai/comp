@@ -2,6 +2,7 @@ import { HttpException, HttpStatus } from '@nestjs/common';
 import { db } from '@db';
 import { validate } from 'class-validator';
 import { createHash } from 'node:crypto';
+import { PDFDocument } from 'pdf-lib';
 import type { BillingEntitlementsService } from '../billing/billing-entitlements.service';
 import type { CredentialVaultService } from '../integration-platform/services/credential-vault.service';
 import { CreatePenetrationTestDto } from './dto/create-penetration-test.dto';
@@ -45,6 +46,9 @@ jest.mock('@db', () => ({
       findUnique: jest.fn(),
       findMany: jest.fn(),
     },
+    securityPenetrationTestFindingContext: {
+      findMany: jest.fn(),
+    },
     secret: {
       upsert: jest.fn(),
       findUnique: jest.fn(),
@@ -63,6 +67,9 @@ type MockDb = {
   securityPenetrationTestRun: {
     upsert: jest.Mock;
     findUnique: jest.Mock;
+    findMany: jest.Mock;
+  };
+  securityPenetrationTestFindingContext: {
     findMany: jest.Mock;
   };
   secret: {
@@ -139,6 +146,10 @@ describe('SecurityPenetrationTestsService', () => {
     mockedDb.securityPenetrationTestRun.findMany.mockResolvedValue([
       { providerRunId: 'run_123' },
     ]);
+    // Default: no stored finding-context notes for the target.
+    mockedDb.securityPenetrationTestFindingContext.findMany.mockResolvedValue(
+      [],
+    );
     mockedDb.secret.upsert.mockResolvedValue({});
     mockedDb.secret.findUnique.mockResolvedValue({
       id: 'sec_default',
@@ -231,6 +242,108 @@ describe('SecurityPenetrationTestsService', () => {
     );
     expect(mockedDb.secret.upsert).not.toHaveBeenCalled();
     expect(mockedDb.securityPenetrationTestRun.upsert).toHaveBeenCalledTimes(1);
+  });
+
+  it('omits additionalContext when there is no context to send', async () => {
+    fetchMock.mockResolvedValueOnce(
+      new Response(JSON.stringify({ id: 'run_456', status: 'provisioning' }), {
+        status: 200,
+      }),
+    );
+
+    await service.createReport('org_123', {
+      targetUrl: 'https://app.example.com',
+    });
+
+    const requestBody = await getRequestBody();
+    expect(requestBody).not.toHaveProperty('additionalContext');
+  });
+
+  it('passes user-provided additional context to the provider', async () => {
+    fetchMock.mockResolvedValueOnce(
+      new Response(JSON.stringify({ id: 'run_456', status: 'provisioning' }), {
+        status: 200,
+      }),
+    );
+
+    await service.createReport('org_123', {
+      targetUrl: 'https://app.example.com',
+      additionalContext: 'We deployed fixes for the auth findings last week.',
+    });
+
+    const requestBody = await getRequestBody();
+    expect(requestBody.additionalContext).toBe(
+      'We deployed fixes for the auth findings last week.',
+    );
+  });
+
+  it('creates the run even when the notes lookup fails (best-effort context)', async () => {
+    fetchMock.mockResolvedValueOnce(
+      new Response(JSON.stringify({ id: 'run_456', status: 'provisioning' }), {
+        status: 200,
+      }),
+    );
+    // e.g. transient outage, or the table missing mid-deploy before the
+    // migration has run — must never block pentest creation.
+    mockedDb.securityPenetrationTestFindingContext.findMany.mockRejectedValue(
+      new Error('relation does not exist'),
+    );
+
+    const result = await service.createReport('org_123', {
+      targetUrl: 'https://app.example.com',
+      additionalContext: 'User-typed context.',
+    });
+
+    expect(result.id).toBe('run_456');
+    const requestBody = await getRequestBody();
+    expect(requestBody.additionalContext).toBe('User-typed context.');
+  });
+
+  it('appends stored finding-context notes for the normalized target to additionalContext', async () => {
+    fetchMock.mockResolvedValueOnce(
+      new Response(JSON.stringify({ id: 'run_456', status: 'provisioning' }), {
+        status: 200,
+      }),
+    );
+    mockedDb.securityPenetrationTestFindingContext.findMany.mockResolvedValue([
+      {
+        issueTitle: 'appConfiguration read access',
+        context:
+          'Accepted by design — collection holds non-secret bootstrap config.',
+      },
+      {
+        issueTitle: 'Unverified email access',
+        context: 'Email verification is now enabled in the tested environment.',
+      },
+    ]);
+
+    await service.createReport('org_123', {
+      // Mixed-case host + trailing slash — the stored-notes lookup must
+      // normalize before matching rows keyed by canonical target URL.
+      targetUrl: 'https://App.example.com/',
+      additionalContext: 'Focus on the three previously reported findings.',
+    });
+
+    expect(
+      mockedDb.securityPenetrationTestFindingContext.findMany,
+    ).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: {
+          organizationId: 'org_123',
+          targetUrl: 'https://app.example.com',
+        },
+      }),
+    );
+
+    const requestBody = await getRequestBody();
+    const additionalContext = requestBody.additionalContext as string;
+    expect(additionalContext).toContain(
+      'Focus on the three previously reported findings.',
+    );
+    expect(additionalContext).toContain('"appConfiguration read access"');
+    expect(additionalContext).toContain(
+      'Email verification is now enabled in the tested environment.',
+    );
   });
 
   it('accepts valid scan profile fields in the create DTO', async () => {
@@ -694,6 +807,138 @@ describe('SecurityPenetrationTestsService', () => {
     );
     expect(output.buffer).toEqual(Buffer.from(fixtureContent, 'utf-8'));
     expect(output.contentType).toBe('text/markdown; charset=utf-8');
+  });
+
+  it('appends customer context notes to the markdown report', async () => {
+    fetchMock.mockResolvedValueOnce(
+      new Response(
+        JSON.stringify({
+          id: 'run_notes',
+          targetUrl: 'https://app.example.com',
+          status: 'completed',
+          createdAt: '2026-06-01T00:00:00.000Z',
+          updatedAt: '2026-06-01T00:00:00.000Z',
+        }),
+        { status: 200 },
+      ),
+    );
+    fetchMock.mockResolvedValueOnce(
+      new Response(JSON.stringify({ markdown: '# Report\n\nBody.' }), {
+        status: 200,
+      }),
+    );
+    mockedDb.securityPenetrationTestFindingContext.findMany.mockResolvedValue([
+      {
+        issueTitle: 'appConfiguration read access',
+        context: 'Accepted by design.',
+        updatedAt: new Date('2026-06-11T00:00:00.000Z'),
+      },
+    ]);
+
+    const output = await service.getReportOutput('org_123', 'run_notes');
+    const markdown = output.buffer.toString('utf-8');
+
+    expect(markdown.startsWith('# Report\n\nBody.')).toBe(true);
+    expect(markdown).toContain(
+      '## Appendix: Customer context & management responses',
+    );
+    expect(markdown).toContain('Accepted by design.');
+  });
+
+  it('serves the original report when the notes lookup fails', async () => {
+    fetchMock.mockResolvedValueOnce(
+      new Response(
+        JSON.stringify({
+          id: 'run_notes_err',
+          targetUrl: 'https://app.example.com',
+          status: 'completed',
+          createdAt: '2026-06-01T00:00:00.000Z',
+          updatedAt: '2026-06-01T00:00:00.000Z',
+        }),
+        { status: 200 },
+      ),
+    );
+    fetchMock.mockResolvedValueOnce(
+      new Response(JSON.stringify({ markdown: '# Report' }), { status: 200 }),
+    );
+    mockedDb.securityPenetrationTestFindingContext.findMany.mockRejectedValue(
+      new Error('db unavailable'),
+    );
+
+    const output = await service.getReportOutput('org_123', 'run_notes_err');
+
+    expect(output.buffer.toString('utf-8')).toBe('# Report');
+  });
+
+  it('serves the original PDF bytes when the provider PDF cannot be parsed', async () => {
+    const bogusPdf = Buffer.from('definitely not a pdf');
+    fetchMock.mockResolvedValueOnce(
+      new Response(
+        JSON.stringify({
+          id: 'run_pdf_bogus',
+          targetUrl: 'https://app.example.com',
+          status: 'completed',
+          createdAt: '2026-06-01T00:00:00.000Z',
+          updatedAt: '2026-06-01T00:00:00.000Z',
+        }),
+        { status: 200 },
+      ),
+    );
+    fetchMock.mockResolvedValueOnce(
+      new Response(bogusPdf, {
+        status: 200,
+        headers: { 'Content-Type': 'application/pdf' },
+      }),
+    );
+    mockedDb.securityPenetrationTestFindingContext.findMany.mockResolvedValue([
+      {
+        issueTitle: 'Some finding',
+        context: 'Some note.',
+        updatedAt: new Date('2026-06-11T00:00:00.000Z'),
+      },
+    ]);
+
+    const output = await service.getReportPdf('org_123', 'run_pdf_bogus');
+
+    expect(output.buffer).toEqual(bogusPdf);
+    expect(output.contentType).toBe('application/pdf');
+  });
+
+  it('appends appendix pages to the PDF report when notes exist', async () => {
+    const baseDoc = await PDFDocument.create();
+    baseDoc.addPage([595, 842]);
+    const basePdf = Buffer.from(await baseDoc.save());
+
+    fetchMock.mockResolvedValueOnce(
+      new Response(
+        JSON.stringify({
+          id: 'run_pdf_notes',
+          targetUrl: 'https://app.example.com',
+          status: 'completed',
+          createdAt: '2026-06-01T00:00:00.000Z',
+          updatedAt: '2026-06-01T00:00:00.000Z',
+        }),
+        { status: 200 },
+      ),
+    );
+    fetchMock.mockResolvedValueOnce(
+      new Response(basePdf, {
+        status: 200,
+        headers: { 'Content-Type': 'application/pdf' },
+      }),
+    );
+    mockedDb.securityPenetrationTestFindingContext.findMany.mockResolvedValue([
+      {
+        issueTitle: 'appConfiguration read access',
+        context: 'Accepted by design.',
+        updatedAt: new Date('2026-06-11T00:00:00.000Z'),
+      },
+    ]);
+
+    const output = await service.getReportPdf('org_123', 'run_pdf_notes');
+
+    const merged = await PDFDocument.load(output.buffer);
+    expect(merged.getPageCount()).toBeGreaterThanOrEqual(2);
   });
 
   it('falls back to markdown content type when response omits content-type', async () => {

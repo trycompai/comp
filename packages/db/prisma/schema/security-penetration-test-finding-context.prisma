@@ -1,0 +1,31 @@
+/// Customer-provided context on a pentest finding ("accepted by design
+/// because…", "fixed on 2026-06-01 via…"). Keyed by the provider's issue id
+/// so each finding carries at most one context note per organization.
+///
+/// On every new run for the same target URL, the API aggregates these notes
+/// into the provider's `additionalContext` field so retests are informed by
+/// the customer's explanations instead of blindly re-flagging the same
+/// findings (see SecurityPenetrationTestsService.createReport).
+model SecurityPenetrationTestFindingContext {
+  id              String @id @default(dbgenerated("generate_prefixed_cuid('ptfc'::text)"))
+  organizationId  String @map("organization_id")
+  /// Provider (Maced) issue id the note is attached to.
+  providerIssueId String @map("provider_issue_id")
+  /// Provider run the issue belonged to when the note was written.
+  providerRunId   String @map("provider_run_id")
+  /// Normalized target URL of that run — aggregation key for retests.
+  targetUrl       String @map("target_url")
+  /// Snapshot of the issue title so the retest prompt (and the UI) can
+  /// reference the finding even after the provider prunes old runs.
+  issueTitle      String @map("issue_title")
+  context         String
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@unique([organizationId, providerIssueId])
+  @@index([organizationId, targetUrl])
+  @@map("security_penetration_test_finding_contexts")
+}

@@ -1,5 +1,4 @@
 openapi: "3.0.0"
-x-speakeasy-timeout: 120000
 paths:
   /v1/organization:
     get:
@@ -8419,6 +8418,12 @@ paths:
           description: "Automation ID"
           schema:
             type: "string"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateVersionDto"
       responses:
         "201":
           description: ""
@@ -8608,8 +8613,8 @@ paths:
       x-speakeasy-mcp:
         name: "export-task-evidence-zip"
   /v1/evidence-export/all:
-    get:
-      description: "Export all organization evidence as ZIP (Auditor only) in Comp AI. Export all organization evidence for an auditor review package."
+    post:
+      description: "Trigger bulk evidence export (Auditor only) in Comp AI. Export all organization evidence for an auditor review package."
       operationId: "AuditorEvidenceExportController_exportAllEvidence_v1"
       parameters:
         - name: "includeJson"
@@ -8619,24 +8624,20 @@ paths:
           schema:
             type: "boolean"
       responses:
-        "200":
-          description: "ZIP file generated successfully"
-          content:
-            application/zip: {}
-        "403":
-          description: "Access denied - Auditor role required"
+        "201":
+          description: "Export job started"
       security:
         - apikey: []
-      summary: "Export all organization evidence as ZIP (Auditor only)"
+      summary: "Trigger bulk evidence export (Auditor only)"
       tags:
         - "Evidence Export (Auditor)"
       x-mint:
         metadata:
-          title: "Export all organization evidence as ZIP | Comp AI API"
-          sidebarTitle: "Export all organization evidence as ZIP (Auditor only)"
-          description: "Export all organization evidence as ZIP (Auditor only) in Comp AI. Export all organization evidence for an auditor review package."
-          og:title: "Export all organization evidence as ZIP | Comp AI API"
-          og:description: "Export all organization evidence as ZIP (Auditor only) in Comp AI. Export all organization evidence for an auditor review package."
+          title: "Trigger bulk evidence export (Auditor only) | Comp AI API"
+          sidebarTitle: "Trigger bulk evidence export (Auditor only)"
+          description: "Trigger bulk evidence export (Auditor only) in Comp AI. Export all organization evidence for an auditor review package."
+          og:title: "Trigger bulk evidence export (Auditor only) | Comp AI API"
+          og:description: "Trigger bulk evidence export (Auditor only) in Comp AI. Export all organization evidence for an auditor review package."
       x-speakeasy-mcp:
         name: "export-all-evidence"
   /v1/comments:
@@ -9285,6 +9286,34 @@ paths:
           og:description: "Update allowed domains for the trust portal in Comp AI. Configure the live Trust Center, custom domain, public overview, FAQs, compliance resources."
       x-speakeasy-mcp:
         name: "update-allowed-domains"
+  /v1/trust-portal/settings/allowed-emails:
+    put:
+      operationId: "TrustPortalController_updateAllowedEmails_v1"
+      parameters: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateAllowedEmailsDto"
+      responses:
+        "200":
+          description: ""
+      security:
+        - apikey: []
+      summary: "Update allowed emails for the trust portal"
+      tags:
+        - "Trust Portal"
+      description: "Update allowed emails for the trust portal in Comp AI. Configure the live Trust Center, custom domain, public overview, FAQs, compliance resources, documents, links, and vendor disclosures."
+      x-mint:
+        metadata:
+          title: "Update allowed emails for the trust portal | Comp AI API"
+          sidebarTitle: "Update allowed emails for the trust portal"
+          description: "Update allowed emails for the trust portal in Comp AI. Configure the live Trust Center, custom domain, public overview, FAQs, compliance resources."
+          og:title: "Update allowed emails for the trust portal | Comp AI API"
+          og:description: "Update allowed emails for the trust portal in Comp AI. Configure the live Trust Center, custom domain, public overview, FAQs, compliance resources."
+      x-speakeasy-mcp:
+        name: "update-allowed-emails"
   /v1/trust-portal/settings/frameworks:
     put:
       operationId: "TrustPortalController_updateFrameworks_v1"
@@ -9307,6 +9336,75 @@ paths:
           og:description: "Update trust portal framework settings in Comp AI. Configure the live Trust Center, custom domain, public overview, FAQs, compliance resources, documents."
       x-speakeasy-mcp:
         name: "update-frameworks"
+  /v1/trust-portal/custom-frameworks:
+    get:
+      operationId: "TrustPortalController_listCustomFrameworks_v1"
+      parameters: []
+      responses:
+        "200":
+          description: ""
+      security:
+        - apikey: []
+      summary: "List org-authored custom frameworks with their trust portal selection"
+      tags:
+        - "Trust Portal"
+      description: "List org-authored custom frameworks with their trust portal selection in Comp AI. Configure the live Trust Center, custom domain, public overview, FAQs, compliance resources, documents, links, and vendor disclosures."
+      x-mint:
+        metadata:
+          title: "List org-authored custom frameworks with | Comp AI API"
+          sidebarTitle: "List org-authored custom frameworks with their trust portal selection"
+          description: "List org-authored custom frameworks with their trust portal selection in Comp AI. Configure the live Trust Center, custom domain, public overview, FAQs."
+          og:title: "List org-authored custom frameworks with | Comp AI API"
+          og:description: "List org-authored custom frameworks with their trust portal selection in Comp AI. Configure the live Trust Center, custom domain, public overview, FAQs."
+      x-speakeasy-mcp:
+        name: "list-custom-frameworks"
+    put:
+      operationId: "TrustPortalController_updateCustomFramework_v1"
+      parameters: []
+      requestBody:
+        required: true
+        description: "At least one of `enabled` or `status` must be provided."
+        content:
+          application/json:
+            schema:
+              type: "object"
+              required:
+                - "customFrameworkId"
+              anyOf:
+                - required:
+                    - "enabled"
+                - required:
+                    - "status"
+              properties:
+                customFrameworkId:
+                  type: "string"
+                  minLength: 1
+                enabled:
+                  type: "boolean"
+                status:
+                  type: "string"
+                  enum:
+                    - "started"
+                    - "in_progress"
+                    - "compliant"
+      responses:
+        "200":
+          description: ""
+      security:
+        - apikey: []
+      summary: "Enable/disable a custom framework on the trust portal and set its status"
+      tags:
+        - "Trust Portal"
+      description: "Enable/disable a custom framework on the trust portal and set its status in Comp AI. Configure the live Trust Center, custom domain, public overview, FAQs, compliance resources, documents, links, and vendor disclosures."
+      x-mint:
+        metadata:
+          title: "Enable/disable a custom framework on the | Comp AI API"
+          sidebarTitle: "Enable/disable a custom framework on the trust portal and set its status"
+          description: "Enable/disable a custom framework on the trust portal and set its status in Comp AI. Configure the live Trust Center, custom domain, public overview, FAQs."
+          og:title: "Enable/disable a custom framework on the | Comp AI API"
+          og:description: "Enable/disable a custom framework on the trust portal and set its status in Comp AI. Configure the live Trust Center, custom domain, public overview, FAQs."
+      x-speakeasy-mcp:
+        name: "update-custom-framework"
   /v1/trust-portal/overview:
     post:
       operationId: "TrustPortalController_updateOverview_v1"
@@ -10026,6 +10124,32 @@ paths:
           og:description: "List published vendors and subprocessors for an organization Trust Center so reviewers can inspect third-party posture."
       x-speakeasy-mcp:
         name: "get-public-vendors"
+  /v1/trust-access/{friendlyUrl}/custom-frameworks:
+    get:
+      description: "Get org-authored custom frameworks shown on a trust portal in Comp AI. Manage external Trust Center access requests, NDA signing, grants, tokenized document downloads, public FAQs, and reviewer access."
+      operationId: "TrustAccessController_getPublicCustomFrameworks_v1"
+      parameters:
+        - name: "friendlyUrl"
+          required: true
+          in: "path"
+          description: "Trust Portal friendly URL or Organization ID"
+          schema:
+            type: "string"
+      responses:
+        "200":
+          description: "Custom frameworks retrieved successfully"
+      summary: "Get org-authored custom frameworks shown on a trust portal"
+      tags:
+        - "Trust Access"
+      x-mint:
+        metadata:
+          title: "Get org-authored custom frameworks shown on a | Comp AI API"
+          sidebarTitle: "Get org-authored custom frameworks shown on a trust portal"
+          description: "Get org-authored custom frameworks shown on a trust portal in Comp AI. Manage external Trust Center access requests, NDA signing, grants, tokenized document."
+          og:title: "Get org-authored custom frameworks shown on a | Comp AI API"
+          og:description: "Get org-authored custom frameworks shown on a trust portal in Comp AI. Manage external Trust Center access requests, NDA signing, grants, tokenized document."
+      x-speakeasy-mcp:
+        name: "get-public-custom-frameworks"
   /v1/findings:
     get:
       operationId: "FindingsController_listFindings_v1"
@@ -10090,6 +10214,7 @@ paths:
               - "employee-performance-evaluation"
               - "network-diagram"
               - "tabletop-exercise"
+              - "account-types"
             type: "string"
         - name: "policyId"
           required: false
@@ -13138,6 +13263,31 @@ paths:
           og:description: "Resolve the \"About this check\" description for a finding (AI-cached for AWS; provider-derived for GCP/Azure) in Comp AI. Run AWS, Azure, and GCP cloud."
       x-speakeasy-mcp:
         name: "get-check-definition"
+  /v1/cloud-security/resolve-session/{connectionId}:
+    post:
+      operationId: "CloudSecurityController_resolveSession_v1"
+      parameters:
+        - name: "connectionId"
+          required: true
+          in: "path"
+          schema:
+            type: "string"
+      responses:
+        "201":
+          description: ""
+      summary: "Resolve short-lived AWS credentials for a connection (internal only)"
+      tags:
+        - "CloudSecurity"
+      description: "Resolve short-lived AWS credentials for a connection (internal only) in Comp AI. Run AWS, Azure, and GCP cloud security scans, detect enabled services, review findings, and connect cloud posture results to compliance work."
+      x-mint:
+        metadata:
+          title: "Resolve short-lived AWS credentials for a | Comp AI API"
+          sidebarTitle: "Resolve short-lived AWS credentials for a connection (internal only)"
+          description: "Resolve short-lived AWS credentials for a connection (internal only) in Comp AI. Run AWS, Azure, and GCP cloud security scans, detect enabled services."
+          og:title: "Resolve short-lived AWS credentials for a | Comp AI API"
+          og:description: "Resolve short-lived AWS credentials for a connection (internal only) in Comp AI. Run AWS, Azure, and GCP cloud security scans, detect enabled services."
+      x-speakeasy-mcp:
+        name: "resolve-session"
   /v1/cloud-security/scan/{connectionId}:
     post:
       operationId: "CloudSecurityController_scan_v1"
@@ -15331,11 +15481,6 @@ paths:
           schema:
             example: "ctl_abc123def456"
             type: "string"
-        - name: "frameworkInstanceId"
-          required: true
-          in: "query"
-          schema:
-            type: "string"
         - name: "formType"
           required: true
           in: "path"
@@ -15354,6 +15499,12 @@ paths:
               - "employee_performance_evaluation"
               - "network_diagram"
               - "tabletop_exercise"
+              - "account_types"
+            type: "string"
+        - name: "frameworkInstanceId"
+          required: true
+          in: "query"
+          schema:
             type: "string"
       responses:
         "200":
@@ -15636,6 +15787,115 @@ paths:
           og:description: "Get penetration test PDF in Comp AI. Create AI-powered penetration test runs, track progress, inspect findings and events, and download markdown or PDF."
       x-speakeasy-mcp:
         name: "get-pdf"
+  /v1/pentest-finding-contexts:
+    get:
+      description: "Returns the customer-written context notes attached to pentest findings for a target URL. These notes are shared with the testing agent on future scans of the same target so retests are informed, not blind."
+      operationId: "PentestFindingContextsController_list_v1"
+      parameters:
+        - name: "X-Organization-Id"
+          in: "header"
+          description: "Organization ID (required for session auth, optional for API key auth)"
+          required: false
+          schema:
+            type: "string"
+        - name: "targetUrl"
+          required: true
+          in: "query"
+          description: "Target URL the notes are attached to"
+          schema:
+            type: "string"
+      responses:
+        "200":
+          description: "Context notes returned"
+      security:
+        - apikey: []
+      summary: "List pentest finding context notes"
+      tags:
+        - "Security Penetration Tests"
+      x-speakeasy-mcp:
+        name: "list-pentest-finding-contexts"
+      x-mint:
+        metadata:
+          title: "List pentest finding context notes | Comp AI API"
+          sidebarTitle: "List pentest finding context notes"
+          description: "Returns the customer-written context notes attached to pentest findings for a target URL. These notes are shared with the testing agent on future scans of."
+          og:title: "List pentest finding context notes | Comp AI API"
+          og:description: "Returns the customer-written context notes attached to pentest findings for a target URL. These notes are shared with the testing agent on future scans of."
+  /v1/pentest-finding-contexts/{issueId}:
+    put:
+      description: "Saves a customer context note on a pentest finding, e.g. an accepted-by-design rationale or remediation details. Future scans of the same target pass the note to the testing agent so the issue is retested with that context."
+      operationId: "PentestFindingContextsController_upsert_v1"
+      parameters:
+        - name: "X-Organization-Id"
+          in: "header"
+          description: "Organization ID (required for session auth, optional for API key auth)"
+          required: false
+          schema:
+            type: "string"
+        - name: "issueId"
+          required: true
+          in: "path"
+          schema:
+            type: "string"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpsertFindingContextDto"
+      responses:
+        "200":
+          description: "Context note saved"
+        "404":
+          description: "Run or finding not found"
+      security:
+        - apikey: []
+      summary: "Add context to a pentest finding"
+      tags:
+        - "Security Penetration Tests"
+      x-speakeasy-mcp:
+        name: "set-pentest-finding-context"
+      x-mint:
+        metadata:
+          title: "Add context to a pentest finding | Comp AI API"
+          sidebarTitle: "Add context to a pentest finding"
+          description: "Saves a customer context note on a pentest finding, e.g. an accepted-by-design rationale or remediation details. Future scans of the same target pass the."
+          og:title: "Add context to a pentest finding | Comp AI API"
+          og:description: "Saves a customer context note on a pentest finding, e.g. an accepted-by-design rationale or remediation details. Future scans of the same target pass the."
+    delete:
+      description: "Deletes the customer context note attached to a pentest finding so future scans of the target no longer receive it from the testing agent briefing."
+      operationId: "PentestFindingContextsController_remove_v1"
+      parameters:
+        - name: "X-Organization-Id"
+          in: "header"
+          description: "Organization ID (required for session auth, optional for API key auth)"
+          required: false
+          schema:
+            type: "string"
+        - name: "issueId"
+          required: true
+          in: "path"
+          schema:
+            type: "string"
+      responses:
+        "200":
+          description: "Context note deleted"
+        "404":
+          description: "No context found for finding"
+      security:
+        - apikey: []
+      summary: "Remove context from a pentest finding"
+      tags:
+        - "Security Penetration Tests"
+      x-speakeasy-mcp:
+        name: "delete-pentest-finding-context"
+      x-mint:
+        metadata:
+          title: "Remove context from a pentest finding | Comp AI API"
+          sidebarTitle: "Remove context from a pentest finding"
+          description: "Deletes the customer context note attached to a pentest finding so future scans of the target no longer receive it from the testing agent briefing."
+          og:title: "Remove context from a pentest finding | Comp AI API"
+          og:description: "Deletes the customer context note attached to a pentest finding so future scans of the target no longer receive it from the testing agent briefing."
   /v1/offboarding-checklist/pending:
     get:
       description: "Lists members whose offboarding checklist is still incomplete, with their outstanding items, so you can track and finish departing-employee offboarding."
@@ -17952,14 +18212,20 @@ components:
     CreateVersionDto:
       type: "object"
       properties:
-        sourceVersionId:
+        version:
+          type: "number"
+          description: "Version number for this published script"
+          example: 1
+        scriptKey:
           type: "string"
-          description: "Optional version ID to base the new version on"
-          example: "pv_abc123def456"
+          description: "S3 key of the already-generated & published automation script (returned by the publish step)."
+          example: "org_abc123/tsk_abc123/aut_abc123.v1.js"
         changelog:
           type: "string"
-          description: "Optional changelog to associate with the new version"
-          example: "Initial draft for quarterly updates"
+          description: "Optional changelog describing this version"
+      required:
+        - "version"
+        - "scriptKey"
     UpdateVersionContentDto:
       type: "object"
       properties:
@@ -18327,7 +18593,7 @@ components:
           example: "org_6914cd0e16e4c7dccbb54426"
         framework:
           type: "string"
-          description: "Compliance framework identifier"
+          description: "Native compliance framework identifier"
           enum:
             - "iso_27001"
             - "iso_42001"
@@ -18342,6 +18608,10 @@ components:
             - "pipeda"
             - "ccpa"
           example: "iso_27001"
+        customFrameworkId:
+          type: "string"
+          description: "Org-authored custom framework ID (alternative to `framework`)"
+          example: "cfrm_6914cd0e16e4c7dccbb54426"
         fileName:
           type: "string"
           description: "Original file name (PDF only)"
@@ -18355,7 +18625,6 @@ components:
           description: "Base64 encoded PDF content"
       required:
         - "organizationId"
-        - "framework"
         - "fileName"
         - "fileType"
         - "fileData"
@@ -18377,6 +18646,12 @@ components:
             - "iso_9001"
             - "pipeda"
             - "ccpa"
+          description: "Set for native-framework certificates; null for custom ones"
+          nullable: true
+        customFrameworkId:
+          type: "object"
+          description: "Set for custom-framework certificates; null for native ones"
+          nullable: true
         fileName:
           type: "string"
         fileSize:
@@ -18387,6 +18662,7 @@ components:
           description: "ISO timestamp when the certificate was last updated"
       required:
         - "framework"
+        - "customFrameworkId"
         - "fileName"
         - "fileSize"
         - "updatedAt"
@@ -18399,7 +18675,7 @@ components:
           example: "org_6914cd0e16e4c7dccbb54426"
         framework:
           type: "string"
-          description: "Compliance framework identifier"
+          description: "Native compliance framework identifier"
           enum:
             - "iso_27001"
             - "iso_42001"
@@ -18414,9 +18690,12 @@ components:
             - "pipeda"
             - "ccpa"
           example: "iso_27001"
+        customFrameworkId:
+          type: "string"
+          description: "Org-authored custom framework ID (alternative to `framework`)"
+          example: "cfrm_6914cd0e16e4c7dccbb54426"
       required:
         - "organizationId"
-        - "framework"
     ComplianceResourceUrlResponseDto:
       type: "object"
       properties:
@@ -18517,6 +18796,18 @@ components:
           example: "org_6914cd0e16e4c7dccbb54426"
       required:
         - "organizationId"
+    UpdateAllowedEmailsDto:
+      type: "object"
+      properties:
+        emails:
+          description: "Email addresses that bypass NDA signing for trust portal access. Replaces the full list; send an empty array to clear it."
+          example:
+            - "person@example.com"
+          type: "array"
+          items:
+            type: "string"
+      required:
+        - "emails"
     CreateAccessRequestDto:
       type: "object"
       properties:
@@ -18588,6 +18879,7 @@ components:
             - "employee-performance-evaluation"
             - "network-diagram"
             - "tabletop-exercise"
+            - "account-types"
         policyId:
           type: "string"
           description: "Policy ID"
@@ -19498,6 +19790,7 @@ components:
               - "employee_performance_evaluation"
               - "network_diagram"
               - "tabletop_exercise"
+              - "account_types"
       required:
         - "name"
         - "description"
@@ -19566,6 +19859,7 @@ components:
               - "employee_performance_evaluation"
               - "network_diagram"
               - "tabletop_exercise"
+              - "account_types"
       required:
         - "formTypes"
     CreatePenetrationTestDto:
@@ -19579,8 +19873,27 @@ components:
           type: "string"
           description: "Repository URL containing the target application code"
           example: "https://github.com/org/repo"
+        additionalContext:
+          type: "string"
+          description: "Free-text context shared with the testing agent, e.g. remediation notes or accepted-by-design explanations from a previous run. Saved per-finding context notes for the same target are appended automatically. Max 4000 characters."
+          maxLength: 4000
       required:
         - "targetUrl"
+    UpsertFindingContextDto:
+      type: "object"
+      properties:
+        runId:
+          type: "string"
+          description: "Penetration test run ID the finding belongs to"
+          example: "pentest-abc123"
+        context:
+          type: "string"
+          description: "Context for the finding, e.g. an accepted-by-design rationale or remediation details. Shared with the testing agent on future scans of the same target. Max 2000 characters."
+          example: "Read access to appConfiguration is accepted by design: the collection only holds non-secret bootstrap configuration and write access is restricted to privileged users."
+          maxLength: 2000
+      required:
+        - "runId"
+        - "context"
     CreateTemplateItemDto:
       type: "object"
       properties:
@@ -19624,3 +19937,4 @@ components:
         s3Key:
           type: "string"
           description: "Key of an evidence file already uploaded via /v1/uploads/presign (purpose=evidence). The server fetches the bytes from storage — no base64 needed. Provide fileData or s3Key (not both)."
+x-speakeasy-timeout: 120000

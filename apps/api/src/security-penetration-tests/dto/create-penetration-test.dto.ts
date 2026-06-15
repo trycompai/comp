@@ -4,7 +4,9 @@ import {
   IsBoolean,
   IsEnum,
   IsOptional,
+  IsString,
   IsUrl,
+  MaxLength,
 } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
@@ -107,4 +109,15 @@ export class CreatePenetrationTestDto {
   @ArrayUnique()
   @IsEnum(pentestCheckValues, { each: true })
   checks?: PentestCheck[];
+
+  @ApiPropertyOptional({
+    description:
+      'Free-text context shared with the testing agent, e.g. remediation notes or accepted-by-design explanations from a previous run. Saved per-finding context notes for the same target are appended automatically. Max 4000 characters.',
+    required: false,
+    maxLength: 4000,
+  })
+  @IsOptional()
+  @IsString()
+  @MaxLength(4000)
+  additionalContext?: string;
 }
