@@ -13,9 +13,10 @@ import type { JSONContent } from '@tiptap/react';
  * Inline marks supported (encode + decode, kept symmetric): bold (**), italic
  * (*), bold+italic (***), inline code (`) and links ([text](href)). Underscore
  * emphasis is intentionally NOT parsed so snake_case identifiers in policy text
- * are never mangled. Inline-marker differences are also neutralized in the diff
- * (see normalizeContent in compute-suggestion-ranges) so any residual asymmetry
- * can't surface as a phantom suggestion.
+ * are never mangled. Because encode and decode use the same conventions,
+ * unchanged formatted content round-trips identically and the line diff sees no
+ * change — while a real formatting edit (e.g. adding bold) still diffs and can
+ * be accepted.
  */
 
 /**

@@ -87,13 +87,15 @@ function mergeOverlappingRanges(ranges: SuggestionRange[]): SuggestionRange[] {
       continue;
     }
 
-    // Merge if overlapping or adjacent (gap of ≤20 positions, which covers
-    // a few empty paragraphs / blank lines between hunks).
-    // Always merge two adjacent deletes — they're almost certainly one section.
+    // Merge only when it can't drop unchanged content between the ranges:
+    //  - overlapping ranges (any type), or
+    //  - adjacent deletes split by blank-line context (one logical section).
+    // Do NOT merge two modifies across a gap — the unchanged content in the gap
+    // (e.g. a heading between two edited paragraphs) is absent from the merged
+    // proposedText and would be deleted on apply.
     const gap = range.from - prev.to;
     const shouldMerge =
       gap <= 0 || // overlapping
-      (gap <= 20 && prev.type === range.type) || // same type, close together
       (gap <= 20 && prev.type === 'delete' && range.type === 'delete'); // adjacent deletes
 
     if (shouldMerge) {
@@ -125,9 +127,22 @@ function resolveHunkPositions(
   lineToPos: Map<number, { from: number; to: number }>,
 ): { from: number; to: number } | null {
   if (oldLines === 0) {
-    const anchor = lineToPos.get(oldStart) ?? lineToPos.get(oldStart - 1);
-    if (!anchor) return findNearestPosition(oldStart, lineToPos);
-    return anchor;
+    // Pure insertion: collapse to a zero-width point at the right boundary.
+    // jsdiff's oldStart is the old line the new content is inserted BEFORE, so
+    // anchor to that line's start; otherwise insert after the previous line.
+    const before = lineToPos.get(oldStart);
+    if (before) return { from: before.from, to: before.from };
+    const after = lineToPos.get(oldStart - 1);
+    if (after) return { from: after.to, to: after.to };
+    // Fallback: anchor to the nearest mapped line, choosing the side by its
+    // position relative to the insertion point. If the nearest line is at/after
+    // oldStart, insert BEFORE it (.from); otherwise insert AFTER it (.to).
+    // Using .to unconditionally would drop content on the wrong side.
+    const near = findNearestEntry(oldStart, lineToPos);
+    if (!near) return null;
+    return near.line >= oldStart
+      ? { from: near.from, to: near.from }
+      : { from: near.to, to: near.to };
   }
 
   let from: number | null = null;
@@ -148,20 +163,28 @@ function resolveHunkPositions(
   return { from, to };
 }
 
-function findNearestPosition(
+function findNearestEntry(
   targetLine: number,
   lineToPos: Map<number, { from: number; to: number }>,
-): { from: number; to: number } | null {
-  let closest: { from: number; to: number } | null = null;
+): { line: number; from: number; to: number } | null {
+  let closest: { line: number; from: number; to: number } | null = null;
   let closestDist = Infinity;
   for (const [line, pos] of lineToPos) {
     const dist = Math.abs(line - targetLine);
     if (dist < closestDist) {
       closestDist = dist;
-      closest = pos;
+      closest = { line, from: pos.from, to: pos.to };
     }
   }
   return closest;
+}
+
+function findNearestPosition(
+  targetLine: number,
+  lineToPos: Map<number, { from: number; to: number }>,
+): { from: number; to: number } | null {
+  const entry = findNearestEntry(targetLine, lineToPos);
+  return entry ? { from: entry.from, to: entry.to } : null;
 }
 
 function computeWordDiff(oldText: string, newText: string): DiffSegment[] {
@@ -173,24 +196,22 @@ function computeWordDiff(oldText: string, newText: string): DiffSegment[] {
 }
 
 /**
- * Aggressively normalize text for comparison:
- * - Strip list markers (- , * , 1. )
- * - Strip heading markers (# ## ### etc.)
- * - Strip inline marks (bold/italic asterisks, code ticks; links -> text + href)
- * - Collapse all whitespace
- * - Lowercase
- * This catches formatting-only diffs the AI introduces, and ensures any residual
- * asymmetry between our markdown encoder and the model's output never surfaces
- * as a phantom suggestion (real content/href changes still differ).
+ * Normalize text for comparison:
+ * - Strip block markers (list - / * , heading #, blockquote >) so the AI
+ *   reformatting a block marker isn't treated as a content change.
+ * - Collapse all whitespace + lowercase.
+ *
+ * NOTE: inline marks (bold/italic/code/link) are deliberately NOT stripped.
+ * The markdown encoder is mark-aware and symmetric with the model's output, so
+ * unchanged formatted content already compares equal — while a user explicitly
+ * adding/removing formatting (e.g. "make this bold") still produces an
+ * accept-able suggestion instead of being silently swallowed (CS-265).
  */
 function normalizeContent(text: string): string {
   return text
-    .replace(/^[\s]*[-*]\s+/gm, '')               // strip list markers
-    .replace(/^[\s]*#{1,6}\s+/gm, '')             // strip heading markers
-    .replace(/^[\s]*>\s+/gm, '')                  // strip blockquote markers
-    .replace(/\[([^\]]*)\]\(([^)]*)\)/g, '$1 $2') // links -> text + href
-    .replace(/`+/g, '')                           // inline code ticks
-    .replace(/\*+/g, '')                          // bold/italic asterisks
+    .replace(/^[\s]*[-*]\s+/gm, '')    // strip list markers
+    .replace(/^[\s]*#{1,6}\s+/gm, '')  // strip heading markers
+    .replace(/^[\s]*>\s+/gm, '')       // strip blockquote markers
     .replace(/\s+/g, ' ')
     .trim()
     .toLowerCase();

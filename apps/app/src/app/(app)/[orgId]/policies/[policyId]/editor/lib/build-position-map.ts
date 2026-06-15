@@ -32,24 +32,28 @@ export function buildPositionMap(doc: ProseMirrorNode): PositionMap {
       return;
     }
 
-    const nodeTo = nodeFrom + node.nodeSize - 2;
+    // Use the node's outer boundaries [before, after] so accept/delete operate
+    // on the whole block. Using the inner content range instead leaves an empty
+    // block behind on delete, and splits the block on replace (CS-265).
+    const nodeStart = offset;
+    const nodeEnd = offset + node.nodeSize;
 
     if (node.type.name === 'heading') {
       const level = (node.attrs.level as number) || 1;
       const text = serializeInline(node);
-      entries.push({ type: 'heading', markdown: '#'.repeat(level) + ' ' + text, from: nodeFrom, to: nodeTo });
+      entries.push({ type: 'heading', markdown: '#'.repeat(level) + ' ' + text, from: nodeStart, to: nodeEnd });
     } else if (node.type.name === 'paragraph') {
       const text = serializeInline(node);
-      entries.push({ type: 'paragraph', markdown: text, from: nodeFrom, to: nodeTo });
+      entries.push({ type: 'paragraph', markdown: text, from: nodeStart, to: nodeEnd });
     } else if (node.type.name === 'blockquote') {
       const text = serializeInline(node);
-      entries.push({ type: 'other', markdown: '> ' + text, from: nodeFrom, to: nodeTo });
+      entries.push({ type: 'other', markdown: '> ' + text, from: nodeStart, to: nodeEnd });
     } else if (node.type.name === 'horizontalRule') {
-      entries.push({ type: 'other', markdown: '---', from: nodeFrom, to: nodeTo });
+      entries.push({ type: 'other', markdown: '---', from: nodeStart, to: nodeEnd });
     } else {
       const text = serializeInline(node);
       if (text) {
-        entries.push({ type: 'other', markdown: text, from: nodeFrom, to: nodeTo });
+        entries.push({ type: 'other', markdown: text, from: nodeStart, to: nodeEnd });
       }
     }
   });
