@@ -173,24 +173,22 @@ function computeWordDiff(oldText: string, newText: string): DiffSegment[] {
 }
 
 /**
- * Aggressively normalize text for comparison:
- * - Strip list markers (- , * , 1. )
- * - Strip heading markers (# ## ### etc.)
- * - Strip inline marks (bold/italic asterisks, code ticks; links -> text + href)
- * - Collapse all whitespace
- * - Lowercase
- * This catches formatting-only diffs the AI introduces, and ensures any residual
- * asymmetry between our markdown encoder and the model's output never surfaces
- * as a phantom suggestion (real content/href changes still differ).
+ * Normalize text for comparison:
+ * - Strip block markers (list - / * , heading #, blockquote >) so the AI
+ *   reformatting a block marker isn't treated as a content change.
+ * - Collapse all whitespace + lowercase.
+ *
+ * NOTE: inline marks (bold/italic/code/link) are deliberately NOT stripped.
+ * The markdown encoder is mark-aware and symmetric with the model's output, so
+ * unchanged formatted content already compares equal — while a user explicitly
+ * adding/removing formatting (e.g. "make this bold") still produces an
+ * accept-able suggestion instead of being silently swallowed (CS-265).
  */
 function normalizeContent(text: string): string {
   return text
-    .replace(/^[\s]*[-*]\s+/gm, '')               // strip list markers
-    .replace(/^[\s]*#{1,6}\s+/gm, '')             // strip heading markers
-    .replace(/^[\s]*>\s+/gm, '')                  // strip blockquote markers
-    .replace(/\[([^\]]*)\]\(([^)]*)\)/g, '$1 $2') // links -> text + href
-    .replace(/`+/g, '')                           // inline code ticks
-    .replace(/\*+/g, '')                          // bold/italic asterisks
+    .replace(/^[\s]*[-*]\s+/gm, '')    // strip list markers
+    .replace(/^[\s]*#{1,6}\s+/gm, '')  // strip heading markers
+    .replace(/^[\s]*>\s+/gm, '')       // strip blockquote markers
     .replace(/\s+/g, ' ')
     .trim()
     .toLowerCase();

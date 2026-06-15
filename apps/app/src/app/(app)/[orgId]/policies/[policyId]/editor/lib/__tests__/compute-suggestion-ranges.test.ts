@@ -378,4 +378,33 @@ describe('computeSuggestionRanges', () => {
       expect(modRange!.proposedText).toContain('must');
     });
   });
+
+  describe('inline formatting-only changes still surface (CS-265 fmt)', () => {
+    it('produces a suggestion when only inline bold is added', () => {
+      const current =
+        'Provide authentication that resists brute-force and credential-stuffing attacks.';
+      const proposed =
+        'Provide authentication that resists **brute-force** and **credential-stuffing** attacks.';
+      const posMap = makePositionMap(current);
+
+      const ranges = computeSuggestionRanges(posMap, proposed);
+
+      // A user explicitly asking to bold text must get an accept-able suggestion
+      // — the formatting must NOT be silently swallowed by normalization.
+      expect(ranges.length).toBeGreaterThan(0);
+      expect(ranges[0]!.proposedText).toContain('**brute-force**');
+    });
+
+    it('produces a suggestion when only a link is added', () => {
+      const current = 'Store passwords in an approved password manager.';
+      const proposed =
+        'Store passwords in an approved [password manager](https://1password.com).';
+      const posMap = makePositionMap(current);
+
+      const ranges = computeSuggestionRanges(posMap, proposed);
+
+      expect(ranges.length).toBeGreaterThan(0);
+      expect(ranges[0]!.proposedText).toContain('](https://1password.com)');
+    });
+  });
 });
