@@ -31,7 +31,10 @@ export const googleWorkspaceManifest: IntegrationManifest = {
       supportsRefreshToken: true,
       authorizationParams: {
         access_type: 'offline',
-        prompt: 'consent',
+        // select_account forces Google's account chooser so an admin can switch
+        // from a wrong (e.g. non-admin) account when connecting/reconnecting;
+        // consent keeps the consent screen so a refresh token is always issued.
+        prompt: 'select_account consent',
       },
       setupInstructions: `To enable Google Workspace Admin SDK:
 1. Go to Google Cloud Console (console.cloud.google.com)
