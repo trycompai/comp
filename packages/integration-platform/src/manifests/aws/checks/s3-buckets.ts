@@ -95,6 +95,111 @@ export async function listAllBuckets(
   }
 }
 
+/**
+ * Per-bucket reads are independent and idempotent, so run them with bounded
+ * concurrency. Reading a large bucket fleet serially was exceeding the API
+ * gateway's idle timeout on the scheduled/auto run path (surfacing to the
+ * caller as a 504); a bounded pool keeps even thousands of buckets well under
+ * that ceiling without opening an unbounded number of sockets.
+ */
+const BUCKET_READ_CONCURRENCY = 20;
+
+/** Run `fn` over `items` with at most `limit` in flight, preserving order. */
+async function mapWithConcurrency<T, R>(
+  items: T[],
+  limit: number,
+  fn: (item: T) => Promise<R>,
+): Promise<R[]> {
+  const results = new Array<R>(items.length);
+  let cursor = 0;
+  const worker = async (): Promise<void> => {
+    while (cursor < items.length) {
+      const index = cursor++;
+      results[index] = await fn(items[index]);
+    }
+  };
+  const workerCount = Math.min(Math.max(1, limit), items.length);
+  await Promise.all(Array.from({ length: workerCount }, () => worker()));
+  return results;
+}
+
+interface BucketReadOptions {
+  encryption: boolean;
+  publicAccess: boolean;
+  log?: (message: string) => void;
+}
+
+/**
+ * Read one bucket's encryption + Block Public Access posture. Never throws: a
+ * read error is recorded on the returned info (`*Determined: false`) so one bad
+ * bucket cannot fail the whole run.
+ */
+async function readBucketInfo(
+  client: S3Client,
+  name: string,
+  opts: BucketReadOptions,
+): Promise<S3BucketInfo> {
+  let encrypted = false;
+  let encryptionDetermined = true;
+  let encryptionReadFailure: ReadFailure | undefined;
+  let bucketBpa: BpaFlags | null = null;
+  let publicAccessDetermined = true;
+  let publicAccessReadFailure: ReadFailure | undefined;
+
+  if (opts.encryption) {
+    try {
+      const enc = await client.send(new GetBucketEncryptionCommand({ Bucket: name }));
+      encrypted = (enc.ServerSideEncryptionConfiguration?.Rules?.length ?? 0) > 0;
+    } catch (err) {
+      // "no encryption configured" is a genuine finding; any other error
+      // (permissions/transient) is indeterminate → exclude from evaluation.
+      if (err instanceof Error && /ServerSideEncryptionConfigurationNotFound/i.test(err.name)) {
+        encrypted = false;
+      } else {
+        encryptionDetermined = false;
+        encryptionReadFailure = toReadFailure(err);
+        opts.log?.(`S3 ${name}: encryption read failed — ${encryptionReadFailure.error}`);
+      }
+    }
+  }
+
+  if (opts.publicAccess) {
+    try {
+      const pab = await client.send(new GetPublicAccessBlockCommand({ Bucket: name }));
+      const c = pab.PublicAccessBlockConfiguration;
+      bucketBpa = {
+        blockPublicAcls: Boolean(c?.BlockPublicAcls),
+        ignorePublicAcls: Boolean(c?.IgnorePublicAcls),
+        blockPublicPolicy: Boolean(c?.BlockPublicPolicy),
+        restrictPublicBuckets: Boolean(c?.RestrictPublicBuckets),
+      };
+    } catch (err) {
+      // "no bucket-level config" is a genuine finding (account-level may still
+      // cover it); any other error (AccessDenied/transient) is indeterminate →
+      // exclude from evaluation so we don't report a false public-access failure.
+      if (err instanceof Error && /NoSuchPublicAccessBlockConfiguration/i.test(err.name)) {
+        bucketBpa = null; // no bucket-level config
+      } else {
+        publicAccessDetermined = false;
+        publicAccessReadFailure = toReadFailure(err);
+        opts.log?.(
+          `S3 ${name}: Block Public Access read failed — ${publicAccessReadFailure.error}`,
+        );
+      }
+    }
+  }
+
+  return {
+    name,
+    encrypted,
+    encryptionDetermined,
+    encryptionReadFailure,
+    bucketBpa,
+    publicAccessDetermined,
+    publicAccessReadFailure,
+  };
+}
+
 export async function gatherBuckets(
   s3: S3Client,
   opts: {
@@ -107,75 +212,8 @@ export async function gatherBuckets(
 ): Promise<S3BucketInfo[]> {
   const buckets = await listAllBuckets(s3, opts.log);
 
-  const infos: S3BucketInfo[] = [];
-  for (const { name, region } of buckets) {
-    const client =
-      region && opts.clientForRegion ? opts.clientForRegion(region) : s3;
-    let encrypted = false;
-    let encryptionDetermined = true;
-    let encryptionReadFailure: ReadFailure | undefined;
-    let bucketBpa: BpaFlags | null = null;
-    let publicAccessDetermined = true;
-    let publicAccessReadFailure: ReadFailure | undefined;
-
-    if (opts.encryption) {
-      try {
-        const enc = await client.send(new GetBucketEncryptionCommand({ Bucket: name }));
-        encrypted = (enc.ServerSideEncryptionConfiguration?.Rules?.length ?? 0) > 0;
-      } catch (err) {
-        // "no encryption configured" is a genuine finding; any other error
-        // (permissions/transient) is indeterminate → exclude from evaluation.
-        if (
-          err instanceof Error &&
-          /ServerSideEncryptionConfigurationNotFound/i.test(err.name)
-        ) {
-          encrypted = false;
-        } else {
-          encryptionDetermined = false;
-          encryptionReadFailure = toReadFailure(err);
-          opts.log?.(
-            `S3 ${name}: encryption read failed — ${encryptionReadFailure.error}`,
-          );
-        }
-      }
-    }
-    if (opts.publicAccess) {
-      try {
-        const pab = await client.send(new GetPublicAccessBlockCommand({ Bucket: name }));
-        const c = pab.PublicAccessBlockConfiguration;
-        bucketBpa = {
-          blockPublicAcls: Boolean(c?.BlockPublicAcls),
-          ignorePublicAcls: Boolean(c?.IgnorePublicAcls),
-          blockPublicPolicy: Boolean(c?.BlockPublicPolicy),
-          restrictPublicBuckets: Boolean(c?.RestrictPublicBuckets),
-        };
-      } catch (err) {
-        // "no bucket-level config" is a genuine finding (account-level may still
-        // cover it); any other error (AccessDenied/transient) is indeterminate →
-        // exclude from evaluation so we don't report a false public-access failure.
-        if (
-          err instanceof Error &&
-          /NoSuchPublicAccessBlockConfiguration/i.test(err.name)
-        ) {
-          bucketBpa = null; // no bucket-level config
-        } else {
-          publicAccessDetermined = false;
-          publicAccessReadFailure = toReadFailure(err);
-          opts.log?.(
-            `S3 ${name}: Block Public Access read failed — ${publicAccessReadFailure.error}`,
-          );
-        }
-      }
-    }
-    infos.push({
-      name,
-      encrypted,
-      encryptionDetermined,
-      encryptionReadFailure,
-      bucketBpa,
-      publicAccessDetermined,
-      publicAccessReadFailure,
-    });
-  }
-  return infos;
+  return mapWithConcurrency(buckets, BUCKET_READ_CONCURRENCY, ({ name, region }) => {
+    const client = region && opts.clientForRegion ? opts.clientForRegion(region) : s3;
+    return readBucketInfo(client, name, opts);
+  });
 }
