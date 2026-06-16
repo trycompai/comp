@@ -256,10 +256,6 @@ export function useRequirementChangeTracking(
       // Re-sync the grid with server truth (ids, timestamps, links).
       router.refresh();
     }
-
-    // Report success so callers (e.g. "Save and Commit") can chain a publish
-    // only when every edit persisted cleanly.
-    return results.errors.length === 0;
   }, [data, createdIds, updatedIds, deletedIds, frameworkId, router]);
 
   const handleCancel = useCallback(() => {
