@@ -102,8 +102,22 @@ export class FrameworkEditorFrameworkService {
   async delete(id: string) {
     await this.findById(id);
 
+    // A framework may have published versions and org-level instances that
+    // reference it. Delete the dependency graph in order inside one transaction:
+    //   1. instances   — cascades their org controls/maps/links/sync-operations
+    //                    AND frees the Restrict FK on
+    //                    FrameworkInstance.currentVersionId -> FrameworkVersion
+    //   2. versions     — now unreferenced by instances or sync-operations
+    //   3. requirements — Restrict FK back to the framework
+    //   4. the framework — cascades the editor-side control/policy/task/document
+    //                    links + ISMS docs
+    // Deleting the framework directly would cascade versions and instances
+    // together, which trips the currentVersionId Restrict (P2003) depending on
+    // cascade order; the explicit ordering avoids that.
     try {
       await db.$transaction([
+        db.frameworkInstance.deleteMany({ where: { frameworkId: id } }),
+        db.frameworkVersion.deleteMany({ where: { frameworkId: id } }),
         db.frameworkEditorRequirement.deleteMany({
           where: { frameworkId: id },
         }),
@@ -115,7 +129,7 @@ export class FrameworkEditorFrameworkService {
         error.code === 'P2003'
       ) {
         throw new ConflictException(
-          'Cannot delete framework: it is referenced by existing framework instances',
+          'Could not delete framework: it still has references that could not be removed automatically',
         );
       }
       throw error;
