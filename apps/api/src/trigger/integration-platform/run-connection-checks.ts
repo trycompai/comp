@@ -6,7 +6,14 @@ import {
   requestValidCredentials,
   type IntegrationCredentialValues,
 } from './ensure-valid-credentials';
-import { runChecksOnServer } from './run-checks-on-server';
+import {
+  runChecksOnServer,
+  type RunAllChecksResult,
+} from './run-checks-on-server';
+import {
+  isActiveDynamicProvider,
+  shouldRunOnServer,
+} from './dynamic-provider';
 
 /**
  * Trigger task that runs all checks for a connection.
@@ -37,12 +44,24 @@ export const runConnectionChecks = task({
 
     const manifest = getManifest(providerSlug);
 
-    if (!manifest) {
+    // Dynamic (DB-backed) providers have no manifest in the Trigger.dev runtime,
+    // so run their checks ON OUR SERVER (like AWS), where the dynamic-manifest
+    // loader has populated the registry. Static providers keep running here.
+    const isDynamic = manifest
+      ? false
+      : await isActiveDynamicProvider(providerSlug);
+    const runOnServer = shouldRunOnServer({
+      providerSlug,
+      hasManifest: !!manifest,
+      isActiveDynamic: isDynamic,
+    });
+
+    if (!manifest && !runOnServer) {
       logger.error(`Manifest not found for provider: ${providerSlug}`);
       return { success: false, error: `Manifest not found: ${providerSlug}` };
     }
 
-    if (!manifest.checks || manifest.checks.length === 0) {
+    if (manifest && (!manifest.checks || manifest.checks.length === 0)) {
       logger.info(`No checks defined for provider: ${providerSlug}`);
       return { success: true, reason: 'No checks defined' };
     }
@@ -57,53 +76,59 @@ export const runConnectionChecks = task({
       return { success: false, error: 'Connection not found or inactive' };
     }
 
-    // Check if all required variables are configured
-    const requiredVariables = new Set<string>();
-    for (const check of manifest.checks) {
-      if (check.variables) {
-        for (const variable of check.variables) {
-          if (variable.required) {
-            requiredVariables.add(variable.id);
+    // Check if all required variables are configured. Only possible for
+    // in-process (static) providers — for server-delegated dynamic providers the
+    // manifest (and thus its variable definitions) isn't available here, so the
+    // server runs every check and reports any that are unconfigured as results.
+    if (manifest) {
+      const requiredVariables = new Set<string>();
+      for (const check of manifest.checks ?? []) {
+        if (check.variables) {
+          for (const variable of check.variables) {
+            if (variable.required) {
+              requiredVariables.add(variable.id);
+            }
           }
         }
       }
-    }
 
-    const configuredVariables =
-      (connection.variables as Record<string, unknown>) || {};
-    const missingVariables: string[] = [];
+      const configuredVariables =
+        (connection.variables as Record<string, unknown>) || {};
+      const missingVariables: string[] = [];
 
-    for (const requiredVar of requiredVariables) {
-      const value = configuredVariables[requiredVar];
-      if (value === undefined || value === null || value === '') {
-        missingVariables.push(requiredVar);
+      for (const requiredVar of requiredVariables) {
+        const value = configuredVariables[requiredVar];
+        if (value === undefined || value === null || value === '') {
+          missingVariables.push(requiredVar);
+        }
+        if (Array.isArray(value) && value.length === 0) {
+          missingVariables.push(requiredVar);
+        }
       }
-      if (Array.isArray(value) && value.length === 0) {
-        missingVariables.push(requiredVar);
-      }
-    }
 
-    if (missingVariables.length > 0) {
-      logger.info(
-        `Skipping auto-run: missing required variables: ${missingVariables.join(', ')}`,
-      );
-      return {
-        success: true,
-        reason: `Missing required variables: ${missingVariables.join(', ')}`,
-      };
+      if (missingVariables.length > 0) {
+        logger.info(
+          `Skipping auto-run: missing required variables: ${missingVariables.join(', ')}`,
+        );
+        return {
+          success: true,
+          reason: `Missing required variables: ${missingVariables.join(', ')}`,
+        };
+      }
     }
 
     const apiUrl = process.env.BASE_URL || 'http://localhost:3333';
 
-    // AWS checks run ON OUR SERVER (see below), which decrypts the credentials
-    // and assumes the cross-account role there. Skip the Trigger-side credential
-    // preflight for AWS — running it would add redundant failure points (a
-    // transient preflight error would falsely fail an AWS run that
-    // `runChecksOnServer` could have completed).
+    // Server-delegated checks (AWS + dynamic providers) decrypt credentials and
+    // run ON OUR SERVER, so the Trigger-side credential preflight is skipped for
+    // them — running it would add redundant failure points (a transient
+    // preflight error would falsely fail a run that `runChecksOnServer` could
+    // have completed). The `&& manifest` is a no-op at runtime (a non-delegated
+    // provider always has a manifest by here) that narrows the type below.
     let credentials: IntegrationCredentialValues = {};
     let handleTokenRefresh: (() => Promise<string | null>) | undefined;
 
-    if (providerSlug !== 'aws') {
+    if (!runOnServer && manifest) {
       logger.info('Ensuring valid credentials...');
       const credentialsResult = await requestValidCredentials({
         apiUrl,
@@ -177,30 +202,37 @@ export const runConnectionChecks = task({
     let totalPassing = 0;
 
     try {
-      // AWS checks run ON OUR SERVER so their S3 calls egress our VPC (allowed)
-      // instead of Trigger.dev's (blocked). Every other provider keeps running
-      // here in the Trigger.dev runtime, unchanged. Same result shape either
-      // way, so the persistence below is shared.
-      const result =
-        providerSlug === 'aws'
-          ? await runChecksOnServer({ apiUrl, connectionId, organizationId })
-          : await runAllChecks({
-              manifest,
-              accessToken: getAccessToken(credentials),
-              credentials,
-              variables,
-              connectionId,
-              organizationId,
-              onTokenRefresh:
-                manifest.auth.type === 'oauth2'
-                  ? handleTokenRefresh
-                  : undefined,
-              logger: {
-                info: (msg, data) => logger.info(msg, data),
-                warn: (msg, data) => logger.warn(msg, data),
-                error: (msg, data) => logger.error(msg, data),
-              },
-            });
+      // Server-delegated providers (AWS + dynamic) run ON OUR SERVER so their
+      // checks egress our VPC / resolve their DB-backed manifest there. Static
+      // providers keep running here in the Trigger.dev runtime, unchanged. Same
+      // result shape either way, so the persistence below is shared.
+      let result: RunAllChecksResult;
+      if (runOnServer) {
+        result = await runChecksOnServer({
+          apiUrl,
+          connectionId,
+          organizationId,
+        });
+      } else if (manifest) {
+        result = await runAllChecks({
+          manifest,
+          accessToken: getAccessToken(credentials),
+          credentials,
+          variables,
+          connectionId,
+          organizationId,
+          onTokenRefresh:
+            manifest.auth.type === 'oauth2' ? handleTokenRefresh : undefined,
+          logger: {
+            info: (msg, data) => logger.info(msg, data),
+            warn: (msg, data) => logger.warn(msg, data),
+            error: (msg, data) => logger.error(msg, data),
+          },
+        });
+      } else {
+        // Unreachable: guarded at the top (no manifest ⇒ runOnServer).
+        throw new Error(`Manifest not found: ${providerSlug}`);
+      }
 
       totalFindings = result.totalFindings;
       totalPassing = result.totalPassing;

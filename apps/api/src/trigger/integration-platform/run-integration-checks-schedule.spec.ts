@@ -1,5 +1,8 @@
 import { TaskFrequency } from '@trycompai/db';
-import { filterDueTasks } from './run-integration-checks-schedule';
+import {
+  filterDueTasks,
+  resolveProviderChecks,
+} from './run-integration-checks-schedule';
 
 // Mock @db at the module boundary so importing the orchestrator does not try
 // to connect to Postgres. We never call the scheduled `run` function itself
@@ -9,6 +12,7 @@ jest.mock('@db', () => ({
   db: {
     integrationConnection: { findMany: jest.fn() },
     task: { findMany: jest.fn(), update: jest.fn() },
+    dynamicIntegration: { findMany: jest.fn() },
   },
   TaskFrequency: {
     daily: 'daily',
@@ -117,5 +121,54 @@ describe('filterDueTasks (integration orchestrator)', () => {
     const dueTasks = filterDueTasks({ tasks: candidateTasks, now });
 
     expect(dueTasks).toEqual([]);
+  });
+});
+
+describe('resolveProviderChecks (static vs dynamic)', () => {
+  it('uses the static code manifest when present (and ignores any dynamic map)', () => {
+    const checks = resolveProviderChecks({
+      manifest: {
+        checks: [
+          { id: 'two_factor_auth', taskMapping: 'tpl_mfa' },
+          { id: 'branch_protection', taskMapping: null },
+        ],
+      },
+      dynamicChecks: [{ id: 'should_not_be_used', taskMapping: 'tpl_x' }],
+    });
+
+    expect(checks).toEqual([
+      { id: 'two_factor_auth', taskMapping: 'tpl_mfa' },
+      { id: 'branch_protection', taskMapping: null },
+    ]);
+  });
+
+  it('falls back to the dynamic DB map when there is no manifest (the fix)', () => {
+    const checks = resolveProviderChecks({
+      manifest: undefined,
+      dynamicChecks: [
+        { id: 'mfa_enforcement', taskMapping: 'frk_tt_mfa' },
+        { id: 'supabase_mfa', taskMapping: 'frk_tt_mfa' },
+      ],
+    });
+
+    expect(checks).toEqual([
+      { id: 'mfa_enforcement', taskMapping: 'frk_tt_mfa' },
+      { id: 'supabase_mfa', taskMapping: 'frk_tt_mfa' },
+    ]);
+  });
+
+  it('returns [] for an unknown provider (no manifest, no dynamic entry)', () => {
+    expect(
+      resolveProviderChecks({ manifest: undefined, dynamicChecks: undefined }),
+    ).toEqual([]);
+  });
+
+  it('normalizes an undefined manifest taskMapping to null', () => {
+    const checks = resolveProviderChecks({
+      manifest: { checks: [{ id: 'c1', taskMapping: undefined }] },
+      dynamicChecks: undefined,
+    });
+
+    expect(checks).toEqual([{ id: 'c1', taskMapping: null }]);
   });
 });

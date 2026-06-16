@@ -14,6 +14,10 @@ import {
   runChecksOnServer,
   type RunAllChecksResult,
 } from './run-checks-on-server';
+import {
+  isActiveDynamicProvider,
+  shouldRunOnServer,
+} from './dynamic-provider';
 import { loadActiveExceptionSet } from '../../cloud-security/finding-exceptions';
 import {
   countEffectiveFailures,
@@ -212,7 +216,21 @@ export const runTaskIntegrationChecks = task({
 
     const manifest = getManifest(providerSlug);
 
-    if (!manifest) {
+    // Dynamic (DB-backed) providers have no manifest in the Trigger.dev runtime,
+    // so run their checks ON OUR SERVER (like AWS), where the dynamic-manifest
+    // loader has populated the registry. Static providers keep running here.
+    const isDynamic = manifest
+      ? false
+      : await isActiveDynamicProvider(providerSlug);
+    const runOnServer = shouldRunOnServer({
+      providerSlug,
+      hasManifest: !!manifest,
+      isActiveDynamic: isDynamic,
+    });
+
+    // Only a truly unknown provider (no manifest AND not delegated) is a dead
+    // end; dynamic providers are delegated below instead of failing here.
+    if (!manifest && !runOnServer) {
       logger.error(`Manifest not found for provider: ${providerSlug}`);
       return { success: false, error: `Manifest not found: ${providerSlug}` };
     }
@@ -229,15 +247,17 @@ export const runTaskIntegrationChecks = task({
 
     const apiUrl = process.env.BASE_URL || 'http://localhost:3333';
 
-    // AWS checks run ON OUR SERVER (see the loop below), which decrypts the
-    // credentials and assumes the cross-account role there. So the Trigger-side
-    // credential/session preflight is skipped for AWS — running it would add
-    // redundant failure points (a transient preflight error would falsely fail
-    // an AWS run that `runChecksOnServer` could have completed).
+    // Server-delegated checks (AWS + dynamic providers) decrypt credentials and
+    // run ON OUR SERVER, so the Trigger-side credential/session preflight is
+    // skipped for them — running it would add redundant failure points (a
+    // transient preflight error would falsely fail a run that
+    // `runChecksOnServer` could have completed). The `&& manifest` is a no-op at
+    // runtime (a non-delegated provider always has a manifest by here) that lets
+    // TypeScript narrow `manifest` for the in-process branch below.
     let credentials: IntegrationCredentialValues = {};
     let handleTokenRefresh: (() => Promise<string | null>) | undefined;
 
-    if (providerSlug !== 'aws') {
+    if (!runOnServer && manifest) {
       logger.info('Ensuring valid credentials (refreshing if needed)...');
       const credentialsResult = await requestValidCredentials({
         apiUrl,
@@ -347,58 +367,64 @@ export const runTaskIntegrationChecks = task({
     // Run only the checks that apply to this task
     try {
       for (const checkId of effectiveCheckIds) {
-        // AWS checks run ON OUR SERVER so their S3 calls egress our VPC (whose
-        // endpoint allows the read) instead of Trigger.dev's (which blocks it).
-        // Every other provider keeps executing here in the Trigger.dev runtime,
+        // Server-delegated providers (AWS + dynamic) run ON OUR SERVER so their
+        // checks egress our VPC / resolve their DB-backed manifest there.
+        // Static providers keep executing here in the Trigger.dev runtime,
         // unchanged. The result shape is identical either way, so all the
         // persistence / status / email logic below is shared.
         let result: RunAllChecksResult;
         try {
-          result =
-            providerSlug === 'aws'
-              ? await runChecksOnServer({
-                  apiUrl,
-                  connectionId,
-                  organizationId,
-                  checkId,
-                })
-              : await runAllChecks({
-                  manifest,
-                  accessToken: getAccessToken(credentials),
-                  credentials,
-                  variables,
-                  connectionId,
-                  organizationId,
-                  checkId, // Run specific check
-                  onTokenRefresh:
-                    manifest.auth.type === 'oauth2'
-                      ? handleTokenRefresh
-                      : undefined,
-                  logger: {
-                    info: (msg, data) => logger.info(msg, data),
-                    warn: (msg, data) => logger.warn(msg, data),
-                    error: (msg, data) => logger.error(msg, data),
-                  },
-                });
+          if (runOnServer) {
+            result = await runChecksOnServer({
+              apiUrl,
+              connectionId,
+              organizationId,
+              checkId,
+            });
+          } else if (manifest) {
+            result = await runAllChecks({
+              manifest,
+              accessToken: getAccessToken(credentials),
+              credentials,
+              variables,
+              connectionId,
+              organizationId,
+              checkId, // Run specific check
+              onTokenRefresh:
+                manifest.auth.type === 'oauth2'
+                  ? handleTokenRefresh
+                  : undefined,
+              logger: {
+                info: (msg, data) => logger.info(msg, data),
+                warn: (msg, data) => logger.warn(msg, data),
+                error: (msg, data) => logger.error(msg, data),
+              },
+            });
+          } else {
+            // Unreachable: guarded at the top (no manifest ⇒ runOnServer). Kept
+            // so the type checker knows `result` is always assigned.
+            throw new Error(`Manifest not found: ${providerSlug}`);
+          }
         } catch (error) {
-          // Only the AWS server-run path is degraded here. Non-AWS providers run
-          // in-process via runAllChecks, which catches per-check failures and
-          // returns status:'error' rather than throwing — so a throw on the
-          // non-AWS branch is unexpected and must NOT be silently downgraded.
-          // Re-throw it to preserve the pre-change behavior (it propagates to the
-          // outer catch and fails the task).
-          if (providerSlug !== 'aws') throw error;
+          // Only the server-run path is degraded here. In-process providers run
+          // via runAllChecks, which catches per-check failures and returns
+          // status:'error' rather than throwing — so a throw on the in-process
+          // branch is unexpected and must NOT be silently downgraded. Re-throw
+          // it to preserve the pre-change behavior (it propagates to the outer
+          // catch and fails the task).
+          if (!runOnServer) throw error;
 
-          // AWS server-run threw, and only on a transport blip (network/non-2xx)
-          // — per-check AWS execution errors come back inside the result, not
-          // thrown. Record THIS check as errored and keep going so one blip
-          // doesn't abort its sibling checks (multiple AWS checks share a task)
-          // or skip the lastSyncAt/status updates, mirroring runAllChecks'
-          // per-check resilience. hasExecutionErrors keeps integrationLastRunAt
-          // unwritten, so the next orchestrator tick retries.
+          // Server-run threw, and only on a transport blip (network/non-2xx) —
+          // per-check execution errors come back inside the result, not thrown.
+          // Record THIS check as errored and keep going so one blip doesn't abort
+          // its sibling checks (multiple checks share a task) or skip the
+          // lastSyncAt/status updates, mirroring runAllChecks' per-check
+          // resilience. hasExecutionErrors keeps integrationLastRunAt unwritten,
+          // so the next orchestrator tick retries. `manifest` is undefined for
+          // dynamic providers, so resolve the check name defensively.
           const message =
             error instanceof Error ? error.message : String(error);
-          const checkDef = manifest.checks?.find((c) => c.id === checkId);
+          const checkDef = manifest?.checks?.find((c) => c.id === checkId);
           // A transport blip is indeterminate, not a finding: it gates
           // integrationLastRunAt (retry next tick) but must not fail the task.
           hasExecutionErrors = true;
