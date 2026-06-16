@@ -1,3 +1,10 @@
+## [3.83.4](https://github.com/trycompai/comp/compare/v3.83.3...v3.83.4) (2026-06-16)
+
+
+### Bug Fixes
+
+* **framework-editor:** also delete timeline templates when deleting a framework ([59aa455](https://github.com/trycompai/comp/commit/59aa455c677eae04d5c70f5baf5314a264f5c136))
+
 ## [3.83.3](https://github.com/trycompai/comp/compare/v3.83.2...v3.83.3) (2026-06-16)
 
 
