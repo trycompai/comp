@@ -1,3 +1,10 @@
+## [3.83.6](https://github.com/trycompai/comp/compare/v3.83.5...v3.83.6) (2026-06-16)
+
+
+### Bug Fixes
+
+* **integration-platform:** run dynamic integration checks on the daily schedule ([db2db18](https://github.com/trycompai/comp/commit/db2db189ed4b3b2f53745ce743bdc01b9e7bba16))
+
 ## [3.83.5](https://github.com/trycompai/comp/compare/v3.83.4...v3.83.5) (2026-06-16)
 
 
