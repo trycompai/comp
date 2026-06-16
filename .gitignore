@@ -103,3 +103,8 @@ scripts/sync-release-branch.sh
 # from .github/workflows/ at the repo root. We move them up. See
 # .github/workflows/sdk_generation.yaml + sdk_publish.yaml (the real ones).
 apps/mcp-server/.github/
+
+# Ad-hoc read-only prod ops scripts (contain DB creds) + any exported customer data.
+# These must never be committed.
+/dbq_*.js
+/*.csv
