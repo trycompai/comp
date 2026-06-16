@@ -1,3 +1,11 @@
+## [3.83.3](https://github.com/trycompai/comp/compare/v3.83.2...v3.83.3) (2026-06-16)
+
+
+### Bug Fixes
+
+* **framework-editor:** allow deleting a framework that has versions/instances ([4cf2142](https://github.com/trycompai/comp/commit/4cf2142cf67172d7aa457a58e6761b50adb7e0c1))
+* **framework-editor:** commit changes independently of publishing a version ([e06d446](https://github.com/trycompai/comp/commit/e06d44647362e33730ff36992038d207a6049343))
+
 ## [3.83.2](https://github.com/trycompai/comp/compare/v3.83.1...v3.83.2) (2026-06-16)
 
 
