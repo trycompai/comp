@@ -1,3 +1,10 @@
+## [3.83.7](https://github.com/trycompai/comp/compare/v3.83.6...v3.83.7) (2026-06-16)
+
+
+### Bug Fixes
+
+* **integration-platform:** parallelize S3 bucket reads to avoid gateway 504s ([23aae17](https://github.com/trycompai/comp/commit/23aae17a28d80f6d933a2f1a9b7d97379b70c458)), closes [#3133](https://github.com/trycompai/comp/issues/3133)
+
 ## [3.83.6](https://github.com/trycompai/comp/compare/v3.83.5...v3.83.6) (2026-06-16)
 
 
