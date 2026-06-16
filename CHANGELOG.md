@@ -1,3 +1,10 @@
+## [3.83.5](https://github.com/trycompai/comp/compare/v3.83.4...v3.83.5) (2026-06-16)
+
+
+### Bug Fixes
+
+* **tasks:** respect evidenceApprovalEnabled when gating task completion ([440f0cc](https://github.com/trycompai/comp/commit/440f0cc7a0befed74acf6ce7b49357639d94464b))
+
 ## [3.83.4](https://github.com/trycompai/comp/compare/v3.83.3...v3.83.4) (2026-06-16)
 
 
