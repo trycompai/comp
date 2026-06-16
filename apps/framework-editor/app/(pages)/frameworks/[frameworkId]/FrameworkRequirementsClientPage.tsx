@@ -22,8 +22,6 @@ import {
   useRequirementChangeTracking,
   type RequirementGridRow,
 } from './hooks/useRequirementChangeTracking';
-import { PublishVersionDialog } from './versions/components/PublishVersionDialog';
-import { useFrameworkVersions } from './versions/hooks/useFrameworkVersions';
 
 interface FrameworkDetails {
   id: string;
@@ -78,12 +76,6 @@ export function FrameworkRequirementsClientPage({
   // Row whose large description editor is currently open — highlighted so the
   // edited row is obvious behind the (semi-transparent) editor dialog.
   const [expandedRowId, setExpandedRowId] = useState<string | null>(null);
-  // "Save and Commit" saves the edits then opens the publish flow (FRAME-4).
-  const [isPublishOpen, setIsPublishOpen] = useState(false);
-  const { data: publishedVersions, refetch: refetchVersions } = useFrameworkVersions(
-    frameworkDetails.id,
-  );
-  const latestPublishedVersion = publishedVersions?.[0]?.version;
 
   const initialGridData: RequirementGridRow[] = useMemo(
     () =>
@@ -114,13 +106,6 @@ export function FrameworkRequirementsClientPage({
     createdIds,
     changesSummary,
   } = useRequirementChangeTracking(initialGridData, frameworkDetails.id);
-
-  // Save edits, then (only if they all persisted) open the publish dialog so
-  // the accumulated changes can be committed as a new version.
-  const handleSaveAndCommit = useCallback(async () => {
-    const ok = await handleCommit();
-    if (ok) setIsPublishOpen(true);
-  }, [handleCommit]);
 
   const uniqueFamilies = useMemo(() => {
     const families = new Set<string>();
@@ -319,11 +304,8 @@ export function FrameworkRequirementsClientPage({
               <Button variant="outline" onClick={handleCancel} size="sm" className="rounded-xs">
                 Cancel
               </Button>
-              <Button variant="outline" onClick={handleCommit} size="sm" className="rounded-xs">
-                Save as Draft
-              </Button>
-              <Button onClick={handleSaveAndCommit} size="sm" className="rounded-xs">
-                Save and Commit
+              <Button onClick={handleCommit} size="sm" className="rounded-xs">
+                Commit Changes
               </Button>
             </>
           )}
@@ -448,17 +430,6 @@ export function FrameworkRequirementsClientPage({
           frameworkName={frameworkDetails.name}
         />
       )}
-      <PublishVersionDialog
-        frameworkId={frameworkDetails.id}
-        open={isPublishOpen}
-        onClose={() => setIsPublishOpen(false)}
-        latestVersion={latestPublishedVersion}
-        onPublished={() => {
-          setIsPublishOpen(false);
-          void refetchVersions();
-          router.refresh();
-        }}
-      />
     </div>
   );
 }
