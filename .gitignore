@@ -105,6 +105,6 @@ scripts/sync-release-branch.sh
 apps/mcp-server/.github/
 
 # Ad-hoc read-only prod ops scripts (contain DB creds) + any exported customer data.
-# These must never be committed.
-/dbq_*.js
-/*.csv
+# These must never be committed. Unanchored so nested paths are covered too.
+dbq_*.js
+*.csv
