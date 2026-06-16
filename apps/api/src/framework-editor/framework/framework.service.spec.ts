@@ -14,6 +14,9 @@ jest.mock('@db', () => {
     frameworkInstance: {
       deleteMany: jest.fn(),
     },
+    timelineTemplate: {
+      deleteMany: jest.fn(),
+    },
     frameworkVersion: {
       deleteMany: jest.fn(),
     },
@@ -108,11 +111,14 @@ describe('FrameworkEditorFrameworkService.delete (FRAME-13)', () => {
     });
   });
 
-  it('deletes instances, versions, requirements, then the framework — in that order', async () => {
+  it('deletes instances, timeline templates, versions, requirements, then the framework — in that order', async () => {
     const result = await service.delete('frk_1');
 
     expect(result).toEqual({ message: 'Framework deleted successfully' });
     expect(mockDb.frameworkInstance.deleteMany).toHaveBeenCalledWith({
+      where: { frameworkId: 'frk_1' },
+    });
+    expect(mockDb.timelineTemplate.deleteMany).toHaveBeenCalledWith({
       where: { frameworkId: 'frk_1' },
     });
     expect(mockDb.frameworkVersion.deleteMany).toHaveBeenCalledWith({
@@ -125,16 +131,26 @@ describe('FrameworkEditorFrameworkService.delete (FRAME-13)', () => {
       where: { id: 'frk_1' },
     });
 
-    // Order matters: instances free the currentVersion Restrict FK before
-    // versions are removed, and requirements before the framework itself.
+    // Order matters: instances must go first (they cascade TimelineInstances,
+    // freeing the Restrict FK TimelineInstance.templateId -> TimelineTemplate and
+    // FrameworkInstance.currentVersionId -> FrameworkVersion); then timeline
+    // templates and versions; requirements before the framework itself.
     const order = [
       (mockDb.frameworkInstance.deleteMany as jest.Mock).mock.invocationCallOrder[0],
+      (mockDb.timelineTemplate.deleteMany as jest.Mock).mock.invocationCallOrder[0],
       (mockDb.frameworkVersion.deleteMany as jest.Mock).mock.invocationCallOrder[0],
       (mockDb.frameworkEditorRequirement.deleteMany as jest.Mock).mock
         .invocationCallOrder[0],
       (mockDb.frameworkEditorFramework.delete as jest.Mock).mock.invocationCallOrder[0],
     ];
     expect(order).toEqual([...order].sort((a, b) => a - b));
+    // Timeline templates must be removed AFTER instances (their TimelineInstances
+    // cascade-delete with the instance, freeing the templateId Restrict FK).
+    expect(
+      (mockDb.timelineTemplate.deleteMany as jest.Mock).mock.invocationCallOrder[0],
+    ).toBeGreaterThan(
+      (mockDb.frameworkInstance.deleteMany as jest.Mock).mock.invocationCallOrder[0],
+    );
   });
 
   it('maps a residual FK conflict (P2003) to a ConflictException', async () => {
