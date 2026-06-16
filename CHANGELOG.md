@@ -1,3 +1,10 @@
+## [3.83.2](https://github.com/trycompai/comp/compare/v3.83.1...v3.83.2) (2026-06-16)
+
+
+### Bug Fixes
+
+* **integration-platform:** force Google account chooser on connect/reconnect ([13fe965](https://github.com/trycompai/comp/commit/13fe965d226f7c9879de908b883c70d6466536a8))
+
 ## [3.83.1](https://github.com/trycompai/comp/compare/v3.83.0...v3.83.1) (2026-06-15)
 
 

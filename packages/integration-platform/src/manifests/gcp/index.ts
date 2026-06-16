@@ -34,7 +34,10 @@ export const gcpManifest: IntegrationManifest = {
       supportsRefreshToken: true,
       authorizationParams: {
         access_type: 'offline',
-        prompt: 'consent',
+        // select_account forces Google's account chooser so a user can switch
+        // from a wrong account when connecting/reconnecting; consent keeps the
+        // consent screen so a refresh token is always issued.
+        prompt: 'select_account consent',
       },
       setupInstructions: `## Platform Admin: Enable GCP OAuth
 
