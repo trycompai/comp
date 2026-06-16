@@ -1,3 +1,66 @@
+## [3.83.4](https://github.com/trycompai/comp/compare/v3.83.3...v3.83.4) (2026-06-16)
+
+
+### Bug Fixes
+
+* **framework-editor:** also delete timeline templates when deleting a framework ([59aa455](https://github.com/trycompai/comp/commit/59aa455c677eae04d5c70f5baf5314a264f5c136))
+
+## [3.83.3](https://github.com/trycompai/comp/compare/v3.83.2...v3.83.3) (2026-06-16)
+
+
+### Bug Fixes
+
+* **framework-editor:** allow deleting a framework that has versions/instances ([4cf2142](https://github.com/trycompai/comp/commit/4cf2142cf67172d7aa457a58e6761b50adb7e0c1))
+* **framework-editor:** commit changes independently of publishing a version ([e06d446](https://github.com/trycompai/comp/commit/e06d44647362e33730ff36992038d207a6049343))
+
+## [3.83.2](https://github.com/trycompai/comp/compare/v3.83.1...v3.83.2) (2026-06-16)
+
+
+### Bug Fixes
+
+* **integration-platform:** force Google account chooser on connect/reconnect ([13fe965](https://github.com/trycompai/comp/commit/13fe965d226f7c9879de908b883c70d6466536a8))
+
+## [3.83.1](https://github.com/trycompai/comp/compare/v3.83.0...v3.83.1) (2026-06-15)
+
+
+### Bug Fixes
+
+* **policy-editor:** correct insert position, paragraph modify, and multi-edit merge ([7e6d073](https://github.com/trycompai/comp/commit/7e6d073acb5a6500fd083dcbad96babae439c936))
+* **policy-editor:** correct insert-fallback side for unmapped anchors ([789e0a1](https://github.com/trycompai/comp/commit/789e0a1d6c5fad1dc38303e186d4c37042dbf631))
+* **policy-editor:** don't swallow inline formatting-only edits ([750edcd](https://github.com/trycompai/comp/commit/750edcd211c650e0fdb2073b8469d22f8aac00ce))
+* **policy-editor:** stabilize AI Policy Assistant edit pipeline (CS-427) ([2812455](https://github.com/trycompai/comp/commit/2812455ba330edd4f443a31cf567a692af378214))
+* **policy-editor:** use node boundaries for blocks; fix section delete ([0350a9d](https://github.com/trycompai/comp/commit/0350a9d1592fc12102e56d4fa812f06cdb428452))
+
+# [3.83.0](https://github.com/trycompai/comp/compare/v3.82.3...v3.83.0) (2026-06-15)
+
+
+### Bug Fixes
+
+* **automation-builder:** make polling backstop independent of the poll loop ([6417018](https://github.com/trycompai/comp/commit/6417018de92f8ae924efe058fb7dcc1267a4be73))
+* **automation-builder:** stop test dialog hanging on "Running your automation" ([ddf7b34](https://github.com/trycompai/comp/commit/ddf7b34a7c304ad6bfd1ac25b09e036c4000ab2f))
+* **integration-platform:** make refresh lease release ownership-checked ([dc4b3f4](https://github.com/trycompai/comp/commit/dc4b3f4a5da88e298de6f23f2f836daf8caffd70))
+* **integration-platform:** serialize OAuth token refresh per connection ([1821eb2](https://github.com/trycompai/comp/commit/1821eb23830c8d835c1ddce28a5f03487fcce19a))
+
+
+### Features
+
+* **isms:** add CS-437 foundational documents ([5bf86d3](https://github.com/trycompai/comp/commit/5bf86d3987ca86ff9529c5637e4b75b36cb7c21e)), closes [#8](https://github.com/trycompai/comp/issues/8) [#9](https://github.com/trycompai/comp/issues/9) [#6](https://github.com/trycompai/comp/issues/6) [#7](https://github.com/trycompai/comp/issues/7) [#1](https://github.com/trycompai/comp/issues/1) [#2](https://github.com/trycompai/comp/issues/2) [#4](https://github.com/trycompai/comp/issues/4) [#5](https://github.com/trycompai/comp/issues/5) [#3](https://github.com/trycompai/comp/issues/3) [#11](https://github.com/trycompai/comp/issues/11) [#10](https://github.com/trycompai/comp/issues/10) [#2992](https://github.com/trycompai/comp/issues/2992) [mutation-throu#to-hook](https://github.com/mutation-throu/issues/to-hook)
+
+## [3.82.3](https://github.com/trycompai/comp/compare/v3.82.2...v3.82.3) (2026-06-15)
+
+
+### Bug Fixes
+
+* **framework-editor:** raise all import description limits to 10k ([e2f22a2](https://github.com/trycompai/comp/commit/e2f22a2c6162069e79c611b5d0fbf9f8f5c6bbe1))
+* **framework-editor:** unblock framework import (10k requirement limit + content shape) ([09aeba6](https://github.com/trycompai/comp/commit/09aeba6787a4d9d398c9a3d5064361ef27554605))
+
+## [3.82.2](https://github.com/trycompai/comp/compare/v3.82.1...v3.82.2) (2026-06-15)
+
+
+### Bug Fixes
+
+* **sentry:** only report errors from the production environment ([f1e8e8f](https://github.com/trycompai/comp/commit/f1e8e8f30a963f07c6702d2ed8cf4852ff98cfe5))
+
 ## [3.82.1](https://github.com/trycompai/comp/compare/v3.82.0...v3.82.1) (2026-06-15)
 
 

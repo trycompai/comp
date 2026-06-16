@@ -1,0 +1,270 @@
+// ISMS Foundational Documents (ISO 27001 clauses 4.1-4.3, 5.1, 6.2)
+//
+// Generated-and-edited management-system documents that live alongside the SOA
+// in the Documents page (Compliance -> Documents -> "ISO 27001 (ISMS)" tab).
+// Mirrors the SOADocument pattern: links the global framework template
+// (FrameworkEditorFramework) + organization, auto-fills from platform data,
+// supports edit/override, versioning, sign-off, drift detection, and export.
+//
+// Each document maps 1:1 to its ISO 27001 clause requirement
+// (FrameworkEditorRequirement) so it inherits framework grouping and powers the
+// auditor "where is this clause evidenced?" link.
+
+enum IsmsDocumentType {
+  context_of_organization // 4.1
+  interested_parties_register // 4.2a
+  interested_parties_requirements // 4.2b / 4.2c
+  isms_scope // 4.3
+  leadership_commitment // 5.1
+  objectives_plan // 6.2
+}
+
+enum IsmsDocumentStatus {
+  draft // being created / edited
+  in_progress // being generated
+  needs_review // submitted for approval
+  approved // signed off
+  declined // approval declined
+}
+
+model IsmsDocument {
+  id String @id @default(dbgenerated("generate_prefixed_cuid('isms_doc'::text)"))
+
+  // Framework + organization context. Mirrors SOADocument: references the global
+  // framework template + the org, not the per-org FrameworkInstance.
+  organizationId String
+  organization   Organization             @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  frameworkId    String
+  framework      FrameworkEditorFramework @relation(fields: [frameworkId], references: [id], onDelete: Cascade)
+
+  // ISO 27001 clause this document satisfies (4.1, 4.2, ...). Optional because the
+  // clause requirement may not be seeded for every type until verified (e.g. 6.2).
+  requirementId String?
+  requirement   FrameworkEditorRequirement? @relation(fields: [requirementId], references: [id], onDelete: SetNull)
+
+  // Framework-editor template this document was instantiated from (CS-437).
+  templateId String?
+  template   FrameworkEditorIsmsDocumentTemplate? @relation(fields: [templateId], references: [id], onDelete: SetNull)
+
+  type   IsmsDocumentType
+  title  String
+  status IsmsDocumentStatus @default(draft)
+
+  // Approval / sign-off (mirrors SOADocument).
+  preparedBy String    @default("Comp AI")
+  approverId String?
+  approver   Member?   @relation("IsmsDocumentApprover", fields: [approverId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  approvedAt DateTime?
+  declinedAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relationships
+  versions                    IsmsDocumentVersion[]
+  contextIssues               IsmsContextIssue[] // 4.1 register
+  interestedParties           IsmsInterestedParty[] // 4.2a register
+  interestedPartyRequirements IsmsInterestedPartyRequirement[] // 4.2b/c register
+  objectives                  IsmsObjective[] // 6.2 register
+  controlLinks                IsmsDocumentControlLink[] // CS-437: org controls this document maps to
+
+  @@unique([organizationId, frameworkId, type]) // one document per type per framework per org
+  @@index([organizationId, type])
+  @@index([frameworkId])
+  @@index([requirementId])
+  @@index([status])
+}
+
+// A partial unique index ("isms_document_version_one_latest") enforces at most one
+// row with isLatest = true per documentId. Prisma cannot express a filtered unique
+// index, so it lives in the raw SQL migration (isms_version_single_latest); keep it
+// in sync if isLatest semantics change.
+model IsmsDocumentVersion {
+  id         String       @id @default(dbgenerated("generate_prefixed_cuid('isms_ver'::text)"))
+  documentId String
+  document   IsmsDocument @relation(fields: [documentId], references: [id], onDelete: Cascade)
+
+  version  Int     @default(1)
+  isLatest Boolean @default(true)
+
+  // Per-section saved narrative + section-level overrides (stored as data, not free
+  // text, so the model is localisation-ready).
+  narrative Json
+  // Snapshot of derived inputs captured at generate / approve. Drift is detected by
+  // comparing this against the current derived data.
+  sourceSnapshot Json?
+
+  // Rendered, branded exports.
+  pdfUrl  String?
+  docxUrl String?
+
+  // User/member id who published this version (plain id, like SOAAnswer.createdBy).
+  publishedById String?
+  publishedAt   DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([documentId, version])
+  @@index([documentId])
+  @@index([documentId, isLatest])
+}
+
+// --- Register: Context of the Organization (clause 4.1) ---
+
+enum IsmsContextIssueKind {
+  internal
+  external
+}
+
+// Shared across every ISMS register: distinguishes auto-derived rows from
+// user-authored / overridden ones (the override is recorded by the flip to manual).
+enum IsmsContextSource {
+  derived // auto-populated from platform data
+  manual // user-authored, or a derived value the user overrode (override recorded)
+}
+
+model IsmsContextIssue {
+  id         String       @id @default(dbgenerated("generate_prefixed_cuid('isms_ci'::text)"))
+  documentId String
+  document   IsmsDocument @relation(fields: [documentId], references: [id], onDelete: Cascade)
+
+  kind        IsmsContextIssueKind
+  // ISO 27001 clause 4.1 grouping. External: "Regulatory & Legal" / "Market &
+  // Economic" / "Technological" / "Social & Cultural". Internal: "Governance &
+  // Structure" / "Strategy & Objectives" / "Capabilities & Resources" /
+  // "Culture & Values". Nullable so legacy rows + free-form issues stay valid.
+  category    String?
+  description String // the internal / external issue
+  effect      String // effect on the ISMS and its objectives (required by clause 4.1)
+
+  source      IsmsContextSource @default(derived)
+  derivedFrom String? // provenance for derived rows, e.g. "framework:iso27001", "vendor:<id>"
+
+  position  Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([documentId, kind])
+}
+
+// --- ISMS wizard inputs (CS-438): the ~12 un-derivable answers that feed
+// document generation. One profile per org + framework. Stored as a single
+// Zod-validated JSON blob (configuration, not register rows). ---
+
+model IsmsProfile {
+  id             String                   @id @default(dbgenerated("generate_prefixed_cuid('isms_pf'::text)"))
+  organizationId String
+  organization   Organization             @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  frameworkId    String
+  framework      FrameworkEditorFramework @relation(fields: [frameworkId], references: [id], onDelete: Cascade)
+
+  answers     Json // validated against the shared wizard Zod schema on read/write
+  completedAt DateTime? // set when the customer finishes the wizard
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([organizationId, frameworkId])
+  @@index([organizationId])
+}
+
+// --- Register: Interested Parties (clause 4.2a) ---
+
+model IsmsInterestedParty {
+  id         String       @id @default(dbgenerated("generate_prefixed_cuid('isms_ip'::text)"))
+  documentId String
+  document   IsmsDocument @relation(fields: [documentId], references: [id], onDelete: Cascade)
+
+  name              String // the interested party, e.g. "Customers", "Regulators (GDPR)", "Acme Cloud Ltd"
+  category          String // grouping, e.g. "Customer", "Regulator", "Supplier", "Employee", "Shareholder"
+  needsExpectations String // the party's relevant needs and expectations (4.2a)
+
+  source      IsmsContextSource @default(derived)
+  derivedFrom String? // e.g. "vendor:<id>", "framework:iso27001", "members"
+
+  position  Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  requirements IsmsInterestedPartyRequirement[]
+
+  @@index([documentId])
+}
+
+// --- Register: Interested Parties Requirements & ISMS Treatment (clauses 4.2b, 4.2c) ---
+
+model IsmsInterestedPartyRequirement {
+  id         String       @id @default(dbgenerated("generate_prefixed_cuid('isms_ipr'::text)"))
+  documentId String
+  document   IsmsDocument @relation(fields: [documentId], references: [id], onDelete: Cascade)
+
+  // Optional link to a party from the Interested Parties Register. partyName is kept
+  // denormalized so this register reads standalone even if the party row changes.
+  interestedPartyId String?
+  interestedParty   IsmsInterestedParty? @relation(fields: [interestedPartyId], references: [id], onDelete: SetNull)
+  partyName         String
+
+  requirement String // the party's requirement (4.2b)
+  treatment   String // whether and how the ISMS addresses it (4.2c)
+
+  source      IsmsContextSource @default(derived)
+  derivedFrom String?
+
+  position  Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([documentId])
+  @@index([interestedPartyId])
+}
+
+// --- Register: Information Security Objectives (clause 6.2) ---
+
+enum IsmsObjectiveStatus {
+  not_started
+  on_track
+  at_risk
+  met
+}
+
+model IsmsObjective {
+  id         String       @id @default(dbgenerated("generate_prefixed_cuid('isms_obj'::text)"))
+  documentId String
+  document   IsmsDocument @relation(fields: [documentId], references: [id], onDelete: Cascade)
+
+  objective         String // what we are trying to achieve (6.2)
+  target            String? // measurable target / KPI
+  ownerMemberId     String? // responsible member (plain id, like IsmsDocumentVersion.publishedById)
+  cadence           String? // monitoring cadence, e.g. "Quarterly"
+  plan              String? // what will be done, with what resources, by when (6.2)
+  measurementMethod String? // how results are evaluated
+  status            IsmsObjectiveStatus @default(not_started)
+
+  source      IsmsContextSource @default(derived)
+  derivedFrom String?
+
+  position  Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([documentId])
+}
+
+// --- Org-level link: an ISMS document maps to individual controls (CS-437) ---
+// Direct document<->control junction (both are org-scoped), mirroring how the
+// platform links documents to controls (cf. ControlDocumentType). The app doc
+// detail page manages these like Policy control mappings.
+model IsmsDocumentControlLink {
+  id             String       @id @default(dbgenerated("generate_prefixed_cuid('idc'::text)"))
+  ismsDocumentId String
+  ismsDocument   IsmsDocument @relation(fields: [ismsDocumentId], references: [id], onDelete: Cascade)
+  controlId      String
+  control        Control      @relation(fields: [controlId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@unique([ismsDocumentId, controlId])
+  @@index([ismsDocumentId])
+  @@index([controlId])
+}
