@@ -22,12 +22,6 @@ vi.mock('../../../components/table', () => ({
 
 vi.mock('./components/EditFrameworkDialog', () => ({ EditFrameworkDialog: () => null }));
 vi.mock('./components/DeleteFrameworkDialog', () => ({ DeleteFrameworkDialog: () => null }));
-vi.mock('./versions/components/PublishVersionDialog', () => ({
-  PublishVersionDialog: () => null,
-}));
-vi.mock('./versions/hooks/useFrameworkVersions', () => ({
-  useFrameworkVersions: () => ({ data: [], refetch: vi.fn() }),
-}));
 vi.mock('@/app/lib/api-client', () => ({ apiClient: vi.fn() }));
 vi.mock('next/navigation', () => ({ useRouter: () => ({ refresh: vi.fn(), push: vi.fn() }) }));
 vi.mock('sonner', () => ({ toast: { success: vi.fn(), error: vi.fn() } }));

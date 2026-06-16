@@ -2,19 +2,28 @@ jest.mock('@db', () => {
   const dbMock = {
     frameworkEditorFramework: {
       findUnique: jest.fn(),
+      delete: jest.fn(),
     },
     frameworkEditorRequirement: {
       findMany: jest.fn(),
+      deleteMany: jest.fn(),
     },
     frameworkEditorControlTemplate: {
       update: jest.fn(),
     },
+    frameworkInstance: {
+      deleteMany: jest.fn(),
+    },
+    frameworkVersion: {
+      deleteMany: jest.fn(),
+    },
+    $transaction: jest.fn((ops: unknown[]) => Promise.all(ops)),
   };
   return { db: dbMock, Prisma: { PrismaClientKnownRequestError: class {} } };
 });
 
 import { BadRequestException, ConflictException } from '@nestjs/common';
-import { db } from '@db';
+import { db, Prisma } from '@db';
 import { FrameworkEditorFrameworkService } from './framework.service';
 
 const mockDb = db as jest.Mocked<typeof db>;
@@ -85,5 +94,61 @@ describe('FrameworkEditorFrameworkService.linkControl', () => {
       ConflictException,
     );
     expect(mockDb.frameworkEditorControlTemplate.update).not.toHaveBeenCalled();
+  });
+});
+
+describe('FrameworkEditorFrameworkService.delete (FRAME-13)', () => {
+  let service: FrameworkEditorFrameworkService;
+
+  beforeEach(() => {
+    service = new FrameworkEditorFrameworkService();
+    jest.clearAllMocks();
+    (mockDb.frameworkEditorFramework.findUnique as jest.Mock).mockResolvedValue({
+      id: 'frk_1',
+    });
+  });
+
+  it('deletes instances, versions, requirements, then the framework — in that order', async () => {
+    const result = await service.delete('frk_1');
+
+    expect(result).toEqual({ message: 'Framework deleted successfully' });
+    expect(mockDb.frameworkInstance.deleteMany).toHaveBeenCalledWith({
+      where: { frameworkId: 'frk_1' },
+    });
+    expect(mockDb.frameworkVersion.deleteMany).toHaveBeenCalledWith({
+      where: { frameworkId: 'frk_1' },
+    });
+    expect(mockDb.frameworkEditorRequirement.deleteMany).toHaveBeenCalledWith({
+      where: { frameworkId: 'frk_1' },
+    });
+    expect(mockDb.frameworkEditorFramework.delete).toHaveBeenCalledWith({
+      where: { id: 'frk_1' },
+    });
+
+    // Order matters: instances free the currentVersion Restrict FK before
+    // versions are removed, and requirements before the framework itself.
+    const order = [
+      (mockDb.frameworkInstance.deleteMany as jest.Mock).mock.invocationCallOrder[0],
+      (mockDb.frameworkVersion.deleteMany as jest.Mock).mock.invocationCallOrder[0],
+      (mockDb.frameworkEditorRequirement.deleteMany as jest.Mock).mock
+        .invocationCallOrder[0],
+      (mockDb.frameworkEditorFramework.delete as jest.Mock).mock.invocationCallOrder[0],
+    ];
+    expect(order).toEqual([...order].sort((a, b) => a - b));
+  });
+
+  it('maps a residual FK conflict (P2003) to a ConflictException', async () => {
+    // Runtime uses the mocked class (ignores ctor args); the args satisfy the
+    // real Prisma type, and Object.assign sets the code the catch checks.
+    const fkError = Object.assign(
+      new Prisma.PrismaClientKnownRequestError('FK constraint', {
+        code: 'P2003',
+        clientVersion: '0',
+      }),
+      { code: 'P2003' },
+    );
+    (mockDb.$transaction as jest.Mock).mockRejectedValueOnce(fkError);
+
+    await expect(service.delete('frk_1')).rejects.toBeInstanceOf(ConflictException);
   });
 });
