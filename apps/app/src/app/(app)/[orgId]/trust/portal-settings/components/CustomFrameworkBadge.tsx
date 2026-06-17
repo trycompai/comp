@@ -1,7 +1,7 @@
 'use client';
 
 import { TrashCan, Upload } from '@trycompai/design-system/icons';
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
 
 const ALLOWED_BADGE_TYPES = ['image/png', 'image/jpeg', 'image/webp'];
@@ -34,6 +34,11 @@ export function CustomFrameworkBadge({
   disabled?: boolean;
 }) {
   const [isBusy, setIsBusy] = useState(false);
+  // Fall back to initials if the badge image fails to load (e.g. an expired
+  // signed URL). Reset when the URL changes so a freshly uploaded/replaced
+  // badge gets a fresh attempt.
+  const [imgErrored, setImgErrored] = useState(false);
+  useEffect(() => setImgErrored(false), [badgeUrl]);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const editable = !!onUpload && !disabled;
 
@@ -72,17 +77,19 @@ export function CustomFrameworkBadge({
     }
   };
 
-  const inner = badgeUrl ? (
-    <img
-      src={badgeUrl}
-      alt={`${title} badge`}
-      className="h-16 w-16 rounded-lg border bg-white object-contain p-1"
-    />
-  ) : (
-    <div className="flex h-16 w-16 items-center justify-center rounded-lg border bg-muted text-lg font-semibold uppercase text-muted-foreground">
-      {getFrameworkInitials(title)}
-    </div>
-  );
+  const inner =
+    badgeUrl && !imgErrored ? (
+      <img
+        src={badgeUrl}
+        alt={`${title} badge`}
+        className="h-16 w-16 rounded-lg border bg-white object-contain p-1"
+        onError={() => setImgErrored(true)}
+      />
+    ) : (
+      <div className="flex h-16 w-16 items-center justify-center rounded-lg border bg-muted text-lg font-semibold uppercase text-muted-foreground">
+        {getFrameworkInitials(title)}
+      </div>
+    );
 
   if (!editable) {
     return <div className="relative h-16 w-16 shrink-0">{inner}</div>;

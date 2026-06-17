@@ -1,5 +1,5 @@
 import type { TrustCustomFrameworkItem } from '@/hooks/use-trust-portal-settings';
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { CustomFrameworksSection } from './CustomFrameworksSection';
 
@@ -126,6 +126,23 @@ describe('CustomFrameworksSection', () => {
     expect(screen.getByAltText('Acme Internal Standard badge')).toBeInTheDocument();
     expect(screen.getByLabelText('Replace badge')).toBeInTheDocument();
     expect(screen.getByLabelText('Remove badge')).toBeInTheDocument();
+  });
+
+  it('falls back to initials when the badge image fails to load', () => {
+    render(
+      <CustomFrameworksSection
+        orgId="org_1"
+        canUpdate
+        initialCustomFrameworks={[{ ...frameworks[0], badgeUrl: 'https://signed/expired.png' }]}
+      />,
+    );
+
+    const img = screen.getByAltText('Acme Internal Standard badge');
+    fireEvent.error(img);
+
+    // Broken/expired image -> initials avatar ("AI" from "Acme Internal").
+    expect(screen.queryByAltText('Acme Internal Standard badge')).toBeNull();
+    expect(screen.getByText('AI')).toBeInTheDocument();
   });
 
   it('still shows an uploaded badge to read-only users (without controls)', () => {
