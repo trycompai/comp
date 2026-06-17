@@ -1,3 +1,10 @@
+## [3.83.8](https://github.com/trycompai/comp/compare/v3.83.7...v3.83.8) (2026-06-17)
+
+
+### Bug Fixes
+
+* **auth:** grant admin role portal permission to submit evidence forms ([3386bb2](https://github.com/trycompai/comp/commit/3386bb260a232b7c830d141935299fa6c0cb26d7))
+
 ## [3.83.7](https://github.com/trycompai/comp/compare/v3.83.6...v3.83.7) (2026-06-16)
 
 
