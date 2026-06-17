@@ -9,6 +9,7 @@ import { TrustAccessService } from './trust-access.service';
 import { TrustPortalController } from './trust-portal.controller';
 import { TrustPortalService } from './trust-portal.service';
 import { TrustCustomFrameworkService } from './trust-custom-framework.service';
+import { TrustCustomFrameworkBadgeService } from './trust-custom-framework-badge.service';
 
 @Module({
   imports: [AuthModule, AttachmentsModule],
@@ -16,11 +17,16 @@ import { TrustCustomFrameworkService } from './trust-custom-framework.service';
   providers: [
     TrustPortalService,
     TrustCustomFrameworkService,
+    TrustCustomFrameworkBadgeService,
     TrustAccessService,
     NdaPdfService,
     TrustEmailService,
     PolicyPdfRendererService,
   ],
-  exports: [TrustPortalService, TrustCustomFrameworkService, TrustAccessService],
+  exports: [
+    TrustPortalService,
+    TrustCustomFrameworkService,
+    TrustAccessService,
+  ],
 })
 export class TrustPortalModule {}
