@@ -1,4 +1,4 @@
-import { RiskStatus, db } from '@db/server';
+import { Prisma, RiskStatus, db } from '@db/server';
 import { logger, metadata, queue, tags, task, tasks } from '@trigger.dev/sdk';
 import axios from 'axios';
 import {
@@ -10,6 +10,48 @@ import {
 // Queues
 const riskMitigationQueue = queue({ name: 'risk-mitigations', concurrencyLimit: 50 });
 const riskMitigationFanoutQueue = queue({ name: 'risk-mitigations-fanout', concurrencyLimit: 50 });
+
+/**
+ * Builds the "apply onboarding defaults" writes for a risk after a mitigation
+ * plan is drafted, WITHOUT clobbering a user-managed risk.
+ *
+ * generateRiskMitigation re-runs on EXISTING risks — via the "Regenerate"
+ * button and via task-unlink (refreshTreatmentPlan) — and those runs land
+ * asynchronously AFTER the user may have changed the risk. An unconditional
+ * write here silently reopened risks the user had closed ("I mark a risk
+ * closed and it comes back as pending"). So each write is scoped:
+ *  - status: promote only a still-default `open` risk to `pending` (the AI
+ *    drafted a plan that needs review). Never downgrade a user-set
+ *    pending/closed/archived.
+ *  - assigneeId: assign the author only when the risk is still unassigned —
+ *    don't reassign a risk the user has already given an owner.
+ *
+ * The status/assignee where-clauses also keep this correct against a race
+ * where the user edits the risk while this async job is in flight.
+ */
+export function buildMitigationDefaultWrites(params: {
+  riskId: string;
+  organizationId: string;
+  authorId?: string;
+}): Prisma.RiskUpdateManyArgs[] {
+  const { riskId, organizationId, authorId } = params;
+
+  const writes: Prisma.RiskUpdateManyArgs[] = [
+    {
+      where: { id: riskId, organizationId, status: RiskStatus.open },
+      data: { status: RiskStatus.pending },
+    },
+  ];
+
+  if (authorId) {
+    writes.push({
+      where: { id: riskId, organizationId, assigneeId: null },
+      data: { assigneeId: authorId },
+    });
+  }
+
+  return writes;
+}
 
 export const generateRiskMitigation = task({
   id: 'generate-risk-mitigation',
@@ -42,17 +84,16 @@ export const generateRiskMitigation = task({
 
     await createRiskMitigationComment(risk, policies, organizationId, authorId ?? '');
 
-    // Mark risk as PENDING (not closed) — the AI drafted a plan but the
-    // user still needs to review it. Closing on the user's behalf would
-    // skip review and feel automated-away. Reassign to owner/admin only
-    // if we have one.
-    await db.risk.update({
-      where: { id: risk.id, organizationId },
-      data: {
-        status: RiskStatus.pending,
-        ...(authorId ? { assigneeId: authorId } : {}),
-      },
-    });
+    // Apply onboarding defaults without clobbering a user-managed risk — the
+    // AI drafted a plan, but the user owns the status/assignee. See
+    // buildMitigationDefaultWrites for why each write is scoped.
+    for (const write of buildMitigationDefaultWrites({
+      riskId: risk.id,
+      organizationId,
+      authorId,
+    })) {
+      await db.risk.updateMany(write);
+    }
 
     // Mark as completed after mitigation is done
     // Update root onboarding task metadata if available
