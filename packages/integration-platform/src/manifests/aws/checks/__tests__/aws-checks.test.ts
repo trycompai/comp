@@ -2,6 +2,10 @@ import { describe, expect, it } from 'bun:test';
 import { evaluateCloudTrail } from '../cloudtrail';
 import { evaluateSecurityGroups } from '../ec2';
 import {
+  classifyVpcEnv,
+  evaluateEnvironmentSeparation,
+} from '../environment-separation';
+import {
   evaluateAccountSummary,
   evaluateIamAccount,
   evaluatePasswordPolicy,
@@ -951,5 +955,54 @@ describe('account-level findings carry AWS account attribution (cubic finding on
       error: 'assume failed for test',
     });
     expect(failed[0]!.description).toContain('AWS account 123456789012');
+  });
+});
+
+describe('AWS environment separation', () => {
+  it('classifyVpcEnv: env tag wins, then Name tag, incl. underscore', () => {
+    expect(classifyVpcEnv([{ Key: 'Environment', Value: 'production' }])).toBe('production');
+    expect(classifyVpcEnv([{ Key: 'Name', Value: 'prod-vpc' }])).toBe('production');
+    expect(classifyVpcEnv([{ Key: 'Name', Value: 'vpc_dev' }])).toBe('development');
+  });
+
+  it('classifyVpcEnv: ignores non-env tags (no fabricated environment)', () => {
+    expect(classifyVpcEnv([{ Key: 'team', Value: 'dev-team' }])).toBeNull();
+    expect(classifyVpcEnv(undefined)).toBeNull();
+  });
+
+  it('passes when >=2 environments are found, without claiming cross-account isolation', () => {
+    const out = evaluateEnvironmentSeparation([
+      { vpcId: 'vpc-1', region: 'us-east-1', environment: 'production' },
+      { vpcId: 'vpc-2', region: 'us-east-1', environment: 'development' },
+    ]);
+    expect(out).toHaveLength(1);
+    expect(out[0]!.kind).toBe('pass');
+    expect(out[0]!.description).toMatch(/not cross-account isolation/);
+  });
+
+  it('fails (low) with guidance when only one environment is detected', () => {
+    const out = evaluateEnvironmentSeparation([
+      { vpcId: 'vpc-1', region: 'us-east-1', environment: 'production' },
+    ]);
+    expect(out).toHaveLength(1);
+    expect(out[0]!.kind).toBe('fail');
+    expect(out[0]!.severity).toBe('low');
+    expect(out[0]!.remediation).toMatch(/separate AWS account per environment/);
+  });
+
+  it('fails when no VPC can be classified', () => {
+    const out = evaluateEnvironmentSeparation([
+      { vpcId: 'vpc-1', region: 'us-east-1', environment: null },
+      { vpcId: 'vpc-2', region: 'us-east-1', environment: null },
+    ]);
+    expect(out[0]!.kind).toBe('fail');
+  });
+
+  it('fails (low) with guidance when there are no non-default VPCs', () => {
+    const out = evaluateEnvironmentSeparation([]);
+    expect(out).toHaveLength(1);
+    expect(out[0]!.kind).toBe('fail');
+    expect(out[0]!.severity).toBe('low');
+    expect(out[0]!.evidence).toMatchObject({ vpcCount: 0 });
   });
 });

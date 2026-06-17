@@ -1,5 +1,6 @@
 import type { IntegrationManifest } from '../../types';
 import {
+  environmentSeparationCheck,
   keyVaultProtectionCheck,
   keyVaultRbacCheck,
   monitorLoggingAlertingCheck,
@@ -176,5 +177,6 @@ Our integration only makes read-only API calls for security scanning.`,
     nsgNoOpenPortsCheck,
     rbacLeastPrivilegeCheck,
     monitorLoggingAlertingCheck,
+    environmentSeparationCheck,
   ],
 };

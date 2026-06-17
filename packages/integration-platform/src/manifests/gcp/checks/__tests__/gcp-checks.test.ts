@@ -889,10 +889,11 @@ describe('GCP Cloud SQL encryption check', () => {
 });
 
 describe('classifyProjectEnv — token matching', () => {
-  it('classifies by name token', () => {
+  it('classifies by name token (any separator, incl. underscore)', () => {
     expect(classifyProjectEnv({ projectId: 'myapp-prod' })).toBe('production');
     expect(classifyProjectEnv({ projectId: 'myapp-dev-123' })).toBe('development');
     expect(classifyProjectEnv({ projectId: 'web-staging' })).toBe('staging');
+    expect(classifyProjectEnv({ projectId: 'myapp_prod' })).toBe('production');
   });
 
   it('prefers an explicit environment label over the name', () => {
