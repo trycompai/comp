@@ -124,8 +124,12 @@ export const environmentSeparationCheck: IntegrationCheck = {
       return;
     }
 
-    // Tier 2 (weak, logical): resource-group-level separation across the footprint.
+    // Tier 2 (weak, logical): resource-group-level separation across the
+    // footprint. The RG fan-out is bounded (one list call per subscription);
+    // a footprint larger than the cap is surfaced as incomplete coverage below,
+    // never silently dropped.
     const boundedSubs = subscriptions.slice(0, MAX_SUBSCRIPTIONS);
+    const truncated = subscriptions.length > boundedSubs.length;
     const rgEnvSet = new Set<string>();
     const rgSamples: Array<{ name: string; environment: string }> = [];
     let anyRgReadFailed = false;
@@ -152,6 +156,10 @@ export const environmentSeparationCheck: IntegrationCheck = {
       }
     }
     const resourceGroupEnvs = [...rgEnvSet];
+    // A PASS means >=2 environments were positively found; scanning the
+    // remaining subscriptions could only ADD environments, never remove the two
+    // we already have, so truncation cannot invalidate a pass. The scanned count
+    // is still recorded in evidence for transparency.
     if (resourceGroupEnvs.length >= 2) {
       ctx.pass({
         title: 'Environments separated across resource groups',
@@ -161,32 +169,51 @@ export const environmentSeparationCheck: IntegrationCheck = {
         evidence: {
           boundary: 'resource-group',
           detectedEnvironments: resourceGroupEnvs,
-          subscriptionCount: boundedSubs.length,
+          enabledSubscriptions: subscriptions.length,
+          subscriptionsScannedForResourceGroups: boundedSubs.length,
           resourceGroups: rgSamples,
         },
       });
       return;
     }
 
-    // Neither tier confirmed separation.
+    // Neither tier confirmed separation. Surface any incomplete coverage (read
+    // failures and/or the subscription scan cap) so the verdict is never
+    // presented as if it covered the whole footprint.
     const detectedAll = [...new Set([...subscriptionEnvs, ...resourceGroupEnvs])];
+    const coverageGaps: string[] = [];
+    if (truncated) {
+      coverageGaps.push(
+        `only ${boundedSubs.length} of ${subscriptions.length} enabled subscriptions were scanned for resource groups`,
+      );
+    }
+    if (anyRgReadFailed) {
+      coverageGaps.push('some resource groups could not be read');
+    }
+    const base =
+      detectedAll.length === 0
+        ? `No Azure subscription or resource group could be classified by environment across ${subscriptions.length} subscription(s)`
+        : `Environment(s) detected (${detectedAll.join(', ')}) but not 2+ distinct environments at a single boundary (subscriptions, or resource groups)`;
     ctx.fail({
+      // Incomplete coverage that leaves us short of a verdict is "could not
+      // verify"; a complete scan that simply found no separation is "could not
+      // confirm".
       title:
-        anyRgReadFailed && detectedAll.length < 2
+        coverageGaps.length > 0 && detectedAll.length < 2
           ? 'Could not verify environment separation'
           : 'Could not confirm environment separation',
-      description:
-        detectedAll.length === 0
-          ? `No Azure subscription or resource group could be classified by environment across ${subscriptions.length} subscription(s)${anyRgReadFailed ? ' (some resource groups could not be read)' : ''}, so environment separation could not be confirmed.`
-          : `Environment(s) detected (${detectedAll.join(', ')}) but not 2+ distinct environments at a single boundary (subscriptions, or resource groups), so environment separation could not be confirmed.`,
+      description: `${base}${coverageGaps.length ? ` (${coverageGaps.join('; ')})` : ''}, so environment separation could not be confirmed.`,
       resourceType: 'azure-environment-separation',
       resourceId: 'subscriptions',
       severity: 'medium',
-      remediation: GUIDANCE,
+      remediation: truncated
+        ? `Reduce to at most ${MAX_SUBSCRIPTIONS} enabled subscriptions (or contact support to raise the limit). ${GUIDANCE}`
+        : GUIDANCE,
       evidence: {
         subscriptionEnvironments: subscriptionEnvs,
         resourceGroupEnvironments: resourceGroupEnvs,
-        subscriptionCount: subscriptions.length,
+        enabledSubscriptions: subscriptions.length,
+        subscriptionsScannedForResourceGroups: boundedSubs.length,
         resourceGroupsClassified: rgSamples.length,
       },
     });

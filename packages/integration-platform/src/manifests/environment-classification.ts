@@ -61,9 +61,13 @@ export function envTagValues(
   keys: ReadonlyArray<string> = ENV_TAG_KEYS,
 ): string[] {
   if (!tags) return [];
-  const wanted = new Set(keys.map((k) => k.toLowerCase()));
-  return Object.entries(tags)
-    .filter(([k]) => wanted.has(k.toLowerCase()))
-    .map(([, v]) => v)
+  // Iterate the configured keys in PRIORITY order (not the tag map's insertion
+  // order) so a more authoritative key (`environment`) is returned before a
+  // less authoritative one (`stage`) — `classifyEnvironment` trusts order.
+  const normalized = new Map(
+    Object.entries(tags).map(([k, v]) => [k.toLowerCase(), v]),
+  );
+  return keys
+    .map((k) => normalized.get(k.toLowerCase()))
     .filter((v): v is string => typeof v === 'string' && v.length > 0);
 }
