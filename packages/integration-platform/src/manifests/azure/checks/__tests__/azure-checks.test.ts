@@ -6,6 +6,7 @@ import type {
 } from '../../../../types';
 import { azureManifest } from '../../index';
 import { rbacLeastPrivilegeCheck } from '../entra-id';
+import { environmentSeparationCheck } from '../environment-separation';
 import { keyVaultProtectionCheck, keyVaultRbacCheck } from '../key-vault';
 import { monitorLoggingAlertingCheck } from '../monitor';
 import {
@@ -894,5 +895,127 @@ describe('azure subscription picker fetchOptions', () => {
     } as unknown as Parameters<NonNullable<typeof variable.fetchOptions>>[0];
     const options = await variable!.fetchOptions!(ctx);
     expect(options).toEqual([]);
+  });
+});
+
+describe('Azure environment separation', () => {
+  const envSepFetch =
+    (opts: { subs: unknown[]; rgs?: Record<string, unknown[]> }) =>
+    (url: string) => {
+      if (url.includes('/subscriptions?api-version')) return { value: opts.subs };
+      const m = url.match(/\/subscriptions\/([^/]+)\/resourcegroups/);
+      if (m) return { value: opts.rgs?.[m[1]!] ?? [] };
+      return {};
+    };
+
+  it('passes (strong) when >=2 subscriptions classify to distinct environments', async () => {
+    const { passed, failed } = await run(
+      environmentSeparationCheck,
+      envSepFetch({
+        subs: [
+          { subscriptionId: 's1', state: 'Enabled', displayName: 'Production' },
+          { subscriptionId: 's2', state: 'Enabled', displayName: 'Development' },
+        ],
+      }),
+    );
+    expect(failed).toHaveLength(0);
+    expect(passed).toContain('Environments separated across subscriptions');
+  });
+
+  it('passes (weak) on resource-group separation, disclosed as logical', async () => {
+    const { passed, failed } = await run(
+      environmentSeparationCheck,
+      envSepFetch({
+        subs: [{ subscriptionId: 's1', state: 'Enabled', displayName: 'MyCompany' }],
+        rgs: {
+          s1: [
+            { id: 'a', name: 'rg-prod' },
+            { id: 'b', name: 'rg-dev' },
+          ],
+        },
+      }),
+    );
+    expect(failed).toHaveLength(0);
+    expect(passed).toContain('Environments separated across resource groups');
+  });
+
+  it('passes on resource-group tags (case-insensitive key)', async () => {
+    const { passed } = await run(
+      environmentSeparationCheck,
+      envSepFetch({
+        subs: [{ subscriptionId: 's1', state: 'Enabled', displayName: 'Company' }],
+        rgs: {
+          s1: [
+            { id: 'a', name: 'a', tags: { environment: 'production' } },
+            { id: 'b', name: 'b', tags: { Environment: 'staging' } },
+          ],
+        },
+      }),
+    );
+    expect(passed).toContain('Environments separated across resource groups');
+  });
+
+  it('does NOT union tiers: a prod subscription with an rg-dev inside fails', async () => {
+    const { passed, failed } = await run(
+      environmentSeparationCheck,
+      envSepFetch({
+        subs: [{ subscriptionId: 's1', state: 'Enabled', displayName: 'Production' }],
+        rgs: { s1: [{ id: 'a', name: 'rg-dev' }] },
+      }),
+    );
+    expect(passed).toHaveLength(0);
+    expect(failed.some((f) => /Could not confirm environment separation/.test(f.title))).toBe(true);
+  });
+
+  it('fails with guidance when nothing classifies', async () => {
+    const { passed, failed } = await run(
+      environmentSeparationCheck,
+      envSepFetch({
+        subs: [{ subscriptionId: 's1', state: 'Enabled', displayName: 'Company' }],
+        rgs: { s1: [{ id: 'a', name: 'backend' }] },
+      }),
+    );
+    expect(passed).toHaveLength(0);
+    expect(failed).toHaveLength(1);
+    expect(failed[0]!.remediation).toMatch(/distinct subscriptions/);
+  });
+
+  it('fails when no enabled subscriptions are visible', async () => {
+    const { failed } = await run(
+      environmentSeparationCheck,
+      envSepFetch({ subs: [{ subscriptionId: 's1', state: 'Disabled', displayName: 'Old' }] }),
+    );
+    expect(failed.some((f) => /No Azure subscriptions detected/.test(f.title))).toBe(true);
+  });
+
+  it('fails "could not verify" when the subscription list read fails', async () => {
+    const { passed, failed } = await run(environmentSeparationCheck, (url) => {
+      if (url.includes('/subscriptions?api-version')) throw new Error('HTTP 403: Forbidden');
+      return {};
+    });
+    expect(passed).toHaveLength(0);
+    expect(failed.some((f) => /Could not verify environment separation/.test(f.title))).toBe(true);
+  });
+
+  it('surfaces the subscription scan cap as explicit coverage info (no silent truncation)', async () => {
+    // 60 enabled subscriptions, none env-named, no classifiable resource groups
+    // → unconfirmed, and the >50 RG-scan cap must be disclosed.
+    const subs = Array.from({ length: 60 }, (_, i) => ({
+      subscriptionId: `s${i}`,
+      state: 'Enabled',
+      displayName: `Company-${i}`,
+    }));
+    const { passed, failed } = await run(
+      environmentSeparationCheck,
+      envSepFetch({ subs, rgs: {} }),
+    );
+    expect(passed).toHaveLength(0);
+    expect(failed).toHaveLength(1);
+    expect(failed[0]!.title).toMatch(/Could not verify environment separation/);
+    expect(failed[0]!.remediation).toMatch(/Reduce to at most 50 enabled subscriptions/);
+    expect(failed[0]!.evidence).toMatchObject({
+      enabledSubscriptions: 60,
+      subscriptionsScannedForResourceGroups: 50,
+    });
   });
 });
