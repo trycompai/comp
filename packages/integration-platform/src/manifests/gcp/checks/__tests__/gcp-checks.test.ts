@@ -4,15 +4,22 @@ import type {
   CheckVariableValues,
   IntegrationCheck,
 } from '../../../../types';
+import { cloudMonitoringAlertingCheck } from '../cloud-monitoring-alerting';
 import { cloudSqlBackupsCheck } from '../cloud-sql-backups';
+import { cloudSqlEncryptionCheck } from '../cloud-sql-encryption';
 import { cloudSqlSslCheck } from '../cloud-sql-ssl';
 import { iamPrimitiveRolesCheck } from '../iam-primitive-roles';
+import { storageEncryptionCheck } from '../storage-encryption';
 import { storagePublicAccessCheck } from '../storage-public-access';
 import { vpcOpenFirewallsCheck } from '../vpc-open-firewalls';
 import { isGcpApiDisabled } from '../shared';
 
 interface Captured {
-  passed: Array<{ resourceId: string; title: string }>;
+  passed: Array<{
+    resourceId: string;
+    title: string;
+    evidence?: Record<string, unknown>;
+  }>;
   failed: Array<{
     resourceId: string;
     title: string;
@@ -43,7 +50,12 @@ async function runCheck(
     log: () => {},
     warn: () => {},
     error: () => {},
-    pass: (r) => passed.push({ resourceId: r.resourceId, title: r.title }),
+    pass: (r) =>
+      passed.push({
+        resourceId: r.resourceId,
+        title: r.title,
+        evidence: r.evidence,
+      }),
     fail: (r) =>
       failed.push({
         resourceId: r.resourceId,
@@ -576,5 +588,298 @@ describe('No projects resolved → check no-ops (no false pass)', () => {
     });
     expect(passed).toHaveLength(0);
     expect(failed).toHaveLength(0);
+  });
+});
+
+describe('GCP Cloud Monitoring — alerting and log export check', () => {
+  // Branch a single mock by which API the check is calling.
+  const monitorFetch =
+    (opts: { policies?: unknown[]; sinks?: unknown[] }) => (url: string) => {
+      if (url.includes('/alertPolicies')) {
+        return { alertPolicies: opts.policies ?? [] };
+      }
+      if (url.includes('/sinks')) return { sinks: opts.sinks ?? [] };
+      return {};
+    };
+
+  const status = (err: Error, code: number) => {
+    (err as Error & { status: number }).status = code;
+    return err;
+  };
+
+  it('passes both prongs: enabled alert policy with a channel + a configured sink', async () => {
+    const out = await runCheck(cloudMonitoringAlertingCheck, {
+      fetch: monitorFetch({
+        policies: [
+          {
+            name: 'p1',
+            displayName: 'High CPU',
+            enabled: true,
+            notificationChannels: ['projects/x/notificationChannels/1'],
+          },
+        ],
+        sinks: [
+          { name: 'export-bq', destination: 'bigquery.googleapis.com/x', disabled: false },
+          { name: '_Default', disabled: false },
+        ],
+      }),
+    });
+    expect(out.failed).toHaveLength(0);
+    expect(out.passed).toHaveLength(2);
+    expect(out.passed.some((p) => /Alerting configured/.test(p.title))).toBe(true);
+    expect(out.passed.some((p) => /Log export configured/.test(p.title))).toBe(true);
+  });
+
+  it('fails alerting when a policy has no notification channel (log export still passes)', async () => {
+    const out = await runCheck(cloudMonitoringAlertingCheck, {
+      fetch: monitorFetch({
+        policies: [{ name: 'p1', enabled: true, notificationChannels: [] }],
+        sinks: [
+          { name: 'export-bq', destination: 'storage.googleapis.com/b1', disabled: false },
+        ],
+      }),
+    });
+    expect(out.failed).toHaveLength(1);
+    expect(out.failed[0]!.title).toMatch(/No alerting configured/);
+    expect(out.passed).toHaveLength(1);
+    expect(out.passed[0]!.title).toMatch(/Log export configured/);
+  });
+
+  it('fails alerting when there are zero alert policies', async () => {
+    const out = await runCheck(cloudMonitoringAlertingCheck, {
+      fetch: monitorFetch({
+        policies: [],
+        sinks: [{ name: 'export', destination: 'bigquery.googleapis.com/x', disabled: false }],
+      }),
+    });
+    expect(out.failed.some((f) => /No alerting configured/.test(f.title))).toBe(true);
+  });
+
+  it('treats an unset `enabled` field as enabled (API default)', async () => {
+    const out = await runCheck(cloudMonitoringAlertingCheck, {
+      fetch: monitorFetch({
+        policies: [{ name: 'p1', notificationChannels: ['c1'] }], // no `enabled`
+        sinks: [
+          {
+            name: 'export',
+            destination: 'pubsub.googleapis.com/projects/x/topics/logs',
+            disabled: false,
+          },
+        ],
+      }),
+    });
+    expect(out.failed).toHaveLength(0);
+    expect(out.passed).toHaveLength(2);
+  });
+
+  it('fails log export when only the managed _Default/_Required sinks exist', async () => {
+    const out = await runCheck(cloudMonitoringAlertingCheck, {
+      fetch: monitorFetch({
+        policies: [{ name: 'p1', enabled: true, notificationChannels: ['c1'] }],
+        sinks: [
+          {
+            name: '_Default',
+            destination:
+              'logging.googleapis.com/projects/x/locations/global/buckets/_Default',
+            disabled: false,
+          },
+          {
+            name: '_Required',
+            destination:
+              'logging.googleapis.com/projects/x/locations/global/buckets/_Required',
+            disabled: false,
+          },
+        ],
+      }),
+    });
+    expect(out.passed.some((p) => /Alerting configured/.test(p.title))).toBe(true);
+    expect(out.failed.some((f) => /No log export configured/.test(f.title))).toBe(true);
+  });
+
+  it('does not count a disabled sink as log export', async () => {
+    const out = await runCheck(cloudMonitoringAlertingCheck, {
+      fetch: monitorFetch({
+        policies: [{ name: 'p1', enabled: true, notificationChannels: ['c1'] }],
+        sinks: [{ name: 'export', destination: 'bigquery.googleapis.com/x', disabled: true }],
+      }),
+    });
+    expect(out.failed.some((f) => /No log export configured/.test(f.title))).toBe(true);
+  });
+
+  it('does not count a custom-named sink that still targets the _Default bucket', async () => {
+    const out = await runCheck(cloudMonitoringAlertingCheck, {
+      fetch: monitorFetch({
+        policies: [{ name: 'p1', enabled: true, notificationChannels: ['c1'] }],
+        sinks: [
+          {
+            name: 'my-sink', // non-default NAME, but routes to the default bucket
+            destination:
+              'logging.googleapis.com/projects/x/locations/global/buckets/_Default',
+            disabled: false,
+          },
+        ],
+      }),
+    });
+    expect(out.failed.some((f) => /No log export configured/.test(f.title))).toBe(true);
+  });
+
+  it('counts a sink to a dedicated (non-default) Cloud Logging bucket as export', async () => {
+    const out = await runCheck(cloudMonitoringAlertingCheck, {
+      fetch: monitorFetch({
+        policies: [{ name: 'p1', enabled: true, notificationChannels: ['c1'] }],
+        sinks: [
+          {
+            name: 'audit',
+            destination:
+              'logging.googleapis.com/projects/x/locations/global/buckets/audit-7yr',
+            disabled: false,
+          },
+        ],
+      }),
+    });
+    expect(out.failed).toHaveLength(0);
+    expect(out.passed.some((p) => /Log export configured/.test(p.title))).toBe(true);
+  });
+
+  it('fails "could not verify" alerting on a genuine permission error (log export unaffected)', async () => {
+    const out = await runCheck(cloudMonitoringAlertingCheck, {
+      fetch: (url) => {
+        if (url.includes('/alertPolicies')) {
+          throw status(
+            new Error('HTTP 403: Forbidden - The caller does not have permission'),
+            403,
+          );
+        }
+        if (url.includes('/sinks')) {
+          return {
+            sinks: [{ name: 'export', destination: 'storage.googleapis.com/b', disabled: false }],
+          };
+        }
+        return {};
+      },
+    });
+    expect(out.failed.some((f) => /Could not verify alerting/.test(f.title))).toBe(true);
+    expect(out.passed.some((p) => /Log export configured/.test(p.title))).toBe(true);
+  });
+
+  it('skips a project whose Monitoring/Logging APIs are disabled (no false finding)', async () => {
+    const out = await runCheck(cloudMonitoringAlertingCheck, {
+      fetch: () => {
+        throw status(
+          new Error(
+            'HTTP 403: Forbidden - Cloud Monitoring API has not been used in project p before or it is disabled. (SERVICE_DISABLED)',
+          ),
+          403,
+        );
+      },
+    });
+    expect(out.passed).toHaveLength(0);
+    expect(out.failed).toHaveLength(0);
+  });
+});
+
+describe('GCP Cloud Storage encryption check', () => {
+  const status = (err: Error, code: number) => {
+    (err as Error & { status: number }).status = code;
+    return err;
+  };
+
+  it('passes a bucket and reports Google-managed encryption by default', async () => {
+    const out = await runCheck(storageEncryptionCheck, {
+      fetch: () => ({ items: [{ name: 'b1', location: 'US' }] }),
+    });
+    expect(out.failed).toHaveLength(0);
+    expect(out.passed).toHaveLength(1);
+    expect(out.passed[0]!.evidence).toMatchObject({
+      keyType: 'Google-managed',
+      defaultKmsKeyName: null,
+    });
+  });
+
+  it('reports CMEK when a default KMS key is set on the bucket', async () => {
+    const key = 'projects/x/locations/us/keyRings/r/cryptoKeys/k';
+    const out = await runCheck(storageEncryptionCheck, {
+      fetch: () => ({
+        items: [{ name: 'b1', encryption: { defaultKmsKeyName: key } }],
+      }),
+    });
+    expect(out.passed[0]!.evidence).toMatchObject({
+      keyType: 'CMEK',
+      defaultKmsKeyName: key,
+    });
+  });
+
+  it('emits nothing when a project has no buckets', async () => {
+    const out = await runCheck(storageEncryptionCheck, {
+      fetch: () => ({ items: [] }),
+    });
+    expect(out.passed).toHaveLength(0);
+    expect(out.failed).toHaveLength(0);
+  });
+
+  it('fails "could not verify" when the bucket list read fails', async () => {
+    const out = await runCheck(storageEncryptionCheck, {
+      fetch: () => {
+        throw status(new Error('HTTP 403: Forbidden'), 403);
+      },
+    });
+    expect(out.passed).toHaveLength(0);
+    expect(out.failed).toHaveLength(1);
+    expect(out.failed[0]!.title).toMatch(/Could not verify Cloud Storage encryption/);
+  });
+
+  it('skips a project whose Storage API is disabled (no false finding)', async () => {
+    const out = await runCheck(storageEncryptionCheck, {
+      fetch: () => {
+        throw status(
+          new Error(
+            'HTTP 403: Forbidden - Cloud Storage API has not been used in project p before or it is disabled. (SERVICE_DISABLED)',
+          ),
+          403,
+        );
+      },
+    });
+    expect(out.passed).toHaveLength(0);
+    expect(out.failed).toHaveLength(0);
+  });
+});
+
+describe('GCP Cloud SQL encryption check', () => {
+  const status = (err: Error, code: number) => {
+    (err as Error & { status: number }).status = code;
+    return err;
+  };
+
+  it('passes an instance and reports Google-managed encryption by default', async () => {
+    const out = await runCheck(cloudSqlEncryptionCheck, {
+      fetch: () => ({ items: [{ name: 'db1', region: 'us-central1' }] }),
+    });
+    expect(out.failed).toHaveLength(0);
+    expect(out.passed).toHaveLength(1);
+    expect(out.passed[0]!.evidence).toMatchObject({
+      keyType: 'Google-managed',
+      kmsKeyName: null,
+    });
+  });
+
+  it('reports CMEK when diskEncryptionConfiguration is set', async () => {
+    const key = 'projects/x/locations/us/keyRings/r/cryptoKeys/k';
+    const out = await runCheck(cloudSqlEncryptionCheck, {
+      fetch: () => ({
+        items: [{ name: 'db1', diskEncryptionConfiguration: { kmsKeyName: key } }],
+      }),
+    });
+    expect(out.passed[0]!.evidence).toMatchObject({ keyType: 'CMEK', kmsKeyName: key });
+  });
+
+  it('fails "could not verify" when the instance list read fails', async () => {
+    const out = await runCheck(cloudSqlEncryptionCheck, {
+      fetch: () => {
+        throw status(new Error('HTTP 403: Forbidden'), 403);
+      },
+    });
+    expect(out.passed).toHaveLength(0);
+    expect(out.failed).toHaveLength(1);
+    expect(out.failed[0]!.title).toMatch(/Could not verify Cloud SQL encryption/);
   });
 });
