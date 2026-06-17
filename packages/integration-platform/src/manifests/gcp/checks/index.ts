@@ -6,3 +6,4 @@ export { cloudSqlBackupsCheck } from './cloud-sql-backups';
 export { cloudMonitoringAlertingCheck } from './cloud-monitoring-alerting';
 export { storageEncryptionCheck } from './storage-encryption';
 export { cloudSqlEncryptionCheck } from './cloud-sql-encryption';
+export { environmentSeparationCheck } from './environment-separation';
