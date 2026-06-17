@@ -996,4 +996,26 @@ describe('Azure environment separation', () => {
     expect(passed).toHaveLength(0);
     expect(failed.some((f) => /Could not verify environment separation/.test(f.title))).toBe(true);
   });
+
+  it('surfaces the subscription scan cap as explicit coverage info (no silent truncation)', async () => {
+    // 60 enabled subscriptions, none env-named, no classifiable resource groups
+    // → unconfirmed, and the >50 RG-scan cap must be disclosed.
+    const subs = Array.from({ length: 60 }, (_, i) => ({
+      subscriptionId: `s${i}`,
+      state: 'Enabled',
+      displayName: `Company-${i}`,
+    }));
+    const { passed, failed } = await run(
+      environmentSeparationCheck,
+      envSepFetch({ subs, rgs: {} }),
+    );
+    expect(passed).toHaveLength(0);
+    expect(failed).toHaveLength(1);
+    expect(failed[0]!.title).toMatch(/Could not verify environment separation/);
+    expect(failed[0]!.remediation).toMatch(/Reduce to at most 50 enabled subscriptions/);
+    expect(failed[0]!.evidence).toMatchObject({
+      enabledSubscriptions: 60,
+      subscriptionsScannedForResourceGroups: 50,
+    });
+  });
 });

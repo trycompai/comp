@@ -51,7 +51,15 @@ describe('classifyEnvironment — token-exact matching', () => {
 describe('envTagValues — only env-key tags, case-insensitive', () => {
   it('reads environment-indicating keys regardless of case', () => {
     expect(envTagValues({ Environment: 'production' })).toEqual(['production']);
-    expect(envTagValues({ env: 'prod', stage: 'dev' }).sort()).toEqual(['dev', 'prod']);
+  });
+
+  it('returns values in env-key PRIORITY order, not tag insertion order', () => {
+    // `environment` outranks `stage` even though `stage` is inserted first.
+    expect(envTagValues({ stage: 'dev', environment: 'prod' })).toEqual(['prod', 'dev']);
+    // so the authoritative key wins classification
+    expect(classifyEnvironment(envTagValues({ stage: 'dev', environment: 'prod' }))).toBe(
+      'production',
+    );
   });
 
   it('ignores non-environment tags (false-positive guard)', () => {
