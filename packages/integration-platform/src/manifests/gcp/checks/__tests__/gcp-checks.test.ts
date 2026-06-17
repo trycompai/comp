@@ -921,9 +921,13 @@ describe('GCP environment-separation check', () => {
     (err as Error & { status: number }).status = code;
     return err;
   };
+  // `variables: {}` forces unscoped discovery (the project_ids-less default),
+  // so the mock can return the `/v1/projects` list shape.
+  const UNSCOPED = {};
 
-  it('passes when ≥2 distinct environments are detected by name', async () => {
+  it('passes when production is separated from a non-production env (by name)', async () => {
     const out = await runCheck(environmentSeparationCheck, {
+      variables: UNSCOPED,
       fetch: () => ({
         projects: [{ projectId: 'myapp-prod' }, { projectId: 'myapp-dev' }],
       }),
@@ -936,8 +940,9 @@ describe('GCP environment-separation check', () => {
     });
   });
 
-  it('passes when environments are distinguished by labels', async () => {
+  it('passes when environments are distinguished by labels (prod + staging)', async () => {
     const out = await runCheck(environmentSeparationCheck, {
+      variables: UNSCOPED,
       fetch: () => ({
         projects: [
           { projectId: 'a', labels: { environment: 'production' } },
@@ -949,8 +954,9 @@ describe('GCP environment-separation check', () => {
     expect(out.passed).toHaveLength(1);
   });
 
-  it('evaluates projects across multiple pages', async () => {
+  it('evaluates projects across multiple pages (unscoped discovery)', async () => {
     const out = await runCheck(environmentSeparationCheck, {
+      variables: UNSCOPED,
       fetch: (url) => {
         if (url.includes('pageToken=tok2')) {
           return { projects: [{ projectId: 'app-dev' }] };
@@ -962,8 +968,39 @@ describe('GCP environment-separation check', () => {
     expect(out.passed).toHaveLength(1);
   });
 
-  it('fails with guidance when only one environment is present', async () => {
+  it('honors project_ids scope: fetches selected projects, never lists all', async () => {
     const out = await runCheck(environmentSeparationCheck, {
+      variables: { project_ids: ['p-prod', 'p-dev'] },
+      fetch: (url) => {
+        if (url.includes('/v1/projects/p-prod')) {
+          return { projectId: 'p-prod', labels: { environment: 'production' } };
+        }
+        if (url.includes('/v1/projects/p-dev')) {
+          return { projectId: 'p-dev', labels: { environment: 'development' } };
+        }
+        // The list endpoint must NOT be called when projects are selected.
+        throw new Error(`unexpected list call: ${url}`);
+      },
+    });
+    expect(out.failed).toHaveLength(0);
+    expect(out.passed).toHaveLength(1);
+  });
+
+  it('fails when only non-production environments are present (no production)', async () => {
+    const out = await runCheck(environmentSeparationCheck, {
+      variables: UNSCOPED,
+      fetch: () => ({
+        projects: [{ projectId: 'app-dev' }, { projectId: 'app-staging' }],
+      }),
+    });
+    expect(out.passed).toHaveLength(0);
+    expect(out.failed).toHaveLength(1);
+    expect(out.failed[0]!.title).toMatch(/Could not confirm environment separation/);
+  });
+
+  it('fails when only production is present (no non-production)', async () => {
+    const out = await runCheck(environmentSeparationCheck, {
+      variables: UNSCOPED,
       fetch: () => ({ projects: [{ projectId: 'myapp-prod' }] }),
     });
     expect(out.passed).toHaveLength(0);
@@ -972,8 +1009,9 @@ describe('GCP environment-separation check', () => {
     expect(out.failed[0]!.remediation).toMatch(/distinct GCP projects/);
   });
 
-  it('fails with guidance when no project can be classified', async () => {
+  it('fails when no project can be classified', async () => {
     const out = await runCheck(environmentSeparationCheck, {
+      variables: UNSCOPED,
       fetch: () => ({
         projects: [{ projectId: 'product-catalog' }, { projectId: 'backend' }],
       }),
@@ -983,8 +1021,25 @@ describe('GCP environment-separation check', () => {
     expect(out.failed[0]!.title).toMatch(/Could not confirm environment separation/);
   });
 
-  it('fails when no projects are accessible', async () => {
+  it('surfaces truncation as "could not verify" when discovery is capped', async () => {
+    // Every page returns more pages → the 20-page cap trips; classify only
+    // non-prod so the verdict is a fail that must disclose the partial scan.
     const out = await runCheck(environmentSeparationCheck, {
+      variables: UNSCOPED,
+      fetch: () => ({
+        projects: [{ projectId: 'app-dev' }],
+        nextPageToken: 'next',
+      }),
+    });
+    expect(out.passed).toHaveLength(0);
+    expect(out.failed).toHaveLength(1);
+    expect(out.failed[0]!.title).toMatch(/Could not verify environment separation/);
+    expect(out.failed[0]!.evidence).toMatchObject({ discoveryTruncated: true });
+  });
+
+  it('fails when no projects are accessible (unscoped)', async () => {
+    const out = await runCheck(environmentSeparationCheck, {
+      variables: UNSCOPED,
       fetch: () => ({ projects: [] }),
     });
     expect(out.passed).toHaveLength(0);
@@ -992,8 +1047,21 @@ describe('GCP environment-separation check', () => {
     expect(out.failed[0]!.title).toMatch(/No GCP projects detected/);
   });
 
-  it('fails "could not verify" when the project list read fails', async () => {
+  it('fails "could not verify" when unscoped discovery read fails', async () => {
     const out = await runCheck(environmentSeparationCheck, {
+      variables: UNSCOPED,
+      fetch: () => {
+        throw status(new Error('HTTP 403: Forbidden'), 403);
+      },
+    });
+    expect(out.passed).toHaveLength(0);
+    expect(out.failed).toHaveLength(1);
+    expect(out.failed[0]!.title).toMatch(/Could not verify environment separation/);
+  });
+
+  it('fails "could not verify" when a selected (scoped) project cannot be read', async () => {
+    const out = await runCheck(environmentSeparationCheck, {
+      variables: { project_ids: ['p1'] },
       fetch: () => {
         throw status(new Error('HTTP 403: Forbidden'), 403);
       },

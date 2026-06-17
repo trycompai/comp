@@ -899,24 +899,24 @@ describe('azure subscription picker fetchOptions', () => {
 });
 
 describe('Azure environment separation', () => {
-  const envSepFetch =
-    (opts: { subs: unknown[]; rgs?: Record<string, unknown[]> }) =>
+  // Mocks the IN-SCOPE per-subscription name GET and the per-subscription
+  // resource-group list. Scope is driven by the `variables` arg (subscription_id
+  // / subscription_ids) via resolveAzureSubscriptionIds — there is NO list-all.
+  const azFetch =
+    (opts: { names?: Record<string, string>; rgs?: Record<string, unknown[]> }) =>
     (url: string) => {
-      if (url.includes('/subscriptions?api-version')) return { value: opts.subs };
-      const m = url.match(/\/subscriptions\/([^/]+)\/resourcegroups/);
-      if (m) return { value: opts.rgs?.[m[1]!] ?? [] };
+      const subM = url.match(/\/subscriptions\/([^/?]+)\?api-version/);
+      if (subM) return { displayName: opts.names?.[subM[1]!] ?? subM[1]! };
+      const rgM = url.match(/\/subscriptions\/([^/]+)\/resourcegroups/);
+      if (rgM) return { value: opts.rgs?.[rgM[1]!] ?? [] };
       return {};
     };
 
-  it('passes (strong) when >=2 subscriptions classify to distinct environments', async () => {
+  it('passes (strong) when scoped subscriptions classify to prod + non-prod', async () => {
     const { passed, failed } = await run(
       environmentSeparationCheck,
-      envSepFetch({
-        subs: [
-          { subscriptionId: 's1', state: 'Enabled', displayName: 'Production' },
-          { subscriptionId: 's2', state: 'Enabled', displayName: 'Development' },
-        ],
-      }),
+      azFetch({ names: { s1: 'Production', s2: 'Development' } }),
+      { subscription_ids: ['s1', 's2'] },
     );
     expect(failed).toHaveLength(0);
     expect(passed).toContain('Environments separated across subscriptions');
@@ -925,14 +925,9 @@ describe('Azure environment separation', () => {
   it('passes (weak) on resource-group separation, disclosed as logical', async () => {
     const { passed, failed } = await run(
       environmentSeparationCheck,
-      envSepFetch({
-        subs: [{ subscriptionId: 's1', state: 'Enabled', displayName: 'MyCompany' }],
-        rgs: {
-          s1: [
-            { id: 'a', name: 'rg-prod' },
-            { id: 'b', name: 'rg-dev' },
-          ],
-        },
+      azFetch({
+        names: { 'sub-1': 'MyCompany' },
+        rgs: { 'sub-1': [{ id: 'a', name: 'rg-prod' }, { id: 'b', name: 'rg-dev' }] },
       }),
     );
     expect(failed).toHaveLength(0);
@@ -942,10 +937,10 @@ describe('Azure environment separation', () => {
   it('passes on resource-group tags (case-insensitive key)', async () => {
     const { passed } = await run(
       environmentSeparationCheck,
-      envSepFetch({
-        subs: [{ subscriptionId: 's1', state: 'Enabled', displayName: 'Company' }],
+      azFetch({
+        names: { 'sub-1': 'Company' },
         rgs: {
-          s1: [
+          'sub-1': [
             { id: 'a', name: 'a', tags: { environment: 'production' } },
             { id: 'b', name: 'b', tags: { Environment: 'staging' } },
           ],
@@ -955,67 +950,84 @@ describe('Azure environment separation', () => {
     expect(passed).toContain('Environments separated across resource groups');
   });
 
-  it('does NOT union tiers: a prod subscription with an rg-dev inside fails', async () => {
+  it('fails on two non-production environments (no production)', async () => {
     const { passed, failed } = await run(
       environmentSeparationCheck,
-      envSepFetch({
-        subs: [{ subscriptionId: 's1', state: 'Enabled', displayName: 'Production' }],
-        rgs: { s1: [{ id: 'a', name: 'rg-dev' }] },
+      azFetch({
+        names: { 'sub-1': 'Company' },
+        rgs: { 'sub-1': [{ id: 'a', name: 'rg-dev' }, { id: 'b', name: 'rg-staging' }] },
       }),
     );
     expect(passed).toHaveLength(0);
     expect(failed.some((f) => /Could not confirm environment separation/.test(f.title))).toBe(true);
   });
 
+  it('does NOT union tiers: prod subscription + an rg-dev inside fails', async () => {
+    const { passed, failed } = await run(
+      environmentSeparationCheck,
+      azFetch({ names: { s1: 'Production' }, rgs: { s1: [{ id: 'a', name: 'rg-dev' }] } }),
+      { subscription_ids: ['s1'] },
+    );
+    expect(passed).toHaveLength(0);
+    expect(failed.some((f) => /Could not confirm environment separation/.test(f.title))).toBe(true);
+  });
+
+  it('only scans the configured subscription scope', async () => {
+    // Scope is ['s1']; touching any other subscription must throw.
+    const { passed, failed } = await run(
+      environmentSeparationCheck,
+      (url) => {
+        if (!url.includes('/subscriptions/s1')) {
+          throw new Error(`out-of-scope access: ${url}`);
+        }
+        const subM = url.match(/\/subscriptions\/([^/?]+)\?api-version/);
+        if (subM) return { displayName: 'Company' };
+        if (url.includes('/resourcegroups')) {
+          return { value: [{ id: 'a', name: 'rg-prod' }, { id: 'b', name: 'rg-dev' }] };
+        }
+        return {};
+      },
+      { subscription_ids: ['s1'] },
+    );
+    expect(failed).toHaveLength(0);
+    expect(passed).toContain('Environments separated across resource groups');
+  });
+
   it('fails with guidance when nothing classifies', async () => {
     const { passed, failed } = await run(
       environmentSeparationCheck,
-      envSepFetch({
-        subs: [{ subscriptionId: 's1', state: 'Enabled', displayName: 'Company' }],
-        rgs: { s1: [{ id: 'a', name: 'backend' }] },
-      }),
+      azFetch({ names: { 'sub-1': 'Company' }, rgs: { 'sub-1': [{ id: 'a', name: 'backend' }] } }),
     );
     expect(passed).toHaveLength(0);
     expect(failed).toHaveLength(1);
     expect(failed[0]!.remediation).toMatch(/distinct subscriptions/);
   });
 
-  it('fails when no enabled subscriptions are visible', async () => {
-    const { failed } = await run(
-      environmentSeparationCheck,
-      envSepFetch({ subs: [{ subscriptionId: 's1', state: 'Disabled', displayName: 'Old' }] }),
-    );
-    expect(failed.some((f) => /No Azure subscriptions detected/.test(f.title))).toBe(true);
-  });
-
-  it('fails "could not verify" when the subscription list read fails', async () => {
+  it('fails "could not verify" when a resource-group read fails', async () => {
     const { passed, failed } = await run(environmentSeparationCheck, (url) => {
-      if (url.includes('/subscriptions?api-version')) throw new Error('HTTP 403: Forbidden');
+      if (url.includes('/resourcegroups')) throw new Error('HTTP 403: Forbidden');
+      const subM = url.match(/\/subscriptions\/([^/?]+)\?api-version/);
+      if (subM) return { displayName: 'Company' };
       return {};
     });
     expect(passed).toHaveLength(0);
     expect(failed.some((f) => /Could not verify environment separation/.test(f.title))).toBe(true);
   });
 
-  it('surfaces the subscription scan cap as explicit coverage info (no silent truncation)', async () => {
-    // 60 enabled subscriptions, none env-named, no classifiable resource groups
-    // → unconfirmed, and the >50 RG-scan cap must be disclosed.
-    const subs = Array.from({ length: 60 }, (_, i) => ({
-      subscriptionId: `s${i}`,
-      state: 'Enabled',
-      displayName: `Company-${i}`,
-    }));
+  it('defers to the scope resolver when no subscription is in scope', async () => {
+    // variables {} → discovery; no enabled subscription → resolveAzureSubscriptionIds
+    // emits its own scope finding and the check early-returns (no double fail).
     const { passed, failed } = await run(
       environmentSeparationCheck,
-      envSepFetch({ subs, rgs: {} }),
+      (url) => {
+        if (url.includes('/subscriptions?api-version')) {
+          return { value: [{ subscriptionId: 's1', state: 'Disabled' }] };
+        }
+        return {};
+      },
+      {},
     );
     expect(passed).toHaveLength(0);
-    expect(failed).toHaveLength(1);
-    expect(failed[0]!.title).toMatch(/Could not verify environment separation/);
-    expect(failed[0]!.remediation).toMatch(/Reduce to at most 50 enabled subscriptions/);
-    expect(failed[0]!.evidence).toMatchObject({
-      enabledSubscriptions: 60,
-      subscriptionsScannedForResourceGroups: 50,
-    });
+    expect(failed.some((f) => /Could not verify Azure subscription scope/.test(f.title))).toBe(true);
   });
 });
