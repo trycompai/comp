@@ -1,3 +1,15 @@
+# [3.85.0](https://github.com/trycompai/comp/compare/v3.84.0...v3.85.0) (2026-06-17)
+
+
+### Bug Fixes
+
+* **integrations:** require a durable destination for GCP log-export prong ([600f277](https://github.com/trycompai/comp/commit/600f277e54aa4f85afcfd85dbe5e74649d27dcc0))
+
+
+### Features
+
+* **integrations:** add GCP Monitoring & Alerting and Encryption at Rest checks ([d294ba0](https://github.com/trycompai/comp/commit/d294ba0312015dd3fa30abbb50f8644d5cec0d52))
+
 # [3.84.0](https://github.com/trycompai/comp/compare/v3.83.8...v3.84.0) (2026-06-17)
 
 
