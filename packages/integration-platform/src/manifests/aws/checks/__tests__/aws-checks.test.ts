@@ -2,6 +2,7 @@ import { describe, expect, it } from 'bun:test';
 import { evaluateCloudTrail } from '../cloudtrail';
 import { evaluateSecurityGroups } from '../ec2';
 import {
+  buildEnvironmentSeparationOutcomes,
   classifyVpcEnv,
   evaluateEnvironmentSeparation,
 } from '../environment-separation';
@@ -1013,5 +1014,53 @@ describe('AWS environment separation', () => {
     expect(out[0]!.kind).toBe('fail');
     expect(out[0]!.severity).toBe('low');
     expect(out[0]!.evidence).toMatchObject({ vpcCount: 0 });
+  });
+});
+
+describe('buildEnvironmentSeparationOutcomes — region failures vs verdict (cubic finding)', () => {
+  const failure = { error: 'AccessDenied: ec2:DescribeVpcs', denied: true };
+  const regionFailures = [{ region: 'eu-west-1', failure }];
+
+  it('does NOT pair a region-failure fail with a confirmed pass', () => {
+    const out = buildEnvironmentSeparationOutcomes(
+      [
+        { vpcId: 'vpc-1', region: 'us-east-1', environment: 'production' },
+        { vpcId: 'vpc-2', region: 'us-east-1', environment: 'development' },
+      ],
+      regionFailures,
+    );
+    // A confirmed pass stands alone — more regions can only ADD environments, so
+    // the unread region can't un-confirm it; emitting a fail too would be a
+    // contradictory pass+fail in one run.
+    expect(out).toHaveLength(1);
+    expect(out[0]!.kind).toBe('pass');
+  });
+
+  it('surfaces the region failure alongside an UNconfirmed verdict (both negative)', () => {
+    const out = buildEnvironmentSeparationOutcomes(
+      [{ vpcId: 'vpc-1', region: 'us-east-1', environment: 'production' }],
+      regionFailures,
+    );
+    expect(out.length).toBeGreaterThanOrEqual(2);
+    expect(out.every((o) => o.kind === 'fail')).toBe(true);
+    expect(out.some((o) => /Could not verify VPCs in some regions/.test(o.title))).toBe(true);
+  });
+
+  it('returns only the region-failure finding when zero VPCs were read', () => {
+    const out = buildEnvironmentSeparationOutcomes([], regionFailures);
+    expect(out).toHaveLength(1);
+    expect(out[0]!.title).toMatch(/Could not verify VPCs in some regions/);
+  });
+
+  it('with no region failures, returns the separation verdict unchanged', () => {
+    const out = buildEnvironmentSeparationOutcomes(
+      [
+        { vpcId: 'vpc-1', region: 'us-east-1', environment: 'production' },
+        { vpcId: 'vpc-2', region: 'us-east-1', environment: 'staging' },
+      ],
+      [],
+    );
+    expect(out).toHaveLength(1);
+    expect(out[0]!.kind).toBe('pass');
   });
 });
