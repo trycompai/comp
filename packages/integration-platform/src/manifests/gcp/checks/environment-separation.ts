@@ -1,6 +1,10 @@
 import { TASK_TEMPLATES } from '../../../task-mappings';
 import type { CheckContext, IntegrationCheck } from '../../../types';
 import {
+  classifyEnvironment,
+  envTagValues,
+} from '../../environment-classification';
+import {
   remediationForReadFailure,
   toHttpReadFailure,
 } from '../../http-read-failure';
@@ -12,35 +16,18 @@ interface GcpProject {
 }
 
 /**
- * Environment classification by token. Production is listed first so it wins
- * when a string could match more than one bucket. Tokens are matched with word
- * boundaries (so "product"/"developer" do NOT match "prod"/"dev").
+ * Classify a project into an environment bucket, or null if undetermined.
+ * Explicit `environment`/`env` label values are most authoritative, then the
+ * project id / display name. Token matching (shared classifier) means
+ * "product"/"developer" do NOT match "prod"/"dev" and separator style
+ * (`-`/`_`/`.`) doesn't matter.
  */
-const ENV_PATTERNS: ReadonlyArray<{ env: string; re: RegExp }> = [
-  { env: 'production', re: /\b(prod|production|prd|live)\b/i },
-  { env: 'staging', re: /\b(staging|stage|stg|preprod|uat)\b/i },
-  { env: 'development', re: /\b(dev|develop|development)\b/i },
-  { env: 'test', re: /\b(test|testing|qa)\b/i },
-  { env: 'sandbox', re: /\b(sandbox|sbx|demo)\b/i },
-];
-
-// Label keys that conventionally carry the environment, checked before falling
-// back to the project name/id — an explicit label is more authoritative.
-const ENV_LABEL_KEYS = ['environment', 'env', 'stage', 'tier'] as const;
-
-/** Classify a project into an environment bucket, or null if undetermined. */
 export function classifyProjectEnv(project: GcpProject): string | null {
-  const labelValues = ENV_LABEL_KEYS.map((k) => project.labels?.[k]).filter(
-    (v): v is string => typeof v === 'string' && v.length > 0,
-  );
-  // Explicit env labels first, then the project id / display name.
-  const haystacks = [...labelValues, project.projectId, project.name ?? ''];
-  for (const haystack of haystacks) {
-    for (const { env, re } of ENV_PATTERNS) {
-      if (re.test(haystack)) return env;
-    }
-  }
-  return null;
+  return classifyEnvironment([
+    ...envTagValues(project.labels),
+    project.projectId,
+    project.name,
+  ]);
 }
 
 /** List every active project the connection can see (bounded pagination). */
