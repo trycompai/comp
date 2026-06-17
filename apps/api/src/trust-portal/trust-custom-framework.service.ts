@@ -5,6 +5,7 @@ import type {
   TrustCustomFrameworkPublicItem,
   UpdateTrustCustomFrameworkDto,
 } from './dto/trust-custom-framework.dto';
+import { TrustCustomFrameworkBadgeService } from './trust-custom-framework-badge.service';
 
 /**
  * Manages which org-authored custom frameworks are displayed on the public
@@ -19,6 +20,10 @@ import type {
 @Injectable()
 export class TrustCustomFrameworkService {
   private readonly logger = new Logger(TrustCustomFrameworkService.name);
+
+  constructor(
+    private readonly badgeService: TrustCustomFrameworkBadgeService,
+  ) {}
 
   /**
    * List every custom framework the org owns, joined with its Trust Portal
@@ -36,7 +41,12 @@ export class TrustCustomFrameworkService {
       }),
       db.trustCustomFramework.findMany({
         where: { organizationId },
-        select: { customFrameworkId: true, enabled: true, status: true },
+        select: {
+          customFrameworkId: true,
+          enabled: true,
+          status: true,
+          badgeS3Key: true,
+        },
       }),
       db.trustResource.findMany({
         where: { organizationId, customFrameworkId: { not: null } },
@@ -53,20 +63,25 @@ export class TrustCustomFrameworkService {
         .map((c) => [c.customFrameworkId as string, c.fileName]),
     );
 
-    return customFrameworks.map((framework) => {
-      const selection = selectionByFramework.get(framework.id);
-      const certificateFileName =
-        certificateByFramework.get(framework.id) ?? null;
-      return {
-        customFrameworkId: framework.id,
-        name: framework.name,
-        description: framework.description,
-        enabled: selection?.enabled ?? false,
-        status: selection?.status ?? 'started',
-        hasCertificate: certificateFileName !== null,
-        certificateFileName,
-      };
-    });
+    return Promise.all(
+      customFrameworks.map(async (framework) => {
+        const selection = selectionByFramework.get(framework.id);
+        const certificateFileName =
+          certificateByFramework.get(framework.id) ?? null;
+        return {
+          customFrameworkId: framework.id,
+          name: framework.name,
+          description: framework.description,
+          enabled: selection?.enabled ?? false,
+          status: selection?.status ?? 'started',
+          hasCertificate: certificateFileName !== null,
+          certificateFileName,
+          badgeUrl: selection?.badgeS3Key
+            ? await this.badgeService.signBadgeUrl(selection.badgeS3Key)
+            : null,
+        };
+      }),
+    );
   }
 
   /**
@@ -129,6 +144,7 @@ export class TrustCustomFrameworkService {
       where: { organizationId, enabled: true },
       select: {
         status: true,
+        badgeS3Key: true,
         customFramework: {
           select: { id: true, name: true, description: true },
         },
@@ -148,13 +164,18 @@ export class TrustCustomFrameworkService {
       certificates.map((c) => c.customFrameworkId),
     );
 
-    return selections.map((selection) => ({
-      id: selection.customFramework.id,
-      name: selection.customFramework.name,
-      description: selection.customFramework.description,
-      status: selection.status,
-      hasCertificate: withCertificate.has(selection.customFramework.id),
-    }));
+    return Promise.all(
+      selections.map(async (selection) => ({
+        id: selection.customFramework.id,
+        name: selection.customFramework.name,
+        description: selection.customFramework.description,
+        status: selection.status,
+        hasCertificate: withCertificate.has(selection.customFramework.id),
+        badgeUrl: selection.badgeS3Key
+          ? await this.badgeService.signBadgeUrl(selection.badgeS3Key)
+          : null,
+      })),
+    );
   }
 
   private async resolveOrganizationId(

@@ -3,6 +3,7 @@ import { BadRequestException } from '@nestjs/common';
 import { TrustPortalController } from './trust-portal.controller';
 import { TrustPortalService } from './trust-portal.service';
 import { TrustCustomFrameworkService } from './trust-custom-framework.service';
+import { TrustCustomFrameworkBadgeService } from './trust-custom-framework-badge.service';
 import { HybridAuthGuard } from '../auth/hybrid-auth.guard';
 import { PermissionGuard } from '../auth/permission.guard';
 import type { AuthContext as AuthContextType } from '../auth/types';
@@ -59,6 +60,12 @@ describe('TrustPortalController', () => {
     getPublicCustomFrameworks: jest.fn(),
   };
 
+  const mockBadgeService = {
+    uploadBadge: jest.fn(),
+    removeBadge: jest.fn(),
+    signBadgeUrl: jest.fn(),
+  };
+
   const mockGuard = { canActivate: jest.fn().mockReturnValue(true) };
 
   const orgId = 'org_test123';
@@ -84,6 +91,10 @@ describe('TrustPortalController', () => {
         {
           provide: TrustCustomFrameworkService,
           useValue: mockCustomFrameworkService,
+        },
+        {
+          provide: TrustCustomFrameworkBadgeService,
+          useValue: mockBadgeService,
         },
       ],
     })
@@ -671,6 +682,43 @@ describe('TrustPortalController', () => {
 
       expect(service.getPublicVendors).toHaveBeenCalledWith(orgId);
       expect(service.getAllVendorsWithSync).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('uploadCustomFrameworkBadge', () => {
+    it('delegates to badgeService.uploadBadge with org + dto', async () => {
+      const dto = {
+        customFrameworkId: 'cfrm_a',
+        fileName: 'badge.png',
+        fileType: 'image/png',
+        fileData: 'base64data',
+      };
+      const mockResult = {
+        success: true,
+        badgeUrl: 'https://signed/badge.png',
+      };
+      mockBadgeService.uploadBadge.mockResolvedValue(mockResult);
+
+      const result = await controller.uploadCustomFrameworkBadge(orgId, dto);
+
+      expect(result).toEqual(mockResult);
+      expect(mockBadgeService.uploadBadge).toHaveBeenCalledWith(orgId, dto);
+    });
+  });
+
+  describe('removeCustomFrameworkBadge', () => {
+    it('delegates to badgeService.removeBadge with org + customFrameworkId', async () => {
+      mockBadgeService.removeBadge.mockResolvedValue({ success: true });
+
+      const result = await controller.removeCustomFrameworkBadge(orgId, {
+        customFrameworkId: 'cfrm_a',
+      });
+
+      expect(result).toEqual({ success: true });
+      expect(mockBadgeService.removeBadge).toHaveBeenCalledWith(
+        orgId,
+        'cfrm_a',
+      );
     });
   });
 });

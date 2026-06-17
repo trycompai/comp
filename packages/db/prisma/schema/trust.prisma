@@ -136,6 +136,11 @@ model TrustCustomFramework {
   enabled Boolean         @default(true)
   status  FrameworkStatus @default(started)
 
+  // Optional uploaded badge/logo image for this custom framework, shown on the
+  // public Trust Portal in place of the initials avatar. Stores an S3 object
+  // KEY (not a URL), resolved to a signed URL on read — mirrors `Trust.favicon`.
+  badgeS3Key String?
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 

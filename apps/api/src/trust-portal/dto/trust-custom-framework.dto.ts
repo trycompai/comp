@@ -1,3 +1,5 @@
+import { ApiProperty } from '@nestjs/swagger';
+import { IsNotEmpty, IsString } from 'class-validator';
 import { z } from 'zod';
 
 /**
@@ -31,6 +33,8 @@ export interface TrustCustomFrameworkAdminItem {
   /** Whether a compliance certificate PDF has been uploaded. */
   hasCertificate: boolean;
   certificateFileName: string | null;
+  /** Signed URL to the uploaded badge/logo, or null when none is set. */
+  badgeUrl: string | null;
 }
 
 /** A custom framework as shown on the public portal. */
@@ -40,4 +44,62 @@ export interface TrustCustomFrameworkPublicItem {
   description: string;
   status: 'started' | 'in_progress' | 'compliant';
   hasCertificate: boolean;
+  /** Signed URL to the uploaded badge/logo, or null when none is set. */
+  badgeUrl: string | null;
+}
+
+/** Upload (or replace) the badge/logo image for one custom framework. */
+export class UploadCustomFrameworkBadgeDto {
+  @ApiProperty({
+    description: 'Org-authored custom framework ID the badge belongs to',
+    example: 'cfrm_6914cd0e16e4c7dccbb54426',
+  })
+  @IsString()
+  @IsNotEmpty()
+  customFrameworkId!: string;
+
+  @ApiProperty({
+    description: 'Original file name (PNG, JPEG, or WebP)',
+    example: 'acme-framework-badge.png',
+  })
+  @IsString()
+  @IsNotEmpty()
+  fileName!: string;
+
+  @ApiProperty({
+    description: 'MIME type of the image',
+    example: 'image/png',
+  })
+  @IsString()
+  @IsNotEmpty()
+  fileType!: string;
+
+  @ApiProperty({
+    description: 'Base64 encoded image content',
+  })
+  @IsString()
+  @IsNotEmpty()
+  fileData!: string;
+}
+
+/** Query params for removing a custom framework's badge. */
+export class RemoveCustomFrameworkBadgeQueryDto {
+  @ApiProperty({
+    description: 'Org-authored custom framework ID whose badge to remove',
+    example: 'cfrm_6914cd0e16e4c7dccbb54426',
+  })
+  @IsString()
+  @IsNotEmpty()
+  customFrameworkId!: string;
+}
+
+/** Response from a successful badge upload. */
+export class CustomFrameworkBadgeResponseDto {
+  @ApiProperty()
+  success!: boolean;
+
+  @ApiProperty({
+    description: 'Signed URL to the uploaded badge for immediate display',
+  })
+  badgeUrl!: string;
 }

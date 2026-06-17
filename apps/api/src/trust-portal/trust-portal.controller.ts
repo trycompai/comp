@@ -62,10 +62,14 @@ import { UpdateVendorTrustSettingsSchema } from './dto/trust-vendor.dto';
 import {
   UpdateTrustCustomFrameworkSchema,
   type UpdateTrustCustomFrameworkDto,
+  UploadCustomFrameworkBadgeDto,
+  RemoveCustomFrameworkBadgeQueryDto,
+  CustomFrameworkBadgeResponseDto,
 } from './dto/trust-custom-framework.dto';
 import { ZodValidationPipe } from '../common/pipes/zod-validation.pipe';
 import { TrustPortalService } from './trust-portal.service';
 import { TrustCustomFrameworkService } from './trust-custom-framework.service';
+import { TrustCustomFrameworkBadgeService } from './trust-custom-framework-badge.service';
 
 class ListComplianceResourcesDto {
   @ApiProperty({
@@ -84,6 +88,7 @@ export class TrustPortalController {
   constructor(
     private readonly trustPortalService: TrustPortalService,
     private readonly trustCustomFrameworkService: TrustCustomFrameworkService,
+    private readonly trustCustomFrameworkBadgeService: TrustCustomFrameworkBadgeService,
   ) {}
 
   @Get('settings')
@@ -461,6 +466,51 @@ export class TrustPortalController {
     return this.trustCustomFrameworkService.updateSelection(
       organizationId,
       dto,
+    );
+  }
+
+  @Post('custom-frameworks/badge')
+  @HttpCode(HttpStatus.CREATED)
+  @RequirePermission('trust', 'update')
+  @ApiOperation({
+    summary: "Upload or replace a custom framework's Trust Portal badge image",
+    description:
+      "Stores a PNG/JPEG/WebP badge (max 256KB) in the organization assets bucket. Does not change the framework's portal visibility.",
+  })
+  @ApiBody({ type: UploadCustomFrameworkBadgeDto })
+  @ApiResponse({
+    status: HttpStatus.CREATED,
+    description: 'Badge uploaded successfully',
+    type: CustomFrameworkBadgeResponseDto,
+  })
+  async uploadCustomFrameworkBadge(
+    @OrganizationId() organizationId: string,
+    @Body() dto: UploadCustomFrameworkBadgeDto,
+  ): Promise<CustomFrameworkBadgeResponseDto> {
+    return this.trustCustomFrameworkBadgeService.uploadBadge(
+      organizationId,
+      dto,
+    );
+  }
+
+  @Delete('custom-frameworks/badge')
+  @HttpCode(HttpStatus.OK)
+  @RequirePermission('trust', 'update')
+  @ApiOperation({
+    summary: "Remove a custom framework's Trust Portal badge image",
+  })
+  @ApiQuery({
+    name: 'customFrameworkId',
+    description: 'Org-authored custom framework ID whose badge to remove',
+    required: true,
+  })
+  async removeCustomFrameworkBadge(
+    @OrganizationId() organizationId: string,
+    @Query() query: RemoveCustomFrameworkBadgeQueryDto,
+  ) {
+    return this.trustCustomFrameworkBadgeService.removeBadge(
+      organizationId,
+      query.customFrameworkId,
     );
   }
 
